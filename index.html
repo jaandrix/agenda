@@ -1138,6 +1138,18 @@
         let filteredEntries = [];
         let searchQuery = '';
 
+        // IDs de categorías especiales para sincronización
+        const CAT_IDS = {
+            VIAJE: 'cat_viaje',
+            OBJETIVO: 'cat_objetivo',
+            PROYECTO: 'cat_proyecto',
+            TRABAJO: 'cat_trabajo',
+            LIBRO: 'cat_libro',
+            PELICULA: 'cat_pelicula',
+            SERIE: 'cat_serie',
+            VIDEOJUEGO: 'cat_videojuego'
+        };
+
         const DEFAULT_COLORS = [
             '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
             '#1abc9c', '#e67e22', '#e84393', '#00b894', '#6c5ce7',
@@ -1196,6 +1208,66 @@
                 { id: 'cat_viaje', name: 'Viaje', color: '#e84393' },
                 { id: 'cat_finanzas', name: 'Finanzas', color: '#2ecc71' },
             ];
+        }
+
+        // ============================================================
+        //  SISTEMA DE ENTRADAS AUTOMÁTICAS
+        // ============================================================
+
+        function getCategoryId(name) {
+            let cat = categories.find(c => c.name === name);
+            if (!cat) {
+                const colors = ['#e84393', '#6c5ce7', '#00b894', '#e67e22', '#3498db', '#f39c12', '#9b59b6', '#e74c3c'];
+                const colorMap = {
+                    'Viaje': '#e84393',
+                    'Objetivo': '#6c5ce7',
+                    'Proyecto': '#00b894',
+                    'Trabajo': '#e67e22',
+                    'Libro': '#3498db',
+                    'Película': '#f39c12',
+                    'Serie': '#9b59b6',
+                    'Videojuego': '#e74c3c'
+                };
+                const newCat = {
+                    id: 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    name: name,
+                    color: colorMap[name] || '#6b7280'
+                };
+                categories.push(newCat);
+                cat = newCat;
+                saveData();
+            }
+            return cat.id;
+        }
+
+        function addEntryForItem(title, date, categoryName, extraInfo) {
+            if (!date) return null;
+            const catId = getCategoryId(categoryName);
+            const entry = {
+                id: Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                date: date,
+                title: title + (extraInfo ? ' (' + extraInfo + ')' : ''),
+                categoryId: catId,
+                notes: '',
+                _source: categoryName
+            };
+            entries.push(entry);
+            return entry;
+        }
+
+        function removeEntriesForItem(id, categoryName) {
+            // Eliminar entradas que contengan el ID en el título o en _source
+            const toRemove = entries.filter(e => {
+                return e.title.includes('[' + id + ']') || e._source === categoryName + '_' + id;
+            });
+            toRemove.forEach(e => {
+                const idx = entries.indexOf(e);
+                if (idx >= 0) entries.splice(idx, 1);
+            });
+        }
+
+        function getEntryTitle(title, id) {
+            return title + ' [' + id + ']';
         }
 
         // ============================================================
@@ -1310,7 +1382,7 @@
         }
 
         // ============================================================
-        //  SEARCH (optimizada)
+        //  SEARCH
         // ============================================================
         let searchTimeout = null;
 
@@ -1557,19 +1629,36 @@
         function saveGoal() {
             const title = document.getElementById('modal-title').value.trim();
             if (!title) { showToast('Escribe un nombre', true); return; }
+            const deadline = document.getElementById('modal-deadline').value || '';
             const item = {
                 id: editingItemId || Date.now(),
                 title,
                 category: document.getElementById('modal-category').value,
                 description: document.getElementById('modal-desc').value.trim(),
                 progress: parseInt(document.getElementById('modal-progress').value) || 0,
-                deadline: document.getElementById('modal-deadline').value || '',
+                deadline: deadline,
                 status: document.getElementById('modal-status').value
             };
+
+            // Eliminar entrada anterior si existe
             if (editingItemId) {
+                removeEntriesForItem(editingItemId, 'Objetivo');
                 const idx = goals.findIndex(g => g.id === editingItemId);
                 if (idx >= 0) goals[idx] = item;
-            } else goals.push(item);
+            } else {
+                goals.push(item);
+            }
+
+            // Crear nueva entrada en el calendario
+            if (deadline) {
+                addEntryForItem(
+                    getEntryTitle('🎯 ' + item.title, item.id),
+                    deadline,
+                    'Objetivo',
+                    'Límite: ' + item.category
+                );
+            }
+
             saveData();
             closeModal();
             render();
@@ -1578,6 +1667,7 @@
 
         function deleteGoal(id) {
             if (!confirm('¿Eliminar este objetivo?')) return;
+            removeEntriesForItem(id, 'Objetivo');
             goals = goals.filter(g => g.id !== id);
             saveData();
             closeModal();
@@ -1625,22 +1715,40 @@
         function saveProject() {
             const name = document.getElementById('modal-title').value.trim();
             if (!name) { showToast('Escribe un nombre', true); return; }
+            const startDate = document.getElementById('modal-start').value || '';
+
             const tasksRaw = document.getElementById('modal-tasks').value.split('\n').filter(t => t.trim());
             const tasks = tasksRaw.map(t => ({ text: t.replace(' ✅', '').trim(), done: t.includes('✅') }));
+
             const item = {
                 id: editingItemId || Date.now(),
                 name,
                 description: document.getElementById('modal-desc').value.trim(),
-                startDate: document.getElementById('modal-start').value || '',
+                startDate: startDate,
                 endDate: document.getElementById('modal-end').value || '',
                 status: document.getElementById('modal-status').value,
                 tasks,
                 notes: document.getElementById('modal-notes').value.trim()
             };
+
             if (editingItemId) {
+                removeEntriesForItem(editingItemId, 'Proyecto');
                 const idx = projects.findIndex(p => p.id === editingItemId);
                 if (idx >= 0) projects[idx] = item;
-            } else projects.push(item);
+            } else {
+                projects.push(item);
+            }
+
+            // Crear entrada en el calendario
+            if (startDate) {
+                addEntryForItem(
+                    getEntryTitle('📁 ' + item.name, item.id),
+                    startDate,
+                    'Proyecto',
+                    'Inicio: ' + item.status
+                );
+            }
+
             saveData();
             closeModal();
             render();
@@ -1649,6 +1757,7 @@
 
         function deleteProject(id) {
             if (!confirm('¿Eliminar este proyecto?')) return;
+            removeEntriesForItem(id, 'Proyecto');
             projects = projects.filter(p => p.id !== id);
             saveData();
             closeModal();
@@ -1657,7 +1766,7 @@
         }
 
         // ============================================================
-        //  TRAVELS
+        //  TRAVELS (con entrada de inicio y fin)
         // ============================================================
         function openTravelModal(travel) {
             editingItemId = travel?.id || null;
@@ -1693,19 +1802,48 @@
         function saveTravel() {
             const place = document.getElementById('modal-place').value.trim();
             if (!place) { showToast('Escribe un lugar', true); return; }
+
+            const startDate = document.getElementById('modal-start').value || '';
+            const endDate = document.getElementById('modal-end').value || '';
+
             const item = {
                 id: editingItemId || Date.now(),
                 place,
                 country: document.getElementById('modal-country').value.trim(),
-                startDate: document.getElementById('modal-start').value || '',
-                endDate: document.getElementById('modal-end').value || '',
+                startDate: startDate,
+                endDate: endDate,
                 rating: parseInt(document.getElementById('modal-rating').value) || 0,
                 notes: document.getElementById('modal-notes').value.trim()
             };
+
             if (editingItemId) {
+                removeEntriesForItem(editingItemId, 'Viaje');
                 const idx = travels.findIndex(t => t.id === editingItemId);
                 if (idx >= 0) travels[idx] = item;
-            } else travels.push(item);
+            } else {
+                travels.push(item);
+            }
+
+            // Crear entrada de INICIO en el calendario
+            if (startDate) {
+                addEntryForItem(
+                    getEntryTitle('✈️ Inicio viaje: ' + item.place, item.id),
+                    startDate,
+                    'Viaje',
+                    '→ ' + (endDate || '...')
+                );
+            }
+
+            // Crear entrada de FIN en el calendario (si existe)
+            if (endDate && endDate !== startDate) {
+                addEntryForItem(
+                    getEntryTitle('✈️ Fin viaje: ' + item.place, item.id),
+                    endDate,
+                    'Viaje',
+                    '← ' + (startDate || '...')
+                );
+            }
+
             saveData();
             closeModal();
             render();
@@ -1714,6 +1852,7 @@
 
         function deleteTravel(id) {
             if (!confirm('¿Eliminar este viaje?')) return;
+            removeEntriesForItem(id, 'Viaje');
             travels = travels.filter(t => t.id !== id);
             saveData();
             closeModal();
@@ -1722,7 +1861,7 @@
         }
 
         // ============================================================
-        //  WORK (con tipo de puesto, días de fiesta y cálculo de días)
+        //  WORK
         // ============================================================
         function openWorkModal(workItem) {
             editingItemId = workItem?.id || null;
@@ -1770,7 +1909,7 @@
             const current = new Date(inicio);
             while (current <= fin) {
                 const day = current.getDay();
-                if (day !== 0 && day !== 6) { // Lunes a viernes
+                if (day !== 0 && day !== 6) {
                     count++;
                 }
                 current.setDate(current.getDate() + 1);
@@ -1786,7 +1925,6 @@
             const endDate = document.getElementById('modal-end').value || '';
             const holidays = parseInt(document.getElementById('modal-holidays').value) || 0;
 
-            // Validar que la fecha de fin sea posterior a la de inicio si ambas existen
             if (startDate && endDate && endDate < startDate) {
                 showToast('La fecha de fin debe ser posterior a la de inicio', true);
                 return;
@@ -1805,11 +1943,23 @@
             };
 
             if (editingItemId) {
+                removeEntriesForItem(editingItemId, 'Trabajo');
                 const idx = work.findIndex(w => w.id === editingItemId);
                 if (idx >= 0) work[idx] = item;
             } else {
                 work.push(item);
             }
+
+            // Crear entrada en el calendario
+            if (startDate) {
+                addEntryForItem(
+                    getEntryTitle('💼 ' + item.company + ' (' + item.position + ')', item.id),
+                    startDate,
+                    'Trabajo',
+                    'Inicio: ' + (item.type === 'practicas' ? 'Prácticas' : 'Puesto normal')
+                );
+            }
+
             saveData();
             closeModal();
             render();
@@ -1818,6 +1968,7 @@
 
         function deleteWork(id) {
             if (!confirm('¿Eliminar esta experiencia?')) return;
+            removeEntriesForItem(id, 'Trabajo');
             work = work.filter(w => w.id !== id);
             saveData();
             closeModal();
@@ -1826,14 +1977,13 @@
         }
 
         // ============================================================
-        //  RENDER: WORK (con estadísticas)
+        //  RENDER: WORK
         // ============================================================
         function renderWork() {
             if (!work.length) {
                 return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa "+ Nueva experiencia" para empezar</div></div>`;
             }
 
-            // Calcular días totales trabajados
             let totalDays = 0;
             let totalDaysNormal = 0;
 
@@ -1972,30 +2122,56 @@
             const title = document.getElementById('modal-title').value.trim();
             if (!title) { showToast('Escribe un título', true); return; }
 
-            let item = { id: editingItemId || Date.now(), title, type, rating: parseInt(document.getElementById('modal-rating')
-                    .value) || 0 };
+            const rating = parseInt(document.getElementById('modal-rating').value) || 0;
+
+            let item = {
+                id: editingItemId || Date.now(),
+                title: title,
+                type: type,
+                rating: rating
+            };
+
+            let startDate = '';
 
             if (type === 'books') {
                 item.author = document.getElementById('modal-author').value.trim();
                 item.startDate = document.getElementById('modal-start').value || '';
                 item.endDate = document.getElementById('modal-end').value || '';
+                startDate = item.startDate;
             } else if (type === 'movies') {
                 item.year = parseInt(document.getElementById('modal-year').value) || null;
                 item.watchDate = document.getElementById('modal-date').value || '';
+                startDate = item.watchDate;
             } else if (type === 'series' || type === 'games') {
                 item.platform = document.getElementById('modal-platform').value.trim();
                 item.startDate = document.getElementById('modal-start').value || '';
                 item.endDate = document.getElementById('modal-end').value || '';
+                startDate = item.startDate;
             }
 
             const store = library[type] || [];
+            const typeLabels = { books: 'Libro', movies: 'Película', series: 'Serie', games: 'Videojuego' };
+
             if (editingItemId) {
+                removeEntriesForItem(editingItemId, typeLabels[type]);
                 const idx = store.findIndex(i => i.id === editingItemId);
                 if (idx >= 0) store[idx] = item;
             } else {
                 store.push(item);
             }
             library[type] = store;
+
+            // Crear entrada en el calendario
+            if (startDate) {
+                const emoji = { books: '📖', movies: '🎬', series: '📺', games: '🎮' };
+                addEntryForItem(
+                    getEntryTitle(emoji[type] + ' ' + item.title, item.id),
+                    startDate,
+                    typeLabels[type],
+                    'Valoración: ' + (rating > 0 ? '⭐'.repeat(rating) : 'Sin valorar')
+                );
+            }
+
             saveData();
             closeModal();
             render();
@@ -2004,6 +2180,8 @@
 
         function deleteLibraryItem(type, id) {
             if (!confirm('¿Eliminar este item?')) return;
+            const typeLabels = { books: 'Libro', movies: 'Película', series: 'Serie', games: 'Videojuego' };
+            removeEntriesForItem(id, typeLabels[type]);
             const store = library[type] || [];
             library[type] = store.filter(i => i.id !== id);
             saveData();
@@ -2157,7 +2335,7 @@
                 html += renderDayEntries(window._selectedDate);
             }
 
-            // Search bar (optimizada)
+            // Search bar
             html += `
             <div class="search-bar" style="margin-top:24px">
                 <span class="search-icon">⌕</span>
@@ -2311,7 +2489,7 @@
         }
 
         // ============================================================
-        //  RENDER: STATS (sin entradas por mes)
+        //  RENDER: STATS
         // ============================================================
         function renderStats() {
             const totalEntries = entries.length;
@@ -2565,19 +2743,16 @@
             loadTheme();
             loadData();
 
-            // Detectar si es móvil para mostrar hamburguesa
             if (window.innerWidth <= 768) {
                 document.querySelector('.menu-hamburger').style.display = 'block';
             }
 
-            // Cerrar menú al hacer clic fuera
             document.getElementById('mobile-menu-overlay').addEventListener('click', function() {
                 if (this.classList.contains('open')) toggleMobileMenu();
             });
 
             render();
 
-            // Re-render al cambiar tamaño
             let resizeTimer;
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimer);
