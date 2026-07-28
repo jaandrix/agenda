@@ -8,7 +8,6 @@
     <title>Bitácora</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        /* ===== RESET & BASE ===== */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -364,61 +363,15 @@
             letter-spacing: -0.5px;
         }
 
-        #main-header .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        /* ===== CONTENT ===== */
+        #content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 32px 32px 32px;
+            -webkit-overflow-scrolling: touch;
         }
 
-        .btn-primary {
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            font-size: 13px;
-            padding: 8px 18px;
-            border-radius: 10px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            background: #e2e8f0;
-            color: #0a0a0f;
-        }
-        .btn-primary:hover {
-            opacity: 0.85;
-        }
-        .btn-primary:active {
-            transform: scale(0.96);
-        }
-        body.light .btn-primary {
-            background: #1c1c1e;
-            color: #f5f5f7;
-        }
-
-        .btn-secondary {
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            font-size: 12px;
-            padding: 6px 14px;
-            border-radius: 8px;
-            border: 1px solid #2a2a3a;
-            background: transparent;
-            color: #8e8e93;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: #e2e8f0;
-        }
-        body.light .btn-secondary {
-            border-color: #e2e8f0;
-            color: #6b7280;
-        }
-        body.light .btn-secondary:hover {
-            background: rgba(0, 0, 0, 0.05);
-            color: #1c1c1e;
-        }
-
-        /* ===== FAB (Botón flotante +) ===== */
+        /* ===== FAB ===== */
         #fab {
             position: fixed;
             bottom: 30px;
@@ -461,7 +414,7 @@
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
             z-index: 51;
             display: none;
-            min-width: 180px;
+            min-width: 200px;
             border: 1px solid #2a2a3a;
         }
         #fab-menu.open {
@@ -510,14 +463,6 @@
             }
         }
 
-        /* ===== CONTENT ===== */
-        #content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 24px 32px 32px 32px;
-            -webkit-overflow-scrolling: touch;
-        }
-
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             #sidebar {
@@ -534,14 +479,6 @@
             }
             #content {
                 padding: 16px;
-            }
-            .btn-primary {
-                font-size: 12px;
-                padding: 6px 14px;
-            }
-            .btn-secondary {
-                font-size: 11px;
-                padding: 4px 10px;
             }
         }
 
@@ -767,125 +704,6 @@
             color: #e2e8f0;
         }
 
-        .work-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        .work-stat-card {
-            background: #12121f;
-            border-radius: 12px;
-            padding: 14px 16px;
-            border: 1px solid #1a1a2e;
-        }
-        body.light .work-stat-card {
-            background: #ffffff;
-            border-color: #e2e8f0;
-        }
-        .work-stat-card .stat-value {
-            font-size: 24px;
-            font-weight: 800;
-        }
-        .work-stat-card .stat-label {
-            font-size: 11px;
-            color: #6b7280;
-            margin-top: 2px;
-        }
-        body.light .work-stat-card .stat-label {
-            color: #8e8e93;
-        }
-
-        /* ===== SEARCH ===== */
-        .search-bar {
-            margin-bottom: 20px;
-            position: relative;
-        }
-        .search-bar input {
-            width: 100%;
-            padding: 10px 14px 10px 40px;
-            border-radius: 12px;
-            border: 1px solid #2a2a3a;
-            background: #12121f;
-            color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            font-weight: 500;
-            outline: none;
-            transition: border-color 0.15s ease;
-        }
-        .search-bar input:focus {
-            border-color: #e2e8f0;
-        }
-        .search-bar input::placeholder {
-            color: #6b7280;
-        }
-        .search-bar .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6b7280;
-            font-size: 18px;
-            pointer-events: none;
-        }
-        body.light .search-bar input {
-            background: #ffffff;
-            border-color: #e2e8f0;
-            color: #1c1c1e;
-        }
-        body.light .search-bar input::placeholder {
-            color: #8e8e93;
-        }
-        body.light .search-bar input:focus {
-            border-color: #1c1c1e;
-        }
-
-        .search-results {
-            margin-top: 12px;
-        }
-
-        /* ===== CULTURA ===== */
-        .cultura-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        .cultura-card {
-            background: #12121f;
-            border-radius: 12px;
-            padding: 14px 16px;
-            border: 1px solid #1a1a2e;
-        }
-        body.light .cultura-card {
-            background: #ffffff;
-            border-color: #e2e8f0;
-        }
-        .cultura-card .categoria {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #6b7280;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-        body.light .cultura-card .categoria {
-            color: #8e8e93;
-        }
-        .cultura-card .numero {
-            font-size: 24px;
-            font-weight: 800;
-        }
-        .cultura-card .detalle {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 4px;
-        }
-        body.light .cultura-card .detalle {
-            color: #8e8e93;
-        }
-
         /* ===== TOAST ===== */
         #toast {
             position: fixed;
@@ -1090,6 +908,35 @@
         body.light #mobile-menu-panel::-webkit-scrollbar-thumb {
             background: #d1d1d6;
         }
+
+        /* ===== EXAMENES: NOTA FINAL ===== */
+        .nota-final {
+            font-size: 24px;
+            font-weight: 900;
+            padding: 4px 12px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .nota-aprobado {
+            color: #16a34a;
+        }
+        .nota-suspenso {
+            color: #dc2626;
+        }
+        .nota-matricula {
+            color: #d4af37;
+        }
+
+        /* ===== INVERSIONES ===== */
+        .inversion-positiva {
+            color: #16a34a;
+        }
+        .inversion-negativa {
+            color: #dc2626;
+        }
+        .inversion-neutral {
+            color: #6b7280;
+        }
     </style>
 </head>
 <body>
@@ -1102,6 +949,7 @@
             </div>
 
             <div class="sidebar-nav">
+                <span class="nav-label">General</span>
                 <button class="active" onclick="switchView('calendar')" data-view="calendar">
                     <span class="nav-icon">◷</span>
                     <span class="nav-text">Calendario</span>
@@ -1136,6 +984,28 @@
                     <span class="nav-icon">◊</span>
                     <span class="nav-text">Cultura</span>
                 </button>
+
+                <span class="nav-label">Nuevo</span>
+                <button onclick="switchView('exams')" data-view="exams">
+                    <span class="nav-icon">📚</span>
+                    <span class="nav-text">Exámenes</span>
+                </button>
+                <button onclick="switchView('events')" data-view="events">
+                    <span class="nav-icon">🎭</span>
+                    <span class="nav-text">Eventos</span>
+                </button>
+                <button onclick="switchView('shopping')" data-view="shopping">
+                    <span class="nav-icon">🛒</span>
+                    <span class="nav-text">Listas</span>
+                </button>
+                <button onclick="switchView('ideas')" data-view="ideas">
+                    <span class="nav-icon">💡</span>
+                    <span class="nav-text">Ideas</span>
+                </button>
+                <button onclick="switchView('investments')" data-view="investments">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Inversiones</span>
+                </button>
             </div>
 
             <div class="sidebar-actions">
@@ -1158,7 +1028,7 @@
         </div>
     </div>
 
-    <!-- ===== FAB (Botón flotante +) ===== -->
+    <!-- ===== FAB ===== -->
     <button id="fab" onclick="toggleFabMenu()">+</button>
     <div id="fab-menu">
         <button onclick="openNewEntry('entry')">📝 Entrada</button>
@@ -1167,6 +1037,11 @@
         <button onclick="openNewEntry('travel')">✈️ Viaje</button>
         <button onclick="openNewEntry('work')">💼 Trabajo</button>
         <button onclick="openNewEntry('library')">📚 Cultura</button>
+        <button onclick="openNewEntry('exam')">📚 Examen</button>
+        <button onclick="openNewEntry('event')">🎭 Evento</button>
+        <button onclick="openNewEntry('shopping')">🛒 Lista</button>
+        <button onclick="openNewEntry('idea')">💡 Idea</button>
+        <button onclick="openNewEntry('investment')">📊 Inversión</button>
     </div>
 
     <!-- ===== MOBILE MENU ===== -->
@@ -1177,6 +1052,7 @@
             <button class="menu-close" onclick="toggleMobileMenu()">✕</button>
         </div>
         <div class="menu-nav">
+            <span class="nav-label">General</span>
             <button class="active" onclick="switchView('calendar');toggleMobileMenu()" data-view="calendar">
                 <span class="nav-icon">◷</span> Calendario
             </button>
@@ -1186,6 +1062,7 @@
             <button onclick="switchView('stats');toggleMobileMenu()" data-view="stats">
                 <span class="nav-icon">▦</span> Estadísticas
             </button>
+
             <span class="nav-label">Registro</span>
             <button onclick="switchView('goals');toggleMobileMenu()" data-view="goals">
                 <span class="nav-icon">◉</span> Objetivos
@@ -1202,6 +1079,23 @@
             <button onclick="switchView('cultura');toggleMobileMenu()" data-view="cultura">
                 <span class="nav-icon">◊</span> Cultura
             </button>
+
+            <span class="nav-label">Nuevo</span>
+            <button onclick="switchView('exams');toggleMobileMenu()" data-view="exams">
+                <span class="nav-icon">📚</span> Exámenes
+            </button>
+            <button onclick="switchView('events');toggleMobileMenu()" data-view="events">
+                <span class="nav-icon">🎭</span> Eventos
+            </button>
+            <button onclick="switchView('shopping');toggleMobileMenu()" data-view="shopping">
+                <span class="nav-icon">🛒</span> Listas
+            </button>
+            <button onclick="switchView('ideas');toggleMobileMenu()" data-view="ideas">
+                <span class="nav-icon">💡</span> Ideas
+            </button>
+            <button onclick="switchView('investments');toggleMobileMenu()" data-view="investments">
+                <span class="nav-icon">📊</span> Inversiones
+            </button>
         </div>
         <div class="menu-actions">
             <button onclick="exportData()" title="Exportar">⬇</button>
@@ -1217,12 +1111,13 @@
 
     <script>
         // ============================================================
-        //  DATA - TODO UNIFICADO EN ENTRIES
+        //  DATA
         // ============================================================
         let entries = [];
         let categories = [];
         let editId = null;
         let editType = null;
+        let filteredEntries = [];
 
         // Tipos de entrada
         const ENTRY_TYPES = {
@@ -1231,16 +1126,12 @@
             PROJECT: 'project',
             TRAVEL: 'travel',
             WORK: 'work',
-            LIBRARY: 'library'
-        };
-
-        const TYPE_LABELS = {
-            entry: 'Entrada',
-            goal: 'Objetivo',
-            project: 'Proyecto',
-            travel: 'Viaje',
-            work: 'Trabajo',
-            library: 'Cultura'
+            LIBRARY: 'library',
+            EXAM: 'exam',
+            EVENT: 'event',
+            SHOPPING: 'shopping',
+            IDEA: 'idea',
+            INVESTMENT: 'investment'
         };
 
         const TYPE_ICONS = {
@@ -1249,7 +1140,26 @@
             project: '📁',
             travel: '✈️',
             work: '💼',
-            library: '📚'
+            library: '📚',
+            exam: '📚',
+            event: '🎭',
+            shopping: '🛒',
+            idea: '💡',
+            investment: '📊'
+        };
+
+        const TYPE_LABELS = {
+            entry: 'Entrada',
+            goal: 'Objetivo',
+            project: 'Proyecto',
+            travel: 'Viaje',
+            work: 'Trabajo',
+            library: 'Cultura',
+            exam: 'Examen',
+            event: 'Evento',
+            shopping: 'Lista',
+            idea: 'Idea',
+            investment: 'Inversión'
         };
 
         const DEFAULT_COLORS = [
@@ -1257,12 +1167,6 @@
             '#1abc9c', '#e67e22', '#e84393', '#00b894', '#6c5ce7',
             '#fd79a8', '#0984e3', '#fdcb6e', '#00cec9', '#a29bfe'
         ];
-
-        let searchQuery = '';
-        let culturaMonth = new Date().getMonth();
-        let culturaYear = new Date().getFullYear();
-        let libraryView = 'all';
-        let filteredEntries = [];
 
         // ============================================================
         //  LOAD / SAVE
@@ -1279,12 +1183,10 @@
             if (!categories || categories.length === 0) categories = getDefaultCategories();
             categories.forEach(c => { if (!c.id) c.id = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); });
             filteredEntries = [...entries];
-            updateHeader();
         }
 
         function saveData() {
             localStorage.setItem('bitacora_data', JSON.stringify({ entries, categories }));
-            updateHeader();
         }
 
         function getDefaultCategories() {
@@ -1298,6 +1200,11 @@
                 { id: 'cat_pelicula', name: 'Película', color: '#f39c12' },
                 { id: 'cat_serie', name: 'Serie', color: '#9b59b6' },
                 { id: 'cat_videojuego', name: 'Videojuego', color: '#e74c3c' },
+                { id: 'cat_examen', name: 'Examen', color: '#8b5cf6' },
+                { id: 'cat_evento', name: 'Evento', color: '#ec4899' },
+                { id: 'cat_lista', name: 'Lista', color: '#14b8a6' },
+                { id: 'cat_idea', name: 'Idea', color: '#f59e0b' },
+                { id: 'cat_inversion', name: 'Inversión', color: '#10b981' },
             ];
         }
 
@@ -1320,13 +1227,6 @@
         function toggleMode() {
             modeWide = !modeWide;
             document.getElementById('app').style.maxWidth = modeWide ? '100%' : '1200px';
-        }
-
-        // ============================================================
-        //  HEADER
-        // ============================================================
-        function updateHeader() {
-            // No need
         }
 
         // ============================================================
@@ -1359,7 +1259,12 @@
                 'projects': 'Proyectos',
                 'travels': 'Viajes',
                 'work': 'Trabajo',
-                'cultura': 'Cultura'
+                'cultura': 'Cultura',
+                'exams': 'Exámenes',
+                'events': 'Eventos',
+                'shopping': 'Listas',
+                'ideas': 'Ideas',
+                'investments': 'Inversiones'
             };
             document.getElementById('page-title').textContent = titles[view] || 'Calendario';
             render();
@@ -1387,58 +1292,7 @@
         }
 
         // ============================================================
-        //  SEARCH
-        // ============================================================
-        let searchTimeout = null;
-
-        function doSearch(query) {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                searchQuery = query.toLowerCase().trim();
-                const resultsContainer = document.getElementById('search-results-container');
-                if (!resultsContainer) return;
-
-                if (!searchQuery) {
-                    resultsContainer.innerHTML = '';
-                    return;
-                }
-
-                const filtered = entries.filter(e => {
-                    const cat = categories.find(c => c.id === e.categoryId);
-                    return e.title.toLowerCase().includes(searchQuery) ||
-                        (cat && cat.name.toLowerCase().includes(searchQuery)) ||
-                        (e.notes && e.notes.toLowerCase().includes(searchQuery)) ||
-                        (e.type && e.type.toLowerCase().includes(searchQuery));
-                });
-
-                if (!filtered.length) {
-                    resultsContainer.innerHTML =
-                        `<div style="margin-top:12px;color:#6b7280;text-align:center;padding:20px">No se encontraron resultados</div>`;
-                    return;
-                }
-
-                let html =
-                    `<div style="margin-top:8px;font-size:12px;color:#6b7280;margin-bottom:8px">${filtered.length} resultados</div>`;
-                filtered.forEach(e => {
-                    const cat = categories.find(c => c.id === e.categoryId);
-                    const color = cat?.color || '#6b7280';
-                    const catName = cat?.name || 'Sin categoría';
-                    const icon = TYPE_ICONS[e.type] || '📌';
-                    html += `
-                    <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${icon} ${e.title}</div>
-                            <div class="entry-meta">${e.date} · ${catName}</div>
-                        </div>
-                    </div>`;
-                });
-                resultsContainer.innerHTML = html;
-            }, 200);
-        }
-
-        // ============================================================
-        //  OPEN NEW ENTRY (FAB)
+        //  OPEN NEW ENTRY
         // ============================================================
         function openNewEntry(type) {
             closeFabMenu();
@@ -1459,120 +1313,134 @@
         }
 
         // ============================================================
+        //  CLOSE MODAL
+        // ============================================================
+        function closeModal() {
+            document.getElementById('modal-container').innerHTML = '';
+            editId = null;
+            editType = null;
+        }
+
+        // ============================================================
         //  RENDER ENTRY MODAL
         // ============================================================
         function renderEntryModal(type, entry) {
             const isEdit = !!entry;
             const today = new Date().toISOString().slice(0, 10);
-            const typeLabels = {
-                entry: 'Entrada',
-                goal: 'Objetivo',
-                project: 'Proyecto',
-                travel: 'Viaje',
-                work: 'Trabajo',
-                library: 'Cultura'
-            };
             const icon = TYPE_ICONS[type] || '📌';
+            const label = TYPE_LABELS[type] || 'Entrada';
+            const title = isEdit ? `Editar ${label}` : `Nuevo ${label}`;
 
-            let title = isEdit ? `Editar ${typeLabels[type]}` : `Nuevo ${typeLabels[type]}`;
-
-            // Campos específicos por tipo
             let extraFields = '';
 
-            if (type === 'goal') {
+            if (type === 'exam') {
                 extraFields = `
-                    <div class="modal-label">Categoría de plazo</div>
-                    <select id="modal-goal-category" class="modal-input">
-                        <option value="Corto plazo" ${isEdit && entry.goalCategory === 'Corto plazo' ? 'selected' : ''}>Corto plazo</option>
-                        <option value="Medio plazo" ${isEdit && entry.goalCategory === 'Medio plazo' ? 'selected' : ''}>Medio plazo</option>
-                        <option value="Largo plazo" ${isEdit && entry.goalCategory === 'Largo plazo' ? 'selected' : ''}>Largo plazo</option>
+                    <div class="modal-label">Titulación / Asignatura</div>
+                    <input id="modal-subject" class="modal-input" value="${isEdit ? entry.subject || '' : ''}" placeholder="Ej: Álgebra Lineal">
+                    <div class="modal-label">Tipo</div>
+                    <select id="modal-exam-type" class="modal-input">
+                        <option value="examen" ${isEdit && entry.examType === 'examen' ? 'selected' : ''}>Examen</option>
+                        <option value="trabajo" ${isEdit && entry.examType === 'trabajo' ? 'selected' : ''}>Trabajo</option>
+                        <option value="practica" ${isEdit && entry.examType === 'practica' ? 'selected' : ''}>Práctica</option>
+                        <option value="titulacion" ${isEdit && entry.examType === 'titulacion' ? 'selected' : ''}>Titulación</option>
                     </select>
-                    <div class="modal-label">Progreso (%)</div>
-                    <input type="number" id="modal-progress" class="modal-input" value="${isEdit ? entry.progress || 0 : 0}" min="0" max="100">
-                    <div class="modal-label">Fecha límite</div>
-                    <input type="date" id="modal-deadline" class="modal-input" value="${isEdit ? entry.deadline || '' : ''}">
+                    <div class="modal-row">
+                        <div><div class="modal-label">Peso (%)</div><input type="number" id="modal-weight" class="modal-input" value="${isEdit ? entry.weight || 0 : 0}" min="0" max="100" step="0.5"></div>
+                        <div><div class="modal-label">Nota</div><input type="number" id="modal-grade" class="modal-input" value="${isEdit ? entry.grade || '' : ''}" min="0" max="10" step="0.1" placeholder="0-10"></div>
+                    </div>
+                    <div class="modal-label">Fecha del examen</div>
+                    <input type="date" id="modal-exam-date" class="modal-input" value="${isEdit ? entry.examDate || '' : ''}">
                     <div class="modal-label">Estado</div>
-                    <select id="modal-status" class="modal-input">
-                        <option value="Pendiente" ${isEdit && entry.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                        <option value="En progreso" ${isEdit && entry.status === 'En progreso' ? 'selected' : ''}>En progreso</option>
-                        <option value="Completado" ${isEdit && entry.status === 'Completado' ? 'selected' : ''}>Completado</option>
+                    <select id="modal-exam-status" class="modal-input">
+                        <option value="Pendiente" ${isEdit && entry.examStatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="Aprobado" ${isEdit && entry.examStatus === 'Aprobado' ? 'selected' : ''}>Aprobado</option>
+                        <option value="Suspenso" ${isEdit && entry.examStatus === 'Suspenso' ? 'selected' : ''}>Suspenso</option>
+                        <option value="Matrícula" ${isEdit && entry.examStatus === 'Matrícula' ? 'selected' : ''}>Matrícula</option>
                     </select>
                 `;
-            } else if (type === 'project') {
+            } else if (type === 'event') {
                 extraFields = `
-                    <div class="modal-label">Descripción</div>
-                    <textarea id="modal-desc" class="modal-input" rows="2" placeholder="Descripción...">${isEdit ? entry.description || '' : ''}</textarea>
-                    <div class="modal-row">
-                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
-                        <div><div class="modal-label">Fin previsto</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
-                    </div>
+                    <div class="modal-label">Lugar</div>
+                    <input id="modal-place" class="modal-input" value="${isEdit ? entry.place || '' : ''}" placeholder="Ej: Wembley Stadium">
+                    <div class="modal-label">Fecha del evento</div>
+                    <input type="date" id="modal-event-date" class="modal-input" value="${isEdit ? entry.eventDate || '' : ''}">
+                    <div class="modal-label">Acompañantes</div>
+                    <input id="modal-companions" class="modal-input" value="${isEdit ? entry.companions || '' : ''}" placeholder="Ana, Carlos, ...">
+                    <div class="modal-label">Valoración (1-10)</div>
+                    <input type="number" id="modal-event-rating" class="modal-input" value="${isEdit ? entry.eventRating || 5 : 5}" min="1" max="10">
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-event-notes" class="modal-input" rows="2" placeholder="Experiencia, recuerdos...">${isEdit ? entry.eventNotes || '' : ''}</textarea>
+                `;
+            } else if (type === 'shopping') {
+                extraFields = `
+                    <div class="modal-label">Categoría</div>
+                    <select id="modal-list-category" class="modal-input">
+                        <option value="Alimentación" ${isEdit && entry.listCategory === 'Alimentación' ? 'selected' : ''}>Alimentación</option>
+                        <option value="Hogar" ${isEdit && entry.listCategory === 'Hogar' ? 'selected' : ''}>Hogar</option>
+                        <option value="Tecnología" ${isEdit && entry.listCategory === 'Tecnología' ? 'selected' : ''}>Tecnología</option>
+                        <option value="Ropa" ${isEdit && entry.listCategory === 'Ropa' ? 'selected' : ''}>Ropa</option>
+                        <option value="Ocio" ${isEdit && entry.listCategory === 'Ocio' ? 'selected' : ''}>Ocio</option>
+                        <option value="Otro" ${isEdit && entry.listCategory === 'Otro' ? 'selected' : ''}>Otro</option>
+                    </select>
+                    <div class="modal-label">Precio estimado (€)</div>
+                    <input type="number" id="modal-list-price" class="modal-input" value="${isEdit ? entry.listPrice || '' : ''}" step="0.01" placeholder="0.00">
+                    <div class="modal-label">Prioridad</div>
+                    <select id="modal-list-priority" class="modal-input">
+                        <option value="Alta" ${isEdit && entry.listPriority === 'Alta' ? 'selected' : ''}>Alta</option>
+                        <option value="Media" ${isEdit && entry.listPriority === 'Media' ? 'selected' : ''}>Media</option>
+                        <option value="Baja" ${isEdit && entry.listPriority === 'Baja' ? 'selected' : ''}>Baja</option>
+                    </select>
+                    <div class="modal-label">Comprado</div>
+                    <select id="modal-list-done" class="modal-input">
+                        <option value="0" ${isEdit && !entry.listDone ? 'selected' : ''}>No</option>
+                        <option value="1" ${isEdit && entry.listDone ? 'selected' : ''}>Sí</option>
+                    </select>
+                `;
+            } else if (type === 'idea') {
+                extraFields = `
+                    <div class="modal-label">Categoría</div>
+                    <select id="modal-idea-category" class="modal-input">
+                        <option value="Proyecto" ${isEdit && entry.ideaCategory === 'Proyecto' ? 'selected' : ''}>Proyecto</option>
+                        <option value="Personal" ${isEdit && entry.ideaCategory === 'Personal' ? 'selected' : ''}>Personal</option>
+                        <option value="Trabajo" ${isEdit && entry.ideaCategory === 'Trabajo' ? 'selected' : ''}>Trabajo</option>
+                        <option value="Creativa" ${isEdit && entry.ideaCategory === 'Creativa' ? 'selected' : ''}>Creativa</option>
+                        <option value="Otro" ${isEdit && entry.ideaCategory === 'Otro' ? 'selected' : ''}>Otro</option>
+                    </select>
+                    <div class="modal-label">Contenido</div>
+                    <textarea id="modal-idea-content" class="modal-input" rows="4" placeholder="Describe tu idea...">${isEdit ? entry.ideaContent || '' : ''}</textarea>
                     <div class="modal-label">Estado</div>
-                    <select id="modal-status" class="modal-input">
-                        <option value="Pendiente" ${isEdit && entry.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                        <option value="En curso" ${isEdit && entry.status === 'En curso' ? 'selected' : ''}>En curso</option>
-                        <option value="Completado" ${isEdit && entry.status === 'Completado' ? 'selected' : ''}>Completado</option>
+                    <select id="modal-idea-status" class="modal-input">
+                        <option value="Pendiente" ${isEdit && entry.ideaStatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="En progreso" ${isEdit && entry.ideaStatus === 'En progreso' ? 'selected' : ''}>En progreso</option>
+                        <option value="Completada" ${isEdit && entry.ideaStatus === 'Completada' ? 'selected' : ''}>Completada</option>
+                        <option value="Descartada" ${isEdit && entry.ideaStatus === 'Descartada' ? 'selected' : ''}>Descartada</option>
                     </select>
-                    <div class="modal-label">Tareas (una por línea, marcar completadas con ✅)</div>
-                    <textarea id="modal-tasks" class="modal-input" rows="3" placeholder="Tarea 1&#10;Tarea 2 ✅">${isEdit ? (entry.tasks || []).join('\n') : ''}</textarea>
                 `;
-            } else if (type === 'travel') {
+            } else if (type === 'investment') {
                 extraFields = `
-                    <div class="modal-label">País</div>
-                    <input id="modal-country" class="modal-input" value="${isEdit ? entry.country || '' : ''}" placeholder="Ej: Italia">
-                    <div class="modal-row">
-                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
-                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
-                    </div>
-                    <div class="modal-label">Valoración (1-5)</div>
-                    <select id="modal-rating" class="modal-input">
-                        ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
+                    <div class="modal-label">Tipo</div>
+                    <select id="modal-inv-type" class="modal-input">
+                        <option value="Acciones" ${isEdit && entry.invType === 'Acciones' ? 'selected' : ''}>Acciones</option>
+                        <option value="Fondos" ${isEdit && entry.invType === 'Fondos' ? 'selected' : ''}>Fondos</option>
+                        <option value="Criptomonedas" ${isEdit && entry.invType === 'Criptomonedas' ? 'selected' : ''}>Criptomonedas</option>
+                        <option value="Bonos" ${isEdit && entry.invType === 'Bonos' ? 'selected' : ''}>Bonos</option>
+                        <option value="Inmobiliaria" ${isEdit && entry.invType === 'Inmobiliaria' ? 'selected' : ''}>Inmobiliaria</option>
+                        <option value="Otro" ${isEdit && entry.invType === 'Otro' ? 'selected' : ''}>Otro</option>
                     </select>
-                    <div class="modal-label">Recuerdos / Notas</div>
-                    <textarea id="modal-notes" class="modal-input" rows="2" placeholder="Experiencias, lugares visitados...">${isEdit ? entry.notes || '' : ''}</textarea>
+                    <div class="modal-label">Cantidad invertida (€)</div>
+                    <input type="number" id="modal-inv-invested" class="modal-input" value="${isEdit ? entry.invInvested || '' : ''}" step="0.01" placeholder="0.00">
+                    <div class="modal-label">Valor actual (€)</div>
+                    <input type="number" id="modal-inv-current" class="modal-input" value="${isEdit ? entry.invCurrent || '' : ''}" step="0.01" placeholder="0.00">
+                    <div class="modal-label">Fecha de inversión</div>
+                    <input type="date" id="modal-inv-date" class="modal-input" value="${isEdit ? entry.invDate || '' : ''}">
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-inv-notes" class="modal-input" rows="2" placeholder="Detalles adicionales...">${isEdit ? entry.invNotes || '' : ''}</textarea>
                 `;
-            } else if (type === 'work') {
+            } else {
+                // Para los tipos básicos, campos comunes
                 extraFields = `
-                    <div class="modal-label">Empresa</div>
-                    <input id="modal-company" class="modal-input" value="${isEdit ? entry.company || '' : ''}" placeholder="Ej: Empresa X">
-                    <div class="modal-label">Puesto</div>
-                    <input id="modal-position" class="modal-input" value="${isEdit ? entry.position || '' : ''}" placeholder="Ej: Operario logístico">
-                    <div class="modal-label">Tipo de puesto</div>
-                    <select id="modal-work-type" class="modal-input">
-                        <option value="normal" ${isEdit && entry.workType === 'normal' ? 'selected' : ''}>Puesto normal</option>
-                        <option value="practicas" ${isEdit && entry.workType === 'practicas' ? 'selected' : ''}>Prácticas</option>
-                    </select>
-                    <div class="modal-row">
-                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
-                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
-                    </div>
-                    <div class="modal-label">Días de fiesta</div>
-                    <input type="number" id="modal-holidays" class="modal-input" value="${isEdit ? entry.holidays || 0 : 0}" min="0">
-                    <div class="modal-label">Funciones</div>
-                    <textarea id="modal-functions" class="modal-input" rows="2" placeholder="Funciones realizadas...">${isEdit ? entry.functions || '' : ''}</textarea>
-                    <div class="modal-label">Habilidades</div>
-                    <input id="modal-skills" class="modal-input" value="${isEdit ? entry.skills || '' : ''}" placeholder="Ej: Gestión de equipos, Excel">
-                `;
-            } else if (type === 'library') {
-                extraFields = `
-                    <div class="modal-label">Tipo de contenido</div>
-                    <select id="modal-lib-type" class="modal-input">
-                        <option value="libro" ${isEdit && entry.libType === 'libro' ? 'selected' : ''}>Libro</option>
-                        <option value="pelicula" ${isEdit && entry.libType === 'pelicula' ? 'selected' : ''}>Película</option>
-                        <option value="serie" ${isEdit && entry.libType === 'serie' ? 'selected' : ''}>Serie</option>
-                        <option value="videojuego" ${isEdit && entry.libType === 'videojuego' ? 'selected' : ''}>Videojuego</option>
-                    </select>
-                    <div class="modal-label">Autor / Creador</div>
-                    <input id="modal-author" class="modal-input" value="${isEdit ? entry.author || '' : ''}" placeholder="Ej: Gabriel García Márquez">
-                    <div class="modal-label">Plataforma (opcional)</div>
-                    <input id="modal-platform" class="modal-input" value="${isEdit ? entry.platform || '' : ''}" placeholder="Ej: Netflix, PC, PS5">
-                    <div class="modal-row">
-                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
-                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
-                    </div>
-                    <div class="modal-label">Valoración (1-5)</div>
-                    <select id="modal-rating" class="modal-input">
-                        ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
-                    </select>
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-notes" class="modal-input" rows="2" placeholder="Detalles adicionales...">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
             }
 
@@ -1609,15 +1477,6 @@
         }
 
         // ============================================================
-        //  CLOSE MODAL
-        // ============================================================
-        function closeModal() {
-            document.getElementById('modal-container').innerHTML = '';
-            editId = null;
-            editType = null;
-        }
-
-        // ============================================================
         //  SAVE ENTRY (UNIFICADO)
         // ============================================================
         function saveEntry() {
@@ -1628,11 +1487,11 @@
             if (!title) { showToast('Escribe un título', true); return; }
 
             let categoryId = document.getElementById('modal-category').value;
-            const notes = document.getElementById('modal-notes')?.value?.trim() || '';
 
             if (categoryId === '__new') {
-                const newCatName = document.getElementById('modal-new-cat-name')?.value?.trim() || 'Nueva categoría';
-                const color = document.getElementById('modal-new-cat-color')?.value || '#6b7280';
+                const newCatName = prompt('Nombre de la nueva categoría:');
+                if (!newCatName) { showToast('Escribe un nombre', true); return; }
+                const color = DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)];
                 const newCat = { id: 'cat_' + Date.now(), name: newCatName, color: color };
                 categories.push(newCat);
                 categoryId = newCat.id;
@@ -1640,52 +1499,45 @@
             }
 
             const type = editType;
-
-            // Construir el objeto entrada
             const entry = {
                 id: editId || 'entry_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
                 date: date,
                 title: title,
                 categoryId: categoryId,
-                notes: notes,
                 type: type
             };
 
-            // Campos específicos por tipo
-            if (type === 'goal') {
-                entry.goalCategory = document.getElementById('modal-goal-category')?.value || 'Medio plazo';
-                entry.progress = parseInt(document.getElementById('modal-progress')?.value) || 0;
-                entry.deadline = document.getElementById('modal-deadline')?.value || '';
-                entry.status = document.getElementById('modal-status')?.value || 'Pendiente';
-            } else if (type === 'project') {
-                entry.description = document.getElementById('modal-desc')?.value?.trim() || '';
-                entry.startDate = document.getElementById('modal-start')?.value || '';
-                entry.endDate = document.getElementById('modal-end')?.value || '';
-                entry.status = document.getElementById('modal-status')?.value || 'Pendiente';
-                const tasksRaw = document.getElementById('modal-tasks')?.value?.split('\n').filter(t => t.trim()) || [];
-                entry.tasks = tasksRaw.map(t => ({ text: t.replace(' ✅', '').trim(), done: t.includes('✅') }));
-            } else if (type === 'travel') {
-                entry.country = document.getElementById('modal-country')?.value?.trim() || '';
-                entry.startDate = document.getElementById('modal-start')?.value || '';
-                entry.endDate = document.getElementById('modal-end')?.value || '';
-                entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
+            // Campos específicos
+            if (type === 'exam') {
+                entry.subject = document.getElementById('modal-subject')?.value?.trim() || '';
+                entry.examType = document.getElementById('modal-exam-type')?.value || 'examen';
+                entry.weight = parseFloat(document.getElementById('modal-weight')?.value) || 0;
+                entry.grade = parseFloat(document.getElementById('modal-grade')?.value) || null;
+                entry.examDate = document.getElementById('modal-exam-date')?.value || '';
+                entry.examStatus = document.getElementById('modal-exam-status')?.value || 'Pendiente';
+            } else if (type === 'event') {
+                entry.place = document.getElementById('modal-place')?.value?.trim() || '';
+                entry.eventDate = document.getElementById('modal-event-date')?.value || '';
+                entry.companions = document.getElementById('modal-companions')?.value?.trim() || '';
+                entry.eventRating = parseInt(document.getElementById('modal-event-rating')?.value) || 5;
+                entry.eventNotes = document.getElementById('modal-event-notes')?.value?.trim() || '';
+            } else if (type === 'shopping') {
+                entry.listCategory = document.getElementById('modal-list-category')?.value || 'Otro';
+                entry.listPrice = parseFloat(document.getElementById('modal-list-price')?.value) || null;
+                entry.listPriority = document.getElementById('modal-list-priority')?.value || 'Media';
+                entry.listDone = document.getElementById('modal-list-done')?.value === '1';
+            } else if (type === 'idea') {
+                entry.ideaCategory = document.getElementById('modal-idea-category')?.value || 'Otro';
+                entry.ideaContent = document.getElementById('modal-idea-content')?.value?.trim() || '';
+                entry.ideaStatus = document.getElementById('modal-idea-status')?.value || 'Pendiente';
+            } else if (type === 'investment') {
+                entry.invType = document.getElementById('modal-inv-type')?.value || 'Otro';
+                entry.invInvested = parseFloat(document.getElementById('modal-inv-invested')?.value) || 0;
+                entry.invCurrent = parseFloat(document.getElementById('modal-inv-current')?.value) || 0;
+                entry.invDate = document.getElementById('modal-inv-date')?.value || '';
+                entry.invNotes = document.getElementById('modal-inv-notes')?.value?.trim() || '';
+            } else {
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
-            } else if (type === 'work') {
-                entry.company = document.getElementById('modal-company')?.value?.trim() || '';
-                entry.position = document.getElementById('modal-position')?.value?.trim() || '';
-                entry.workType = document.getElementById('modal-work-type')?.value || 'normal';
-                entry.startDate = document.getElementById('modal-start')?.value || '';
-                entry.endDate = document.getElementById('modal-end')?.value || '';
-                entry.holidays = parseInt(document.getElementById('modal-holidays')?.value) || 0;
-                entry.functions = document.getElementById('modal-functions')?.value?.trim() || '';
-                entry.skills = document.getElementById('modal-skills')?.value?.trim() || '';
-            } else if (type === 'library') {
-                entry.libType = document.getElementById('modal-lib-type')?.value || 'libro';
-                entry.author = document.getElementById('modal-author')?.value?.trim() || '';
-                entry.platform = document.getElementById('modal-platform')?.value?.trim() || '';
-                entry.startDate = document.getElementById('modal-start')?.value || '';
-                entry.endDate = document.getElementById('modal-end')?.value || '';
-                entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
             }
 
             if (editId) {
@@ -1714,23 +1566,6 @@
             closeModal();
             render();
             showToast('Eliminado');
-        }
-
-        // ============================================================
-        //  CALCULAR DÍAS LABORABLES (para trabajo)
-        // ============================================================
-        function calcularDiasLaborables(fechaInicio, fechaFin, diasFiesta) {
-            if (!fechaInicio || !fechaFin) return 0;
-            const inicio = new Date(fechaInicio + 'T12:00:00');
-            const fin = new Date(fechaFin + 'T12:00:00');
-            let count = 0;
-            const current = new Date(inicio);
-            while (current <= fin) {
-                const day = current.getDay();
-                if (day !== 0 && day !== 6) count++;
-                current.setDate(current.getDate() + 1);
-            }
-            return Math.max(0, count - (diasFiesta || 0));
         }
 
         // ============================================================
@@ -1782,6 +1617,11 @@
             else if (currentView === 'travels') content.innerHTML = renderTravels();
             else if (currentView === 'work') content.innerHTML = renderWork();
             else if (currentView === 'cultura') content.innerHTML = renderCultura();
+            else if (currentView === 'exams') content.innerHTML = renderExams();
+            else if (currentView === 'events') content.innerHTML = renderEvents();
+            else if (currentView === 'shopping') content.innerHTML = renderShopping();
+            else if (currentView === 'ideas') content.innerHTML = renderIdeas();
+            else if (currentView === 'investments') content.innerHTML = renderInvestments();
         }
 
         // ============================================================
@@ -1937,37 +1777,29 @@
         }
 
         // ============================================================
-        //  RENDER: HOME (Centro resumen + Próximamente)
+        //  RENDER: HOME (Centro resumen)
         // ============================================================
         function renderHome() {
             const today = new Date().toISOString().slice(0, 10);
             const todayEntries = entries.filter(e => e.date === today);
 
-            // Activos
             const activeGoals = entries.filter(e => e.type === 'goal' && e.status !== 'Completado');
             const activeProjects = entries.filter(e => e.type === 'project' && e.status !== 'Completado');
 
-            // Próximos eventos (futuro)
+            // Próximos eventos
             const upcoming = entries.filter(e => {
-                // Viajes con fecha de inicio futura
                 if (e.type === 'travel' && e.startDate && e.startDate > today) return true;
-                // Proyectos con fecha de fin futura
                 if (e.type === 'project' && e.endDate && e.endDate > today) return true;
-                // Objetivos con fecha límite futura
                 if (e.type === 'goal' && e.deadline && e.deadline > today) return true;
-                // Trabajos con fecha de fin futura
                 if (e.type === 'work' && e.endDate && e.endDate > today) return true;
+                if (e.type === 'event' && e.eventDate && e.eventDate > today) return true;
+                if (e.type === 'exam' && e.examDate && e.examDate > today) return true;
                 return false;
             }).sort((a, b) => {
-                const dateA = a.startDate || a.endDate || a.deadline || '';
-                const dateB = b.startDate || b.endDate || b.deadline || '';
+                const dateA = a.startDate || a.endDate || a.deadline || a.eventDate || a.examDate || '';
+                const dateB = b.startDate || b.endDate || b.deadline || b.eventDate || b.examDate || '';
                 return dateA.localeCompare(dateB);
             }).slice(0, 5);
-
-            // Biblioteca: libro actual (último iniciado sin fin)
-            const libros = entries.filter(e => e.type === 'library' && e.libType === 'libro');
-            const currentBook = libros.filter(b => b.startDate && !b.endDate).sort((a, b) => b.startDate.localeCompare(
-                a.startDate))[0];
 
             const recentEntries = entries.slice(0, 5);
 
@@ -1977,73 +1809,48 @@
                 <div style="font-size:15px;font-weight:600;margin-bottom:20px">${todayEntries.length} entradas hoy</div>
 
                 <div class="card-grid">
-                    <div class="card"><div class="card-title">Objetivos activos</div><div class="card-value">${activeGoals.length}</div><div class="card-sub">${entries.filter(e=>e.type==='goal' && e.status==='Completado').length} completados</div></div>
-                    <div class="card"><div class="card-title">Proyectos activos</div><div class="card-value">${activeProjects.length}</div><div class="card-sub">${entries.filter(e=>e.type==='project' && e.status==='Completado').length} completados</div></div>
-                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${entries.filter(e=>e.type==='travel').length}</div><div class="card-sub">experiencias</div></div>
-                    <div class="card"><div class="card-title">Cultura</div><div class="card-value">${entries.filter(e=>e.type==='library').length}</div><div class="card-sub">items registrados</div></div>
-                </div>`;
+                    <div class="card"><div class="card-title">Objetivos activos</div><div class="card-value">${activeGoals.length}</div></div>
+                    <div class="card"><div class="card-title">Proyectos activos</div><div class="card-value">${activeProjects.length}</div></div>
+                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${entries.filter(e=>e.type==='travel').length}</div></div>
+                    <div class="card"><div class="card-title">Cultura</div><div class="card-value">${entries.filter(e=>e.type==='library').length}</div></div>
+                    <div class="card"><div class="card-title">Exámenes</div><div class="card-value">${entries.filter(e=>e.type==='exam').length}</div></div>
+                    <div class="card"><div class="card-title">Inversiones</div><div class="card-value">${entries.filter(e=>e.type==='investment').length}</div></div>
+                </div>
 
-            // Próximamente
-            if (upcoming.length) {
-                html += `
-                <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">📅 Próximamente</div>`;
-                upcoming.forEach(e => {
-                    const cat = categories.find(c => c.id === e.categoryId);
-                    const color = cat?.color || '#6b7280';
-                    const catName = cat?.name || 'Sin categoría';
-                    const icon = TYPE_ICONS[e.type] || '📌';
-                    const dateInfo = e.startDate || e.endDate || e.deadline || '';
-                    html += `
-                    <div class="entry-item" onclick="switchView('calendar');showDayEntries('${dateInfo}')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${icon} ${e.title}</div>
-                            <div class="entry-meta">${dateInfo} · ${catName}</div>
-                        </div>
-                    </div>`;
-                });
-            }
+                ${upcoming.length ? `
+                    <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">📅 Próximamente</div>
+                    ${upcoming.map(e => {
+                        const cat = categories.find(c => c.id === e.categoryId);
+                        const color = cat?.color || '#6b7280';
+                        const icon = TYPE_ICONS[e.type] || '📌';
+                        const dateInfo = e.startDate || e.endDate || e.deadline || e.eventDate || e.examDate || '';
+                        return `
+                            <div class="entry-item" onclick="switchView('calendar');showDayEntries('${dateInfo}')">
+                                <div class="entry-color-dot" style="background:${color}"></div>
+                                <div class="entry-info">
+                                    <div class="entry-title">${icon} ${e.title}</div>
+                                    <div class="entry-meta">${dateInfo}</div>
+                                </div>
+                            </div>`;
+                    }).join('')}
+                ` : ''}
 
-            if (currentBook) {
-                html += `
-                    <div class="card" style="margin-top:12px;border-left:3px solid #3498db">
-                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px">📖 Leyendo actualmente</div>
-                        <div style="font-size:18px;font-weight:700;margin-top:2px">${currentBook.title}</div>
-                        <div style="font-size:13px;color:#6b7280">${currentBook.author || 'Autor desconocido'} · Iniciado: ${currentBook.startDate}</div>
-                    </div>
-                `;
-            }
-
-            // Búsqueda
-            html += `
-            <div class="search-bar" style="margin-top:16px">
-                <span class="search-icon">⌕</span>
-                <input type="text" placeholder="Buscar en todas las entradas..." oninput="doSearch(this.value)" id="search-input">
-            </div>
-            <div class="search-results" id="search-results-container"></div>`;
-
-            html += `
-                <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Actividad reciente</div>`;
-
-            if (recentEntries.length) {
-                recentEntries.forEach(e => {
+                <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Actividad reciente</div>
+                ${recentEntries.length ? recentEntries.map(e => {
                     const cat = categories.find(c => c.id === e.categoryId);
                     const color = cat?.color || '#6b7280';
                     const icon = TYPE_ICONS[e.type] || '📌';
-                    html += `
-                    <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${icon} ${e.title}</div>
-                            <div class="entry-meta">${e.date} · ${cat?.name || 'Sin categoría'}</div>
-                        </div>
-                    </div>`;
-                });
-            } else {
-                html += `<div style="color:#6b7280;padding:12px 0">No hay actividad reciente</div>`;
-            }
+                    return `
+                        <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
+                            <div class="entry-color-dot" style="background:${color}"></div>
+                            <div class="entry-info">
+                                <div class="entry-title">${icon} ${e.title}</div>
+                                <div class="entry-meta">${e.date}</div>
+                            </div>
+                        </div>`;
+                }).join('') : `<div style="color:#6b7280;padding:12px 0">No hay actividad reciente</div>`}
+            </div>`;
 
-            html += `</div>`;
             return html;
         }
 
@@ -2052,22 +1859,12 @@
         // ============================================================
         function renderStats() {
             const totalEntries = entries.length;
-            const goalsTotal = entries.filter(e => e.type === 'goal').length;
-            const goalsDone = entries.filter(e => e.type === 'goal' && e.status === 'Completado').length;
-            const projectsTotal = entries.filter(e => e.type === 'project').length;
-            const projectsDone = entries.filter(e => e.type === 'project' && e.status === 'Completado').length;
-            const travelsTotal = entries.filter(e => e.type === 'travel').length;
-            const workTotal = entries.filter(e => e.type === 'work').length;
-            const libraryTotal = entries.filter(e => e.type === 'library').length;
-
-            const byCategory = {};
-            entries.forEach(e => {
-                if (!byCategory[e.categoryId]) byCategory[e.categoryId] = 0;
-                byCategory[e.categoryId]++;
+            const byType = {};
+            Object.keys(ENTRY_TYPES).forEach(key => {
+                const type = ENTRY_TYPES[key];
+                byType[type] = entries.filter(e => e.type === type).length;
             });
-            const sortedCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
 
-            // Entradas por mes
             const monthCount = {};
             entries.forEach(e => {
                 const m = e.date.slice(0, 7);
@@ -2084,14 +1881,17 @@
 
                 <div class="card-grid">
                     <div class="card"><div class="card-title">Total entradas</div><div class="card-value">${totalEntries}</div></div>
-                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${goalsTotal}</div><div class="card-sub">${goalsDone} completados</div></div>
-                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${projectsTotal}</div><div class="card-sub">${projectsDone} completados</div></div>
-                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${travelsTotal}</div></div>
-                    <div class="card"><div class="card-title">Trabajo</div><div class="card-value">${workTotal}</div></div>
-                    <div class="card"><div class="card-title">Cultura</div><div class="card-value">${libraryTotal}</div></div>
+                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${byType.goal || 0}</div></div>
+                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${byType.project || 0}</div></div>
+                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${byType.travel || 0}</div></div>
+                    <div class="card"><div class="card-title">Trabajo</div><div class="card-value">${byType.work || 0}</div></div>
+                    <div class="card"><div class="card-title">Cultura</div><div class="card-value">${byType.library || 0}</div></div>
+                    <div class="card"><div class="card-title">Exámenes</div><div class="card-value">${byType.exam || 0}</div></div>
+                    <div class="card"><div class="card-title">Eventos</div><div class="card-value">${byType.event || 0}</div></div>
+                    <div class="card"><div class="card-title">Ideas</div><div class="card-value">${byType.idea || 0}</div></div>
+                    <div class="card"><div class="card-title">Inversiones</div><div class="card-value">${byType.investment || 0}</div></div>
                 </div>`;
 
-            // Entradas por mes
             if (sortedMonths.length) {
                 html += `
                 <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin:20px 0 12px 0">Entradas por mes</div>
@@ -2110,85 +1910,330 @@
                 html += `</div>`;
             }
 
-            // Por categoría
-            if (sortedCats.length) {
-                html += `
-                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin:20px 0 12px 0">Distribución por categoría</div>`;
-                sortedCats.forEach(([catId, count]) => {
-                    const cat = categories.find(c => c.id === catId);
-                    const color = cat?.color || '#6b7280';
-                    const name = cat?.name || 'Sin categoría';
-                    const pct = totalEntries > 0 ? Math.round((count / totalEntries) * 100) : 0;
-                    html += `
-                    <div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid #1a1a2e">
-                        <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div>
-                        <div style="flex:1;font-weight:500">${name}</div>
-                        <div style="display:flex;align-items:center;gap:8px">
-                            <div style="width:100px;height:6px;background:#1a1a2e;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color};border-radius:99px"></div></div>
-                            <span style="font-weight:600;font-size:13px;min-width:30px;text-align:right">${count}</span>
-                        </div>
-                    </div>`;
-                });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: EXAMS
+        // ============================================================
+        function renderExams() {
+            const exams = entries.filter(e => e.type === 'exam');
+            if (!exams.length) {
+                return `<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-title">Sin exámenes</div><div class="empty-sub">Pulsa el botón + y selecciona "Examen"</div></div>`;
             }
+
+            // Agrupar por asignatura para calcular nota final
+            const subjects = {};
+            exams.forEach(e => {
+                const key = e.subject || 'Sin asignatura';
+                if (!subjects[key]) subjects[key] = { entries: [], totalWeight: 0, weightedSum: 0 };
+                subjects[key].entries.push(e);
+                if (e.grade !== null && e.grade !== undefined && e.weight > 0) {
+                    subjects[key].totalWeight += e.weight;
+                    subjects[key].weightedSum += e.grade * e.weight;
+                }
+            });
+
+            let html = `
+            <div style="max-width:800px">
+                <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px;margin-bottom:12px">Resumen por asignatura</div>`;
+
+            Object.keys(subjects).forEach(subject => {
+                const data = subjects[subject];
+                const finalGrade = data.totalWeight > 0 ? Math.round((data.weightedSum / data.totalWeight) * 10) / 10 :
+                null;
+                const isApproved = finalGrade !== null && finalGrade >= 5;
+                const isMatricula = finalGrade !== null && finalGrade >= 9;
+
+                let gradeClass = 'nota-suspenso';
+                let gradeLabel = 'Suspenso';
+                if (isMatricula) { gradeClass = 'nota-matricula';
+                    gradeLabel = 'Matrícula'; } else if (isApproved) { gradeClass = 'nota-aprobado';
+                    gradeLabel = 'Aprobado'; }
+
+                html += `
+                <div class="card" style="margin-bottom:12px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px">${subject}</span>
+                        <div>
+                            ${finalGrade !== null ? `
+                                <span class="nota-final ${gradeClass}">${finalGrade}</span>
+                                <span class="badge ${isMatricula ? 'badge-done' : isApproved ? 'badge-progress' : 'badge-pending'}">${gradeLabel}</span>
+                            ` : `<span class="badge badge-pending">Sin calificación</span>`}
+                        </div>
+                    </div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:4px">${data.entries.length} elementos · Peso total: ${data.totalWeight}%</div>
+                    <div style="margin-top:8px">`;
+                data.entries.forEach(e => {
+                    const statusClass = e.examStatus === 'Aprobado' ? 'badge-done' : e.examStatus === 'Matrícula' ?
+                        'badge-done' : e.examStatus === 'Suspenso' ? 'badge-pending' : 'badge-progress';
+                    const icon = e.examType === 'titulacion' ? '🎓' : e.examType === 'trabajo' ? '📄' : e.examType ===
+                        'practica' ? '🔬' : '📝';
+                    html += `
+                        <div class="entry-item" onclick="openEditEntry('${e.id}')" style="cursor:pointer;padding:4px 0">
+                            <div class="entry-info">
+                                <div style="font-size:13px">${icon} ${e.title}</div>
+                                <div style="font-size:11px;color:#6b7280">${e.examType} · Peso: ${e.weight}% ${e.grade !== null ? '· Nota: ' + e.grade : ''}</div>
+                            </div>
+                            <span class="badge ${statusClass}">${e.examStatus}</span>
+                        </div>`;
+                });
+                html += `</div></div>`;
+            });
+
+            // Todas las entradas de exámenes
+            html += `
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px;margin:20px 0 12px 0">Todos los exámenes</div>
+            ${exams.map(e => {
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || '#6b7280';
+                const statusClass = e.examStatus === 'Aprobado' ? 'badge-done' : e.examStatus === 'Matrícula' ? 'badge-done' : e.examStatus === 'Suspenso' ? 'badge-pending' : 'badge-progress';
+                return `
+                    <div class="entry-item" onclick="openEditEntry('${e.id}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${e.title}</div>
+                            <div class="entry-meta">${e.subject || 'Sin asignatura'} · ${e.examType} · ${e.examDate || 'Sin fecha'} ${e.grade !== null ? '· Nota: ' + e.grade : ''}</div>
+                        </div>
+                        <span class="badge ${statusClass}">${e.examStatus}</span>
+                    </div>`;
+            }).join('')}
+            </div>`;
+
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: EVENTS
+        // ============================================================
+        function renderEvents() {
+            const events = entries.filter(e => e.type === 'event');
+            if (!events.length) {
+                return `<div class="empty-state"><div class="empty-icon">🎭</div><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento"</div></div>`;
+            }
+
+            const sorted = [...events].sort((a, b) => (b.eventDate || '').localeCompare(a.eventDate || ''));
+
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(e => {
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || '#6b7280';
+                const stars = e.eventRating ? '⭐'.repeat(Math.floor(e.eventRating / 2)) : '';
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px">${e.title}</span>
+                        <span style="font-size:13px;color:#6b7280">${e.eventDate || ''}</span>
+                    </div>
+                    <div style="font-size:13px;color:#6b7280;margin-top:4px">📍 ${e.place || 'Sin lugar'}</div>
+                    ${e.companions ? `<div style="font-size:13px;color:#6b7280;margin-top:2px">👥 ${e.companions}</div>` : ''}
+                    ${stars ? `<div style="margin-top:4px;font-size:14px">${stars}</div>` : ''}
+                    ${e.eventNotes ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">${e.eventNotes}</div>` : ''}
+                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: SHOPPING (Listas)
+        // ============================================================
+        function renderShopping() {
+            const items = entries.filter(e => e.type === 'shopping');
+            if (!items.length) {
+                return `<div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-title">Sin items en listas</div><div class="empty-sub">Pulsa el botón + y selecciona "Lista"</div></div>`;
+            }
+
+            const pending = items.filter(e => !e.listDone);
+            const done = items.filter(e => e.listDone);
+
+            let html = `
+            <div style="max-width:700px">
+                <div style="display:flex;gap:16px;margin-bottom:16px">
+                    <div class="card" style="flex:1"><div class="card-title">Pendientes</div><div class="card-value">${pending.length}</div></div>
+                    <div class="card" style="flex:1"><div class="card-title">Comprados</div><div class="card-value">${done.length}</div></div>
+                </div>
+
+                ${pending.length ? `
+                    <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px;margin-bottom:8px">Pendientes</div>
+                    ${pending.map(e => {
+                        const cat = categories.find(c => c.id === e.categoryId);
+                        const color = cat?.color || '#6b7280';
+                        const priorityColor = e.listPriority === 'Alta' ? '#dc2626' : e.listPriority === 'Media' ? '#d97706' : '#6b7280';
+                        return `
+                            <div class="entry-item" onclick="openEditEntry('${e.id}')">
+                                <div class="entry-color-dot" style="background:${color}"></div>
+                                <div class="entry-info">
+                                    <div class="entry-title">${e.title}</div>
+                                    <div class="entry-meta">${e.listCategory || 'Sin categoría'} · ${e.listPrice !== null ? e.listPrice + '€' : ''} · <span style="color:${priorityColor}">${e.listPriority}</span></div>
+                                </div>
+                                <span class="badge badge-pending">Pendiente</span>
+                            </div>`;
+                    }).join('')}
+                ` : ''}
+
+                ${done.length ? `
+                    <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px;margin:16px 0 8px 0">Comprados</div>
+                    ${done.map(e => {
+                        const cat = categories.find(c => c.id === e.categoryId);
+                        const color = cat?.color || '#6b7280';
+                        return `
+                            <div class="entry-item" onclick="openEditEntry('${e.id}')" style="opacity:0.6">
+                                <div class="entry-color-dot" style="background:${color}"></div>
+                                <div class="entry-info">
+                                    <div class="entry-title"><s>${e.title}</s></div>
+                                    <div class="entry-meta">${e.listCategory || 'Sin categoría'} · ${e.listPrice !== null ? e.listPrice + '€' : ''}</div>
+                                </div>
+                                <span class="badge badge-done">✅ Comprado</span>
+                            </div>`;
+                    }).join('')}
+                ` : ''}
+            </div>`;
+
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: IDEAS
+        // ============================================================
+        function renderIdeas() {
+            const ideas = entries.filter(e => e.type === 'idea');
+            if (!ideas.length) {
+                return `<div class="empty-state"><div class="empty-icon">💡</div><div class="empty-title">Sin ideas</div><div class="empty-sub">Pulsa el botón + y selecciona "Idea"</div></div>`;
+            }
+
+            const sorted = [...ideas].sort((a, b) => b.date.localeCompare(a.date));
+
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(e => {
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || '#6b7280';
+                const statusClass = e.ideaStatus === 'Completada' ? 'badge-done' : e.ideaStatus === 'En progreso' ?
+                    'badge-progress' : e.ideaStatus === 'Descartada' ? 'badge-pending' : 'badge-pending';
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px">${e.title}</span>
+                        <span class="badge ${statusClass}">${e.ideaStatus}</span>
+                    </div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:4px">${e.ideaCategory || 'Sin categoría'} · ${e.date}</div>
+                    ${e.ideaContent ? `<div style="font-size:13px;color:#6b7280;margin-top:6px;white-space:pre-wrap">${e.ideaContent.substring(0, 150)}${e.ideaContent.length > 150 ? '...' : ''}</div>` : ''}
+                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: INVESTMENTS
+        // ============================================================
+        function renderInvestments() {
+            const investments = entries.filter(e => e.type === 'investment');
+            if (!investments.length) {
+                return `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">Sin inversiones</div><div class="empty-sub">Pulsa el botón + y selecciona "Inversión"</div></div>`;
+            }
+
+            let totalInvested = 0;
+            let totalCurrent = 0;
+
+            investments.forEach(e => {
+                totalInvested += e.invInvested || 0;
+                totalCurrent += e.invCurrent || 0;
+            });
+
+            const profit = totalCurrent - totalInvested;
+            const profitPct = totalInvested > 0 ? Math.round((profit / totalInvested) * 100) : 0;
+
+            let html = `
+            <div style="max-width:700px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+                    <div class="card"><div class="card-title">Invertido</div><div class="card-value">${totalInvested.toFixed(2)}€</div></div>
+                    <div class="card"><div class="card-title">Valor actual</div><div class="card-value">${totalCurrent.toFixed(2)}€</div></div>
+                    <div class="card"><div class="card-title">Rentabilidad</div>
+                        <div class="card-value ${profit > 0 ? 'inversion-positiva' : profit < 0 ? 'inversion-negativa' : 'inversion-neutral'}">
+                            ${profit > 0 ? '+' : ''}${profit.toFixed(2)}€ (${profitPct}%)
+                        </div>
+                    </div>
+                </div>`;
+
+            const sorted = [...investments].sort((a, b) => (b.invDate || '').localeCompare(a.invDate || ''));
+
+            sorted.forEach(e => {
+                const profitItem = (e.invCurrent || 0) - (e.invInvested || 0);
+                const pctItem = e.invInvested > 0 ? Math.round((profitItem / e.invInvested) * 100) : 0;
+                const isPositive = profitItem > 0;
+                const cat = categories.find(c => c.id === e.categoryId);
+                const color = cat?.color || '#6b7280';
+
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px">${e.title}</span>
+                        <span style="font-size:13px;color:#6b7280">${e.invType || 'Otro'}</span>
+                    </div>
+                    <div style="display:flex;gap:16px;margin-top:4px;flex-wrap:wrap">
+                        <span style="font-size:13px;color:#6b7280">Invertido: ${(e.invInvested || 0).toFixed(2)}€</span>
+                        <span style="font-size:13px;color:#6b7280">Actual: ${(e.invCurrent || 0).toFixed(2)}€</span>
+                        <span style="font-size:13px;font-weight:700;${isPositive ? 'color:#16a34a' : 'color:#dc2626'}">
+                            ${isPositive ? '+' : ''}${profitItem.toFixed(2)}€ (${pctItem}%)
+                        </span>
+                    </div>
+                    ${e.invDate ? `<div style="font-size:12px;color:#6b7280;margin-top:2px">${e.invDate}</div>` : ''}
+                    ${e.invNotes ? `<div style="font-size:13px;color:#6b7280;margin-top:4px">${e.invNotes}</div>` : ''}
+                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                </div>`;
+            });
 
             html += `</div>`;
             return html;
         }
 
         // ============================================================
-        //  RENDER: GOALS
+        //  RENDER: GOALS, PROJECTS, TRAVELS, WORK, CULTURA
         // ============================================================
+        // (Estas funciones se mantienen igual que antes, solo se filtran por tipo)
+
         function renderGoals() {
             const goals = entries.filter(e => e.type === 'goal');
             if (!goals.length) {
                 return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin objetivos</div><div class="empty-sub">Pulsa el botón + y selecciona "Objetivo"</div></div>`;
             }
-
-            const catLabels = ['Corto plazo', 'Medio plazo', 'Largo plazo'];
             let html = '';
-
-            catLabels.forEach(cat => {
+            ['Corto plazo', 'Medio plazo', 'Largo plazo'].forEach(cat => {
                 const filtered = goals.filter(g => g.goalCategory === cat);
                 if (!filtered.length) return;
-
                 html += `<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-bottom:8px">${cat}</div>`;
-
                 filtered.forEach(g => {
                     const pct = g.progress || 0;
                     const color = pct >= 100 ? '#16a34a' : pct >= 50 ? '#d97706' : '#2563eb';
                     const statusClass = g.status === 'Completado' ? 'badge-done' : g.status === 'En progreso' ?
                         'badge-progress' : 'badge-pending';
-
                     html += `
-                    <div class="card" style="margin-bottom:8px;padding:14px 16px;cursor:pointer" onclick="openEditEntry('${g.id}')">
-                        <div style="display:flex;justify-content:space-between;align-items:center">
-                            <span style="font-weight:600">${g.title}</span>
-                            <span class="badge ${statusClass}">${g.status}</span>
-                        </div>
-                        ${g.notes ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${g.notes}</div>` : ''}
-                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-                        <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280;margin-top:4px">
-                            <span>${pct}% completado</span>
-                            ${g.deadline ? `<span>Límite: ${g.deadline}</span>` : ''}
-                        </div>
-                    </div>`;
+                        <div class="card" style="margin-bottom:8px;padding:14px 16px;cursor:pointer" onclick="openEditEntry('${g.id}')">
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <span style="font-weight:600">${g.title}</span>
+                                <span class="badge ${statusClass}">${g.status}</span>
+                            </div>
+                            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+                            <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280;margin-top:4px">
+                                <span>${pct}% completado</span>
+                                ${g.deadline ? `<span>Límite: ${g.deadline}</span>` : ''}
+                            </div>
+                        </div>`;
                 });
-
                 html += `</div>`;
             });
-
             return html;
         }
 
-        // ============================================================
-        //  RENDER: PROJECTS
-        // ============================================================
         function renderProjects() {
             const projects = entries.filter(e => e.type === 'project');
             if (!projects.length) {
                 return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa el botón + y selecciona "Proyecto"</div></div>`;
             }
-
             let html = '';
             projects.forEach(p => {
                 const totalTasks = p.tasks?.length || 0;
@@ -2196,157 +2241,86 @@
                 const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
                 const statusClass = p.status === 'Completado' ? 'badge-done' : p.status === 'En curso' ?
                     'badge-progress' : 'badge-pending';
-
                 html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${p.id}')">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px">${p.title}</span>
-                        <span class="badge ${statusClass}">${p.status}</span>
-                    </div>
-                    ${p.description ? `<div style="font-size:13px;color:#6b7280;margin-top:4px">${p.description}</div>` : ''}
-                    <div style="font-size:12px;color:#6b7280;margin-top:4px">
-                        ${p.startDate ? 'Inicio: ' + p.startDate : ''} ${p.endDate ? '· Fin previsto: ' + p.endDate : ''}
-                    </div>
-                    ${totalTasks > 0 ? `
-                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
-                        <div style="font-size:12px;color:#6b7280;margin-top:4px">${doneTasks}/${totalTasks} tareas completadas</div>
-                    ` : ''}
-                </div>`;
+                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${p.id}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:700;font-size:16px">${p.title}</span>
+                            <span class="badge ${statusClass}">${p.status}</span>
+                        </div>
+                        ${p.description ? `<div style="font-size:13px;color:#6b7280;margin-top:4px">${p.description}</div>` : ''}
+                        <div style="font-size:12px;color:#6b7280;margin-top:4px">${p.startDate || ''} ${p.endDate ? '→ ' + p.endDate : ''}</div>
+                        ${totalTasks > 0 ? `
+                            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:4px">${doneTasks}/${totalTasks} tareas</div>
+                        ` : ''}
+                    </div>`;
             });
-
             return html;
         }
 
-        // ============================================================
-        //  RENDER: TRAVELS
-        // ============================================================
         function renderTravels() {
             const travels = entries.filter(e => e.type === 'travel');
             if (!travels.length) {
                 return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
             }
-
             let html = '';
             travels.forEach(t => {
                 const stars = t.rating ? '⭐'.repeat(t.rating) : '';
                 html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${t.id}')">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px">${t.title}</span>
-                        <span style="font-size:13px;color:#6b7280">${t.country || ''}</span>
-                    </div>
-                    <div style="font-size:13px;color:#6b7280;margin-top:4px">
-                        ${t.startDate ? t.startDate : ''} ${t.endDate ? '→ ' + t.endDate : ''}
-                    </div>
-                    ${stars ? `<div style="margin-top:4px">${stars}</div>` : ''}
-                    ${t.notes ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">${t.notes}</div>` : ''}
-                </div>`;
+                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${t.id}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:700;font-size:16px">${t.title}</span>
+                            <span style="font-size:13px;color:#6b7280">${t.country || ''}</span>
+                        </div>
+                        <div style="font-size:13px;color:#6b7280;margin-top:4px">${t.startDate || ''} ${t.endDate ? '→ ' + t.endDate : ''}</div>
+                        ${stars ? `<div style="margin-top:4px">${stars}</div>` : ''}
+                        ${t.notes ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">${t.notes}</div>` : ''}
+                    </div>`;
             });
-
             return html;
         }
 
-        // ============================================================
-        //  RENDER: WORK
-        // ============================================================
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
                 return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa el botón + y selecciona "Trabajo"</div></div>`;
             }
 
-            let totalDays = 0;
-            let totalDaysNormal = 0;
-
-            work.forEach(w => {
-                if (w.startDate && w.endDate) {
-                    const days = calcularDiasLaborables(w.startDate, w.endDate, w.holidays || 0);
-                    totalDays += days;
-                    if (w.workType !== 'practicas') totalDaysNormal += days;
-                }
-            });
-
-            let html = `
-            <div class="work-stats">
-                <div class="work-stat-card"><div class="stat-value">${totalDays}</div><div class="stat-label">Días totales trabajados</div></div>
-                <div class="work-stat-card"><div class="stat-value">${totalDaysNormal}</div><div class="stat-label">Días (excluyendo prácticas)</div></div>
-            </div>`;
-
-            const sorted = [...work].sort((a, b) => b.startDate?.localeCompare(a.startDate) || 0);
-
+            const sorted = [...work].sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+            let html =
+                `<div style="max-width:700px">`;
             sorted.forEach(w => {
                 const typeLabel = w.workType === 'practicas' ? 'Prácticas' : 'Puesto normal';
-                const daysWorked = (w.startDate && w.endDate) ? calcularDiasLaborables(w.startDate, w.endDate, w
-                    .holidays || 0) : 0;
-
                 html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${w.id}')">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px">${w.title}</span>
-                        <span style="font-size:12px;color:#6b7280">${w.position || ''}</span>
-                    </div>
-                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
-                        <span style="font-size:12px;color:#6b7280">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
-                        <span class="badge ${w.workType === 'practicas' ? 'badge-pending' : 'badge-done'}">${typeLabel}</span>
-                        ${daysWorked > 0 ? `<span style="font-size:12px;color:#6b7280">${daysWorked} días</span>` : ''}
-                        ${(w.holidays || 0) > 0 ? `<span style="font-size:12px;color:#dc2626">${w.holidays} días de fiesta</span>` : ''}
-                    </div>
-                    ${w.functions ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">${w.functions}</div>` : ''}
-                    ${w.skills ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">Habilidades: ${w.skills}</div>` : ''}
-                </div>`;
+                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${w.id}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:700;font-size:16px">${w.title}</span>
+                            <span style="font-size:12px;color:#6b7280">${w.position || ''}</span>
+                        </div>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
+                            <span style="font-size:12px;color:#6b7280">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
+                            <span class="badge ${w.workType === 'practicas' ? 'badge-pending' : 'badge-done'}">${typeLabel}</span>
+                        </div>
+                        ${w.functions ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">${w.functions}</div>` : ''}
+                        ${w.skills ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">Habilidades: ${w.skills}</div>` : ''}
+                    </div>`;
             });
-
+            html += `</div>`;
             return html;
         }
 
-        // ============================================================
-        //  RENDER: CULTURA
-        // ============================================================
         function renderCultura() {
-            const mes = culturaMonth;
-            const año = culturaYear;
-            const mesStr = String(mes + 1).padStart(2, '0');
-            const añoStr = String(año);
-            const inicioMes = añoStr + '-' + mesStr + '-01';
-            const finMes = añoStr + '-' + mesStr + '-' + String(new Date(año, mes + 1, 0).getDate()).padStart(2, '0');
-
-            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-            ];
-
             const libraryItems = entries.filter(e => e.type === 'library');
-
-            const itemsInMonth = libraryItems.filter(e => {
-                return (e.startDate && e.startDate >= inicioMes && e.startDate <= finMes) ||
-                    (e.endDate && e.endDate >= inicioMes && e.endDate <= finMes);
-            });
-
-            const libros = itemsInMonth.filter(e => e.libType === 'libro');
-            const peliculas = itemsInMonth.filter(e => e.libType === 'pelicula');
-            const series = itemsInMonth.filter(e => e.libType === 'serie');
-            const videojuegos = itemsInMonth.filter(e => e.libType === 'videojuego');
+            if (!libraryItems.length) {
+                return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin items culturales</div><div class="empty-sub">Pulsa el botón + y selecciona "Cultura"</div></div>`;
+            }
 
             // Libro actual
             const currentBook = libraryItems.filter(b => b.libType === 'libro' && b.startDate && !b.endDate)
                 .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
 
-            const libTypeLabels = {
-                'libro': 'Libro',
-                'pelicula': 'Película',
-                'serie': 'Serie',
-                'videojuego': 'Videojuego'
-            };
-
             let html = `
             <div style="max-width:700px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                    <span style="font-size:17px;font-weight:700">${monthNames[mes]} ${año}</span>
-                    <div style="display:flex;gap:8px">
-                        <button class="btn-secondary" onclick="cambiarCulturaMes(-1)">‹</button>
-                        <button class="btn-secondary" onclick="cambiarCulturaMes(1)">›</button>
-                    </div>
-                </div>
-
                 ${currentBook ? `
                     <div class="card" style="margin-bottom:16px;border-left:3px solid #3498db">
                         <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px;margin-bottom:4px">📖 Leyendo actualmente</div>
@@ -2360,42 +2334,22 @@
                     </div>
                 `}
 
-                <div class="cultura-grid">
-                    <div class="cultura-card"><div class="categoria">📖 Libros</div><div class="numero">${libros.length}</div><div class="detalle">${libros.filter(b=>b.startDate && b.startDate >= inicioMes && b.startDate <= finMes).length} iniciados · ${libros.filter(b=>b.endDate && b.endDate >= inicioMes && b.endDate <= finMes).length} terminados</div></div>
-                    <div class="cultura-card"><div class="categoria">🎬 Películas</div><div class="numero">${peliculas.length}</div><div class="detalle">vistas este mes</div></div>
-                    <div class="cultura-card"><div class="categoria">📺 Series</div><div class="numero">${series.length}</div><div class="detalle">${series.filter(s=>s.startDate && s.startDate >= inicioMes && s.startDate <= finMes).length} iniciadas · ${series.filter(s=>s.endDate && s.endDate >= inicioMes && s.endDate <= finMes).length} terminadas</div></div>
-                    <div class="cultura-card"><div class="categoria">🎮 Videojuegos</div><div class="numero">${videojuegos.length}</div><div class="detalle">${videojuegos.filter(g=>g.startDate && g.startDate >= inicioMes && g.startDate <= finMes).length} iniciados · ${videojuegos.filter(g=>g.endDate && g.endDate >= inicioMes && g.endDate <= finMes).length} terminados</div></div>
-                </div>
-
-                ${itemsInMonth.length === 0 ? `
-                    <div style="color:#6b7280;padding:20px 0;text-align:center">No hay actividad cultural este mes</div>
-                ` : `
-                    <div style="font-size:13px;font-weight:700;margin:16px 0 8px 0">Detalle del mes</div>
-                    ${itemsInMonth.map(e => {
-                        const icon = e.libType === 'libro' ? '📖' : e.libType === 'pelicula' ? '🎬' : e.libType === 'serie' ? '📺' : '🎮';
-                        const label = libTypeLabels[e.libType] || 'Item';
-                        const details = `${e.startDate || ''}${e.endDate ? ' → ' + e.endDate : ''}${e.rating ? ' · ⭐'.repeat(e.rating) : ''}`;
-                        return `
-                            <div class="entry-item" style="cursor:default">
-                                <div class="entry-info">
-                                    <div class="entry-title">${icon} ${e.title}</div>
-                                    <div class="entry-meta">${label} · ${e.author || e.platform || ''} ${details}</div>
-                                </div>
-                            </div>`;
-                    }).join('')}
-                `}
+                <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px;margin:16px 0 8px 0">Todos los items</div>
+                ${libraryItems.map(e => {
+                    const icon = e.libType === 'libro' ? '📖' : e.libType === 'pelicula' ? '🎬' : e.libType === 'serie' ? '📺' : '🎮';
+                    const label = e.libType === 'libro' ? 'Libro' : e.libType === 'pelicula' ? 'Película' : e.libType === 'serie' ? 'Serie' : 'Videojuego';
+                    const details = `${e.startDate || ''}${e.endDate ? ' → ' + e.endDate : ''}${e.rating ? ' · ⭐'.repeat(e.rating) : ''}`;
+                    return `
+                        <div class="entry-item" onclick="openEditEntry('${e.id}')">
+                            <div class="entry-info">
+                                <div class="entry-title">${icon} ${e.title}</div>
+                                <div class="entry-meta">${label} · ${e.author || e.platform || ''} ${details}</div>
+                            </div>
+                        </div>`;
+                }).join('')}
             </div>`;
 
             return html;
-        }
-
-        function cambiarCulturaMes(delta) {
-            culturaMonth += delta;
-            if (culturaMonth < 0) { culturaMonth = 11;
-                culturaYear--; }
-            if (culturaMonth > 11) { culturaMonth = 0;
-                culturaYear++; }
-            render();
         }
 
         // ============================================================
@@ -2413,7 +2367,6 @@
                 if (this.classList.contains('open')) toggleMobileMenu();
             });
 
-            // Cerrar FAB al hacer clic fuera
             document.addEventListener('click', function(e) {
                 const fab = document.getElementById('fab');
                 const menu = document.getElementById('fab-menu');
@@ -2451,5 +2404,6 @@
 
         init();
     </script>
+
 </body>
 </html>
