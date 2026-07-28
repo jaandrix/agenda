@@ -35,9 +35,10 @@
             display: flex;
             height: 100dvh;
             margin: 0 auto;
-            max-width: 1100px;
+            max-width: 1200px;
             background: #0a0a0f;
             transition: background 0.25s ease;
+            position: relative;
         }
         body.light #app {
             background: #f5f5f7;
@@ -55,13 +56,13 @@
             flex-shrink: 0;
             transition: background 0.25s ease, border-color 0.25s ease;
             overflow-y: auto;
+            z-index: 10;
         }
         body.light #sidebar {
             background: #ffffff;
             border-right-color: #e2e8f0;
         }
 
-        /* Sidebar - Brand */
         .sidebar-brand {
             display: flex;
             align-items: center;
@@ -85,7 +86,6 @@
             letter-spacing: -0.3px;
         }
 
-        /* Sidebar - Search */
         .sidebar-search {
             position: relative;
             margin-bottom: 20px;
@@ -130,14 +130,12 @@
             border-color: #1c1c1e;
         }
 
-        /* Sidebar - Nav */
         .sidebar-nav {
             flex: 1;
             display: flex;
             flex-direction: column;
             gap: 2px;
         }
-
         .sidebar-nav .nav-label {
             font-size: 10px;
             font-weight: 700;
@@ -188,7 +186,7 @@
         }
 
         .sidebar-nav button .nav-icon {
-            font-size: 18px;
+            font-size: 16px;
             width: 24px;
             text-align: center;
             flex-shrink: 0;
@@ -197,7 +195,6 @@
             flex: 1;
         }
 
-        /* Sidebar - Footer actions */
         .sidebar-actions {
             border-top: 1px solid #2a2a3a;
             padding-top: 12px;
@@ -228,6 +225,159 @@
             color: #1c1c1e;
         }
 
+        /* ===== MOBILE HAMBURGER MENU ===== */
+        #mobile-menu-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        #mobile-menu-overlay.open {
+            display: block;
+        }
+
+        #mobile-menu-panel {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100dvh;
+            background: #12121f;
+            z-index: 101;
+            transition: left 0.3s ease;
+            padding: 24px 16px 16px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        #mobile-menu-panel.open {
+            left: 0;
+        }
+        body.light #mobile-menu-panel {
+            background: #ffffff;
+        }
+
+        #mobile-menu-panel .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #mobile-menu-panel .menu-header .brand {
+            font-size: 18px;
+            font-weight: 800;
+        }
+        #mobile-menu-panel .menu-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+        }
+
+        #mobile-menu-panel .menu-search {
+            margin-bottom: 16px;
+        }
+        #mobile-menu-panel .menu-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #2a2a3a;
+            background: #1a1a2e;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            outline: none;
+        }
+        body.light #mobile-menu-panel .menu-search input {
+            background: #f0f0f2;
+            border-color: #e2e8f0;
+            color: #1c1c1e;
+        }
+
+        #mobile-menu-panel .menu-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        #mobile-menu-panel .menu-nav .nav-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #6b7280;
+            padding: 12px 8px 6px 8px;
+        }
+        #mobile-menu-panel .menu-nav button {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: none;
+            border: none;
+            padding: 10px 10px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #8e8e93;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            width: 100%;
+            text-align: left;
+        }
+        #mobile-menu-panel .menu-nav button:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+        }
+        #mobile-menu-panel .menu-nav button.active {
+            background: #2a2a3a;
+            color: #e2e8f0;
+        }
+        body.light #mobile-menu-panel .menu-nav button:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #1c1c1e;
+        }
+        body.light #mobile-menu-panel .menu-nav button.active {
+            background: #e2e8f0;
+            color: #1c1c1e;
+        }
+        #mobile-menu-panel .menu-nav button .nav-icon {
+            font-size: 16px;
+            width: 24px;
+            text-align: center;
+        }
+
+        #mobile-menu-panel .menu-actions {
+            border-top: 1px solid #2a2a3a;
+            padding-top: 12px;
+            display: flex;
+            gap: 6px;
+        }
+        body.light #mobile-menu-panel .menu-actions {
+            border-top-color: #e2e8f0;
+        }
+        #mobile-menu-panel .menu-actions button {
+            background: none;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+        #mobile-menu-panel .menu-actions button:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+        }
+        body.light #mobile-menu-panel .menu-actions button:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #1c1c1e;
+        }
+
         /* ===== MAIN CONTENT ===== */
         #main {
             flex: 1;
@@ -241,9 +391,9 @@
             background: #f5f5f7;
         }
 
-        /* ===== HEADER (dentro de main) ===== */
+        /* ===== HEADER ===== */
         #main-header {
-            padding: 24px 32px 16px 32px;
+            padding: 20px 32px 14px 32px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
@@ -255,8 +405,26 @@
             border-bottom-color: #e2e8f0;
         }
 
-        #main-header h1 {
+        #main-header .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        #main-header .menu-hamburger {
+            display: none;
+            background: none;
+            border: none;
             font-size: 24px;
+            color: #e2e8f0;
+            cursor: pointer;
+            padding: 4px;
+        }
+        body.light #main-header .menu-hamburger {
+            color: #1c1c1e;
+        }
+
+        #main-header h1 {
+            font-size: 22px;
             font-weight: 800;
             letter-spacing: -0.5px;
         }
@@ -264,7 +432,7 @@
         #main-header .header-actions {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .btn-primary {
@@ -323,8 +491,8 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* ===== MOBILE NAV (solo visible en móvil) ===== */
-        #mobile-nav {
+        /* ===== MOBILE BOTTOM NAV ===== */
+        #mobile-bottom-nav {
             display: none;
             flex-shrink: 0;
             background: #12121f;
@@ -332,40 +500,40 @@
             padding-bottom: max(8px, env(safe-area-inset-bottom));
             transition: background 0.25s ease, border-color 0.25s ease;
         }
-        body.light #mobile-nav {
+        body.light #mobile-bottom-nav {
             background: #ffffff;
             border-top-color: #e2e8f0;
         }
 
-        #mobile-nav .mobile-nav-inner {
+        #mobile-bottom-nav .bottom-nav-inner {
             display: flex;
             justify-content: space-around;
-            padding: 6px 8px 4px 8px;
+            padding: 6px 4px 4px 4px;
         }
 
-        #mobile-nav button {
+        #mobile-bottom-nav button {
             background: none;
             border: none;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
-            padding: 4px 12px;
+            gap: 1px;
+            padding: 4px 10px;
             font-family: 'Inter', sans-serif;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
             color: #6b7280;
             cursor: pointer;
             transition: all 0.15s ease;
             border-radius: 8px;
         }
-        #mobile-nav button .nav-icon {
-            font-size: 20px;
+        #mobile-bottom-nav button .nav-icon {
+            font-size: 18px;
         }
-        #mobile-nav button.active {
+        #mobile-bottom-nav button.active {
             color: #e2e8f0;
         }
-        body.light #mobile-nav button.active {
+        body.light #mobile-bottom-nav button.active {
             color: #1c1c1e;
         }
 
@@ -373,25 +541,24 @@
                RESPONSIVE
             ============================================================ */
 
-        /* Móvil: ocultar sidebar, mostrar mobile-nav */
         @media (max-width: 768px) {
             #sidebar {
                 display: none !important;
             }
-            #mobile-nav {
+            #mobile-bottom-nav {
+                display: block !important;
+            }
+            #main-header .menu-hamburger {
                 display: block !important;
             }
             #main-header {
-                padding: 16px 16px 12px 16px;
+                padding: 14px 16px 10px 16px;
             }
             #main-header h1 {
-                font-size: 18px;
+                font-size: 17px;
             }
             #content {
                 padding: 16px;
-            }
-            #app {
-                max-width: 100%;
             }
             .btn-primary {
                 font-size: 12px;
@@ -401,152 +568,107 @@
                 font-size: 11px;
                 padding: 4px 10px;
             }
-            /* Ocultar botones de acción en móvil dentro del header */
             #main-header .header-actions .btn-secondary {
                 display: none;
             }
         }
 
-        /* Tablets / escritorio pequeño */
         @media (min-width: 769px) and (max-width: 1024px) {
             #sidebar {
                 width: 200px;
                 min-width: 200px;
             }
-            #app {
-                max-width: 100%;
-            }
             #main-header {
-                padding: 20px 24px 14px 24px;
+                padding: 18px 24px 12px 24px;
             }
             #content {
                 padding: 20px 24px 24px 24px;
             }
         }
 
-        /* Escritorio grande */
-        @media (min-width: 1025px) {
-            #app {
-                max-width: 1200px;
-            }
-            #sidebar {
-                width: 240px;
-                min-width: 240px;
-            }
-        }
+        /* ============================================================
+               COMMON STYLES
+            ============================================================ */
 
-        /* ===== CALENDAR STYLES (dentro de content) ===== */
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .calendar-header .month-label {
-            font-size: 17px;
-            font-weight: 700;
-        }
-        .calendar-nav-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 4px 12px;
-            color: #6b7280;
-            transition: color 0.15s ease;
-        }
-        .calendar-nav-btn:hover {
-            color: #e2e8f0;
-        }
-        body.light .calendar-nav-btn {
-            color: #8e8e93;
-        }
-        body.light .calendar-nav-btn:hover {
-            color: #1c1c1e;
-        }
-
-        .calendar-grid {
+        /* Cards */
+        .card-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 3px;
-        }
-        .calendar-day-header {
-            text-align: center;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #6b7280;
-            padding: 6px 0 10px 0;
-            letter-spacing: 0.5px;
-        }
-        body.light .calendar-day-header {
-            color: #8e8e93;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
         }
 
-        .calendar-day {
+        .card {
             background: #12121f;
-            border-radius: 10px;
-            padding: 6px 4px 8px 4px;
-            min-height: 64px;
-            text-align: center;
-            border: 1px solid transparent;
+            border-radius: 14px;
+            padding: 18px;
+            border: 1px solid #1a1a2e;
             transition: background 0.15s ease, border-color 0.15s ease;
-            cursor: pointer;
         }
-        .calendar-day:hover {
+        .card:hover {
             background: #1a1a2e;
         }
-        body.light .calendar-day {
+        body.light .card {
             background: #ffffff;
             border-color: #e2e8f0;
         }
-        body.light .calendar-day:hover {
-            background: #f5f5f7;
+        body.light .card:hover {
+            background: #fafafa;
         }
 
-        .calendar-day.empty {
-            background: transparent;
-            border-color: transparent;
+        .card .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 6px;
         }
-        .calendar-day.empty:hover {
-            background: transparent;
+        body.light .card .card-title {
+            color: #8e8e93;
         }
-        body.light .calendar-day.empty {
-            background: transparent;
+        .card .card-value {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .card .card-sub {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        body.light .card .card-sub {
+            color: #8e8e93;
         }
 
-        .calendar-day.today {
-            border-color: #e2e8f0;
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: #6b7280;
         }
-        body.light .calendar-day.today {
-            border-color: #1c1c1e;
+        body.light .empty-state {
+            color: #8e8e93;
         }
-
-        .calendar-day .day-number {
-            font-size: 13px;
+        .empty-state .empty-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+        .empty-state .empty-title {
             font-weight: 700;
-            display: block;
-            margin-bottom: 4px;
+            font-size: 16px;
+            color: #e2e8f0;
+        }
+        body.light .empty-state .empty-title {
+            color: #1c1c1e;
+        }
+        .empty-state .empty-sub {
+            font-size: 13px;
+            margin-top: 4px;
         }
 
-        .calendar-day .day-bars {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            align-items: center;
-        }
-
-        .calendar-day .day-bar {
-            width: 20px;
-            height: 3px;
-            border-radius: 4px;
-            display: block;
-        }
-
-        /* ===== ENTRIES LIST ===== */
-        .entries-section {
-            margin-top: 20px;
-        }
+        /* Entries list */
         .entries-section .section-title {
             font-size: 12px;
             font-weight: 700;
@@ -637,31 +759,100 @@
             color: #dc2626;
         }
 
-        /* ===== EMPTY STATE ===== */
-        .empty-state {
-            text-align: center;
-            padding: 48px 20px;
-            color: #6b7280;
+        /* Progress bar */
+        .progress-bar-bg {
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 6px;
         }
-        body.light .empty-state {
-            color: #8e8e93;
+        body.light .progress-bar-bg {
+            background: #e2e8f0;
         }
-        .empty-state .empty-icon {
-            font-size: 42px;
-            margin-bottom: 12px;
-            opacity: 0.4;
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.4s ease;
         }
-        .empty-state .empty-title {
+
+        /* Badges */
+        .badge {
+            font-size: 10px;
             font-weight: 700;
-            font-size: 16px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .badge-progress {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        .badge-done {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        body.dark .badge-pending {
+            background: #422f00;
+            color: #fcd34d;
+        }
+        body.dark .badge-progress {
+            background: #1e3a5f;
+            color: #93c5fd;
+        }
+        body.dark .badge-done {
+            background: #14532d;
+            color: #86efac;
+        }
+        body.dark .badge {
+            background: #2a2a3a;
             color: #e2e8f0;
         }
-        body.light .empty-state .empty-title {
-            color: #1c1c1e;
+
+        /* Rating stars */
+        .stars {
+            color: #f59e0b;
+            font-size: 14px;
+            letter-spacing: 2px;
         }
-        .empty-state .empty-sub {
+        .stars-empty {
+            color: #3a3a5c;
+        }
+
+        /* ===== TOAST ===== */
+        #toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 24px;
+            border-radius: 30px;
             font-size: 13px;
-            margin-top: 4px;
+            font-weight: 600;
+            z-index: 300;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+            background: #e2e8f0;
+            color: #0a0a0f;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        #toast.show {
+            opacity: 1;
+        }
+        body.light #toast {
+            background: #1c1c1e;
+            color: #f5f5f7;
+        }
+        #toast.error {
+            background: #dc2626;
+            color: #fff;
         }
 
         /* ===== MODAL ===== */
@@ -767,31 +958,6 @@
             flex: 1;
         }
 
-        .modal-color-grid {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-        .modal-color-option {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .modal-color-option:hover {
-            transform: scale(1.05);
-        }
-        .modal-color-option.selected {
-            border-color: #e2e8f0;
-            transform: scale(1.1);
-        }
-        body.light .modal-color-option.selected {
-            border-color: #1c1c1e;
-        }
-
         .btn-modal-primary {
             width: 100%;
             padding: 12px;
@@ -835,130 +1001,36 @@
             background: #fee2e2;
         }
 
-        /* ===== TOAST ===== */
-        #toast {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 24px;
-            border-radius: 30px;
-            font-size: 13px;
-            font-weight: 600;
-            z-index: 300;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-            max-width: 90%;
-            text-align: center;
-            background: #e2e8f0;
-            color: #0a0a0f;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        #toast.show {
-            opacity: 1;
-        }
-        body.light #toast {
-            background: #1c1c1e;
-            color: #f5f5f7;
-        }
-        #toast.error {
-            background: #dc2626;
-            color: #fff;
-        }
-
-        /* ===== MOBILE SEARCH OVERLAY ===== */
-        #mobile-search {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: #0a0a0f;
-            z-index: 150;
-            padding: 16px;
-            flex-direction: column;
-        }
-        #mobile-search.open {
-            display: flex;
-        }
-        body.light #mobile-search {
-            background: #f5f5f7;
-        }
-
-        #mobile-search .search-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        #mobile-search .search-header input {
-            flex: 1;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid #2a2a3a;
-            background: #12121f;
-            color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            outline: none;
-        }
-        #mobile-search .search-header input:focus {
-            border-color: #e2e8f0;
-        }
-        body.light #mobile-search .search-header input {
-            background: #ffffff;
-            border-color: #e2e8f0;
-            color: #1c1c1e;
-        }
-        body.light #mobile-search .search-header input:focus {
-            border-color: #1c1c1e;
-        }
-
-        #mobile-search .search-results {
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        .search-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: #e2e8f0;
-            cursor: pointer;
-        }
-        body.light .search-close {
-            color: #1c1c1e;
-        }
-
-        /* ============================================================
-               SCROLLBAR
-            ============================================================ */
+        /* ===== SCROLLBAR ===== */
         #content::-webkit-scrollbar,
         .modal-sheet::-webkit-scrollbar,
-        #sidebar::-webkit-scrollbar {
+        #sidebar::-webkit-scrollbar,
+        #mobile-menu-panel::-webkit-scrollbar {
             width: 4px;
         }
         #content::-webkit-scrollbar-track,
         .modal-sheet::-webkit-scrollbar-track,
-        #sidebar::-webkit-scrollbar-track {
+        #sidebar::-webkit-scrollbar-track,
+        #mobile-menu-panel::-webkit-scrollbar-track {
             background: transparent;
         }
         #content::-webkit-scrollbar-thumb,
         .modal-sheet::-webkit-scrollbar-thumb,
-        #sidebar::-webkit-scrollbar-thumb {
+        #sidebar::-webkit-scrollbar-thumb,
+        #mobile-menu-panel::-webkit-scrollbar-thumb {
             background: #3a3a5c;
             border-radius: 4px;
         }
         body.light #content::-webkit-scrollbar-thumb,
         body.light .modal-sheet::-webkit-scrollbar-thumb,
-        body.light #sidebar::-webkit-scrollbar-thumb {
+        body.light #sidebar::-webkit-scrollbar-thumb,
+        body.light #mobile-menu-panel::-webkit-scrollbar-thumb {
             background: #d1d1d6;
         }
     </style>
 </head>
 <body>
-
     <div id="app">
-
         <!-- ===== SIDEBAR ===== -->
         <div id="sidebar">
             <div class="sidebar-brand">
@@ -966,14 +1038,14 @@
                 <span class="brand-name">Bitácora</span>
             </div>
 
-            <div class="sidebar-search" id="desktop-search">
+            <div class="sidebar-search">
                 <span class="search-icon">⌕</span>
-                <input type="text" placeholder="Buscar..." oninput="filterEntries(this.value)">
+                <input type="text" placeholder="Buscar..." oninput="globalSearch(this.value)">
             </div>
 
             <div class="sidebar-nav">
-                <button class="active" onclick="switchView('calendar')" data-view="calendar">
-                    <span class="nav-icon">□</span>
+                <button class="active" onclick="switchView('home')" data-view="home">
+                    <span class="nav-icon">⌂</span>
                     <span class="nav-text">Inicio</span>
                 </button>
                 <button onclick="switchView('calendar')" data-view="calendar">
@@ -986,13 +1058,27 @@
                 </button>
 
                 <span class="nav-label">Registro</span>
-                <button onclick="switchView('entries')" data-view="entries">
-                    <span class="nav-icon">✦</span>
-                    <span class="nav-text">Todas las entradas</span>
+                <button onclick="switchView('goals')" data-view="goals">
+                    <span class="nav-icon">◉</span>
+                    <span class="nav-text">Objetivos</span>
                 </button>
-                <button onclick="switchView('categories')" data-view="categories">
-                    <span class="nav-icon">🏷</span>
-                    <span class="nav-text">Categorías</span>
+                <button onclick="switchView('projects')" data-view="projects">
+                    <span class="nav-icon">⊞</span>
+                    <span class="nav-text">Proyectos</span>
+                </button>
+                <button onclick="switchView('travels')" data-view="travels">
+                    <span class="nav-icon">◈</span>
+                    <span class="nav-text">Viajes</span>
+                </button>
+                <button onclick="switchView('work')" data-view="work">
+                    <span class="nav-icon">◫</span>
+                    <span class="nav-text">Trabajo</span>
+                </button>
+
+                <span class="nav-label">Biblioteca</span>
+                <button onclick="switchView('library')" data-view="library">
+                    <span class="nav-icon">☰</span>
+                    <span class="nav-text">Todos los items</span>
                 </button>
             </div>
 
@@ -1008,21 +1094,23 @@
         <div id="main">
             <!-- Header -->
             <div id="main-header">
-                <h1 id="page-title">Inicio</h1>
+                <div class="header-left">
+                    <button class="menu-hamburger" onclick="toggleMobileMenu()" id="hamburger-btn">☰</button>
+                    <h1 id="page-title">Inicio</h1>
+                </div>
                 <div class="header-actions">
-                    <button class="btn-secondary" onclick="openNewEntry()">+ Nueva entrada</button>
-                    <button class="btn-secondary" onclick="toggleMobileSearch()" id="mobile-search-btn" style="display:none">⌕</button>
+                    <button class="btn-secondary" onclick="openNewEntry()" id="new-entry-btn">+ Nueva entrada</button>
                 </div>
             </div>
 
             <!-- Content -->
             <div id="content"></div>
 
-            <!-- Mobile Nav -->
-            <div id="mobile-nav">
-                <div class="mobile-nav-inner">
-                    <button class="active" onclick="switchView('calendar')" data-view="calendar">
-                        <span class="nav-icon">□</span>
+            <!-- Mobile Bottom Nav -->
+            <div id="mobile-bottom-nav">
+                <div class="bottom-nav-inner">
+                    <button class="active" onclick="switchView('home')" data-view="home">
+                        <span class="nav-icon">⌂</span>
                         <span>Inicio</span>
                     </button>
                     <button onclick="switchView('calendar')" data-view="calendar">
@@ -1031,28 +1119,65 @@
                     </button>
                     <button onclick="switchView('stats')" data-view="stats">
                         <span class="nav-icon">▦</span>
-                        <span>Estadísticas</span>
+                        <span>Stats</span>
                     </button>
-                    <button onclick="switchView('entries')" data-view="entries">
-                        <span class="nav-icon">✦</span>
-                        <span>Entradas</span>
+                    <button onclick="switchView('library')" data-view="library">
+                        <span class="nav-icon">☰</span>
+                        <span>Biblioteca</span>
                     </button>
-                    <button onclick="switchView('categories')" data-view="categories">
-                        <span class="nav-icon">🏷</span>
-                        <span>Categorías</span>
+                    <button onclick="toggleMobileMenu()">
+                        <span class="nav-icon">≡</span>
+                        <span>Menú</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ===== MOBILE SEARCH OVERLAY ===== -->
-    <div id="mobile-search">
-        <div class="search-header">
-            <input type="text" placeholder="Buscar..." id="mobile-search-input" oninput="filterEntriesMobile(this.value)">
-            <button class="search-close" onclick="toggleMobileSearch()">✕</button>
+    <!-- ===== MOBILE MENU OVERLAY ===== -->
+    <div id="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+    <div id="mobile-menu-panel">
+        <div class="menu-header">
+            <span class="brand">Bitácora</span>
+            <button class="menu-close" onclick="toggleMobileMenu()">✕</button>
         </div>
-        <div class="search-results" id="mobile-search-results"></div>
+        <div class="menu-search">
+            <input type="text" placeholder="Buscar..." oninput="globalSearchMobile(this.value)">
+        </div>
+        <div class="menu-nav">
+            <button class="active" onclick="switchView('home');toggleMobileMenu()" data-view="home">
+                <span class="nav-icon">⌂</span> Inicio
+            </button>
+            <button onclick="switchView('calendar');toggleMobileMenu()" data-view="calendar">
+                <span class="nav-icon">◷</span> Calendario
+            </button>
+            <button onclick="switchView('stats');toggleMobileMenu()" data-view="stats">
+                <span class="nav-icon">▦</span> Estadísticas
+            </button>
+            <span class="nav-label">Registro</span>
+            <button onclick="switchView('goals');toggleMobileMenu()" data-view="goals">
+                <span class="nav-icon">◉</span> Objetivos
+            </button>
+            <button onclick="switchView('projects');toggleMobileMenu()" data-view="projects">
+                <span class="nav-icon">⊞</span> Proyectos
+            </button>
+            <button onclick="switchView('travels');toggleMobileMenu()" data-view="travels">
+                <span class="nav-icon">◈</span> Viajes
+            </button>
+            <button onclick="switchView('work');toggleMobileMenu()" data-view="work">
+                <span class="nav-icon">◫</span> Trabajo
+            </button>
+            <span class="nav-label">Biblioteca</span>
+            <button onclick="switchView('library');toggleMobileMenu()" data-view="library">
+                <span class="nav-icon">☰</span> Todos los items
+            </button>
+        </div>
+        <div class="menu-actions">
+            <button onclick="exportData()" title="Exportar">⬇</button>
+            <button onclick="document.getElementById('import-input').click()" title="Importar">⬆</button>
+            <button onclick="toggleTheme()" title="Tema">◐</button>
+            <button onclick="toggleMode()" title="Modo">⊞</button>
+        </div>
     </div>
 
     <!-- ===== MODAL ===== -->
@@ -1070,6 +1195,12 @@
         // ============================================================
         let entries = [];
         let categories = [];
+        let goals = [];
+        let projects = [];
+        let travels = [];
+        let work = [];
+        let library = { books: [], movies: [], series: [], games: [] };
+
         let filteredEntries = [];
 
         const DEFAULT_COLORS = [
@@ -1077,6 +1208,45 @@
             '#1abc9c', '#e67e22', '#e84393', '#00b894', '#6c5ce7',
             '#fd79a8', '#0984e3', '#fdcb6e', '#00cec9', '#a29bfe'
         ];
+
+        // ============================================================
+        //  LOAD / SAVE
+        // ============================================================
+        function loadData() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('bitacora_data') || '{}');
+                entries = saved.entries || [];
+                categories = saved.categories || getDefaultCategories();
+                goals = saved.goals || [];
+                projects = saved.projects || [];
+                travels = saved.travels || [];
+                work = saved.work || [];
+                library = saved.library || { books: [], movies: [], series: [], games: [] };
+            } catch (e) {
+                entries = [];
+                categories = getDefaultCategories();
+                goals = [];
+                projects = [];
+                travels = [];
+                work = [];
+                library = { books: [], movies: [], series: [], games: [] };
+            }
+            if (!categories || categories.length === 0) categories = getDefaultCategories();
+            categories.forEach(c => { if (!c.id) c.id = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); });
+            if (!library.books) library.books = [];
+            if (!library.movies) library.movies = [];
+            if (!library.series) library.series = [];
+            if (!library.games) library.games = [];
+            filteredEntries = [...entries];
+            updateHeader();
+        }
+
+        function saveData() {
+            localStorage.setItem('bitacora_data', JSON.stringify({
+                entries, categories, goals, projects, travels, work, library
+            }));
+            updateHeader();
+        }
 
         function getDefaultCategories() {
             return [
@@ -1094,43 +1264,14 @@
         }
 
         // ============================================================
-        //  LOAD / SAVE
-        // ============================================================
-        function loadData() {
-            try {
-                const saved = JSON.parse(localStorage.getItem('bitacora_data') || '{}');
-                entries = saved.entries || [];
-                categories = saved.categories || getDefaultCategories();
-            } catch (e) {
-                entries = [];
-                categories = getDefaultCategories();
-            }
-            if (!categories || categories.length === 0) {
-                categories = getDefaultCategories();
-            }
-            categories.forEach(c => {
-                if (!c.id) c.id = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            });
-            filteredEntries = [...entries];
-            updateHeader();
-        }
-
-        function saveData() {
-            localStorage.setItem('bitacora_data', JSON.stringify({ entries, categories }));
-            updateHeader();
-        }
-
-        // ============================================================
         //  THEME / MODE
         // ============================================================
         function loadTheme() {
             const theme = localStorage.getItem('bitacora_theme') || 'dark';
             if (theme === 'light') {
                 document.body.classList.add('light');
-                document.getElementById('theme-btn').textContent = '◐';
             } else {
                 document.body.classList.remove('light');
-                document.getElementById('theme-btn').textContent = '◐';
             }
         }
 
@@ -1140,32 +1281,20 @@
             localStorage.setItem('bitacora_theme', isLight ? 'light' : 'dark');
         }
 
+        let modeWide = false;
+
         function toggleMode() {
             const app = document.getElementById('app');
-            const isDesktop = app.style.maxWidth !== '100%' || app.style.maxWidth === '';
-            if (isDesktop) {
-                app.style.maxWidth = '100%';
-                document.getElementById('mode-btn').textContent = '⊞';
-            } else {
-                app.style.maxWidth = '1200px';
-                document.getElementById('mode-btn').textContent = '⊞';
-            }
-            // Toggle entre ancho fijo y fluido
-            const currentMax = app.style.maxWidth;
-            if (currentMax === '100%') {
-                app.style.maxWidth = '1200px';
-            } else {
-                app.style.maxWidth = '100%';
-            }
+            modeWide = !modeWide;
+            app.style.maxWidth = modeWide ? '100%' : '1200px';
         }
 
         // ============================================================
         //  HEADER
         // ============================================================
         function updateHeader() {
-            const total = entries.length;
-            document.querySelector('#main-header h1').textContent =
-                document.querySelector('#main-header h1').textContent || 'Inicio';
+            const total = entries.length + goals.length + projects.length + travels.length + work.length +
+                library.books.length + library.movies.length + library.series.length + library.games.length;
         }
 
         // ============================================================
@@ -1183,28 +1312,75 @@
         // ============================================================
         //  NAVIGATION
         // ============================================================
-        let currentView = 'calendar';
+        let currentView = 'home';
 
         function switchView(view) {
             currentView = view;
-            document.querySelectorAll('.sidebar-nav button, #mobile-nav button').forEach(b => {
-                b.classList.toggle('active', b.dataset.view === view);
-            });
-            // Actualizar título
+            document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button, #mobile-bottom-nav button')
+                .forEach(b => {
+                    b.classList.toggle('active', b.dataset.view === view);
+                });
             const titles = {
-                'calendar': 'Inicio',
+                'home': 'Inicio',
+                'calendar': 'Calendario',
                 'stats': 'Estadísticas',
-                'entries': 'Todas las entradas',
-                'categories': 'Categorías'
+                'goals': 'Objetivos',
+                'projects': 'Proyectos',
+                'travels': 'Viajes',
+                'work': 'Trabajo',
+                'library': 'Biblioteca'
             };
             document.getElementById('page-title').textContent = titles[view] || 'Inicio';
+
+            // Ocultar botón de nueva entrada en vistas que no lo necesitan
+            const btn = document.getElementById('new-entry-btn');
+            if (view === 'home' || view === 'calendar' || view === 'stats') {
+                btn.style.display = 'inline-block';
+                btn.textContent = '+ Nueva entrada';
+            } else if (view === 'goals') {
+                btn.style.display = 'inline-block';
+                btn.textContent = '+ Nuevo objetivo';
+            } else if (view === 'projects') {
+                btn.style.display = 'inline-block';
+                btn.textContent = '+ Nuevo proyecto';
+            } else if (view === 'travels') {
+                btn.style.display = 'inline-block';
+                btn.textContent = '+ Nuevo viaje';
+            } else if (view === 'work') {
+                btn.style.display = 'inline-block';
+                btn.textContent = '+ Nueva experiencia';
+            } else if (view === 'library') {
+                btn.style.display = 'inline-block';
+                btn.textContent = '+ Nuevo item';
+            } else {
+                btn.style.display = 'none';
+            }
+
             render();
+            // Cerrar búsqueda móvil si está abierta
+            if (document.getElementById('mobile-search-overlay')?.classList?.contains('open')) {
+                toggleMobileSearch();
+            }
+            // Cerrar menú móvil
+            if (document.getElementById('mobile-menu-panel').classList.contains('open')) {
+                toggleMobileMenu();
+            }
         }
 
         // ============================================================
-        //  SEARCH
+        //  MOBILE MENU
         // ============================================================
-        function filterEntries(query) {
+        function toggleMobileMenu() {
+            const overlay = document.getElementById('mobile-menu-overlay');
+            const panel = document.getElementById('mobile-menu-panel');
+            overlay.classList.toggle('open');
+            panel.classList.toggle('open');
+        }
+
+        // ============================================================
+        //  GLOBAL SEARCH
+        // ============================================================
+        function globalSearch(query) {
             const q = query.toLowerCase().trim();
             if (!q) {
                 filteredEntries = [...entries];
@@ -1219,78 +1395,47 @@
             render();
         }
 
-        function filterEntriesMobile(query) {
-            const q = query.toLowerCase().trim();
-            const results = document.getElementById('mobile-search-results');
-            if (!q) {
-                results.innerHTML = '<div style="color:#6b7280;padding:20px;text-align:center">Escribe para buscar</div>';
-                return;
-            }
-            const filtered = entries.filter(e => {
-                const cat = categories.find(c => c.id === e.categoryId);
-                return e.title.toLowerCase().includes(q) ||
-                    (cat && cat.name.toLowerCase().includes(q)) ||
-                    (e.notes && e.notes.toLowerCase().includes(q));
-            });
-            if (!filtered.length) {
-                results.innerHTML = '<div style="color:#6b7280;padding:20px;text-align:center">Sin resultados</div>';
-                return;
-            }
-            let html = '';
-            filtered.forEach(e => {
-                const cat = categories.find(c => c.id === e.categoryId);
-                const color = cat?.color || '#6b7280';
-                html += `
-                    <div class="entry-item" onclick="openEditEntry(${e.id});toggleMobileSearch()">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${e.title}</div>
-                            <div class="entry-meta">${e.date} · ${cat?.name || 'Sin categoría'}</div>
-                        </div>
-                    </div>`;
-            });
-            results.innerHTML = html;
-        }
-
-        function toggleMobileSearch() {
-            const el = document.getElementById('mobile-search');
-            el.classList.toggle('open');
-            if (el.classList.contains('open')) {
-                document.getElementById('mobile-search-input').focus();
-                document.getElementById('mobile-search-results').innerHTML =
-                    '<div style="color:#6b7280;padding:20px;text-align:center">Escribe para buscar</div>';
-            }
+        function globalSearchMobile(query) {
+            // Similar pero para móvil, se puede implementar si se desea
+            // Por ahora redirige a la búsqueda de escritorio
+            globalSearch(query);
         }
 
         // ============================================================
         //  MODAL
         // ============================================================
         let editingEntryId = null;
+        let editingItemId = null;
+        let editingType = null;
 
         function closeModal() {
             document.getElementById('modal-container').innerHTML = '';
             editingEntryId = null;
+            editingItemId = null;
+            editingType = null;
         }
 
         function openNewEntry() {
+            if (currentView === 'goals') { openGoalModal(null); return; }
+            if (currentView === 'projects') { openProjectModal(null); return; }
+            if (currentView === 'travels') { openTravelModal(null); return; }
+            if (currentView === 'work') { openWorkModal(null); return; }
+            if (currentView === 'library') { openLibraryModal(null); return; }
+            // Default: entrada normal
             editingEntryId = null;
             document.getElementById('modal-container').innerHTML = renderEntryModal(null);
         }
 
-        function openEditEntry(id) {
-            const entry = entries.find(e => e.id === id);
-            if (!entry) return;
-            editingEntryId = id;
-            document.getElementById('modal-container').innerHTML = renderEntryModal(entry);
-        }
-
+        // ============================================================
+        //  ENTRY MODAL
+        // ============================================================
         function renderEntryModal(entry) {
             const isEdit = !!entry;
             const title = isEdit ? 'Editar entrada' : 'Nueva entrada';
             const today = new Date().toISOString().slice(0, 10);
 
             const catOptions = categories.map(c =>
-                `<option value="${c.id}" ${isEdit && entry.categoryId === c.id ? 'selected' : ''}>${c.name}</option>`
+                `<option value="${c.id}" ${isEdit && entry?.categoryId === c.id ? 'selected' : ''}>${c.name}</option>`
             ).join('');
 
             const colorOptions = DEFAULT_COLORS.map(c =>
@@ -1298,7 +1443,7 @@
             ).join('');
 
             const currentColor = isEdit ?
-                (categories.find(c => c.id === entry.categoryId)?.color || '#e74c3c') :
+                (categories.find(c => c.id === entry?.categoryId)?.color || '#e74c3c') :
                 '#e74c3c';
 
             return `
@@ -1324,7 +1469,6 @@
                     <div id="new-category-fields" style="display:none">
                         <div class="modal-label">Nombre de la nueva categoría</div>
                         <input id="modal-new-cat-name" class="modal-input" placeholder="Ej: Podcast">
-
                         <div class="modal-label">Color</div>
                         <div class="modal-color-grid" id="color-picker">
                             ${colorOptions}
@@ -1365,9 +1509,6 @@
             }
         }
 
-        // ============================================================
-        //  SAVE ENTRY
-        // ============================================================
         function saveEntry() {
             const date = document.getElementById('modal-date').value;
             if (!date) { showToast('Selecciona una fecha', true); return; }
@@ -1411,9 +1552,6 @@
             showToast('Entrada guardada');
         }
 
-        // ============================================================
-        //  DELETE
-        // ============================================================
         function deleteEntry(id) {
             if (!confirm('¿Eliminar esta entrada?')) return;
             entries = entries.filter(e => e.id !== id);
@@ -1440,10 +1578,408 @@
         }
 
         // ============================================================
+        //  GOALS
+        // ============================================================
+        function openGoalModal(goal) {
+            editingItemId = goal?.id || null;
+            editingType = 'goal';
+            document.getElementById('modal-container').innerHTML = renderGoalModal(goal);
+        }
+
+        function renderGoalModal(goal) {
+            const isEdit = !!goal;
+            const statuses = ['Pendiente', 'En progreso', 'Completado'];
+            const cats = ['Corto plazo', 'Medio plazo', 'Largo plazo'];
+
+            return `
+            <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                <div class="modal-sheet">
+                    <div class="modal-title">${isEdit ? 'Editar objetivo' : 'Nuevo objetivo'}<button class="modal-close" onclick="closeModal()">✕</button></div>
+                    <div class="modal-label">Nombre</div>
+                    <input id="modal-title" class="modal-input" value="${isEdit ? goal.title : ''}" placeholder="Ej: Leer 20 libros">
+                    <div class="modal-label">Categoría</div>
+                    <select id="modal-category" class="modal-input">${cats.map(c => `<option value="${c}" ${isEdit && goal.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+                    <div class="modal-label">Descripción</div>
+                    <textarea id="modal-desc" class="modal-input" rows="2" placeholder="Descripción...">${isEdit ? goal.description || '' : ''}</textarea>
+                    <div class="modal-label">Progreso (%)</div>
+                    <input type="number" id="modal-progress" class="modal-input" value="${isEdit ? goal.progress : 0}" min="0" max="100">
+                    <div class="modal-label">Fecha límite</div>
+                    <input type="date" id="modal-deadline" class="modal-input" value="${isEdit ? goal.deadline || '' : ''}">
+                    <div class="modal-label">Estado</div>
+                    <select id="modal-status" class="modal-input">${statuses.map(s => `<option value="${s}" ${isEdit && goal.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+                    <button class="btn-modal-primary" onclick="saveGoal()">Guardar</button>
+                    ${isEdit ? `<button class="btn-modal-danger" onclick="deleteGoal(${goal.id})">Eliminar</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        function saveGoal() {
+            const title = document.getElementById('modal-title').value.trim();
+            if (!title) { showToast('Escribe un nombre', true); return; }
+            const item = {
+                id: editingItemId || Date.now(),
+                title,
+                category: document.getElementById('modal-category').value,
+                description: document.getElementById('modal-desc').value.trim(),
+                progress: parseInt(document.getElementById('modal-progress').value) || 0,
+                deadline: document.getElementById('modal-deadline').value || '',
+                status: document.getElementById('modal-status').value
+            };
+            if (editingItemId) {
+                const idx = goals.findIndex(g => g.id === editingItemId);
+                if (idx >= 0) goals[idx] = item;
+            } else goals.push(item);
+            saveData();
+            closeModal();
+            render();
+            showToast('Objetivo guardado');
+        }
+
+        function deleteGoal(id) {
+            if (!confirm('¿Eliminar este objetivo?')) return;
+            goals = goals.filter(g => g.id !== id);
+            saveData();
+            closeModal();
+            render();
+            showToast('Eliminado');
+        }
+
+        // ============================================================
+        //  PROJECTS
+        // ============================================================
+        function openProjectModal(project) {
+            editingItemId = project?.id || null;
+            editingType = 'project';
+            document.getElementById('modal-container').innerHTML = renderProjectModal(project);
+        }
+
+        function renderProjectModal(project) {
+            const isEdit = !!project;
+            const statuses = ['Pendiente', 'En curso', 'Completado'];
+
+            return `
+            <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                <div class="modal-sheet">
+                    <div class="modal-title">${isEdit ? 'Editar proyecto' : 'Nuevo proyecto'}<button class="modal-close" onclick="closeModal()">✕</button></div>
+                    <div class="modal-label">Nombre</div>
+                    <input id="modal-title" class="modal-input" value="${isEdit ? project.name : ''}" placeholder="Ej: Reforma cocina">
+                    <div class="modal-label">Descripción</div>
+                    <textarea id="modal-desc" class="modal-input" rows="2" placeholder="Descripción...">${isEdit ? project.description || '' : ''}</textarea>
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? project.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin previsto</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? project.endDate || '' : ''}"></div>
+                    </div>
+                    <div class="modal-label">Estado</div>
+                    <select id="modal-status" class="modal-input">${statuses.map(s => `<option value="${s}" ${isEdit && project.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+                    <div class="modal-label">Tareas (una por línea, marcar completadas con ✅)</div>
+                    <textarea id="modal-tasks" class="modal-input" rows="3" placeholder="Tarea 1&#10;Tarea 2 ✅&#10;Tarea 3">${isEdit ? (project.tasks || []).join('\n') : ''}</textarea>
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-notes" class="modal-input" rows="2" placeholder="Notas adicionales...">${isEdit ? project.notes || '' : ''}</textarea>
+                    <button class="btn-modal-primary" onclick="saveProject()">Guardar</button>
+                    ${isEdit ? `<button class="btn-modal-danger" onclick="deleteProject(${project.id})">Eliminar</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        function saveProject() {
+            const name = document.getElementById('modal-title').value.trim();
+            if (!name) { showToast('Escribe un nombre', true); return; }
+            const tasksRaw = document.getElementById('modal-tasks').value.split('\n').filter(t => t.trim());
+            const tasks = tasksRaw.map(t => ({ text: t.replace(' ✅', '').trim(), done: t.includes('✅') }));
+            const item = {
+                id: editingItemId || Date.now(),
+                name,
+                description: document.getElementById('modal-desc').value.trim(),
+                startDate: document.getElementById('modal-start').value || '',
+                endDate: document.getElementById('modal-end').value || '',
+                status: document.getElementById('modal-status').value,
+                tasks,
+                notes: document.getElementById('modal-notes').value.trim()
+            };
+            if (editingItemId) {
+                const idx = projects.findIndex(p => p.id === editingItemId);
+                if (idx >= 0) projects[idx] = item;
+            } else projects.push(item);
+            saveData();
+            closeModal();
+            render();
+            showToast('Proyecto guardado');
+        }
+
+        function deleteProject(id) {
+            if (!confirm('¿Eliminar este proyecto?')) return;
+            projects = projects.filter(p => p.id !== id);
+            saveData();
+            closeModal();
+            render();
+            showToast('Eliminado');
+        }
+
+        // ============================================================
+        //  TRAVELS
+        // ============================================================
+        function openTravelModal(travel) {
+            editingItemId = travel?.id || null;
+            editingType = 'travel';
+            document.getElementById('modal-container').innerHTML = renderTravelModal(travel);
+        }
+
+        function renderTravelModal(travel) {
+            const isEdit = !!travel;
+
+            return `
+            <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                <div class="modal-sheet">
+                    <div class="modal-title">${isEdit ? 'Editar viaje' : 'Nuevo viaje'}<button class="modal-close" onclick="closeModal()">✕</button></div>
+                    <div class="modal-label">Lugar</div>
+                    <input id="modal-place" class="modal-input" value="${isEdit ? travel.place : ''}" placeholder="Ej: Roma">
+                    <div class="modal-label">País</div>
+                    <input id="modal-country" class="modal-input" value="${isEdit ? travel.country : ''}" placeholder="Ej: Italia">
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? travel.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? travel.endDate || '' : ''}"></div>
+                    </div>
+                    <div class="modal-label">Valoración (1-5)</div>
+                    <select id="modal-rating" class="modal-input">${[1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && travel.rating === r ? 'selected' : ''}>${'⭐'.repeat(r)}</option>`).join('')}<option value="0" ${isEdit && !travel.rating ? 'selected' : ''}>Sin valorar</option></select>
+                    <div class="modal-label">Recuerdos / Notas</div>
+                    <textarea id="modal-notes" class="modal-input" rows="2" placeholder="Experiencias, lugares visitados...">${isEdit ? travel.notes || '' : ''}</textarea>
+                    <button class="btn-modal-primary" onclick="saveTravel()">Guardar</button>
+                    ${isEdit ? `<button class="btn-modal-danger" onclick="deleteTravel(${travel.id})">Eliminar</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        function saveTravel() {
+            const place = document.getElementById('modal-place').value.trim();
+            if (!place) { showToast('Escribe un lugar', true); return; }
+            const item = {
+                id: editingItemId || Date.now(),
+                place,
+                country: document.getElementById('modal-country').value.trim(),
+                startDate: document.getElementById('modal-start').value || '',
+                endDate: document.getElementById('modal-end').value || '',
+                rating: parseInt(document.getElementById('modal-rating').value) || 0,
+                notes: document.getElementById('modal-notes').value.trim()
+            };
+            if (editingItemId) {
+                const idx = travels.findIndex(t => t.id === editingItemId);
+                if (idx >= 0) travels[idx] = item;
+            } else travels.push(item);
+            saveData();
+            closeModal();
+            render();
+            showToast('Viaje guardado');
+        }
+
+        function deleteTravel(id) {
+            if (!confirm('¿Eliminar este viaje?')) return;
+            travels = travels.filter(t => t.id !== id);
+            saveData();
+            closeModal();
+            render();
+            showToast('Eliminado');
+        }
+
+        // ============================================================
+        //  WORK
+        // ============================================================
+        function openWorkModal(workItem) {
+            editingItemId = workItem?.id || null;
+            editingType = 'work';
+            document.getElementById('modal-container').innerHTML = renderWorkModal(workItem);
+        }
+
+        function renderWorkModal(workItem) {
+            const isEdit = !!workItem;
+
+            return `
+            <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                <div class="modal-sheet">
+                    <div class="modal-title">${isEdit ? 'Editar experiencia' : 'Nueva experiencia'}<button class="modal-close" onclick="closeModal()">✕</button></div>
+                    <div class="modal-label">Empresa</div>
+                    <input id="modal-company" class="modal-input" value="${isEdit ? workItem.company : ''}" placeholder="Ej: Empresa X">
+                    <div class="modal-label">Puesto</div>
+                    <input id="modal-position" class="modal-input" value="${isEdit ? workItem.position : ''}" placeholder="Ej: Operario logístico">
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? workItem.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? workItem.endDate || '' : ''}"></div>
+                    </div>
+                    <div class="modal-label">Funciones</div>
+                    <textarea id="modal-functions" class="modal-input" rows="2" placeholder="Funciones realizadas...">${isEdit ? workItem.functions || '' : ''}</textarea>
+                    <div class="modal-label">Habilidades adquiridas</div>
+                    <input id="modal-skills" class="modal-input" value="${isEdit ? workItem.skills || '' : ''}" placeholder="Ej: Gestión de equipos, Excel avanzado">
+                    <button class="btn-modal-primary" onclick="saveWork()">Guardar</button>
+                    ${isEdit ? `<button class="btn-modal-danger" onclick="deleteWork(${workItem.id})">Eliminar</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        function saveWork() {
+            const company = document.getElementById('modal-company').value.trim();
+            if (!company) { showToast('Escribe una empresa', true); return; }
+            const item = {
+                id: editingItemId || Date.now(),
+                company,
+                position: document.getElementById('modal-position').value.trim(),
+                startDate: document.getElementById('modal-start').value || '',
+                endDate: document.getElementById('modal-end').value || '',
+                functions: document.getElementById('modal-functions').value.trim(),
+                skills: document.getElementById('modal-skills').value.trim()
+            };
+            if (editingItemId) {
+                const idx = work.findIndex(w => w.id === editingItemId);
+                if (idx >= 0) work[idx] = item;
+            } else work.push(item);
+            saveData();
+            closeModal();
+            render();
+            showToast('Experiencia guardada');
+        }
+
+        function deleteWork(id) {
+            if (!confirm('¿Eliminar esta experiencia?')) return;
+            work = work.filter(w => w.id !== id);
+            saveData();
+            closeModal();
+            render();
+            showToast('Eliminada');
+        }
+
+        // ============================================================
+        //  LIBRARY
+        // ============================================================
+        let libraryType = 'books';
+
+        function openLibraryModal(item) {
+            editingItemId = item?.id || null;
+            editingType = 'library';
+            document.getElementById('modal-container').innerHTML = renderLibraryModal(item);
+        }
+
+        function renderLibraryModal(item) {
+            const isEdit = !!item;
+            const types = ['books', 'movies', 'series', 'games'];
+            const typeLabels = { books: 'Libro', movies: 'Película', series: 'Serie', games: 'Videojuego' };
+            const currentType = item?.type || libraryType || 'books';
+
+            let extraFields = '';
+            if (currentType === 'books') {
+                extraFields = `
+                    <div class="modal-label">Autor</div>
+                    <input id="modal-author" class="modal-input" value="${isEdit ? item.author : ''}" placeholder="Ej: Gabriel García Márquez">
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? item.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? item.endDate || '' : ''}"></div>
+                    </div>`;
+            } else if (currentType === 'movies') {
+                extraFields = `
+                    <div class="modal-label">Año</div>
+                    <input type="number" id="modal-year" class="modal-input" value="${isEdit ? item.year || '' : ''}" placeholder="Ej: 2010">
+                    <div class="modal-label">Fecha visionado</div>
+                    <input type="date" id="modal-date" class="modal-input" value="${isEdit ? item.watchDate || '' : ''}">`;
+            } else if (currentType === 'series') {
+                extraFields = `
+                    <div class="modal-label">Plataforma</div>
+                    <input id="modal-platform" class="modal-input" value="${isEdit ? item.platform || '' : ''}" placeholder="Ej: Netflix">
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? item.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? item.endDate || '' : ''}"></div>
+                    </div>`;
+            } else if (currentType === 'games') {
+                extraFields = `
+                    <div class="modal-label">Plataforma</div>
+                    <input id="modal-platform" class="modal-input" value="${isEdit ? item.platform || '' : ''}" placeholder="Ej: PC, PS5">
+                    <div class="modal-row">
+                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? item.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? item.endDate || '' : ''}"></div>
+                    </div>`;
+            }
+
+            return `
+            <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                <div class="modal-sheet">
+                    <div class="modal-title">${isEdit ? 'Editar' : 'Nuevo'} ${typeLabels[currentType]}<button class="modal-close" onclick="closeModal()">✕</button></div>
+                    <div class="modal-label">Tipo</div>
+                    <select id="modal-type" class="modal-input" onchange="changeLibraryType(this.value)">
+                        ${types.map(t => `<option value="${t}" ${t === currentType ? 'selected' : ''}>${typeLabels[t]}</option>`).join('')}
+                    </select>
+                    <div class="modal-label">Título</div>
+                    <input id="modal-title" class="modal-input" value="${isEdit ? item.title : ''}" placeholder="Ej: El nombre del viento">
+                    ${extraFields}
+                    <div class="modal-label">Valoración (1-5)</div>
+                    <select id="modal-rating" class="modal-input">${[1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && item.rating === r ? 'selected' : ''}>${'⭐'.repeat(r)}</option>`).join('')}<option value="0" ${isEdit && !item.rating ? 'selected' : ''}>Sin valorar</option></select>
+                    <button class="btn-modal-primary" onclick="saveLibraryItem()">Guardar</button>
+                    ${isEdit ? `<button class="btn-modal-danger" onclick="deleteLibraryItem('${currentType}', ${item.id})">Eliminar</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        function changeLibraryType(type) {
+            libraryType = type;
+            // Re-render modal con el nuevo tipo
+            const modal = document.getElementById('modal-container');
+            // Conservar el título si existe
+            const titleInput = document.getElementById('modal-title');
+            const title = titleInput ? titleInput.value : '';
+            // Re-renderizar
+            const item = { type: type };
+            if (title) item.title = title;
+            modal.innerHTML = renderLibraryModal(item);
+            // Preservar el título
+            const newTitle = document.getElementById('modal-title');
+            if (newTitle && title) newTitle.value = title;
+        }
+
+        function saveLibraryItem() {
+            const type = document.getElementById('modal-type').value;
+            const title = document.getElementById('modal-title').value.trim();
+            if (!title) { showToast('Escribe un título', true); return; }
+
+            let item = { id: editingItemId || Date.now(), title, type, rating: parseInt(document.getElementById('modal-rating')
+                    .value) || 0 };
+
+            if (type === 'books') {
+                item.author = document.getElementById('modal-author').value.trim();
+                item.startDate = document.getElementById('modal-start').value || '';
+                item.endDate = document.getElementById('modal-end').value || '';
+            } else if (type === 'movies') {
+                item.year = parseInt(document.getElementById('modal-year').value) || null;
+                item.watchDate = document.getElementById('modal-date').value || '';
+            } else if (type === 'series' || type === 'games') {
+                item.platform = document.getElementById('modal-platform').value.trim();
+                item.startDate = document.getElementById('modal-start').value || '';
+                item.endDate = document.getElementById('modal-end').value || '';
+            }
+
+            const store = library[type] || [];
+            if (editingItemId) {
+                const idx = store.findIndex(i => i.id === editingItemId);
+                if (idx >= 0) store[idx] = item;
+            } else {
+                store.push(item);
+            }
+            library[type] = store;
+            saveData();
+            closeModal();
+            render();
+            showToast('Item guardado');
+        }
+
+        function deleteLibraryItem(type, id) {
+            if (!confirm('¿Eliminar este item?')) return;
+            const store = library[type] || [];
+            library[type] = store.filter(i => i.id !== id);
+            saveData();
+            closeModal();
+            render();
+            showToast('Eliminado');
+        }
+
+        // ============================================================
         //  EXPORT / IMPORT
         // ============================================================
         function exportData() {
-            const data = { entries, categories };
+            const data = { entries, categories, goals, projects, travels, work, library };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1463,6 +1999,11 @@
                     const data = JSON.parse(e.target.result);
                     if (data.entries) entries = data.entries;
                     if (data.categories) categories = data.categories;
+                    if (data.goals) goals = data.goals;
+                    if (data.projects) projects = data.projects;
+                    if (data.travels) travels = data.travels;
+                    if (data.work) work = data.work;
+                    if (data.library) library = data.library;
                     filteredEntries = [...entries];
                     saveData();
                     render();
@@ -1480,15 +2021,71 @@
         // ============================================================
         function render() {
             const content = document.getElementById('content');
-            if (currentView === 'calendar') {
-                content.innerHTML = renderCalendar();
-            } else if (currentView === 'stats') {
-                content.innerHTML = renderStats();
-            } else if (currentView === 'entries') {
-                content.innerHTML = renderEntries();
-            } else if (currentView === 'categories') {
-                content.innerHTML = renderCategories();
+            if (currentView === 'home') content.innerHTML = renderHome();
+            else if (currentView === 'calendar') content.innerHTML = renderCalendar();
+            else if (currentView === 'stats') content.innerHTML = renderStats();
+            else if (currentView === 'goals') content.innerHTML = renderGoals();
+            else if (currentView === 'projects') content.innerHTML = renderProjects();
+            else if (currentView === 'travels') content.innerHTML = renderTravels();
+            else if (currentView === 'work') content.innerHTML = renderWork();
+            else if (currentView === 'library') content.innerHTML = renderLibrary();
+        }
+
+        // ============================================================
+        //  RENDER: HOME
+        // ============================================================
+        function renderHome() {
+            const today = new Date().toISOString().slice(0, 10);
+            const todayEntries = entries.filter(e => e.date === today);
+
+            const activeGoals = goals.filter(g => g.status !== 'Completado').slice(0, 3);
+            const activeProjects = projects.filter(p => p.status !== 'Completado').slice(0, 2);
+            const recentEntries = entries.slice(0, 5);
+
+            let html = `
+            <div style="max-width:800px">
+                <div style="font-size:13px;color:#6b7280;margin-bottom:4px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
+                <div style="font-size:15px;font-weight:600;margin-bottom:20px">${todayEntries.length} entradas hoy</div>
+
+                <div class="card-grid">
+                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${goals.length}</div><div class="card-sub">${goals.filter(g=>g.status==='Completado').length} completados</div></div>
+                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${projects.length}</div><div class="card-sub">${projects.filter(p=>p.status==='Completado').length} completados</div></div>
+                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${travels.length}</div><div class="card-sub">${travels.length} experiencias</div></div>
+                    <div class="card"><div class="card-title">Biblioteca</div><div class="card-value">${library.books.length + library.movies.length + library.series.length + library.games.length}</div><div class="card-sub">${library.books.length} libros · ${library.movies.length} películas</div></div>
+                </div>`;
+
+            if (activeGoals.length) {
+                html += `<div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Objetivos activos</div>`;
+                activeGoals.forEach(g => {
+                    const pct = g.progress || 0;
+                    const color = pct >= 100 ? '#16a34a' : pct >= 50 ? '#d97706' : '#2563eb';
+                    html += `
+                    <div class="card" style="margin-bottom:8px;padding:14px 16px">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:600">${g.title}</span>
+                            <span style="font-size:12px;color:#6b7280">${g.status}</span>
+                        </div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+                        <div style="font-size:12px;color:#6b7280;margin-top:4px">${pct}% · ${g.category}</div>
+                    </div>`;
+                });
             }
+
+            if (recentEntries.length) {
+                html += `<div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Actividad reciente</div>`;
+                recentEntries.forEach(e => {
+                    const cat = categories.find(c => c.id === e.categoryId);
+                    const color = cat?.color || '#6b7280';
+                    html += `
+                    <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info"><div class="entry-title">${e.title}</div><div class="entry-meta">${e.date} · ${cat?.name || 'Sin categoría'}</div></div>
+                    </div>`;
+                });
+            }
+
+            html += `</div>`;
+            return html;
         }
 
         // ============================================================
@@ -1518,24 +2115,26 @@
             const daysInPrevMonth = prevMonth.getDate();
 
             let html = `
-            <div class="calendar-header">
-                <button class="calendar-nav-btn" onclick="changeMonth(-1)">‹</button>
-                <span class="month-label">${monthNames[calMonth]} ${calYear}</span>
-                <button class="calendar-nav-btn" onclick="changeMonth(1)">›</button>
+            <div class="calendar-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <button class="calendar-nav-btn" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280" onclick="changeMonth(-1)">‹</button>
+                <span style="font-size:17px;font-weight:700">${monthNames[calMonth]} ${calYear}</span>
+                <button class="calendar-nav-btn" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280" onclick="changeMonth(1)">›</button>
             </div>
-            <div class="calendar-grid">`;
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
 
             dayNames.forEach(d => {
-                html += `<div class="calendar-day-header">${d}</div>`;
+                html += `<div style="text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;padding:6px 0 10px 0">${d}</div>`;
             });
 
             for (let i = 0; i < offset; i++) {
                 const day = daysInPrevMonth - offset + i + 1;
-                html += `<div class="calendar-day empty"><span class="day-number" style="opacity:0.3">${day}</span></div>`;
+                html +=
+                    `<div style="background:transparent;border-radius:10px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3">${day}</span></div>`;
             }
 
             for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dateStr =
+                `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const isToday = dateStr === today;
                 const dayEntries = entriesByDate[dateStr] || [];
 
@@ -1550,27 +2149,25 @@
                 });
 
                 const barsHtml = colors.slice(0, 4).map(color =>
-                    `<span class="day-bar" style="background:${color}"></span>`
+                    `<span style="width:20px;height:3px;border-radius:4px;display:block;background:${color}"></span>`
                 ).join('');
 
                 const extra = colors.length > 4 ?
-                    `<span class="day-bar" style="background:#6b7280;width:12px;height:3px;border-radius:4px;display:block;font-size:7px;text-align:center">+${colors.length - 4}</span>` :
+                    `<span style="width:12px;height:3px;border-radius:4px;display:block;background:#6b7280;font-size:7px;text-align:center">+${colors.length - 4}</span>` :
                     '';
 
                 html += `
-                <div class="calendar-day ${isToday ? 'today' : ''}" onclick="showDayEntries('${dateStr}')">
-                    <span class="day-number">${d}</span>
-                    <div class="day-bars">
-                        ${barsHtml}
-                        ${extra}
-                    </div>
+                <div style="background:#12121f;border-radius:10px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid ${isToday ? '#e2e8f0' : 'transparent'};cursor:pointer;transition:background 0.15s ease" onclick="switchView('calendar');showDayEntries('${dateStr}')" onmouseover="this.style.background='#1a1a2e'" onmouseout="this.style.background='#12121f'">
+                    <span style="font-size:13px;font-weight:700;display:block;margin-bottom:4px">${d}</span>
+                    <div style="display:flex;flex-direction:column;gap:2px;align-items:center">${barsHtml}${extra}</div>
                 </div>`;
             }
 
             const totalDays = offset + daysInMonth;
             const remaining = (7 - (totalDays % 7)) % 7;
             for (let d = 1; d <= remaining; d++) {
-                html += `<div class="calendar-day empty"><span class="day-number" style="opacity:0.3">${d}</span></div>`;
+                html +=
+                    `<div style="background:transparent;border-radius:10px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3">${d}</span></div>`;
             }
 
             html += `</div>`;
@@ -1578,6 +2175,25 @@
             if (window._selectedDate) {
                 html += renderDayEntries(window._selectedDate);
             }
+
+            // Estilos inline para el calendario
+            html += `
+            <style>
+                .calendar-nav-btn:hover { color: #e2e8f0; }
+                body.light .calendar-nav-btn:hover { color: #1c1c1e; }
+                body.light .calendar-day-cell { background: #ffffff !important; border-color: #e2e8f0 !important; }
+                body.light .calendar-day-cell:hover { background: #f5f5f7 !important; }
+                .calendar-day-cell { background: #12121f; }
+                .calendar-day-empty { background: transparent !important; border-color: transparent !important; }
+            </style>
+            <script>
+                // Añadir clases para light mode
+                document.querySelectorAll('.calendar-day-cell').forEach(el => {
+                    if (document.body.classList.contains('light')) {
+                        el.style.background = '#ffffff';
+                    }
+                });
+            <\/script>`;
 
             return html;
         }
@@ -1605,8 +2221,8 @@
             const dateLabel = dateObj.toLocaleDateString('es-ES', options);
 
             let html = `
-            <div class="entries-section">
-                <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+            <div class="entries-section" style="margin-top:20px">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
                     <span>${dateLabel}</span>
                     <button class="btn-secondary" onclick="window._selectedDate=null;render()">✕ Cerrar</button>
                 </div>`;
@@ -1638,49 +2254,31 @@
         //  RENDER: STATS
         // ============================================================
         function renderStats() {
-            if (!entries.length) {
-                return `
-                <div class="empty-state">
-                    <div class="empty-icon">▦</div>
-                    <div class="empty-title">Sin datos</div>
-                    <div class="empty-sub">Añade entradas para ver estadísticas</div>
-                </div>`;
-            }
+            const totalEntries = entries.length;
 
-            const total = entries.length;
+            // Biblioteca counts
+            const booksCount = library.books.length;
+            const moviesCount = library.movies.length;
+            const seriesCount = library.series.length;
+            const gamesCount = library.games.length;
+
+            // Goals
+            const goalsTotal = goals.length;
+            const goalsDone = goals.filter(g => g.status === 'Completado').length;
+
+            // Travels
+            const travelsTotal = travels.length;
+
+            // Work
+            const workTotal = work.length;
+
+            // Entradas por categoría
             const byCategory = {};
             entries.forEach(e => {
                 if (!byCategory[e.categoryId]) byCategory[e.categoryId] = 0;
                 byCategory[e.categoryId]++;
             });
-
             const sortedCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
-
-            let html = `
-            <div style="max-width:600px">
-                <div style="font-weight:700;font-size:20px;margin-bottom:4px">${total}</div>
-                <div style="color:#6b7280;margin-bottom:24px">entradas totales</div>
-
-                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin-bottom:12px">Por categoría</div>`;
-
-            sortedCats.forEach(([catId, count]) => {
-                const cat = categories.find(c => c.id === catId);
-                const color = cat?.color || '#6b7280';
-                const name = cat?.name || 'Sin categoría';
-                const pct = Math.round((count / total) * 100);
-
-                html += `
-                <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #1a1a2e">
-                    <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div>
-                    <div style="flex:1;font-weight:500">${name}</div>
-                    <div style="display:flex;align-items:center;gap:8px">
-                        <div style="width:120px;height:6px;background:#1a1a2e;border-radius:99px;overflow:hidden">
-                            <div style="height:100%;width:${pct}%;background:${color};border-radius:99px"></div>
-                        </div>
-                        <span style="font-weight:600;font-size:13px;min-width:40px;text-align:right">${count}</span>
-                    </div>
-                </div>`;
-            });
 
             // Entradas por mes (últimos 6)
             const monthCount = {};
@@ -1689,28 +2287,66 @@
                 if (!monthCount[m]) monthCount[m] = 0;
                 monthCount[m]++;
             });
-
             const sortedMonths = Object.keys(monthCount).sort().slice(-6);
-            if (sortedMonths.length) {
-                const maxMonth = Math.max(...Object.values(monthCount));
-                html += `
-                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin:24px 0 12px 0">Entradas por mes</div>
-                <div style="display:flex;gap:8px;align-items:flex-end;height:120px;padding-top:8px">`;
+            const maxMonth = Math.max(...Object.values(monthCount), 1);
 
+            let html = `
+            <div style="max-width:700px">
+                <div style="font-size:20px;font-weight:800;margin-bottom:4px">Estadísticas</div>
+                <div style="color:#6b7280;margin-bottom:20px">Resumen de tu actividad</div>
+
+                <div class="card-grid">
+                    <div class="card"><div class="card-title">Entradas</div><div class="card-value">${totalEntries}</div><div class="card-sub">registros totales</div></div>
+                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${goalsTotal}</div><div class="card-sub">${goalsDone} completados</div></div>
+                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${projects.length}</div><div class="card-sub">${projects.filter(p=>p.status==='Completado').length} completados</div></div>
+                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${travelsTotal}</div><div class="card-sub">experiencias</div></div>
+                    <div class="card"><div class="card-title">Trabajo</div><div class="card-value">${workTotal}</div><div class="card-sub">experiencias laborales</div></div>
+                    <div class="card"><div class="card-title">Biblioteca</div><div class="card-value">${booksCount + moviesCount + seriesCount + gamesCount}</div><div class="card-sub">${booksCount} libros · ${moviesCount} películas</div></div>
+                </div>
+
+                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin:20px 0 12px 0">Biblioteca en detalle</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div class="card"><div class="card-title">Libros</div><div class="card-value">${booksCount}</div></div>
+                    <div class="card"><div class="card-title">Películas</div><div class="card-value">${moviesCount}</div></div>
+                    <div class="card"><div class="card-title">Series</div><div class="card-value">${seriesCount}</div></div>
+                    <div class="card"><div class="card-title">Videojuegos</div><div class="card-value">${gamesCount}</div></div>
+                </div>`;
+
+            if (sortedCats.length) {
+                html += `
+                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin:20px 0 12px 0">Distribución por categoría</div>`;
+                sortedCats.forEach(([catId, count]) => {
+                    const cat = categories.find(c => c.id === catId);
+                    const color = cat?.color || '#6b7280';
+                    const name = cat?.name || 'Sin categoría';
+                    const pct = Math.round((count / totalEntries) * 100);
+                    html += `
+                    <div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid #1a1a2e">
+                        <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div>
+                        <div style="flex:1;font-weight:500">${name}</div>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <div style="width:100px;height:6px;background:#1a1a2e;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color};border-radius:99px"></div></div>
+                            <span style="font-weight:600;font-size:13px;min-width:30px;text-align:right">${count}</span>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            if (sortedMonths.length) {
+                html += `
+                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin:20px 0 12px 0">Entradas por mes</div>
+                <div style="display:flex;gap:8px;align-items:flex-end;height:100px;padding-top:8px">`;
                 sortedMonths.forEach(m => {
                     const count = monthCount[m] || 0;
-                    const pct = maxMonth > 0 ? (count / maxMonth) * 100 : 0;
-                    const [year, month] = m.split('-');
-                    const label = `${month}/${year.slice(2)}`;
-
+                    const pct = (count / maxMonth) * 100;
+                    const label = m.slice(5);
                     html += `
                     <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-                        <div style="font-weight:600;font-size:13px">${count}</div>
+                        <div style="font-weight:600;font-size:12px">${count}</div>
                         <div style="width:100%;height:${Math.max(4, pct)}px;background:#3a3a5c;border-radius:4px 4px 0 0;min-height:4px"></div>
                         <div style="font-size:10px;color:#6b7280">${label}</div>
                     </div>`;
                 });
-
                 html += `</div>`;
             }
 
@@ -1719,101 +2355,216 @@
         }
 
         // ============================================================
-        //  RENDER: ENTRIES
+        //  RENDER: GOALS
         // ============================================================
-        function renderEntries() {
-            const list = filteredEntries.length ? filteredEntries : entries;
-
-            if (!list.length) {
-                return `
-                <div class="empty-state">
-                    <div class="empty-icon">✦</div>
-                    <div class="empty-title">No hay entradas</div>
-                    <div class="empty-sub">${filteredEntries.length === 0 && entries.length > 0 ? 'La búsqueda no coincide con ninguna entrada' : 'Pulsa "+ Nueva entrada" para empezar'}</div>
-                </div>`;
+        function renderGoals() {
+            if (!goals.length) {
+                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin objetivos</div><div class="empty-sub">Pulsa "+ Nuevo objetivo" para empezar</div></div>`;
             }
 
-            const grouped = {};
-            list.forEach(e => {
-                if (!grouped[e.date]) grouped[e.date] = [];
-                grouped[e.date].push(e);
-            });
+            const categories = ['Corto plazo', 'Medio plazo', 'Largo plazo'];
+            let html = '';
 
-            const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+            categories.forEach(cat => {
+                const filtered = goals.filter(g => g.category === cat);
+                if (!filtered.length) return;
 
-            let html = `<div class="entries-section">`;
+                html += `<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-bottom:8px">${cat}</div>`;
 
-            sortedDates.forEach(date => {
-                const dateObj = new Date(date + 'T12:00:00');
-                const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-                const dateLabel = dateObj.toLocaleDateString('es-ES', options);
-
-                html += `
-                <div style="margin-bottom:4px;font-weight:700;font-size:13px;color:#6b7280;padding:8px 0 4px 0;border-bottom:1px solid #1a1a2e">
-                    ${dateLabel}
-                </div>`;
-
-                grouped[date].forEach(e => {
-                    const cat = categories.find(c => c.id === e.categoryId);
-                    const color = cat?.color || '#6b7280';
-                    const catName = cat?.name || 'Sin categoría';
+                filtered.forEach(g => {
+                    const pct = g.progress || 0;
+                    const color = pct >= 100 ? '#16a34a' : pct >= 50 ? '#d97706' : '#2563eb';
+                    const statusClass = g.status === 'Completado' ? 'badge-done' : g.status === 'En progreso' ?
+                        'badge-progress' : 'badge-pending';
 
                     html += `
-                    <div class="entry-item" onclick="openEditEntry(${e.id})">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${e.title}</div>
-                            <div class="entry-meta">${catName}${e.notes ? ' · ' + e.notes : ''}</div>
+                    <div class="card" style="margin-bottom:8px;padding:14px 16px;cursor:pointer" onclick="openGoalModal(${JSON.stringify(g).replace(/"/g,'&quot;')})">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:600">${g.title}</span>
+                            <span class="badge ${statusClass}">${g.status}</span>
                         </div>
-                        <div class="entry-actions">
-                            <button onclick="event.stopPropagation();openEditEntry(${e.id})">✎</button>
-                            <button class="delete" onclick="event.stopPropagation();deleteEntry(${e.id})">✕</button>
+                        ${g.description ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${g.description}</div>` : ''}
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+                        <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280;margin-top:4px">
+                            <span>${pct}% completado</span>
+                            ${g.deadline ? `<span>Límite: ${g.deadline}</span>` : ''}
                         </div>
                     </div>`;
                 });
+
+                html += `</div>`;
             });
 
-            html += `</div>`;
             return html;
         }
 
         // ============================================================
-        //  RENDER: CATEGORIES
+        //  RENDER: PROJECTS
         // ============================================================
-        function renderCategories() {
-            if (!categories.length) {
-                return `
-                <div class="empty-state">
-                    <div class="empty-icon">🏷</div>
-                    <div class="empty-title">Sin categorías</div>
-                    <div class="empty-sub">Crea una categoría al añadir una entrada</div>
-                </div>`;
+        function renderProjects() {
+            if (!projects.length) {
+                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa "+ Nuevo proyecto" para empezar</div></div>`;
             }
 
-            let html = `
-            <div class="entries-section">
-                <div class="section-title">Gestionar categorías</div>
-                <div style="margin-bottom:12px;font-size:12px;color:#6b7280">Las categorías con entradas no se pueden eliminar sin antes eliminar las entradas asociadas.</div>`;
-
-            categories.forEach(c => {
-                const count = entries.filter(e => e.categoryId === c.id).length;
-                const hasEntries = count > 0;
+            let html = '';
+            projects.forEach(p => {
+                const totalTasks = p.tasks?.length || 0;
+                const doneTasks = p.tasks?.filter(t => t.done).length || 0;
+                const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+                const statusClass = p.status === 'Completado' ? 'badge-done' : p.status === 'En curso' ?
+                    'badge-progress' : 'badge-pending';
 
                 html += `
-                <div class="entry-item" style="cursor:default">
-                    <div class="entry-color-dot" style="background:${c.color}"></div>
-                    <div class="entry-info">
-                        <div class="entry-title">${c.name}</div>
-                        <div class="entry-meta">${count} entrada${count !== 1 ? 's' : ''}</div>
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openProjectModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px">${p.name}</span>
+                        <span class="badge ${statusClass}">${p.status}</span>
                     </div>
-                    <div class="entry-actions">
-                        ${hasEntries ? `<span style="font-size:10px;color:#6b7280;font-weight:600">En uso</span>` : ''}
-                        <button class="delete" onclick="deleteCategory('${c.id}')" ${hasEntries ? '' : ''}>✕</button>
+                    ${p.description ? `<div style="font-size:13px;color:#6b7280;margin-top:4px">${p.description}</div>` : ''}
+                    <div style="font-size:12px;color:#6b7280;margin-top:4px">
+                        ${p.startDate ? 'Inicio: ' + p.startDate : ''} ${p.endDate ? '· Fin previsto: ' + p.endDate : ''}
                     </div>
+                    ${totalTasks > 0 ? `
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
+                        <div style="font-size:12px;color:#6b7280;margin-top:4px">${doneTasks}/${totalTasks} tareas completadas</div>
+                    ` : ''}
+                    ${p.tasks && p.tasks.length > 0 ? `<div style="margin-top:8px;font-size:12px;color:#6b7280">${p.tasks.filter(t=>t.done).length > 0 ? '✅ ' + p.tasks.filter(t=>t.done).map(t=>t.text).join(', ') : 'Sin tareas completadas'}</div>` : ''}
                 </div>`;
             });
 
-            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: TRAVELS
+        // ============================================================
+        function renderTravels() {
+            if (!travels.length) {
+                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa "+ Nuevo viaje" para empezar</div></div>`;
+            }
+
+            let html = '';
+            travels.forEach(t => {
+                const stars = t.rating ? '⭐'.repeat(t.rating) : '';
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openTravelModal(${JSON.stringify(t).replace(/"/g,'&quot;')})">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px">${t.place}</span>
+                        <span style="font-size:13px;color:#6b7280">${t.country || ''}</span>
+                    </div>
+                    <div style="font-size:13px;color:#6b7280;margin-top:4px">
+                        ${t.startDate ? t.startDate : ''} ${t.endDate ? '→ ' + t.endDate : ''}
+                    </div>
+                    ${stars ? `<div style="margin-top:4px">${stars}</div>` : ''}
+                    ${t.notes ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">${t.notes}</div>` : ''}
+                </div>`;
+            });
+
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: WORK
+        // ============================================================
+        function renderWork() {
+            if (!work.length) {
+                return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa "+ Nueva experiencia" para empezar</div></div>`;
+            }
+
+            let html = '';
+            // Ordenar por fecha de inicio (más reciente primero)
+            const sorted = [...work].sort((a, b) => b.startDate.localeCompare(a.startDate));
+
+            sorted.forEach(w => {
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openWorkModal(${JSON.stringify(w).replace(/"/g,'&quot;')})">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px">${w.company}</span>
+                        <span style="font-size:13px;color:#6b7280">${w.position || ''}</span>
+                    </div>
+                    <div style="font-size:13px;color:#6b7280;margin-top:4px">
+                        ${w.startDate ? w.startDate : ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}
+                    </div>
+                    ${w.functions ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">${w.functions}</div>` : ''}
+                    ${w.skills ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">Habilidades: ${w.skills}</div>` : ''}
+                </div>`;
+            });
+
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: LIBRARY
+        // ============================================================
+        let libraryView = 'all';
+
+        function renderLibrary() {
+            const allItems = [];
+            library.books.forEach(i => { allItems.push({ ...i, type: 'books', label: 'Libro' }); });
+            library.movies.forEach(i => { allItems.push({ ...i, type: 'movies', label: 'Película' }); });
+            library.series.forEach(i => { allItems.push({ ...i, type: 'series', label: 'Serie' }); });
+            library.games.forEach(i => { allItems.push({ ...i, type: 'games', label: 'Videojuego' }); });
+
+            // Aplicar filtro de tipo
+            const filtered = libraryView === 'all' ? allItems : allItems.filter(i => i.type === libraryView);
+
+            const counts = {
+                all: allItems.length,
+                books: library.books.length,
+                movies: library.movies.length,
+                series: library.series.length,
+                games: library.games.length
+            };
+
+            let html = `
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                ${['all','books','movies','series','games'].map(t => `
+                    <button class="btn-secondary ${libraryView === t ? 'active' : ''}" 
+                        style="${libraryView === t ? 'background:#2a2a3a;color:#e2e8f0;border-color:#3a3a5c' : ''}"
+                        onclick="libraryView='${t}';render()">${t === 'all' ? 'Todos' : t} (${counts[t]})</button>
+                `).join('')}
+            </div>`;
+
+            if (!filtered.length) {
+                html += `<div class="empty-state"><div class="empty-icon">☰</div><div class="empty-title">Sin items</div><div class="empty-sub">Pulsa "+ Nuevo item" para empezar</div></div>`;
+                return html;
+            }
+
+            // Ordenar por fecha más reciente
+            const sorted = filtered.sort((a, b) => {
+                const dateA = a.endDate || a.watchDate || a.startDate || '';
+                const dateB = b.endDate || b.watchDate || b.startDate || '';
+                return dateB.localeCompare(dateA);
+            });
+
+            const typeLabels = { books: 'Libro', movies: 'Película', series: 'Serie', games: 'Videojuego' };
+
+            sorted.forEach(item => {
+                let details = '';
+                if (item.type === 'books') {
+                    details =
+                        `${item.author ? item.author + ' · ' : ''}${item.startDate || ''}${item.endDate ? ' → ' + item.endDate : ''}`;
+                } else if (item.type === 'movies') {
+                    details = `${item.year || ''}${item.watchDate ? ' · ' + item.watchDate : ''}`;
+                } else if (item.type === 'series' || item.type === 'games') {
+                    details =
+                        `${item.platform ? item.platform + ' · ' : ''}${item.startDate || ''}${item.endDate ? ' → ' + item.endDate : ''}`;
+                }
+                const stars = item.rating ? '⭐'.repeat(item.rating) : '';
+
+                html += `
+                <div class="card" style="margin-bottom:8px;cursor:pointer;padding:14px 16px" onclick="openLibraryModal(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <span style="font-weight:600;font-size:15px">${item.title}</span>
+                            <span style="font-size:11px;color:#6b7280;margin-left:8px">${typeLabels[item.type]}</span>
+                        </div>
+                        ${stars ? `<span style="font-size:13px">${stars}</span>` : ''}
+                    </div>
+                    ${details ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${details}</div>` : ''}
+                </div>`;
+            });
+
             return html;
         }
 
@@ -1821,39 +2572,47 @@
         //  INIT
         // ============================================================
         function init() {
-            // Detectar móvil para mostrar botón de búsqueda
-            if (window.innerWidth <= 768) {
-                document.getElementById('mobile-search-btn').style.display = 'inline-block';
-            }
-
             loadTheme();
             loadData();
+
+            // Detectar si es móvil para mostrar hamburguesa
+            if (window.innerWidth <= 768) {
+                document.querySelector('.menu-hamburger').style.display = 'block';
+            }
+
             render();
 
-            // Cerrar búsqueda móvil al cambiar de vista
-            document.querySelectorAll('#mobile-nav button, .sidebar-nav button').forEach(b => {
-                b.addEventListener('click', () => {
-                    if (document.getElementById('mobile-search').classList.contains('open')) {
-                        toggleMobileSearch();
-                    }
-                });
+            // Cerrar menú al hacer clic fuera
+            document.getElementById('mobile-menu-overlay').addEventListener('click', function() {
+                if (this.classList.contains('open')) toggleMobileMenu();
             });
 
-            // Re-render al cambiar tamaño de ventana
+            // Re-render al cambiar tamaño
             let resizeTimer;
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimer);
                 resizeTimer = setTimeout(() => {
                     const isMobile = window.innerWidth <= 768;
-                    document.getElementById('mobile-search-btn').style.display = isMobile ? 'inline-block' : 'none';
+                    document.querySelector('.menu-hamburger').style.display = isMobile ? 'block' : 'none';
                 }, 200);
             });
         }
 
-        // ============================================================
-        //  OVERRIDE PARA QUE LA BÚSQUEDA EN ESCRITORIO FUNCIONE
-        // ============================================================
-        // La función filterEntries ya está definida arriba
+        // Añadir estilos para los botones activos en library
+        const style = document.createElement('style');
+        style.textContent = `
+            .btn-secondary.active {
+                background: #2a2a3a;
+                color: #e2e8f0;
+                border-color: #3a3a5c;
+            }
+            body.light .btn-secondary.active {
+                background: #e2e8f0;
+                color: #1c1c1e;
+                border-color: #d1d1d6;
+            }
+        `;
+        document.head.appendChild(style);
 
         init();
     </script>
