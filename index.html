@@ -8,7 +8,6 @@
     <title>Bitácora</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        /* ===== RESET & BASE ===== */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -30,7 +29,6 @@
             color: #1c1c1e;
         }
 
-        /* ===== APP CONTAINER ===== */
         #app {
             display: flex;
             height: 100dvh;
@@ -44,7 +42,6 @@
             background: #f5f5f7;
         }
 
-        /* ===== SIDEBAR ===== */
         #sidebar {
             width: 220px;
             min-width: 220px;
@@ -181,7 +178,6 @@
             color: #1c1c1e;
         }
 
-        /* ===== MOBILE HAMBURGER MENU ===== */
         #mobile-menu-overlay {
             display: none;
             position: fixed;
@@ -314,7 +310,6 @@
             color: #1c1c1e;
         }
 
-        /* ===== MAIN CONTENT ===== */
         #main {
             flex: 1;
             display: flex;
@@ -327,7 +322,6 @@
             background: #f5f5f7;
         }
 
-        /* ===== HEADER ===== */
         #main-header {
             padding: 20px 32px 14px 32px;
             flex-shrink: 0;
@@ -419,7 +413,6 @@
             color: #1c1c1e;
         }
 
-        /* ===== CONTENT AREA ===== */
         #content {
             flex: 1;
             overflow-y: auto;
@@ -427,7 +420,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             #sidebar {
                 display: none !important;
@@ -470,11 +462,6 @@
             }
         }
 
-        /* ============================================================
-               COMMON STYLES
-            ============================================================ */
-
-        /* Cards */
         .card-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -525,7 +512,6 @@
             color: #8e8e93;
         }
 
-        /* Empty state */
         .empty-state {
             text-align: center;
             padding: 48px 20px;
@@ -550,19 +536,6 @@
         .empty-state .empty-sub {
             font-size: 13px;
             margin-top: 4px;
-        }
-
-        /* Entries list */
-        .entries-section .section-title {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #6b7280;
-            margin-bottom: 10px;
-        }
-        body.light .entries-section .section-title {
-            color: #8e8e93;
         }
 
         .entry-item {
@@ -642,7 +615,6 @@
             color: #dc2626;
         }
 
-        /* Progress bar */
         .progress-bar-bg {
             height: 6px;
             background: #1a1a2e;
@@ -659,7 +631,6 @@
             transition: width 0.4s ease;
         }
 
-        /* Badges */
         .badge {
             font-size: 10px;
             font-weight: 700;
@@ -696,17 +667,12 @@
             color: #e2e8f0;
         }
 
-        /* Rating stars */
         .stars {
             color: #f59e0b;
             font-size: 14px;
             letter-spacing: 2px;
         }
-        .stars-empty {
-            color: #3a3a5c;
-        }
 
-        /* ===== SEARCH BAR ===== */
         .search-bar {
             margin-bottom: 20px;
             position: relative;
@@ -754,14 +720,7 @@
         .search-results {
             margin-top: 12px;
         }
-        .search-results .entry-item {
-            border-bottom: 1px solid #1a1a2e;
-        }
-        body.light .search-results .entry-item {
-            border-bottom-color: #e2e8f0;
-        }
 
-        /* ===== TOAST ===== */
         #toast {
             position: fixed;
             bottom: 80px;
@@ -793,7 +752,6 @@
             color: #fff;
         }
 
-        /* ===== MODAL ===== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -939,7 +897,6 @@
             background: #fee2e2;
         }
 
-        /* ===== WORK STATS ===== */
         .work-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -969,7 +926,6 @@
             color: #8e8e93;
         }
 
-        /* ===== SCROLLBAR ===== */
         #content::-webkit-scrollbar,
         .modal-sheet::-webkit-scrollbar,
         #sidebar::-webkit-scrollbar,
@@ -995,11 +951,52 @@
         body.light #mobile-menu-panel::-webkit-scrollbar-thumb {
             background: #d1d1d6;
         }
+
+        /* Cultura section */
+        .cultura-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .cultura-card {
+            background: #12121f;
+            border-radius: 12px;
+            padding: 14px 16px;
+            border: 1px solid #1a1a2e;
+        }
+        body.light .cultura-card {
+            background: #ffffff;
+            border-color: #e2e8f0;
+        }
+        .cultura-card .categoria {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #6b7280;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        body.light .cultura-card .categoria {
+            color: #8e8e93;
+        }
+        .cultura-card .numero {
+            font-size: 24px;
+            font-weight: 800;
+        }
+        .cultura-card .detalle {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        body.light .cultura-card .detalle {
+            color: #8e8e93;
+        }
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- ===== SIDEBAR ===== -->
+        <!-- SIDEBAR -->
         <div id="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-icon"></div>
@@ -1038,6 +1035,12 @@
                     <span class="nav-text">Trabajo</span>
                 </button>
 
+                <span class="nav-label">Cultura</span>
+                <button onclick="switchView('cultura')" data-view="cultura">
+                    <span class="nav-icon">◊</span>
+                    <span class="nav-text">Resumen cultural</span>
+                </button>
+
                 <span class="nav-label">Biblioteca</span>
                 <button onclick="switchView('library')" data-view="library">
                     <span class="nav-icon">☰</span>
@@ -1053,9 +1056,8 @@
             </div>
         </div>
 
-        <!-- ===== MAIN ===== -->
+        <!-- MAIN -->
         <div id="main">
-            <!-- Header -->
             <div id="main-header">
                 <div class="header-left">
                     <button class="menu-hamburger" onclick="toggleMobileMenu()" id="hamburger-btn">☰</button>
@@ -1065,13 +1067,11 @@
                     <button class="btn-secondary" onclick="openNewEntry()" id="new-entry-btn">+ Nueva entrada</button>
                 </div>
             </div>
-
-            <!-- Content -->
             <div id="content"></div>
         </div>
     </div>
 
-    <!-- ===== MOBILE MENU OVERLAY ===== -->
+    <!-- MOBILE MENU -->
     <div id="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
     <div id="mobile-menu-panel">
         <div class="menu-header">
@@ -1101,6 +1101,10 @@
             <button onclick="switchView('work');" data-view="work">
                 <span class="nav-icon">◫</span> Trabajo
             </button>
+            <span class="nav-label">Cultura</span>
+            <button onclick="switchView('cultura');" data-view="cultura">
+                <span class="nav-icon">◊</span> Resumen cultural
+            </button>
             <span class="nav-label">Biblioteca</span>
             <button onclick="switchView('library');" data-view="library">
                 <span class="nav-icon">☰</span> Todos los items
@@ -1114,13 +1118,8 @@
         </div>
     </div>
 
-    <!-- ===== MODAL ===== -->
     <div id="modal-container"></div>
-
-    <!-- ===== TOAST ===== -->
     <div id="toast"></div>
-
-    <!-- ===== IMPORT INPUT ===== -->
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
 
     <script>
@@ -1137,18 +1136,8 @@
 
         let filteredEntries = [];
         let searchQuery = '';
-
-        // IDs de categorías especiales para sincronización
-        const CAT_IDS = {
-            VIAJE: 'cat_viaje',
-            OBJETIVO: 'cat_objetivo',
-            PROYECTO: 'cat_proyecto',
-            TRABAJO: 'cat_trabajo',
-            LIBRO: 'cat_libro',
-            PELICULA: 'cat_pelicula',
-            SERIE: 'cat_serie',
-            VIDEOJUEGO: 'cat_videojuego'
-        };
+        let culturaMonth = new Date().getMonth();
+        let culturaYear = new Date().getFullYear();
 
         const DEFAULT_COLORS = [
             '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
@@ -1217,7 +1206,6 @@
         function getCategoryId(name) {
             let cat = categories.find(c => c.name === name);
             if (!cat) {
-                const colors = ['#e84393', '#6c5ce7', '#00b894', '#e67e22', '#3498db', '#f39c12', '#9b59b6', '#e74c3c'];
                 const colorMap = {
                     'Viaje': '#e84393',
                     'Objetivo': '#6c5ce7',
@@ -1256,7 +1244,6 @@
         }
 
         function removeEntriesForItem(id, categoryName) {
-            // Eliminar entradas que contengan el ID en el título o en _source
             const toRemove = entries.filter(e => {
                 return e.title.includes('[' + id + ']') || e._source === categoryName + '_' + id;
             });
@@ -1333,12 +1320,13 @@
                 'projects': 'Proyectos',
                 'travels': 'Viajes',
                 'work': 'Trabajo',
+                'cultura': 'Resumen cultural',
                 'library': 'Biblioteca'
             };
             document.getElementById('page-title').textContent = titles[view] || 'Calendario';
 
             const btn = document.getElementById('new-entry-btn');
-            if (view === 'calendar' || view === 'home' || view === 'stats') {
+            if (view === 'calendar' || view === 'home' || view === 'stats' || view === 'cultura') {
                 btn.style.display = 'inline-block';
                 btn.textContent = '+ Nueva entrada';
             } else if (view === 'goals') {
@@ -1360,7 +1348,6 @@
                 btn.style.display = 'none';
             }
 
-            // Cerrar menú móvil SIEMPRE
             const panel = document.getElementById('mobile-menu-panel');
             const overlay = document.getElementById('mobile-menu-overlay');
             if (panel.classList.contains('open')) {
@@ -1640,7 +1627,6 @@
                 status: document.getElementById('modal-status').value
             };
 
-            // Eliminar entrada anterior si existe
             if (editingItemId) {
                 removeEntriesForItem(editingItemId, 'Objetivo');
                 const idx = goals.findIndex(g => g.id === editingItemId);
@@ -1649,7 +1635,6 @@
                 goals.push(item);
             }
 
-            // Crear nueva entrada en el calendario
             if (deadline) {
                 addEntryForItem(
                     getEntryTitle('🎯 ' + item.title, item.id),
@@ -1739,7 +1724,6 @@
                 projects.push(item);
             }
 
-            // Crear entrada en el calendario
             if (startDate) {
                 addEntryForItem(
                     getEntryTitle('📁 ' + item.name, item.id),
@@ -1766,7 +1750,7 @@
         }
 
         // ============================================================
-        //  TRAVELS (con entrada de inicio y fin)
+        //  TRAVELS
         // ============================================================
         function openTravelModal(travel) {
             editingItemId = travel?.id || null;
@@ -1824,7 +1808,6 @@
                 travels.push(item);
             }
 
-            // Crear entrada de INICIO en el calendario
             if (startDate) {
                 addEntryForItem(
                     getEntryTitle('✈️ Inicio viaje: ' + item.place, item.id),
@@ -1834,7 +1817,6 @@
                 );
             }
 
-            // Crear entrada de FIN en el calendario (si existe)
             if (endDate && endDate !== startDate) {
                 addEntryForItem(
                     getEntryTitle('✈️ Fin viaje: ' + item.place, item.id),
@@ -1950,13 +1932,21 @@
                 work.push(item);
             }
 
-            // Crear entrada en el calendario
             if (startDate) {
                 addEntryForItem(
-                    getEntryTitle('💼 ' + item.company + ' (' + item.position + ')', item.id),
+                    getEntryTitle('💼 Inicio: ' + item.company + ' (' + item.position + ')', item.id),
                     startDate,
                     'Trabajo',
-                    'Inicio: ' + (item.type === 'practicas' ? 'Prácticas' : 'Puesto normal')
+                    'Tipo: ' + (item.type === 'practicas' ? 'Prácticas' : 'Puesto normal')
+                );
+            }
+
+            if (endDate && endDate !== startDate) {
+                addEntryForItem(
+                    getEntryTitle('💼 Fin: ' + item.company + ' (' + item.position + ')', item.id),
+                    endDate,
+                    'Trabajo',
+                    'Tipo: ' + (item.type === 'practicas' ? 'Prácticas' : 'Puesto normal')
                 );
             }
 
@@ -2132,12 +2122,16 @@
             };
 
             let startDate = '';
+            let endDate = '';
+            const typeLabels = { books: 'Libro', movies: 'Película', series: 'Serie', games: 'Videojuego' };
+            const emoji = { books: '📖', movies: '🎬', series: '📺', games: '🎮' };
 
             if (type === 'books') {
                 item.author = document.getElementById('modal-author').value.trim();
                 item.startDate = document.getElementById('modal-start').value || '';
                 item.endDate = document.getElementById('modal-end').value || '';
                 startDate = item.startDate;
+                endDate = item.endDate;
             } else if (type === 'movies') {
                 item.year = parseInt(document.getElementById('modal-year').value) || null;
                 item.watchDate = document.getElementById('modal-date').value || '';
@@ -2147,10 +2141,10 @@
                 item.startDate = document.getElementById('modal-start').value || '';
                 item.endDate = document.getElementById('modal-end').value || '';
                 startDate = item.startDate;
+                endDate = item.endDate;
             }
 
             const store = library[type] || [];
-            const typeLabels = { books: 'Libro', movies: 'Película', series: 'Serie', games: 'Videojuego' };
 
             if (editingItemId) {
                 removeEntriesForItem(editingItemId, typeLabels[type]);
@@ -2161,12 +2155,19 @@
             }
             library[type] = store;
 
-            // Crear entrada en el calendario
             if (startDate) {
-                const emoji = { books: '📖', movies: '🎬', series: '📺', games: '🎮' };
                 addEntryForItem(
-                    getEntryTitle(emoji[type] + ' ' + item.title, item.id),
+                    getEntryTitle(emoji[type] + ' Inicio: ' + item.title, item.id),
                     startDate,
+                    typeLabels[type],
+                    'Valoración: ' + (rating > 0 ? '⭐'.repeat(rating) : 'Sin valorar')
+                );
+            }
+
+            if (endDate && endDate !== startDate) {
+                addEntryForItem(
+                    getEntryTitle(emoji[type] + ' Fin: ' + item.title, item.id),
+                    endDate,
                     typeLabels[type],
                     'Valoración: ' + (rating > 0 ? '⭐'.repeat(rating) : 'Sin valorar')
                 );
@@ -2188,6 +2189,235 @@
             closeModal();
             render();
             showToast('Eliminado');
+        }
+
+        // ============================================================
+        //  RENDER: LIBRARY (Todos los items)
+        // ============================================================
+        let libraryView = 'all';
+
+        function renderLibrary() {
+            const allItems = [];
+
+            // Función para añadir items con su tipo
+            function addItems(items, type) {
+                items.forEach(i => {
+                    allItems.push({ ...i, type: type });
+                });
+            }
+
+            addItems(library.books, 'books');
+            addItems(library.movies, 'movies');
+            addItems(library.series, 'series');
+            addItems(library.games, 'games');
+
+            const filtered = libraryView === 'all' ? allItems : allItems.filter(i => i.type === libraryView);
+
+            const counts = {
+                all: allItems.length,
+                books: library.books.length,
+                movies: library.movies.length,
+                series: library.series.length,
+                games: library.games.length
+            };
+
+            const typeLabels = { books: 'Libro', movies: 'Película', series: 'Serie', games: 'Videojuego' };
+
+            let html = `
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                ${['all','books','movies','series','games'].map(t => `
+                    <button class="btn-secondary ${libraryView === t ? 'active' : ''}" 
+                        style="${libraryView === t ? 'background:#2a2a3a;color:#e2e8f0;border-color:#3a3a5c' : ''}"
+                        onclick="libraryView='${t}';render()">${t === 'all' ? 'Todos' : t} (${counts[t]})</button>
+                `).join('')}
+            </div>`;
+
+            if (!filtered.length) {
+                html += `<div class="empty-state"><div class="empty-icon">☰</div><div class="empty-title">Sin items</div><div class="empty-sub">Pulsa "+ Nuevo item" para empezar</div></div>`;
+                return html;
+            }
+
+            const sorted = filtered.sort((a, b) => {
+                const dateA = a.endDate || a.watchDate || a.startDate || '';
+                const dateB = b.endDate || b.watchDate || b.startDate || '';
+                return dateB.localeCompare(dateA);
+            });
+
+            sorted.forEach(item => {
+                let details = '';
+                if (item.type === 'books') {
+                    details =
+                        `${item.author ? item.author + ' · ' : ''}${item.startDate || ''}${item.endDate ? ' → ' + item.endDate : ''}`;
+                } else if (item.type === 'movies') {
+                    details = `${item.year || ''}${item.watchDate ? ' · ' + item.watchDate : ''}`;
+                } else if (item.type === 'series' || item.type === 'games') {
+                    details =
+                        `${item.platform ? item.platform + ' · ' : ''}${item.startDate || ''}${item.endDate ? ' → ' + item.endDate : ''}`;
+                }
+                const stars = item.rating ? '⭐'.repeat(item.rating) : '';
+
+                html += `
+                <div class="card" style="margin-bottom:8px;cursor:pointer;padding:14px 16px" onclick="openLibraryModal(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <span style="font-weight:600;font-size:15px">${item.title}</span>
+                            <span style="font-size:11px;color:#6b7280;margin-left:8px">${typeLabels[item.type]}</span>
+                        </div>
+                        ${stars ? `<span style="font-size:13px">${stars}</span>` : ''}
+                    </div>
+                    ${details ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${details}</div>` : ''}
+                </div>`;
+            });
+
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: CULTURA (Resumen cultural)
+        // ============================================================
+        function renderCultura() {
+            const mes = culturaMonth;
+            const año = culturaYear;
+            const mesStr = String(mes + 1).padStart(2, '0');
+            const añoStr = String(año);
+            const inicioMes = añoStr + '-' + mesStr + '-01';
+            const finMes = añoStr + '-' + mesStr + '-' + String(new Date(año, mes + 1, 0).getDate()).padStart(2, '0');
+
+            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+
+            // Filtrar items de biblioteca del mes
+            const libros = library.books.filter(b => {
+                return (b.startDate && b.startDate >= inicioMes && b.startDate <= finMes) ||
+                    (b.endDate && b.endDate >= inicioMes && b.endDate <= finMes);
+            });
+            const peliculas = library.movies.filter(m => m.watchDate && m.watchDate >= inicioMes && m.watchDate <= finMes);
+            const series = library.series.filter(s => {
+                return (s.startDate && s.startDate >= inicioMes && s.startDate <= finMes) ||
+                    (s.endDate && s.endDate >= inicioMes && s.endDate <= finMes);
+            });
+            const videojuegos = library.games.filter(g => {
+                return (g.startDate && g.startDate >= inicioMes && g.startDate <= finMes) ||
+                    (g.endDate && g.endDate >= inicioMes && g.endDate <= finMes);
+            });
+
+            // Encontrar libro actual (último iniciado sin fecha de fin)
+            const libroActual = library.books.filter(b => b.startDate && !b.endDate).sort((a, b) => b.startDate.localeCompare(
+                a.startDate))[0];
+
+            let html = `
+            <div style="max-width:700px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                    <span style="font-size:17px;font-weight:700">${monthNames[mes]} ${año}</span>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn-secondary" onclick="cambiarCulturaMes(-1)">‹</button>
+                        <button class="btn-secondary" onclick="cambiarCulturaMes(1)">›</button>
+                    </div>
+                </div>
+
+                ${libroActual ? `
+                    <div class="card" style="margin-bottom:16px">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px;margin-bottom:4px">Leyendo actualmente</div>
+                        <div style="font-size:18px;font-weight:700">${libroActual.title}</div>
+                        <div style="font-size:13px;color:#6b7280">${libroActual.author || 'Autor desconocido'} · Iniciado: ${libroActual.startDate}</div>
+                    </div>
+                ` : `
+                    <div class="card" style="margin-bottom:16px;border-color:#2a2a3a50">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px;margin-bottom:4px">Leyendo actualmente</div>
+                        <div style="font-size:16px;color:#6b7280">No hay ningún libro en curso</div>
+                    </div>
+                `}
+
+                <div class="cultura-grid">
+                    <div class="cultura-card">
+                        <div class="categoria">📖 Libros</div>
+                        <div class="numero">${libros.length}</div>
+                        <div class="detalle">${libros.filter(b => b.startDate && b.startDate >= inicioMes && b.startDate <= finMes).length} iniciados · ${libros.filter(b => b.endDate && b.endDate >= inicioMes && b.endDate <= finMes).length} terminados</div>
+                    </div>
+                    <div class="cultura-card">
+                        <div class="categoria">🎬 Películas</div>
+                        <div class="numero">${peliculas.length}</div>
+                        <div class="detalle">vistas este mes</div>
+                    </div>
+                    <div class="cultura-card">
+                        <div class="categoria">📺 Series</div>
+                        <div class="numero">${series.length}</div>
+                        <div class="detalle">${series.filter(s => s.startDate && s.startDate >= inicioMes && s.startDate <= finMes).length} iniciadas · ${series.filter(s => s.endDate && s.endDate >= inicioMes && s.endDate <= finMes).length} terminadas</div>
+                    </div>
+                    <div class="cultura-card">
+                        <div class="categoria">🎮 Videojuegos</div>
+                        <div class="numero">${videojuegos.length}</div>
+                        <div class="detalle">${videojuegos.filter(g => g.startDate && g.startDate >= inicioMes && g.startDate <= finMes).length} iniciados · ${videojuegos.filter(g => g.endDate && g.endDate >= inicioMes && g.endDate <= finMes).length} terminados</div>
+                    </div>
+                </div>
+
+                <div style="font-size:13px;font-weight:700;margin:16px 0 8px 0">Detalle del mes</div>
+                ${libros.length === 0 && peliculas.length === 0 && series.length === 0 && videojuegos.length === 0 ?
+                    `<div style="color:#6b7280;padding:20px 0;text-align:center">No hay actividad cultural este mes</div>` :
+                    ''
+                }
+
+                ${libros.length > 0 ? `
+                    <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 4px 0">Libros</div>
+                    ${libros.map(b => `
+                        <div class="entry-item" style="cursor:default">
+                            <div class="entry-info">
+                                <div class="entry-title">${b.title}</div>
+                                <div class="entry-meta">${b.author || 'Sin autor'} · ${b.startDate ? 'Inicio: ' + b.startDate : ''}${b.endDate ? ' · Fin: ' + b.endDate : ''}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                ` : ''}
+
+                ${peliculas.length > 0 ? `
+                    <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 4px 0">Películas</div>
+                    ${peliculas.map(m => `
+                        <div class="entry-item" style="cursor:default">
+                            <div class="entry-info">
+                                <div class="entry-title">${m.title} ${m.year ? '(' + m.year + ')' : ''}</div>
+                                <div class="entry-meta">${m.watchDate || 'Sin fecha'}${m.rating ? ' · ⭐'.repeat(m.rating) : ''}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                ` : ''}
+
+                ${series.length > 0 ? `
+                    <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 4px 0">Series</div>
+                    ${series.map(s => `
+                        <div class="entry-item" style="cursor:default">
+                            <div class="entry-info">
+                                <div class="entry-title">${s.title}</div>
+                                <div class="entry-meta">${s.platform || 'Sin plataforma'} · ${s.startDate ? 'Inicio: ' + s.startDate : ''}${s.endDate ? ' · Fin: ' + s.endDate : ''}${s.rating ? ' · ⭐'.repeat(s.rating) : ''}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                ` : ''}
+
+                ${videojuegos.length > 0 ? `
+                    <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 4px 0">Videojuegos</div>
+                    ${videojuegos.map(g => `
+                        <div class="entry-item" style="cursor:default">
+                            <div class="entry-info">
+                                <div class="entry-title">${g.title}</div>
+                                <div class="entry-meta">${g.platform || 'Sin plataforma'} · ${g.startDate ? 'Inicio: ' + g.startDate : ''}${g.endDate ? ' · Fin: ' + g.endDate : ''}${g.rating ? ' · ⭐'.repeat(g.rating) : ''}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                ` : ''}
+
+            </div>`;
+
+            return html;
+        }
+
+        function cambiarCulturaMes(delta) {
+            culturaMonth += delta;
+            if (culturaMonth < 0) { culturaMonth = 11;
+                culturaYear--; }
+            if (culturaMonth > 11) { culturaMonth = 0;
+                culturaYear++; }
+            render();
         }
 
         // ============================================================
@@ -2243,6 +2473,7 @@
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'travels') content.innerHTML = renderTravels();
             else if (currentView === 'work') content.innerHTML = renderWork();
+            else if (currentView === 'cultura') content.innerHTML = renderCultura();
             else if (currentView === 'library') content.innerHTML = renderLibrary();
         }
 
@@ -2335,7 +2566,6 @@
                 html += renderDayEntries(window._selectedDate);
             }
 
-            // Search bar
             html += `
             <div class="search-bar" style="margin-top:24px">
                 <span class="search-icon">⌕</span>
@@ -2343,12 +2573,8 @@
             </div>
             <div class="search-results" id="search-results-container"></div>`;
 
-            // Estilos para light mode
             html += `
             <style>
-                body.light .calendar-day-cell { background: #ffffff !important; border-color: #e2e8f0 !important; }
-                body.light .calendar-day-cell:hover { background: #f5f5f7 !important; }
-                .calendar-day-cell { background: #12121f; }
                 body.light .calendar-day { background: #ffffff !important; border-color: #e2e8f0 !important; }
                 body.light .calendar-day:hover { background: #f5f5f7 !important; }
                 body.light .calendar-day.today { border-color: #1c1c1e !important; }
@@ -2416,8 +2642,27 @@
             const today = new Date().toISOString().slice(0, 10);
             const todayEntries = entries.filter(e => e.date === today);
 
+            // Activos (no completados)
             const activeGoals = goals.filter(g => g.status !== 'Completado').slice(0, 3);
             const activeProjects = projects.filter(p => p.status !== 'Completado').slice(0, 2);
+
+            // Viajes totales
+            const totalTravels = travels.length;
+
+            // Biblioteca: libros leídos (con fecha fin) y libro actual
+            const booksRead = library.books.filter(b => b.endDate).length;
+            const currentBook = library.books.filter(b => b.startDate && !b.endDate).sort((a, b) => b.startDate.localeCompare(
+                a.startDate))[0];
+
+            // Películas vistas
+            const moviesWatched = library.movies.filter(m => m.watchDate).length;
+
+            // Series vistas (con fecha fin)
+            const seriesFinished = library.series.filter(s => s.endDate).length;
+
+            // Videojuegos completados
+            const gamesFinished = library.games.filter(g => g.endDate).length;
+
             const recentEntries = entries.slice(0, 5);
 
             let html = `
@@ -2427,11 +2672,19 @@
                 <div style="font-size:15px;font-weight:600;margin-bottom:20px">${todayEntries.length} entradas hoy</div>
 
                 <div class="card-grid">
-                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${goals.length}</div><div class="card-sub">${goals.filter(g=>g.status==='Completado').length} completados</div></div>
-                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${projects.length}</div><div class="card-sub">${projects.filter(p=>p.status==='Completado').length} completados</div></div>
-                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${travels.length}</div><div class="card-sub">${travels.length} experiencias</div></div>
-                    <div class="card"><div class="card-title">Biblioteca</div><div class="card-value">${library.books.length + library.movies.length + library.series.length + library.games.length}</div><div class="card-sub">${library.books.length} libros · ${library.movies.length} películas</div></div>
+                    <div class="card"><div class="card-title">Objetivos activos</div><div class="card-value">${goals.filter(g=>g.status!=='Completado').length}</div><div class="card-sub">${goals.filter(g=>g.status==='Completado').length} completados</div></div>
+                    <div class="card"><div class="card-title">Proyectos activos</div><div class="card-value">${projects.filter(p=>p.status!=='Completado').length}</div><div class="card-sub">${projects.filter(p=>p.status==='Completado').length} completados</div></div>
+                    <div class="card"><div class="card-title">Viajes realizados</div><div class="card-value">${totalTravels}</div><div class="card-sub">experiencias</div></div>
+                    <div class="card"><div class="card-title">Biblioteca</div><div class="card-value">${booksRead + moviesWatched + seriesFinished + gamesFinished}</div><div class="card-sub">${booksRead} libros · ${moviesWatched} películas</div></div>
                 </div>
+
+                ${currentBook ? `
+                    <div class="card" style="margin-bottom:12px;border-left:3px solid #3498db">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.5px">Leyendo actualmente</div>
+                        <div style="font-size:18px;font-weight:700;margin-top:2px">${currentBook.title}</div>
+                        <div style="font-size:13px;color:#6b7280">${currentBook.author || 'Autor desconocido'} · Iniciado: ${currentBook.startDate}</div>
+                    </div>
+                ` : ''}
 
                 <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Actividad reciente</div>`;
 
@@ -2470,7 +2723,7 @@
             }
 
             if (activeProjects.length) {
-                html += `<div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Proyectos en curso</div>`;
+                html += `<div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Proyectos activos</div>`;
                 activeProjects.forEach(p => {
                     const totalTasks = p.tasks?.length || 0;
                     const doneTasks = p.tasks?.filter(t => t.done).length || 0;
@@ -2664,79 +2917,6 @@
         }
 
         // ============================================================
-        //  RENDER: LIBRARY
-        // ============================================================
-        let libraryView = 'all';
-
-        function renderLibrary() {
-            const allItems = [];
-            library.books.forEach(i => { allItems.push({ ...i, type: 'books', label: 'Libro' }); });
-            library.movies.forEach(i => { allItems.push({ ...i, type: 'movies', label: 'Película' }); });
-            library.series.forEach(i => { allItems.push({ ...i, type: 'series', label: 'Serie' }); });
-            library.games.forEach(i => { allItems.push({ ...i, type: 'games', label: 'Videojuego' }); });
-
-            const filtered = libraryView === 'all' ? allItems : allItems.filter(i => i.type === libraryView);
-
-            const counts = {
-                all: allItems.length,
-                books: library.books.length,
-                movies: library.movies.length,
-                series: library.series.length,
-                games: library.games.length
-            };
-
-            let html = `
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-                ${['all','books','movies','series','games'].map(t => `
-                    <button class="btn-secondary ${libraryView === t ? 'active' : ''}" 
-                        style="${libraryView === t ? 'background:#2a2a3a;color:#e2e8f0;border-color:#3a3a5c' : ''}"
-                        onclick="libraryView='${t}';render()">${t === 'all' ? 'Todos' : t} (${counts[t]})</button>
-                `).join('')}
-            </div>`;
-
-            if (!filtered.length) {
-                html += `<div class="empty-state"><div class="empty-icon">☰</div><div class="empty-title">Sin items</div><div class="empty-sub">Pulsa "+ Nuevo item" para empezar</div></div>`;
-                return html;
-            }
-
-            const sorted = filtered.sort((a, b) => {
-                const dateA = a.endDate || a.watchDate || a.startDate || '';
-                const dateB = b.endDate || b.watchDate || b.startDate || '';
-                return dateB.localeCompare(dateA);
-            });
-
-            const typeLabels = { books: 'Libro', movies: 'Película', series: 'Serie', games: 'Videojuego' };
-
-            sorted.forEach(item => {
-                let details = '';
-                if (item.type === 'books') {
-                    details =
-                        `${item.author ? item.author + ' · ' : ''}${item.startDate || ''}${item.endDate ? ' → ' + item.endDate : ''}`;
-                } else if (item.type === 'movies') {
-                    details = `${item.year || ''}${item.watchDate ? ' · ' + item.watchDate : ''}`;
-                } else if (item.type === 'series' || item.type === 'games') {
-                    details =
-                        `${item.platform ? item.platform + ' · ' : ''}${item.startDate || ''}${item.endDate ? ' → ' + item.endDate : ''}`;
-                }
-                const stars = item.rating ? '⭐'.repeat(item.rating) : '';
-
-                html += `
-                <div class="card" style="margin-bottom:8px;cursor:pointer;padding:14px 16px" onclick="openLibraryModal(${JSON.stringify(item).replace(/"/g,'&quot;')})">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <div>
-                            <span style="font-weight:600;font-size:15px">${item.title}</span>
-                            <span style="font-size:11px;color:#6b7280;margin-left:8px">${typeLabels[item.type]}</span>
-                        </div>
-                        ${stars ? `<span style="font-size:13px">${stars}</span>` : ''}
-                    </div>
-                    ${details ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${details}</div>` : ''}
-                </div>`;
-            });
-
-            return html;
-        }
-
-        // ============================================================
         //  INIT
         // ============================================================
         function init() {
@@ -2763,7 +2943,6 @@
             });
         }
 
-        // Estilos para botones activos
         const styleEl = document.createElement('style');
         styleEl.textContent = `
             .btn-secondary.active {
