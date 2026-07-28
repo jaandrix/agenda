@@ -44,7 +44,7 @@
             background: #f5f5f7;
         }
 
-        /* ===== SIDEBAR (escritorio) ===== */
+        /* ===== SIDEBAR ===== */
         #sidebar {
             width: 220px;
             min-width: 220px;
@@ -706,7 +706,7 @@
             color: #3a3a5c;
         }
 
-        /* ===== SEARCH BAR (dentro del contenido) ===== */
+        /* ===== SEARCH BAR ===== */
         .search-bar {
             margin-bottom: 20px;
             position: relative;
@@ -939,6 +939,36 @@
             background: #fee2e2;
         }
 
+        /* ===== WORK STATS ===== */
+        .work-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .work-stat-card {
+            background: #12121f;
+            border-radius: 12px;
+            padding: 14px 16px;
+            border: 1px solid #1a1a2e;
+        }
+        body.light .work-stat-card {
+            background: #ffffff;
+            border-color: #e2e8f0;
+        }
+        .work-stat-card .stat-value {
+            font-size: 24px;
+            font-weight: 800;
+        }
+        .work-stat-card .stat-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        body.light .work-stat-card .stat-label {
+            color: #8e8e93;
+        }
+
         /* ===== SCROLLBAR ===== */
         #content::-webkit-scrollbar,
         .modal-sheet::-webkit-scrollbar,
@@ -1049,30 +1079,30 @@
             <button class="menu-close" onclick="toggleMobileMenu()">✕</button>
         </div>
         <div class="menu-nav">
-            <button class="active" onclick="switchView('calendar');toggleMobileMenu()" data-view="calendar">
+            <button class="active" onclick="switchView('calendar');" data-view="calendar">
                 <span class="nav-icon">◷</span> Calendario
             </button>
-            <button onclick="switchView('home');toggleMobileMenu()" data-view="home">
+            <button onclick="switchView('home');" data-view="home">
                 <span class="nav-icon">⌂</span> Centro resumen
             </button>
-            <button onclick="switchView('stats');toggleMobileMenu()" data-view="stats">
+            <button onclick="switchView('stats');" data-view="stats">
                 <span class="nav-icon">▦</span> Estadísticas
             </button>
             <span class="nav-label">Registro</span>
-            <button onclick="switchView('goals');toggleMobileMenu()" data-view="goals">
+            <button onclick="switchView('goals');" data-view="goals">
                 <span class="nav-icon">◉</span> Objetivos
             </button>
-            <button onclick="switchView('projects');toggleMobileMenu()" data-view="projects">
+            <button onclick="switchView('projects');" data-view="projects">
                 <span class="nav-icon">⊞</span> Proyectos
             </button>
-            <button onclick="switchView('travels');toggleMobileMenu()" data-view="travels">
+            <button onclick="switchView('travels');" data-view="travels">
                 <span class="nav-icon">◈</span> Viajes
             </button>
-            <button onclick="switchView('work');toggleMobileMenu()" data-view="work">
+            <button onclick="switchView('work');" data-view="work">
                 <span class="nav-icon">◫</span> Trabajo
             </button>
             <span class="nav-label">Biblioteca</span>
-            <button onclick="switchView('library');toggleMobileMenu()" data-view="library">
+            <button onclick="switchView('library');" data-view="library">
                 <span class="nav-icon">☰</span> Todos los items
             </button>
         </div>
@@ -1258,9 +1288,12 @@
                 btn.style.display = 'none';
             }
 
-            // Cerrar menú móvil si está abierto
-            if (document.getElementById('mobile-menu-panel').classList.contains('open')) {
-                toggleMobileMenu();
+            // Cerrar menú móvil SIEMPRE
+            const panel = document.getElementById('mobile-menu-panel');
+            const overlay = document.getElementById('mobile-menu-overlay');
+            if (panel.classList.contains('open')) {
+                panel.classList.remove('open');
+                overlay.classList.remove('open');
             }
 
             render();
@@ -1277,21 +1310,52 @@
         }
 
         // ============================================================
-        //  SEARCH
+        //  SEARCH (optimizada)
         // ============================================================
+        let searchTimeout = null;
+
         function doSearch(query) {
-            searchQuery = query.toLowerCase().trim();
-            if (!searchQuery) {
-                filteredEntries = [...entries];
-            } else {
-                filteredEntries = entries.filter(e => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchQuery = query.toLowerCase().trim();
+                const resultsContainer = document.getElementById('search-results-container');
+                if (!resultsContainer) return;
+
+                if (!searchQuery) {
+                    resultsContainer.innerHTML = '';
+                    return;
+                }
+
+                const filtered = entries.filter(e => {
                     const cat = categories.find(c => c.id === e.categoryId);
                     return e.title.toLowerCase().includes(searchQuery) ||
                         (cat && cat.name.toLowerCase().includes(searchQuery)) ||
                         (e.notes && e.notes.toLowerCase().includes(searchQuery));
                 });
-            }
-            render();
+
+                if (!filtered.length) {
+                    resultsContainer.innerHTML =
+                        `<div style="margin-top:12px;color:#6b7280;text-align:center;padding:20px">No se encontraron entradas</div>`;
+                    return;
+                }
+
+                let html =
+                    `<div style="margin-top:8px;font-size:12px;color:#6b7280;margin-bottom:8px">${filtered.length} resultados</div>`;
+                filtered.forEach(e => {
+                    const cat = categories.find(c => c.id === e.categoryId);
+                    const color = cat?.color || '#6b7280';
+                    const catName = cat?.name || 'Sin categoría';
+                    html += `
+                    <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${e.title}</div>
+                            <div class="entry-meta">${e.date} · ${catName}</div>
+                        </div>
+                    </div>`;
+                });
+                resultsContainer.innerHTML = html;
+            }, 200);
         }
 
         // ============================================================
@@ -1314,7 +1378,6 @@
             if (currentView === 'travels') { openTravelModal(null); return; }
             if (currentView === 'work') { openWorkModal(null); return; }
             if (currentView === 'library') { openLibraryModal(null); return; }
-            // Default: entrada normal
             editingEntryId = null;
             document.getElementById('modal-container').innerHTML = renderEntryModal(null);
         }
@@ -1659,7 +1722,7 @@
         }
 
         // ============================================================
-        //  WORK
+        //  WORK (con tipo de puesto, días de fiesta y cálculo de días)
         // ============================================================
         function openWorkModal(workItem) {
             editingItemId = workItem?.id || null;
@@ -1678,10 +1741,17 @@
                     <input id="modal-company" class="modal-input" value="${isEdit ? workItem.company : ''}" placeholder="Ej: Empresa X">
                     <div class="modal-label">Puesto</div>
                     <input id="modal-position" class="modal-input" value="${isEdit ? workItem.position : ''}" placeholder="Ej: Operario logístico">
+                    <div class="modal-label">Tipo de puesto</div>
+                    <select id="modal-type" class="modal-input">
+                        <option value="normal" ${isEdit && workItem.type === 'normal' ? 'selected' : ''}>Puesto normal</option>
+                        <option value="practicas" ${isEdit && workItem.type === 'practicas' ? 'selected' : ''}>Prácticas</option>
+                    </select>
                     <div class="modal-row">
                         <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? workItem.startDate || '' : ''}"></div>
                         <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? workItem.endDate || '' : ''}"></div>
                     </div>
+                    <div class="modal-label">Días de fiesta (no trabajados, no cotizan)</div>
+                    <input type="number" id="modal-holidays" class="modal-input" value="${isEdit ? workItem.holidays || 0 : 0}" min="0" placeholder="Ej: 5">
                     <div class="modal-label">Funciones</div>
                     <textarea id="modal-functions" class="modal-input" rows="2" placeholder="Funciones realizadas...">${isEdit ? workItem.functions || '' : ''}</textarea>
                     <div class="modal-label">Habilidades adquiridas</div>
@@ -1692,22 +1762,54 @@
             </div>`;
         }
 
+        function calcularDiasLaborables(fechaInicio, fechaFin, diasFiesta) {
+            if (!fechaInicio || !fechaFin) return 0;
+            const inicio = new Date(fechaInicio + 'T12:00:00');
+            const fin = new Date(fechaFin + 'T12:00:00');
+            let count = 0;
+            const current = new Date(inicio);
+            while (current <= fin) {
+                const day = current.getDay();
+                if (day !== 0 && day !== 6) { // Lunes a viernes
+                    count++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return Math.max(0, count - (diasFiesta || 0));
+        }
+
         function saveWork() {
             const company = document.getElementById('modal-company').value.trim();
             if (!company) { showToast('Escribe una empresa', true); return; }
+
+            const startDate = document.getElementById('modal-start').value || '';
+            const endDate = document.getElementById('modal-end').value || '';
+            const holidays = parseInt(document.getElementById('modal-holidays').value) || 0;
+
+            // Validar que la fecha de fin sea posterior a la de inicio si ambas existen
+            if (startDate && endDate && endDate < startDate) {
+                showToast('La fecha de fin debe ser posterior a la de inicio', true);
+                return;
+            }
+
             const item = {
                 id: editingItemId || Date.now(),
                 company,
                 position: document.getElementById('modal-position').value.trim(),
-                startDate: document.getElementById('modal-start').value || '',
-                endDate: document.getElementById('modal-end').value || '',
+                type: document.getElementById('modal-type').value,
+                startDate: startDate,
+                endDate: endDate,
+                holidays: holidays,
                 functions: document.getElementById('modal-functions').value.trim(),
                 skills: document.getElementById('modal-skills').value.trim()
             };
+
             if (editingItemId) {
                 const idx = work.findIndex(w => w.id === editingItemId);
                 if (idx >= 0) work[idx] = item;
-            } else work.push(item);
+            } else {
+                work.push(item);
+            }
             saveData();
             closeModal();
             render();
@@ -1721,6 +1823,67 @@
             closeModal();
             render();
             showToast('Eliminada');
+        }
+
+        // ============================================================
+        //  RENDER: WORK (con estadísticas)
+        // ============================================================
+        function renderWork() {
+            if (!work.length) {
+                return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa "+ Nueva experiencia" para empezar</div></div>`;
+            }
+
+            // Calcular días totales trabajados
+            let totalDays = 0;
+            let totalDaysNormal = 0;
+
+            work.forEach(w => {
+                if (w.startDate && w.endDate) {
+                    const days = calcularDiasLaborables(w.startDate, w.endDate, w.holidays || 0);
+                    totalDays += days;
+                    if (w.type !== 'practicas') {
+                        totalDaysNormal += days;
+                    }
+                }
+            });
+
+            let html = `
+            <div class="work-stats">
+                <div class="work-stat-card">
+                    <div class="stat-value">${totalDays}</div>
+                    <div class="stat-label">Días totales trabajados</div>
+                </div>
+                <div class="work-stat-card">
+                    <div class="stat-value">${totalDaysNormal}</div>
+                    <div class="stat-label">Días trabajados (excluyendo prácticas)</div>
+                </div>
+            </div>`;
+
+            const sorted = [...work].sort((a, b) => b.startDate.localeCompare(a.startDate));
+
+            sorted.forEach(w => {
+                const typeLabel = w.type === 'practicas' ? 'Prácticas' : 'Puesto normal';
+                const daysWorked = (w.startDate && w.endDate) ? calcularDiasLaborables(w.startDate, w.endDate, w
+                    .holidays || 0) : 0;
+
+                html += `
+                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openWorkModal(${JSON.stringify(w).replace(/"/g,'&quot;')})">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:700;font-size:16px">${w.company}</span>
+                        <span style="font-size:12px;color:#6b7280">${w.position || ''}</span>
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
+                        <span style="font-size:12px;color:#6b7280">${w.startDate ? w.startDate : ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
+                        <span class="badge ${w.type === 'practicas' ? 'badge-pending' : 'badge-done'}">${typeLabel}</span>
+                        ${daysWorked > 0 ? `<span style="font-size:12px;color:#6b7280">${daysWorked} días trabajados</span>` : ''}
+                        ${(w.holidays || 0) > 0 ? `<span style="font-size:12px;color:#dc2626">${w.holidays} días de fiesta</span>` : ''}
+                    </div>
+                    ${w.functions ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">${w.functions}</div>` : ''}
+                    ${w.skills ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">Habilidades: ${w.skills}</div>` : ''}
+                </div>`;
+            });
+
+            return html;
         }
 
         // ============================================================
@@ -1906,7 +2069,7 @@
         }
 
         // ============================================================
-        //  RENDER: CALENDAR (página de inicio)
+        //  RENDER: CALENDAR
         // ============================================================
         let calYear = new Date().getFullYear();
         let calMonth = new Date().getMonth();
@@ -1994,46 +2157,20 @@
                 html += renderDayEntries(window._selectedDate);
             }
 
-            // Search bar
+            // Search bar (optimizada)
             html += `
             <div class="search-bar" style="margin-top:24px">
                 <span class="search-icon">⌕</span>
-                <input type="text" placeholder="Buscar entradas..." oninput="doSearch(this.value)">
+                <input type="text" placeholder="Buscar entradas..." oninput="doSearch(this.value)" id="search-input">
             </div>
             <div class="search-results" id="search-results-container"></div>`;
 
-            // Si hay resultados de búsqueda, mostrarlos
-            if (searchQuery && filteredEntries.length > 0) {
-                const searchResultsHtml = filteredEntries.map(e => {
-                    const cat = categories.find(c => c.id === e.categoryId);
-                    const color = cat?.color || '#6b7280';
-                    const catName = cat?.name || 'Sin categoría';
-                    return `
-                    <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${e.title}</div>
-                            <div class="entry-meta">${e.date} · ${catName}</div>
-                        </div>
-                    </div>`;
-                }).join('');
-                html += `<div style="margin-top:8px;font-size:12px;color:#6b7280;margin-bottom:8px">${filteredEntries.length} resultados</div>${searchResultsHtml}`;
-            } else if (searchQuery && filteredEntries.length === 0) {
-                html +=
-                    `<div style="margin-top:12px;color:#6b7280;text-align:center;padding:20px">No se encontraron entradas</div>`;
-            }
-
-            // Añadir estilos para light mode
+            // Estilos para light mode
             html += `
             <style>
-                .calendar-nav-btn:hover { color: #e2e8f0; }
-                body.light .calendar-nav-btn:hover { color: #1c1c1e; }
                 body.light .calendar-day-cell { background: #ffffff !important; border-color: #e2e8f0 !important; }
                 body.light .calendar-day-cell:hover { background: #f5f5f7 !important; }
                 .calendar-day-cell { background: #12121f; }
-                .calendar-day-empty { background: transparent !important; border-color: transparent !important; }
-                body.light .search-bar input { background: #ffffff; border-color: #e2e8f0; color: #1c1c1e; }
-                body.light .search-bar input:focus { border-color: #1c1c1e; }
                 body.light .calendar-day { background: #ffffff !important; border-color: #e2e8f0 !important; }
                 body.light .calendar-day:hover { background: #f5f5f7 !important; }
                 body.light .calendar-day.today { border-color: #1c1c1e !important; }
@@ -2174,7 +2311,7 @@
         }
 
         // ============================================================
-        //  RENDER: STATS
+        //  RENDER: STATS (sin entradas por mes)
         // ============================================================
         function renderStats() {
             const totalEntries = entries.length;
@@ -2193,15 +2330,6 @@
                 byCategory[e.categoryId]++;
             });
             const sortedCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
-
-            const monthCount = {};
-            entries.forEach(e => {
-                const m = e.date.slice(0, 7);
-                if (!monthCount[m]) monthCount[m] = 0;
-                monthCount[m]++;
-            });
-            const sortedMonths = Object.keys(monthCount).sort().slice(-6);
-            const maxMonth = Math.max(...Object.values(monthCount), 1);
 
             let html = `
             <div style="max-width:700px">
@@ -2243,24 +2371,6 @@
                         </div>
                     </div>`;
                 });
-            }
-
-            if (sortedMonths.length) {
-                html += `
-                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin:20px 0 12px 0">Entradas por mes</div>
-                <div style="display:flex;gap:8px;align-items:flex-end;height:100px;padding-top:8px">`;
-                sortedMonths.forEach(m => {
-                    const count = monthCount[m] || 0;
-                    const pct = (count / maxMonth) * 100;
-                    const label = m.slice(5);
-                    html += `
-                    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-                        <div style="font-weight:600;font-size:12px">${count}</div>
-                        <div style="width:100%;height:${Math.max(4, pct)}px;background:#3a3a5c;border-radius:4px 4px 0 0;min-height:4px"></div>
-                        <div style="font-size:10px;color:#6b7280">${label}</div>
-                    </div>`;
-                });
-                html += `</div>`;
             }
 
             html += `</div>`;
@@ -2376,35 +2486,6 @@
         }
 
         // ============================================================
-        //  RENDER: WORK
-        // ============================================================
-        function renderWork() {
-            if (!work.length) {
-                return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa "+ Nueva experiencia" para empezar</div></div>`;
-            }
-
-            let html = '';
-            const sorted = [...work].sort((a, b) => b.startDate.localeCompare(a.startDate));
-
-            sorted.forEach(w => {
-                html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openWorkModal(${JSON.stringify(w).replace(/"/g,'&quot;')})">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px">${w.company}</span>
-                        <span style="font-size:13px;color:#6b7280">${w.position || ''}</span>
-                    </div>
-                    <div style="font-size:13px;color:#6b7280;margin-top:4px">
-                        ${w.startDate ? w.startDate : ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}
-                    </div>
-                    ${w.functions ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">${w.functions}</div>` : ''}
-                    ${w.skills ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">Habilidades: ${w.skills}</div>` : ''}
-                </div>`;
-            });
-
-            return html;
-        }
-
-        // ============================================================
         //  RENDER: LIBRARY
         // ============================================================
         let libraryView = 'all';
@@ -2478,11 +2559,6 @@
         }
 
         // ============================================================
-        //  RENDER: HOME (Centro resumen)
-        // ============================================================
-        // Ya definido arriba
-
-        // ============================================================
         //  INIT
         // ============================================================
         function init() {
@@ -2525,49 +2601,11 @@
                 color: #1c1c1e;
                 border-color: #d1d1d6;
             }
-            .search-bar input {
-                width: 100%;
-                padding: 10px 14px 10px 40px;
-                border-radius: 12px;
-                border: 1px solid #2a2a3a;
-                background: #12121f;
-                color: #e2e8f0;
-                font-family: 'Inter', sans-serif;
-                font-size: 14px;
-                font-weight: 500;
-                outline: none;
-                transition: border-color 0.15s ease;
-            }
-            .search-bar input:focus {
-                border-color: #e2e8f0;
-            }
-            .search-bar input::placeholder {
-                color: #6b7280;
-            }
-            .search-bar .search-icon {
-                position: absolute;
-                left: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                color: #6b7280;
-                font-size: 18px;
-                pointer-events: none;
-            }
-            body.light .search-bar input {
-                background: #ffffff;
-                border-color: #e2e8f0;
-                color: #1c1c1e;
-            }
-            body.light .search-bar input::placeholder {
-                color: #8e8e93;
-            }
-            body.light .search-bar input:focus {
-                border-color: #1c1c1e;
-            }
         `;
         document.head.appendChild(styleEl);
 
         init();
     </script>
+
 </body>
 </html>
