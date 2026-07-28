@@ -86,50 +86,6 @@
             letter-spacing: -0.3px;
         }
 
-        .sidebar-search {
-            position: relative;
-            margin-bottom: 20px;
-        }
-        .sidebar-search input {
-            width: 100%;
-            padding: 8px 12px 8px 36px;
-            border-radius: 10px;
-            border: 1px solid #2a2a3a;
-            background: #1a1a2e;
-            color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            outline: none;
-            transition: border-color 0.15s ease;
-        }
-        .sidebar-search input::placeholder {
-            color: #6b7280;
-        }
-        .sidebar-search input:focus {
-            border-color: #e2e8f0;
-        }
-        .sidebar-search .search-icon {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6b7280;
-            font-size: 16px;
-            pointer-events: none;
-        }
-        body.light .sidebar-search input {
-            background: #f0f0f2;
-            border-color: #e2e8f0;
-            color: #1c1c1e;
-        }
-        body.light .sidebar-search input::placeholder {
-            color: #8e8e93;
-        }
-        body.light .sidebar-search input:focus {
-            border-color: #1c1c1e;
-        }
-
         .sidebar-nav {
             flex: 1;
             display: flex;
@@ -276,26 +232,6 @@
             font-size: 24px;
             color: #6b7280;
             cursor: pointer;
-        }
-
-        #mobile-menu-panel .menu-search {
-            margin-bottom: 16px;
-        }
-        #mobile-menu-panel .menu-search input {
-            width: 100%;
-            padding: 8px 12px;
-            border-radius: 10px;
-            border: 1px solid #2a2a3a;
-            background: #1a1a2e;
-            color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            outline: none;
-        }
-        body.light #mobile-menu-panel .menu-search input {
-            background: #f0f0f2;
-            border-color: #e2e8f0;
-            color: #1c1c1e;
         }
 
         #mobile-menu-panel .menu-nav {
@@ -491,62 +427,10 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* ===== MOBILE BOTTOM NAV ===== */
-        #mobile-bottom-nav {
-            display: none;
-            flex-shrink: 0;
-            background: #12121f;
-            border-top: 1px solid #2a2a3a;
-            padding-bottom: max(8px, env(safe-area-inset-bottom));
-            transition: background 0.25s ease, border-color 0.25s ease;
-        }
-        body.light #mobile-bottom-nav {
-            background: #ffffff;
-            border-top-color: #e2e8f0;
-        }
-
-        #mobile-bottom-nav .bottom-nav-inner {
-            display: flex;
-            justify-content: space-around;
-            padding: 6px 4px 4px 4px;
-        }
-
-        #mobile-bottom-nav button {
-            background: none;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1px;
-            padding: 4px 10px;
-            font-family: 'Inter', sans-serif;
-            font-size: 9px;
-            font-weight: 600;
-            color: #6b7280;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            border-radius: 8px;
-        }
-        #mobile-bottom-nav button .nav-icon {
-            font-size: 18px;
-        }
-        #mobile-bottom-nav button.active {
-            color: #e2e8f0;
-        }
-        body.light #mobile-bottom-nav button.active {
-            color: #1c1c1e;
-        }
-
-        /* ============================================================
-               RESPONSIVE
-            ============================================================ */
-
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             #sidebar {
                 display: none !important;
-            }
-            #mobile-bottom-nav {
-                display: block !important;
             }
             #main-header .menu-hamburger {
                 display: block !important;
@@ -593,15 +477,15 @@
         /* Cards */
         .card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
             margin-bottom: 20px;
         }
 
         .card {
             background: #12121f;
             border-radius: 14px;
-            padding: 18px;
+            padding: 16px 18px;
             border: 1px solid #1a1a2e;
             transition: background 0.15s ease, border-color 0.15s ease;
         }
@@ -617,25 +501,25 @@
         }
 
         .card .card-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             color: #6b7280;
             text-transform: uppercase;
             letter-spacing: 0.4px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         body.light .card .card-title {
             color: #8e8e93;
         }
         .card .card-value {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 800;
             letter-spacing: -0.5px;
         }
         .card .card-sub {
             font-size: 12px;
             color: #6b7280;
-            margin-top: 4px;
+            margin-top: 2px;
         }
         body.light .card .card-sub {
             color: #8e8e93;
@@ -685,12 +569,11 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 0;
+            padding: 8px 8px;
             border-bottom: 1px solid #1a1a2e;
             cursor: pointer;
             transition: background 0.15s ease;
             border-radius: 6px;
-            padding: 8px 8px;
         }
         .entry-item:hover {
             background: rgba(255, 255, 255, 0.03);
@@ -823,10 +706,65 @@
             color: #3a3a5c;
         }
 
+        /* ===== SEARCH BAR (dentro del contenido) ===== */
+        .search-bar {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .search-bar input {
+            width: 100%;
+            padding: 10px 14px 10px 40px;
+            border-radius: 12px;
+            border: 1px solid #2a2a3a;
+            background: #12121f;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        .search-bar input:focus {
+            border-color: #e2e8f0;
+        }
+        .search-bar input::placeholder {
+            color: #6b7280;
+        }
+        .search-bar .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            font-size: 18px;
+            pointer-events: none;
+        }
+        body.light .search-bar input {
+            background: #ffffff;
+            border-color: #e2e8f0;
+            color: #1c1c1e;
+        }
+        body.light .search-bar input::placeholder {
+            color: #8e8e93;
+        }
+        body.light .search-bar input:focus {
+            border-color: #1c1c1e;
+        }
+
+        .search-results {
+            margin-top: 12px;
+        }
+        .search-results .entry-item {
+            border-bottom: 1px solid #1a1a2e;
+        }
+        body.light .search-results .entry-item {
+            border-bottom-color: #e2e8f0;
+        }
+
         /* ===== TOAST ===== */
         #toast {
             position: fixed;
-            bottom: 100px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             padding: 10px 24px;
@@ -1038,19 +976,14 @@
                 <span class="brand-name">Bitácora</span>
             </div>
 
-            <div class="sidebar-search">
-                <span class="search-icon">⌕</span>
-                <input type="text" placeholder="Buscar..." oninput="globalSearch(this.value)">
-            </div>
-
             <div class="sidebar-nav">
-                <button class="active" onclick="switchView('home')" data-view="home">
-                    <span class="nav-icon">⌂</span>
-                    <span class="nav-text">Inicio</span>
-                </button>
-                <button onclick="switchView('calendar')" data-view="calendar">
+                <button class="active" onclick="switchView('calendar')" data-view="calendar">
                     <span class="nav-icon">◷</span>
                     <span class="nav-text">Calendario</span>
+                </button>
+                <button onclick="switchView('home')" data-view="home">
+                    <span class="nav-icon">⌂</span>
+                    <span class="nav-text">Centro resumen</span>
                 </button>
                 <button onclick="switchView('stats')" data-view="stats">
                     <span class="nav-icon">▦</span>
@@ -1096,7 +1029,7 @@
             <div id="main-header">
                 <div class="header-left">
                     <button class="menu-hamburger" onclick="toggleMobileMenu()" id="hamburger-btn">☰</button>
-                    <h1 id="page-title">Inicio</h1>
+                    <h1 id="page-title">Calendario</h1>
                 </div>
                 <div class="header-actions">
                     <button class="btn-secondary" onclick="openNewEntry()" id="new-entry-btn">+ Nueva entrada</button>
@@ -1105,32 +1038,6 @@
 
             <!-- Content -->
             <div id="content"></div>
-
-            <!-- Mobile Bottom Nav -->
-            <div id="mobile-bottom-nav">
-                <div class="bottom-nav-inner">
-                    <button class="active" onclick="switchView('home')" data-view="home">
-                        <span class="nav-icon">⌂</span>
-                        <span>Inicio</span>
-                    </button>
-                    <button onclick="switchView('calendar')" data-view="calendar">
-                        <span class="nav-icon">◷</span>
-                        <span>Calendario</span>
-                    </button>
-                    <button onclick="switchView('stats')" data-view="stats">
-                        <span class="nav-icon">▦</span>
-                        <span>Stats</span>
-                    </button>
-                    <button onclick="switchView('library')" data-view="library">
-                        <span class="nav-icon">☰</span>
-                        <span>Biblioteca</span>
-                    </button>
-                    <button onclick="toggleMobileMenu()">
-                        <span class="nav-icon">≡</span>
-                        <span>Menú</span>
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -1141,15 +1048,12 @@
             <span class="brand">Bitácora</span>
             <button class="menu-close" onclick="toggleMobileMenu()">✕</button>
         </div>
-        <div class="menu-search">
-            <input type="text" placeholder="Buscar..." oninput="globalSearchMobile(this.value)">
-        </div>
         <div class="menu-nav">
-            <button class="active" onclick="switchView('home');toggleMobileMenu()" data-view="home">
-                <span class="nav-icon">⌂</span> Inicio
-            </button>
-            <button onclick="switchView('calendar');toggleMobileMenu()" data-view="calendar">
+            <button class="active" onclick="switchView('calendar');toggleMobileMenu()" data-view="calendar">
                 <span class="nav-icon">◷</span> Calendario
+            </button>
+            <button onclick="switchView('home');toggleMobileMenu()" data-view="home">
+                <span class="nav-icon">⌂</span> Centro resumen
             </button>
             <button onclick="switchView('stats');toggleMobileMenu()" data-view="stats">
                 <span class="nav-icon">▦</span> Estadísticas
@@ -1202,6 +1106,7 @@
         let library = { books: [], movies: [], series: [], games: [] };
 
         let filteredEntries = [];
+        let searchQuery = '';
 
         const DEFAULT_COLORS = [
             '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
@@ -1293,8 +1198,7 @@
         //  HEADER
         // ============================================================
         function updateHeader() {
-            const total = entries.length + goals.length + projects.length + travels.length + work.length +
-                library.books.length + library.movies.length + library.series.length + library.games.length;
+            // No need for header count
         }
 
         // ============================================================
@@ -1312,17 +1216,16 @@
         // ============================================================
         //  NAVIGATION
         // ============================================================
-        let currentView = 'home';
+        let currentView = 'calendar';
 
         function switchView(view) {
             currentView = view;
-            document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button, #mobile-bottom-nav button')
-                .forEach(b => {
-                    b.classList.toggle('active', b.dataset.view === view);
-                });
+            document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                b.classList.toggle('active', b.dataset.view === view);
+            });
             const titles = {
-                'home': 'Inicio',
                 'calendar': 'Calendario',
+                'home': 'Centro resumen',
                 'stats': 'Estadísticas',
                 'goals': 'Objetivos',
                 'projects': 'Proyectos',
@@ -1330,11 +1233,10 @@
                 'work': 'Trabajo',
                 'library': 'Biblioteca'
             };
-            document.getElementById('page-title').textContent = titles[view] || 'Inicio';
+            document.getElementById('page-title').textContent = titles[view] || 'Calendario';
 
-            // Ocultar botón de nueva entrada en vistas que no lo necesitan
             const btn = document.getElementById('new-entry-btn');
-            if (view === 'home' || view === 'calendar' || view === 'stats') {
+            if (view === 'calendar' || view === 'home' || view === 'stats') {
                 btn.style.display = 'inline-block';
                 btn.textContent = '+ Nueva entrada';
             } else if (view === 'goals') {
@@ -1356,15 +1258,12 @@
                 btn.style.display = 'none';
             }
 
-            render();
-            // Cerrar búsqueda móvil si está abierta
-            if (document.getElementById('mobile-search-overlay')?.classList?.contains('open')) {
-                toggleMobileSearch();
-            }
-            // Cerrar menú móvil
+            // Cerrar menú móvil si está abierto
             if (document.getElementById('mobile-menu-panel').classList.contains('open')) {
                 toggleMobileMenu();
             }
+
+            render();
         }
 
         // ============================================================
@@ -1378,27 +1277,21 @@
         }
 
         // ============================================================
-        //  GLOBAL SEARCH
+        //  SEARCH
         // ============================================================
-        function globalSearch(query) {
-            const q = query.toLowerCase().trim();
-            if (!q) {
+        function doSearch(query) {
+            searchQuery = query.toLowerCase().trim();
+            if (!searchQuery) {
                 filteredEntries = [...entries];
             } else {
                 filteredEntries = entries.filter(e => {
                     const cat = categories.find(c => c.id === e.categoryId);
-                    return e.title.toLowerCase().includes(q) ||
-                        (cat && cat.name.toLowerCase().includes(q)) ||
-                        (e.notes && e.notes.toLowerCase().includes(q));
+                    return e.title.toLowerCase().includes(searchQuery) ||
+                        (cat && cat.name.toLowerCase().includes(searchQuery)) ||
+                        (e.notes && e.notes.toLowerCase().includes(searchQuery));
                 });
             }
             render();
-        }
-
-        function globalSearchMobile(query) {
-            // Similar pero para móvil, se puede implementar si se desea
-            // Por ahora redirige a la búsqueda de escritorio
-            globalSearch(query);
         }
 
         // ============================================================
@@ -1560,21 +1453,6 @@
             closeModal();
             render();
             showToast('Eliminada');
-        }
-
-        function deleteCategory(id) {
-            const hasEntries = entries.some(e => e.categoryId === id);
-            if (hasEntries) {
-                if (!confirm('Esta categoría tiene entradas. ¿Eliminar la categoría y todas sus entradas?')) return;
-                entries = entries.filter(e => e.categoryId !== id);
-            } else {
-                if (!confirm('¿Eliminar esta categoría?')) return;
-            }
-            categories = categories.filter(c => c.id !== id);
-            filteredEntries = [...entries];
-            saveData();
-            render();
-            showToast('Categoría eliminada');
         }
 
         // ============================================================
@@ -1916,16 +1794,12 @@
 
         function changeLibraryType(type) {
             libraryType = type;
-            // Re-render modal con el nuevo tipo
             const modal = document.getElementById('modal-container');
-            // Conservar el título si existe
             const titleInput = document.getElementById('modal-title');
             const title = titleInput ? titleInput.value : '';
-            // Re-renderizar
             const item = { type: type };
             if (title) item.title = title;
             modal.innerHTML = renderLibraryModal(item);
-            // Preservar el título
             const newTitle = document.getElementById('modal-title');
             if (newTitle && title) newTitle.value = title;
         }
@@ -2021,8 +1895,8 @@
         // ============================================================
         function render() {
             const content = document.getElementById('content');
-            if (currentView === 'home') content.innerHTML = renderHome();
-            else if (currentView === 'calendar') content.innerHTML = renderCalendar();
+            if (currentView === 'calendar') content.innerHTML = renderCalendar();
+            else if (currentView === 'home') content.innerHTML = renderHome();
             else if (currentView === 'stats') content.innerHTML = renderStats();
             else if (currentView === 'goals') content.innerHTML = renderGoals();
             else if (currentView === 'projects') content.innerHTML = renderProjects();
@@ -2032,64 +1906,7 @@
         }
 
         // ============================================================
-        //  RENDER: HOME
-        // ============================================================
-        function renderHome() {
-            const today = new Date().toISOString().slice(0, 10);
-            const todayEntries = entries.filter(e => e.date === today);
-
-            const activeGoals = goals.filter(g => g.status !== 'Completado').slice(0, 3);
-            const activeProjects = projects.filter(p => p.status !== 'Completado').slice(0, 2);
-            const recentEntries = entries.slice(0, 5);
-
-            let html = `
-            <div style="max-width:800px">
-                <div style="font-size:13px;color:#6b7280;margin-bottom:4px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
-                <div style="font-size:15px;font-weight:600;margin-bottom:20px">${todayEntries.length} entradas hoy</div>
-
-                <div class="card-grid">
-                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${goals.length}</div><div class="card-sub">${goals.filter(g=>g.status==='Completado').length} completados</div></div>
-                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${projects.length}</div><div class="card-sub">${projects.filter(p=>p.status==='Completado').length} completados</div></div>
-                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${travels.length}</div><div class="card-sub">${travels.length} experiencias</div></div>
-                    <div class="card"><div class="card-title">Biblioteca</div><div class="card-value">${library.books.length + library.movies.length + library.series.length + library.games.length}</div><div class="card-sub">${library.books.length} libros · ${library.movies.length} películas</div></div>
-                </div>`;
-
-            if (activeGoals.length) {
-                html += `<div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Objetivos activos</div>`;
-                activeGoals.forEach(g => {
-                    const pct = g.progress || 0;
-                    const color = pct >= 100 ? '#16a34a' : pct >= 50 ? '#d97706' : '#2563eb';
-                    html += `
-                    <div class="card" style="margin-bottom:8px;padding:14px 16px">
-                        <div style="display:flex;justify-content:space-between;align-items:center">
-                            <span style="font-weight:600">${g.title}</span>
-                            <span style="font-size:12px;color:#6b7280">${g.status}</span>
-                        </div>
-                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-                        <div style="font-size:12px;color:#6b7280;margin-top:4px">${pct}% · ${g.category}</div>
-                    </div>`;
-                });
-            }
-
-            if (recentEntries.length) {
-                html += `<div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Actividad reciente</div>`;
-                recentEntries.forEach(e => {
-                    const cat = categories.find(c => c.id === e.categoryId);
-                    const color = cat?.color || '#6b7280';
-                    html += `
-                    <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info"><div class="entry-title">${e.title}</div><div class="entry-meta">${e.date} · ${cat?.name || 'Sin categoría'}</div></div>
-                    </div>`;
-                });
-            }
-
-            html += `</div>`;
-            return html;
-        }
-
-        // ============================================================
-        //  RENDER: CALENDAR
+        //  RENDER: CALENDAR (página de inicio)
         // ============================================================
         let calYear = new Date().getFullYear();
         let calMonth = new Date().getMonth();
@@ -2115,15 +1932,16 @@
             const daysInPrevMonth = prevMonth.getDate();
 
             let html = `
-            <div class="calendar-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                <button class="calendar-nav-btn" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280" onclick="changeMonth(-1)">‹</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <button style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280" onclick="changeMonth(-1)">‹</button>
                 <span style="font-size:17px;font-weight:700">${monthNames[calMonth]} ${calYear}</span>
-                <button class="calendar-nav-btn" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280" onclick="changeMonth(1)">›</button>
+                <button style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280" onclick="changeMonth(1)">›</button>
             </div>
             <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
 
             dayNames.forEach(d => {
-                html += `<div style="text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;padding:6px 0 10px 0">${d}</div>`;
+                html +=
+                    `<div style="text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;padding:6px 0 10px 0">${d}</div>`;
             });
 
             for (let i = 0; i < offset; i++) {
@@ -2176,7 +1994,36 @@
                 html += renderDayEntries(window._selectedDate);
             }
 
-            // Estilos inline para el calendario
+            // Search bar
+            html += `
+            <div class="search-bar" style="margin-top:24px">
+                <span class="search-icon">⌕</span>
+                <input type="text" placeholder="Buscar entradas..." oninput="doSearch(this.value)">
+            </div>
+            <div class="search-results" id="search-results-container"></div>`;
+
+            // Si hay resultados de búsqueda, mostrarlos
+            if (searchQuery && filteredEntries.length > 0) {
+                const searchResultsHtml = filteredEntries.map(e => {
+                    const cat = categories.find(c => c.id === e.categoryId);
+                    const color = cat?.color || '#6b7280';
+                    const catName = cat?.name || 'Sin categoría';
+                    return `
+                    <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${e.title}</div>
+                            <div class="entry-meta">${e.date} · ${catName}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+                html += `<div style="margin-top:8px;font-size:12px;color:#6b7280;margin-bottom:8px">${filteredEntries.length} resultados</div>${searchResultsHtml}`;
+            } else if (searchQuery && filteredEntries.length === 0) {
+                html +=
+                    `<div style="margin-top:12px;color:#6b7280;text-align:center;padding:20px">No se encontraron entradas</div>`;
+            }
+
+            // Añadir estilos para light mode
             html += `
             <style>
                 .calendar-nav-btn:hover { color: #e2e8f0; }
@@ -2185,15 +2032,12 @@
                 body.light .calendar-day-cell:hover { background: #f5f5f7 !important; }
                 .calendar-day-cell { background: #12121f; }
                 .calendar-day-empty { background: transparent !important; border-color: transparent !important; }
-            </style>
-            <script>
-                // Añadir clases para light mode
-                document.querySelectorAll('.calendar-day-cell').forEach(el => {
-                    if (document.body.classList.contains('light')) {
-                        el.style.background = '#ffffff';
-                    }
-                });
-            <\/script>`;
+                body.light .search-bar input { background: #ffffff; border-color: #e2e8f0; color: #1c1c1e; }
+                body.light .search-bar input:focus { border-color: #1c1c1e; }
+                body.light .calendar-day { background: #ffffff !important; border-color: #e2e8f0 !important; }
+                body.light .calendar-day:hover { background: #f5f5f7 !important; }
+                body.light .calendar-day.today { border-color: #1c1c1e !important; }
+            </style>`;
 
             return html;
         }
@@ -2251,28 +2095,98 @@
         }
 
         // ============================================================
+        //  RENDER: HOME (Centro resumen)
+        // ============================================================
+        function renderHome() {
+            const today = new Date().toISOString().slice(0, 10);
+            const todayEntries = entries.filter(e => e.date === today);
+
+            const activeGoals = goals.filter(g => g.status !== 'Completado').slice(0, 3);
+            const activeProjects = projects.filter(p => p.status !== 'Completado').slice(0, 2);
+            const recentEntries = entries.slice(0, 5);
+
+            let html = `
+            <div style="max-width:800px">
+
+                <div style="font-size:13px;color:#6b7280;margin-bottom:4px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
+                <div style="font-size:15px;font-weight:600;margin-bottom:20px">${todayEntries.length} entradas hoy</div>
+
+                <div class="card-grid">
+                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${goals.length}</div><div class="card-sub">${goals.filter(g=>g.status==='Completado').length} completados</div></div>
+                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${projects.length}</div><div class="card-sub">${projects.filter(p=>p.status==='Completado').length} completados</div></div>
+                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${travels.length}</div><div class="card-sub">${travels.length} experiencias</div></div>
+                    <div class="card"><div class="card-title">Biblioteca</div><div class="card-value">${library.books.length + library.movies.length + library.series.length + library.games.length}</div><div class="card-sub">${library.books.length} libros · ${library.movies.length} películas</div></div>
+                </div>
+
+                <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Actividad reciente</div>`;
+
+            if (recentEntries.length) {
+                recentEntries.forEach(e => {
+                    const cat = categories.find(c => c.id === e.categoryId);
+                    const color = cat?.color || '#6b7280';
+                    html += `
+                    <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${e.title}</div>
+                            <div class="entry-meta">${e.date} · ${cat?.name || 'Sin categoría'}</div>
+                        </div>
+                    </div>`;
+                });
+            } else {
+                html += `<div style="color:#6b7280;padding:12px 0">No hay actividad reciente</div>`;
+            }
+
+            if (activeGoals.length) {
+                html += `<div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Objetivos activos</div>`;
+                activeGoals.forEach(g => {
+                    const pct = g.progress || 0;
+                    const color = pct >= 100 ? '#16a34a' : pct >= 50 ? '#d97706' : '#2563eb';
+                    html += `
+                    <div class="card" style="margin-bottom:8px;padding:14px 16px">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:600">${g.title}</span>
+                            <span style="font-size:12px;color:#6b7280">${g.status}</span>
+                        </div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+                        <div style="font-size:12px;color:#6b7280;margin-top:4px">${pct}% · ${g.category}</div>
+                    </div>`;
+                });
+            }
+
+            if (activeProjects.length) {
+                html += `<div style="font-weight:700;font-size:14px;margin:16px 0 8px 0">Proyectos en curso</div>`;
+                activeProjects.forEach(p => {
+                    const totalTasks = p.tasks?.length || 0;
+                    const doneTasks = p.tasks?.filter(t => t.done).length || 0;
+                    const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+                    html += `
+                    <div class="card" style="margin-bottom:8px;padding:14px 16px">
+                        <div style="font-weight:600">${p.name}</div>
+                        <div style="font-size:12px;color:#6b7280">${p.status} · ${doneTasks}/${totalTasks} tareas</div>
+                        ${totalTasks > 0 ? `<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>` : ''}
+                    </div>`;
+                });
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
         //  RENDER: STATS
         // ============================================================
         function renderStats() {
             const totalEntries = entries.length;
-
-            // Biblioteca counts
             const booksCount = library.books.length;
             const moviesCount = library.movies.length;
             const seriesCount = library.series.length;
             const gamesCount = library.games.length;
-
-            // Goals
             const goalsTotal = goals.length;
             const goalsDone = goals.filter(g => g.status === 'Completado').length;
-
-            // Travels
             const travelsTotal = travels.length;
-
-            // Work
             const workTotal = work.length;
 
-            // Entradas por categoría
             const byCategory = {};
             entries.forEach(e => {
                 if (!byCategory[e.categoryId]) byCategory[e.categoryId] = 0;
@@ -2280,7 +2194,6 @@
             });
             const sortedCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
 
-            // Entradas por mes (últimos 6)
             const monthCount = {};
             entries.forEach(e => {
                 const m = e.date.slice(0, 7);
@@ -2362,10 +2275,10 @@
                 return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin objetivos</div><div class="empty-sub">Pulsa "+ Nuevo objetivo" para empezar</div></div>`;
             }
 
-            const categories = ['Corto plazo', 'Medio plazo', 'Largo plazo'];
+            const catLabels = ['Corto plazo', 'Medio plazo', 'Largo plazo'];
             let html = '';
 
-            categories.forEach(cat => {
+            catLabels.forEach(cat => {
                 const filtered = goals.filter(g => g.category === cat);
                 if (!filtered.length) return;
 
@@ -2428,7 +2341,6 @@
                         <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
                         <div style="font-size:12px;color:#6b7280;margin-top:4px">${doneTasks}/${totalTasks} tareas completadas</div>
                     ` : ''}
-                    ${p.tasks && p.tasks.length > 0 ? `<div style="margin-top:8px;font-size:12px;color:#6b7280">${p.tasks.filter(t=>t.done).length > 0 ? '✅ ' + p.tasks.filter(t=>t.done).map(t=>t.text).join(', ') : 'Sin tareas completadas'}</div>` : ''}
                 </div>`;
             });
 
@@ -2472,7 +2384,6 @@
             }
 
             let html = '';
-            // Ordenar por fecha de inicio (más reciente primero)
             const sorted = [...work].sort((a, b) => b.startDate.localeCompare(a.startDate));
 
             sorted.forEach(w => {
@@ -2505,7 +2416,6 @@
             library.series.forEach(i => { allItems.push({ ...i, type: 'series', label: 'Serie' }); });
             library.games.forEach(i => { allItems.push({ ...i, type: 'games', label: 'Videojuego' }); });
 
-            // Aplicar filtro de tipo
             const filtered = libraryView === 'all' ? allItems : allItems.filter(i => i.type === libraryView);
 
             const counts = {
@@ -2530,7 +2440,6 @@
                 return html;
             }
 
-            // Ordenar por fecha más reciente
             const sorted = filtered.sort((a, b) => {
                 const dateA = a.endDate || a.watchDate || a.startDate || '';
                 const dateB = b.endDate || b.watchDate || b.startDate || '';
@@ -2569,6 +2478,11 @@
         }
 
         // ============================================================
+        //  RENDER: HOME (Centro resumen)
+        // ============================================================
+        // Ya definido arriba
+
+        // ============================================================
         //  INIT
         // ============================================================
         function init() {
@@ -2580,12 +2494,12 @@
                 document.querySelector('.menu-hamburger').style.display = 'block';
             }
 
-            render();
-
             // Cerrar menú al hacer clic fuera
             document.getElementById('mobile-menu-overlay').addEventListener('click', function() {
                 if (this.classList.contains('open')) toggleMobileMenu();
             });
+
+            render();
 
             // Re-render al cambiar tamaño
             let resizeTimer;
@@ -2598,9 +2512,9 @@
             });
         }
 
-        // Añadir estilos para los botones activos en library
-        const style = document.createElement('style');
-        style.textContent = `
+        // Estilos para botones activos
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
             .btn-secondary.active {
                 background: #2a2a3a;
                 color: #e2e8f0;
@@ -2611,11 +2525,49 @@
                 color: #1c1c1e;
                 border-color: #d1d1d6;
             }
+            .search-bar input {
+                width: 100%;
+                padding: 10px 14px 10px 40px;
+                border-radius: 12px;
+                border: 1px solid #2a2a3a;
+                background: #12121f;
+                color: #e2e8f0;
+                font-family: 'Inter', sans-serif;
+                font-size: 14px;
+                font-weight: 500;
+                outline: none;
+                transition: border-color 0.15s ease;
+            }
+            .search-bar input:focus {
+                border-color: #e2e8f0;
+            }
+            .search-bar input::placeholder {
+                color: #6b7280;
+            }
+            .search-bar .search-icon {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #6b7280;
+                font-size: 18px;
+                pointer-events: none;
+            }
+            body.light .search-bar input {
+                background: #ffffff;
+                border-color: #e2e8f0;
+                color: #1c1c1e;
+            }
+            body.light .search-bar input::placeholder {
+                color: #8e8e93;
+            }
+            body.light .search-bar input:focus {
+                border-color: #1c1c1e;
+            }
         `;
-        document.head.appendChild(style);
+        document.head.appendChild(styleEl);
 
         init();
     </script>
-
 </body>
 </html>
