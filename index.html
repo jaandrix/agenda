@@ -965,7 +965,6 @@
             display: flex;
             align-items: flex-end;
             gap: 6px;
-            height: 120px;
             padding-top: 8px;
         }
         .investment-chart .bar {
@@ -975,9 +974,15 @@
             align-items: center;
             gap: 4px;
         }
-        .investment-chart .bar .bar-fill {
+        .investment-chart .bar .bar-track {
             width: 100%;
             max-width: 24px;
+            height: 110px;
+            display: flex;
+            align-items: flex-end;
+        }
+        .investment-chart .bar .bar-fill {
+            width: 100%;
             border-radius: 4px 4px 0 0;
             transition: height 0.6s ease;
             background: var(--accent);
@@ -987,6 +992,51 @@
             font-size: 9px;
             color: var(--text-secondary);
         }
+        .year-selector {
+            display: flex;
+            gap: 6px;
+        }
+        .year-selector button {
+            background: var(--bg-app);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .year-selector button.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--accent-contrast);
+        }
+        .milestones-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        .milestones-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .milestone-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .milestone-row .milestone-label {
+            color: var(--text-secondary);
+        }
+        .milestone-row .milestone-value {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
 
         /* ============================================================
                LOGIN
@@ -994,11 +1044,23 @@
         #login-screen {
             position: fixed;
             inset: 0;
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             background: var(--bg-app);
             z-index: 1000;
+        }
+        #boot-loading {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-app);
+            z-index: 1001;
+            font-size: 13px;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
         }
         #login-box {
             width: 100%;
@@ -1162,6 +1224,8 @@
     <!-- ============================================================
     LOGIN SCREEN
     ============================================================ -->
+    <div id="boot-loading">Cargando...</div>
+
     <div id="login-screen">
         <div id="login-box">
             <div id="mode-login">
@@ -1270,10 +1334,6 @@
                     <span class="nav-icon">◈</span>
                     <span class="nav-text">Eventos</span>
                 </button>
-                <button onclick="switchView('restaurants')" data-view="restaurants">
-                    <span class="nav-icon">◉</span>
-                    <span class="nav-text">Restaurantes</span>
-                </button>
                 <button onclick="switchView('places')" data-view="places">
                     <span class="nav-icon">⌂</span>
                     <span class="nav-text">Lugares</span>
@@ -1324,7 +1384,6 @@
         <button onclick="openNewEntry('work')">Trabajo</button>
         <button onclick="openNewEntry('project')">Proyecto</button>
         <button onclick="openNewEntry('event')">Evento</button>
-        <button onclick="openNewEntry('restaurant')">Restaurante</button>
         <button onclick="openNewEntry('place')">Lugar</button>
         <button onclick="openNewEntry('document')">Documento</button>
     </div>
@@ -1374,9 +1433,6 @@
             </button>
             <button onclick="switchView('events');toggleMobileMenu()" data-view="events">
                 <span class="nav-icon">◈</span> Eventos
-            </button>
-            <button onclick="switchView('restaurants');toggleMobileMenu()" data-view="restaurants">
-                <span class="nav-icon">◉</span> Restaurantes
             </button>
             <button onclick="switchView('places');toggleMobileMenu()" data-view="places">
                 <span class="nav-icon">⌂</span> Lugares
@@ -1454,6 +1510,8 @@
         }
 
         async function startApp() {
+            const boot = document.getElementById('boot-loading');
+            if (boot) boot.style.display = 'none';
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app').classList.add('ready');
             await init();
@@ -1557,7 +1615,12 @@
 
         (async () => {
             const { data: { session } } = await sb.auth.getSession();
-            if (session) { await startApp(); }
+            document.getElementById('boot-loading').style.display = 'none';
+            if (session) {
+                await startApp();
+            } else {
+                document.getElementById('login-screen').style.display = 'flex';
+            }
         })();
 
         // ============================================================
@@ -1569,6 +1632,7 @@
         let editType = null;
         let filteredEntries = [];
         let userName = '';
+        let investmentData = { initial: 0, rate: 7, monthly: 0 };
 
         // ============================================================
         //  ENTRY TYPES (SIN EMOJIS)
@@ -1610,9 +1674,26 @@
             work: 'Trabajo',
             project: 'Proyecto',
             event: 'Evento',
-            restaurant: 'Restaurante',
             place: 'Lugar',
             document: 'Documento'
+        };
+
+        // Etiquetas de cada vista/pestaña del menu (usadas para el titulo superior)
+        const VIEW_LABELS = {
+            calendar: 'Calendario',
+            home: 'Centro resumen',
+            stats: 'Estadisticas',
+            books: 'Libros',
+            movies: 'Peliculas',
+            series: 'Series',
+            games: 'Videojuegos',
+            travels: 'Viajes',
+            work: 'Trabajo',
+            projects: 'Proyectos',
+            events: 'Eventos',
+            places: 'Lugares',
+            documents: 'Documentos',
+            investments: 'Finanzas'
         };
 
         // Tipos que NO aparecen en el calendario
@@ -1643,6 +1724,7 @@
                 entries = saved.entries || [];
                 categories = saved.categories || getDefaultCategories();
                 userName = saved.userName || '';
+                investmentData = saved.investmentData || { initial: 0, rate: 7, monthly: 0 };
             } catch (e) {
                 console.error('Error cargando datos de Supabase:', e);
                 return false;
@@ -1669,7 +1751,7 @@
             if (!user) throw new Error('No hay sesión activa');
             const { error } = await sb.from('bitacora').upsert({
                 user_id: user.id,
-                data: { entries, categories, userName },
+                data: { entries, categories, userName, investmentData },
                 updated_at: new Date().toISOString()
             });
             if (error) throw error;
@@ -1680,10 +1762,7 @@
         // ============================================================
         function updatePageTitle() {
             const titleEl = document.getElementById('page-title');
-            const baseTitle = currentView === 'calendar' ? 'Calendario' :
-                currentView === 'home' ? 'Centro resumen' :
-                currentView === 'stats' ? 'Estadisticas' :
-                TYPE_LABELS[currentView] || 'Calendario';
+            const baseTitle = VIEW_LABELS[currentView] || 'Calendario';
 
             if (userName && currentView === 'calendar') {
                 titleEl.textContent = 'Calendario de ' + userName + ' ';
@@ -2283,7 +2362,6 @@
             else if (currentView === 'work') content.innerHTML = renderWork();
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
-            else if (currentView === 'restaurants') content.innerHTML = renderRestaurants();
             else if (currentView === 'places') content.innerHTML = renderPlaces();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
                 loadDocuments(); } else if (currentView === 'investments') content.innerHTML = renderInvestments();
@@ -2580,7 +2658,6 @@
                     <div class="card"><div class="card-title">Trabajo</div><div class="card-value">${byType.work || 0}</div></div>
                     <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${byType.project || 0}</div></div>
                     <div class="card"><div class="card-title">Eventos</div><div class="card-value">${byType.event || 0}</div></div>
-                    <div class="card"><div class="card-title">Restaurantes</div><div class="card-value">${byType.restaurant || 0}</div></div>
                     <div class="card"><div class="card-title">Lugares</div><div class="card-value">${byType.place || 0}</div></div>
                 </div>`;
 
@@ -2965,18 +3042,23 @@
         // ============================================================
         //  RENDER: INVESTMENTS (Calculadora de interes compuesto)
         // ============================================================
-        let investmentData = { initial: 0, rate: 7, monthly: 0 };
+        let investmentChartYears = 10;
 
         function renderInvestments() {
-            // Cargar datos guardados
-            const saved = localStorage.getItem('bitacora_investment_data');
-            if (saved) {
-                try { investmentData = JSON.parse(saved); } catch (e) {}
-            }
-
-            const proj = calcCompoundProjection(investmentData.initial || 0, investmentData.monthly || 0, investmentData
-                .rate || 0, 30);
+            const proj = calcCompoundProjection(investmentData.initial || 0, investmentData.monthly || 0,
+                investmentData.rate || 0, investmentChartYears);
             const max = Math.max(...proj.yearlySnapshots.map(s => s.balance), 1);
+
+            // Hitos "a este ritmo" (siempre a 6 meses, 1, 3, 5 y 10 anos, independientemente de la vista del grafico)
+            const milestoneMonths = [6, 12, 36, 60, 120];
+            const milestoneLabels = ['6 meses', '1 ano', '3 anos', '5 anos', '10 anos'];
+            const milestones = milestoneMonths.map((m, i) => ({
+                label: milestoneLabels[i],
+                balance: calcBalanceAtMonth(investmentData.initial || 0, investmentData.monthly || 0,
+                    investmentData.rate || 0, m)
+            }));
+
+            const yearOptions = [5, 10, 20, 30];
 
             let html = `
             <div class="investment-calculator">
@@ -3005,12 +3087,33 @@
                 </div>
 
                 <div class="chart-container">
-                    <div class="chart-title">Evolucion anual (30 anos)</div>
+                    <div class="milestones-title">A este ritmo...</div>
+                    <div class="milestones-list">
+                        ${milestones.map(ms => `
+                            <div class="milestone-row">
+                                <span class="milestone-label">En ${ms.label}</span>
+                                <span class="milestone-value">${ms.balance.toLocaleString('es-ES')}€</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                        <div class="chart-title" style="margin-bottom:0">Evolucion anual</div>
+                        <div class="year-selector">
+                            ${yearOptions.map(y => `
+                                <button class="${y === investmentChartYears ? 'active' : ''}" onclick="setInvestmentYears(${y})">${y} anos</button>
+                            `).join('')}
+                        </div>
+                    </div>
                     <div class="investment-chart">
                         ${proj.yearlySnapshots.map((s, i) => `
-                            <div class="bar" title="Ano ${s.year}: ${s.balance}€">
-                                <div class="bar-fill" style="height:${Math.max(4, (s.balance/max)*100)}%;background:${s.balance > proj.totalContributed ? 'var(--accent)' : 'var(--text-secondary)'}"></div>
-                                <div class="bar-label">${i % 5 === 0 ? s.year : ''}</div>
+                            <div class="bar" title="Ano ${s.year}: ${s.balance.toLocaleString('es-ES')}€">
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="height:${Math.max(4, (s.balance/max)*100)}%;background:${s.balance > proj.totalContributed ? 'var(--accent)' : 'var(--text-secondary)'}"></div>
+                                </div>
+                                <div class="bar-label">${shouldShowYearLabel(i, proj.yearlySnapshots.length) ? s.year : ''}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -3020,17 +3123,33 @@
             return html;
         }
 
-        function updateInvestment() {
+        // Evita amontonar etiquetas cuando hay muchos anos: muestra como maximo ~8 etiquetas
+        function shouldShowYearLabel(index, total) {
+            const step = Math.max(1, Math.round(total / 8));
+            return index % step === 0;
+        }
+
+        function setInvestmentYears(years) {
+            investmentChartYears = years;
+            document.getElementById('content').innerHTML = renderInvestments();
+        }
+
+        async function updateInvestment() {
             const initial = parseFloat(document.getElementById('inv-initial').value) || 0;
             const rate = parseFloat(document.getElementById('inv-rate').value) || 0;
             const monthly = parseFloat(document.getElementById('inv-monthly').value) || 0;
 
             investmentData = { initial, rate, monthly };
-            localStorage.setItem('bitacora_investment_data', JSON.stringify(investmentData));
 
             // Re-render solo la seccion de inversiones
-            const content = document.getElementById('content');
-            content.innerHTML = renderInvestments();
+            document.getElementById('content').innerHTML = renderInvestments();
+
+            try {
+                await saveData();
+            } catch (err) {
+                console.error('Error guardando los datos de finanzas en Supabase:', err);
+                showToast('No se pudo guardar en la nube. Revisa tu conexión.', true);
+            }
         }
 
         function calcCompoundProjection(principal, monthlyContribution, annualRatePct, years) {
@@ -3052,6 +3171,16 @@
                 totalInterest: Math.round(balance - totalContributed),
                 yearlySnapshots
             };
+        }
+
+        // Calcula el capital exacto tras N meses (para los hitos "a este ritmo")
+        function calcBalanceAtMonth(principal, monthlyContribution, annualRatePct, months) {
+            const monthlyRate = annualRatePct / 100 / 12;
+            let balance = principal;
+            for (let m = 1; m <= months; m++) {
+                balance = balance * (1 + monthlyRate) + monthlyContribution;
+            }
+            return Math.round(balance);
         }
 
         // ============================================================
@@ -3086,7 +3215,7 @@
             } catch (e) {
                 console.error('Error cargando documentos:', e);
                 if (listEl) listEl.innerHTML =
-                    `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No se pudieron cargar los documentos</div><div class="empty-sub">Comprueba que el bucket "documents" existe en Supabase Storage</div></div>`;
+                    `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No se pudieron cargar los documentos</div><div class="empty-sub">${(e?.message || 'Comprueba que el bucket "documents" existe en Supabase Storage')}</div></div>`;
             }
         }
 
@@ -3133,7 +3262,7 @@
                 await loadDocuments();
             } catch (e) {
                 console.error('Error subiendo documento:', e);
-                showToast('Error al subir el documento', true);
+                showToast('Error al subir: ' + (e?.message || 'desconocido'), true);
             }
         }
 
@@ -3147,7 +3276,7 @@
                 window.open(data.signedUrl, '_blank');
             } catch (e) {
                 console.error('Error descargando documento:', e);
-                showToast('Error al descargar el documento', true);
+                showToast('Error al descargar: ' + (e?.message || 'desconocido'), true);
             }
         }
 
@@ -3163,7 +3292,7 @@
                 await loadDocuments();
             } catch (e) {
                 console.error('Error eliminando documento:', e);
-                showToast('Error al eliminar el documento', true);
+                showToast('Error al eliminar: ' + (e?.message || 'desconocido'), true);
             }
         }
 
