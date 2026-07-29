@@ -1014,6 +1014,78 @@
             margin-top: 10px;
             min-height: 14px;
         }
+        #login-success {
+            color: #2ecc71;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 14px;
+        }
+        .login-links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 14px;
+        }
+        .login-links a {
+            font-size: 12px;
+            color: #2563eb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .login-links a:hover { text-decoration: underline; }
+        .login-back {
+            display: block;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 14px;
+            cursor: pointer;
+        }
+        .login-back:hover { color: #2563eb; }
+
+        /* ===== DOCUMENTOS ===== */
+        .doc-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid #2a2a3a;
+            background: #12121f;
+            margin-bottom: 10px;
+        }
+        body.light .doc-item {
+            background: #ffffff;
+            border-color: #e2e8f0;
+        }
+        .doc-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .doc-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .doc-meta { font-size: 12px; color: #6b7280; }
+        .doc-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .doc-actions button {
+            background: none;
+            border: 1px solid #2a2a3a;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #e2e8f0;
+        }
+        body.light .doc-actions button {
+            border-color: #d1d1d6;
+            color: #1c1c1e;
+        }
+        .doc-upload-box {
+            border: 2px dashed #2a2a3a;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        body.light .doc-upload-box { border-color: #d1d1d6; }
+        .doc-upload-box:hover { border-color: #2563eb; }
         #app { display: none; }
         #app.ready { display: flex; }
     </style>
@@ -1021,12 +1093,54 @@
 <body>
     <div id="login-screen">
         <div id="login-box">
-            <h1>Bitácora</h1>
-            <p class="sub">Inicia sesión para continuar</p>
-            <input type="email" id="login-email" placeholder="Email" autocomplete="username">
-            <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
-            <button id="login-btn" onclick="handleLogin()">Entrar</button>
-            <div id="login-error"></div>
+            <!-- ===== MODO: LOGIN ===== -->
+            <div id="mode-login">
+                <h1>Bitácora</h1>
+                <p class="sub">Inicia sesión para continuar</p>
+                <input type="email" id="login-email" placeholder="Email" autocomplete="username">
+                <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
+                <button id="login-btn" onclick="handleLogin()">Entrar</button>
+                <div id="login-error"></div>
+                <div class="login-links">
+                    <a onclick="showAuthMode('signup')">Crear cuenta</a>
+                    <a onclick="showAuthMode('forgot')">¿Olvidaste tu contraseña?</a>
+                </div>
+            </div>
+
+            <!-- ===== MODO: REGISTRO ===== -->
+            <div id="mode-signup" style="display:none">
+                <h1>Crear cuenta</h1>
+                <p class="sub">Regístrate para empezar a usar Bitácora</p>
+                <input type="email" id="signup-email" placeholder="Email" autocomplete="username">
+                <input type="password" id="signup-password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password">
+                <input type="password" id="signup-password2" placeholder="Repite la contraseña" autocomplete="new-password">
+                <button id="signup-btn" onclick="handleSignup()">Crear cuenta</button>
+                <div id="signup-error"></div>
+                <div id="signup-success"></div>
+                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesión</a>
+            </div>
+
+            <!-- ===== MODO: OLVIDÉ MI CONTRASEÑA ===== -->
+            <div id="mode-forgot" style="display:none">
+                <h1>Recuperar contraseña</h1>
+                <p class="sub">Te enviaremos un enlace a tu email</p>
+                <input type="email" id="forgot-email" placeholder="Email" autocomplete="username">
+                <button id="forgot-btn" onclick="handleForgotPassword()">Enviar enlace</button>
+                <div id="forgot-error"></div>
+                <div id="forgot-success"></div>
+                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesión</a>
+            </div>
+
+            <!-- ===== MODO: NUEVA CONTRASEÑA (tras pulsar el enlace del email) ===== -->
+            <div id="mode-reset" style="display:none">
+                <h1>Nueva contraseña</h1>
+                <p class="sub">Elige tu nueva contraseña</p>
+                <input type="password" id="reset-password" placeholder="Nueva contraseña (mín. 6 caracteres)" autocomplete="new-password">
+                <input type="password" id="reset-password2" placeholder="Repite la contraseña" autocomplete="new-password">
+                <button id="reset-btn" onclick="handleResetPassword()">Guardar contraseña</button>
+                <div id="reset-error"></div>
+                <div id="reset-success"></div>
+            </div>
         </div>
     </div>
 
@@ -1073,6 +1187,10 @@
                 <button onclick="switchView('cultura')" data-view="cultura">
                     <span class="nav-icon">◊</span>
                     <span class="nav-text">Cultura</span>
+                </button>
+                <button onclick="switchView('documents')" data-view="documents">
+                    <span class="nav-icon">📄</span>
+                    <span class="nav-text">Documentos</span>
                 </button>
 
                 <span class="nav-label">Nuevo</span>
@@ -1170,6 +1288,9 @@
             <button onclick="switchView('cultura');toggleMobileMenu()" data-view="cultura">
                 <span class="nav-icon">◊</span> Cultura
             </button>
+            <button onclick="switchView('documents');toggleMobileMenu()" data-view="documents">
+                <span class="nav-icon">📄</span> Documentos
+            </button>
 
             <span class="nav-label">Nuevo</span>
             <button onclick="switchView('exams');toggleMobileMenu()" data-view="exams">
@@ -1200,6 +1321,7 @@
     <div id="modal-container"></div>
     <div id="toast"></div>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
+    <input type="file" id="doc-upload-input" accept="application/pdf" style="display:none" onchange="handleDocUpload(event)">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
@@ -1238,6 +1360,7 @@
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';
+            showAuthMode('login');
         }
 
         async function startApp() {
@@ -1246,10 +1369,139 @@
             await init();
         }
 
+        // Cambiar entre login / registro / recuperar contraseña
+        function showAuthMode(mode) {
+            ['login', 'signup', 'forgot', 'reset'].forEach(m => {
+                document.getElementById('mode-' + m).style.display = (m === mode) ? 'block' : 'none';
+            });
+        }
+
+        // ===== REGISTRO =====
+        async function handleSignup() {
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const password2 = document.getElementById('signup-password2').value;
+            const errorEl = document.getElementById('signup-error');
+            const successEl = document.getElementById('signup-success');
+            const btn = document.getElementById('signup-btn');
+            errorEl.textContent = '';
+            successEl.textContent = '';
+
+            if (!email || !password || !password2) {
+                errorEl.textContent = 'Rellena todos los campos.';
+                return;
+            }
+            if (password.length < 6) {
+                errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                return;
+            }
+            if (password !== password2) {
+                errorEl.textContent = 'Las contraseñas no coinciden.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Creando...';
+            const { data, error } = await sb.auth.signUp({ email, password });
+            btn.disabled = false;
+            btn.textContent = 'Crear cuenta';
+
+            if (error) {
+                errorEl.textContent = 'No se pudo crear la cuenta: ' + error.message;
+                return;
+            }
+
+            // Si Supabase pide confirmación por email, no habrá sesión activa todavía
+            if (data.session) {
+                await startApp();
+            } else {
+                successEl.textContent = 'Cuenta creada. Revisa tu email para confirmar la cuenta antes de entrar.';
+                document.getElementById('signup-email').value = '';
+                document.getElementById('signup-password').value = '';
+                document.getElementById('signup-password2').value = '';
+            }
+        }
+
+        // ===== OLVIDÉ MI CONTRASEÑA =====
+        async function handleForgotPassword() {
+            const email = document.getElementById('forgot-email').value.trim();
+            const errorEl = document.getElementById('forgot-error');
+            const successEl = document.getElementById('forgot-success');
+            const btn = document.getElementById('forgot-btn');
+            errorEl.textContent = '';
+            successEl.textContent = '';
+
+            if (!email) {
+                errorEl.textContent = 'Introduce tu email.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            const { error } = await sb.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + window.location.pathname
+            });
+            btn.disabled = false;
+            btn.textContent = 'Enviar enlace';
+
+            if (error) {
+                errorEl.textContent = 'No se pudo enviar el enlace: ' + error.message;
+                return;
+            }
+            successEl.textContent = 'Si el email existe, te hemos enviado un enlace para restablecer tu contraseña.';
+        }
+
+        // ===== GUARDAR NUEVA CONTRASEÑA (tras pulsar el enlace del email) =====
+        async function handleResetPassword() {
+            const password = document.getElementById('reset-password').value;
+            const password2 = document.getElementById('reset-password2').value;
+            const errorEl = document.getElementById('reset-error');
+            const successEl = document.getElementById('reset-success');
+            const btn = document.getElementById('reset-btn');
+            errorEl.textContent = '';
+            successEl.textContent = '';
+
+            if (!password || !password2) {
+                errorEl.textContent = 'Rellena ambos campos.';
+                return;
+            }
+            if (password.length < 6) {
+                errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                return;
+            }
+            if (password !== password2) {
+                errorEl.textContent = 'Las contraseñas no coinciden.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+            const { error } = await sb.auth.updateUser({ password });
+            btn.disabled = false;
+            btn.textContent = 'Guardar contraseña';
+
+            if (error) {
+                errorEl.textContent = 'No se pudo actualizar la contraseña: ' + error.message;
+                return;
+            }
+            successEl.textContent = 'Contraseña actualizada. Ya puedes usar la app.';
+            setTimeout(() => startApp(), 1200);
+        }
+
         // Enter key para enviar el login
         document.addEventListener('DOMContentLoaded', () => {
             const pw = document.getElementById('login-password');
             if (pw) pw.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+        });
+
+        // Supabase redirige aquí con un token especial cuando el usuario
+        // pulsa el enlace de "recuperar contraseña" del email.
+        sb.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('app').classList.remove('ready');
+                showAuthMode('reset');
+            }
         });
 
         // Al cargar la página, comprobar si ya hay sesión activa
@@ -1366,6 +1618,120 @@
             })();
         }
 
+        // ============================================================
+        //  DOCUMENTOS (Supabase Storage)
+        // ============================================================
+        const DOCS_BUCKET = 'documents'; // Debes crear este bucket (privado) en Supabase Storage
+        let documents = [];
+
+        function renderDocuments() {
+            return `
+                <div style="max-width:700px">
+                    <div class="doc-upload-box" onclick="document.getElementById('doc-upload-input').click()">
+                        <div style="font-size:28px;margin-bottom:6px">📄</div>
+                        <div style="font-weight:600;margin-bottom:4px">Sube un documento PDF</div>
+                        <div style="font-size:12px;color:#6b7280">Pulsa aquí para elegir un archivo (ej. tu CV)</div>
+                    </div>
+                    <div id="doc-list">Cargando documentos...</div>
+                </div>`;
+        }
+
+        async function loadDocuments() {
+            const listEl = document.getElementById('doc-list');
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { documents = []; if (listEl) listEl.innerHTML = ''; return; }
+                const { data, error } = await sb.storage.from(DOCS_BUCKET).list(user.id, {
+                    sortBy: { column: 'created_at', order: 'desc' }
+                });
+                if (error) throw error;
+                documents = data || [];
+                if (listEl) renderDocList();
+            } catch (e) {
+                console.error('Error cargando documentos:', e);
+                if (listEl) listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No se pudieron cargar los documentos</div><div class="empty-sub">Comprueba que el bucket "documents" existe en Supabase Storage</div></div>`;
+            }
+        }
+
+        function renderDocList() {
+            const listEl = document.getElementById('doc-list');
+            if (!listEl) return;
+            if (!documents.length) {
+                listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF con el botón de arriba</div></div>`;
+                return;
+            }
+            listEl.innerHTML = documents.map(doc => {
+                const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
+                const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
+                return `
+                    <div class="doc-item">
+                        <div class="doc-info">
+                            <span style="font-size:20px">📄</span>
+                            <div style="min-width:0">
+                                <div class="doc-name">${doc.name}</div>
+                                <div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
+                            </div>
+                        </div>
+                        <div class="doc-actions">
+                            <button onclick="downloadDocument('${doc.name}')">⬇ Descargar</button>
+                            <button onclick="deleteDocument('${doc.name}')">🗑</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function handleDocUpload(event) {
+            const file = event.target.files[0];
+            event.target.value = ''; // permite volver a elegir el mismo archivo después
+            if (!file) return;
+            if (file.type !== 'application/pdf') {
+                showToast('Solo se admiten archivos PDF', true);
+                return;
+            }
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${Date.now()}_${file.name}`;
+                const { error } = await sb.storage.from(DOCS_BUCKET).upload(path, file, { upsert: false });
+                if (error) throw error;
+                showToast('Documento subido correctamente');
+                await loadDocuments();
+            } catch (e) {
+                console.error('Error subiendo documento:', e);
+                showToast('Error al subir el documento', true);
+            }
+        }
+
+        async function downloadDocument(name) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${name}`;
+                const { data, error } = await sb.storage.from(DOCS_BUCKET).createSignedUrl(path, 60);
+                if (error) throw error;
+                window.open(data.signedUrl, '_blank');
+            } catch (e) {
+                console.error('Error descargando documento:', e);
+                showToast('Error al descargar el documento', true);
+            }
+        }
+
+        async function deleteDocument(name) {
+            if (!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${name}`;
+                const { error } = await sb.storage.from(DOCS_BUCKET).remove([path]);
+                if (error) throw error;
+                showToast('Documento eliminado');
+                await loadDocuments();
+            } catch (e) {
+                console.error('Error eliminando documento:', e);
+                showToast('Error al eliminar el documento', true);
+            }
+        }
+
         function getDefaultCategories() {
             return [
                 { id: 'cat_general', name: 'General', color: '#6b7280' },
@@ -1437,6 +1803,7 @@
                 'travels': 'Viajes',
                 'work': 'Trabajo',
                 'cultura': 'Cultura',
+                'documents': 'Documentos',
                 'exams': 'Exámenes',
                 'events': 'Eventos',
                 'shopping': 'Listas',
@@ -1799,6 +2166,7 @@
             else if (currentView === 'shopping') content.innerHTML = renderShopping();
             else if (currentView === 'ideas') content.innerHTML = renderIdeas();
             else if (currentView === 'investments') content.innerHTML = renderInvestments();
+            else if (currentView === 'documents') { content.innerHTML = renderDocuments(); loadDocuments(); }
         }
 
         // ============================================================
