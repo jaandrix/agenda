@@ -397,6 +397,24 @@
             font-weight: 800;
             letter-spacing: -0.5px;
             color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #main-header h1 .edit-name-btn {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            padding: 2px 8px;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+        #main-header h1 .edit-name-btn:hover {
+            background: var(--bg-card-hover);
         }
 
         /* ============================================================
@@ -897,15 +915,76 @@
         }
 
         /* ============================================================
-               INVERSIONES
+               INVERSIONES (Calculadora de interes compuesto)
             ============================================================ */
-        .inversion-positiva {
-            color: #16a34a;
+        .investment-calculator {
+            max-width: 500px;
         }
-        .inversion-negativa {
-            color: #dc2626;
+        .investment-calculator .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
         }
-        .inversion-neutral {
+        .investment-calculator .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 12px;
+            text-align: center;
+        }
+        .investment-calculator .result-card .value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .investment-calculator .result-card .label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .investment-calculator .chart-container {
+            margin-top: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .investment-calculator .chart-container .chart-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        .investment-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            height: 120px;
+            padding-top: 8px;
+        }
+        .investment-chart .bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .investment-chart .bar .bar-fill {
+            width: 100%;
+            max-width: 24px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.6s ease;
+            background: var(--accent);
+            min-height: 4px;
+        }
+        .investment-chart .bar .bar-label {
+            font-size: 9px;
             color: var(--text-secondary);
         }
 
@@ -1159,13 +1238,21 @@
                 </button>
 
                 <span class="nav-label">Registro</span>
-                <button onclick="switchView('goals')" data-view="goals">
-                    <span class="nav-icon">◉</span>
-                    <span class="nav-text">Objetivos</span>
+                <button onclick="switchView('books')" data-view="books">
+                    <span class="nav-icon">◊</span>
+                    <span class="nav-text">Libros</span>
                 </button>
-                <button onclick="switchView('projects')" data-view="projects">
-                    <span class="nav-icon">⊞</span>
-                    <span class="nav-text">Proyectos</span>
+                <button onclick="switchView('movies')" data-view="movies">
+                    <span class="nav-icon">▸</span>
+                    <span class="nav-text">Peliculas</span>
+                </button>
+                <button onclick="switchView('series')" data-view="series">
+                    <span class="nav-icon">◈</span>
+                    <span class="nav-text">Series</span>
+                </button>
+                <button onclick="switchView('games')" data-view="games">
+                    <span class="nav-icon">◉</span>
+                    <span class="nav-text">Videojuegos</span>
                 </button>
                 <button onclick="switchView('travels')" data-view="travels">
                     <span class="nav-icon">◈</span>
@@ -1175,55 +1262,31 @@
                     <span class="nav-icon">◫</span>
                     <span class="nav-text">Trabajo</span>
                 </button>
-                <button onclick="switchView('cultura')" data-view="cultura">
-                    <span class="nav-icon">◊</span>
-                    <span class="nav-text">Cultura</span>
+                <button onclick="switchView('projects')" data-view="projects">
+                    <span class="nav-icon">⊞</span>
+                    <span class="nav-text">Proyectos</span>
+                </button>
+                <button onclick="switchView('events')" data-view="events">
+                    <span class="nav-icon">◈</span>
+                    <span class="nav-text">Eventos</span>
+                </button>
+                <button onclick="switchView('restaurants')" data-view="restaurants">
+                    <span class="nav-icon">◉</span>
+                    <span class="nav-text">Restaurantes</span>
+                </button>
+                <button onclick="switchView('places')" data-view="places">
+                    <span class="nav-icon">⌂</span>
+                    <span class="nav-text">Lugares</span>
                 </button>
                 <button onclick="switchView('documents')" data-view="documents">
                     <span class="nav-icon">📄</span>
                     <span class="nav-text">Documentos</span>
                 </button>
 
-                <span class="nav-label">Nuevo</span>
-                <button onclick="switchView('exams')" data-view="exams">
-                    <span class="nav-icon">◊</span>
-                    <span class="nav-text">Examenes</span>
-                </button>
-                <button onclick="switchView('events')" data-view="events">
-                    <span class="nav-icon">◈</span>
-                    <span class="nav-text">Eventos</span>
-                </button>
-                <button onclick="switchView('shopping')" data-view="shopping">
-                    <span class="nav-icon">◉</span>
-                    <span class="nav-text">Listas</span>
-                </button>
-                <button onclick="switchView('ideas')" data-view="ideas">
-                    <span class="nav-icon">⊞</span>
-                    <span class="nav-text">Ideas</span>
-                </button>
+                <span class="nav-label">Finanzas</span>
                 <button onclick="switchView('investments')" data-view="investments">
                     <span class="nav-icon">◫</span>
                     <span class="nav-text">Inversiones</span>
-                </button>
-                <button onclick="switchView('services')" data-view="services">
-                    <span class="nav-icon">⌂</span>
-                    <span class="nav-text">Servicios</span>
-                </button>
-                <button onclick="switchView('watchlist')" data-view="watchlist">
-                    <span class="nav-icon">◉</span>
-                    <span class="nav-text">Pendientes</span>
-                </button>
-                <button onclick="switchView('wishlist')" data-view="wishlist">
-                    <span class="nav-icon">◈</span>
-                    <span class="nav-text">Wishlist</span>
-                </button>
-                <button onclick="switchView('tasks')" data-view="tasks">
-                    <span class="nav-icon">⊞</span>
-                    <span class="nav-text">Tareas</span>
-                </button>
-                <button onclick="switchView('links')" data-view="links">
-                    <span class="nav-icon">⌂</span>
-                    <span class="nav-text">Enlaces</span>
                 </button>
             </div>
 
@@ -1241,7 +1304,7 @@
             <div id="main-header">
                 <div class="header-left">
                     <button class="menu-hamburger" onclick="toggleMobileMenu()" id="hamburger-btn">☰</button>
-                    <h1 id="page-title">Calendario</h1>
+                    <h1 id="page-title">Calendario <button class="edit-name-btn" onclick="editUserName()">✎</button></h1>
                 </div>
             </div>
             <div id="content"></div>
@@ -1253,22 +1316,17 @@
     ============================================================ -->
     <button id="fab" onclick="toggleFabMenu()">+</button>
     <div id="fab-menu">
-        <button onclick="openNewEntry('entry')">Entrada</button>
-        <button onclick="openNewEntry('goal')">Objetivo</button>
-        <button onclick="openNewEntry('project')">Proyecto</button>
+        <button onclick="openNewEntry('book')">Libro</button>
+        <button onclick="openNewEntry('movie')">Pelicula</button>
+        <button onclick="openNewEntry('series')">Serie</button>
+        <button onclick="openNewEntry('game')">Videojuego</button>
         <button onclick="openNewEntry('travel')">Viaje</button>
         <button onclick="openNewEntry('work')">Trabajo</button>
-        <button onclick="openNewEntry('library')">Cultura</button>
-        <button onclick="openNewEntry('exam')">Examen</button>
+        <button onclick="openNewEntry('project')">Proyecto</button>
         <button onclick="openNewEntry('event')">Evento</button>
-        <button onclick="openNewEntry('shopping')">Lista</button>
-        <button onclick="openNewEntry('idea')">Idea</button>
-        <button onclick="openNewEntry('investment')">Inversion</button>
-        <button onclick="openNewEntry('service')">Servicio</button>
-        <button onclick="openNewEntry('watchlist')">Pendiente</button>
-        <button onclick="openNewEntry('wishlist')">Wishlist</button>
-        <button onclick="openNewEntry('task')">Tarea</button>
-        <button onclick="openNewEntry('link')">Enlace</button>
+        <button onclick="openNewEntry('restaurant')">Restaurante</button>
+        <button onclick="openNewEntry('place')">Lugar</button>
+        <button onclick="openNewEntry('document')">Documento</button>
     </div>
 
     <!-- ============================================================
@@ -1293,11 +1351,17 @@
             </button>
 
             <span class="nav-label">Registro</span>
-            <button onclick="switchView('goals');toggleMobileMenu()" data-view="goals">
-                <span class="nav-icon">◉</span> Objetivos
+            <button onclick="switchView('books');toggleMobileMenu()" data-view="books">
+                <span class="nav-icon">◊</span> Libros
             </button>
-            <button onclick="switchView('projects');toggleMobileMenu()" data-view="projects">
-                <span class="nav-icon">⊞</span> Proyectos
+            <button onclick="switchView('movies');toggleMobileMenu()" data-view="movies">
+                <span class="nav-icon">▸</span> Peliculas
+            </button>
+            <button onclick="switchView('series');toggleMobileMenu()" data-view="series">
+                <span class="nav-icon">◈</span> Series
+            </button>
+            <button onclick="switchView('games');toggleMobileMenu()" data-view="games">
+                <span class="nav-icon">◉</span> Videojuegos
             </button>
             <button onclick="switchView('travels');toggleMobileMenu()" data-view="travels">
                 <span class="nav-icon">◈</span> Viajes
@@ -1305,43 +1369,25 @@
             <button onclick="switchView('work');toggleMobileMenu()" data-view="work">
                 <span class="nav-icon">◫</span> Trabajo
             </button>
-            <button onclick="switchView('cultura');toggleMobileMenu()" data-view="cultura">
-                <span class="nav-icon">◊</span> Cultura
+            <button onclick="switchView('projects');toggleMobileMenu()" data-view="projects">
+                <span class="nav-icon">⊞</span> Proyectos
+            </button>
+            <button onclick="switchView('events');toggleMobileMenu()" data-view="events">
+                <span class="nav-icon">◈</span> Eventos
+            </button>
+            <button onclick="switchView('restaurants');toggleMobileMenu()" data-view="restaurants">
+                <span class="nav-icon">◉</span> Restaurantes
+            </button>
+            <button onclick="switchView('places');toggleMobileMenu()" data-view="places">
+                <span class="nav-icon">⌂</span> Lugares
             </button>
             <button onclick="switchView('documents');toggleMobileMenu()" data-view="documents">
                 <span class="nav-icon">📄</span> Documentos
             </button>
 
-            <span class="nav-label">Nuevo</span>
-            <button onclick="switchView('exams');toggleMobileMenu()" data-view="exams">
-                <span class="nav-icon">◊</span> Examenes
-            </button>
-            <button onclick="switchView('events');toggleMobileMenu()" data-view="events">
-                <span class="nav-icon">◈</span> Eventos
-            </button>
-            <button onclick="switchView('shopping');toggleMobileMenu()" data-view="shopping">
-                <span class="nav-icon">◉</span> Listas
-            </button>
-            <button onclick="switchView('ideas');toggleMobileMenu()" data-view="ideas">
-                <span class="nav-icon">⊞</span> Ideas
-            </button>
+            <span class="nav-label">Finanzas</span>
             <button onclick="switchView('investments');toggleMobileMenu()" data-view="investments">
                 <span class="nav-icon">◫</span> Inversiones
-            </button>
-            <button onclick="switchView('services');toggleMobileMenu()" data-view="services">
-                <span class="nav-icon">⌂</span> Servicios
-            </button>
-            <button onclick="switchView('watchlist');toggleMobileMenu()" data-view="watchlist">
-                <span class="nav-icon">◉</span> Pendientes
-            </button>
-            <button onclick="switchView('wishlist');toggleMobileMenu()" data-view="wishlist">
-                <span class="nav-icon">◈</span> Wishlist
-            </button>
-            <button onclick="switchView('tasks');toggleMobileMenu()" data-view="tasks">
-                <span class="nav-icon">⊞</span> Tareas
-            </button>
-            <button onclick="switchView('links');toggleMobileMenu()" data-view="links">
-                <span class="nav-icon">⌂</span> Enlaces
             </button>
         </div>
         <div class="menu-actions">
@@ -1442,7 +1488,7 @@
             if (error) { errorEl.textContent = 'No se pudo crear la cuenta: ' + error.message; return; }
             if (data.session) { await startApp(); } else {
                 successEl.textContent =
-                'Cuenta creada. Revisa tu email para confirmar la cuenta antes de entrar.';
+                    'Cuenta creada. Revisa tu email para confirmar la cuenta antes de entrar.';
                 document.getElementById('signup-email').value = '';
                 document.getElementById('signup-password').value = '';
                 document.getElementById('signup-password2').value = '';
@@ -1469,7 +1515,7 @@
 
             if (error) { errorEl.textContent = 'No se pudo enviar el enlace: ' + error.message; return; }
             successEl.textContent =
-            'Si el email existe, te hemos enviado un enlace para restablecer tu contrasena.';
+                'Si el email existe, te hemos enviado un enlace para restablecer tu contrasena.';
         }
 
         async function handleResetPassword() {
@@ -1526,69 +1572,55 @@
         let filteredEntries = [];
         let saveInFlight = null;
         let savePending = false;
+        let userName = '';
 
         // ============================================================
         //  ENTRY TYPES (SIN EMOJIS)
         // ============================================================
         const ENTRY_TYPES = {
-            ENTRY: 'entry',
-            GOAL: 'goal',
-            PROJECT: 'project',
+            BOOK: 'book',
+            MOVIE: 'movie',
+            SERIES: 'series',
+            GAME: 'game',
             TRAVEL: 'travel',
             WORK: 'work',
-            LIBRARY: 'library',
-            EXAM: 'exam',
+            PROJECT: 'project',
             EVENT: 'event',
-            SHOPPING: 'shopping',
-            IDEA: 'idea',
-            INVESTMENT: 'investment',
-            SERVICE: 'service',
-            WATCHLIST: 'watchlist',
-            WISHLIST: 'wishlist',
-            TASK: 'task',
-            LINK: 'link'
+            RESTAURANT: 'restaurant',
+            PLACE: 'place',
+            DOCUMENT: 'document'
         };
 
         const TYPE_ICONS = {
-            entry: '◈',
-            goal: '◉',
-            project: '⊞',
+            book: '◊',
+            movie: '▸',
+            series: '◈',
+            game: '◉',
             travel: '◈',
             work: '◫',
-            library: '◊',
-            exam: '◊',
+            project: '⊞',
             event: '◈',
-            shopping: '◉',
-            idea: '⊞',
-            investment: '◫',
-            service: '⌂',
-            watchlist: '◉',
-            wishlist: '◈',
-            task: '⊞',
-            link: '⌂'
+            restaurant: '◉',
+            place: '⌂',
+            document: '📄'
         };
 
         const TYPE_LABELS = {
-            entry: 'Entrada',
-            goal: 'Objetivo',
-            project: 'Proyecto',
+            book: 'Libro',
+            movie: 'Pelicula',
+            series: 'Serie',
+            game: 'Videojuego',
             travel: 'Viaje',
             work: 'Trabajo',
-            library: 'Cultura',
-            exam: 'Examen',
+            project: 'Proyecto',
             event: 'Evento',
-            shopping: 'Lista',
-            idea: 'Idea',
-            investment: 'Inversion',
-            service: 'Servicio',
-            watchlist: 'Pendiente',
-            wishlist: 'Wishlist',
-            task: 'Tarea',
-            link: 'Enlace'
+            restaurant: 'Restaurante',
+            place: 'Lugar',
+            document: 'Documento'
         };
 
         // Tipos que NO aparecen en el calendario
-        const NON_CALENDAR_TYPES = ['service', 'watchlist', 'wishlist', 'task', 'link'];
+        const NON_CALENDAR_TYPES = ['document', 'restaurant', 'place'];
 
         // ============================================================
         //  DEFAULT COLORS
@@ -1607,21 +1639,25 @@
                 const { data: { user } } = await sb.auth.getUser();
                 if (!user) { entries = [];
                     categories = getDefaultCategories();
+                    userName = '';
                     filteredEntries = []; return; }
                 const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
                 if (error) throw error;
                 const saved = (data && data.data) ? data.data : {};
                 entries = saved.entries || [];
                 categories = saved.categories || getDefaultCategories();
+                userName = saved.userName || '';
             } catch (e) {
                 console.error('Error cargando datos de Supabase:', e);
                 entries = [];
                 categories = getDefaultCategories();
+                userName = '';
             }
             if (!categories || categories.length === 0) categories = getDefaultCategories();
             categories.forEach(c => { if (!c.id) c.id = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2,
                     6); });
             filteredEntries = [...entries];
+            updatePageTitle();
         }
 
         async function saveData() {
@@ -1632,7 +1668,7 @@
                     if (!user) return;
                     const { error } = await sb.from('bitacora').upsert({
                         user_id: user.id,
-                        data: { entries, categories },
+                        data: { entries, categories, userName },
                         updated_at: new Date().toISOString()
                     });
                     if (error) console.error('Error guardando en Supabase:', error);
@@ -1647,29 +1683,56 @@
         }
 
         // ============================================================
+        //  USER NAME
+        // ============================================================
+        function updatePageTitle() {
+            const titleEl = document.getElementById('page-title');
+            const baseTitle = currentView === 'calendar' ? 'Calendario' :
+                currentView === 'home' ? 'Centro resumen' :
+                currentView === 'stats' ? 'Estadisticas' :
+                TYPE_LABELS[currentView] || 'Calendario';
+
+            if (userName && currentView === 'calendar') {
+                titleEl.textContent = 'Calendario de ' + userName + ' ';
+            } else {
+                titleEl.textContent = baseTitle + ' ';
+            }
+            // Asegurar que el boton de edicion esta presente
+            if (!titleEl.querySelector('.edit-name-btn')) {
+                const btn = document.createElement('button');
+                btn.className = 'edit-name-btn';
+                btn.textContent = '✎';
+                btn.onclick = editUserName;
+                titleEl.appendChild(btn);
+            }
+        }
+
+        function editUserName() {
+            const name = prompt('Como quieres que aparezca tu nombre?', userName || '');
+            if (name !== null) {
+                userName = name.trim();
+                saveData();
+                updatePageTitle();
+                showToast('Nombre guardado');
+            }
+        }
+
+        // ============================================================
         //  DEFAULT CATEGORIES
         // ============================================================
         function getDefaultCategories() {
             return [
                 { id: 'cat_general', name: 'General', color: '#6b7280' },
                 { id: 'cat_viaje', name: 'Viaje', color: '#e84393' },
-                { id: 'cat_objetivo', name: 'Objetivo', color: '#6c5ce7' },
                 { id: 'cat_proyecto', name: 'Proyecto', color: '#00b894' },
                 { id: 'cat_trabajo', name: 'Trabajo', color: '#e67e22' },
                 { id: 'cat_libro', name: 'Libro', color: '#3498db' },
                 { id: 'cat_pelicula', name: 'Pelicula', color: '#f39c12' },
                 { id: 'cat_serie', name: 'Serie', color: '#9b59b6' },
                 { id: 'cat_videojuego', name: 'Videojuego', color: '#e74c3c' },
-                { id: 'cat_examen', name: 'Examen', color: '#8b5cf6' },
                 { id: 'cat_evento', name: 'Evento', color: '#ec4899' },
-                { id: 'cat_lista', name: 'Lista', color: '#14b8a6' },
-                { id: 'cat_idea', name: 'Idea', color: '#f59e0b' },
-                { id: 'cat_inversion', name: 'Inversion', color: '#10b981' },
-                { id: 'cat_servicio', name: 'Servicio', color: '#8b5cf6' },
-                { id: 'cat_watchlist', name: 'Pendiente', color: '#f59e0b' },
-                { id: 'cat_wishlist', name: 'Wishlist', color: '#ec4899' },
-                { id: 'cat_tarea', name: 'Tarea', color: '#14b8a6' },
-                { id: 'cat_enlace', name: 'Enlace', color: '#6b7280' },
+                { id: 'cat_restaurante', name: 'Restaurante', color: '#f59e0b' },
+                { id: 'cat_lugar', name: 'Lugar', color: '#14b8a6' },
             ];
         }
 
@@ -1729,28 +1792,7 @@
             document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
                 b.classList.toggle('active', b.dataset.view === view);
             });
-            const titles = {
-                'calendar': 'Calendario',
-                'home': 'Centro resumen',
-                'stats': 'Estadisticas',
-                'goals': 'Objetivos',
-                'projects': 'Proyectos',
-                'travels': 'Viajes',
-                'work': 'Trabajo',
-                'cultura': 'Cultura',
-                'documents': 'Documentos',
-                'exams': 'Examenes',
-                'events': 'Eventos',
-                'shopping': 'Listas',
-                'ideas': 'Ideas',
-                'investments': 'Inversiones',
-                'services': 'Servicios',
-                'watchlist': 'Pendientes',
-                'wishlist': 'Wishlist',
-                'tasks': 'Tareas',
-                'links': 'Enlaces'
-            };
-            document.getElementById('page-title').textContent = titles[view] || 'Calendario';
+            updatePageTitle();
             render();
         }
 
@@ -1816,76 +1858,97 @@
             const title = isEdit ? 'Editar ' + label : 'Nueva ' + label;
 
             let extraFields = '';
+            let categoryField = '';
 
-            // ===== ENTRY (básico) =====
-            if (type === 'entry') {
+            // ===== BOOK =====
+            if (type === 'book') {
                 extraFields = `
-                    <div class="modal-label">Notas</div>
-                    <textarea id="modal-notes" class="modal-input" rows="2" placeholder="Detalles adicionales...">${isEdit ? entry.notes || '' : ''}</textarea>
+                    <div class="modal-label">Autor</div>
+                    <input id="modal-author" class="modal-input" value="${isEdit ? entry.author || '' : ''}" placeholder="Ej: Gabriel Garcia Marquez">
+                    <div class="modal-label">Fecha de inicio</div>
+                    <input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}">
+                    ${isEdit ? `
+                        <div class="modal-label">Fecha de finalizacion</div>
+                        <input type="date" id="modal-end" class="modal-input" value="${entry.endDate || ''}">
+                        <div class="modal-label">Valoracion (1-5)</div>
+                        <select id="modal-rating" class="modal-input">
+                            ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
+                        </select>
+                    ` : ''}
                 `;
             }
 
-            // ===== GOAL =====
-            else if (type === 'goal') {
+            // ===== MOVIE =====
+            else if (type === 'movie') {
                 extraFields = `
-                    <div class="modal-label">Categoria de plazo</div>
-                    <select id="modal-goal-category" class="modal-input">
-                        <option value="Corto plazo" ${isEdit && entry.goalCategory === 'Corto plazo' ? 'selected' : ''}>Corto plazo</option>
-                        <option value="Medio plazo" ${isEdit && entry.goalCategory === 'Medio plazo' ? 'selected' : ''}>Medio plazo</option>
-                        <option value="Largo plazo" ${isEdit && entry.goalCategory === 'Largo plazo' ? 'selected' : ''}>Largo plazo</option>
-                    </select>
-                    <div class="modal-label">Progreso (%)</div>
-                    <input type="number" id="modal-progress" class="modal-input" value="${isEdit ? entry.progress || 0 : 0}" min="0" max="100">
-                    <div class="modal-label">Fecha limite</div>
-                    <input type="date" id="modal-deadline" class="modal-input" value="${isEdit ? entry.deadline || '' : ''}">
-                    <div class="modal-label">Estado</div>
-                    <select id="modal-status" class="modal-input">
-                        <option value="Pendiente" ${isEdit && entry.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                        <option value="En progreso" ${isEdit && entry.status === 'En progreso' ? 'selected' : ''}>En progreso</option>
-                        <option value="Completado" ${isEdit && entry.status === 'Completado' ? 'selected' : ''}>Completado</option>
-                    </select>
+                    <div class="modal-label">Fecha</div>
+                    <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
+                    ${isEdit ? `
+                        <div class="modal-label">Valoracion (1-5)</div>
+                        <select id="modal-rating" class="modal-input">
+                            ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
+                        </select>
+                        <div class="modal-label">Notas</div>
+                        <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
+                    ` : ''}
                 `;
             }
 
-            // ===== PROJECT =====
-            else if (type === 'project') {
+            // ===== SERIES =====
+            else if (type === 'series') {
+                const statuses = ['Viendo', 'Completada', 'Abandonada'];
                 extraFields = `
-                    <div class="modal-label">Descripcion</div>
-                    <textarea id="modal-desc" class="modal-input" rows="2" placeholder="Descripcion...">${isEdit ? entry.description || '' : ''}</textarea>
-                    <div class="modal-row">
-                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
-                        <div><div class="modal-label">Fin previsto</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
-                    </div>
-                    <div class="modal-label">Estado</div>
-                    <select id="modal-status" class="modal-input">
-                        <option value="Pendiente" ${isEdit && entry.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                        <option value="En curso" ${isEdit && entry.status === 'En curso' ? 'selected' : ''}>En curso</option>
-                        <option value="Completado" ${isEdit && entry.status === 'Completado' ? 'selected' : ''}>Completado</option>
-                    </select>
-                    <div class="modal-label">Presupuesto (€)</div>
-                    <input type="number" id="modal-budget" class="modal-input" step="0.01" value="${isEdit ? entry.budget || '' : ''}" placeholder="0.00">
-                    <div class="modal-label">Tareas (una por linea, marcar completadas con ✅)</div>
-                    <textarea id="modal-tasks" class="modal-input" rows="3" placeholder="Tarea 1&#10;Tarea 2 ✅">${isEdit ? (entry.tasks || []).map(t => t.text + (t.done ? ' ✅' : '')).join('\n') : ''}</textarea>
-                    <div class="modal-label">Notas del proyecto</div>
-                    <textarea id="modal-project-notes" class="modal-input" rows="2" placeholder="Notas adicionales...">${isEdit ? entry.projectNotes || '' : ''}</textarea>
+                    <div class="modal-label">Fecha de inicio</div>
+                    <input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : today}">
+                    ${isEdit ? `
+                        <div class="modal-label">Estado</div>
+                        <select id="modal-status" class="modal-input">
+                            ${statuses.map(s => `<option value="${s}" ${isEdit && entry.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                        <div class="modal-label">Fecha de finalizacion</div>
+                        <input type="date" id="modal-end" class="modal-input" value="${entry.endDate || ''}">
+                        <div class="modal-label">Valoracion (1-5)</div>
+                        <select id="modal-rating" class="modal-input">
+                            ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
+                        </select>
+                    ` : ''}
+                `;
+            }
+
+            // ===== GAME =====
+            else if (type === 'game') {
+                const statuses = ['Jugando', 'Completado', 'Abandonado'];
+                extraFields = `
+                    <div class="modal-label">Fecha de inicio</div>
+                    <input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : today}">
+                    ${isEdit ? `
+                        <div class="modal-label">Estado</div>
+                        <select id="modal-status" class="modal-input">
+                            ${statuses.map(s => `<option value="${s}" ${isEdit && entry.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                        <div class="modal-label">Fecha de finalizacion</div>
+                        <input type="date" id="modal-end" class="modal-input" value="${entry.endDate || ''}">
+                        <div class="modal-label">Valoracion (1-5)</div>
+                        <select id="modal-rating" class="modal-input">
+                            ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
+                        </select>
+                    ` : ''}
                 `;
             }
 
             // ===== TRAVEL =====
             else if (type === 'travel') {
                 extraFields = `
-                    <div class="modal-label">Pais</div>
-                    <input id="modal-country" class="modal-input" value="${isEdit ? entry.country || '' : ''}" placeholder="Ej: Italia">
+                    <div class="modal-label">Destino</div>
+                    <input id="modal-destination" class="modal-input" value="${isEdit ? entry.destination || '' : ''}" placeholder="Ej: Roma, Italia">
                     <div class="modal-row">
-                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
-                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fecha fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
                     </div>
-                    <div class="modal-label">Valoracion (1-5)</div>
-                    <select id="modal-rating" class="modal-input">
-                        ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
-                    </select>
-                    <div class="modal-label">Recuerdos / Notas</div>
-                    <textarea id="modal-notes" class="modal-input" rows="2" placeholder="Experiencias, lugares visitados...">${isEdit ? entry.notes || '' : ''}</textarea>
+                    <div class="modal-label">Personas</div>
+                    <input id="modal-companions" class="modal-input" value="${isEdit ? entry.companions || '' : ''}" placeholder="Ana, Carlos, ...">
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
             }
 
@@ -1894,88 +1957,50 @@
                 extraFields = `
                     <div class="modal-label">Empresa</div>
                     <input id="modal-company" class="modal-input" value="${isEdit ? entry.company || '' : ''}" placeholder="Ej: Empresa X">
-                    <div class="modal-label">Puesto</div>
+                    <div class="modal-label">Cargo</div>
                     <input id="modal-position" class="modal-input" value="${isEdit ? entry.position || '' : ''}" placeholder="Ej: Operario logistico">
-                    <div class="modal-label">Tipo de puesto</div>
-                    <select id="modal-work-type" class="modal-input">
-                        <option value="normal" ${isEdit && entry.workType === 'normal' ? 'selected' : ''}>Puesto normal</option>
-                        <option value="practicas" ${isEdit && entry.workType === 'practicas' ? 'selected' : ''}>Practicas</option>
-                    </select>
                     <div class="modal-row">
-                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
-                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fecha fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
                     </div>
                     <div class="modal-label">Horario</div>
                     <input id="modal-schedule" class="modal-input" value="${isEdit ? entry.schedule || '' : ''}" placeholder="L-V 9:00-18:00">
-                    <div class="modal-label">Dias de fiesta</div>
-                    <input type="number" id="modal-holidays" class="modal-input" value="${isEdit ? entry.holidays || 0 : 0}" min="0">
-                    <div class="modal-label">Funciones</div>
-                    <textarea id="modal-functions" class="modal-input" rows="2" placeholder="Funciones realizadas...">${isEdit ? entry.functions || '' : ''}</textarea>
-                    <div class="modal-label">Habilidades</div>
-                    <input id="modal-skills" class="modal-input" value="${isEdit ? entry.skills || '' : ''}" placeholder="Ej: Gestion de equipos, Excel">
+                    <div class="modal-label">Salario (€/mes, opcional)</div>
+                    <input type="number" id="modal-salary" class="modal-input" value="${isEdit ? entry.salary || '' : ''}" step="0.01" placeholder="0.00">
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
             }
 
-            // ===== LIBRARY =====
-            else if (type === 'library') {
-                const libTypes = [
-                    { value: 'libro', label: 'Libro' },
-                    { value: 'musica', label: 'Musica' },
-                    { value: 'videojuego', label: 'Videojuego' },
-                    { value: 'video', label: 'Video' }
-                ];
+            // ===== PROJECT =====
+            else if (type === 'project') {
                 extraFields = `
-                    <div class="modal-label">Tipo de contenido</div>
-                    <select id="modal-lib-type" class="modal-input">
-                        ${libTypes.map(t => `<option value="${t.value}" ${isEdit && entry.libType === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
-                    </select>
-                    <div class="modal-label">Autor / Creador</div>
-                    <input id="modal-author" class="modal-input" value="${isEdit ? entry.author || '' : ''}" placeholder="Ej: Gabriel Garcia Marquez">
-                    <div class="modal-label">Plataforma (opcional)</div>
-                    <input id="modal-platform" class="modal-input" value="${isEdit ? entry.platform || '' : ''}" placeholder="Ej: Netflix, PC, PS5">
-                    <div class="modal-row">
-                        <div><div class="modal-label">Inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
-                        <div><div class="modal-label">Fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
-                    </div>
-                    <div class="modal-label">Valoracion (1-5)</div>
-                    <select id="modal-rating" class="modal-input">
-                        ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
-                    </select>
-                `;
-            }
-
-            // ===== EXAM =====
-            else if (type === 'exam') {
-                extraFields = `
-                    <div class="modal-label">Titulacion / Asignatura</div>
-                    <input id="modal-subject" class="modal-input" value="${isEdit ? entry.subject || '' : ''}" placeholder="Ej: Algebra Lineal">
-                    <div class="modal-label">Tipo</div>
-                    <select id="modal-exam-type" class="modal-input">
-                        <option value="examen" ${isEdit && entry.examType === 'examen' ? 'selected' : ''}>Examen</option>
-                        <option value="trabajo" ${isEdit && entry.examType === 'trabajo' ? 'selected' : ''}>Trabajo</option>
-                        <option value="practica" ${isEdit && entry.examType === 'practica' ? 'selected' : ''}>Practica</option>
-                        <option value="titulacion" ${isEdit && entry.examType === 'titulacion' ? 'selected' : ''}>Titulacion</option>
+                    <div class="modal-label">Descripcion</div>
+                    <textarea id="modal-desc" class="modal-input" rows="2">${isEdit ? entry.description || '' : ''}</textarea>
+                    <div class="modal-label">Categoria</div>
+                    <select id="modal-category" class="modal-input">
+                        <option value="Trabajo" ${isEdit && entry.projectCategory === 'Trabajo' ? 'selected' : ''}>Trabajo</option>
+                        <option value="Estudios" ${isEdit && entry.projectCategory === 'Estudios' ? 'selected' : ''}>Estudios</option>
+                        <option value="Ocio" ${isEdit && entry.projectCategory === 'Ocio' ? 'selected' : ''}>Ocio</option>
+                        <option value="Evento" ${isEdit && entry.projectCategory === 'Evento' ? 'selected' : ''}>Evento</option>
                     </select>
                     <div class="modal-row">
-                        <div><div class="modal-label">Peso (%)</div><input type="number" id="modal-weight" class="modal-input" value="${isEdit ? entry.weight || 0 : 0}" min="0" max="100" step="0.5"></div>
-                        <div><div class="modal-label">Nota</div><input type="number" id="modal-grade" class="modal-input" value="${isEdit ? entry.grade || '' : ''}" min="0" max="10" step="0.1" placeholder="0-10"></div>
+                        <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
+                        <div><div class="modal-label">Fecha fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
                     </div>
-                    <div class="modal-label">Fecha del examen</div>
-                    <input type="date" id="modal-exam-date" class="modal-input" value="${isEdit ? entry.examDate || '' : ''}">
-                    <div class="modal-label">Estado</div>
-                    <select id="modal-exam-status" class="modal-input">
-                        <option value="Pendiente" ${isEdit && entry.examStatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                        <option value="Aprobado" ${isEdit && entry.examStatus === 'Aprobado' ? 'selected' : ''}>Aprobado</option>
-                        <option value="Suspenso" ${isEdit && entry.examStatus === 'Suspenso' ? 'selected' : ''}>Suspenso</option>
-                        <option value="Matricula" ${isEdit && entry.examStatus === 'Matricula' ? 'selected' : ''}>Matricula</option>
-                    </select>
+                    <div class="modal-label">Presupuesto (€)</div>
+                    <input type="number" id="modal-budget" class="modal-input" step="0.01" value="${isEdit ? entry.budget || '' : ''}" placeholder="0.00">
+                    <div class="modal-label">Tareas (una por linea)</div>
+                    <textarea id="modal-tasks" class="modal-input" rows="3">${isEdit ? (entry.tasks || []).join('\n') : ''}</textarea>
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
             }
 
             // ===== EVENT =====
             else if (type === 'event') {
                 extraFields = `
-                    <div class="modal-label">Tipo de evento</div>
+                    <div class="modal-label">Tipo</div>
                     <select id="modal-event-type" class="modal-input">
                         <option value="social" ${isEdit && entry.eventType === 'social' ? 'selected' : ''}>Social</option>
                         <option value="teatro" ${isEdit && entry.eventType === 'teatro' ? 'selected' : ''}>Teatro</option>
@@ -1984,178 +2009,46 @@
                         <option value="deporte" ${isEdit && entry.eventType === 'deporte' ? 'selected' : ''}>Deporte</option>
                         <option value="otro" ${isEdit && entry.eventType === 'otro' ? 'selected' : ''}>Otro</option>
                     </select>
+                    <div class="modal-label">Fecha</div>
+                    <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
+                    <div class="modal-label">Hora</div>
+                    <input type="time" id="modal-time" class="modal-input" value="${isEdit ? entry.time || '' : ''}">
                     <div class="modal-label">Lugar</div>
                     <input id="modal-place" class="modal-input" value="${isEdit ? entry.place || '' : ''}" placeholder="Ej: Wembley Stadium">
-                    <div class="modal-label">Fecha del evento</div>
-                    <input type="date" id="modal-event-date" class="modal-input" value="${isEdit ? entry.eventDate || '' : ''}">
-                    <div class="modal-label">Hora del evento (opcional)</div>
-                    <input type="time" id="modal-event-time" class="modal-input" value="${isEdit ? entry.eventTime || '' : ''}">
-                    <div class="modal-label">Acompanantes</div>
-                    <input id="modal-companions" class="modal-input" value="${isEdit ? entry.companions || '' : ''}" placeholder="Ana, Carlos, ...">
-                    <div class="modal-label">Valoracion (1-10)</div>
-                    <input type="number" id="modal-event-rating" class="modal-input" value="${isEdit ? entry.eventRating || 5 : 5}" min="1" max="10">
                     <div class="modal-label">Notas</div>
-                    <textarea id="modal-event-notes" class="modal-input" rows="2" placeholder="Experiencia, recuerdos...">${isEdit ? entry.eventNotes || '' : ''}</textarea>
+                    <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
             }
 
-            // ===== SHOPPING =====
-            else if (type === 'shopping') {
+            // ===== RESTAURANT =====
+            else if (type === 'restaurant') {
                 extraFields = `
-                    <div class="modal-label">Categoria</div>
-                    <select id="modal-list-category" class="modal-input">
-                        <option value="Alimentacion" ${isEdit && entry.listCategory === 'Alimentacion' ? 'selected' : ''}>Alimentacion</option>
-                        <option value="Hogar" ${isEdit && entry.listCategory === 'Hogar' ? 'selected' : ''}>Hogar</option>
-                        <option value="Tecnologia" ${isEdit && entry.listCategory === 'Tecnologia' ? 'selected' : ''}>Tecnologia</option>
-                        <option value="Ropa" ${isEdit && entry.listCategory === 'Ropa' ? 'selected' : ''}>Ropa</option>
-                        <option value="Ocio" ${isEdit && entry.listCategory === 'Ocio' ? 'selected' : ''}>Ocio</option>
-                        <option value="Otro" ${isEdit && entry.listCategory === 'Otro' ? 'selected' : ''}>Otro</option>
-                    </select>
-                    <div class="modal-label">Precio estimado (€)</div>
-                    <input type="number" id="modal-list-price" class="modal-input" value="${isEdit ? entry.listPrice || '' : ''}" step="0.01" placeholder="0.00">
-                    <div class="modal-label">Prioridad</div>
-                    <select id="modal-list-priority" class="modal-input">
-                        <option value="Alta" ${isEdit && entry.listPriority === 'Alta' ? 'selected' : ''}>Alta</option>
-                        <option value="Media" ${isEdit && entry.listPriority === 'Media' ? 'selected' : ''}>Media</option>
-                        <option value="Baja" ${isEdit && entry.listPriority === 'Baja' ? 'selected' : ''}>Baja</option>
-                    </select>
-                    <div class="modal-label">Comprado</div>
-                    <select id="modal-list-done" class="modal-input">
-                        <option value="0" ${isEdit && !entry.listDone ? 'selected' : ''}>No</option>
-                        <option value="1" ${isEdit && entry.listDone ? 'selected' : ''}>Si</option>
-                    </select>
-                `;
-            }
-
-            // ===== IDEA =====
-            else if (type === 'idea') {
-                extraFields = `
-                    <div class="modal-label">Categoria</div>
-                    <select id="modal-idea-category" class="modal-input">
-                        <option value="Proyecto" ${isEdit && entry.ideaCategory === 'Proyecto' ? 'selected' : ''}>Proyecto</option>
-                        <option value="Personal" ${isEdit && entry.ideaCategory === 'Personal' ? 'selected' : ''}>Personal</option>
-                        <option value="Trabajo" ${isEdit && entry.ideaCategory === 'Trabajo' ? 'selected' : ''}>Trabajo</option>
-                        <option value="Creativa" ${isEdit && entry.ideaCategory === 'Creativa' ? 'selected' : ''}>Creativa</option>
-                        <option value="Otro" ${isEdit && entry.ideaCategory === 'Otro' ? 'selected' : ''}>Otro</option>
-                    </select>
-                    <div class="modal-label">Contenido</div>
-                    <textarea id="modal-idea-content" class="modal-input" rows="4" placeholder="Describe tu idea...">${isEdit ? entry.ideaContent || '' : ''}</textarea>
-                    <div class="modal-label">Estado</div>
-                    <select id="modal-idea-status" class="modal-input">
-                        <option value="Pendiente" ${isEdit && entry.ideaStatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                        <option value="En progreso" ${isEdit && entry.ideaStatus === 'En progreso' ? 'selected' : ''}>En progreso</option>
-                        <option value="Completada" ${isEdit && entry.ideaStatus === 'Completada' ? 'selected' : ''}>Completada</option>
-                        <option value="Descartada" ${isEdit && entry.ideaStatus === 'Descartada' ? 'selected' : ''}>Descartada</option>
-                    </select>
-                `;
-            }
-
-            // ===== INVESTMENT =====
-            else if (type === 'investment') {
-                extraFields = `
-                    <div class="modal-label">Tipo</div>
-                    <select id="modal-inv-type" class="modal-input">
-                        <option value="Acciones" ${isEdit && entry.invType === 'Acciones' ? 'selected' : ''}>Acciones</option>
-                        <option value="Fondos" ${isEdit && entry.invType === 'Fondos' ? 'selected' : ''}>Fondos</option>
-                        <option value="Criptomonedas" ${isEdit && entry.invType === 'Criptomonedas' ? 'selected' : ''}>Criptomonedas</option>
-                        <option value="Bonos" ${isEdit && entry.invType === 'Bonos' ? 'selected' : ''}>Bonos</option>
-                        <option value="Inmobiliaria" ${isEdit && entry.invType === 'Inmobiliaria' ? 'selected' : ''}>Inmobiliaria</option>
-                        <option value="Otro" ${isEdit && entry.invType === 'Otro' ? 'selected' : ''}>Otro</option>
-                    </select>
-                    <div class="modal-label">Cantidad invertida (€)</div>
-                    <input type="number" id="modal-inv-invested" class="modal-input" value="${isEdit ? entry.invInvested || '' : ''}" step="0.01" placeholder="0.00">
-                    <div class="modal-label">Valor actual (€)</div>
-                    <input type="number" id="modal-inv-current" class="modal-input" value="${isEdit ? entry.invCurrent || '' : ''}" step="0.01" placeholder="0.00">
-                    <div class="modal-label">Fecha de inversion</div>
-                    <input type="date" id="modal-inv-date" class="modal-input" value="${isEdit ? entry.invDate || '' : ''}">
-                    <div class="modal-label">Aportacion mensual (€)</div>
-                    <input type="number" id="modal-inv-monthly" class="modal-input" value="${isEdit ? entry.invMonthly || 0 : 0}" step="0.01" placeholder="0">
-                    <div class="modal-label">Rentabilidad anual estimada (%)</div>
-                    <input type="number" id="modal-inv-rate" class="modal-input" value="${isEdit ? entry.invRate || 7 : 7}" step="0.1" placeholder="7">
-                    <div class="modal-label">Horizonte (anos)</div>
-                    <input type="number" id="modal-inv-years" class="modal-input" value="${isEdit ? entry.invYears || 10 : 10}" min="1" step="1">
+                    <div class="modal-label">Fecha</div>
+                    <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
                     <div class="modal-label">Notas</div>
-                    <textarea id="modal-inv-notes" class="modal-input" rows="2" placeholder="Detalles adicionales...">${isEdit ? entry.invNotes || '' : ''}</textarea>
+                    <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
             }
 
-            // ===== SERVICE =====
-            else if (type === 'service') {
+            // ===== PLACE =====
+            else if (type === 'place') {
                 extraFields = `
-                    <div class="modal-label">URL del sitio</div>
-                    <input id="modal-service-url" class="modal-input" placeholder="https://..." value="${isEdit ? entry.serviceUrl || '' : ''}">
-                    <div class="modal-label">Email / usuario</div>
-                    <input id="modal-service-email" class="modal-input" placeholder="tucorreo@..." value="${isEdit ? entry.serviceEmail || '' : ''}">
-                    <div class="modal-label">Metodo de registro</div>
-                    <select id="modal-service-method" class="modal-input">
-                        <option value="Email/contraseña" ${isEdit && entry.serviceMethod === 'Email/contraseña' ? 'selected' : ''}>Email/contraseña</option>
-                        <option value="Google" ${isEdit && entry.serviceMethod === 'Google' ? 'selected' : ''}>Google</option>
-                        <option value="Apple" ${isEdit && entry.serviceMethod === 'Apple' ? 'selected' : ''}>Apple</option>
-                        <option value="Facebook" ${isEdit && entry.serviceMethod === 'Facebook' ? 'selected' : ''}>Facebook</option>
-                        <option value="Otro" ${isEdit && entry.serviceMethod === 'Otro' ? 'selected' : ''}>Otro</option>
-                    </select>
-                    <div class="modal-label">Notas (2FA, alias, etc.)</div>
-                    <textarea id="modal-service-notes" class="modal-input" rows="2">${isEdit ? entry.serviceNotes || '' : ''}</textarea>
-                `;
-            }
-
-            // ===== WATCHLIST =====
-            else if (type === 'watchlist') {
-                extraFields = `
-                    <div class="modal-label">Tipo</div>
-                    <select id="modal-watch-type" class="modal-input">
-                        <option value="libro" ${isEdit && entry.watchType === 'libro' ? 'selected' : ''}>Libro</option>
-                        <option value="pelicula" ${isEdit && entry.watchType === 'pelicula' ? 'selected' : ''}>Pelicula</option>
-                        <option value="serie" ${isEdit && entry.watchType === 'serie' ? 'selected' : ''}>Serie</option>
-                    </select>
-                    <div class="modal-label">Prioridad</div>
-                    <select id="modal-watch-priority" class="modal-input">
-                        <option value="Alta" ${isEdit && entry.watchPriority === 'Alta' ? 'selected' : ''}>Alta</option>
-                        <option value="Media" ${isEdit && entry.watchPriority === 'Media' ? 'selected' : ''}>Media</option>
-                        <option value="Baja" ${isEdit && entry.watchPriority === 'Baja' ? 'selected' : ''}>Baja</option>
-                    </select>
-                    <div class="modal-label">Notas / recomendacion</div>
-                    <textarea id="modal-watch-notes" class="modal-input" rows="2">${isEdit ? entry.watchNotes || '' : ''}</textarea>
-                `;
-            }
-
-            // ===== WISHLIST =====
-            else if (type === 'wishlist') {
-                extraFields = `
-                    <div class="modal-label">Precio (€)</div>
-                    <input type="number" id="modal-wish-price" class="modal-input" step="0.01" value="${isEdit ? entry.wishPrice || '' : ''}" placeholder="0.00">
-                    <div class="modal-label">URL del producto</div>
-                    <input id="modal-wish-url" class="modal-input" value="${isEdit ? entry.wishUrl || '' : ''}" placeholder="https://...">
+                    <div class="modal-label">Fecha</div>
+                    <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
                     <div class="modal-label">Notas</div>
-                    <textarea id="modal-wish-notes" class="modal-input" rows="2">${isEdit ? entry.wishNotes || '' : ''}</textarea>
+                    <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
             }
 
-            // ===== TASK =====
-            else if (type === 'task') {
+            // ===== DOCUMENT =====
+            else if (type === 'document') {
                 extraFields = `
-                    <div class="modal-row">
-                        <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-task-start" class="modal-input" value="${isEdit ? entry.taskStart || '' : ''}"></div>
-                        <div><div class="modal-label">Fecha fin prevista</div><input type="date" id="modal-task-due" class="modal-input" value="${isEdit ? entry.taskDue || '' : ''}"></div>
-                    </div>
+                    <div class="modal-label">Fecha</div>
+                    <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
                     <div class="modal-label">Notas</div>
-                    <textarea id="modal-task-notes" class="modal-input" rows="2">${isEdit ? entry.taskNotes || '' : ''}</textarea>
+                    <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
             }
-
-            // ===== LINK =====
-            else if (type === 'link') {
-                extraFields = `
-                    <div class="modal-label">URL</div>
-                    <input id="modal-link-url" class="modal-input" placeholder="https://www.amazon.es" value="${isEdit ? entry.linkUrl || '' : ''}">
-                    <div class="modal-label">Icono (opcional)</div>
-                    <input id="modal-link-icon" class="modal-input" placeholder="◈" value="${isEdit ? entry.linkIcon || '' : ''}">
-                `;
-            }
-
-            const catOptions = categories.map(c =>
-                `<option value="${c.id}" ${isEdit && entry?.categoryId === c.id ? 'selected' : ''}>${c.name}</option>`
-            ).join('');
 
             return `
             <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -2165,17 +2058,8 @@
                         <button class="modal-close" onclick="closeModal()">✕</button>
                     </div>
 
-                    <div class="modal-label">Fecha</div>
-                    <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date : today}">
-
                     <div class="modal-label">Titulo</div>
                     <input id="modal-title" class="modal-input" value="${isEdit ? entry.title : ''}" placeholder="Escribe un titulo...">
-
-                    <div class="modal-label">Categoria</div>
-                    <select id="modal-category" class="modal-input">
-                        ${catOptions}
-                        <option value="__new">+ Crear nueva categoria</option>
-                    </select>
 
                     ${extraFields}
 
@@ -2189,129 +2073,101 @@
         //  SAVE ENTRY
         // ============================================================
         function saveEntry() {
-            const date = document.getElementById('modal-date').value;
-            if (!date) { showToast('Selecciona una fecha', true); return; }
-
             const title = document.getElementById('modal-title').value.trim();
             if (!title) { showToast('Escribe un titulo', true); return; }
-
-            let categoryId = document.getElementById('modal-category').value;
-
-            if (categoryId === '__new') {
-                const newCatName = prompt('Nombre de la nueva categoria:');
-                if (!newCatName) { showToast('Escribe un nombre', true); return; }
-                const color = DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)];
-                const newCat = { id: 'cat_' + Date.now(), name: newCatName, color: color };
-                categories.push(newCat);
-                categoryId = newCat.id;
-                saveData();
-            }
 
             const type = editType;
             const entry = {
                 id: editId || 'entry_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-                date: date,
                 title: title,
-                categoryId: categoryId,
-                type: type
+                type: type,
+                date: '',
+                categoryId: getCategoryIdForType(type)
             };
 
             // Campos especificos por tipo
-            if (type === 'entry') {
-                entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
-            } else if (type === 'goal') {
-                entry.goalCategory = document.getElementById('modal-goal-category')?.value || 'Medio plazo';
-                entry.progress = parseInt(document.getElementById('modal-progress')?.value) || 0;
-                entry.deadline = document.getElementById('modal-deadline')?.value || '';
-                entry.status = document.getElementById('modal-status')?.value || 'Pendiente';
-            } else if (type === 'project') {
-                entry.description = document.getElementById('modal-desc')?.value?.trim() || '';
+            if (type === 'book') {
+                entry.author = document.getElementById('modal-author')?.value?.trim() || '';
                 entry.startDate = document.getElementById('modal-start')?.value || '';
-                entry.endDate = document.getElementById('modal-end')?.value || '';
-                entry.status = document.getElementById('modal-status')?.value || 'Pendiente';
-                entry.budget = parseFloat(document.getElementById('modal-budget')?.value) || null;
-                const tasksRaw = document.getElementById('modal-tasks')?.value?.split('\n').filter(t => t.trim()) || [];
-                entry.tasks = tasksRaw.map(t => ({ text: t.replace(' ✅', '').trim(), done: t.includes('✅') }));
-                entry.projectNotes = document.getElementById('modal-project-notes')?.value?.trim() || '';
+                entry.date = entry.startDate;
+                if (editId) {
+                    entry.endDate = document.getElementById('modal-end')?.value || '';
+                    entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
+                } else {
+                    entry.endDate = '';
+                    entry.rating = 0;
+                }
+                entry.status = entry.endDate ? 'Completado' : 'Leyendo';
+            } else if (type === 'movie') {
+                entry.date = document.getElementById('modal-date')?.value || '';
+                if (editId) {
+                    entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
+                    entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+                } else {
+                    entry.rating = 0;
+                    entry.notes = '';
+                }
+            } else if (type === 'series') {
+                entry.startDate = document.getElementById('modal-start')?.value || '';
+                entry.date = entry.startDate;
+                if (editId) {
+                    entry.status = document.getElementById('modal-status')?.value || 'Viendo';
+                    entry.endDate = document.getElementById('modal-end')?.value || '';
+                    entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
+                } else {
+                    entry.status = 'Viendo';
+                    entry.endDate = '';
+                    entry.rating = 0;
+                }
+            } else if (type === 'game') {
+                entry.startDate = document.getElementById('modal-start')?.value || '';
+                entry.date = entry.startDate;
+                if (editId) {
+                    entry.status = document.getElementById('modal-status')?.value || 'Jugando';
+                    entry.endDate = document.getElementById('modal-end')?.value || '';
+                    entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
+                } else {
+                    entry.status = 'Jugando';
+                    entry.endDate = '';
+                    entry.rating = 0;
+                }
             } else if (type === 'travel') {
-                entry.country = document.getElementById('modal-country')?.value?.trim() || '';
+                entry.destination = document.getElementById('modal-destination')?.value?.trim() || '';
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.endDate = document.getElementById('modal-end')?.value || '';
-                entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
+                entry.date = entry.startDate || entry.endDate || '';
+                entry.companions = document.getElementById('modal-companions')?.value?.trim() || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
             } else if (type === 'work') {
                 entry.company = document.getElementById('modal-company')?.value?.trim() || '';
                 entry.position = document.getElementById('modal-position')?.value?.trim() || '';
-                entry.workType = document.getElementById('modal-work-type')?.value || 'normal';
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.endDate = document.getElementById('modal-end')?.value || '';
+                entry.date = entry.startDate || entry.endDate || '';
                 entry.schedule = document.getElementById('modal-schedule')?.value?.trim() || '';
-                entry.holidays = parseInt(document.getElementById('modal-holidays')?.value) || 0;
-                entry.functions = document.getElementById('modal-functions')?.value?.trim() || '';
-                entry.skills = document.getElementById('modal-skills')?.value?.trim() || '';
-            } else if (type === 'library') {
-                entry.libType = document.getElementById('modal-lib-type')?.value || 'libro';
-                entry.author = document.getElementById('modal-author')?.value?.trim() || '';
-                entry.platform = document.getElementById('modal-platform')?.value?.trim() || '';
+                entry.salary = parseFloat(document.getElementById('modal-salary')?.value) || null;
+                entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+                entry.status = entry.endDate ? 'Completado' : 'Trabajo actual';
+            } else if (type === 'project') {
+                entry.description = document.getElementById('modal-desc')?.value?.trim() || '';
+                entry.projectCategory = document.getElementById('modal-category')?.value || 'Trabajo';
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.endDate = document.getElementById('modal-end')?.value || '';
-                entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
-            } else if (type === 'exam') {
-                entry.subject = document.getElementById('modal-subject')?.value?.trim() || '';
-                entry.examType = document.getElementById('modal-exam-type')?.value || 'examen';
-                entry.weight = parseFloat(document.getElementById('modal-weight')?.value) || 0;
-                entry.grade = parseFloat(document.getElementById('modal-grade')?.value) || null;
-                entry.examDate = document.getElementById('modal-exam-date')?.value || '';
-                entry.examStatus = document.getElementById('modal-exam-status')?.value || 'Pendiente';
+                entry.date = entry.startDate || entry.endDate || '';
+                entry.budget = parseFloat(document.getElementById('modal-budget')?.value) || null;
+                const tasksRaw = document.getElementById('modal-tasks')?.value?.split('\n').filter(t => t.trim()) || [];
+                entry.tasks = tasksRaw.map(t => ({ text: t.replace(' ✅', '').trim(), done: t.includes('✅') }));
+                entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+                entry.status = entry.endDate ? 'Completado' : 'En desarrollo';
             } else if (type === 'event') {
                 entry.eventType = document.getElementById('modal-event-type')?.value || 'otro';
+                entry.date = document.getElementById('modal-date')?.value || '';
+                entry.time = document.getElementById('modal-time')?.value || '';
                 entry.place = document.getElementById('modal-place')?.value?.trim() || '';
-                entry.eventDate = document.getElementById('modal-event-date')?.value || '';
-                entry.eventTime = document.getElementById('modal-event-time')?.value || '';
-                entry.companions = document.getElementById('modal-companions')?.value?.trim() || '';
-                entry.eventRating = parseInt(document.getElementById('modal-event-rating')?.value) || 5;
-                entry.eventNotes = document.getElementById('modal-event-notes')?.value?.trim() || '';
-            } else if (type === 'shopping') {
-                entry.listCategory = document.getElementById('modal-list-category')?.value || 'Otro';
-                entry.listPrice = parseFloat(document.getElementById('modal-list-price')?.value) || null;
-                entry.listPriority = document.getElementById('modal-list-priority')?.value || 'Media';
-                entry.listDone = document.getElementById('modal-list-done')?.value === '1';
-            } else if (type === 'idea') {
-                entry.ideaCategory = document.getElementById('modal-idea-category')?.value || 'Otro';
-                entry.ideaContent = document.getElementById('modal-idea-content')?.value?.trim() || '';
-                entry.ideaStatus = document.getElementById('modal-idea-status')?.value || 'Pendiente';
-            } else if (type === 'investment') {
-                entry.invType = document.getElementById('modal-inv-type')?.value || 'Otro';
-                entry.invInvested = parseFloat(document.getElementById('modal-inv-invested')?.value) || 0;
-                entry.invCurrent = parseFloat(document.getElementById('modal-inv-current')?.value) || 0;
-                entry.invDate = document.getElementById('modal-inv-date')?.value || '';
-                entry.invMonthly = parseFloat(document.getElementById('modal-inv-monthly')?.value) || 0;
-                entry.invRate = parseFloat(document.getElementById('modal-inv-rate')?.value) || 0;
-                entry.invYears = parseInt(document.getElementById('modal-inv-years')?.value) || 0;
-                entry.invNotes = document.getElementById('modal-inv-notes')?.value?.trim() || '';
-            } else if (type === 'service') {
-                entry.serviceUrl = document.getElementById('modal-service-url')?.value?.trim() || '';
-                entry.serviceEmail = document.getElementById('modal-service-email')?.value?.trim() || '';
-                entry.serviceMethod = document.getElementById('modal-service-method')?.value || 'Otro';
-                entry.serviceNotes = document.getElementById('modal-service-notes')?.value?.trim() || '';
-            } else if (type === 'watchlist') {
-                entry.watchType = document.getElementById('modal-watch-type')?.value || 'libro';
-                entry.watchPriority = document.getElementById('modal-watch-priority')?.value || 'Media';
-                entry.watchNotes = document.getElementById('modal-watch-notes')?.value?.trim() || '';
-            } else if (type === 'wishlist') {
-                entry.wishPrice = parseFloat(document.getElementById('modal-wish-price')?.value) || 0;
-                entry.wishUrl = document.getElementById('modal-wish-url')?.value?.trim() || '';
-                entry.wishNotes = document.getElementById('modal-wish-notes')?.value?.trim() || '';
-                entry.wishAddedDate = isEdit ? entries.find(x => x.id === editId)?.wishAddedDate || today : today;
-            } else if (type === 'task') {
-                entry.taskStart = document.getElementById('modal-task-start')?.value || '';
-                entry.taskDue = document.getElementById('modal-task-due')?.value || '';
-                entry.taskNotes = document.getElementById('modal-task-notes')?.value?.trim() || '';
-                entry.taskDone = isEdit ? entries.find(x => x.id === editId)?.taskDone || false : false;
-                entry.taskCompletedDate = entry.taskDone ? new Date().toISOString().slice(0, 10) : '';
-            } else if (type === 'link') {
-                entry.linkUrl = document.getElementById('modal-link-url')?.value?.trim() || '';
-                entry.linkIcon = document.getElementById('modal-link-icon')?.value?.trim() || '';
+                entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+            } else if (type === 'restaurant' || type === 'place' || type === 'document') {
+                entry.date = document.getElementById('modal-date')?.value || '';
+                entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
             }
 
             if (editId) {
@@ -2321,12 +2177,30 @@
                 entries.push(entry);
             }
 
-            entries.sort((a, b) => b.date.localeCompare(a.date));
+            entries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             filteredEntries = [...entries];
             saveData();
             closeModal();
             render();
             showToast('Guardado');
+        }
+
+        function getCategoryIdForType(type) {
+            const map = {
+                book: 'cat_libro',
+                movie: 'cat_pelicula',
+                series: 'cat_serie',
+                game: 'cat_videojuego',
+                travel: 'cat_viaje',
+                work: 'cat_trabajo',
+                project: 'cat_proyecto',
+                event: 'cat_evento',
+                restaurant: 'cat_restaurante',
+                place: 'cat_lugar',
+                document: 'cat_general'
+            };
+            const id = map[type] || 'cat_general';
+            return categories.find(c => c.id === id)?.id || 'cat_general';
         }
 
         // ============================================================
@@ -2346,7 +2220,7 @@
         //  EXPORT / IMPORT
         // ============================================================
         function exportData() {
-            const data = { entries, categories };
+            const data = { entries, categories, userName };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -2366,9 +2240,11 @@
                     const data = JSON.parse(e.target.result);
                     if (data.entries) entries = data.entries;
                     if (data.categories) categories = data.categories;
+                    if (data.userName) userName = data.userName;
                     filteredEntries = [...entries];
                     saveData();
                     render();
+                    updatePageTitle();
                     showToast('Importado correctamente');
                 } catch (err) {
                     showToast('Error al importar', true);
@@ -2379,177 +2255,6 @@
         }
 
         // ============================================================
-        //  EXPORT SECTION (HTML standalone)
-        // ============================================================
-        function exportSection(title, itemsHtml) {
-            const doc = `<!DOCTYPE html>
-        <html lang="es">
-        <head><meta charset="UTF-8">
-        <title>${title} - Bitacora</title>
-        <style>
-            body{font-family:'Georgia',serif;max-width:700px;margin:60px auto;padding:0 24px;color:#1c1c1e;background:#faf8f3}
-            h1{font-family:Arial,sans-serif;border-bottom:3px solid #1c1c1e;padding-bottom:10px}
-            .item{padding:16px 0;border-bottom:1px solid #ddd}
-            .item h3{margin:0 0 4px 0}
-            .meta{color:#777;font-size:13px}
-            footer{margin-top:40px;font-size:12px;color:#999;text-align:center}
-        </style>
-        </head>
-        <body>
-            <h1>${title}</h1>
-            ${itemsHtml}
-            <footer>Exportado desde Bitacora el ${new Date().toLocaleDateString('es-ES')}</footer>
-        </body>
-        </html>`;
-            const blob = new Blob([doc], { type: 'text/html' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `${title.toLowerCase().replace(/\s+/g,'_')}.html`;
-            a.click();
-        }
-
-        // ============================================================
-        //  COMPOUND INTEREST CALCULATION
-        // ============================================================
-        function calcCompoundProjection(principal, monthlyContribution, annualRatePct, years) {
-            const monthlyRate = annualRatePct / 100 / 12;
-            const months = years * 12;
-            let balance = principal;
-            const yearlySnapshots = [{ year: 0, balance: Math.round(balance) }];
-
-            for (let m = 1; m <= months; m++) {
-                balance = balance * (1 + monthlyRate) + monthlyContribution;
-                if (m % 12 === 0) {
-                    yearlySnapshots.push({ year: m / 12, balance: Math.round(balance) });
-                }
-            }
-            const totalContributed = principal + monthlyContribution * months;
-            return {
-                finalBalance: Math.round(balance),
-                totalContributed: Math.round(totalContributed),
-                totalInterest: Math.round(balance - totalContributed),
-                yearlySnapshots
-            };
-        }
-
-        function renderInvestmentProjection(entry) {
-            if (!entry.invYears) return '';
-            const proj = calcCompoundProjection(entry.invCurrent || entry.invInvested || 0, entry.invMonthly || 0, entry
-                .invRate || 0, entry.invYears);
-            const max = Math.max(...proj.yearlySnapshots.map(s => s.balance), 1);
-            return `
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-                <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Proyeccion a ${entry.invYears} anos (${entry.invRate}% anual)</div>
-                <div style="font-size:20px;font-weight:800;margin:4px 0;color:var(--text-primary)">${proj.finalBalance.toLocaleString('es-ES')}€</div>
-                <div style="font-size:12px;color:var(--text-secondary)">Aportado: ${proj.totalContributed.toLocaleString('es-ES')}€ · Intereses: +${proj.totalInterest.toLocaleString('es-ES')}€</div>
-                <div style="display:flex;gap:4px;align-items:flex-end;height:60px;margin-top:8px">
-                    ${proj.yearlySnapshots.map(s => `
-                        <div style="flex:1;height:${Math.max(4,(s.balance/max)*100)}%;background:var(--accent);border-radius:2px 2px 0 0;min-height:4px" title="Ano ${s.year}: ${s.balance}€"></div>
-                    `).join('')}
-                </div>
-            </div>`;
-        }
-
-        // ============================================================
-        //  WISHLIST: DAYS UNLOCK
-        // ============================================================
-        function daysUntilUnlock(wishAddedDate) {
-            if (!wishAddedDate) return 0;
-            const added = new Date(wishAddedDate + 'T00:00:00');
-            const unlock = new Date(added.getTime() + 15 * 24 * 60 * 60 * 1000);
-            const diff = Math.ceil((unlock - new Date()) / (24 * 60 * 60 * 1000));
-            return Math.max(0, diff);
-        }
-
-        // ============================================================
-        //  WATCHLIST: MOVE TO CULTURA
-        // ============================================================
-        function moveWatchlistToStarted(id) {
-            const w = entries.find(e => e.id === id);
-            if (!w) return;
-            entries.push({
-                id: 'entry_' + Date.now(),
-                type: 'library',
-                title: w.title,
-                date: new Date().toISOString().slice(0, 10),
-                categoryId: w.categoryId,
-                libType: w.watchType || 'libro',
-                startDate: new Date().toISOString().slice(0, 10),
-                endDate: '',
-                author: '',
-                platform: '',
-                rating: 0
-            });
-            entries = entries.filter(e => e.id !== id);
-            saveData();
-            render();
-            showToast('Movido a Cultura como "en curso"');
-        }
-
-        // ============================================================
-        //  TASK: TOGGLE DONE
-        // ============================================================
-        function toggleTaskDone(id) {
-            const t = entries.find(e => e.id === id);
-            if (!t) return;
-            t.taskDone = !t.taskDone;
-            t.taskCompletedDate = t.taskDone ? new Date().toISOString().slice(0, 10) : '';
-            saveData();
-            render();
-        }
-
-        function showCompletedTasksModal() {
-            const done = entries.filter(e => e.type === 'task' && e.taskDone);
-            const html = `
-            <div class="modal-overlay" id="completed-overlay" onclick="if(event.target===this)this.remove()">
-                <div class="modal-sheet">
-                    <div class="modal-title">Tareas completadas <button class="modal-close" onclick="document.getElementById('completed-overlay').remove()">✕</button></div>
-                    ${done.length ? done.map(t => `
-                        <div class="entry-item">
-                            <div class="entry-info"><div class="entry-title" style="text-decoration:line-through;opacity:0.6">${t.title}</div>
-                            <div class="entry-meta">Completada: ${t.taskCompletedDate}</div></div>
-                            <button class="delete" onclick="deleteEntry('${t.id}');document.getElementById('completed-overlay').remove()">✕ Borrar</button>
-                        </div>`).join('') : '<p style="color:var(--text-secondary)">No hay tareas completadas</p>'}
-                </div>
-            </div>`;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        // ============================================================
-        //  ALERTAS DE EVENTOS DEL DIA
-        // ============================================================
-        function checkTodayAlerts() {
-            const today = new Date().toISOString().slice(0, 10);
-            const dismissedKey = 'bitacora_alerts_dismissed_' + today;
-            if (sessionStorage.getItem(dismissedKey)) return;
-
-            const todayEvents = entries.filter(e => e.type === 'event' && e.eventDate === today);
-            if (!todayEvents.length) return;
-
-            showAlertModal(todayEvents);
-            sessionStorage.setItem(dismissedKey, '1');
-        }
-
-        function showAlertModal(events) {
-            const html = `
-            <div class="modal-overlay" id="alert-overlay" onclick="if(event.target===this)document.getElementById('alert-overlay').remove()">
-                <div class="modal-sheet" style="max-width:400px;text-align:center">
-                    <div class="modal-title" style="justify-content:center;position:relative">
-                        Hoy tienes
-                        <button class="modal-close" style="position:absolute;right:0" onclick="document.getElementById('alert-overlay').remove()">✕</button>
-                    </div>
-                    ${events.map(e => `
-                        <div style="padding:12px 0;border-bottom:1px solid var(--border)">
-                            <div style="font-weight:700;font-size:15px;color:var(--text-primary)">${e.title}</div>
-                            ${e.place ? `<div style="font-size:13px;color:var(--text-secondary)">${e.place}</div>` : ''}
-                            <div style="font-size:13px;color:var(--text-secondary)">${e.eventTime ? e.eventTime : 'Sin hora fijada'}</div>
-                        </div>`).join('')}
-                </div>
-            </div>`;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        // ============================================================
         //  RENDER
         // ============================================================
         function render() {
@@ -2557,22 +2262,18 @@
             if (currentView === 'calendar') content.innerHTML = renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();
             else if (currentView === 'stats') content.innerHTML = renderStats();
-            else if (currentView === 'goals') content.innerHTML = renderGoals();
-            else if (currentView === 'projects') content.innerHTML = renderProjects();
+            else if (currentView === 'books') content.innerHTML = renderBooks();
+            else if (currentView === 'movies') content.innerHTML = renderMovies();
+            else if (currentView === 'series') content.innerHTML = renderSeries();
+            else if (currentView === 'games') content.innerHTML = renderGames();
             else if (currentView === 'travels') content.innerHTML = renderTravels();
             else if (currentView === 'work') content.innerHTML = renderWork();
-            else if (currentView === 'cultura') content.innerHTML = renderCultura();
-            else if (currentView === 'exams') content.innerHTML = renderExams();
+            else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
-            else if (currentView === 'shopping') content.innerHTML = renderShopping();
-            else if (currentView === 'ideas') content.innerHTML = renderIdeas();
-            else if (currentView === 'investments') content.innerHTML = renderInvestments();
+            else if (currentView === 'restaurants') content.innerHTML = renderRestaurants();
+            else if (currentView === 'places') content.innerHTML = renderPlaces();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
-                loadDocuments(); } else if (currentView === 'services') content.innerHTML = renderServices();
-            else if (currentView === 'watchlist') content.innerHTML = renderWatchlist();
-            else if (currentView === 'wishlist') content.innerHTML = renderWishlist();
-            else if (currentView === 'tasks') content.innerHTML = renderTasks();
-            else if (currentView === 'links') content.innerHTML = renderLinks();
+                loadDocuments(); } else if (currentView === 'investments') content.innerHTML = renderInvestments();
         }
 
         // ============================================================
@@ -2585,8 +2286,10 @@
             const entriesByDate = {};
             entries.forEach(e => {
                 if (NON_CALENDAR_TYPES.includes(e.type)) return;
-                if (!entriesByDate[e.date]) entriesByDate[e.date] = [];
-                entriesByDate[e.date].push(e);
+                const date = e.date || e.startDate || '';
+                if (!date) return;
+                if (!entriesByDate[date]) entriesByDate[date] = [];
+                entriesByDate[date].push(e);
             });
 
             const today = new Date().toISOString().slice(0, 10);
@@ -2683,7 +2386,8 @@
         }
 
         function renderDayEntries(date) {
-            const dayEntries = entries.filter(e => e.date === date && e.type !== 'work');
+            const dayEntries = entries.filter(e => (e.date === date || e.startDate === date) && !NON_CALENDAR_TYPES.includes(
+                e.type));
             const activeJobs = entries.filter(e =>
                 e.type === 'work' &&
                 e.startDate && e.startDate <= date &&
@@ -2728,7 +2432,7 @@
         }
 
         // ============================================================
-        //  RENDER: HOME (con filtros)
+        //  RENDER: HOME
         // ============================================================
         let homeFilter = 'month';
 
@@ -2747,24 +2451,21 @@
 
         function renderHome() {
             const range = getFilterRange(homeFilter);
-            const filtered = range ? entries.filter(e => e.date >= range) : entries;
+            const filtered = range ? entries.filter(e => (e.date || '') >= range) : entries;
             const today = new Date().toISOString().slice(0, 10);
-            const todayEntries = filtered.filter(e => e.date === today);
+            const todayEntries = filtered.filter(e => e.date === today || e.startDate === today);
 
-            const activeGoals = filtered.filter(e => e.type === 'goal' && e.status !== 'Completado');
             const activeProjects = filtered.filter(e => e.type === 'project' && e.status !== 'Completado');
 
             const upcoming = filtered.filter(e => {
                 if (e.type === 'travel' && e.startDate && e.startDate > today) return true;
                 if (e.type === 'project' && e.endDate && e.endDate > today) return true;
-                if (e.type === 'goal' && e.deadline && e.deadline > today) return true;
                 if (e.type === 'work' && e.endDate && e.endDate > today) return true;
-                if (e.type === 'event' && e.eventDate && e.eventDate > today) return true;
-                if (e.type === 'exam' && e.examDate && e.examDate > today) return true;
+                if (e.type === 'event' && e.date && e.date > today) return true;
                 return false;
             }).sort((a, b) => {
-                const dateA = a.startDate || a.endDate || a.deadline || a.eventDate || a.examDate || '';
-                const dateB = b.startDate || b.endDate || b.deadline || b.eventDate || b.examDate || '';
+                const dateA = a.startDate || a.endDate || a.date || '';
+                const dateB = b.startDate || b.endDate || b.date || '';
                 return dateA.localeCompare(dateB);
             }).slice(0, 5);
 
@@ -2783,12 +2484,12 @@
                 <div style="font-size:15px;font-weight:600;margin-bottom:20px;color:var(--text-primary)">${todayEntries.length} entradas hoy</div>
 
                 <div class="card-grid">
-                    <div class="card"><div class="card-title">Objetivos activos</div><div class="card-value">${activeGoals.length}</div></div>
+                    <div class="card"><div class="card-title">Libros</div><div class="card-value">${entries.filter(e=>e.type==='book').length}</div></div>
+                    <div class="card"><div class="card-title">Peliculas</div><div class="card-value">${entries.filter(e=>e.type==='movie').length}</div></div>
+                    <div class="card"><div class="card-title">Series</div><div class="card-value">${entries.filter(e=>e.type==='series').length}</div></div>
+                    <div class="card"><div class="card-title">Videojuegos</div><div class="card-value">${entries.filter(e=>e.type==='game').length}</div></div>
+                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${entries.filter(e=>e.type==='travel').length}</div></div>
                     <div class="card"><div class="card-title">Proyectos activos</div><div class="card-value">${activeProjects.length}</div></div>
-                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${filtered.filter(e=>e.type==='travel').length}</div></div>
-                    <div class="card"><div class="card-title">Cultura</div><div class="card-value">${filtered.filter(e=>e.type==='library').length}</div></div>
-                    <div class="card"><div class="card-title">Examenes</div><div class="card-value">${filtered.filter(e=>e.type==='exam').length}</div></div>
-                    <div class="card"><div class="card-title">Inversiones</div><div class="card-value">${filtered.filter(e=>e.type==='investment').length}</div></div>
                 </div>
 
                 ${upcoming.length ? `
@@ -2797,7 +2498,7 @@
                         const cat = categories.find(c => c.id === e.categoryId);
                         const color = cat?.color || 'var(--text-secondary)';
                         const icon = TYPE_ICONS[e.type] || '◈';
-                        const dateInfo = e.startDate || e.endDate || e.deadline || e.eventDate || e.examDate || '';
+                        const dateInfo = e.startDate || e.endDate || e.date || '';
                         return `
                             <div class="entry-item" onclick="switchView('calendar');showDayEntries('${dateInfo}')">
                                 <div class="entry-color-dot" style="background:${color}"></div>
@@ -2814,12 +2515,13 @@
                     const cat = categories.find(c => c.id === e.categoryId);
                     const color = cat?.color || 'var(--text-secondary)';
                     const icon = TYPE_ICONS[e.type] || '◈';
+                    const dateInfo = e.date || e.startDate || '';
                     return `
-                        <div class="entry-item" onclick="switchView('calendar');showDayEntries('${e.date}')">
+                        <div class="entry-item" onclick="switchView('calendar');showDayEntries('${dateInfo}')">
                             <div class="entry-color-dot" style="background:${color}"></div>
                             <div class="entry-info">
                                 <div class="entry-title">${icon} ${e.title}</div>
-                                <div class="entry-meta">${e.date}</div>
+                                <div class="entry-meta">${dateInfo}</div>
                             </div>
                         </div>`;
                 }).join('') : `<div style="color:var(--text-secondary);padding:12px 0">No hay actividad reciente</div>`}
@@ -2841,7 +2543,9 @@
 
             const monthCount = {};
             entries.forEach(e => {
-                const m = e.date.slice(0, 7);
+                const date = e.date || e.startDate || '';
+                if (!date) return;
+                const m = date.slice(0, 7);
                 if (!monthCount[m]) monthCount[m] = 0;
                 monthCount[m]++;
             });
@@ -2855,17 +2559,16 @@
 
                 <div class="card-grid">
                     <div class="card"><div class="card-title">Total entradas</div><div class="card-value">${totalEntries}</div></div>
-                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${byType.goal || 0}</div></div>
-                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${byType.project || 0}</div></div>
+                    <div class="card"><div class="card-title">Libros</div><div class="card-value">${byType.book || 0}</div></div>
+                    <div class="card"><div class="card-title">Peliculas</div><div class="card-value">${byType.movie || 0}</div></div>
+                    <div class="card"><div class="card-title">Series</div><div class="card-value">${byType.series || 0}</div></div>
+                    <div class="card"><div class="card-title">Videojuegos</div><div class="card-value">${byType.game || 0}</div></div>
                     <div class="card"><div class="card-title">Viajes</div><div class="card-value">${byType.travel || 0}</div></div>
                     <div class="card"><div class="card-title">Trabajo</div><div class="card-value">${byType.work || 0}</div></div>
-                    <div class="card"><div class="card-title">Cultura</div><div class="card-value">${byType.library || 0}</div></div>
-                    <div class="card"><div class="card-title">Examenes</div><div class="card-value">${byType.exam || 0}</div></div>
+                    <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${byType.project || 0}</div></div>
                     <div class="card"><div class="card-title">Eventos</div><div class="card-value">${byType.event || 0}</div></div>
-                    <div class="card"><div class="card-title">Ideas</div><div class="card-value">${byType.idea || 0}</div></div>
-                    <div class="card"><div class="card-title">Inversiones</div><div class="card-value">${byType.investment || 0}</div></div>
-                    <div class="card"><div class="card-title">Servicios</div><div class="card-value">${byType.service || 0}</div></div>
-                    <div class="card"><div class="card-title">Tareas</div><div class="card-value">${byType.task || 0}</div></div>
+                    <div class="card"><div class="card-title">Restaurantes</div><div class="card-value">${byType.restaurant || 0}</div></div>
+                    <div class="card"><div class="card-title">Lugares</div><div class="card-value">${byType.place || 0}</div></div>
                 </div>`;
 
             if (sortedMonths.length) {
@@ -2891,105 +2594,155 @@
         }
 
         // ============================================================
-        //  RENDER: GOALS
+        //  RENDER: BOOKS
         // ============================================================
-        function renderGoals() {
-            const goals = entries.filter(e => e.type === 'goal');
-            if (!goals.length) {
-                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin objetivos</div><div class="empty-sub">Pulsa el boton + y selecciona "Objetivo"</div></div>`;
+        function renderBooks() {
+            const books = entries.filter(e => e.type === 'book');
+            if (!books.length) {
+                return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin libros</div><div class="empty-sub">Pulsa el boton + y selecciona "Libro"</div></div>`;
             }
-            let html = '';
-            ['Corto plazo', 'Medio plazo', 'Largo plazo'].forEach(cat => {
-                const filtered = goals.filter(g => g.goalCategory === cat);
-                if (!filtered.length) return;
-                html += `<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">${cat}</div>`;
-                filtered.forEach(g => {
-                    const pct = g.progress || 0;
-                    const color = pct >= 100 ? '#16a34a' : pct >= 50 ? '#d97706' : '#2563eb';
-                    const statusClass = g.status === 'Completado' ? 'badge-done' : g.status === 'En progreso' ?
-                        'badge-progress' : 'badge-pending';
+
+            const reading = books.filter(b => b.status === 'Leyendo');
+            const completed = books.filter(b => b.status === 'Completado');
+
+            let html = `<div style="max-width:700px">
+                <div style="display:flex;gap:16px;margin-bottom:16px">
+                    <div class="card" style="flex:1"><div class="card-title">Leyendo</div><div class="card-value">${reading.length}</div></div>
+                    <div class="card" style="flex:1"><div class="card-title">Completados</div><div class="card-value">${completed.length}</div></div>
+                </div>`;
+
+            if (reading.length) {
+                html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Leyendo</div>`;
+                reading.forEach(b => {
+                    const cat = categories.find(c => c.id === b.categoryId);
+                    const color = cat?.color || 'var(--text-secondary)';
                     html += `
-                        <div class="card" style="margin-bottom:8px;padding:14px 16px;cursor:pointer" onclick="openEditEntry('${g.id}')">
-                            <div style="display:flex;justify-content:space-between;align-items:center">
-                                <span style="font-weight:600;color:var(--text-primary)">${g.title}</span>
-                                <span class="badge ${statusClass}">${g.status}</span>
+                        <div class="entry-item" onclick="openEditEntry('${b.id}')">
+                            <div class="entry-color-dot" style="background:${color}"></div>
+                            <div class="entry-info">
+                                <div class="entry-title">${b.title}</div>
+                                <div class="entry-meta">${b.author || 'Sin autor'} · Inicio: ${b.startDate}</div>
                             </div>
-                            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-                            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-top:4px">
-                                <span>${pct}% completado</span>
-                                ${g.deadline ? `<span>Limite: ${g.deadline}</span>` : ''}
-                            </div>
+                            <span class="badge badge-progress">Leyendo</span>
                         </div>`;
                 });
-                html += `</div>`;
-            });
-            return html;
-        }
-
-        // ============================================================
-        //  RENDER: PROJECTS
-        // ============================================================
-        function renderProjects() {
-            const projects = [...entries.filter(e => e.type === 'project')].sort((a, b) => {
-                const rank = s => s === 'En curso' ? 0 : s === 'Pendiente' ? 1 : 2;
-                return rank(a.status) - rank(b.status) || (b.startDate || '').localeCompare(a.startDate || '');
-            });
-            if (!projects.length) {
-                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa el boton + y selecciona "Proyecto"</div></div>`;
             }
 
-            let html = `
-            <div style="max-width:800px">
-                <button class="btn-modal-primary" style="width:auto;padding:8px 16px;margin-bottom:16px" onclick="exportProjects()">⬇ Exportar proyectos</button>`;
-
-            projects.forEach(p => {
-                const totalTasks = p.tasks?.length || 0;
-                const doneTasks = p.tasks?.filter(t => t.done).length || 0;
-                const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
-                const statusClass = p.status === 'Completado' ? 'badge-done' : p.status === 'En curso' ?
-                    'badge-progress' : 'badge-pending';
-
-                html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${p.id}')">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${p.title}</span>
-                        <span class="badge ${statusClass}">${p.status}</span>
-                    </div>
-                    ${p.description ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${p.description}</div>` : ''}
-                    <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${p.startDate || ''} ${p.endDate ? '→ ' + p.endDate : ''}</div>
-                    ${p.budget !== null && p.budget !== undefined && p.budget > 0 ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Presupuesto: ${p.budget}€</div>` : ''}
-                    ${totalTasks > 0 ? `
-                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
-                        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${doneTasks}/${totalTasks} tareas</div>
-                        <div style="margin-top:6px">
-                            ${p.tasks.map((t, i) => `
-                                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
-                                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleProjectTask('${p.id}', ${i})" style="cursor:pointer">
-                                    <span style="${t.done ? 'text-decoration:line-through;opacity:0.5' : ''}">${t.text}</span>
-                                </div>`).join('')}
-                        </div>
-                    ` : ''}
-                    ${p.projectNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${p.projectNotes}</div>` : ''}
-                </div>`;
-            });
+            if (completed.length) {
+                html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:16px 0 8px 0">Completados</div>`;
+                completed.forEach(b => {
+                    const cat = categories.find(c => c.id === b.categoryId);
+                    const color = cat?.color || 'var(--text-secondary)';
+                    const stars = b.rating ? '⭐'.repeat(b.rating) : '';
+                    html += `
+                        <div class="entry-item" onclick="openEditEntry('${b.id}')">
+                            <div class="entry-color-dot" style="background:${color}"></div>
+                            <div class="entry-info">
+                                <div class="entry-title">${b.title}</div>
+                                <div class="entry-meta">${b.author || 'Sin autor'} · Fin: ${b.endDate}${stars ? ' · ' + stars : ''}</div>
+                            </div>
+                            <span class="badge badge-done">Completado</span>
+                        </div>`;
+                });
+            }
 
             html += `</div>`;
             return html;
         }
 
-        function toggleProjectTask(id, idx) {
-            const e = entries.find(e => e.id === id);
-            if (!e) return;
-            e.tasks[idx].done = !e.tasks[idx].done;
-            saveData();
-            render();
+        // ============================================================
+        //  RENDER: MOVIES
+        // ============================================================
+        function renderMovies() {
+            const movies = entries.filter(e => e.type === 'movie');
+            if (!movies.length) {
+                return `<div class="empty-state"><div class="empty-icon">▸</div><div class="empty-title">Sin peliculas</div><div class="empty-sub">Pulsa el boton + y selecciona "Pelicula"</div></div>`;
+            }
+
+            const sorted = [...movies].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(m => {
+                const cat = categories.find(c => c.id === m.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                const stars = m.rating ? '⭐'.repeat(m.rating) : '';
+                html += `
+                    <div class="entry-item" onclick="openEditEntry('${m.id}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${m.title}</div>
+                            <div class="entry-meta">${m.date || 'Sin fecha'}${stars ? ' · ' + stars : ''}</div>
+                        </div>
+                    </div>`;
+            });
+            html += `</div>`;
+            return html;
         }
 
-        function exportProjects() {
-            const items = entries.filter(e => e.type === 'project').map(p => `
-                <div class="item"><h3>${p.title}</h3><div class="meta">${p.status} · ${p.startDate||''} ${p.endDate ? '→ '+p.endDate:''}</div>
-                <p>${p.description||''}</p></div>`).join('');
-            exportSection('Proyectos', items);
+        // ============================================================
+        //  RENDER: SERIES
+        // ============================================================
+        function renderSeries() {
+            const series = entries.filter(e => e.type === 'series');
+            if (!series.length) {
+                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin series</div><div class="empty-sub">Pulsa el boton + y selecciona "Serie"</div></div>`;
+            }
+
+            const statusOrder = { 'Viendo': 0, 'Completada': 1, 'Abandonada': 2 };
+            const sorted = [...series].sort((a, b) => (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0));
+
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(s => {
+                const cat = categories.find(c => c.id === s.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                const statusClass = s.status === 'Completada' ? 'badge-done' : s.status === 'Abandonada' ?
+                    'badge-pending' : 'badge-progress';
+                const stars = s.rating ? '⭐'.repeat(s.rating) : '';
+                html += `
+                    <div class="entry-item" onclick="openEditEntry('${s.id}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${s.title}</div>
+                            <div class="entry-meta">Inicio: ${s.startDate}${s.endDate ? ' · Fin: ' + s.endDate : ''}${stars ? ' · ' + stars : ''}</div>
+                        </div>
+                        <span class="badge ${statusClass}">${s.status}</span>
+                    </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: GAMES
+        // ============================================================
+        function renderGames() {
+            const games = entries.filter(e => e.type === 'game');
+            if (!games.length) {
+                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin videojuegos</div><div class="empty-sub">Pulsa el boton + y selecciona "Videojuego"</div></div>`;
+            }
+
+            const statusOrder = { 'Jugando': 0, 'Completado': 1, 'Abandonado': 2 };
+            const sorted = [...games].sort((a, b) => (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0));
+
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(g => {
+                const cat = categories.find(c => c.id === g.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                const statusClass = g.status === 'Completado' ? 'badge-done' : g.status === 'Abandonado' ?
+                    'badge-pending' : 'badge-progress';
+                const stars = g.rating ? '⭐'.repeat(g.rating) : '';
+                html += `
+                    <div class="entry-item" onclick="openEditEntry('${g.id}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${g.title}</div>
+                            <div class="entry-meta">Inicio: ${g.startDate}${g.endDate ? ' · Fin: ' + g.endDate : ''}${stars ? ' · ' + stars : ''}</div>
+                        </div>
+                        <span class="badge ${statusClass}">${g.status}</span>
+                    </div>`;
+            });
+            html += `</div>`;
+            return html;
         }
 
         // ============================================================
@@ -3000,20 +2753,24 @@
             if (!travels.length) {
                 return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el boton + y selecciona "Viaje"</div></div>`;
             }
-            let html = '';
+
+            let html = `<div style="max-width:700px">`;
             travels.forEach(t => {
-                const stars = t.rating ? '⭐'.repeat(t.rating) : '';
+                const cat = categories.find(c => c.id === t.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
                 html += `
                     <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${t.id}')">
                         <div style="display:flex;justify-content:space-between;align-items:center">
                             <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${t.title}</span>
-                            <span style="font-size:13px;color:var(--text-secondary)">${t.country || ''}</span>
+                            <span style="font-size:13px;color:var(--text-secondary)">${t.destination || ''}</span>
                         </div>
                         <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${t.startDate || ''} ${t.endDate ? '→ ' + t.endDate : ''}</div>
-                        ${stars ? `<div style="margin-top:4px">${stars}</div>` : ''}
+                        ${t.companions ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${t.companions}</div>` : ''}
                         ${t.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${t.notes}</div>` : ''}
+                        <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
                     </div>`;
             });
+            html += `</div>`;
             return html;
         }
 
@@ -3035,7 +2792,9 @@
 
             let html = `<div style="max-width:700px">`;
             sorted.forEach(w => {
-                const typeLabel = w.workType === 'practicas' ? 'Practicas' : 'Puesto normal';
+                const cat = categories.find(c => c.id === w.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                const statusClass = w.status === 'Trabajo actual' ? 'badge-progress' : 'badge-done';
                 html += `
                     <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${w.id}')">
                         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -3044,11 +2803,12 @@
                         </div>
                         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
                             <span style="font-size:12px;color:var(--text-secondary)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
-                            <span class="badge ${w.workType === 'practicas' ? 'badge-pending' : 'badge-done'}">${typeLabel}</span>
+                            <span class="badge ${statusClass}">${w.status}</span>
                         </div>
                         ${w.schedule ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.schedule}</div>` : ''}
-                        ${w.functions ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${w.functions}</div>` : ''}
-                        ${w.skills ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Habilidades: ${w.skills}</div>` : ''}
+                        ${w.salary ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.salary}€/mes</div>` : ''}
+                        ${w.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${w.notes}</div>` : ''}
+                        <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
                     </div>`;
             });
             html += `</div>`;
@@ -3056,132 +2816,48 @@
         }
 
         // ============================================================
-        //  RENDER: CULTURA
+        //  RENDER: PROJECTS
         // ============================================================
-        function renderCultura() {
-            const items = entries.filter(e => e.type === 'library');
-            if (!items.length) {
-                return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin items culturales</div><div class="empty-sub">Pulsa el boton + y selecciona "Cultura"</div></div>`;
+        function renderProjects() {
+            const projects = entries.filter(e => e.type === 'project');
+            if (!projects.length) {
+                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa el boton + y selecciona "Proyecto"</div></div>`;
             }
 
-            const LIB_TYPES = {
-                libro: { icon: '◊', label: 'Libros' },
-                musica: { icon: '♪', label: 'Musica' },
-                videojuego: { icon: '◉', label: 'Videojuegos' },
-                video: { icon: '▸', label: 'Videos' }
-            };
-
-            let html = '<div style="max-width:800px">';
-
-            Object.entries(LIB_TYPES).forEach(([key, meta]) => {
-                const subset = items.filter(i => i.libType === key);
-                if (!subset.length) return;
-                const active = subset.find(i => i.startDate && !i.endDate);
-                html += `
-                <div style="margin-bottom:24px">
-                    <div style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--text-primary)">${meta.icon} ${meta.label} (${subset.length})</div>
-                    ${active ? `<div class="card" style="border-left:3px solid var(--accent);margin-bottom:8px">
-                        <div style="font-size:11px;text-transform:uppercase;color:var(--text-secondary)">En curso</div>
-                        <div style="font-weight:700;color:var(--text-primary)">${active.title}</div>
-                    </div>` : ''}
-                    ${subset.filter(i => i !== active).map(i => `
-                        <div class="entry-item" onclick="openEditEntry('${i.id}')">
-                            <div class="entry-info">
-                                <div class="entry-title">${i.title}</div>
-                                <div class="entry-meta">${i.author || i.platform || ''} ${i.startDate||''}${i.endDate ? ' → '+i.endDate:''}${i.rating ? ' · ⭐'.repeat(i.rating):''}</div>
-                            </div>
-                        </div>`).join('')}
-                </div>`;
-            });
-            html += '</div>';
-            return html;
-        }
-
-        // ============================================================
-        //  RENDER: EXAMS
-        // ============================================================
-        function renderExams() {
-            const exams = entries.filter(e => e.type === 'exam');
-            if (!exams.length) {
-                return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin examenes</div><div class="empty-sub">Pulsa el boton + y selecciona "Examen"</div></div>`;
-            }
-
-            const subjects = {};
-            exams.forEach(e => {
-                const key = e.subject || 'Sin asignatura';
-                if (!subjects[key]) subjects[key] = { entries: [], totalWeight: 0, weightedSum: 0 };
-                subjects[key].entries.push(e);
-                if (e.grade !== null && e.grade !== undefined && e.weight > 0) {
-                    subjects[key].totalWeight += e.weight;
-                    subjects[key].weightedSum += e.grade * e.weight;
-                }
+            const sorted = [...projects].sort((a, b) => {
+                const aActive = !a.endDate,
+                    bActive = !b.endDate;
+                if (aActive !== bActive) return aActive ? -1 : 1;
+                return (b.startDate || '').localeCompare(a.startDate || '');
             });
 
-            let html = `
-            <div style="max-width:800px">
-                <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:12px">Resumen por asignatura</div>`;
-
-            Object.keys(subjects).forEach(subject => {
-                const data = subjects[subject];
-                const finalGrade = data.totalWeight > 0 ? Math.round((data.weightedSum / data.totalWeight) * 10) / 10 :
-                null;
-                const isApproved = finalGrade !== null && finalGrade >= 5;
-                const isMatricula = finalGrade !== null && finalGrade >= 9;
-
-                let gradeClass = 'nota-suspenso';
-                let gradeLabel = 'Suspenso';
-                if (isMatricula) { gradeClass = 'nota-matricula';
-                    gradeLabel = 'Matricula'; } else if (isApproved) { gradeClass = 'nota-aprobado';
-                    gradeLabel = 'Aprobado'; }
-
-                html += `
-                <div class="card" style="margin-bottom:12px">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${subject}</span>
-                        <div>
-                            ${finalGrade !== null ? `
-                                <span class="nota-final ${gradeClass}">${finalGrade}</span>
-                                <span class="badge ${isMatricula ? 'badge-done' : isApproved ? 'badge-progress' : 'badge-pending'}">${gradeLabel}</span>
-                            ` : `<span class="badge badge-pending">Sin calificacion</span>`}
-                        </div>
-                    </div>
-                    <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${data.entries.length} elementos · Peso total: ${data.totalWeight}%</div>
-                    <div style="margin-top:8px">`;
-                data.entries.forEach(e => {
-                    const statusClass = e.examStatus === 'Aprobado' ? 'badge-done' : e.examStatus === 'Matricula' ?
-                        'badge-done' : e.examStatus === 'Suspenso' ? 'badge-pending' : 'badge-progress';
-                    const icon = e.examType === 'titulacion' ? '◊' : e.examType === 'trabajo' ? '▸' : e.examType ===
-                        'practica' ? '◉' : '◈';
-                    html += `
-                        <div class="entry-item" onclick="openEditEntry('${e.id}')" style="cursor:pointer;padding:4px 0">
-                            <div class="entry-info">
-                                <div style="font-size:13px;color:var(--text-primary)">${icon} ${e.title}</div>
-                                <div style="font-size:11px;color:var(--text-secondary)">${e.examType} · Peso: ${e.weight}% ${e.grade !== null ? '· Nota: ' + e.grade : ''}</div>
-                            </div>
-                            <span class="badge ${statusClass}">${e.examStatus}</span>
-                        </div>`;
-                });
-                html += `</div></div>`;
-            });
-
-            html += `
-            <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:20px 0 12px 0">Todos los examenes</div>
-            ${exams.map(e => {
-                const cat = categories.find(c => c.id === e.categoryId);
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(p => {
+                const cat = categories.find(c => c.id === p.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
-                const statusClass = e.examStatus === 'Aprobado' ? 'badge-done' : e.examStatus === 'Matricula' ? 'badge-done' : e.examStatus === 'Suspenso' ? 'badge-pending' : 'badge-progress';
-                return `
-                    <div class="entry-item" onclick="openEditEntry('${e.id}')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${e.title}</div>
-                            <div class="entry-meta">${e.subject || 'Sin asignatura'} · ${e.examType} · ${e.examDate || 'Sin fecha'} ${e.grade !== null ? '· Nota: ' + e.grade : ''}</div>
-                        </div>
-                        <span class="badge ${statusClass}">${e.examStatus}</span>
-                    </div>`;
-            }).join('')}
-            </div>`;
+                const statusClass = p.status === 'Completado' ? 'badge-done' : 'badge-progress';
+                const totalTasks = p.tasks?.length || 0;
+                const doneTasks = p.tasks?.filter(t => t.done).length || 0;
+                const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
+                html += `
+                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${p.id}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${p.title}</span>
+                            <span class="badge ${statusClass}">${p.status}</span>
+                        </div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${p.projectCategory || 'Sin categoria'} · ${p.startDate || ''} ${p.endDate ? '→ ' + p.endDate : ''}</div>
+                        ${p.description ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${p.description}</div>` : ''}
+                        ${p.budget ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Presupuesto: ${p.budget}€</div>` : ''}
+                        ${totalTasks > 0 ? `
+                            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${doneTasks}/${totalTasks} tareas</div>
+                        ` : ''}
+                        ${p.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${p.notes}</div>` : ''}
+                        <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                    </div>`;
+            });
+            html += `</div>`;
             return html;
         }
 
@@ -3195,354 +2871,174 @@
             }
 
             const eventIcons = { social: '◈', teatro: '◊', cine: '▸', concierto: '♪', deporte: '◉', otro: '◈' };
-            const sorted = [...events].sort((a, b) => (b.eventDate || '').localeCompare(a.eventDate || ''));
+            const sorted = [...events].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-            let html =
-                `<div style="max-width:700px">`;
+            let html = `<div style="max-width:700px">`;
             sorted.forEach(e => {
                 const cat = categories.find(c => c.id === e.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
                 const icon = eventIcons[e.eventType] || '◈';
-                const stars = e.eventRating ? '⭐'.repeat(Math.floor(e.eventRating / 2)) : '';
                 html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${icon} ${e.title}</span>
-                        <span style="font-size:13px;color:var(--text-secondary)">${e.eventDate || ''}${e.eventTime ? ' · ' + e.eventTime : ''}</span>
-                    </div>
-                    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.place || 'Sin lugar'}</div>
-                    ${e.companions ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${e.companions}</div>` : ''}
-                    ${stars ? `<div style="margin-top:4px;font-size:14px">${stars}</div>` : ''}
-                    ${e.eventNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${e.eventNotes}</div>` : ''}
-                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
-                </div>`;
+                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${icon} ${e.title}</span>
+                            <span style="font-size:13px;color:var(--text-secondary)">${e.date || ''}${e.time ? ' · ' + e.time : ''}</span>
+                        </div>
+                        <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.place || 'Sin lugar'}</div>
+                        ${e.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${e.notes}</div>` : ''}
+                        <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                    </div>`;
             });
             html += `</div>`;
             return html;
         }
 
         // ============================================================
-        //  RENDER: SHOPPING
+        //  RENDER: RESTAURANTS
         // ============================================================
-        function renderShopping() {
-            const items = entries.filter(e => e.type === 'shopping');
-            if (!items.length) {
-                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin items en listas</div><div class="empty-sub">Pulsa el boton + y selecciona "Lista"</div></div>`;
+        function renderRestaurants() {
+            const restaurants = entries.filter(e => e.type === 'restaurant');
+            if (!restaurants.length) {
+                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin restaurantes</div><div class="empty-sub">Pulsa el boton + y selecciona "Restaurante"</div></div>`;
             }
 
-            const pending = items.filter(e => !e.listDone);
-            const done = items.filter(e => e.listDone);
+            const sorted = [...restaurants].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(r => {
+                const cat = categories.find(c => c.id === r.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                html += `
+                    <div class="entry-item" onclick="openEditEntry('${r.id}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${r.title}</div>
+                            <div class="entry-meta">${r.date || 'Sin fecha'}${r.notes ? ' · ' + r.notes : ''}</div>
+                        </div>
+                    </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: PLACES
+        // ============================================================
+        function renderPlaces() {
+            const places = entries.filter(e => e.type === 'place');
+            if (!places.length) {
+                return `<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin lugares</div><div class="empty-sub">Pulsa el boton + y selecciona "Lugar"</div></div>`;
+            }
+
+            const sorted = [...places].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            let html = `<div style="max-width:700px">`;
+            sorted.forEach(p => {
+                const cat = categories.find(c => c.id === p.categoryId);
+                const color = cat?.color || 'var(--text-secondary)';
+                html += `
+                    <div class="entry-item" onclick="openEditEntry('${p.id}')">
+                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${p.title}</div>
+                            <div class="entry-meta">${p.date || 'Sin fecha'}${p.notes ? ' · ' + p.notes : ''}</div>
+                        </div>
+                    </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
+        //  RENDER: INVESTMENTS (Calculadora de interes compuesto)
+        // ============================================================
+        let investmentData = { initial: 0, rate: 7, monthly: 0 };
+
+        function renderInvestments() {
+            // Cargar datos guardados
+            const saved = localStorage.getItem('bitacora_investment_data');
+            if (saved) {
+                try { investmentData = JSON.parse(saved); } catch (e) {}
+            }
+
+            const proj = calcCompoundProjection(investmentData.initial || 0, investmentData.monthly || 0, investmentData
+                .rate || 0, 30);
+            const max = Math.max(...proj.yearlySnapshots.map(s => s.balance), 1);
 
             let html = `
-            <div style="max-width:700px">
-                <div style="display:flex;gap:16px;margin-bottom:16px">
-                    <div class="card" style="flex:1"><div class="card-title">Pendientes</div><div class="card-value">${pending.length}</div></div>
-                    <div class="card" style="flex:1"><div class="card-title">Comprados</div><div class="card-value">${done.length}</div></div>
+            <div class="investment-calculator">
+                <div style="margin-bottom:16px">
+                    <div class="modal-label">Capital inicial (€)</div>
+                    <input type="number" id="inv-initial" class="modal-input" value="${investmentData.initial || ''}" step="0.01" placeholder="0.00" onchange="updateInvestment()">
+                    <div class="modal-label">Rentabilidad anual (%)</div>
+                    <input type="number" id="inv-rate" class="modal-input" value="${investmentData.rate || 7}" step="0.1" placeholder="7" onchange="updateInvestment()">
+                    <div class="modal-label">Aportacion mensual (€)</div>
+                    <input type="number" id="inv-monthly" class="modal-input" value="${investmentData.monthly || ''}" step="0.01" placeholder="0.00" onchange="updateInvestment()">
                 </div>
 
-                ${pending.length ? `
-                    <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Pendientes</div>
-                    ${pending.map(e => {
-                        const cat = categories.find(c => c.id === e.categoryId);
-                        const color = cat?.color || 'var(--text-secondary)';
-                        const priorityColor = e.listPriority === 'Alta' ? '#dc2626' : e.listPriority === 'Media' ? '#d97706' : 'var(--text-secondary)';
-                        return `
-                            <div class="entry-item" onclick="openEditEntry('${e.id}')">
-                                <div class="entry-color-dot" style="background:${color}"></div>
-                                <div class="entry-info">
-                                    <div class="entry-title">${e.title}</div>
-                                    <div class="entry-meta">${e.listCategory || 'Sin categoria'} · ${e.listPrice !== null ? e.listPrice + '€' : ''} · <span style="color:${priorityColor}">${e.listPriority}</span></div>
-                                </div>
-                                <span class="badge badge-pending">Pendiente</span>
-                            </div>`;
-                    }).join('')}
-                ` : ''}
+                <div class="result-grid">
+                    <div class="result-card">
+                        <div class="value">${proj.finalBalance.toLocaleString('es-ES')}€</div>
+                        <div class="label">Capital estimado</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="value">${proj.totalInterest.toLocaleString('es-ES')}€</div>
+                        <div class="label">Intereses generados</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="value">${proj.totalContributed.toLocaleString('es-ES')}€</div>
+                        <div class="label">Aportaciones realizadas</div>
+                    </div>
+                </div>
 
-                ${done.length ? `
-                    <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:16px 0 8px 0">Comprados</div>
-                    ${done.map(e => {
-                        const cat = categories.find(c => c.id === e.categoryId);
-                        const color = cat?.color || 'var(--text-secondary)';
-                        return `
-                            <div class="entry-item" onclick="openEditEntry('${e.id}')" style="opacity:0.6">
-                                <div class="entry-color-dot" style="background:${color}"></div>
-                                <div class="entry-info">
-                                    <div class="entry-title"><s>${e.title}</s></div>
-                                    <div class="entry-meta">${e.listCategory || 'Sin categoria'} · ${e.listPrice !== null ? e.listPrice + '€' : ''}</div>
-                                </div>
-                                <span class="badge badge-done">Comprado</span>
-                            </div>`;
-                    }).join('')}
-                ` : ''}
+                <div class="chart-container">
+                    <div class="chart-title">Evolucion anual (30 anos)</div>
+                    <div class="investment-chart">
+                        ${proj.yearlySnapshots.map((s, i) => `
+                            <div class="bar" title="Ano ${s.year}: ${s.balance}€">
+                                <div class="bar-fill" style="height:${Math.max(4, (s.balance/max)*100)}%;background:${s.balance > proj.totalContributed ? 'var(--accent)' : 'var(--text-secondary)'}"></div>
+                                <div class="bar-label">${i % 5 === 0 ? s.year : ''}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
             </div>`;
 
             return html;
         }
 
-        // ============================================================
-        //  RENDER: IDEAS
-        // ============================================================
-        function renderIdeas() {
-            const ideas = entries.filter(e => e.type === 'idea');
-            if (!ideas.length) {
-                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin ideas</div><div class="empty-sub">Pulsa el boton + y selecciona "Idea"</div></div>`;
-            }
+        function updateInvestment() {
+            const initial = parseFloat(document.getElementById('inv-initial').value) || 0;
+            const rate = parseFloat(document.getElementById('inv-rate').value) || 0;
+            const monthly = parseFloat(document.getElementById('inv-monthly').value) || 0;
 
-            const sorted = [...ideas].sort((a, b) => b.date.localeCompare(a.date));
+            investmentData = { initial, rate, monthly };
+            localStorage.setItem('bitacora_investment_data', JSON.stringify(investmentData));
 
-            let html = `<div style="max-width:700px">`;
-            sorted.forEach(e => {
-                const cat = categories.find(c => c.id === e.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
-                const statusClass = e.ideaStatus === 'Completada' ? 'badge-done' : e.ideaStatus === 'En progreso' ?
-                    'badge-progress' : e.ideaStatus === 'Descartada' ? 'badge-pending' : 'badge-pending';
-                html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${e.title}</span>
-                        <span class="badge ${statusClass}">${e.ideaStatus}</span>
-                    </div>
-                    <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${e.ideaCategory || 'Sin categoria'} · ${e.date}</div>
-                    ${e.ideaContent ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px;white-space:pre-wrap">${e.ideaContent.substring(0, 150)}${e.ideaContent.length > 150 ? '...' : ''}</div>` : ''}
-                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
-                </div>`;
-            });
-            html += `</div>`;
-            return html;
+            // Re-render solo la seccion de inversiones
+            const content = document.getElementById('content');
+            content.innerHTML = renderInvestments();
         }
 
-        // ============================================================
-        //  RENDER: INVESTMENTS
-        // ============================================================
-        function renderInvestments() {
-            const investments = entries.filter(e => e.type === 'investment');
-            if (!investments.length) {
-                return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin inversiones</div><div class="empty-sub">Pulsa el boton + y selecciona "Inversion"</div></div>`;
+        function calcCompoundProjection(principal, monthlyContribution, annualRatePct, years) {
+            const monthlyRate = annualRatePct / 100 / 12;
+            const months = years * 12;
+            let balance = principal;
+            const yearlySnapshots = [{ year: 0, balance: Math.round(balance) }];
+
+            for (let m = 1; m <= months; m++) {
+                balance = balance * (1 + monthlyRate) + monthlyContribution;
+                if (m % 12 === 0) {
+                    yearlySnapshots.push({ year: m / 12, balance: Math.round(balance) });
+                }
             }
-
-            let totalInvested = 0;
-            let totalCurrent = 0;
-
-            investments.forEach(e => {
-                totalInvested += e.invInvested || 0;
-                totalCurrent += e.invCurrent || 0;
-            });
-
-            const profit = totalCurrent - totalInvested;
-            const profitPct = totalInvested > 0 ? Math.round((profit / totalInvested) * 100) : 0;
-
-            let html = `
-            <div style="max-width:700px">
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
-                    <div class="card"><div class="card-title">Invertido</div><div class="card-value">${totalInvested.toFixed(2)}€</div></div>
-                    <div class="card"><div class="card-title">Valor actual</div><div class="card-value">${totalCurrent.toFixed(2)}€</div></div>
-                    <div class="card"><div class="card-title">Rentabilidad</div>
-                        <div class="card-value ${profit > 0 ? 'inversion-positiva' : profit < 0 ? 'inversion-negativa' : 'inversion-neutral'}">
-                            ${profit > 0 ? '+' : ''}${profit.toFixed(2)}€ (${profitPct}%)
-                        </div>
-                    </div>
-                </div>`;
-
-            const sorted = [...investments].sort((a, b) => (b.invDate || '').localeCompare(a.invDate || ''));
-
-            sorted.forEach(e => {
-                const profitItem = (e.invCurrent || 0) - (e.invInvested || 0);
-                const pctItem = e.invInvested > 0 ? Math.round((profitItem / e.invInvested) * 100) : 0;
-                const isPositive = profitItem > 0;
-                const cat = categories.find(c => c.id === e.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
-
-                html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${e.title}</span>
-                        <span style="font-size:13px;color:var(--text-secondary)">${e.invType || 'Otro'}</span>
-                    </div>
-                    <div style="display:flex;gap:16px;margin-top:4px;flex-wrap:wrap">
-                        <span style="font-size:13px;color:var(--text-secondary)">Invertido: ${(e.invInvested || 0).toFixed(2)}€</span>
-                        <span style="font-size:13px;color:var(--text-secondary)">Actual: ${(e.invCurrent || 0).toFixed(2)}€</span>
-                        <span style="font-size:13px;font-weight:700;${isPositive ? 'color:#16a34a' : 'color:#dc2626'}">
-                            ${isPositive ? '+' : ''}${profitItem.toFixed(2)}€ (${pctItem}%)
-                        </span>
-                    </div>
-                    ${e.invDate ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${e.invDate}</div>` : ''}
-                    ${renderInvestmentProjection(e)}
-                    ${e.invNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.invNotes}</div>` : ''}
-                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
-                </div>`;
-            });
-
-            html += `</div>`;
-            return html;
-        }
-
-        // ============================================================
-        //  RENDER: SERVICES
-        // ============================================================
-        function renderServices() {
-            const services = entries.filter(e => e.type === 'service');
-            if (!services.length) {
-                return `<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin servicios</div><div class="empty-sub">Pulsa el boton + y selecciona "Servicio"</div></div>`;
-            }
-
-            let html = `<div style="max-width:700px">`;
-            services.forEach(e => {
-                const cat = categories.find(c => c.id === e.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
-                html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${e.title}</span>
-                        <span style="font-size:12px;color:var(--text-secondary)">${e.serviceMethod || 'Otro'}</span>
-                    </div>
-                    ${e.serviceEmail ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.serviceEmail}</div>` : ''}
-                    ${e.serviceUrl ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:2px"><a href="${e.serviceUrl}" target="_blank" style="color:var(--accent);text-decoration:none">${e.serviceUrl}</a></div>` : ''}
-                    ${e.serviceNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${e.serviceNotes}</div>` : ''}
-                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
-                </div>`;
-            });
-            html += `</div>`;
-            return html;
-        }
-
-        // ============================================================
-        //  RENDER: WATCHLIST
-        // ============================================================
-        function renderWatchlist() {
-            const items = entries.filter(e => e.type === 'watchlist');
-            if (!items.length) {
-                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin pendientes</div><div class="empty-sub">Pulsa el boton + y selecciona "Pendiente"</div></div>`;
-            }
-
-            const types = { libro: 'Libros', pelicula: 'Peliculas', serie: 'Series' };
-            let html = `<div style="max-width:700px">`;
-
-            Object.entries(types).forEach(([key, label]) => {
-                const subset = items.filter(i => i.watchType === key).sort((a, b) => {
-                    const order = { Alta: 0, Media: 1, Baja: 2 };
-                    return (order[a.watchPriority] || 1) - (order[b.watchPriority] || 1);
-                });
-                if (!subset.length) return;
-
-                html += `
-                <div style="margin-bottom:20px">
-                    <div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">${label} (${subset.length})</div>
-                    ${subset.map(e => {
-                        const priorityColor = e.watchPriority === 'Alta' ? '#dc2626' : e.watchPriority === 'Media' ? '#d97706' : 'var(--text-secondary)';
-                        const cat = categories.find(c => c.id === e.categoryId);
-                        const color = cat?.color || 'var(--text-secondary)';
-                        return `
-                            <div class="entry-item" onclick="openEditEntry('${e.id}')">
-                                <div class="entry-color-dot" style="background:${color}"></div>
-                                <div class="entry-info">
-                                    <div class="entry-title">${e.title}</div>
-                                    <div class="entry-meta">Prioridad: <span style="color:${priorityColor}">${e.watchPriority}</span>${e.watchNotes ? ' · ' + e.watchNotes : ''}</div>
-                                </div>
-                                <div class="entry-actions">
-                                    <button class="btn-modal-primary" style="width:auto;padding:4px 10px;font-size:11px" onclick="event.stopPropagation();moveWatchlistToStarted('${e.id}')">Empezar</button>
-                                </div>
-                            </div>`;
-                    }).join('')}
-                </div>`;
-            });
-
-            html += `</div>`;
-            return html;
-        }
-
-        // ============================================================
-        //  RENDER: WISHLIST
-        // ============================================================
-        function renderWishlist() {
-            const items = entries.filter(e => e.type === 'wishlist');
-            if (!items.length) {
-                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin items en wishlist</div><div class="empty-sub">Pulsa el boton + y selecciona "Wishlist"</div></div>`;
-            }
-
-            let html = `<div style="max-width:700px">`;
-            items.forEach(e => {
-                const daysLeft = daysUntilUnlock(e.wishAddedDate);
-                const unlocked = daysLeft === 0;
-                const pct = e.wishAddedDate ? Math.min(100, ((15 - daysLeft) / 15) * 100) : 0;
-                const cat = categories.find(c => c.id === e.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
-
-                html += `
-                <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${e.id}')">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${e.title}</span>
-                        <span style="font-weight:700;color:var(--text-primary)">${e.wishPrice ? e.wishPrice + '€' : ''}</span>
-                    </div>
-                    <div style="margin-top:4px">
-                        ${unlocked
-                            ? `<span class="badge badge-done">Desbloqueado — comprar?</span>`
-                            : `<span class="badge badge-pending">Bloqueado — ${daysLeft} dias</span>
-                               <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:var(--accent)"></div></div>`}
-                    </div>
-                    ${e.wishUrl ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px"><a href="${e.wishUrl}" target="_blank" style="color:var(--accent);text-decoration:none">Ver producto</a></div>` : ''}
-                    ${e.wishNotes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.wishNotes}</div>` : ''}
-                    <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
-                </div>`;
-            });
-            html += `</div>`;
-            return html;
-        }
-
-        // ============================================================
-        //  RENDER: TASKS
-        // ============================================================
-        function renderTasks() {
-            const tasks = entries.filter(e => e.type === 'task');
-            if (!tasks.length) {
-                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin tareas</div><div class="empty-sub">Pulsa el boton + y selecciona "Tarea"</div></div>`;
-            }
-
-            const pending = tasks.filter(e => !e.taskDone)
-                .sort((a, b) => (a.taskDue || '9999').localeCompare(b.taskDue || '9999'));
-            const done = tasks.filter(e => e.taskDone);
-
-            let html = `
-            <div style="max-width:700px">
-                <button class="btn-modal-primary" style="width:auto;padding:8px 16px;margin-bottom:16px" onclick="showCompletedTasksModal()">Ver completadas</button>
-
-                ${pending.length ? `
-                    <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Pendientes (${pending.length})</div>
-                    ${pending.map(t => {
-                        const cat = categories.find(c => c.id === t.categoryId);
-                        const color = cat?.color || 'var(--text-secondary)';
-                        return `
-                            <div class="entry-item">
-                                <input type="checkbox" onchange="toggleTaskDone('${t.id}')" style="width:18px;height:18px;cursor:pointer">
-                                <div class="entry-color-dot" style="background:${color}"></div>
-                                <div class="entry-info" onclick="openEditEntry('${t.id}')" style="cursor:pointer">
-                                    <div class="entry-title">${t.title}</div>
-                                    <div class="entry-meta">${t.taskStart||'?'} → ${t.taskDue||'sin fecha'}${t.taskNotes ? ' · ' + t.taskNotes : ''}</div>
-                                </div>
-                            </div>`;
-                    }).join('')}
-                ` : `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin tareas pendientes</div></div>`}
-            </div>`;
-
-            return html;
-        }
-
-        // ============================================================
-        //  RENDER: LINKS
-        // ============================================================
-        function renderLinks() {
-            const links = entries.filter(e => e.type === 'link');
-            if (!links.length) {
-                return `<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin enlaces</div><div class="empty-sub">Pulsa el boton + y selecciona "Enlace"</div></div>`;
-            }
-
-            return `
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;max-width:700px">
-                ${links.map(l => `
-                    <div class="card" style="text-align:center;cursor:pointer" onclick="window.open('${l.linkUrl}','_blank')">
-                        <div style="font-size:28px;color:var(--text-primary)">${l.linkIcon || '◈'}</div>
-                        <div style="font-weight:600;margin-top:6px;font-size:13px;color:var(--text-primary)">${l.title}</div>
-                    </div>`).join('')}
-            </div>`;
+            const totalContributed = principal + monthlyContribution * months;
+            return {
+                finalBalance: Math.round(balance),
+                totalContributed: Math.round(totalContributed),
+                totalInterest: Math.round(balance - totalContributed),
+                yearlySnapshots
+            };
         }
 
         // ============================================================
@@ -3559,6 +3055,8 @@
                     <div id="doc-list">Cargando documentos...</div>
                 </div>`;
         }
+
+        let documents = [];
 
         async function loadDocuments() {
             const listEl = document.getElementById('doc-list');
@@ -3578,8 +3076,6 @@
                     `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No se pudieron cargar los documentos</div><div class="empty-sub">Comprueba que el bucket "documents" existe en Supabase Storage</div></div>`;
             }
         }
-
-        let documents = [];
 
         function renderDocList() {
             const listEl = document.getElementById('doc-list');
@@ -3698,7 +3194,20 @@
             }
 
             render();
-            checkTodayAlerts();
+            updatePageTitle();
+            // No llamar a checkTodayAlerts() aquí para evitar problemas
+        }
+
+        // Forzar que el calendario se renderice correctamente al cargar
+        // Aseguramos que la vista actual sea calendar
+        if (window.location.hash) {
+            const view = window.location.hash.replace('#', '');
+            if (view && view !== 'calendar') {
+                // Si hay un hash, cambiar a esa vista
+                currentView = view;
+            }
+        } else {
+            currentView = 'calendar';
         }
 
         const styleEl = document.createElement('style');
