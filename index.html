@@ -1559,9 +1559,7 @@
             const { data: { session } } = await sb.auth.getSession();
             if (session) { await startApp(); }
         })();
-    </script>
 
-    <script>
         // ============================================================
         //  DATA
         // ============================================================
@@ -1570,8 +1568,6 @@
         let editId = null;
         let editType = null;
         let filteredEntries = [];
-        let saveInFlight = null;
-        let savePending = false;
         let userName = '';
 
         // ============================================================
@@ -1640,7 +1636,7 @@
                 if (!user) { entries = [];
                     categories = getDefaultCategories();
                     userName = '';
-                    filteredEntries = []; return; }
+                    filteredEntries = []; return true; }
                 const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
                 if (error) throw error;
                 const saved = (data && data.data) ? data.data : {};
@@ -1649,37 +1645,34 @@
                 userName = saved.userName || '';
             } catch (e) {
                 console.error('Error cargando datos de Supabase:', e);
-                entries = [];
-                categories = getDefaultCategories();
-                userName = '';
+                return false;
             }
             if (!categories || categories.length === 0) categories = getDefaultCategories();
             categories.forEach(c => { if (!c.id) c.id = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2,
                     6); });
             filteredEntries = [...entries];
             updatePageTitle();
+            return true;
         }
 
-        async function saveData() {
-            if (saveInFlight) { savePending = true; return; }
-            saveInFlight = (async () => {
-                try {
-                    const { data: { user } } = await sb.auth.getUser();
-                    if (!user) return;
-                    const { error } = await sb.from('bitacora').upsert({
-                        user_id: user.id,
-                        data: { entries, categories, userName },
-                        updated_at: new Date().toISOString()
-                    });
-                    if (error) console.error('Error guardando en Supabase:', error);
-                } catch (e) {
-                    console.error('Error guardando en Supabase:', e);
-                } finally {
-                    saveInFlight = null;
-                    if (savePending) { savePending = false;
-                        saveData(); }
-                }
-            })();
+        let saveChain = Promise.resolve();
+        function saveData() {
+            const attempt = saveChain.then(doSaveData, doSaveData);
+            // Encadenamos siempre el siguiente intento tras este, incluso si falla,
+            // para no perder el orden de las escrituras.
+            saveChain = attempt.catch(() => {});
+            return attempt;
+        }
+
+        async function doSaveData() {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) throw new Error('No hay sesión activa');
+            const { error } = await sb.from('bitacora').upsert({
+                user_id: user.id,
+                data: { entries, categories, userName },
+                updated_at: new Date().toISOString()
+            });
+            if (error) throw error;
         }
 
         // ============================================================
@@ -1697,8 +1690,8 @@
             } else {
                 titleEl.textContent = baseTitle + ' ';
             }
-            // Asegurar que el boton de edicion esta presente
-            if (!titleEl.querySelector('.edit-name-btn')) {
+            // El boton de edicion de nombre solo debe aparecer en la vista Calendario
+            if (currentView === 'calendar' && !titleEl.querySelector('.edit-name-btn')) {
                 const btn = document.createElement('button');
                 btn.className = 'edit-name-btn';
                 btn.textContent = '✎';
@@ -1707,13 +1700,18 @@
             }
         }
 
-        function editUserName() {
+        async function editUserName() {
             const name = prompt('Como quieres que aparezca tu nombre?', userName || '');
             if (name !== null) {
                 userName = name.trim();
-                saveData();
                 updatePageTitle();
-                showToast('Nombre guardado');
+                try {
+                    await saveData();
+                    showToast('Nombre guardado');
+                } catch (err) {
+                    console.error('Error guardando el nombre en Supabase:', err);
+                    showToast('No se pudo guardar en la nube. Revisa tu conexión.', true);
+                }
             }
         }
 
@@ -2072,7 +2070,7 @@
         // ============================================================
         //  SAVE ENTRY
         // ============================================================
-        function saveEntry() {
+        async function saveEntry() {
             const title = document.getElementById('modal-title').value.trim();
             if (!title) { showToast('Escribe un titulo', true); return; }
 
@@ -2179,10 +2177,15 @@
 
             entries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             filteredEntries = [...entries];
-            saveData();
             closeModal();
             render();
-            showToast('Guardado');
+            try {
+                await saveData();
+                showToast('Guardado');
+            } catch (err) {
+                console.error('Error guardando la entrada en Supabase:', err);
+                showToast('No se pudo guardar en la nube. Revisa tu conexión.', true);
+            }
         }
 
         function getCategoryIdForType(type) {
@@ -2206,14 +2209,19 @@
         // ============================================================
         //  DELETE ENTRY
         // ============================================================
-        function deleteEntry(id) {
+        async function deleteEntry(id) {
             if (!confirm('Eliminar esta entrada?')) return;
             entries = entries.filter(e => e.id !== id);
             filteredEntries = [...entries];
-            saveData();
             closeModal();
             render();
-            showToast('Eliminado');
+            try {
+                await saveData();
+                showToast('Eliminado');
+            } catch (err) {
+                console.error('Error eliminando la entrada en Supabase:', err);
+                showToast('No se pudo eliminar en la nube. Revisa tu conexión.', true);
+            }
         }
 
         // ============================================================
@@ -2235,17 +2243,22 @@
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
                     if (data.entries) entries = data.entries;
                     if (data.categories) categories = data.categories;
                     if (data.userName) userName = data.userName;
                     filteredEntries = [...entries];
-                    saveData();
                     render();
                     updatePageTitle();
-                    showToast('Importado correctamente');
+                    try {
+                        await saveData();
+                        showToast('Importado correctamente');
+                    } catch (saveErr) {
+                        console.error('Error guardando la importación en Supabase:', saveErr);
+                        showToast('Importado localmente, pero no se pudo guardar en la nube.', true);
+                    }
                 } catch (err) {
                     showToast('Error al importar', true);
                 }
@@ -3161,7 +3174,7 @@
 
         async function init() {
             loadTheme();
-            await loadData();
+            const loaded = await loadData();
 
             if (window.innerWidth <= 768) {
                 document.querySelector('.menu-hamburger').style.display = 'block';
@@ -3193,9 +3206,19 @@
                 });
             }
 
+            if (!loaded) {
+                document.getElementById('content').innerHTML =
+                    `<div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <div class="empty-title">No se pudieron cargar tus datos</div>
+                        <div class="empty-sub">Revisa tu conexión a internet y vuelve a intentarlo. No se ha modificado nada en la nube.</div>
+                        <button class="btn-secondary" style="margin-top:12px" onclick="init()">Reintentar</button>
+                    </div>`;
+                return;
+            }
+
             render();
             updatePageTitle();
-            // No llamar a checkTodayAlerts() aquí para evitar problemas
         }
 
         // Forzar que el calendario se renderice correctamente al cargar
