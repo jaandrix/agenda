@@ -4495,8 +4495,6 @@
                 errorEl.textContent = '';
                 showToast(`✅ Acceso concedido a ${type}`);
 
-                if (window._passwordSuccessCallback) {
-                    window._passwordSuccessCallback();
                 }
             } catch (e) {
                 console.error('Error verificando contraseña:', e);
