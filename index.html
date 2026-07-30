@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Bitacora</title>
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+    <title>Bitácora</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         /* ============================================================
@@ -382,6 +384,113 @@
             align-items: center;
             gap: 12px;
         }
+
+        #search-trigger {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-app);
+            border: 1px solid var(--border-strong);
+            color: var(--text-secondary);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+        #search-trigger:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+        #search-trigger .search-kbd {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 2px 5px;
+        }
+
+        #search-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 10vh;
+            z-index: 2000;
+        }
+        #search-overlay.open { display: flex; }
+        #search-box {
+            width: 100%;
+            max-width: 520px;
+            max-height: 70vh;
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #search-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        #search-icon { font-size: 16px; color: var(--text-secondary); }
+        #search-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+        #search-close {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #search-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            opacity: 0.75;
+            border-bottom: 1px solid var(--border);
+        }
+        #search-results {
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .search-result-item:hover {
+            background: var(--bg-app);
+        }
+        .search-result-icon { font-size: 16px; }
+        .search-result-title { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+        .search-result-meta { font-size: 11px; color: var(--text-secondary); }
+        .search-empty {
+            padding: 24px 16px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
         #main-header .menu-hamburger {
             display: none;
             background: none;
@@ -798,6 +907,45 @@
             color: var(--text-secondary);
             display: block;
             margin-bottom: 4px;
+        }
+
+        .wikilink {
+            color: var(--accent);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+        .wikilink-missing {
+            color: var(--text-secondary);
+            cursor: default;
+            text-decoration: none;
+        }
+        .wikilink-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin: 4px 0 14px;
+            opacity: 0.75;
+        }
+        .backlinks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .backlink-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: var(--bg-app);
+            border: 1px solid var(--border);
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .backlink-item:hover {
+            border-color: var(--accent);
         }
 
         .modal-input {
@@ -1229,7 +1377,7 @@
     <div id="login-screen">
         <div id="login-box">
             <div id="mode-login">
-                <h1>Bitacora</h1>
+                <h1>Bitácora</h1>
                 <p class="sub">Inicia sesion para continuar</p>
                 <input type="email" id="login-email" placeholder="Email" autocomplete="username">
                 <input type="password" id="login-password" placeholder="Contrasena" autocomplete="current-password">
@@ -1243,7 +1391,7 @@
 
             <div id="mode-signup" style="display:none">
                 <h1>Crear cuenta</h1>
-                <p class="sub">Registrate para empezar a usar Bitacora</p>
+                <p class="sub">Regístrate para empezar a usar Bitácora</p>
                 <input type="email" id="signup-email" placeholder="Email" autocomplete="username">
                 <input type="password" id="signup-password" placeholder="Contrasena (min. 6 caracteres)" autocomplete="new-password">
                 <input type="password" id="signup-password2" placeholder="Repite la contrasena" autocomplete="new-password">
@@ -1283,7 +1431,7 @@
         <div id="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-icon"></div>
-                <span class="brand-name">Bitacora</span>
+                <span class="brand-name">Bitácora</span>
             </div>
 
             <div class="sidebar-nav">
@@ -1298,7 +1446,7 @@
                 </button>
                 <button onclick="switchView('stats')" data-view="stats">
                     <span class="nav-icon">▦</span>
-                    <span class="nav-text">Estadisticas</span>
+                    <span class="nav-text">Estadísticas</span>
                 </button>
 
                 <span class="nav-label">Registro</span>
@@ -1308,7 +1456,7 @@
                 </button>
                 <button onclick="switchView('movies')" data-view="movies">
                     <span class="nav-icon">▸</span>
-                    <span class="nav-text">Peliculas</span>
+                    <span class="nav-text">Películas</span>
                 </button>
                 <button onclick="switchView('series')" data-view="series">
                     <span class="nav-icon">◈</span>
@@ -1366,8 +1514,27 @@
                     <button class="menu-hamburger" onclick="toggleMobileMenu()" id="hamburger-btn">☰</button>
                     <h1 id="page-title">Calendario <button class="edit-name-btn" onclick="editUserName()">✎</button></h1>
                 </div>
+                <button id="search-trigger" onclick="openSearch()" title="Buscar (Ctrl+K)">
+                    <span>⌕</span> Buscar
+                    <span class="search-kbd">Ctrl K</span>
+                </button>
             </div>
             <div id="content"></div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    BUSQUEDA GLOBAL
+    ============================================================ -->
+    <div id="search-overlay" onclick="if(event.target===this)closeSearch()">
+        <div id="search-box">
+            <div id="search-input-row">
+                <span id="search-icon">⌕</span>
+                <input type="text" id="search-input" placeholder="Buscar por titulo, notas o etiquetas..." oninput="runSearch()">
+                <button id="search-close" onclick="closeSearch()">✕</button>
+            </div>
+            <div id="search-hint">La busqueda por IA (por significado, no solo texto exacto) llegara mas adelante. De momento busca en titulos, notas y etiquetas.</div>
+            <div id="search-results"></div>
         </div>
     </div>
 
@@ -1377,7 +1544,7 @@
     <button id="fab" onclick="toggleFabMenu()">+</button>
     <div id="fab-menu">
         <button onclick="openNewEntry('book')">Libro</button>
-        <button onclick="openNewEntry('movie')">Pelicula</button>
+        <button onclick="openNewEntry('movie')">Película</button>
         <button onclick="openNewEntry('series')">Serie</button>
         <button onclick="openNewEntry('game')">Videojuego</button>
         <button onclick="openNewEntry('travel')">Viaje</button>
@@ -1385,7 +1552,6 @@
         <button onclick="openNewEntry('project')">Proyecto</button>
         <button onclick="openNewEntry('event')">Evento</button>
         <button onclick="openNewEntry('place')">Lugar</button>
-        <button onclick="openNewEntry('document')">Documento</button>
     </div>
 
     <!-- ============================================================
@@ -1394,7 +1560,7 @@
     <div id="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
     <div id="mobile-menu-panel">
         <div class="menu-header">
-            <span class="brand">Bitacora</span>
+            <span class="brand">Bitácora</span>
             <button class="menu-close" onclick="toggleMobileMenu()">✕</button>
         </div>
         <div class="menu-nav">
@@ -1406,7 +1572,7 @@
                 <span class="nav-icon">⌂</span> Centro resumen
             </button>
             <button onclick="switchView('stats');toggleMobileMenu()" data-view="stats">
-                <span class="nav-icon">▦</span> Estadisticas
+                <span class="nav-icon">▦</span> Estadísticas
             </button>
 
             <span class="nav-label">Registro</span>
@@ -1414,7 +1580,7 @@
                 <span class="nav-icon">◊</span> Libros
             </button>
             <button onclick="switchView('movies');toggleMobileMenu()" data-view="movies">
-                <span class="nav-icon">▸</span> Peliculas
+                <span class="nav-icon">▸</span> Películas
             </button>
             <button onclick="switchView('series');toggleMobileMenu()" data-view="series">
                 <span class="nav-icon">◈</span> Series
@@ -1667,7 +1833,7 @@
 
         const TYPE_LABELS = {
             book: 'Libro',
-            movie: 'Pelicula',
+            movie: 'Película',
             series: 'Serie',
             game: 'Videojuego',
             travel: 'Viaje',
@@ -1682,9 +1848,9 @@
         const VIEW_LABELS = {
             calendar: 'Calendario',
             home: 'Centro resumen',
-            stats: 'Estadisticas',
+            stats: 'Estadísticas',
             books: 'Libros',
-            movies: 'Peliculas',
+            movies: 'Películas',
             series: 'Series',
             games: 'Videojuegos',
             travels: 'Viajes',
@@ -1698,6 +1864,105 @@
 
         // Tipos que NO aparecen en el calendario
         const NON_CALENDAR_TYPES = ['document', 'restaurant', 'place'];
+
+        // ============================================================
+        //  WIKILINKS [[Titulo]] Y BACKLINKS
+        // ============================================================
+        // Escapa HTML para evitar que el texto de las notas rompa el marcado
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str || '';
+            return div.innerHTML;
+        }
+
+        // Busca los ids de las entradas mencionadas con [[Titulo]] dentro de un texto
+        function parseWikiLinks(text) {
+            if (!text) return [];
+            const matches = [...text.matchAll(/\[\[(.+?)\]\]/g)];
+            const ids = matches
+                .map(m => entries.find(e => (e.title || '').toLowerCase() === m[1].trim().toLowerCase()))
+                .filter(Boolean)
+                .map(e => e.id);
+            return [...new Set(ids)];
+        }
+
+        // Convierte el texto plano en HTML seguro, con los [[Titulo]] como enlaces clicables
+        function linkifyText(text) {
+            if (!text) return '';
+            const escaped = escapeHtml(text);
+            return escaped.replace(/\[\[(.+?)\]\]/g, (match, rawTitle) => {
+                const title = rawTitle.trim();
+                const target = entries.find(e => (e.title || '').toLowerCase() === title.toLowerCase());
+                if (!target) {
+                    return `<span class="wikilink wikilink-missing" title="No existe ninguna entrada con este titulo">[[${title}]]</span>`;
+                }
+                return `<span class="wikilink" onclick="event.stopPropagation();openEntryFromLink('${target.id}')">${title}</span>`;
+            }).replace(/\n/g, '<br>');
+        }
+
+        // Todas las entradas que mencionan a la entrada dada mediante [[..]]
+        function getBacklinks(entryId) {
+            return entries.filter(e => e.id !== entryId && parseWikiLinks(e.notes).includes(entryId));
+        }
+
+        // Abre para editar la entrada enlazada desde un wikilink, sin importar en que vista estemos
+        function openEntryFromLink(entryId) {
+            const target = entries.find(e => e.id === entryId);
+            if (!target) return;
+            closeModal();
+            openEditEntry(entryId);
+        }
+
+        // ============================================================
+        //  BUSQUEDA GLOBAL (Ctrl/Cmd + K)
+        // ============================================================
+        function openSearch() {
+            document.getElementById('search-overlay').classList.add('open');
+            const input = document.getElementById('search-input');
+            input.value = '';
+            document.getElementById('search-results').innerHTML = '';
+            setTimeout(() => input.focus(), 50);
+        }
+
+        function closeSearch() {
+            document.getElementById('search-overlay').classList.remove('open');
+        }
+
+        function runSearch() {
+            const q = document.getElementById('search-input').value.trim().toLowerCase();
+            const resultsEl = document.getElementById('search-results');
+            if (!q) { resultsEl.innerHTML = ''; return; }
+
+            const matches = entries.filter(e => {
+                const haystack = [e.title, e.notes, e.description, ...(e.tags || [])].filter(Boolean).join(' ')
+                    .toLowerCase();
+                return haystack.includes(q);
+            }).slice(0, 30);
+
+            if (!matches.length) {
+                resultsEl.innerHTML = `<div class="search-empty">Sin resultados para "${escapeHtml(q)}"</div>`;
+                return;
+            }
+
+            resultsEl.innerHTML = matches.map(e => `
+                <div class="search-result-item" onclick="closeSearch();openEntryFromLink('${e.id}')">
+                    <span class="search-result-icon">${TYPE_ICONS[e.type] || '◈'}</span>
+                    <div>
+                        <div class="search-result-title">${escapeHtml(e.title)}</div>
+                        <div class="search-result-meta">${TYPE_LABELS[e.type] || ''}${e.date ? ' · ' + e.date : ''}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                openSearch();
+            } else if (e.key === 'Escape') {
+                closeSearch();
+            }
+        });
 
         // ============================================================
         //  DEFAULT COLORS
@@ -1804,7 +2069,7 @@
                 { id: 'cat_proyecto', name: 'Proyecto', color: '#00b894' },
                 { id: 'cat_trabajo', name: 'Trabajo', color: '#e67e22' },
                 { id: 'cat_libro', name: 'Libro', color: '#3498db' },
-                { id: 'cat_pelicula', name: 'Pelicula', color: '#f39c12' },
+                { id: 'cat_pelicula', name: 'Película', color: '#f39c12' },
                 { id: 'cat_serie', name: 'Serie', color: '#9b59b6' },
                 { id: 'cat_videojuego', name: 'Videojuego', color: '#e74c3c' },
                 { id: 'cat_evento', name: 'Evento', color: '#ec4899' },
@@ -1927,12 +2192,34 @@
         // ============================================================
         //  RENDER ENTRY MODAL
         // ============================================================
+        // Genero gramatical de cada tipo, para el titulo del modal ("Nuevo"/"Nueva")
+        const TYPE_GENDER = {
+            book: 'o', movie: 'a', series: 'a', game: 'o', travel: 'o',
+            work: 'o', project: 'o', event: 'o', place: 'o', document: 'o'
+        };
+
+        function renderBacklinksBlock(entryId) {
+            const backlinks = getBacklinks(entryId);
+            if (!backlinks.length) return '';
+            return `
+                <div class="modal-label">Enlazado desde</div>
+                <div class="backlinks-list">
+                    ${backlinks.map(b => `
+                        <div class="backlink-item" onclick="openEntryFromLink('${b.id}')">
+                            <span>${TYPE_ICONS[b.type] || '◈'}</span>
+                            <span>${escapeHtml(b.title)}</span>
+                        </div>
+                    `).join('')}
+                </div>`;
+        }
+
         function renderEntryModal(type, entry) {
             const isEdit = !!entry;
             const today = new Date().toISOString().slice(0, 10);
             const icon = TYPE_ICONS[type] || '◈';
             const label = TYPE_LABELS[type] || 'Entrada';
-            const title = isEdit ? 'Editar ' + label : 'Nueva ' + label;
+            const nuevoNueva = TYPE_GENDER[type] === 'a' ? 'Nueva' : 'Nuevo';
+            const title = isEdit ? 'Editar ' + label : nuevoNueva + ' ' + label;
 
             let extraFields = '';
             let categoryField = '';
@@ -2015,6 +2302,7 @@
 
             // ===== TRAVEL =====
             else if (type === 'travel') {
+                const expenses = isEdit ? (entry.expenses || []) : [];
                 extraFields = `
                     <div class="modal-label">Destino</div>
                     <input id="modal-destination" class="modal-input" value="${isEdit ? entry.destination || '' : ''}" placeholder="Ej: Roma, Italia">
@@ -2024,6 +2312,12 @@
                     </div>
                     <div class="modal-label">Personas</div>
                     <input id="modal-companions" class="modal-input" value="${isEdit ? entry.companions || '' : ''}" placeholder="Ana, Carlos, ...">
+                    <div class="modal-label">Gastos del viaje</div>
+                    <div id="expenses-list">
+                        ${expenses.map((exp, i) => renderExpenseRow(exp, i)).join('')}
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="addExpenseRow()">+ Añadir gasto</button>
+                    <div id="expenses-total">Total: ${expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0).toLocaleString('es-ES')}€</div>
                     <div class="modal-label">Notas</div>
                     <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
@@ -2052,9 +2346,9 @@
             // ===== PROJECT =====
             else if (type === 'project') {
                 extraFields = `
-                    <div class="modal-label">Descripcion</div>
+                    <div class="modal-label">Descripción</div>
                     <textarea id="modal-desc" class="modal-input" rows="2">${isEdit ? entry.description || '' : ''}</textarea>
-                    <div class="modal-label">Categoria</div>
+                    <div class="modal-label">Categoría</div>
                     <select id="modal-category" class="modal-input">
                         <option value="Trabajo" ${isEdit && entry.projectCategory === 'Trabajo' ? 'selected' : ''}>Trabajo</option>
                         <option value="Estudios" ${isEdit && entry.projectCategory === 'Estudios' ? 'selected' : ''}>Estudios</option>
@@ -2140,6 +2434,12 @@
 
                     ${extraFields}
 
+                    <div class="modal-label">Etiquetas (separadas por comas)</div>
+                    <input id="modal-tags" class="modal-input" value="${isEdit ? (entry.tags || []).join(', ') : ''}" placeholder="p.ej. urgente, 2026, personal">
+
+                    <div class="wikilink-hint">Consejo: escribe [[Titulo de otra entrada]] en las notas para enlazarla.</div>
+                    ${isEdit ? renderBacklinksBlock(entry.id) : ''}
+
                     <button class="btn-modal-primary" onclick="saveEntry()">Guardar</button>
                     ${isEdit ? `<button class="btn-modal-danger" onclick="deleteEntry('${entry.id}')">Eliminar</button>` : ''}
                 </div>
@@ -2159,7 +2459,9 @@
                 title: title,
                 type: type,
                 date: '',
-                categoryId: getCategoryIdForType(type)
+                categoryId: getCategoryIdForType(type),
+                tags: (document.getElementById('modal-tags')?.value || '')
+                    .split(',').map(t => t.trim()).filter(Boolean)
             };
 
             // Campos especificos por tipo
@@ -2501,7 +2803,7 @@
             all.forEach(e => {
                 const cat = categories.find(c => c.id === e.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
-                const catName = cat?.name || 'Sin categoria';
+                const catName = cat?.name || 'Sin categoría';
                 const icon = TYPE_ICONS[e.type] || '◈';
 
                 html += `
@@ -2509,7 +2811,7 @@
                     <div class="entry-color-dot" style="background:${color}"></div>
                     <div class="entry-info">
                         <div class="entry-title">${icon} ${e.title}</div>
-                        <div class="entry-meta">${catName}${e.notes ? ' · ' + e.notes : ''}</div>
+                        <div class="entry-meta">${catName}${e.notes ? ' · ' + linkifyText(e.notes) : ''}</div>
                     </div>
                     <div class="entry-actions">
                         <button onclick="event.stopPropagation();openEditEntry('${e.id}')">✎</button>
@@ -2567,7 +2869,7 @@
                 <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
                     ${['week','month','year','all'].map(f => `
                         <button onclick="setHomeFilter('${f}')" style="padding:6px 14px;border-radius:20px;border:1px solid var(--border-strong);background:${homeFilter===f?'var(--accent)':'transparent'};color:${homeFilter===f?'var(--accent-contrast)':'var(--text-primary)'};cursor:pointer;font-size:12px;font-weight:600">
-                            ${({week:'Semana',month:'Mes',year:'Ano',all:'Todo'})[f]}
+                            ${({week:'Semana',month:'Mes',year:'Año',all:'Todo'})[f]}
                         </button>`).join('')}
                 </div>
 
@@ -2576,7 +2878,7 @@
 
                 <div class="card-grid">
                     <div class="card"><div class="card-title">Libros</div><div class="card-value">${entries.filter(e=>e.type==='book').length}</div></div>
-                    <div class="card"><div class="card-title">Peliculas</div><div class="card-value">${entries.filter(e=>e.type==='movie').length}</div></div>
+                    <div class="card"><div class="card-title">Películas</div><div class="card-value">${entries.filter(e=>e.type==='movie').length}</div></div>
                     <div class="card"><div class="card-title">Series</div><div class="card-value">${entries.filter(e=>e.type==='series').length}</div></div>
                     <div class="card"><div class="card-title">Videojuegos</div><div class="card-value">${entries.filter(e=>e.type==='game').length}</div></div>
                     <div class="card"><div class="card-title">Viajes</div><div class="card-value">${entries.filter(e=>e.type==='travel').length}</div></div>
@@ -2645,13 +2947,13 @@
 
             let html = `
             <div style="max-width:700px">
-                <div style="font-size:20px;font-weight:800;margin-bottom:4px;color:var(--text-primary)">Estadisticas</div>
+                <div style="font-size:20px;font-weight:800;margin-bottom:4px;color:var(--text-primary)">Estadísticas</div>
                 <div style="color:var(--text-secondary);margin-bottom:20px">Resumen de tu actividad</div>
 
                 <div class="card-grid">
                     <div class="card"><div class="card-title">Total entradas</div><div class="card-value">${totalEntries}</div></div>
                     <div class="card"><div class="card-title">Libros</div><div class="card-value">${byType.book || 0}</div></div>
-                    <div class="card"><div class="card-title">Peliculas</div><div class="card-value">${byType.movie || 0}</div></div>
+                    <div class="card"><div class="card-title">Películas</div><div class="card-value">${byType.movie || 0}</div></div>
                     <div class="card"><div class="card-title">Series</div><div class="card-value">${byType.series || 0}</div></div>
                     <div class="card"><div class="card-title">Videojuegos</div><div class="card-value">${byType.game || 0}</div></div>
                     <div class="card"><div class="card-title">Viajes</div><div class="card-value">${byType.travel || 0}</div></div>
@@ -2746,7 +3048,7 @@
         function renderMovies() {
             const movies = entries.filter(e => e.type === 'movie');
             if (!movies.length) {
-                return `<div class="empty-state"><div class="empty-icon">▸</div><div class="empty-title">Sin peliculas</div><div class="empty-sub">Pulsa el boton + y selecciona "Pelicula"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">▸</div><div class="empty-title">Sin peliculas</div><div class="empty-sub">Pulsa el boton + y selecciona "Película"</div></div>`;
             }
 
             const sorted = [...movies].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -2856,7 +3158,7 @@
                         </div>
                         <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${t.startDate || ''} ${t.endDate ? '→ ' + t.endDate : ''}</div>
                         ${t.companions ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${t.companions}</div>` : ''}
-                        ${t.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${t.notes}</div>` : ''}
+                        ${t.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(t.notes)}</div>` : ''}
                         <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
                     </div>`;
             });
@@ -2873,18 +3175,41 @@
                 return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa el boton + y selecciona "Trabajo"</div></div>`;
             }
 
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const daysBetween = (start, end) => {
+                if (!start) return 0;
+                const s = new Date(start), e = new Date(end);
+                return Math.max(0, Math.round((e - s) / 86400000) + 1);
+            };
+
             const sorted = [...work].sort((a, b) => {
-                const aActive = !a.endDate,
-                    bActive = !b.endDate;
+                const aActive = !a.endDate || a.endDate >= todayStr;
+                const bActive = !b.endDate || b.endDate >= todayStr;
                 if (aActive !== bActive) return aActive ? -1 : 1;
                 return (b.startDate || '').localeCompare(a.startDate || '');
             });
 
-            let html = `<div style="max-width:700px">`;
+            // Total de dias trabajados hasta hoy (se recalcula cada dia, no se queda fijo)
+            const totalDays = sorted.reduce((sum, w) => {
+                const isActive = !w.endDate || w.endDate >= todayStr;
+                const effectiveEnd = isActive ? todayStr : w.endDate;
+                return sum + daysBetween(w.startDate, effectiveEnd);
+            }, 0);
+
+            let html = `
+                <div class="card" style="margin-bottom:16px;max-width:700px">
+                    <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Total de dias trabajados hasta hoy</div>
+                    <div style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px">${totalDays} dias</div>
+                </div>
+                <div style="max-width:700px">`;
             sorted.forEach(w => {
                 const cat = categories.find(c => c.id === w.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
-                const statusClass = w.status === 'Trabajo actual' ? 'badge-progress' : 'badge-done';
+                const isActive = !w.endDate || w.endDate >= todayStr;
+                const effectiveEnd = isActive ? todayStr : w.endDate;
+                const daysHere = daysBetween(w.startDate, effectiveEnd);
+                const statusClass = isActive ? 'badge-progress' : 'badge-done';
+                const statusLabel = isActive ? `Trabajando en ${w.title}` : (w.status || 'Finalizado');
                 html += `
                     <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${w.id}')">
                         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -2893,11 +3218,12 @@
                         </div>
                         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
                             <span style="font-size:12px;color:var(--text-secondary)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
-                            <span class="badge ${statusClass}">${w.status}</span>
+                            <span class="badge ${statusClass}">${statusLabel}</span>
+                            <span style="font-size:12px;color:var(--text-secondary)">${daysHere} dias</span>
                         </div>
                         ${w.schedule ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.schedule}</div>` : ''}
                         ${w.salary ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.salary}€/mes</div>` : ''}
-                        ${w.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${w.notes}</div>` : ''}
+                        ${w.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(w.notes)}</div>` : ''}
                         <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
                     </div>`;
             });
@@ -2936,14 +3262,14 @@
                             <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${p.title}</span>
                             <span class="badge ${statusClass}">${p.status}</span>
                         </div>
-                        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${p.projectCategory || 'Sin categoria'} · ${p.startDate || ''} ${p.endDate ? '→ ' + p.endDate : ''}</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${p.projectCategory || 'Sin categoría'} · ${p.startDate || ''} ${p.endDate ? '→ ' + p.endDate : ''}</div>
                         ${p.description ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${p.description}</div>` : ''}
                         ${p.budget ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Presupuesto: ${p.budget}€</div>` : ''}
                         ${totalTasks > 0 ? `
                             <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
                             <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${doneTasks}/${totalTasks} tareas</div>
                         ` : ''}
-                        ${p.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${p.notes}</div>` : ''}
+                        ${p.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(p.notes)}</div>` : ''}
                         <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
                     </div>`;
             });
@@ -2975,7 +3301,7 @@
                             <span style="font-size:13px;color:var(--text-secondary)">${e.date || ''}${e.time ? ' · ' + e.time : ''}</span>
                         </div>
                         <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${e.place || 'Sin lugar'}</div>
-                        ${e.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${e.notes}</div>` : ''}
+                        ${e.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(e.notes)}</div>` : ''}
                         <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
                     </div>`;
             });
@@ -3003,7 +3329,7 @@
                         <div class="entry-color-dot" style="background:${color}"></div>
                         <div class="entry-info">
                             <div class="entry-title">${r.title}</div>
-                            <div class="entry-meta">${r.date || 'Sin fecha'}${r.notes ? ' · ' + r.notes : ''}</div>
+                            <div class="entry-meta">${r.date || 'Sin fecha'}${r.notes ? ' · ' + linkifyText(r.notes) : ''}</div>
                         </div>
                     </div>`;
             });
@@ -3031,7 +3357,7 @@
                         <div class="entry-color-dot" style="background:${color}"></div>
                         <div class="entry-info">
                             <div class="entry-title">${p.title}</div>
-                            <div class="entry-meta">${p.date || 'Sin fecha'}${p.notes ? ' · ' + p.notes : ''}</div>
+                            <div class="entry-meta">${p.date || 'Sin fecha'}${p.notes ? ' · ' + linkifyText(p.notes) : ''}</div>
                         </div>
                     </div>`;
             });
@@ -3049,9 +3375,9 @@
                 investmentData.rate || 0, investmentChartYears);
             const max = Math.max(...proj.yearlySnapshots.map(s => s.balance), 1);
 
-            // Hitos "a este ritmo" (siempre a 6 meses, 1, 3, 5 y 10 anos, independientemente de la vista del grafico)
+            // Hitos "a este ritmo" (siempre a 6 meses, 1, 3, 5 y 10 años, independientemente de la vista del grafico)
             const milestoneMonths = [6, 12, 36, 60, 120];
-            const milestoneLabels = ['6 meses', '1 ano', '3 anos', '5 anos', '10 anos'];
+            const milestoneLabels = ['6 meses', '1 año', '3 años', '5 años', '10 años'];
             const milestones = milestoneMonths.map((m, i) => ({
                 label: milestoneLabels[i],
                 balance: calcBalanceAtMonth(investmentData.initial || 0, investmentData.monthly || 0,
@@ -3067,7 +3393,7 @@
                     <input type="number" id="inv-initial" class="modal-input" value="${investmentData.initial || ''}" step="0.01" placeholder="0.00" onchange="updateInvestment()">
                     <div class="modal-label">Rentabilidad anual (%)</div>
                     <input type="number" id="inv-rate" class="modal-input" value="${investmentData.rate || 7}" step="0.1" placeholder="7" onchange="updateInvestment()">
-                    <div class="modal-label">Aportacion mensual (€)</div>
+                    <div class="modal-label">Aportación mensual (€)</div>
                     <input type="number" id="inv-monthly" class="modal-input" value="${investmentData.monthly || ''}" step="0.01" placeholder="0.00" onchange="updateInvestment()">
                 </div>
 
@@ -3103,13 +3429,13 @@
                         <div class="chart-title" style="margin-bottom:0">Evolucion anual</div>
                         <div class="year-selector">
                             ${yearOptions.map(y => `
-                                <button class="${y === investmentChartYears ? 'active' : ''}" onclick="setInvestmentYears(${y})">${y} anos</button>
+                                <button class="${y === investmentChartYears ? 'active' : ''}" onclick="setInvestmentYears(${y})">${y} años</button>
                             `).join('')}
                         </div>
                     </div>
                     <div class="investment-chart">
                         ${proj.yearlySnapshots.map((s, i) => `
-                            <div class="bar" title="Ano ${s.year}: ${s.balance.toLocaleString('es-ES')}€">
+                            <div class="bar" title="Año ${s.year}: ${s.balance.toLocaleString('es-ES')}€">
                                 <div class="bar-track">
                                     <div class="bar-fill" style="height:${Math.max(4, (s.balance/max)*100)}%;background:${s.balance > proj.totalContributed ? 'var(--accent)' : 'var(--text-secondary)'}"></div>
                                 </div>
@@ -3123,7 +3449,7 @@
             return html;
         }
 
-        // Evita amontonar etiquetas cuando hay muchos anos: muestra como maximo ~8 etiquetas
+        // Evita amontonar etiquetas cuando hay muchos años: muestra como máximo ~8 etiquetas
         function shouldShowYearLabel(index, total) {
             const step = Math.max(1, Math.round(total / 8));
             return index % step === 0;
