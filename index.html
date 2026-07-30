@@ -4196,31 +4196,39 @@
             }
         }
 
-        async function verifyPassword(type) {
-            const input = document.getElementById('pw-input').value;
+         async function verifyPassword(type) {
+            // Intentamos obtener el input. Si no existe (porque el modal aún no cargó), salimos sin hacer nada
+            const inputElement = document.getElementById('pw-input');
+            if (!inputElement) {
+                console.warn("El modal de contraseña aún no está listo.");
+                return;
+            }
+
+            const input = inputElement.value;
             const errorEl = document.getElementById('pw-error');
 
             if (!input) {
-                errorEl.textContent = 'Introduce tu contraseña';
+                if (errorEl) errorEl.textContent = 'Introduce tu contraseña';
                 return;
             }
 
             try {
                 const storedHash = await getSecret(type);
                 if (!storedHash) {
-                    errorEl.textContent = 'No hay contraseña guardada para esta sección';
+                    if (errorEl) errorEl.textContent = 'No hay contraseña guardada para esta sección';
                     return;
                 }
 
                 const inputHash = await hashPassword(input);
                 if (inputHash !== storedHash) {
-                    errorEl.textContent = '❌ Contraseña incorrecta';
+                    if (errorEl) errorEl.textContent = '❌ Contraseña incorrecta';
                     return;
                 }
 
                 closeModal();
-                document.getElementById('pw-input').value = '';
-                errorEl.textContent = '';
+                // No hace falta limpiar el valor porque el modal ya se cerró, pero dejamos la línea por seguridad
+                if (inputElement) inputElement.value = '';
+                if (errorEl) errorEl.textContent = '';
                 showToast(`✅ Acceso concedido a ${type}`);
 
                 // --- CAMBIO DE VISTA ---
@@ -4240,6 +4248,13 @@
                     updatePageTitle();
                     render();
                 }
+                // ----------------------
+
+            } catch (e) {
+                console.error('Error verificando contraseña:', e);
+                if (errorEl) errorEl.textContent = 'Error de conexión, intenta de nuevo';
+            }
+        }
                 // ----------------------
 
             } catch (e) {
