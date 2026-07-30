@@ -4468,7 +4468,7 @@
             }
         }
 
-        async function verifyPassword(type) {
+          async function verifyPassword(type) {
             const input = document.getElementById('pw-input').value;
             const errorEl = document.getElementById('pw-error');
 
@@ -4495,7 +4495,25 @@
                 errorEl.textContent = '';
                 showToast(`✅ Acceso concedido a ${type}`);
 
+                // --- CAMBIO DE VISTA ---
+                if (type === 'fantasy') {
+                    currentView = 'fantasy';
+                    document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                        b.classList.toggle('active', b.dataset.view === 'fantasy');
+                    });
+                    updatePageTitle();
+                    render();
+                    renderFantasyChart();
+                } else if (type === 'vault') {
+                    currentView = 'vault';
+                    document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                        b.classList.toggle('active', b.dataset.view === 'vault');
+                    });
+                    updatePageTitle();
+                    render();
                 }
+                // ----------------------
+
             } catch (e) {
                 console.error('Error verificando contraseña:', e);
                 errorEl.textContent = 'Error de conexión, intenta de nuevo';
