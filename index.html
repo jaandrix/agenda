@@ -4197,29 +4197,7 @@
         }
 
         async function verifyPassword(type) {
-            // Función segura para obtener el input
-            const getInputValue = () => {
-                const el = document.getElementById('pw-input');
-                return el ? el.value : null;
-            };
-
-            let input = getInputValue();
-            let attempts = 0;
-            
-            // Si el input no existe, esperamos un poco y lo intentamos de nuevo (máximo 3 veces)
-            while (input === null && attempts < 3) {
-                // CORREGIDO: La promesa debe estar dentro de una función async o usar .then
-                await new Promise(resolve => setTimeout(resolve, 100)); 
-                input = getInputValue();
-                attempts++;
-            }
-
-            // Si después de esperar sigue sin existir, paramos para no romper la app
-            if (input === null) {
-                console.warn("No se pudo encontrar el campo de contraseña.");
-                return;
-            }
-
+            const input = document.getElementById('pw-input').value;
             const errorEl = document.getElementById('pw-error');
 
             if (!input) {
@@ -4266,13 +4244,6 @@
             } catch (e) {
                 console.error('Error verificando contraseña:', e);
                 if (errorEl) errorEl.textContent = 'Error de conexión, intenta de nuevo';
-            }
-        }
-                // ----------------------
-
-            } catch (e) {
-                console.error('Error verificando contraseña:', e);
-                errorEl.textContent = 'Error de conexión, intenta de nuevo';
             }
         }
 
@@ -4401,7 +4372,7 @@
         }
 
         // ============================================================
-        //  RENDER: FANTASY CHART (UNIFICADA Y CORREGIDA)
+        //  RENDER: FANTASY CHART
         // ============================================================
         function renderFantasyChart() {
             setTimeout(() => {
@@ -4454,7 +4425,7 @@
                         }
                     }
                 });
-            }, 100); // Pequeño retraso para asegurar que el canvas esté renderizado
+            }, 100);
         }
 
         // ============================================================
@@ -4582,7 +4553,7 @@
         }
 
         // ============================================================
-        //  SHOW MODAL (UNIFICADA)
+        //  SHOW MODAL
         // ============================================================
         function showModal(htmlContent) {
             const container = document.getElementById('modal-container');
@@ -4599,7 +4570,7 @@
         }
 
         // ============================================================
-        //  SHOW FANTASY USER DETAIL (UNIFICADA)
+        //  SHOW FANTASY USER DETAIL
         // ============================================================
         function showFantasyUserDetail(nombre) {
             const u = fantasyData.usuarios.find(u => u.nombre === nombre);
