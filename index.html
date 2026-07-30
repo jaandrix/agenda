@@ -38,6 +38,10 @@
             --badge-default-text: #e2e8f0;
             --shadow: 0 4px 20px rgba(0,0,0,0.3);
             --radius: 14px;
+            --fantasy-accent: #8B5CF6;
+            --fantasy-accent-soft: #1a152e;
+            --vault-accent: #F59E0B;
+            --vault-accent-soft: #2a1f0a;
         }
 
         body.light {
@@ -64,6 +68,10 @@
             --badge-default-bg: #e2e8f0;
             --badge-default-text: #1c1c1e;
             --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            --fantasy-accent: #7C3AED;
+            --fantasy-accent-soft: #ede9fe;
+            --vault-accent: #D97706;
+            --vault-accent-soft: #fef3c7;
         }
 
         body.beige {
@@ -90,6 +98,10 @@
             --badge-default-bg: #ddccaa;
             --badge-default-text: #3d3324;
             --shadow: 0 4px 20px rgba(60,50,30,0.15);
+            --fantasy-accent: #7C3AED;
+            --fantasy-accent-soft: #ede9fe;
+            --vault-accent: #D97706;
+            --vault-accent-soft: #fef3c7;
         }
 
         /* ============================================================
@@ -201,6 +213,28 @@
         .sidebar-nav button.active {
             background: var(--border-strong);
             color: var(--text-primary);
+        }
+        .sidebar-nav button.fantasy-btn {
+            color: var(--fantasy-accent);
+        }
+        .sidebar-nav button.fantasy-btn:hover {
+            background: var(--fantasy-accent-soft);
+            color: var(--fantasy-accent);
+        }
+        .sidebar-nav button.fantasy-btn.active {
+            background: var(--fantasy-accent-soft);
+            color: var(--fantasy-accent);
+        }
+        .sidebar-nav button.vault-btn {
+            color: var(--vault-accent);
+        }
+        .sidebar-nav button.vault-btn:hover {
+            background: var(--vault-accent-soft);
+            color: var(--vault-accent);
+        }
+        .sidebar-nav button.vault-btn.active {
+            background: var(--vault-accent-soft);
+            color: var(--vault-accent);
         }
 
         .sidebar-nav button .nav-icon {
@@ -327,6 +361,28 @@
         #mobile-menu-panel .menu-nav button.active {
             background: var(--border-strong);
             color: var(--text-primary);
+        }
+        #mobile-menu-panel .menu-nav button.fantasy-btn {
+            color: var(--fantasy-accent);
+        }
+        #mobile-menu-panel .menu-nav button.fantasy-btn:hover {
+            background: var(--fantasy-accent-soft);
+            color: var(--fantasy-accent);
+        }
+        #mobile-menu-panel .menu-nav button.fantasy-btn.active {
+            background: var(--fantasy-accent-soft);
+            color: var(--fantasy-accent);
+        }
+        #mobile-menu-panel .menu-nav button.vault-btn {
+            color: var(--vault-accent);
+        }
+        #mobile-menu-panel .menu-nav button.vault-btn:hover {
+            background: var(--vault-accent-soft);
+            color: var(--vault-accent);
+        }
+        #mobile-menu-panel .menu-nav button.vault-btn.active {
+            background: var(--vault-accent-soft);
+            color: var(--vault-accent);
         }
         #mobile-menu-panel .menu-nav button .nav-icon {
             font-size: 16px;
@@ -537,7 +593,7 @@
         }
 
         /* ============================================================
-               FAB (Floting Action Button)
+               FAB (Floating Action Button)
             ============================================================ */
         #fab {
             position: fixed;
@@ -634,6 +690,22 @@
             }
             #content {
                 padding: 16px;
+            }
+            /* Corrección modal en móvil */
+            .modal-sheet {
+                padding: 20px 16px !important;
+            }
+            .modal-input[type="date"] {
+                min-width: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .form-2col {
+                flex-wrap: wrap !important;
+            }
+            .form-2col > * {
+                flex: 1 1 100% !important;
+                min-width: 0 !important;
             }
         }
 
@@ -909,45 +981,6 @@
             margin-bottom: 4px;
         }
 
-        .wikilink {
-            color: var(--accent);
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: underline;
-            text-decoration-style: dotted;
-        }
-        .wikilink-missing {
-            color: var(--text-secondary);
-            cursor: default;
-            text-decoration: none;
-        }
-        .wikilink-hint {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin: 4px 0 14px;
-            opacity: 0.75;
-        }
-        .backlinks-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 16px;
-        }
-        .backlink-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border-radius: 8px;
-            background: var(--bg-app);
-            border: 1px solid var(--border);
-            font-size: 13px;
-            cursor: pointer;
-        }
-        .backlink-item:hover {
-            border-color: var(--accent);
-        }
-
         .modal-input {
             width: 100%;
             padding: 10px 14px;
@@ -967,6 +1000,10 @@
         }
         .modal-input::placeholder {
             color: var(--text-secondary);
+        }
+        .modal-input[type="date"] {
+            min-width: 0;
+            width: 100%;
         }
 
         .modal-row {
@@ -1020,6 +1057,183 @@
         }
 
         /* ============================================================
+               VAULT TASKS
+            ============================================================ */
+        .vault-task {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .vault-task:hover {
+            background: var(--bg-card-hover);
+        }
+        .vault-task.done .task-text {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+        .vault-task .task-check {
+            font-size: 20px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .vault-task.done .task-check {
+            color: var(--vault-accent);
+        }
+        .vault-task .task-text {
+            flex: 1;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        .vault-task .task-delete {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+        .vault-task .task-delete:hover {
+            color: #dc2626;
+        }
+
+        .vault-input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .vault-input-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-strong);
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+        }
+        .vault-input-row input:focus {
+            border-color: var(--vault-accent);
+        }
+        .vault-input-row button {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: none;
+            background: var(--vault-accent);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.15s ease;
+        }
+        .vault-input-row button:hover {
+            opacity: 0.85;
+        }
+
+        /* ============================================================
+               FANTASY
+            ============================================================ */
+        .fantasy-user-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .fantasy-user-card:hover {
+            background: var(--bg-card-hover);
+        }
+        .fantasy-user-card .user-name {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+        .fantasy-user-card .user-balance {
+            text-align: right;
+        }
+        .fantasy-user-card .user-balance .cash {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .fantasy-user-card .user-balance .total {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--fantasy-accent);
+        }
+
+        .fantasy-tx-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+        .fantasy-tx-item:last-child {
+            border-bottom: none;
+        }
+        .fantasy-tx-item .tx-type {
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        .fantasy-tx-item .tx-type.buy {
+            color: var(--fantasy-accent);
+        }
+        .fantasy-tx-item .tx-type.sell {
+            color: #dc2626;
+        }
+        .fantasy-tx-item .tx-amount {
+            font-weight: 600;
+        }
+        .fantasy-tx-item .tx-amount.positive {
+            color: #16a34a;
+        }
+        .fantasy-tx-item .tx-amount.negative {
+            color: #dc2626;
+        }
+
+        .fantasy-alert {
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            border-left: 4px solid;
+        }
+        .fantasy-alert.high {
+            background: #2a1515;
+            border-color: #dc2626;
+            color: #fca5a5;
+        }
+        .fantasy-alert.medium {
+            background: #2a1f0a;
+            border-color: #f59e0b;
+            color: #fcd34d;
+        }
+
+        .fantasy-chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .fantasy-chart-container canvas {
+            max-width: 100%;
+            height: 220px !important;
+        }
+
+        /* ============================================================
                SCROLLBAR
             ============================================================ */
         #content::-webkit-scrollbar,
@@ -1043,72 +1257,8 @@
         }
 
         /* ============================================================
-               EXAMENES: NOTA FINAL
+               INVESTMENT CHART
             ============================================================ */
-        .nota-final {
-            font-size: 24px;
-            font-weight: 900;
-            padding: 4px 12px;
-            border-radius: 8px;
-            display: inline-block;
-        }
-        .nota-aprobado {
-            color: #16a34a;
-        }
-        .nota-suspenso {
-            color: #dc2626;
-        }
-        .nota-matricula {
-            color: #d4af37;
-        }
-
-        /* ============================================================
-               INVERSIONES (Calculadora de interes compuesto)
-            ============================================================ */
-        .investment-calculator {
-            max-width: 500px;
-        }
-        .investment-calculator .result-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-            margin-top: 16px;
-        }
-        .investment-calculator .result-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px 12px;
-            text-align: center;
-        }
-        .investment-calculator .result-card .value {
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-        .investment-calculator .result-card .label {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 4px;
-        }
-        .investment-calculator .chart-container {
-            margin-top: 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-        }
-        .investment-calculator .chart-container .chart-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
-        }
         .investment-chart {
             display: flex;
             align-items: flex-end;
@@ -1159,6 +1309,49 @@
             border-color: var(--accent);
             color: var(--accent-contrast);
         }
+
+        .investment-calculator .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .investment-calculator .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 12px;
+            text-align: center;
+        }
+        .investment-calculator .result-card .value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .investment-calculator .result-card .label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .investment-calculator .chart-container {
+            margin-top: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .investment-calculator .chart-container .chart-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
         .milestones-title {
             font-size: 11px;
             font-weight: 700;
@@ -1184,6 +1377,120 @@
         .milestone-row .milestone-value {
             font-weight: 700;
             color: var(--text-primary);
+        }
+
+        .wikilink {
+            color: var(--accent);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+        .wikilink-missing {
+            color: var(--text-secondary);
+            cursor: default;
+            text-decoration: none;
+        }
+        .wikilink-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin: 4px 0 14px;
+            opacity: 0.75;
+        }
+        .backlinks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .backlink-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: var(--bg-app);
+            border: 1px solid var(--border);
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .backlink-item:hover {
+            border-color: var(--accent);
+        }
+
+        .nota-final {
+            font-size: 24px;
+            font-weight: 900;
+            padding: 4px 12px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .nota-aprobado {
+            color: #16a34a;
+        }
+        .nota-suspenso {
+            color: #dc2626;
+        }
+        .nota-matricula {
+            color: #d4af37;
+        }
+
+        .doc-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-strong);
+            background: var(--bg-card);
+            margin-bottom: 10px;
+        }
+        .doc-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .doc-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .doc-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .doc-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .doc-actions button {
+            background: none;
+            border: 1px solid var(--border-strong);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+        .doc-actions button:hover {
+            background: var(--bg-card-hover);
+        }
+        .doc-upload-box {
+            border: 2px dashed var(--border-strong);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .doc-upload-box:hover {
+            border-color: #2563eb;
         }
 
         /* ============================================================
@@ -1299,67 +1606,6 @@
             color: #2563eb;
         }
 
-        /* ============================================================
-               DOCUMENTOS
-            ============================================================ */
-        .doc-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 12px 14px;
-            border-radius: 10px;
-            border: 1px solid var(--border-strong);
-            background: var(--bg-card);
-            margin-bottom: 10px;
-        }
-        .doc-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-        }
-        .doc-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .doc-meta {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-        .doc-actions {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .doc-actions button {
-            background: none;
-            border: 1px solid var(--border-strong);
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 13px;
-            cursor: pointer;
-            color: var(--text-primary);
-        }
-        .doc-actions button:hover {
-            background: var(--bg-card-hover);
-        }
-        .doc-upload-box {
-            border: 2px dashed var(--border-strong);
-            border-radius: 12px;
-            padding: 24px;
-            text-align: center;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-        .doc-upload-box:hover {
-            border-color: #2563eb;
-        }
-
         #app {
             display: none;
         }
@@ -1378,14 +1624,14 @@
         <div id="login-box">
             <div id="mode-login">
                 <h1>Bitácora</h1>
-                <p class="sub">Inicia sesion para continuar</p>
+                <p class="sub">Inicia sesión para continuar</p>
                 <input type="email" id="login-email" placeholder="Email" autocomplete="username">
-                <input type="password" id="login-password" placeholder="Contrasena" autocomplete="current-password">
+                <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
                 <button id="login-btn" onclick="handleLogin()">Entrar</button>
                 <div id="login-error"></div>
                 <div class="login-links">
                     <a onclick="showAuthMode('signup')">Crear cuenta</a>
-                    <a onclick="showAuthMode('forgot')">Olvidaste tu contrasena?</a>
+                    <a onclick="showAuthMode('forgot')">¿Olvidaste tu contraseña?</a>
                 </div>
             </div>
 
@@ -1393,30 +1639,30 @@
                 <h1>Crear cuenta</h1>
                 <p class="sub">Regístrate para empezar a usar Bitácora</p>
                 <input type="email" id="signup-email" placeholder="Email" autocomplete="username">
-                <input type="password" id="signup-password" placeholder="Contrasena (min. 6 caracteres)" autocomplete="new-password">
-                <input type="password" id="signup-password2" placeholder="Repite la contrasena" autocomplete="new-password">
+                <input type="password" id="signup-password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password">
+                <input type="password" id="signup-password2" placeholder="Repite la contraseña" autocomplete="new-password">
                 <button id="signup-btn" onclick="handleSignup()">Crear cuenta</button>
                 <div id="signup-error"></div>
                 <div id="signup-success"></div>
-                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesion</a>
+                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesión</a>
             </div>
 
             <div id="mode-forgot" style="display:none">
-                <h1>Recuperar contrasena</h1>
+                <h1>Recuperar contraseña</h1>
                 <p class="sub">Te enviaremos un enlace a tu email</p>
                 <input type="email" id="forgot-email" placeholder="Email" autocomplete="username">
                 <button id="forgot-btn" onclick="handleForgotPassword()">Enviar enlace</button>
                 <div id="forgot-error"></div>
                 <div id="forgot-success"></div>
-                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesion</a>
+                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesión</a>
             </div>
 
             <div id="mode-reset" style="display:none">
-                <h1>Nueva contrasena</h1>
-                <p class="sub">Elige tu nueva contrasena</p>
-                <input type="password" id="reset-password" placeholder="Nueva contrasena (min. 6 caracteres)" autocomplete="new-password">
-                <input type="password" id="reset-password2" placeholder="Repite la contrasena" autocomplete="new-password">
-                <button id="reset-btn" onclick="handleResetPassword()">Guardar contrasena</button>
+                <h1>Nueva contraseña</h1>
+                <p class="sub">Elige tu nueva contraseña</p>
+                <input type="password" id="reset-password" placeholder="Nueva contraseña (mín. 6 caracteres)" autocomplete="new-password">
+                <input type="password" id="reset-password2" placeholder="Repite la contraseña" autocomplete="new-password">
+                <button id="reset-btn" onclick="handleResetPassword()">Guardar contraseña</button>
                 <div id="reset-error"></div>
                 <div id="reset-success"></div>
             </div>
@@ -1496,6 +1742,16 @@
                     <span class="nav-icon">◫</span>
                     <span class="nav-text">Inversiones</span>
                 </button>
+
+                <span class="nav-label">Privado</span>
+                <button class="fantasy-btn" onclick="openFantasy()" data-view="fantasy">
+                    <span class="nav-icon">◉</span>
+                    <span class="nav-text">Fantasy</span>
+                </button>
+                <button class="vault-btn" onclick="openVault()" data-view="vault">
+                    <span class="nav-icon">◈</span>
+                    <span class="nav-text">Vault</span>
+                </button>
             </div>
 
             <div class="sidebar-actions">
@@ -1503,7 +1759,7 @@
                 <button onclick="document.getElementById('import-input').click()" title="Importar">⬆</button>
                 <button onclick="toggleTheme()" id="theme-btn" title="Tema">◐</button>
                 <button onclick="toggleMode()" id="mode-btn" title="Modo">⊞</button>
-                <button onclick="handleLogout()" title="Cerrar sesion">⏻</button>
+                <button onclick="handleLogout()" title="Cerrar sesión">⏻</button>
             </div>
         </div>
 
@@ -1530,10 +1786,10 @@
         <div id="search-box">
             <div id="search-input-row">
                 <span id="search-icon">⌕</span>
-                <input type="text" id="search-input" placeholder="Buscar por titulo, notas o etiquetas..." oninput="runSearch()">
+                <input type="text" id="search-input" placeholder="Buscar por título, notas o etiquetas..." oninput="runSearch()">
                 <button id="search-close" onclick="closeSearch()">✕</button>
             </div>
-            <div id="search-hint">La busqueda por IA (por significado, no solo texto exacto) llegara mas adelante. De momento busca en titulos, notas y etiquetas.</div>
+            <div id="search-hint">La búsqueda por IA (por significado, no solo texto exacto) llegará más adelante. De momento busca en títulos, notas y etiquetas.</div>
             <div id="search-results"></div>
         </div>
     </div>
@@ -1611,13 +1867,21 @@
             <button onclick="switchView('investments');toggleMobileMenu()" data-view="investments">
                 <span class="nav-icon">◫</span> Inversiones
             </button>
+
+            <span class="nav-label">Privado</span>
+            <button class="fantasy-btn" onclick="openFantasy();toggleMobileMenu()" data-view="fantasy">
+                <span class="nav-icon">◉</span> Fantasy
+            </button>
+            <button class="vault-btn" onclick="openVault();toggleMobileMenu()" data-view="vault">
+                <span class="nav-icon">◈</span> Vault
+            </button>
         </div>
         <div class="menu-actions">
             <button onclick="exportData()" title="Exportar">⬇</button>
             <button onclick="document.getElementById('import-input').click()" title="Importar">⬆</button>
             <button onclick="toggleTheme()" title="Tema">◐</button>
             <button onclick="toggleMode()" title="Modo">⊞</button>
-            <button onclick="handleLogout()" title="Cerrar sesion">⏻</button>
+            <button onclick="handleLogout()" title="Cerrar sesión">⏻</button>
         </div>
     </div>
 
@@ -1656,13 +1920,13 @@
             const errorEl = document.getElementById('login-error');
             const btn = document.getElementById('login-btn');
             errorEl.textContent = '';
-            if (!email || !password) { errorEl.textContent = 'Introduce email y contrasena.'; return; }
+            if (!email || !password) { errorEl.textContent = 'Introduce email y contraseña.'; return; }
             btn.disabled = true;
             btn.textContent = 'Entrando...';
             const { error } = await sb.auth.signInWithPassword({ email, password });
             btn.disabled = false;
             btn.textContent = 'Entrar';
-            if (error) { errorEl.textContent = 'Credenciales incorrectas o error de conexion.'; return; }
+            if (error) { errorEl.textContent = 'Credenciales incorrectas o error de conexión.'; return; }
             await startApp();
         }
 
@@ -1700,8 +1964,8 @@
             successEl.textContent = '';
 
             if (!email || !password || !password2) { errorEl.textContent = 'Rellena todos los campos.'; return; }
-            if (password.length < 6) { errorEl.textContent = 'La contrasena debe tener al menos 6 caracteres.'; return; }
-            if (password !== password2) { errorEl.textContent = 'Las contrasenas no coinciden.'; return; }
+            if (password.length < 6) { errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+            if (password !== password2) { errorEl.textContent = 'Las contraseñas no coinciden.'; return; }
 
             btn.disabled = true;
             btn.textContent = 'Creando...';
@@ -1739,7 +2003,7 @@
 
             if (error) { errorEl.textContent = 'No se pudo enviar el enlace: ' + error.message; return; }
             successEl.textContent =
-                'Si el email existe, te hemos enviado un enlace para restablecer tu contrasena.';
+                'Si el email existe, te hemos enviado un enlace para restablecer tu contraseña.';
         }
 
         async function handleResetPassword() {
@@ -1752,17 +2016,17 @@
             successEl.textContent = '';
 
             if (!password || !password2) { errorEl.textContent = 'Rellena ambos campos.'; return; }
-            if (password.length < 6) { errorEl.textContent = 'La contrasena debe tener al menos 6 caracteres.'; return; }
-            if (password !== password2) { errorEl.textContent = 'Las contrasenas no coinciden.'; return; }
+            if (password.length < 6) { errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+            if (password !== password2) { errorEl.textContent = 'Las contraseñas no coinciden.'; return; }
 
             btn.disabled = true;
             btn.textContent = 'Guardando...';
             const { error } = await sb.auth.updateUser({ password });
             btn.disabled = false;
-            btn.textContent = 'Guardar contrasena';
+            btn.textContent = 'Guardar contraseña';
 
-            if (error) { errorEl.textContent = 'No se pudo actualizar la contrasena: ' + error.message; return; }
-            successEl.textContent = 'Contrasena actualizada. Ya puedes usar la app.';
+            if (error) { errorEl.textContent = 'No se pudo actualizar la contraseña: ' + error.message; return; }
+            successEl.textContent = 'Contraseña actualizada. Ya puedes usar la app.';
             setTimeout(() => startApp(), 1200);
         }
 
@@ -1801,7 +2065,7 @@
         let investmentData = { initial: 0, rate: 7, monthly: 0 };
 
         // ============================================================
-        //  ENTRY TYPES (SIN EMOJIS)
+        //  ENTRY TYPES
         // ============================================================
         const ENTRY_TYPES = {
             BOOK: 'book',
@@ -1844,7 +2108,6 @@
             document: 'Documento'
         };
 
-        // Etiquetas de cada vista/pestaña del menu (usadas para el titulo superior)
         const VIEW_LABELS = {
             calendar: 'Calendario',
             home: 'Centro resumen',
@@ -1859,23 +2122,22 @@
             events: 'Eventos',
             places: 'Lugares',
             documents: 'Documentos',
-            investments: 'Finanzas'
+            investments: 'Finanzas',
+            fantasy: 'Fantasy',
+            vault: 'Vault'
         };
 
-        // Tipos que NO aparecen en el calendario
         const NON_CALENDAR_TYPES = ['document', 'restaurant', 'place'];
 
         // ============================================================
-        //  WIKILINKS [[Titulo]] Y BACKLINKS
+        //  WIKILINKS
         // ============================================================
-        // Escapa HTML para evitar que el texto de las notas rompa el marcado
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = str || '';
             return div.innerHTML;
         }
 
-        // Busca los ids de las entradas mencionadas con [[Titulo]] dentro de un texto
         function parseWikiLinks(text) {
             if (!text) return [];
             const matches = [...text.matchAll(/\[\[(.+?)\]\]/g)];
@@ -1886,7 +2148,6 @@
             return [...new Set(ids)];
         }
 
-        // Convierte el texto plano en HTML seguro, con los [[Titulo]] como enlaces clicables
         function linkifyText(text) {
             if (!text) return '';
             const escaped = escapeHtml(text);
@@ -1894,18 +2155,16 @@
                 const title = rawTitle.trim();
                 const target = entries.find(e => (e.title || '').toLowerCase() === title.toLowerCase());
                 if (!target) {
-                    return `<span class="wikilink wikilink-missing" title="No existe ninguna entrada con este titulo">[[${title}]]</span>`;
+                    return `<span class="wikilink wikilink-missing" title="No existe ninguna entrada con este título">[[${title}]]</span>`;
                 }
                 return `<span class="wikilink" onclick="event.stopPropagation();openEntryFromLink('${target.id}')">${title}</span>`;
             }).replace(/\n/g, '<br>');
         }
 
-        // Todas las entradas que mencionan a la entrada dada mediante [[..]]
         function getBacklinks(entryId) {
             return entries.filter(e => e.id !== entryId && parseWikiLinks(e.notes).includes(entryId));
         }
 
-        // Abre para editar la entrada enlazada desde un wikilink, sin importar en que vista estemos
         function openEntryFromLink(entryId) {
             const target = entries.find(e => e.id === entryId);
             if (!target) return;
@@ -1914,7 +2173,7 @@
         }
 
         // ============================================================
-        //  BUSQUEDA GLOBAL (Ctrl/Cmd + K)
+        //  BUSQUEDA GLOBAL
         // ============================================================
         function openSearch() {
             document.getElementById('search-overlay').classList.add('open');
@@ -1974,7 +2233,7 @@
         ];
 
         // ============================================================
-        //  LOAD / SAVE
+        //  LOAD / SAVE (SUPABASE)
         // ============================================================
         async function loadData() {
             try {
@@ -2003,10 +2262,9 @@
         }
 
         let saveChain = Promise.resolve();
+
         function saveData() {
             const attempt = saveChain.then(doSaveData, doSaveData);
-            // Encadenamos siempre el siguiente intento tras este, incluso si falla,
-            // para no perder el orden de las escrituras.
             saveChain = attempt.catch(() => {});
             return attempt;
         }
@@ -2034,7 +2292,6 @@
             } else {
                 titleEl.textContent = baseTitle + ' ';
             }
-            // El boton de edicion de nombre solo debe aparecer en la vista Calendario
             if (currentView === 'calendar' && !titleEl.querySelector('.edit-name-btn')) {
                 const btn = document.createElement('button');
                 btn.className = 'edit-name-btn';
@@ -2045,7 +2302,7 @@
         }
 
         async function editUserName() {
-            const name = prompt('Como quieres que aparezca tu nombre?', userName || '');
+            const name = prompt('¿Cómo quieres que aparezca tu nombre?', userName || '');
             if (name !== null) {
                 userName = name.trim();
                 updatePageTitle();
@@ -2192,7 +2449,6 @@
         // ============================================================
         //  RENDER ENTRY MODAL
         // ============================================================
-        // Genero gramatical de cada tipo, para el titulo del modal ("Nuevo"/"Nueva")
         const TYPE_GENDER = {
             book: 'o', movie: 'a', series: 'a', game: 'o', travel: 'o',
             work: 'o', project: 'o', event: 'o', place: 'o', document: 'o'
@@ -2222,19 +2478,18 @@
             const title = isEdit ? 'Editar ' + label : nuevoNueva + ' ' + label;
 
             let extraFields = '';
-            let categoryField = '';
 
             // ===== BOOK =====
             if (type === 'book') {
                 extraFields = `
                     <div class="modal-label">Autor</div>
-                    <input id="modal-author" class="modal-input" value="${isEdit ? entry.author || '' : ''}" placeholder="Ej: Gabriel Garcia Marquez">
+                    <input id="modal-author" class="modal-input" value="${isEdit ? entry.author || '' : ''}" placeholder="Ej: Gabriel García Márquez">
                     <div class="modal-label">Fecha de inicio</div>
                     <input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}">
                     ${isEdit ? `
-                        <div class="modal-label">Fecha de finalizacion</div>
+                        <div class="modal-label">Fecha de finalización</div>
                         <input type="date" id="modal-end" class="modal-input" value="${entry.endDate || ''}">
-                        <div class="modal-label">Valoracion (1-5)</div>
+                        <div class="modal-label">Valoración (1-5)</div>
                         <select id="modal-rating" class="modal-input">
                             ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
                         </select>
@@ -2248,7 +2503,7 @@
                     <div class="modal-label">Fecha</div>
                     <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
                     ${isEdit ? `
-                        <div class="modal-label">Valoracion (1-5)</div>
+                        <div class="modal-label">Valoración (1-5)</div>
                         <select id="modal-rating" class="modal-input">
                             ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
                         </select>
@@ -2269,9 +2524,9 @@
                         <select id="modal-status" class="modal-input">
                             ${statuses.map(s => `<option value="${s}" ${isEdit && entry.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                         </select>
-                        <div class="modal-label">Fecha de finalizacion</div>
+                        <div class="modal-label">Fecha de finalización</div>
                         <input type="date" id="modal-end" class="modal-input" value="${entry.endDate || ''}">
-                        <div class="modal-label">Valoracion (1-5)</div>
+                        <div class="modal-label">Valoración (1-5)</div>
                         <select id="modal-rating" class="modal-input">
                             ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
                         </select>
@@ -2290,9 +2545,9 @@
                         <select id="modal-status" class="modal-input">
                             ${statuses.map(s => `<option value="${s}" ${isEdit && entry.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                         </select>
-                        <div class="modal-label">Fecha de finalizacion</div>
+                        <div class="modal-label">Fecha de finalización</div>
                         <input type="date" id="modal-end" class="modal-input" value="${entry.endDate || ''}">
-                        <div class="modal-label">Valoracion (1-5)</div>
+                        <div class="modal-label">Valoración (1-5)</div>
                         <select id="modal-rating" class="modal-input">
                             ${[0,1,2,3,4,5].map(r => `<option value="${r}" ${isEdit && entry.rating === r ? 'selected' : ''}>${r === 0 ? 'Sin valorar' : '⭐'.repeat(r)}</option>`).join('')}
                         </select>
@@ -2329,7 +2584,7 @@
                     <div class="modal-label">Empresa</div>
                     <input id="modal-company" class="modal-input" value="${isEdit ? entry.company || '' : ''}" placeholder="Ej: Empresa X">
                     <div class="modal-label">Cargo</div>
-                    <input id="modal-position" class="modal-input" value="${isEdit ? entry.position || '' : ''}" placeholder="Ej: Operario logistico">
+                    <input id="modal-position" class="modal-input" value="${isEdit ? entry.position || '' : ''}" placeholder="Ej: Operario logístico">
                     <div class="modal-row">
                         <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
                         <div><div class="modal-label">Fecha fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
@@ -2343,7 +2598,7 @@
                 `;
             }
 
-            // ===== PROJECT =====
+            // ===== PROJECT (sin presupuesto) =====
             else if (type === 'project') {
                 extraFields = `
                     <div class="modal-label">Descripción</div>
@@ -2359,10 +2614,8 @@
                         <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
                         <div><div class="modal-label">Fecha fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
                     </div>
-                    <div class="modal-label">Presupuesto (€)</div>
-                    <input type="number" id="modal-budget" class="modal-input" step="0.01" value="${isEdit ? entry.budget || '' : ''}" placeholder="0.00">
-                    <div class="modal-label">Tareas (una por linea)</div>
-                    <textarea id="modal-tasks" class="modal-input" rows="3">${isEdit ? (entry.tasks || []).join('\n') : ''}</textarea>
+                    <div class="modal-label">Tareas (una por línea)</div>
+                    <textarea id="modal-tasks" class="modal-input" rows="3">${isEdit ? (entry.tasks || []).map(t => t.text + (t.done ? ' ✅' : '')).join('\n') : ''}</textarea>
                     <div class="modal-label">Notas</div>
                     <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
@@ -2429,15 +2682,15 @@
                         <button class="modal-close" onclick="closeModal()">✕</button>
                     </div>
 
-                    <div class="modal-label">Titulo</div>
-                    <input id="modal-title" class="modal-input" value="${isEdit ? entry.title : ''}" placeholder="Escribe un titulo...">
+                    <div class="modal-label">Título</div>
+                    <input id="modal-title" class="modal-input" value="${isEdit ? entry.title : ''}" placeholder="Escribe un título...">
 
                     ${extraFields}
 
                     <div class="modal-label">Etiquetas (separadas por comas)</div>
                     <input id="modal-tags" class="modal-input" value="${isEdit ? (entry.tags || []).join(', ') : ''}" placeholder="p.ej. urgente, 2026, personal">
 
-                    <div class="wikilink-hint">Consejo: escribe [[Titulo de otra entrada]] en las notas para enlazarla.</div>
+                    <div class="wikilink-hint">Consejo: escribe [[Título de otra entrada]] en las notas para enlazarla.</div>
                     ${isEdit ? renderBacklinksBlock(entry.id) : ''}
 
                     <button class="btn-modal-primary" onclick="saveEntry()">Guardar</button>
@@ -2451,7 +2704,7 @@
         // ============================================================
         async function saveEntry() {
             const title = document.getElementById('modal-title').value.trim();
-            if (!title) { showToast('Escribe un titulo', true); return; }
+            if (!title) { showToast('Escribe un título', true); return; }
 
             const type = editType;
             const entry = {
@@ -2464,7 +2717,6 @@
                     .split(',').map(t => t.trim()).filter(Boolean)
             };
 
-            // Campos especificos por tipo
             if (type === 'book') {
                 entry.author = document.getElementById('modal-author')?.value?.trim() || '';
                 entry.startDate = document.getElementById('modal-start')?.value || '';
@@ -2533,9 +2785,11 @@
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.endDate = document.getElementById('modal-end')?.value || '';
                 entry.date = entry.startDate || entry.endDate || '';
-                entry.budget = parseFloat(document.getElementById('modal-budget')?.value) || null;
                 const tasksRaw = document.getElementById('modal-tasks')?.value?.split('\n').filter(t => t.trim()) || [];
-                entry.tasks = tasksRaw.map(t => ({ text: t.replace(' ✅', '').trim(), done: t.includes('✅') }));
+                entry.tasks = tasksRaw.map(t => {
+                    const done = t.includes('✅');
+                    return { text: t.replace(' ✅', '').trim(), done };
+                });
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 entry.status = entry.endDate ? 'Completado' : 'En desarrollo';
             } else if (type === 'event') {
@@ -2591,7 +2845,7 @@
         //  DELETE ENTRY
         // ============================================================
         async function deleteEntry(id) {
-            if (!confirm('Eliminar esta entrada?')) return;
+            if (!confirm('¿Eliminar esta entrada?')) return;
             entries = entries.filter(e => e.id !== id);
             filteredEntries = [...entries];
             closeModal();
@@ -2649,6 +2903,54 @@
         }
 
         // ============================================================
+        //  EXPENSE ROWS (TRAVEL)
+        // ============================================================
+        function renderExpenseRow(exp, index) {
+            return `
+                <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+                    <input class="modal-input" style="flex:2" value="${exp.description || ''}" placeholder="Concepto" onchange="updateExpense(${index}, 'description', this.value)">
+                    <input class="modal-input" style="flex:1" type="number" value="${exp.amount || ''}" placeholder="€" onchange="updateExpense(${index}, 'amount', this.value)">
+                    <button onclick="removeExpense(${index})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px">✕</button>
+                </div>`;
+        }
+
+        window._expenses = [];
+
+        function addExpenseRow() {
+            const list = document.getElementById('expenses-list');
+            if (!list) return;
+            const idx = window._expenses.length;
+            window._expenses.push({ description: '', amount: 0 });
+            list.insertAdjacentHTML('beforeend', renderExpenseRow({ description: '', amount: 0 }, idx));
+            updateExpenseTotal();
+        }
+
+        function updateExpense(index, field, value) {
+            if (!window._expenses[index]) return;
+            window._expenses[index][field] = field === 'amount' ? parseFloat(value) || 0 : value;
+            updateExpenseTotal();
+        }
+
+        function removeExpense(index) {
+            window._expenses.splice(index, 1);
+            renderExpensesList();
+        }
+
+        function renderExpensesList() {
+            const list = document.getElementById('expenses-list');
+            if (!list) return;
+            list.innerHTML = window._expenses.map((exp, i) => renderExpenseRow(exp, i)).join('');
+            updateExpenseTotal();
+        }
+
+        function updateExpenseTotal() {
+            const totalEl = document.getElementById('expenses-total');
+            if (!totalEl) return;
+            const total = window._expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+            totalEl.textContent = 'Total: ' + total.toLocaleString('es-ES') + '€';
+        }
+
+        // ============================================================
         //  RENDER
         // ============================================================
         function render() {
@@ -2667,6 +2969,8 @@
             else if (currentView === 'places') content.innerHTML = renderPlaces();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
                 loadDocuments(); } else if (currentView === 'investments') content.innerHTML = renderInvestments();
+            else if (currentView === 'fantasy') { content.innerHTML = renderFantasy();
+                renderFantasyChart(); } else if (currentView === 'vault') content.innerHTML = renderVault();
         }
 
         // ============================================================
@@ -2886,7 +3190,7 @@
                 </div>
 
                 ${upcoming.length ? `
-                    <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Proximamente</div>
+                    <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Próximamente</div>
                     ${upcoming.map(e => {
                         const cat = categories.find(c => c.id === e.categoryId);
                         const color = cat?.color || 'var(--text-secondary)';
@@ -2991,7 +3295,7 @@
         function renderBooks() {
             const books = entries.filter(e => e.type === 'book');
             if (!books.length) {
-                return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin libros</div><div class="empty-sub">Pulsa el boton + y selecciona "Libro"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin libros</div><div class="empty-sub">Pulsa el botón + y selecciona "Libro"</div></div>`;
             }
 
             const reading = books.filter(b => b.status === 'Leyendo');
@@ -3048,7 +3352,7 @@
         function renderMovies() {
             const movies = entries.filter(e => e.type === 'movie');
             if (!movies.length) {
-                return `<div class="empty-state"><div class="empty-icon">▸</div><div class="empty-title">Sin peliculas</div><div class="empty-sub">Pulsa el boton + y selecciona "Película"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">▸</div><div class="empty-title">Sin películas</div><div class="empty-sub">Pulsa el botón + y selecciona "Película"</div></div>`;
             }
 
             const sorted = [...movies].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -3077,7 +3381,7 @@
         function renderSeries() {
             const series = entries.filter(e => e.type === 'series');
             if (!series.length) {
-                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin series</div><div class="empty-sub">Pulsa el boton + y selecciona "Serie"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin series</div><div class="empty-sub">Pulsa el botón + y selecciona "Serie"</div></div>`;
             }
 
             const statusOrder = { 'Viendo': 0, 'Completada': 1, 'Abandonada': 2 };
@@ -3110,7 +3414,7 @@
         function renderGames() {
             const games = entries.filter(e => e.type === 'game');
             if (!games.length) {
-                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin videojuegos</div><div class="empty-sub">Pulsa el boton + y selecciona "Videojuego"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin videojuegos</div><div class="empty-sub">Pulsa el botón + y selecciona "Videojuego"</div></div>`;
             }
 
             const statusOrder = { 'Jugando': 0, 'Completado': 1, 'Abandonado': 2 };
@@ -3143,7 +3447,7 @@
         function renderTravels() {
             const travels = entries.filter(e => e.type === 'travel');
             if (!travels.length) {
-                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el boton + y selecciona "Viaje"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
             }
 
             let html = `<div style="max-width:700px">`;
@@ -3172,13 +3476,14 @@
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
-                return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa el boton + y selecciona "Trabajo"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa el botón + y selecciona "Trabajo"</div></div>`;
             }
 
             const todayStr = new Date().toISOString().slice(0, 10);
             const daysBetween = (start, end) => {
                 if (!start) return 0;
-                const s = new Date(start), e = new Date(end);
+                const s = new Date(start),
+                    e = new Date(end);
                 return Math.max(0, Math.round((e - s) / 86400000) + 1);
             };
 
@@ -3189,7 +3494,6 @@
                 return (b.startDate || '').localeCompare(a.startDate || '');
             });
 
-            // Total de dias trabajados hasta hoy (se recalcula cada dia, no se queda fijo)
             const totalDays = sorted.reduce((sum, w) => {
                 const isActive = !w.endDate || w.endDate >= todayStr;
                 const effectiveEnd = isActive ? todayStr : w.endDate;
@@ -3198,8 +3502,8 @@
 
             let html = `
                 <div class="card" style="margin-bottom:16px;max-width:700px">
-                    <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Total de dias trabajados hasta hoy</div>
-                    <div style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px">${totalDays} dias</div>
+                    <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Total de días trabajados hasta hoy</div>
+                    <div style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px">${totalDays} días</div>
                 </div>
                 <div style="max-width:700px">`;
             sorted.forEach(w => {
@@ -3219,7 +3523,7 @@
                         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
                             <span style="font-size:12px;color:var(--text-secondary)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
                             <span class="badge ${statusClass}">${statusLabel}</span>
-                            <span style="font-size:12px;color:var(--text-secondary)">${daysHere} dias</span>
+                            <span style="font-size:12px;color:var(--text-secondary)">${daysHere} días</span>
                         </div>
                         ${w.schedule ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.schedule}</div>` : ''}
                         ${w.salary ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.salary}€/mes</div>` : ''}
@@ -3237,7 +3541,7 @@
         function renderProjects() {
             const projects = entries.filter(e => e.type === 'project');
             if (!projects.length) {
-                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa el boton + y selecciona "Proyecto"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa el botón + y selecciona "Proyecto"</div></div>`;
             }
 
             const sorted = [...projects].sort((a, b) => {
@@ -3264,7 +3568,6 @@
                         </div>
                         <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${p.projectCategory || 'Sin categoría'} · ${p.startDate || ''} ${p.endDate ? '→ ' + p.endDate : ''}</div>
                         ${p.description ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${p.description}</div>` : ''}
-                        ${p.budget ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Presupuesto: ${p.budget}€</div>` : ''}
                         ${totalTasks > 0 ? `
                             <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
                             <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${doneTasks}/${totalTasks} tareas</div>
@@ -3283,7 +3586,7 @@
         function renderEvents() {
             const events = entries.filter(e => e.type === 'event');
             if (!events.length) {
-                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el boton + y selecciona "Evento"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento"</div></div>`;
             }
 
             const eventIcons = { social: '◈', teatro: '◊', cine: '▸', concierto: '♪', deporte: '◉', otro: '◈' };
@@ -3310,40 +3613,12 @@
         }
 
         // ============================================================
-        //  RENDER: RESTAURANTS
-        // ============================================================
-        function renderRestaurants() {
-            const restaurants = entries.filter(e => e.type === 'restaurant');
-            if (!restaurants.length) {
-                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin restaurantes</div><div class="empty-sub">Pulsa el boton + y selecciona "Restaurante"</div></div>`;
-            }
-
-            const sorted = [...restaurants].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-
-            let html = `<div style="max-width:700px">`;
-            sorted.forEach(r => {
-                const cat = categories.find(c => c.id === r.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
-                html += `
-                    <div class="entry-item" onclick="openEditEntry('${r.id}')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${r.title}</div>
-                            <div class="entry-meta">${r.date || 'Sin fecha'}${r.notes ? ' · ' + linkifyText(r.notes) : ''}</div>
-                        </div>
-                    </div>`;
-            });
-            html += `</div>`;
-            return html;
-        }
-
-        // ============================================================
         //  RENDER: PLACES
         // ============================================================
         function renderPlaces() {
             const places = entries.filter(e => e.type === 'place');
             if (!places.length) {
-                return `<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin lugares</div><div class="empty-sub">Pulsa el boton + y selecciona "Lugar"</div></div>`;
+                return `<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin lugares</div><div class="empty-sub">Pulsa el botón + y selecciona "Lugar"</div></div>`;
             }
 
             const sorted = [...places].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -3366,7 +3641,7 @@
         }
 
         // ============================================================
-        //  RENDER: INVESTMENTS (Calculadora de interes compuesto)
+        //  RENDER: INVESTMENTS
         // ============================================================
         let investmentChartYears = 10;
 
@@ -3375,7 +3650,6 @@
                 investmentData.rate || 0, investmentChartYears);
             const max = Math.max(...proj.yearlySnapshots.map(s => s.balance), 1);
 
-            // Hitos "a este ritmo" (siempre a 6 meses, 1, 3, 5 y 10 años, independientemente de la vista del grafico)
             const milestoneMonths = [6, 12, 36, 60, 120];
             const milestoneLabels = ['6 meses', '1 año', '3 años', '5 años', '10 años'];
             const milestones = milestoneMonths.map((m, i) => ({
@@ -3426,7 +3700,7 @@
 
                 <div class="chart-container">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                        <div class="chart-title" style="margin-bottom:0">Evolucion anual</div>
+                        <div class="chart-title" style="margin-bottom:0">Evolución anual</div>
                         <div class="year-selector">
                             ${yearOptions.map(y => `
                                 <button class="${y === investmentChartYears ? 'active' : ''}" onclick="setInvestmentYears(${y})">${y} años</button>
@@ -3449,7 +3723,6 @@
             return html;
         }
 
-        // Evita amontonar etiquetas cuando hay muchos años: muestra como máximo ~8 etiquetas
         function shouldShowYearLabel(index, total) {
             const step = Math.max(1, Math.round(total / 8));
             return index % step === 0;
@@ -3467,7 +3740,6 @@
 
             investmentData = { initial, rate, monthly };
 
-            // Re-render solo la seccion de inversiones
             document.getElementById('content').innerHTML = renderInvestments();
 
             try {
@@ -3499,7 +3771,6 @@
             };
         }
 
-        // Calcula el capital exacto tras N meses (para los hitos "a este ritmo")
         function calcBalanceAtMonth(principal, monthlyContribution, annualRatePct, months) {
             const monthlyRate = annualRatePct / 100 / 12;
             let balance = principal;
@@ -3518,7 +3789,7 @@
                     <div class="doc-upload-box" onclick="document.getElementById('doc-upload-input').click()">
                         <div style="font-size:28px;margin-bottom:6px">📄</div>
                         <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF</div>
-                        <div style="font-size:12px;color:var(--text-secondary)">Pulsa aqui para elegir un archivo</div>
+                        <div style="font-size:12px;color:var(--text-secondary)">Pulsa aquí para elegir un archivo</div>
                     </div>
                     <div id="doc-list">Cargando documentos...</div>
                 </div>`;
@@ -3550,7 +3821,7 @@
             if (!listEl) return;
             if (!documents.length) {
                 listEl.innerHTML =
-                    `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF con el boton de arriba</div></div>`;
+                    `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF con el botón de arriba</div></div>`;
                 return;
             }
             listEl.innerHTML = documents.map(doc => {
@@ -3607,7 +3878,7 @@
         }
 
         async function deleteDocument(name) {
-            if (!confirm('Eliminar este documento? No se puede deshacer.')) return;
+            if (!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
             try {
                 const { data: { user } } = await sb.auth.getUser();
                 if (!user) return;
@@ -3623,6 +3894,741 @@
         }
 
         // ============================================================
+        //  FANTASY
+        // ============================================================
+        let fantasyData = { usuarios: [], transacciones: [] };
+        let fantasyChartInstance = null;
+
+        function loadFantasyData() {
+            try {
+                const stored = localStorage.getItem('fantasy_data');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    fantasyData = parsed;
+                    return true;
+                }
+            } catch (e) { console.error('Error cargando datos de Fantasy:', e); }
+            return false;
+        }
+
+        function saveFantasyData() {
+            try {
+                localStorage.setItem('fantasy_data', JSON.stringify(fantasyData));
+                return true;
+            } catch (e) {
+                console.error('Error guardando datos de Fantasy:', e);
+                return false;
+            }
+        }
+
+        function getDefaultFantasyData() {
+            return {
+                usuarios: [
+                    { nombre: 'VEZAMAN', efectivo: 65478932, valor_plantilla: 87654321 },
+                    { nombre: 'rafa_cm_', efectivo: 35201984, valor_plantilla: 98765432 },
+                    { nombre: 'LALIGA', efectivo: 128900000, valor_plantilla: 75000000 },
+                    { nombre: 'User4', efectivo: 42100000, valor_plantilla: 82345678 },
+                    { nombre: 'User5', efectivo: 65300000, valor_plantilla: 71234567 }
+                ],
+                transacciones: [
+                    { id: 'tx_001', tipo: 'venta', jugador: 'Lenglet', precio: 9468794, fecha: '2024-01-15',
+                        comprador: 'LALIGA', vendedor: 'VEZAMAN' },
+                    { id: 'tx_002', tipo: 'compra', jugador: 'Carlos V.', precio: 11692043, fecha: '2024-01-15',
+                        comprador: 'VEZAMAN', vendedor: 'LALIGA' },
+                    { id: 'tx_003', tipo: 'compra', jugador: 'Starfelt', precio: 5940199, fecha: '2024-01-15',
+                        comprador: 'VEZAMAN', vendedor: 'LALIGA' },
+                    { id: 'tx_004', tipo: 'venta', jugador: 'Mosquera', precio: 16144311, fecha: '2024-01-15',
+                        comprador: 'LALIGA', vendedor: 'VEZAMAN' },
+                    { id: 'tx_005', tipo: 'compra', jugador: 'Miguel', precio: 15655570, fecha: '2024-01-15',
+                        comprador: 'rafa_cm_', vendedor: 'LALIGA' }
+                ]
+            };
+        }
+
+        function recalcFantasyBalances() {
+            const INITIAL_CASH = 100000000;
+            const INITIAL_TEAM = 100000000;
+
+            fantasyData.usuarios.forEach(u => {
+                u.efectivo = INITIAL_CASH;
+                u.valor_plantilla = INITIAL_TEAM;
+            });
+
+            fantasyData.transacciones.forEach(tx => {
+                const comprador = fantasyData.usuarios.find(u => u.nombre === tx.comprador);
+                const vendedor = fantasyData.usuarios.find(u => u.nombre === tx.vendedor);
+
+                if (comprador && comprador.nombre !== 'LALIGA') {
+                    comprador.efectivo -= tx.precio;
+                    comprador.valor_plantilla += tx.precio;
+                }
+                if (vendedor && vendedor.nombre !== 'LALIGA') {
+                    vendedor.efectivo += tx.precio;
+                    vendedor.valor_plantilla -= tx.precio;
+                }
+            });
+        }
+
+        function detectSuspiciousFlows() {
+            const warnings = [];
+            const pairs = {};
+            const SYSTEM_USERS = ['LALIGA', 'SISTEMA', 'BANCO'];
+
+            fantasyData.transacciones.forEach(tx => {
+                if (SYSTEM_USERS.includes(tx.comprador) || SYSTEM_USERS.includes(tx.vendedor)) return;
+                const key = [tx.comprador, tx.vendedor].sort().join('|');
+                if (!pairs[key]) pairs[key] = { user1: [tx.comprador, tx.vendedor].sort()[0],
+                    user2: [tx.comprador, tx.vendedor].sort()[1], count: 0, players: [], dates: [] };
+                pairs[key].count++;
+                if (!pairs[key].players.includes(tx.jugador)) pairs[key].players.push(tx.jugador);
+                pairs[key].dates.push(new Date(tx.fecha + 'T00:00:00'));
+            });
+
+            Object.values(pairs).forEach(p => {
+                if (p.count >= 3) {
+                    const first = new Date(Math.min(...p.dates));
+                    const last = new Date(Math.max(...p.dates));
+                    const days = (last - first) / 86400000;
+                    if (days <= 7) {
+                        warnings.push({
+                            nivel: '🔴 ALTA',
+                            descripcion: `${p.user1} y ${p.user2}: ${p.count} operaciones en ${Math.round(days)} días`,
+                            detalle: `Jugadores: ${p.players.join(', ')}`
+                        });
+                    } else {
+                        warnings.push({
+                            nivel: '🟡 MEDIA',
+                            descripcion: `${p.user1} y ${p.user2}: ${p.count} operaciones en total`,
+                            detalle: `Jugadores: ${p.players.join(', ')}`
+                        });
+                    }
+                } else if (p.count >= 2 && p.players.length <= 2) {
+                    warnings.push({
+                        nivel: '🟡 MEDIA',
+                        descripcion: `${p.user1} y ${p.user2}: ${p.count} operaciones con ${p.players.length} jugadores`,
+                        detalle: `Posible concentración de operaciones`
+                    });
+                }
+            });
+
+            return warnings;
+        }
+
+        function renderFantasy() {
+            if (!fantasyData.usuarios.length) {
+                fantasyData = getDefaultFantasyData();
+                recalcFantasyBalances();
+                saveFantasyData();
+            }
+
+            const warnings = detectSuspiciousFlows();
+
+            let html = `
+                <div style="max-width:800px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+                        <div>
+                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◉ Fantasy</div>
+                            <div style="font-size:13px;color:var(--text-secondary)">Análisis económico de la liga</div>
+                        </div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                            <button class="btn-secondary" onclick="resetFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">Reiniciar</button>
+                            <button class="btn-secondary" onclick="exportFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📤 Exportar</button>
+                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Importar JSON</button>
+                            <button class="btn-secondary" onclick="changeFantasyPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
+                        </div>
+                    </div>
+
+                    <div class="fantasy-chart-container">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">💰 Efectivo por usuario</div>
+                        <canvas id="fantasyChart"></canvas>
+                    </div>
+
+                    <div style="margin-top:16px">
+                        <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px">👥 Usuarios</div>
+                        ${fantasyData.usuarios.map(u => {
+                            const total = u.efectivo + u.valor_plantilla;
+                            const txs = fantasyData.transacciones.filter(t => t.comprador === u.nombre || t.vendedor === u.nombre);
+                            return `
+                                <div class="fantasy-user-card" onclick="showFantasyUserDetail('${u.nombre}')">
+                                    <div>
+                                        <div class="user-name">${u.nombre}</div>
+                                        <div style="font-size:11px;color:var(--text-secondary)">${txs.length} operaciones</div>
+                                    </div>
+                                    <div class="user-balance">
+                                        <div class="total">${total.toLocaleString('es-ES')}€</div>
+                                        <div class="cash">${u.efectivo.toLocaleString('es-ES')}€ efectivo</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    ${warnings.length ? `
+                        <div style="margin-top:16px">
+                            <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px">🚨 Flujos sospechosos</div>
+                            ${warnings.map(w => `
+                                <div class="fantasy-alert ${w.nivel.includes('ALTA') ? 'high' : 'medium'}">
+                                    <div style="font-weight:700">${w.nivel}</div>
+                                    <div>${w.descripcion}</div>
+                                    <div style="font-size:12px;opacity:0.8">${w.detalle}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div style="margin-top:16px;padding:16px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);text-align:center;color:var(--text-secondary)">
+                            ✅ No se detectaron flujos sospechosos
+                        </div>
+                    `}
+                </div>
+            `;
+
+            return html;
+        }
+
+        function renderFantasyChart() {
+            setTimeout(() => {
+                const canvas = document.getElementById('fantasyChart');
+                if (!canvas) return;
+
+                if (fantasyChartInstance) {
+                    fantasyChartInstance.destroy();
+                    fantasyChartInstance = null;
+                }
+
+                const labels = fantasyData.usuarios.map(u => u.nombre);
+                const data = fantasyData.usuarios.map(u => u.efectivo);
+                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
+
+                const ctx = canvas.getContext('2d');
+                fantasyChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Efectivo (€)',
+                            data: data,
+                            backgroundColor: colors,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: 'var(--text-secondary)' },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: {
+                                    color: 'var(--text-secondary)',
+                                    callback: function(value) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    }
+                                },
+                                grid: { color: 'var(--border)' }
+                            }
+                        }
+                    }
+                });
+            }, 50);
+        }
+
+        function showFantasyUserDetail(nombre) {
+            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
+            if (!u) return;
+            const txs = fantasyData.transacciones
+                .filter(t => t.comprador === nombre || t.vendedor === nombre)
+                .slice().reverse();
+
+            showModal(`
+                <div class="modal-title">${nombre}</div>
+                <div class="stats-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+                    <div class="stat-box"><div class="stat-val" style="font-size:18px">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div><div class="stat-lbl">Total</div></div>
+                    <div class="stat-box"><div class="stat-val" style="font-size:18px;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div><div class="stat-lbl">Efectivo</div></div>
+                    <div class="stat-box"><div class="stat-val" style="font-size:18px">${u.valor_plantilla.toLocaleString('es-ES')}€</div><div class="stat-lbl">Plantilla</div></div>
+                </div>
+
+                <div class="modal-label">Historial de transacciones (${txs.length})</div>
+                <div style="max-height:300px;overflow-y:auto">
+                    ${txs.length ? txs.map(tx => `
+                        <div class="fantasy-tx-item">
+                            <div style="display:flex;justify-content:space-between">
+                                <span>
+                                    <span class="tx-type ${tx.tipo}">${tx.tipo === 'compra' ? 'COMPRA' : 'VENTA'}</span>
+                                    <span style="font-weight:600">${tx.jugador}</span>
+                                    <span style="font-size:11px;color:var(--text-secondary)">${tx.comprador} → ${tx.vendedor}</span>
+                                </span>
+                                <span class="tx-amount ${tx.tipo === 'venta' ? 'positive' : 'negative'}">${tx.tipo === 'venta' ? '+' : '-'}${tx.precio.toLocaleString('es-ES')}€</span>
+                            </div>
+                            <div style="font-size:11px;color:var(--text-secondary)">${tx.fecha}</div>
+                        </div>
+                    `).join('') : '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin transacciones</div>'}
+                </div>
+            `);
+        }
+
+        function resetFantasyData() {
+            if (!confirm('¿Reiniciar todos los datos de Fantasy? Esta acción no se puede deshacer.')) return;
+            fantasyData = getDefaultFantasyData();
+            recalcFantasyBalances();
+            saveFantasyData();
+            render();
+            showToast('Datos de Fantasy reiniciados');
+        }
+
+        function exportFantasyData() {
+            const blob = new Blob([JSON.stringify(fantasyData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fantasy_data_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Datos de Fantasy exportados');
+        }
+
+        function importFantasyData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    let added = 0;
+                    if (data.transacciones) {
+                        data.transacciones.forEach(tx => {
+                            const exists = fantasyData.transacciones.some(t =>
+                                t.jugador === tx.jugador &&
+                                t.precio === tx.precio &&
+                                t.fecha === tx.fecha &&
+                                t.comprador === tx.comprador &&
+                                t.vendedor === tx.vendedor
+                            );
+                            if (!exists) {
+                                fantasyData.transacciones.push(tx);
+                                added++;
+                            }
+                        });
+                    }
+                    if (data.usuarios) {
+                        data.usuarios.forEach(u => {
+                            const exists = fantasyData.usuarios.some(us => us.nombre === u.nombre);
+                            if (!exists) fantasyData.usuarios.push(u);
+                        });
+                    }
+                    recalcFantasyBalances();
+                    saveFantasyData();
+                    render();
+                    showToast(`✅ Importados ${added} transacciones`);
+                } catch (err) {
+                    showToast('Error al importar: ' + err.message, true);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ============================================================
+        //  VAULT
+        // ============================================================
+        let vaultTasks = [];
+
+        function loadVaultData() {
+            try {
+                const stored = localStorage.getItem('vault_data');
+                if (stored) {
+                    vaultTasks = JSON.parse(stored);
+                    return true;
+                }
+            } catch (e) { console.error('Error cargando Vault:', e); }
+            return false;
+        }
+
+        function saveVaultData() {
+            try {
+                localStorage.setItem('vault_data', JSON.stringify(vaultTasks));
+                return true;
+            } catch (e) {
+                console.error('Error guardando Vault:', e);
+                return false;
+            }
+        }
+
+        function renderVault() {
+            if (!vaultTasks.length) {
+                return `
+                    <div style="max-width:600px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                            <div>
+                                <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
+                                <div style="font-size:13px;color:var(--text-secondary)">Tareas personales</div>
+                            </div>
+                            <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
+                        </div>
+                        <div class="vault-input-row">
+                            <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
+                            <button onclick="addVaultTask()">Añadir</button>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-icon">◈</div>
+                            <div class="empty-title">Sin tareas</div>
+                            <div class="empty-sub">Añade tu primera tarea con el campo de arriba</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const done = vaultTasks.filter(t => t.done);
+            const pending = vaultTasks.filter(t => !t.done);
+
+            return `
+                <div style="max-width:600px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                        <div>
+                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
+                            <div style="font-size:13px;color:var(--text-secondary)">${pending.length} pendientes · ${done.length} completadas</div>
+                        </div>
+                        <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
+                    </div>
+                    <div class="vault-input-row">
+                        <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
+                        <button onclick="addVaultTask()">Añadir</button>
+                    </div>
+
+                    ${pending.length ? `
+                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Pendientes</div>
+                        ${pending.map((t, i) => `
+                            <div class="vault-task" onclick="toggleVaultTask(${i})">
+                                <span class="task-check">${t.done ? '✅' : '◯'}</span>
+                                <span class="task-text">${escapeHtml(t.text)}</span>
+                                <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${i})">✕</button>
+                            </div>
+                        `).join('')}
+                    ` : ''}
+
+                    ${done.length ? `
+                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Completadas</div>
+                        ${done.map((t, i) => {
+                            const realIdx = vaultTasks.indexOf(t);
+                            return `
+                                <div class="vault-task done" onclick="toggleVaultTask(${realIdx})">
+                                    <span class="task-check">✅</span>
+                                    <span class="task-text">${escapeHtml(t.text)}</span>
+                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
+                                </div>
+                            `;
+                        }).join('')}
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function addVaultTask() {
+            const input = document.getElementById('vault-input');
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) { showToast('Escribe una tarea', true); return; }
+
+            vaultTasks.push({ text, done: false, created: new Date().toISOString() });
+            saveVaultData();
+            input.value = '';
+            render();
+            showToast('Tarea añadida');
+        }
+
+        function toggleVaultTask(index) {
+            if (index < 0 || index >= vaultTasks.length) return;
+            vaultTasks[index].done = !vaultTasks[index].done;
+            saveVaultData();
+            render();
+        }
+
+        function deleteVaultTask(index) {
+            if (index < 0 || index >= vaultTasks.length) return;
+            if (!confirm('¿Eliminar esta tarea?')) return;
+            vaultTasks.splice(index, 1);
+            saveVaultData();
+            render();
+            showToast('Tarea eliminada');
+        }
+
+        // ============================================================
+        //  FANTASY & VAULT: CONTRASEÑAS EN SUPABASE
+        // ============================================================
+
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function getSecret(type) {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) throw new Error('No hay sesión activa');
+            const { data, error } = await sb
+                .from('bitacora_secrets')
+                .select(`${type}_password_hash`)
+                .eq('user_id', user.id)
+                .maybeSingle();
+            if (error) throw error;
+            return data ? data[`${type}_password_hash`] : null;
+        }
+
+        async function setSecret(type, hash) {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) throw new Error('No hay sesión activa');
+            const column = `${type}_password_hash`;
+            const { error } = await sb
+                .from('bitacora_secrets')
+                .upsert({
+                    user_id: user.id,
+                    [column]: hash,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+            if (error) throw error;
+        }
+
+        async function requestPasswordAccess(type, onSuccess) {
+            try {
+                const storedHash = await getSecret(type);
+                const label = type === 'fantasy' ? 'Fantasy' : 'Vault';
+                const icon = type === 'fantasy' ? '◉' : '◈';
+                const color = type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)';
+
+                if (!storedHash) {
+                    showModal(`
+                        <div class="modal-title" style="color:${color}">${icon} Crear contraseña de ${label}</div>
+                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Protege tu sección ${label} con una contraseña.</div>
+                        <div class="form-row">
+                            <label class="modal-label">Contraseña</label>
+                            <input type="password" id="pw-new" class="modal-input" placeholder="Mínimo 6 caracteres">
+                        </div>
+                        <div class="form-row">
+                            <label class="modal-label">Repetir contraseña</label>
+                            <input type="password" id="pw-new2" class="modal-input" placeholder="Repite la contraseña">
+                        </div>
+                        <div id="pw-create-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                        <button class="btn-modal-primary" onclick="createPassword('${type}')" style="background:${color}">🔐 Guardar contraseña</button>
+                        <button class="btn-secondary" onclick="closeModal()" style="margin-top:8px">Cancelar</button>
+                    `);
+                } else {
+                    showModal(`
+                        <div class="modal-title" style="color:${color}">${icon} Acceso a ${label}</div>
+                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce tu contraseña de ${label} para acceder.</div>
+                        <div class="form-row">
+                            <label class="modal-label">Contraseña</label>
+                            <input type="password" id="pw-input" class="modal-input" placeholder="Tu contraseña" onkeydown="if(event.key==='Enter')verifyPassword('${type}')">
+                        </div>
+                        <div id="pw-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                        <button class="btn-modal-primary" onclick="verifyPassword('${type}')" style="background:${color}">🔓 Entrar</button>
+                        <button class="btn-secondary" onclick="closeModal()" style="margin-top:8px">Cancelar</button>
+                    `);
+                }
+
+                window._passwordSuccessCallback = onSuccess;
+                window._passwordType = type;
+
+            } catch (e) {
+                console.error('Error al verificar contraseña:', e);
+                showToast('Error al conectar con el servidor', true);
+            }
+        }
+
+        async function createPassword(type) {
+            const pw1 = document.getElementById('pw-new').value;
+            const pw2 = document.getElementById('pw-new2').value;
+            const errorEl = document.getElementById('pw-create-error');
+
+            if (!pw1 || pw1.length < 6) {
+                errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
+                return;
+            }
+            if (pw1 !== pw2) {
+                errorEl.textContent = 'Las contraseñas no coinciden';
+                return;
+            }
+
+            try {
+                const hash = await hashPassword(pw1);
+                await setSecret(type, hash);
+                closeModal();
+                showToast(`🔐 Contraseña de ${type} creada`);
+                if (window._passwordSuccessCallback) {
+                    window._passwordSuccessCallback();
+                }
+            } catch (e) {
+                console.error('Error guardando contraseña:', e);
+                errorEl.textContent = 'Error al guardar la contraseña. Revisa tu conexión.';
+            }
+        }
+
+        async function verifyPassword(type) {
+            const input = document.getElementById('pw-input').value;
+            const errorEl = document.getElementById('pw-error');
+
+            if (!input) {
+                errorEl.textContent = 'Introduce tu contraseña';
+                return;
+            }
+
+            try {
+                const storedHash = await getSecret(type);
+                if (!storedHash) {
+                    errorEl.textContent = 'No hay contraseña guardada para esta sección';
+                    return;
+                }
+
+                const inputHash = await hashPassword(input);
+                if (inputHash !== storedHash) {
+                    errorEl.textContent = '❌ Contraseña incorrecta';
+                    return;
+                }
+
+                closeModal();
+                document.getElementById('pw-input').value = '';
+                errorEl.textContent = '';
+                showToast(`✅ Acceso concedido a ${type}`);
+
+                if (window._passwordSuccessCallback) {
+                    window._passwordSuccessCallback();
+                }
+            } catch (e) {
+                console.error('Error verificando contraseña:', e);
+                errorEl.textContent = 'Error de conexión, intenta de nuevo';
+            }
+        }
+
+        function openFantasy() {
+            // Cargar datos locales antes de pedir contraseña
+            loadFantasyData();
+            requestPasswordAccess('fantasy', () => {
+                currentView = 'fantasy';
+                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                    b.classList.toggle('active', b.dataset.view === 'fantasy');
+                });
+                updatePageTitle();
+                render();
+                renderFantasyChart();
+            });
+        }
+
+        function openVault() {
+            loadVaultData();
+            requestPasswordAccess('vault', () => {
+                currentView = 'vault';
+                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                    b.classList.toggle('active', b.dataset.view === 'vault');
+                });
+                updatePageTitle();
+                render();
+            });
+        }
+
+        function changeFantasyPassword() {
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Cambiar contraseña de Fantasy</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce tu contraseña actual y la nueva.</div>
+                <div class="form-row">
+                    <label class="modal-label">Contraseña actual</label>
+                    <input type="password" id="pw-old" class="modal-input" placeholder="Tu contraseña actual">
+                </div>
+                <div class="form-row">
+                    <label class="modal-label">Nueva contraseña</label>
+                    <input type="password" id="pw-new-f" class="modal-input" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-row">
+                    <label class="modal-label">Repetir nueva contraseña</label>
+                    <input type="password" id="pw-new2-f" class="modal-input" placeholder="Repite la contraseña">
+                </div>
+                <div id="pw-change-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                <button class="btn-modal-primary" onclick="updateFantasyPassword()" style="background:var(--fantasy-accent)">🔐 Cambiar contraseña</button>
+                <button class="btn-secondary" onclick="closeModal()" style="margin-top:8px">Cancelar</button>
+            `);
+        }
+
+        async function updateFantasyPassword() {
+            const old = document.getElementById('pw-old').value;
+            const pw1 = document.getElementById('pw-new-f').value;
+            const pw2 = document.getElementById('pw-new2-f').value;
+            const errorEl = document.getElementById('pw-change-error');
+
+            if (!old) { errorEl.textContent = 'Introduce tu contraseña actual'; return; }
+            if (!pw1 || pw1.length < 6) { errorEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres'; return; }
+            if (pw1 !== pw2) { errorEl.textContent = 'Las contraseñas no coinciden'; return; }
+
+            try {
+                const storedHash = await getSecret('fantasy');
+                const oldHash = await hashPassword(old);
+                if (oldHash !== storedHash) {
+                    errorEl.textContent = '❌ Contraseña actual incorrecta';
+                    return;
+                }
+                const newHash = await hashPassword(pw1);
+                await setSecret('fantasy', newHash);
+                closeModal();
+                showToast('🔑 Contraseña de Fantasy actualizada');
+            } catch (e) {
+                console.error('Error cambiando contraseña:', e);
+                errorEl.textContent = 'Error de conexión, intenta de nuevo';
+            }
+        }
+
+        function changeVaultPassword() {
+            showModal(`
+                <div class="modal-title" style="color:var(--vault-accent)">◈ Cambiar contraseña de Vault</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce tu contraseña actual y la nueva.</div>
+                <div class="form-row">
+                    <label class="modal-label">Contraseña actual</label>
+                    <input type="password" id="pw-old-v" class="modal-input" placeholder="Tu contraseña actual">
+                </div>
+                <div class="form-row">
+                    <label class="modal-label">Nueva contraseña</label>
+                    <input type="password" id="pw-new-v" class="modal-input" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-row">
+                    <label class="modal-label">Repetir nueva contraseña</label>
+                    <input type="password" id="pw-new2-v" class="modal-input" placeholder="Repite la contraseña">
+                </div>
+                <div id="pw-change-error-v" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                <button class="btn-modal-primary" onclick="updateVaultPassword()" style="background:var(--vault-accent)">🔐 Cambiar contraseña</button>
+                <button class="btn-secondary" onclick="closeModal()" style="margin-top:8px">Cancelar</button>
+            `);
+        }
+
+        async function updateVaultPassword() {
+            const old = document.getElementById('pw-old-v').value;
+            const pw1 = document.getElementById('pw-new-v').value;
+            const pw2 = document.getElementById('pw-new2-v').value;
+            const errorEl = document.getElementById('pw-change-error-v');
+
+            if (!old) { errorEl.textContent = 'Introduce tu contraseña actual'; return; }
+            if (!pw1 || pw1.length < 6) { errorEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres'; return; }
+            if (pw1 !== pw2) { errorEl.textContent = 'Las contraseñas no coinciden'; return; }
+
+            try {
+                const storedHash = await getSecret('vault');
+                const oldHash = await hashPassword(old);
+                if (oldHash !== storedHash) {
+                    errorEl.textContent = '❌ Contraseña actual incorrecta';
+                    return;
+                }
+                const newHash = await hashPassword(pw1);
+                await setSecret('vault', newHash);
+                closeModal();
+                showToast('🔑 Contraseña de Vault actualizada');
+            } catch (e) {
+                console.error('Error cambiando contraseña:', e);
+                errorEl.textContent = 'Error de conexión, intenta de nuevo';
+            }
+        }
+
+        // ============================================================
         //  INIT
         // ============================================================
         let appInitialized = false;
@@ -3630,6 +4636,17 @@
         async function init() {
             loadTheme();
             const loaded = await loadData();
+
+            // Inicializar datos de Fantasy y Vault (si no existen)
+            if (!loadFantasyData()) {
+                fantasyData = getDefaultFantasyData();
+                recalcFantasyBalances();
+                saveFantasyData();
+            }
+            if (!loadVaultData()) {
+                vaultTasks = [];
+                saveVaultData();
+            }
 
             if (window.innerWidth <= 768) {
                 document.querySelector('.menu-hamburger').style.display = 'block';
@@ -3659,6 +4676,15 @@
                         'none';
                     }, 200);
                 });
+
+                // Input de importación de Fantasy
+                const fantasyInput = document.createElement('input');
+                fantasyInput.type = 'file';
+                fantasyInput.id = 'fantasy-import-input';
+                fantasyInput.accept = '.json';
+                fantasyInput.style.display = 'none';
+                fantasyInput.onchange = importFantasyData;
+                document.body.appendChild(fantasyInput);
             }
 
             if (!loaded) {
@@ -3676,28 +4702,14 @@
             updatePageTitle();
         }
 
-        // Forzar que el calendario se renderice correctamente al cargar
-        // Aseguramos que la vista actual sea calendar
         if (window.location.hash) {
             const view = window.location.hash.replace('#', '');
             if (view && view !== 'calendar') {
-                // Si hay un hash, cambiar a esa vista
                 currentView = view;
             }
         } else {
             currentView = 'calendar';
         }
-
-        const styleEl = document.createElement('style');
-        styleEl.textContent = `
-            .btn-secondary.active {
-                background: var(--accent);
-                color: var(--accent-contrast);
-                border-color: var(--accent);
-            }
-        `;
-        document.head.appendChild(styleEl);
     </script>
-
 </body>
 </html>
