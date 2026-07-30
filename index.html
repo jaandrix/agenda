@@ -4085,277 +4085,6 @@
             return html;
         }
 
-        function renderFantasyChart() {
-            setTimeout(() => {
-                const canvas = document.getElementById('fantasyChart');
-                if (!canvas) return;
-
-                if (fantasyChartInstance) {
-                    fantasyChartInstance.destroy();
-                    fantasyChartInstance = null;
-                }
-
-                const labels = fantasyData.usuarios.map(u => u.nombre);
-                const data = fantasyData.usuarios.map(u => u.efectivo);
-                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
-
-                const ctx = canvas.getContext('2d');
-                fantasyChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Efectivo (€)',
-                            data: data,
-                            backgroundColor: colors,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            x: {
-                                ticks: { color: 'var(--text-secondary)' },
-                                grid: { display: false }
-                            },
-                            y: {
-                                ticks: {
-                                    color: 'var(--text-secondary)',
-                                    callback: function(value) {
-                                        return (value / 1000000).toFixed(1) + 'M';
-                                    }
-                                },
-                                grid: { color: 'var(--border)' }
-                            }
-                        }
-                    }
-                });
-            }, 50);
-        }
-
-        function showFantasyUserDetail(nombre) {
-            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
-            if (!u) return;
-            const txs = fantasyData.transacciones
-                .filter(t => t.comprador === nombre || t.vendedor === nombre)
-                .slice().reverse();
-
-            showModal(`
-                <div class="modal-title">${nombre}</div>
-                <div class="stats-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
-                    <div class="stat-box"><div class="stat-val" style="font-size:18px">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div><div class="stat-lbl">Total</div></div>
-                    <div class="stat-box"><div class="stat-val" style="font-size:18px;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div><div class="stat-lbl">Efectivo</div></div>
-                    <div class="stat-box"><div class="stat-val" style="font-size:18px">${u.valor_plantilla.toLocaleString('es-ES')}€</div><div class="stat-lbl">Plantilla</div></div>
-                </div>
-
-                <div class="modal-label">Historial de transacciones (${txs.length})</div>
-                <div style="max-height:300px;overflow-y:auto">
-                    ${txs.length ? txs.map(tx => `
-                        <div class="fantasy-tx-item">
-                            <div style="display:flex;justify-content:space-between">
-                                <span>
-                                    <span class="tx-type ${tx.tipo}">${tx.tipo === 'compra' ? 'COMPRA' : 'VENTA'}</span>
-                                    <span style="font-weight:600">${tx.jugador}</span>
-                                    <span style="font-size:11px;color:var(--text-secondary)">${tx.comprador} → ${tx.vendedor}</span>
-                                </span>
-                                <span class="tx-amount ${tx.tipo === 'venta' ? 'positive' : 'negative'}">${tx.tipo === 'venta' ? '+' : '-'}${tx.precio.toLocaleString('es-ES')}€</span>
-                            </div>
-                            <div style="font-size:11px;color:var(--text-secondary)">${tx.fecha}</div>
-                        </div>
-                    `).join('') : '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin transacciones</div>'}
-                </div>
-            `);
-        }
-
-        function resetFantasyData() {
-            if (!confirm('¿Reiniciar todos los datos de Fantasy? Esta acción no se puede deshacer.')) return;
-            fantasyData = getDefaultFantasyData();
-            recalcFantasyBalances();
-            saveFantasyData();
-            render();
-            showToast('Datos de Fantasy reiniciados');
-        }
-
-        function exportFantasyData() {
-            const blob = new Blob([JSON.stringify(fantasyData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `fantasy_data_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Datos de Fantasy exportados');
-        }
-
-        function importFantasyData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    let added = 0;
-                    if (data.transacciones) {
-                        data.transacciones.forEach(tx => {
-                            const exists = fantasyData.transacciones.some(t =>
-                                t.jugador === tx.jugador &&
-                                t.precio === tx.precio &&
-                                t.fecha === tx.fecha &&
-                                t.comprador === tx.comprador &&
-                                t.vendedor === tx.vendedor
-                            );
-                            if (!exists) {
-                                fantasyData.transacciones.push(tx);
-                                added++;
-                            }
-                        });
-                    }
-                    if (data.usuarios) {
-                        data.usuarios.forEach(u => {
-                            const exists = fantasyData.usuarios.some(us => us.nombre === u.nombre);
-                            if (!exists) fantasyData.usuarios.push(u);
-                        });
-                    }
-                    recalcFantasyBalances();
-                    saveFantasyData();
-                    render();
-                    showToast(`✅ Importados ${added} transacciones`);
-                } catch (err) {
-                    showToast('Error al importar: ' + err.message, true);
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        }
-
-        // ============================================================
-        //  VAULT
-        // ============================================================
-        let vaultTasks = [];
-
-        function loadVaultData() {
-            try {
-                const stored = localStorage.getItem('vault_data');
-                if (stored) {
-                    vaultTasks = JSON.parse(stored);
-                    return true;
-                }
-            } catch (e) { console.error('Error cargando Vault:', e); }
-            return false;
-        }
-
-        function saveVaultData() {
-            try {
-                localStorage.setItem('vault_data', JSON.stringify(vaultTasks));
-                return true;
-            } catch (e) {
-                console.error('Error guardando Vault:', e);
-                return false;
-            }
-        }
-
-        function renderVault() {
-            if (!vaultTasks.length) {
-                return `
-                    <div style="max-width:600px">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                            <div>
-                                <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
-                                <div style="font-size:13px;color:var(--text-secondary)">Tareas personales</div>
-                            </div>
-                            <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
-                        </div>
-                        <div class="vault-input-row">
-                            <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
-                            <button onclick="addVaultTask()">Añadir</button>
-                        </div>
-                        <div class="empty-state">
-                            <div class="empty-icon">◈</div>
-                            <div class="empty-title">Sin tareas</div>
-                            <div class="empty-sub">Añade tu primera tarea con el campo de arriba</div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            const done = vaultTasks.filter(t => t.done);
-            const pending = vaultTasks.filter(t => !t.done);
-
-            return `
-                <div style="max-width:600px">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                        <div>
-                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
-                            <div style="font-size:13px;color:var(--text-secondary)">${pending.length} pendientes · ${done.length} completadas</div>
-                        </div>
-                        <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
-                    </div>
-                    <div class="vault-input-row">
-                        <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
-                        <button onclick="addVaultTask()">Añadir</button>
-                    </div>
-
-                    ${pending.length ? `
-                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Pendientes</div>
-                        ${pending.map((t, i) => `
-                            <div class="vault-task" onclick="toggleVaultTask(${i})">
-                                <span class="task-check">${t.done ? '✅' : '◯'}</span>
-                                <span class="task-text">${escapeHtml(t.text)}</span>
-                                <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${i})">✕</button>
-                            </div>
-                        `).join('')}
-                    ` : ''}
-
-                    ${done.length ? `
-                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Completadas</div>
-                        ${done.map((t, i) => {
-                            const realIdx = vaultTasks.indexOf(t);
-                            return `
-                                <div class="vault-task done" onclick="toggleVaultTask(${realIdx})">
-                                    <span class="task-check">✅</span>
-                                    <span class="task-text">${escapeHtml(t.text)}</span>
-                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
-                                </div>
-                            `;
-                        }).join('')}
-                    ` : ''}
-                </div>
-            `;
-        }
-
-        function addVaultTask() {
-            const input = document.getElementById('vault-input');
-            if (!input) return;
-            const text = input.value.trim();
-            if (!text) { showToast('Escribe una tarea', true); return; }
-
-            vaultTasks.push({ text, done: false, created: new Date().toISOString() });
-            saveVaultData();
-            input.value = '';
-            render();
-            showToast('Tarea añadida');
-        }
-
-        function toggleVaultTask(index) {
-            if (index < 0 || index >= vaultTasks.length) return;
-            vaultTasks[index].done = !vaultTasks[index].done;
-            saveVaultData();
-            render();
-        }
-
-        function deleteVaultTask(index) {
-            if (index < 0 || index >= vaultTasks.length) return;
-            if (!confirm('¿Eliminar esta tarea?')) return;
-            vaultTasks.splice(index, 1);
-            saveVaultData();
-            render();
-            showToast('Tarea eliminada');
-        }
-
         // ============================================================
         //  FANTASY & VAULT: CONTRASEÑAS EN SUPABASE
         // ============================================================
@@ -4388,8 +4117,7 @@
                 .from('bitacora_secrets')
                 .upsert({
                     user_id: user.id,
-                    [column]: hash,
-                    updated_at: new Date().toISOString()
+                    [column]: hash
                 }, { onConflict: 'user_id' });
             if (error) throw error;
         }
@@ -4468,7 +4196,7 @@
             }
         }
 
-          async function verifyPassword(type) {
+        async function verifyPassword(type) {
             const input = document.getElementById('pw-input').value;
             const errorEl = document.getElementById('pw-error');
 
@@ -4645,6 +4373,252 @@
         }
 
         // ============================================================
+        //  RENDER: FANTASY CHART (UNIFICADA Y CORREGIDA)
+        // ============================================================
+        function renderFantasyChart() {
+            setTimeout(() => {
+                const canvas = document.getElementById('fantasyChart');
+                if (!canvas) return;
+
+                if (fantasyChartInstance) {
+                    fantasyChartInstance.destroy();
+                    fantasyChartInstance = null;
+                }
+
+                if (!fantasyData || !fantasyData.usuarios || fantasyData.usuarios.length === 0) return;
+
+                const labels = fantasyData.usuarios.map(u => u.nombre);
+                const data = fantasyData.usuarios.map(u => u.efectivo);
+                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
+
+                const ctx = canvas.getContext('2d');
+                fantasyChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Efectivo (€)',
+                            data: data,
+                            backgroundColor: colors,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: 'var(--text-secondary)' },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: {
+                                    color: 'var(--text-secondary)',
+                                    callback: function(value) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    }
+                                },
+                                grid: { color: 'var(--border)' }
+                            }
+                        }
+                    }
+                });
+            }, 100); // Pequeño retraso para asegurar que el canvas esté renderizado
+        }
+
+        // ============================================================
+        //  VAULT
+        // ============================================================
+        let vaultTasks = [];
+
+        function loadVaultData() {
+            try {
+                const stored = localStorage.getItem('vault_data');
+                if (stored) {
+                    vaultTasks = JSON.parse(stored);
+                    return true;
+                }
+            } catch (e) { console.error('Error cargando Vault:', e); }
+            return false;
+        }
+
+        function saveVaultData() {
+            try {
+                localStorage.setItem('vault_data', JSON.stringify(vaultTasks));
+                return true;
+            } catch (e) {
+                console.error('Error guardando Vault:', e);
+                return false;
+            }
+        }
+
+        function renderVault() {
+            if (!vaultTasks.length) {
+                return `
+                    <div style="max-width:600px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                            <div>
+                                <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
+                                <div style="font-size:13px;color:var(--text-secondary)">Tareas personales</div>
+                            </div>
+                            <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
+                        </div>
+                        <div class="vault-input-row">
+                            <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
+                            <button onclick="addVaultTask()">Añadir</button>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-icon">◈</div>
+                            <div class="empty-title">Sin tareas</div>
+                            <div class="empty-sub">Añade tu primera tarea con el campo de arriba</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const done = vaultTasks.filter(t => t.done);
+            const pending = vaultTasks.filter(t => !t.done);
+
+            return `
+                <div style="max-width:600px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                        <div>
+                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
+                            <div style="font-size:13px;color:var(--text-secondary)">${pending.length} pendientes · ${done.length} completadas</div>
+                        </div>
+                        <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
+                    </div>
+                    <div class="vault-input-row">
+                        <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
+                        <button onclick="addVaultTask()">Añadir</button>
+                    </div>
+
+                    ${pending.length ? `
+                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Pendientes</div>
+                        ${pending.map((t, i) => `
+                            <div class="vault-task" onclick="toggleVaultTask(${i})">
+                                <span class="task-check">${t.done ? '✅' : '◯'}</span>
+                                <span class="task-text">${escapeHtml(t.text)}</span>
+                                <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${i})">✕</button>
+                            </div>
+                        `).join('')}
+                    ` : ''}
+
+                    ${done.length ? `
+                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Completadas</div>
+                        ${done.map((t, i) => {
+                            const realIdx = vaultTasks.indexOf(t);
+                            return `
+                                <div class="vault-task done" onclick="toggleVaultTask(${realIdx})">
+                                    <span class="task-check">✅</span>
+                                    <span class="task-text">${escapeHtml(t.text)}</span>
+                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
+                                </div>
+                            `;
+                        }).join('')}
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function addVaultTask() {
+            const input = document.getElementById('vault-input');
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) { showToast('Escribe una tarea', true); return; }
+
+            vaultTasks.push({ text, done: false, created: new Date().toISOString() });
+            saveVaultData();
+            input.value = '';
+            render();
+            showToast('Tarea añadida');
+        }
+
+        function toggleVaultTask(index) {
+            if (index < 0 || index >= vaultTasks.length) return;
+            vaultTasks[index].done = !vaultTasks[index].done;
+            saveVaultData();
+            render();
+        }
+
+        function deleteVaultTask(index) {
+            if (index < 0 || index >= vaultTasks.length) return;
+            if (!confirm('¿Eliminar esta tarea?')) return;
+            vaultTasks.splice(index, 1);
+            saveVaultData();
+            render();
+            showToast('Tarea eliminada');
+        }
+
+        // ============================================================
+        //  SHOW MODAL (UNIFICADA)
+        // ============================================================
+        function showModal(htmlContent) {
+            const container = document.getElementById('modal-container');
+            container.innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+                    <div class="modal-sheet">
+                        ${htmlContent}
+                        <div style="text-align:right; margin-top:12px">
+                            <button class="btn-modal-primary" onclick="closeModal()" style="width:auto; padding:8px 24px;">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        //  SHOW FANTASY USER DETAIL (UNIFICADA)
+        // ============================================================
+        function showFantasyUserDetail(nombre) {
+            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
+            if (!u) return;
+            const txs = fantasyData.transacciones
+                .filter(t => t.comprador === nombre || t.vendedor === nombre)
+                .slice().reverse();
+
+            const contenidoHTML = `
+                <div class="modal-title">${nombre}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+                    <div style="text-align:center">
+                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
+                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Total</div>
+                    </div>
+                    <div style="text-align:center">
+                        <div style="font-size:18px;font-weight:800;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
+                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Efectivo</div>
+                    </div>
+                    <div style="text-align:center">
+                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${u.valor_plantilla.toLocaleString('es-ES')}€</div>
+                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Plantilla</div>
+                    </div>
+                </div>
+
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
+                <div style="max-height:300px;overflow-y:auto">
+                    ${txs.length ? txs.map(tx => `
+                        <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+                            <div style="display:flex;justify-content:space-between">
+                                <span>
+                                    <span style="font-weight:700;text-transform:uppercase;font-size:11px;color:${tx.tipo === 'compra' ? 'var(--fantasy-accent)' : '#dc2626'}">${tx.tipo === 'compra' ? 'COMPRA' : 'VENTA'}</span>
+                                    <span style="font-weight:600">${tx.jugador}</span>
+                                    <span style="font-size:11px;color:var(--text-secondary)">${tx.comprador} → ${tx.vendedor}</span>
+                                </span>
+                                <span style="font-weight:600;color:${tx.tipo === 'venta' ? '#16a34a' : '#dc2626'}">${tx.tipo === 'venta' ? '+' : '-'}${tx.precio.toLocaleString('es-ES')}€</span>
+                            </div>
+                            <div style="font-size:11px;color:var(--text-secondary)">${tx.fecha}</div>
+                        </div>
+                    `).join('') : '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin transacciones</div>'}
+                </div>
+            `;
+
+            showModal(contenidoHTML);
+        }
+
+        // ============================================================
         //  INIT
         // ============================================================
         let appInitialized = false;
@@ -4725,195 +4699,6 @@
             }
         } else {
             currentView = 'calendar';
-        }
-        // ============================================================
-        //  FUNCIÓN showModal CORREGIDA (PARA FANTASY)
-        // ============================================================
-        function showModal(htmlContent) {
-            const container = document.getElementById('modal-container');
-            container.innerHTML = `
-                <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
-                    <div class="modal-sheet">
-                        ${htmlContent}
-                        <div style="text-align:right; margin-top:12px">
-                            <button class="btn-modal-primary" onclick="closeModal()" style="width:auto; padding:8px 24px;">Cerrar</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ============================================================
-        //  CORRECCIÓN DE LA FUNCIÓN QUE USA showModal EN FANTASY
-        // ============================================================
-        // Reemplazamos la función showFantasyUserDetail por esta versión corregida
-        function showFantasyUserDetail(nombre) {
-            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
-            if (!u) return;
-            const txs = fantasyData.transacciones
-                .filter(t => t.comprador === nombre || t.vendedor === nombre)
-                .slice().reverse();
-
-            // Generamos el contenido HTML del modal
-            const contenidoHTML = `
-                <div class="modal-title">${nombre}</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
-                    <div style="text-align:center">
-                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Total</div>
-                    </div>
-                    <div style="text-align:center">
-                        <div style="font-size:18px;font-weight:800;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Efectivo</div>
-                    </div>
-                    <div style="text-align:center">
-                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${u.valor_plantilla.toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Plantilla</div>
-                    </div>
-                </div>
-
-                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
-                <div style="max-height:300px;overflow-y:auto">
-                    ${txs.length ? txs.map(tx => `
-                        <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
-                            <div style="display:flex;justify-content:space-between">
-                                <span>
-                                    <span style="font-weight:700;text-transform:uppercase;font-size:11px;color:${tx.tipo === 'compra' ? 'var(--fantasy-accent)' : '#dc2626'}">${tx.tipo === 'compra' ? 'COMPRA' : 'VENTA'}</span>
-                                    <span style="font-weight:600">${tx.jugador}</span>
-                                    <span style="font-size:11px;color:var(--text-secondary)">${tx.comprador} → ${tx.vendedor}</span>
-                                </span>
-                                <span style="font-weight:600;color:${tx.tipo === 'venta' ? '#16a34a' : '#dc2626'}">${tx.tipo === 'venta' ? '+' : '-'}${tx.precio.toLocaleString('es-ES')}€</span>
-                            </div>
-                            <div style="font-size:11px;color:var(--text-secondary)">${tx.fecha}</div>
-                        </div>
-                    `).join('') : '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin transacciones</div>'}
-                </div>
-            `;
-
-            // Usamos la función showModal que acabamos de definir arriba
-            showModal(contenidoHTML);
-        }
-        // ============================================================
-        //  CORRECCIÓN: VERIFICAR CONTRASEÑA Y CARGAR VISTA CORRECTA
-        // ============================================================
-        async function verifyPassword(type) {
-            const input = document.getElementById('pw-input').value;
-            const errorEl = document.getElementById('pw-error');
-
-            if (!input) {
-                errorEl.textContent = 'Introduce tu contraseña';
-                return;
-            }
-
-            try {
-                const storedHash = await getSecret(type);
-                if (!storedHash) {
-                    errorEl.textContent = 'No hay contraseña guardada para esta sección';
-                    return;
-                }
-
-                const inputHash = await hashPassword(input);
-                if (inputHash !== storedHash) {
-                    errorEl.textContent = '❌ Contraseña incorrecta';
-                    return;
-                }
-
-                closeModal();
-                document.getElementById('pw-input').value = '';
-                errorEl.textContent = '';
-                showToast(`✅ Acceso concedido a ${type}`);
-
-                // CAMBIO CRÍTICO: Aquí definimos la vista y forzamos el renderizado
-                if (type === 'fantasy') {
-                    currentView = 'fantasy';
-                    // Forzamos a que el botón de Fantasy se ilumine en el menú
-                    document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                        b.classList.toggle('active', b.dataset.view === 'fantasy');
-                    });
-                    updatePageTitle();
-                    render(); // Dibuja la vista
-                    renderFantasyChart(); // ¡Esto es lo que faltaba! Dibuja el gráfico.
-                } else if (type === 'vault') {
-                    currentView = 'vault';
-                    document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                        b.classList.toggle('active', b.dataset.view === 'vault');
-                    });
-                    updatePageTitle();
-                    render();
-                }
-
-                if (window._passwordSuccessCallback) {
-                    window._passwordSuccessCallback();
-                }
-            } catch (e) {
-                console.error('Error verificando contraseña:', e);
-                errorEl.textContent = 'Error de conexión, intenta de nuevo';
-            }
-        }
-
-        // ============================================================
-        //  CORRECCIÓN: ASEGURAR QUE EL GRÁFICO SE DIBUJE AL CAMBIAR DE VISTA
-        // ============================================================
-        // Esto es necesario porque a veces el gráfico no se ve si cambias de vista rápidamente.
-        function renderFantasyChart() {
-            setTimeout(() => {
-                const canvas = document.getElementById('fantasyChart');
-                if (!canvas) return;
-
-                if (fantasyChartInstance) {
-                    fantasyChartInstance.destroy();
-                    fantasyChartInstance = null;
-                }
-
-                // Si no hay datos de usuario, no dibujamos nada
-                if (!fantasyData || !fantasyData.usuarios || fantasyData.usuarios.length === 0) return;
-
-                const labels = fantasyData.usuarios.map(u => u.nombre);
-                const data = fantasyData.usuarios.map(u => u.efectivo);
-                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
-
-                // Cargamos Chart.js por si no lo ha cargado aún la página
-                if (typeof Chart === 'undefined') {
-                    console.warn("Chart.js no está disponible. El gráfico no se mostrará.");
-                    return;
-                }
-
-                const ctx = canvas.getContext('2d');
-                fantasyChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Efectivo (€)',
-                            data: data,
-                            backgroundColor: colors,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            x: {
-                                ticks: { color: 'var(--text-secondary)' },
-                                grid: { display: false }
-                            },
-                            y: {
-                                ticks: {
-                                    color: 'var(--text-secondary)',
-                                    callback: function(value) {
-                                        return (value / 1000000).toFixed(1) + 'M';
-                                    }
-                                },
-                                grid: { color: 'var(--border)' }
-                            }
-                        }
-                    }
-                });
-            }, 100); // Pequeño retraso para asegurar que el HTML del gráfico ya esté renderizado
         }
     </script>
 </body>
