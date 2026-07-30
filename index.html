@@ -4777,6 +4777,128 @@
             // Usamos la función showModal que acabamos de definir arriba
             showModal(contenidoHTML);
         }
+        // ============================================================
+        //  CORRECCIÓN: VERIFICAR CONTRASEÑA Y CARGAR VISTA CORRECTA
+        // ============================================================
+        async function verifyPassword(type) {
+            const input = document.getElementById('pw-input').value;
+            const errorEl = document.getElementById('pw-error');
+
+            if (!input) {
+                errorEl.textContent = 'Introduce tu contraseña';
+                return;
+            }
+
+            try {
+                const storedHash = await getSecret(type);
+                if (!storedHash) {
+                    errorEl.textContent = 'No hay contraseña guardada para esta sección';
+                    return;
+                }
+
+                const inputHash = await hashPassword(input);
+                if (inputHash !== storedHash) {
+                    errorEl.textContent = '❌ Contraseña incorrecta';
+                    return;
+                }
+
+                closeModal();
+                document.getElementById('pw-input').value = '';
+                errorEl.textContent = '';
+                showToast(`✅ Acceso concedido a ${type}`);
+
+                // CAMBIO CRÍTICO: Aquí definimos la vista y forzamos el renderizado
+                if (type === 'fantasy') {
+                    currentView = 'fantasy';
+                    // Forzamos a que el botón de Fantasy se ilumine en el menú
+                    document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                        b.classList.toggle('active', b.dataset.view === 'fantasy');
+                    });
+                    updatePageTitle();
+                    render(); // Dibuja la vista
+                    renderFantasyChart(); // ¡Esto es lo que faltaba! Dibuja el gráfico.
+                } else if (type === 'vault') {
+                    currentView = 'vault';
+                    document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                        b.classList.toggle('active', b.dataset.view === 'vault');
+                    });
+                    updatePageTitle();
+                    render();
+                }
+
+                if (window._passwordSuccessCallback) {
+                    window._passwordSuccessCallback();
+                }
+            } catch (e) {
+                console.error('Error verificando contraseña:', e);
+                errorEl.textContent = 'Error de conexión, intenta de nuevo';
+            }
+        }
+
+        // ============================================================
+        //  CORRECCIÓN: ASEGURAR QUE EL GRÁFICO SE DIBUJE AL CAMBIAR DE VISTA
+        // ============================================================
+        // Esto es necesario porque a veces el gráfico no se ve si cambias de vista rápidamente.
+        function renderFantasyChart() {
+            setTimeout(() => {
+                const canvas = document.getElementById('fantasyChart');
+                if (!canvas) return;
+
+                if (fantasyChartInstance) {
+                    fantasyChartInstance.destroy();
+                    fantasyChartInstance = null;
+                }
+
+                // Si no hay datos de usuario, no dibujamos nada
+                if (!fantasyData || !fantasyData.usuarios || fantasyData.usuarios.length === 0) return;
+
+                const labels = fantasyData.usuarios.map(u => u.nombre);
+                const data = fantasyData.usuarios.map(u => u.efectivo);
+                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
+
+                // Cargamos Chart.js por si no lo ha cargado aún la página
+                if (typeof Chart === 'undefined') {
+                    console.warn("Chart.js no está disponible. El gráfico no se mostrará.");
+                    return;
+                }
+
+                const ctx = canvas.getContext('2d');
+                fantasyChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Efectivo (€)',
+                            data: data,
+                            backgroundColor: colors,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: 'var(--text-secondary)' },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: {
+                                    color: 'var(--text-secondary)',
+                                    callback: function(value) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    }
+                                },
+                                grid: { color: 'var(--border)' }
+                            }
+                        }
+                    }
+                });
+            }, 100); // Pequeño retraso para asegurar que el HTML del gráfico ya esté renderizado
+        }
     </script>
 </body>
 </html>
