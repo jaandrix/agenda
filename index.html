@@ -4196,15 +4196,30 @@
             }
         }
 
-         async function verifyPassword(type) {
-            // Intentamos obtener el input. Si no existe (porque el modal aún no cargó), salimos sin hacer nada
-            const inputElement = document.getElementById('pw-input');
-            if (!inputElement) {
-                console.warn("El modal de contraseña aún no está listo.");
+        async function verifyPassword(type) {
+            // Función segura para obtener el input
+            const getInputValue = () => {
+                const el = document.getElementById('pw-input');
+                return el ? el.value : null;
+            };
+
+            let input = getInputValue();
+            let attempts = 0;
+            
+            // Si el input no existe, esperamos un poco y lo intentamos de nuevo (máximo 3 veces)
+            while (input === null && attempts < 3) {
+                // CORREGIDO: La promesa debe estar dentro de una función async o usar .then
+                await new Promise(resolve => setTimeout(resolve, 100)); 
+                input = getInputValue();
+                attempts++;
+            }
+
+            // Si después de esperar sigue sin existir, paramos para no romper la app
+            if (input === null) {
+                console.warn("No se pudo encontrar el campo de contraseña.");
                 return;
             }
 
-            const input = inputElement.value;
             const errorEl = document.getElementById('pw-error');
 
             if (!input) {
@@ -4226,8 +4241,6 @@
                 }
 
                 closeModal();
-                // No hace falta limpiar el valor porque el modal ya se cerró, pero dejamos la línea por seguridad
-                if (inputElement) inputElement.value = '';
                 if (errorEl) errorEl.textContent = '';
                 showToast(`✅ Acceso concedido a ${type}`);
 
