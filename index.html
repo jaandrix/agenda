@@ -129,8 +129,7 @@
         #app {
             display: flex;
             height: 100dvh;
-            margin: 0 auto;
-            max-width: 1200px;
+            width: 100%;
             background: var(--bg-app);
             transition: background 0.25s ease;
             position: relative;
@@ -252,7 +251,7 @@
             padding-top: 12px;
             margin-top: 8px;
             display: flex;
-            gap: 6px;
+            justify-content: center;
         }
 
         .sidebar-actions button {
@@ -264,6 +263,7 @@
             cursor: pointer;
             color: var(--text-secondary);
             transition: all 0.15s ease;
+            width: auto;
         }
         .sidebar-actions button:hover {
             background: var(--bg-card-hover);
@@ -394,6 +394,7 @@
             border-top: 1px solid var(--border-strong);
             padding-top: 12px;
             display: flex;
+            justify-content: center;
             gap: 6px;
         }
         #mobile-menu-panel .menu-actions button {
@@ -439,6 +440,35 @@
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+
+        #main-header .header-right {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .add-section-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-fab);
+            color: var(--accent-contrast);
+            border: none;
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s ease;
+        }
+        .add-section-btn:hover {
+            opacity: 0.85;
+        }
+        .add-section-btn .add-icon {
+            font-size: 15px;
+            line-height: 1;
         }
 
         #search-trigger {
@@ -590,6 +620,9 @@
             overflow-y: auto;
             padding: 24px 32px 32px 32px;
             -webkit-overflow-scrolling: touch;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
         }
 
         /* ============================================================
@@ -691,11 +724,11 @@
             #content {
                 padding: 16px;
             }
-            /* Corrección modal en móvil */
             .modal-sheet {
                 padding: 20px 16px !important;
             }
-            .modal-input[type="date"] {
+            .modal-input[type="date"],
+            .modal-input[type="time"] {
                 min-width: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
@@ -1001,9 +1034,11 @@
         .modal-input::placeholder {
             color: var(--text-secondary);
         }
-        .modal-input[type="date"] {
+        .modal-input[type="date"],
+        .modal-input[type="time"] {
             min-width: 0;
             width: 100%;
+            padding: 10px 8px;
         }
 
         .modal-row {
@@ -1054,6 +1089,23 @@
         }
         body.beige .btn-modal-danger {
             background: #f3e0d8;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-strong);
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-secondary:hover {
+            background: var(--bg-card-hover);
         }
 
         /* ============================================================
@@ -1264,6 +1316,7 @@
             align-items: flex-end;
             gap: 6px;
             padding-top: 8px;
+            height: 140px;
         }
         .investment-chart .bar {
             flex: 1;
@@ -1278,18 +1331,47 @@
             height: 110px;
             display: flex;
             align-items: flex-end;
+            position: relative;
         }
-        .investment-chart .bar .bar-fill {
-            width: 100%;
+        .investment-chart .bar .bar-fill-contrib {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
             border-radius: 4px 4px 0 0;
+            background: var(--text-secondary);
             transition: height 0.6s ease;
+        }
+        .investment-chart .bar .bar-fill-interest {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-radius: 4px 4px 0 0;
             background: var(--accent);
-            min-height: 4px;
+            opacity: 0.9;
+            transition: height 0.6s ease;
         }
         .investment-chart .bar .bar-label {
             font-size: 9px;
             color: var(--text-secondary);
         }
+
+        .chart-legend {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .chart-legend .legend-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
         .year-selector {
             display: flex;
             gap: 6px;
@@ -1379,12 +1461,20 @@
             color: var(--text-primary);
         }
 
+        /* ============================================================
+               WIKILINKS
+            ============================================================ */
         .wikilink {
             color: var(--accent);
             font-weight: 600;
             cursor: pointer;
             text-decoration: underline;
             text-decoration-style: dotted;
+        }
+        .wikilink-broken {
+            color: var(--text-muted);
+            text-decoration: line-through;
+            cursor: default;
         }
         .wikilink-missing {
             color: var(--text-secondary);
@@ -1416,6 +1506,70 @@
         }
         .backlink-item:hover {
             border-color: var(--accent);
+        }
+
+        /* ============================================================
+               NOTES
+            ============================================================ */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        .note-card {
+            background: #f7f0e2;
+            border: 1px solid #e6d9bd;
+            border-radius: 14px;
+            padding: 18px 14px;
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+        }
+        .note-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+        .note-card-title {
+            font-weight: 800;
+            color: #1c1c1c;
+            font-size: 14px;
+            letter-spacing: -0.2px;
+        }
+        .note-detail {
+            max-width: 640px;
+        }
+        .note-detail-title {
+            font-weight: 800;
+            color: #1c1c1c;
+            font-size: 22px;
+            margin-bottom: 16px;
+        }
+        .note-textarea,
+        .note-readonly {
+            background: #f7f0e2;
+            border: 1px solid #e6d9bd;
+            border-radius: 14px;
+            padding: 20px;
+            min-height: 320px;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            color: #3d3324;
+            line-height: 1.6;
+        }
+        .note-textarea {
+            resize: vertical;
+            outline: none;
+        }
+        .note-textarea:focus {
+            border-color: #cdb98c;
+        }
+        .note-detail-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 8px;
         }
 
         .nota-final {
@@ -1677,12 +1831,13 @@
         <div id="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-icon"></div>
-                <span class="brand-name">Bitácora v0.10</span>
+                <span class="brand-name">Bitácora v0.24</span>
             </div>
 
             <div class="sidebar-nav">
+                <!-- General -->
                 <span class="nav-label">General</span>
-                <button class="active" onclick="switchView('calendar')" data-view="calendar">
+                <button onclick="switchView('calendar')" data-view="calendar">
                     <span class="nav-icon">◷</span>
                     <span class="nav-text">Calendario</span>
                 </button>
@@ -1694,19 +1849,24 @@
                     <span class="nav-icon">▦</span>
                     <span class="nav-text">Estadísticas</span>
                 </button>
+                <button onclick="switchView('notes')" data-view="notes">
+                    <span class="nav-icon">✎</span>
+                    <span class="nav-text">Notas</span>
+                </button>
 
-                <span class="nav-label">Registro</span>
+                <!-- Ocio -->
+                <span class="nav-label">Ocio</span>
                 <button onclick="switchView('books')" data-view="books">
                     <span class="nav-icon">◊</span>
                     <span class="nav-text">Libros</span>
                 </button>
-                <button onclick="switchView('movies')" data-view="movies">
-                    <span class="nav-icon">▸</span>
-                    <span class="nav-text">Películas</span>
-                </button>
                 <button onclick="switchView('series')" data-view="series">
                     <span class="nav-icon">◈</span>
                     <span class="nav-text">Series</span>
+                </button>
+                <button onclick="switchView('movies')" data-view="movies">
+                    <span class="nav-icon">▸</span>
+                    <span class="nav-text">Películas</span>
                 </button>
                 <button onclick="switchView('games')" data-view="games">
                     <span class="nav-icon">◉</span>
@@ -1716,6 +1876,17 @@
                     <span class="nav-icon">◈</span>
                     <span class="nav-text">Viajes</span>
                 </button>
+                <button onclick="switchView('places')" data-view="places">
+                    <span class="nav-icon">⌂</span>
+                    <span class="nav-text">Lugares</span>
+                </button>
+
+                <!-- Desarrollo -->
+                <span class="nav-label">Desarrollo</span>
+                <button onclick="switchView('events')" data-view="events">
+                    <span class="nav-icon">◈</span>
+                    <span class="nav-text">Eventos</span>
+                </button>
                 <button onclick="switchView('work')" data-view="work">
                     <span class="nav-icon">◫</span>
                     <span class="nav-text">Trabajo</span>
@@ -1724,25 +1895,23 @@
                     <span class="nav-icon">⊞</span>
                     <span class="nav-text">Proyectos</span>
                 </button>
-                <button onclick="switchView('events')" data-view="events">
-                    <span class="nav-icon">◈</span>
-                    <span class="nav-text">Eventos</span>
-                </button>
-                <button onclick="switchView('places')" data-view="places">
-                    <span class="nav-icon">⌂</span>
-                    <span class="nav-text">Lugares</span>
+                <button onclick="switchView('goals')" data-view="goals">
+                    <span class="nav-icon">◉</span>
+                    <span class="nav-text">Objetivos</span>
                 </button>
                 <button onclick="switchView('documents')" data-view="documents">
                     <span class="nav-icon">📄</span>
                     <span class="nav-text">Documentos</span>
                 </button>
 
+                <!-- Finanzas -->
                 <span class="nav-label">Finanzas</span>
                 <button onclick="switchView('investments')" data-view="investments">
                     <span class="nav-icon">◫</span>
                     <span class="nav-text">Inversiones</span>
                 </button>
 
+                <!-- Privado -->
                 <span class="nav-label">Privado</span>
                 <button class="fantasy-btn" onclick="openFantasy()" data-view="fantasy">
                     <span class="nav-icon">◉</span>
@@ -1752,13 +1921,16 @@
                     <span class="nav-icon">◈</span>
                     <span class="nav-text">Vault</span>
                 </button>
+
+                <!-- Sistema -->
+                <span class="nav-label">Sistema</span>
+                <button onclick="switchView('settings')" data-view="settings">
+                    <span class="nav-icon">⚙</span>
+                    <span class="nav-text">Ajustes</span>
+                </button>
             </div>
 
             <div class="sidebar-actions">
-                <button onclick="exportData()" title="Exportar">⬇</button>
-                <button onclick="document.getElementById('import-input').click()" title="Importar">⬆</button>
-                <button onclick="toggleTheme()" id="theme-btn" title="Tema">◐</button>
-                <button onclick="toggleMode()" id="mode-btn" title="Modo">⊞</button>
                 <button onclick="handleLogout()" title="Cerrar sesión">⏻</button>
             </div>
         </div>
@@ -1770,10 +1942,15 @@
                     <button class="menu-hamburger" onclick="toggleMobileMenu()" id="hamburger-btn">☰</button>
                     <h1 id="page-title">Calendario <button class="edit-name-btn" onclick="editUserName()">✎</button></h1>
                 </div>
-                <button id="search-trigger" onclick="openSearch()" title="Buscar (Ctrl+K)">
-                    <span>⌕</span> Buscar
-                    <span class="search-kbd">Ctrl K</span>
-                </button>
+                <div class="header-right">
+                    <button id="add-section-btn" class="add-section-btn" onclick="openSectionAdd()">
+                        <span class="add-icon">+</span> Añadir
+                    </button>
+                    <button id="search-trigger" onclick="openSearch()" title="Buscar (Ctrl+K)">
+                        <span>⌕</span> Buscar
+                        <span class="search-kbd">Ctrl K</span>
+                    </button>
+                </div>
             </div>
             <div id="content"></div>
         </div>
@@ -1808,6 +1985,7 @@
         <button onclick="openNewEntry('project')">Proyecto</button>
         <button onclick="openNewEntry('event')">Evento</button>
         <button onclick="openNewEntry('place')">Lugar</button>
+        <button onclick="openNewEntry('goal')">Objetivo</button>
     </div>
 
     <!-- ============================================================
@@ -1821,7 +1999,7 @@
         </div>
         <div class="menu-nav">
             <span class="nav-label">General</span>
-            <button class="active" onclick="switchView('calendar');toggleMobileMenu()" data-view="calendar">
+            <button onclick="switchView('calendar');toggleMobileMenu()" data-view="calendar">
                 <span class="nav-icon">◷</span> Calendario
             </button>
             <button onclick="switchView('home');toggleMobileMenu()" data-view="home">
@@ -1830,16 +2008,19 @@
             <button onclick="switchView('stats');toggleMobileMenu()" data-view="stats">
                 <span class="nav-icon">▦</span> Estadísticas
             </button>
+            <button onclick="switchView('notes');toggleMobileMenu()" data-view="notes">
+                <span class="nav-icon">✎</span> Notas
+            </button>
 
-            <span class="nav-label">Registro</span>
+            <span class="nav-label">Ocio</span>
             <button onclick="switchView('books');toggleMobileMenu()" data-view="books">
                 <span class="nav-icon">◊</span> Libros
             </button>
-            <button onclick="switchView('movies');toggleMobileMenu()" data-view="movies">
-                <span class="nav-icon">▸</span> Películas
-            </button>
             <button onclick="switchView('series');toggleMobileMenu()" data-view="series">
                 <span class="nav-icon">◈</span> Series
+            </button>
+            <button onclick="switchView('movies');toggleMobileMenu()" data-view="movies">
+                <span class="nav-icon">▸</span> Películas
             </button>
             <button onclick="switchView('games');toggleMobileMenu()" data-view="games">
                 <span class="nav-icon">◉</span> Videojuegos
@@ -1847,17 +2028,22 @@
             <button onclick="switchView('travels');toggleMobileMenu()" data-view="travels">
                 <span class="nav-icon">◈</span> Viajes
             </button>
+            <button onclick="switchView('places');toggleMobileMenu()" data-view="places">
+                <span class="nav-icon">⌂</span> Lugares
+            </button>
+
+            <span class="nav-label">Desarrollo</span>
+            <button onclick="switchView('events');toggleMobileMenu()" data-view="events">
+                <span class="nav-icon">◈</span> Eventos
+            </button>
             <button onclick="switchView('work');toggleMobileMenu()" data-view="work">
                 <span class="nav-icon">◫</span> Trabajo
             </button>
             <button onclick="switchView('projects');toggleMobileMenu()" data-view="projects">
                 <span class="nav-icon">⊞</span> Proyectos
             </button>
-            <button onclick="switchView('events');toggleMobileMenu()" data-view="events">
-                <span class="nav-icon">◈</span> Eventos
-            </button>
-            <button onclick="switchView('places');toggleMobileMenu()" data-view="places">
-                <span class="nav-icon">⌂</span> Lugares
+            <button onclick="switchView('goals');toggleMobileMenu()" data-view="goals">
+                <span class="nav-icon">◉</span> Objetivos
             </button>
             <button onclick="switchView('documents');toggleMobileMenu()" data-view="documents">
                 <span class="nav-icon">📄</span> Documentos
@@ -1875,12 +2061,13 @@
             <button class="vault-btn" onclick="openVault();toggleMobileMenu()" data-view="vault">
                 <span class="nav-icon">◈</span> Vault
             </button>
+
+            <span class="nav-label">Sistema</span>
+            <button onclick="switchView('settings');toggleMobileMenu()" data-view="settings">
+                <span class="nav-icon">⚙</span> Ajustes
+            </button>
         </div>
         <div class="menu-actions">
-            <button onclick="exportData()" title="Exportar">⬇</button>
-            <button onclick="document.getElementById('import-input').click()" title="Importar">⬆</button>
-            <button onclick="toggleTheme()" title="Tema">◐</button>
-            <button onclick="toggleMode()" title="Modo">⊞</button>
             <button onclick="handleLogout()" title="Cerrar sesión">⏻</button>
         </div>
     </div>
@@ -1896,11 +2083,14 @@
     ============================================================ -->
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
     <input type="file" id="doc-upload-input" accept="application/pdf" style="display:none" onchange="handleDocUpload(event)">
+    <input type="file" id="fantasy-import-input" accept=".json" style="display:none" onchange="importFantasyData(event)">
 
     <!-- ============================================================
-    SUPABASE
+    SUPABASE + CHART.JS
     ============================================================ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
     <script>
         // ============================================================
@@ -1930,8 +2120,7 @@
             await startApp();
         }
 
-        async function handleLogout() {
-            await sb.auth.signOut();
+        function resetToLoginScreen() {
             document.getElementById('app').classList.remove('ready');
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('login-email').value = '';
@@ -1939,11 +2128,32 @@
             showAuthMode('login');
         }
 
+        async function handleLogout() {
+            await sb.auth.signOut();
+            resetToLoginScreen();
+        }
+
+        async function handleLogoutAllDevices() {
+            const confirmed = confirm('Esto cerrará tu sesión en todos los dispositivos donde hayas iniciado sesión. ¿Continuar?');
+            if (!confirmed) return;
+            try {
+                await sb.auth.signOut({ scope: 'global' });
+            } catch (e) {
+                console.error('Error cerrando sesión global:', e);
+            }
+            resetToLoginScreen();
+            showToast('Sesión cerrada en todos los dispositivos');
+        }
+
         async function startApp() {
             const boot = document.getElementById('boot-loading');
             if (boot) boot.style.display = 'none';
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app').classList.add('ready');
+
+            // Esperar a que el navegador resuelva el layout tras el cambio de display
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
             await init();
         }
 
@@ -2054,10 +2264,11 @@
         })();
 
         // ============================================================
-        //  DATA
+        //  CONSTANTS & DATA
         // ============================================================
         let entries = [];
         let categories = [];
+        let notes = [];
         let editId = null;
         let editType = null;
         let filteredEntries = [];
@@ -2078,7 +2289,8 @@
             EVENT: 'event',
             RESTAURANT: 'restaurant',
             PLACE: 'place',
-            DOCUMENT: 'document'
+            DOCUMENT: 'document',
+            GOAL: 'goal'
         };
 
         const TYPE_ICONS = {
@@ -2092,7 +2304,8 @@
             event: '◈',
             restaurant: '◉',
             place: '⌂',
-            document: '📄'
+            document: '📄',
+            goal: '◉'
         };
 
         const TYPE_LABELS = {
@@ -2105,7 +2318,8 @@
             project: 'Proyecto',
             event: 'Evento',
             place: 'Lugar',
-            document: 'Documento'
+            document: 'Documento',
+            goal: 'Objetivo'
         };
 
         const VIEW_LABELS = {
@@ -2124,45 +2338,118 @@
             documents: 'Documentos',
             investments: 'Finanzas',
             fantasy: 'Fantasy',
-            vault: 'Vault'
+            vault: 'Vault',
+            notes: 'Notas',
+            goals: 'Objetivos',
+            settings: 'Ajustes'
         };
 
-        const NON_CALENDAR_TYPES = ['document', 'restaurant', 'place'];
+        const NON_CALENDAR_TYPES = ['document', 'restaurant', 'place', 'goal'];
+
+        const VIEW_TO_ENTRY_TYPE = {
+            calendar: null,
+            home: null,
+            stats: null,
+            books: 'book',
+            movies: 'movie',
+            series: 'series',
+            games: 'game',
+            travels: 'travel',
+            work: 'work',
+            projects: 'project',
+            events: 'event',
+            places: 'place',
+            documents: null,
+            investments: null,
+            fantasy: null,
+            vault: null,
+            notes: null,
+            goals: 'goal',
+            settings: null
+        };
+
+        const TYPE_GENDER = {
+            book: 'o', movie: 'a', series: 'a', game: 'o', travel: 'o',
+            work: 'o', project: 'o', event: 'o', place: 'o', document: 'o', goal: 'o'
+        };
 
         // ============================================================
-        //  WIKILINKS
+        //  UTILITY FUNCTIONS
         // ============================================================
+        function todayISO() { return new Date().toISOString().slice(0, 10); }
+
+        function formatNoteTitle(dateISO) {
+            const [y, m, d] = dateISO.split('-');
+            return '#' + d + '/' + m + '/' + y;
+        }
+
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = str || '';
             return div.innerHTML;
         }
 
+        // ============================================================
+        //  WIKILINKS
+        // ============================================================
+        function resolveWikilink(label) {
+            const clean = label.trim();
+
+            // ¿Es una nota? (formato #dd/mm/yyyy)
+            const noteMatch = clean.match(/^#(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (noteMatch) {
+                const d = noteMatch[1],
+                    m = noteMatch[2],
+                    y = noteMatch[3];
+                const iso = y + '-' + m + '-' + d;
+                const note = notes.find(n => n.date === iso);
+                if (note) return { type: 'note', id: note.id };
+                return null;
+            }
+
+            // ¿Es una entrada por título exacto?
+            const entry = entries.find(e => (e.title || '').toLowerCase() === clean.toLowerCase());
+            if (entry) return { type: 'entry', id: entry.id };
+
+            return null;
+        }
+
+        function linkifyWikilinks(text) {
+            if (!text) return '';
+            return text.replace(/\[\[(.+?)\]\]/g, (match, label) => {
+                const target = resolveWikilink(label);
+                if (!target) {
+                    return '<span class="wikilink wikilink-broken" title="No se encontró ninguna entrada o nota con este título">[[' + escapeHtml(
+                        label) + ']]</span>';
+                }
+                const onclick = target.type === 'note' ?
+                    "openReadNote('" + target.id + "')" :
+                    "openEditEntry('" + target.id + "')";
+                return '<a href="javascript:void(0)" class="wikilink" onclick="' + onclick + '">' + escapeHtml(label) +
+                    '</a>';
+            });
+        }
+
         function parseWikiLinks(text) {
             if (!text) return [];
             const matches = [...text.matchAll(/\[\[(.+?)\]\]/g)];
             const ids = matches
-                .map(m => entries.find(e => (e.title || '').toLowerCase() === m[1].trim().toLowerCase()))
-                .filter(Boolean)
-                .map(e => e.id);
+                .map(m => {
+                    const target = resolveWikilink(m[1].trim());
+                    return target ? target.id : null;
+                })
+                .filter(Boolean);
             return [...new Set(ids)];
         }
 
         function linkifyText(text) {
             if (!text) return '';
             const escaped = escapeHtml(text);
-            return escaped.replace(/\[\[(.+?)\]\]/g, (match, rawTitle) => {
-                const title = rawTitle.trim();
-                const target = entries.find(e => (e.title || '').toLowerCase() === title.toLowerCase());
-                if (!target) {
-                    return `<span class="wikilink wikilink-missing" title="No existe ninguna entrada con este título">[[${title}]]</span>`;
-                }
-                return `<span class="wikilink" onclick="event.stopPropagation();openEntryFromLink('${target.id}')">${title}</span>`;
-            }).replace(/\n/g, '<br>');
+            return linkifyWikilinks(escaped).replace(/\n/g, '<br>');
         }
 
         function getBacklinks(entryId) {
-            return entries.filter(e => e.id !== entryId && parseWikiLinks(e.notes).includes(entryId));
+            return entries.filter(e => e.id !== entryId && parseWikiLinks(e.notes || '').includes(entryId));
         }
 
         function openEntryFromLink(entryId) {
@@ -2198,20 +2485,33 @@
                 return haystack.includes(q);
             }).slice(0, 30);
 
-            if (!matches.length) {
+            // También buscar en notas
+            const noteMatches = notes.filter(n => {
+                return n.content.toLowerCase().includes(q) || formatNoteTitle(n.date).toLowerCase().includes(q);
+            }).slice(0, 10);
+
+            const allMatches = [...matches, ...noteMatches];
+
+            if (!allMatches.length) {
                 resultsEl.innerHTML = `<div class="search-empty">Sin resultados para "${escapeHtml(q)}"</div>`;
                 return;
             }
 
-            resultsEl.innerHTML = matches.map(e => `
-                <div class="search-result-item" onclick="closeSearch();openEntryFromLink('${e.id}')">
-                    <span class="search-result-icon">${TYPE_ICONS[e.type] || '◈'}</span>
-                    <div>
-                        <div class="search-result-title">${escapeHtml(e.title)}</div>
-                        <div class="search-result-meta">${TYPE_LABELS[e.type] || ''}${e.date ? ' · ' + e.date : ''}</div>
+            resultsEl.innerHTML = allMatches.map(e => {
+                const isNote = e.content !== undefined;
+                const icon = isNote ? '✎' : (TYPE_ICONS[e.type] || '◈');
+                const label = isNote ? formatNoteTitle(e.date) : (TYPE_LABELS[e.type] || '');
+                const onclick = isNote ? "openReadNote('" + e.id + "')" : "openEntryFromLink('" + e.id + "')";
+                return `
+                    <div class="search-result-item" onclick="closeSearch();${onclick}">
+                        <span class="search-result-icon">${icon}</span>
+                        <div>
+                            <div class="search-result-title">${isNote ? formatNoteTitle(e.date) : escapeHtml(e.title)}</div>
+                            <div class="search-result-meta">${label}${e.date ? ' · ' + e.date : ''}</div>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         document.addEventListener('keydown', function(e) {
@@ -2224,7 +2524,7 @@
         });
 
         // ============================================================
-        //  DEFAULT COLORS
+        //  DEFAULT COLORS & CATEGORIES
         // ============================================================
         const DEFAULT_COLORS = [
             '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
@@ -2232,21 +2532,43 @@
             '#fd79a8', '#0984e3', '#fdcb6e', '#00cec9', '#a29bfe'
         ];
 
+        function getDefaultCategories() {
+            return [
+                { id: 'cat_general', name: 'General', color: '#6b7280' },
+                { id: 'cat_viaje', name: 'Viaje', color: '#e84393' },
+                { id: 'cat_proyecto', name: 'Proyecto', color: '#00b894' },
+                { id: 'cat_trabajo', name: 'Trabajo', color: '#e67e22' },
+                { id: 'cat_libro', name: 'Libro', color: '#3498db' },
+                { id: 'cat_pelicula', name: 'Película', color: '#f39c12' },
+                { id: 'cat_serie', name: 'Serie', color: '#9b59b6' },
+                { id: 'cat_videojuego', name: 'Videojuego', color: '#e74c3c' },
+                { id: 'cat_evento', name: 'Evento', color: '#ec4899' },
+                { id: 'cat_restaurante', name: 'Restaurante', color: '#f59e0b' },
+                { id: 'cat_lugar', name: 'Lugar', color: '#14b8a6' },
+            ];
+        }
+
         // ============================================================
         //  LOAD / SAVE (SUPABASE)
         // ============================================================
         async function loadData() {
             try {
                 const { data: { user } } = await sb.auth.getUser();
-                if (!user) { entries = [];
+                if (!user) {
+                    entries = [];
                     categories = getDefaultCategories();
+                    notes = [];
                     userName = '';
-                    filteredEntries = []; return true; }
+                    filteredEntries = [];
+                    investmentData = { initial: 0, rate: 7, monthly: 0 };
+                    return true;
+                }
                 const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
                 if (error) throw error;
                 const saved = (data && data.data) ? data.data : {};
                 entries = saved.entries || [];
                 categories = saved.categories || getDefaultCategories();
+                notes = saved.notes || [];
                 userName = saved.userName || '';
                 investmentData = saved.investmentData || { initial: 0, rate: 7, monthly: 0 };
             } catch (e) {
@@ -2274,7 +2596,7 @@
             if (!user) throw new Error('No hay sesión activa');
             const { error } = await sb.from('bitacora').upsert({
                 user_id: user.id,
-                data: { entries, categories, userName, investmentData },
+                data: { entries, categories, userName, investmentData, notes },
                 updated_at: new Date().toISOString()
             });
             if (error) throw error;
@@ -2299,6 +2621,7 @@
                 btn.onclick = editUserName;
                 titleEl.appendChild(btn);
             }
+            updateAddButton();
         }
 
         async function editUserName() {
@@ -2317,22 +2640,23 @@
         }
 
         // ============================================================
-        //  DEFAULT CATEGORIES
+        //  ADD BUTTON
         // ============================================================
-        function getDefaultCategories() {
-            return [
-                { id: 'cat_general', name: 'General', color: '#6b7280' },
-                { id: 'cat_viaje', name: 'Viaje', color: '#e84393' },
-                { id: 'cat_proyecto', name: 'Proyecto', color: '#00b894' },
-                { id: 'cat_trabajo', name: 'Trabajo', color: '#e67e22' },
-                { id: 'cat_libro', name: 'Libro', color: '#3498db' },
-                { id: 'cat_pelicula', name: 'Película', color: '#f39c12' },
-                { id: 'cat_serie', name: 'Serie', color: '#9b59b6' },
-                { id: 'cat_videojuego', name: 'Videojuego', color: '#e74c3c' },
-                { id: 'cat_evento', name: 'Evento', color: '#ec4899' },
-                { id: 'cat_restaurante', name: 'Restaurante', color: '#f59e0b' },
-                { id: 'cat_lugar', name: 'Lugar', color: '#14b8a6' },
-            ];
+        function updateAddButton() {
+            const btn = document.getElementById('add-section-btn');
+            if (!btn) return;
+            const type = VIEW_TO_ENTRY_TYPE[currentView];
+            if (type) {
+                btn.style.display = 'flex';
+                btn.onclick = () => openNewEntry(type);
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function openSectionAdd() {
+            const type = VIEW_TO_ENTRY_TYPE[currentView];
+            if (type) openNewEntry(type);
         }
 
         // ============================================================
@@ -2344,7 +2668,6 @@
             const theme = localStorage.getItem('bitacora_theme') || 'dark';
             THEMES.forEach(t => document.body.classList.remove(t));
             if (theme !== 'dark') document.body.classList.add(theme);
-            updateThemeIcon(theme);
         }
 
         function toggleTheme() {
@@ -2354,12 +2677,7 @@
             THEMES.forEach(t => document.body.classList.remove(t));
             if (next !== 'dark') document.body.classList.add(next);
             localStorage.setItem('bitacora_theme', next);
-            updateThemeIcon(next);
-        }
-
-        function updateThemeIcon(theme) {
-            const icons = { dark: '◐', light: '☀', beige: '◐' };
-            document.getElementById('theme-btn').textContent = icons[theme] || '◐';
+            showToast('Tema cambiado a ' + next);
         }
 
         let modeWide = false;
@@ -2367,6 +2685,10 @@
         function toggleMode() {
             modeWide = !modeWide;
             document.getElementById('app').style.maxWidth = modeWide ? '100%' : '1200px';
+        }
+
+        function toggleDeveloperMode() {
+            showToast('Modo desarrollador (sin funciones todavía)');
         }
 
         // ============================================================
@@ -2393,6 +2715,10 @@
             });
             updatePageTitle();
             render();
+            // Cerrar mobile menu si está abierto
+            if (document.getElementById('mobile-menu-panel').classList.contains('open')) {
+                toggleMobileMenu();
+            }
         }
 
         // ============================================================
@@ -2449,11 +2775,6 @@
         // ============================================================
         //  RENDER ENTRY MODAL
         // ============================================================
-        const TYPE_GENDER = {
-            book: 'o', movie: 'a', series: 'a', game: 'o', travel: 'o',
-            work: 'o', project: 'o', event: 'o', place: 'o', document: 'o'
-        };
-
         function renderBacklinksBlock(entryId) {
             const backlinks = getBacklinks(entryId);
             if (!backlinks.length) return '';
@@ -2590,7 +2911,10 @@
                         <div><div class="modal-label">Fecha fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
                     </div>
                     <div class="modal-label">Horario</div>
-                    <input id="modal-schedule" class="modal-input" value="${isEdit ? entry.schedule || '' : ''}" placeholder="L-V 9:00-18:00">
+                    <div class="modal-row">
+                        <div><div class="modal-label" style="margin-top:4px">Entrada</div><input type="time" id="modal-start-time" class="modal-input" value="${isEdit ? entry.startTime || '' : ''}"></div>
+                        <div><div class="modal-label" style="margin-top:4px">Salida</div><input type="time" id="modal-end-time" class="modal-input" value="${isEdit ? entry.endTime || '' : ''}"></div>
+                    </div>
                     <div class="modal-label">Salario (€/mes, opcional)</div>
                     <input type="number" id="modal-salary" class="modal-input" value="${isEdit ? entry.salary || '' : ''}" step="0.01" placeholder="0.00">
                     <div class="modal-label">Notas</div>
@@ -2598,7 +2922,7 @@
                 `;
             }
 
-            // ===== PROJECT (sin presupuesto) =====
+            // ===== PROJECT =====
             else if (type === 'project') {
                 extraFields = `
                     <div class="modal-label">Descripción</div>
@@ -2644,16 +2968,6 @@
                 `;
             }
 
-            // ===== RESTAURANT =====
-            else if (type === 'restaurant') {
-                extraFields = `
-                    <div class="modal-label">Fecha</div>
-                    <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
-                    <div class="modal-label">Notas</div>
-                    <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
-                `;
-            }
-
             // ===== PLACE =====
             else if (type === 'place') {
                 extraFields = `
@@ -2671,6 +2985,27 @@
                     <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
                     <div class="modal-label">Notas</div>
                     <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
+                `;
+            }
+
+            // ===== GOAL =====
+            else if (type === 'goal') {
+                const statuses = ['Pendiente', 'En progreso', 'Completado'];
+                extraFields = `
+                    <div class="modal-label">Plazo</div>
+                    <select id="modal-term" class="modal-input">
+                        <option value="short" ${isEdit && entry.term === 'short' ? 'selected' : ''}>Corto plazo</option>
+                        <option value="medium" ${isEdit && entry.term === 'medium' ? 'selected' : ''}>Medio plazo</option>
+                        <option value="long" ${isEdit && entry.term === 'long' ? 'selected' : ''}>Largo plazo</option>
+                    </select>
+                    <div class="modal-label">Estado</div>
+                    <select id="modal-goal-status" class="modal-input">
+                        ${statuses.map(s => `<option value="${s}" ${isEdit && entry.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                    </select>
+                    <div class="modal-label">Etiquetas (separadas por comas)</div>
+                    <input id="modal-tags" class="modal-input" value="${isEdit ? (entry.tags || []).join(', ') : ''}" placeholder="p.ej. personal, trabajo, 2026">
+                    <div class="modal-label">Notas</div>
+                    <textarea id="modal-notes" class="modal-input" rows="3">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
             }
 
@@ -2769,13 +3104,16 @@
                 entry.date = entry.startDate || entry.endDate || '';
                 entry.companions = document.getElementById('modal-companions')?.value?.trim() || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+                entry.expenses = window._expenses || [];
             } else if (type === 'work') {
                 entry.company = document.getElementById('modal-company')?.value?.trim() || '';
                 entry.position = document.getElementById('modal-position')?.value?.trim() || '';
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.endDate = document.getElementById('modal-end')?.value || '';
+                entry.startTime = document.getElementById('modal-start-time')?.value || '';
+                entry.endTime = document.getElementById('modal-end-time')?.value || '';
                 entry.date = entry.startDate || entry.endDate || '';
-                entry.schedule = document.getElementById('modal-schedule')?.value?.trim() || '';
+                entry.schedule = (entry.startTime ? entry.startTime : '') + (entry.endTime ? ' - ' + entry.endTime : '');
                 entry.salary = parseFloat(document.getElementById('modal-salary')?.value) || null;
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 entry.status = entry.endDate ? 'Completado' : 'Trabajo actual';
@@ -2798,9 +3136,19 @@
                 entry.time = document.getElementById('modal-time')?.value || '';
                 entry.place = document.getElementById('modal-place')?.value?.trim() || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
-            } else if (type === 'restaurant' || type === 'place' || type === 'document') {
+            } else if (type === 'place') {
                 entry.date = document.getElementById('modal-date')?.value || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+            } else if (type === 'document') {
+                entry.date = document.getElementById('modal-date')?.value || '';
+                entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+            } else if (type === 'goal') {
+                entry.term = document.getElementById('modal-term')?.value || 'short';
+                entry.status = document.getElementById('modal-goal-status')?.value || 'Pendiente';
+                entry.tags = (document.getElementById('modal-tags')?.value || '')
+                    .split(',').map(t => t.trim()).filter(Boolean);
+                entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+                entry.date = entry.date || todayISO();
             }
 
             if (editId) {
@@ -2835,7 +3183,8 @@
                 event: 'cat_evento',
                 restaurant: 'cat_restaurante',
                 place: 'cat_lugar',
-                document: 'cat_general'
+                document: 'cat_general',
+                goal: 'cat_general'
             };
             const id = map[type] || 'cat_general';
             return categories.find(c => c.id === id)?.id || 'cat_general';
@@ -2860,51 +3209,10 @@
         }
 
         // ============================================================
-        //  EXPORT / IMPORT
-        // ============================================================
-        function exportData() {
-            const data = { entries, categories, userName };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `bitacora_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Exportado');
-        }
-
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (data.entries) entries = data.entries;
-                    if (data.categories) categories = data.categories;
-                    if (data.userName) userName = data.userName;
-                    filteredEntries = [...entries];
-                    render();
-                    updatePageTitle();
-                    try {
-                        await saveData();
-                        showToast('Importado correctamente');
-                    } catch (saveErr) {
-                        console.error('Error guardando la importación en Supabase:', saveErr);
-                        showToast('Importado localmente, pero no se pudo guardar en la nube.', true);
-                    }
-                } catch (err) {
-                    showToast('Error al importar', true);
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        }
-
-        // ============================================================
         //  EXPENSE ROWS (TRAVEL)
         // ============================================================
+        window._expenses = [];
+
         function renderExpenseRow(exp, index) {
             return `
                 <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
@@ -2913,8 +3221,6 @@
                     <button onclick="removeExpense(${index})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px">✕</button>
                 </div>`;
         }
-
-        window._expenses = [];
 
         function addExpenseRow() {
             const list = document.getElementById('expenses-list');
@@ -2951,6 +3257,90 @@
         }
 
         // ============================================================
+        //  EXPORT / IMPORT
+        // ============================================================
+        function exportData() {
+            const data = { entries, categories, userName, investmentData, notes };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bitacora_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exportado');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.entries) entries = data.entries;
+                    if (data.categories) categories = data.categories;
+                    if (data.userName) userName = data.userName;
+                    if (data.notes) notes = data.notes;
+                    if (data.investmentData) investmentData = data.investmentData;
+                    filteredEntries = [...entries];
+                    render();
+                    updatePageTitle();
+                    try {
+                        await saveData();
+                        showToast('Importado correctamente');
+                    } catch (saveErr) {
+                        console.error('Error guardando la importación en Supabase:', saveErr);
+                        showToast('Importado localmente, pero no se pudo guardar en la nube.', true);
+                    }
+                } catch (err) {
+                    showToast('Error al importar', true);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ============================================================
+        //  FANTASY EXPORT / IMPORT
+        // ============================================================
+        function exportFantasyData() {
+            const blob = new Blob([JSON.stringify(fantasyData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'fantasy_' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Fantasy exportado');
+        }
+
+        function importFantasyData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.usuarios || !data.transacciones) {
+                        showToast('El archivo no tiene el formato esperado de Fantasy', true);
+                        return;
+                    }
+                    fantasyData = data;
+                    recalcFantasyBalances();
+                    saveFantasyData();
+                    document.getElementById('content').innerHTML = renderFantasy();
+                    renderFantasyChart();
+                    showToast('Fantasy importado correctamente');
+                } catch (err) {
+                    showToast('Error al importar el archivo de Fantasy', true);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ============================================================
         //  RENDER
         // ============================================================
         function render() {
@@ -2971,6 +3361,10 @@
                 loadDocuments(); } else if (currentView === 'investments') content.innerHTML = renderInvestments();
             else if (currentView === 'fantasy') { content.innerHTML = renderFantasy();
                 renderFantasyChart(); } else if (currentView === 'vault') content.innerHTML = renderVault();
+            else if (currentView === 'notes') content.innerHTML = renderNotes();
+            else if (currentView === 'goals') content.innerHTML = renderGoals();
+            else if (currentView === 'settings') content.innerHTML = renderSettings();
+            updateAddButton();
         }
 
         // ============================================================
@@ -3110,12 +3504,25 @@
                 const catName = cat?.name || 'Sin categoría';
                 const icon = TYPE_ICONS[e.type] || '◈';
 
+                let titleHtml, metaHtml;
+
+                if (e.type === 'work') {
+                    const start = e.startTime || '';
+                    const end = e.endTime || '';
+                    const scheduleText = (start || end) ? ` de ${start || '--'} a ${end || '--'}` : '';
+                    titleHtml = `${icon} Trabajando en ${e.company || 'empresa sin nombre'}${scheduleText}`;
+                    metaHtml = e.position || catName;
+                } else {
+                    titleHtml = `${icon} ${e.title}`;
+                    metaHtml = `${catName}${e.notes ? ' · ' + linkifyText(e.notes) : ''}`;
+                }
+
                 html += `
                 <div class="entry-item" onclick="openEditEntry('${e.id}')">
                     <div class="entry-color-dot" style="background:${color}"></div>
                     <div class="entry-info">
-                        <div class="entry-title">${icon} ${e.title}</div>
-                        <div class="entry-meta">${catName}${e.notes ? ' · ' + linkifyText(e.notes) : ''}</div>
+                        <div class="entry-title">${titleHtml}</div>
+                        <div class="entry-meta">${metaHtml}</div>
                     </div>
                     <div class="entry-actions">
                         <button onclick="event.stopPropagation();openEditEntry('${e.id}')">✎</button>
@@ -3187,6 +3594,8 @@
                     <div class="card"><div class="card-title">Videojuegos</div><div class="card-value">${entries.filter(e=>e.type==='game').length}</div></div>
                     <div class="card"><div class="card-title">Viajes</div><div class="card-value">${entries.filter(e=>e.type==='travel').length}</div></div>
                     <div class="card"><div class="card-title">Proyectos activos</div><div class="card-value">${activeProjects.length}</div></div>
+                    <div class="card"><div class="card-title">Notas</div><div class="card-value">${notes.length}</div></div>
+                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${entries.filter(e=>e.type==='goal').length}</div></div>
                 </div>
 
                 ${upcoming.length ? `
@@ -3265,6 +3674,8 @@
                     <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${byType.project || 0}</div></div>
                     <div class="card"><div class="card-title">Eventos</div><div class="card-value">${byType.event || 0}</div></div>
                     <div class="card"><div class="card-title">Lugares</div><div class="card-value">${byType.place || 0}</div></div>
+                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${byType.goal || 0}</div></div>
+                    <div class="card"><div class="card-title">Notas</div><div class="card-value">${notes.length}</div></div>
                 </div>`;
 
             if (sortedMonths.length) {
@@ -3514,6 +3925,8 @@
                 const daysHere = daysBetween(w.startDate, effectiveEnd);
                 const statusClass = isActive ? 'badge-progress' : 'badge-done';
                 const statusLabel = isActive ? `Trabajando en ${w.title}` : (w.status || 'Finalizado');
+                const scheduleText = (w.startTime || w.endTime) ? `${w.startTime || '--'} - ${w.endTime || '--'}` : (w
+                    .schedule || '');
                 html += `
                     <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEditEntry('${w.id}')">
                         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -3525,7 +3938,7 @@
                             <span class="badge ${statusClass}">${statusLabel}</span>
                             <span style="font-size:12px;color:var(--text-secondary)">${daysHere} días</span>
                         </div>
-                        ${w.schedule ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.schedule}</div>` : ''}
+                        ${scheduleText ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${scheduleText}</div>` : ''}
                         ${w.salary ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.salary}€/mes</div>` : ''}
                         ${w.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(w.notes)}</div>` : ''}
                         <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
@@ -3641,6 +4054,191 @@
         }
 
         // ============================================================
+        //  RENDER: SETTINGS
+        // ============================================================
+        function renderSettings() {
+            return `
+                <div style="max-width:600px">
+                    <div class="chart-container" style="margin-bottom:16px">
+                        <div class="chart-title">Datos de la cuenta</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                            <button class="btn-secondary" style="width:auto" onclick="exportData()">📤 Exportar datos</button>
+                            <button class="btn-secondary" style="width:auto" onclick="document.getElementById('import-input').click()">📥 Importar datos</button>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Exporta o importa todos tus datos (entradas, categorías, notas, etc.) en formato JSON.</div>
+                    </div>
+
+                    <div class="chart-container" style="margin-bottom:16px">
+                        <div class="chart-title">Apariencia</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                            <button class="btn-secondary" style="width:auto" onclick="toggleTheme()">◐ Cambiar tema</button>
+                            <button class="btn-secondary" style="width:auto" onclick="toggleMode()">⊞ Alternar modo ancho</button>
+                        </div>
+                    </div>
+
+                    <div class="chart-container" style="margin-bottom:16px">
+                        <div class="chart-title">Avanzado</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                            <button class="btn-secondary" style="width:auto" onclick="toggleDeveloperMode()">⚙ Modo desarrollador</button>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Por ahora solo es un botón de prueba. En futuras versiones habrá herramientas adicionales.</div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title" style="color:#dc2626">Zona de riesgo</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                            <button class="btn-secondary" style="width:auto;color:#dc2626" onclick="handleLogoutAllDevices()">⏻ Cerrar sesión en todos los dispositivos</button>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Esto cerrará tu sesión en todos los navegadores y dispositivos donde hayas iniciado sesión.</div>
+                    </div>
+                </div>`;
+        }
+
+        // ============================================================
+        //  RENDER: NOTES
+        // ============================================================
+        function renderNotes() {
+            const sorted = [...notes].sort((a, b) => b.date.localeCompare(a.date));
+
+            if (!sorted.length) {
+                return `
+                    <div style="display:flex;justify-content:flex-start;margin-bottom:16px">
+                        <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir</button>
+                    </div>
+                    <div class="empty-state">
+                        <div class="empty-icon">✎</div>
+                        <div class="empty-title">Todavía no hay notas</div>
+                        <div class="empty-sub">Pulsa "Escribir" para crear la nota de hoy.</div>
+                    </div>`;
+            }
+
+            return `
+                <div style="display:flex;justify-content:flex-start;margin-bottom:16px">
+                    <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir</button>
+                </div>
+                <div class="notes-grid">
+                    ${sorted.map(n => `
+                        <div class="note-card" onclick="openReadNote('${n.id}')">
+                            <div class="note-card-title">${formatNoteTitle(n.date)}</div>
+                        </div>
+                    `).join('')}
+                </div>`;
+        }
+
+        function openWriteNote() {
+            const today = todayISO();
+            let note = notes.find(n => n.date === today);
+            if (!note) {
+                note = { id: 'note_' + Date.now(), date: today, content: '', createdAt: new Date().toISOString() };
+                notes.push(note);
+                saveData();
+            }
+            openReadNote(note.id);
+        }
+
+        function openReadNote(id) {
+            const note = notes.find(n => n.id === id);
+            if (!note) return;
+            window.openNoteId = id;
+            document.getElementById('content').innerHTML = renderNoteDetail(note);
+        }
+
+        function renderNoteDetail(note) {
+            const editable = note.date === todayISO();
+            const content = note.content || '';
+
+            return `
+                <div class="note-detail">
+                    <button class="btn-secondary" style="width:auto;padding:6px 14px;margin-bottom:16px" onclick="closeNoteDetail()">← Volver</button>
+                    <div class="note-detail-title">${formatNoteTitle(note.date)}</div>
+                    ${editable ? `
+                        <textarea id="note-content-input" class="note-textarea" placeholder="Escribe tu nota del día..." oninput="autoSaveNote('${note.id}', this.value)">${escapeHtml(content)}</textarea>
+                        <div class="note-detail-hint">Esta nota es editable solo hoy. Se guarda automáticamente.</div>
+                    ` : `
+                        <div class="note-readonly">${content ? linkifyText(content) : '<span style="color:var(--text-muted)">(Nota vacía)</span>'}</div>
+                        <div class="note-detail-hint">Esta nota ya no es editable (se escribió ${note.date}).</div>
+                    `}
+                </div>`;
+        }
+
+        function closeNoteDetail() {
+            window.openNoteId = null;
+            document.getElementById('content').innerHTML = renderNotes();
+        }
+
+        let noteSaveTimer;
+
+        function autoSaveNote(id, value) {
+            const note = notes.find(n => n.id === id);
+            if (!note || note.date !== todayISO()) return;
+            note.content = value;
+            clearTimeout(noteSaveTimer);
+            noteSaveTimer = setTimeout(async () => {
+                try { await saveData(); } catch (e) { console.error('Error guardando nota:', e); }
+            }, 800);
+        }
+
+        // ============================================================
+        //  RENDER: GOALS
+        // ============================================================
+        function renderGoals() {
+            const goals = entries.filter(e => e.type === 'goal');
+            const groups = [
+                { key: 'short', label: 'Corto plazo' },
+                { key: 'medium', label: 'Medio plazo' },
+                { key: 'long', label: 'Largo plazo' }
+            ];
+
+            if (!goals.length) {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-icon">◉</div>
+                        <div class="empty-title">Sin objetivos</div>
+                        <div class="empty-sub">Pulsa el botón + y selecciona "Objetivo"</div>
+                    </div>`;
+            }
+
+            let html = `<div style="max-width:700px">`;
+
+            groups.forEach(g => {
+                const items = goals.filter(e => e.term === g.key);
+                if (!items.length) return;
+
+                html += `
+                    <div style="margin-bottom:24px">
+                        <div class="modal-label" style="margin-bottom:8px">${g.label}</div>`;
+
+                items.forEach(e => {
+                    const cat = categories.find(c => c.id === e.categoryId);
+                    const color = cat?.color || 'var(--text-secondary)';
+                    const statusClass = e.status === 'Completado' ? 'badge-done' :
+                        e.status === 'En progreso' ? 'badge-progress' : 'badge-pending';
+                    const tags = (e.tags || []).map(t => `<span class="badge badge-default">${escapeHtml(t)}</span>`)
+                        .join(' ');
+
+                    html += `
+                        <div class="entry-item" onclick="openEditEntry('${e.id}')">
+                            <div class="entry-color-dot" style="background:${color}"></div>
+                            <div class="entry-info">
+                                <div class="entry-title">${e.title}</div>
+                                <div class="entry-meta">${tags} ${e.notes ? ' · ' + linkifyText(e.notes) : ''}</div>
+                            </div>
+                            <span class="badge ${statusClass}">${e.status}</span>
+                            <div class="entry-actions">
+                                <button onclick="event.stopPropagation();openEditEntry('${e.id}')">✎</button>
+                                <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')">✕</button>
+                            </div>
+                        </div>`;
+                });
+
+                html += `</div>`;
+            });
+
+            html += `</div>`;
+            return html;
+        }
+
+        // ============================================================
         //  RENDER: INVESTMENTS
         // ============================================================
         let investmentChartYears = 10;
@@ -3708,14 +4306,24 @@
                         </div>
                     </div>
                     <div class="investment-chart">
-                        ${proj.yearlySnapshots.map((s, i) => `
-                            <div class="bar" title="Año ${s.year}: ${s.balance.toLocaleString('es-ES')}€">
-                                <div class="bar-track">
-                                    <div class="bar-fill" style="height:${Math.max(4, (s.balance/max)*100)}%;background:${s.balance > proj.totalContributed ? 'var(--accent)' : 'var(--text-secondary)'}"></div>
+                        ${proj.yearlySnapshots.map((s, i) => {
+                            const balancePct = Math.max(4, (s.balance / max) * 100);
+                            const contribPct = Math.max(0, (s.contributed / max) * 100);
+                            const interestPct = Math.max(0, balancePct - contribPct);
+                            return `
+                                <div class="bar" title="Año ${s.year}: ${s.balance.toLocaleString('es-ES')}€ (${s.contributed.toLocaleString('es-ES')}€ aportados, ${s.interest.toLocaleString('es-ES')}€ intereses)">
+                                    <div class="bar-track">
+                                        <div class="bar-fill-contrib" style="height:${contribPct}%"></div>
+                                        <div class="bar-fill-interest" style="height:${interestPct}%;bottom:${contribPct}%"></div>
+                                    </div>
+                                    <div class="bar-label">${shouldShowYearLabel(i, proj.yearlySnapshots.length) ? s.year : ''}</div>
                                 </div>
-                                <div class="bar-label">${shouldShowYearLabel(i, proj.yearlySnapshots.length) ? s.year : ''}</div>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="chart-legend">
+                        <span><span class="legend-dot" style="background:var(--text-secondary)"></span> Aportaciones</span>
+                        <span><span class="legend-dot" style="background:var(--accent)"></span> Intereses</span>
                     </div>
                 </div>
             </div>`;
@@ -3754,12 +4362,20 @@
             const monthlyRate = annualRatePct / 100 / 12;
             const months = years * 12;
             let balance = principal;
-            const yearlySnapshots = [{ year: 0, balance: Math.round(balance) }];
+            let contributed = principal;
+            const yearlySnapshots = [{ year: 0, balance: Math.round(balance), contributed: Math.round(contributed),
+                interest: 0 }];
 
             for (let m = 1; m <= months; m++) {
                 balance = balance * (1 + monthlyRate) + monthlyContribution;
+                contributed += monthlyContribution;
                 if (m % 12 === 0) {
-                    yearlySnapshots.push({ year: m / 12, balance: Math.round(balance) });
+                    yearlySnapshots.push({
+                        year: m / 12,
+                        balance: Math.round(balance),
+                        contributed: Math.round(contributed),
+                        interest: Math.round(balance - contributed)
+                    });
                 }
             }
             const totalContributed = principal + monthlyContribution * months;
@@ -4033,8 +4649,8 @@
                         <div style="display:flex;gap:6px;flex-wrap:wrap">
                             <button class="btn-secondary" onclick="resetFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">Reiniciar</button>
                             <button class="btn-secondary" onclick="exportFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📤 Exportar</button>
-                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Importar JSON</button>
-                            <button class="btn-secondary" onclick="changeFantasyPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
+                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Importar</button>
+                            <button class="btn-secondary" onclick="changeFantasyPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--fantasy-accent)">🔑 Cambiar contraseña</button>
                         </div>
                     </div>
 
@@ -4085,6 +4701,16 @@
             return html;
         }
 
+        function resetFantasyData() {
+            if (!confirm('¿Reiniciar todos los datos de Fantasy? Esto eliminará todas las transacciones y balances.')) return;
+            fantasyData = getDefaultFantasyData();
+            recalcFantasyBalances();
+            saveFantasyData();
+            render();
+            renderFantasyChart();
+            showToast('Fantasy reiniciado');
+        }
+
         // ============================================================
         //  FANTASY & VAULT: CONTRASEÑAS EN SUPABASE
         // ============================================================
@@ -4122,6 +4748,17 @@
             if (error) throw error;
         }
 
+        function showModal(htmlContent) {
+            const container = document.getElementById('modal-container');
+            container.innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+                    <div class="modal-sheet">
+                        ${htmlContent}
+                    </div>
+                </div>
+            `;
+        }
+
         async function requestPasswordAccess(type, onSuccess) {
             try {
                 const storedHash = await getSecret(type);
@@ -4143,7 +4780,6 @@
                         </div>
                         <div id="pw-create-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
                         <button class="btn-modal-primary" onclick="createPassword('${type}')" style="background:${color}">🔐 Guardar contraseña</button>
-                        <button class="btn-secondary" onclick="closeModal()" style="margin-top:8px">Cancelar</button>
                     `);
                 } else {
                     showModal(`
@@ -4155,7 +4791,6 @@
                         </div>
                         <div id="pw-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
                         <button class="btn-modal-primary" onclick="verifyPassword('${type}')" style="background:${color}">🔓 Entrar</button>
-                        <button class="btn-secondary" onclick="closeModal()" style="margin-top:8px">Cancelar</button>
                     `);
                 }
 
@@ -4222,7 +4857,6 @@
                 if (errorEl) errorEl.textContent = '';
                 showToast(`✅ Acceso concedido a ${type}`);
 
-                // --- CAMBIO DE VISTA ---
                 if (type === 'fantasy') {
                     currentView = 'fantasy';
                     document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
@@ -4239,7 +4873,6 @@
                     updatePageTitle();
                     render();
                 }
-                // ----------------------
 
             } catch (e) {
                 console.error('Error verificando contraseña:', e);
@@ -4248,7 +4881,6 @@
         }
 
         function openFantasy() {
-            // Cargar datos locales antes de pedir contraseña
             loadFantasyData();
             requestPasswordAccess('fantasy', () => {
                 currentView = 'fantasy';
@@ -4291,7 +4923,6 @@
                 </div>
                 <div id="pw-change-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
                 <button class="btn-modal-primary" onclick="updateFantasyPassword()" style="background:var(--fantasy-accent)">🔐 Cambiar contraseña</button>
-                <button class="btn-secondary" onclick="closeModal()" style="margin-top:8px">Cancelar</button>
             `);
         }
 
@@ -4340,7 +4971,6 @@
                 </div>
                 <div id="pw-change-error-v" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
                 <button class="btn-modal-primary" onclick="updateVaultPassword()" style="background:var(--vault-accent)">🔐 Cambiar contraseña</button>
-                <button class="btn-secondary" onclick="closeModal()" style="margin-top:8px">Cancelar</button>
             `);
         }
 
@@ -4497,13 +5127,16 @@
 
                     ${pending.length ? `
                         <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Pendientes</div>
-                        ${pending.map((t, i) => `
-                            <div class="vault-task" onclick="toggleVaultTask(${i})">
-                                <span class="task-check">${t.done ? '✅' : '◯'}</span>
-                                <span class="task-text">${escapeHtml(t.text)}</span>
-                                <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${i})">✕</button>
-                            </div>
-                        `).join('')}
+                        ${pending.map((t, i) => {
+                            const realIdx = vaultTasks.indexOf(t);
+                            return `
+                                <div class="vault-task" onclick="toggleVaultTask(${realIdx})">
+                                    <span class="task-check">${t.done ? '✅' : '◯'}</span>
+                                    <span class="task-text">${escapeHtml(t.text)}</span>
+                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
+                                </div>
+                            `;
+                        }).join('')}
                     ` : ''}
 
                     ${done.length ? `
@@ -4550,23 +5183,6 @@
             saveVaultData();
             render();
             showToast('Tarea eliminada');
-        }
-
-        // ============================================================
-        //  SHOW MODAL
-        // ============================================================
-        function showModal(htmlContent) {
-            const container = document.getElementById('modal-container');
-            container.innerHTML = `
-                <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
-                    <div class="modal-sheet">
-                        ${htmlContent}
-                        <div style="text-align:right; margin-top:12px">
-                            <button class="btn-modal-primary" onclick="closeModal()" style="width:auto; padding:8px 24px;">Cerrar</button>
-                        </div>
-                    </div>
-                </div>
-            `;
         }
 
         // ============================================================
@@ -4626,7 +5242,6 @@
             loadTheme();
             const loaded = await loadData();
 
-            // Inicializar datos de Fantasy y Vault (si no existen)
             if (!loadFantasyData()) {
                 fantasyData = getDefaultFantasyData();
                 recalcFantasyBalances();
@@ -4665,15 +5280,6 @@
                         'none';
                     }, 200);
                 });
-
-                // Input de importación de Fantasy
-                const fantasyInput = document.createElement('input');
-                fantasyInput.type = 'file';
-                fantasyInput.id = 'fantasy-import-input';
-                fantasyInput.accept = '.json';
-                fantasyInput.style.display = 'none';
-                fantasyInput.onchange = importFantasyData;
-                document.body.appendChild(fantasyInput);
             }
 
             if (!loaded) {
@@ -4687,8 +5293,12 @@
                 return;
             }
 
-            render();
-            updatePageTitle();
+            // Forzar render después del layout
+            requestAnimationFrame(() => {
+                render();
+                updatePageTitle();
+                updateAddButton();
+            });
         }
 
         if (window.location.hash) {
