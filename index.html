@@ -1457,7 +1457,7 @@
 
         .notes-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 12px;
         }
         .note-card {
@@ -1483,7 +1483,7 @@
         }
 
         .note-detail {
-            max-width: 100%;
+            max-width: 720px;
             width: 100%;
         }
         .note-detail-title {
@@ -1509,6 +1509,7 @@
             resize: vertical;
             outline: none;
             min-height: 120px;
+            overflow-y: hidden;
         }
         .note-textarea:focus {
             border-color: #cdb98c;
@@ -4127,6 +4128,10 @@
             if (!note) return;
             window.openNoteId = id;
             document.getElementById('content').innerHTML = renderNoteDetail(note);
+            requestAnimationFrame(() => {
+                const ta = document.getElementById('note-content-input');
+                if (ta) autoResizeNote(ta);
+            });
         }
 
         function renderNoteDetail(note) {
@@ -5274,6 +5279,29 @@
                 return;
             }
 
+            let expectedHash;
+            try {
+                expectedHash = await getGlobalDevPasswordHash();
+            } catch (e) {
+                console.error('Error comprobando la contraseña de desarrollador:', e);
+                showToast('No se pudo verificar el acceso. Revisa tu conexión.', true);
+                return;
+            }
+
+            if (!expectedHash) {
+                showModal(`
+                    <div class="modal-title" style="color:var(--fantasy-accent)">⚙ Configura la contraseña de Desarrollador</div>
+                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Todavía no existe una contraseña global. Elige una para proteger el Modo Desarrollador (solo tú deberías conocerla).</div>
+                    <div class="modal-label">Nueva contraseña</div>
+                    <input type="password" id="pw-dev-setup-1" class="modal-input" placeholder="Mínimo 6 caracteres">
+                    <div class="modal-label">Repetir contraseña</div>
+                    <input type="password" id="pw-dev-setup-2" class="modal-input" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')confirmSetupDevPassword()">
+                    <div id="pw-dev-setup-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                    <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmSetupDevPassword()">Guardar y activar</button>
+                `);
+                return;
+            }
+
             showModal(`
                 <div class="modal-title" style="color:var(--fantasy-accent)">⚙ Modo Desarrollador</div>
                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce la contraseña global del Modo Desarrollador para activarlo.</div>
@@ -5284,6 +5312,26 @@
                 <div id="pw-dev-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
                 <button class="btn-modal-primary" onclick="verifyDevPassword()" style="background:var(--fantasy-accent)">🔓 Activar</button>
             `);
+        }
+
+        async function confirmSetupDevPassword() {
+            const pw1 = document.getElementById('pw-dev-setup-1').value;
+            const pw2 = document.getElementById('pw-dev-setup-2').value;
+            const errorEl = document.getElementById('pw-dev-setup-error');
+            if (!pw1 || pw1.length < 6) { errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres'; return; }
+            if (pw1 !== pw2) { errorEl.textContent = 'Las contraseñas no coinciden'; return; }
+            try {
+                const hash = await hashPassword(pw1);
+                await setGlobalDevPasswordHash(hash);
+                closeModal();
+                devModeActive = true;
+                updateSidebarPrivacy();
+                document.getElementById('content').innerHTML = renderSettings();
+                showToast('🔓 Contraseña creada y Modo desarrollador activado');
+            } catch (e) {
+                console.error('Error guardando la contraseña de desarrollador:', e);
+                errorEl.textContent = 'Error de conexión, intenta de nuevo';
+            }
         }
 
         async function verifyDevPassword() {
