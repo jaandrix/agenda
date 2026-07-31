@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
     <title>Bitácora</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         /* ============================================================
                CSS VARIABLES & TEMAS
@@ -1572,6 +1573,54 @@
             margin-top: 8px;
         }
 
+        /* ============================================================
+               CONSOLE / TERMINAL (Prompts)
+            ============================================================ */
+        .console-font {
+            font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+        }
+        .console-textarea {
+            background: #0d0d0d;
+            color: #4ade80;
+            border: 1px solid #1a1a1a;
+            line-height: 1.6;
+            resize: vertical;
+            min-height: 200px;
+        }
+        .console-textarea:focus {
+            border-color: #4ade80;
+            box-shadow: 0 0 0 1px #4ade80;
+        }
+        .prompts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .prompt-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #0d0d0d;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .prompt-card:hover {
+            background: #161616;
+        }
+        .prompt-icon {
+            font-family: 'JetBrains Mono', monospace;
+            color: #4ade80;
+            font-weight: 700;
+        }
+        .prompt-title {
+            font-family: 'JetBrains Mono', monospace;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+
         .nota-final {
             font-size: 24px;
             font-weight: 900;
@@ -1831,7 +1880,7 @@
         <div id="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-icon"></div>
-                <span class="brand-name">Bitácora v0.24</span>
+                <span class="brand-name">Bitácora v0.25</span>
             </div>
 
             <div class="sidebar-nav">
@@ -1913,7 +1962,7 @@
 
                 <!-- Privado -->
                 <span class="nav-label">Privado</span>
-                <button class="fantasy-btn" onclick="openFantasy()" data-view="fantasy">
+                <button class="fantasy-btn" onclick="openFantasy()" data-view="fantasy" id="sidebar-fantasy-btn">
                     <span class="nav-icon">◉</span>
                     <span class="nav-text">Fantasy</span>
                 </button>
@@ -1986,6 +2035,7 @@
         <button onclick="openNewEntry('event')">Evento</button>
         <button onclick="openNewEntry('place')">Lugar</button>
         <button onclick="openNewEntry('goal')">Objetivo</button>
+        <button onclick="openNewEntry('birthday')">Cumpleaños</button>
     </div>
 
     <!-- ============================================================
@@ -2055,7 +2105,7 @@
             </button>
 
             <span class="nav-label">Privado</span>
-            <button class="fantasy-btn" onclick="openFantasy();toggleMobileMenu()" data-view="fantasy">
+            <button class="fantasy-btn" onclick="openFantasy();toggleMobileMenu()" data-view="fantasy" id="mobile-fantasy-btn">
                 <span class="nav-icon">◉</span> Fantasy
             </button>
             <button class="vault-btn" onclick="openVault();toggleMobileMenu()" data-view="vault">
@@ -2084,6 +2134,7 @@
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
     <input type="file" id="doc-upload-input" accept="application/pdf" style="display:none" onchange="handleDocUpload(event)">
     <input type="file" id="fantasy-import-input" accept=".json" style="display:none" onchange="importFantasyData(event)">
+    <input type="file" id="fantasy-import-tx-input" accept=".json" style="display:none" onchange="importFantasyTransactions(event)">
 
     <!-- ============================================================
     SUPABASE + CHART.JS
@@ -2269,11 +2320,13 @@
         let entries = [];
         let categories = [];
         let notes = [];
+        let prompts = [];
         let editId = null;
         let editType = null;
         let filteredEntries = [];
         let userName = '';
         let investmentData = { initial: 0, rate: 7, monthly: 0 };
+        let devModeActive = false;
 
         // ============================================================
         //  ENTRY TYPES
@@ -2290,7 +2343,8 @@
             RESTAURANT: 'restaurant',
             PLACE: 'place',
             DOCUMENT: 'document',
-            GOAL: 'goal'
+            GOAL: 'goal',
+            BIRTHDAY: 'birthday'
         };
 
         const TYPE_ICONS = {
@@ -2305,7 +2359,8 @@
             restaurant: '◉',
             place: '⌂',
             document: '📄',
-            goal: '◉'
+            goal: '◉',
+            birthday: '🎂'
         };
 
         const TYPE_LABELS = {
@@ -2319,7 +2374,8 @@
             event: 'Evento',
             place: 'Lugar',
             document: 'Documento',
-            goal: 'Objetivo'
+            goal: 'Objetivo',
+            birthday: 'Cumpleaños'
         };
 
         const VIEW_LABELS = {
@@ -2370,7 +2426,7 @@
 
         const TYPE_GENDER = {
             book: 'o', movie: 'a', series: 'a', game: 'o', travel: 'o',
-            work: 'o', project: 'o', event: 'o', place: 'o', document: 'o', goal: 'o'
+            work: 'o', project: 'o', event: 'o', place: 'o', document: 'o', goal: 'o', birthday: 'o'
         };
 
         // ============================================================
@@ -2558,6 +2614,7 @@
                     entries = [];
                     categories = getDefaultCategories();
                     notes = [];
+                    prompts = [];
                     userName = '';
                     filteredEntries = [];
                     investmentData = { initial: 0, rate: 7, monthly: 0 };
@@ -2569,6 +2626,7 @@
                 entries = saved.entries || [];
                 categories = saved.categories || getDefaultCategories();
                 notes = saved.notes || [];
+                prompts = saved.prompts || [];
                 userName = saved.userName || '';
                 investmentData = saved.investmentData || { initial: 0, rate: 7, monthly: 0 };
             } catch (e) {
@@ -2596,7 +2654,7 @@
             if (!user) throw new Error('No hay sesión activa');
             const { error } = await sb.from('bitacora').upsert({
                 user_id: user.id,
-                data: { entries, categories, userName, investmentData, notes },
+                data: { entries, categories, userName, investmentData, notes, prompts },
                 updated_at: new Date().toISOString()
             });
             if (error) throw error;
@@ -2685,10 +2743,6 @@
         function toggleMode() {
             modeWide = !modeWide;
             document.getElementById('app').style.maxWidth = modeWide ? '100%' : '1200px';
-        }
-
-        function toggleDeveloperMode() {
-            showToast('Modo desarrollador (sin funciones todavía)');
         }
 
         // ============================================================
@@ -3009,6 +3063,19 @@
                 `;
             }
 
+            // ===== BIRTHDAY =====
+            else if (type === 'birthday') {
+                extraFields = `
+                    <div class="modal-label">Nombre</div>
+                    <input id="modal-bday-name" class="modal-input" value="${isEdit ? entry.firstName || '' : ''}" placeholder="Ej: Juan">
+                    <div class="modal-label">Apellido</div>
+                    <input id="modal-bday-lastname" class="modal-input" value="${isEdit ? entry.lastName || '' : ''}" placeholder="Ej: Pérez">
+                    <div class="modal-label">Fecha de nacimiento</div>
+                    <input type="date" id="modal-bday-date" class="modal-input" value="${isEdit ? entry.birthDate || '' : ''}">
+                    <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">El cumpleaños aparecerá todos los años en el calendario.</div>
+                `;
+            }
+
             return `
             <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
                 <div class="modal-sheet">
@@ -3039,7 +3106,6 @@
         // ============================================================
         async function saveEntry() {
             const title = document.getElementById('modal-title').value.trim();
-            if (!title) { showToast('Escribe un título', true); return; }
 
             const type = editType;
             const entry = {
@@ -3149,6 +3215,14 @@
                     .split(',').map(t => t.trim()).filter(Boolean);
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 entry.date = entry.date || todayISO();
+            } else if (type === 'birthday') {
+                entry.firstName = document.getElementById('modal-bday-name')?.value?.trim() || '';
+                entry.lastName = document.getElementById('modal-bday-lastname')?.value?.trim() || '';
+                entry.birthDate = document.getElementById('modal-bday-date')?.value || '';
+                entry.title = (entry.firstName + ' ' + entry.lastName).trim() || entry.title || 'Cumpleaños';
+                entry.date = entry.birthDate;
+                entry.tags = (document.getElementById('modal-tags')?.value || '')
+                    .split(',').map(t => t.trim()).filter(Boolean);
             }
 
             if (editId) {
@@ -3184,7 +3258,8 @@
                 restaurant: 'cat_restaurante',
                 place: 'cat_lugar',
                 document: 'cat_general',
-                goal: 'cat_general'
+                goal: 'cat_general',
+                birthday: 'cat_general'
             };
             const id = map[type] || 'cat_general';
             return categories.find(c => c.id === id)?.id || 'cat_general';
@@ -3260,7 +3335,7 @@
         //  EXPORT / IMPORT
         // ============================================================
         function exportData() {
-            const data = { entries, categories, userName, investmentData, notes };
+            const data = { entries, categories, userName, investmentData, notes, prompts };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -3282,6 +3357,7 @@
                     if (data.categories) categories = data.categories;
                     if (data.userName) userName = data.userName;
                     if (data.notes) notes = data.notes;
+                    if (data.prompts) prompts = data.prompts;
                     if (data.investmentData) investmentData = data.investmentData;
                     filteredEntries = [...entries];
                     render();
@@ -3341,6 +3417,61 @@
         }
 
         // ============================================================
+        //  FANTASY TRANSACTIONS IMPORT (lightweight)
+        // ============================================================
+        function importFantasyTransactions(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data.transacciones)) {
+                        showToast('El archivo debe tener un array "transacciones"', true);
+                        return;
+                    }
+                    let added = 0,
+                        errors = 0;
+                    data.transacciones.forEach((tx, i) => {
+                        if (!tx.tipo || !tx.jugador || typeof tx.precio !== 'number' || !tx.fecha ||
+                            !tx.comprador || !tx.vendedor) {
+                            errors++;
+                            return;
+                        }
+                        // Asegurar que los usuarios existen
+                        [tx.comprador, tx.vendedor].forEach(nombre => {
+                            if (nombre !== 'LALIGA' && !fantasyData.usuarios.find(u => u.nombre ===
+                                nombre)) {
+                                fantasyData.usuarios.push({ nombre, efectivo: 100000000,
+                                    valor_plantilla: 100000000 });
+                            }
+                        });
+                        fantasyData.transacciones.push({
+                            id: 'tx_import_' + Date.now() + '_' + i,
+                            tipo: tx.tipo,
+                            jugador: tx.jugador,
+                            precio: tx.precio,
+                            fecha: tx.fecha,
+                            comprador: tx.comprador,
+                            vendedor: tx.vendedor,
+                            gastoClausula: 0
+                        });
+                        added++;
+                    });
+                    recalcFantasyBalances();
+                    saveFantasyData();
+                    document.getElementById('content').innerHTML = renderFantasy();
+                    renderFantasyChart();
+                    showToast(added + ' transacciones importadas' + (errors ? ', ' + errors + ' con errores' : ''));
+                } catch (err) {
+                    showToast('Error al leer el archivo de transacciones', true);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ============================================================
         //  RENDER
         // ============================================================
         function render() {
@@ -3360,11 +3491,14 @@
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
                 loadDocuments(); } else if (currentView === 'investments') content.innerHTML = renderInvestments();
             else if (currentView === 'fantasy') { content.innerHTML = renderFantasy();
-                renderFantasyChart(); } else if (currentView === 'vault') content.innerHTML = renderVault();
+                renderFantasyChart();
+                renderPointsChart();
+                renderEconomicEvolutionChart(); } else if (currentView === 'vault') content.innerHTML = renderVault();
             else if (currentView === 'notes') content.innerHTML = renderNotes();
             else if (currentView === 'goals') content.innerHTML = renderGoals();
             else if (currentView === 'settings') content.innerHTML = renderSettings();
             updateAddButton();
+            updateSidebarPrivacy();
         }
 
         // ============================================================
@@ -3377,6 +3511,16 @@
             const entriesByDate = {};
             entries.forEach(e => {
                 if (NON_CALENDAR_TYPES.includes(e.type)) return;
+
+                // Birthday: proyectar al año actual
+                if (e.type === 'birthday' && e.birthDate) {
+                    const [, m, d] = e.birthDate.split('-');
+                    const projectedDate = `${calYear}-${m}-${d}`;
+                    if (!entriesByDate[projectedDate]) entriesByDate[projectedDate] = [];
+                    entriesByDate[projectedDate].push(e);
+                    return;
+                }
+
                 const date = e.date || e.startDate || '';
                 if (!date) return;
                 if (!entriesByDate[date]) entriesByDate[date] = [];
@@ -3476,9 +3620,19 @@
             render();
         }
 
+        function isBirthdayOnDate(entry, dateStr) {
+            if (entry.type !== 'birthday' || !entry.birthDate) return false;
+            const [, m1, d1] = entry.birthDate.split('-');
+            const [, m2, d2] = dateStr.split('-');
+            return m1 === m2 && d1 === d2;
+        }
+
         function renderDayEntries(date) {
-            const dayEntries = entries.filter(e => (e.date === date || e.startDate === date) && !NON_CALENDAR_TYPES.includes(
-                e.type));
+            const dayEntries = entries.filter(e => {
+                if (NON_CALENDAR_TYPES.includes(e.type)) return false;
+                if (isBirthdayOnDate(e, date)) return true;
+                return e.date === date || e.startDate === date;
+            });
             const activeJobs = entries.filter(e =>
                 e.type === 'work' &&
                 e.startDate && e.startDate <= date &&
@@ -3512,6 +3666,10 @@
                     const scheduleText = (start || end) ? ` de ${start || '--'} a ${end || '--'}` : '';
                     titleHtml = `${icon} Trabajando en ${e.company || 'empresa sin nombre'}${scheduleText}`;
                     metaHtml = e.position || catName;
+                } else if (e.type === 'birthday') {
+                    const years = e.birthDate ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
+                    titleHtml = `${icon} 🎂 ${e.title} (${years} años)`;
+                    metaHtml = 'Cumpleaños';
                 } else {
                     titleHtml = `${icon} ${e.title}`;
                     metaHtml = `${catName}${e.notes ? ' · ' + linkifyText(e.notes) : ''}`;
@@ -3533,6 +3691,37 @@
 
             html += `</div>`;
             return html;
+        }
+
+        // ============================================================
+        //  CHECK BIRTHDAYS TODAY
+        // ============================================================
+        function checkBirthdaysToday() {
+            const today = new Date();
+            const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+            const todayDay = String(today.getDate()).padStart(2, '0');
+
+            const todayBirthdays = entries.filter(e => {
+                if (e.type !== 'birthday' || !e.birthDate) return false;
+                const [, m, d] = e.birthDate.split('-');
+                return m === todayMonth && d === todayDay;
+            });
+
+            if (!todayBirthdays.length) return;
+
+            const list = todayBirthdays.map(e => {
+                const years = e.birthDate ? today.getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
+                return `<div style="padding:10px 0;border-bottom:1px solid var(--border-strong)">
+                            <div style="font-weight:700;color:var(--text-primary)">🎂 ${e.title}</div>
+                            ${years ? `<div style="font-size:12px;color:var(--text-secondary)">${years} años</div>` : ''}
+                        </div>`;
+            }).join('');
+
+            showModal(`
+                <div class="modal-title">🎉 Cumpleaños hoy</div>
+                <div style="margin-bottom:12px">${list}</div>
+                <button class="btn-modal-primary" onclick="closeModal()">¡Felicidades!</button>
+            `);
         }
 
         // ============================================================
@@ -3566,10 +3755,16 @@
                 if (e.type === 'project' && e.endDate && e.endDate > today) return true;
                 if (e.type === 'work' && e.endDate && e.endDate > today) return true;
                 if (e.type === 'event' && e.date && e.date > today) return true;
+                if (e.type === 'birthday' && e.birthDate) {
+                    const [, m, d] = e.birthDate.split('-');
+                    const todayM = today.split('-')[1],
+                        todayD = today.split('-')[2];
+                    return m + '-' + d >= todayM + '-' + todayD;
+                }
                 return false;
             }).sort((a, b) => {
-                const dateA = a.startDate || a.endDate || a.date || '';
-                const dateB = b.startDate || b.endDate || b.date || '';
+                const dateA = a.startDate || a.endDate || a.date || a.birthDate || '';
+                const dateB = b.startDate || b.endDate || b.date || b.birthDate || '';
                 return dateA.localeCompare(dateB);
             }).slice(0, 5);
 
@@ -3596,6 +3791,7 @@
                     <div class="card"><div class="card-title">Proyectos activos</div><div class="card-value">${activeProjects.length}</div></div>
                     <div class="card"><div class="card-title">Notas</div><div class="card-value">${notes.length}</div></div>
                     <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${entries.filter(e=>e.type==='goal').length}</div></div>
+                    <div class="card"><div class="card-title">Cumpleaños</div><div class="card-value">${entries.filter(e=>e.type==='birthday').length}</div></div>
                 </div>
 
                 ${upcoming.length ? `
@@ -3604,12 +3800,13 @@
                         const cat = categories.find(c => c.id === e.categoryId);
                         const color = cat?.color || 'var(--text-secondary)';
                         const icon = TYPE_ICONS[e.type] || '◈';
-                        const dateInfo = e.startDate || e.endDate || e.date || '';
+                        const dateInfo = e.birthDate || e.startDate || e.endDate || e.date || '';
+                        const label = e.type === 'birthday' ? '🎂 ' + e.title : icon + ' ' + e.title;
                         return `
                             <div class="entry-item" onclick="switchView('calendar');showDayEntries('${dateInfo}')">
                                 <div class="entry-color-dot" style="background:${color}"></div>
                                 <div class="entry-info">
-                                    <div class="entry-title">${icon} ${e.title}</div>
+                                    <div class="entry-title">${label}</div>
                                     <div class="entry-meta">${dateInfo}</div>
                                 </div>
                             </div>`;
@@ -3675,6 +3872,7 @@
                     <div class="card"><div class="card-title">Eventos</div><div class="card-value">${byType.event || 0}</div></div>
                     <div class="card"><div class="card-title">Lugares</div><div class="card-value">${byType.place || 0}</div></div>
                     <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${byType.goal || 0}</div></div>
+                    <div class="card"><div class="card-title">Cumpleaños</div><div class="card-value">${byType.birthday || 0}</div></div>
                     <div class="card"><div class="card-title">Notas</div><div class="card-value">${notes.length}</div></div>
                 </div>`;
 
@@ -4057,6 +4255,9 @@
         //  RENDER: SETTINGS
         // ============================================================
         function renderSettings() {
+            const devStatus = devModeActive ? '✅ Activado' : '⛔ Desactivado';
+            const devColor = devModeActive ? 'var(--fantasy-accent)' : 'var(--text-secondary)';
+
             return `
                 <div style="max-width:600px">
                     <div class="chart-container" style="margin-bottom:16px">
@@ -4079,9 +4280,24 @@
                     <div class="chart-container" style="margin-bottom:16px">
                         <div class="chart-title">Avanzado</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                            <button class="btn-secondary" style="width:auto" onclick="toggleDeveloperMode()">⚙ Modo desarrollador</button>
+                            <button class="btn-secondary" style="width:auto;color:${devColor}" onclick="toggleDeveloperMode()">⚙ Modo desarrollador: ${devStatus}</button>
                         </div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Por ahora solo es un botón de prueba. En futuras versiones habrá herramientas adicionales.</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Activa el modo desarrollador para acceder a funciones ocultas (ej. Fantasy).</div>
+                    </div>
+
+                    <div class="chart-container" style="margin-bottom:16px">
+                        <div class="chart-title">Prompts guardados</div>
+                        <div style="display:flex;gap:8px;margin:12px 0">
+                            <button class="btn-secondary" style="width:auto" onclick="openNewPrompt()">✎ Nuevo prompt</button>
+                        </div>
+                        <div class="prompts-list">
+                            ${prompts.length ? prompts.map(p => `
+                                <div class="prompt-card" onclick="openPromptDetail('${p.id}')">
+                                    <span class="prompt-icon">&gt;</span>
+                                    <span class="prompt-title">${escapeHtml(p.title)}</span>
+                                </div>
+                            `).join('') : '<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Sin prompts guardados</div>'}
+                        </div>
                     </div>
 
                     <div class="chart-container">
@@ -4512,8 +4728,10 @@
         // ============================================================
         //  FANTASY
         // ============================================================
-        let fantasyData = { usuarios: [], transacciones: [] };
+        let fantasyData = { usuarios: [], transacciones: [], jornadas: [], valorHistorico: [] };
         let fantasyChartInstance = null;
+        let pointsChartInstance = null;
+        let economicChartInstance = null;
 
         function loadFantasyData() {
             try {
@@ -4521,6 +4739,8 @@
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     fantasyData = parsed;
+                    if (!fantasyData.jornadas) fantasyData.jornadas = [];
+                    if (!fantasyData.valorHistorico) fantasyData.valorHistorico = [];
                     return true;
                 }
             } catch (e) { console.error('Error cargando datos de Fantasy:', e); }
@@ -4548,17 +4768,34 @@
                 ],
                 transacciones: [
                     { id: 'tx_001', tipo: 'venta', jugador: 'Lenglet', precio: 9468794, fecha: '2024-01-15',
-                        comprador: 'LALIGA', vendedor: 'VEZAMAN' },
+                        comprador: 'LALIGA', vendedor: 'VEZAMAN', gastoClausula: 0 },
                     { id: 'tx_002', tipo: 'compra', jugador: 'Carlos V.', precio: 11692043, fecha: '2024-01-15',
-                        comprador: 'VEZAMAN', vendedor: 'LALIGA' },
+                        comprador: 'VEZAMAN', vendedor: 'LALIGA', gastoClausula: 0 },
                     { id: 'tx_003', tipo: 'compra', jugador: 'Starfelt', precio: 5940199, fecha: '2024-01-15',
-                        comprador: 'VEZAMAN', vendedor: 'LALIGA' },
+                        comprador: 'VEZAMAN', vendedor: 'LALIGA', gastoClausula: 0 },
                     { id: 'tx_004', tipo: 'venta', jugador: 'Mosquera', precio: 16144311, fecha: '2024-01-15',
-                        comprador: 'LALIGA', vendedor: 'VEZAMAN' },
+                        comprador: 'LALIGA', vendedor: 'VEZAMAN', gastoClausula: 0 },
                     { id: 'tx_005', tipo: 'compra', jugador: 'Miguel', precio: 15655570, fecha: '2024-01-15',
-                        comprador: 'rafa_cm_', vendedor: 'LALIGA' }
-                ]
+                        comprador: 'rafa_cm_', vendedor: 'LALIGA', gastoClausula: 0 }
+                ],
+                jornadas: [],
+                valorHistorico: []
             };
+        }
+
+        function snapshotValoresActuales() {
+            const today = todayISO();
+            fantasyData.usuarios.forEach(u => {
+                const valorTotal = u.efectivo + u.valor_plantilla;
+                const existing = fantasyData.valorHistorico.find(s => s.fecha === today && s.nombre === u.nombre);
+                if (existing) {
+                    existing.valorTotal = valorTotal;
+                } else {
+                    fantasyData.valorHistorico.push({ fecha: today, nombre: u.nombre, valorTotal: valorTotal });
+                }
+            });
+            // Guardar ordenado por fecha
+            fantasyData.valorHistorico.sort((a, b) => a.fecha.localeCompare(b.fecha));
         }
 
         function recalcFantasyBalances() {
@@ -4567,7 +4804,9 @@
 
             fantasyData.usuarios.forEach(u => {
                 u.efectivo = INITIAL_CASH;
-                u.valor_plantilla = INITIAL_TEAM;
+                // Si tiene valor manual, usarlo; si no, el inicial
+                u.valor_plantilla = (typeof u.valor_plantilla_manual === 'number') ? u.valor_plantilla_manual :
+                    INITIAL_TEAM;
             });
 
             fantasyData.transacciones.forEach(tx => {
@@ -4583,6 +4822,8 @@
                     vendedor.valor_plantilla -= tx.precio;
                 }
             });
+
+            snapshotValoresActuales();
         }
 
         function detectSuspiciousFlows() {
@@ -4630,6 +4871,236 @@
             return warnings;
         }
 
+        // ============================================================
+        //  FANTASY: ADD USER MANUALLY (6.1)
+        // ============================================================
+        function addFantasyUserManually() {
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Añadir usuario</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">El nombre debe coincidir exactamente (mayúsculas/minúsculas incluidas) con el que aparece en las transacciones.</div>
+                <div class="modal-label">Nombre de usuario</div>
+                <input id="new-fantasy-user-name" class="modal-input" placeholder="Ej: VEZAMAN">
+                <div id="new-fantasy-user-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmAddFantasyUser()">➕ Añadir</button>
+            `);
+        }
+
+        function confirmAddFantasyUser() {
+            const name = document.getElementById('new-fantasy-user-name').value.trim();
+            const errorEl = document.getElementById('new-fantasy-user-error');
+            if (!name) { errorEl.textContent = 'Escribe un nombre'; return; }
+            if (fantasyData.usuarios.find(u => u.nombre === name)) {
+                errorEl.textContent = 'Ya existe un usuario con ese nombre exacto';
+                return;
+            }
+            fantasyData.usuarios.push({ nombre: name, efectivo: 100000000, valor_plantilla: 100000000 });
+            saveFantasyData();
+            closeModal();
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderFantasyChart();
+            showToast('Usuario "' + name + '" añadido');
+        }
+
+        // ============================================================
+        //  FANTASY: EDIT TEMPLATE VALUE (6.2)
+        // ============================================================
+        function editTemplateValue(nombre) {
+            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
+            if (!u) return;
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Editar valor de plantilla</div>
+                <div class="modal-label">Valor de plantilla (€)</div>
+                <input type="number" id="template-value-input" class="modal-input" value="${u.valor_plantilla}" step="0.01">
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Valor total actual: ${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
+                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmEditTemplateValue('${nombre}')">Guardar</button>
+            `);
+        }
+
+        function confirmEditTemplateValue(nombre) {
+            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
+            if (!u) return;
+            const value = parseFloat(document.getElementById('template-value-input').value);
+            if (isNaN(value)) { showToast('Introduce un valor numérico', true); return; }
+            u.valor_plantilla = value;
+            u.valor_plantilla_manual = value;
+            saveFantasyData();
+            closeModal();
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderFantasyChart();
+            showToast('Valor de plantilla actualizado');
+        }
+
+        // ============================================================
+        //  FANTASY: CALCULATE PLAYER PROFITS (6.4)
+        // ============================================================
+        function calculatePlayerProfits(nombre) {
+            const txsByPlayer = {};
+            fantasyData.transacciones.forEach(tx => {
+                if (tx.comprador !== nombre && tx.vendedor !== nombre) return;
+                if (!txsByPlayer[tx.jugador]) txsByPlayer[tx.jugador] = [];
+                txsByPlayer[tx.jugador].push(tx);
+            });
+
+            const profits = [];
+            Object.entries(txsByPlayer).forEach(([jugador, txs]) => {
+                const sorted = txs.slice().sort((a, b) => a.fecha.localeCompare(b.fecha));
+                let openBuy = null;
+                sorted.forEach(tx => {
+                    const boughtByUser = tx.tipo === 'compra' && tx.comprador === nombre;
+                    const soldByUser = tx.tipo === 'venta' && tx.vendedor === nombre;
+
+                    if (boughtByUser) {
+                        openBuy = tx;
+                    } else if (soldByUser && openBuy) {
+                        profits.push({
+                            jugador,
+                            fechaCompra: openBuy.fecha,
+                            fechaVenta: tx.fecha,
+                            precioCompra: openBuy.precio,
+                            precioVenta: tx.precio,
+                            beneficio: tx.precio - openBuy.precio,
+                            sinCompraRegistrada: false
+                        });
+                        openBuy = null;
+                    } else if (soldByUser && !openBuy) {
+                        profits.push({
+                            jugador,
+                            fechaVenta: tx.fecha,
+                            precioVenta: tx.precio,
+                            sinCompraRegistrada: true,
+                            beneficio: null
+                        });
+                    }
+                });
+            });
+
+            return profits;
+        }
+
+        // ============================================================
+        //  FANTASY: CLAUSE EXPENSE (6.5)
+        // ============================================================
+        function renderClauseButton(tx) {
+            const gasto = tx.gastoClausula || 0;
+            return `
+                <div style="margin-top:4px;display:flex;align-items:center;gap:6px">
+                    <span style="font-size:11px;color:var(--text-secondary)">Cláusula: ${gasto.toLocaleString('es-ES')}€</span>
+                    <button class="btn-secondary" style="padding:2px 10px;font-size:11px" onclick="event.stopPropagation();addClauseExpense('${tx.id}')">✎</button>
+                </div>
+            `;
+        }
+
+        function addClauseExpense(txId) {
+            const tx = fantasyData.transacciones.find(t => t.id === txId);
+            if (!tx) return;
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Gasto en cláusula</div>
+                <div class="modal-label">Importe adicional (€)</div>
+                <input type="number" id="clause-expense-input" class="modal-input" value="${tx.gastoClausula || 0}" step="0.01">
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Este importe se suma al precio de compra (actual: ${tx.precio.toLocaleString('es-ES')}€).</div>
+                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmClauseExpense('${txId}')">Guardar</button>
+            `);
+        }
+
+        function confirmClauseExpense(txId) {
+            const tx = fantasyData.transacciones.find(t => t.id === txId);
+            if (!tx) return;
+            const value = parseFloat(document.getElementById('clause-expense-input').value);
+            if (isNaN(value) || value < 0) { showToast('Introduce un importe válido', true); return; }
+            const previousExpense = tx.gastoClausula || 0;
+            tx.gastoClausula = value;
+            tx.precio = tx.precio - previousExpense + value;
+            recalcFantasyBalances();
+            saveFantasyData();
+            closeModal();
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderFantasyChart();
+            showToast('Gasto en cláusula actualizado');
+        }
+
+        // ============================================================
+        //  FANTASY: POINTS BY JORNADA (6.6)
+        // ============================================================
+        function openJornadaForm(numero) {
+            const existing = fantasyData.jornadas.find(j => j.numero === numero);
+            const puntos = existing ? existing.puntos : {};
+
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">📊 Jornada ${numero}</div>
+                ${fantasyData.usuarios.map(u => `
+                    <div class="modal-label">${escapeHtml(u.nombre)}</div>
+                    <input type="number" class="modal-input jornada-points-input" data-user="${escapeHtml(u.nombre)}" value="${puntos[u.nombre] || ''}" placeholder="Puntos">
+                `).join('')}
+                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="saveJornada(${numero})">Guardar jornada</button>
+            `);
+        }
+
+        function saveJornada(numero) {
+            const puntos = {};
+            document.querySelectorAll('.jornada-points-input').forEach(input => {
+                const value = parseInt(input.value);
+                if (!isNaN(value)) {
+                    puntos[input.dataset.user] = value;
+                }
+            });
+            const idx = fantasyData.jornadas.findIndex(j => j.numero === numero);
+            if (idx >= 0) {
+                fantasyData.jornadas[idx].puntos = puntos;
+            } else {
+                fantasyData.jornadas.push({ numero, puntos });
+            }
+            fantasyData.jornadas.sort((a, b) => a.numero - b.numero);
+            saveFantasyData();
+            closeModal();
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderPointsChart();
+            showToast('Jornada ' + numero + ' guardada');
+        }
+
+        // ============================================================
+        //  FANTASY: DETECT STREAKS (6.7)
+        // ============================================================
+        function detectStreaks() {
+            // --- Puntos: últimas 5 jornadas con datos ---
+            const jornadasOrdenadas = fantasyData.jornadas.slice().sort((a, b) => a.numero - b.numero);
+            const last5 = jornadasOrdenadas.slice(-5);
+            const pointsTotals = {};
+            fantasyData.usuarios.forEach(u => { pointsTotals[u.nombre] = 0; });
+            last5.forEach(j => {
+                Object.entries(j.puntos).forEach(([nombre, pts]) => {
+                    if (pointsTotals[nombre] !== undefined) pointsTotals[nombre] += pts;
+                });
+            });
+            const pointsRanking = Object.entries(pointsTotals)
+                .filter(([_, v]) => v > 0)
+                .sort((a, b) => b[1] - a[1]);
+
+            // --- Económico: variación del valor total en los últimos 7 días ---
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const cutoff = sevenDaysAgo.toISOString().slice(0, 10);
+
+            const economicChange = fantasyData.usuarios.map(u => {
+                const snapshots = fantasyData.valorHistorico
+                    .filter(s => s.nombre === u.nombre && s.fecha >= cutoff)
+                    .sort((a, b) => a.fecha.localeCompare(b.fecha));
+                if (snapshots.length < 2) return { nombre: u.nombre, cambio: null };
+                const primero = snapshots[0].valorTotal;
+                const ultimo = snapshots[snapshots.length - 1].valorTotal;
+                return { nombre: u.nombre, cambio: ultimo - primero };
+            }).filter(e => e.cambio !== null).sort((a, b) => b.cambio - a.cambio);
+
+            return {
+                mejorJornadas: pointsRanking.length ? pointsRanking[0] : null,
+                peorJornadas: pointsRanking.length > 1 ? pointsRanking[pointsRanking.length - 1] : null,
+                mejorEconomico: economicChange.length ? economicChange[0] : null,
+                peorEconomico: economicChange.length > 1 ? economicChange[economicChange.length - 1] : null
+            };
+        }
+
+        // ============================================================
+        //  RENDER: FANTASY (main)
+        // ============================================================
         function renderFantasy() {
             if (!fantasyData.usuarios.length) {
                 fantasyData = getDefaultFantasyData();
@@ -4638,6 +5109,7 @@
             }
 
             const warnings = detectSuspiciousFlows();
+            const streak = detectStreaks();
 
             let html = `
                 <div style="max-width:800px">
@@ -4647,16 +5119,46 @@
                             <div style="font-size:13px;color:var(--text-secondary)">Análisis económico de la liga</div>
                         </div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap">
+                            <button class="btn-secondary" onclick="addFantasyUserManually()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">➕ Usuario</button>
                             <button class="btn-secondary" onclick="resetFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">Reiniciar</button>
                             <button class="btn-secondary" onclick="exportFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📤 Exportar</button>
                             <button class="btn-secondary" onclick="document.getElementById('fantasy-import-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Importar</button>
+                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-tx-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Importar TX</button>
                             <button class="btn-secondary" onclick="changeFantasyPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--fantasy-accent)">🔑 Cambiar contraseña</button>
                         </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+                        <select id="jornada-selector" class="modal-input" style="width:auto;display:inline-block;margin-bottom:0;padding:6px 12px">
+                            ${Array.from({length: 38}, (_, i) => i + 1).map(n => `<option value="${n}">Jornada ${n}</option>`).join('')}
+                        </select>
+                        <button class="btn-secondary" style="width:auto" onclick="openJornadaForm(parseInt(document.getElementById('jornada-selector').value))">📝 Registrar jornada</button>
                     </div>
 
                     <div class="fantasy-chart-container">
                         <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">💰 Efectivo por usuario</div>
                         <canvas id="fantasyChart"></canvas>
+                    </div>
+
+                    <div class="fantasy-chart-container">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">📈 Evolución de puntos por jornada</div>
+                        <canvas id="pointsChart"></canvas>
+                    </div>
+
+                    <div class="fantasy-chart-container">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">📊 Evolución económica (valor total)</div>
+                        <canvas id="economicChart"></canvas>
+                    </div>
+
+                    <div class="chart-container" style="margin-top:16px">
+                        <div class="chart-title">🏆 Rachas</div>
+                        <div style="font-size:13px;margin-top:8px;line-height:1.8">
+                            ${streak.mejorJornadas ? `<div>🔥 Mejor racha (últimas 5 jornadas): <strong>${escapeHtml(streak.mejorJornadas[0])}</strong> (${streak.mejorJornadas[1]} pts)</div>` : '<div style="color:var(--text-secondary)">Sin datos de puntos suficientes</div>'}
+                            ${streak.peorJornadas ? `<div>❄️ Peor racha (últimas 5 jornadas): <strong>${escapeHtml(streak.peorJornadas[0])}</strong> (${streak.peorJornadas[1]} pts)</div>` : ''}
+                            ${streak.mejorEconomico ? `<div>📈 Mayor subida (7 días): <strong>${escapeHtml(streak.mejorEconomico.nombre)}</strong> (+${streak.mejorEconomico.cambio.toLocaleString('es-ES')}€)</div>` : ''}
+                            ${streak.peorEconomico ? `<div>📉 Mayor bajada (7 días): <strong>${escapeHtml(streak.peorEconomico.nombre)}</strong> (${streak.peorEconomico.cambio.toLocaleString('es-ES')}€)</div>` : ''}
+                            <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">* Las rachas económicas requieren al menos 2 mediciones en los últimos 7 días.</div>
+                        </div>
                     </div>
 
                     <div style="margin-top:16px">
@@ -4667,7 +5169,7 @@
                             return `
                                 <div class="fantasy-user-card" onclick="showFantasyUserDetail('${u.nombre}')">
                                     <div>
-                                        <div class="user-name">${u.nombre}</div>
+                                        <div class="user-name">${escapeHtml(u.nombre)}</div>
                                         <div style="font-size:11px;color:var(--text-secondary)">${txs.length} operaciones</div>
                                     </div>
                                     <div class="user-balance">
@@ -4708,7 +5210,267 @@
             saveFantasyData();
             render();
             renderFantasyChart();
+            renderPointsChart();
+            renderEconomicEvolutionChart();
             showToast('Fantasy reiniciado');
+        }
+
+        // ============================================================
+        //  SHOW FANTASY USER DETAIL (with 6.3, 6.4, 6.5)
+        // ============================================================
+        function showFantasyUserDetail(nombre) {
+            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
+            if (!u) return;
+            const txs = fantasyData.transacciones
+                .filter(t => t.comprador === nombre || t.vendedor === nombre)
+                .slice().reverse();
+
+            const profits = calculatePlayerProfits(nombre);
+            const withProfit = profits.filter(p => !p.sinCompraRegistrada);
+            const withoutBuy = profits.filter(p => p.sinCompraRegistrada);
+
+            const contenidoHTML = `
+                <div class="modal-title">${escapeHtml(nombre)}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+                    <div style="text-align:center">
+                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
+                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Total</div>
+                    </div>
+                    <div style="text-align:center;position:relative">
+                        <div style="font-size:18px;font-weight:800;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
+                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Efectivo</div>
+                    </div>
+                    <div style="text-align:center;position:relative">
+                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${u.valor_plantilla.toLocaleString('es-ES')}€</div>
+                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Plantilla</div>
+                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px;margin-top:4px" onclick="event.stopPropagation();closeModal();editTemplateValue('${nombre}')">✎ Editar</button>
+                    </div>
+                </div>
+
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
+                <div style="max-height:300px;overflow-y:auto">
+                    ${txs.length ? txs.map(tx => {
+                        const isBuy = tx.tipo === 'compra';
+                        const dateObj = new Date(tx.fecha + 'T12:00:00');
+                        const dateLabel = dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        return `
+                            <div class="fantasy-tx-item">
+                                <div style="display:flex;justify-content:space-between;align-items:center">
+                                    <div>
+                                        <span class="tx-type ${isBuy ? 'buy' : 'sell'}">${isBuy ? '⬆ COMPRA' : '⬇ VENTA'}</span>
+                                        <span style="font-weight:700;margin-left:6px">${escapeHtml(tx.jugador)}</span>
+                                        <span style="font-size:11px;color:var(--text-secondary)">${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)}</span>
+                                    </div>
+                                    <span class="tx-amount ${isBuy ? 'negative' : 'positive'}">${isBuy ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
+                                    <span style="font-size:11px;color:var(--text-secondary)">${dateLabel}</span>
+                                </div>
+                                ${isBuy ? renderClauseButton(tx) : ''}
+                            </div>
+                        `;
+                    }).join('') : '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin transacciones</div>'}
+                </div>
+
+                ${withProfit.length ? `
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">💰 Beneficios por reventa</div>
+                    ${withProfit.map(p => `
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
+                            <span>${escapeHtml(p.jugador)} <span style="color:var(--text-secondary);font-size:11px">(${p.fechaCompra} → ${p.fechaVenta})</span></span>
+                            <span style="font-weight:700;color:${p.beneficio >= 0 ? '#16a34a' : '#dc2626'}">${p.beneficio >= 0 ? '+' : ''}${p.beneficio.toLocaleString('es-ES')}€</span>
+                        </div>
+                    `).join('')}
+                ` : ''}
+
+                ${withoutBuy.length ? `
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">⚠️ Ventas sin compra registrada</div>
+                    ${withoutBuy.map(p => `
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-secondary)">
+                            <span>${escapeHtml(p.jugador)}</span>
+                            <span>${p.precioVenta.toLocaleString('es-ES')}€ (${p.fechaVenta})</span>
+                        </div>
+                    `).join('')}
+                ` : ''}
+            `;
+
+            showModal(contenidoHTML);
+        }
+
+        // ============================================================
+        //  RENDER: FANTASY CHART (efectivo)
+        // ============================================================
+        function renderFantasyChart() {
+            setTimeout(() => {
+                const canvas = document.getElementById('fantasyChart');
+                if (!canvas) return;
+
+                if (fantasyChartInstance) {
+                    fantasyChartInstance.destroy();
+                    fantasyChartInstance = null;
+                }
+
+                if (!fantasyData || !fantasyData.usuarios || fantasyData.usuarios.length === 0) return;
+
+                const labels = fantasyData.usuarios.map(u => u.nombre);
+                const data = fantasyData.usuarios.map(u => u.efectivo);
+                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
+
+                const ctx = canvas.getContext('2d');
+                fantasyChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Efectivo (€)',
+                            data: data,
+                            backgroundColor: colors,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: 'var(--text-secondary)' },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: {
+                                    color: 'var(--text-secondary)',
+                                    callback: function(value) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    }
+                                },
+                                grid: { color: 'var(--border)' }
+                            }
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        // ============================================================
+        //  RENDER: POINTS CHART (6.6)
+        // ============================================================
+        function renderPointsChart() {
+            setTimeout(() => {
+                const canvas = document.getElementById('pointsChart');
+                if (!canvas) return;
+
+                if (pointsChartInstance) {
+                    pointsChartInstance.destroy();
+                    pointsChartInstance = null;
+                }
+
+                if (!fantasyData.jornadas || fantasyData.jornadas.length === 0) {
+                    const ctx = canvas.getContext('2d');
+                    pointsChartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: { labels: ['Sin datos'], datasets: [{ label: 'Esperando jornadas...', data: [0] }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                    return;
+                }
+
+                const jornadasOrdenadas = fantasyData.jornadas.slice().sort((a, b) => a.numero - b.numero);
+                const labels = jornadasOrdenadas.map(j => 'J' + j.numero);
+                const palette = ['#8B5CF6', '#F59E0B', '#16a34a', '#dc2626', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
+
+                const datasets = fantasyData.usuarios.map((u, i) => ({
+                    label: u.nombre,
+                    data: jornadasOrdenadas.map(j => j.puntos[u.nombre] !== undefined ? j.puntos[u.nombre] : null),
+                    borderColor: palette[i % palette.length],
+                    backgroundColor: 'transparent',
+                    tension: 0.3,
+                    spanGaps: true
+                }));
+
+                const ctx = canvas.getContext('2d');
+                pointsChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: 'var(--text-secondary)' } }
+                        },
+                        scales: {
+                            x: { ticks: { color: 'var(--text-secondary)' }, grid: { display: false } },
+                            y: { ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border)' } }
+                        }
+                    }
+                });
+            }, 150);
+        }
+
+        // ============================================================
+        //  RENDER: ECONOMIC EVOLUTION CHART (6.8)
+        // ============================================================
+        function renderEconomicEvolutionChart() {
+            setTimeout(() => {
+                const canvas = document.getElementById('economicChart');
+                if (!canvas) return;
+
+                if (economicChartInstance) {
+                    economicChartInstance.destroy();
+                    economicChartInstance = null;
+                }
+
+                if (!fantasyData.valorHistorico || fantasyData.valorHistorico.length === 0) {
+                    const ctx = canvas.getContext('2d');
+                    economicChartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: { labels: ['Sin datos'], datasets: [{ label: 'Esperando histórico...', data: [0] }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                    return;
+                }
+
+                const fechas = [...new Set(fantasyData.valorHistorico.map(s => s.fecha))].sort();
+                const palette = ['#8B5CF6', '#F59E0B', '#16a34a', '#dc2626', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
+
+                const datasets = fantasyData.usuarios.map((u, i) => ({
+                    label: u.nombre,
+                    data: fechas.map(f => {
+                        const snap = fantasyData.valorHistorico.find(s => s.fecha === f && s.nombre === u.nombre);
+                        return snap ? snap.valorTotal : null;
+                    }),
+                    borderColor: palette[i % palette.length],
+                    backgroundColor: 'transparent',
+                    tension: 0.3,
+                    spanGaps: true
+                }));
+
+                const ctx = canvas.getContext('2d');
+                economicChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: fechas, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: 'var(--text-secondary)' } }
+                        },
+                        scales: {
+                            x: { ticks: { color: 'var(--text-secondary)' }, grid: { display: false } },
+                            y: {
+                                ticks: {
+                                    color: 'var(--text-secondary)',
+                                    callback: function(value) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    }
+                                },
+                                grid: { color: 'var(--border)' }
+                            }
+                        }
+                    }
+                });
+            }, 150);
         }
 
         // ============================================================
@@ -4762,9 +5524,25 @@
         async function requestPasswordAccess(type, onSuccess) {
             try {
                 const storedHash = await getSecret(type);
-                const label = type === 'fantasy' ? 'Fantasy' : 'Vault';
-                const icon = type === 'fantasy' ? '◉' : '◈';
-                const color = type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)';
+                let label, icon, color;
+
+                if (type === 'fantasy') {
+                    label = 'Fantasy';
+                    icon = '◉';
+                    color = 'var(--fantasy-accent)';
+                } else if (type === 'vault') {
+                    label = 'Vault';
+                    icon = '◈';
+                    color = 'var(--vault-accent)';
+                } else if (type === 'dev') {
+                    label = 'Modo Desarrollador';
+                    icon = '⚙';
+                    color = 'var(--fantasy-accent)';
+                } else {
+                    label = type;
+                    icon = '✕';
+                    color = 'var(--text-secondary)';
+                }
 
                 if (!storedHash) {
                     showModal(`
@@ -4821,7 +5599,7 @@
                 const hash = await hashPassword(pw1);
                 await setSecret(type, hash);
                 closeModal();
-                showToast(`🔐 Contraseña de ${type} creada`);
+                showToast('🔐 Contraseña de ' + type + ' creada');
                 if (window._passwordSuccessCallback) {
                     window._passwordSuccessCallback();
                 }
@@ -4855,7 +5633,7 @@
 
                 closeModal();
                 if (errorEl) errorEl.textContent = '';
-                showToast(`✅ Acceso concedido a ${type}`);
+                showToast('✅ Acceso concedido a ' + type);
 
                 if (type === 'fantasy') {
                     currentView = 'fantasy';
@@ -4865,6 +5643,8 @@
                     updatePageTitle();
                     render();
                     renderFantasyChart();
+                    renderPointsChart();
+                    renderEconomicEvolutionChart();
                 } else if (type === 'vault') {
                     currentView = 'vault';
                     document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
@@ -4872,6 +5652,11 @@
                     });
                     updatePageTitle();
                     render();
+                } else if (type === 'dev') {
+                    devModeActive = true;
+                    updateSidebarPrivacy();
+                    document.getElementById('content').innerHTML = renderSettings();
+                    showToast('🔓 Modo desarrollador activado');
                 }
 
             } catch (e) {
@@ -4880,7 +5665,246 @@
             }
         }
 
+        // ============================================================
+        //  TOGGLE DEVELOPER MODE (Punto 1)
+        // ============================================================
+        async function toggleDeveloperMode() {
+            if (devModeActive) {
+                // Desactivar
+                devModeActive = false;
+                updateSidebarPrivacy();
+                // Si está en Fantasy, redirigir a Ajustes
+                if (currentView === 'fantasy') {
+                    switchView('settings');
+                } else {
+                    document.getElementById('content').innerHTML = renderSettings();
+                }
+                showToast('Modo desarrollador desactivado');
+                return;
+            }
+
+            // Activar - pedir contraseña
+            requestPasswordAccess('dev', () => {
+                // Ya se maneja en verifyPassword
+            });
+        }
+
+        // ============================================================
+        //  UPDATE SIDEBAR PRIVACY (Punto 1)
+        // ============================================================
+        function updateSidebarPrivacy() {
+            const fantasyBtns = document.querySelectorAll('[data-view="fantasy"]');
+            fantasyBtns.forEach(btn => {
+                btn.style.display = devModeActive ? 'flex' : 'none';
+            });
+        }
+
+        // ============================================================
+        //  PROMPTS (Punto 5)
+        // ============================================================
+        function openNewPrompt() {
+            window._editPromptId = null;
+            showModal(renderPromptModalContent());
+        }
+
+        function openPromptDetail(id) {
+            window._editPromptId = id;
+            showModal(renderPromptModalContent());
+        }
+
+        function renderPromptModalContent() {
+            const p = window._editPromptId ? prompts.find(x => x.id === window._editPromptId) : null;
+            const title = p ? p.title : '';
+            const content = p ? p.content : '';
+
+            return `
+                <div class="modal-title" style="font-family:'JetBrains Mono',monospace;color:var(--fantasy-accent)">&gt; ${p ? 'Editar prompt' : 'Nuevo prompt'}</div>
+                <div class="modal-label">Título</div>
+                <input id="prompt-title-input" class="modal-input console-font" value="${escapeHtml(title)}" placeholder="Nombre del prompt...">
+                <div class="modal-label">Contenido</div>
+                <textarea id="prompt-content-input" class="modal-input console-font console-textarea" rows="8" placeholder="Escribe tu prompt aquí...">${escapeHtml(content)}</textarea>
+                <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                    <button class="btn-modal-primary" style="width:auto;background:var(--fantasy-accent)" onclick="savePrompt()">💾 Guardar</button>
+                    <button class="btn-secondary" style="width:auto" onclick="copyPromptToClipboard()">📋 Copiar</button>
+                    ${p ? `<button class="btn-secondary" style="width:auto;color:#dc2626" onclick="deletePrompt('${p.id}')">🗑 Eliminar</button>` : ''}
+                </div>
+            `;
+        }
+
+        async function savePrompt() {
+            const title = document.getElementById('prompt-title-input').value.trim();
+            const content = document.getElementById('prompt-content-input').value;
+            if (!title) { showToast('Escribe un título', true); return; }
+
+            if (window._editPromptId) {
+                const p = prompts.find(x => x.id === window._editPromptId);
+                if (p) {
+                    p.title = title;
+                    p.content = content;
+                    p.updatedAt = new Date().toISOString();
+                }
+            } else {
+                prompts.push({ id: 'prompt_' + Date.now(), title, content, updatedAt: new Date().toISOString() });
+            }
+            closeModal();
+            document.getElementById('content').innerHTML = renderSettings();
+            try { await saveData();
+                showToast('Prompt guardado'); } catch (e) { console.error(e);
+                showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deletePrompt(id) {
+            if (!confirm('¿Eliminar este prompt?')) return;
+            prompts = prompts.filter(p => p.id !== id);
+            closeModal();
+            document.getElementById('content').innerHTML = renderSettings();
+            try { await saveData();
+                showToast('Prompt eliminado'); } catch (e) { console.error(e);
+                showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function copyPromptToClipboard() {
+            const content = document.getElementById('prompt-content-input').value;
+            navigator.clipboard.writeText(content)
+                .then(() => showToast('📋 Copiado al portapapeles'))
+                .catch(() => showToast('No se pudo copiar', true));
+        }
+
+        // ============================================================
+        //  VAULT
+        // ============================================================
+        let vaultTasks = [];
+
+        function loadVaultData() {
+            try {
+                const stored = localStorage.getItem('vault_data');
+                if (stored) {
+                    vaultTasks = JSON.parse(stored);
+                    return true;
+                }
+            } catch (e) { console.error('Error cargando Vault:', e); }
+            return false;
+        }
+
+        function saveVaultData() {
+            try {
+                localStorage.setItem('vault_data', JSON.stringify(vaultTasks));
+                return true;
+            } catch (e) {
+                console.error('Error guardando Vault:', e);
+                return false;
+            }
+        }
+
+        function renderVault() {
+            if (!vaultTasks.length) {
+                return `
+                    <div style="max-width:600px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                            <div>
+                                <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
+                                <div style="font-size:13px;color:var(--text-secondary)">Tareas personales</div>
+                            </div>
+                            <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
+                        </div>
+                        <div class="vault-input-row">
+                            <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
+                            <button onclick="addVaultTask()">Añadir</button>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-icon">◈</div>
+                            <div class="empty-title">Sin tareas</div>
+                            <div class="empty-sub">Añade tu primera tarea con el campo de arriba</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const done = vaultTasks.filter(t => t.done);
+            const pending = vaultTasks.filter(t => !t.done);
+
+            return `
+                <div style="max-width:600px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                        <div>
+                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
+                            <div style="font-size:13px;color:var(--text-secondary)">${pending.length} pendientes · ${done.length} completadas</div>
+                        </div>
+                        <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
+                    </div>
+                    <div class="vault-input-row">
+                        <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
+                        <button onclick="addVaultTask()">Añadir</button>
+                    </div>
+
+                    ${pending.length ? `
+                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Pendientes</div>
+                        ${pending.map((t, i) => {
+                            const realIdx = vaultTasks.indexOf(t);
+                            return `
+                                <div class="vault-task" onclick="toggleVaultTask(${realIdx})">
+                                    <span class="task-check">◯</span>
+                                    <span class="task-text">${escapeHtml(t.text)}</span>
+                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
+                                </div>
+                            `;
+                        }).join('')}
+                    ` : ''}
+
+                    ${done.length ? `
+                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Completadas</div>
+                        ${done.map((t, i) => {
+                            const realIdx = vaultTasks.indexOf(t);
+                            return `
+                                <div class="vault-task done" onclick="toggleVaultTask(${realIdx})">
+                                    <span class="task-check">●</span>
+                                    <span class="task-text">${escapeHtml(t.text)}</span>
+                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
+                                </div>
+                            `;
+                        }).join('')}
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function addVaultTask() {
+            const input = document.getElementById('vault-input');
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) { showToast('Escribe una tarea', true); return; }
+
+            vaultTasks.push({ text, done: false, created: new Date().toISOString() });
+            saveVaultData();
+            input.value = '';
+            render();
+            showToast('Tarea añadida');
+        }
+
+        function toggleVaultTask(index) {
+            if (index < 0 || index >= vaultTasks.length) return;
+            vaultTasks[index].done = !vaultTasks[index].done;
+            saveVaultData();
+            render();
+        }
+
+        function deleteVaultTask(index) {
+            if (index < 0 || index >= vaultTasks.length) return;
+            if (!confirm('¿Eliminar esta tarea?')) return;
+            vaultTasks.splice(index, 1);
+            saveVaultData();
+            render();
+            showToast('Tarea eliminada');
+        }
+
+        // ============================================================
+        //  OPEN FANTASY / VAULT (with password)
+        // ============================================================
         function openFantasy() {
+            if (!devModeActive) {
+                showToast('⚠️ Activa el Modo Desarrollador en Ajustes para acceder a Fantasy', true);
+                return;
+            }
             loadFantasyData();
             requestPasswordAccess('fantasy', () => {
                 currentView = 'fantasy';
@@ -4890,6 +5914,8 @@
                 updatePageTitle();
                 render();
                 renderFantasyChart();
+                renderPointsChart();
+                renderEconomicEvolutionChart();
             });
         }
 
@@ -5002,238 +6028,6 @@
         }
 
         // ============================================================
-        //  RENDER: FANTASY CHART
-        // ============================================================
-        function renderFantasyChart() {
-            setTimeout(() => {
-                const canvas = document.getElementById('fantasyChart');
-                if (!canvas) return;
-
-                if (fantasyChartInstance) {
-                    fantasyChartInstance.destroy();
-                    fantasyChartInstance = null;
-                }
-
-                if (!fantasyData || !fantasyData.usuarios || fantasyData.usuarios.length === 0) return;
-
-                const labels = fantasyData.usuarios.map(u => u.nombre);
-                const data = fantasyData.usuarios.map(u => u.efectivo);
-                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
-
-                const ctx = canvas.getContext('2d');
-                fantasyChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Efectivo (€)',
-                            data: data,
-                            backgroundColor: colors,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            x: {
-                                ticks: { color: 'var(--text-secondary)' },
-                                grid: { display: false }
-                            },
-                            y: {
-                                ticks: {
-                                    color: 'var(--text-secondary)',
-                                    callback: function(value) {
-                                        return (value / 1000000).toFixed(1) + 'M';
-                                    }
-                                },
-                                grid: { color: 'var(--border)' }
-                            }
-                        }
-                    }
-                });
-            }, 100);
-        }
-
-        // ============================================================
-        //  VAULT
-        // ============================================================
-        let vaultTasks = [];
-
-        function loadVaultData() {
-            try {
-                const stored = localStorage.getItem('vault_data');
-                if (stored) {
-                    vaultTasks = JSON.parse(stored);
-                    return true;
-                }
-            } catch (e) { console.error('Error cargando Vault:', e); }
-            return false;
-        }
-
-        function saveVaultData() {
-            try {
-                localStorage.setItem('vault_data', JSON.stringify(vaultTasks));
-                return true;
-            } catch (e) {
-                console.error('Error guardando Vault:', e);
-                return false;
-            }
-        }
-
-        function renderVault() {
-            if (!vaultTasks.length) {
-                return `
-                    <div style="max-width:600px">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                            <div>
-                                <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
-                                <div style="font-size:13px;color:var(--text-secondary)">Tareas personales</div>
-                            </div>
-                            <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
-                        </div>
-                        <div class="vault-input-row">
-                            <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
-                            <button onclick="addVaultTask()">Añadir</button>
-                        </div>
-                        <div class="empty-state">
-                            <div class="empty-icon">◈</div>
-                            <div class="empty-title">Sin tareas</div>
-                            <div class="empty-sub">Añade tu primera tarea con el campo de arriba</div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            const done = vaultTasks.filter(t => t.done);
-            const pending = vaultTasks.filter(t => !t.done);
-
-            return `
-                <div style="max-width:600px">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                        <div>
-                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
-                            <div style="font-size:13px;color:var(--text-secondary)">${pending.length} pendientes · ${done.length} completadas</div>
-                        </div>
-                        <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
-                    </div>
-                    <div class="vault-input-row">
-                        <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
-                        <button onclick="addVaultTask()">Añadir</button>
-                    </div>
-
-                    ${pending.length ? `
-                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Pendientes</div>
-                        ${pending.map((t, i) => {
-                            const realIdx = vaultTasks.indexOf(t);
-                            return `
-                                <div class="vault-task" onclick="toggleVaultTask(${realIdx})">
-                                    <span class="task-check">${t.done ? '✅' : '◯'}</span>
-                                    <span class="task-text">${escapeHtml(t.text)}</span>
-                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
-                                </div>
-                            `;
-                        }).join('')}
-                    ` : ''}
-
-                    ${done.length ? `
-                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Completadas</div>
-                        ${done.map((t, i) => {
-                            const realIdx = vaultTasks.indexOf(t);
-                            return `
-                                <div class="vault-task done" onclick="toggleVaultTask(${realIdx})">
-                                    <span class="task-check">✅</span>
-                                    <span class="task-text">${escapeHtml(t.text)}</span>
-                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
-                                </div>
-                            `;
-                        }).join('')}
-                    ` : ''}
-                </div>
-            `;
-        }
-
-        function addVaultTask() {
-            const input = document.getElementById('vault-input');
-            if (!input) return;
-            const text = input.value.trim();
-            if (!text) { showToast('Escribe una tarea', true); return; }
-
-            vaultTasks.push({ text, done: false, created: new Date().toISOString() });
-            saveVaultData();
-            input.value = '';
-            render();
-            showToast('Tarea añadida');
-        }
-
-        function toggleVaultTask(index) {
-            if (index < 0 || index >= vaultTasks.length) return;
-            vaultTasks[index].done = !vaultTasks[index].done;
-            saveVaultData();
-            render();
-        }
-
-        function deleteVaultTask(index) {
-            if (index < 0 || index >= vaultTasks.length) return;
-            if (!confirm('¿Eliminar esta tarea?')) return;
-            vaultTasks.splice(index, 1);
-            saveVaultData();
-            render();
-            showToast('Tarea eliminada');
-        }
-
-        // ============================================================
-        //  SHOW FANTASY USER DETAIL
-        // ============================================================
-        function showFantasyUserDetail(nombre) {
-            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
-            if (!u) return;
-            const txs = fantasyData.transacciones
-                .filter(t => t.comprador === nombre || t.vendedor === nombre)
-                .slice().reverse();
-
-            const contenidoHTML = `
-                <div class="modal-title">${nombre}</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
-                    <div style="text-align:center">
-                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Total</div>
-                    </div>
-                    <div style="text-align:center">
-                        <div style="font-size:18px;font-weight:800;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Efectivo</div>
-                    </div>
-                    <div style="text-align:center">
-                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${u.valor_plantilla.toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Plantilla</div>
-                    </div>
-                </div>
-
-                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
-                <div style="max-height:300px;overflow-y:auto">
-                    ${txs.length ? txs.map(tx => `
-                        <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
-                            <div style="display:flex;justify-content:space-between">
-                                <span>
-                                    <span style="font-weight:700;text-transform:uppercase;font-size:11px;color:${tx.tipo === 'compra' ? 'var(--fantasy-accent)' : '#dc2626'}">${tx.tipo === 'compra' ? 'COMPRA' : 'VENTA'}</span>
-                                    <span style="font-weight:600">${tx.jugador}</span>
-                                    <span style="font-size:11px;color:var(--text-secondary)">${tx.comprador} → ${tx.vendedor}</span>
-                                </span>
-                                <span style="font-weight:600;color:${tx.tipo === 'venta' ? '#16a34a' : '#dc2626'}">${tx.tipo === 'venta' ? '+' : '-'}${tx.precio.toLocaleString('es-ES')}€</span>
-                            </div>
-                            <div style="font-size:11px;color:var(--text-secondary)">${tx.fecha}</div>
-                        </div>
-                    `).join('') : '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin transacciones</div>'}
-                </div>
-            `;
-
-            showModal(contenidoHTML);
-        }
-
-        // ============================================================
         //  INIT
         // ============================================================
         let appInitialized = false;
@@ -5251,6 +6045,9 @@
                 vaultTasks = [];
                 saveVaultData();
             }
+
+            // Inicializar devModeActive = false (siempre empieza desactivado)
+            devModeActive = false;
 
             if (window.innerWidth <= 768) {
                 document.querySelector('.menu-hamburger').style.display = 'block';
@@ -5298,6 +6095,8 @@
                 render();
                 updatePageTitle();
                 updateAddButton();
+                updateSidebarPrivacy();
+                checkBirthdaysToday();
             });
         }
 
