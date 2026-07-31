@@ -11,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* ============================================================
+               CSS VARIABLES & TEMAS
+            ============================================================ */
         :root {
             --bg-app: #0a0a0f;
             --bg-sidebar: #12121f;
@@ -102,6 +105,9 @@
             --vault-accent-soft: #fef3c7;
         }
 
+        /* ============================================================
+               RESET
+            ============================================================ */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -118,6 +124,9 @@
             transition: background 0.25s ease, color 0.25s ease;
         }
 
+        /* ============================================================
+               APP LAYOUT
+            ============================================================ */
         #app {
             display: flex;
             height: 100dvh;
@@ -127,6 +136,9 @@
             position: relative;
         }
 
+        /* ============================================================
+               SIDEBAR
+            ============================================================ */
         #sidebar {
             width: 220px;
             min-width: 220px;
@@ -259,6 +271,9 @@
             color: var(--text-primary);
         }
 
+        /* ============================================================
+               MOBILE MENU
+            ============================================================ */
         #mobile-menu-overlay {
             display: none;
             position: fixed;
@@ -397,6 +412,9 @@
             color: var(--text-primary);
         }
 
+        /* ============================================================
+               MAIN
+            ============================================================ */
         #main {
             flex: 1;
             display: flex;
@@ -406,6 +424,9 @@
             transition: background 0.25s ease;
         }
 
+        /* ============================================================
+               HEADER
+            ============================================================ */
         #main-header {
             padding: 20px 32px 14px 32px;
             flex-shrink: 0;
@@ -592,6 +613,9 @@
             background: var(--bg-card-hover);
         }
 
+        /* ============================================================
+               CONTENT
+            ============================================================ */
         #content {
             flex: 1;
             overflow-y: auto;
@@ -602,6 +626,9 @@
             width: 100%;
         }
 
+        /* ============================================================
+               FAB (Floating Action Button)
+            ============================================================ */
         #fab {
             position: fixed;
             bottom: 30px;
@@ -679,6 +706,9 @@
             }
         }
 
+        /* ============================================================
+               RESPONSIVE
+            ============================================================ */
         @media (max-width: 768px) {
             #sidebar {
                 display: none !important;
@@ -729,6 +759,10 @@
                 padding: 20px 24px 24px 24px;
             }
         }
+
+        /* ============================================================
+               COMMON STYLES
+            ============================================================ */
 
         .card-grid {
             display: grid;
@@ -872,6 +906,9 @@
             transition: width 0.4s ease;
         }
 
+        /* ============================================================
+               BADGES
+            ============================================================ */
         .badge {
             font-size: 10px;
             font-weight: 700;
@@ -896,6 +933,9 @@
             color: var(--badge-default-text);
         }
 
+        /* ============================================================
+               TOAST
+            ============================================================ */
         #toast {
             position: fixed;
             bottom: 80px;
@@ -923,6 +963,9 @@
             color: #fff;
         }
 
+        /* ============================================================
+               MODAL
+            ============================================================ */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -1070,6 +1113,9 @@
             background: var(--bg-card-hover);
         }
 
+        /* ============================================================
+               VAULT TASKS
+            ============================================================ */
         .vault-task {
             display: flex;
             align-items: center;
@@ -1149,6 +1195,9 @@
             opacity: 0.85;
         }
 
+        /* ============================================================
+               FANTASY
+            ============================================================ */
         .fantasy-user-card {
             display: flex;
             justify-content: space-between;
@@ -1241,6 +1290,9 @@
             height: 220px !important;
         }
 
+        /* ============================================================
+               SCROLLBAR
+            ============================================================ */
         #content::-webkit-scrollbar,
         .modal-sheet::-webkit-scrollbar,
         #sidebar::-webkit-scrollbar,
@@ -1261,6 +1313,9 @@
             border-radius: 4px;
         }
 
+        /* ============================================================
+               INVESTMENT CHART
+            ============================================================ */
         .investment-chart {
             display: flex;
             align-items: flex-end;
@@ -1411,6 +1466,9 @@
             color: var(--text-primary);
         }
 
+        /* ============================================================
+               WIKILINKS
+            ============================================================ */
         .wikilink {
             color: var(--accent);
             font-weight: 600;
@@ -1455,9 +1513,12 @@
             border-color: var(--accent);
         }
 
+        /* ============================================================
+               NOTES
+            ============================================================ */
         .notes-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 12px;
         }
         .note-card {
@@ -1483,7 +1544,7 @@
         }
 
         .note-detail {
-            max-width: 720px;
+            max-width: 100%;
             width: 100%;
         }
         .note-detail-title {
@@ -1509,7 +1570,6 @@
             resize: vertical;
             outline: none;
             min-height: 120px;
-            overflow-y: hidden;
         }
         .note-textarea:focus {
             border-color: #cdb98c;
@@ -1525,6 +1585,9 @@
             margin-top: 8px;
         }
 
+        /* ============================================================
+               CONSOLE / TERMINAL (Prompts)
+            ============================================================ */
         .console-font {
             font-family: 'JetBrains Mono', 'Courier New', monospace !important;
         }
@@ -1645,6 +1708,9 @@
             border-color: #2563eb;
         }
 
+        /* ============================================================
+               LOGIN
+            ============================================================ */
         #login-screen {
             position: fixed;
             inset: 0;
@@ -1764,6 +1830,9 @@
     </style>
 </head>
 <body>
+    <!-- ============================================================
+    LOGIN SCREEN
+    ============================================================ -->
     <div id="boot-loading">Cargando...</div>
 
     <div id="login-screen">
@@ -1815,7 +1884,11 @@
         </div>
     </div>
 
+    <!-- ============================================================
+    APP
+    ============================================================ -->
     <div id="app">
+        <!-- SIDEBAR -->
         <div id="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-icon"></div>
@@ -1823,6 +1896,7 @@
             </div>
 
             <div class="sidebar-nav">
+                <!-- General -->
                 <span class="nav-label">General</span>
                 <button onclick="switchView('calendar')" data-view="calendar">
                     <span class="nav-icon">◷</span>
@@ -1841,6 +1915,7 @@
                     <span class="nav-text">Notas</span>
                 </button>
 
+                <!-- Ocio -->
                 <span class="nav-label">Ocio</span>
                 <button onclick="switchView('books')" data-view="books">
                     <span class="nav-icon">◊</span>
@@ -1867,6 +1942,7 @@
                     <span class="nav-text">Lugares</span>
                 </button>
 
+                <!-- Desarrollo -->
                 <span class="nav-label">Desarrollo</span>
                 <button onclick="switchView('events')" data-view="events">
                     <span class="nav-icon">◈</span>
@@ -1889,12 +1965,14 @@
                     <span class="nav-text">Documentos</span>
                 </button>
 
+                <!-- Finanzas -->
                 <span class="nav-label">Finanzas</span>
                 <button onclick="switchView('investments')" data-view="investments">
                     <span class="nav-icon">◫</span>
                     <span class="nav-text">Inversiones</span>
                 </button>
 
+                <!-- Privado -->
                 <span class="nav-label">Privado</span>
                 <button class="fantasy-btn" onclick="openFantasy()" data-view="fantasy" id="sidebar-fantasy-btn">
                     <span class="nav-icon">◉</span>
@@ -1905,6 +1983,7 @@
                     <span class="nav-text">Vault</span>
                 </button>
 
+                <!-- Sistema -->
                 <span class="nav-label">Sistema</span>
                 <button onclick="switchView('settings')" data-view="settings">
                     <span class="nav-icon">⚙</span>
@@ -1917,6 +1996,7 @@
             </div>
         </div>
 
+        <!-- MAIN -->
         <div id="main">
             <div id="main-header">
                 <div class="header-left">
@@ -1937,6 +2017,9 @@
         </div>
     </div>
 
+    <!-- ============================================================
+    BUSQUEDA GLOBAL
+    ============================================================ -->
     <div id="search-overlay" onclick="if(event.target===this)closeSearch()">
         <div id="search-box">
             <div id="search-input-row">
@@ -1949,6 +2032,9 @@
         </div>
     </div>
 
+    <!-- ============================================================
+    FAB
+    ============================================================ -->
     <button id="fab" onclick="toggleFabMenu()">+</button>
     <div id="fab-menu">
         <button onclick="openNewEntry('book')">Libro</button>
@@ -1964,6 +2050,9 @@
         <button onclick="openNewEntry('birthday')">Cumpleaños</button>
     </div>
 
+    <!-- ============================================================
+    MOBILE MENU
+    ============================================================ -->
     <div id="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
     <div id="mobile-menu-panel">
         <div class="menu-header">
@@ -2045,24 +2134,39 @@
         </div>
     </div>
 
+    <!-- ============================================================
+    MODAL CONTAINER
+    ============================================================ -->
     <div id="modal-container"></div>
     <div id="toast"></div>
 
+    <!-- ============================================================
+    HIDDEN INPUTS
+    ============================================================ -->
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
     <input type="file" id="doc-upload-input" accept="application/pdf" style="display:none" onchange="handleDocUpload(event)">
     <input type="file" id="fantasy-import-input" accept=".json" style="display:none" onchange="importFantasyData(event)">
     <input type="file" id="fantasy-import-tx-input" accept=".json" style="display:none" onchange="importFantasyTransactions(event)">
 
+    <!-- ============================================================
+    SUPABASE + CHART.JS
+    ============================================================ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
     <script>
+        // ============================================================
+        //  SUPABASE CONFIG
+        // ============================================================
         const SUPABASE_URL = 'https://avdqtnukgbejorieuunj.supabase.co';
         const SUPABASE_ANON_KEY =
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2ZHF0bnVrZ2Jlam9yaWV1dW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMjcyOTUsImV4cCI6MjEwMDkwMzI5NX0.sq1cepXuBaNT6qygyxKEAhVHJh7G9LZyzaeJBhc7s7s';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // ============================================================
+        //  AUTH FUNCTIONS
+        // ============================================================
         async function handleLogin() {
             const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
@@ -2110,6 +2214,7 @@
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app').classList.add('ready');
 
+            // Esperar a que el navegador resuelva el layout tras el cambio de display
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
             await init();
@@ -2221,6 +2326,9 @@
             }
         })();
 
+        // ============================================================
+        //  CONSTANTS & DATA
+        // ============================================================
         let entries = [];
         let categories = [];
         let notes = [];
@@ -2232,6 +2340,9 @@
         let investmentData = { initial: 0, rate: 7, monthly: 0 };
         let devModeActive = false;
 
+        // ============================================================
+        //  ENTRY TYPES
+        // ============================================================
         const ENTRY_TYPES = {
             BOOK: 'book',
             MOVIE: 'movie',
@@ -2330,6 +2441,9 @@
             work: 'o', project: 'o', event: 'o', place: 'o', document: 'o', goal: 'o', birthday: 'o'
         };
 
+        // ============================================================
+        //  UTILITY FUNCTIONS
+        // ============================================================
         function todayISO() { return new Date().toISOString().slice(0, 10); }
 
         function formatNoteTitle(dateISO) {
@@ -2343,9 +2457,13 @@
             return div.innerHTML;
         }
 
+        // ============================================================
+        //  WIKILINKS
+        // ============================================================
         function resolveWikilink(label) {
             const clean = label.trim();
 
+            // ¿Es una nota? (formato #dd/mm/yyyy)
             const noteMatch = clean.match(/^#(\d{2})\/(\d{2})\/(\d{4})$/);
             if (noteMatch) {
                 const d = noteMatch[1],
@@ -2357,6 +2475,7 @@
                 return null;
             }
 
+            // ¿Es una entrada por título exacto?
             const entry = entries.find(e => (e.title || '').toLowerCase() === clean.toLowerCase());
             if (entry) return { type: 'entry', id: entry.id };
 
@@ -2408,6 +2527,9 @@
             openEditEntry(entryId);
         }
 
+        // ============================================================
+        //  BUSQUEDA GLOBAL
+        // ============================================================
         function openSearch() {
             document.getElementById('search-overlay').classList.add('open');
             const input = document.getElementById('search-input');
@@ -2431,6 +2553,7 @@
                 return haystack.includes(q);
             }).slice(0, 30);
 
+            // También buscar en notas
             const noteMatches = notes.filter(n => {
                 return n.content.toLowerCase().includes(q) || formatNoteTitle(n.date).toLowerCase().includes(q);
             }).slice(0, 10);
@@ -2468,6 +2591,9 @@
             }
         });
 
+        // ============================================================
+        //  DEFAULT COLORS & CATEGORIES
+        // ============================================================
         const DEFAULT_COLORS = [
             '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
             '#1abc9c', '#e67e22', '#e84393', '#00b894', '#6c5ce7',
@@ -2490,6 +2616,9 @@
             ];
         }
 
+        // ============================================================
+        //  LOAD / SAVE (SUPABASE)
+        // ============================================================
         async function loadData() {
             try {
                 const { data: { user } } = await sb.auth.getUser();
@@ -2543,6 +2672,9 @@
             if (error) throw error;
         }
 
+        // ============================================================
+        //  USER NAME
+        // ============================================================
         function updatePageTitle() {
             const titleEl = document.getElementById('page-title');
             const baseTitle = VIEW_LABELS[currentView] || 'Calendario';
@@ -2577,6 +2709,9 @@
             }
         }
 
+        // ============================================================
+        //  ADD BUTTON
+        // ============================================================
         function updateAddButton() {
             const btn = document.getElementById('add-section-btn');
             if (!btn) return;
@@ -2594,6 +2729,9 @@
             if (type) openNewEntry(type);
         }
 
+        // ============================================================
+        //  THEME
+        // ============================================================
         const THEMES = ['dark', 'light', 'beige'];
 
         function loadTheme() {
@@ -2619,6 +2757,9 @@
             document.getElementById('app').style.maxWidth = modeWide ? '100%' : '1200px';
         }
 
+        // ============================================================
+        //  TOAST
+        // ============================================================
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             t.textContent = msg;
@@ -2628,6 +2769,9 @@
             t._timer = setTimeout(() => t.classList.remove('show'), 2500);
         }
 
+        // ============================================================
+        //  NAVIGATION
+        // ============================================================
         let currentView = 'calendar';
 
         function switchView(view) {
@@ -2637,11 +2781,15 @@
             });
             updatePageTitle();
             render();
+            // Cerrar mobile menu si está abierto
             if (document.getElementById('mobile-menu-panel').classList.contains('open')) {
                 toggleMobileMenu();
             }
         }
 
+        // ============================================================
+        //  MOBILE MENU
+        // ============================================================
         function toggleMobileMenu() {
             const overlay = document.getElementById('mobile-menu-overlay');
             const panel = document.getElementById('mobile-menu-panel');
@@ -2649,6 +2797,9 @@
             panel.classList.toggle('open');
         }
 
+        // ============================================================
+        //  FAB
+        // ============================================================
         function toggleFabMenu() {
             document.getElementById('fab-menu').classList.toggle('open');
         }
@@ -2657,6 +2808,9 @@
             document.getElementById('fab-menu').classList.remove('open');
         }
 
+        // ============================================================
+        //  OPEN NEW ENTRY (FAB)
+        // ============================================================
         function openNewEntry(type) {
             closeFabMenu();
             editId = null;
@@ -2664,6 +2818,9 @@
             document.getElementById('modal-container').innerHTML = renderEntryModal(type, null);
         }
 
+        // ============================================================
+        //  OPEN EDIT ENTRY
+        // ============================================================
         function openEditEntry(id) {
             const entry = entries.find(e => e.id === id);
             if (!entry) return;
@@ -2672,12 +2829,18 @@
             document.getElementById('modal-container').innerHTML = renderEntryModal(entry.type, entry);
         }
 
+        // ============================================================
+        //  CLOSE MODAL
+        // ============================================================
         function closeModal() {
             document.getElementById('modal-container').innerHTML = '';
             editId = null;
             editType = null;
         }
 
+        // ============================================================
+        //  RENDER ENTRY MODAL
+        // ============================================================
         function renderBacklinksBlock(entryId) {
             const backlinks = getBacklinks(entryId);
             if (!backlinks.length) return '';
@@ -2703,6 +2866,7 @@
 
             let extraFields = '';
 
+            // ===== BOOK =====
             if (type === 'book') {
                 extraFields = `
                     <div class="modal-label">Autor</div>
@@ -2720,6 +2884,7 @@
                 `;
             }
 
+            // ===== MOVIE =====
             else if (type === 'movie') {
                 extraFields = `
                     <div class="modal-label">Fecha</div>
@@ -2735,6 +2900,7 @@
                 `;
             }
 
+            // ===== SERIES =====
             else if (type === 'series') {
                 const statuses = ['Viendo', 'Completada', 'Abandonada'];
                 extraFields = `
@@ -2755,6 +2921,7 @@
                 `;
             }
 
+            // ===== GAME =====
             else if (type === 'game') {
                 const statuses = ['Jugando', 'Completado', 'Abandonado'];
                 extraFields = `
@@ -2775,6 +2942,7 @@
                 `;
             }
 
+            // ===== TRAVEL =====
             else if (type === 'travel') {
                 const expenses = isEdit ? (entry.expenses || []) : [];
                 extraFields = `
@@ -2797,6 +2965,7 @@
                 `;
             }
 
+            // ===== WORK =====
             else if (type === 'work') {
                 extraFields = `
                     <div class="modal-label">Empresa</div>
@@ -2819,6 +2988,7 @@
                 `;
             }
 
+            // ===== PROJECT =====
             else if (type === 'project') {
                 extraFields = `
                     <div class="modal-label">Descripción</div>
@@ -2841,6 +3011,7 @@
                 `;
             }
 
+            // ===== EVENT =====
             else if (type === 'event') {
                 extraFields = `
                     <div class="modal-label">Tipo</div>
@@ -2863,6 +3034,7 @@
                 `;
             }
 
+            // ===== PLACE =====
             else if (type === 'place') {
                 extraFields = `
                     <div class="modal-label">Fecha</div>
@@ -2872,6 +3044,7 @@
                 `;
             }
 
+            // ===== DOCUMENT =====
             else if (type === 'document') {
                 extraFields = `
                     <div class="modal-label">Fecha</div>
@@ -2881,6 +3054,7 @@
                 `;
             }
 
+            // ===== GOAL =====
             else if (type === 'goal') {
                 const statuses = ['Pendiente', 'En progreso', 'Completado'];
                 extraFields = `
@@ -2901,6 +3075,7 @@
                 `;
             }
 
+            // ===== BIRTHDAY =====
             else if (type === 'birthday') {
                 extraFields = `
                     <div class="modal-label">Nombre</div>
@@ -2938,11 +3113,13 @@
             </div>`;
         }
 
+        // ============================================================
+        //  SAVE ENTRY
+        // ============================================================
         async function saveEntry() {
             const title = document.getElementById('modal-title').value.trim();
 
             const type = editType;
-            const previous = editId ? entries.find(e => e.id === editId) : null;
             const entry = {
                 id: editId || 'entry_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
                 title: title,
@@ -3049,7 +3226,7 @@
                 entry.tags = (document.getElementById('modal-tags')?.value || '')
                     .split(',').map(t => t.trim()).filter(Boolean);
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
-                entry.date = (previous && previous.date) || todayISO();
+                entry.date = entry.date || todayISO();
             } else if (type === 'birthday') {
                 entry.firstName = document.getElementById('modal-bday-name')?.value?.trim() || '';
                 entry.lastName = document.getElementById('modal-bday-lastname')?.value?.trim() || '';
@@ -3100,6 +3277,9 @@
             return categories.find(c => c.id === id)?.id || 'cat_general';
         }
 
+        // ============================================================
+        //  DELETE ENTRY
+        // ============================================================
         async function deleteEntry(id) {
             if (!confirm('¿Eliminar esta entrada?')) return;
             entries = entries.filter(e => e.id !== id);
@@ -3115,6 +3295,9 @@
             }
         }
 
+        // ============================================================
+        //  EXPENSE ROWS (TRAVEL)
+        // ============================================================
         window._expenses = [];
 
         function renderExpenseRow(exp, index) {
@@ -3160,6 +3343,9 @@
             totalEl.textContent = 'Total: ' + total.toLocaleString('es-ES') + '€';
         }
 
+        // ============================================================
+        //  EXPORT / IMPORT
+        // ============================================================
         function exportData() {
             const data = { entries, categories, userName, investmentData, notes, prompts };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -3203,6 +3389,9 @@
             event.target.value = '';
         }
 
+        // ============================================================
+        //  FANTASY EXPORT / IMPORT
+        // ============================================================
         function exportFantasyData() {
             const blob = new Blob([JSON.stringify(fantasyData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -3239,6 +3428,9 @@
             event.target.value = '';
         }
 
+        // ============================================================
+        //  FANTASY TRANSACTIONS IMPORT (lightweight)
+        // ============================================================
         function importFantasyTransactions(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -3258,6 +3450,7 @@
                             errors++;
                             return;
                         }
+                        // Asegurar que los usuarios existen
                         [tx.comprador, tx.vendedor].forEach(nombre => {
                             if (nombre !== 'LALIGA' && !fantasyData.usuarios.find(u => u.nombre ===
                                 nombre)) {
@@ -3290,6 +3483,9 @@
             event.target.value = '';
         }
 
+        // ============================================================
+        //  RENDER
+        // ============================================================
         function render() {
             const content = document.getElementById('content');
             if (currentView === 'calendar') content.innerHTML = renderCalendar();
@@ -3317,6 +3513,9 @@
             updateSidebarPrivacy();
         }
 
+        // ============================================================
+        //  RENDER: CALENDAR
+        // ============================================================
         let calYear = new Date().getFullYear();
         let calMonth = new Date().getMonth();
 
@@ -3325,6 +3524,7 @@
             entries.forEach(e => {
                 if (NON_CALENDAR_TYPES.includes(e.type)) return;
 
+                // Birthday: proyectar al año actual
                 if (e.type === 'birthday' && e.birthDate) {
                     const [, m, d] = e.birthDate.split('-');
                     const projectedDate = `${calYear}-${m}-${d}`;
@@ -3505,6 +3705,9 @@
             return html;
         }
 
+        // ============================================================
+        //  CHECK BIRTHDAYS TODAY
+        // ============================================================
         function checkBirthdaysToday() {
             const today = new Date();
             const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
@@ -3533,6 +3736,9 @@
             `);
         }
 
+        // ============================================================
+        //  RENDER: HOME
+        // ============================================================
         let homeFilter = 'month';
 
         function getFilterRange(filter) {
@@ -3639,6 +3845,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: STATS
+        // ============================================================
         function renderStats() {
             const totalEntries = entries.length;
             const byType = {};
@@ -3701,6 +3910,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: BOOKS
+        // ============================================================
         function renderBooks() {
             const books = entries.filter(e => e.type === 'book');
             if (!books.length) {
@@ -3755,6 +3967,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: MOVIES
+        // ============================================================
         function renderMovies() {
             const movies = entries.filter(e => e.type === 'movie');
             if (!movies.length) {
@@ -3781,6 +3996,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: SERIES
+        // ============================================================
         function renderSeries() {
             const series = entries.filter(e => e.type === 'series');
             if (!series.length) {
@@ -3811,6 +4029,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: GAMES
+        // ============================================================
         function renderGames() {
             const games = entries.filter(e => e.type === 'game');
             if (!games.length) {
@@ -3841,6 +4062,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: TRAVELS
+        // ============================================================
         function renderTravels() {
             const travels = entries.filter(e => e.type === 'travel');
             if (!travels.length) {
@@ -3867,6 +4091,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: WORK
+        // ============================================================
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
@@ -3931,6 +4158,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: PROJECTS
+        // ============================================================
         function renderProjects() {
             const projects = entries.filter(e => e.type === 'project');
             if (!projects.length) {
@@ -3973,6 +4203,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: EVENTS
+        // ============================================================
         function renderEvents() {
             const events = entries.filter(e => e.type === 'event');
             if (!events.length) {
@@ -4002,6 +4235,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: PLACES
+        // ============================================================
         function renderPlaces() {
             const places = entries.filter(e => e.type === 'place');
             if (!places.length) {
@@ -4027,6 +4263,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: SETTINGS
+        // ============================================================
         function renderSettings() {
             const devStatus = devModeActive ? '✅ Activado' : '⛔ Desactivado';
             const devColor = devModeActive ? 'var(--fantasy-accent)' : 'var(--text-secondary)';
@@ -4054,9 +4293,8 @@
                         <div class="chart-title">Avanzado</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                             <button class="btn-secondary" style="width:auto;color:${devColor}" onclick="toggleDeveloperMode()">⚙ Modo desarrollador: ${devStatus}</button>
-                            <button class="btn-secondary" style="width:auto" onclick="changeDevPasswordModal()">🔑 Cambiar contraseña global</button>
                         </div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">La contraseña del Modo Desarrollador es global: la misma para todas las cuentas y se guarda de forma segura (hash) en Supabase.</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Activa el modo desarrollador para acceder a funciones ocultas (ej. Fantasy).</div>
                     </div>
 
                     <div class="chart-container" style="margin-bottom:16px">
@@ -4084,6 +4322,9 @@
                 </div>`;
         }
 
+        // ============================================================
+        //  RENDER: NOTES
+        // ============================================================
         function renderNotes() {
             const sorted = [...notes].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -4128,10 +4369,6 @@
             if (!note) return;
             window.openNoteId = id;
             document.getElementById('content').innerHTML = renderNoteDetail(note);
-            requestAnimationFrame(() => {
-                const ta = document.getElementById('note-content-input');
-                if (ta) autoResizeNote(ta);
-            });
         }
 
         function renderNoteDetail(note) {
@@ -4175,6 +4412,9 @@
             el.style.height = el.scrollHeight + 'px';
         }
 
+        // ============================================================
+        //  RENDER: GOALS
+        // ============================================================
         function renderGoals() {
             const goals = entries.filter(e => e.type === 'goal');
             const groups = [
@@ -4232,6 +4472,9 @@
             return html;
         }
 
+        // ============================================================
+        //  RENDER: INVESTMENTS
+        // ============================================================
         let investmentChartYears = 10;
 
         function renderInvestments() {
@@ -4387,6 +4630,9 @@
             return Math.round(balance);
         }
 
+        // ============================================================
+        //  DOCUMENTS
+        // ============================================================
         function renderDocuments() {
             return `
                 <div style="max-width:700px">
@@ -4497,6 +4743,9 @@
             }
         }
 
+        // ============================================================
+        //  FANTASY
+        // ============================================================
         let fantasyData = { usuarios: [], transacciones: [], jornadas: [], valorHistorico: [] };
         let fantasyChartInstance = null;
         let pointsChartInstance = null;
@@ -4638,6 +4887,9 @@
             return warnings;
         }
 
+        // ============================================================
+        //  FANTASY: ADD USER MANUALLY (6.1)
+        // ============================================================
         function addFantasyUserManually() {
             showModal(`
                 <div class="modal-title" style="color:var(--fantasy-accent)">◉ Añadir usuario</div>
@@ -4665,6 +4917,9 @@
             showToast('Usuario "' + name + '" añadido');
         }
 
+        // ============================================================
+        //  FANTASY: EDIT TEMPLATE VALUE (6.2)
+        // ============================================================
         function editTemplateValue(nombre) {
             const u = fantasyData.usuarios.find(u => u.nombre === nombre);
             if (!u) return;
@@ -4691,6 +4946,9 @@
             showToast('Valor de plantilla actualizado');
         }
 
+        // ============================================================
+        //  FANTASY: CALCULATE PLAYER PROFITS (6.4)
+        // ============================================================
         function calculatePlayerProfits(nombre) {
             const txsByPlayer = {};
             fantasyData.transacciones.forEach(tx => {
@@ -4735,6 +4993,9 @@
             return profits;
         }
 
+        // ============================================================
+        //  FANTASY: CLAUSE EXPENSE (6.5)
+        // ============================================================
         function renderClauseButton(tx) {
             const gasto = tx.gastoClausula || 0;
             return `
@@ -4773,6 +5034,9 @@
             showToast('Gasto en cláusula actualizado');
         }
 
+        // ============================================================
+        //  FANTASY: POINTS BY JORNADA (6.6)
+        // ============================================================
         function openJornadaForm(numero) {
             const existing = fantasyData.jornadas.find(j => j.numero === numero);
             const puntos = existing ? existing.puntos : {};
@@ -4809,6 +5073,9 @@
             showToast('Jornada ' + numero + ' guardada');
         }
 
+        // ============================================================
+        //  FANTASY: DETECT STREAKS (6.7)
+        // ============================================================
         function detectStreaks() {
             const jornadasOrdenadas = fantasyData.jornadas.slice().sort((a, b) => a.numero - b.numero);
             const last5 = jornadasOrdenadas.slice(-5);
@@ -4845,6 +5112,9 @@
             };
         }
 
+        // ============================================================
+        //  RENDER: FANTASY (main)
+        // ============================================================
         function renderFantasy() {
             if (!fantasyData.usuarios.length) {
                 fantasyData = getDefaultFantasyData();
@@ -4959,6 +5229,9 @@
             showToast('Fantasy reiniciado');
         }
 
+        // ============================================================
+        //  SHOW FANTASY USER DETAIL (with 6.3, 6.4, 6.5)
+        // ============================================================
         function showFantasyUserDetail(nombre) {
             const u = fantasyData.usuarios.find(u => u.nombre === nombre);
             if (!u) return;
@@ -5037,6 +5310,9 @@
             showModal(contenidoHTML);
         }
 
+        // ============================================================
+        //  RENDER: FANTASY CHART (efectivo)
+        // ============================================================
         function renderFantasyChart() {
             setTimeout(() => {
                 const canvas = document.getElementById('fantasyChart');
@@ -5091,6 +5367,9 @@
             }, 100);
         }
 
+        // ============================================================
+        //  RENDER: POINTS CHART (6.6)
+        // ============================================================
         function renderPointsChart() {
             setTimeout(() => {
                 const canvas = document.getElementById('pointsChart');
@@ -5143,6 +5422,9 @@
             }, 150);
         }
 
+        // ============================================================
+        //  RENDER: ECONOMIC EVOLUTION CHART (6.8)
+        // ============================================================
         function renderEconomicEvolutionChart() {
             setTimeout(() => {
                 const canvas = document.getElementById('economicChart');
@@ -5205,6 +5487,10 @@
             }, 150);
         }
 
+        // ============================================================
+        //  FANTASY & VAULT: CONTRASEÑAS EN SUPABASE
+        // ============================================================
+
         async function hashPassword(password) {
             const encoder = new TextEncoder();
             const data = encoder.encode(password);
@@ -5251,7 +5537,11 @@
         async function setGlobalDevPasswordHash(hash) {
             const { error } = await sb
                 .from('global_settings')
-                .upsert({ id: 1, dev_password_hash: hash, updated_at: new Date().toISOString() });
+                .upsert({
+                    id: 1,
+                    dev_password_hash: hash,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'id' });
             if (error) throw error;
         }
 
@@ -5266,8 +5556,12 @@
             `;
         }
 
+        // ============================================================
+        //  MODE DEVELOPER GLOBAL - CONTRASEÑA EN SUPABASE
+        // ============================================================
         async function toggleDeveloperMode() {
             if (devModeActive) {
+                // Desactivar
                 devModeActive = false;
                 updateSidebarPrivacy();
                 if (currentView === 'fantasy') {
@@ -5279,58 +5573,29 @@
                 return;
             }
 
-            let expectedHash;
+            // Verificar si existe el hash global en Supabase
             try {
-                expectedHash = await getGlobalDevPasswordHash();
-            } catch (e) {
-                console.error('Error comprobando la contraseña de desarrollador:', e);
-                showToast('No se pudo verificar el acceso. Revisa tu conexión.', true);
-                return;
-            }
+                const storedHash = await getGlobalDevPasswordHash();
 
-            if (!expectedHash) {
+                if (!storedHash) {
+                    showToast('Error: No hay contraseña global configurada. Contacta con el administrador.', true);
+                    return;
+                }
+
+                // Pedir la contraseña
                 showModal(`
-                    <div class="modal-title" style="color:var(--fantasy-accent)">⚙ Configura la contraseña de Desarrollador</div>
-                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Todavía no existe una contraseña global. Elige una para proteger el Modo Desarrollador (solo tú deberías conocerla).</div>
-                    <div class="modal-label">Nueva contraseña</div>
-                    <input type="password" id="pw-dev-setup-1" class="modal-input" placeholder="Mínimo 6 caracteres">
-                    <div class="modal-label">Repetir contraseña</div>
-                    <input type="password" id="pw-dev-setup-2" class="modal-input" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')confirmSetupDevPassword()">
-                    <div id="pw-dev-setup-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                    <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmSetupDevPassword()">Guardar y activar</button>
+                    <div class="modal-title" style="color:var(--fantasy-accent)">⚙ Modo Desarrollador</div>
+                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce la contraseña global del Modo Desarrollador para activarlo.</div>
+                    <div class="form-row">
+                        <label class="modal-label">Contraseña</label>
+                        <input type="password" id="pw-dev-input" class="modal-input" placeholder="Contraseña global" onkeydown="if(event.key==='Enter')verifyDevPassword()">
+                    </div>
+                    <div id="pw-dev-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                    <button class="btn-modal-primary" onclick="verifyDevPassword()" style="background:var(--fantasy-accent)">🔓 Activar</button>
                 `);
-                return;
-            }
-
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">⚙ Modo Desarrollador</div>
-                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce la contraseña global del Modo Desarrollador para activarlo.</div>
-                <div class="form-row">
-                    <label class="modal-label">Contraseña</label>
-                    <input type="password" id="pw-dev-input" class="modal-input" placeholder="Contraseña global" onkeydown="if(event.key==='Enter')verifyDevPassword()">
-                </div>
-                <div id="pw-dev-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" onclick="verifyDevPassword()" style="background:var(--fantasy-accent)">🔓 Activar</button>
-            `);
-        }
-
-        async function confirmSetupDevPassword() {
-            const pw1 = document.getElementById('pw-dev-setup-1').value;
-            const pw2 = document.getElementById('pw-dev-setup-2').value;
-            const errorEl = document.getElementById('pw-dev-setup-error');
-            if (!pw1 || pw1.length < 6) { errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres'; return; }
-            if (pw1 !== pw2) { errorEl.textContent = 'Las contraseñas no coinciden'; return; }
-            try {
-                const hash = await hashPassword(pw1);
-                await setGlobalDevPasswordHash(hash);
-                closeModal();
-                devModeActive = true;
-                updateSidebarPrivacy();
-                document.getElementById('content').innerHTML = renderSettings();
-                showToast('🔓 Contraseña creada y Modo desarrollador activado');
             } catch (e) {
-                console.error('Error guardando la contraseña de desarrollador:', e);
-                errorEl.textContent = 'Error de conexión, intenta de nuevo';
+                console.error('Error al obtener la contraseña global:', e);
+                showToast('Error al conectar con el servidor', true);
             }
         }
 
@@ -5344,13 +5609,15 @@
             }
 
             try {
-                const expectedHash = await getGlobalDevPasswordHash();
-                if (!expectedHash) {
-                    errorEl.textContent = 'La contraseña global todavía no está configurada en Supabase.';
+                const storedHash = await getGlobalDevPasswordHash();
+                if (!storedHash) {
+                    errorEl.textContent = 'No hay contraseña global configurada';
                     return;
                 }
+
                 const inputHash = await hashPassword(input);
-                if (inputHash !== expectedHash) {
+
+                if (inputHash !== storedHash) {
                     errorEl.textContent = '❌ Contraseña incorrecta';
                     return;
                 }
@@ -5361,53 +5628,14 @@
                 document.getElementById('content').innerHTML = renderSettings();
                 showToast('🔓 Modo desarrollador activado');
             } catch (e) {
-                console.error('Error verificando la contraseña de desarrollador:', e);
+                console.error('Error verificando contraseña:', e);
                 errorEl.textContent = 'Error de conexión, intenta de nuevo';
             }
         }
 
-        function changeDevPasswordModal() {
-            showModal(`
-                <div class="modal-title">⚙ Cambiar contraseña de desarrollador</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Esta contraseña es global: cambia el acceso al Modo Desarrollador para todas las cuentas que usan esta app.</div>
-                <div class="modal-label">Contraseña actual</div>
-                <input type="password" id="pw-dev-old" class="modal-input" placeholder="Contraseña actual">
-                <div class="modal-label">Nueva contraseña</div>
-                <input type="password" id="pw-dev-new1" class="modal-input" placeholder="Mínimo 6 caracteres">
-                <div class="modal-label">Repetir nueva contraseña</div>
-                <input type="password" id="pw-dev-new2" class="modal-input" placeholder="Repite la contraseña">
-                <div id="pw-dev-change-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" onclick="confirmChangeDevPassword()">Guardar</button>
-            `);
-        }
-
-        async function confirmChangeDevPassword() {
-            const old = document.getElementById('pw-dev-old').value;
-            const pw1 = document.getElementById('pw-dev-new1').value;
-            const pw2 = document.getElementById('pw-dev-new2').value;
-            const errorEl = document.getElementById('pw-dev-change-error');
-
-            if (!old) { errorEl.textContent = 'Introduce la contraseña actual'; return; }
-            if (!pw1 || pw1.length < 6) { errorEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres'; return; }
-            if (pw1 !== pw2) { errorEl.textContent = 'Las contraseñas no coinciden'; return; }
-
-            try {
-                const expectedHash = await getGlobalDevPasswordHash();
-                const oldHash = await hashPassword(old);
-                if (!expectedHash || oldHash !== expectedHash) {
-                    errorEl.textContent = '❌ Contraseña actual incorrecta';
-                    return;
-                }
-                const newHash = await hashPassword(pw1);
-                await setGlobalDevPasswordHash(newHash);
-                closeModal();
-                showToast('🔑 Contraseña global de desarrollador actualizada');
-            } catch (e) {
-                console.error('Error cambiando la contraseña global:', e);
-                errorEl.textContent = 'Error de conexión, intenta de nuevo';
-            }
-        }
-
+        // ============================================================
+        //  UPDATE SIDEBAR PRIVACY
+        // ============================================================
         function updateSidebarPrivacy() {
             const fantasyBtns = document.querySelectorAll('[data-view="fantasy"]');
             fantasyBtns.forEach(btn => {
@@ -5415,6 +5643,9 @@
             });
         }
 
+        // ============================================================
+        //  OPEN FANTASY (with password, only if dev mode active)
+        // ============================================================
         function openFantasy() {
             if (!devModeActive) {
                 showToast('⚠️ Activa el Modo Desarrollador en Ajustes para acceder a Fantasy', true);
@@ -5446,86 +5677,9 @@
             });
         }
 
-        async function requestPasswordAccess(type, onSuccess) {
-            const accentVar = type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)';
-            const icon = type === 'fantasy' ? '◉' : '◈';
-            const label = type === 'fantasy' ? 'Fantasy' : 'Vault';
-
-            let storedHash;
-            try {
-                storedHash = await getSecret(type);
-            } catch (e) {
-                console.error('Error obteniendo la contraseña de ' + type + ':', e);
-                showToast('No se pudo verificar el acceso. Revisa tu conexión.', true);
-                return;
-            }
-
-            window._pendingAccessCallback = onSuccess;
-            window._pendingAccessType = type;
-
-            if (!storedHash) {
-                showModal(`
-                    <div class="modal-title" style="color:${accentVar}">${icon} Configura tu contraseña de ${label}</div>
-                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Es la primera vez que accedes a esta sección. Elige una contraseña para protegerla.</div>
-                    <div class="modal-label">Nueva contraseña</div>
-                    <input type="password" id="pw-setup-1" class="modal-input" placeholder="Mínimo 6 caracteres">
-                    <div class="modal-label">Repetir contraseña</div>
-                    <input type="password" id="pw-setup-2" class="modal-input" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')confirmSetupPassword('${type}')">
-                    <div id="pw-setup-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                    <button class="btn-modal-primary" style="background:${accentVar}" onclick="confirmSetupPassword('${type}')">Guardar y entrar</button>
-                `);
-                return;
-            }
-
-            showModal(`
-                <div class="modal-title" style="color:${accentVar}">${icon} Acceso a ${label}</div>
-                <div class="modal-label">Contraseña</div>
-                <input type="password" id="pw-access-input" class="modal-input" placeholder="Tu contraseña" onkeydown="if(event.key==='Enter')confirmAccessPassword('${type}')">
-                <div id="pw-access-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" style="background:${accentVar}" onclick="confirmAccessPassword('${type}')">Entrar</button>
-            `);
-        }
-
-        async function confirmSetupPassword(type) {
-            const pw1 = document.getElementById('pw-setup-1').value;
-            const pw2 = document.getElementById('pw-setup-2').value;
-            const errorEl = document.getElementById('pw-setup-error');
-            if (!pw1 || pw1.length < 6) { errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres'; return; }
-            if (pw1 !== pw2) { errorEl.textContent = 'Las contraseñas no coinciden'; return; }
-            try {
-                const hash = await hashPassword(pw1);
-                await setSecret(type, hash);
-                closeModal();
-                const cb = window._pendingAccessCallback;
-                window._pendingAccessCallback = null;
-                if (cb) cb();
-            } catch (e) {
-                console.error('Error guardando la contraseña:', e);
-                errorEl.textContent = 'Error de conexión, intenta de nuevo';
-            }
-        }
-
-        async function confirmAccessPassword(type) {
-            const input = document.getElementById('pw-access-input').value;
-            const errorEl = document.getElementById('pw-access-error');
-            if (!input) { errorEl.textContent = 'Introduce la contraseña'; return; }
-            try {
-                const storedHash = await getSecret(type);
-                const inputHash = await hashPassword(input);
-                if (!storedHash || inputHash !== storedHash) {
-                    errorEl.textContent = '❌ Contraseña incorrecta';
-                    return;
-                }
-                closeModal();
-                const cb = window._pendingAccessCallback;
-                window._pendingAccessCallback = null;
-                if (cb) cb();
-            } catch (e) {
-                console.error('Error verificando la contraseña:', e);
-                errorEl.textContent = 'Error de conexión, intenta de nuevo';
-            }
-        }
-
+        // ============================================================
+        //  PROMPTS (Punto 5)
+        // ============================================================
         function openNewPrompt() {
             window._editPromptId = null;
             showModal(renderPromptModalContent());
@@ -5594,6 +5748,9 @@
                 .catch(() => showToast('No se pudo copiar', true));
         }
 
+        // ============================================================
+        //  VAULT
+        // ============================================================
         let vaultTasks = [];
 
         function loadVaultData() {
@@ -5718,6 +5875,9 @@
             showToast('Tarea eliminada');
         }
 
+        // ============================================================
+        //  VAULT PASSWORD CHANGE
+        // ============================================================
         function changeVaultPassword() {
             showModal(`
                 <div class="modal-title" style="color:var(--vault-accent)">◈ Cambiar contraseña de Vault</div>
@@ -5766,6 +5926,9 @@
             }
         }
 
+        // ============================================================
+        //  FANTASY PASSWORD CHANGE
+        // ============================================================
         function changeFantasyPassword() {
             showModal(`
                 <div class="modal-title" style="color:var(--fantasy-accent)">◉ Cambiar contraseña de Fantasy</div>
@@ -5814,6 +5977,9 @@
             }
         }
 
+        // ============================================================
+        //  INIT
+        // ============================================================
         let appInitialized = false;
 
         async function init() {
@@ -5830,6 +5996,7 @@
                 saveVaultData();
             }
 
+            // Inicializar devModeActive = false (siempre empieza desactivado)
             devModeActive = false;
 
             if (window.innerWidth <= 768) {
@@ -5873,6 +6040,7 @@
                 return;
             }
 
+            // Forzar render después del layout
             requestAnimationFrame(() => {
                 render();
                 updatePageTitle();
