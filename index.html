@@ -5525,15 +5525,14 @@
         }
 
         async function getGlobalDevPasswordHash() {
-            const { data, error } = await sb
-                .from('global_settings')
-                .select('dev_password_hash')
-                .eq('id', 1)
-                .maybeSingle();
-            if (error) throw error;
-            return data ? data.dev_password_hash : null;
-        }
-
+    const { data, error } = await sb
+        .from('global_settings')
+        .select('dev_password_hash')
+        .eq('id', 1)
+        .limit(1);
+    if (error) throw error;
+    return data && data.length > 0 ? data[0].dev_password_hash : null;
+}
         async function setGlobalDevPasswordHash(hash) {
             const { error } = await sb
                 .from('global_settings')
