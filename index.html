@@ -741,6 +741,10 @@
                 flex: 1 1 100% !important;
                 min-width: 0 !important;
             }
+            .note-detail {
+                max-width: 100% !important;
+                padding: 0 4px;
+            }
         }
 
         @media (min-width: 769px) and (max-width: 1024px) {
@@ -1538,8 +1542,10 @@
             font-size: 14px;
             letter-spacing: -0.2px;
         }
+
         .note-detail {
-            max-width: 640px;
+            max-width: 100%;
+            width: 100%;
         }
         .note-detail-title {
             font-weight: 800;
@@ -1553,7 +1559,7 @@
             border: 1px solid #e6d9bd;
             border-radius: 14px;
             padding: 20px;
-            min-height: 320px;
+            min-height: 100px;
             width: 100%;
             font-family: 'Inter', sans-serif;
             font-size: 14px;
@@ -1563,9 +1569,15 @@
         .note-textarea {
             resize: vertical;
             outline: none;
+            min-height: 120px;
         }
         .note-textarea:focus {
             border-color: #cdb98c;
+        }
+        .note-readonly {
+            min-height: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
         .note-detail-hint {
             font-size: 11px;
@@ -2327,6 +2339,10 @@
         let userName = '';
         let investmentData = { initial: 0, rate: 7, monthly: 0 };
         let devModeActive = false;
+
+        // Clave fija global para el Modo Desarrollador
+        const DEV_PASSWORD = 'sp1$;!';
+        let devPasswordHash = null;
 
         // ============================================================
         //  ENTRY TYPES
@@ -4283,6 +4299,7 @@
                             <button class="btn-secondary" style="width:auto;color:${devColor}" onclick="toggleDeveloperMode()">⚙ Modo desarrollador: ${devStatus}</button>
                         </div>
                         <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Activa el modo desarrollador para acceder a funciones ocultas (ej. Fantasy).</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">🔑 Contraseña global: <strong>sp1$;!</strong></div>
                     </div>
 
                     <div class="chart-container" style="margin-bottom:16px">
@@ -4319,18 +4336,18 @@
             if (!sorted.length) {
                 return `
                     <div style="display:flex;justify-content:flex-start;margin-bottom:16px">
-                        <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir</button>
+                        <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir nota de hoy</button>
                     </div>
                     <div class="empty-state">
                         <div class="empty-icon">✎</div>
                         <div class="empty-title">Todavía no hay notas</div>
-                        <div class="empty-sub">Pulsa "Escribir" para crear la nota de hoy.</div>
+                        <div class="empty-sub">Pulsa "Escribir nota de hoy" para crear la nota del día.</div>
                     </div>`;
             }
 
             return `
                 <div style="display:flex;justify-content:flex-start;margin-bottom:16px">
-                    <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir</button>
+                    <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir nota de hoy</button>
                 </div>
                 <div class="notes-grid">
                     ${sorted.map(n => `
@@ -4368,7 +4385,7 @@
                     <button class="btn-secondary" style="width:auto;padding:6px 14px;margin-bottom:16px" onclick="closeNoteDetail()">← Volver</button>
                     <div class="note-detail-title">${formatNoteTitle(note.date)}</div>
                     ${editable ? `
-                        <textarea id="note-content-input" class="note-textarea" placeholder="Escribe tu nota del día..." oninput="autoSaveNote('${note.id}', this.value)">${escapeHtml(content)}</textarea>
+                        <textarea id="note-content-input" class="note-textarea" placeholder="Escribe tu nota del día..." oninput="autoSaveNote('${note.id}', this.value);autoResizeNote(this)">${escapeHtml(content)}</textarea>
                         <div class="note-detail-hint">Esta nota es editable solo hoy. Se guarda automáticamente.</div>
                     ` : `
                         <div class="note-readonly">${content ? linkifyText(content) : '<span style="color:var(--text-muted)">(Nota vacía)</span>'}</div>
@@ -4392,6 +4409,12 @@
             noteSaveTimer = setTimeout(async () => {
                 try { await saveData(); } catch (e) { console.error('Error guardando nota:', e); }
             }, 800);
+        }
+
+        function autoResizeNote(el) {
+            if (!el) return;
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
         }
 
         // ============================================================
@@ -4794,7 +4817,6 @@
                     fantasyData.valorHistorico.push({ fecha: today, nombre: u.nombre, valorTotal: valorTotal });
                 }
             });
-            // Guardar ordenado por fecha
             fantasyData.valorHistorico.sort((a, b) => a.fecha.localeCompare(b.fecha));
         }
 
@@ -4804,7 +4826,6 @@
 
             fantasyData.usuarios.forEach(u => {
                 u.efectivo = INITIAL_CASH;
-                // Si tiene valor manual, usarlo; si no, el inicial
                 u.valor_plantilla = (typeof u.valor_plantilla_manual === 'number') ? u.valor_plantilla_manual :
                     INITIAL_TEAM;
             });
@@ -5061,7 +5082,6 @@
         //  FANTASY: DETECT STREAKS (6.7)
         // ============================================================
         function detectStreaks() {
-            // --- Puntos: últimas 5 jornadas con datos ---
             const jornadasOrdenadas = fantasyData.jornadas.slice().sort((a, b) => a.numero - b.numero);
             const last5 = jornadasOrdenadas.slice(-5);
             const pointsTotals = {};
@@ -5075,7 +5095,6 @@
                 .filter(([_, v]) => v > 0)
                 .sort((a, b) => b[1] - a[1]);
 
-            // --- Económico: variación del valor total en los últimos 7 días ---
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
             const cutoff = sevenDaysAgo.toISOString().slice(0, 10);
@@ -5474,7 +5493,7 @@
         }
 
         // ============================================================
-        //  FANTASY & VAULT: CONTRASEÑAS EN SUPABASE
+        //  FANTASY & VAULT: CONTRASEÑAS EN SUPABASE (solo Fantasy y Vault)
         // ============================================================
 
         async function hashPassword(password) {
@@ -5521,159 +5540,14 @@
             `;
         }
 
-        async function requestPasswordAccess(type, onSuccess) {
-            try {
-                const storedHash = await getSecret(type);
-                let label, icon, color;
-
-                if (type === 'fantasy') {
-                    label = 'Fantasy';
-                    icon = '◉';
-                    color = 'var(--fantasy-accent)';
-                } else if (type === 'vault') {
-                    label = 'Vault';
-                    icon = '◈';
-                    color = 'var(--vault-accent)';
-                } else if (type === 'dev') {
-                    label = 'Modo Desarrollador';
-                    icon = '⚙';
-                    color = 'var(--fantasy-accent)';
-                } else {
-                    label = type;
-                    icon = '✕';
-                    color = 'var(--text-secondary)';
-                }
-
-                if (!storedHash) {
-                    showModal(`
-                        <div class="modal-title" style="color:${color}">${icon} Crear contraseña de ${label}</div>
-                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Protege tu sección ${label} con una contraseña.</div>
-                        <div class="form-row">
-                            <label class="modal-label">Contraseña</label>
-                            <input type="password" id="pw-new" class="modal-input" placeholder="Mínimo 6 caracteres">
-                        </div>
-                        <div class="form-row">
-                            <label class="modal-label">Repetir contraseña</label>
-                            <input type="password" id="pw-new2" class="modal-input" placeholder="Repite la contraseña">
-                        </div>
-                        <div id="pw-create-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                        <button class="btn-modal-primary" onclick="createPassword('${type}')" style="background:${color}">🔐 Guardar contraseña</button>
-                    `);
-                } else {
-                    showModal(`
-                        <div class="modal-title" style="color:${color}">${icon} Acceso a ${label}</div>
-                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce tu contraseña de ${label} para acceder.</div>
-                        <div class="form-row">
-                            <label class="modal-label">Contraseña</label>
-                            <input type="password" id="pw-input" class="modal-input" placeholder="Tu contraseña" onkeydown="if(event.key==='Enter')verifyPassword('${type}')">
-                        </div>
-                        <div id="pw-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                        <button class="btn-modal-primary" onclick="verifyPassword('${type}')" style="background:${color}">🔓 Entrar</button>
-                    `);
-                }
-
-                window._passwordSuccessCallback = onSuccess;
-                window._passwordType = type;
-
-            } catch (e) {
-                console.error('Error al verificar contraseña:', e);
-                showToast('Error al conectar con el servidor', true);
-            }
-        }
-
-        async function createPassword(type) {
-            const pw1 = document.getElementById('pw-new').value;
-            const pw2 = document.getElementById('pw-new2').value;
-            const errorEl = document.getElementById('pw-create-error');
-
-            if (!pw1 || pw1.length < 6) {
-                errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
-                return;
-            }
-            if (pw1 !== pw2) {
-                errorEl.textContent = 'Las contraseñas no coinciden';
-                return;
-            }
-
-            try {
-                const hash = await hashPassword(pw1);
-                await setSecret(type, hash);
-                closeModal();
-                showToast('🔐 Contraseña de ' + type + ' creada');
-                if (window._passwordSuccessCallback) {
-                    window._passwordSuccessCallback();
-                }
-            } catch (e) {
-                console.error('Error guardando contraseña:', e);
-                errorEl.textContent = 'Error al guardar la contraseña. Revisa tu conexión.';
-            }
-        }
-
-        async function verifyPassword(type) {
-            const input = document.getElementById('pw-input').value;
-            const errorEl = document.getElementById('pw-error');
-
-            if (!input) {
-                if (errorEl) errorEl.textContent = 'Introduce tu contraseña';
-                return;
-            }
-
-            try {
-                const storedHash = await getSecret(type);
-                if (!storedHash) {
-                    if (errorEl) errorEl.textContent = 'No hay contraseña guardada para esta sección';
-                    return;
-                }
-
-                const inputHash = await hashPassword(input);
-                if (inputHash !== storedHash) {
-                    if (errorEl) errorEl.textContent = '❌ Contraseña incorrecta';
-                    return;
-                }
-
-                closeModal();
-                if (errorEl) errorEl.textContent = '';
-                showToast('✅ Acceso concedido a ' + type);
-
-                if (type === 'fantasy') {
-                    currentView = 'fantasy';
-                    document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                        b.classList.toggle('active', b.dataset.view === 'fantasy');
-                    });
-                    updatePageTitle();
-                    render();
-                    renderFantasyChart();
-                    renderPointsChart();
-                    renderEconomicEvolutionChart();
-                } else if (type === 'vault') {
-                    currentView = 'vault';
-                    document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                        b.classList.toggle('active', b.dataset.view === 'vault');
-                    });
-                    updatePageTitle();
-                    render();
-                } else if (type === 'dev') {
-                    devModeActive = true;
-                    updateSidebarPrivacy();
-                    document.getElementById('content').innerHTML = renderSettings();
-                    showToast('🔓 Modo desarrollador activado');
-                }
-
-            } catch (e) {
-                console.error('Error verificando contraseña:', e);
-                if (errorEl) errorEl.textContent = 'Error de conexión, intenta de nuevo';
-            }
-        }
-
         // ============================================================
-        //  TOGGLE DEVELOPER MODE (Punto 1)
+        //  MODE DEVELOPER GLOBAL - PASSWORD FIXED
         // ============================================================
         async function toggleDeveloperMode() {
             if (devModeActive) {
                 // Desactivar
                 devModeActive = false;
                 updateSidebarPrivacy();
-                // Si está en Fantasy, redirigir a Ajustes
                 if (currentView === 'fantasy') {
                     switchView('settings');
                 } else {
@@ -5683,19 +5557,84 @@
                 return;
             }
 
-            // Activar - pedir contraseña
-            requestPasswordAccess('dev', () => {
-                // Ya se maneja en verifyPassword
-            });
+            // Activar - pedir la contraseña global
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">⚙ Modo Desarrollador</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce la contraseña global del Modo Desarrollador para activarlo.</div>
+                <div class="form-row">
+                    <label class="modal-label">Contraseña</label>
+                    <input type="password" id="pw-dev-input" class="modal-input" placeholder="Contraseña global" onkeydown="if(event.key==='Enter')verifyDevPassword()">
+                </div>
+                <div id="pw-dev-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                <button class="btn-modal-primary" onclick="verifyDevPassword()" style="background:var(--fantasy-accent)">🔓 Activar</button>
+            `);
+        }
+
+        async function verifyDevPassword() {
+            const input = document.getElementById('pw-dev-input').value;
+            const errorEl = document.getElementById('pw-dev-error');
+
+            if (!input) {
+                errorEl.textContent = 'Introduce la contraseña';
+                return;
+            }
+
+            const inputHash = await hashPassword(input);
+            const expectedHash = await hashPassword(DEV_PASSWORD);
+
+            if (inputHash !== expectedHash) {
+                errorEl.textContent = '❌ Contraseña incorrecta';
+                return;
+            }
+
+            closeModal();
+            devModeActive = true;
+            updateSidebarPrivacy();
+            document.getElementById('content').innerHTML = renderSettings();
+            showToast('🔓 Modo desarrollador activado');
         }
 
         // ============================================================
-        //  UPDATE SIDEBAR PRIVACY (Punto 1)
+        //  UPDATE SIDEBAR PRIVACY
         // ============================================================
         function updateSidebarPrivacy() {
             const fantasyBtns = document.querySelectorAll('[data-view="fantasy"]');
             fantasyBtns.forEach(btn => {
                 btn.style.display = devModeActive ? 'flex' : 'none';
+            });
+        }
+
+        // ============================================================
+        //  OPEN FANTASY (with password, only if dev mode active)
+        // ============================================================
+        function openFantasy() {
+            if (!devModeActive) {
+                showToast('⚠️ Activa el Modo Desarrollador en Ajustes para acceder a Fantasy', true);
+                return;
+            }
+            loadFantasyData();
+            requestPasswordAccess('fantasy', () => {
+                currentView = 'fantasy';
+                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                    b.classList.toggle('active', b.dataset.view === 'fantasy');
+                });
+                updatePageTitle();
+                render();
+                renderFantasyChart();
+                renderPointsChart();
+                renderEconomicEvolutionChart();
+            });
+        }
+
+        function openVault() {
+            loadVaultData();
+            requestPasswordAccess('vault', () => {
+                currentView = 'vault';
+                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                    b.classList.toggle('active', b.dataset.view === 'vault');
+                });
+                updatePageTitle();
+                render();
             });
         }
 
@@ -5898,87 +5837,8 @@
         }
 
         // ============================================================
-        //  OPEN FANTASY / VAULT (with password)
+        //  VAULT PASSWORD CHANGE
         // ============================================================
-        function openFantasy() {
-            if (!devModeActive) {
-                showToast('⚠️ Activa el Modo Desarrollador en Ajustes para acceder a Fantasy', true);
-                return;
-            }
-            loadFantasyData();
-            requestPasswordAccess('fantasy', () => {
-                currentView = 'fantasy';
-                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                    b.classList.toggle('active', b.dataset.view === 'fantasy');
-                });
-                updatePageTitle();
-                render();
-                renderFantasyChart();
-                renderPointsChart();
-                renderEconomicEvolutionChart();
-            });
-        }
-
-        function openVault() {
-            loadVaultData();
-            requestPasswordAccess('vault', () => {
-                currentView = 'vault';
-                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                    b.classList.toggle('active', b.dataset.view === 'vault');
-                });
-                updatePageTitle();
-                render();
-            });
-        }
-
-        function changeFantasyPassword() {
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Cambiar contraseña de Fantasy</div>
-                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce tu contraseña actual y la nueva.</div>
-                <div class="form-row">
-                    <label class="modal-label">Contraseña actual</label>
-                    <input type="password" id="pw-old" class="modal-input" placeholder="Tu contraseña actual">
-                </div>
-                <div class="form-row">
-                    <label class="modal-label">Nueva contraseña</label>
-                    <input type="password" id="pw-new-f" class="modal-input" placeholder="Mínimo 6 caracteres">
-                </div>
-                <div class="form-row">
-                    <label class="modal-label">Repetir nueva contraseña</label>
-                    <input type="password" id="pw-new2-f" class="modal-input" placeholder="Repite la contraseña">
-                </div>
-                <div id="pw-change-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" onclick="updateFantasyPassword()" style="background:var(--fantasy-accent)">🔐 Cambiar contraseña</button>
-            `);
-        }
-
-        async function updateFantasyPassword() {
-            const old = document.getElementById('pw-old').value;
-            const pw1 = document.getElementById('pw-new-f').value;
-            const pw2 = document.getElementById('pw-new2-f').value;
-            const errorEl = document.getElementById('pw-change-error');
-
-            if (!old) { errorEl.textContent = 'Introduce tu contraseña actual'; return; }
-            if (!pw1 || pw1.length < 6) { errorEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres'; return; }
-            if (pw1 !== pw2) { errorEl.textContent = 'Las contraseñas no coinciden'; return; }
-
-            try {
-                const storedHash = await getSecret('fantasy');
-                const oldHash = await hashPassword(old);
-                if (oldHash !== storedHash) {
-                    errorEl.textContent = '❌ Contraseña actual incorrecta';
-                    return;
-                }
-                const newHash = await hashPassword(pw1);
-                await setSecret('fantasy', newHash);
-                closeModal();
-                showToast('🔑 Contraseña de Fantasy actualizada');
-            } catch (e) {
-                console.error('Error cambiando contraseña:', e);
-                errorEl.textContent = 'Error de conexión, intenta de nuevo';
-            }
-        }
-
         function changeVaultPassword() {
             showModal(`
                 <div class="modal-title" style="color:var(--vault-accent)">◈ Cambiar contraseña de Vault</div>
@@ -6021,6 +5881,57 @@
                 await setSecret('vault', newHash);
                 closeModal();
                 showToast('🔑 Contraseña de Vault actualizada');
+            } catch (e) {
+                console.error('Error cambiando contraseña:', e);
+                errorEl.textContent = 'Error de conexión, intenta de nuevo';
+            }
+        }
+
+        // ============================================================
+        //  FANTASY PASSWORD CHANGE
+        // ============================================================
+        function changeFantasyPassword() {
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Cambiar contraseña de Fantasy</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce tu contraseña actual y la nueva.</div>
+                <div class="form-row">
+                    <label class="modal-label">Contraseña actual</label>
+                    <input type="password" id="pw-old" class="modal-input" placeholder="Tu contraseña actual">
+                </div>
+                <div class="form-row">
+                    <label class="modal-label">Nueva contraseña</label>
+                    <input type="password" id="pw-new-f" class="modal-input" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-row">
+                    <label class="modal-label">Repetir nueva contraseña</label>
+                    <input type="password" id="pw-new2-f" class="modal-input" placeholder="Repite la contraseña">
+                </div>
+                <div id="pw-change-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                <button class="btn-modal-primary" onclick="updateFantasyPassword()" style="background:var(--fantasy-accent)">🔐 Cambiar contraseña</button>
+            `);
+        }
+
+        async function updateFantasyPassword() {
+            const old = document.getElementById('pw-old').value;
+            const pw1 = document.getElementById('pw-new-f').value;
+            const pw2 = document.getElementById('pw-new2-f').value;
+            const errorEl = document.getElementById('pw-change-error');
+
+            if (!old) { errorEl.textContent = 'Introduce tu contraseña actual'; return; }
+            if (!pw1 || pw1.length < 6) { errorEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres'; return; }
+            if (pw1 !== pw2) { errorEl.textContent = 'Las contraseñas no coinciden'; return; }
+
+            try {
+                const storedHash = await getSecret('fantasy');
+                const oldHash = await hashPassword(old);
+                if (oldHash !== storedHash) {
+                    errorEl.textContent = '❌ Contraseña actual incorrecta';
+                    return;
+                }
+                const newHash = await hashPassword(pw1);
+                await setSecret('fantasy', newHash);
+                closeModal();
+                showToast('🔑 Contraseña de Fantasy actualizada');
             } catch (e) {
                 console.error('Error cambiando contraseña:', e);
                 errorEl.textContent = 'Error de conexión, intenta de nuevo';
