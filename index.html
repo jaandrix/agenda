@@ -2214,7 +2214,6 @@
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app').classList.add('ready');
 
-            // Esperar a que el navegador resuelva el layout tras el cambio de display
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
             await init();
@@ -4682,13 +4681,13 @@
                         <div class="doc-info">
                             <span style="font-size:20px">📄</span>
                             <div style="min-width:0">
-                                <div class="doc-name">${doc.name}</div>
+                                <div class="doc-name">${escapeHtml(doc.name)}</div>
                                 <div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
                             </div>
                         </div>
                         <div class="doc-actions">
-                            <button onclick="downloadDocument('${doc.name}')">⬇ Descargar</button>
-                            <button onclick="deleteDocument('${doc.name}')">🗑</button>
+                            <button onclick="downloadDocument('${escapeHtml(doc.name)}')">⬇ Descargar</button>
+                            <button onclick="deleteDocument('${escapeHtml(doc.name)}')">🗑</button>
                         </div>
                     </div>`;
             }).join('');
@@ -5525,14 +5524,15 @@
         }
 
         async function getGlobalDevPasswordHash() {
-    const { data, error } = await sb
-        .from('global_settings')
-        .select('dev_password_hash')
-        .eq('id', 1)
-        .limit(1);
-    if (error) throw error;
-    return data && data.length > 0 ? data[0].dev_password_hash : null;
-}
+            const { data, error } = await sb
+                .from('global_settings')
+                .select('dev_password_hash')
+                .eq('id', 1)
+                .maybeSingle();
+            if (error) throw error;
+            return data ? data.dev_password_hash : null;
+        }
+
         async function setGlobalDevPasswordHash(hash) {
             const { error } = await sb
                 .from('global_settings')
@@ -5556,7 +5556,192 @@
         }
 
         // ============================================================
-        //  MODE DEVELOPER GLOBAL - CONTRASEÑA EN SUPABASE
+        //  PASSWORD ACCESS SYSTEM (para Vault y Fantasy) - CORREGIDO
+        // ============================================================
+
+        async function requestPasswordAccess(type, onSuccess) {
+            try {
+                const storedHash = await getSecret(type);
+                
+                if (!storedHash) {
+                    // No hay contraseña guardada → crear por primera vez
+                    window._passwordSuccessCallback = onSuccess;
+                    window._passwordType = type;
+                    
+                    showModal(`
+                        <div class="modal-title" style="color:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
+                            ${type === 'fantasy' ? '◉' : '◈'} Configurar acceso a ${type === 'fantasy' ? 'Fantasy' : 'Vault'}
+                        </div>
+                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
+                            Establece una contraseña para proteger ${type === 'fantasy' ? 'Fantasy' : 'Vault'}.
+                        </div>
+                        <div class="form-row">
+                            <label class="modal-label">Nueva contraseña</label>
+                            <input type="password" id="pw-new" class="modal-input" placeholder="Mínimo 6 caracteres" onkeydown="if(event.key==='Enter')createPassword('${type}')">
+                        </div>
+                        <div class="form-row">
+                            <label class="modal-label">Repetir contraseña</label>
+                            <input type="password" id="pw-new2" class="modal-input" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')createPassword('${type}')">
+                        </div>
+                        <div id="pw-create-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                        <button class="btn-modal-primary" onclick="createPassword('${type}')" style="background:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
+                            🔐 Crear contraseña
+                        </button>
+                    `);
+                    return;
+                }
+                
+                // Ya hay contraseña guardada → verificar acceso
+                window._passwordSuccessCallback = onSuccess;
+                window._passwordType = type;
+                
+                showModal(`
+                    <div class="modal-title" style="color:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
+                        ${type === 'fantasy' ? '◉' : '◈'} Acceso a ${type === 'fantasy' ? 'Fantasy' : 'Vault'}
+                    </div>
+                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
+                        Introduce tu contraseña para acceder.
+                    </div>
+                    <div class="form-row">
+                        <label class="modal-label">Contraseña</label>
+                        <input type="password" id="pw-input" class="modal-input" placeholder="Tu contraseña" onkeydown="if(event.key==='Enter')verifyPassword('${type}')">
+                    </div>
+                    <div id="pw-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                    <button class="btn-modal-primary" onclick="verifyPassword('${type}')" style="background:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
+                        🔓 Verificar
+                    </button>
+                `);
+                
+                // Enfocar el input después de renderizar
+                setTimeout(() => {
+                    const input = document.getElementById('pw-input');
+                    if (input) input.focus();
+                }, 100);
+                
+            } catch (e) {
+                console.error('Error al acceder a la contraseña:', e);
+                showToast('Error de conexión, intenta de nuevo', true);
+            }
+        }
+
+        async function createPassword(type) {
+            const pw1 = document.getElementById('pw-new').value;
+            const pw2 = document.getElementById('pw-new2').value;
+            const errorEl = document.getElementById('pw-create-error');
+            
+            if (!pw1 || pw1.length < 6) {
+                errorEl.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
+                return;
+            }
+            if (pw1 !== pw2) {
+                errorEl.textContent = '❌ Las contraseñas no coinciden';
+                return;
+            }
+            
+            try {
+                const hash = await hashPassword(pw1);
+                await setSecret(type, hash);
+                closeModal();
+                if (window._passwordSuccessCallback) {
+                    window._passwordSuccessCallback();
+                }
+                showToast('🔑 Contraseña creada correctamente');
+            } catch (e) {
+                console.error('Error al crear contraseña:', e);
+                errorEl.textContent = 'Error al guardar la contraseña. Intenta de nuevo.';
+            }
+        }
+
+        async function verifyPassword(type) {
+            const input = document.getElementById('pw-input');
+            if (!input) return;
+            const password = input.value;
+            const errorEl = document.getElementById('pw-error');
+            
+            if (!password) {
+                errorEl.textContent = 'Introduce tu contraseña';
+                return;
+            }
+            
+            try {
+                const storedHash = await getSecret(type);
+                if (!storedHash) {
+                    errorEl.textContent = 'No hay contraseña guardada. Contacta con el administrador.';
+                    return;
+                }
+                
+                const inputHash = await hashPassword(password);
+                
+                if (inputHash === storedHash) {
+                    closeModal();
+                    if (window._passwordSuccessCallback) {
+                        window._passwordSuccessCallback();
+                    }
+                } else {
+                    errorEl.textContent = '❌ Contraseña incorrecta';
+                }
+            } catch (e) {
+                console.error('Error al verificar contraseña:', e);
+                errorEl.textContent = 'Error de conexión, intenta de nuevo';
+            }
+        }
+
+        // ============================================================
+        //  DESARROLLADOR - CREAR CONTRASEÑA GLOBAL
+        // ============================================================
+
+        async function createDevPassword() {
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">⚙ Configurar Modo Desarrollador</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
+                    Esta es la contraseña global que se usará para activar el Modo Desarrollador.
+                    <br><strong>Guárdala bien</strong> — no hay forma de recuperarla si la pierdes.
+                </div>
+                <div class="form-row">
+                    <label class="modal-label">Nueva contraseña</label>
+                    <input type="password" id="dev-pw-new" class="modal-input" placeholder="Mínimo 6 caracteres" onkeydown="if(event.key==='Enter')confirmCreateDevPassword()">
+                </div>
+                <div class="form-row">
+                    <label class="modal-label">Repetir contraseña</label>
+                    <input type="password" id="dev-pw-new2" class="modal-input" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')confirmCreateDevPassword()">
+                </div>
+                <div id="dev-pw-create-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                <button class="btn-modal-primary" onclick="confirmCreateDevPassword()" style="background:var(--fantasy-accent)">
+                    🔐 Establecer contraseña
+                </button>
+            `);
+        }
+
+        async function confirmCreateDevPassword() {
+            const pw1 = document.getElementById('dev-pw-new').value;
+            const pw2 = document.getElementById('dev-pw-new2').value;
+            const errorEl = document.getElementById('dev-pw-create-error');
+            
+            if (!pw1 || pw1.length < 6) {
+                errorEl.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
+                return;
+            }
+            if (pw1 !== pw2) {
+                errorEl.textContent = '❌ Las contraseñas no coinciden';
+                return;
+            }
+            
+            try {
+                const hash = await hashPassword(pw1);
+                await setGlobalDevPasswordHash(hash);
+                closeModal();
+                devModeActive = true;
+                updateSidebarPrivacy();
+                document.getElementById('content').innerHTML = renderSettings();
+                showToast('🔓 Modo desarrollador activado correctamente');
+            } catch (e) {
+                console.error('Error al guardar la contraseña global:', e);
+                errorEl.textContent = 'Error al guardar la contraseña. Asegúrate de que la tabla global_settings existe en Supabase.';
+            }
+        }
+
+        // ============================================================
+        //  MODE DEVELOPER GLOBAL - CONTRASEÑA EN SUPABASE - CORREGIDO
         // ============================================================
         async function toggleDeveloperMode() {
             if (devModeActive) {
@@ -5572,12 +5757,12 @@
                 return;
             }
 
-            // Verificar si existe el hash global en Supabase
             try {
                 const storedHash = await getGlobalDevPasswordHash();
 
                 if (!storedHash) {
-                    showToast('Error: No hay contraseña global configurada. Contacta con el administrador.', true);
+                    // No hay contraseña global → ofrecer crearla
+                    createDevPassword();
                     return;
                 }
 
@@ -5592,9 +5777,15 @@
                     <div id="pw-dev-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
                     <button class="btn-modal-primary" onclick="verifyDevPassword()" style="background:var(--fantasy-accent)">🔓 Activar</button>
                 `);
+                
+                setTimeout(() => {
+                    const input = document.getElementById('pw-dev-input');
+                    if (input) input.focus();
+                }, 100);
+                
             } catch (e) {
                 console.error('Error al obtener la contraseña global:', e);
-                showToast('Error al conectar con el servidor', true);
+                showToast('Error al conectar con el servidor. Asegúrate de que la tabla global_settings existe.', true);
             }
         }
 
@@ -5643,7 +5834,7 @@
         }
 
         // ============================================================
-        //  OPEN FANTASY (with password, only if dev mode active)
+        //  OPEN FANTASY (with password, only if dev mode active) - CORREGIDO
         // ============================================================
         function openFantasy() {
             if (!devModeActive) {
@@ -6039,7 +6230,6 @@
                 return;
             }
 
-            // Forzar render después del layout
             requestAnimationFrame(() => {
                 render();
                 updatePageTitle();
