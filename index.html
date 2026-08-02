@@ -802,6 +802,44 @@
             margin-top: 2px;
         }
 
+        .finance-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .finance-menu-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 22px;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .finance-menu-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-strong);
+            transform: translateY(-2px);
+        }
+        .finance-menu-icon {
+            font-size: 20px;
+            color: var(--accent);
+            line-height: 1;
+        }
+        .finance-menu-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .finance-menu-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
         .empty-state {
             text-align: center;
             padding: 48px 20px;
@@ -4669,24 +4707,27 @@
             const saved = wishlistItems.filter(w => w.outcome === 'no_comprado').reduce((s, w) => s + (w.price || 0), 0);
 
             return `
-            <div style="max-width:700px">
+            <div style="max-width:760px">
                 ${saved > 0 ? `
                 <div class="card" style="margin-bottom:20px;border-left:3px solid #16a34a">
-                    <div class="card-title">💰 Ahorrado gracias a Bitácora</div>
+                    <div class="card-title">Ahorrado gracias a Bitácora</div>
                     <div class="card-value" style="color:#16a34a">${saved.toLocaleString('es-ES')}€</div>
                 </div>` : ''}
-                <div class="card-grid">
-                    <div class="card" style="cursor:pointer" onclick="financeSubView='wishlist';render()">
-                        <div class="card-title">🛒 Wishlist</div>
-                        <div class="card-sub" style="margin-top:6px">Antes de comprar, espera 30 días</div>
+                <div class="finance-menu-grid">
+                    <div class="finance-menu-card" onclick="financeSubView='wishlist';render()">
+                        <div class="finance-menu-icon">◔</div>
+                        <div class="finance-menu-title">Wishlist</div>
+                        <div class="finance-menu-sub">Antes de comprar, espera 30 días</div>
                     </div>
-                    <div class="card" style="cursor:pointer" onclick="financeSubView='indexado';render()">
-                        <div class="card-title">📈 Fondo Indexado</div>
-                        <div class="card-sub" style="margin-top:6px">Interés compuesto automático</div>
+                    <div class="finance-menu-card" onclick="financeSubView='indexado';render()">
+                        <div class="finance-menu-icon">▲</div>
+                        <div class="finance-menu-title">Fondo Indexado</div>
+                        <div class="finance-menu-sub">Interés compuesto automático</div>
                     </div>
-                    <div class="card" style="cursor:pointer" onclick="financeSubView='recurrentes';render()">
-                        <div class="card-title">🔄 Suscripciones y gastos fijos</div>
-                        <div class="card-sub" style="margin-top:6px">Cuánto pagas cada mes</div>
+                    <div class="finance-menu-card" onclick="financeSubView='recurrentes';render()">
+                        <div class="finance-menu-icon">↻</div>
+                        <div class="finance-menu-title">Suscripciones y gastos fijos</div>
+                        <div class="finance-menu-sub">Cuánto pagas cada mes</div>
                     </div>
                 </div>
             </div>`;
@@ -4762,7 +4803,7 @@
                                 </div>`}
                         </div>
                     </div>`;
-                }).join('') : '<div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-title">Sin deseos pendientes</div><div class="empty-sub">Añade algo que quieras comprar y espera 30 días</div></div>'}
+                }).join('') : '<div class="empty-state"><div class="empty-icon">◔</div><div class="empty-title">Sin deseos pendientes</div><div class="empty-sub">Añade algo que quieras comprar y espera 30 días</div></div>'}
 
                 ${archived.length ? `
                     <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:20px 0 8px 0">Historial</div>
@@ -4784,7 +4825,7 @@
 
         function openAddWishlistItem() {
             showModal(`
-                <div class="modal-title">🛒 Nuevo deseo</div>
+                <div class="modal-title">Nuevo deseo</div>
                 <div class="modal-label">¿Qué quieres comprar?</div>
                 <input id="wl-title" class="modal-input" placeholder="Ej: Auriculares nuevos">
                 <div class="modal-label">¿Por qué lo quieres?</div>
@@ -4856,7 +4897,7 @@
             document.getElementById('content').innerHTML = renderWishlist();
             try {
                 await saveData();
-                showToast(bought ? 'Genial, ¡disfrútalo!' : '💰 Has ahorrado ' + w.price.toLocaleString('es-ES') + '€');
+                showToast(bought ? 'Genial, ¡disfrútalo!' : 'Has ahorrado ' + w.price.toLocaleString('es-ES') + '€');
             } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -4903,8 +4944,8 @@
             return `
             <button class="btn-secondary" style="width:auto;margin-bottom:16px" onclick="financeSubView='menu';render()">← Volver a Finanzas</button>
             <div style="display:flex;gap:24px;flex-wrap:wrap;max-width:900px">
-                ${renderRecurringColumn('subscription', 'Suscripciones', '🔄')}
-                ${renderRecurringColumn('fixed_expense', 'Gastos fijos', '📌')}
+                ${renderRecurringColumn('subscription', 'Suscripciones', '↻')}
+                ${renderRecurringColumn('fixed_expense', 'Gastos fijos', '■')}
             </div>`;
         }
 
