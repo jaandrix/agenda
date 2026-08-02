@@ -1518,17 +1518,17 @@
             ============================================================ */
         .notes-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 14px;
         }
         .note-card {
             background: #f7f0e2;
             border: 1px solid #e6d9bd;
             border-radius: 14px;
-            padding: 18px 14px;
+            padding: 22px 18px;
             cursor: pointer;
             transition: transform 0.12s ease, box-shadow 0.12s ease;
-            min-height: 70px;
+            min-height: 90px;
             display: flex;
             align-items: center;
         }
@@ -1914,6 +1914,10 @@
                     <span class="nav-icon">✎</span>
                     <span class="nav-text">Notas</span>
                 </button>
+                <button onclick="switchView('tags')" data-view="tags">
+                    <span class="nav-icon">#</span>
+                    <span class="nav-text">Etiquetas</span>
+                </button>
 
                 <!-- Ocio -->
                 <span class="nav-label">Ocio</span>
@@ -1967,9 +1971,9 @@
 
                 <!-- Finanzas -->
                 <span class="nav-label">Finanzas</span>
-                <button onclick="switchView('investments')" data-view="investments">
+                <button onclick="switchView('finances')" data-view="finances">
                     <span class="nav-icon">◫</span>
-                    <span class="nav-text">Inversiones</span>
+                    <span class="nav-text">Finanzas</span>
                 </button>
 
                 <!-- Privado -->
@@ -2036,6 +2040,10 @@
     FAB
     ============================================================ -->
     <button id="fab" onclick="toggleFabMenu()">+</button>
+    <button id="quick-capture-btn" onclick="openQuickCapture()" title="Captura rápida (tecla Q)"
+        style="position:fixed;bottom:96px;right:30px;width:44px;height:44px;border-radius:50%;
+        background:var(--bg-card);border:1px solid var(--border-strong);color:var(--text-primary);
+        cursor:pointer;z-index:49;font-size:16px;box-shadow:var(--shadow)">✎</button>
     <div id="fab-menu">
         <button onclick="openNewEntry('book')">Libro</button>
         <button onclick="openNewEntry('movie')">Película</button>
@@ -2072,6 +2080,9 @@
             </button>
             <button onclick="switchView('notes');toggleMobileMenu()" data-view="notes">
                 <span class="nav-icon">✎</span> Notas
+            </button>
+            <button onclick="switchView('tags');toggleMobileMenu()" data-view="tags">
+                <span class="nav-icon">#</span> Etiquetas
             </button>
 
             <span class="nav-label">Ocio</span>
@@ -2112,8 +2123,8 @@
             </button>
 
             <span class="nav-label">Finanzas</span>
-            <button onclick="switchView('investments');toggleMobileMenu()" data-view="investments">
-                <span class="nav-icon">◫</span> Inversiones
+            <button onclick="switchView('finances');toggleMobileMenu()" data-view="finances">
+                <span class="nav-icon">◫</span> Finanzas
             </button>
 
             <span class="nav-label">Privado</span>
@@ -2337,6 +2348,10 @@
         let filteredEntries = [];
         let userName = '';
         let investmentData = { initial: 0, rate: 7, monthly: 0 };
+        let wishlistItems = [];
+        let inbox = [];
+        let financeSubView = 'menu';
+        let _wishlistTimerId = null;
         let devModeActive = false;
 
         // ============================================================
@@ -2355,7 +2370,9 @@
             PLACE: 'place',
             DOCUMENT: 'document',
             GOAL: 'goal',
-            BIRTHDAY: 'birthday'
+            BIRTHDAY: 'birthday',
+            SUBSCRIPTION: 'subscription',
+            FIXED_EXPENSE: 'fixed_expense'
         };
 
         const TYPE_ICONS = {
@@ -2371,7 +2388,9 @@
             place: '⌂',
             document: '📄',
             goal: '◉',
-            birthday: '🎂'
+            birthday: '🎂',
+            subscription: '🔄',
+            fixed_expense: '📌'
         };
 
         const TYPE_LABELS = {
@@ -2386,7 +2405,9 @@
             place: 'Lugar',
             document: 'Documento',
             goal: 'Objetivo',
-            birthday: 'Cumpleaños'
+            birthday: 'Cumpleaños',
+            subscription: 'Suscripción',
+            fixed_expense: 'Gasto fijo'
         };
 
         const VIEW_LABELS = {
@@ -2403,7 +2424,8 @@
             events: 'Eventos',
             places: 'Lugares',
             documents: 'Documentos',
-            investments: 'Finanzas',
+            finances: 'Finanzas',
+            tags: 'Etiquetas',
             fantasy: 'Fantasy',
             vault: 'Vault',
             notes: 'Notas',
@@ -2411,7 +2433,7 @@
             settings: 'Ajustes'
         };
 
-        const NON_CALENDAR_TYPES = ['document', 'restaurant', 'place', 'goal'];
+        const NON_CALENDAR_TYPES = ['document', 'restaurant', 'place', 'goal', 'subscription', 'fixed_expense'];
 
         const VIEW_TO_ENTRY_TYPE = {
             calendar: null,
@@ -2427,7 +2449,8 @@
             events: 'event',
             places: 'place',
             documents: null,
-            investments: null,
+            finances: null,
+            tags: null,
             fantasy: null,
             vault: null,
             notes: null,
@@ -2437,7 +2460,8 @@
 
         const TYPE_GENDER = {
             book: 'o', movie: 'a', series: 'a', game: 'o', travel: 'o',
-            work: 'o', project: 'o', event: 'o', place: 'o', document: 'o', goal: 'o', birthday: 'o'
+            work: 'o', project: 'o', event: 'o', place: 'o', document: 'o', goal: 'o', birthday: 'o',
+            subscription: 'a', fixed_expense: 'o'
         };
 
         // ============================================================
@@ -2590,6 +2614,13 @@
             }
         });
 
+        document.addEventListener('keydown', function(e) {
+            if (e.key.toLowerCase() === 'q' && !e.metaKey && !e.ctrlKey &&
+                !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                openQuickCapture();
+            }
+        });
+
         // ============================================================
         //  DEFAULT COLORS & CATEGORIES
         // ============================================================
@@ -2612,6 +2643,8 @@
                 { id: 'cat_evento', name: 'Evento', color: '#ec4899' },
                 { id: 'cat_restaurante', name: 'Restaurante', color: '#f59e0b' },
                 { id: 'cat_lugar', name: 'Lugar', color: '#14b8a6' },
+                { id: 'cat_suscripcion', name: 'Suscripción', color: '#0984e3' },
+                { id: 'cat_gasto_fijo', name: 'Gasto fijo', color: '#e17055' },
             ];
         }
 
@@ -2640,6 +2673,8 @@
                 prompts = saved.prompts || [];
                 userName = saved.userName || '';
                 investmentData = saved.investmentData || { initial: 0, rate: 7, monthly: 0 };
+                wishlistItems = saved.wishlistItems || [];
+                inbox = saved.inbox || [];
             } catch (e) {
                 console.error('Error cargando datos de Supabase:', e);
                 return false;
@@ -2665,7 +2700,7 @@
             if (!user) throw new Error('No hay sesión activa');
             const { error } = await sb.from('bitacora').upsert({
                 user_id: user.id,
-                data: { entries, categories, userName, investmentData, notes, prompts },
+                data: { entries, categories, userName, investmentData, notes, prompts, wishlistItems, inbox },
                 updated_at: new Date().toISOString()
             });
             if (error) throw error;
@@ -2774,6 +2809,7 @@
         let currentView = 'calendar';
 
         function switchView(view) {
+            if (view !== 'finances') stopWishlistTimer();
             currentView = view;
             document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
                 b.classList.toggle('active', b.dataset.view === view);
@@ -2794,6 +2830,32 @@
             const panel = document.getElementById('mobile-menu-panel');
             overlay.classList.toggle('open');
             panel.classList.toggle('open');
+        }
+
+        function openQuickCapture() {
+            showModal(`
+                <div class="modal-title">✎ Captura rápida</div>
+                <textarea id="quick-capture-input" class="modal-input" rows="3"
+                    placeholder="Escribe algo, lo organizas luego..."></textarea>
+                <button class="btn-modal-primary" onclick="saveQuickCapture()">Guardar en Inbox</button>
+            `);
+            setTimeout(() => document.getElementById('quick-capture-input')?.focus(), 50);
+        }
+
+        async function saveQuickCapture() {
+            const text = document.getElementById('quick-capture-input').value.trim();
+            if (!text) return;
+            inbox.push({ id: 'inbox_' + Date.now(), text, createdAt: new Date().toISOString() });
+            closeModal();
+            if (currentView === 'home') render();
+            try { await saveData(); showToast('Guardado en Inbox'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteInboxItem(id) {
+            inbox = inbox.filter(i => i.id !== id);
+            if (currentView === 'home') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================
@@ -3074,6 +3136,21 @@
                 `;
             }
 
+            // ===== SUBSCRIPTION / FIXED_EXPENSE =====
+            else if (type === 'subscription' || type === 'fixed_expense') {
+                extraFields = `
+                    <div class="modal-label">Importe mensual (€)</div>
+                    <input type="number" id="modal-recurring-amount" class="modal-input" step="0.01" value="${isEdit ? entry.amount || '' : ''}" placeholder="0.00">
+                    <div class="modal-label">Día de cargo (1-31)</div>
+                    <input type="number" id="modal-recurring-day" class="modal-input" min="1" max="31" value="${isEdit ? entry.renewalDay || '' : ''}" placeholder="1">
+                    <div class="modal-label">Estado</div>
+                    <select id="modal-recurring-active" class="modal-input">
+                        <option value="true" ${!isEdit || entry.active !== false ? 'selected' : ''}>Activo</option>
+                        <option value="false" ${isEdit && entry.active === false ? 'selected' : ''}>Inactivo</option>
+                    </select>
+                `;
+            }
+
             // ===== BIRTHDAY =====
             else if (type === 'birthday') {
                 extraFields = `
@@ -3226,6 +3303,11 @@
                     .split(',').map(t => t.trim()).filter(Boolean);
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 entry.date = entry.date || todayISO();
+            } else if (type === 'subscription' || type === 'fixed_expense') {
+                entry.amount = parseFloat(document.getElementById('modal-recurring-amount')?.value) || 0;
+                entry.renewalDay = parseInt(document.getElementById('modal-recurring-day')?.value) || 1;
+                entry.active = document.getElementById('modal-recurring-active')?.value !== 'false';
+                entry.date = entry.date || todayISO();
             } else if (type === 'birthday') {
                 entry.firstName = document.getElementById('modal-bday-name')?.value?.trim() || '';
                 entry.lastName = document.getElementById('modal-bday-lastname')?.value?.trim() || '';
@@ -3270,7 +3352,9 @@
                 place: 'cat_lugar',
                 document: 'cat_general',
                 goal: 'cat_general',
-                birthday: 'cat_general'
+                birthday: 'cat_general',
+                subscription: 'cat_suscripcion',
+                fixed_expense: 'cat_gasto_fijo'
             };
             const id = map[type] || 'cat_general';
             return categories.find(c => c.id === id)?.id || 'cat_general';
@@ -3346,7 +3430,7 @@
         //  EXPORT / IMPORT
         // ============================================================
         function exportData() {
-            const data = { entries, categories, userName, investmentData, notes, prompts };
+            const data = { entries, categories, userName, investmentData, notes, prompts, wishlistItems, inbox };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -3370,6 +3454,8 @@
                     if (data.notes) notes = data.notes;
                     if (data.prompts) prompts = data.prompts;
                     if (data.investmentData) investmentData = data.investmentData;
+                    if (data.wishlistItems) wishlistItems = data.wishlistItems;
+                    if (data.inbox) inbox = data.inbox;
                     filteredEntries = [...entries];
                     render();
                     updatePageTitle();
@@ -3500,7 +3586,8 @@
             else if (currentView === 'events') content.innerHTML = renderEvents();
             else if (currentView === 'places') content.innerHTML = renderPlaces();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
-                loadDocuments(); } else if (currentView === 'investments') content.innerHTML = renderInvestments();
+                loadDocuments(); } else if (currentView === 'finances') content.innerHTML = renderFinances();
+            else if (currentView === 'tags') content.innerHTML = renderTagsView();
             else if (currentView === 'fantasy') { content.innerHTML = renderFantasy();
                 renderFantasyChart();
                 renderPointsChart();
@@ -3753,8 +3840,29 @@
         function setHomeFilter(f) { homeFilter = f;
             render(); }
 
+        function getBirthdaysInRange(filter) {
+            const birthdays = entries.filter(e => e.type === 'birthday' && e.birthDate);
+            const today = new Date();
+            const range = filter === 'week' ? 7 : filter === 'month' ? 31 : filter === 'year' ? 365 : 372;
+            const todayMD = today.getMonth() * 31 + today.getDate();
+            return birthdays.filter(b => {
+                const [, m, d] = b.birthDate.split('-').map(Number);
+                const bMD = (m - 1) * 31 + d;
+                let diff = bMD - todayMD;
+                if (diff < 0) diff += 372;
+                return diff <= range;
+            }).sort((a, b) => {
+                const [, ma, da] = a.birthDate.split('-').map(Number);
+                const [, mb, db] = b.birthDate.split('-').map(Number);
+                return (ma * 31 + da) - (mb * 31 + db);
+            });
+        }
+
         function renderHome() {
             const range = getFilterRange(homeFilter);
+            const subsTotal = entries.filter(e => e.type === 'subscription' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
+            const fixedTotal = entries.filter(e => e.type === 'fixed_expense' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
+            const rangeBirthdays = getBirthdaysInRange(homeFilter);
             const filtered = range ? entries.filter(e => (e.date || '') >= range) : entries;
             const today = new Date().toISOString().slice(0, 10);
             const todayEntries = filtered.filter(e => e.date === today || e.startDate === today);
@@ -3790,6 +3898,15 @@
                         </button>`).join('')}
                 </div>
 
+                ${inbox.length ? `
+                <div class="card" style="margin-bottom:16px;border-left:3px solid #f59e0b">
+                    <div class="card-title">📥 Inbox (${inbox.length} sin organizar)</div>
+                    ${inbox.map(i => `
+                        <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+                            <span style="font-size:13px">${escapeHtml(i.text)}</span>
+                            <button class="btn-secondary" style="width:auto;padding:2px 10px;font-size:11px" onclick="deleteInboxItem('${i.id}')">✕</button>
+                        </div>`).join('')}
+                </div>` : ''}
                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
                 <div style="font-size:15px;font-weight:600;margin-bottom:20px;color:var(--text-primary)">${todayEntries.length} entradas hoy</div>
 
@@ -3803,7 +3920,21 @@
                     <div class="card"><div class="card-title">Notas</div><div class="card-value">${notes.length}</div></div>
                     <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${entries.filter(e=>e.type==='goal').length}</div></div>
                     <div class="card"><div class="card-title">Cumpleaños</div><div class="card-value">${entries.filter(e=>e.type==='birthday').length}</div></div>
+                    <div class="card"><div class="card-title">Suscripciones/mes</div><div class="card-value">${subsTotal.toLocaleString('es-ES')}€</div></div>
+                    <div class="card"><div class="card-title">Gastos fijos/mes</div><div class="card-value">${fixedTotal.toLocaleString('es-ES')}€</div></div>
                 </div>
+
+                ${rangeBirthdays.length ? `
+                    <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Cumpleaños en este periodo</div>
+                    ${rangeBirthdays.map(b => `
+                        <div class="entry-item">
+                            <div class="entry-color-dot" style="background:#ec4899"></div>
+                            <div class="entry-info">
+                                <div class="entry-title">🎂 ${escapeHtml(b.title)}</div>
+                                <div class="entry-meta">${b.birthDate.slice(8,10)}/${b.birthDate.slice(5,7)}</div>
+                            </div>
+                        </div>`).join('')}
+                ` : ''}
 
                 ${upcoming.length ? `
                     <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Próximamente</div>
@@ -4265,6 +4396,49 @@
         // ============================================================
         //  RENDER: SETTINGS
         // ============================================================
+        function renderTagsView() {
+            const tagMap = {};
+            entries.forEach(e => (e.tags || []).forEach(t => {
+                if (!tagMap[t]) tagMap[t] = [];
+                tagMap[t].push(e);
+            }));
+            const tagList = Object.keys(tagMap).sort();
+
+            if (!tagList.length) {
+                return `<div class="empty-state"><div class="empty-icon">#</div><div class="empty-title">Sin etiquetas todavía</div><div class="empty-sub">Añade etiquetas a tus entradas para verlas aquí</div></div>`;
+            }
+
+            if (window._selectedTag) {
+                const items = tagMap[window._selectedTag] || [];
+                return `
+                <div style="max-width:700px">
+                    <button class="btn-secondary" style="width:auto;margin-bottom:12px" onclick="window._selectedTag=null;render()">← Volver a Etiquetas</button>
+                    <div style="font-size:18px;font-weight:800;margin-bottom:12px">#${escapeHtml(window._selectedTag)}</div>
+                    ${items.map(e => {
+                        const cat = categories.find(c => c.id === e.categoryId);
+                        const color = cat?.color || 'var(--text-secondary)';
+                        return `
+                        <div class="entry-item" onclick="openEditEntry('${e.id}')">
+                            <div class="entry-color-dot" style="background:${color}"></div>
+                            <div class="entry-info">
+                                <div class="entry-title">${TYPE_ICONS[e.type]||'◈'} ${escapeHtml(e.title)}</div>
+                                <div class="entry-meta">${TYPE_LABELS[e.type]||''}</div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+            }
+
+            return `
+            <div style="max-width:700px;display:flex;flex-wrap:wrap;gap:8px">
+                ${tagList.map(t => `
+                    <span class="badge badge-default" style="font-size:12px;padding:6px 14px;cursor:pointer"
+                        onclick="window._selectedTag='${escapeHtml(t).replace(/'/g, "\\'")}';render()">
+                        #${escapeHtml(t)} · ${tagMap[t].length}
+                    </span>`).join('')}
+            </div>`;
+        }
+
         function renderSettings() {
             const devStatus = devModeActive ? '✅ Activado' : '⛔ Desactivado';
             const devColor = devModeActive ? 'var(--fantasy-accent)' : 'var(--text-secondary)';
@@ -4474,6 +4648,266 @@
         // ============================================================
         //  RENDER: INVESTMENTS
         // ============================================================
+        // ============================================================
+        //  FINANZAS: HUB
+        // ============================================================
+        function renderFinances() {
+            if (financeSubView === 'wishlist') {
+                startWishlistTimer();
+                return renderWishlist();
+            }
+            if (financeSubView === 'indexado') {
+                syncInvestmentBalance();
+                return renderFondoIndexado();
+            }
+            if (financeSubView === 'recurrentes') {
+                stopWishlistTimer();
+                return renderRecurringFinances();
+            }
+
+            stopWishlistTimer();
+            const saved = wishlistItems.filter(w => w.outcome === 'no_comprado').reduce((s, w) => s + (w.price || 0), 0);
+
+            return `
+            <div style="max-width:700px">
+                ${saved > 0 ? `
+                <div class="card" style="margin-bottom:20px;border-left:3px solid #16a34a">
+                    <div class="card-title">💰 Ahorrado gracias a Bitácora</div>
+                    <div class="card-value" style="color:#16a34a">${saved.toLocaleString('es-ES')}€</div>
+                </div>` : ''}
+                <div class="card-grid">
+                    <div class="card" style="cursor:pointer" onclick="financeSubView='wishlist';render()">
+                        <div class="card-title">🛒 Wishlist</div>
+                        <div class="card-sub" style="margin-top:6px">Antes de comprar, espera 30 días</div>
+                    </div>
+                    <div class="card" style="cursor:pointer" onclick="financeSubView='indexado';render()">
+                        <div class="card-title">📈 Fondo Indexado</div>
+                        <div class="card-sub" style="margin-top:6px">Interés compuesto automático</div>
+                    </div>
+                    <div class="card" style="cursor:pointer" onclick="financeSubView='recurrentes';render()">
+                        <div class="card-title">🔄 Suscripciones y gastos fijos</div>
+                        <div class="card-sub" style="margin-top:6px">Cuánto pagas cada mes</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // ============================================================
+        //  WISHLIST
+        // ============================================================
+        function formatCountdown(ms) {
+            if (ms <= 0) return '00d 00:00:00';
+            const s = Math.floor(ms / 1000);
+            const d = Math.floor(s / 86400);
+            const h = Math.floor((s % 86400) / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            return `${String(d).padStart(2,'0')}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+        }
+
+        function startWishlistTimer() {
+            stopWishlistTimer();
+            _wishlistTimerId = setInterval(() => {
+                let needsFullRerender = false;
+                wishlistItems.forEach(w => {
+                    if (w.status !== 'esperando') return;
+                    const remaining = w.unlockAt - Date.now();
+                    if (remaining <= 0) {
+                        w.status = 'pendiente_decision';
+                        needsFullRerender = true;
+                        return;
+                    }
+                    const el = document.getElementById('wl-countdown-' + w.id);
+                    if (el) el.textContent = formatCountdown(remaining);
+                });
+                if (needsFullRerender && currentView === 'finances' && financeSubView === 'wishlist') {
+                    saveData();
+                    document.getElementById('content').innerHTML = renderWishlist();
+                }
+            }, 1000);
+        }
+
+        function stopWishlistTimer() {
+            if (_wishlistTimerId) { clearInterval(_wishlistTimerId); _wishlistTimerId = null; }
+        }
+
+        function renderWishlist() {
+            const active = wishlistItems.filter(w => w.status !== 'registrado');
+            const archived = wishlistItems.filter(w => w.status === 'registrado');
+
+            return `
+            <button class="btn-secondary" style="width:auto;margin-bottom:16px" onclick="financeSubView='menu';render()">← Volver a Finanzas</button>
+            <div style="max-width:700px">
+                <button class="btn-modal-primary" style="width:auto;padding:8px 20px;margin-bottom:16px" onclick="openAddWishlistItem()">+ Añadir deseo</button>
+
+                ${active.length ? active.map(w => {
+                    const remaining = w.unlockAt - Date.now();
+                    return `
+                    <div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+                        <div style="min-width:100px;text-align:center">
+                            ${w.status === 'esperando'
+                                ? `<div id="wl-countdown-${w.id}" class="console-font" style="font-size:13px">${formatCountdown(remaining)}</div>`
+                                : `<span class="badge badge-progress">Decide ya</span>`}
+                        </div>
+                        <div style="flex:1;min-width:160px">
+                            <div style="font-weight:700">${escapeHtml(w.title)}</div>
+                            <div style="font-size:12px;color:var(--text-secondary)">${w.price.toLocaleString('es-ES')}€${w.reason ? ' · ' + escapeHtml(w.reason) : ''}</div>
+                        </div>
+                        <div>
+                            ${w.status === 'esperando'
+                                ? `<button class="btn-secondary" style="width:auto;font-size:12px" onclick="markWishlistImpulsive('${w.id}')">Comprar ya</button>`
+                                : `<div style="display:flex;gap:6px">
+                                    <button class="btn-secondary" style="width:auto;font-size:12px" onclick="decideWishlistItem('${w.id}', true)">Sí, comprado</button>
+                                    <button class="btn-secondary" style="width:auto;font-size:12px" onclick="decideWishlistItem('${w.id}', false)">No lo compré</button>
+                                </div>`}
+                        </div>
+                    </div>`;
+                }).join('') : '<div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-title">Sin deseos pendientes</div><div class="empty-sub">Añade algo que quieras comprar y espera 30 días</div></div>'}
+
+                ${archived.length ? `
+                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:20px 0 8px 0">Historial</div>
+                    ${archived.map(w => {
+                        const badgeClass = w.outcome === 'no_comprado' ? 'badge-done' : 'badge-default';
+                        const badgeText = w.outcome === 'no_comprado' ? 'No comprado (ahorrado)' : (w.outcome === 'comprado_impulsivo' ? 'Comprado sin esperar' : 'Comprado tras esperar');
+                        return `
+                        <div class="entry-item">
+                            <div class="entry-info">
+                                <div class="entry-title">${escapeHtml(w.title)}</div>
+                                <div class="entry-meta">${w.price.toLocaleString('es-ES')}€</div>
+                            </div>
+                            <span class="badge ${badgeClass}">${badgeText}</span>
+                        </div>`;
+                    }).join('')}
+                ` : ''}
+            </div>`;
+        }
+
+        function openAddWishlistItem() {
+            showModal(`
+                <div class="modal-title">🛒 Nuevo deseo</div>
+                <div class="modal-label">¿Qué quieres comprar?</div>
+                <input id="wl-title" class="modal-input" placeholder="Ej: Auriculares nuevos">
+                <div class="modal-label">¿Por qué lo quieres?</div>
+                <textarea id="wl-reason" class="modal-input" rows="2" placeholder="Breve motivo (opcional)"></textarea>
+                <div class="modal-label">Precio (€)</div>
+                <input type="number" id="wl-price" class="modal-input" step="0.01" placeholder="0.00">
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Podrás decidir si comprarlo pasados 30 días.</div>
+                <button class="btn-modal-primary" onclick="saveWishlistItem()">Añadir a la lista</button>
+            `);
+        }
+
+        async function saveWishlistItem() {
+            const title = document.getElementById('wl-title').value.trim();
+            const reason = document.getElementById('wl-reason').value.trim();
+            const price = parseFloat(document.getElementById('wl-price').value) || 0;
+            if (!title) { showToast('Escribe qué quieres comprar', true); return; }
+            const now = Date.now();
+            wishlistItems.push({
+                id: 'wl_' + now,
+                title, reason, price,
+                createdAt: new Date(now).toISOString(),
+                unlockAt: now + 30 * 24 * 60 * 60 * 1000,
+                status: 'esperando',
+                outcome: null,
+                decidedAt: null
+            });
+            closeModal();
+            document.getElementById('content').innerHTML = renderWishlist();
+            try { await saveData(); showToast('Añadido. Vuelve en 30 días.'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function markWishlistImpulsive(id) {
+            const w = wishlistItems.find(w => w.id === id);
+            if (!w) return;
+            if (!confirm('¿Seguro que quieres comprarlo ya, sin esperar los 30 días? Se registrará como compra impulsiva.')) return;
+            w.status = 'registrado';
+            w.outcome = 'comprado_impulsivo';
+            w.decidedAt = new Date().toISOString();
+            document.getElementById('content').innerHTML = renderWishlist();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function decideWishlistItem(id, bought) {
+            const w = wishlistItems.find(w => w.id === id);
+            if (!w) return;
+            w.status = 'registrado';
+            w.decidedAt = new Date().toISOString();
+
+            if (bought) {
+                w.outcome = 'comprado_esperado';
+                entries.push({
+                    id: 'entry_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    title: 'He comprado ' + w.title,
+                    type: 'event',
+                    eventType: 'otro',
+                    date: todayISO(),
+                    time: '',
+                    place: '',
+                    notes: 'Comprado tras esperar 30 días en la Wishlist. Precio: ' + w.price.toLocaleString('es-ES') + '€',
+                    categoryId: getCategoryIdForType('event'),
+                    tags: []
+                });
+                entries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+            } else {
+                w.outcome = 'no_comprado';
+            }
+
+            document.getElementById('content').innerHTML = renderWishlist();
+            try {
+                await saveData();
+                showToast(bought ? 'Genial, ¡disfrútalo!' : '💰 Has ahorrado ' + w.price.toLocaleString('es-ES') + '€');
+            } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ============================================================
+        //  SUSCRIPCIONES Y GASTOS FIJOS (paralelas)
+        // ============================================================
+        function renderRecurringColumn(type, label, icon) {
+            const items = entries.filter(e => e.type === type);
+            const active = items.filter(i => i.active !== false);
+            const total = active.reduce((s, e) => s + (e.amount || 0), 0);
+            const todayDay = new Date().getDate();
+            const sorted = [...active].sort((a, b) => {
+                const da = a.renewalDay < todayDay ? a.renewalDay + 31 : a.renewalDay;
+                const db = b.renewalDay < todayDay ? b.renewalDay + 31 : b.renewalDay;
+                return da - db;
+            });
+            return `
+            <div style="flex:1;min-width:260px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <div style="font-weight:800;font-size:14px">${icon} ${label}</div>
+                    <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:12px" onclick="openNewEntry('${type}')">+ Añadir</button>
+                </div>
+                <div class="card" style="margin-bottom:12px">
+                    <div class="card-title">Total mensual</div>
+                    <div class="card-value">${total.toLocaleString('es-ES')}€</div>
+                    <div class="card-sub">${active.length} activos · ${(total * 12).toLocaleString('es-ES')}€/año</div>
+                </div>
+                ${sorted.length ? sorted.map(s => {
+                    const daysUntil = s.renewalDay >= todayDay ? s.renewalDay - todayDay : s.renewalDay + 31 - todayDay;
+                    return `
+                    <div class="entry-item" onclick="openEditEntry('${s.id}')">
+                        <div class="entry-color-dot" style="background:${daysUntil <= 3 ? '#e17055' : 'var(--text-secondary)'}"></div>
+                        <div class="entry-info">
+                            <div class="entry-title">${escapeHtml(s.title)}</div>
+                            <div class="entry-meta">Día ${s.renewalDay} · en ${daysUntil} días</div>
+                        </div>
+                        <span style="font-weight:700;font-size:13px">${s.amount.toLocaleString('es-ES')}€</span>
+                    </div>`;
+                }).join('') : `<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Nada por aquí todavía</div>`}
+            </div>`;
+        }
+
+        function renderRecurringFinances() {
+            return `
+            <button class="btn-secondary" style="width:auto;margin-bottom:16px" onclick="financeSubView='menu';render()">← Volver a Finanzas</button>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;max-width:900px">
+                ${renderRecurringColumn('subscription', 'Suscripciones', '🔄')}
+                ${renderRecurringColumn('fixed_expense', 'Gastos fijos', '📌')}
+            </div>`;
+        }
+
         let investmentChartYears = 10;
 
         function renderInvestments() {
@@ -4564,6 +4998,128 @@
             return html;
         }
 
+        function syncInvestmentBalance() {
+            if (investmentData.currentBalance === undefined || investmentData.currentBalance === null || !investmentData.lastUpdateMonth) {
+                investmentData.currentBalance = investmentData.initial || 0;
+                investmentData.lastUpdateMonth = todayISO().slice(0, 7);
+                investmentData.extraContributions = investmentData.extraContributions || [];
+                return;
+            }
+            const now = new Date();
+            let [ly, lm] = investmentData.lastUpdateMonth.split('-').map(Number);
+            const cy = now.getFullYear(), cm = now.getMonth() + 1;
+            const monthlyRate = (investmentData.rate || 0) / 100 / 12;
+            let changed = false;
+            while (ly < cy || (ly === cy && lm < cm)) {
+                investmentData.currentBalance = (investmentData.currentBalance || 0) * (1 + monthlyRate) + (investmentData.monthly || 0);
+                lm++;
+                if (lm > 12) { lm = 1; ly++; }
+                changed = true;
+            }
+            investmentData.lastUpdateMonth = `${cy}-${String(cm).padStart(2, '0')}`;
+            if (changed) saveData();
+        }
+
+        function renderFondoIndexado() {
+            const initialSet = !!investmentData.initializedAt;
+            const proj = calcCompoundProjection(investmentData.currentBalance || 0, investmentData.monthly || 0, investmentData.rate || 0, investmentChartYears);
+            const max = Math.max(...proj.yearlySnapshots.map(s => s.balance), 1);
+            const yearOptions = [5, 10, 20, 30];
+            const extras = (investmentData.extraContributions || []).slice().reverse();
+
+            return `
+            <button class="btn-secondary" style="width:auto;margin-bottom:16px" onclick="financeSubView='menu';render()">← Volver a Finanzas</button>
+            <div class="investment-calculator" style="max-width:700px">
+                <div class="result-grid" style="grid-template-columns:1fr">
+                    <div class="result-card">
+                        <div class="value">${(investmentData.currentBalance || 0).toLocaleString('es-ES')}€</div>
+                        <div class="label">Saldo actual (real)</div>
+                    </div>
+                </div>
+
+                <div style="margin:16px 0">
+                    <div class="modal-label">Capital inicial (€) ${initialSet ? '🔒' : ''}</div>
+                    <input type="number" id="inv-initial" class="modal-input" value="${investmentData.initial || ''}"
+                        ${initialSet ? 'disabled' : ''} placeholder="0.00">
+                    ${initialSet ? `<button class="btn-secondary" style="width:auto;font-size:12px;margin-top:6px" onclick="unlockInitialCapital()">Corregir capital inicial</button>` : ''}
+                    <div class="modal-label">Aportación mensual (€)</div>
+                    <input type="number" id="inv-monthly" class="modal-input" value="${investmentData.monthly || ''}" placeholder="0.00">
+                    <div class="modal-label">Rentabilidad anual esperada (%)</div>
+                    <input type="number" id="inv-rate" class="modal-input" value="${investmentData.rate || 7}" placeholder="7">
+                    <button class="btn-modal-primary" onclick="updateInvestment()">Guardar</button>
+                </div>
+
+                <button class="btn-secondary" style="width:auto;margin-bottom:16px" onclick="openAddExtraContribution()">+ Aportación extra</button>
+
+                ${extras.length ? `
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Aportaciones extra</div>
+                    ${extras.map(e => `
+                        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">
+                            <span>${e.date}${e.note ? ' · ' + escapeHtml(e.note) : ''}</span>
+                            <span style="font-weight:700">+${e.amount.toLocaleString('es-ES')}€</span>
+                        </div>`).join('')}
+                ` : ''}
+
+                <div class="chart-container" style="margin-top:20px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div class="chart-title" style="margin-bottom:0">Proyección desde el saldo actual</div>
+                        <div class="year-selector">
+                            ${yearOptions.map(y => `<button class="${y === investmentChartYears ? 'active' : ''}" onclick="setInvestmentYears(${y})">${y}a</button>`).join('')}
+                        </div>
+                    </div>
+                    <div class="investment-chart">
+                        ${proj.yearlySnapshots.map((s, i) => {
+                            const balancePct = Math.max(4, (s.balance / max) * 100);
+                            const contribPct = Math.max(0, (s.contributed / max) * 100);
+                            const interestPct = Math.max(0, balancePct - contribPct);
+                            return `
+                            <div class="bar" title="Año ${s.year}: ${s.balance.toLocaleString('es-ES')}€">
+                                <div class="bar-track">
+                                    <div class="bar-fill-contrib" style="height:${contribPct}%"></div>
+                                    <div class="bar-fill-interest" style="height:${interestPct}%"></div>
+                                </div>
+                                <div class="bar-label">${shouldShowYearLabel(i, proj.yearlySnapshots.length) ? s.year : ''}</div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    <div class="chart-legend">
+                        <span><span class="legend-dot" style="background:var(--text-secondary)"></span> Aportaciones</span>
+                        <span><span class="legend-dot" style="background:var(--accent)"></span> Intereses</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function unlockInitialCapital() {
+            if (!confirm('Vas a corregir el capital inicial manualmente. Esto es solo para arreglar errores, no para simular aportaciones nuevas. ¿Continuar?')) return;
+            investmentData.initializedAt = null;
+            document.getElementById('content').innerHTML = renderFondoIndexado();
+        }
+
+        function openAddExtraContribution() {
+            showModal(`
+                <div class="modal-title">➕ Aportación extra</div>
+                <div class="modal-label">Importe (€)</div>
+                <input type="number" id="extra-amount" class="modal-input" step="0.01" placeholder="0.00">
+                <div class="modal-label">Nota (opcional)</div>
+                <input id="extra-note" class="modal-input" placeholder="Ej: Paga extra">
+                <button class="btn-modal-primary" onclick="saveExtraContribution()">Añadir</button>
+            `);
+        }
+
+        async function saveExtraContribution() {
+            const amount = parseFloat(document.getElementById('extra-amount').value) || 0;
+            const note = document.getElementById('extra-note').value.trim();
+            if (!amount || amount <= 0) { showToast('Introduce un importe válido', true); return; }
+            if (!investmentData.extraContributions) investmentData.extraContributions = [];
+            investmentData.extraContributions.push({ date: todayISO(), amount, note });
+            investmentData.currentBalance = (investmentData.currentBalance || 0) + amount;
+            closeModal();
+            document.getElementById('content').innerHTML = renderFondoIndexado();
+            try { await saveData(); showToast('Aportación añadida'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
         function shouldShowYearLabel(index, total) {
             const step = Math.max(1, Math.round(total / 8));
             return index % step === 0;
@@ -4571,17 +5127,26 @@
 
         function setInvestmentYears(years) {
             investmentChartYears = years;
-            document.getElementById('content').innerHTML = renderInvestments();
+            document.getElementById('content').innerHTML = renderFondoIndexado();
         }
 
         async function updateInvestment() {
-            const initial = parseFloat(document.getElementById('inv-initial').value) || 0;
+            const initialInput = document.getElementById('inv-initial');
             const rate = parseFloat(document.getElementById('inv-rate').value) || 0;
             const monthly = parseFloat(document.getElementById('inv-monthly').value) || 0;
 
-            investmentData = { initial, rate, monthly };
+            if (initialInput && !initialInput.disabled) {
+                const initial = parseFloat(initialInput.value) || 0;
+                investmentData.initial = initial;
+                investmentData.currentBalance = initial;
+                investmentData.lastUpdateMonth = todayISO().slice(0, 7);
+                investmentData.initializedAt = new Date().toISOString();
+                investmentData.extraContributions = investmentData.extraContributions || [];
+            }
+            investmentData.rate = rate;
+            investmentData.monthly = monthly;
 
-            document.getElementById('content').innerHTML = renderInvestments();
+            document.getElementById('content').innerHTML = renderFondoIndexado();
 
             try {
                 await saveData();
