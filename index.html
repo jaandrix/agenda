@@ -2437,6 +2437,17 @@ body.beige {
 .fund-card .fund-alloc-bar-fill {
     transition:width .25s ease;
 }
+.fund-card-foot {
+    display:flex; justify-content:space-between; gap:10px; margin-top:8px;
+    font-size:10px; color:var(--text-secondary);
+}
+.investment-section-subtitle {
+    font-size:11px; color:var(--text-secondary); margin-top:3px;
+}
+.investment-projection-card .investment-rate-row {
+    align-items:center;
+}
+
 .investment-empty-state {
     border:1px dashed var(--border-strong);
     border-radius:13px;
@@ -5991,7 +6002,15 @@ body.beige {
         }
 
         function migrateInvestmentData() {
-            if (investmentData && Array.isArray(investmentData.funds)) return;
+            // La proyección de Bitácora utiliza siempre un supuesto del 5 % anual.
+            // Las cifras reales de la cartera nunca se alteran por esta simulación.
+            if (investmentData && Array.isArray(investmentData.funds)) {
+                investmentData.rate = 5;
+                if (!Number.isFinite(Number(investmentData.projectionMonthly))) {
+                    investmentData.projectionMonthly = 130;
+                }
+                return;
+            }
 
             const old = investmentData || {};
             const initial = Number(old.initial || 0);
@@ -6022,7 +6041,8 @@ body.beige {
             );
 
             investmentData = {
-                rate: Number(old.rate || 7),
+                rate: 5,
+                projectionMonthly: Number(old.monthly || 130) > 0 ? Number(old.monthly || 130) : 130,
                 funds: contributions.length || currentValue > 0 ? [{
                     id: 'fund_' + Date.now(),
                     name: 'Mi fondo indexado',
@@ -6103,6 +6123,8 @@ body.beige {
             const gain = value - invested;
             const gainPct = invested > 0 ? (gain / invested) * 100 : 0;
             const cagr = portfolioAnnualizedReturn();
+            const projectionMonthly = Number(investmentData.projectionMonthly || 130);
+            const projectionRate = 5;
             const palette = ['#eab308', '#8B5CF6', '#3b82f6', '#ec4899', '#14b8a6', '#f97316', '#22c55e'];
 
             return `
@@ -6122,57 +6144,31 @@ body.beige {
                 <div class="invest-hero">
                     <div class="invest-hero-card primary">
                         <div class="invest-hero-label">Valor actual</div>
-                        <div class="invest-hero-value">${value.toLocaleString('es-ES')}€</div>
-                        <div class="invest-hero-sub">${funds.length} fondo${funds.length === 1 ? '' : 's'} registrado${funds.length === 1 ? '' : 's'}</div>
+                        <div class="invest-hero-value">${value.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}€</div>
+                        <div class="invest-hero-sub">Valor registrado en tu bróker</div>
                     </div>
                     <div class="invest-hero-card">
                         <div class="invest-hero-label">Capital aportado</div>
-                        <div class="invest-hero-value">${invested.toLocaleString('es-ES')}€</div>
-                        <div class="invest-hero-sub">Suma de tus aportaciones</div>
+                        <div class="invest-hero-value">${invested.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}€</div>
+                        <div class="invest-hero-sub">Dinero introducido realmente</div>
                     </div>
                     <div class="invest-hero-card">
                         <div class="invest-hero-label">Resultado</div>
-                        <div class="invest-hero-value ${gain >= 0 ? 'gain-positive' : 'gain-negative'}">${gain >= 0 ? '+' : ''}${gain.toLocaleString('es-ES')}€</div>
+                        <div class="invest-hero-value ${gain >= 0 ? 'gain-positive' : 'gain-negative'}">${gain >= 0 ? '+' : ''}${gain.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}€</div>
                         <div class="invest-hero-sub ${gain >= 0 ? 'gain-positive' : 'gain-negative'}">${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)}% sobre lo aportado</div>
                     </div>
                     <div class="invest-hero-card">
                         <div class="invest-hero-label">Rentabilidad anualizada</div>
                         <div class="invest-hero-value">${cagr === null ? '—' : (cagr >= 0 ? '+' : '') + cagr.toFixed(2) + '%'}</div>
-                        <div class="invest-hero-sub">${cagr === null ? 'Se mostrará con suficiente histórico' : 'Estimación orientativa'}</div>
+                        <div class="invest-hero-sub">Estimación orientativa del histórico</div>
                     </div>
                 </div>
 
-                ${funds.length ? `
-                    <div class="investment-chart-card">
-                        <div class="investment-chart-head">
-                            <div>
-                                <div class="title">Evolución de la cartera</div>
-                                <div class="desc">Compara el dinero que has aportado con el valor que has registrado en tu bróker.</div>
-                                <div class="investment-chart-context">
-                                    <span class="investment-context-chip real">Histórico introducido por ti</span>
-                                    <span class="investment-context-chip">Sin estimaciones en este gráfico</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="investment-canvas-wrap"><canvas id="portfolioHistoryChart"></canvas></div>
-                    </div>
-
-                    ${funds.length > 1 ? `
-                    <div class="investment-chart-card">
-                        <div class="investment-chart-head">
-                            <div>
-                                <div class="title">Distribución de la cartera</div>
-                                <div class="desc">Peso de cada fondo según su última valoración registrada.</div>
-                            </div>
-                        </div>
-                        <div class="investment-canvas-wrap" style="max-width:380px;margin:0 auto;height:300px">
-                            <canvas id="portfolioAllocationChart"></canvas>
-                        </div>
-                    </div>` : ''}
-                ` : ''}
-
                 <div class="investment-funds-head">
-                    <div class="investment-funds-label">Tus posiciones</div>
+                    <div>
+                        <div class="investment-funds-label">Tus posiciones</div>
+                        <div class="investment-section-subtitle">Valor actual y rentabilidad de cada fondo registrado.</div>
+                    </div>
                     <button class="btn-secondary investment-add-btn" onclick="openAddFundModal()">+ Añadir fondo</button>
                 </div>
 
@@ -6195,15 +6191,16 @@ body.beige {
                                 </div>
                             </div>
                             <div class="fund-values">
-                                <div class="fund-value">${fv.toLocaleString('es-ES')}€</div>
+                                <div class="fund-value">${fv.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}€</div>
                                 <div class="fund-gain ${fg >= 0 ? 'gain-positive' : 'gain-negative'}">
-                                    ${fg >= 0 ? '+' : ''}${fgPct.toFixed(1)}%
+                                    ${fg >= 0 ? '+' : ''}${fgPct.toFixed(2)}%
                                 </div>
                             </div>
                         </div>
                         <div class="fund-alloc-bar-bg">
                             <div class="fund-alloc-bar-fill" style="width:${Math.max(0, Math.min(100, alloc))}%;background:${color}"></div>
                         </div>
+                        <div class="fund-card-foot"><span>${fi.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}€ aportados</span><span>${alloc.toFixed(1)}% de la cartera</span></div>
                     </div>`;
                 }).join('') : `
                     <div class="investment-empty-state" onclick="openAddFundModal()">
@@ -6211,11 +6208,40 @@ body.beige {
                         Añade tu fondo y empieza a introducir las aportaciones y valoraciones reales.
                     </div>`}
 
+                ${funds.length ? `
+                    <div class="investment-chart-card" style="margin-top:20px">
+                        <div class="investment-chart-head">
+                            <div>
+                                <div class="title">Evolución de la cartera</div>
+                                <div class="desc">Compara el capital que has aportado con las valoraciones reales que hayas registrado.</div>
+                                <div class="investment-chart-context">
+                                    <span class="investment-context-chip real">Histórico real</span>
+                                    <span class="investment-context-chip">Sin proyecciones</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="investment-canvas-wrap"><canvas id="portfolioHistoryChart"></canvas></div>
+                    </div>
+
+                    ${funds.length > 1 ? `
+                    <div class="investment-chart-card">
+                        <div class="investment-chart-head">
+                            <div>
+                                <div class="title">Distribución de la cartera</div>
+                                <div class="desc">Peso de cada fondo según su última valoración registrada.</div>
+                            </div>
+                        </div>
+                        <div class="investment-canvas-wrap" style="max-width:380px;margin:0 auto;height:300px">
+                            <canvas id="portfolioAllocationChart"></canvas>
+                        </div>
+                    </div>` : ''}
+                ` : ''}
+
                 <div class="investment-chart-card investment-projection-card" style="margin-top:20px">
                     <div class="investment-chart-head">
                         <div>
-                            <div class="title">Proyección</div>
-                            <div class="desc">Una simulación de cómo podría evolucionar el valor actual si mantuviera una rentabilidad anual constante.</div>
+                            <div class="title">Proyección a futuro</div>
+                            <div class="desc">Escenario hipotético a partir del valor actual y de tus aportaciones mensuales.</div>
                         </div>
                         <div class="year-selector">
                             ${[5, 10, 20, 30].map(y => `
@@ -6226,15 +6252,17 @@ body.beige {
 
                     <div class="investment-projection-note">
                         <span>◈</span>
-                        <span><strong>Simulación, no previsión.</strong> Parte del valor actual y aplica únicamente la rentabilidad anual que indiques. No añade aportaciones futuras automáticamente.</span>
+                        <span><strong>Simulación al 5 % anual.</strong> No es una previsión de mercado. Se parte del valor actual y se añaden ${projectionMonthly.toLocaleString('es-ES')}€ al mes, aplicando una capitalización mensual equivalente al 5 % anual.</span>
                     </div>
 
                     <div class="investment-rate-row">
                         <div class="investment-rate-field">
-                            <div class="modal-label">Rentabilidad anual utilizada</div>
-                            <input type="number" id="inv-rate" class="modal-input" value="${Number(investmentData.rate || 7)}" step="0.1" min="0" onchange="updateExpectedRate(this.value)">
+                            <div class="modal-label">Aportación mensual para la simulación (€)</div>
+                            <input type="number" id="inv-monthly-projection" class="modal-input" value="${projectionMonthly}" step="1" min="0" onchange="updateProjectionMonthly(this.value)">
                         </div>
-                        <div class="invest-note" style="max-width:420px;margin-bottom:4px">Este porcentaje solo afecta a la simulación. Los datos reales de la cartera se calculan exclusivamente con tus aportaciones y valoraciones.</div>
+                        <div class="invest-note" style="max-width:420px;margin-bottom:4px">
+                            Rentabilidad fija del escenario: <strong>5 % anual</strong>. Tus datos reales no se modifican.
+                        </div>
                     </div>
 
                     <div class="investment-canvas-wrap"><canvas id="portfolioProjectionChart"></canvas></div>
@@ -6422,9 +6450,22 @@ body.beige {
             await persistInvest('Fondo eliminado');
         }
 
-        async function updateExpectedRate(value) {
-            investmentData.rate = Math.max(0, Number(value) || 0);
+        async function updateExpectedRate() {
+            // El supuesto de simulación queda fijado al 5 % anual.
+            investmentData.rate = 5;
             await persistInvest();
+        }
+
+        async function updateProjectionMonthly(value) {
+            const monthly = Math.max(0, Number(value) || 0);
+            investmentData.projectionMonthly = monthly;
+            try {
+                await persistInvest();
+                document.getElementById('content').innerHTML = renderFondoIndexado();
+                setTimeout(renderInvestmentCharts, 0);
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         let portfolioHistoryChart = null;
@@ -6603,18 +6644,24 @@ body.beige {
 
             if (pEl) {
                 const current = portfolioCurrentValue();
-                const invested = portfolioInvested();
-                const rate = Number(investmentData.rate || 0);
-                const monthlyRate = Math.pow(1 + rate / 100, 1 / 12) - 1;
-
+                const monthlyContribution = Math.max(0, Number(investmentData.projectionMonthly ?? 130));
+                const annualRate = 0.05;
+                const monthlyRate = Math.pow(1 + annualRate, 1 / 12) - 1;
                 let balance = current;
+                let contributed = portfolioInvested();
                 const projection = [current];
+                const contributedSeries = [contributed];
+                const interestSeries = [Math.max(0, current - contributed)];
 
                 for (let y = 1; y <= investmentChartYears; y++) {
                     for (let m = 0; m < 12; m++) {
                         balance *= 1 + monthlyRate;
+                        balance += monthlyContribution;
+                        contributed += monthlyContribution;
                     }
                     projection.push(balance);
+                    contributedSeries.push(contributed);
+                    interestSeries.push(Math.max(0, balance - contributed));
                 }
 
                 portfolioProjectionChart = new Chart(pEl.getContext('2d'), {
@@ -6632,11 +6679,12 @@ body.beige {
                                 pointRadius: 0
                             },
                             {
-                                label: 'Aportado hoy',
-                                data: projection.map(() => invested),
+                                label: 'Capital aportado',
+                                data: contributedSeries,
                                 borderColor: '#6b7280',
                                 borderDash: [5, 5],
-                                pointRadius: 0
+                                pointRadius: 0,
+                                tension: .2
                             }
                         ]
                     },
