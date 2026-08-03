@@ -110,17 +110,16 @@ button:hover{background:#1b1b1b}
 const SUPABASE_URL='https://avdqtnukgbejorieuunj.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhdmRxdG51a2diZWpvcmlldXV1bmoiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4NTMyNzI5NSwiZXhwIjoyMTAwOTAzMjk1fQ.sq1cepXuBaNT6qygyxKEAhVHJh7G9LZyzaeJBhc7s7s';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-let apuntes=[], currentId=null, data={};
+let apuntes=[], currentId=null, currentUserId=null;
 
 const $=id=>document.getElementById(id);
-function status(t){$('status').textContent=t;clearTimeout(status.t);status.t=setTimeout(()=>$('status').textContent='',1800);}
-async function getUser(){ const {data:{user},error}=await sb.auth.getUser(); if(error) throw error; return user; }
+function status(t){$('status').textContent=t;clearTimeout(status.t);status.t=setTimeout(()=>$('status').textContent='',2200);}
+async function getUser(){const {data:{user},error}=await sb.auth.getUser();if(error)throw error;return user;}
 function cmd(name){$('editor').focus();document.execCommand(name,false,null);}
 function changeSize(px){
-  const editor=$('editor');
-  editor.focus();
+  const editor=$('editor'); editor.focus();
   const sel=window.getSelection();
-  if(!sel || !sel.rangeCount || sel.isCollapsed){ status('Selecciona un texto para cambiar su tamaño'); return; }
+  if(!sel || !sel.rangeCount || sel.isCollapsed){status('Selecciona un texto para cambiar su tamaño');return;}
   try{
     document.execCommand('fontSize',false,'7');
     editor.querySelectorAll('font[size="7"]').forEach(font=>{
@@ -135,21 +134,11 @@ function exportPDF(){
   const title=$('title').value.trim()||'Apunte sin título';
   const editorHtml=$('editor').innerHTML.trim();
   if(!editorHtml){status('Escribe algo antes de exportar');return;}
-
-  // Abrimos una pestaña inmediatamente (gesto del usuario) y después
-  // cargamos una página de impresión independiente. Así evitamos que
-  // document.write sobre about:blank quede bloqueado o resulte en una
-  // pestaña vacía en algunos navegadores.
   const win=window.open('about:blank','_blank');
   if(!win){status('El navegador bloqueó la ventana de PDF');return;}
-
   const date=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
   const safeTitle=esc(title);
-  const printDoc=`<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+  const printDoc=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
 <title>${safeTitle}</title>
 <style>
 @page{size:A4;margin:18mm 18mm 20mm}
@@ -163,153 +152,138 @@ h1{font-size:24pt;line-height:1.15;margin:0;font-weight:750;letter-spacing:-.2px
 main{word-wrap:break-word;overflow-wrap:anywhere}
 main p{margin:0 0 .8em}
 main h1{font-size:20pt;margin-top:1em}main h2{font-size:17pt;margin-top:1em}main h3{font-size:14pt;margin-top:1em}
-main img{max-width:100%;height:auto}
-main a{color:#171717;text-decoration:underline}
-ul,ol{padding-left:1.4em}
-blockquote{border-left:3px solid #cfcfcf;padding-left:12px;margin-left:0;color:#555}
+main img{max-width:100%;height:auto}main a{color:#171717;text-decoration:underline}
+ul,ol{padding-left:1.4em}blockquote{border-left:3px solid #cfcfcf;padding-left:12px;margin-left:0;color:#555}
 pre{white-space:pre-wrap;word-break:break-word}
 @media print{.print-page{max-width:none}a{color:inherit}}
-</style>
-</head>
-<body>
-<div class="print-page">
+</style></head><body><div class="print-page">
 <header><h1>${safeTitle} <span class="date">- ${date}</span></h1></header>
-<main>${editorHtml}</main>
-</div>
-</body>
-</html>`;
-
+<main>${editorHtml}</main></div></body></html>`;
   try{
-    win.document.open();
-    win.document.write(printDoc);
-    win.document.close();
-    setTimeout(()=>{
-      try{
-        win.focus();
-        win.print();
-      }catch(e){
-        console.error('No se pudo abrir la impresión:',e);
-        status('No se pudo abrir la impresión');
-      }
-    },500);
-  }catch(e){
-    console.error('Error preparando PDF:',e);
-    try{win.close();}catch(_){ }
-    status('No se pudo preparar el PDF');
-  }
+    win.document.open();win.document.write(printDoc);win.document.close();
+    setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);status('No se pudo abrir la impresión');}},500);
+  }catch(e){console.error(e);try{win.close();}catch(_){}status('No se pudo preparar la impresión');}
 }
 function fmtDate(iso){return new Date(iso).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});}
 function esc(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function makeId(){
+  if(window.crypto?.randomUUID)return crypto.randomUUID();
+  return 'apunte_'+Date.now()+'_'+Math.random().toString(36).slice(2,10);
+}
 
 async function getOrRestoreSession(){
   let {data:{session}}=await sb.auth.getSession();
-
-  if (session) return session;
-
-  // Handoff explícito desde Bitácora. Esto evita pedir credenciales
-  // cuando Apuntes se abre desde la aplicación principal.
-  try {
-    const raw = localStorage.getItem('bitacora_apuntes_handoff');
-    if (raw) {
-      const handoff = JSON.parse(raw);
+  if(session)return session;
+  try{
+    const raw=localStorage.getItem('bitacora_apuntes_handoff');
+    if(raw){
+      const handoff=JSON.parse(raw);
       localStorage.removeItem('bitacora_apuntes_handoff');
-
-      if (handoff?.access_token && handoff?.refresh_token) {
-        const result = await sb.auth.setSession({
-          access_token: handoff.access_token,
-          refresh_token: handoff.refresh_token
-        });
-        session = result?.data?.session || null;
+      if(handoff?.access_token&&handoff?.refresh_token){
+        const result=await sb.auth.setSession({access_token:handoff.access_token,refresh_token:handoff.refresh_token});
+        session=result?.data?.session||null;
       }
     }
-  } catch (e) {
-    console.warn('No se pudo restaurar la sesión de Bitácora:', e);
-  }
-
+  }catch(e){console.warn('No se pudo restaurar la sesión:',e);}
   return session;
 }
 
-const LOCAL_NOTES_KEY='bitacora_apuntes_local_v2';
-let currentUserId=null;
+/* Copia local secundaria: ya no es la base de datos de los apuntes.
+   Supabase es ahora la fuente principal y cada documento tiene su propia fila. */
+const LOCAL_NOTES_KEY='bitacora_apuntes_local_v3';
 function localKey(userId=currentUserId){return userId?LOCAL_NOTES_KEY+'_'+userId:LOCAL_NOTES_KEY+'_anonymous';}
-function readLocalNotes(userId=currentUserId){try{const raw=localStorage.getItem(localKey(userId));const parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed:[];}catch(e){console.warn('No se pudo leer la copia local:',e);return [];}}
-function writeLocalNotes(userId=currentUserId,notes=apuntes){try{localStorage.setItem(localKey(userId),JSON.stringify(notes));localStorage.setItem(localKey(userId)+'_lastSaved',new Date().toISOString());}catch(e){console.warn('No se pudo guardar la copia local:',e);}}
-const IDB_NAME='BitacoraApuntesDB',IDB_STORE='documents';
-function idbOpen(){return new Promise((resolve,reject)=>{if(!window.indexedDB)return resolve(null);const req=indexedDB.open(IDB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(IDB_STORE))req.result.createObjectStore(IDB_STORE);};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
-async function idbSave(userId,notes){try{const db=await idbOpen();if(!db)return;await new Promise((resolve,reject)=>{const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(notes,userId);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});db.close();}catch(e){console.warn('No se pudo guardar la copia IndexedDB:',e);}}
-async function idbRead(userId){try{const db=await idbOpen();if(!db)return [];const result=await new Promise((resolve,reject)=>{const tx=db.transaction(IDB_STORE,'readonly');const req=tx.objectStore(IDB_STORE).get(userId);req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});db.close();return Array.isArray(result)?result:[];}catch(e){console.warn('No se pudo leer la copia IndexedDB:',e);return [];}}
-async function saveLocalCopies(userId=currentUserId){writeLocalNotes(userId,apuntes);await idbSave(userId,apuntes);}
-async function readLocalCopies(userId){const ls=readLocalNotes(userId),idb=await idbRead(userId);return mergeNotes(ls,idb);}
-function mergeNotes(remote,local){const map=new Map();[...(remote||[]),...(local||[])].forEach(n=>{if(!n||!n.id)return;const prev=map.get(n.id);if(!prev||new Date(n.updatedAt||n.createdAt||0)>=new Date(prev.updatedAt||prev.createdAt||0))map.set(n.id,n);});return Array.from(map.values()).sort((a,b)=>new Date(b.updatedAt||b.createdAt||0)-new Date(a.updatedAt||a.createdAt||0));}
+function readLocalNotes(userId=currentUserId){
+  try{const raw=localStorage.getItem(localKey(userId));const parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed:[];}
+  catch(e){return [];}
+}
+function writeLocalNotes(userId=currentUserId,notes=apuntes){
+  try{localStorage.setItem(localKey(userId),JSON.stringify(notes));}catch(e){console.warn('No se pudo guardar la copia local:',e);}
+}
+function mergeNotes(a,b){
+  const map=new Map();
+  [...(a||[]),...(b||[])].forEach(n=>{
+    if(!n||!n.id)return;
+    const old=map.get(n.id);
+    if(!old||new Date(n.updatedAt||n.createdAt||0)>=new Date(old.updatedAt||old.createdAt||0))map.set(n.id,n);
+  });
+  return [...map.values()].sort((a,b)=>new Date(b.updatedAt||b.createdAt||0)-new Date(a.updatedAt||a.createdAt||0));
+}
+
+function normalizeRow(r){
+  return {id:r.id,title:r.title||'',content:r.content||'',createdAt:r.created_at,updatedAt:r.updated_at||r.created_at};
+}
+function dbPayload(n,userId){
+  return {
+    id:n.id,
+    user_id:userId,
+    title:n.title||'Apunte sin título',
+    content:n.content||'',
+    created_at:n.createdAt||new Date().toISOString(),
+    updated_at:n.updatedAt||new Date().toISOString()
+  };
+}
 
 async function load(){
-  const session = await getOrRestoreSession();
-
+  const session=await getOrRestoreSession();
   if(!session){
-    $('app').style.display='none';
-    $('auth-status').style.display='flex';
+    $('app').style.display='none';$('auth-status').style.display='flex';
     $('auth-status-title').textContent='No se encontró la sesión de Bitácora';
-    $('auth-status-text').textContent='Cierra esta pestaña y abre Apuntes desde el apartado Apuntes de Bitácora.';
+    $('auth-status-text').textContent='Cierra esta pestaña y abre Apuntes desde Bitácora.';
     return;
   }
+  $('auth-status').style.display='none';$('app').style.display='flex';
+  currentUserId=session.user.id;
 
-  $('auth-status').style.display='none';
-  $('app').style.display='flex';
+  let remote=[];
+  let remoteError=null;
+  const {data:rows,error}=await sb.from('apuntes').select('id,user_id,title,content,created_at,updated_at').eq('user_id',currentUserId).order('updated_at',{ascending:false});
+  remoteError=error;
+  if(!error)remote=(rows||[]).map(normalizeRow);
 
-  const user = session.user;
-  currentUserId=user.id;
-  const {data:row,error}=await sb.from('bitacora').select('data').eq('user_id',user.id).maybeSingle();
-  const localNotes=await readLocalCopies(user.id);
-
-  if(error){
-    console.error('Error leyendo Supabase:',error);
-    apuntes=localNotes;
-    renderList();
-    if(apuntes.length) openNote(apuntes[0].id);
-    status('Apuntes recuperados de la copia local');
-    return;
-  }
-
-  data=(row&&row.data)||{};
-  const remoteNotes=Array.isArray(data.apuntes)?data.apuntes:[];
-  apuntes=mergeNotes(remoteNotes,localNotes);
-  await saveLocalCopies(user.id);
+  const local=readLocalNotes(currentUserId);
+  apuntes=mergeNotes(remote,local);
+  writeLocalNotes(currentUserId,apuntes);
   renderList();
-  if(apuntes.length) openNote(apuntes[0].id);
+  if(apuntes.length)openNote(apuntes[0].id);
 
-  const remoteIds=new Set(remoteNotes.map(n=>n.id));
-  const needsSync=apuntes.some(n=>!remoteIds.has(n.id));
-  if(needsSync){
-    try{await persist();status('Apuntes sincronizados');}
-    catch(e){console.warn('No se pudo sincronizar con Supabase; se conservará la copia local.',e);}
+  if(remoteError){
+    console.error('Error leyendo tabla apuntes:',remoteError);
+    status('Mostrando la copia local; revisa la tabla de Supabase');
+    return;
+  }
+
+  /* Si quedó algún documento local por un fallo anterior, intenta recuperarlo
+     como fila independiente. No modifica nunca la tabla bitacora. */
+  const remoteIds=new Set(remote.map(n=>n.id));
+  const pending=apuntes.filter(n=>!remoteIds.has(n.id));
+  if(pending.length){
+    try{
+      const {error:syncError}=await sb.from('apuntes').upsert(pending.map(n=>dbPayload(n,currentUserId)),{onConflict:'id'});
+      if(syncError)throw syncError;
+      status('Apuntes sincronizados');
+    }catch(e){console.warn('No se pudieron sincronizar algunos apuntes:',e);}
   }
 }
-async function persist(){
-  const user=await getUser(); if(!user) throw new Error('Sin sesión');
 
-  // Apuntes comparte la misma fila de Supabase con Bitácora. Antes de
-  // guardar, recuperamos la versión más reciente para no sobrescribir
-  // cambios hechos desde la aplicación principal mientras esta pestaña
-  // estaba abierta.
-  const {data:latestRow,error:readError}=await sb
-    .from('bitacora')
-    .select('data')
-    .eq('user_id',user.id)
-    .maybeSingle();
-
-  if(readError) throw readError;
-
-  const latestData=(latestRow&&latestRow.data)?latestRow.data:{};
-  data={...latestData,apuntes};
-  const {error}=await sb.from('bitacora').upsert({
-    user_id:user.id,
-    data,
-    updated_at:new Date().toISOString()
-  });
-
-  if(error) throw error;
-  await saveLocalCopies(user.id);
+async function persistNote(note){
+  const user=await getUser();
+  if(!user)throw new Error('Sin sesión');
+  const payload=dbPayload(note,user.id);
+  const {error}=await sb.from('apuntes').upsert(payload,{onConflict:'id'});
+  if(error)throw error;
+  writeLocalNotes(user.id,apuntes);
 }
+
+async function deleteNote(id){
+  const user=await getUser();if(!user)throw new Error('Sin sesión');
+  const {error}=await sb.from('apuntes').delete().eq('id',id).eq('user_id',user.id);
+  if(error)throw error;
+  apuntes=apuntes.filter(n=>n.id!==id);
+  writeLocalNotes(user.id,apuntes);
+  currentId=apuntes[0]?.id||null;
+  if(currentId)openNote(currentId);else{ $('title').value='';$('editor').innerHTML='';renderList(); }
+}
+
 function renderList(){
   const list=$('saved-list');
   list.innerHTML=apuntes.slice().sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt)).map(n=>`
@@ -327,24 +301,26 @@ async function saveCurrent(){
   const title=$('title').value.trim()||'Apunte sin título';
   if(!content){status('Escribe algo antes de guardar');return;}
   const now=new Date().toISOString();
-  let isNew=false;
-  if(currentId){
-    const n=apuntes.find(x=>x.id===currentId);
-    if(n){n.title=title;n.content=content;n.updatedAt=now;}
+  let n=apuntes.find(x=>x.id===currentId);
+  const isNew=!n;
+  if(!n){
+    n={id:makeId(),title,content,createdAt:now,updatedAt:now};
+    currentId=n.id;apuntes.unshift(n);
   }else{
-    isNew=true;
-    currentId='apunte_'+Date.now();
-    apuntes.unshift({id:currentId,title,content,createdAt:now,updatedAt:now});
+    n.title=title;n.content=content;n.updatedAt=now;
   }
+  /* Guardado local inmediato: el documento aparece incluso si la red falla. */
+  writeLocalNotes(currentUserId,apuntes);
+  renderList();
+  status('Guardando…');
   try{
-    await saveLocalCopies(currentUserId);
+    await persistNote(n);
     renderList();
-    status(isNew?'Nuevo apunte creado':'Guardando…');
-    await persist();
-    renderList();
-    status(isNew?'Guardado en Bitácora y añadido a la lista':'Guardado en Bitácora');
+    status(isNew?'Guardado en Bitácora':'Cambios guardados');
+  }catch(e){
+    console.error('Error guardando apunte en Supabase:',e);
+    status('Guardado localmente; Supabase no respondió');
   }
-  catch(e){console.error(e);status('Error al guardar');}
 }
 $('editor').addEventListener('keydown',e=>{
   const mod=e.ctrlKey||e.metaKey;
@@ -355,11 +331,9 @@ $('editor').addEventListener('keydown',e=>{
     if(k==='s')saveCurrent();else cmd({b:'bold',i:'italic',u:'underline'}[k]);
   }
 });
-window.addEventListener('beforeunload',()=>{});
-sb.auth.onAuthStateChange((event,session)=>{
+sb.auth.onAuthStateChange((event)=>{
   if(event==='SIGNED_OUT'){
-    $('app').style.display='none';
-    $('auth-status').style.display='flex';
+    $('app').style.display='none';$('auth-status').style.display='flex';
     $('auth-status-title').textContent='Sesión cerrada';
     $('auth-status-text').textContent='Vuelve a Bitácora para iniciar sesión.';
   }
