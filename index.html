@@ -2058,7 +2058,6 @@ body.beige {
 }
 
 
-
 /* ============================================================
    WISHLIST — POLISHED UI
    ============================================================ */
@@ -2483,6 +2482,9 @@ body.beige {
     position: fixed; inset: 0; z-index: 9998; pointer-events: none;
 }
 .apuntes-window {
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
     position: absolute; width: min(920px, calc(100vw - 40px)); height: min(760px, calc(100vh - 40px));
     min-width: 420px; min-height: 320px; left: 50%; top: 50%; transform: translate(-50%, -50%);
     background: var(--bg-card, #17171c); border: 1px solid var(--border-strong, rgba(255,255,255,.12));
@@ -2490,7 +2492,16 @@ body.beige {
     resize: both; display: flex; flex-direction: column; pointer-events: auto;
 }
 .apuntes-window.maximized {
-    width: calc(100vw - 24px); height: calc(100vh - 24px); left: 12px; top: 12px; transform: none;
+    left: 12px;
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    transform: none;
+    box-sizing: border-box;
 }
 .apuntes-window-bar {
     height: 42px; min-height: 42px; display:flex; align-items:center; justify-content:space-between;
@@ -6467,9 +6478,7 @@ body.beige {
                 console.error(e);
             }
         }
-
-        let portfolioHistoryChart = null;
-        let portfolioAllocationChart = null;
+let portfolioAllocationChart = null;
         let portfolioProjectionChart = null;
 
         function portfolioTimeline() {
@@ -6519,9 +6528,7 @@ body.beige {
             const hEl = document.getElementById('portfolioHistoryChart');
             const aEl = document.getElementById('portfolioAllocationChart');
             const pEl = document.getElementById('portfolioProjectionChart');
-
-            if (portfolioHistoryChart) portfolioHistoryChart.destroy();
-            if (portfolioAllocationChart) portfolioAllocationChart.destroy();
+if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             if (portfolioProjectionChart) portfolioProjectionChart.destroy();
 
             if (hEl) {
@@ -8350,5 +8357,18 @@ body.beige {
             currentView = 'calendar';
         }
     </script>
+
+function keepApuntesWindowInViewport() {
+    const w = document.getElementById('apuntesWindow');
+    if (!w || !w.classList.contains('maximized')) return;
+    w.style.left = '12px';
+    w.style.top = '12px';
+    w.style.right = '12px';
+    w.style.bottom = '12px';
+    w.style.width = 'auto';
+    w.style.height = 'auto';
+}
+window.addEventListener('resize', keepApuntesWindowInViewport);
+
 </body>
 </html>
