@@ -3478,8 +3478,7 @@ function v22RefreshSummaryIfPresent() {
     const el = document.getElementById('summaryDashboard');
     if (el) v22RenderSummaryDashboard();
 }
-setTimeout(v22RefreshSummaryIfPresent, 0);
-setInterval(v22RefreshSummaryIfPresent, 5000);
+/* v22 summary refresh superseded by v23 */
 
 </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
@@ -4174,11 +4173,18 @@ setInterval(v22RefreshSummaryIfPresent, 5000);
         }
 
         function countWorkingDays(startDate, endDate) {
+            // Los días cotizados incluyen sábados y domingos.
+            // La ocultación de "Trabajando en..." en fin de semana es
+            // únicamente una regla visual del detalle del calendario.
             if (!startDate || !endDate) return 0;
-            let current=new Date(startDate+'T12:00:00'), end=new Date(endDate+'T12:00:00');
-            if(end<current) return 0;
-            let count=0;
-            while(current<=end){const day=current.getDay();if(day!==0&&day!==6)count++;current.setDate(current.getDate()+1);}
+            const current = new Date(startDate + 'T12:00:00');
+            const end = new Date(endDate + 'T12:00:00');
+            if (end < current) return 0;
+            let count = 0;
+            while (current <= end) {
+                count++;
+                current.setDate(current.getDate() + 1);
+            }
             return count;
         }
 
@@ -5115,7 +5121,17 @@ setInterval(v22RefreshSummaryIfPresent, 5000);
             else if (currentView === 'settings') content.innerHTML = renderSettings();
             updateAddButton();
             updateSidebarPrivacy();
-            if(currentView==='finances' && financeSubView==='indexado') setTimeout(renderInvestmentCharts,0);
+
+            if (currentView === 'home' && typeof v23RenderSummaryDashboard === 'function') {
+                requestAnimationFrame(() => v23RenderSummaryDashboard());
+            }
+
+            if(currentView==='finances' && financeSubView==='indexado') {
+                setTimeout(() => {
+                    reorderInvestmentCharts();
+                    renderInvestmentCharts();
+                }, 0);
+            }
         }
 
         // ============================================================
@@ -5489,8 +5505,10 @@ setInterval(v22RefreshSummaryIfPresent, 5000);
                                 <div class="entry-title">${icon} ${e.title}</div>
                                 <div class="entry-meta">${dateInfo}</div>
                             </div>
-                        </div>`;
+                            <div id="summaryDashboard" style="margin-top:20px"></div>
+            </div>`;
                 }).join('') : `<div style="color:var(--text-secondary);padding:12px 0">No hay actividad reciente</div>`}
+                <div id="summaryDashboard" style="margin-top:20px"></div>
             </div>`;
 
             return html;
@@ -8984,6 +9002,472 @@ function keepApuntesWindowInViewport() {
     w.style.height = 'auto';
 }
 window.addEventListener('resize', keepApuntesWindowInViewport);
+
+
+<script>
+/* ============================================================
+   BITÁCORA v23 — CENTRO RESUMEN + BÚSQUEDA GLOBAL + BACKUP
+   ============================================================ */
+
+(function () {
+    function esc(value) {
+        if (typeof escapeHtml === 'function') return escapeHtml(String(value ?? ''));
+        return String(value ?? '').replace(/[&<>"']/g, c => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+        }[c]));
+    }
+
+    function dateOf(value) {
+        if (!value) return null;
+        const d = new Date(value);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function formatDate(d) {
+        return d.toLocaleDateString('es-ES', {
+            day:'2-digit', month:'short', year:'numeric'
+        });
+    }
+
+    function entryDate(entry) {
+        return dateOf(
+            entry?.startDate ||
+            entry?.date ||
+            entry?.birthDate ||
+            entry?.endDate ||
+            entry?.createdAt
+        );
+    }
+
+    function collectEvents() {
+        const result = [];
+
+        (Array.isArray(entries) ? entries : []).forEach(e => {
+            const d = entryDate(e);
+            if (!d) return;
+
+            const type = (typeof TYPE_LABELS !== 'undefined' && TYPE_LABELS[e.type])
+                ? TYPE_LABELS[e.type]
+                : (e.type || 'Entrada');
+
+            result.push({
+                date: d,
+                title: e.title || e.destination || e.company || 'Entrada',
+                type,
+                detail: e.notes || e.description || ''
+            });
+
+            if (e.endDate && e.endDate !== e.startDate) {
+                const end = dateOf(e.endDate);
+                if (end) {
+                    result.push({
+                        date: end,
+                        title: e.title || e.destination || e.company || 'Entrada',
+                        type: type + ' · fin',
+                        detail: 'Finalización'
+                    });
+                }
+            }
+        });
+
+        (Array.isArray(notes) ? notes : []).forEach(n => {
+            const d = dateOf(n.date || n.createdAt);
+            if (!d) return;
+            result.push({
+                date: d,
+                title: n.title || (n.date && typeof formatNoteTitle === 'function'
+                    ? formatNoteTitle(n.date)
+                    : 'Nota'),
+                type: 'Nota',
+                detail: n.text || n.content || n.body || ''
+            });
+        });
+
+        const seen = new Set();
+        return result
+            .filter(e => {
+                const key = `${e.date.toISOString().slice(0,10)}|${e.title}|${e.type}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            })
+            .sort((a,b) => b.date - a.date);
+    }
+
+    function thisWeek(events) {
+        const now = new Date();
+        const start = new Date(now);
+        const day = start.getDay();
+        start.setDate(start.getDate() + (day === 0 ? -6 : 1 - day));
+        start.setHours(0,0,0,0);
+
+        const end = new Date(start);
+        end.setDate(end.getDate() + 7);
+        end.setHours(23,59,59,999);
+
+        return events.filter(e => e.date >= start && e.date <= end)
+            .sort((a,b) => a.date - b.date);
+    }
+
+    function countdown(target) {
+        const ms = target - new Date();
+        if (ms <= 0) return 'Ahora';
+
+        const total = Math.floor(ms / 1000);
+        const d = Math.floor(total / 86400);
+        const h = Math.floor((total % 86400) / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+
+        return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+    }
+
+    function historicalStats() {
+        const countType = type => Array.isArray(entries)
+            ? entries.filter(e => e.type === type).length
+            : 0;
+
+        const workDays = Array.isArray(entries)
+            ? entries.filter(e => e.type === 'work').reduce((sum, job) => {
+                return sum + countWorkingDays(job.startDate, job.endDate || todayISO());
+            }, 0)
+            : 0;
+
+        return {
+            total: Array.isArray(entries) ? entries.length : 0,
+            books: countType('book'),
+            movies: countType('movie'),
+            series: countType('series'),
+            games: countType('game'),
+            trips: countType('travel'),
+            projects: countType('project'),
+            places: countType('place'),
+            goals: countType('goal'),
+            notes: Array.isArray(notes) ? notes.length : 0,
+            workDays
+        };
+    }
+
+    window.v23RenderSummaryDashboard = function () {
+        const root = document.getElementById('summaryDashboard');
+        if (!root) return;
+
+        const events = collectEvents();
+        const week = thisWeek(events);
+        const stats = historicalStats();
+
+        root.innerHTML = `
+            <div class="summary-section">
+                <div class="summary-section-head">
+                    <div>
+                        <div class="summary-section-title">Esta semana</div>
+                        <div class="summary-section-desc">Próximos eventos y tiempo restante.</div>
+                    </div>
+                </div>
+
+                ${week.length ? `
+                    <div class="summary-week-events">
+                        ${week.map(e => `
+                            <div class="summary-event-card">
+                                <div class="event-type">${esc(e.type)}</div>
+                                <div class="event-name">${esc(e.title)}</div>
+                                <div class="summary-countdown" data-v23-countdown="${e.date.toISOString()}">${countdown(e.date)}</div>
+                                <div class="summary-countdown-label">${formatDate(e.date)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div style="font-size:12px;color:var(--text-secondary)">
+                        No hay eventos registrados para esta semana.
+                    </div>
+                `}
+            </div>
+
+            <div class="summary-section">
+                <div class="summary-section-head">
+                    <div>
+                        <div class="summary-section-title">Actividad reciente</div>
+                        <div class="summary-section-desc">Timeline de tu actividad, de lo más reciente hacia atrás.</div>
+                    </div>
+                </div>
+
+                ${events.length ? `
+                    <div class="summary-timeline">
+                        ${events.slice(0, 12).map(e => `
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-date">${formatDate(e.date)}</div>
+                                <div>
+                                    <div class="timeline-title">${esc(e.title)}</div>
+                                    <div class="timeline-meta">${esc(e.type)}${e.detail ? ' · ' + esc(e.detail) : ''}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div style="font-size:12px;color:var(--text-secondary)">
+                        Todavía no hay actividad fechada suficiente para mostrar la timeline.
+                    </div>
+                `}
+            </div>
+
+            <div class="summary-section">
+                <div class="summary-section-head">
+                    <div>
+                        <div class="summary-section-title">Estadísticas históricas</div>
+                        <div class="summary-section-desc">La dimensión real de todo lo que has ido registrando en Bitácora.</div>
+                    </div>
+                </div>
+
+                <div class="summary-stat-list">
+                    <div class="summary-stat"><div class="num">${stats.total}</div><div class="txt">entradas</div></div>
+                    <div class="summary-stat"><div class="num">${stats.books}</div><div class="txt">libros</div></div>
+                    <div class="summary-stat"><div class="num">${stats.movies}</div><div class="txt">películas</div></div>
+                    <div class="summary-stat"><div class="num">${stats.series}</div><div class="txt">series</div></div>
+                    <div class="summary-stat"><div class="num">${stats.games}</div><div class="txt">videojuegos</div></div>
+                    <div class="summary-stat"><div class="num">${stats.trips}</div><div class="txt">viajes</div></div>
+                    <div class="summary-stat"><div class="num">${stats.projects}</div><div class="txt">proyectos</div></div>
+                    <div class="summary-stat"><div class="num">${stats.places}</div><div class="txt">lugares</div></div>
+                    <div class="summary-stat"><div class="num">${stats.goals}</div><div class="txt">objetivos</div></div>
+                    <div class="summary-stat"><div class="num">${stats.notes}</div><div class="txt">notas</div></div>
+                    <div class="summary-stat"><div class="num">${stats.workDays}</div><div class="txt">días cotizados</div></div>
+                </div>
+            </div>
+
+            <div class="summary-section">
+                <div class="summary-backup-row">
+                    <div>
+                        <div class="summary-section-title">Copia de seguridad</div>
+                        <div class="desc">Descarga una copia completa de los datos que Bitácora tiene actualmente cargados.</div>
+                    </div>
+                    <button class="btn-secondary" style="width:auto" onclick="v23ExportBackup()">↧ Copia de seguridad</button>
+                </div>
+            </div>
+        `;
+
+        if (!window._v23Timer) {
+            window._v23Timer = setInterval(() => {
+                document.querySelectorAll('[data-v23-countdown]').forEach(el => {
+                    const d = new Date(el.dataset.v23Countdown);
+                    el.textContent = countdown(d);
+                });
+            }, 1000);
+        }
+    };
+
+    window.v23ExportBackup = async function () {
+        try {
+            if (typeof saveData === 'function') {
+                try { await saveData(); } catch (e) { console.warn('Backup save:', e); }
+            }
+
+            const payload = {
+                exportedAt: new Date().toISOString(),
+                version: 'Bitácora v23',
+                data: {
+                    entries: Array.isArray(entries) ? entries : [],
+                    categories: Array.isArray(categories) ? categories : [],
+                    notes: Array.isArray(notes) ? notes : [],
+                    prompts: Array.isArray(prompts) ? prompts : [],
+                    userName: typeof userName !== 'undefined' ? userName : '',
+                    investmentData: typeof investmentData !== 'undefined' ? investmentData : {},
+                    wishlistItems: Array.isArray(wishlistItems) ? wishlistItems : [],
+                    inbox: Array.isArray(inbox) ? inbox : [],
+                    plannedTrips: Array.isArray(plannedTrips) ? plannedTrips : [],
+                    financeIncome: typeof financeIncome !== 'undefined' ? financeIncome : {current:0,next:0},
+                    apuntes: Array.isArray(apuntes) ? apuntes : []
+                }
+            };
+
+            const blob = new Blob(
+                [JSON.stringify(payload, null, 2)],
+                {type:'application/json;charset=utf-8'}
+            );
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bitacora-backup-${todayISO()}.json`;
+            document.body.appendChild(a);
+            a.click();
+
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+                a.remove();
+            }, 1000);
+
+            if (typeof showToast === 'function') showToast('Copia de seguridad creada');
+        } catch (e) {
+            console.error(e);
+            if (typeof showToast === 'function') showToast('No se pudo crear la copia de seguridad', true);
+        }
+    };
+
+    window.reorderInvestmentCharts = function () {
+        const projectionCanvas = document.getElementById('portfolioProjectionChart');
+        const historyCanvas = document.getElementById('portfolioHistoryChart');
+        if (!projectionCanvas || !historyCanvas) return;
+
+        const projectionCard = projectionCanvas.closest('.investment-chart-card');
+        const historyCard = historyCanvas.closest('.investment-chart-card');
+        if (!projectionCard || !historyCard || projectionCard === historyCard) return;
+
+        historyCard.parentNode.insertBefore(projectionCard, historyCard);
+    };
+
+    function collectSearchResults() {
+        const out = [];
+        const push = (kind, title, detail, action) => {
+            if (title || detail) out.push({
+                kind,
+                title: title || 'Sin título',
+                detail: detail || '',
+                action
+            });
+        };
+
+        (Array.isArray(entries) ? entries : []).forEach(e => {
+            const type = (typeof TYPE_LABELS !== 'undefined' && TYPE_LABELS[e.type])
+                ? TYPE_LABELS[e.type]
+                : (e.type || 'Entrada');
+
+            push(
+                type,
+                e.title || e.destination || e.company || 'Sin título',
+                e.notes || e.description || '',
+                () => {
+                    if (e.id && typeof openEntryDetail === 'function') openEntryDetail(e.id);
+                }
+            );
+        });
+
+        (Array.isArray(notes) ? notes : []).forEach(n => {
+            push(
+                'Nota',
+                n.title || (n.date && typeof formatNoteTitle === 'function'
+                    ? formatNoteTitle(n.date)
+                    : 'Nota'),
+                n.text || n.content || '',
+                () => {
+                    if (n.id && typeof openReadNote === 'function') openReadNote(n.id);
+                }
+            );
+        });
+
+        (Array.isArray(wishlistItems) ? wishlistItems : []).forEach(w => {
+            push(
+                'Wishlist',
+                w.title || 'Deseo',
+                w.reason || '',
+                () => {
+                    financeSubView = 'wishlist';
+                    currentView = 'finances';
+                    if (typeof render === 'function') render();
+                }
+            );
+        });
+
+        (Array.isArray(plannedTrips) ? plannedTrips : []).forEach(t => {
+            push(
+                'Viaje planeado',
+                t.title || t.name || 'Viaje planeado',
+                t.notes || '',
+                () => {
+                    if (typeof switchView === 'function') switchView('travel-organizer');
+                }
+            );
+        });
+
+        (Array.isArray(apuntes) ? apuntes : []).forEach(a => {
+            push(
+                'Apunte',
+                a.title || a.name || 'Apunte',
+                a.date || '',
+                () => {
+                    if (typeof openApuntes === 'function') openApuntes();
+                }
+            );
+        });
+
+        return out.filter((r, i, arr) =>
+            arr.findIndex(x => `${x.kind}|${x.title}|${x.detail}` === `${r.kind}|${r.title}|${r.detail}`) === i
+        );
+    }
+
+    window.v23RunGlobalSearch = function (query) {
+        const box = document.getElementById('globalSearchResults');
+        if (!box) return;
+
+        const q = String(query || '').trim().toLowerCase();
+        if (!q) {
+            box.style.display = 'none';
+            box.innerHTML = '';
+            return;
+        }
+
+        const results = collectSearchResults()
+            .filter(r => `${r.kind} ${r.title} ${r.detail}`.toLowerCase().includes(q))
+            .slice(0, 40);
+
+        box.innerHTML = results.length
+            ? results.map((r, i) => `
+                <div class="global-search-result" data-v23-result="${i}">
+                    <div style="min-width:0">
+                        <div class="result-kind">${esc(r.kind)}</div>
+                        <div class="result-title">${esc(r.title)}</div>
+                        ${r.detail ? `<div class="result-detail">${esc(r.detail)}</div>` : ''}
+                    </div>
+                </div>
+            `).join('')
+            : `<div style="padding:14px;font-size:12px;color:var(--text-secondary)">No se han encontrado resultados.</div>`;
+
+        if (results.length) {
+            box.querySelectorAll('[data-v23-result]').forEach((el, i) => {
+                el.addEventListener('click', () => {
+                    try { results[i].action?.(); } catch (e) { console.warn(e); }
+                    box.style.display = 'none';
+                });
+            });
+        }
+
+        box.style.display = 'block';
+    };
+
+    function initSearch() {
+        const input =
+            document.querySelector('#globalSearch') ||
+            document.querySelector('#search') ||
+            document.querySelector('input[placeholder*="Buscar" i]');
+
+        if (!input || input.dataset.v23Bound) return;
+        input.dataset.v23Bound = '1';
+
+        input.addEventListener('input', () => v23RunGlobalSearch(input.value));
+        input.addEventListener('focus', () => {
+            if (input.value.trim()) v23RunGlobalSearch(input.value);
+        });
+
+        document.addEventListener('click', e => {
+            const box = document.getElementById('globalSearchResults');
+            if (!box || box.contains(e.target) || e.target === input) return;
+            box.style.display = 'none';
+        });
+    }
+
+    function init() {
+        initSearch();
+        if (typeof currentView !== 'undefined' && currentView === 'home') {
+            requestAnimationFrame(() => v23RenderSummaryDashboard());
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
 
 </body>
 </html>
