@@ -229,29 +229,18 @@ async function getOrRestoreSession(){
   return session;
 }
 
-const LOCAL_NOTES_KEY='bitacora_apuntes_local_v1';
-
-function readLocalNotes(){
-  try{
-    const raw=localStorage.getItem(LOCAL_NOTES_KEY);
-    const parsed=raw?JSON.parse(raw):[];
-    return Array.isArray(parsed)?parsed:[];
-  }catch(e){ console.warn('No se pudo leer la copia local de apuntes:',e); return []; }
-}
-function writeLocalNotes(){
-  try{
-    localStorage.setItem(LOCAL_NOTES_KEY, JSON.stringify(apuntes));
-  }catch(e){ console.warn('No se pudo guardar la copia local de apuntes:',e); }
-}
-function mergeNotes(remote, local){
-  const map=new Map();
-  [...(remote||[]), ...(local||[])].forEach(n=>{
-    if(!n || !n.id) return;
-    const prev=map.get(n.id);
-    if(!prev || new Date(n.updatedAt||n.createdAt||0) >= new Date(prev.updatedAt||prev.createdAt||0)) map.set(n.id,n);
-  });
-  return Array.from(map.values()).sort((a,b)=>new Date(b.updatedAt||b.createdAt||0)-new Date(a.updatedAt||a.createdAt||0));
-}
+const LOCAL_NOTES_KEY='bitacora_apuntes_local_v2';
+let currentUserId=null;
+function localKey(userId=currentUserId){return userId?LOCAL_NOTES_KEY+'_'+userId:LOCAL_NOTES_KEY+'_anonymous';}
+function readLocalNotes(userId=currentUserId){try{const raw=localStorage.getItem(localKey(userId));const parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed:[];}catch(e){console.warn('No se pudo leer la copia local:',e);return [];}}
+function writeLocalNotes(userId=currentUserId,notes=apuntes){try{localStorage.setItem(localKey(userId),JSON.stringify(notes));localStorage.setItem(localKey(userId)+'_lastSaved',new Date().toISOString());}catch(e){console.warn('No se pudo guardar la copia local:',e);}}
+const IDB_NAME='BitacoraApuntesDB',IDB_STORE='documents';
+function idbOpen(){return new Promise((resolve,reject)=>{if(!window.indexedDB)return resolve(null);const req=indexedDB.open(IDB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(IDB_STORE))req.result.createObjectStore(IDB_STORE);};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+async function idbSave(userId,notes){try{const db=await idbOpen();if(!db)return;await new Promise((resolve,reject)=>{const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(notes,userId);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});db.close();}catch(e){console.warn('No se pudo guardar la copia IndexedDB:',e);}}
+async function idbRead(userId){try{const db=await idbOpen();if(!db)return [];const result=await new Promise((resolve,reject)=>{const tx=db.transaction(IDB_STORE,'readonly');const req=tx.objectStore(IDB_STORE).get(userId);req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});db.close();return Array.isArray(result)?result:[];}catch(e){console.warn('No se pudo leer la copia IndexedDB:',e);return [];}}
+async function saveLocalCopies(userId=currentUserId){writeLocalNotes(userId,apuntes);await idbSave(userId,apuntes);}
+async function readLocalCopies(userId){const ls=readLocalNotes(userId),idb=await idbRead(userId);return mergeNotes(ls,idb);}
+function mergeNotes(remote,local){const map=new Map();[...(remote||[]),...(local||[])].forEach(n=>{if(!n||!n.id)return;const prev=map.get(n.id);if(!prev||new Date(n.updatedAt||n.createdAt||0)>=new Date(prev.updatedAt||prev.createdAt||0))map.set(n.id,n);});return Array.from(map.values()).sort((a,b)=>new Date(b.updatedAt||b.createdAt||0)-new Date(a.updatedAt||a.createdAt||0));}
 
 async function load(){
   const session = await getOrRestoreSession();
@@ -268,31 +257,32 @@ async function load(){
   $('app').style.display='flex';
 
   const user = session.user;
+  currentUserId=user.id;
   const {data:row,error}=await sb.from('bitacora').select('data').eq('user_id',user.id).maybeSingle();
+  const localNotes=await readLocalCopies(user.id);
 
   if(error){
-    console.error(error);
-    status('No se pudieron cargar los apuntes');
+    console.error('Error leyendo Supabase:',error);
+    apuntes=localNotes;
+    renderList();
+    if(apuntes.length) openNote(apuntes[0].id);
+    status('Apuntes recuperados de la copia local');
     return;
   }
 
   data=(row&&row.data)||{};
   const remoteNotes=Array.isArray(data.apuntes)?data.apuntes:[];
-  const localNotes=readLocalNotes();
   apuntes=mergeNotes(remoteNotes,localNotes);
-  // Si la copia local contiene algo que el servidor no tenía, sincronizamos
-  // la unión inmediatamente para recuperar apuntes que hayan quedado
-  // visualmente ausentes tras cerrar la pestaña.
-  if(apuntes.length && JSON.stringify(apuntes)!==JSON.stringify(remoteNotes)){
-    try{
-      await persist();
-    }catch(e){
-      console.warn('No se pudo resincronizar los apuntes recuperados:',e);
-    }
-  }
-  writeLocalNotes();
+  await saveLocalCopies(user.id);
   renderList();
   if(apuntes.length) openNote(apuntes[0].id);
+
+  const remoteIds=new Set(remoteNotes.map(n=>n.id));
+  const needsSync=apuntes.some(n=>!remoteIds.has(n.id));
+  if(needsSync){
+    try{await persist();status('Apuntes sincronizados');}
+    catch(e){console.warn('No se pudo sincronizar con Supabase; se conservará la copia local.',e);}
+  }
 }
 async function persist(){
   const user=await getUser(); if(!user) throw new Error('Sin sesión');
@@ -318,7 +308,7 @@ async function persist(){
   });
 
   if(error) throw error;
-  writeLocalNotes();
+  await saveLocalCopies(user.id);
 }
 function renderList(){
   const list=$('saved-list');
@@ -347,7 +337,7 @@ async function saveCurrent(){
     apuntes.unshift({id:currentId,title,content,createdAt:now,updatedAt:now});
   }
   try{
-    writeLocalNotes();
+    await saveLocalCopies(currentUserId);
     renderList();
     status(isNew?'Nuevo apunte creado':'Guardando…');
     await persist();
