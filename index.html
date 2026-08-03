@@ -2970,7 +2970,7 @@
         }
         function updateHeaderClock() {
             const el=document.getElementById('header-clock');
-            if(el) el.textContent=new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',hour12:false});
+            if(el) el.textContent=new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
         }
 
         function switchView(view) {
@@ -3815,6 +3815,7 @@
             else if (currentView === 'settings') content.innerHTML = renderSettings();
             updateAddButton();
             updateSidebarPrivacy();
+            if(currentView==='finances' && financeSubView==='indexado') setTimeout(renderInvestmentCharts,0);
         }
 
         // ============================================================
@@ -5274,68 +5275,92 @@
             investmentData.monthly = 0;
         }
 
-        function renderFondoIndexado() {
-            const current = Number(investmentData.currentBalance ?? investmentData.initial ?? 0);
-            const rate = Number(investmentData.rate || 0);
-            const proj = calcCompoundProjection(current, 0, rate, investmentChartYears);
-            const max = Math.max(...proj.yearlySnapshots.map(s => s.balance), 1);
-            const yearOptions = [5, 10, 20, 30];
-            const extras = (investmentData.extraContributions || []).slice().reverse();
-            const contributed = Number(investmentData.initial || 0) + extras.reduce((sum, x) => sum + (Number(x.amount) || 0), 0);
+        let investmentHistoryChart = null;
+        let investmentProjectionChart = null;
 
-            return `
-            <button class="btn-secondary" style="width:auto;margin-bottom:16px" onclick="financeSubView='menu';render()">← Volver a Finanzas</button>
-            <div class="investment-calculator" style="max-width:700px">
-                <div class="result-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-                    <div class="result-card"><div class="value">${current.toLocaleString('es-ES')}€</div><div class="label">Saldo registrado</div></div>
-                    <div class="result-card"><div class="value">${contributed.toLocaleString('es-ES')}€</div><div class="label">Capital aportado</div></div>
+        function investmentSeries() {
+            const initial = Number(investmentData.initial || 0);
+            const extras = (investmentData.extraContributions || []).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+            let total = initial;
+            const rows=[];
+            if(initial>0) rows.push({date:investmentData.initializedAt||extras[0]?.date||todayISO(),total,amount:initial,label:'Capital inicial'});
+            extras.forEach(e=>{const amount=Number(e.amount)||0;total+=amount;rows.push({date:e.date||todayISO(),total,amount,label:e.note||'Aportación real'});});
+            return rows;
+        }
+
+        function renderInvestmentCharts(){
+            const h=document.getElementById('investmentHistoryChart'), p=document.getElementById('investmentProjectionChart');
+            if(!h||!p||typeof Chart==='undefined') return;
+            if(investmentHistoryChart) investmentHistoryChart.destroy();
+            if(investmentProjectionChart) investmentProjectionChart.destroy();
+            const rows=investmentSeries();
+            const labels=rows.map(r=>new Date(r.date).toLocaleDateString('es-ES',{month:'short',year:'2-digit'}));
+            const totals=rows.map(r=>r.total);
+            investmentHistoryChart=new Chart(h.getContext('2d'),{type:'line',data:{labels,datasets:[{label:'Capital aportado',data:totals,borderColor:'#e5e7eb',backgroundColor:'rgba(229,231,235,.08)',fill:true,tension:.28,pointRadius:3,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${Number(c.raw).toLocaleString('es-ES')} €`}}},scales:{x:{grid:{display:false},ticks:{color:'#777'}},y:{beginAtZero:true,grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#777',callback:v=>Number(v).toLocaleString('es-ES')+' €'}}}}});
+            const current=Number(investmentData.currentBalance??investmentData.initial??0);
+            const contributed=Number(investmentData.initial||0)+(investmentData.extraContributions||[]).reduce((a,e)=>a+(Number(e.amount)||0),0);
+            const rate=Number(investmentData.rate||0);
+            const monthlyRate=Math.pow(1+rate/100,1/12)-1;
+            let balance=current; const projection=[current];
+            for(let y=1;y<=investmentChartYears;y++){for(let m=0;m<12;m++) balance*=1+monthlyRate;projection.push(balance);}
+            const labels2=projection.map((_,i)=>i===0?'Hoy':`Año ${i}`);
+            const contributedLine=projection.map(()=>contributed);
+            investmentProjectionChart=new Chart(p.getContext('2d'),{type:'line',data:{labels:labels2,datasets:[{label:'Valor estimado',data:projection,borderColor:'#f1e3a3',backgroundColor:'rgba(241,227,163,.10)',fill:true,tension:.3,pointRadius:0},{label:'Capital aportado hoy',data:contributedLine,borderColor:'#777',borderDash:[5,5],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#aaa',boxWidth:10,font:{size:10}}},tooltip:{callbacks:{label:c=>` ${Number(c.raw).toLocaleString('es-ES')} €`}}},scales:{x:{grid:{display:false},ticks:{color:'#777'}},y:{beginAtZero:true,grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#777',callback:v=>Number(v).toLocaleString('es-ES')+' €'}}}}});
+        }
+
+        function renderFondoIndexado(){
+            const current=Number(investmentData.currentBalance??investmentData.initial??0);
+            const rate=Number(investmentData.rate||0);
+            const extras=(investmentData.extraContributions||[]).slice().reverse();
+            const contributed=Number(investmentData.initial||0)+extras.reduce((s,x)=>s+(Number(x.amount)||0),0);
+            const gain=current-contributed, gainPct=contributed>0?gain/contributed*100:0;
+            const monthlyRate=Math.pow(1+rate/100,1/12)-1;
+            let future=current; for(let m=0;m<investmentChartYears*12;m++) future*=1+monthlyRate;
+            const futureGain=future-current;
+            const yearOptions=[5,10,20,30];
+            return `<button class="btn-secondary" style="width:auto;margin-bottom:16px" onclick="financeSubView='menu';render()">← Volver a Finanzas</button>
+            <div class="investment-dashboard">
+              <div class="investment-overview">
+                <div class="result-card"><div class="value">${current.toLocaleString('es-ES')}€</div><div class="label">Saldo registrado</div><div class="subvalue">Valor introducido en Bitácora</div></div>
+                <div class="result-card"><div class="value">${contributed.toLocaleString('es-ES')}€</div><div class="label">Capital aportado</div><div class="subvalue">Inicial + aportaciones reales</div></div>
+                <div class="result-card"><div class="value">${gain>=0?'+':''}${gain.toLocaleString('es-ES')}€</div><div class="label">Diferencia registrada</div><div class="subvalue">${gainPct.toFixed(2)}% sobre aportado</div></div>
+                <div class="result-card"><div class="value">${rate.toFixed(1)}%</div><div class="label">Rentabilidad esperada</div><div class="subvalue">Hipótesis para la proyección</div></div>
+              </div>
+              <div class="card" style="margin-bottom:14px">
+                <div class="card-title">Configuración del fondo</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+                  <div><div class="modal-label">Capital inicial (€)</div><input type="number" id="inv-initial" class="modal-input" value="${investmentData.initial||''}" step="0.01" placeholder="0.00"></div>
+                  <div><div class="modal-label">Rentabilidad anual esperada (%)</div><input type="number" id="inv-rate" class="modal-input" value="${rate||7}" step="0.1" placeholder="7"></div>
                 </div>
-                <div style="margin:16px 0">
-                    <div class="modal-label">Capital inicial (€)</div>
-                    <input type="number" id="inv-initial" class="modal-input" value="${investmentData.initial || ''}" step="0.01" placeholder="0.00">
-                    <div class="modal-label">Rentabilidad anual esperada (%)</div>
-                    <input type="number" id="inv-rate" class="modal-input" value="${rate || 7}" step="0.1" placeholder="7">
-                    <button class="btn-modal-primary" onclick="updateInvestment()">Guardar parámetros</button>
-                </div>
-                <div class="card" style="margin-bottom:16px">
-                    <div class="card-title">Registrar aportación real</div>
-                    <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Cada vez que realmente metas dinero, añádelo aquí. No se generan aportaciones automáticas.</div>
-                    <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-                        <div style="flex:1;min-width:160px"><div class="modal-label">Importe (€)</div><input type="number" id="manual-contribution" class="modal-input" step="0.01" placeholder="300"></div>
-                        <button class="btn-modal-primary" style="width:auto" onclick="saveManualInvestmentContribution()">Añadir al total</button>
-                    </div>
-                </div>
-                ${extras.length ? `
-                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Historial de aportaciones</div>
-                    ${extras.map(e => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)"><span>${e.date}${e.note ? ' · ' + escapeHtml(e.note) : ''}</span><span style="font-weight:700">+${Number(e.amount).toLocaleString('es-ES')}€</span></div>`).join('')}
-                ` : ''}
-                <div class="chart-container" style="margin-top:20px">
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <div class="chart-title" style="margin-bottom:0">Proyección estimada desde el saldo registrado</div>
-                        <div class="year-selector">${yearOptions.map(y => `<button class="${y === investmentChartYears ? 'active' : ''}" onclick="setInvestmentYears(${y})">${y}a</button>`).join('')}</div>
-                    </div>
-                    <div class="investment-chart">
-                        ${proj.yearlySnapshots.map((snap, i) => {
-                            const pct = Math.max(4, (snap.balance / max) * 100);
-                            return `<div class="bar" title="Año ${snap.year}: ${snap.balance.toLocaleString('es-ES')}€"><div class="bar-track"><div class="bar-fill-contrib" style="height:${pct}%"></div></div><div class="bar-label">${shouldShowYearLabel(i, proj.yearlySnapshots.length) ? snap.year : ''}</div></div>`;
-                        }).join('')}
-                    </div>
-                    <div class="chart-legend"><span><span class="legend-dot" style="background:var(--text-secondary)"></span> Capital de partida</span><span><span class="legend-dot" style="background:var(--accent)"></span> Crecimiento estimado</span></div>
-                </div>
+                <button class="btn-modal-primary" style="width:auto;margin-top:10px" onclick="updateInvestment()">Guardar parámetros</button>
+              </div>
+              <div class="investment-chart-card">
+                <div class="investment-chart-head"><div><div class="title">Evolución de tus aportaciones</div><div class="desc">Solo representa dinero que has registrado realmente. No inventa rentabilidades que Bitácora no puede conocer.</div></div><span class="investment-pill">Histórico real</span></div>
+                <div class="investment-canvas-wrap"><canvas id="investmentHistoryChart"></canvas></div>
+              </div>
+              <div class="investment-chart-card">
+                <div class="investment-chart-head"><div><div class="title">Proyección del interés compuesto</div><div class="desc">Simulación desde el saldo actual, sin asumir nuevas aportaciones automáticas.</div></div><div class="year-selector">${yearOptions.map(y=>`<button class="${y===investmentChartYears?'active':''}" onclick="setInvestmentYears(${y})">${y} años</button>`).join('')}</div></div>
+                <div class="investment-canvas-wrap"><canvas id="investmentProjectionChart"></canvas></div>
+              </div>
+              <div class="investment-small-grid">
+                <div class="card"><div class="card-title">A este ritmo...</div><div class="investment-history-row"><span>Capital actual</span><strong>${current.toLocaleString('es-ES')}€</strong></div><div class="investment-history-row"><span>Valor estimado en ${investmentChartYears} años</span><strong>${future.toLocaleString('es-ES')}€</strong></div><div class="investment-history-row"><span>Crecimiento estimado</span><strong>+${futureGain.toLocaleString('es-ES')}€</strong></div></div>
+                <div class="card"><div class="card-title">Registrar aportación real</div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Añade únicamente el dinero que hayas ingresado realmente. No se generan aportaciones automáticas.</div><div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><div style="flex:1;min-width:150px"><div class="modal-label">Importe (€)</div><input type="number" id="manual-contribution" class="modal-input" step="0.01" placeholder="300"></div><button class="btn-modal-primary" style="width:auto" onclick="saveManualInvestmentContribution()">Añadir</button></div></div>
+              </div>
+              ${extras.length?`<div class="card" style="margin-top:14px"><div class="card-title">Historial de aportaciones</div>${extras.map(e=>`<div class="investment-history-row"><span>${e.date}${e.note?' · '+escapeHtml(e.note):''}</span><strong>+${Number(e.amount).toLocaleString('es-ES')}€</strong></div>`).join('')}</div>`:''}
             </div>`;
         }
 
-        async function updateInvestment() {
-            const initial = Math.max(0, parseFloat(document.getElementById('inv-initial')?.value) || 0);
-            const rate = Math.max(0, parseFloat(document.getElementById('inv-rate')?.value) || 0);
-            const contributions = investmentData.extraContributions || [];
-            investmentData.initial = initial;
-            investmentData.rate = rate;
-            investmentData.monthly = 0;
-            investmentData.currentBalance = initial + contributions.reduce((s,e)=>s+(Number(e.amount)||0),0);
-            investmentData.initializedAt = investmentData.initializedAt || new Date().toISOString();
-            try { await saveData(); document.getElementById('content').innerHTML = renderFondoIndexado(); showToast('Parámetros guardados'); }
-            catch(e){ console.error(e); showToast('No se pudo guardar en la nube',true); }
+        async function updateInvestment(){
+            const initial=Math.max(0,parseFloat(document.getElementById('inv-initial')?.value)||0);
+            const rate=Math.max(0,parseFloat(document.getElementById('inv-rate')?.value)||0);
+            investmentData.initial=initial;
+            investmentData.rate=rate;
+            investmentData.monthly=0;
+            investmentData.extraContributions=investmentData.extraContributions||[];
+            investmentData.currentBalance=initial+investmentData.extraContributions.reduce((s,e)=>s+(Number(e.amount)||0),0);
+            investmentData.initializedAt=investmentData.initializedAt||new Date().toISOString();
+            try{await saveData();document.getElementById('content').innerHTML=renderFondoIndexado();setTimeout(renderInvestmentCharts,0);showToast('Parámetros guardados');}
+            catch(e){console.error(e);showToast('No se pudo guardar en la nube',true);}
         }
 
         async function saveManualInvestmentContribution() {
@@ -5344,7 +5369,7 @@
             investmentData.extraContributions = investmentData.extraContributions || [];
             investmentData.extraContributions.push({ date: todayISO(), amount, note: 'Aportación real' });
             investmentData.currentBalance = Number(investmentData.currentBalance || investmentData.initial || 0) + amount;
-            try { await saveData(); document.getElementById('content').innerHTML = renderFondoIndexado(); showToast('Aportación registrada'); }
+            try { await saveData(); document.getElementById('content').innerHTML = renderFondoIndexado(); setTimeout(renderInvestmentCharts,0); showToast('Aportación registrada'); }
             catch(e){ console.error(e); showToast('No se pudo guardar en la nube',true); }
         }
 
@@ -5356,32 +5381,7 @@ function shouldShowYearLabel(index, total) {
         function setInvestmentYears(years) {
             investmentChartYears = years;
             document.getElementById('content').innerHTML = renderFondoIndexado();
-        }
-
-        async function updateInvestment() {
-            const initialInput = document.getElementById('inv-initial');
-            const rate = parseFloat(document.getElementById('inv-rate').value) || 0;
-            const monthly = parseFloat(document.getElementById('inv-monthly').value) || 0;
-
-            if (initialInput && !initialInput.disabled) {
-                const initial = parseFloat(initialInput.value) || 0;
-                investmentData.initial = initial;
-                investmentData.currentBalance = initial;
-                investmentData.lastUpdateMonth = todayISO().slice(0, 7);
-                investmentData.initializedAt = new Date().toISOString();
-                investmentData.extraContributions = investmentData.extraContributions || [];
-            }
-            investmentData.rate = rate;
-            investmentData.monthly = monthly;
-
-            document.getElementById('content').innerHTML = renderFondoIndexado();
-
-            try {
-                await saveData();
-            } catch (err) {
-                console.error('Error guardando los datos de finanzas en Supabase:', err);
-                showToast('No se pudo guardar en la nube. Revisa tu conexión.', true);
-            }
+            setTimeout(renderInvestmentCharts,0);
         }
 
         function calcCompoundProjection(principal, monthlyContribution, annualRatePct, years) {
