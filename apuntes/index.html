@@ -18,9 +18,9 @@ button{color:var(--text);background:transparent;border:1px solid var(--border);b
 button:hover{background:#1b1b1b}
 #app{height:100vh;display:flex;flex-direction:column}
 #toolbar{height:48px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--panel);display:flex;align-items:center;gap:4px;padding:0 10px}
-#toolbar button{min-width:28px;height:28px;padding:0 7px;border:1px solid transparent;border-radius:6px;color:#d9d9d9;transition:background .15s,border-color .15s,color .15s}
+#toolbar button{min-width:25px;height:25px;padding:0 6px;border:1px solid transparent;border-radius:7px;color:#d9d9d9;font-size:11px;font-weight:700;transition:background .15s,border-color .15s,color .15s}
 #toolbar button:hover{background:#191919;border-color:#2b2b2b;color:#fff}
-#toolbar .align-btn{width:28px;min-width:28px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+#toolbar .align-btn{width:25px;min-width:25px;height:25px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .align-icon{width:14px;height:12px;display:flex;flex-direction:column;justify-content:space-between}
 .align-icon span{display:block;height:1.5px;background:currentColor;border-radius:2px}
 .align-icon.left span:nth-child(1){width:14px;margin-right:auto}.align-icon.left span:nth-child(2){width:10px;margin-right:auto}.align-icon.left span:nth-child(3){width:13px;margin-right:auto}
@@ -28,13 +28,16 @@ button:hover{background:#1b1b1b}
 .align-icon.right span:nth-child(1){width:14px;margin-left:auto}.align-icon.right span:nth-child(2){width:10px;margin-left:auto}.align-icon.right span:nth-child(3){width:13px;margin-left:auto}
 .align-icon.full span{width:14px}
 
-#toolbar select{height:28px;background:#111;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0 7px;min-width:78px;font-size:11px}
+#toolbar select{height:25px;background:#111;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0 7px;min-width:78px;font-size:11px}
 #toolbar .separator{width:1px;height:18px;background:var(--border);margin:0 2px}
 #toolbar .tool-label{font-size:9px;color:var(--muted);margin-left:3px}
 #title{width:190px;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);outline:0;padding:7px 4px;margin-left:8px}
 #title:focus{border-color:#777}
 #workspace{flex:1;min-height:0;display:flex}
 #sidebar{width:235px;flex-shrink:0;border-right:1px solid var(--border);background:#0e0e0e;padding:14px;display:flex;flex-direction:column;gap:7px}
+.side-btn{font-size:12px;font-weight:750;letter-spacing:.05px;border-radius:9px;border-color:#202020;background:#121212;transition:background .15s,border-color .15s,transform .15s}
+.side-btn:hover{background:#181818;border-color:#303030;transform:translateY(-1px)}
+.new-note-btn{background:#171717;border-color:#2d2d2d;color:#fff}
 .side-btn{width:100%;padding:9px 10px;text-align:left}
 .side-label{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700;margin:12px 4px 4px}
 #saved-list{overflow:auto;min-height:0}
@@ -95,6 +98,7 @@ button:hover{background:#1b1b1b}
   </div>
   <div id="workspace">
     <aside id="sidebar">
+      <button class="side-btn new-note-btn" onclick="newNote()">＋ Nuevo apunte</button>
       <button class="side-btn" onclick="saveCurrent()">Guardar en Bitácora</button>
       <button class="side-btn" onclick="window.close()">Salir</button>
       <button class="side-btn" onclick="exportPDF()">Exportar a PDF</button>
@@ -296,6 +300,15 @@ function openNote(id){
   const n=apuntes.find(x=>x.id===id);if(!n)return;
   currentId=id;$('title').value=n.title||'';$('editor').innerHTML=n.content||'';renderList();
 }
+function newNote(){
+  currentId=null;
+  $('title').value='';
+  $('editor').innerHTML='';
+  $('editor').focus();
+  renderList();
+  status('Nuevo apunte');
+}
+
 async function saveCurrent(){
   const content=$('editor').innerHTML.trim();
   const title=$('title').value.trim()||'Apunte sin título';
