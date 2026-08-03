@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Apuntes — Bitácora</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#0b0b0b;--panel:#111;--panel2:#151515;--border:#262626;
+  --text:#f3f4f6;--muted:#8b8b8b;--accent:#d8d8d8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{overflow:hidden}
+button,input,select{font:inherit}
+button{color:var(--text);background:transparent;border:1px solid var(--border);border-radius:7px;cursor:pointer}
+button:hover{background:#1b1b1b}
+#app{height:100vh;display:flex;flex-direction:column}
+#toolbar{height:52px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--panel);display:flex;align-items:center;gap:5px;padding:0 12px}
+#toolbar button{min-width:32px;height:32px;padding:0 9px}
+#toolbar select{height:32px;background:#111;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:0 8px}
+#title{width:210px;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);outline:0;padding:7px 4px;margin-left:8px}
+#title:focus{border-color:#777}
+#workspace{flex:1;min-height:0;display:flex}
+#sidebar{width:235px;flex-shrink:0;border-right:1px solid var(--border);background:#0e0e0e;padding:14px;display:flex;flex-direction:column;gap:7px}
+.side-btn{width:100%;padding:9px 10px;text-align:left}
+.side-label{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700;margin:12px 4px 4px}
+#saved-list{overflow:auto;min-height:0}
+.saved-note{padding:9px 10px;border:1px solid transparent;border-radius:7px;cursor:pointer}
+.saved-note:hover,.saved-note.active{background:#171717;border-color:var(--border)}
+.saved-title{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.saved-date{font-size:10px;color:var(--muted);margin-top:3px}
+#main{flex:1;min-width:0;overflow:auto;padding:60px 10%;display:flex;justify-content:center}
+#editor-wrap{width:min(900px,100%);min-height:100%}
+#editor{min-height:70vh;outline:0;font-size:17px;line-height:1.75;color:var(--text);caret-color:#fff}
+#editor:empty:before{content:"Empieza a escribir…";color:#555}
+#status{position:fixed;right:16px;bottom:14px;color:var(--muted);font-size:10px;pointer-events:none}
+#login{display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:var(--bg);z-index:10}
+#login .box{width:min(360px,90vw);padding:24px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+#login input{width:100%;margin:8px 0;padding:10px;background:#0c0c0c;border:1px solid var(--border);border-radius:7px;color:var(--text)}
+#login button{width:100%;padding:10px;margin-top:8px}
+@media(max-width:700px){
+  #sidebar{width:190px}
+  #title{width:130px}
+  #main{padding:40px 22px}
+  #toolbar{overflow-x:auto}
+}
+@media print{
+  body{background:white!important;color:black!important;overflow:visible}
+  #toolbar,#sidebar,#status,#login{display:none!important}
+  #workspace,#main{display:block;overflow:visible;height:auto;padding:0}
+  #editor-wrap{width:100%}
+  #editor{color:black;min-height:auto;font-size:12pt}
+}
+</style>
+</head>
+<body>
+<div id="login"><div class="box"><strong>Inicia sesión en Bitácora</strong><input id="email" type="email" placeholder="Email"><input id="password" type="password" placeholder="Contraseña"><button onclick="login()">Entrar</button><div id="login-error" style="font-size:11px;color:#e57373;margin-top:8px"></div></div></div>
+
+<div id="app">
+  <div id="toolbar">
+    <button onclick="cmd('bold')" title="Negrita (Ctrl+B)"><b>B</b></button>
+    <button onclick="cmd('italic')" title="Cursiva (Ctrl+I)"><i>I</i></button>
+    <button onclick="cmd('underline')" title="Subrayado (Ctrl+U)"><u>U</u></button>
+    <select onchange="changeSize(this.value)" title="Tamaño">
+      <option value="3">Normal</option><option value="2">Pequeño</option><option value="4">Grande</option><option value="5">Muy grande</option>
+    </select>
+    <button onclick="cmd('justifyLeft')" title="Alinear izquierda">≡</button>
+    <button onclick="cmd('justifyCenter')" title="Centrar">≡</button>
+    <button onclick="cmd('justifyRight')" title="Alinear derecha">≡</button>
+    <button onclick="cmd('insertUnorderedList')" title="Lista">• Lista</button>
+    <button onclick="cmd('insertOrderedList')" title="Lista numerada">1. Lista</button>
+    <input id="title" placeholder="Título del apunte" autocomplete="off">
+  </div>
+  <div id="workspace">
+    <aside id="sidebar">
+      <button class="side-btn" onclick="saveCurrent()">Guardar en Bitácora</button>
+      <button class="side-btn" onclick="window.close()">Salir</button>
+      <button class="side-btn" onclick="window.print()">Exportar a PDF</button>
+      <div class="side-label">Apuntes guardados</div>
+      <div id="saved-list"></div>
+    </aside>
+    <main id="main"><div id="editor-wrap"><div id="editor" contenteditable="true" spellcheck="true"></div></div></main>
+  </div>
+</div>
+<div id="status"></div>
+
+<script>
+const SUPABASE_URL='https://avdqtnukgbejorieuunj.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhdmRxdG51a2diZWpvcmlldXV1bmoiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4NTMyNzI5NSwiZXhwIjoyMTAwOTAzMjk1fQ.sq1cepXuBaNT6qygyxKEAhVHJh7G9LZyzaeJBhc7s7s';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let apuntes=[], currentId=null, data={};
+
+const $=id=>document.getElementById(id);
+function status(t){$('status').textContent=t;clearTimeout(status.t);status.t=setTimeout(()=>$('status').textContent='',1800);}
+function cmd(name){$('editor').focus();document.execCommand(name,false,null);}
+function changeSize(v){$('editor').focus();document.execCommand('fontSize',false,v);}
+function fmtDate(iso){return new Date(iso).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function esc(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+async function getUser(){
+  const {data:{user}}=await sb.auth.getUser();
+  return user;
+}
+async function load(){
+  const user=await getUser();
+  if(!user){$('app').style.display='none';$('login').style.display='flex';return;}
+  const {data:row,error}=await sb.from('bitacora').select('data').eq('user_id',user.id).maybeSingle();
+  if(error){status('No se pudieron cargar los apuntes');return;}
+  data=(row&&row.data)||{};
+  apuntes=Array.isArray(data.apuntes)?data.apuntes:[];
+  renderList();
+  if(apuntes.length) openNote(apuntes[0].id);
+}
+async function login(){
+  const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+  if(error){$('login-error').textContent='Credenciales incorrectas o error de conexión.';return;}
+  $('login').style.display='none';$('app').style.display='flex';load();
+}
+async function persist(){
+  const user=await getUser(); if(!user) throw new Error('Sin sesión');
+  data.apuntes=apuntes;
+  const {error}=await sb.from('bitacora').upsert({user_id:user.id,data,updated_at:new Date().toISOString()});
+  if(error) throw error;
+}
+function renderList(){
+  const list=$('saved-list');
+  list.innerHTML=apuntes.slice().sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt)).map(n=>`
+    <div class="saved-note ${n.id===currentId?'active':''}" onclick="openNote('${n.id}')">
+      <div class="saved-title">${esc(n.title||'Sin título')}</div>
+      <div class="saved-date">${fmtDate(n.updatedAt||n.createdAt)}</div>
+    </div>`).join('');
+}
+function openNote(id){
+  const n=apuntes.find(x=>x.id===id);if(!n)return;
+  currentId=id;$('title').value=n.title||'';$('editor').innerHTML=n.content||'';renderList();
+}
+async function saveCurrent(){
+  const content=$('editor').innerHTML.trim();
+  const title=$('title').value.trim()||'Apunte sin título';
+  if(!content){status('Escribe algo antes de guardar');return;}
+  const now=new Date().toISOString();
+  if(currentId){
+    const n=apuntes.find(x=>x.id===currentId);
+    if(n){n.title=title;n.content=content;n.updatedAt=now;}
+  }else{
+    currentId='apunte_'+Date.now();
+    apuntes.unshift({id:currentId,title,content,createdAt:now,updatedAt:now});
+  }
+  try{await persist();renderList();status('Guardado en Bitácora');}
+  catch(e){console.error(e);status('Error al guardar');}
+}
+$('editor').addEventListener('keydown',e=>{
+  const mod=e.ctrlKey||e.metaKey;
+  if(!mod)return;
+  const k=e.key.toLowerCase();
+  if(['b','i','u','s'].includes(k)){
+    e.preventDefault();
+    if(k==='s')saveCurrent();else cmd({b:'bold',i:'italic',u:'underline'}[k]);
+  }
+});
+window.addEventListener('beforeunload',()=>{});
+sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){window.close();}});
+load();
+</script>
+</body>
+</html>
