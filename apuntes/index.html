@@ -36,10 +36,8 @@ button:hover{background:#1b1b1b}
 #editor{min-height:70vh;outline:0;font-size:17px;line-height:1.75;color:var(--text);caret-color:#fff}
 #editor:empty:before{content:"Empieza a escribir…";color:#555}
 #status{position:fixed;right:16px;bottom:14px;color:var(--muted);font-size:10px;pointer-events:none}
-#login{display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:var(--bg);z-index:10}
-#login .box{width:min(360px,90vw);padding:24px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
-#login input{width:100%;margin:8px 0;padding:10px;background:#0c0c0c;border:1px solid var(--border);border-radius:7px;color:var(--text)}
-#login button{width:100%;padding:10px;margin-top:8px}
+#auth-status{display:flex;position:fixed;inset:0;align-items:center;justify-content:center;background:var(--bg);z-index:10}
+#auth-status .box{width:min(420px,90vw);padding:24px;border:1px solid var(--border);border-radius:12px;background:var(--panel);text-align:center}
 @media(max-width:700px){
   #sidebar{width:190px}
   #title{width:130px}
@@ -48,7 +46,7 @@ button:hover{background:#1b1b1b}
 }
 @media print{
   body{background:white!important;color:black!important;overflow:visible}
-  #toolbar,#sidebar,#status,#login{display:none!important}
+  #toolbar,#sidebar,#status,#auth-status{display:none!important}
   #workspace,#main{display:block;overflow:visible;height:auto;padding:0}
   #editor-wrap{width:100%}
   #editor{color:black;min-height:auto;font-size:12pt}
@@ -56,7 +54,7 @@ button:hover{background:#1b1b1b}
 </style>
 </head>
 <body>
-<div id="login"><div class="box"><strong>Inicia sesión en Bitácora</strong><input id="email" type="email" placeholder="Email"><input id="password" type="password" placeholder="Contraseña"><button onclick="login()">Entrar</button><div id="login-error" style="font-size:11px;color:#e57373;margin-top:8px"></div></div></div>
+<div id="auth-status"><div class="box"><strong id="auth-status-title">Abriendo Apuntes…</strong><div id="auth-status-text" style="font-size:11px;color:var(--muted);margin-top:8px">Comprobando tu sesión de Bitácora.</div></div></div>
 
 <div id="app">
   <div id="toolbar">
@@ -99,24 +97,61 @@ function changeSize(v){$('editor').focus();document.execCommand('fontSize',false
 function fmtDate(iso){return new Date(iso).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});}
 function esc(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 
-async function getUser(){
-  const {data:{user}}=await sb.auth.getUser();
-  return user;
+async function getOrRestoreSession(){
+  let {data:{session}}=await sb.auth.getSession();
+
+  if (session) return session;
+
+  // Handoff explícito desde Bitácora. Esto evita pedir credenciales
+  // cuando Apuntes se abre desde la aplicación principal.
+  try {
+    const raw = localStorage.getItem('bitacora_apuntes_handoff');
+    if (raw) {
+      const handoff = JSON.parse(raw);
+      localStorage.removeItem('bitacora_apuntes_handoff');
+
+      if (handoff?.access_token && handoff?.refresh_token) {
+        const result = await sb.auth.setSession({
+          access_token: handoff.access_token,
+          refresh_token: handoff.refresh_token
+        });
+        session = result?.data?.session || null;
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudo restaurar la sesión de Bitácora:', e);
+  }
+
+  return session;
 }
+
 async function load(){
-  const user=await getUser();
-  if(!user){$('app').style.display='none';$('login').style.display='flex';return;}
+  const session = await getOrRestoreSession();
+
+  if(!session){
+    $('app').style.display='none';
+    $('auth-status').style.display='flex';
+    $('auth-status-title').textContent='No se encontró la sesión de Bitácora';
+    $('auth-status-text').textContent='Cierra esta pestaña y abre Apuntes desde el apartado Apuntes de Bitácora.';
+    return;
+  }
+
+  $('auth-status').style.display='none';
+  $('app').style.display='flex';
+
+  const user = session.user;
   const {data:row,error}=await sb.from('bitacora').select('data').eq('user_id',user.id).maybeSingle();
-  if(error){status('No se pudieron cargar los apuntes');return;}
+
+  if(error){
+    console.error(error);
+    status('No se pudieron cargar los apuntes');
+    return;
+  }
+
   data=(row&&row.data)||{};
   apuntes=Array.isArray(data.apuntes)?data.apuntes:[];
   renderList();
   if(apuntes.length) openNote(apuntes[0].id);
-}
-async function login(){
-  const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
-  if(error){$('login-error').textContent='Credenciales incorrectas o error de conexión.';return;}
-  $('login').style.display='none';$('app').style.display='flex';load();
 }
 async function persist(){
   const user=await getUser(); if(!user) throw new Error('Sin sesión');
@@ -161,7 +196,14 @@ $('editor').addEventListener('keydown',e=>{
   }
 });
 window.addEventListener('beforeunload',()=>{});
-sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){window.close();}});
+sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='SIGNED_OUT'){
+    $('app').style.display='none';
+    $('auth-status').style.display='flex';
+    $('auth-status-title').textContent='Sesión cerrada';
+    $('auth-status-text').textContent='Vuelve a Bitácora para iniciar sesión.';
+  }
+});
 load();
 </script>
 </body>
