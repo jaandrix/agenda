@@ -18,7 +18,15 @@ button{color:var(--text);background:transparent;border:1px solid var(--border);b
 button:hover{background:#1b1b1b}
 #app{height:100vh;display:flex;flex-direction:column}
 #toolbar{height:52px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--panel);display:flex;align-items:center;gap:5px;padding:0 12px}
-#toolbar button{min-width:32px;height:32px;padding:0 9px}
+#toolbar button{min-width:32px;height:32px;padding:0 8px;border-bottom:2px solid #f1e3a3}
+#toolbar .align-btn{width:32px;min-width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.align-icon{width:16px;height:14px;display:flex;flex-direction:column;justify-content:space-between}
+.align-icon span{display:block;height:2px;background:currentColor;border-radius:2px}
+.align-icon.left span:nth-child(1){width:16px;margin-right:auto}.align-icon.left span:nth-child(2){width:12px;margin-right:auto}.align-icon.left span:nth-child(3){width:15px;margin-right:auto}
+.align-icon.center span:nth-child(1){width:16px;margin-left:auto;margin-right:auto}.align-icon.center span:nth-child(2){width:12px;margin-left:auto;margin-right:auto}.align-icon.center span:nth-child(3){width:15px;margin-left:auto;margin-right:auto}
+.align-icon.right span:nth-child(1){width:16px;margin-left:auto}.align-icon.right span:nth-child(2){width:12px;margin-left:auto}.align-icon.right span:nth-child(3){width:15px;margin-left:auto}
+.align-icon.full span{width:16px}
+
 #toolbar select{height:32px;background:#111;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:0 8px;min-width:96px}
 #toolbar .separator{width:1px;height:22px;background:var(--border);margin:0 3px}
 #toolbar .tool-label{font-size:10px;color:var(--muted);margin-left:4px}
@@ -73,12 +81,12 @@ button:hover{background:#1b1b1b}
     <button onclick="cmd('underline')" title="Subrayado (Ctrl+U)"><u>U</u></button>
     <span class="tool-label">Tamaño</span>
     <select onchange="changeSize(this.value)" title="Tamaño de letra">
-      <option value="16">16 px</option><option value="12">12 px</option><option value="14">14 px</option><option value="18">18 px</option><option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option>
+      <option value="12">12 px</option><option value="14">14 px</option><option value="16" selected>16 px</option><option value="18">18 px</option><option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option>
     </select>
-    <button onclick="cmd('justifyLeft')" title="Alinear izquierda">≡</button>
-    <button onclick="cmd('justifyCenter')" title="Centrar">≡</button>
-    <button onclick="cmd('justifyRight')" title="Alinear derecha">≡</button>
-    <button onclick="cmd('justifyFull')" title="Justificar">☰</button>
+    <button class="align-btn" onclick="cmd('justifyLeft')" title="Alinear izquierda"><span class="align-icon left"><span></span><span></span><span></span></span></button>
+    <button class="align-btn" onclick="cmd('justifyCenter')" title="Centrar"><span class="align-icon center"><span></span><span></span><span></span></span></button>
+    <button class="align-btn" onclick="cmd('justifyRight')" title="Alinear derecha"><span class="align-icon right"><span></span><span></span><span></span></span></button>
+    <button class="align-btn" onclick="cmd('justifyFull')" title="Justificar"><span class="align-icon full"><span></span><span></span><span></span></span></button>
     <button onclick="cmd('insertUnorderedList')" title="Lista">• Lista</button>
     <button onclick="cmd('insertOrderedList')" title="Lista numerada">1. Lista</button>
     <input id="title" placeholder="Título del apunte" autocomplete="off">
@@ -124,12 +132,68 @@ function exportPDF(){
   const title=$('title').value.trim()||'Apunte sin título';
   const editorHtml=$('editor').innerHTML.trim();
   if(!editorHtml){status('Escribe algo antes de exportar');return;}
-  const win=window.open('','_blank','noopener,noreferrer');
+
+  // Abrimos una pestaña inmediatamente (gesto del usuario) y después
+  // cargamos una página de impresión independiente. Así evitamos que
+  // document.write sobre about:blank quede bloqueado o resulte en una
+  // pestaña vacía en algunos navegadores.
+  const win=window.open('about:blank','_blank');
   if(!win){status('El navegador bloqueó la ventana de PDF');return;}
+
   const date=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
-  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${esc(title)}</title><style>@page{size:A4;margin:18mm 18mm 20mm}body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111;background:#fff;line-height:1.6;font-size:12pt}header{border-bottom:1px solid #bbb;padding-bottom:8mm;margin-bottom:12mm}h1{font-size:24pt;line-height:1.15;margin:0 0 5mm;font-weight:750}header .date{font-size:9pt;color:#666}main{word-wrap:break-word}main p{margin:0 0 .8em}main img{max-width:100%;height:auto}main a{color:#111;text-decoration:underline}ul,ol{padding-left:1.4em}blockquote{border-left:3px solid #bbb;padding-left:12px;margin-left:0;color:#444}</style></head><body><header><h1>${esc(title)}</h1><div class="date">${date}</div></header><main>${editorHtml}</main></body></html>`);
-  win.document.close();
-  setTimeout(()=>{win.focus();win.print();},250);
+  const safeTitle=esc(title);
+  const printDoc=`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${safeTitle}</title>
+<style>
+@page{size:A4;margin:18mm 18mm 20mm}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff;color:#171717}
+body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:12pt;line-height:1.65}
+.print-page{max-width:174mm;margin:0 auto}
+header{border-bottom:1px solid #d6d6d6;padding:0 0 7mm;margin:0 0 10mm}
+h1{font-size:24pt;line-height:1.15;margin:0 0 4mm;font-weight:750;letter-spacing:-.2px}
+.date{font-size:9.5pt;color:#777}
+main{word-wrap:break-word;overflow-wrap:anywhere}
+main p{margin:0 0 .8em}
+main h1{font-size:20pt;margin-top:1em}main h2{font-size:17pt;margin-top:1em}main h3{font-size:14pt;margin-top:1em}
+main img{max-width:100%;height:auto}
+main a{color:#171717;text-decoration:underline}
+ul,ol{padding-left:1.4em}
+blockquote{border-left:3px solid #cfcfcf;padding-left:12px;margin-left:0;color:#555}
+pre{white-space:pre-wrap;word-break:break-word}
+@media print{.print-page{max-width:none}a{color:inherit}}
+</style>
+</head>
+<body>
+<div class="print-page">
+<header><h1>${safeTitle}</h1><div class="date">${date}</div></header>
+<main>${editorHtml}</main>
+</div>
+</body>
+</html>`;
+
+  try{
+    win.document.open();
+    win.document.write(printDoc);
+    win.document.close();
+    setTimeout(()=>{
+      try{
+        win.focus();
+        win.print();
+      }catch(e){
+        console.error('No se pudo abrir la impresión:',e);
+        status('No se pudo abrir la impresión');
+      }
+    },500);
+  }catch(e){
+    console.error('Error preparando PDF:',e);
+    try{win.close();}catch(_){ }
+    status('No se pudo preparar el PDF');
+  }
 }
 function fmtDate(iso){return new Date(iso).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});}
 function esc(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
@@ -192,8 +256,27 @@ async function load(){
 }
 async function persist(){
   const user=await getUser(); if(!user) throw new Error('Sin sesión');
-  data.apuntes=apuntes;
-  const {error}=await sb.from('bitacora').upsert({user_id:user.id,data,updated_at:new Date().toISOString()});
+
+  // Apuntes comparte la misma fila de Supabase con Bitácora. Antes de
+  // guardar, recuperamos la versión más reciente para no sobrescribir
+  // cambios hechos desde la aplicación principal mientras esta pestaña
+  // estaba abierta.
+  const {data:latestRow,error:readError}=await sb
+    .from('bitacora')
+    .select('data')
+    .eq('user_id',user.id)
+    .maybeSingle();
+
+  if(readError) throw readError;
+
+  const latestData=(latestRow&&latestRow.data)?latestRow.data:{};
+  data={...latestData,apuntes};
+  const {error}=await sb.from('bitacora').upsert({
+    user_id:user.id,
+    data,
+    updated_at:new Date().toISOString()
+  });
+
   if(error) throw error;
 }
 function renderList(){
