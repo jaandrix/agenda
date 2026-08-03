@@ -2763,6 +2763,12 @@
             return true;
         }
 
+        // Apuntes se edita en una página independiente. Para evitar que una
+        // Bitácora abierta con datos antiguos sobrescriba los apuntes recién
+        // guardados, solo usamos la copia local de "apuntes" cuando procede
+        // de una importación explícita. En el resto de guardados conservamos
+        // siempre la versión más reciente que haya en Supabase.
+        let apuntesDirty = false;
         let saveChain = Promise.resolve();
 
         function saveData() {
@@ -2774,12 +2780,50 @@
         async function doSaveData() {
             const { data: { user } } = await sb.auth.getUser();
             if (!user) throw new Error('No hay sesión activa');
+
+            // Leer la versión más reciente antes de escribir. Esto evita que
+            // una pestaña antigua de Bitácora borre cambios hechos desde
+            // /apuntes/.
+            const { data: latestRow, error: readError } = await sb
+                .from('bitacora')
+                .select('data')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (readError) throw readError;
+
+            const latestData = (latestRow && latestRow.data) ? latestRow.data : {};
+            const latestApuntes = Array.isArray(latestData.apuntes) ? latestData.apuntes : [];
+
+            const mergedData = {
+                ...latestData,
+                entries,
+                categories,
+                userName,
+                investmentData,
+                notes,
+                prompts,
+                wishlistItems,
+                inbox,
+                financeIncome,
+                plannedTrips,
+                // Solo sustituir los apuntes remotos cuando el usuario ha
+                // importado deliberadamente un archivo que los contiene.
+                apuntes: apuntesDirty ? apuntes : latestApuntes
+            };
+
             const { error } = await sb.from('bitacora').upsert({
                 user_id: user.id,
-                data: { entries, categories, userName, investmentData, notes, prompts, wishlistItems, inbox, financeIncome, plannedTrips, apuntes },
+                data: mergedData,
                 updated_at: new Date().toISOString()
             });
+
             if (error) throw error;
+
+            // Mantener la memoria local sincronizada con lo que realmente
+            // quedó almacenado.
+            if (!apuntesDirty) apuntes = latestApuntes;
+            apuntesDirty = false;
         }
 
         // ============================================================
@@ -3628,7 +3672,7 @@
                     if (data.inbox) inbox = data.inbox;
                     if (data.financeIncome) financeIncome = data.financeIncome;
                     if (data.plannedTrips) plannedTrips = data.plannedTrips;
-                    if (data.apuntes) apuntes = data.apuntes;
+                    if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
                     filteredEntries = [...entries];
                     render();
                     updatePageTitle();
