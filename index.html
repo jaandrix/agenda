@@ -2522,6 +2522,223 @@ body.beige {
 @media (max-width: 600px) {
     .apuntes-window { width:calc(100vw - 12px); height:calc(100vh - 12px); min-width:0; min-height:0; left:6px; top:6px; transform:none; border-radius:10px; }
 }
+
+/* ===== Bitácora Centro Resumen v22 ===== */
+.summary-dashboard {
+    display:grid;
+    gap:16px;
+}
+.summary-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:10px;
+}
+.summary-card {
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px 16px;
+}
+.summary-card .summary-label {
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.55px;
+    color:var(--text-secondary);
+    margin-bottom:6px;
+}
+.summary-card .summary-value {
+    font-size:22px;
+    line-height:1.1;
+    font-weight:800;
+    color:var(--text-primary);
+}
+.summary-card .summary-sub {
+    margin-top:4px;
+    font-size:11px;
+    color:var(--text-secondary);
+}
+.summary-section {
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+}
+.summary-section-head {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    margin-bottom:12px;
+}
+.summary-section-title {
+    font-size:13px;
+    font-weight:800;
+    color:var(--text-primary);
+}
+.summary-section-desc {
+    font-size:11px;
+    color:var(--text-secondary);
+    margin-top:3px;
+}
+.summary-week-events {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:10px;
+}
+.summary-event-card {
+    border:1px solid var(--border);
+    border-radius:11px;
+    padding:11px 12px;
+    background:var(--bg-card-hover);
+}
+.summary-event-card .event-type {
+    font-size:9px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    color:var(--text-secondary);
+}
+.summary-event-card .event-name {
+    margin-top:4px;
+    font-size:13px;
+    font-weight:750;
+    color:var(--text-primary);
+}
+.summary-countdown {
+    margin-top:8px;
+    font-variant-numeric:tabular-nums;
+    font-size:16px;
+    font-weight:800;
+    letter-spacing:.3px;
+}
+.summary-countdown-label {
+    margin-top:3px;
+    font-size:10px;
+    color:var(--text-secondary);
+}
+.summary-timeline {
+    position:relative;
+    margin-left:5px;
+}
+.summary-timeline:before {
+    content:"";
+    position:absolute;
+    left:6px;
+    top:5px;
+    bottom:5px;
+    width:1px;
+    background:var(--border-strong);
+}
+.timeline-item {
+    position:relative;
+    display:grid;
+    grid-template-columns:14px 78px 1fr;
+    gap:10px;
+    padding:0 0 13px 0;
+}
+.timeline-dot {
+    width:13px;
+    height:13px;
+    margin-top:2px;
+    border-radius:50%;
+    border:3px solid var(--bg-card);
+    background:var(--text-secondary);
+    box-shadow:0 0 0 1px var(--border-strong);
+    z-index:1;
+}
+.timeline-date {
+    font-size:10px;
+    color:var(--text-secondary);
+    padding-top:2px;
+    white-space:nowrap;
+}
+.timeline-title {
+    font-size:12px;
+    font-weight:700;
+    color:var(--text-primary);
+}
+.timeline-meta {
+    font-size:10px;
+    color:var(--text-secondary);
+    margin-top:2px;
+}
+.summary-stat-list {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(145px,1fr));
+    gap:9px;
+}
+.summary-stat {
+    padding:11px 12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+}
+.summary-stat .num {
+    font-size:18px;
+    font-weight:800;
+    color:var(--text-primary);
+}
+.summary-stat .txt {
+    font-size:10px;
+    color:var(--text-secondary);
+    margin-top:2px;
+}
+.global-search-results {
+    position:absolute;
+    top:calc(100% + 8px);
+    left:0;
+    right:0;
+    z-index:1000;
+    max-height:65vh;
+    overflow:auto;
+    background:var(--bg-card);
+    border:1px solid var(--border-strong);
+    border-radius:12px;
+    box-shadow:0 14px 35px rgba(0,0,0,.28);
+}
+.global-search-result {
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    cursor:pointer;
+}
+.global-search-result:last-child { border-bottom:0; }
+.global-search-result:hover { background:var(--bg-card-hover); }
+.global-search-result .result-kind {
+    font-size:9px;
+    text-transform:uppercase;
+    font-weight:800;
+    color:var(--text-secondary);
+    margin-bottom:3px;
+}
+.global-search-result .result-title {
+    font-size:12px;
+    font-weight:700;
+    color:var(--text-primary);
+}
+.global-search-result .result-detail {
+    font-size:10px;
+    color:var(--text-secondary);
+    margin-top:2px;
+}
+.summary-backup-row {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+.summary-backup-row .desc {
+    font-size:11px;
+    color:var(--text-secondary);
+}
+@media(max-width:700px){
+    .timeline-item { grid-template-columns:14px 68px 1fr; gap:8px; }
+    .summary-section { padding:13px; }
+}
+
 </style>
 </head>
 <body>
@@ -2866,7 +3083,405 @@ body.beige {
     SUPABASE + CHART.JS
     ============================================================ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
-    </script>
+    
+/* ============================================================
+   CENTRO RESUMEN + BÚSQUEDA GLOBAL + BACKUP — v22
+   ============================================================ */
+
+function v22Esc(s) {
+    if (typeof escapeHtml === 'function') return escapeHtml(String(s ?? ''));
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+    }[c]));
+}
+
+function v22DateValue(v) {
+    if (!v) return null;
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function v22FormatDate(d) {
+    return d.toLocaleDateString('es-ES', {day:'2-digit', month:'short', year:'numeric'});
+}
+
+function v22CollectGlobalSearch() {
+    const out = [];
+    const push = (kind, title, detail, action) => {
+        if (title || detail) out.push({kind, title: title || 'Sin título', detail: detail || '', action});
+    };
+
+    const arrays = [
+        ['Notas', typeof notes !== 'undefined' ? notes : null],
+        ['Proyectos', typeof projects !== 'undefined' ? projects : null],
+        ['Viajes', typeof trips !== 'undefined' ? trips : null],
+        ['Libros', typeof books !== 'undefined' ? books : null],
+        ['Películas', typeof movies !== 'undefined' ? movies : null],
+        ['Series', typeof series !== 'undefined' ? series : null],
+        ['Videojuegos', typeof games !== 'undefined' ? games : null],
+        ['Lugares', typeof places !== 'undefined' ? places : null],
+        ['Documentos', typeof documents !== 'undefined' ? documents : null],
+        ['Wishlist', typeof wishlist !== 'undefined' ? wishlist : null]
+    ];
+
+    arrays.forEach(([kind, arr]) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach((item, idx) => {
+            if (!item || typeof item !== 'object') return;
+            const title = item.title || item.name || item.nombre || item.place || item.lugar || item.text || item.content || '';
+            const detail = item.description || item.notes || item.note || item.category || item.type || '';
+            const blob = JSON.stringify(item).toLowerCase();
+            push(kind, title, detail, () => {
+                try {
+                    if (typeof openEntry === 'function') openEntry(item, kind.toLowerCase(), idx);
+                    else if (typeof editEntry === 'function') editEntry(item, idx);
+                } catch(e) { console.warn('Global search action:', e); }
+            });
+        });
+    });
+
+    // Include saved Apuntes if they are mirrored in the main app state.
+    const noteCollections = [
+        typeof savedApuntes !== 'undefined' ? savedApuntes : null,
+        typeof apuntes !== 'undefined' ? apuntes : null,
+        typeof documentsData !== 'undefined' ? documentsData : null
+    ];
+    noteCollections.forEach(arr => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach((item, idx) => {
+            const title = item?.title || item?.name || 'Apunte';
+            const detail = item?.date || item?.updatedAt || '';
+            push('Apuntes', title, detail, () => {
+                window.open('/apuntes/index.html', '_blank');
+            });
+        });
+    });
+
+    // Also index the current in-memory app data as a fallback. This makes the
+    // search useful even if some collections use different variable names.
+    try {
+        const rootCandidates = [
+            typeof data !== 'undefined' ? data : null,
+            typeof appData !== 'undefined' ? appData : null,
+            typeof bitacoraData !== 'undefined' ? bitacoraData : null
+        ];
+        rootCandidates.forEach(root => {
+            if (!root || typeof root !== 'object') return;
+            Object.entries(root).forEach(([key, value]) => {
+                if (!Array.isArray(value)) return;
+                value.forEach((item, idx) => {
+                    if (!item || typeof item !== 'object') return;
+                    const title = item.title || item.name || item.nombre || '';
+                    if (!title) return;
+                    const kind = key.charAt(0).toUpperCase() + key.slice(1);
+                    push(kind, title, item.description || item.note || '', () => {
+                        try {
+                            if (typeof openEntry === 'function') openEntry(item, key, idx);
+                        } catch(e) {}
+                    });
+                });
+            });
+        });
+    } catch(e) {}
+
+    // Deduplicate.
+    const seen = new Set();
+    return out.filter(r => {
+        const k = `${r.kind}|${r.title}|${r.detail}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+    });
+}
+
+function v22RunGlobalSearch(query) {
+    const box = document.getElementById('globalSearchResults');
+    if (!box) return;
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+    const results = v22CollectGlobalSearch().filter(r =>
+        `${r.kind} ${r.title} ${r.detail}`.toLowerCase().includes(q)
+    ).slice(0, 40);
+
+    if (!results.length) {
+        box.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--text-secondary)">No se han encontrado resultados.</div>';
+        box.style.display = 'block';
+        return;
+    }
+
+    box.innerHTML = results.map((r, i) => `
+        <div class="global-search-result" data-v22-result="${i}">
+            <div style="min-width:0">
+                <div class="result-kind">${v22Esc(r.kind)}</div>
+                <div class="result-title">${v22Esc(r.title)}</div>
+                ${r.detail ? `<div class="result-detail">${v22Esc(r.detail)}</div>` : ''}
+            </div>
+        </div>
+    `).join('');
+
+    box.querySelectorAll('[data-v22-result]').forEach((el, i) => {
+        el.addEventListener('click', () => {
+            try { results[i].action?.(); } catch(e) {}
+            box.style.display = 'none';
+        });
+    });
+    box.style.display = 'block';
+}
+
+function v22InitGlobalSearch() {
+    const input =
+        document.querySelector('#globalSearch') ||
+        document.querySelector('#search') ||
+        document.querySelector('input[placeholder*="Buscar" i]') ||
+        document.querySelector('input[placeholder*="buscar" i]');
+    if (!input || input.dataset.v22Bound) return;
+    input.dataset.v22Bound = '1';
+    input.addEventListener('input', () => v22RunGlobalSearch(input.value));
+    input.addEventListener('focus', () => { if (input.value.trim()) v22RunGlobalSearch(input.value); });
+    document.addEventListener('click', e => {
+        const box = document.getElementById('globalSearchResults');
+        if (!box || box.contains(e.target) || e.target === input) return;
+        box.style.display = 'none';
+    });
+}
+
+function v22GetAllEvents() {
+    const events = [];
+
+    // Calendar events, if represented by a conventional collection.
+    const candidates = [
+        typeof calendarEvents !== 'undefined' ? calendarEvents : null,
+        typeof events !== 'undefined' ? events : null,
+        typeof entries !== 'undefined' ? entries : null,
+        typeof calendarData !== 'undefined' ? calendarData : null
+    ];
+
+    candidates.forEach(arr => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(e => {
+            if (!e || typeof e !== 'object') return;
+            const date = e.date || e.startDate || e.start || e.fecha;
+            const d = v22DateValue(date);
+            if (!d) return;
+            events.push({
+                date:d,
+                title:e.title || e.name || e.text || e.nombre || 'Evento',
+                type:e.type || e.category || 'Calendario',
+                detail:e.description || e.note || ''
+            });
+        });
+    });
+
+    // Also inspect common app collections for dated entries.
+    [
+        ['Proyectos', typeof projects !== 'undefined' ? projects : null],
+        ['Viajes', typeof trips !== 'undefined' ? trips : null],
+        ['Notas', typeof notes !== 'undefined' ? notes : null]
+    ].forEach(([type, arr]) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(e => {
+            const d = v22DateValue(e?.date || e?.startDate || e?.start || e?.fecha || e?.createdAt);
+            if (!d) return;
+            events.push({
+                date:d,
+                title:e.title || e.name || e.nombre || type,
+                type,
+                detail:e.description || e.note || ''
+            });
+        });
+    });
+
+    const seen = new Set();
+    return events
+        .filter(e => {
+            const k = `${e.date.toISOString().slice(0,10)}|${e.title}|${e.type}`;
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+        })
+        .sort((a,b) => b.date - a.date);
+}
+
+function v22GetThisWeekEvents() {
+    const now = new Date();
+    const start = new Date(now);
+    const day = start.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    start.setDate(start.getDate() + diff);
+    start.setHours(0,0,0,0);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    end.setHours(23,59,59,999);
+
+    return v22GetAllEvents()
+        .filter(e => e.date >= start && e.date <= end)
+        .sort((a,b) => a.date - b.date);
+}
+
+function v22Countdown(d) {
+    const ms = d - new Date();
+    if (ms <= 0) return 'Ahora';
+    const total = Math.floor(ms / 1000);
+    const days = Math.floor(total / 86400);
+    const hours = Math.floor((total % 86400) / 3600);
+    const mins = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    return `${days}d ${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m ${String(secs).padStart(2,'0')}s`;
+}
+
+function v22HistoricalStats() {
+    const count = arr => Array.isArray(arr) ? arr.length : 0;
+    const worked = (() => {
+        try {
+            if (typeof jobs !== 'undefined' && Array.isArray(jobs)) {
+                return jobs.reduce((sum,j) => {
+                    const a = v22DateValue(j.startDate || j.start || j.fechaInicio);
+                    const b = v22DateValue(j.endDate || j.end || j.fechaFin) || new Date();
+                    if (!a) return sum;
+                    return sum + Math.max(0, Math.floor((b-a)/86400000)+1);
+                }, 0);
+            }
+        } catch(e) {}
+        return null;
+    })();
+
+    return {
+        books: count(typeof books !== 'undefined' ? books : null),
+        movies: count(typeof movies !== 'undefined' ? movies : null),
+        series: count(typeof series !== 'undefined' ? series : null),
+        games: count(typeof games !== 'undefined' ? games : null),
+        projects: count(typeof projects !== 'undefined' ? projects : null),
+        trips: count(typeof trips !== 'undefined' ? trips : null),
+        places: count(typeof places !== 'undefined' ? places : null),
+        worked
+    };
+}
+
+function v22RenderSummaryDashboard() {
+    const root = document.getElementById('summaryDashboard');
+    if (!root) return;
+
+    const stats = v22HistoricalStats();
+    const week = v22GetThisWeekEvents();
+    const timeline = v22GetAllEvents().slice(0, 10);
+    const next = week.find(e => e.date > new Date());
+
+    root.innerHTML = `
+      <div class="summary-grid">
+        <div class="summary-card"><div class="summary-label">Libros</div><div class="summary-value">${stats.books}</div><div class="summary-sub">registrados</div></div>
+        <div class="summary-card"><div class="summary-label">Películas</div><div class="summary-value">${stats.movies}</div><div class="summary-sub">registradas</div></div>
+        <div class="summary-card"><div class="summary-label">Series</div><div class="summary-value">${stats.series}</div><div class="summary-sub">registradas</div></div>
+        <div class="summary-card"><div class="summary-label">Videojuegos</div><div class="summary-value">${stats.games}</div><div class="summary-sub">registrados</div></div>
+        <div class="summary-card"><div class="summary-label">Proyectos</div><div class="summary-value">${stats.projects}</div><div class="summary-sub">creados</div></div>
+        <div class="summary-card"><div class="summary-label">Viajes</div><div class="summary-value">${stats.trips}</div><div class="summary-sub">registrados</div></div>
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-section-head">
+          <div><div class="summary-section-title">Esta semana</div><div class="summary-section-desc">Próximos eventos y tiempo restante.</div></div>
+        </div>
+        ${week.length ? `<div class="summary-week-events">
+          ${week.map(e => `
+            <div class="summary-event-card">
+              <div class="event-type">${v22Esc(e.type)}</div>
+              <div class="event-name">${v22Esc(e.title)}</div>
+              <div class="summary-countdown" data-v22-countdown="${e.date.toISOString()}">${v22Countdown(e.date)}</div>
+              <div class="summary-countdown-label">${v22FormatDate(e.date)}</div>
+            </div>`).join('')}
+        </div>` : '<div style="font-size:12px;color:var(--text-secondary)">No hay eventos registrados para esta semana.</div>'}
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-section-head">
+          <div><div class="summary-section-title">Actividad reciente</div><div class="summary-section-desc">Tu timeline personal, de lo más reciente hacia atrás.</div></div>
+        </div>
+        ${timeline.length ? `<div class="summary-timeline">
+          ${timeline.map(e => `
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-date">${v22FormatDate(e.date)}</div>
+              <div><div class="timeline-title">${v22Esc(e.title)}</div><div class="timeline-meta">${v22Esc(e.type)}${e.detail ? ' · ' + v22Esc(e.detail) : ''}</div></div>
+            </div>`).join('')}
+        </div>` : '<div style="font-size:12px;color:var(--text-secondary)">Todavía no hay suficiente actividad fechada para mostrar la timeline.</div>'}
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-section-head">
+          <div><div class="summary-section-title">Estadísticas históricas</div><div class="summary-section-desc">Una visión rápida de todo lo que has ido registrando.</div></div>
+        </div>
+        <div class="summary-stat-list">
+          <div class="summary-stat"><div class="num">${stats.books}</div><div class="txt">libros</div></div>
+          <div class="summary-stat"><div class="num">${stats.movies}</div><div class="txt">películas</div></div>
+          <div class="summary-stat"><div class="num">${stats.series}</div><div class="txt">series</div></div>
+          <div class="summary-stat"><div class="num">${stats.games}</div><div class="txt">videojuegos</div></div>
+          <div class="summary-stat"><div class="num">${stats.projects}</div><div class="txt">proyectos</div></div>
+          <div class="summary-stat"><div class="num">${stats.trips}</div><div class="txt">viajes</div></div>
+          <div class="summary-stat"><div class="num">${stats.places}</div><div class="txt">lugares</div></div>
+          ${stats.worked !== null ? `<div class="summary-stat"><div class="num">${stats.worked}</div><div class="txt">días de trabajo registrados</div></div>` : ''}
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-backup-row">
+          <div><div class="summary-section-title">Copia de seguridad</div><div class="desc">Guarda los datos disponibles de Bitácora en un archivo JSON para poder recuperarlos.</div></div>
+          <button class="btn-secondary" style="width:auto" onclick="v22ExportBackup()">↧ Copia de seguridad</button>
+        </div>
+      </div>
+    `;
+}
+
+function v22ExportBackup() {
+    try {
+        const payload = {
+            exportedAt: new Date().toISOString(),
+            version: 'Bitácora v22',
+            data: {}
+        };
+        const candidates = ['data','appData','bitacoraData','notes','projects','trips','books','movies','series','games','places','documents','wishlist','investmentData','jobs','events','calendarEvents'];
+        candidates.forEach(k => {
+            try {
+                if (typeof window[k] !== 'undefined') payload.data[k] = window[k];
+            } catch(e) {}
+        });
+        const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `bitacora-backup-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        if (typeof showToast === 'function') showToast('Copia de seguridad creada');
+    } catch(e) {
+        console.error(e);
+        if (typeof showToast === 'function') showToast('No se pudo crear la copia de seguridad', true);
+    }
+}
+
+function v22StartCountdowns() {
+    setInterval(() => {
+        document.querySelectorAll('[data-v22-countdown]').forEach(el => {
+            const d = new Date(el.dataset.v22Countdown);
+            el.textContent = v22Countdown(d);
+        });
+    }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    v22InitGlobalSearch();
+    v22StartCountdowns();
+});
+
+
+function v22RefreshSummaryIfPresent() {
+    const el = document.getElementById('summaryDashboard');
+    if (el) v22RenderSummaryDashboard();
+}
+setTimeout(v22RefreshSummaryIfPresent, 0);
+setInterval(v22RefreshSummaryIfPresent, 5000);
+
+</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
     <script>
