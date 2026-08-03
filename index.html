@@ -2057,6 +2057,449 @@ body.beige {
     .fund-card { padding: 13px 14px; }
 }
 
+
+
+/* ============================================================
+   WISHLIST — POLISHED UI
+   ============================================================ */
+.wishlist-shell {
+    max-width: 900px;
+}
+.wishlist-header {
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+}
+.wishlist-kicker {
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.55px;
+    text-transform:uppercase;
+    color:var(--text-secondary);
+    margin-bottom:5px;
+}
+.wishlist-title {
+    font-size:24px;
+    line-height:1.1;
+    font-weight:850;
+    letter-spacing:-.6px;
+    color:var(--text-primary);
+}
+.wishlist-subtitle {
+    margin-top:6px;
+    font-size:13px;
+    line-height:1.45;
+    color:var(--text-secondary);
+    max-width:620px;
+}
+.wishlist-add {
+    width:auto !important;
+    margin:0 !important;
+    padding:9px 15px !important;
+    border-radius:11px !important;
+    font-size:12px !important;
+}
+.wishlist-summary {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:18px;
+}
+.wishlist-stat {
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:13px 14px;
+}
+.wishlist-stat-label {
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.45px;
+    color:var(--text-secondary);
+}
+.wishlist-stat-value {
+    margin-top:4px;
+    font-size:19px;
+    font-weight:800;
+    color:var(--text-primary);
+}
+.wishlist-section-label {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin:22px 0 9px;
+}
+.wishlist-section-label span:first-child {
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    color:var(--text-secondary);
+}
+.wishlist-section-count {
+    font-size:10px;
+    font-weight:700;
+    color:var(--text-secondary);
+    background:var(--bg-input);
+    border:1px solid var(--border);
+    padding:3px 8px;
+    border-radius:20px;
+}
+.wishlist-item {
+    display:grid;
+    grid-template-columns:76px minmax(0,1fr) auto;
+    gap:14px;
+    align-items:center;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px;
+    margin-bottom:9px;
+    transition:transform .15s ease,border-color .15s ease,background .15s ease;
+}
+.wishlist-item:hover {
+    transform:translateY(-1px);
+    background:var(--bg-card-hover);
+    border-color:var(--border-strong);
+}
+.wishlist-timer {
+    min-height:48px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:7px 6px;
+    border-radius:10px;
+    background:var(--bg-input);
+    border:1px solid var(--border);
+    color:var(--text-primary);
+    font-size:11px;
+    font-weight:750;
+    text-align:center;
+    line-height:1.25;
+}
+.wishlist-item-title {
+    font-size:14px;
+    font-weight:800;
+    color:var(--text-primary);
+}
+.wishlist-item-meta {
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+    margin-top:5px;
+    font-size:12px;
+    color:var(--text-secondary);
+}
+.wishlist-price {
+    color:var(--text-primary);
+    font-weight:750;
+}
+.wishlist-reason {
+    margin-top:5px;
+    font-size:11px;
+    color:var(--text-secondary);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.wishlist-actions {
+    display:flex;
+    justify-content:flex-end;
+    gap:6px;
+    flex-wrap:wrap;
+}
+.wishlist-actions .btn-secondary {
+    width:auto !important;
+    padding:7px 10px !important;
+    font-size:11px !important;
+}
+.wishlist-history {
+    opacity:.82;
+}
+.wishlist-history .entry-item {
+    border-radius:11px;
+}
+.wishlist-empty {
+    border:1px dashed var(--border-strong);
+    border-radius:13px;
+    padding:28px 18px;
+    text-align:center;
+    color:var(--text-secondary);
+    background:var(--bg-card);
+}
+.wishlist-empty-title {
+    margin-top:6px;
+    font-size:13px;
+    font-weight:750;
+    color:var(--text-primary);
+}
+.wishlist-empty-sub {
+    margin-top:3px;
+    font-size:11px;
+}
+.wishlist-divider {
+    height:1px;
+    background:var(--border);
+    margin:18px 0;
+}
+
+/* ============================================================
+   FONDO INDEXADO — POLISHED UI
+   ============================================================ */
+.investment-dashboard {
+    max-width:980px;
+}
+.investment-topbar {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+}
+.investment-heading-kicker {
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.55px;
+    color:var(--invest-accent);
+    margin-bottom:4px;
+}
+.investment-heading {
+    font-size:24px;
+    font-weight:850;
+    letter-spacing:-.6px;
+    color:var(--text-primary);
+}
+.investment-heading-sub {
+    font-size:12px;
+    color:var(--text-secondary);
+    margin-top:4px;
+}
+.investment-real-badge {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 9px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    background:var(--bg-card);
+    color:var(--text-secondary);
+    font-size:10px;
+    font-weight:750;
+}
+.investment-real-dot {
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:var(--invest-gain);
+}
+.investment-chart-card {
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow:0 4px 18px rgba(0,0,0,.04);
+}
+.investment-chart-head {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+}
+.investment-chart-head .title {
+    font-size:14px;
+    font-weight:800;
+    color:var(--text-primary);
+}
+.investment-chart-head .desc {
+    margin-top:4px;
+    font-size:11px;
+    line-height:1.4;
+    color:var(--text-secondary);
+    max-width:620px;
+}
+.investment-chart-context {
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-top:8px;
+    flex-wrap:wrap;
+}
+.investment-context-chip {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 8px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--bg-input);
+    color:var(--text-secondary);
+    font-size:10px;
+    font-weight:700;
+}
+.investment-context-chip.real::before {
+    content:"";
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:var(--invest-gain);
+}
+.investment-context-chip.sim::before {
+    content:"";
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:var(--invest-accent);
+}
+.investment-canvas-wrap {
+    position:relative;
+    height:280px;
+    width:100%;
+}
+.investment-canvas-wrap canvas {
+    width:100% !important;
+    height:100% !important;
+}
+.investment-projection-card {
+    border-color:rgba(234,179,8,.32);
+    background:linear-gradient(145deg,var(--bg-card),var(--invest-accent-soft));
+}
+.investment-projection-note {
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    padding:9px 10px;
+    margin:10px 0 13px;
+    border-radius:9px;
+    background:var(--invest-accent-soft);
+    color:var(--text-secondary);
+    font-size:10px;
+    line-height:1.45;
+}
+.investment-projection-note strong {
+    color:var(--text-primary);
+}
+.investment-rate-row {
+    display:flex;
+    align-items:flex-end;
+    gap:12px;
+    margin:10px 0 14px;
+    flex-wrap:wrap;
+}
+.investment-rate-field {
+    min-width:190px;
+}
+.investment-rate-field .modal-input {
+    margin-bottom:0;
+}
+.investment-funds-head {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin:20px 0 10px;
+}
+.investment-funds-label {
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    color:var(--text-secondary);
+}
+.investment-add-btn {
+    width:auto !important;
+    padding:7px 11px !important;
+    font-size:11px !important;
+}
+.fund-card {
+    position:relative;
+    overflow:hidden;
+}
+.fund-card-top {
+    position:relative;
+}
+.fund-card .fund-gain {
+    margin-top:2px;
+}
+.fund-card .fund-alloc-bar-bg {
+    margin-top:11px;
+}
+.fund-card .fund-alloc-bar-fill {
+    transition:width .25s ease;
+}
+.investment-empty-state {
+    border:1px dashed var(--border-strong);
+    border-radius:13px;
+    padding:28px 18px;
+    text-align:center;
+    color:var(--text-secondary);
+    background:var(--bg-card);
+}
+.investment-empty-state strong {
+    display:block;
+    color:var(--text-primary);
+    font-size:13px;
+    margin-bottom:4px;
+}
+@media (max-width:700px) {
+    .wishlist-summary { grid-template-columns:1fr 1fr; }
+    .wishlist-item { grid-template-columns:1fr; }
+    .wishlist-timer { justify-content:flex-start; min-height:0; width:max-content; }
+    .wishlist-actions { justify-content:flex-start; }
+    .investment-heading { font-size:21px; }
+    .investment-canvas-wrap { height:240px; }
+}
+@media (max-width:480px) {
+    .wishlist-summary { grid-template-columns:1fr; }
+}
+
+
+/* ============================================================
+   VENTANA FLOTANTE DE APUNTES
+   El contenido sigue viviendo en /apuntes/index.html
+   ============================================================ */
+.apuntes-window-layer {
+    position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+}
+.apuntes-window {
+    position: absolute; width: min(920px, calc(100vw - 40px)); height: min(760px, calc(100vh - 40px));
+    min-width: 420px; min-height: 320px; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    background: var(--bg-card, #17171c); border: 1px solid var(--border-strong, rgba(255,255,255,.12));
+    border-radius: 14px; box-shadow: 0 24px 80px rgba(0,0,0,.48); overflow: hidden;
+    resize: both; display: flex; flex-direction: column; pointer-events: auto;
+}
+.apuntes-window.maximized {
+    width: calc(100vw - 24px); height: calc(100vh - 24px); left: 12px; top: 12px; transform: none;
+}
+.apuntes-window-bar {
+    height: 42px; min-height: 42px; display:flex; align-items:center; justify-content:space-between;
+    padding: 0 10px 0 14px; background: var(--bg-card, #17171c); border-bottom:1px solid var(--border, rgba(255,255,255,.08));
+    user-select:none; cursor:grab;
+}
+.apuntes-window-bar:active { cursor:grabbing; }
+.apuntes-window-title { font-size:13px; font-weight:800; letter-spacing:.2px; color:var(--text-primary, #fff); }
+.apuntes-window-actions { display:flex; gap:4px; }
+.apuntes-window-action {
+    width:28px; height:28px; border:0; border-radius:7px; background:transparent; color:var(--text-secondary, #999);
+    cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center;
+}
+.apuntes-window-action:hover { background:var(--bg-card-hover, rgba(255,255,255,.07)); color:var(--text-primary, #fff); }
+.apuntes-window-frame { width:100%; height:100%; border:0; display:block; background:var(--bg-card, #17171c); }
+.apuntes-window-minimized { height:42px !important; min-height:42px !important; resize:none; }
+.apuntes-window-minimized .apuntes-window-frame { display:none; }
+@media (max-width: 600px) {
+    .apuntes-window { width:calc(100vw - 12px); height:calc(100vh - 12px); min-width:0; min-height:0; left:6px; top:6px; transform:none; border-radius:10px; }
+}
 </style>
 </head>
 <body>
@@ -3108,36 +3551,85 @@ body.beige {
         let currentView = 'calendar';
         let _wishlistTimerId = null;
 
-        async function openApuntes() {
-            // Abrimos la pestaña de forma síncrona para evitar que el navegador
-            // bloquee la ventana por haber esperado una operación async.
-            const apuntesWindow = window.open('about:blank', '_blank');
+        // Abre Apuntes como una ventana flotante dentro de Bitácora.
+        // IMPORTANTE: el contenido NO se duplica aquí: se carga directamente
+        // desde /apuntes/index.html, por lo que sigue siendo un proyecto independiente.
+        let apuntesFloatingWindow = null;
 
-            try {
-                const { data: { session } } = await sb.auth.getSession();
-                if (session?.access_token && session?.refresh_token) {
-                    localStorage.setItem('bitacora_apuntes_handoff', JSON.stringify({
-                        access_token: session.access_token,
-                        refresh_token: session.refresh_token,
-                        expires_at: session.expires_at || null,
-                        created_at: Date.now()
-                    }));
-                }
-
-                if (apuntesWindow) {
-                    apuntesWindow.location.href = '/apuntes/';
-                } else {
-                    window.location.href = '/apuntes/';
-                }
-            } catch (e) {
-                console.warn('No se pudo preparar la sesión para Apuntes:', e);
-                if (apuntesWindow) {
-                    apuntesWindow.location.href = '/apuntes/';
-                } else {
-                    window.location.href = '/apuntes/';
-                }
+        function openApuntes() {
+            if (apuntesFloatingWindow) {
+                apuntesFloatingWindow.classList.remove('apuntes-window-minimized');
+                apuntesFloatingWindow.style.display = 'flex';
+                bringApuntesToFront();
+                return;
             }
+
+            const layer = document.createElement('div');
+            layer.className = 'apuntes-window-layer';
+            layer.innerHTML = `
+                <div class="apuntes-window" id="apuntes-floating-window">
+                    <div class="apuntes-window-bar" id="apuntes-window-bar">
+                        <div class="apuntes-window-title">Apuntes</div>
+                        <div class="apuntes-window-actions">
+                            <button class="apuntes-window-action" type="button" title="Minimizar" onclick="minimizeApuntes()">−</button>
+                            <button class="apuntes-window-action" type="button" title="Maximizar" onclick="maximizeApuntes()">□</button>
+                            <button class="apuntes-window-action" type="button" title="Cerrar" onclick="closeApuntes()">×</button>
+                        </div>
+                    </div>
+                    <iframe class="apuntes-window-frame" src="/apuntes/index.html" title="Apuntes"></iframe>
+                </div>`;
+
+            document.body.appendChild(layer);
+            apuntesFloatingWindow = layer.querySelector('#apuntes-floating-window');
+            bringApuntesToFront();
+            makeApuntesDraggable(apuntesFloatingWindow, layer.querySelector('#apuntes-window-bar'));
+
+            // Si se pulsa fuera de la ventana, no la cerramos: se comporta como
+            // una ventana de escritorio y permanece disponible hasta que el usuario la cierre.
+            layer.addEventListener('mousedown', () => bringApuntesToFront());
         }
+
+        function bringApuntesToFront() {
+            if (!apuntesFloatingWindow) return;
+            apuntesFloatingWindow.style.zIndex = String(Date.now());
+        }
+
+        function minimizeApuntes() {
+            if (!apuntesFloatingWindow) return;
+            apuntesFloatingWindow.classList.toggle('apuntes-window-minimized');
+        }
+
+        function maximizeApuntes() {
+            if (!apuntesFloatingWindow) return;
+            apuntesFloatingWindow.classList.toggle('maximized');
+        }
+
+        function closeApuntes() {
+            if (!apuntesFloatingWindow) return;
+            const layer = apuntesFloatingWindow.parentElement;
+            layer?.remove();
+            apuntesFloatingWindow = null;
+        }
+
+        function makeApuntesDraggable(win, bar) {
+            let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+            bar.addEventListener('mousedown', (e) => {
+                if (e.target.closest('button')) return;
+                if (win.classList.contains('maximized')) return;
+                dragging = true;
+                const rect = win.getBoundingClientRect();
+                startX = e.clientX; startY = e.clientY; startLeft = rect.left; startTop = rect.top;
+                win.style.left = rect.left + 'px'; win.style.top = rect.top + 'px'; win.style.transform = 'none';
+                e.preventDefault();
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                win.style.left = Math.max(0, startLeft + e.clientX - startX) + 'px';
+                win.style.top = Math.max(0, startTop + e.clientY - startY) + 'px';
+            });
+            window.addEventListener('mouseup', () => { dragging = false; });
+        }
+
         function updateHeaderClock() {
             const el=document.getElementById('header-clock');
             if(el) el.textContent=new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
@@ -5160,50 +5652,101 @@ body.beige {
         function renderWishlist() {
             const active = wishlistItems.filter(w => w.status !== 'registrado');
             const archived = wishlistItems.filter(w => w.status === 'registrado');
+            const pendingValue = active.reduce((s, w) => s + (Number(w.price) || 0), 0);
+            const savedValue = archived
+                .filter(w => w.outcome === 'no_comprado')
+                .reduce((s, w) => s + (Number(w.price) || 0), 0);
 
             return `
-            <button class="btn-secondary" style="width:auto;margin-bottom:16px" onclick="financeSubView='menu';render()">← Volver a Finanzas</button>
-            <div style="max-width:700px">
-                <button class="btn-modal-primary" style="width:auto;padding:8px 20px;margin-bottom:16px" onclick="openAddWishlistItem()">+ Añadir deseo</button>
+            <div class="wishlist-shell">
+                <div class="wishlist-header">
+                    <div>
+                        <div class="wishlist-kicker">Finanzas · Control de compras</div>
+                        <div class="wishlist-title">Wishlist</div>
+                        <div class="wishlist-subtitle">Deja reposar una compra durante 30 días antes de decidir. La lista te ayuda a separar deseo, impulso y compra consciente.</div>
+                    </div>
+                    <button class="btn-modal-primary wishlist-add" onclick="openAddWishlistItem()">+ Añadir deseo</button>
+                </div>
+
+                <div class="wishlist-summary">
+                    <div class="wishlist-stat">
+                        <div class="wishlist-stat-label">Pendientes</div>
+                        <div class="wishlist-stat-value">${active.length}</div>
+                    </div>
+                    <div class="wishlist-stat">
+                        <div class="wishlist-stat-label">Valor pendiente</div>
+                        <div class="wishlist-stat-value">${pendingValue.toLocaleString('es-ES')}€</div>
+                    </div>
+                    <div class="wishlist-stat">
+                        <div class="wishlist-stat-label">No comprado</div>
+                        <div class="wishlist-stat-value">${savedValue.toLocaleString('es-ES')}€</div>
+                    </div>
+                </div>
+
+                <button class="btn-secondary" style="width:auto;margin-bottom:2px" onclick="financeSubView='menu';render()">← Volver a Finanzas</button>
+
+                <div class="wishlist-section-label">
+                    <span>Compras en espera</span>
+                    <span class="wishlist-section-count">${active.length} ${active.length === 1 ? 'deseo' : 'deseos'}</span>
+                </div>
 
                 ${active.length ? active.map(w => {
-                    const remaining = w.unlockAt - Date.now();
+                    const remaining = Math.max(0, w.unlockAt - Date.now());
                     return `
-                    <div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-                        <div style="min-width:100px;text-align:center">
-                            ${w.status === 'esperando'
-                                ? `<div id="wl-countdown-${w.id}" class="console-font" style="font-size:13px">${formatCountdown(remaining)}</div>`
-                                : `<span class="badge badge-progress">Decide ya</span>`}
+                    <div class="wishlist-item">
+                        <div id="wl-countdown-${w.id}" class="wishlist-timer">
+                            ${w.status === 'esperando' ? formatCountdown(remaining) : 'Decisión disponible'}
                         </div>
-                        <div style="flex:1;min-width:160px">
-                            <div style="font-weight:700">${escapeHtml(w.title)}</div>
-                            <div style="font-size:12px;color:var(--text-secondary)">${w.price.toLocaleString('es-ES')}€${w.reason ? ' · ' + escapeHtml(w.reason) : ''}</div>
+
+                        <div style="min-width:0">
+                            <div class="wishlist-item-title">${escapeHtml(w.title)}</div>
+                            <div class="wishlist-item-meta">
+                                <span class="wishlist-price">${(Number(w.price) || 0).toLocaleString('es-ES')}€</span>
+                                <span>·</span>
+                                <span>${w.status === 'esperando' ? 'Esperando 30 días' : 'Listo para decidir'}</span>
+                            </div>
+                            ${w.reason ? `<div class="wishlist-reason">${escapeHtml(w.reason)}</div>` : ''}
                         </div>
-                        <div>
+
+                        <div class="wishlist-actions">
                             ${w.status === 'esperando'
-                                ? `<button class="btn-secondary" style="width:auto;font-size:12px" onclick="markWishlistImpulsive('${w.id}')">Comprar ya</button>`
-                                : `<div style="display:flex;gap:6px">
-                                    <button class="btn-secondary" style="width:auto;font-size:12px" onclick="decideWishlistItem('${w.id}', true)">Sí, comprado</button>
-                                    <button class="btn-secondary" style="width:auto;font-size:12px" onclick="decideWishlistItem('${w.id}', false)">No lo compré</button>
-                                </div>`}
+                                ? `<button class="btn-secondary" onclick="markWishlistImpulsive('${w.id}')">Comprar ya</button>`
+                                : `<button class="btn-secondary" onclick="decideWishlistItem('${w.id}', true)">Sí, comprado</button>
+                                   <button class="btn-secondary" onclick="decideWishlistItem('${w.id}', false)">No lo compré</button>`}
                         </div>
                     </div>`;
-                }).join('') : '<div class="empty-state"><div class="empty-icon">◔</div><div class="empty-title">Sin deseos pendientes</div><div class="empty-sub">Añade algo que quieras comprar y espera 30 días</div></div>'}
+                }).join('') : `
+                    <div class="wishlist-empty">
+                        <div style="font-size:20px;color:var(--text-secondary)">◇</div>
+                        <div class="wishlist-empty-title">No tienes compras pendientes</div>
+                        <div class="wishlist-empty-sub">Cuando aparezca un nuevo capricho, añádelo aquí antes de comprarlo.</div>
+                    </div>`}
 
                 ${archived.length ? `
-                    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:20px 0 8px 0">Historial</div>
-                    ${archived.map(w => {
-                        const badgeClass = w.outcome === 'no_comprado' ? 'badge-done' : 'badge-default';
-                        const badgeText = w.outcome === 'no_comprado' ? 'No comprado (ahorrado)' : (w.outcome === 'comprado_impulsivo' ? 'Comprado sin esperar' : 'Comprado tras esperar');
-                        return `
-                        <div class="entry-item">
-                            <div class="entry-info">
-                                <div class="entry-title">${escapeHtml(w.title)}</div>
-                                <div class="entry-meta">${w.price.toLocaleString('es-ES')}€</div>
-                            </div>
-                            <span class="badge ${badgeClass}">${badgeText}</span>
-                        </div>`;
-                    }).join('')}
+                    <div class="wishlist-divider"></div>
+                    <div class="wishlist-section-label">
+                        <span>Historial</span>
+                        <span class="wishlist-section-count">${archived.length}</span>
+                    </div>
+                    <div class="wishlist-history">
+                        ${archived.map(w => {
+                            const badgeClass = w.outcome === 'no_comprado' ? 'badge-done' : 'badge-default';
+                            const badgeText = w.outcome === 'no_comprado'
+                                ? 'No comprado · ahorrado'
+                                : (w.outcome === 'comprado_impulsivo'
+                                    ? 'Comprado sin esperar'
+                                    : 'Comprado tras esperar');
+
+                            return `
+                            <div class="entry-item">
+                                <div class="entry-info">
+                                    <div class="entry-title">${escapeHtml(w.title)}</div>
+                                    <div class="entry-meta">${(Number(w.price) || 0).toLocaleString('es-ES')}€${w.decidedAt ? ' · ' + new Date(w.decidedAt).toLocaleDateString('es-ES') : ''}</div>
+                                </div>
+                                <span class="badge ${badgeClass}">${badgeText}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
                 ` : ''}
             </div>`;
         }
@@ -5563,120 +6106,139 @@ body.beige {
             const palette = ['#eab308', '#8B5CF6', '#3b82f6', '#ec4899', '#14b8a6', '#f97316', '#22c55e'];
 
             return `
-            <button class="btn-secondary" style="width:auto;margin-bottom:16px" onclick="financeSubView='menu';render()">← Volver a Finanzas</button>
+            <div class="investment-dashboard">
+                <div class="investment-topbar">
+                    <div>
+                        <div class="investment-heading-kicker">Finanzas · Inversión</div>
+                        <div class="investment-heading">Fondos indexados</div>
+                        <div class="investment-heading-sub">Tu cartera real por posiciones, aportaciones y valoraciones registradas.</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        <span class="investment-real-badge"><span class="investment-real-dot"></span>Datos reales registrados</span>
+                        <button class="btn-secondary" style="width:auto" onclick="financeSubView='menu';render()">← Finanzas</button>
+                    </div>
+                </div>
 
-            <div class="invest-hero">
-                <div class="invest-hero-card primary">
-                    <div class="invest-hero-label">Valor actual de la cartera</div>
-                    <div class="invest-hero-value">${value.toLocaleString('es-ES')}€</div>
-                    <div class="invest-hero-sub">${funds.length} fondo${funds.length === 1 ? '' : 's'}</div>
-                </div>
-                <div class="invest-hero-card">
-                    <div class="invest-hero-label">Capital aportado</div>
-                    <div class="invest-hero-value">${invested.toLocaleString('es-ES')}€</div>
-                    <div class="invest-hero-sub">Dinero real invertido</div>
-                </div>
-                <div class="invest-hero-card">
-                    <div class="invest-hero-label">Ganancia / pérdida</div>
-                    <div class="invest-hero-value ${gain >= 0 ? 'gain-positive' : 'gain-negative'}">
-                        ${gain >= 0 ? '+' : ''}${gain.toLocaleString('es-ES')}€
+                <div class="invest-hero">
+                    <div class="invest-hero-card primary">
+                        <div class="invest-hero-label">Valor actual</div>
+                        <div class="invest-hero-value">${value.toLocaleString('es-ES')}€</div>
+                        <div class="invest-hero-sub">${funds.length} fondo${funds.length === 1 ? '' : 's'} registrado${funds.length === 1 ? '' : 's'}</div>
                     </div>
-                    <div class="invest-hero-sub ${gain >= 0 ? 'gain-positive' : 'gain-negative'}">
-                        ${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)}%
+                    <div class="invest-hero-card">
+                        <div class="invest-hero-label">Capital aportado</div>
+                        <div class="invest-hero-value">${invested.toLocaleString('es-ES')}€</div>
+                        <div class="invest-hero-sub">Suma de tus aportaciones</div>
                     </div>
-                </div>
-                <div class="invest-hero-card">
-                    <div class="invest-hero-label">Rentabilidad anualizada</div>
-                    <div class="invest-hero-value">
-                        ${cagr === null ? '—' : (cagr >= 0 ? '+' : '') + cagr.toFixed(2) + '%'}
+                    <div class="invest-hero-card">
+                        <div class="invest-hero-label">Resultado</div>
+                        <div class="invest-hero-value ${gain >= 0 ? 'gain-positive' : 'gain-negative'}">${gain >= 0 ? '+' : ''}${gain.toLocaleString('es-ES')}€</div>
+                        <div class="invest-hero-sub ${gain >= 0 ? 'gain-positive' : 'gain-negative'}">${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)}% sobre lo aportado</div>
                     </div>
-                    <div class="invest-hero-sub" style="color:var(--text-secondary)">
-                        ${cagr === null ? 'Necesitas más histórico' : 'Estimación desde tu 1ª aportación'}
+                    <div class="invest-hero-card">
+                        <div class="invest-hero-label">Rentabilidad anualizada</div>
+                        <div class="invest-hero-value">${cagr === null ? '—' : (cagr >= 0 ? '+' : '') + cagr.toFixed(2) + '%'}</div>
+                        <div class="invest-hero-sub">${cagr === null ? 'Se mostrará con suficiente histórico' : 'Estimación orientativa'}</div>
                     </div>
                 </div>
-            </div>
 
-            ${funds.length ? `
-                <div class="investment-chart-card" style="margin-bottom:16px">
+                ${funds.length ? `
+                    <div class="investment-chart-card">
+                        <div class="investment-chart-head">
+                            <div>
+                                <div class="title">Evolución de la cartera</div>
+                                <div class="desc">Compara el dinero que has aportado con el valor que has registrado en tu bróker.</div>
+                                <div class="investment-chart-context">
+                                    <span class="investment-context-chip real">Histórico introducido por ti</span>
+                                    <span class="investment-context-chip">Sin estimaciones en este gráfico</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="investment-canvas-wrap"><canvas id="portfolioHistoryChart"></canvas></div>
+                    </div>
+
+                    ${funds.length > 1 ? `
+                    <div class="investment-chart-card">
+                        <div class="investment-chart-head">
+                            <div>
+                                <div class="title">Distribución de la cartera</div>
+                                <div class="desc">Peso de cada fondo según su última valoración registrada.</div>
+                            </div>
+                        </div>
+                        <div class="investment-canvas-wrap" style="max-width:380px;margin:0 auto;height:300px">
+                            <canvas id="portfolioAllocationChart"></canvas>
+                        </div>
+                    </div>` : ''}
+                ` : ''}
+
+                <div class="investment-funds-head">
+                    <div class="investment-funds-label">Tus posiciones</div>
+                    <button class="btn-secondary investment-add-btn" onclick="openAddFundModal()">+ Añadir fondo</button>
+                </div>
+
+                ${funds.length ? funds.map((f, i) => {
+                    const fv = fundCurrentValue(f);
+                    const fi = fundInvested(f);
+                    const fg = fv - fi;
+                    const fgPct = fi > 0 ? (fg / fi) * 100 : 0;
+                    const alloc = value > 0 ? (fv / value) * 100 : 0;
+                    const color = f.color || palette[i % palette.length];
+
+                    return `
+                    <div class="fund-card" onclick="openFundDetail('${f.id}')">
+                        <div class="fund-card-top">
+                            <div class="fund-id">
+                                <span class="fund-dot" style="background:${color}"></span>
+                                <div style="min-width:0">
+                                    <div class="fund-name">${escapeHtml(f.name || 'Sin nombre')}</div>
+                                    ${f.ticker ? `<div class="fund-ticker">${escapeHtml(f.ticker)}</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="fund-values">
+                                <div class="fund-value">${fv.toLocaleString('es-ES')}€</div>
+                                <div class="fund-gain ${fg >= 0 ? 'gain-positive' : 'gain-negative'}">
+                                    ${fg >= 0 ? '+' : ''}${fgPct.toFixed(1)}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fund-alloc-bar-bg">
+                            <div class="fund-alloc-bar-fill" style="width:${Math.max(0, Math.min(100, alloc))}%;background:${color}"></div>
+                        </div>
+                    </div>`;
+                }).join('') : `
+                    <div class="investment-empty-state" onclick="openAddFundModal()">
+                        <strong>Aún no tienes ninguna posición registrada</strong>
+                        Añade tu fondo y empieza a introducir las aportaciones y valoraciones reales.
+                    </div>`}
+
+                <div class="investment-chart-card investment-projection-card" style="margin-top:20px">
                     <div class="investment-chart-head">
                         <div>
-                            <div class="title">Evolución: aportado vs valor real</div>
-                            <div class="desc">Solo con datos que has introducido tú. Nada inventado.</div>
+                            <div class="title">Proyección</div>
+                            <div class="desc">Una simulación de cómo podría evolucionar el valor actual si mantuviera una rentabilidad anual constante.</div>
+                        </div>
+                        <div class="year-selector">
+                            ${[5, 10, 20, 30].map(y => `
+                                <button class="${y === investmentChartYears ? 'active' : ''}" onclick="setInvestmentYears(${y})">${y} años</button>
+                            `).join('')}
                         </div>
                     </div>
-                    <div class="investment-canvas-wrap"><canvas id="portfolioHistoryChart"></canvas></div>
-                </div>
 
-                ${funds.length > 1 ? `
-                <div class="investment-chart-card" style="margin-bottom:16px">
-                    <div class="investment-chart-head">
-                        <div><div class="title">Reparto por fondo</div><div class="desc">Distribución según el último valor registrado de cada posición.</div></div>
+                    <div class="investment-projection-note">
+                        <span>◈</span>
+                        <span><strong>Simulación, no previsión.</strong> Parte del valor actual y aplica únicamente la rentabilidad anual que indiques. No añade aportaciones futuras automáticamente.</span>
                     </div>
-                    <div class="investment-canvas-wrap" style="max-width:360px;margin:0 auto">
-                        <canvas id="portfolioAllocationChart"></canvas>
-                    </div>
-                </div>` : ''}
-            ` : ''}
 
-            <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 10px 0;gap:10px">
-                <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:.5px">Tus fondos</div>
-                <button class="btn-secondary" style="width:auto;padding:6px 12px;font-size:12px" onclick="openAddFundModal()">+ Añadir fondo</button>
-            </div>
-
-            ${funds.length ? funds.map((f, i) => {
-                const fv = fundCurrentValue(f);
-                const fi = fundInvested(f);
-                const fg = fv - fi;
-                const fgPct = fi > 0 ? (fg / fi) * 100 : 0;
-                const alloc = value > 0 ? (fv / value) * 100 : 0;
-                const color = f.color || palette[i % palette.length];
-
-                return `
-                <div class="fund-card" onclick="openFundDetail('${f.id}')">
-                    <div class="fund-card-top">
-                        <div class="fund-id">
-                            <span class="fund-dot" style="background:${color}"></span>
-                            <div style="min-width:0">
-                                <div class="fund-name">${escapeHtml(f.name || 'Sin nombre')}</div>
-                                ${f.ticker ? `<div class="fund-ticker">${escapeHtml(f.ticker)}</div>` : ''}
-                            </div>
+                    <div class="investment-rate-row">
+                        <div class="investment-rate-field">
+                            <div class="modal-label">Rentabilidad anual utilizada</div>
+                            <input type="number" id="inv-rate" class="modal-input" value="${Number(investmentData.rate || 7)}" step="0.1" min="0" onchange="updateExpectedRate(this.value)">
                         </div>
-                        <div class="fund-values">
-                            <div class="fund-value">${fv.toLocaleString('es-ES')}€</div>
-                            <div class="fund-gain ${fg >= 0 ? 'gain-positive' : 'gain-negative'}">
-                                ${fg >= 0 ? '+' : ''}${fgPct.toFixed(1)}%
-                            </div>
-                        </div>
+                        <div class="invest-note" style="max-width:420px;margin-bottom:4px">Este porcentaje solo afecta a la simulación. Los datos reales de la cartera se calculan exclusivamente con tus aportaciones y valoraciones.</div>
                     </div>
-                    <div class="fund-alloc-bar-bg">
-                        <div class="fund-alloc-bar-fill" style="width:${Math.max(0, Math.min(100, alloc))}%;background:${color}"></div>
-                    </div>
-                </div>`;
-            }).join('') : `
-                <div class="invest-empty-fund" onclick="openAddFundModal()">
-                    Aún no tienes ningún fondo registrado. Pulsa aquí para añadir el primero.
-                </div>`}
 
-            <div class="investment-chart-card" style="margin-top:20px">
-                <div class="investment-chart-head">
-                    <div>
-                        <div class="title">Proyección a futuro</div>
-                        <div class="desc">Simulación con interés compuesto a partir del valor actual. No es un dato real, es una hipótesis.</div>
-                    </div>
-                    <div class="year-selector">
-                        ${[5, 10, 20, 30].map(y => `
-                            <button class="${y === investmentChartYears ? 'active' : ''}" onclick="setInvestmentYears(${y})">${y} años</button>
-                        `).join('')}
-                    </div>
+                    <div class="investment-canvas-wrap"><canvas id="portfolioProjectionChart"></canvas></div>
                 </div>
-
-                <div style="margin:12px 0">
-                    <div class="modal-label">Rentabilidad anual esperada (%)</div>
-                    <input type="number" id="inv-rate" class="modal-input" value="${Number(investmentData.rate || 7)}" step="0.1" min="0" onchange="updateExpectedRate(this.value)">
-                    <div class="invest-note">Solo se utiliza para la simulación futura. No altera la rentabilidad real registrada.</div>
-                </div>
-
-                <div class="investment-canvas-wrap"><canvas id="portfolioProjectionChart"></canvas></div>
             </div>`;
         }
 
@@ -5688,7 +6250,7 @@ body.beige {
                 <div class="modal-label">Ticker (opcional)</div>
                 <input id="fund-ticker" class="modal-input" placeholder="Ej: IWDA">
                 <div class="modal-label">Aportación inicial (€)</div>
-                <input type="number" id="fund-initial" class="modal-input" step="0.01" min="0" placeholder="0.00">
+                <input type="number" id="fund-initial" class="modal-input" step="0.01" min="0" value="570" placeholder="0.00">
                 <div class="modal-label">Fecha</div>
                 <input type="date" id="fund-date" class="modal-input" value="${todayISO()}">
                 <button class="btn-modal-primary" style="background:var(--invest-accent)" onclick="saveNewFund()">Crear fondo</button>
@@ -5955,7 +6517,7 @@ body.beige {
                         })),
                         datasets: [
                             {
-                                label: 'Aportado',
+                                label: 'Capital aportado',
                                 data: investedData,
                                 borderColor: '#6b7280',
                                 borderDash: [5, 5],
@@ -5963,7 +6525,7 @@ body.beige {
                                 tension: .2
                             },
                             {
-                                label: 'Valor real',
+                                label: 'Valor registrado',
                                 data: valueData,
                                 borderColor: '#eab308',
                                 backgroundColor: 'rgba(234,179,8,.12)',
@@ -6064,7 +6626,7 @@ body.beige {
                                 label: 'Valor estimado',
                                 data: projection,
                                 borderColor: '#eab308',
-                                backgroundColor: 'rgba(234,179,8,.1)',
+                                backgroundColor: 'rgba(234,179,8,.10)',
                                 fill: true,
                                 tension: .3,
                                 pointRadius: 0
