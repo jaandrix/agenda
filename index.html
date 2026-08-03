@@ -246,6 +246,11 @@
         .sidebar-nav button .nav-text {
             flex: 1;
         }
+        .nav-subbutton {
+            padding-left: 42px !important;
+            font-size: 12px !important;
+            color: var(--text-secondary) !important;
+        }
 
         .sidebar-actions {
             border-top: 1px solid var(--border-strong);
@@ -2028,10 +2033,6 @@
                     <span class="nav-icon">◈</span>
                     <span class="nav-text">Viajes</span>
                 </button>
-                <button onclick="switchView('travel-organizer')" data-view="travel-organizer">
-                    <span class="nav-icon">☷</span>
-                    <span class="nav-text">Organizador de Viajes</span>
-                </button>
                 <button onclick="switchView('places')" data-view="places">
                     <span class="nav-icon">⌂</span>
                     <span class="nav-text">Lugares</span>
@@ -2187,9 +2188,6 @@
             </button>
             <button onclick="switchView('travels');toggleMobileMenu()" data-view="travels">
                 <span class="nav-icon">◈</span> Viajes
-            </button>
-            <button onclick="switchView('travel-organizer');toggleMobileMenu()" data-view="travel-organizer">
-                <span class="nav-icon">☷</span> Organizador de Viajes
             </button>
             <button onclick="switchView('places');toggleMobileMenu()" data-view="places">
                 <span class="nav-icon">⌂</span> Lugares
@@ -2890,24 +2888,62 @@
         //  NAVIGATION
         // ============================================================
         let currentView = 'calendar';
+        let _wishlistTimerId = null;
 
-        function openApuntes() { window.open('/apuntes/', '_blank', 'noopener'); }
+        async function openApuntes() {
+            // Abrimos la pestaña de forma síncrona para evitar que el navegador
+            // bloquee la ventana por haber esperado una operación async.
+            const apuntesWindow = window.open('about:blank', '_blank');
+
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                if (session?.access_token && session?.refresh_token) {
+                    localStorage.setItem('bitacora_apuntes_handoff', JSON.stringify({
+                        access_token: session.access_token,
+                        refresh_token: session.refresh_token,
+                        expires_at: session.expires_at || null,
+                        created_at: Date.now()
+                    }));
+                }
+
+                if (apuntesWindow) {
+                    apuntesWindow.location.href = '/apuntes/';
+                } else {
+                    window.location.href = '/apuntes/';
+                }
+            } catch (e) {
+                console.warn('No se pudo preparar la sesión para Apuntes:', e);
+                if (apuntesWindow) {
+                    apuntesWindow.location.href = '/apuntes/';
+                } else {
+                    window.location.href = '/apuntes/';
+                }
+            }
+        }
         function updateHeaderClock() {
             const el=document.getElementById('header-clock');
             if(el) el.textContent=new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',hour12:false});
         }
 
         function switchView(view) {
-            if (view !== 'finances') stopWishlistTimer();
-            currentView = view;
-            document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                b.classList.toggle('active', b.dataset.view === view);
-            });
-            updatePageTitle();
-            render();
-            // Cerrar mobile menu si está abierto
-            if (document.getElementById('mobile-menu-panel').classList.contains('open')) {
-                toggleMobileMenu();
+            try {
+                if (view !== 'finances') stopWishlistTimer();
+                currentView = view;
+
+                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                    b.classList.toggle('active', b.dataset.view === view);
+                });
+
+                updatePageTitle();
+                render();
+
+                const mobilePanel = document.getElementById('mobile-menu-panel');
+                if (mobilePanel && mobilePanel.classList.contains('open')) {
+                    toggleMobileMenu();
+                }
+            } catch (error) {
+                console.error('Error cambiando de sección:', error);
+                showToast('No se pudo abrir esta sección. Revisa la consola.', true);
             }
         }
 
@@ -4333,11 +4369,26 @@
         // ============================================================
         function renderTravels() {
             const travels = entries.filter(e => e.type === 'travel');
+
+            let html = `
+                <div style="max-width:760px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+                        <div>
+                            <div style="font-size:20px;font-weight:800">Viajes</div>
+                            <div style="font-size:12px;color:var(--text-secondary)">Tus viajes registrados y su información.</div>
+                        </div>
+                        <button class="btn-secondary" style="width:auto" onclick="switchView('travel-organizer')">
+                            ☷ Organizador de Viajes
+                        </button>
+                    </div>
+            `;
+
             if (!travels.length) {
-                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
+                html += `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
+                html += `</div>`;
+                return html;
             }
 
-            let html = `<div style="max-width:700px">`;
             travels.forEach(t => {
                 const cat = categories.find(c => c.id === t.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
