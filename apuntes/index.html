@@ -19,7 +19,9 @@ button:hover{background:#1b1b1b}
 #app{height:100vh;display:flex;flex-direction:column}
 #toolbar{height:52px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--panel);display:flex;align-items:center;gap:5px;padding:0 12px}
 #toolbar button{min-width:32px;height:32px;padding:0 9px}
-#toolbar select{height:32px;background:#111;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:0 8px}
+#toolbar select{height:32px;background:#111;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:0 8px;min-width:96px}
+#toolbar .separator{width:1px;height:22px;background:var(--border);margin:0 3px}
+#toolbar .tool-label{font-size:10px;color:var(--muted);margin-left:4px}
 #title{width:210px;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);outline:0;padding:7px 4px;margin-left:8px}
 #title:focus{border-color:#777}
 #workspace{flex:1;min-height:0;display:flex}
@@ -33,7 +35,9 @@ button:hover{background:#1b1b1b}
 .saved-date{font-size:10px;color:var(--muted);margin-top:3px}
 #main{flex:1;min-width:0;overflow:auto;padding:60px 10%;display:flex;justify-content:center}
 #editor-wrap{width:min(900px,100%);min-height:100%}
-#editor{min-height:70vh;outline:0;font-size:17px;line-height:1.75;color:var(--text);caret-color:#fff}
+#editor{min-height:70vh;outline:0;font-size:17px;line-height:1.75;color:var(--text);caret-color:#fff;white-space:normal}
+#editor p{margin:0 0 .8em}
+#editor:focus{outline:0}
 #editor:empty:before{content:"Empieza a escribir…";color:#555}
 #status{position:fixed;right:16px;bottom:14px;color:var(--muted);font-size:10px;pointer-events:none}
 #auth-status{display:flex;position:fixed;inset:0;align-items:center;justify-content:center;background:var(--bg);z-index:10}
@@ -45,11 +49,17 @@ button:hover{background:#1b1b1b}
   #toolbar{overflow-x:auto}
 }
 @media print{
-  body{background:white!important;color:black!important;overflow:visible}
+  @page{size:A4;margin:18mm 18mm 20mm}
+  body{background:white!important;color:#111!important;overflow:visible}
   #toolbar,#sidebar,#status,#auth-status{display:none!important}
   #workspace,#main{display:block;overflow:visible;height:auto;padding:0}
   #editor-wrap{width:100%}
-  #editor{color:black;min-height:auto;font-size:12pt}
+  #editor{color:#111!important;min-height:auto;font-size:12pt;line-height:1.6}
+  #print-header{display:block!important;margin:0 0 18mm;border-bottom:1px solid #bbb;padding-bottom:8mm}
+  #print-header h1{margin:0 0 5mm;font-size:24pt;line-height:1.15}
+  #print-header .meta{font-size:9pt;color:#666}
+  #editor img{max-width:100%}
+  #editor a{color:#111;text-decoration:underline}
 }
 </style>
 </head>
@@ -61,12 +71,14 @@ button:hover{background:#1b1b1b}
     <button onclick="cmd('bold')" title="Negrita (Ctrl+B)"><b>B</b></button>
     <button onclick="cmd('italic')" title="Cursiva (Ctrl+I)"><i>I</i></button>
     <button onclick="cmd('underline')" title="Subrayado (Ctrl+U)"><u>U</u></button>
-    <select onchange="changeSize(this.value)" title="Tamaño">
-      <option value="3">Normal</option><option value="2">Pequeño</option><option value="4">Grande</option><option value="5">Muy grande</option>
+    <span class="tool-label">Tamaño</span>
+    <select onchange="changeSize(this.value)" title="Tamaño de letra">
+      <option value="16">16 px</option><option value="12">12 px</option><option value="14">14 px</option><option value="18">18 px</option><option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option>
     </select>
     <button onclick="cmd('justifyLeft')" title="Alinear izquierda">≡</button>
     <button onclick="cmd('justifyCenter')" title="Centrar">≡</button>
     <button onclick="cmd('justifyRight')" title="Alinear derecha">≡</button>
+    <button onclick="cmd('justifyFull')" title="Justificar">☰</button>
     <button onclick="cmd('insertUnorderedList')" title="Lista">• Lista</button>
     <button onclick="cmd('insertOrderedList')" title="Lista numerada">1. Lista</button>
     <input id="title" placeholder="Título del apunte" autocomplete="off">
@@ -75,11 +87,11 @@ button:hover{background:#1b1b1b}
     <aside id="sidebar">
       <button class="side-btn" onclick="saveCurrent()">Guardar en Bitácora</button>
       <button class="side-btn" onclick="window.close()">Salir</button>
-      <button class="side-btn" onclick="window.print()">Exportar a PDF</button>
+      <button class="side-btn" onclick="exportPDF()">Exportar a PDF</button>
       <div class="side-label">Apuntes guardados</div>
       <div id="saved-list"></div>
     </aside>
-    <main id="main"><div id="editor-wrap"><div id="editor" contenteditable="true" spellcheck="true"></div></div></main>
+    <main id="main"><div id="editor-wrap"><div id="print-header" style="display:none"><h1 id="print-title"></h1><div class="meta" id="print-meta"></div></div><div id="editor" contenteditable="true" spellcheck="true"></div></div></main>
   </div>
 </div>
 <div id="status"></div>
@@ -93,7 +105,32 @@ let apuntes=[], currentId=null, data={};
 const $=id=>document.getElementById(id);
 function status(t){$('status').textContent=t;clearTimeout(status.t);status.t=setTimeout(()=>$('status').textContent='',1800);}
 function cmd(name){$('editor').focus();document.execCommand(name,false,null);}
-function changeSize(v){$('editor').focus();document.execCommand('fontSize',false,v);}
+function changeSize(px){
+  const editor=$('editor');
+  editor.focus();
+  const sel=window.getSelection();
+  if(!sel || !sel.rangeCount || sel.isCollapsed){ status('Selecciona un texto para cambiar su tamaño'); return; }
+  try{
+    document.execCommand('fontSize',false,'7');
+    editor.querySelectorAll('font[size="7"]').forEach(font=>{
+      const span=document.createElement('span');
+      span.style.fontSize=px+'px';
+      span.innerHTML=font.innerHTML;
+      font.replaceWith(span);
+    });
+  }catch(e){console.error(e);}
+}
+function exportPDF(){
+  const title=$('title').value.trim()||'Apunte sin título';
+  const editorHtml=$('editor').innerHTML.trim();
+  if(!editorHtml){status('Escribe algo antes de exportar');return;}
+  const win=window.open('','_blank','noopener,noreferrer');
+  if(!win){status('El navegador bloqueó la ventana de PDF');return;}
+  const date=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${esc(title)}</title><style>@page{size:A4;margin:18mm 18mm 20mm}body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111;background:#fff;line-height:1.6;font-size:12pt}header{border-bottom:1px solid #bbb;padding-bottom:8mm;margin-bottom:12mm}h1{font-size:24pt;line-height:1.15;margin:0 0 5mm;font-weight:750}header .date{font-size:9pt;color:#666}main{word-wrap:break-word}main p{margin:0 0 .8em}main img{max-width:100%;height:auto}main a{color:#111;text-decoration:underline}ul,ol{padding-left:1.4em}blockquote{border-left:3px solid #bbb;padding-left:12px;margin-left:0;color:#444}</style></head><body><header><h1>${esc(title)}</h1><div class="date">${date}</div></header><main>${editorHtml}</main></body></html>`);
+  win.document.close();
+  setTimeout(()=>{win.focus();win.print();},250);
+}
 function fmtDate(iso){return new Date(iso).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});}
 function esc(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 
@@ -176,14 +213,22 @@ async function saveCurrent(){
   const title=$('title').value.trim()||'Apunte sin título';
   if(!content){status('Escribe algo antes de guardar');return;}
   const now=new Date().toISOString();
+  let isNew=false;
   if(currentId){
     const n=apuntes.find(x=>x.id===currentId);
     if(n){n.title=title;n.content=content;n.updatedAt=now;}
   }else{
+    isNew=true;
     currentId='apunte_'+Date.now();
     apuntes.unshift({id:currentId,title,content,createdAt:now,updatedAt:now});
   }
-  try{await persist();renderList();status('Guardado en Bitácora');}
+  try{
+    renderList();
+    status(isNew?'Nuevo apunte creado':'Guardando…');
+    await persist();
+    renderList();
+    status(isNew?'Guardado en Bitácora y añadido a la lista':'Guardado en Bitácora');
+  }
   catch(e){console.error(e);status('Error al guardar');}
 }
 $('editor').addEventListener('keydown',e=>{
