@@ -1591,7 +1591,8 @@
             width: 100%;
         }
         .note-detail-wide { width:100%; max-width:none; }
-        .note-detail-wide .note-textarea, .note-detail-wide .note-readonly { width:100%; min-height:320px; }
+        .note-detail-wide .note-textarea { width:100%; }
+        .note-detail-wide .note-readonly { width:100%; }
         .note-detail-title {
             font-weight: 800;
             color: #1c1c1c;
@@ -1613,6 +1614,7 @@
         }
         .note-textarea {
             resize: vertical;
+            overflow:hidden;
             outline: none;
             min-height: 120px;
         }
@@ -1620,7 +1622,8 @@
             border-color: #cdb98c;
         }
         .note-readonly {
-            min-height: auto;
+            min-height: 0;
+            height: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
         }
@@ -2419,6 +2422,7 @@
         let plannedTrips = [];
         let apuntes = [];
         let financeIncome = { current: 0, next: 0 };
+        let financeSubView = 'menu';
         let devModeActive = false;
 
         // ============================================================
@@ -4741,6 +4745,10 @@
             if (!note) return;
             window.openNoteId = id;
             document.getElementById('content').innerHTML = renderNoteDetail(note);
+            requestAnimationFrame(() => {
+                const editor = document.getElementById('note-content-input');
+                if (editor) autoResizeNote(editor);
+            });
         }
 
         function renderNoteDetail(note) {
