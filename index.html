@@ -2614,10 +2614,26 @@ body.beige {
 .finance-dashboard-head p { margin:0; color:var(--text-secondary); font-size:12px; max-width:650px; line-height:1.6; }
 .finance-kicker { font-size:10px; text-transform:uppercase; letter-spacing:.8px; font-weight:800; color:var(--text-secondary); }
 .finance-update-btn { width:auto; white-space:nowrap; padding:9px 14px; }
+.finance-head-actions { display:flex; align-items:center; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
+.finance-oneoff-btn { width:auto; white-space:nowrap; padding:8px 11px; border:1px solid var(--border-strong); border-radius:9px; background:var(--bg-card); color:var(--text-primary); font-size:11px; font-weight:750; cursor:pointer; transition:all .15s ease; }
+.finance-oneoff-btn:hover { border-color:var(--accent); background:var(--bg-card-hover); transform:translateY(-1px); }
+.finance-oneoff-list { margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
+.finance-oneoff-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; font-size:11px; }
+.finance-oneoff-row span { color:var(--text-secondary); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.finance-oneoff-row strong { white-space:nowrap; font-size:11px; }
+.finance-oneoff-row button { border:0; background:transparent; color:var(--text-secondary); cursor:pointer; padding:2px 4px; font-size:12px; }
+.finance-oneoff-row button:hover { color:var(--text-primary); }
 .finance-subnav { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
 .finance-subnav button { border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); border-radius:8px; padding:6px 10px; font-size:10px; font-weight:700; cursor:pointer; }
 .finance-subnav button:hover { color:var(--text-primary); border-color:var(--border-strong); background:var(--bg-card-hover); }
-.finance-networth-card { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; background:linear-gradient(135deg,var(--bg-card),rgba(234,179,8,.06)); border:1px solid var(--border-strong); border-radius:16px; padding:22px; margin-bottom:14px; }
+.finance-networth-card { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; background:#f3eee3; color:#171717; border:1px solid #ded6c7; border-radius:16px; padding:22px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.10); }
+.finance-networth-card .finance-kicker { color:#777064; }
+.finance-networth-card .finance-networth-meta { color:#6f695f; }
+.finance-networth-card .finance-networth-side { border-left-color:#d8d0c2; }
+.finance-networth-card .finance-networth-side span, .finance-networth-card .finance-networth-side small { color:#777064; }
+.finance-networth-card .finance-networth-side strong { color:#171717; }
+.finance-networth-card .finance-progress { background:#ddd5c7; }
+.finance-networth-card .finance-progress span { background:#a67c00; }
 .finance-networth-value { font-size:34px; line-height:1; font-weight:850; letter-spacing:-1px; margin:8px 0; }
 .finance-networth-meta { font-size:11px; color:var(--text-secondary); }
 .finance-networth-side { border-left:1px solid var(--border); padding-left:22px; display:flex; flex-direction:column; justify-content:center; gap:5px; }
@@ -2669,7 +2685,10 @@ body.beige {
 .finance-dashboard-foot { margin-top:10px; }
 .finance-salary-row { display:grid; grid-template-columns:1fr 130px; gap:10px; align-items:center; margin-bottom:8px; font-size:11px; }
 @media(max-width:850px){ .finance-metrics-grid{grid-template-columns:repeat(2,1fr)} .finance-networth-card{grid-template-columns:1fr}.finance-networth-side{border-left:0;border-top:1px solid var(--border);padding:14px 0 0}.finance-forecast-grid{grid-template-columns:repeat(2,1fr)} }
-@media(max-width:600px){ .finance-dashboard-head,.finance-grid-2{display:block}.finance-update-btn{margin-top:12px}.finance-metrics-grid{grid-template-columns:1fr 1fr}.finance-metric-meta{display:block}.finance-metric-meta span{display:block;margin-bottom:2px}.finance-networth-value{font-size:29px} }
+@media(max-width:600px){ .finance-dashboard-head,.finance-grid-2{display:block}.finance-head-actions{justify-content:flex-start;margin-top:12px}.finance-update-btn{margin-top:0}.finance-metrics-grid{grid-template-columns:1fr 1fr}.finance-metric-meta{display:block}.finance-metric-meta span{display:block;margin-bottom:2px}.finance-networth-value{font-size:29px} }
+
+.tags-view-chip { display:inline-flex; align-items:center; gap:4px; border:1px solid #d9d0c0; background:#f3eee3; color:#292722; border-radius:9px; font-size:12px; font-weight:750; padding:7px 13px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.08); transition:transform .15s ease, background .15s ease, border-color .15s ease; }
+.tags-view-chip:hover { background:#eee7da; border-color:#c9bda9; transform:translateY(-1px); }
 
 /* ============================================================
    VENTANA FLOTANTE DE APUNTES
@@ -3884,7 +3903,8 @@ function v22RefreshSummaryIfPresent() {
             vacation: 0,
             vacationTarget: 0,
             salaryForecast: {},
-            history: []
+            history: [],
+            oneOffIncome: []
         };
         let financeSubView = 'menu';
         let devModeActive = false;
@@ -4221,6 +4241,7 @@ function v22RefreshSummaryIfPresent() {
                 };
                 financeProfile.salaryForecast = financeProfile.salaryForecast || {};
                 financeProfile.history = Array.isArray(financeProfile.history) ? financeProfile.history : [];
+                financeProfile.oneOffIncome = Array.isArray(financeProfile.oneOffIncome) ? financeProfile.oneOffIncome : [];
                 // Si aún no existe una cifra manual para inversiones, tomamos como
                 // punto de partida el valor real de la cartera ya registrada.
                 if (!(Number(financeProfile.invested) > 0) && typeof portfolioCurrentValue === 'function') {
@@ -6399,7 +6420,7 @@ function v22RefreshSummaryIfPresent() {
             return `
             <div style="max-width:700px;display:flex;flex-wrap:wrap;gap:8px">
                 ${tagList.map(t => `
-                    <span class="badge badge-default" style="font-size:12px;padding:6px 14px;cursor:pointer"
+                    <span class="tags-view-chip"
                         onclick="window._selectedTag='${escapeHtml(t).replace(/'/g, "\\'")}';render()">
                         #${escapeHtml(t)} · ${tagMap[t].length}
                     </span>`).join('')}
@@ -6704,6 +6725,12 @@ function v22RefreshSummaryIfPresent() {
                 const salary = Number(financeProfile.salaryForecast?.[key] || 0);
                 if (key === currentKey) balance += Math.max(0, salary);
                 else balance += salary;
+                const today = todayISO();
+                const oneOffs = (financeProfile.oneOffIncome || []).filter(x => {
+                    const d = String(x.date || '');
+                    return d.slice(0,7) === key && (d > today || (d === today && !x.addedToCash));
+                });
+                balance += oneOffs.reduce((s, x) => s + (Number(x.amount) || 0), 0);
                 balance -= recurring;
             }
             return Math.max(0, balance);
@@ -6751,6 +6778,55 @@ function v22RefreshSummaryIfPresent() {
             financeProfile[key] = Math.max(0, Number(document.getElementById('finance-edit-value')?.value) || 0);
             financeProfile[targetKey] = Math.max(0, Number(document.getElementById('finance-edit-target')?.value) || 0);
             closeModal();
+            await saveFinanceDashboard();
+        }
+
+        function openFinanceOneOffIncome() {
+            const today = todayISO();
+            showModal(`
+                <div class="modal-title">+ Ingreso puntual</div>
+                <div class="finance-modal-note">Registra una venta, regalo, devolución u otro ingreso que no forme parte de tu sueldo habitual.</div>
+                <div class="modal-label">Concepto</div>
+                <input id="finance-oneoff-label" class="modal-input" placeholder="Ej: Venta de ropa">
+                <div class="modal-label">Importe (€)</div>
+                <input id="finance-oneoff-amount" class="modal-input" type="number" min="0" step="0.01" placeholder="0.00">
+                <div class="modal-label">Fecha</div>
+                <input id="finance-oneoff-date" class="modal-input" type="date" value="${today}">
+                <label style="display:flex;align-items:center;gap:8px;margin:10px 0 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">
+                    <input id="finance-oneoff-addcash" type="checkbox" checked> Sumarlo también al efectivo actual
+                </label>
+                <button class="btn-modal-primary" onclick="saveFinanceOneOffIncome()">Guardar ingreso</button>
+            `);
+        }
+
+        async function saveFinanceOneOffIncome() {
+            const label = document.getElementById('finance-oneoff-label')?.value.trim() || 'Ingreso puntual';
+            const amount = Number(document.getElementById('finance-oneoff-amount')?.value);
+            const date = document.getElementById('finance-oneoff-date')?.value || todayISO();
+            const addCash = document.getElementById('finance-oneoff-addcash')?.checked;
+            if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
+
+            financeProfile.oneOffIncome = Array.isArray(financeProfile.oneOffIncome) ? financeProfile.oneOffIncome : [];
+            financeProfile.oneOffIncome.push({
+                id: 'income_' + Date.now(),
+                label,
+                amount,
+                date,
+                addedToCash: !!(addCash && date <= todayISO())
+            });
+            financeProfile.oneOffIncome.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+
+            if (addCash && date <= todayISO()) {
+                financeProfile.cash = Math.max(0, Number(financeProfile.cash || 0) + amount);
+            }
+
+            closeModal();
+            await saveFinanceDashboard();
+            showToast('Ingreso puntual registrado');
+        }
+
+        async function deleteFinanceOneOffIncome(id) {
+            financeProfile.oneOffIncome = (financeProfile.oneOffIncome || []).filter(x => x.id !== id);
             await saveFinanceDashboard();
         }
 
@@ -6849,7 +6925,10 @@ function v22RefreshSummaryIfPresent() {
                             <button onclick="financeSubView='recurrentes';render()">Gastos recurrentes</button>
                         </div>
                     </div>
-                    <button class="btn-modal-primary finance-update-btn" onclick="saveFinanceDashboard()">Guardar actualización</button>
+                    <div class="finance-head-actions">
+                        <button class="finance-oneoff-btn" onclick="openFinanceOneOffIncome()">+ Ingreso puntual</button>
+                        <button class="btn-modal-primary finance-update-btn" onclick="saveFinanceDashboard()">Guardar actualización</button>
+                    </div>
                 </div>
 
                 <section class="finance-networth-card">
@@ -6884,6 +6963,11 @@ function v22RefreshSummaryIfPresent() {
                         <div class="finance-salary-list">
                             ${Object.keys(financeProfile.salaryForecast || {}).filter(k => k >= financeMonthKey()).sort().slice(0,5).map(k => `<div><span>${escapeHtml(financeMonthLabel(k))}</span><strong>${financeMoney(financeProfile.salaryForecast[k])}</strong></div>`).join('') || '<div class="finance-empty-line">Añade una previsión para que Bitácora pueda calcular tu ritmo.</div>'}
                         </div>
+                        ${(financeProfile.oneOffIncome || []).length ? `
+                            <div class="finance-oneoff-list">
+                                <div class="finance-kicker" style="margin-bottom:3px">Ingresos puntuales</div>
+                                ${[...(financeProfile.oneOffIncome || [])].slice(0,3).map(x => `<div class="finance-oneoff-row"><span>${escapeHtml(x.label)} · ${escapeHtml(x.date)}</span><strong>+${financeMoney(x.amount)}</strong><button title="Eliminar registro" onclick="deleteFinanceOneOffIncome('${x.id}')">×</button></div>`).join('')}
+                            </div>` : ''}
                     </section>
 
                     <section class="finance-panel">
