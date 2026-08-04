@@ -715,6 +715,133 @@
             }
         }
 
+
+        /* ============================================================
+           TAREAS SEMANALES — botón flotante + bocadillo
+           ============================================================ */
+        #weekly-tasks-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 96px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 1px solid var(--border-strong);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: -.4px;
+            transition: transform .18s ease, background .18s ease, border-color .18s ease;
+        }
+        #weekly-tasks-btn:hover { transform: scale(1.05); border-color: var(--accent); }
+        #weekly-tasks-btn:active { transform: scale(.94); }
+
+        #weekly-tasks-panel {
+            position: fixed;
+            right: 96px;
+            bottom: 100px;
+            width: min(320px, calc(100vw - 32px));
+            max-height: min(390px, calc(100vh - 150px));
+            background: #f8f5ed;
+            color: #242424;
+            border: 1px solid rgba(0,0,0,.10);
+            border-radius: 16px;
+            box-shadow: 0 18px 50px rgba(0,0,0,.28);
+            z-index: 52;
+            display: none;
+            overflow: visible;
+        }
+        #weekly-tasks-panel.open { display: flex; flex-direction: column; }
+        #weekly-tasks-panel::after {
+            content: '';
+            position: absolute;
+            right: 12px;
+            bottom: -8px;
+            width: 15px;
+            height: 15px;
+            background: #f8f5ed;
+            border-right: 1px solid rgba(0,0,0,.10);
+            border-bottom: 1px solid rgba(0,0,0,.10);
+            transform: rotate(45deg);
+        }
+        .weekly-tasks-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 14px 15px 11px;
+            border-bottom: 1px solid rgba(0,0,0,.08);
+        }
+        .weekly-tasks-title { font-size: 14px; font-weight: 800; letter-spacing: -.2px; }
+        .weekly-tasks-week { margin-top: 2px; font-size: 10px; color: #77736a; }
+        .weekly-tasks-add {
+            border: 1px solid rgba(0,0,0,.14);
+            background: #fffdf7;
+            color: #252525;
+            border-radius: 8px;
+            padding: 5px 8px;
+            font: 700 11px 'Inter', sans-serif;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .weekly-tasks-add:hover { background: #ffffff; border-color: rgba(0,0,0,.24); }
+        .weekly-tasks-list {
+            padding: 8px 10px 12px;
+            overflow-y: auto;
+            min-height: 80px;
+        }
+        .weekly-task-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 9px 7px;
+            border-radius: 9px;
+            transition: background .15s ease;
+        }
+        .weekly-task-row:hover { background: rgba(0,0,0,.035); }
+        .weekly-task-check {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 17px;
+            height: 17px;
+            flex: 0 0 17px;
+            margin: 0;
+            border: 1.5px solid #8b877d;
+            border-radius: 5px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+        }
+        .weekly-task-check:hover { border-color: #333; }
+        .weekly-task-text {
+            min-width: 0;
+            font-size: 12px;
+            line-height: 1.35;
+            font-weight: 600;
+            color: #292929;
+            overflow-wrap: anywhere;
+        }
+        .weekly-tasks-empty {
+            padding: 24px 12px 26px;
+            text-align: center;
+            color: #817d74;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        @media (max-width: 768px) {
+            #weekly-tasks-btn { right: 84px; bottom: 90px; width: 52px; height: 52px; }
+            #weekly-tasks-panel { right: 16px; bottom: 150px; max-height: calc(100vh - 185px); }
+            #weekly-tasks-panel::after { right: 58px; }
+        }
+
         /* ============================================================
                RESPONSIVE
             ============================================================ */
@@ -3026,6 +3153,8 @@ body.beige {
     <!-- ============================================================
     FAB
     ============================================================ -->
+    <button id="weekly-tasks-btn" onclick="toggleWeeklyTasks()" title="Tareas semanales">TS</button>
+    <div id="weekly-tasks-panel" aria-hidden="true"></div>
     <button id="fab" onclick="toggleFabMenu()">+</button>
     <button id="quick-capture-btn" onclick="openQuickCapture()" title="Captura rápida (tecla Q)"
         style="position:fixed;bottom:96px;right:30px;width:44px;height:44px;border-radius:50%;
@@ -3739,6 +3868,9 @@ function v22RefreshSummaryIfPresent() {
         let inbox = [];
         let plannedTrips = [];
         let apuntes = [];
+        // Tareas semanales: recordatorios activos de la semana actual.
+        // Al completarse se convierten en una entrada real del calendario.
+        let weeklyTasks = [];
         let financeIncome = { current: 0, next: 0 };
         // Perfil económico: cifras reales que el usuario actualiza periódicamente.
         // history conserva una fotografía mensual para poder comparar evolución.
@@ -4096,6 +4228,7 @@ function v22RefreshSummaryIfPresent() {
                 }
                 plannedTrips = saved.plannedTrips || [];
                 apuntes = saved.apuntes || [];
+                weeklyTasks = Array.isArray(saved.weeklyTasks) ? saved.weeklyTasks : [];
             } catch (e) {
                 console.error('Error cargando datos de Supabase:', e);
                 return false;
@@ -4153,6 +4286,7 @@ function v22RefreshSummaryIfPresent() {
                 financeIncome,
                 financeProfile,
                 plannedTrips,
+                weeklyTasks,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
                 apuntes: apuntesDirty ? apuntes : latestApuntes
@@ -4432,6 +4566,154 @@ function v22RefreshSummaryIfPresent() {
             if (currentView === 'home') render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
+
+
+        // ============================================================
+        //  TAREAS SEMANALES
+        // ============================================================
+        function getWeeklyTasksWeekKey(date = new Date()) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            const day = d.getDay() || 7;
+            d.setDate(d.getDate() - day + 1);
+            return d.toISOString().slice(0, 10);
+        }
+
+        function formatWeeklyTasksWeek() {
+            const start = new Date(getWeeklyTasksWeekKey() + 'T12:00:00');
+            const end = new Date(start);
+            end.setDate(end.getDate() + 6);
+            const fmt = d => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+            return `${fmt(start)} – ${fmt(end)}`;
+        }
+
+        function getCurrentWeeklyTasks() {
+            const weekKey = getWeeklyTasksWeekKey();
+            return (Array.isArray(weeklyTasks) ? weeklyTasks : []).filter(t => t && t.weekKey === weekKey && !t.completed);
+        }
+
+        function renderWeeklyTasksPanel() {
+            const panel = document.getElementById('weekly-tasks-panel');
+            if (!panel) return;
+            const tasks = getCurrentWeeklyTasks();
+
+            panel.innerHTML = `
+                <div class="weekly-tasks-head">
+                    <div>
+                        <div class="weekly-tasks-title">Tareas semanales</div>
+                        <div class="weekly-tasks-week">${formatWeeklyTasksWeek()}</div>
+                    </div>
+                    <button class="weekly-tasks-add" type="button" onclick="openWeeklyTaskModal()">+ Tarea</button>
+                </div>
+                <div class="weekly-tasks-list">
+                    ${tasks.length ? tasks.map(t => `
+                        <label class="weekly-task-row">
+                            <input class="weekly-task-check" type="checkbox" onchange="completeWeeklyTask('${String(t.id).replace(/'/g, "\\'")}')" aria-label="Marcar como hecha">
+                            <span class="weekly-task-text">${escapeHtml(t.title)}</span>
+                        </label>
+                    `).join('') : `
+                        <div class="weekly-tasks-empty">
+                            No tienes tareas pendientes esta semana.<br>
+                            Pulsa <strong>+ Tarea</strong> para añadir una.
+                        </div>
+                    `}
+                </div>`;
+        }
+
+        function toggleWeeklyTasks(force) {
+            const panel = document.getElementById('weekly-tasks-panel');
+            if (!panel) return;
+            const shouldOpen = typeof force === 'boolean' ? force : !panel.classList.contains('open');
+            panel.classList.toggle('open', shouldOpen);
+            panel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+            if (shouldOpen) renderWeeklyTasksPanel();
+        }
+
+        function openWeeklyTaskModal() {
+            showModal(`
+                <div class="modal-title">+ Tarea semanal</div>
+                <div class="modal-label">¿Qué tienes que hacer?</div>
+                <input id="weekly-task-input" class="modal-input" maxlength="140" placeholder="Ej: Comprar comida para la semana">
+                <button class="btn-modal-primary" onclick="saveWeeklyTask()">Añadir tarea</button>
+            `);
+            setTimeout(() => document.getElementById('weekly-task-input')?.focus(), 50);
+        }
+
+        async function saveWeeklyTask() {
+            const input = document.getElementById('weekly-task-input');
+            const title = input?.value.trim();
+            if (!title) {
+                showToast('Escribe una tarea', true);
+                input?.focus();
+                return;
+            }
+
+            weeklyTasks = Array.isArray(weeklyTasks) ? weeklyTasks : [];
+            weeklyTasks.push({
+                id: 'weekly_task_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                title,
+                weekKey: getWeeklyTasksWeekKey(),
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+
+            closeModal();
+            renderWeeklyTasksPanel();
+            toggleWeeklyTasks(true);
+            try {
+                await saveData();
+                showToast('Tarea añadida');
+            } catch (e) {
+                console.error('Error guardando tarea semanal:', e);
+                showToast('La tarea se añadió, pero no se pudo guardar en la nube.', true);
+            }
+        }
+
+        async function completeWeeklyTask(taskId) {
+            const task = (Array.isArray(weeklyTasks) ? weeklyTasks : []).find(t => t && t.id === taskId);
+            if (!task || task.completed) return;
+
+            const completedDate = new Date().toISOString().slice(0, 10);
+            task.completed = true;
+            task.completedAt = new Date().toISOString();
+
+            // La tarea deja de estar pendiente y pasa a formar parte del
+            // historial normal de Bitácora mediante una entrada de calendario.
+            entries.push({
+                id: 'weekly_task_done_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                type: 'event',
+                title: 'Tarea hecha: ' + task.title,
+                date: completedDate,
+                notes: 'Tarea semanal completada',
+                category: 'Tareas semanales',
+                createdAt: new Date().toISOString()
+            });
+
+            filteredEntries = [...entries];
+            renderWeeklyTasksPanel();
+            if (currentView === 'calendar') render();
+
+            try {
+                await saveData();
+                showToast('Tarea completada');
+            } catch (e) {
+                console.error('Error guardando tarea completada:', e);
+                showToast('Se marcó como hecha, pero no se pudo guardar en la nube.', true);
+            }
+        }
+
+        function closeWeeklyTasksOnOutsideClick(event) {
+            const panel = document.getElementById('weekly-tasks-panel');
+            const button = document.getElementById('weekly-tasks-btn');
+            if (!panel || !panel.classList.contains('open')) return;
+            if (panel.contains(event.target) || button?.contains(event.target)) return;
+            toggleWeeklyTasks(false);
+        }
+
+        document.addEventListener('click', closeWeeklyTasksOnOutsideClick);
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') toggleWeeklyTasks(false);
+        });
 
         // ============================================================
         //  FAB
@@ -5046,7 +5328,7 @@ function v22RefreshSummaryIfPresent() {
         //  EXPORT / IMPORT
         // ============================================================
         function exportData() {
-            const data = { entries, categories, userName, investmentData, notes, prompts, wishlistItems, inbox, financeIncome, financeProfile, plannedTrips, apuntes };
+            const data = { entries, categories, userName, investmentData, notes, prompts, wishlistItems, inbox, financeIncome, financeProfile, plannedTrips, weeklyTasks, apuntes };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -5076,6 +5358,7 @@ function v22RefreshSummaryIfPresent() {
                     if (data.financeIncome) financeIncome = data.financeIncome;
                     if (data.financeProfile) financeProfile = data.financeProfile;
                     if (data.plannedTrips) plannedTrips = data.plannedTrips;
+                    if (data.weeklyTasks) weeklyTasks = Array.isArray(data.weeklyTasks) ? data.weeklyTasks : [];
                     if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
                     filteredEntries = [...entries];
                     render();
