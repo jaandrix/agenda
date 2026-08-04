@@ -124,6 +124,10 @@
             transition: background 0.25s ease, color 0.25s ease;
         }
 
+        /* Fantasy nunca se pinta durante el arranque: solo se revela cuando
+           el modo desarrollador se activa explícitamente. */
+        .fantasy-hidden { display:none !important; }
+
         /* ============================================================
                APP LAYOUT
             ============================================================ */
@@ -2475,6 +2479,72 @@ body.beige {
 
 
 /* ============================================================
+   FINANZAS v0.30 — DASHBOARD ECONÓMICO
+   ============================================================ */
+.finance-dashboard { max-width: 980px; padding-bottom: 30px; }
+.finance-dashboard-head { display:flex; justify-content:space-between; gap:24px; align-items:flex-end; margin-bottom:20px; }
+.finance-dashboard-head h2 { margin:3px 0 6px; font-size:24px; letter-spacing:-.5px; }
+.finance-dashboard-head p { margin:0; color:var(--text-secondary); font-size:12px; max-width:650px; line-height:1.6; }
+.finance-kicker { font-size:10px; text-transform:uppercase; letter-spacing:.8px; font-weight:800; color:var(--text-secondary); }
+.finance-update-btn { width:auto; white-space:nowrap; padding:9px 14px; }
+.finance-subnav { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+.finance-subnav button { border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); border-radius:8px; padding:6px 10px; font-size:10px; font-weight:700; cursor:pointer; }
+.finance-subnav button:hover { color:var(--text-primary); border-color:var(--border-strong); background:var(--bg-card-hover); }
+.finance-networth-card { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; background:linear-gradient(135deg,var(--bg-card),rgba(234,179,8,.06)); border:1px solid var(--border-strong); border-radius:16px; padding:22px; margin-bottom:14px; }
+.finance-networth-value { font-size:34px; line-height:1; font-weight:850; letter-spacing:-1px; margin:8px 0; }
+.finance-networth-meta { font-size:11px; color:var(--text-secondary); }
+.finance-networth-side { border-left:1px solid var(--border); padding-left:22px; display:flex; flex-direction:column; justify-content:center; gap:5px; }
+.finance-networth-side span,.finance-networth-side small { color:var(--text-secondary); font-size:10px; }
+.finance-networth-side strong { font-size:24px; }
+.finance-progress { height:5px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:8px; }
+.finance-progress span { display:block; height:100%; background:var(--accent); border-radius:inherit; }
+.finance-progress-large { height:7px; margin:3px 0 4px; }
+.finance-metrics-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+.finance-metric-card { background:var(--bg-card); border:1px solid var(--border); border-radius:13px; padding:14px; min-width:0; }
+.finance-metric-card:hover { border-color:var(--border-strong); }
+.finance-metric-top,.finance-panel-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.finance-metric-label { font-size:10px; text-transform:uppercase; font-weight:800; color:var(--text-secondary); letter-spacing:.35px; display:flex; gap:6px; align-items:center; }
+.finance-edit-btn,.finance-icon-btn { width:25px; height:25px; border:0; border-radius:7px; background:transparent; color:var(--text-secondary); cursor:pointer; }
+.finance-edit-btn:hover,.finance-icon-btn:hover { background:var(--bg-card-hover); color:var(--text-primary); }
+.finance-metric-value { font-size:20px; font-weight:800; margin-top:10px; }
+.finance-metric-meta { display:flex; justify-content:space-between; gap:6px; margin-top:7px; font-size:9px; color:var(--text-secondary); }
+.finance-metric-note { font-size:9px; color:var(--text-secondary); margin-top:7px; line-height:1.4; }
+.finance-positive { color:var(--invest-gain,#22c55e)!important; font-style:normal; }
+.finance-negative { color:var(--invest-loss,#ef4444)!important; font-style:normal; }
+.finance-goal-complete { border-color:var(--accent); }
+.finance-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.finance-panel,.finance-forecast-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:17px; }
+.finance-panel h3,.finance-forecast-panel h3 { margin:3px 0 4px; font-size:15px; }
+.finance-panel-head p { margin:0; color:var(--text-secondary); font-size:10px; line-height:1.5; }
+.finance-text-btn { background:none; border:0; color:var(--text-secondary); font-size:10px; cursor:pointer; }
+.finance-income-highlight { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:11px; }
+.finance-income-highlight span { color:var(--text-secondary); }
+.finance-income-highlight strong { font-size:14px; }
+.finance-salary-list { margin-top:5px; }
+.finance-salary-list > div,.finance-mini-bars > div { display:flex; justify-content:space-between; padding:6px 0; font-size:10px; }
+.finance-salary-list span,.finance-mini-bars span { color:var(--text-secondary); }
+.finance-recurring-total { font-size:27px; font-weight:850; margin-top:14px; }
+.finance-recurring-total span { font-size:11px; font-weight:600; color:var(--text-secondary); }
+.finance-recurring-sub { font-size:10px; color:var(--text-secondary); margin-top:2px; }
+.finance-mini-bars { margin-top:10px; border-top:1px solid var(--border); }
+.finance-forecast-panel { margin-bottom:12px; }
+.finance-forecast-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
+.finance-forecast-grid div { background:var(--bg-app); border:1px solid var(--border); border-radius:10px; padding:11px; }
+.finance-forecast-grid span { display:block; font-size:9px; color:var(--text-secondary); margin-bottom:5px; }
+.finance-forecast-grid strong { font-size:16px; }
+.finance-forecast-note,.finance-dashboard-foot,.finance-empty-state,.finance-empty-line,.finance-modal-note { color:var(--text-secondary); font-size:10px; line-height:1.5; }
+.finance-forecast-note { margin-top:10px; }
+.finance-history-count { font-size:9px; color:var(--text-secondary); }
+.finance-history-list { margin-top:10px; }
+.finance-history-row { display:grid; grid-template-columns:1fr auto auto; gap:16px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:10px; }
+.finance-history-row strong { font-size:12px; }
+.finance-history-row em { font-style:normal; min-width:70px; text-align:right; }
+.finance-dashboard-foot { margin-top:10px; }
+.finance-salary-row { display:grid; grid-template-columns:1fr 130px; gap:10px; align-items:center; margin-bottom:8px; font-size:11px; }
+@media(max-width:850px){ .finance-metrics-grid{grid-template-columns:repeat(2,1fr)} .finance-networth-card{grid-template-columns:1fr}.finance-networth-side{border-left:0;border-top:1px solid var(--border);padding:14px 0 0}.finance-forecast-grid{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:600px){ .finance-dashboard-head,.finance-grid-2{display:block}.finance-update-btn{margin-top:12px}.finance-metrics-grid{grid-template-columns:1fr 1fr}.finance-metric-meta{display:block}.finance-metric-meta span{display:block;margin-bottom:2px}.finance-networth-value{font-size:29px} }
+
+/* ============================================================
    VENTANA FLOTANTE DE APUNTES
    El contenido sigue viviendo en /apuntes/index.html
    ============================================================ */
@@ -2894,7 +2964,7 @@ body.beige {
 
                 <!-- Privado -->
                <span class="nav-label">Privado</span>
-                <button class="fantasy-btn" onclick="openFantasy()" data-view="fantasy" id="sidebar-fantasy-btn">
+                <button class="fantasy-btn fantasy-hidden" onclick="openFantasy()" data-view="fantasy" id="sidebar-fantasy-btn">
                     <span class="nav-icon">◉</span>
                     <span class="nav-text">Fantasy</span>
                 </button>
@@ -3048,7 +3118,7 @@ body.beige {
             </button>
 
             <span class="nav-label">Privado</span>
-            <button class="fantasy-btn" onclick="openFantasy();toggleMobileMenu()" data-view="fantasy" id="mobile-fantasy-btn">
+            <button class="fantasy-btn fantasy-hidden" onclick="openFantasy();toggleMobileMenu()" data-view="fantasy" id="mobile-fantasy-btn">
                 <span class="nav-icon">◉</span> Fantasy
             </button>
             <button class="vault-btn" onclick="openVault();toggleMobileMenu()" data-view="vault">
@@ -3670,6 +3740,20 @@ function v22RefreshSummaryIfPresent() {
         let plannedTrips = [];
         let apuntes = [];
         let financeIncome = { current: 0, next: 0 };
+        // Perfil económico: cifras reales que el usuario actualiza periódicamente.
+        // history conserva una fotografía mensual para poder comparar evolución.
+        let financeProfile = {
+            cash: 0,
+            cashTarget: 0,
+            invested: 0,
+            investedTarget: 0,
+            emergency: 0,
+            emergencyTarget: 0,
+            vacation: 0,
+            vacationTarget: 0,
+            salaryForecast: {},
+            history: []
+        };
         let financeSubView = 'menu';
         let devModeActive = false;
 
@@ -3998,6 +4082,18 @@ function v22RefreshSummaryIfPresent() {
                 wishlistItems = saved.wishlistItems || [];
                 inbox = saved.inbox || [];
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
+                financeProfile = saved.financeProfile || {
+                    cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
+                    emergency: 0, emergencyTarget: 0, vacation: 0, vacationTarget: 0,
+                    salaryForecast: {}, history: []
+                };
+                financeProfile.salaryForecast = financeProfile.salaryForecast || {};
+                financeProfile.history = Array.isArray(financeProfile.history) ? financeProfile.history : [];
+                // Si aún no existe una cifra manual para inversiones, tomamos como
+                // punto de partida el valor real de la cartera ya registrada.
+                if (!(Number(financeProfile.invested) > 0) && typeof portfolioCurrentValue === 'function') {
+                    financeProfile.invested = portfolioCurrentValue();
+                }
                 plannedTrips = saved.plannedTrips || [];
                 apuntes = saved.apuntes || [];
             } catch (e) {
@@ -4055,6 +4151,7 @@ function v22RefreshSummaryIfPresent() {
                 wishlistItems,
                 inbox,
                 financeIncome,
+                financeProfile,
                 plannedTrips,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
@@ -4949,7 +5046,7 @@ function v22RefreshSummaryIfPresent() {
         //  EXPORT / IMPORT
         // ============================================================
         function exportData() {
-            const data = { entries, categories, userName, investmentData, notes, prompts, wishlistItems, inbox, financeIncome, plannedTrips, apuntes };
+            const data = { entries, categories, userName, investmentData, notes, prompts, wishlistItems, inbox, financeIncome, financeProfile, plannedTrips, apuntes };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -4977,6 +5074,7 @@ function v22RefreshSummaryIfPresent() {
                     if (data.wishlistItems) wishlistItems = data.wishlistItems;
                     if (data.inbox) inbox = data.inbox;
                     if (data.financeIncome) financeIncome = data.financeIncome;
+                    if (data.financeProfile) financeProfile = data.financeProfile;
                     if (data.plannedTrips) plannedTrips = data.plannedTrips;
                     if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
                     filteredEntries = [...entries];
@@ -5140,6 +5238,20 @@ function v22RefreshSummaryIfPresent() {
         let calYear = new Date().getFullYear();
         let calMonth = new Date().getMonth();
 
+        function getRecurringCalendarEntries(dateStr) {
+            const day = Number(String(dateStr).slice(8, 10));
+            if (!day) return [];
+            const year = Number(String(dateStr).slice(0, 4));
+            const month = Number(String(dateStr).slice(5, 7));
+            const daysInMonth = new Date(year, month, 0).getDate();
+            return entries.filter(e => {
+                if (!((e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false)) return false;
+                const renewalDay = Number(e.renewalDay);
+                if (!renewalDay) return false;
+                return Math.min(renewalDay, daysInMonth) === day;
+            }).map(e => ({ ...e, date: dateStr, _recurringPayment: true }));
+        }
+
         function renderCalendar() {
             const entriesByDate = {};
             entries.forEach(e => {
@@ -5159,6 +5271,13 @@ function v22RefreshSummaryIfPresent() {
                 if (!entriesByDate[date]) entriesByDate[date] = [];
                 entriesByDate[date].push(e);
             });
+
+            // Los gastos recurrentes se proyectan al calendario en el día configurado.
+            for (let d = 1; d <= new Date(calYear, calMonth + 1, 0).getDate(); d++) {
+                const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const recurring = getRecurringCalendarEntries(dateStr);
+                if (recurring.length) entriesByDate[dateStr] = [...(entriesByDate[dateStr] || []), ...recurring];
+            }
 
             const today = new Date().toISOString().slice(0, 10);
             const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -5273,7 +5392,8 @@ function v22RefreshSummaryIfPresent() {
                 e.startDate && e.startDate <= date &&
                 (!e.endDate || e.endDate >= date)
             );
-            const all = [...dayEntries, ...activeJobs];
+            const recurringEntries = getRecurringCalendarEntries(date);
+            const all = [...dayEntries, ...activeJobs, ...recurringEntries];
             if (!all.length) return '';
 
             const dateObj = new Date(date + 'T12:00:00');
@@ -5295,7 +5415,10 @@ function v22RefreshSummaryIfPresent() {
 
                 let titleHtml, metaHtml;
 
-                if (e.type === 'work') {
+                if (e._recurringPayment) {
+                    titleHtml = `${icon} Pago: ${e.title}`;
+                    metaHtml = `${e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'} · ${financeMoney(e.amount)}`;
+                } else if (e.type === 'work') {
                     const start = e.startTime || '';
                     const end = e.endTime || '';
                     const scheduleText = (start || end) ? ` de ${start || '--'} a ${end || '--'}` : '';
@@ -6221,6 +6344,303 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         //  FINANZAS: HUB
         // ============================================================
+        function financeMoney(value) {
+            return Number(value || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
+        }
+
+        function financeMonthKey(date = new Date()) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function financeMonthLabel(key) {
+            const [y, m] = String(key).split('-').map(Number);
+            if (!y || !m) return key;
+            return new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+        }
+
+        function financeTotalAssets() {
+            return Number(financeProfile.cash || 0) + Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0) + Number(financeProfile.vacation || 0);
+        }
+
+        function financeCorePatrimony() {
+            return Number(financeProfile.cash || 0) + Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0);
+        }
+
+        function financeTargetTotal() {
+            return Number(financeProfile.cashTarget || 0) + Number(financeProfile.investedTarget || 0) + Number(financeProfile.emergencyTarget || 0);
+        }
+
+        function financeRecurringTotal() {
+            return entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false)
+                .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        }
+
+        function financeSnapshot() {
+            return {
+                month: financeMonthKey(),
+                date: new Date().toISOString(),
+                cash: Number(financeProfile.cash || 0),
+                invested: Number(financeProfile.invested || 0),
+                emergency: Number(financeProfile.emergency || 0),
+                vacation: Number(financeProfile.vacation || 0),
+                total: financeCorePatrimony()
+            };
+        }
+
+        function financePreviousSnapshot() {
+            const current = financeMonthKey();
+            return [...(financeProfile.history || [])]
+                .filter(h => h.month !== current)
+                .sort((a, b) => String(b.month).localeCompare(String(a.month)))[0] || null;
+        }
+
+        function financePctChange(current, previous) {
+            if (previous === null || previous === undefined || Number(previous) === 0) return null;
+            return ((Number(current) - Number(previous)) / Math.abs(Number(previous))) * 100;
+        }
+
+        function financePctToTarget(current, target) {
+            if (Number(target) <= 0) return null;
+            return (Number(current) / Number(target)) * 100;
+        }
+
+        function financeMonthDiff(fromKey, toKey) {
+            const [fy, fm] = String(fromKey).split('-').map(Number);
+            const [ty, tm] = String(toKey).split('-').map(Number);
+            return (ty - fy) * 12 + (tm - fm);
+        }
+
+        function financeProjectedCashAtYearEnd() {
+            const now = new Date();
+            let balance = Number(financeProfile.cash || 0);
+            const recurring = financeRecurringTotal();
+            const currentKey = financeMonthKey(now);
+            const year = now.getFullYear();
+            for (let month = now.getMonth(); month < 12; month++) {
+                const key = `${year}-${String(month + 1).padStart(2, '0')}`;
+                const salary = Number(financeProfile.salaryForecast?.[key] || 0);
+                if (key === currentKey) balance += Math.max(0, salary);
+                else balance += salary;
+                balance -= recurring;
+            }
+            return Math.max(0, balance);
+        }
+
+        function financeYearEndInvestedProjection() {
+            const now = new Date();
+            const monthsLeft = 12 - now.getMonth();
+            const current = Number(financeProfile.invested || 0);
+            const monthly = Number(investmentData.projectionMonthly || 0);
+            return current + monthly * monthsLeft;
+        }
+
+        function financeYearEndPatrimonyProjection() {
+            return financeProjectedCashAtYearEnd() + financeYearEndInvestedProjection() + Number(financeProfile.emergency || 0);
+        }
+
+        function financeGoalStatus(value, target) {
+            if (Number(target) <= 0) return { pct: null, label: 'Sin objetivo', cls: '' };
+            const pct = Math.max(0, Math.min(100, Number(value) / Number(target) * 100));
+            return { pct, label: `${pct.toFixed(0)}% del objetivo`, cls: pct >= 100 ? 'finance-goal-complete' : '' };
+        }
+
+        async function saveFinanceDashboard() {
+            const snap = financeSnapshot();
+            const existing = Array.isArray(financeProfile.history) ? financeProfile.history : [];
+            const withoutCurrent = existing.filter(h => h.month !== snap.month);
+            financeProfile.history = [...withoutCurrent, snap].sort((a, b) => String(a.month).localeCompare(String(b.month))).slice(-24);
+            try { await saveData(); showToast('Finanzas actualizadas'); render(); }
+            catch (e) { console.error(e); showToast('No se pudieron guardar las finanzas', true); }
+        }
+
+        function openFinanceMetricEditor(key, label, targetKey) {
+            showModal(`
+                <div class="modal-title">Editar ${escapeHtml(label)}</div>
+                <div class="modal-label">Valor actual (€)</div>
+                <input id="finance-edit-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile[key] || 0)}">
+                <div class="modal-label">Objetivo para final de año (€)</div>
+                <input id="finance-edit-target" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile[targetKey] || 0)}">
+                <button class="btn-modal-primary" onclick="saveFinanceMetricEditor('${key}','${targetKey}')">Guardar</button>
+            `);
+        }
+
+        async function saveFinanceMetricEditor(key, targetKey) {
+            financeProfile[key] = Math.max(0, Number(document.getElementById('finance-edit-value')?.value) || 0);
+            financeProfile[targetKey] = Math.max(0, Number(document.getElementById('finance-edit-target')?.value) || 0);
+            closeModal();
+            await saveFinanceDashboard();
+        }
+
+        function openFinanceSalaryEditor() {
+            const now = new Date();
+            const months = [];
+            for (let i = now.getMonth(); i < 12; i++) {
+                const key = `${now.getFullYear()}-${String(i + 1).padStart(2, '0')}`;
+                months.push({ key, label: financeMonthLabel(key), value: financeProfile.salaryForecast?.[key] || 0 });
+            }
+            showModal(`
+                <div class="modal-title">Previsión de ingresos</div>
+                <div class="finance-modal-note">Introduce lo que crees que cobrarás en cada mes. Son previsiones y puedes modificarlas cuando cobres realmente.</div>
+                ${months.map(m => `
+                    <div class="finance-salary-row">
+                        <span>${escapeHtml(m.label)}</span>
+                        <input class="modal-input" style="margin:0" type="number" min="0" step="0.01" data-finance-salary="${m.key}" value="${Number(m.value) || ''}" placeholder="0">
+                    </div>`).join('')}
+                <button class="btn-modal-primary" onclick="saveFinanceSalaryForecast()">Guardar previsiones</button>
+            `);
+        }
+
+        async function saveFinanceSalaryForecast() {
+            financeProfile.salaryForecast = financeProfile.salaryForecast || {};
+            document.querySelectorAll('[data-finance-salary]').forEach(input => {
+                financeProfile.salaryForecast[input.dataset.financeSalary] = Math.max(0, Number(input.value) || 0);
+            });
+            closeModal();
+            await saveFinanceDashboard();
+        }
+
+        function financePaceLabel(key, targetKey) {
+            const current = Number(financeProfile[key] || 0);
+            const target = Number(financeProfile[targetKey] || 0);
+            if (target <= 0) return 'Ritmo: sin objetivo';
+            if (current >= target) return 'Objetivo alcanzado';
+            const previous = financePreviousSnapshot()?.[key];
+            if (previous === undefined || previous === null) return 'Ritmo: falta un registro mensual';
+            const monthlyDelta = current - Number(previous);
+            if (monthlyDelta <= 0) return 'Ritmo actual: no acerca al objetivo';
+            const monthsNeeded = Math.ceil((target - current) / monthlyDelta);
+            const monthsLeft = 12 - new Date().getMonth();
+            return monthsNeeded <= monthsLeft
+                ? `Ritmo: llegarías en ~${monthsNeeded} mes${monthsNeeded === 1 ? '' : 'es'}`
+                : `Ritmo: necesitarías ~${monthsNeeded} meses`;
+        }
+
+        function renderFinanceMetric(key, targetKey, label, icon, note) {
+            const value = Number(financeProfile[key] || 0);
+            const target = Number(financeProfile[targetKey] || 0);
+            const prev = financePreviousSnapshot()?.[key];
+            const change = financePctChange(value, prev);
+            const goal = financeGoalStatus(value, target);
+            return `
+                <div class="finance-metric-card ${goal.cls}">
+                    <div class="finance-metric-top">
+                        <div class="finance-metric-label"><span>${icon}</span>${label}</div>
+                        <button class="finance-edit-btn" title="Editar" onclick="openFinanceMetricEditor('${key}','${label}','${targetKey}')">✎</button>
+                    </div>
+                    <div class="finance-metric-value">${financeMoney(value)}</div>
+                    <div class="finance-metric-meta">
+                        <span class="${change === null ? '' : change >= 0 ? 'finance-positive' : 'finance-negative'}">${change === null ? 'Sin mes anterior' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}% vs. mes anterior`}</span>
+                        <span>${goal.pct === null ? 'Sin objetivo' : `${goal.pct.toFixed(0)}% del objetivo`}</span>
+                    </div>
+                    <div class="finance-progress"><span style="width:${goal.pct === null ? 0 : Math.min(100, goal.pct)}%"></span></div>
+                    <div class="finance-metric-note">Objetivo: ${target > 0 ? financeMoney(target) : 'sin definir'} · ${financePaceLabel(key,targetKey)}${note ? ` · ${note}` : ''}</div>
+                </div>`;
+        }
+
+        function renderFinanceDashboard() {
+            const total = financeCorePatrimony();
+            const totalWithVacation = financeTotalAssets();
+            const target = financeTargetTotal();
+            const totalPct = target > 0 ? Math.min(100, total / target * 100) : null;
+            const prevTotal = financePreviousSnapshot()?.total;
+            const totalChange = financePctChange(total, prevTotal);
+            const yearEnd = financeYearEndPatrimonyProjection();
+            const recurring = financeRecurringTotal();
+            const available = Math.max(0, yearEnd - target);
+            const now = new Date();
+            const monthsLeft = 12 - now.getMonth();
+            const currentSalary = Number(financeProfile.salaryForecast?.[financeMonthKey()] || financeIncome.current || 0);
+            const nextSalaryKey = `${now.getFullYear()}-${String(now.getMonth() + 2).padStart(2, '0')}`;
+            const nextSalary = Number(financeProfile.salaryForecast?.[nextSalaryKey] || financeIncome.next || 0);
+
+            return `
+            <div class="finance-dashboard">
+                <div class="finance-dashboard-head">
+                    <div>
+                        <div class="finance-kicker">Finanzas personales</div>
+                        <h2>Tu situación económica</h2>
+                        <p>Actualiza tus cifras cuando cobres o cierres el mes. Bitácora compara la evolución real con tus objetivos y separa los datos de las previsiones.</p>
+                        <div class="finance-subnav">
+                            <button onclick="financeSubView='indexado';render()">Fondo indexado</button>
+                            <button onclick="financeSubView='wishlist';render()">Wishlist</button>
+                            <button onclick="financeSubView='recurrentes';render()">Gastos recurrentes</button>
+                        </div>
+                    </div>
+                    <button class="btn-modal-primary finance-update-btn" onclick="saveFinanceDashboard()">Guardar actualización</button>
+                </div>
+
+                <section class="finance-networth-card">
+                    <div>
+                        <div class="finance-kicker">Patrimonio operativo</div>
+                        <div class="finance-networth-value">${financeMoney(total)}</div>
+                        <div class="finance-networth-meta">
+                            ${totalChange === null ? 'Primer registro' : `${totalChange >= 0 ? '+' : ''}${totalChange.toFixed(1)}% frente al mes anterior`}
+                            · Objetivo ${target > 0 ? financeMoney(target) : 'sin definir'}
+                        </div>
+                    </div>
+                    <div class="finance-networth-side">
+                        <span>Progreso</span>
+                        <strong>${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</strong>
+                        <div class="finance-progress finance-progress-large"><span style="width:${totalPct === null ? 0 : totalPct}%"></span></div>
+                        <small>${financeMoney(totalWithVacation)} incluyendo reserva de vacaciones</small>
+                    </div>
+                </section>
+
+                <div class="finance-metrics-grid">
+                    ${renderFinanceMetric('cash','cashTarget','Efectivo / bancos','€','Liquidez disponible')}
+                    ${renderFinanceMetric('invested','investedTarget','Inversiones','↗','Valor real que hayas registrado')}
+                    ${renderFinanceMetric('emergency','emergencyTarget','Fondo de emergencia','◇','Reserva no destinada al gasto corriente')}
+                    ${renderFinanceMetric('vacation','vacationTarget','Reserva de vacaciones','✦','Se mantiene aparte del patrimonio operativo')}
+                </div>
+
+                <div class="finance-grid-2">
+                    <section class="finance-panel">
+                        <div class="finance-panel-head"><div><div class="finance-kicker">Previsión</div><h3>Ingresos próximos</h3></div><button class="finance-icon-btn" onclick="openFinanceSalaryEditor()">✎</button></div>
+                        <div class="finance-income-highlight"><span>Este mes</span><strong>${financeMoney(currentSalary)}</strong></div>
+                        <div class="finance-income-highlight"><span>Mes siguiente</span><strong>${financeMoney(nextSalary)}</strong></div>
+                        <div class="finance-salary-list">
+                            ${Object.keys(financeProfile.salaryForecast || {}).filter(k => k >= financeMonthKey()).sort().slice(0,5).map(k => `<div><span>${escapeHtml(financeMonthLabel(k))}</span><strong>${financeMoney(financeProfile.salaryForecast[k])}</strong></div>`).join('') || '<div class="finance-empty-line">Añade una previsión para que Bitácora pueda calcular tu ritmo.</div>'}
+                        </div>
+                    </section>
+
+                    <section class="finance-panel">
+                        <div class="finance-panel-head"><div><div class="finance-kicker">Compromisos</div><h3>Gastos recurrentes</h3></div><button class="finance-text-btn" onclick="financeSubView='recurrentes';render()">Ver detalle →</button></div>
+                        <div class="finance-recurring-total">${financeMoney(recurring)} <span>/ mes</span></div>
+                        <div class="finance-recurring-sub">${financeMoney(recurring * 12)} al año · se descuentan de la previsión de efectivo</div>
+                        <div class="finance-mini-bars">
+                            <div><span>Suscripciones</span><strong>${financeMoney(entries.filter(e=>e.type==='subscription'&&e.active!==false).reduce((s,e)=>s+(Number(e.amount)||0),0))}</strong></div>
+                            <div><span>Gastos fijos</span><strong>${financeMoney(entries.filter(e=>e.type==='fixed_expense'&&e.active!==false).reduce((s,e)=>s+(Number(e.amount)||0),0))}</strong></div>
+                        </div>
+                    </section>
+                </div>
+
+                <section class="finance-forecast-panel">
+                    <div class="finance-panel-head"><div><div class="finance-kicker">Ritmo</div><h3>¿Voy a llegar a mi objetivo?</h3><p>Estimación hasta final de año con tus ingresos previstos y gastos recurrentes actuales.</p></div></div>
+                    <div class="finance-forecast-grid">
+                        <div><span>Patrimonio operativo proyectado</span><strong>${financeMoney(yearEnd)}</strong></div>
+                        <div><span>Objetivo fin de año</span><strong>${target > 0 ? financeMoney(target) : '—'}</strong></div>
+                        <div><span>${available >= 0 ? 'Margen estimado' : 'Faltante estimado'}</span><strong class="${available >= 0 ? 'finance-positive' : 'finance-negative'}">${financeMoney(Math.abs(available))}</strong></div>
+                        <div><span>Meses restantes</span><strong>${monthsLeft}</strong></div>
+                    </div>
+                    <div class="finance-forecast-note">La proyección no sustituye a tus cifras reales: cambia cuando actualices tus saldos, inversiones o previsiones de ingresos.</div>
+                </section>
+
+                <section class="finance-panel finance-history-panel">
+                    <div class="finance-panel-head"><div><div class="finance-kicker">Histórico</div><h3>Evolución patrimonial</h3></div><span class="finance-history-count">${(financeProfile.history || []).length} registros</span></div>
+                    ${(financeProfile.history || []).length ? `
+                        <div class="finance-history-list">
+                            ${[...(financeProfile.history || [])].reverse().slice(0,8).map((h,i,arr) => {
+                                const previous = arr[i+1];
+                                const diff = previous ? Number(h.total)-Number(previous.total) : null;
+                                return `<div class="finance-history-row"><span>${escapeHtml(financeMonthLabel(h.month))}</span><strong>${financeMoney(h.total)}</strong><em class="${diff===null?'':diff>=0?'finance-positive':'finance-negative'}">${diff===null?'—':`${diff>=0?'+':''}${financeMoney(diff)}`}</em></div>`;
+                            }).join('')}
+                        </div>` : '<div class="finance-empty-state">Aún no hay histórico. Guarda tu primera actualización mensual y Bitácora empezará a construirlo.</div>'}
+                </section>
+
+                <div class="finance-dashboard-foot">${monthsLeft > 0 ? `Quedan ${monthsLeft} meses del año. ` : ''}La reserva de vacaciones (${financeMoney(financeProfile.vacation || 0)}) queda fuera del patrimonio operativo para evitar contar dos veces el dinero disponible.</div>
+            </div>`;
+        }
+
         function renderFinances() {
             if (financeSubView === 'wishlist') {
                 startWishlistTimer();
@@ -6236,33 +6656,7 @@ function v22RefreshSummaryIfPresent() {
             }
 
             stopWishlistTimer();
-            const saved = wishlistItems.filter(w => w.outcome === 'no_comprado').reduce((s, w) => s + (w.price || 0), 0);
-
-            return `
-            <div style="max-width:760px">
-                ${saved > 0 ? `
-                <div class="card" style="margin-bottom:20px;border-left:3px solid #16a34a">
-                    <div class="card-title">Ahorrado gracias a Bitácora</div>
-                    <div class="card-value" style="color:#16a34a">${saved.toLocaleString('es-ES')}€</div>
-                </div>` : ''}
-                <div class="finance-menu-grid">
-                    <div class="finance-menu-card" onclick="financeSubView='wishlist';render()">
-                        <div class="finance-menu-icon">◔</div>
-                        <div class="finance-menu-title">Wishlist</div>
-                        <div class="finance-menu-sub">Antes de comprar, espera 30 días</div>
-                    </div>
-                    <div class="finance-menu-card" onclick="financeSubView='indexado';render()">
-                        <div class="finance-menu-icon">▲</div>
-                        <div class="finance-menu-title">Fondo Indexado</div>
-                        <div class="finance-menu-sub">Interés compuesto automático</div>
-                    </div>
-                    <div class="finance-menu-card" onclick="financeSubView='recurrentes';render()">
-                        <div class="finance-menu-icon">↻</div>
-                        <div class="finance-menu-title">Suscripciones y gastos fijos</div>
-                        <div class="finance-menu-sub">Cuánto pagas cada mes</div>
-                    </div>
-                </div>
-            </div>`;
+            return renderFinanceDashboard();
         }
 
         // ============================================================
@@ -8569,7 +8963,9 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         function updateSidebarPrivacy() {
             const fantasyBtns = document.querySelectorAll('[data-view="fantasy"]');
             fantasyBtns.forEach(btn => {
-                btn.style.display = devModeActive ? 'flex' : 'none';
+                btn.classList.toggle('fantasy-hidden', !devModeActive);
+                if (devModeActive) btn.style.display = 'flex';
+                else btn.style.removeProperty('display');
             });
         }
 
