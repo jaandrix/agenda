@@ -1819,6 +1819,66 @@
         .entry-detail-label { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-secondary); margin-bottom:5px; font-weight:700; }
         .entry-detail-value { font-size:13px; color:var(--text-primary); line-height:1.5; white-space:pre-wrap; word-break:break-word; }
         .entry-detail-actions { display:flex; gap:8px; margin-top:18px; flex-wrap:wrap; }
+        .bone-surface {
+            background:var(--bone-surface) !important;
+            border-color:var(--bone-border) !important;
+            color:var(--bone-text) !important;
+            box-shadow:0 6px 18px rgba(0,0,0,.08);
+        }
+        .work-total-bone .label,
+        .work-total-bone .value { color:var(--bone-text) !important; }
+        .work-cotization-bone {
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            min-height:92px;
+        }
+        .work-cotization-bone .cotization-main {
+            font-size:20px;
+            line-height:1.25;
+            font-weight:800;
+            color:var(--bone-text);
+            margin-top:4px;
+        }
+        .work-cotization-bone .cotization-detail {
+            margin-top:6px;
+            font-size:12px;
+            color:var(--bone-muted);
+        }
+        .work-cotization-bone .cotization-detail strong {
+            color:var(--bone-text);
+            font-weight:700;
+        }
+        @media (max-width:620px) {
+            #content .work-total-bone,
+            #content .work-cotization-bone { min-width:0; }
+            #content .work-total-bone .value { font-size:24px !important; }
+        }
+        .work-total-bone .label { color:var(--bone-muted) !important; }
+        .project-completed-bone { color:var(--bone-text) !important; }
+        .project-completed-bone [style*="color:var(--text-primary)"],
+        .project-completed-bone [style*="color:var(--text-secondary)"] {
+            color:var(--bone-text) !important;
+        }
+        .project-completed-bone [style*="color:var(--text-secondary)"] {
+            color:var(--bone-muted) !important;
+        }
+        .goal-completed-bone .entry-title,
+        .goal-completed-bone .entry-meta { color:var(--bone-text) !important; }
+        .goal-completed-bone .entry-meta { color:var(--bone-muted) !important; }
+        .goal-completed-bone .entry-actions button { color:var(--bone-text) !important; }
+        .travel-bone { color:var(--bone-text) !important; }
+        .travel-bone [style*="color:var(--text-primary)"] { color:var(--bone-text) !important; }
+        .travel-bone [style*="color:var(--text-secondary)"] { color:var(--bone-muted) !important; }
+        .doc-item {
+            background:var(--bone-surface);
+            border-color:var(--bone-border);
+            color:var(--bone-text);
+        }
+        .doc-item .doc-name { color:var(--bone-text); }
+        .doc-item .doc-meta { color:var(--bone-muted); }
+        .doc-item .doc-actions button { color:var(--bone-text); border-color:var(--bone-border); }
+
         .project-task-row { display:flex; align-items:center; gap:10px; padding:8px 0; font-size:13px; color:var(--text-primary); cursor:pointer; }
         .project-task-row input,.trip-check-row input { width:16px; height:16px; flex-shrink:0; accent-color:var(--accent); }
         .project-task-row .done { text-decoration:line-through; opacity:.5; }
@@ -2626,7 +2686,8 @@ body.beige {
 .finance-subnav { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
 .finance-subnav button { border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); border-radius:8px; padding:6px 10px; font-size:10px; font-weight:700; cursor:pointer; }
 .finance-subnav button:hover { color:var(--text-primary); border-color:var(--border-strong); background:var(--bg-card-hover); }
-.finance-networth-card { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; background:#f3eee3; color:#171717; border:1px solid #ded6c7; border-radius:16px; padding:22px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.10); }
+:root { --bone-surface:#f3eee3; --bone-border:#ded6c7; --bone-text:#171717; --bone-muted:#6f695f; }
+        .finance-networth-card { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; background:var(--bone-surface); color:var(--bone-text); border:1px solid var(--bone-border); border-radius:16px; padding:22px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.10); }
 .finance-networth-card .finance-kicker { color:#777064; }
 .finance-networth-card .finance-networth-meta { color:#6f695f; }
 .finance-networth-card .finance-networth-side { border-left-color:#d8d0c2; }
@@ -4225,6 +4286,7 @@ function v22RefreshSummaryIfPresent() {
                 if (error) throw error;
                 const saved = (data && data.data) ? data.data : {};
                 entries = saved.entries || [];
+                normalizeWorkCotizationData();
                 categories = saved.categories || getDefaultCategories();
                 notes = saved.notes || [];
                 prompts = saved.prompts || [];
@@ -4325,6 +4387,23 @@ function v22RefreshSummaryIfPresent() {
             // quedó almacenado.
             if (!apuntesDirty) apuntes = latestApuntes;
             apuntesDirty = false;
+        }
+
+        // Normaliza registros laborales antiguos para que el nuevo sistema
+        // de estimación/corrección sea compatible con los datos existentes.
+        function normalizeWorkCotizationData() {
+            entries.forEach(entry => {
+                if (entry.type !== 'work') return;
+                if (entry.cotizationType !== 'practicas' && entry.cotizationType !== 'general') {
+                    entry.cotizationType = 'general';
+                }
+                if (entry.cotizedDays !== null && entry.cotizedDays !== undefined && entry.cotizedDays !== '') {
+                    const n = Number(entry.cotizedDays);
+                    entry.cotizedDays = Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+                } else {
+                    entry.cotizedDays = null;
+                }
+            });
         }
 
         // ============================================================
@@ -4961,6 +5040,16 @@ function v22RefreshSummaryIfPresent() {
                         <div><div class="modal-label" style="margin-top:4px">Entrada</div><input type="time" id="modal-start-time" class="modal-input" value="${isEdit ? entry.startTime || '' : ''}"></div>
                         <div><div class="modal-label" style="margin-top:4px">Salida</div><input type="time" id="modal-end-time" class="modal-input" value="${isEdit ? entry.endTime || '' : ''}"></div>
                     </div>
+                    <div class="modal-label">Tipo de cotización</div>
+                    <select id="modal-cotization-type" class="modal-input">
+                        <option value="general" ${isEdit && entry.cotizationType === 'practicas' ? '' : 'selected'}>Régimen general</option>
+                        <option value="practicas" ${isEdit && entry.cotizationType === 'practicas' ? 'selected' : ''}>Prácticas formativas</option>
+                    </select>
+                    <div class="modal-label">Vida laboral · días cotizados</div>
+                    <input type="number" id="modal-cotized-days" class="modal-input" value="${isEdit && Number.isFinite(Number(entry.cotizedDays)) ? entry.cotizedDays : ''}" min="0" step="1" placeholder="Ej: 32">
+                    <div style="font-size:11px;color:var(--text-secondary);margin:-4px 0 10px">
+                        Opcional. Si introduces aquí la cifra real de tu informe de Vida Laboral, Bitácora la utilizará en lugar de su estimación. Si lo dejas vacío, calculará los días automáticamente, incluyendo fines de semana.
+                    </div>
                     <div class="modal-label">Salario (€/mes, opcional)</div>
                     <input type="number" id="modal-salary" class="modal-input" value="${isEdit ? entry.salary || '' : ''}" step="0.01" placeholder="0.00">
                     <div class="modal-label">Notas</div>
@@ -5187,6 +5276,9 @@ function v22RefreshSummaryIfPresent() {
                 entry.endTime = document.getElementById('modal-end-time')?.value || '';
                 entry.date = entry.startDate || entry.endDate || '';
                 entry.schedule = (entry.startTime ? entry.startTime : '') + (entry.endTime ? ' - ' + entry.endTime : '');
+                entry.cotizationType = document.getElementById('modal-cotization-type')?.value || 'general';
+                const cotizedDaysRaw = document.getElementById('modal-cotized-days')?.value;
+                entry.cotizedDays = cotizedDaysRaw === '' || cotizedDaysRaw == null ? null : Math.max(0, parseInt(cotizedDaysRaw, 10) || 0);
                 entry.salary = parseFloat(document.getElementById('modal-salary')?.value) || null;
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 entry.status = entry.endDate ? 'Completado' : 'Trabajo actual';
@@ -6187,7 +6279,7 @@ function v22RefreshSummaryIfPresent() {
                 const cat = categories.find(c => c.id === t.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
                 html += `
-                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${t.id}\')">
+                    <div class="card bone-surface travel-bone" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${t.id}\')">
                         <div style="display:flex;justify-content:space-between;align-items:center">
                             <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${t.title}</span>
                             <span style="font-size:13px;color:var(--text-secondary)">${t.destination || ''}</span>
@@ -6217,6 +6309,29 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         //  RENDER: WORK
         // ============================================================
+        // Días naturales inclusivos: se utiliza como estimación de cotización
+        // cuando todavía no existe una cifra corregida desde la Vida Laboral.
+        // Incluye siempre el día de inicio y el de fin, incluidos sábados y domingos.
+        function countCotizationDays(startDate, endDate) {
+            if (!startDate || !endDate) return 0;
+            const start = new Date(startDate + 'T12:00:00');
+            const end = new Date(endDate + 'T12:00:00');
+            if (end < start) return 0;
+            return Math.floor((end - start) / 86400000) + 1;
+        }
+
+        function getCotizationDays(entry, todayStr) {
+            const effectiveEnd = (!entry.endDate || entry.endDate >= todayStr) ? todayStr : entry.endDate;
+            const calculated = countCotizationDays(entry.startDate, effectiveEnd);
+            const manual = Number(entry.cotizedDays);
+            return Number.isFinite(manual) && manual >= 0 ? manual : calculated;
+        }
+
+        function getCotizationSource(entry) {
+            const manual = Number(entry.cotizedDays);
+            return Number.isFinite(manual) && manual >= 0 ? 'Vida laboral' : 'Estimación';
+        }
+
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
@@ -6239,10 +6354,27 @@ function v22RefreshSummaryIfPresent() {
                 return sum + daysBetween(w.startDate, effectiveEnd);
             }, 0);
 
+            const cotizedStats = sorted.reduce((acc, w) => {
+                const cotizationDays = getCotizationDays(w, todayStr);
+                if (w.cotizationType === 'practicas') acc.practicas += cotizationDays;
+                else acc.general += cotizationDays;
+                return acc;
+            }, { practicas: 0, general: 0 });
+
+            const totalCotized = cotizedStats.practicas + cotizedStats.general;
+
             let html = `
-                <div class="card" style="margin-bottom:16px;max-width:700px">
-                    <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Total de días trabajados hasta hoy</div>
-                    <div style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px">${totalDays} días</div>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px;max-width:700px">
+                    <div class="card bone-surface work-total-bone" style="margin:0">
+                        <div class="label" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Total de días trabajados hasta hoy</div>
+                        <div class="value" style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px">${totalDays} días</div>
+                    </div>
+                    <div class="card bone-surface work-cotization-bone" style="margin:0">
+                        <div style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Días cotizados</div>
+                        <div class="cotization-main">${totalCotized} días</div>
+                        <div class="cotization-detail"><strong>${cotizedStats.practicas}</strong> de prácticas formativas · <strong>${cotizedStats.general}</strong> de régimen general</div>
+                        <div style="font-size:10px;color:var(--bone-muted);margin-top:6px;opacity:.82">Estimados automáticamente y corregibles desde «Editar → Vida laboral»</div>
+                    </div>
                 </div>
                 <div style="max-width:700px">`;
             sorted.forEach(w => {
@@ -6265,6 +6397,7 @@ function v22RefreshSummaryIfPresent() {
                             <span style="font-size:12px;color:var(--text-secondary)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
                             <span class="badge ${statusClass}">${statusLabel}</span>
                             <span style="font-size:12px;color:var(--text-secondary)">${daysHere} días</span>
+                            <span style="font-size:11px;color:var(--text-secondary)">${getCotizationDays(w, todayStr)} días cotizados · ${getCotizationSource(w)}</span>
                         </div>
                         ${scheduleText ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${scheduleText}</div>` : ''}
                         ${w.salary ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.salary}€/mes</div>` : ''}
@@ -6302,7 +6435,7 @@ function v22RefreshSummaryIfPresent() {
                 const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
                 html += `
-                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${p.id}\')">
+                    <div class="card ${p.status === 'Completado' ? 'bone-surface project-completed-bone' : ''}" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${p.id}\')">
                         <div style="display:flex;justify-content:space-between;align-items:center">
                             <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${p.title}</span>
                             <span class="badge ${statusClass}">${p.status}</span>
@@ -6406,7 +6539,7 @@ function v22RefreshSummaryIfPresent() {
                         const cat = categories.find(c => c.id === e.categoryId);
                         const color = cat?.color || 'var(--text-secondary)';
                         return `
-                        <div class="entry-item" onclick="openEntryDetail(\'${e.id}\')">
+                        <div class="entry-item ${e.status === 'Completado' ? 'bone-surface goal-completed-bone' : ''}" onclick="openEntryDetail(\'${e.id}\')">
                             <div class="entry-color-dot" style="background:${color}"></div>
                             <div class="entry-info">
                                 <div class="entry-title">${TYPE_ICONS[e.type]||'◈'} ${escapeHtml(e.title)}</div>
