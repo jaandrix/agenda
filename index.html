@@ -1849,6 +1849,22 @@
             color:var(--bone-text);
             font-weight:700;
         }
+        .book-completed-bone {
+            background:var(--bone-surface) !important;
+            border-color:var(--bone-border) !important;
+            color:var(--bone-text) !important;
+        }
+        .book-completed-bone .entry-title,
+        .book-completed-bone .entry-meta {
+            color:var(--bone-text) !important;
+        }
+        .weekly-task-done-bone {
+            background:var(--bone-surface) !important;
+            border-color:var(--bone-border) !important;
+        }
+        .weekly-task-done-bone * {
+            color:var(--bone-text) !important;
+        }
         @media (max-width:620px) {
             #content .work-total-bone,
             #content .work-cotization-bone { min-width:0; }
@@ -2342,7 +2358,7 @@ body.beige {
 }
 .wishlist-item {
     display:grid;
-    grid-template-columns:76px minmax(0,1fr) auto;
+    grid-template-columns:minmax(190px,auto) minmax(0,1fr) auto;
     gap:14px;
     align-items:center;
     background:var(--bg-card);
@@ -2358,11 +2374,14 @@ body.beige {
     border-color:var(--border-strong);
 }
 .wishlist-timer {
-    min-height:48px;
-    display:flex;
+    min-height:0;
+    display:inline-flex;
     align-items:center;
     justify-content:center;
-    padding:7px 6px;
+    width:max-content;
+    min-width:190px;
+    box-sizing:border-box;
+    padding:8px 12px;
     border-radius:10px;
     background:var(--bg-input);
     border:1px solid var(--border);
@@ -2370,7 +2389,9 @@ body.beige {
     font-size:11px;
     font-weight:750;
     text-align:center;
-    line-height:1.25;
+    line-height:1;
+    white-space:nowrap;
+    letter-spacing:.15px;
 }
 .wishlist-item-title {
     font-size:14px;
@@ -2655,7 +2676,7 @@ body.beige {
 @media (max-width:700px) {
     .wishlist-summary { grid-template-columns:1fr 1fr; }
     .wishlist-item { grid-template-columns:1fr; }
-    .wishlist-timer { justify-content:flex-start; min-height:0; width:max-content; }
+    .wishlist-timer { justify-content:flex-start; min-height:0; width:max-content; min-width:190px; }
     .wishlist-actions { justify-content:flex-start; }
     .investment-heading { font-size:21px; }
     .investment-canvas-wrap { height:240px; }
@@ -6140,7 +6161,7 @@ function v22RefreshSummaryIfPresent() {
                     const color = cat?.color || 'var(--text-secondary)';
                     const stars = b.rating ? '⭐'.repeat(b.rating) : '';
                     html += `
-                        <div class="entry-item" onclick="openEntryDetail(\'${b.id}\')">
+                        <div class="entry-item book-completed-bone" onclick="openEntryDetail(\'${b.id}\')">
                             <div class="entry-color-dot" style="background:${color}"></div>
                             <div class="entry-info">
                                 <div class="entry-title">${b.title}</div>
@@ -6348,10 +6369,18 @@ function v22RefreshSummaryIfPresent() {
                 return (b.startDate || '').localeCompare(a.startDate || '');
             });
 
+            // Los días trabajados parten del cálculo automático de días naturales.
+            // Si el usuario ha introducido una cifra oficial de Vida Laboral,
+            // esa cifra sustituye también la duración mostrada para ese registro,
+            // de modo que ambas estadísticas queden alineadas con la realidad
+            // verificada por el usuario.
             const totalDays = sorted.reduce((sum, w) => {
                 const isActive = !w.endDate || w.endDate >= todayStr;
                 const effectiveEnd = isActive ? todayStr : w.endDate;
-                return sum + daysBetween(w.startDate, effectiveEnd);
+                const calculatedDays = daysBetween(w.startDate, effectiveEnd);
+                const manual = Number(w.cotizedDays);
+                const displayDays = Number.isFinite(manual) && manual >= 0 ? manual : calculatedDays;
+                return sum + displayDays;
             }, 0);
 
             const cotizedStats = sorted.reduce((acc, w) => {
@@ -6382,7 +6411,11 @@ function v22RefreshSummaryIfPresent() {
                 const color = cat?.color || 'var(--text-secondary)';
                 const isActive = !w.endDate || w.endDate >= todayStr;
                 const effectiveEnd = isActive ? todayStr : w.endDate;
-                const daysHere = daysBetween(w.startDate, effectiveEnd);
+                const calculatedDaysHere = daysBetween(w.startDate, effectiveEnd);
+                const manualDaysHere = Number(w.cotizedDays);
+                const daysHere = Number.isFinite(manualDaysHere) && manualDaysHere >= 0
+                    ? manualDaysHere
+                    : calculatedDaysHere;
                 const statusClass = isActive ? 'badge-progress' : 'badge-done';
                 const statusLabel = isActive ? `Trabajando en ${w.title}` : (w.status || 'Finalizado');
                 const scheduleText = (w.startTime || w.endTime) ? `${w.startTime || '--'} - ${w.endTime || '--'}` : (w
@@ -6472,7 +6505,7 @@ function v22RefreshSummaryIfPresent() {
                 const color = cat?.color || 'var(--text-secondary)';
                 const icon = eventIcons[e.eventType] || '◈';
                 html += `
-                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${e.id}\')">
+                    <div class="card ${String(e.title || '').startsWith('Tarea hecha:') ? 'weekly-task-done-bone' : ''}" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${e.id}\')">
                         <div style="display:flex;justify-content:space-between;align-items:center">
                             <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${icon} ${e.title}</span>
                             <span style="font-size:13px;color:var(--text-secondary)">${e.date || ''}${e.time ? ' · ' + e.time : ''}</span>
