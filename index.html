@@ -178,6 +178,41 @@
             color: var(--text-primary);
         }
 
+        #sidebar-progress-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0 4px 14px 4px;
+            opacity: 0.55;
+            transition: opacity 0.2s ease;
+        }
+        #sidebar-progress-row:hover {
+            opacity: 1;
+        }
+        #sidebar-progress-track {
+            flex: 1;
+            height: 2px;
+            border-radius: 2px;
+            background: var(--border);
+            overflow: hidden;
+        }
+        #sidebar-progress-fill {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+        #sidebar-progress-pct {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 30px;
+            text-align: right;
+        }
+
         .sidebar-nav {
             flex: 1;
             display: flex;
@@ -3105,6 +3140,11 @@ body.beige {
                 <span class="brand-name">Bitácora v0.25</span>
             </div>
 
+            <div id="sidebar-progress-row" title="Progreso del día">
+                <div id="sidebar-progress-track"><span id="sidebar-progress-fill"></span></div>
+                <span id="sidebar-progress-pct"></span>
+            </div>
+
             <div class="sidebar-nav">
                 <!-- General -->
                 <span class="nav-label">General</span>
@@ -3120,13 +3160,17 @@ body.beige {
                     <span class="nav-icon">▦</span>
                     <span class="nav-text">Estadísticas</span>
                 </button>
-                <button onclick="openApuntes()" data-view="apuntes">
+                <button onclick="switchView('planner')" data-view="planner">
                     <span class="nav-icon">▤</span>
-                    <span class="nav-text">Apuntes</span>
+                    <span class="nav-text">Planificador</span>
                 </button>
                 <button onclick="switchView('notes')" data-view="notes">
                     <span class="nav-icon">✎</span>
                     <span class="nav-text">Notas</span>
+                </button>
+                <button onclick="switchView('collectibles')" data-view="collectibles">
+                    <span class="nav-icon">◆</span>
+                    <span class="nav-text">Coleccionables</span>
                 </button>
 
                 <!-- Desarrollo -->
@@ -3295,11 +3339,14 @@ body.beige {
             <button onclick="switchView('stats');toggleMobileMenu()" data-view="stats">
                 <span class="nav-icon">▦</span> Estadísticas
             </button>
-            <button onclick="openApuntes();toggleMobileMenu()" data-view="apuntes">
-                <span class="nav-icon">▤</span> Apuntes
+            <button onclick="switchView('planner');toggleMobileMenu()" data-view="planner">
+                <span class="nav-icon">▤</span> Planificador
             </button>
             <button onclick="switchView('notes');toggleMobileMenu()" data-view="notes">
                 <span class="nav-icon">✎</span> Notas
+            </button>
+            <button onclick="switchView('collectibles');toggleMobileMenu()" data-view="collectibles">
+                <span class="nav-icon">◆</span> Coleccionables
             </button>
 
             <span class="nav-label">Desarrollo</span>
@@ -3972,6 +4019,14 @@ function v22RefreshSummaryIfPresent() {
         // Tareas semanales: recordatorios activos de la semana actual.
         // Al completarse se convierten en una entrada real del calendario.
         let weeklyTasks = [];
+        // Coleccionables: catálogo de objetos por categoría con valor de mercado.
+        let collectibleCategories = [
+            { id: 'cat_cartas', name: 'Cartas' },
+            { id: 'cat_videojuegos', name: 'Videojuegos' }
+        ];
+        let collectibles = [];
+        // Planificador del día: sustituye a Apuntes. Se reinicia cada día a las 4:00 am.
+        let dayPlanner = { dayKey: '', items: [] };
         let financeIncome = { current: 0, next: 0 };
         // Perfil económico: cifras reales que el usuario actualiza periódicamente.
         // history conserva una fotografía mensual para poder comparar evolución.
@@ -3986,7 +4041,10 @@ function v22RefreshSummaryIfPresent() {
             vacationTarget: 0,
             salaryForecast: {},
             history: [],
-            oneOffIncome: []
+            oneOffIncome: [],
+            // chartHistory: fotografías mensuales específicas para la gráfica de evolución
+            // (efectivo, ingresado, emergencia). Se alimenta con el botón "Actualizar gráfica".
+            chartHistory: []
         };
         let financeSubView = 'menu';
         let devModeActive = false;
@@ -4068,6 +4126,8 @@ function v22RefreshSummaryIfPresent() {
             notes: 'Notas',
             'travel-organizer': 'Organizador de Viajes',
             goals: 'Objetivos',
+            planner: 'Planificador del día',
+            collectibles: 'Coleccionables',
             settings: 'Ajustes'
         };
 
@@ -4333,6 +4393,14 @@ function v22RefreshSummaryIfPresent() {
                 plannedTrips = saved.plannedTrips || [];
                 apuntes = saved.apuntes || [];
                 weeklyTasks = Array.isArray(saved.weeklyTasks) ? saved.weeklyTasks : [];
+                collectibleCategories = Array.isArray(saved.collectibleCategories) && saved.collectibleCategories.length
+                    ? saved.collectibleCategories
+                    : [{ id: 'cat_cartas', name: 'Cartas' }, { id: 'cat_videojuegos', name: 'Videojuegos' }];
+                collectibles = Array.isArray(saved.collectibles) ? saved.collectibles : [];
+                dayPlanner = (saved.dayPlanner && typeof saved.dayPlanner === 'object') ? saved.dayPlanner : { dayKey: '', items: [] };
+                dayPlanner.items = Array.isArray(dayPlanner.items) ? dayPlanner.items : [];
+                financeProfile.chartHistory = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
+                resetDayPlannerIfNeeded();
             } catch (e) {
                 console.error('Error cargando datos de Supabase:', e);
                 return false;
@@ -4391,6 +4459,9 @@ function v22RefreshSummaryIfPresent() {
                 financeProfile,
                 plannedTrips,
                 weeklyTasks,
+                collectibleCategories,
+                collectibles,
+                dayPlanner,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
                 apuntes: apuntesDirty ? apuntes : latestApuntes
@@ -4630,6 +4701,28 @@ function v22RefreshSummaryIfPresent() {
             if(el) el.textContent=new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
         }
 
+        // Barra casi imperceptible en la sidebar: progreso del día transcurrido (0:00-23:59).
+        function updateSidebarProgress() {
+            const fill = document.getElementById('sidebar-progress-fill');
+            const pctEl = document.getElementById('sidebar-progress-pct');
+            if (fill && pctEl) {
+                const now = new Date();
+                const secondsElapsed = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+                const pct = Math.min(100, Math.max(0, (secondsElapsed / 86400) * 100));
+                fill.style.width = pct.toFixed(1) + '%';
+                pctEl.textContent = Math.round(pct) + '%';
+            }
+
+            // Comprueba si el planificador debe reiniciarse (cruce de las 4:00 am).
+            if (typeof dayPlanner !== 'undefined' && dayPlanner) {
+                const key = currentPlannerDayKey();
+                if (dayPlanner.dayKey !== key) {
+                    resetDayPlannerIfNeeded();
+                    if (currentView === 'planner') render();
+                }
+            }
+        }
+
         function switchView(view) {
             try {
                 if (view !== 'finances') stopWishlistTimer();
@@ -4821,6 +4914,107 @@ function v22RefreshSummaryIfPresent() {
                 console.error('Error guardando tarea completada:', e);
                 showToast('Se marcó como hecha, pero no se pudo guardar en la nube.', true);
             }
+        }
+
+        // ============================================================
+        //  PLANIFICADOR DEL DÍA (sustituye a Apuntes)
+        //  La tabla se reinicia vacía cada día a las 4:00 am.
+        // ============================================================
+
+        // Clave del "día lógico" actual: antes de las 4:00 am se sigue
+        // considerando parte del día anterior.
+        function currentPlannerDayKey(date = new Date()) {
+            const d = new Date(date);
+            if (d.getHours() < 4) d.setDate(d.getDate() - 1);
+            return d.toISOString().slice(0, 10);
+        }
+
+        function resetDayPlannerIfNeeded() {
+            const key = currentPlannerDayKey();
+            if (!dayPlanner || dayPlanner.dayKey !== key) {
+                dayPlanner = { dayKey: key, items: [] };
+            }
+            dayPlanner.items = Array.isArray(dayPlanner.items) ? dayPlanner.items : [];
+        }
+
+        function renderPlanner() {
+            resetDayPlannerIfNeeded();
+            const items = [...dayPlanner.items].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+            const now = new Date();
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+            return `
+            <div class="planner-view">
+                <div class="planner-head">
+                    <div>
+                        <div class="finance-kicker">Hoy</div>
+                        <h3 style="margin:2px 0 0 0">Planificador del día</h3>
+                        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">
+                            Esta tabla se reinicia vacía automáticamente cada día a las 4:00 am.
+                        </p>
+                    </div>
+                    <button class="btn-modal-primary" onclick="openAddPlannerItem()">+ Evento</button>
+                </div>
+
+                <div class="planner-timeline">
+                    ${items.length ? items.map(it => {
+                        const [h, m] = String(it.time).split(':').map(Number);
+                        const itemMinutes = (h || 0) * 60 + (m || 0);
+                        const isPast = itemMinutes < nowMinutes;
+                        return `
+                        <div class="planner-item ${isPast ? 'planner-item-past' : ''}">
+                            <div class="planner-item-time">${escapeHtml(it.time)}</div>
+                            <div class="planner-item-dot"></div>
+                            <div class="planner-item-body">
+                                <div class="planner-item-title">${escapeHtml(it.title)}</div>
+                                ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
+                            </div>
+                            <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}')">×</button>
+                        </div>`;
+                    }).join('') : `
+                        <div class="finance-empty-state">Aún no has añadido eventos para hoy. Pulsa <strong>+ Evento</strong> para empezar tu planificación.</div>
+                    `}
+                </div>
+            </div>`;
+        }
+
+        function openAddPlannerItem() {
+            const now = new Date();
+            const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(Math.ceil(now.getMinutes() / 5) * 5 % 60).padStart(2, '0')}`;
+            showModal(`
+                <div class="modal-title">+ Evento del día</div>
+                <div class="modal-label">Hora</div>
+                <input id="planner-item-time" class="modal-input" type="time" value="${defaultTime}">
+                <div class="modal-label">Título</div>
+                <input id="planner-item-title" class="modal-input" type="text" placeholder="¿Qué vas a hacer?">
+                <div class="modal-label">Notas (opcional)</div>
+                <textarea id="planner-item-notes" class="modal-input" rows="2" placeholder="Detalles adicionales..."></textarea>
+                <button class="btn-modal-primary" onclick="savePlannerItem()">Añadir a la timeline</button>
+            `);
+            setTimeout(() => document.getElementById('planner-item-title')?.focus(), 50);
+        }
+
+        async function savePlannerItem() {
+            resetDayPlannerIfNeeded();
+            const time = document.getElementById('planner-item-time')?.value || '';
+            const title = document.getElementById('planner-item-title')?.value.trim() || '';
+            const notes = document.getElementById('planner-item-notes')?.value.trim() || '';
+            if (!time || !title) { showToast('Indica al menos hora y título', true); return; }
+
+            dayPlanner.items.push({
+                id: 'planner_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                time, title, notes
+            });
+            closeModal();
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deletePlannerItem(id) {
+            resetDayPlannerIfNeeded();
+            dayPlanner.items = dayPlanner.items.filter(it => it.id !== id);
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function closeWeeklyTasksOnOutsideClick(event) {
@@ -5462,7 +5656,7 @@ function v22RefreshSummaryIfPresent() {
         //  EXPORT / IMPORT
         // ============================================================
         function exportData() {
-            const data = { entries, categories, userName, investmentData, notes, prompts, wishlistItems, inbox, financeIncome, financeProfile, plannedTrips, weeklyTasks, apuntes };
+            const data = { entries, categories, userName, investmentData, notes, prompts, wishlistItems, inbox, financeIncome, financeProfile, plannedTrips, weeklyTasks, collectibleCategories, collectibles, dayPlanner, apuntes };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -5493,6 +5687,9 @@ function v22RefreshSummaryIfPresent() {
                     if (data.financeProfile) financeProfile = data.financeProfile;
                     if (data.plannedTrips) plannedTrips = data.plannedTrips;
                     if (data.weeklyTasks) weeklyTasks = Array.isArray(data.weeklyTasks) ? data.weeklyTasks : [];
+                    if (data.collectibleCategories) collectibleCategories = data.collectibleCategories;
+                    if (data.collectibles) collectibles = data.collectibles;
+                    if (data.dayPlanner) dayPlanner = data.dayPlanner;
                     if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
                     filteredEntries = [...entries];
                     render();
@@ -5633,6 +5830,8 @@ function v22RefreshSummaryIfPresent() {
                 renderEconomicEvolutionChart(); } else if (currentView === 'vault') content.innerHTML = renderVault();
             else if (currentView === 'notes') content.innerHTML = renderNotes();
             else if (currentView === 'goals') content.innerHTML = renderGoals();
+            else if (currentView === 'planner') content.innerHTML = renderPlanner();
+            else if (currentView === 'collectibles') content.innerHTML = renderCollectibles();
             else if (currentView === 'settings') content.innerHTML = renderSettings();
             updateAddButton();
             updateSidebarPrivacy();
@@ -9902,7 +10101,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             requestAnimationFrame(() => {
                 render();
                 updateHeaderClock();
-                if (!window._headerClockTimer) window._headerClockTimer = setInterval(updateHeaderClock, 1000);
+                updateSidebarProgress();
+                if (!window._headerClockTimer) window._headerClockTimer = setInterval(() => { updateHeaderClock(); updateSidebarProgress(); }, 1000);
                 updatePageTitle();
                 updateAddButton();
                 updateSidebarPrivacy();
