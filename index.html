@@ -2804,6 +2804,59 @@ body.beige {
 @media(max-width:850px){ .finance-metrics-grid{grid-template-columns:repeat(2,1fr)} .finance-networth-card{grid-template-columns:1fr}.finance-networth-side{border-left:0;border-top:1px solid var(--border);padding:14px 0 0}.finance-forecast-grid{grid-template-columns:repeat(2,1fr)} }
 @media(max-width:600px){ .finance-dashboard-head,.finance-grid-2{display:block}.finance-head-actions{justify-content:flex-start;margin-top:12px}.finance-update-btn{margin-top:0}.finance-metrics-grid{grid-template-columns:1fr 1fr}.finance-metric-meta{display:block}.finance-metric-meta span{display:block;margin-bottom:2px}.finance-networth-value{font-size:29px} }
 
+/* ============================================================
+   PLANIFICADOR DEL DÍA
+   ============================================================ */
+.planner-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.planner-timeline { display:flex; flex-direction:column; }
+.planner-item { display:grid; grid-template-columns:52px 14px 1fr 28px; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); position:relative; }
+.planner-item:last-child { border-bottom:none; }
+.planner-item-time { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text-primary); padding-top:2px; }
+.planner-item-dot { width:9px; height:9px; border-radius:50%; background:var(--accent); margin:5px auto 0; position:relative; }
+.planner-item-dot::after { content:''; position:absolute; top:12px; left:50%; transform:translateX(-50%); width:1px; height:34px; background:var(--border-strong); }
+.planner-item:last-child .planner-item-dot::after { display:none; }
+.planner-item-title { font-size:13px; font-weight:600; color:var(--text-primary); }
+.planner-item-notes { font-size:11px; color:var(--text-secondary); margin-top:3px; line-height:1.4; }
+.planner-item-past { opacity:0.45; }
+.planner-item-delete { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:15px; padding:0; }
+.planner-item-delete:hover { color:var(--text-primary); }
+
+/* ============================================================
+   COLECCIONABLES
+   ============================================================ */
+.collectibles-dashboard { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; margin-bottom:24px; }
+.collectibles-total-card { border-color:var(--border-strong); background:var(--bg-card-hover); }
+.collectibles-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+.collectibles-head-actions { display:flex; gap:8px; }
+.collectibles-table-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; }
+.collectibles-table { width:100%; border-collapse:collapse; font-size:13px; }
+.collectibles-table th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); font-weight:700; padding:12px 16px; border-bottom:1px solid var(--border-strong); white-space:nowrap; }
+.collectibles-table td { padding:11px 16px; border-bottom:1px solid var(--border); color:var(--text-primary); white-space:nowrap; }
+.collectibles-table tr:last-child td { border-bottom:none; }
+.collectibles-cat-badge { background:var(--badge-default-bg); color:var(--badge-default-text); font-size:10px; font-weight:700; padding:3px 9px; border-radius:20px; }
+.collectibles-row-actions { text-align:right; }
+.collectibles-row-actions button { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:13px; padding:2px 6px; }
+.collectibles-row-actions button:hover { color:var(--text-primary); }
+@media(max-width:600px){ .collectibles-dashboard{grid-template-columns:repeat(2,1fr)} }
+
+/* ============================================================
+   GRÁFICA DE FINANZAS (Efectivo / Ingresado / Emergencia)
+   ============================================================ */
+.finance-chart-panel .finance-panel-head { margin-bottom:6px; }
+.finance-chart-legend { display:flex; gap:16px; flex-wrap:wrap; margin:6px 0 14px; font-size:11px; color:var(--text-secondary); }
+.finance-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
+.finance-chart-legend i { width:9px; height:9px; border-radius:50%; display:inline-block; }
+.finance-chart-svg-wrap { position:relative; width:100%; overflow-x:auto; }
+.finance-chart-point { cursor:pointer; transition:r .12s ease; }
+.finance-chart-point:hover { r:5.5; }
+#finance-chart-tooltip {
+    position:fixed; z-index:1000; pointer-events:none;
+    background:var(--bg-modal, #12121f); border:1px solid var(--border-strong);
+    border-radius:8px; padding:8px 11px; font-size:11px; color:var(--text-primary);
+    box-shadow:var(--shadow); display:none; line-height:1.5; white-space:nowrap;
+}
+#finance-chart-tooltip strong { font-family:'JetBrains Mono',monospace; }
+
 .tags-view-chip { display:inline-flex; align-items:center; gap:4px; border:1px solid #d9d0c0; background:#f3eee3; color:#292722; border-radius:9px; font-size:12px; font-weight:750; padding:7px 13px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.08); transition:transform .15s ease, background .15s ease, border-color .15s ease; }
 .tags-view-chip:hover { background:#eee7da; border-color:#c9bda9; transform:translateY(-1px); }
 
@@ -5017,6 +5070,184 @@ function v22RefreshSummaryIfPresent() {
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+        // ============================================================
+        //  COLECCIONABLES
+        // ============================================================
+
+        function collectibleCategoryName(catId) {
+            const cat = collectibleCategories.find(c => c.id === catId);
+            return cat ? cat.name : 'Sin categoría';
+        }
+
+        function renderCollectibles() {
+            if (!Array.isArray(collectibleCategories) || !collectibleCategories.length) {
+                collectibleCategories = [{ id: 'cat_cartas', name: 'Cartas' }, { id: 'cat_videojuegos', name: 'Videojuegos' }];
+            }
+            if (!Array.isArray(collectibles)) collectibles = [];
+
+            const totalsByCategory = collectibleCategories.map(cat => {
+                const items = collectibles.filter(c => c.category === cat.id);
+                const total = items.reduce((s, c) => s + (Number(c.value) || 0), 0);
+                return { cat, count: items.length, total };
+            });
+            const grandTotal = totalsByCategory.reduce((s, t) => s + t.total, 0);
+
+            const sorted = [...collectibles].sort((a, b) =>
+                collectibleCategoryName(a.category).localeCompare(collectibleCategoryName(b.category)) ||
+                String(a.name).localeCompare(String(b.name))
+            );
+
+            return `
+            <div class="collectibles-view">
+                <div class="collectibles-dashboard">
+                    ${totalsByCategory.map(t => `
+                        <div class="finance-metric-card">
+                            <div class="finance-metric-top">
+                                <div class="finance-metric-label"><span>◆</span>${escapeHtml(t.cat.name)}</div>
+                            </div>
+                            <div class="finance-metric-value">${financeMoney(t.total)}</div>
+                            <div class="finance-metric-note">${t.count} objeto${t.count === 1 ? '' : 's'}</div>
+                        </div>
+                    `).join('')}
+                    <div class="finance-metric-card collectibles-total-card">
+                        <div class="finance-metric-top">
+                            <div class="finance-metric-label"><span>Σ</span>Valor total</div>
+                        </div>
+                        <div class="finance-metric-value">${financeMoney(grandTotal)}</div>
+                        <div class="finance-metric-note">${collectibles.length} objetos en total</div>
+                    </div>
+                </div>
+
+                <div class="collectibles-head">
+                    <h3 style="margin:0">Catálogo</h3>
+                    <div class="collectibles-head-actions">
+                        <button class="finance-oneoff-btn" onclick="openAddCollectibleCategory()">+ Categoría</button>
+                        <button class="btn-modal-primary" onclick="openAddCollectible()">+ Coleccionable</button>
+                    </div>
+                </div>
+
+                <div class="collectibles-table-wrap">
+                    ${sorted.length ? `
+                    <table class="collectibles-table">
+                        <thead>
+                            <tr><th>Nombre</th><th>Categoría</th><th>Valor de mercado</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            ${sorted.map(c => `
+                                <tr>
+                                    <td>${escapeHtml(c.name)}</td>
+                                    <td><span class="collectibles-cat-badge">${escapeHtml(collectibleCategoryName(c.category))}</span></td>
+                                    <td>${financeMoney(c.value)}</td>
+                                    <td class="collectibles-row-actions">
+                                        <button title="Editar" onclick="openEditCollectible('${c.id}')">✎</button>
+                                        <button title="Eliminar" onclick="deleteCollectible('${c.id}')">×</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>` : `
+                        <div class="finance-empty-state">Aún no has añadido coleccionables. Pulsa <strong>+ Coleccionable</strong> para empezar tu catálogo.</div>
+                    `}
+                </div>
+            </div>`;
+        }
+
+        function collectibleCategoryOptions(selectedId) {
+            return collectibleCategories.map(c =>
+                `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+            ).join('');
+        }
+
+        function openAddCollectible() {
+            showModal(`
+                <div class="modal-title">+ Coleccionable</div>
+                <div class="modal-label">Nombre</div>
+                <input id="collectible-name" class="modal-input" type="text" placeholder="Ej: Carta Charizard 1ª edición">
+                <div class="modal-label">Categoría</div>
+                <select id="collectible-category" class="modal-input">${collectibleCategoryOptions()}</select>
+                <div class="modal-label">Valor de mercado (€)</div>
+                <input id="collectible-value" class="modal-input" type="number" min="0" step="0.01" value="0">
+                <button class="btn-modal-primary" onclick="saveNewCollectible()">Añadir</button>
+            `);
+            setTimeout(() => document.getElementById('collectible-name')?.focus(), 50);
+        }
+
+        async function saveNewCollectible() {
+            const name = document.getElementById('collectible-name')?.value.trim() || '';
+            const category = document.getElementById('collectible-category')?.value || '';
+            const value = Math.max(0, Number(document.getElementById('collectible-value')?.value) || 0);
+            if (!name || !category) { showToast('Indica al menos nombre y categoría', true); return; }
+
+            collectibles.push({
+                id: 'coll_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                name, category, value, createdAt: new Date().toISOString()
+            });
+            closeModal();
+            if (currentView === 'collectibles') render();
+            try { await saveData(); showToast('Coleccionable añadido'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openEditCollectible(id) {
+            const item = collectibles.find(c => c.id === id);
+            if (!item) return;
+            showModal(`
+                <div class="modal-title">Editar coleccionable</div>
+                <div class="modal-label">Nombre</div>
+                <input id="collectible-name" class="modal-input" type="text" value="${escapeHtml(item.name)}">
+                <div class="modal-label">Categoría</div>
+                <select id="collectible-category" class="modal-input">${collectibleCategoryOptions(item.category)}</select>
+                <div class="modal-label">Valor de mercado (€)</div>
+                <input id="collectible-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(item.value) || 0}">
+                <button class="btn-modal-primary" onclick="saveEditCollectible('${id}')">Guardar cambios</button>
+            `);
+        }
+
+        async function saveEditCollectible(id) {
+            const item = collectibles.find(c => c.id === id);
+            if (!item) return;
+            const name = document.getElementById('collectible-name')?.value.trim() || '';
+            const category = document.getElementById('collectible-category')?.value || '';
+            const value = Math.max(0, Number(document.getElementById('collectible-value')?.value) || 0);
+            if (!name || !category) { showToast('Indica al menos nombre y categoría', true); return; }
+
+            item.name = name; item.category = category; item.value = value;
+            closeModal();
+            if (currentView === 'collectibles') render();
+            try { await saveData(); showToast('Coleccionable actualizado'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteCollectible(id) {
+            if (!confirm('¿Eliminar este coleccionable?')) return;
+            collectibles = collectibles.filter(c => c.id !== id);
+            if (currentView === 'collectibles') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openAddCollectibleCategory() {
+            showModal(`
+                <div class="modal-title">+ Categoría de coleccionables</div>
+                <div class="modal-label">Nombre de la categoría</div>
+                <input id="collectible-category-name" class="modal-input" type="text" placeholder="Ej: Figuras, Vinilos, Cómics...">
+                <button class="btn-modal-primary" onclick="saveNewCollectibleCategory()">Añadir categoría</button>
+            `);
+            setTimeout(() => document.getElementById('collectible-category-name')?.focus(), 50);
+        }
+
+        async function saveNewCollectibleCategory() {
+            const name = document.getElementById('collectible-category-name')?.value.trim() || '';
+            if (!name) { showToast('Indica un nombre para la categoría', true); return; }
+            if (collectibleCategories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                showToast('Ya existe una categoría con ese nombre', true); return;
+            }
+            collectibleCategories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name });
+            closeModal();
+            if (currentView === 'collectibles') render();
+            try { await saveData(); showToast('Categoría añadida'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
         function closeWeeklyTasksOnOutsideClick(event) {
             const panel = document.getElementById('weekly-tasks-panel');
             const button = document.getElementById('weekly-tasks-btn');
@@ -7128,6 +7359,97 @@ function v22RefreshSummaryIfPresent() {
             catch (e) { console.error(e); showToast('No se pudieron guardar las finanzas', true); }
         }
 
+        // ============================================================
+        //  GRÁFICA DE EVOLUCIÓN: Efectivo / Ingresado / Emergencia
+        //  Toma las cifras actuales del Dashboard cuando se pulsa
+        //  "Actualizar gráfica" y guarda una fotografía del mes.
+        // ============================================================
+        async function updateFinanceChart() {
+            const month = financeMonthKey();
+            const snap = {
+                month,
+                cash: Number(financeProfile.cash || 0),
+                invested: Number(financeProfile.invested || 0),
+                emergency: Number(financeProfile.emergency || 0)
+            };
+            const existing = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
+            financeProfile.chartHistory = [...existing.filter(h => h.month !== month), snap]
+                .sort((a, b) => String(a.month).localeCompare(String(b.month)))
+                .slice(-24);
+            try { await saveData(); showToast('Gráfica actualizada'); render(); }
+            catch (e) { console.error(e); showToast('No se pudo guardar la gráfica', true); }
+        }
+
+        function renderFinanceEvolutionChart() {
+            const data = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
+            if (data.length < 2) {
+                return `<div class="finance-empty-state">Necesitas al menos dos actualizaciones mensuales para dibujar la evolución. Pulsa <strong>Actualizar gráfica</strong> cada mes para ir construyéndola.</div>`;
+            }
+
+            const W = 720, H = 260, padL = 44, padR = 16, padT = 16, padB = 30;
+            const innerW = W - padL - padR, innerH = H - padT - padB;
+
+            const series = [
+                { key: 'cash', color: '#e2e8f0', label: 'Efectivo' },
+                { key: 'invested', color: '#93c5fd', label: 'Ingresado' },
+                { key: 'emergency', color: '#fcd34d', label: 'Emergencia' }
+            ];
+
+            const allValues = data.flatMap(d => series.map(s => Number(d[s.key]) || 0));
+            const maxVal = Math.max(1, ...allValues);
+            const minVal = 0;
+
+            const x = i => padL + (data.length === 1 ? innerW / 2 : (innerW * i) / (data.length - 1));
+            const y = v => padT + innerH - ((v - minVal) / (maxVal - minVal || 1)) * innerH;
+
+            const gridLines = [0, 0.25, 0.5, 0.75, 1].map(f => {
+                const val = minVal + (maxVal - minVal) * f;
+                const yy = y(val);
+                return `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="var(--border)" stroke-width="1"/>
+                        <text x="${padL - 8}" y="${yy + 3}" text-anchor="end" font-size="9" fill="var(--text-secondary)" font-family="JetBrains Mono, monospace">${Math.round(val).toLocaleString('es-ES')}</text>`;
+            }).join('');
+
+            const xLabels = data.map((d, i) => `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="9" fill="var(--text-secondary)">${escapeHtml(financeMonthLabel(d.month).split(' de ')[0])}</text>`).join('');
+
+            const seriesSvg = series.map(s => {
+                const points = data.map((d, i) => `${x(i)},${y(Number(d[s.key]) || 0)}`).join(' ');
+                const circles = data.map((d, i) => {
+                    const val = Number(d[s.key]) || 0;
+                    return `<circle class="finance-chart-point" cx="${x(i)}" cy="${y(val)}" r="4" fill="${s.color}" stroke="var(--bg-card)" stroke-width="1.5"
+                        onmousemove="showFinanceChartTooltip(event,'${escapeHtml(s.label)}','${escapeHtml(financeMonthLabel(d.month))}',${val})"
+                        onmouseleave="hideFinanceChartTooltip()"></circle>`;
+                }).join('');
+                return `<polyline points="${points}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${circles}`;
+            }).join('');
+
+            return `
+                <div class="finance-chart-svg-wrap">
+                    <svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:480px">
+                        ${gridLines}
+                        ${seriesSvg}
+                        ${xLabels}
+                    </svg>
+                </div>`;
+        }
+
+        function showFinanceChartTooltip(evt, seriesLabel, monthLabel, value) {
+            let tip = document.getElementById('finance-chart-tooltip');
+            if (!tip) {
+                tip = document.createElement('div');
+                tip.id = 'finance-chart-tooltip';
+                document.body.appendChild(tip);
+            }
+            tip.innerHTML = `<strong>${financeMoney(value)}</strong><br>${escapeHtml(seriesLabel)} · ${escapeHtml(monthLabel)}`;
+            tip.style.display = 'block';
+            tip.style.left = (evt.clientX + 14) + 'px';
+            tip.style.top = (evt.clientY + 14) + 'px';
+        }
+
+        function hideFinanceChartTooltip() {
+            const tip = document.getElementById('finance-chart-tooltip');
+            if (tip) tip.style.display = 'none';
+        }
+
         function openFinanceMetricEditor(key, label, targetKey) {
             showModal(`
                 <div class="modal-title">Editar ${escapeHtml(label)}</div>
@@ -7367,6 +7689,19 @@ function v22RefreshSummaryIfPresent() {
                                 return `<div class="finance-history-row"><span>${escapeHtml(financeMonthLabel(h.month))}</span><strong>${financeMoney(h.total)}</strong><em class="${diff===null?'':diff>=0?'finance-positive':'finance-negative'}">${diff===null?'—':`${diff>=0?'+':''}${financeMoney(diff)}`}</em></div>`;
                             }).join('')}
                         </div>` : '<div class="finance-empty-state">Aún no hay histórico. Guarda tu primera actualización mensual y Bitácora empezará a construirlo.</div>'}
+                </section>
+
+                <section class="finance-panel finance-chart-panel">
+                    <div class="finance-panel-head">
+                        <div><div class="finance-kicker">Evolución mensual</div><h3>Efectivo · Ingresado · Emergencia</h3></div>
+                        <button class="finance-oneoff-btn" onclick="updateFinanceChart()">Actualizar gráfica</button>
+                    </div>
+                    <div class="finance-chart-legend">
+                        <span><i style="background:#e2e8f0"></i>Efectivo</span>
+                        <span><i style="background:#93c5fd"></i>Ingresado</span>
+                        <span><i style="background:#fcd34d"></i>Emergencia</span>
+                    </div>
+                    ${renderFinanceEvolutionChart()}
                 </section>
 
                 <div class="finance-dashboard-foot">${monthsLeft > 0 ? `Quedan ${monthsLeft} meses del año. ` : ''}La reserva de vacaciones (${financeMoney(financeProfile.vacation || 0)}) queda fuera del patrimonio operativo para evitar contar dos veces el dinero disponible.</div>
