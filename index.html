@@ -2773,6 +2773,10 @@ body.beige {
 .finance-negative { color:var(--invest-loss,#ef4444)!important; font-style:normal; }
 .finance-goal-complete { border-color:var(--accent); }
 .finance-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.finance-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+.finance-mov-income { color:#4ade80; }
+.finance-mov-expense { color:#f87171; }
+.finance-salary-btn { border-color:var(--accent); }
 .finance-panel,.finance-forecast-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:17px; }
 .finance-panel h3,.finance-forecast-panel h3 { margin:3px 0 4px; font-size:15px; }
 .finance-panel-head p { margin:0; color:var(--text-secondary); font-size:10px; line-height:1.5; }
@@ -2801,8 +2805,8 @@ body.beige {
 .finance-history-row em { font-style:normal; min-width:70px; text-align:right; }
 .finance-dashboard-foot { margin-top:10px; }
 .finance-salary-row { display:grid; grid-template-columns:1fr 130px; gap:10px; align-items:center; margin-bottom:8px; font-size:11px; }
-@media(max-width:850px){ .finance-metrics-grid{grid-template-columns:repeat(2,1fr)} .finance-networth-card{grid-template-columns:1fr}.finance-networth-side{border-left:0;border-top:1px solid var(--border);padding:14px 0 0}.finance-forecast-grid{grid-template-columns:repeat(2,1fr)} }
-@media(max-width:600px){ .finance-dashboard-head,.finance-grid-2{display:block}.finance-head-actions{justify-content:flex-start;margin-top:12px}.finance-update-btn{margin-top:0}.finance-metrics-grid{grid-template-columns:1fr 1fr}.finance-metric-meta{display:block}.finance-metric-meta span{display:block;margin-bottom:2px}.finance-networth-value{font-size:29px} }
+@media(max-width:850px){ .finance-metrics-grid{grid-template-columns:repeat(2,1fr)} .finance-networth-card{grid-template-columns:1fr}.finance-networth-side{border-left:0;border-top:1px solid var(--border);padding:14px 0 0}.finance-forecast-grid{grid-template-columns:repeat(2,1fr)} .finance-grid-3{grid-template-columns:1fr} }
+@media(max-width:600px){ .finance-dashboard-head,.finance-grid-2,.finance-grid-3{display:block}.finance-head-actions{justify-content:flex-start;margin-top:12px}.finance-update-btn{margin-top:0}.finance-metrics-grid{grid-template-columns:1fr 1fr}.finance-metric-meta{display:block}.finance-metric-meta span{display:block;margin-bottom:2px}.finance-networth-value{font-size:29px} }
 
 /* ============================================================
    PLANIFICADOR DEL DÍA
@@ -4095,6 +4099,9 @@ function v22RefreshSummaryIfPresent() {
             salaryForecast: {},
             history: [],
             oneOffIncome: [],
+            // movements: registro unificado de ingresos y gastos puntuales
+            // (sustituye a oneOffIncome, que se migra automáticamente al cargar).
+            movements: [],
             // chartHistory: fotografías mensuales específicas para la gráfica de evolución
             // (efectivo, ingresado, emergencia). Se alimenta con el botón "Actualizar gráfica".
             chartHistory: []
@@ -4438,6 +4445,20 @@ function v22RefreshSummaryIfPresent() {
                 financeProfile.salaryForecast = financeProfile.salaryForecast || {};
                 financeProfile.history = Array.isArray(financeProfile.history) ? financeProfile.history : [];
                 financeProfile.oneOffIncome = Array.isArray(financeProfile.oneOffIncome) ? financeProfile.oneOffIncome : [];
+                financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
+                // Migración: los antiguos "ingresos puntuales" pasan a formar parte
+                // del registro unificado de movimientos (una sola vez).
+                if (financeProfile.oneOffIncome.length && !financeProfile._oneOffMigrated) {
+                    financeProfile.movements = [
+                        ...financeProfile.oneOffIncome.map(x => ({
+                            id: x.id || ('income_' + Date.now() + Math.random().toString(36).slice(2, 6)),
+                            type: 'income', label: x.label, amount: Number(x.amount) || 0,
+                            date: x.date, addedToCash: !!x.addedToCash
+                        })),
+                        ...financeProfile.movements
+                    ];
+                    financeProfile._oneOffMigrated = true;
+                }
                 // Si aún no existe una cifra manual para inversiones, tomamos como
                 // punto de partida el valor real de la cartera ya registrada.
                 if (!(Number(financeProfile.invested) > 0) && typeof portfolioCurrentValue === 'function') {
@@ -7468,52 +7489,120 @@ function v22RefreshSummaryIfPresent() {
             await saveFinanceDashboard();
         }
 
-        function openFinanceOneOffIncome() {
+        // ============================================================
+        //  MOVIMIENTOS: ingresos y gastos puntuales (sueldo, extras, compras...)
+        //  Sustituye a "+ Ingreso puntual". Cada movimiento ajusta el
+        //  Efectivo automáticamente y queda registrado en el historial.
+        // ============================================================
+
+        function openFinanceMovement(type = 'income') {
             const today = todayISO();
+            const isIncome = type === 'income';
             showModal(`
-                <div class="modal-title">+ Ingreso puntual</div>
-                <div class="finance-modal-note">Registra una venta, regalo, devolución u otro ingreso que no forme parte de tu sueldo habitual.</div>
+                <div class="modal-title">${isIncome ? '+ Ingreso puntual' : '+ Gasto puntual'}</div>
+                <div class="finance-modal-note">${isIncome
+                    ? 'Registra una venta, regalo, devolución u otro ingreso que no forme parte de tu sueldo habitual.'
+                    : 'Registra una compra o gasto puntual que quieras descontar de tu efectivo.'}</div>
                 <div class="modal-label">Concepto</div>
-                <input id="finance-oneoff-label" class="modal-input" placeholder="Ej: Venta de ropa">
+                <input id="finance-mov-label" class="modal-input" placeholder="${isIncome ? 'Ej: Venta de ropa' : 'Ej: Reparación del coche'}">
                 <div class="modal-label">Importe (€)</div>
-                <input id="finance-oneoff-amount" class="modal-input" type="number" min="0" step="0.01" placeholder="0.00">
+                <input id="finance-mov-amount" class="modal-input" type="number" min="0" step="0.01" placeholder="0.00">
                 <div class="modal-label">Fecha</div>
-                <input id="finance-oneoff-date" class="modal-input" type="date" value="${today}">
+                <input id="finance-mov-date" class="modal-input" type="date" value="${today}">
                 <label style="display:flex;align-items:center;gap:8px;margin:10px 0 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">
-                    <input id="finance-oneoff-addcash" type="checkbox" checked> Sumarlo también al efectivo actual
+                    <input id="finance-mov-addcash" type="checkbox" checked> ${isIncome ? 'Sumarlo también al efectivo actual' : 'Restarlo también del efectivo actual'}
                 </label>
-                <button class="btn-modal-primary" onclick="saveFinanceOneOffIncome()">Guardar ingreso</button>
+                <button class="btn-modal-primary" onclick="saveFinanceMovement('${type}')">Guardar ${isIncome ? 'ingreso' : 'gasto'}</button>
             `);
+            setTimeout(() => document.getElementById('finance-mov-label')?.focus(), 50);
         }
 
-        async function saveFinanceOneOffIncome() {
-            const label = document.getElementById('finance-oneoff-label')?.value.trim() || 'Ingreso puntual';
-            const amount = Number(document.getElementById('finance-oneoff-amount')?.value);
-            const date = document.getElementById('finance-oneoff-date')?.value || todayISO();
-            const addCash = document.getElementById('finance-oneoff-addcash')?.checked;
+        async function saveFinanceMovement(type = 'income') {
+            const isIncome = type === 'income';
+            const label = document.getElementById('finance-mov-label')?.value.trim() || (isIncome ? 'Ingreso puntual' : 'Gasto puntual');
+            const amount = Number(document.getElementById('finance-mov-amount')?.value);
+            const date = document.getElementById('finance-mov-date')?.value || todayISO();
+            const addCash = document.getElementById('finance-mov-addcash')?.checked;
             if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
 
-            financeProfile.oneOffIncome = Array.isArray(financeProfile.oneOffIncome) ? financeProfile.oneOffIncome : [];
-            financeProfile.oneOffIncome.push({
-                id: 'income_' + Date.now(),
-                label,
-                amount,
-                date,
-                addedToCash: !!(addCash && date <= todayISO())
+            const applied = !!(addCash && date <= todayISO());
+            financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
+            financeProfile.movements.unshift({
+                id: 'mov_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                type, label, amount, date, addedToCash: applied
             });
-            financeProfile.oneOffIncome.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+            financeProfile.movements.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
-            if (addCash && date <= todayISO()) {
-                financeProfile.cash = Math.max(0, Number(financeProfile.cash || 0) + amount);
+            if (applied) {
+                const delta = isIncome ? amount : -amount;
+                financeProfile.cash = Math.max(0, Number(financeProfile.cash || 0) + delta);
             }
 
             closeModal();
             await saveFinanceDashboard();
-            showToast('Ingreso puntual registrado');
+            showToast(isIncome ? 'Ingreso registrado' : 'Gasto registrado');
         }
 
-        async function deleteFinanceOneOffIncome(id) {
-            financeProfile.oneOffIncome = (financeProfile.oneOffIncome || []).filter(x => x.id !== id);
+        // Botón rápido "Cobrar sueldo": sugiere la previsión del mes actual
+        // pero permite ajustar la cifra real antes de aplicarla, ya que el
+        // importe cobrado puede diferir de lo previsto.
+        function quickPaySalary() {
+            const monthKey = financeMonthKey();
+            const forecast = Number(financeProfile.salaryForecast?.[monthKey] || financeIncome.current || 0);
+            const today = todayISO();
+            showModal(`
+                <div class="modal-title">💰 Cobrar sueldo</div>
+                <div class="finance-modal-note">${forecast > 0
+                    ? `Tu previsión para ${escapeHtml(financeMonthLabel(monthKey))} era ${financeMoney(forecast)}. Ajusta la cifra si has cobrado algo distinto.`
+                    : `No tienes previsión definida para ${escapeHtml(financeMonthLabel(monthKey))}. Indica el importe real que has cobrado.`}</div>
+                <div class="modal-label">Concepto</div>
+                <input id="finance-salary-label" class="modal-input" value="Sueldo de ${escapeHtml(financeMonthLabel(monthKey))}">
+                <div class="modal-label">Importe cobrado (€)</div>
+                <input id="finance-salary-amount" class="modal-input" type="number" min="0" step="0.01" value="${forecast > 0 ? forecast : ''}" placeholder="0.00">
+                <div class="modal-label">Fecha</div>
+                <input id="finance-salary-date" class="modal-input" type="date" value="${today}">
+                ${forecast > 0 ? `
+                <label style="display:flex;align-items:center;gap:8px;margin:10px 0 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">
+                    <input id="finance-salary-updateforecast" type="checkbox"> Actualizar también la previsión de este mes con esta cifra
+                </label>` : ''}
+                <button class="btn-modal-primary" onclick="saveQuickPaySalary('${monthKey}')">Sumar al efectivo</button>
+            `);
+            setTimeout(() => document.getElementById('finance-salary-amount')?.select(), 50);
+        }
+
+        async function saveQuickPaySalary(monthKey) {
+            const label = document.getElementById('finance-salary-label')?.value.trim() || ('Sueldo de ' + financeMonthLabel(monthKey));
+            const amount = Number(document.getElementById('finance-salary-amount')?.value);
+            const date = document.getElementById('finance-salary-date')?.value || todayISO();
+            const updateForecast = document.getElementById('finance-salary-updateforecast')?.checked;
+            if (!(amount > 0)) { showToast('Introduce el importe cobrado', true); return; }
+
+            financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
+            financeProfile.movements.unshift({
+                id: 'mov_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                type: 'income', label, amount, date, addedToCash: true
+            });
+            financeProfile.movements.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+            financeProfile.cash = Math.max(0, Number(financeProfile.cash || 0) + amount);
+
+            if (updateForecast) {
+                financeProfile.salaryForecast = financeProfile.salaryForecast || {};
+                financeProfile.salaryForecast[monthKey] = amount;
+            }
+
+            closeModal();
+            await saveFinanceDashboard();
+            showToast(`Sueldo de ${financeMoney(amount)} añadido al efectivo`);
+        }
+
+        async function deleteFinanceMovement(id) {
+            const mov = (financeProfile.movements || []).find(x => x.id === id);
+            if (!mov) return;
+            if (mov.addedToCash) {
+                const delta = mov.type === 'income' ? -mov.amount : mov.amount;
+                financeProfile.cash = Math.max(0, Number(financeProfile.cash || 0) + delta);
+            }
+            financeProfile.movements = (financeProfile.movements || []).filter(x => x.id !== id);
             await saveFinanceDashboard();
         }
 
@@ -7613,7 +7702,9 @@ function v22RefreshSummaryIfPresent() {
                         </div>
                     </div>
                     <div class="finance-head-actions">
-                        <button class="finance-oneoff-btn" onclick="openFinanceOneOffIncome()">+ Ingreso puntual</button>
+                        <button class="finance-oneoff-btn finance-salary-btn" onclick="quickPaySalary()">💰 Cobrar sueldo</button>
+                        <button class="finance-oneoff-btn" onclick="openFinanceMovement('expense')">− Gasto</button>
+                        <button class="finance-oneoff-btn" onclick="openFinanceMovement('income')">+ Ingreso</button>
                         <button class="btn-modal-primary finance-update-btn" onclick="saveFinanceDashboard()">Guardar actualización</button>
                     </div>
                 </div>
@@ -7642,7 +7733,7 @@ function v22RefreshSummaryIfPresent() {
                     ${renderFinanceMetric('vacation','vacationTarget','Reserva de vacaciones','✦','Se mantiene aparte del patrimonio operativo')}
                 </div>
 
-                <div class="finance-grid-2">
+                <div class="finance-grid-3">
                     <section class="finance-panel">
                         <div class="finance-panel-head"><div><div class="finance-kicker">Previsión</div><h3>Ingresos próximos</h3></div><button class="finance-icon-btn" onclick="openFinanceSalaryEditor()">✎</button></div>
                         <div class="finance-income-highlight"><span>Este mes</span><strong>${financeMoney(currentSalary)}</strong></div>
@@ -7650,11 +7741,19 @@ function v22RefreshSummaryIfPresent() {
                         <div class="finance-salary-list">
                             ${Object.keys(financeProfile.salaryForecast || {}).filter(k => k >= financeMonthKey()).sort().slice(0,5).map(k => `<div><span>${escapeHtml(financeMonthLabel(k))}</span><strong>${financeMoney(financeProfile.salaryForecast[k])}</strong></div>`).join('') || '<div class="finance-empty-line">Añade una previsión para que Bitácora pueda calcular tu ritmo.</div>'}
                         </div>
-                        ${(financeProfile.oneOffIncome || []).length ? `
-                            <div class="finance-oneoff-list">
-                                <div class="finance-kicker" style="margin-bottom:3px">Ingresos puntuales</div>
-                                ${[...(financeProfile.oneOffIncome || [])].slice(0,3).map(x => `<div class="finance-oneoff-row"><span>${escapeHtml(x.label)} · ${escapeHtml(x.date)}</span><strong>+${financeMoney(x.amount)}</strong><button title="Eliminar registro" onclick="deleteFinanceOneOffIncome('${x.id}')">×</button></div>`).join('')}
-                            </div>` : ''}
+                    </section>
+
+                    <section class="finance-panel">
+                        <div class="finance-panel-head"><div><div class="finance-kicker">Registro</div><h3>Movimientos</h3></div></div>
+                        ${(financeProfile.movements || []).length ? `
+                            <div class="finance-oneoff-list" style="margin-top:0;padding-top:0;border-top:none">
+                                ${[...(financeProfile.movements || [])].slice(0,6).map(x => `
+                                    <div class="finance-oneoff-row">
+                                        <span>${escapeHtml(x.label)} · ${escapeHtml(x.date)}${x.addedToCash ? '' : ' <em style="opacity:.7">(no aplicado)</em>'}</span>
+                                        <strong class="${x.type === 'income' ? 'finance-mov-income' : 'finance-mov-expense'}">${x.type === 'income' ? '+' : '−'}${financeMoney(x.amount)}</strong>
+                                        <button title="Eliminar registro" onclick="deleteFinanceMovement('${x.id}')">×</button>
+                                    </div>`).join('')}
+                            </div>` : `<div class="finance-empty-line">Aún no hay movimientos. Usa "Cobrar sueldo", "+ Ingreso" o "− Gasto" arriba para empezar a registrarlos.</div>`}
                     </section>
 
                     <section class="finance-panel">
