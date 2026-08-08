@@ -2776,6 +2776,7 @@ body.beige {
 .finance-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
 .finance-mov-income { color:#4ade80; }
 .finance-mov-expense { color:#f87171; }
+.finance-mov-transfer { color:var(--text-secondary); }
 .finance-salary-btn { border-color:var(--accent); }
 .finance-panel,.finance-forecast-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:17px; }
 .finance-panel h3,.finance-forecast-panel h3 { margin:3px 0 4px; font-size:15px; }
@@ -7403,8 +7404,11 @@ function v22RefreshSummaryIfPresent() {
 
         function renderFinanceEvolutionChart() {
             const data = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
-            if (data.length < 2) {
-                return `<div class="finance-empty-state">Necesitas al menos dos actualizaciones mensuales para dibujar la evolución. Pulsa <strong>Actualizar gráfica</strong> cada mes para ir construyéndola.</div>`;
+            if (data.length < 1) {
+                return `<div class="finance-empty-state">Aún no hay datos. Pulsa <strong>Actualizar gráfica</strong> para registrar tu primera foto del mes.</div>`;
+            }
+            if (data.length === 1) {
+                return renderFinanceSingleChartPoint(data[0]) + `<div class="finance-empty-state" style="margin-top:8px">Con una sola actualización solo se puede mostrar un punto. Vuelve a pulsar <strong>Actualizar gráfica</strong> el mes que viene para empezar a ver la línea de evolución.</div>`;
             }
 
             const W = 720, H = 260, padL = 44, padR = 16, padT = 16, padB = 30;
@@ -7449,6 +7453,28 @@ function v22RefreshSummaryIfPresent() {
                         ${gridLines}
                         ${seriesSvg}
                         ${xLabels}
+                    </svg>
+                </div>`;
+        }
+
+        function renderFinanceSingleChartPoint(d) {
+            const series = [
+                { key: 'cash', color: '#e2e8f0', label: 'Efectivo' },
+                { key: 'invested', color: '#93c5fd', label: 'Ingresado' },
+                { key: 'emergency', color: '#fcd34d', label: 'Emergencia' }
+            ];
+            return `
+                <div class="finance-chart-svg-wrap">
+                    <svg viewBox="0 0 720 90" width="100%" style="min-width:480px">
+                        ${series.map((s, i) => {
+                            const val = Number(d[s.key]) || 0;
+                            const cy = 20 + i * 24;
+                            return `
+                                <circle class="finance-chart-point" cx="60" cy="${cy}" r="4" fill="${s.color}" stroke="var(--bg-card)" stroke-width="1.5"
+                                    onmousemove="showFinanceChartTooltip(event,'${escapeHtml(s.label)}','${escapeHtml(financeMonthLabel(d.month))}',${val})"
+                                    onmouseleave="hideFinanceChartTooltip()"></circle>
+                                <text x="76" y="${cy + 4}" font-size="11" fill="var(--text-primary)" font-family="JetBrains Mono, monospace">${escapeHtml(s.label)}: ${financeMoney(val)}</text>`;
+                        }).join('')}
                     </svg>
                 </div>`;
         }
@@ -7598,12 +7624,89 @@ function v22RefreshSummaryIfPresent() {
         async function deleteFinanceMovement(id) {
             const mov = (financeProfile.movements || []).find(x => x.id === id);
             if (!mov) return;
-            if (mov.addedToCash) {
+            if (mov.type === 'transfer') {
+                // Deshace la transferencia: devuelve el importe de destino a origen.
+                financeProfile[mov.toKey] = Math.max(0, Number(financeProfile[mov.toKey] || 0) - mov.amount);
+                financeProfile[mov.fromKey] = Math.max(0, Number(financeProfile[mov.fromKey] || 0) + mov.amount);
+            } else if (mov.addedToCash) {
                 const delta = mov.type === 'income' ? -mov.amount : mov.amount;
                 financeProfile.cash = Math.max(0, Number(financeProfile.cash || 0) + delta);
             }
             financeProfile.movements = (financeProfile.movements || []).filter(x => x.id !== id);
             await saveFinanceDashboard();
+        }
+
+        // ============================================================
+        //  TRANSFERENCIAS ENTRE CUENTAS
+        //  Repartir el sueldo (u otro importe) entre Efectivo, Inversiones,
+        //  Emergencia y Vacaciones sin que cuente como ingreso/gasto nuevo.
+        // ============================================================
+        const FINANCE_ACCOUNT_LABELS = {
+            cash: 'Efectivo / bancos',
+            invested: 'Inversiones',
+            emergency: 'Fondo de emergencia',
+            vacation: 'Reserva de vacaciones'
+        };
+
+        function financeAccountOptions(excludeKey) {
+            return Object.entries(FINANCE_ACCOUNT_LABELS)
+                .filter(([key]) => key !== excludeKey)
+                .map(([key, label]) => `<option value="${key}">${label} (${financeMoney(financeProfile[key] || 0)})</option>`)
+                .join('');
+        }
+
+        function openFinanceTransfer() {
+            showModal(`
+                <div class="modal-title">🔁 Transferir entre cuentas</div>
+                <div class="finance-modal-note">Mueve dinero de una cuenta a otra (por ejemplo, repartir el sueldo entre Efectivo, Inversiones y Emergencia). No se cuenta como ingreso ni gasto nuevo, solo cambia de sitio.</div>
+                <div class="modal-label">Desde</div>
+                <select id="finance-transfer-from" class="modal-input" onchange="updateFinanceTransferOptions()">
+                    ${Object.entries(FINANCE_ACCOUNT_LABELS).map(([key, label]) => `<option value="${key}">${label} (${financeMoney(financeProfile[key] || 0)})</option>`).join('')}
+                </select>
+                <div class="modal-label">Hacia</div>
+                <select id="finance-transfer-to" class="modal-input">
+                    ${financeAccountOptions('cash')}
+                </select>
+                <div class="modal-label">Importe (€)</div>
+                <input id="finance-transfer-amount" class="modal-input" type="number" min="0" step="0.01" placeholder="0.00">
+                <button class="btn-modal-primary" onclick="saveFinanceTransfer()">Transferir</button>
+            `);
+            setTimeout(() => document.getElementById('finance-transfer-amount')?.focus(), 50);
+        }
+
+        function updateFinanceTransferOptions() {
+            const fromKey = document.getElementById('finance-transfer-from')?.value;
+            const toSelect = document.getElementById('finance-transfer-to');
+            if (toSelect) toSelect.innerHTML = financeAccountOptions(fromKey);
+        }
+
+        async function saveFinanceTransfer() {
+            const fromKey = document.getElementById('finance-transfer-from')?.value;
+            const toKey = document.getElementById('finance-transfer-to')?.value;
+            const amount = Number(document.getElementById('finance-transfer-amount')?.value);
+            if (!fromKey || !toKey || fromKey === toKey) { showToast('Elige dos cuentas distintas', true); return; }
+            if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
+            const available = Number(financeProfile[fromKey] || 0);
+            if (amount > available) {
+                showToast(`No hay suficiente en ${FINANCE_ACCOUNT_LABELS[fromKey]} (disponible: ${financeMoney(available)})`, true);
+                return;
+            }
+
+            financeProfile[fromKey] = Math.max(0, available - amount);
+            financeProfile[toKey] = Math.max(0, Number(financeProfile[toKey] || 0) + amount);
+
+            financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
+            financeProfile.movements.unshift({
+                id: 'mov_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                type: 'transfer',
+                label: `${FINANCE_ACCOUNT_LABELS[fromKey]} → ${FINANCE_ACCOUNT_LABELS[toKey]}`,
+                amount, date: todayISO(), fromKey, toKey, addedToCash: true
+            });
+            financeProfile.movements.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+            closeModal();
+            await saveFinanceDashboard();
+            showToast('Transferencia realizada');
         }
 
         function openFinanceSalaryEditor() {
@@ -7703,6 +7806,7 @@ function v22RefreshSummaryIfPresent() {
                     </div>
                     <div class="finance-head-actions">
                         <button class="finance-oneoff-btn finance-salary-btn" onclick="quickPaySalary()">💰 Cobrar sueldo</button>
+                        <button class="finance-oneoff-btn" onclick="openFinanceTransfer()">🔁 Transferir</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceMovement('expense')">− Gasto</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceMovement('income')">+ Ingreso</button>
                         <button class="btn-modal-primary finance-update-btn" onclick="saveFinanceDashboard()">Guardar actualización</button>
@@ -7749,11 +7853,11 @@ function v22RefreshSummaryIfPresent() {
                             <div class="finance-oneoff-list" style="margin-top:0;padding-top:0;border-top:none">
                                 ${[...(financeProfile.movements || [])].slice(0,6).map(x => `
                                     <div class="finance-oneoff-row">
-                                        <span>${escapeHtml(x.label)} · ${escapeHtml(x.date)}${x.addedToCash ? '' : ' <em style="opacity:.7">(no aplicado)</em>'}</span>
-                                        <strong class="${x.type === 'income' ? 'finance-mov-income' : 'finance-mov-expense'}">${x.type === 'income' ? '+' : '−'}${financeMoney(x.amount)}</strong>
+                                        <span>${x.type === 'transfer' ? '🔁 ' : ''}${escapeHtml(x.label)} · ${escapeHtml(x.date)}${(x.type !== 'transfer' && !x.addedToCash) ? ' <em style="opacity:.7">(no aplicado)</em>' : ''}</span>
+                                        <strong class="${x.type === 'income' ? 'finance-mov-income' : x.type === 'expense' ? 'finance-mov-expense' : 'finance-mov-transfer'}">${x.type === 'income' ? '+' : x.type === 'expense' ? '−' : ''}${financeMoney(x.amount)}</strong>
                                         <button title="Eliminar registro" onclick="deleteFinanceMovement('${x.id}')">×</button>
                                     </div>`).join('')}
-                            </div>` : `<div class="finance-empty-line">Aún no hay movimientos. Usa "Cobrar sueldo", "+ Ingreso" o "− Gasto" arriba para empezar a registrarlos.</div>`}
+                            </div>` : `<div class="finance-empty-line">Aún no hay movimientos. Usa "Cobrar sueldo", "🔁 Transferir", "+ Ingreso" o "− Gasto" arriba para empezar a registrarlos.</div>`}
                     </section>
 
                     <section class="finance-panel">
