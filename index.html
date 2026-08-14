@@ -6016,11 +6016,18 @@ function v22RefreshSummaryIfPresent() {
                         return;
                     }
                     let added = 0,
-                        errors = 0;
+                        errors = 0,
+                        duplicates = 0;
                     data.transacciones.forEach((tx, i) => {
                         if (!tx.tipo || !tx.jugador || typeof tx.precio !== 'number' || !tx.fecha ||
                             !tx.comprador || !tx.vendedor) {
                             errors++;
+                            return;
+                        }
+                        if (fantasyData.transacciones.some(e => e.jugador === tx.jugador &&
+                            e.precio === tx.precio && e.fecha === tx.fecha && e.comprador === tx.comprador &&
+                            e.vendedor === tx.vendedor)) {
+                            duplicates++;
                             return;
                         }
                         // Asegurar que los usuarios existen
@@ -6047,7 +6054,9 @@ function v22RefreshSummaryIfPresent() {
                     saveFantasyData();
                     document.getElementById('content').innerHTML = renderFantasy();
                     renderFantasyChart();
-                    showToast(added + ' transacciones importadas' + (errors ? ', ' + errors + ' con errores' : ''));
+                    showToast(added + ' transacciones importadas' +
+                        (duplicates ? ', ' + duplicates + ' duplicadas omitidas' : '') +
+                        (errors ? ', ' + errors + ' con errores' : ''));
                 } catch (err) {
                     showToast('Error al leer el archivo de transacciones', true);
                 }
@@ -6068,7 +6077,10 @@ function v22RefreshSummaryIfPresent() {
                     fantasyData.usuarios.push({ nombre, efectivo: 100000000, valor_plantilla: 100000000 });
                 }
             };
-            let added = 0, users = 0, errors = 0;
+            const isDuplicate = t => fantasyData.transacciones.some(e => e.jugador === t.jugador &&
+                e.precio === t.precio && e.fecha === t.fecha && e.comprador === t.comprador &&
+                e.vendedor === t.vendedor);
+            let added = 0, users = 0, errors = 0, duplicates = 0;
             raw.split('\n').map(l => l.trim()).filter(Boolean).forEach((line, i) => {
                 const p = line.split('|').map(s => s.trim());
                 const tipo = (p[0] || '').toUpperCase();
@@ -6079,33 +6091,33 @@ function v22RefreshSummaryIfPresent() {
                 } else if ((tipo === 'COMPRA' || tipo === 'VENTA') && p.length >= 5) {
                     const precio = parseFloat(p[4].replace(/[^\d.-]/g, ''));
                     if (isNaN(precio)) { errors++; return; }
-                    ensureUser(p[2]);
-                    fantasyData.transacciones.push({
-                        id: 'tx_text_' + Date.now() + '_' + i,
-                        tipo: 'compra',
+                    const nuevaTx = {
                         jugador: p[3],
                         precio,
                         fecha: p[1],
                         comprador: tipo === 'COMPRA' ? p[2] : 'LALIGA',
-                        vendedor: tipo === 'COMPRA' ? 'LALIGA' : p[2],
+                        vendedor: tipo === 'COMPRA' ? 'LALIGA' : p[2]
+                    };
+                    if (isDuplicate(nuevaTx)) { duplicates++; return; }
+                    ensureUser(p[2]);
+                    fantasyData.transacciones.push(Object.assign({
+                        id: 'tx_text_' + Date.now() + '_' + i,
+                        tipo: tipo === 'COMPRA' ? 'compra' : 'venta',
                         gastoClausula: 0
-                    });
+                    }, nuevaTx));
                     added++;
                 } else if (tipo === 'TRASPASO' && p.length >= 6) {
                     const precio = parseFloat(p[5].replace(/[^\d.-]/g, ''));
                     if (isNaN(precio)) { errors++; return; }
+                    const nuevaTx = { jugador: p[4], precio, fecha: p[1], comprador: p[2], vendedor: p[3] };
+                    if (isDuplicate(nuevaTx)) { duplicates++; return; }
                     ensureUser(p[2]);
                     ensureUser(p[3]);
-                    fantasyData.transacciones.push({
+                    fantasyData.transacciones.push(Object.assign({
                         id: 'tx_text_' + Date.now() + '_' + i,
                         tipo: 'compra',
-                        jugador: p[4],
-                        precio,
-                        fecha: p[1],
-                        comprador: p[2],
-                        vendedor: p[3],
                         gastoClausula: 0
-                    });
+                    }, nuevaTx));
                     added++;
                 } else { errors++; }
             });
@@ -6114,7 +6126,9 @@ function v22RefreshSummaryIfPresent() {
             ta.value = '';
             document.getElementById('content').innerHTML = renderFantasy();
             renderFantasyChart();
-            showToast(added + ' operaciones y ' + users + ' usuarios nuevos importados' + (errors ? ', ' + errors + ' líneas con error' : ''));
+            showToast(added + ' operaciones y ' + users + ' usuarios nuevos importados' +
+                (duplicates ? ', ' + duplicates + ' duplicadas omitidas' : '') +
+                (errors ? ', ' + errors + ' líneas con error' : ''));
         }
 
         // ============================================================
@@ -9273,11 +9287,9 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                 if (comprador && comprador.nombre !== 'LALIGA') {
                     comprador.efectivo -= tx.precio;
-                    comprador.valor_plantilla += tx.precio;
                 }
                 if (vendedor && vendedor.nombre !== 'LALIGA') {
                     vendedor.efectivo += tx.precio;
-                    vendedor.valor_plantilla -= tx.precio;
                 }
             });
 
@@ -9369,7 +9381,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div class="modal-title" style="color:var(--fantasy-accent)">◉ Editar valor de plantilla</div>
                 <div class="modal-label">Valor de plantilla (€)</div>
                 <input type="number" id="template-value-input" class="modal-input" value="${u.valor_plantilla}" step="0.01">
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Efectivo inicial: 100.000.000€ (fijo) · Valor total actual: ${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Este valor es 100% manual y no se ve afectado por las compras/ventas · Valor total actual: ${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
                 <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmEditTemplateValue('${nombre}')">Guardar</button>
             `);
         }
@@ -9438,6 +9450,17 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         //  FANTASY: CLAUSE EXPENSE (6.5)
         // ============================================================
+        function deleteFantasyTransaction(txId) {
+            if (!confirm('¿Eliminar esta transacción? Esto recalculará los saldos.')) return;
+            fantasyData.transacciones = fantasyData.transacciones.filter(t => t.id !== txId);
+            recalcFantasyBalances();
+            saveFantasyData();
+            closeModal();
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderFantasyChart();
+            showToast('Transacción eliminada');
+        }
+
         function renderClauseButton(tx) {
             const gasto = tx.gastoClausula || 0;
             return `
@@ -9714,8 +9737,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div style="max-height:300px;overflow-y:auto">
                     ${txs.length ? txs.map(tx => {
                         const isBuy = tx.tipo === 'compra';
-                        const dateObj = new Date(tx.fecha + 'T12:00:00');
-                        const dateLabel = dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
+                        const dateLabel = isNaN(dateObj) ? (tx.fecha || '—') : dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         return `
                             <div class="fantasy-tx-item">
                                 <div style="display:flex;justify-content:space-between;align-items:center">
@@ -9728,6 +9751,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                 </div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
                                     <span style="font-size:11px;color:var(--text-secondary)">${dateLabel}</span>
+                                    <button class="btn-secondary" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();deleteFantasyTransaction('${tx.id}')">🗑 Eliminar</button>
                                 </div>
                                 ${isBuy ? renderClauseButton(tx) : ''}
                             </div>
