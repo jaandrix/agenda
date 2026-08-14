@@ -9240,29 +9240,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         function getDefaultFantasyData() {
-            return {
-                usuarios: [
-                    { nombre: 'VEZAMAN', efectivo: 65478932, valor_plantilla: 87654321 },
-                    { nombre: 'rafa_cm_', efectivo: 35201984, valor_plantilla: 98765432 },
-                    { nombre: 'LALIGA', efectivo: 128900000, valor_plantilla: 75000000 },
-                    { nombre: 'User4', efectivo: 42100000, valor_plantilla: 82345678 },
-                    { nombre: 'User5', efectivo: 65300000, valor_plantilla: 71234567 }
-                ],
-                transacciones: [
-                    { id: 'tx_001', tipo: 'venta', jugador: 'Lenglet', precio: 9468794, fecha: '2024-01-15',
-                        comprador: 'LALIGA', vendedor: 'VEZAMAN', gastoClausula: 0 },
-                    { id: 'tx_002', tipo: 'compra', jugador: 'Carlos V.', precio: 11692043, fecha: '2024-01-15',
-                        comprador: 'VEZAMAN', vendedor: 'LALIGA', gastoClausula: 0 },
-                    { id: 'tx_003', tipo: 'compra', jugador: 'Starfelt', precio: 5940199, fecha: '2024-01-15',
-                        comprador: 'VEZAMAN', vendedor: 'LALIGA', gastoClausula: 0 },
-                    { id: 'tx_004', tipo: 'venta', jugador: 'Mosquera', precio: 16144311, fecha: '2024-01-15',
-                        comprador: 'LALIGA', vendedor: 'VEZAMAN', gastoClausula: 0 },
-                    { id: 'tx_005', tipo: 'compra', jugador: 'Miguel', precio: 15655570, fecha: '2024-01-15',
-                        comprador: 'rafa_cm_', vendedor: 'LALIGA', gastoClausula: 0 }
-                ],
-                jornadas: [],
-                valorHistorico: []
-            };
+            return { usuarios: [], transacciones: [], jornadas: [], valorHistorico: [] };
         }
 
         function snapshotValoresActuales() {
@@ -9391,7 +9369,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div class="modal-title" style="color:var(--fantasy-accent)">◉ Editar valor de plantilla</div>
                 <div class="modal-label">Valor de plantilla (€)</div>
                 <input type="number" id="template-value-input" class="modal-input" value="${u.valor_plantilla}" step="0.01">
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Valor total actual: ${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Efectivo inicial: 100.000.000€ (fijo) · Valor total actual: ${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
                 <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmEditTemplateValue('${nombre}')">Guardar</button>
             `);
         }
@@ -9401,8 +9379,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             if (!u) return;
             const value = parseFloat(document.getElementById('template-value-input').value);
             if (isNaN(value)) { showToast('Introduce un valor numérico', true); return; }
-            u.valor_plantilla = value;
             u.valor_plantilla_manual = value;
+            recalcFantasyBalances();
             saveFantasyData();
             closeModal();
             document.getElementById('content').innerHTML = renderFantasy();
@@ -9655,6 +9633,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                     <div>
                                         <div class="user-name">${escapeHtml(u.nombre)}</div>
                                         <div style="font-size:11px;color:var(--text-secondary)">${txs.length} operaciones</div>
+                                        <button class="btn-secondary" style="margin:4px 0 0;padding:2px 8px;font-size:10px;width:auto" onclick="event.stopPropagation();editTemplateValue('${u.nombre}')">💰 Valor plantilla</button>
                                     </div>
                                     <div class="user-balance">
                                         <div class="total">${total.toLocaleString('es-ES')}€</div>
