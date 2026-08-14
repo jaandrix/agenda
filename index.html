@@ -6057,6 +6057,67 @@ function v22RefreshSummaryIfPresent() {
         }
 
         // ============================================================
+        //  FANTASY TEXT IMPORT (paste block, from screenshot translation)
+        // ============================================================
+        function processFantasyTextImport() {
+            const ta = document.getElementById('fantasy-text-import');
+            const raw = ta.value.trim();
+            if (!raw) { showToast('Pega primero el texto a importar', true); return; }
+            const ensureUser = nombre => {
+                if (nombre !== 'LALIGA' && !fantasyData.usuarios.find(u => u.nombre === nombre)) {
+                    fantasyData.usuarios.push({ nombre, efectivo: 100000000, valor_plantilla: 100000000 });
+                }
+            };
+            let added = 0, users = 0, errors = 0;
+            raw.split('\n').map(l => l.trim()).filter(Boolean).forEach((line, i) => {
+                const p = line.split('|').map(s => s.trim());
+                const tipo = (p[0] || '').toUpperCase();
+                if (tipo === 'NUEVO' && p.length >= 3) {
+                    const before = fantasyData.usuarios.length;
+                    ensureUser(p[2]);
+                    if (fantasyData.usuarios.length > before) users++;
+                } else if ((tipo === 'COMPRA' || tipo === 'VENTA') && p.length >= 5) {
+                    const precio = parseFloat(p[4].replace(/[^\d.-]/g, ''));
+                    if (isNaN(precio)) { errors++; return; }
+                    ensureUser(p[2]);
+                    fantasyData.transacciones.push({
+                        id: 'tx_text_' + Date.now() + '_' + i,
+                        tipo: 'compra',
+                        jugador: p[3],
+                        precio,
+                        fecha: p[1],
+                        comprador: tipo === 'COMPRA' ? p[2] : 'LALIGA',
+                        vendedor: tipo === 'COMPRA' ? 'LALIGA' : p[2],
+                        gastoClausula: 0
+                    });
+                    added++;
+                } else if (tipo === 'TRASPASO' && p.length >= 6) {
+                    const precio = parseFloat(p[5].replace(/[^\d.-]/g, ''));
+                    if (isNaN(precio)) { errors++; return; }
+                    ensureUser(p[2]);
+                    ensureUser(p[3]);
+                    fantasyData.transacciones.push({
+                        id: 'tx_text_' + Date.now() + '_' + i,
+                        tipo: 'compra',
+                        jugador: p[4],
+                        precio,
+                        fecha: p[1],
+                        comprador: p[2],
+                        vendedor: p[3],
+                        gastoClausula: 0
+                    });
+                    added++;
+                } else { errors++; }
+            });
+            recalcFantasyBalances();
+            saveFantasyData();
+            ta.value = '';
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderFantasyChart();
+            showToast(added + ' operaciones y ' + users + ' usuarios nuevos importados' + (errors ? ', ' + errors + ' líneas con error' : ''));
+        }
+
+        // ============================================================
         //  RENDER
         // ============================================================
         function render() {
@@ -9543,6 +9604,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                             <button class="btn-secondary" onclick="document.getElementById('fantasy-import-tx-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Importar TX</button>
                             <button class="btn-secondary" onclick="changeFantasyPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--fantasy-accent)">🔑 Cambiar contraseña</button>
                         </div>
+                    </div>
+
+                    <div class="fantasy-chart-container" style="margin-bottom:16px">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">📋 Actualizar por texto (pegar traducción de capturas)</div>
+                        <textarea id="fantasy-text-import" class="modal-input" rows="4" placeholder="COMPRA|2026-08-12 18:00|Capa11|G. Puerta|13321297&#10;VENTA|2026-08-13 08:57|Bordalostias|Moscardo|9977200&#10;TRASPASO|2026-08-13 20:15|sergi___03|Capa11|Sergio Herrera|48000100&#10;NUEVO|2026-08-12 16:06|PiterLoveMourinho" style="margin-bottom:8px"></textarea>
+                        <button class="btn-secondary" style="margin:0;padding:6px 12px;font-size:12px;width:auto" onclick="processFantasyTextImport()">✅ Procesar texto</button>
                     </div>
 
                     <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
