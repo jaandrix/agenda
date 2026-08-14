@@ -3482,7 +3482,6 @@ body.beige {
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
     <input type="file" id="doc-upload-input" accept="application/pdf" style="display:none" onchange="handleDocUpload(event)">
     <input type="file" id="fantasy-import-input" accept=".json" style="display:none" onchange="importFantasyData(event)">
-    <input type="file" id="fantasy-import-tx-input" accept=".json" style="display:none" onchange="importFantasyTransactions(event)">
 
     <!-- ============================================================
     SUPABASE + CHART.JS
@@ -5971,7 +5970,9 @@ function v22RefreshSummaryIfPresent() {
             const a = document.createElement('a');
             a.href = url;
             a.download = 'fantasy_' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
             showToast('Fantasy exportado');
         }
@@ -6001,69 +6002,6 @@ function v22RefreshSummaryIfPresent() {
             event.target.value = '';
         }
 
-        // ============================================================
-        //  FANTASY TRANSACTIONS IMPORT (lightweight)
-        // ============================================================
-        function importFantasyTransactions(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (!Array.isArray(data.transacciones)) {
-                        showToast('El archivo debe tener un array "transacciones"', true);
-                        return;
-                    }
-                    let added = 0,
-                        errors = 0,
-                        duplicates = 0;
-                    data.transacciones.forEach((tx, i) => {
-                        if (!tx.tipo || !tx.jugador || typeof tx.precio !== 'number' || !tx.fecha ||
-                            !tx.comprador || !tx.vendedor) {
-                            errors++;
-                            return;
-                        }
-                        if (fantasyData.transacciones.some(e => e.jugador === tx.jugador &&
-                            e.precio === tx.precio && e.fecha === tx.fecha && e.comprador === tx.comprador &&
-                            e.vendedor === tx.vendedor)) {
-                            duplicates++;
-                            return;
-                        }
-                        // Asegurar que los usuarios existen
-                        [tx.comprador, tx.vendedor].forEach(nombre => {
-                            if (nombre !== 'LALIGA' && !fantasyData.usuarios.find(u => u.nombre ===
-                                nombre)) {
-                                fantasyData.usuarios.push({ nombre, efectivo: 100000000,
-                                    valor_plantilla: 100000000 });
-                            }
-                        });
-                        fantasyData.transacciones.push({
-                            id: 'tx_import_' + Date.now() + '_' + i,
-                            tipo: tx.tipo,
-                            jugador: tx.jugador,
-                            precio: tx.precio,
-                            fecha: tx.fecha,
-                            comprador: tx.comprador,
-                            vendedor: tx.vendedor,
-                            gastoClausula: 0
-                        });
-                        added++;
-                    });
-                    recalcFantasyBalances();
-                    saveFantasyData();
-                    document.getElementById('content').innerHTML = renderFantasy();
-                    renderFantasyChart();
-                    showToast(added + ' transacciones importadas' +
-                        (duplicates ? ', ' + duplicates + ' duplicadas omitidas' : '') +
-                        (errors ? ', ' + errors + ' con errores' : ''));
-                } catch (err) {
-                    showToast('Error al leer el archivo de transacciones', true);
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        }
 
         // ============================================================
         //  FANTASY TEXT IMPORT (paste block, from screenshot translation)
@@ -9226,6 +9164,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         let fantasyData = { usuarios: [], transacciones: [], jornadas: [], valorHistorico: [] };
         let fantasyChartInstance = null;
+        let patrimonyChartInstance = null;
         let pointsChartInstance = null;
         let economicChartInstance = null;
 
@@ -9461,6 +9400,40 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             showToast('Transacción eliminada');
         }
 
+        function openManualClauseExpense(nombre) {
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">⚖ Cláusula manual</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Para gastos en cláusulas que no aparecen en el feed de actividad. Resta directamente del efectivo de ${escapeHtml(nombre)}.</div>
+                <div class="modal-label">Jugador (opcional)</div>
+                <input id="manual-clause-player" class="modal-input" placeholder="Ej: Bellingham">
+                <div class="modal-label">Importe (€)</div>
+                <input type="number" id="manual-clause-amount" class="modal-input" step="0.01">
+                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmManualClauseExpense('${nombre}')">Guardar</button>
+            `);
+        }
+
+        function confirmManualClauseExpense(nombre) {
+            const amount = parseFloat(document.getElementById('manual-clause-amount').value);
+            if (isNaN(amount) || amount <= 0) { showToast('Introduce un importe válido', true); return; }
+            const jugador = document.getElementById('manual-clause-player').value.trim() || 'Cláusula manual';
+            fantasyData.transacciones.push({
+                id: 'tx_clausula_' + Date.now(),
+                tipo: 'clausula',
+                jugador,
+                precio: amount,
+                fecha: todayISO(),
+                comprador: nombre,
+                vendedor: 'LALIGA',
+                gastoClausula: 0
+            });
+            recalcFantasyBalances();
+            saveFantasyData();
+            closeModal();
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderFantasyChart();
+            showToast('Cláusula manual registrada');
+        }
+
         function renderClauseButton(tx) {
             const gasto = tx.gastoClausula || 0;
             return `
@@ -9589,6 +9562,10 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
             const warnings = detectSuspiciousFlows();
             const streak = detectStreaks();
+            const LOW_CASH_THRESHOLD = 20000000;
+            const lowCashUsers = fantasyData.usuarios
+                .filter(u => u.efectivo < LOW_CASH_THRESHOLD)
+                .sort((a, b) => a.efectivo - b.efectivo);
 
             let html = `
                 <div style="max-width:800px">
@@ -9601,8 +9578,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                             <button class="btn-secondary" onclick="addFantasyUserManually()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">➕ Usuario</button>
                             <button class="btn-secondary" onclick="resetFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">Reiniciar</button>
                             <button class="btn-secondary" onclick="exportFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📤 Exportar</button>
-                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Importar</button>
-                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-tx-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Importar TX</button>
+                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Restaurar copia</button>
                             <button class="btn-secondary" onclick="changeFantasyPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--fantasy-accent)">🔑 Cambiar contraseña</button>
                         </div>
                     </div>
@@ -9626,6 +9602,11 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     </div>
 
                     <div class="fantasy-chart-container">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">🏦 Patrimonio total por usuario (efectivo + plantilla)</div>
+                        <canvas id="patrimonyChart"></canvas>
+                    </div>
+
+                    <div class="fantasy-chart-container">
                         <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">📈 Evolución de puntos por jornada</div>
                         <canvas id="pointsChart"></canvas>
                     </div>
@@ -9646,6 +9627,48 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         </div>
                     </div>
 
+                    ${fantasyData.transacciones.length ? `
+                        <div class="fantasy-chart-container" style="margin-top:16px">
+                            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">🕐 Timeline de actividad (todos los rivales)</div>
+                            <div style="max-height:340px;overflow-y:auto">
+                                ${fantasyData.transacciones.slice().sort((a, b) => b.fecha.localeCompare(a.fecha)).map(tx => {
+                                    const isClausula = tx.tipo === 'clausula';
+                                    const isBuy = tx.tipo === 'compra';
+                                    const isNegative = isBuy || isClausula;
+                                    const typeLabel = isClausula ? '⚖ CLÁUSULA' : (isBuy ? '⬆ COMPRA' : '⬇ VENTA');
+                                    const actor = tx.comprador !== 'LALIGA' ? tx.comprador : tx.vendedor;
+                                    const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
+                                    const dateLabel = isNaN(dateObj) ? (tx.fecha || '—') : dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                    return `
+                                        <div class="fantasy-tx-item" style="cursor:pointer" onclick="showFantasyUserDetail('${actor}')">
+                                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                                <div>
+                                                    <span class="tx-type ${isNegative ? 'buy' : 'sell'}">${typeLabel}</span>
+                                                    <span style="font-weight:700;margin-left:6px">${escapeHtml(actor)}</span>
+                                                    ${isClausula ? '' : `<span style="font-size:11px;color:var(--text-secondary)"> · ${escapeHtml(tx.jugador)} (${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)})</span>`}
+                                                </div>
+                                                <span class="tx-amount ${isNegative ? 'negative' : 'positive'}">${isNegative ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
+                                            </div>
+                                            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${dateLabel}</div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${lowCashUsers.length ? `
+                        <div style="margin-top:16px">
+                            <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px">🪫 Efectivo bajo — oportunidad de negociación</div>
+                            ${lowCashUsers.map(u => `
+                                <div class="fantasy-alert ${u.efectivo < 0 ? 'high' : 'medium'}">
+                                    <div style="font-weight:700">${escapeHtml(u.nombre)}</div>
+                                    <div>${u.efectivo < 0 ? 'Efectivo negativo' : 'Efectivo por debajo de 20M€'}: ${u.efectivo.toLocaleString('es-ES')}€</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+
                     <div style="margin-top:16px">
                         <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px">👥 Usuarios</div>
                         ${fantasyData.usuarios.map(u => {
@@ -9656,7 +9679,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                     <div>
                                         <div class="user-name">${escapeHtml(u.nombre)}</div>
                                         <div style="font-size:11px;color:var(--text-secondary)">${txs.length} operaciones</div>
-                                        <button class="btn-secondary" style="margin:4px 0 0;padding:2px 8px;font-size:10px;width:auto" onclick="event.stopPropagation();editTemplateValue('${u.nombre}')">💰 Valor plantilla</button>
+                                        <button class="btn-secondary" style="margin:4px 4px 0 0;padding:2px 8px;font-size:10px;width:auto" onclick="event.stopPropagation();editTemplateValue('${u.nombre}')">💰 Valor plantilla</button>
+                                        <button class="btn-secondary" style="margin:4px 0 0;padding:2px 8px;font-size:10px;width:auto" onclick="event.stopPropagation();openManualClauseExpense('${u.nombre}')">⚖ Cláusula manual</button>
                                     </div>
                                     <div class="user-balance">
                                         <div class="total">${total.toLocaleString('es-ES')}€</div>
@@ -9736,18 +9760,21 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
                 <div style="max-height:300px;overflow-y:auto">
                     ${txs.length ? txs.map(tx => {
+                        const isClausula = tx.tipo === 'clausula';
                         const isBuy = tx.tipo === 'compra';
+                        const isNegative = isBuy || isClausula;
+                        const typeLabel = isClausula ? '⚖ CLÁUSULA' : (isBuy ? '⬆ COMPRA' : '⬇ VENTA');
                         const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
                         const dateLabel = isNaN(dateObj) ? (tx.fecha || '—') : dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         return `
                             <div class="fantasy-tx-item">
                                 <div style="display:flex;justify-content:space-between;align-items:center">
                                     <div>
-                                        <span class="tx-type ${isBuy ? 'buy' : 'sell'}">${isBuy ? '⬆ COMPRA' : '⬇ VENTA'}</span>
+                                        <span class="tx-type ${isNegative ? 'buy' : 'sell'}">${typeLabel}</span>
                                         <span style="font-weight:700;margin-left:6px">${escapeHtml(tx.jugador)}</span>
-                                        <span style="font-size:11px;color:var(--text-secondary)">${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)}</span>
+                                        ${isClausula ? '' : `<span style="font-size:11px;color:var(--text-secondary)">${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)}</span>`}
                                     </div>
-                                    <span class="tx-amount ${isBuy ? 'negative' : 'positive'}">${isBuy ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
+                                    <span class="tx-amount ${isNegative ? 'negative' : 'positive'}">${isNegative ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
                                 </div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
                                     <span style="font-size:11px;color:var(--text-secondary)">${dateLabel}</span>
@@ -9787,6 +9814,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         //  RENDER: FANTASY CHART (efectivo)
         // ============================================================
         function renderFantasyChart() {
+            renderPatrimonyChart();
             setTimeout(() => {
                 const canvas = document.getElementById('fantasyChart');
                 if (!canvas) return;
@@ -9798,8 +9826,9 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                 if (!fantasyData || !fantasyData.usuarios || fantasyData.usuarios.length === 0) return;
 
-                const labels = fantasyData.usuarios.map(u => u.nombre);
-                const data = fantasyData.usuarios.map(u => u.efectivo);
+                const sorted = fantasyData.usuarios.slice().sort((a, b) => b.efectivo - a.efectivo);
+                const labels = sorted.map(u => u.nombre);
+                const data = sorted.map(u => u.efectivo);
                 const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
 
                 const ctx = canvas.getContext('2d');
@@ -9809,6 +9838,61 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         labels: labels,
                         datasets: [{
                             label: 'Efectivo (€)',
+                            data: data,
+                            backgroundColor: colors,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: 'var(--text-secondary)' },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: {
+                                    color: 'var(--text-secondary)',
+                                    callback: function(value) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    }
+                                },
+                                grid: { color: 'var(--border)' }
+                            }
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        function renderPatrimonyChart() {
+            setTimeout(() => {
+                const canvas = document.getElementById('patrimonyChart');
+                if (!canvas) return;
+
+                if (patrimonyChartInstance) {
+                    patrimonyChartInstance.destroy();
+                    patrimonyChartInstance = null;
+                }
+
+                if (!fantasyData || !fantasyData.usuarios || fantasyData.usuarios.length === 0) return;
+
+                const sorted = fantasyData.usuarios.slice().sort((a, b) => (b.efectivo + b.valor_plantilla) - (a.efectivo + a.valor_plantilla));
+                const labels = sorted.map(u => u.nombre);
+                const data = sorted.map(u => u.efectivo + u.valor_plantilla);
+                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
+
+                const ctx = canvas.getContext('2d');
+                patrimonyChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Patrimonio total (€)',
                             data: data,
                             backgroundColor: colors,
                             borderRadius: 4
