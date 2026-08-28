@@ -9427,8 +9427,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 const sorted = txs.slice().sort((a, b) => a.fecha.localeCompare(b.fecha));
                 let openBuy = null;
                 sorted.forEach(tx => {
-                    const boughtByUser = tx.tipo === 'compra' && tx.comprador === nombre;
-                    const soldByUser = tx.tipo === 'venta' && tx.vendedor === nombre;
+                    // No usamos únicamente tx.tipo, ya que en un TRASPASO (compraventa entre
+                    // usuarios, ninguno "LALIGA") el lado del vendedor no debe perderse aunque
+                    // el campo tipo esté etiquetado como "compra" (dato antiguo o traspaso).
+                    const isSystemTx = tx.tipo === 'clausula' || tx.tipo === 'premio' || tx.tipo === 'video';
+                    const boughtByUser = !isSystemTx && tx.comprador === nombre;
+                    const soldByUser = !isSystemTx && tx.vendedor === nombre;
 
                     if (boughtByUser) {
                         openBuy = tx;
@@ -9839,7 +9843,11 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         const isClausula = tx.tipo === 'clausula';
                         const isPremio = tx.tipo === 'premio';
                         const isVideo = tx.tipo === 'video';
-                        const isBuy = tx.tipo === 'compra';
+                        // isBuy se calcula respecto al usuario que se está viendo (nombre), no
+                        // según el campo global tx.tipo: en un TRASPASO ambos lados (comprador
+                        // y vendedor) son usuarios reales, así que hay que mirar quién de los
+                        // dos es "nombre" para saber si a él le suma o le resta el efectivo.
+                        const isBuy = !isClausula && !isPremio && !isVideo && tx.comprador === nombre;
                         const isNegative = isBuy || isClausula;
                         const typeLabel = isVideo ? '🎥 VÍDEO' : (isPremio ? '🏆 PREMIO' : (isClausula ? '⚖ CLÁUSULA' : (isBuy ? '⬆ COMPRA' : '⬇ VENTA')));
                         const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
