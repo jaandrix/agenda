@@ -1432,6 +1432,33 @@
             border-radius: 8px;
         }
 
+        .fantasy-more-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 6px;
+            z-index: 20;
+            min-width: 170px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        }
+        .fantasy-more-menu.open {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .fantasy-more-menu .btn-secondary {
+            margin: 0;
+            width: 100%;
+            text-align: left;
+            padding: 7px 10px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
         .fantasy-btn-accent {
             border-color: var(--fantasy-accent) !important;
             color: var(--fantasy-accent) !important;
@@ -1441,52 +1468,79 @@
             color: #dc2626 !important;
         }
 
+        .fantasy-users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
         .fantasy-user-card {
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
+            text-align: center;
+            aspect-ratio: 1 / 1;
+            padding: 14px 10px;
             border-radius: 12px;
             border: 1px solid var(--border);
             background: var(--bg-card);
-            margin-bottom: 10px;
             cursor: pointer;
             transition: all 0.15s ease;
         }
         .fantasy-user-card:hover {
             background: var(--bg-card-hover);
             border-color: var(--fantasy-accent);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+            transform: translateY(-1px);
+        }
+        .fantasy-user-card .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 6px;
+            font-size: 12px;
+            font-weight: 800;
+            color: #fff;
         }
         .fantasy-user-card .user-name {
             font-weight: 700;
-            font-size: 15px;
+            font-size: 14px;
             color: var(--text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
         }
         .fantasy-user-card .user-meta {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-secondary);
             margin-top: 2px;
         }
         .fantasy-user-card .user-actions {
             display: flex;
-            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
             margin-top: 8px;
         }
         .fantasy-user-card .user-actions .btn-secondary {
             margin: 0;
-            padding: 3px 9px;
+            padding: 3px 7px;
             font-size: 10px;
             width: auto;
             border-radius: 6px;
         }
         .fantasy-user-card .user-balance {
-            text-align: right;
-            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .fantasy-user-card .user-balance .cash {
             font-weight: 800;
-            font-size: 20px;
+            font-size: 19px;
             line-height: 1.2;
             color: #16a34a;
         }
@@ -1501,7 +1555,7 @@
             color: var(--text-secondary);
         }
         .fantasy-user-card .user-balance .total {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
             margin-top: 4px;
         }
@@ -1559,6 +1613,10 @@
             border-radius: 12px;
             padding: 16px;
             margin-top: 16px;
+            transition: box-shadow 0.15s ease;
+        }
+        .fantasy-chart-container:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.14);
         }
         .fantasy-chart-container .fantasy-canvas-wrap {
             position: relative;
@@ -1567,6 +1625,13 @@
         }
         .fantasy-chart-container canvas {
             max-width: 100%;
+        }
+
+        .fantasy-empty-state {
+            text-align: center;
+            padding: 24px 12px;
+            color: var(--text-secondary);
+            font-size: 13px;
         }
 
         .fantasy-profit-table {
@@ -4578,6 +4643,14 @@ function v22RefreshSummaryIfPresent() {
                 dayPlanner.items = Array.isArray(dayPlanner.items) ? dayPlanner.items : [];
                 financeProfile.chartHistory = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
                 resetDayPlannerIfNeeded();
+                if (saved.fantasyData) {
+                    fantasyData = saved.fantasyData;
+                    if (!fantasyData.jornadas) fantasyData.jornadas = [];
+                    if (!fantasyData.valorHistorico) fantasyData.valorHistorico = [];
+                    fantasyDataFromCloud = true;
+                } else {
+                    fantasyDataFromCloud = false;
+                }
             } catch (e) {
                 console.error('Error cargando datos de Supabase:', e);
                 return false;
@@ -4639,6 +4712,7 @@ function v22RefreshSummaryIfPresent() {
                 collectibleCategories,
                 collectibles,
                 dayPlanner,
+                fantasyData,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
                 apuntes: apuntesDirty ? apuntes : latestApuntes
@@ -6184,10 +6258,13 @@ function v22RefreshSummaryIfPresent() {
             ta.value = '';
             document.getElementById('content').innerHTML = renderFantasy();
             renderAllFantasyCharts();
-            showToast(added + ' operaciones y ' + users + ' usuarios nuevos importados' +
-                (duplicates ? ', ' + duplicates + ' duplicadas omitidas' : '') +
-                (ignoradas ? ', ' + ignoradas + ' líneas ignoradas (sin efecto económico)' : '') +
-                (errors ? ', ' + errors + ' líneas con error' : ''));
+            const summaryEl = document.getElementById('fantasy-import-summary');
+            if (summaryEl) {
+                summaryEl.innerHTML = `<strong>${added}</strong> operaciones y <strong>${users}</strong> usuarios nuevos importados` +
+                    (duplicates ? `, ${duplicates} duplicadas omitidas` : '') +
+                    (ignoradas ? `, ${ignoradas} líneas ignoradas` : '') +
+                    (errors ? `, <span style="color:#dc2626">${errors} líneas con error</span>` : '');
+            }
         }
 
         // ============================================================
@@ -9282,12 +9359,57 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         //  FANTASY
         // ============================================================
         let fantasyData = { usuarios: [], transacciones: [], jornadas: [], valorHistorico: [] };
+        // true cuando fantasyData procede de Supabase (loadData()) en vez de
+        // solo del localStorage de este dispositivo.
+        let fantasyDataFromCloud = false;
         let fantasyChartInstance = null;
         let patrimonyChartInstance = null;
         let pointsChartInstance = null;
         let economicChartInstance = null;
 
+        // Convierte 'YYYY-MM-DD' o 'YYYY-MM-DD HH:MM' en un timestamp comparable.
+        // Ordenar por string (localeCompare) fallaba en cuanto se mezclaban fechas
+        // con y sin hora, o si faltaba el campo: por eso el timeline no siempre
+        // mostraba las operaciones más recientes arriba.
+        function fantasyDateValue(fecha) {
+            if (!fecha) return 0;
+            const normalized = /\d{2}:\d{2}/.test(fecha) ? fecha.replace(' ', 'T') : fecha + 'T00:00:00';
+            const d = new Date(normalized);
+            return isNaN(d) ? 0 : d.getTime();
+        }
+
+        // Color estable por usuario (mismo índice que en fantasyData.usuarios),
+        // usado tanto en las tarjetas/avatares como en las 4 gráficas para que
+        // un mismo usuario se identifique siempre con el mismo color.
+        const FANTASY_PALETTE = ['#8B5CF6', '#F59E0B', '#16a34a', '#dc2626', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
+        function fantasyUserColor(nombre) {
+            const idx = fantasyData.usuarios.findIndex(u => u.nombre === nombre);
+            return FANTASY_PALETTE[(idx >= 0 ? idx : 0) % FANTASY_PALETTE.length];
+        }
+
+        // Formatea cifras grandes de forma compacta (18,2M€ / 950K€) para que las
+        // tarjetas no se vean saturadas de dígitos; el valor exacto va en el title.
+        function fantasyAbbreviate(value) {
+            const abs = Math.abs(value);
+            const sign = value < 0 ? '-' : '';
+            if (abs >= 1000000) return sign + (abs / 1000000).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + 'M€';
+            if (abs >= 1000) return sign + (abs / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + 'K€';
+            return sign + abs.toLocaleString('es-ES') + '€';
+        }
+
+        function fantasyInitials(nombre) {
+            const clean = (nombre || '').trim();
+            if (!clean) return '?';
+            const parts = clean.split(/[\s_]+/).filter(Boolean);
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return clean.slice(0, 2).toUpperCase();
+        }
+
         function loadFantasyData() {
+            // Si Supabase ya nos dio datos de Fantasy en loadData(), esos son
+            // la fuente de verdad (viajan entre dispositivos); el localStorage
+            // solo se usa como caché offline cuando aún no hay nada en la nube.
+            if (fantasyDataFromCloud) return true;
             try {
                 const stored = localStorage.getItem('fantasy_data');
                 if (stored) {
@@ -9304,6 +9426,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         function saveFantasyData() {
             try {
                 localStorage.setItem('fantasy_data', JSON.stringify(fantasyData));
+                fantasyDataFromCloud = true;
+                if (typeof saveData === 'function') saveData();
                 return true;
             } catch (e) {
                 console.error('Error guardando datos de Fantasy:', e);
@@ -9352,51 +9476,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             });
 
             snapshotValoresActuales();
-        }
-
-        function detectSuspiciousFlows() {
-            const warnings = [];
-            const pairs = {};
-            const SYSTEM_USERS = ['LALIGA', 'SISTEMA', 'BANCO'];
-
-            fantasyData.transacciones.forEach(tx => {
-                if (SYSTEM_USERS.includes(tx.comprador) || SYSTEM_USERS.includes(tx.vendedor)) return;
-                const key = [tx.comprador, tx.vendedor].sort().join('|');
-                if (!pairs[key]) pairs[key] = { user1: [tx.comprador, tx.vendedor].sort()[0],
-                    user2: [tx.comprador, tx.vendedor].sort()[1], count: 0, players: [], dates: [] };
-                pairs[key].count++;
-                if (!pairs[key].players.includes(tx.jugador)) pairs[key].players.push(tx.jugador);
-                pairs[key].dates.push(new Date(tx.fecha + 'T00:00:00'));
-            });
-
-            Object.values(pairs).forEach(p => {
-                if (p.count >= 3) {
-                    const first = new Date(Math.min(...p.dates));
-                    const last = new Date(Math.max(...p.dates));
-                    const days = (last - first) / 86400000;
-                    if (days <= 7) {
-                        warnings.push({
-                            nivel: 'ALTA',
-                            descripcion: `${p.user1} y ${p.user2}: ${p.count} operaciones en ${Math.round(days)} días`,
-                            detalle: `Jugadores: ${p.players.join(', ')}`
-                        });
-                    } else {
-                        warnings.push({
-                            nivel: 'MEDIA',
-                            descripcion: `${p.user1} y ${p.user2}: ${p.count} operaciones en total`,
-                            detalle: `Jugadores: ${p.players.join(', ')}`
-                        });
-                    }
-                } else if (p.count >= 2 && p.players.length <= 2) {
-                    warnings.push({
-                        nivel: 'MEDIA',
-                        descripcion: `${p.user1} y ${p.user2}: ${p.count} operaciones con ${p.players.length} jugadores`,
-                        detalle: `Posible concentración de operaciones`
-                    });
-                }
-            });
-
-            return warnings;
         }
 
         // ============================================================
@@ -9490,12 +9569,31 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const u = fantasyData.usuarios.find(u => u.nombre === nombre);
             if (!u) return;
             showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Editar valor de plantilla</div>
-                <div class="modal-label">Valor de plantilla (€)</div>
-                <input type="number" id="template-value-input" class="modal-input" value="${u.valor_plantilla}" step="0.01">
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Este valor es 100% manual y no se ve afectado por las compras/ventas · Valor total actual: ${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
+                <div class="modal-title" style="color:var(--fantasy-accent)">Editar valor de plantilla</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">${escapeHtml(nombre)} · manual, no se ve afectado por compras/ventas</div>
+                <input type="number" id="template-value-input" class="modal-input" value="${u.valor_plantilla}" step="100000"
+                    style="font-size:20px;font-weight:800;text-align:center"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();confirmEditTemplateValue('${nombre}');}">
+                <div style="display:flex;gap:6px;justify-content:center;margin:10px 0 16px">
+                    <button class="btn-secondary" style="width:auto;padding:6px 10px;font-size:12px" onclick="adjustTemplateValue(-5000000,'${nombre}')">-5M</button>
+                    <button class="btn-secondary" style="width:auto;padding:6px 10px;font-size:12px" onclick="adjustTemplateValue(-1000000,'${nombre}')">-1M</button>
+                    <button class="btn-secondary" style="width:auto;padding:6px 10px;font-size:12px" onclick="adjustTemplateValue(1000000,'${nombre}')">+1M</button>
+                    <button class="btn-secondary" style="width:auto;padding:6px 10px;font-size:12px" onclick="adjustTemplateValue(5000000,'${nombre}')">+5M</button>
+                </div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Valor total resultante: <span id="template-value-total">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</span></div>
                 <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmEditTemplateValue('${nombre}')">Guardar</button>
             `);
+            setTimeout(() => document.getElementById('template-value-input')?.select(), 50);
+        }
+
+        function adjustTemplateValue(delta, nombre) {
+            const input = document.getElementById('template-value-input');
+            const totalEl = document.getElementById('template-value-total');
+            if (!input) return;
+            const newValue = (parseFloat(input.value) || 0) + delta;
+            input.value = newValue;
+            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
+            if (totalEl && u) totalEl.textContent = (u.efectivo + newValue).toLocaleString('es-ES') + '€';
         }
 
         function confirmEditTemplateValue(nombre) {
@@ -9525,7 +9623,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
             const profits = [];
             Object.entries(txsByPlayer).forEach(([jugador, txs]) => {
-                const sorted = txs.slice().sort((a, b) => a.fecha.localeCompare(b.fecha));
+                const sorted = txs.slice().sort((a, b) => fantasyDateValue(a.fecha) - fantasyDateValue(b.fecha));
                 let openBuy = null;
                 sorted.forEach(tx => {
                     // No usamos únicamente tx.tipo, ya que en un TRASPASO (compraventa entre
@@ -9691,6 +9789,70 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         //  FANTASY: TABLA DE BENEFICIOS POR REVENTA (todos los usuarios)
         // ============================================================
+        // ============================================================
+        //  FANTASY: TIMELINE (con buscador)
+        // ============================================================
+        function renderFantasyTimelineItems(filterText) {
+            const q = (filterText || '').trim().toLowerCase();
+            const items = fantasyData.transacciones
+                .filter(tx => !q || [tx.jugador, tx.comprador, tx.vendedor].some(v => (v || '').toLowerCase().includes(q)))
+                .slice()
+                .sort((a, b) => fantasyDateValue(b.fecha) - fantasyDateValue(a.fecha));
+
+            if (!items.length) {
+                return `<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin resultados</div>`;
+            }
+
+            return items.map(tx => {
+                const isClausula = tx.tipo === 'clausula';
+                const isPremio = tx.tipo === 'premio';
+                const isVideo = tx.tipo === 'video';
+                const isBuy = tx.tipo === 'compra';
+                const isNegative = isBuy || isClausula;
+                const typeLabel = isVideo ? 'VÍDEO' : (isPremio ? 'PREMIO' : (isClausula ? 'CLÁUSULA' : (isBuy ? 'COMPRA' : 'VENTA')));
+                const actor = tx.comprador !== 'LALIGA' ? tx.comprador : tx.vendedor;
+                const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
+                const dateLabel = isNaN(dateObj) ? (tx.fecha || '—') : dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                return `
+                    <div class="fantasy-tx-item" style="cursor:pointer" onclick="showFantasyUserDetail('${actor}')">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <div>
+                                <span class="tx-type ${isNegative ? 'buy' : 'sell'}">${typeLabel}</span>
+                                <span style="font-weight:700;margin-left:6px">${escapeHtml(actor)}</span>
+                                ${(isClausula || isPremio || isVideo) ? '' : `<span style="font-size:11px;color:var(--text-secondary)"> · ${escapeHtml(tx.jugador)} (${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)})</span>`}
+                            </div>
+                            <span class="tx-amount ${isNegative ? 'negative' : 'positive'}">${isNegative ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${dateLabel}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterFantasyTimeline() {
+            const input = document.getElementById('fantasy-timeline-search');
+            const list = document.getElementById('fantasy-timeline-list');
+            if (!input || !list) return;
+            list.innerHTML = renderFantasyTimelineItems(input.value);
+        }
+
+        function toggleFantasyMoreMenu() {
+            const menu = document.getElementById('fantasy-more-menu');
+            if (!menu) return;
+            const willOpen = !menu.classList.contains('open');
+            menu.classList.toggle('open', willOpen);
+            if (willOpen) {
+                setTimeout(() => {
+                    document.addEventListener('click', function closeFantasyMoreMenu(e) {
+                        if (!menu.contains(e.target)) {
+                            menu.classList.remove('open');
+                            document.removeEventListener('click', closeFantasyMoreMenu);
+                        }
+                    });
+                }, 0);
+            }
+        }
+
         function getAllFantasyProfits() {
             const rows = [];
             fantasyData.usuarios.forEach(u => {
@@ -9698,7 +9860,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     .filter(p => !p.sinCompraRegistrada)
                     .forEach(p => rows.push(Object.assign({ usuario: u.nombre }, p)));
             });
-            return rows.sort((a, b) => b.fechaVenta.localeCompare(a.fechaVenta));
+            return rows.sort((a, b) => fantasyDateValue(b.fechaVenta) - fantasyDateValue(a.fechaVenta));
         }
 
         function renderFantasyProfitTable() {
@@ -9749,7 +9911,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 saveFantasyData();
             }
 
-            const warnings = detectSuspiciousFlows();
             const LOW_CASH_THRESHOLD = 20000000;
             const lowCashUsers = fantasyData.usuarios
                 .filter(u => u.efectivo < LOW_CASH_THRESHOLD)
@@ -9765,23 +9926,32 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         <div class="fantasy-toolbar">
                             <button class="btn-secondary fantasy-btn-accent" onclick="openVideoRewardModal()">Vídeo +100.000€</button>
                             <button class="btn-secondary" onclick="addFantasyUserManually()">Añadir usuario</button>
-                            <button class="btn-secondary" onclick="resetFantasyData()">Reiniciar</button>
-                            <button class="btn-secondary" onclick="exportFantasyData()">Exportar</button>
-                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-input').click()">Restaurar copia</button>
-                            <button class="btn-secondary fantasy-btn-accent" onclick="changeFantasyPassword()">Cambiar contraseña</button>
+                            <div style="position:relative;display:inline-block">
+                                <button class="btn-secondary" onclick="toggleFantasyMoreMenu()">Más opciones</button>
+                                <div id="fantasy-more-menu" class="fantasy-more-menu">
+                                    <button class="btn-secondary" onclick="toggleFantasyMoreMenu();exportFantasyData()">Exportar</button>
+                                    <button class="btn-secondary" onclick="toggleFantasyMoreMenu();document.getElementById('fantasy-import-input').click()">Restaurar copia</button>
+                                    <button class="btn-secondary" onclick="toggleFantasyMoreMenu();resetFantasyData()">Reiniciar</button>
+                                    <button class="btn-secondary fantasy-btn-accent" onclick="toggleFantasyMoreMenu();changeFantasyPassword()">Cambiar contraseña</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="fantasy-chart-container" style="margin-bottom:16px">
                         <div class="fantasy-section-title">Actualizar por texto (pegar traducción de capturas)</div>
-                        <textarea id="fantasy-text-import" class="modal-input" rows="4" placeholder="COMPRA|2026-08-12 18:00|Capa11|G. Puerta|13321297&#10;VENTA|2026-08-13 08:57|Bordalostias|Moscardo|9977200&#10;TRASPASO|2026-08-13 20:15|sergi___03|Capa11|Sergio Herrera|48000100&#10;PREMIO|2026-08-20 11:44|Alex_rr|1|1600000&#10;NUEVO|2026-08-12 16:06|PiterLoveMourinho" style="margin-bottom:8px"></textarea>
+                        <textarea id="fantasy-text-import" class="modal-input" rows="1" placeholder="Pega aquí el texto (COMPRA / VENTA / TRASPASO / PREMIO / NUEVO)..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
                         <button class="btn-secondary fantasy-btn-accent" style="margin:0;padding:7px 14px;font-size:12px;width:auto;border-radius:8px" onclick="processFantasyTextImport()">Procesar texto</button>
                         <div style="font-size:10px;color:var(--text-secondary);margin-top:6px">Las líneas de tipo "shielded" (protección de jugador) se ignoran automáticamente: no tienen efecto económico.</div>
+                        <div id="fantasy-import-summary" style="font-size:12px;margin-top:8px"></div>
                     </div>
 
                     <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
                         <select id="jornada-selector" class="modal-input" style="width:auto;display:inline-block;margin-bottom:0;padding:6px 12px">
-                            ${Array.from({length: 38}, (_, i) => i + 1).map(n => `<option value="${n}">Jornada ${n}</option>`).join('')}
+                            ${Array.from({length: 38}, (_, i) => i + 1).map(n => {
+                                const registrada = fantasyData.jornadas.some(j => j.numero === n);
+                                return `<option value="${n}">${registrada ? '✓ ' : ''}Jornada ${n}</option>`;
+                            }).join('')}
                         </select>
                         <button class="btn-secondary" style="width:auto" onclick="openJornadaForm(parseInt(document.getElementById('jornada-selector').value))">Registrar jornada</button>
                     </div>
@@ -9811,34 +9981,16 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     ${fantasyData.transacciones.length ? `
                         <div class="fantasy-chart-container" style="margin-top:16px">
                             <div class="fantasy-section-title">Timeline de actividad (todos los rivales)</div>
-                            <div style="max-height:340px;overflow-y:auto">
-                                ${fantasyData.transacciones.slice().sort((a, b) => b.fecha.localeCompare(a.fecha)).map(tx => {
-                                    const isClausula = tx.tipo === 'clausula';
-                                    const isPremio = tx.tipo === 'premio';
-                                    const isVideo = tx.tipo === 'video';
-                                    const isBuy = tx.tipo === 'compra';
-                                    const isNegative = isBuy || isClausula;
-                                    const typeLabel = isVideo ? 'VÍDEO' : (isPremio ? 'PREMIO' : (isClausula ? 'CLÁUSULA' : (isBuy ? 'COMPRA' : 'VENTA')));
-                                    const actor = tx.comprador !== 'LALIGA' ? tx.comprador : tx.vendedor;
-                                    const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
-                                    const dateLabel = isNaN(dateObj) ? (tx.fecha || '—') : dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                                    return `
-                                        <div class="fantasy-tx-item" style="cursor:pointer" onclick="showFantasyUserDetail('${actor}')">
-                                            <div style="display:flex;justify-content:space-between;align-items:center">
-                                                <div>
-                                                    <span class="tx-type ${isNegative ? 'buy' : 'sell'}">${typeLabel}</span>
-                                                    <span style="font-weight:700;margin-left:6px">${escapeHtml(actor)}</span>
-                                                    ${(isClausula || isPremio || isVideo) ? '' : `<span style="font-size:11px;color:var(--text-secondary)"> · ${escapeHtml(tx.jugador)} (${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)})</span>`}
-                                                </div>
-                                                <span class="tx-amount ${isNegative ? 'negative' : 'positive'}">${isNegative ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
-                                            </div>
-                                            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${dateLabel}</div>
-                                        </div>
-                                    `;
-                                }).join('')}
+                            <input id="fantasy-timeline-search" class="modal-input" placeholder="Buscar por jugador o usuario..." style="margin-bottom:8px" oninput="filterFantasyTimeline()">
+                            <div id="fantasy-timeline-list" style="max-height:340px;overflow-y:auto">
+                                ${renderFantasyTimelineItems('')}
                             </div>
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div class="fantasy-chart-container" style="margin-top:16px">
+                            <div class="fantasy-empty-state">Todavía no hay operaciones registradas</div>
+                        </div>
+                    `}
 
                     ${lowCashUsers.length ? `
                         <div style="margin-top:16px">
@@ -9854,46 +10006,37 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                     <div style="margin-top:16px">
                         <div class="fantasy-section-title" style="margin-bottom:8px">Usuarios</div>
-                        ${fantasyData.usuarios.map(u => {
-                            const total = u.efectivo + u.valor_plantilla;
-                            const txs = fantasyData.transacciones.filter(t => t.comprador === u.nombre || t.vendedor === u.nombre);
-                            return `
-                                <div class="fantasy-user-card" onclick="showFantasyUserDetail('${u.nombre}')">
-                                    <div>
-                                        <div class="user-name">${escapeHtml(u.nombre)}</div>
-                                        <div class="user-meta">${txs.length} operaciones</div>
-                                        <div class="user-actions">
-                                            <button class="btn-secondary" onclick="event.stopPropagation();editTemplateValue('${u.nombre}')">Valor plantilla</button>
-                                            <button class="btn-secondary" onclick="event.stopPropagation();openManualClauseExpense('${u.nombre}')">Cláusula manual</button>
-                                            <button class="btn-secondary fantasy-btn-danger" onclick="event.stopPropagation();deleteFantasyUser('${u.nombre}')">Borrar usuario</button>
+                        ${fantasyData.usuarios.length ? `
+                            <div class="fantasy-users-grid">
+                                ${fantasyData.usuarios.map(u => {
+                                    const total = u.efectivo + u.valor_plantilla;
+                                    const txs = fantasyData.transacciones.filter(t => t.comprador === u.nombre || t.vendedor === u.nombre);
+                                    const color = fantasyUserColor(u.nombre);
+                                    return `
+                                        <div class="fantasy-user-card" style="border-top:3px solid ${color}" onclick="showFantasyUserDetail('${u.nombre}')">
+                                            <div>
+                                                <div class="user-avatar" style="background:${color}">${fantasyInitials(u.nombre)}</div>
+                                                <div class="user-name">${escapeHtml(u.nombre)}</div>
+                                                <div class="user-meta">${txs.length} operaciones</div>
+                                            </div>
+                                            <div class="user-balance">
+                                                <div class="cash-label">Efectivo</div>
+                                                <div class="cash ${u.efectivo < 0 ? 'fantasy-negative' : ''}" title="${u.efectivo.toLocaleString('es-ES')}€">${fantasyAbbreviate(u.efectivo)}</div>
+                                                <div class="total" title="${total.toLocaleString('es-ES')}€">${fantasyAbbreviate(total)} total</div>
+                                            </div>
+                                            <div class="user-actions">
+                                                <button class="btn-secondary" onclick="event.stopPropagation();editTemplateValue('${u.nombre}')">Plantilla</button>
+                                                <button class="btn-secondary" onclick="event.stopPropagation();openManualClauseExpense('${u.nombre}')">Cláusula</button>
+                                                <button class="btn-secondary fantasy-btn-danger" onclick="event.stopPropagation();deleteFantasyUser('${u.nombre}')">Borrar</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="user-balance">
-                                        <div class="cash-label">Efectivo</div>
-                                        <div class="cash ${u.efectivo < 0 ? 'fantasy-negative' : ''}">${u.efectivo.toLocaleString('es-ES')}€</div>
-                                        <div class="total">${total.toLocaleString('es-ES')}€ total</div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : `
+                            <div class="fantasy-empty-state">Aún no hay usuarios en la liga</div>
+                        `}
                     </div>
-
-                    ${warnings.length ? `
-                        <div style="margin-top:16px">
-                            <div class="fantasy-section-title" style="margin-bottom:8px">Flujos sospechosos</div>
-                            ${warnings.map(w => `
-                                <div class="fantasy-alert ${w.nivel.includes('ALTA') ? 'high' : 'medium'}">
-                                    <div style="font-weight:700">${w.nivel}</div>
-                                    <div>${w.descripcion}</div>
-                                    <div style="font-size:12px;opacity:0.8">${w.detalle}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : `
-                        <div style="margin-top:16px;padding:16px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);text-align:center;color:var(--text-secondary)">
-                            No se detectaron flujos sospechosos
-                        </div>
-                    `}
                 </div>
             `;
 
@@ -10048,7 +10191,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 const sorted = fantasyData.usuarios.slice().sort((a, b) => b.efectivo - a.efectivo);
                 const labels = sorted.map(u => u.nombre);
                 const data = sorted.map(u => u.efectivo);
-                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
+                const colors = sorted.map(u => u.efectivo < 0 ? '#dc2626' : fantasyUserColor(u.nombre));
 
                 const ctx = canvas.getContext('2d');
                 fantasyChartInstance = new Chart(ctx, {
@@ -10103,7 +10246,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 const sorted = fantasyData.usuarios.slice().sort((a, b) => (b.efectivo + b.valor_plantilla) - (a.efectivo + a.valor_plantilla));
                 const labels = sorted.map(u => u.nombre);
                 const data = sorted.map(u => u.efectivo + u.valor_plantilla);
-                const colors = data.map(v => v < 0 ? '#dc2626' : '#8B5CF6');
+                const colors = sorted.map(u => (u.efectivo + u.valor_plantilla) < 0 ? '#dc2626' : fantasyUserColor(u.nombre));
 
                 const ctx = canvas.getContext('2d');
                 patrimonyChartInstance = new Chart(ctx, {
@@ -10168,12 +10311,11 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                 const jornadasOrdenadas = fantasyData.jornadas.slice().sort((a, b) => a.numero - b.numero);
                 const labels = jornadasOrdenadas.map(j => 'J' + j.numero);
-                const palette = ['#8B5CF6', '#F59E0B', '#16a34a', '#dc2626', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
 
-                const datasets = fantasyData.usuarios.map((u, i) => ({
+                const datasets = fantasyData.usuarios.map((u) => ({
                     label: u.nombre,
                     data: jornadasOrdenadas.map(j => j.puntos[u.nombre] !== undefined ? j.puntos[u.nombre] : null),
-                    borderColor: palette[i % palette.length],
+                    borderColor: fantasyUserColor(u.nombre),
                     backgroundColor: 'transparent',
                     tension: 0.3,
                     spanGaps: true
@@ -10222,15 +10364,14 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 }
 
                 const fechas = [...new Set(fantasyData.valorHistorico.map(s => s.fecha))].sort();
-                const palette = ['#8B5CF6', '#F59E0B', '#16a34a', '#dc2626', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
 
-                const datasets = fantasyData.usuarios.map((u, i) => ({
+                const datasets = fantasyData.usuarios.map((u) => ({
                     label: u.nombre,
                     data: fechas.map(f => {
                         const snap = fantasyData.valorHistorico.find(s => s.fecha === f && s.nombre === u.nombre);
                         return snap ? snap.valorTotal : null;
                     }),
-                    borderColor: palette[i % palette.length],
+                    borderColor: fantasyUserColor(u.nombre),
                     backgroundColor: 'transparent',
                     tension: 0.3,
                     spanGaps: true
