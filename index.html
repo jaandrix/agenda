@@ -1407,37 +1407,103 @@
         /* ============================================================
                FANTASY
             ============================================================ */
+        .fantasy-positive { color: #16a34a; }
+        .fantasy-negative { color: #dc2626; }
+
+        .fantasy-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .fantasy-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .fantasy-toolbar .btn-secondary {
+            margin: 0;
+            padding: 7px 14px;
+            font-size: 12px;
+            width: auto;
+            border-radius: 8px;
+        }
+
+        .fantasy-btn-accent {
+            border-color: var(--fantasy-accent) !important;
+            color: var(--fantasy-accent) !important;
+        }
+        .fantasy-btn-danger {
+            border-color: #dc2626 !important;
+            color: #dc2626 !important;
+        }
+
         .fantasy-user-card {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 14px;
-            border-radius: 10px;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 12px;
             border: 1px solid var(--border);
             background: var(--bg-card);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             cursor: pointer;
             transition: all 0.15s ease;
         }
         .fantasy-user-card:hover {
             background: var(--bg-card-hover);
+            border-color: var(--fantasy-accent);
         }
         .fantasy-user-card .user-name {
             font-weight: 700;
             font-size: 15px;
             color: var(--text-primary);
         }
+        .fantasy-user-card .user-meta {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .fantasy-user-card .user-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .fantasy-user-card .user-actions .btn-secondary {
+            margin: 0;
+            padding: 3px 9px;
+            font-size: 10px;
+            width: auto;
+            border-radius: 6px;
+        }
         .fantasy-user-card .user-balance {
             text-align: right;
+            flex-shrink: 0;
         }
         .fantasy-user-card .user-balance .cash {
-            font-size: 13px;
+            font-weight: 800;
+            font-size: 20px;
+            line-height: 1.2;
+            color: #16a34a;
+        }
+        .fantasy-user-card .user-balance .cash.fantasy-negative {
+            color: #dc2626;
+        }
+        .fantasy-user-card .user-balance .cash-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             color: var(--text-secondary);
         }
         .fantasy-user-card .user-balance .total {
-            font-weight: 700;
-            font-size: 15px;
-            color: var(--fantasy-accent);
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
         }
 
         .fantasy-tx-item {
@@ -1457,7 +1523,7 @@
             color: var(--fantasy-accent);
         }
         .fantasy-tx-item .tx-type.sell {
-            color: #dc2626;
+            color: #16a34a;
         }
         .fantasy-tx-item .tx-amount {
             font-weight: 600;
@@ -1494,9 +1560,46 @@
             padding: 16px;
             margin-top: 16px;
         }
+        .fantasy-chart-container .fantasy-canvas-wrap {
+            position: relative;
+            width: 100%;
+            height: 220px;
+        }
         .fantasy-chart-container canvas {
             max-width: 100%;
-            height: 220px !important;
+        }
+
+        .fantasy-profit-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .fantasy-profit-table th {
+            text-align: left;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .fantasy-profit-table td {
+            padding: 7px 8px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .fantasy-profit-table tr:last-child td {
+            border-bottom: none;
+        }
+        .fantasy-profit-table .profit-user {
+            font-weight: 700;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .fantasy-profit-table .profit-user:hover {
+            color: var(--fantasy-accent);
         }
 
         /* ============================================================
@@ -5992,7 +6095,7 @@ function v22RefreshSummaryIfPresent() {
                     recalcFantasyBalances();
                     saveFantasyData();
                     document.getElementById('content').innerHTML = renderFantasy();
-                    renderFantasyChart();
+                    renderAllFantasyCharts();
                     showToast('Fantasy importado correctamente');
                 } catch (err) {
                     showToast('Error al importar el archivo de Fantasy', true);
@@ -6080,7 +6183,7 @@ function v22RefreshSummaryIfPresent() {
             saveFantasyData();
             ta.value = '';
             document.getElementById('content').innerHTML = renderFantasy();
-            renderFantasyChart();
+            renderAllFantasyCharts();
             showToast(added + ' operaciones y ' + users + ' usuarios nuevos importados' +
                 (duplicates ? ', ' + duplicates + ' duplicadas omitidas' : '') +
                 (ignoradas ? ', ' + ignoradas + ' líneas ignoradas (sin efecto económico)' : '') +
@@ -6109,9 +6212,7 @@ function v22RefreshSummaryIfPresent() {
                 loadDocuments(); } else if (currentView === 'finances') content.innerHTML = renderFinances();
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
             else if (currentView === 'fantasy') { content.innerHTML = renderFantasy();
-                renderFantasyChart();
-                renderPointsChart();
-                renderEconomicEvolutionChart(); } else if (currentView === 'vault') content.innerHTML = renderVault();
+                renderAllFantasyCharts(); } else if (currentView === 'vault') content.innerHTML = renderVault();
             else if (currentView === 'notes') content.innerHTML = renderNotes();
             else if (currentView === 'goals') content.innerHTML = renderGoals();
             else if (currentView === 'planner') content.innerHTML = renderPlanner();
@@ -9275,20 +9376,20 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     const days = (last - first) / 86400000;
                     if (days <= 7) {
                         warnings.push({
-                            nivel: '🔴 ALTA',
+                            nivel: 'ALTA',
                             descripcion: `${p.user1} y ${p.user2}: ${p.count} operaciones en ${Math.round(days)} días`,
                             detalle: `Jugadores: ${p.players.join(', ')}`
                         });
                     } else {
                         warnings.push({
-                            nivel: '🟡 MEDIA',
+                            nivel: 'MEDIA',
                             descripcion: `${p.user1} y ${p.user2}: ${p.count} operaciones en total`,
                             detalle: `Jugadores: ${p.players.join(', ')}`
                         });
                     }
                 } else if (p.count >= 2 && p.players.length <= 2) {
                     warnings.push({
-                        nivel: '🟡 MEDIA',
+                        nivel: 'MEDIA',
                         descripcion: `${p.user1} y ${p.user2}: ${p.count} operaciones con ${p.players.length} jugadores`,
                         detalle: `Posible concentración de operaciones`
                     });
@@ -9308,7 +9409,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div class="modal-label">Nombre de usuario</div>
                 <input id="new-fantasy-user-name" class="modal-input" placeholder="Ej: VEZAMAN">
                 <div id="new-fantasy-user-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmAddFantasyUser()">➕ Añadir</button>
+                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmAddFantasyUser()">Añadir</button>
             `);
         }
 
@@ -9324,7 +9425,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             saveFantasyData();
             closeModal();
             document.getElementById('content').innerHTML = renderFantasy();
-            renderFantasyChart();
+            renderAllFantasyCharts();
             showToast('Usuario "' + name + '" añadido');
         }
 
@@ -9340,7 +9441,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     .map(t => t.vendedor)
             );
             showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">🎥 Recompensa por vídeo (+100.000€)</div>
+                <div class="modal-title" style="color:var(--fantasy-accent)">Recompensa por vídeo (+100.000€)</div>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Selecciona quién ha visto hoy el vídeo opcional del juego. Cada usuario solo puede recibirla una vez al día.</div>
                 <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:280px;overflow-y:auto">
                     ${fantasyData.usuarios.length ? fantasyData.usuarios.map(u => {
@@ -9378,7 +9479,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             saveFantasyData();
             closeModal();
             document.getElementById('content').innerHTML = renderFantasy();
-            renderFantasyChart();
+            renderAllFantasyCharts();
             showToast(`Recompensa otorgada a ${checked.length} usuario${checked.length === 1 ? '' : 's'}`);
         }
 
@@ -9407,7 +9508,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             saveFantasyData();
             closeModal();
             document.getElementById('content').innerHTML = renderFantasy();
-            renderFantasyChart();
+            renderAllFantasyCharts();
             showToast('Valor de plantilla actualizado');
         }
 
@@ -9472,13 +9573,13 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             saveFantasyData();
             closeModal();
             document.getElementById('content').innerHTML = renderFantasy();
-            renderFantasyChart();
+            renderAllFantasyCharts();
             showToast('Transacción eliminada');
         }
 
         function openManualClauseExpense(nombre) {
             showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">⚖ Cláusula manual</div>
+                <div class="modal-title" style="color:var(--fantasy-accent)">Cláusula manual</div>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Para gastos en cláusulas que no aparecen en el feed de actividad. Resta directamente del efectivo de ${escapeHtml(nombre)}.</div>
                 <div class="modal-label">Jugador (opcional)</div>
                 <input id="manual-clause-player" class="modal-input" placeholder="Ej: Bellingham">
@@ -9506,7 +9607,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             saveFantasyData();
             closeModal();
             document.getElementById('content').innerHTML = renderFantasy();
-            renderFantasyChart();
+            renderAllFantasyCharts();
             showToast('Cláusula manual registrada');
         }
 
@@ -9544,7 +9645,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             saveFantasyData();
             closeModal();
             document.getElementById('content').innerHTML = renderFantasy();
-            renderFantasyChart();
+            renderAllFantasyCharts();
             showToast('Gasto en cláusula actualizado');
         }
 
@@ -9556,7 +9657,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const puntos = existing ? existing.puntos : {};
 
             showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">📊 Jornada ${numero}</div>
+                <div class="modal-title" style="color:var(--fantasy-accent)">Jornada ${numero}</div>
                 ${fantasyData.usuarios.map(u => `
                     <div class="modal-label">${escapeHtml(u.nombre)}</div>
                     <input type="number" class="modal-input jornada-points-input" data-user="${escapeHtml(u.nombre)}" value="${puntos[u.nombre] || ''}" placeholder="Puntos">
@@ -9583,47 +9684,59 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             saveFantasyData();
             closeModal();
             document.getElementById('content').innerHTML = renderFantasy();
-            renderPointsChart();
+            renderAllFantasyCharts();
             showToast('Jornada ' + numero + ' guardada');
         }
 
         // ============================================================
-        //  FANTASY: DETECT STREAKS (6.7)
+        //  FANTASY: TABLA DE BENEFICIOS POR REVENTA (todos los usuarios)
         // ============================================================
-        function detectStreaks() {
-            const jornadasOrdenadas = fantasyData.jornadas.slice().sort((a, b) => a.numero - b.numero);
-            const last5 = jornadasOrdenadas.slice(-5);
-            const pointsTotals = {};
-            fantasyData.usuarios.forEach(u => { pointsTotals[u.nombre] = 0; });
-            last5.forEach(j => {
-                Object.entries(j.puntos).forEach(([nombre, pts]) => {
-                    if (pointsTotals[nombre] !== undefined) pointsTotals[nombre] += pts;
-                });
+        function getAllFantasyProfits() {
+            const rows = [];
+            fantasyData.usuarios.forEach(u => {
+                calculatePlayerProfits(u.nombre)
+                    .filter(p => !p.sinCompraRegistrada)
+                    .forEach(p => rows.push(Object.assign({ usuario: u.nombre }, p)));
             });
-            const pointsRanking = Object.entries(pointsTotals)
-                .filter(([_, v]) => v > 0)
-                .sort((a, b) => b[1] - a[1]);
+            return rows.sort((a, b) => b.fechaVenta.localeCompare(a.fechaVenta));
+        }
 
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            const cutoff = sevenDaysAgo.toISOString().slice(0, 10);
-
-            const economicChange = fantasyData.usuarios.map(u => {
-                const snapshots = fantasyData.valorHistorico
-                    .filter(s => s.nombre === u.nombre && s.fecha >= cutoff)
-                    .sort((a, b) => a.fecha.localeCompare(b.fecha));
-                if (snapshots.length < 2) return { nombre: u.nombre, cambio: null };
-                const primero = snapshots[0].valorTotal;
-                const ultimo = snapshots[snapshots.length - 1].valorTotal;
-                return { nombre: u.nombre, cambio: ultimo - primero };
-            }).filter(e => e.cambio !== null).sort((a, b) => b.cambio - a.cambio);
-
-            return {
-                mejorJornadas: pointsRanking.length ? pointsRanking[0] : null,
-                peorJornadas: pointsRanking.length > 1 ? pointsRanking[pointsRanking.length - 1] : null,
-                mejorEconomico: economicChange.length ? economicChange[0] : null,
-                peorEconomico: economicChange.length > 1 ? economicChange[economicChange.length - 1] : null
-            };
+        function renderFantasyProfitTable() {
+            const rows = getAllFantasyProfits();
+            if (!rows.length) return '';
+            return `
+                <div class="fantasy-chart-container" style="margin-top:16px">
+                    <div class="fantasy-section-title">Beneficios por reventa de jugadores</div>
+                    <div style="overflow-x:auto">
+                        <table class="fantasy-profit-table">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Jugador</th>
+                                    <th>Compra</th>
+                                    <th>Venta</th>
+                                    <th>Precio compra</th>
+                                    <th>Precio venta</th>
+                                    <th>Beneficio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map(p => `
+                                    <tr>
+                                        <td class="profit-user" onclick="showFantasyUserDetail('${p.usuario}')">${escapeHtml(p.usuario)}</td>
+                                        <td>${escapeHtml(p.jugador)}</td>
+                                        <td>${p.fechaCompra}</td>
+                                        <td>${p.fechaVenta}</td>
+                                        <td>${p.precioCompra.toLocaleString('es-ES')}€</td>
+                                        <td>${p.precioVenta.toLocaleString('es-ES')}€</td>
+                                        <td class="${p.beneficio >= 0 ? 'fantasy-positive' : 'fantasy-negative'}" style="font-weight:700">${p.beneficio >= 0 ? '+' : ''}${p.beneficio.toLocaleString('es-ES')}€</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
         }
 
         // ============================================================
@@ -9637,7 +9750,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             }
 
             const warnings = detectSuspiciousFlows();
-            const streak = detectStreaks();
             const LOW_CASH_THRESHOLD = 20000000;
             const lowCashUsers = fantasyData.usuarios
                 .filter(u => u.efectivo < LOW_CASH_THRESHOLD)
@@ -9647,23 +9759,23 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div style="max-width:800px">
                     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px">
                         <div>
-                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◉ Fantasy</div>
+                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Fantasy</div>
                             <div style="font-size:13px;color:var(--text-secondary)">Análisis económico de la liga</div>
                         </div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap">
-                            <button class="btn-secondary" onclick="openVideoRewardModal()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--fantasy-accent)">🎥 Vídeo +100.000€</button>
-                            <button class="btn-secondary" onclick="addFantasyUserManually()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">➕ Usuario</button>
-                            <button class="btn-secondary" onclick="resetFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">Reiniciar</button>
-                            <button class="btn-secondary" onclick="exportFantasyData()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📤 Exportar</button>
-                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-input').click()" style="margin:0;padding:6px 12px;font-size:12px;width:auto">📥 Restaurar copia</button>
-                            <button class="btn-secondary" onclick="changeFantasyPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--fantasy-accent)">🔑 Cambiar contraseña</button>
+                        <div class="fantasy-toolbar">
+                            <button class="btn-secondary fantasy-btn-accent" onclick="openVideoRewardModal()">Vídeo +100.000€</button>
+                            <button class="btn-secondary" onclick="addFantasyUserManually()">Añadir usuario</button>
+                            <button class="btn-secondary" onclick="resetFantasyData()">Reiniciar</button>
+                            <button class="btn-secondary" onclick="exportFantasyData()">Exportar</button>
+                            <button class="btn-secondary" onclick="document.getElementById('fantasy-import-input').click()">Restaurar copia</button>
+                            <button class="btn-secondary fantasy-btn-accent" onclick="changeFantasyPassword()">Cambiar contraseña</button>
                         </div>
                     </div>
 
                     <div class="fantasy-chart-container" style="margin-bottom:16px">
-                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">📋 Actualizar por texto (pegar traducción de capturas)</div>
+                        <div class="fantasy-section-title">Actualizar por texto (pegar traducción de capturas)</div>
                         <textarea id="fantasy-text-import" class="modal-input" rows="4" placeholder="COMPRA|2026-08-12 18:00|Capa11|G. Puerta|13321297&#10;VENTA|2026-08-13 08:57|Bordalostias|Moscardo|9977200&#10;TRASPASO|2026-08-13 20:15|sergi___03|Capa11|Sergio Herrera|48000100&#10;PREMIO|2026-08-20 11:44|Alex_rr|1|1600000&#10;NUEVO|2026-08-12 16:06|PiterLoveMourinho" style="margin-bottom:8px"></textarea>
-                        <button class="btn-secondary" style="margin:0;padding:6px 12px;font-size:12px;width:auto" onclick="processFantasyTextImport()">✅ Procesar texto</button>
+                        <button class="btn-secondary fantasy-btn-accent" style="margin:0;padding:7px 14px;font-size:12px;width:auto;border-radius:8px" onclick="processFantasyTextImport()">Procesar texto</button>
                         <div style="font-size:10px;color:var(--text-secondary);margin-top:6px">Las líneas de tipo "shielded" (protección de jugador) se ignoran automáticamente: no tienen efecto económico.</div>
                     </div>
 
@@ -9671,43 +9783,34 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         <select id="jornada-selector" class="modal-input" style="width:auto;display:inline-block;margin-bottom:0;padding:6px 12px">
                             ${Array.from({length: 38}, (_, i) => i + 1).map(n => `<option value="${n}">Jornada ${n}</option>`).join('')}
                         </select>
-                        <button class="btn-secondary" style="width:auto" onclick="openJornadaForm(parseInt(document.getElementById('jornada-selector').value))">📝 Registrar jornada</button>
+                        <button class="btn-secondary" style="width:auto" onclick="openJornadaForm(parseInt(document.getElementById('jornada-selector').value))">Registrar jornada</button>
                     </div>
 
                     <div class="fantasy-chart-container">
-                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">💰 Efectivo por usuario</div>
-                        <canvas id="fantasyChart"></canvas>
+                        <div class="fantasy-section-title">Efectivo por usuario</div>
+                        <div class="fantasy-canvas-wrap"><canvas id="fantasyChart"></canvas></div>
                     </div>
 
                     <div class="fantasy-chart-container">
-                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">🏦 Patrimonio total por usuario (efectivo + plantilla)</div>
-                        <canvas id="patrimonyChart"></canvas>
+                        <div class="fantasy-section-title">Patrimonio total por usuario (efectivo + plantilla)</div>
+                        <div class="fantasy-canvas-wrap"><canvas id="patrimonyChart"></canvas></div>
                     </div>
 
                     <div class="fantasy-chart-container">
-                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">📈 Evolución de puntos por jornada</div>
-                        <canvas id="pointsChart"></canvas>
+                        <div class="fantasy-section-title">Evolución de puntos por jornada</div>
+                        <div class="fantasy-canvas-wrap"><canvas id="pointsChart"></canvas></div>
                     </div>
 
                     <div class="fantasy-chart-container">
-                        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">📊 Evolución económica (valor total)</div>
-                        <canvas id="economicChart"></canvas>
+                        <div class="fantasy-section-title">Evolución económica (valor total)</div>
+                        <div class="fantasy-canvas-wrap"><canvas id="economicChart"></canvas></div>
                     </div>
 
-                    <div class="chart-container" style="margin-top:16px">
-                        <div class="chart-title">🏆 Rachas</div>
-                        <div style="font-size:13px;margin-top:8px;line-height:1.8">
-                            ${streak.mejorJornadas ? `<div>🔥 Mejor racha (últimas 5 jornadas): <strong>${escapeHtml(streak.mejorJornadas[0])}</strong> (${streak.mejorJornadas[1]} pts)</div>` : '<div style="color:var(--text-secondary)">Sin datos de puntos suficientes</div>'}
-                            ${streak.peorJornadas ? `<div>❄️ Peor racha (últimas 5 jornadas): <strong>${escapeHtml(streak.peorJornadas[0])}</strong> (${streak.peorJornadas[1]} pts)</div>` : ''}
-                            ${streak.mejorEconomico ? `<div>📈 Mayor subida (7 días): <strong>${escapeHtml(streak.mejorEconomico.nombre)}</strong> (+${streak.mejorEconomico.cambio.toLocaleString('es-ES')}€)</div>` : ''}
-                            ${streak.peorEconomico ? `<div>📉 Mayor bajada (7 días): <strong>${escapeHtml(streak.peorEconomico.nombre)}</strong> (${streak.peorEconomico.cambio.toLocaleString('es-ES')}€)</div>` : ''}
-                            <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">* Las rachas económicas requieren al menos 2 mediciones en los últimos 7 días.</div>
-                        </div>
-                    </div>
+                    ${renderFantasyProfitTable()}
 
                     ${fantasyData.transacciones.length ? `
                         <div class="fantasy-chart-container" style="margin-top:16px">
-                            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">🕐 Timeline de actividad (todos los rivales)</div>
+                            <div class="fantasy-section-title">Timeline de actividad (todos los rivales)</div>
                             <div style="max-height:340px;overflow-y:auto">
                                 ${fantasyData.transacciones.slice().sort((a, b) => b.fecha.localeCompare(a.fecha)).map(tx => {
                                     const isClausula = tx.tipo === 'clausula';
@@ -9715,7 +9818,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                     const isVideo = tx.tipo === 'video';
                                     const isBuy = tx.tipo === 'compra';
                                     const isNegative = isBuy || isClausula;
-                                    const typeLabel = isVideo ? '🎥 VÍDEO' : (isPremio ? '🏆 PREMIO' : (isClausula ? '⚖ CLÁUSULA' : (isBuy ? '⬆ COMPRA' : '⬇ VENTA')));
+                                    const typeLabel = isVideo ? 'VÍDEO' : (isPremio ? 'PREMIO' : (isClausula ? 'CLÁUSULA' : (isBuy ? 'COMPRA' : 'VENTA')));
                                     const actor = tx.comprador !== 'LALIGA' ? tx.comprador : tx.vendedor;
                                     const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
                                     const dateLabel = isNaN(dateObj) ? (tx.fecha || '—') : dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -9739,7 +9842,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                     ${lowCashUsers.length ? `
                         <div style="margin-top:16px">
-                            <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px">🪫 Efectivo bajo — oportunidad de negociación</div>
+                            <div class="fantasy-section-title" style="margin-bottom:8px">Efectivo bajo — oportunidad de negociación</div>
                             ${lowCashUsers.map(u => `
                                 <div class="fantasy-alert ${u.efectivo < 0 ? 'high' : 'medium'}">
                                     <div style="font-weight:700">${escapeHtml(u.nombre)}</div>
@@ -9750,7 +9853,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     ` : ''}
 
                     <div style="margin-top:16px">
-                        <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px">👥 Usuarios</div>
+                        <div class="fantasy-section-title" style="margin-bottom:8px">Usuarios</div>
                         ${fantasyData.usuarios.map(u => {
                             const total = u.efectivo + u.valor_plantilla;
                             const txs = fantasyData.transacciones.filter(t => t.comprador === u.nombre || t.vendedor === u.nombre);
@@ -9758,13 +9861,17 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                 <div class="fantasy-user-card" onclick="showFantasyUserDetail('${u.nombre}')">
                                     <div>
                                         <div class="user-name">${escapeHtml(u.nombre)}</div>
-                                        <div style="font-size:11px;color:var(--text-secondary)">${txs.length} operaciones</div>
-                                        <button class="btn-secondary" style="margin:4px 4px 0 0;padding:2px 8px;font-size:10px;width:auto" onclick="event.stopPropagation();editTemplateValue('${u.nombre}')">💰 Valor plantilla</button>
-                                        <button class="btn-secondary" style="margin:4px 0 0;padding:2px 8px;font-size:10px;width:auto" onclick="event.stopPropagation();openManualClauseExpense('${u.nombre}')">⚖ Cláusula manual</button>
+                                        <div class="user-meta">${txs.length} operaciones</div>
+                                        <div class="user-actions">
+                                            <button class="btn-secondary" onclick="event.stopPropagation();editTemplateValue('${u.nombre}')">Valor plantilla</button>
+                                            <button class="btn-secondary" onclick="event.stopPropagation();openManualClauseExpense('${u.nombre}')">Cláusula manual</button>
+                                            <button class="btn-secondary fantasy-btn-danger" onclick="event.stopPropagation();deleteFantasyUser('${u.nombre}')">Borrar usuario</button>
+                                        </div>
                                     </div>
                                     <div class="user-balance">
-                                        <div class="total">${total.toLocaleString('es-ES')}€</div>
-                                        <div class="cash">${u.efectivo.toLocaleString('es-ES')}€ efectivo</div>
+                                        <div class="cash-label">Efectivo</div>
+                                        <div class="cash ${u.efectivo < 0 ? 'fantasy-negative' : ''}">${u.efectivo.toLocaleString('es-ES')}€</div>
+                                        <div class="total">${total.toLocaleString('es-ES')}€ total</div>
                                     </div>
                                 </div>
                             `;
@@ -9773,7 +9880,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                     ${warnings.length ? `
                         <div style="margin-top:16px">
-                            <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px">🚨 Flujos sospechosos</div>
+                            <div class="fantasy-section-title" style="margin-bottom:8px">Flujos sospechosos</div>
                             ${warnings.map(w => `
                                 <div class="fantasy-alert ${w.nivel.includes('ALTA') ? 'high' : 'medium'}">
                                     <div style="font-weight:700">${w.nivel}</div>
@@ -9784,7 +9891,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         </div>
                     ` : `
                         <div style="margin-top:16px;padding:16px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);text-align:center;color:var(--text-secondary)">
-                            OK — No se detectaron flujos sospechosos
+                            No se detectaron flujos sospechosos
                         </div>
                     `}
                 </div>
@@ -9793,15 +9900,30 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             return html;
         }
 
+        function deleteFantasyUser(nombre) {
+            if (!confirm(`¿Borrar al usuario "${nombre}"? Esto también eliminará todas sus transacciones y recalculará los saldos.`)) return;
+            fantasyData.usuarios = fantasyData.usuarios.filter(u => u.nombre !== nombre);
+            fantasyData.transacciones = fantasyData.transacciones.filter(t => t.comprador !== nombre && t.vendedor !== nombre);
+            if (fantasyData.jornadas) {
+                fantasyData.jornadas.forEach(j => { delete j.puntos[nombre]; });
+            }
+            if (fantasyData.valorHistorico) {
+                fantasyData.valorHistorico = fantasyData.valorHistorico.filter(s => s.nombre !== nombre);
+            }
+            recalcFantasyBalances();
+            saveFantasyData();
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderAllFantasyCharts();
+            showToast('Usuario "' + nombre + '" eliminado');
+        }
+
         function resetFantasyData() {
             if (!confirm('¿Reiniciar todos los datos de Fantasy? Esto eliminará todas las transacciones y balances.')) return;
             fantasyData = getDefaultFantasyData();
             recalcFantasyBalances();
             saveFantasyData();
             render();
-            renderFantasyChart();
-            renderPointsChart();
-            renderEconomicEvolutionChart();
+            renderAllFantasyCharts();
             showToast('Fantasy reiniciado');
         }
 
@@ -9821,21 +9943,22 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
             const contenidoHTML = `
                 <div class="modal-title">${escapeHtml(nombre)}</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+                <div style="text-align:center;padding:14px;margin-bottom:12px;border-radius:12px;background:var(--fantasy-accent-soft)">
+                    <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Efectivo</div>
+                    <div style="font-size:28px;font-weight:800;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
                     <div style="text-align:center">
-                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
+                        <div style="font-size:16px;font-weight:800;color:var(--text-primary)">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
                         <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Total</div>
                     </div>
                     <div style="text-align:center;position:relative">
-                        <div style="font-size:18px;font-weight:800;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Efectivo</div>
-                    </div>
-                    <div style="text-align:center;position:relative">
-                        <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${u.valor_plantilla.toLocaleString('es-ES')}€</div>
+                        <div style="font-size:16px;font-weight:800;color:var(--text-primary)">${u.valor_plantilla.toLocaleString('es-ES')}€</div>
                         <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Plantilla</div>
-                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px;margin-top:4px" onclick="event.stopPropagation();closeModal();editTemplateValue('${nombre}')">✎ Editar</button>
+                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px;margin-top:4px" onclick="event.stopPropagation();closeModal();editTemplateValue('${nombre}')">Editar</button>
                     </div>
                 </div>
+                <button class="btn-secondary fantasy-btn-danger" style="width:auto;margin-bottom:16px" onclick="closeModal();deleteFantasyUser('${nombre}')">Borrar usuario</button>
 
                 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
                 <div style="max-height:300px;overflow-y:auto">
@@ -9849,7 +9972,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         // dos es "nombre" para saber si a él le suma o le resta el efectivo.
                         const isBuy = !isClausula && !isPremio && !isVideo && tx.comprador === nombre;
                         const isNegative = isBuy || isClausula;
-                        const typeLabel = isVideo ? '🎥 VÍDEO' : (isPremio ? '🏆 PREMIO' : (isClausula ? '⚖ CLÁUSULA' : (isBuy ? '⬆ COMPRA' : '⬇ VENTA')));
+                        const typeLabel = isVideo ? 'VÍDEO' : (isPremio ? 'PREMIO' : (isClausula ? 'CLÁUSULA' : (isBuy ? 'COMPRA' : 'VENTA')));
                         const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
                         const dateLabel = isNaN(dateObj) ? (tx.fecha || '—') : dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         return `
@@ -9864,7 +9987,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                 </div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
                                     <span style="font-size:11px;color:var(--text-secondary)">${dateLabel}</span>
-                                    <button class="btn-secondary" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();deleteFantasyTransaction('${tx.id}')">🗑 Eliminar</button>
+                                    <button class="btn-secondary" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();deleteFantasyTransaction('${tx.id}')">Eliminar</button>
                                 </div>
                                 ${isBuy ? renderClauseButton(tx) : ''}
                             </div>
@@ -9873,7 +9996,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 </div>
 
                 ${withProfit.length ? `
-                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">💰 Beneficios por reventa</div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">Beneficios por reventa</div>
                     ${withProfit.map(p => `
                         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
                             <span>${escapeHtml(p.jugador)} <span style="color:var(--text-secondary);font-size:11px">(${p.fechaCompra} → ${p.fechaVenta})</span></span>
@@ -9883,7 +10006,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 ` : ''}
 
                 ${withoutBuy.length ? `
-                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">⚠️ Ventas sin compra registrada</div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">Ventas sin compra registrada</div>
                     ${withoutBuy.map(p => `
                         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-secondary)">
                             <span>${escapeHtml(p.jugador)}</span>
@@ -9899,6 +10022,16 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         //  RENDER: FANTASY CHART (efectivo)
         // ============================================================
+        // Refresca las 4 gráficas de Fantasy. Como cada renderFantasy() reemplaza
+        // los <canvas> del DOM, las instancias de Chart.js anteriores quedan
+        // apuntando a nodos ya desmontados: hay que reconstruirlas todas juntas
+        // cada vez que cambian los datos, o algunas se quedan en blanco.
+        function renderAllFantasyCharts() {
+            renderFantasyChart();
+            renderPointsChart();
+            renderEconomicEvolutionChart();
+        }
+
         function renderFantasyChart() {
             renderPatrimonyChart();
             setTimeout(() => {
@@ -10484,7 +10617,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         function openFantasy() {
             if (!devModeActive) {
-                showToast('⚠️ Activa el Modo Desarrollador en Ajustes para acceder a Fantasy', true);
+                showToast('Activa el Modo Desarrollador en Ajustes para acceder a Fantasy', true);
                 return;
             }
             loadFantasyData();
@@ -10495,9 +10628,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 });
                 updatePageTitle();
                 render();
-                renderFantasyChart();
-                renderPointsChart();
-                renderEconomicEvolutionChart();
+                renderAllFantasyCharts();
             });
         }
 
@@ -10782,7 +10913,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     <input type="password" id="pw-new2-f" class="modal-input" placeholder="Repite la contraseña">
                 </div>
                 <div id="pw-change-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" onclick="updateFantasyPassword()" style="background:var(--fantasy-accent)">🔐 Cambiar contraseña</button>
+                <button class="btn-modal-primary" onclick="updateFantasyPassword()" style="background:var(--fantasy-accent)">Cambiar contraseña</button>
             `);
         }
 
@@ -10800,13 +10931,13 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 const storedHash = await getSecret('fantasy');
                 const oldHash = await hashPassword(old);
                 if (oldHash !== storedHash) {
-                    errorEl.textContent = '❌ Contraseña actual incorrecta';
+                    errorEl.textContent = 'Contraseña actual incorrecta';
                     return;
                 }
                 const newHash = await hashPassword(pw1);
                 await setSecret('fantasy', newHash);
                 closeModal();
-                showToast('🔑 Contraseña de Fantasy actualizada');
+                showToast('Contraseña de Fantasy actualizada');
             } catch (e) {
                 console.error('Error cambiando contraseña:', e);
                 errorEl.textContent = 'Error de conexión, intenta de nuevo';
