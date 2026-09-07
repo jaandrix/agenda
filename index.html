@@ -15,30 +15,31 @@
                CSS VARIABLES & TEMAS
             ============================================================ */
         :root {
-            --bg-app: #0a0a0f;
-            --bg-sidebar: #12121f;
-            --bg-card: #12121f;
-            --bg-card-hover: #1a1a2e;
-            --bg-input: #1a1a2e;
-            --bg-modal: #12121f;
-            --bg-fab: #e2e8f0;
-            --border: #1a1a2e;
-            --border-strong: #2a2a3a;
-            --text-primary: #e2e8f0;
-            --text-secondary: #6b7280;
-            --text-muted: #4a4a5a;
-            --accent: #e2e8f0;
-            --accent-contrast: #0a0a0f;
-            --badge-pending-bg: #422f00;
-            --badge-pending-text: #fcd34d;
-            --badge-progress-bg: #1e3a5f;
-            --badge-progress-text: #93c5fd;
-            --badge-done-bg: #14532d;
-            --badge-done-text: #86efac;
-            --badge-default-bg: #2a2a3a;
-            --badge-default-text: #e2e8f0;
-            --shadow: 0 4px 20px rgba(0,0,0,0.3);
-            --radius: 14px;
+            --bg-app: #000000;
+            --bg-sidebar: #0a0a0a;
+            --bg-card: #131313;
+            --bg-card-hover: #1c1c1c;
+            --bg-input: #161616;
+            --bg-modal: #141414;
+            --bg-fab: #ffffff;
+            --border: #202020;
+            --border-strong: #2b2b2b;
+            --text-primary: #ffffff;
+            --text-secondary: #9a9a9a;
+            --text-muted: #5c5c5c;
+            --accent: #ffffff;
+            --accent-contrast: #000000;
+            --badge-pending-bg: #2a2a2a;
+            --badge-pending-text: #e5e5e5;
+            --badge-progress-bg: #3a3a3a;
+            --badge-progress-text: #ffffff;
+            --badge-done-bg: #ffffff;
+            --badge-done-text: #000000;
+            --badge-default-bg: #262626;
+            --badge-default-text: #e5e5e5;
+            --shadow: 0 4px 20px rgba(0,0,0,0.45);
+            --radius: 20px;
+            --radius-full: 999px;
             --fantasy-accent: #8B5CF6;
             --fantasy-accent-soft: #1a152e;
             --vault-accent: #F59E0B;
@@ -46,29 +47,29 @@
         }
 
         body.light {
-            --bg-app: #f5f5f7;
+            --bg-app: #f7f7f5;
             --bg-sidebar: #ffffff;
             --bg-card: #ffffff;
-            --bg-card-hover: #fafafa;
-            --bg-input: #f5f5f7;
+            --bg-card-hover: #f2f2f0;
+            --bg-input: #f2f2f0;
             --bg-modal: #ffffff;
-            --bg-fab: #1c1c1e;
-            --border: #e2e8f0;
-            --border-strong: #d1d1d6;
-            --text-primary: #1c1c1e;
-            --text-secondary: #8e8e93;
-            --text-muted: #aeaeb2;
-            --accent: #1c1c1e;
-            --accent-contrast: #f5f5f7;
-            --badge-pending-bg: #fef3c7;
-            --badge-pending-text: #92400e;
-            --badge-progress-bg: #dbeafe;
-            --badge-progress-text: #1d4ed8;
-            --badge-done-bg: #dcfce7;
-            --badge-done-text: #15803d;
-            --badge-default-bg: #e2e8f0;
-            --badge-default-text: #1c1c1e;
-            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            --bg-fab: #000000;
+            --border: #e8e8e6;
+            --border-strong: #d8d8d5;
+            --text-primary: #000000;
+            --text-secondary: #6b6b6b;
+            --text-muted: #a3a3a3;
+            --accent: #000000;
+            --accent-contrast: #ffffff;
+            --badge-pending-bg: #ededea;
+            --badge-pending-text: #3d3d3d;
+            --badge-progress-bg: #e2e2df;
+            --badge-progress-text: #1a1a1a;
+            --badge-done-bg: #000000;
+            --badge-done-text: #ffffff;
+            --badge-default-bg: #ededea;
+            --badge-default-text: #1a1a1a;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
             --fantasy-accent: #7C3AED;
             --fantasy-accent-soft: #ede9fe;
             --vault-accent: #D97706;
@@ -168,7 +169,7 @@
             width: 32px;
             height: 32px;
             background: var(--accent);
-            border-radius: 8px;
+            border-radius: 14px;
             flex-shrink: 0;
         }
         .sidebar-brand .brand-name {
@@ -235,7 +236,7 @@
             background: none;
             border: none;
             padding: 8px 10px;
-            border-radius: 8px;
+            border-radius: 14px;
             font-family: 'Inter', sans-serif;
             font-size: 13px;
             font-weight: 500;
@@ -303,7 +304,7 @@
             background: none;
             border: none;
             padding: 6px 10px;
-            border-radius: 8px;
+            border-radius: 14px;
             font-size: 16px;
             cursor: pointer;
             color: var(--text-secondary);
@@ -389,7 +390,7 @@
             background: none;
             border: none;
             padding: 10px 10px;
-            border-radius: 8px;
+            border-radius: 14px;
             font-family: 'Inter', sans-serif;
             font-size: 14px;
             font-weight: 500;
@@ -446,7 +447,7 @@
             background: none;
             border: none;
             padding: 6px 10px;
-            border-radius: 8px;
+            border-radius: 14px;
             font-size: 16px;
             cursor: pointer;
             color: var(--text-secondary);
@@ -500,7 +501,7 @@
             background: var(--bg-fab);
             color: var(--accent-contrast);
             border: none;
-            border-radius: 10px;
+            border-radius: 16px;
             padding: 8px 14px;
             font-family: 'Inter', sans-serif;
             font-size: 13px;
@@ -523,7 +524,7 @@
             background: var(--bg-app);
             border: 1px solid var(--border-strong);
             color: var(--text-secondary);
-            border-radius: 10px;
+            border-radius: 16px;
             padding: 8px 12px;
             font-size: 13px;
             font-weight: 600;
@@ -561,7 +562,7 @@
             max-height: 70vh;
             background: var(--bg-card);
             border: 1px solid var(--border-strong);
-            border-radius: 16px;
+            border-radius: 22px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -606,7 +607,7 @@
             align-items: center;
             gap: 10px;
             padding: 10px 12px;
-            border-radius: 10px;
+            border-radius: 16px;
             cursor: pointer;
         }
         .search-result-item:hover {
@@ -650,7 +651,7 @@
             border: none;
             font-family: 'Inter', sans-serif;
             padding: 2px 8px;
-            border-radius: 6px;
+            border-radius: 10px;
             transition: background 0.15s ease;
         }
         #main-header h1 .edit-name-btn:hover {
@@ -706,7 +707,7 @@
             bottom: 100px;
             right: 30px;
             background: var(--bg-card);
-            border-radius: 16px;
+            border-radius: 22px;
             padding: 8px 0;
             box-shadow: var(--shadow);
             z-index: 51;
@@ -788,7 +789,7 @@
             background: #f8f5ed;
             color: #242424;
             border: 1px solid rgba(0,0,0,.10);
-            border-radius: 16px;
+            border-radius: 22px;
             box-shadow: 0 18px 50px rgba(0,0,0,.28);
             z-index: 52;
             display: none;
@@ -821,7 +822,7 @@
             border: 1px solid rgba(0,0,0,.14);
             background: #fffdf7;
             color: #252525;
-            border-radius: 8px;
+            border-radius: 14px;
             padding: 5px 8px;
             font: 700 11px 'Inter', sans-serif;
             cursor: pointer;
@@ -838,7 +839,7 @@
             align-items: center;
             gap: 9px;
             padding: 9px 7px;
-            border-radius: 9px;
+            border-radius: 14px;
             transition: background .15s ease;
         }
         .weekly-task-row:hover { background: rgba(0,0,0,.035); }
@@ -1011,6 +1012,163 @@
             line-height: 1.4;
         }
 
+        /* ============================================================
+               HOME / CALENDARIO (estilo Stoic)
+            ============================================================ */
+        .cal-home { max-width: 760px; }
+        .cal-greeting {
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        .cal-strip {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 22px;
+            overflow-x: auto;
+        }
+        .cal-strip-day {
+            flex: 1;
+            min-width: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 8px 4px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            transition: all 0.15s ease;
+        }
+        .cal-strip-day:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+        .cal-strip-letter { font-size: 10px; font-weight: 700; text-transform: uppercase; opacity: 0.7; }
+        .cal-strip-num { font-size: 14px; font-weight: 700; }
+        .cal-strip-day.is-today { border-color: var(--border-strong); color: var(--text-primary); }
+        .cal-strip-day.selected { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+        .cal-strip-day.selected .cal-strip-letter { color: var(--accent-contrast); opacity: 0.6; }
+
+        .cal-nav-arrow {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-full);
+            font-size: 16px;
+            cursor: pointer;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cal-nav-arrow:hover { background: var(--bg-card-hover); }
+
+        .cal-month-cell {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 6px 4px 8px 4px;
+            min-height: 64px;
+            text-align: center;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .cal-month-cell:hover { background: var(--bg-card-hover); }
+        .cal-month-cell.is-today { border-color: var(--text-primary); }
+        .cal-month-cell.is-selected { border-color: var(--accent); background: var(--bg-card-hover); }
+
+        .cal-week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+        .cal-week-col {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 8px 6px;
+            cursor: pointer;
+            min-height: 140px;
+            transition: background 0.15s ease;
+        }
+        .cal-week-col:hover { background: var(--bg-card-hover); }
+        .cal-week-col.is-today { border-color: var(--text-primary); }
+        .cal-week-col-head {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .cal-week-col-num { font-size: 15px; font-weight: 800; color: var(--text-primary); }
+        .cal-week-col-items { display: flex; flex-direction: column; gap: 4px; }
+        .cal-week-item {
+            font-size: 10px;
+            color: var(--text-primary);
+            background: var(--bg-input);
+            border-left: 3px solid var(--text-secondary);
+            border-radius: 6px;
+            padding: 3px 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .cal-week-empty { font-size: 10px; color: var(--text-muted); text-align: center; }
+        .cal-week-more { font-size: 9px; color: var(--text-secondary); text-align: center; }
+
+        @media (max-width: 720px) {
+            .cal-week-grid { grid-template-columns: repeat(7, minmax(80px,1fr)); overflow-x: auto; }
+        }
+
+        /* ============================================================
+               CULTURA (tabs Libros/Series/Películas/Videojuegos)
+            ============================================================ */
+        .culture-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: var(--bg-card);
+            padding: 6px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border);
+            width: fit-content;
+        }
+        .culture-tab {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .culture-tab:hover { color: var(--text-primary); }
+        .culture-tab.active {
+            background: var(--accent);
+            color: var(--accent-contrast);
+        }
+        .culture-tab-icon { font-size: 13px; }
+        .culture-tab-count {
+            font-size: 11px;
+            font-weight: 700;
+            opacity: 0.6;
+        }
+        .culture-tab.active .culture-tab-count { opacity: 0.75; }
+
         .empty-state {
             text-align: center;
             padding: 48px 20px;
@@ -1039,7 +1197,7 @@
             border-bottom: 1px solid var(--border);
             cursor: pointer;
             transition: background 0.15s ease;
-            border-radius: 6px;
+            border-radius: 10px;
         }
         .entry-item:hover {
             background: var(--bg-card-hover);
@@ -1081,7 +1239,7 @@
             font-size: 14px;
             cursor: pointer;
             padding: 4px 6px;
-            border-radius: 6px;
+            border-radius: 10px;
             color: var(--text-secondary);
             transition: all 0.15s ease;
         }
@@ -1122,7 +1280,7 @@
             font-size: 10px;
             font-weight: 700;
             padding: 2px 10px;
-            border-radius: 20px;
+            border-radius: 24px;
             display: inline-block;
         }
         .badge-pending {
@@ -1190,7 +1348,7 @@
 
         .modal-sheet {
             background: var(--bg-modal);
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 28px;
             width: 100%;
             max-width: 520px;
@@ -1231,7 +1389,7 @@
         .modal-input {
             width: 100%;
             padding: 10px 14px;
-            border-radius: 10px;
+            border-radius: 16px;
             border: 1px solid var(--border-strong);
             font-family: 'Inter', sans-serif;
             font-size: 14px;
@@ -1266,7 +1424,7 @@
         .btn-modal-primary {
             width: 100%;
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 18px;
             border: none;
             background: var(--accent);
             color: var(--accent-contrast);
@@ -1284,7 +1442,7 @@
         .btn-modal-danger {
             width: 100%;
             padding: 10px;
-            border-radius: 12px;
+            border-radius: 18px;
             border: none;
             background: #2a1515;
             color: #dc2626;
@@ -1308,7 +1466,7 @@
         .btn-secondary {
             display: inline-block;
             padding: 8px 16px;
-            border-radius: 10px;
+            border-radius: 16px;
             border: 1px solid var(--border-strong);
             background: var(--bg-input);
             color: var(--text-primary);
@@ -1330,7 +1488,7 @@
             align-items: center;
             gap: 12px;
             padding: 10px 12px;
-            border-radius: 10px;
+            border-radius: 16px;
             border: 1px solid var(--border);
             background: var(--bg-card);
             margin-bottom: 8px;
@@ -1377,7 +1535,7 @@
         .vault-input-row input {
             flex: 1;
             padding: 10px 14px;
-            border-radius: 10px;
+            border-radius: 16px;
             border: 1px solid var(--border-strong);
             background: var(--bg-input);
             color: var(--text-primary);
@@ -1390,7 +1548,7 @@
         }
         .vault-input-row button {
             padding: 10px 18px;
-            border-radius: 10px;
+            border-radius: 16px;
             border: none;
             background: var(--vault-accent);
             color: #fff;
@@ -1461,7 +1619,7 @@
             padding: 7px 14px;
             font-size: 12px;
             width: auto;
-            border-radius: 8px;
+            border-radius: 14px;
             background: var(--fx-bg);
             border-color: var(--fx-border);
             color: var(--fx-text);
@@ -1474,7 +1632,7 @@
             top: calc(100% + 6px);
             background: var(--fx-bg);
             border: 1px solid var(--fx-border);
-            border-radius: 10px;
+            border-radius: 16px;
             padding: 6px;
             z-index: 20;
             min-width: 170px;
@@ -1491,7 +1649,7 @@
             text-align: left;
             padding: 7px 10px;
             font-size: 12px;
-            border-radius: 6px;
+            border-radius: 10px;
             background: transparent;
             border-color: var(--fx-border);
             color: var(--fx-text);
@@ -1565,7 +1723,7 @@
             text-align: center;
             aspect-ratio: 1 / 1;
             padding: 14px 10px;
-            border-radius: 12px;
+            border-radius: 18px;
             border: 1px solid var(--fx-border);
             background: var(--fx-bg);
             cursor: pointer;
@@ -1615,7 +1773,7 @@
             padding: 3px 7px;
             font-size: 10px;
             width: auto;
-            border-radius: 6px;
+            border-radius: 10px;
             background: transparent;
             border-color: var(--fx-border);
             color: var(--fx-text);
@@ -1678,7 +1836,7 @@
 
         .fantasy-alert {
             padding: 10px 14px;
-            border-radius: 10px;
+            border-radius: 16px;
             margin-bottom: 8px;
             font-size: 13px;
             border-left: 4px solid;
@@ -1697,7 +1855,7 @@
         .fantasy-chart-container {
             background: var(--fx-bg);
             border: 1px solid var(--fx-border);
-            border-radius: 12px;
+            border-radius: 18px;
             padding: 16px;
             margin-top: 16px;
             transition: box-shadow 0.15s ease;
@@ -1909,7 +2067,7 @@
             background: var(--bg-app);
             border: 1px solid var(--border);
             color: var(--text-secondary);
-            border-radius: 8px;
+            border-radius: 14px;
             padding: 4px 10px;
             font-size: 11px;
             font-weight: 600;
@@ -1930,7 +2088,7 @@
         .investment-calculator .result-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 18px;
             padding: 14px 12px;
             text-align: center;
         }
@@ -1951,7 +2109,7 @@
             margin-top: 20px;
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 18px;
             padding: 16px;
         }
         .investment-calculator .chart-container .chart-title {
@@ -2027,7 +2185,7 @@
             align-items: center;
             gap: 8px;
             padding: 8px 10px;
-            border-radius: 8px;
+            border-radius: 14px;
             background: var(--bg-app);
             border: 1px solid var(--border);
             font-size: 13px;
@@ -2048,7 +2206,7 @@
         .note-card {
             background: #f7f0e2;
             border: 1px solid #e6d9bd;
-            border-radius: 14px;
+            border-radius: 20px;
             padding: 22px 18px;
             cursor: pointer;
             transition: transform 0.12s ease, box-shadow 0.12s ease;
@@ -2084,7 +2242,7 @@
         .note-readonly {
             background: #f7f0e2;
             border: 1px solid #e6d9bd;
-            border-radius: 14px;
+            border-radius: 20px;
             padding: 20px;
             min-height: 100px;
             width: 100%;
@@ -2143,7 +2301,7 @@
             align-items: center;
             gap: 10px;
             padding: 10px 12px;
-            border-radius: 8px;
+            border-radius: 14px;
             border: 1px solid var(--border);
             background: #0d0d0d;
             cursor: pointer;
@@ -2165,7 +2323,7 @@
         #header-clock { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text-secondary); min-width:42px; text-align:right; }
         .entry-detail-card { max-width:760px; }
         .entry-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
-        .entry-detail-field { padding:12px 14px; border:1px solid var(--border); border-radius:10px; background:var(--bg-card); }
+        .entry-detail-field { padding:12px 14px; border:1px solid var(--border); border-radius:16px; background:var(--bg-card); }
         .entry-detail-label { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-secondary); margin-bottom:5px; font-weight:700; }
         .entry-detail-value { font-size:13px; color:var(--text-primary); line-height:1.5; white-space:pre-wrap; word-break:break-word; }
         .entry-detail-actions { display:flex; gap:8px; margin-top:18px; flex-wrap:wrap; }
@@ -2255,7 +2413,7 @@
             font-size: 24px;
             font-weight: 900;
             padding: 4px 12px;
-            border-radius: 8px;
+            border-radius: 14px;
             display: inline-block;
         }
         .nota-aprobado {
@@ -2274,7 +2432,7 @@
             justify-content: space-between;
             gap: 12px;
             padding: 12px 14px;
-            border-radius: 10px;
+            border-radius: 16px;
             border: 1px solid var(--border-strong);
             background: var(--bg-card);
             margin-bottom: 10px;
@@ -2305,7 +2463,7 @@
         .doc-actions button {
             background: none;
             border: 1px solid var(--border-strong);
-            border-radius: 6px;
+            border-radius: 10px;
             padding: 6px 10px;
             font-size: 13px;
             cursor: pointer;
@@ -2316,7 +2474,7 @@
         }
         .doc-upload-box {
             border: 2px dashed var(--border-strong);
-            border-radius: 12px;
+            border-radius: 18px;
             padding: 24px;
             text-align: center;
             margin-bottom: 20px;
@@ -2354,7 +2512,7 @@
             width: 100%;
             max-width: 320px;
             padding: 32px 28px;
-            border-radius: 16px;
+            border-radius: 22px;
             background: var(--bg-card);
             border: 1px solid var(--border-strong);
         }
@@ -2375,7 +2533,7 @@
             width: 100%;
             padding: 10px 12px;
             margin-bottom: 12px;
-            border-radius: 8px;
+            border-radius: 14px;
             border: 1px solid var(--border-strong);
             background: var(--bg-input);
             color: var(--text-primary);
@@ -2385,7 +2543,7 @@
         #login-box button {
             width: 100%;
             padding: 10px 12px;
-            border-radius: 8px;
+            border-radius: 14px;
             border: none;
             background: #2563eb;
             color: #fff;
@@ -2505,7 +2663,7 @@ body.beige {
 .fund-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 18px;
     padding: 14px 16px;
     margin-bottom: 10px;
     cursor: pointer;
@@ -2577,7 +2735,7 @@ body.beige {
 }
 .invest-tab {
     padding: 6px 14px;
-    border-radius: 20px;
+    border-radius: 24px;
     border: 1px solid var(--border-strong);
     background: transparent;
     color: var(--text-primary);
@@ -2592,7 +2750,7 @@ body.beige {
 }
 .invest-empty-fund {
     border: 1px dashed var(--border-strong);
-    border-radius: 12px;
+    border-radius: 18px;
     padding: 24px;
     text-align: center;
     cursor: pointer;
@@ -2655,7 +2813,7 @@ body.beige {
     width:auto !important;
     margin:0 !important;
     padding:9px 15px !important;
-    border-radius:11px !important;
+    border-radius:16px !important;
     font-size:12px !important;
 }
 .wishlist-summary {
@@ -2667,7 +2825,7 @@ body.beige {
 .wishlist-stat {
     background:var(--bg-card);
     border:1px solid var(--border);
-    border-radius:12px;
+    border-radius:18px;
     padding:13px 14px;
 }
 .wishlist-stat-label {
@@ -2704,7 +2862,7 @@ body.beige {
     background:var(--bg-input);
     border:1px solid var(--border);
     padding:3px 8px;
-    border-radius:20px;
+    border-radius:24px;
 }
 .wishlist-item {
     display:grid;
@@ -2713,7 +2871,7 @@ body.beige {
     align-items:center;
     background:var(--bg-card);
     border:1px solid var(--border);
-    border-radius:14px;
+    border-radius:20px;
     padding:14px;
     margin-bottom:9px;
     transition:transform .15s ease,border-color .15s ease,background .15s ease;
@@ -2732,7 +2890,7 @@ body.beige {
     min-width:190px;
     box-sizing:border-box;
     padding:8px 12px;
-    border-radius:10px;
+    border-radius:16px;
     background:var(--bg-input);
     border:1px solid var(--border);
     color:var(--text-primary);
@@ -2784,11 +2942,11 @@ body.beige {
     opacity:.82;
 }
 .wishlist-history .entry-item {
-    border-radius:11px;
+    border-radius:16px;
 }
 .wishlist-empty {
     border:1px dashed var(--border-strong);
-    border-radius:13px;
+    border-radius:18px;
     padding:28px 18px;
     text-align:center;
     color:var(--text-secondary);
@@ -2864,7 +3022,7 @@ body.beige {
 .investment-chart-card {
     background:var(--bg-card);
     border:1px solid var(--border);
-    border-radius:14px;
+    border-radius:20px;
     padding:16px;
     margin-bottom:14px;
     box-shadow:0 4px 18px rgba(0,0,0,.04);
@@ -2901,7 +3059,7 @@ body.beige {
     align-items:center;
     gap:6px;
     padding:5px 8px;
-    border-radius:8px;
+    border-radius:14px;
     border:1px solid var(--border);
     background:var(--bg-input);
     color:var(--text-secondary);
@@ -2941,7 +3099,7 @@ body.beige {
     gap:8px;
     padding:9px 10px;
     margin:10px 0 13px;
-    border-radius:9px;
+    border-radius:14px;
     background:var(--invest-accent-soft);
     color:var(--text-secondary);
     font-size:10px;
@@ -3011,7 +3169,7 @@ body.beige {
 
 .investment-empty-state {
     border:1px dashed var(--border-strong);
-    border-radius:13px;
+    border-radius:18px;
     padding:28px 18px;
     text-align:center;
     color:var(--text-secondary);
@@ -3046,7 +3204,7 @@ body.beige {
 .finance-kicker { font-size:10px; text-transform:uppercase; letter-spacing:.8px; font-weight:800; color:var(--text-secondary); }
 .finance-update-btn { width:auto; white-space:nowrap; padding:9px 14px; }
 .finance-head-actions { display:flex; align-items:center; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
-.finance-oneoff-btn { width:auto; white-space:nowrap; padding:8px 11px; border:1px solid var(--border-strong); border-radius:9px; background:var(--bg-card); color:var(--text-primary); font-size:11px; font-weight:750; cursor:pointer; transition:all .15s ease; }
+.finance-oneoff-btn { width:auto; white-space:nowrap; padding:8px 11px; border:1px solid var(--border-strong); border-radius:14px; background:var(--bg-card); color:var(--text-primary); font-size:11px; font-weight:750; cursor:pointer; transition:all .15s ease; }
 .finance-oneoff-btn:hover { border-color:var(--accent); background:var(--bg-card-hover); transform:translateY(-1px); }
 .finance-oneoff-list { margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
 .finance-oneoff-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; font-size:11px; }
@@ -3055,10 +3213,10 @@ body.beige {
 .finance-oneoff-row button { border:0; background:transparent; color:var(--text-secondary); cursor:pointer; padding:2px 4px; font-size:12px; }
 .finance-oneoff-row button:hover { color:var(--text-primary); }
 .finance-subnav { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
-.finance-subnav button { border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); border-radius:8px; padding:6px 10px; font-size:10px; font-weight:700; cursor:pointer; }
+.finance-subnav button { border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); border-radius:14px; padding:6px 10px; font-size:10px; font-weight:700; cursor:pointer; }
 .finance-subnav button:hover { color:var(--text-primary); border-color:var(--border-strong); background:var(--bg-card-hover); }
 :root { --bone-surface:#f3eee3; --bone-border:#ded6c7; --bone-text:#171717; --bone-muted:#6f695f; }
-        .finance-networth-card { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; background:var(--bone-surface); color:var(--bone-text); border:1px solid var(--bone-border); border-radius:16px; padding:22px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.10); }
+        .finance-networth-card { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; background:var(--bone-surface); color:var(--bone-text); border:1px solid var(--bone-border); border-radius:22px; padding:22px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.10); }
 .finance-networth-card .finance-kicker { color:#777064; }
 .finance-networth-card .finance-networth-meta { color:#6f695f; }
 .finance-networth-card .finance-networth-side { border-left-color:#d8d0c2; }
@@ -3075,11 +3233,11 @@ body.beige {
 .finance-progress span { display:block; height:100%; background:var(--accent); border-radius:inherit; }
 .finance-progress-large { height:7px; margin:3px 0 4px; }
 .finance-metrics-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
-.finance-metric-card { background:var(--bg-card); border:1px solid var(--border); border-radius:13px; padding:14px; min-width:0; }
+.finance-metric-card { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:14px; min-width:0; }
 .finance-metric-card:hover { border-color:var(--border-strong); }
 .finance-metric-top,.finance-panel-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
 .finance-metric-label { font-size:10px; text-transform:uppercase; font-weight:800; color:var(--text-secondary); letter-spacing:.35px; display:flex; gap:6px; align-items:center; }
-.finance-edit-btn,.finance-icon-btn { width:25px; height:25px; border:0; border-radius:7px; background:transparent; color:var(--text-secondary); cursor:pointer; }
+.finance-edit-btn,.finance-icon-btn { width:25px; height:25px; border:0; border-radius:12px; background:transparent; color:var(--text-secondary); cursor:pointer; }
 .finance-edit-btn:hover,.finance-icon-btn:hover { background:var(--bg-card-hover); color:var(--text-primary); }
 .finance-metric-value { font-size:20px; font-weight:800; margin-top:10px; }
 .finance-metric-meta { display:flex; justify-content:space-between; gap:6px; margin-top:7px; font-size:9px; color:var(--text-secondary); }
@@ -3093,7 +3251,7 @@ body.beige {
 .finance-mov-expense { color:#f87171; }
 .finance-mov-transfer { color:var(--text-secondary); }
 .finance-salary-btn { border-color:var(--accent); }
-.finance-panel,.finance-forecast-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:17px; }
+.finance-panel,.finance-forecast-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:17px; }
 .finance-panel h3,.finance-forecast-panel h3 { margin:3px 0 4px; font-size:15px; }
 .finance-panel-head p { margin:0; color:var(--text-secondary); font-size:10px; line-height:1.5; }
 .finance-text-btn { background:none; border:0; color:var(--text-secondary); font-size:10px; cursor:pointer; }
@@ -3109,7 +3267,7 @@ body.beige {
 .finance-mini-bars { margin-top:10px; border-top:1px solid var(--border); }
 .finance-forecast-panel { margin-bottom:12px; }
 .finance-forecast-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
-.finance-forecast-grid div { background:var(--bg-app); border:1px solid var(--border); border-radius:10px; padding:11px; }
+.finance-forecast-grid div { background:var(--bg-app); border:1px solid var(--border); border-radius:16px; padding:11px; }
 .finance-forecast-grid span { display:block; font-size:9px; color:var(--text-secondary); margin-bottom:5px; }
 .finance-forecast-grid strong { font-size:16px; }
 .finance-forecast-note,.finance-dashboard-foot,.finance-empty-state,.finance-empty-line,.finance-modal-note { color:var(--text-secondary); font-size:10px; line-height:1.5; }
@@ -3153,7 +3311,7 @@ body.beige {
 .collectibles-table th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); font-weight:700; padding:12px 16px; border-bottom:1px solid var(--border-strong); white-space:nowrap; }
 .collectibles-table td { padding:11px 16px; border-bottom:1px solid var(--border); color:var(--text-primary); white-space:nowrap; }
 .collectibles-table tr:last-child td { border-bottom:none; }
-.collectibles-cat-badge { background:var(--badge-default-bg); color:var(--badge-default-text); font-size:10px; font-weight:700; padding:3px 9px; border-radius:20px; }
+.collectibles-cat-badge { background:var(--badge-default-bg); color:var(--badge-default-text); font-size:10px; font-weight:700; padding:3px 9px; border-radius:24px; }
 .collectibles-row-actions { text-align:right; }
 .collectibles-row-actions button { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:13px; padding:2px 6px; }
 .collectibles-row-actions button:hover { color:var(--text-primary); }
@@ -3172,12 +3330,12 @@ body.beige {
 #finance-chart-tooltip {
     position:fixed; z-index:1000; pointer-events:none;
     background:var(--bg-modal, #12121f); border:1px solid var(--border-strong);
-    border-radius:8px; padding:8px 11px; font-size:11px; color:var(--text-primary);
+    border-radius:14px; padding:8px 11px; font-size:11px; color:var(--text-primary);
     box-shadow:var(--shadow); display:none; line-height:1.5; white-space:nowrap;
 }
 #finance-chart-tooltip strong { font-family:'JetBrains Mono',monospace; }
 
-.tags-view-chip { display:inline-flex; align-items:center; gap:4px; border:1px solid #d9d0c0; background:#f3eee3; color:#292722; border-radius:9px; font-size:12px; font-weight:750; padding:7px 13px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.08); transition:transform .15s ease, background .15s ease, border-color .15s ease; }
+.tags-view-chip { display:inline-flex; align-items:center; gap:4px; border:1px solid #d9d0c0; background:#f3eee3; color:#292722; border-radius:14px; font-size:12px; font-weight:750; padding:7px 13px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.08); transition:transform .15s ease, background .15s ease, border-color .15s ease; }
 .tags-view-chip:hover { background:#eee7da; border-color:#c9bda9; transform:translateY(-1px); }
 
 /* ============================================================
@@ -3194,7 +3352,7 @@ body.beige {
     position: absolute; width: min(920px, calc(100vw - 40px)); height: min(760px, calc(100vh - 40px));
     min-width: 420px; min-height: 320px; left: 50%; top: 50%; transform: translate(-50%, -50%);
     background: var(--bg-card, #17171c); border: 1px solid var(--border-strong, rgba(255,255,255,.12));
-    border-radius: 14px; box-shadow: 0 24px 80px rgba(0,0,0,.48); overflow: hidden;
+    border-radius: 20px; box-shadow: 0 24px 80px rgba(0,0,0,.48); overflow: hidden;
     resize: both; display: flex; flex-direction: column; pointer-events: auto;
 }
 .apuntes-window.maximized {
@@ -3218,7 +3376,7 @@ body.beige {
 .apuntes-window-title { font-size:13px; font-weight:800; letter-spacing:.2px; color:var(--text-primary, #fff); }
 .apuntes-window-actions { display:flex; gap:4px; }
 .apuntes-window-action {
-    width:28px; height:28px; border:0; border-radius:7px; background:transparent; color:var(--text-secondary, #999);
+    width:28px; height:28px; border:0; border-radius:12px; background:transparent; color:var(--text-secondary, #999);
     cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center;
 }
 .apuntes-window-action:hover { background:var(--bg-card-hover, rgba(255,255,255,.07)); color:var(--text-primary, #fff); }
@@ -3226,7 +3384,7 @@ body.beige {
 .apuntes-window-minimized { height:42px !important; min-height:42px !important; resize:none; }
 .apuntes-window-minimized .apuntes-window-frame { display:none; }
 @media (max-width: 600px) {
-    .apuntes-window { width:calc(100vw - 12px); height:calc(100vh - 12px); min-width:0; min-height:0; left:6px; top:6px; transform:none; border-radius:10px; }
+    .apuntes-window { width:calc(100vw - 12px); height:calc(100vh - 12px); min-width:0; min-height:0; left:6px; top:6px; transform:none; border-radius:16px; }
 }
 
 /* ===== Bitácora Centro Resumen v22 ===== */
@@ -3294,7 +3452,7 @@ body.beige {
 }
 .summary-event-card {
     border:1px solid var(--border);
-    border-radius:11px;
+    border-radius:16px;
     padding:11px 12px;
     background:var(--bg-card-hover);
 }
@@ -3377,7 +3535,7 @@ body.beige {
 .summary-stat {
     padding:11px 12px;
     border:1px solid var(--border);
-    border-radius:10px;
+    border-radius:16px;
 }
 .summary-stat .num {
     font-size:18px;
@@ -3399,7 +3557,7 @@ body.beige {
     overflow:auto;
     background:var(--bg-card);
     border:1px solid var(--border-strong);
-    border-radius:12px;
+    border-radius:18px;
     box-shadow:0 14px 35px rgba(0,0,0,.28);
 }
 .global-search-result {
@@ -3523,15 +3681,11 @@ body.beige {
                 <span class="nav-label">General</span>
                 <button onclick="switchView('calendar')" data-view="calendar">
                     <span class="nav-icon">◷</span>
-                    <span class="nav-text">Calendario</span>
+                    <span class="nav-text">Home</span>
                 </button>
                 <button onclick="switchView('home')" data-view="home">
                     <span class="nav-icon">⌂</span>
                     <span class="nav-text">Centro resumen</span>
-                </button>
-                <button onclick="switchView('stats')" data-view="stats">
-                    <span class="nav-icon">▦</span>
-                    <span class="nav-text">Estadísticas</span>
                 </button>
                 <button onclick="switchView('planner')" data-view="planner">
                     <span class="nav-icon">▤</span>
@@ -3582,29 +3736,13 @@ body.beige {
                 <!-- Ocio -->
      
             <span class="nav-label">Ocio</span>
-                <button onclick="switchView('books')" data-view="books">
+                <button onclick="switchView('culture')" data-view="culture">
                     <span class="nav-icon">◊</span>
-                    <span class="nav-text">Libros</span>
-                </button>
-                <button onclick="switchView('series')" data-view="series">
-                    <span class="nav-icon">◈</span>
-                    <span class="nav-text">Series</span>
-                </button>
-                <button onclick="switchView('movies')" data-view="movies">
-                    <span class="nav-icon">▸</span>
-                    <span class="nav-text">Películas</span>
-                </button>
-                <button onclick="switchView('games')" data-view="games">
-                    <span class="nav-icon">◉</span>
-                    <span class="nav-text">Videojuegos</span>
+                    <span class="nav-text">Cultura</span>
                 </button>
                 <button onclick="switchView('travels')" data-view="travels">
-                    <span class="nav-icon">◈</span>
-                    <span class="nav-text">Viajes</span>
-                </button>
-                <button onclick="switchView('places')" data-view="places">
                     <span class="nav-icon">⌂</span>
-                    <span class="nav-text">Lugares</span>
+                    <span class="nav-text">Viajes y Lugares</span>
                 </button>
 
                 <!-- Privado -->
@@ -3636,7 +3774,7 @@ body.beige {
             <div id="main-header">
                 <div class="header-left">
                     <button class="menu-hamburger" onclick="toggleMobileMenu()" id="hamburger-btn">☰</button>
-                    <h1 id="page-title">Calendario <button class="edit-name-btn" onclick="editUserName()">✎</button></h1>
+                    <h1 id="page-title">Home <button class="edit-name-btn" onclick="editUserName()">✎</button></h1>
                 </div>
                 <div class="header-right">
                     <button id="add-section-btn" class="add-section-btn" onclick="openSectionAdd()">
@@ -3671,8 +3809,6 @@ body.beige {
     <!-- ============================================================
     FAB
     ============================================================ -->
-    <button id="weekly-tasks-btn" onclick="toggleWeeklyTasks()" title="Tareas semanales">TS</button>
-    <div id="weekly-tasks-panel" aria-hidden="true"></div>
     <button id="fab" onclick="toggleFabMenu()">+</button>
     <button id="quick-capture-btn" onclick="openQuickCapture()" title="Captura rápida (tecla Q)"
         style="position:fixed;bottom:96px;right:30px;width:44px;height:44px;border-radius:50%;
@@ -3704,13 +3840,10 @@ body.beige {
         <div class="menu-nav">
             <span class="nav-label">General</span>
             <button onclick="switchView('calendar');toggleMobileMenu()" data-view="calendar">
-                <span class="nav-icon">◷</span> Calendario
+                <span class="nav-icon">◷</span> Home
             </button>
             <button onclick="switchView('home');toggleMobileMenu()" data-view="home">
                 <span class="nav-icon">⌂</span> Centro resumen
-            </button>
-            <button onclick="switchView('stats');toggleMobileMenu()" data-view="stats">
-                <span class="nav-icon">▦</span> Estadísticas
             </button>
             <button onclick="switchView('planner');toggleMobileMenu()" data-view="planner">
                 <span class="nav-icon">▤</span> Planificador
@@ -3748,23 +3881,11 @@ body.beige {
 
 
             <span class="nav-label">Ocio</span>
-            <button onclick="switchView('books');toggleMobileMenu()" data-view="books">
-                <span class="nav-icon">◊</span> Libros
-            </button>
-            <button onclick="switchView('series');toggleMobileMenu()" data-view="series">
-                <span class="nav-icon">◈</span> Series
-            </button>
-            <button onclick="switchView('movies');toggleMobileMenu()" data-view="movies">
-                <span class="nav-icon">▸</span> Películas
-            </button>
-            <button onclick="switchView('games');toggleMobileMenu()" data-view="games">
-                <span class="nav-icon">◉</span> Videojuegos
+            <button onclick="switchView('culture');toggleMobileMenu()" data-view="culture">
+                <span class="nav-icon">◊</span> Cultura
             </button>
             <button onclick="switchView('travels');toggleMobileMenu()" data-view="travels">
-                <span class="nav-icon">◈</span> Viajes
-            </button>
-            <button onclick="switchView('places');toggleMobileMenu()" data-view="places">
-                <span class="nav-icon">⌂</span> Lugares
+                <span class="nav-icon">⌂</span> Viajes y Lugares
             </button>
 
             <span class="nav-label">Privado</span>
@@ -4481,18 +4602,13 @@ function v22RefreshSummaryIfPresent() {
         };
 
         const VIEW_LABELS = {
-            calendar: 'Calendario',
+            calendar: 'Home',
             home: 'Centro resumen',
-            stats: 'Estadísticas',
-            books: 'Libros',
-            movies: 'Películas',
-            series: 'Series',
-            games: 'Videojuegos',
-            travels: 'Viajes',
+            culture: 'Cultura',
+            travels: 'Viajes y Lugares',
             work: 'Trabajo',
             projects: 'Proyectos',
             events: 'Eventos',
-            places: 'Lugares',
             documents: 'Documentos',
             finances: 'Finanzas',
             tags: 'Etiquetas',
@@ -4511,16 +4627,11 @@ function v22RefreshSummaryIfPresent() {
         const VIEW_TO_ENTRY_TYPE = {
             calendar: null,
             home: null,
-            stats: null,
-            books: 'book',
-            movies: 'movie',
-            series: 'series',
-            games: 'game',
-            travels: 'travel',
+            culture: null,
+            travels: null,
             work: 'work',
             projects: 'project',
             events: 'event',
-            places: 'place',
             documents: null,
             finances: null,
             tags: null,
@@ -4901,13 +5012,8 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         function updatePageTitle() {
             const titleEl = document.getElementById('page-title');
-            const baseTitle = VIEW_LABELS[currentView] || 'Calendario';
-
-            if (userName && currentView === 'calendar') {
-                titleEl.textContent = 'Calendario de ' + userName + ' ';
-            } else {
-                titleEl.textContent = baseTitle + ' ';
-            }
+            const baseTitle = VIEW_LABELS[currentView] || 'Home';
+            titleEl.textContent = baseTitle + ' ';
             if (currentView === 'calendar' && !titleEl.querySelector('.edit-name-btn')) {
                 const btn = document.createElement('button');
                 btn.className = 'edit-name-btn';
@@ -4939,7 +5045,12 @@ function v22RefreshSummaryIfPresent() {
         function updateAddButton() {
             const btn = document.getElementById('add-section-btn');
             if (!btn) return;
-            const type = VIEW_TO_ENTRY_TYPE[currentView];
+            let type = VIEW_TO_ENTRY_TYPE[currentView];
+            if (currentView === 'culture') {
+                type = ({ books: 'book', series: 'series', movies: 'movie', games: 'game' })[cultureTab] || 'book';
+            } else if (currentView === 'travels') {
+                type = travelPlacesTab === 'places' ? 'place' : 'travel';
+            }
             if (type) {
                 btn.style.display = 'flex';
                 btn.onclick = () => openNewEntry(type);
@@ -6422,17 +6533,12 @@ function v22RefreshSummaryIfPresent() {
             if (currentView !== 'fantasy') document.body.classList.remove('fantasy-green-page');
             if (currentView === 'calendar') content.innerHTML = renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();
-            else if (currentView === 'stats') content.innerHTML = renderStats();
-            else if (currentView === 'books') content.innerHTML = renderBooks();
-            else if (currentView === 'movies') content.innerHTML = renderMovies();
-            else if (currentView === 'series') content.innerHTML = renderSeries();
-            else if (currentView === 'games') content.innerHTML = renderGames();
+            else if (currentView === 'culture') content.innerHTML = renderCulture();
             else if (currentView === 'travels') content.innerHTML = renderTravels();
             else if (currentView === 'travel-organizer') content.innerHTML = renderTravelOrganizer();
             else if (currentView === 'work') content.innerHTML = renderWork();
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
-            else if (currentView === 'places') content.innerHTML = renderPlaces();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
                 loadDocuments(); } else if (currentView === 'finances') content.innerHTML = renderFinances();
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
@@ -6463,6 +6569,12 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         let calYear = new Date().getFullYear();
         let calMonth = new Date().getMonth();
+        let calViewMode = 'month'; // 'day' | 'week' | 'month'
+        let calSelectedDate = new Date().toISOString().slice(0, 10);
+        const CAL_MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+        const CAL_DAY_LETTERS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
 
         function getRecurringCalendarEntries(dateStr) {
             const day = Number(String(dateStr).slice(8, 10));
@@ -6478,27 +6590,113 @@ function v22RefreshSummaryIfPresent() {
             }).map(e => ({ ...e, date: dateStr, _recurringPayment: true }));
         }
 
-        function renderCalendar() {
+        function buildEntriesByDate(year) {
             const entriesByDate = {};
             entries.forEach(e => {
                 if (NON_CALENDAR_TYPES.includes(e.type)) return;
-
-                // Birthday: proyectar al año actual
                 if (e.type === 'birthday' && e.birthDate) {
                     const [, m, d] = e.birthDate.split('-');
-                    const projectedDate = `${calYear}-${m}-${d}`;
+                    const projectedDate = `${year}-${m}-${d}`;
                     if (!entriesByDate[projectedDate]) entriesByDate[projectedDate] = [];
                     entriesByDate[projectedDate].push(e);
                     return;
                 }
-
                 const date = e.date || e.startDate || '';
                 if (!date) return;
                 if (!entriesByDate[date]) entriesByDate[date] = [];
                 entriesByDate[date].push(e);
             });
+            return entriesByDate;
+        }
 
-            // Los gastos recurrentes se proyectan al calendario en el día configurado.
+        function greetingText() {
+            const h = new Date().getHours();
+            if (h < 6) return 'buenas noches.';
+            if (h < 13) return 'buenos días.';
+            if (h < 20) return 'buenas tardes.';
+            return 'buenas noches.';
+        }
+
+        function setCalView(mode) {
+            calViewMode = mode;
+            render();
+        }
+
+        function jumpToToday() {
+            const t = new Date();
+            calYear = t.getFullYear();
+            calMonth = t.getMonth();
+            calSelectedDate = t.toISOString().slice(0, 10);
+            render();
+        }
+
+        function selectCalDate(dateStr) {
+            calSelectedDate = dateStr;
+            window._selectedDate = dateStr;
+            const d = new Date(dateStr + 'T12:00:00');
+            calYear = d.getFullYear();
+            calMonth = d.getMonth();
+            render();
+        }
+
+        // ============================================================
+        //  RENDER: HOME (calendario estilo Stoic)
+        // ============================================================
+        function renderCalendar() {
+            let html = `<div class="cal-home">`;
+            html += renderCalGreetingHeader();
+            html += `<div class="culture-tabs" style="margin-bottom:18px">
+                ${[['day','Día'],['week','Semana'],['month','Mes']].map(([id,label]) => `
+                    <button class="culture-tab ${calViewMode===id?'active':''}" onclick="setCalView('${id}')">${label}</button>
+                `).join('')}
+            </div>`;
+
+            if (calViewMode === 'month') html += renderCalMonth();
+            else if (calViewMode === 'week') html += renderCalWeek();
+            else html += renderCalDay();
+
+            html += `</div>`;
+            return html;
+        }
+
+        function renderCalGreetingHeader() {
+            const base = new Date(calSelectedDate + 'T12:00:00');
+            const dow = base.getDay(); // 0-6, Sunday=0
+            const monday = new Date(base);
+            monday.setDate(base.getDate() - ((dow + 6) % 7));
+            const today = new Date().toISOString().slice(0, 10);
+
+            let strip = '';
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dateStr = d.toISOString().slice(0, 10);
+                const isToday = dateStr === today;
+                const isSelected = dateStr === calSelectedDate;
+                strip += `
+                    <button class="cal-strip-day ${isSelected ? 'selected' : ''} ${isToday ? 'is-today' : ''}" onclick="selectCalDate('${dateStr}');setCalView('day')">
+                        <span class="cal-strip-letter">${CAL_DAY_LETTERS[d.getDay()]}</span>
+                        <span class="cal-strip-num">${String(d.getDate()).padStart(2,'0')}</span>
+                    </button>`;
+            }
+
+            return `
+            <div class="cal-greeting">${greetingText()}</div>
+            <div class="cal-strip">${strip}</div>`;
+        }
+
+        function changeMonth(delta) {
+            calMonth += delta;
+            if (calMonth < 0) { calMonth = 11;
+                calYear--; }
+            if (calMonth > 11) { calMonth = 0;
+                calYear++; }
+            render();
+        }
+
+        function renderCalMonth() {
+            const entriesByDate = buildEntriesByDate(calYear);
+
             for (let d = 1; d <= new Date(calYear, calMonth + 1, 0).getDate(); d++) {
                 const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const recurring = getRecurringCalendarEntries(dateStr);
@@ -6506,9 +6704,6 @@ function v22RefreshSummaryIfPresent() {
             }
 
             const today = new Date().toISOString().slice(0, 10);
-            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-            ];
             const dayNames = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
             const firstDay = new Date(calYear, calMonth, 1).getDay();
@@ -6520,9 +6715,9 @@ function v22RefreshSummaryIfPresent() {
 
             let html = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary)" onclick="changeMonth(-1)">‹</button>
-                <span style="font-size:17px;font-weight:700;color:var(--text-primary)">${monthNames[calMonth]} ${calYear}</span>
-                <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary)" onclick="changeMonth(1)">›</button>
+                <button class="cal-nav-arrow" onclick="changeMonth(-1)">‹</button>
+                <span style="font-size:17px;font-weight:700;color:var(--text-primary)">${CAL_MONTH_NAMES[calMonth]} ${calYear}</span>
+                <button class="cal-nav-arrow" onclick="changeMonth(1)">›</button>
             </div>
             <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
 
@@ -6534,13 +6729,14 @@ function v22RefreshSummaryIfPresent() {
             for (let i = 0; i < offset; i++) {
                 const day = daysInPrevMonth - offset + i + 1;
                 html +=
-                    `<div style="background:transparent;border-radius:10px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3;color:var(--text-secondary)">${day}</span></div>`;
+                    `<div style="background:transparent;border-radius:16px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3;color:var(--text-secondary)">${day}</span></div>`;
             }
 
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr =
                     `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const isToday = dateStr === today;
+                const isSelected = dateStr === window._selectedDate;
                 const dayEntries = entriesByDate[dateStr] || [];
 
                 const colors = [];
@@ -6562,7 +6758,7 @@ function v22RefreshSummaryIfPresent() {
                     '';
 
                 html += `
-                <div style="background:var(--bg-card);border-radius:10px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid ${isToday ? 'var(--accent)' : 'transparent'};cursor:pointer;transition:background 0.15s ease" onclick="switchView('calendar');showDayEntries('${dateStr}')">
+                <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" onclick="showDayEntries('${dateStr}')">
                     <span style="font-size:13px;font-weight:700;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
                     <div style="display:flex;flex-direction:column;gap:2px;align-items:center">${barsHtml}${extra}</div>
                 </div>`;
@@ -6572,7 +6768,7 @@ function v22RefreshSummaryIfPresent() {
             const remaining = (7 - (totalDays % 7)) % 7;
             for (let d = 1; d <= remaining; d++) {
                 html +=
-                    `<div style="background:transparent;border-radius:10px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3;color:var(--text-secondary)">${d}</span></div>`;
+                    `<div style="background:transparent;border-radius:16px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3;color:var(--text-secondary)">${d}</span></div>`;
             }
 
             html += `</div>`;
@@ -6584,17 +6780,86 @@ function v22RefreshSummaryIfPresent() {
             return html;
         }
 
-        function changeMonth(delta) {
-            calMonth += delta;
-            if (calMonth < 0) { calMonth = 11;
-                calYear--; }
-            if (calMonth > 11) { calMonth = 0;
-                calYear++; }
+        function changeWeek(delta) {
+            const d = new Date(calSelectedDate + 'T12:00:00');
+            d.setDate(d.getDate() + delta * 7);
+            calSelectedDate = d.toISOString().slice(0, 10);
+            calYear = d.getFullYear();
+            calMonth = d.getMonth();
             render();
         }
 
+        function renderCalWeek() {
+            const base = new Date(calSelectedDate + 'T12:00:00');
+            const dow = base.getDay();
+            const monday = new Date(base);
+            monday.setDate(base.getDate() - ((dow + 6) % 7));
+            const today = new Date().toISOString().slice(0, 10);
+            const entriesByDate = buildEntriesByDate(monday.getFullYear());
+
+            let html = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <button class="cal-nav-arrow" onclick="changeWeek(-1)">‹</button>
+                <span style="font-size:15px;font-weight:700;color:var(--text-primary)">Semana del ${monday.getDate()} de ${CAL_MONTH_NAMES[monday.getMonth()]}</span>
+                <button class="cal-nav-arrow" onclick="changeWeek(1)">›</button>
+            </div>
+            <div class="cal-week-grid">`;
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dateStr = d.toISOString().slice(0, 10);
+                const isToday = dateStr === today;
+                const recurring = getRecurringCalendarEntries(dateStr);
+                const dayEntries = [...(entriesByDate[dateStr] || []), ...recurring];
+
+                html += `
+                <div class="cal-week-col ${isToday ? 'is-today' : ''}" onclick="selectCalDate('${dateStr}');setCalView('day')">
+                    <div class="cal-week-col-head">
+                        <span>${CAL_DAY_LETTERS[d.getDay()]}</span>
+                        <span class="cal-week-col-num">${d.getDate()}</span>
+                    </div>
+                    <div class="cal-week-col-items">
+                        ${dayEntries.slice(0, 4).map(e => {
+                            const cat = categories.find(c => c.id === e.categoryId);
+                            const color = cat?.color || 'var(--text-secondary)';
+                            return `<div class="cal-week-item" style="border-left-color:${color}">${escapeHtml(e.title || '')}</div>`;
+                        }).join('') || '<div class="cal-week-empty">—</div>'}
+                        ${dayEntries.length > 4 ? `<div class="cal-week-more">+${dayEntries.length - 4} más</div>` : ''}
+                    </div>
+                </div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        function changeDay(delta) {
+            const d = new Date(calSelectedDate + 'T12:00:00');
+            d.setDate(d.getDate() + delta);
+            calSelectedDate = d.toISOString().slice(0, 10);
+            calYear = d.getFullYear();
+            calMonth = d.getMonth();
+            render();
+        }
+
+        function renderCalDay() {
+            const dateObj = new Date(calSelectedDate + 'T12:00:00');
+            const dateLabel = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+            const body = renderDayEntries(calSelectedDate);
+
+            return `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <button class="cal-nav-arrow" onclick="changeDay(-1)">‹</button>
+                <span style="font-size:15px;font-weight:700;color:var(--text-primary);text-transform:capitalize">${dateLabel}</span>
+                <button class="cal-nav-arrow" onclick="changeDay(1)">›</button>
+            </div>
+            ${body || '<div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}`;
+        }
+
         function showDayEntries(date) {
-            window._selectedDate = date;
+            window._selectedDate = window._selectedDate === date ? null : date;
+            calSelectedDate = date;
             render();
         }
 
@@ -6779,7 +7044,7 @@ function v22RefreshSummaryIfPresent() {
             <div style="max-width:800px">
                 <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
                     ${['week','month','year','all'].map(f => `
-                        <button onclick="setHomeFilter('${f}')" style="padding:6px 14px;border-radius:20px;border:1px solid var(--border-strong);background:${homeFilter===f?'var(--accent)':'transparent'};color:${homeFilter===f?'var(--accent-contrast)':'var(--text-primary)'};cursor:pointer;font-size:12px;font-weight:600">
+                        <button onclick="setHomeFilter('${f}')" style="padding:6px 14px;border-radius:24px;border:1px solid var(--border-strong);background:${homeFilter===f?'var(--accent)':'transparent'};color:${homeFilter===f?'var(--accent-contrast)':'var(--text-primary)'};cursor:pointer;font-size:12px;font-weight:600">
                             ${({week:'Semana',month:'Mes',year:'Año',all:'Todo'})[f]}
                         </button>`).join('')}
                 </div>
@@ -6931,6 +7196,44 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         //  RENDER: BOOKS
         // ============================================================
+        // ============================================================
+        //  RENDER: CULTURA (Libros + Series + Películas + Videojuegos)
+        // ============================================================
+        let cultureTab = 'books';
+
+        function setCultureTab(tab) {
+            cultureTab = tab;
+            render();
+        }
+
+        function renderCulture() {
+            const tabs = [
+                { id: 'books', label: 'Libros', icon: '◊', count: entries.filter(e => e.type === 'book').length },
+                { id: 'series', label: 'Series', icon: '◈', count: entries.filter(e => e.type === 'series').length },
+                { id: 'movies', label: 'Películas', icon: '▸', count: entries.filter(e => e.type === 'movie').length },
+                { id: 'games', label: 'Videojuegos', icon: '◉', count: entries.filter(e => e.type === 'game').length },
+            ];
+
+            let html = `<div style="max-width:760px">
+                <div class="culture-tabs">
+                    ${tabs.map(t => `
+                        <button class="culture-tab ${cultureTab === t.id ? 'active' : ''}" onclick="setCultureTab('${t.id}')">
+                            <span class="culture-tab-icon">${t.icon}</span>
+                            <span>${t.label}</span>
+                            <span class="culture-tab-count">${t.count}</span>
+                        </button>`).join('')}
+                </div>
+                <div class="culture-tab-content">`;
+
+            if (cultureTab === 'books') html += renderBooks();
+            else if (cultureTab === 'series') html += renderSeries();
+            else if (cultureTab === 'movies') html += renderMovies();
+            else if (cultureTab === 'games') html += renderGames();
+
+            html += `</div></div>`;
+            return html;
+        }
+
         function renderBooks() {
             const books = entries.filter(e => e.type === 'book');
             if (!books.length) {
@@ -7083,44 +7386,60 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         //  RENDER: TRAVELS
         // ============================================================
+        let travelPlacesTab = 'travels';
+        function setTravelPlacesTab(tab) { travelPlacesTab = tab; render(); }
+
         function renderTravels() {
             const travels = entries.filter(e => e.type === 'travel');
+            const places = entries.filter(e => e.type === 'place');
 
             let html = `
                 <div style="max-width:760px">
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
                         <div>
-                            <div style="font-size:20px;font-weight:800">Viajes</div>
-                            <div style="font-size:12px;color:var(--text-secondary)">Tus viajes registrados y su información.</div>
+                            <div style="font-size:20px;font-weight:800">Viajes y Lugares</div>
+                            <div style="font-size:12px;color:var(--text-secondary)">Tus viajes y lugares registrados.</div>
                         </div>
                         <button class="btn-secondary" style="width:auto" onclick="switchView('travel-organizer')">
                             ☷ Organizador de Viajes
                         </button>
                     </div>
+                    <div class="culture-tabs">
+                        <button class="culture-tab ${travelPlacesTab === 'travels' ? 'active' : ''}" onclick="setTravelPlacesTab('travels')">
+                            <span class="culture-tab-icon">◈</span><span>Viajes</span><span class="culture-tab-count">${travels.length}</span>
+                        </button>
+                        <button class="culture-tab ${travelPlacesTab === 'places' ? 'active' : ''}" onclick="setTravelPlacesTab('places')">
+                            <span class="culture-tab-icon">⌂</span><span>Lugares</span><span class="culture-tab-count">${places.length}</span>
+                        </button>
+                    </div>
+                    <div class="culture-tab-content">
             `;
 
-            if (!travels.length) {
-                html += `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
-                html += `</div>`;
-                return html;
+            if (travelPlacesTab === 'travels') {
+                if (!travels.length) {
+                    html += `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
+                } else {
+                    travels.forEach(t => {
+                        const cat = categories.find(c => c.id === t.categoryId);
+                        const color = cat?.color || 'var(--text-secondary)';
+                        html += `
+                            <div class="card bone-surface travel-bone" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${t.id}\')">
+                                <div style="display:flex;justify-content:space-between;align-items:center">
+                                    <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${t.title}</span>
+                                    <span style="font-size:13px;color:var(--text-secondary)">${t.destination || ''}</span>
+                                </div>
+                                <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${t.startDate || ''} ${t.endDate ? '→ ' + t.endDate : ''}</div>
+                                ${t.companions ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${t.companions}</div>` : ''}
+                                ${t.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(t.notes)}</div>` : ''}
+                                <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                            </div>`;
+                    });
+                }
+            } else {
+                html += renderPlaces();
             }
 
-            travels.forEach(t => {
-                const cat = categories.find(c => c.id === t.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
-                html += `
-                    <div class="card bone-surface travel-bone" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${t.id}\')">
-                        <div style="display:flex;justify-content:space-between;align-items:center">
-                            <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${t.title}</span>
-                            <span style="font-size:13px;color:var(--text-secondary)">${t.destination || ''}</span>
-                        </div>
-                        <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${t.startDate || ''} ${t.endDate ? '→ ' + t.endDate : ''}</div>
-                        ${t.companions ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${t.companions}</div>` : ''}
-                        ${t.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(t.notes)}</div>` : ''}
-                        <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
-                    </div>`;
-            });
-            html += `</div>`;
+            html += `</div></div>`;
             return html;
         }
 
@@ -10190,7 +10509,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     <div class="fantasy-chart-container" style="margin-bottom:16px">
                         <div class="fantasy-section-title">Actualizar por texto (pegar traducción de capturas)</div>
                         <textarea id="fantasy-text-import" class="modal-input" rows="1" placeholder="Pega aquí el texto (COMPRA / VENTA / TRASPASO / PREMIO / NUEVO)..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-                        <button class="btn-secondary fantasy-btn-accent" style="margin:0;padding:7px 14px;font-size:12px;width:auto;border-radius:8px" onclick="processFantasyTextImport()">Procesar texto</button>
+                        <button class="btn-secondary fantasy-btn-accent" style="margin:0;padding:7px 14px;font-size:12px;width:auto;border-radius:14px" onclick="processFantasyTextImport()">Procesar texto</button>
                         <div style="font-size:10px;color:var(--fx-text-secondary);margin-top:6px">Las líneas de tipo "shielded" (protección de jugador) se ignoran automáticamente: no tienen efecto económico.</div>
                         <div id="fantasy-import-summary" style="font-size:12px;margin-top:8px"></div>
                     </div>
@@ -10340,7 +10659,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
             const contenidoHTML = `
                 <div class="modal-title">${escapeHtml(nombre)}</div>
-                <div style="text-align:center;padding:14px;margin-bottom:12px;border-radius:12px;background:var(--fantasy-accent-soft)">
+                <div style="text-align:center;padding:14px;margin-bottom:12px;border-radius:18px;background:var(--fantasy-accent-soft)">
                     <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Efectivo</div>
                     <div style="font-size:28px;font-weight:800;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
                 </div>
