@@ -1432,15 +1432,11 @@
             --fx-page-bg: #070f0b;
             --fx-grid: rgba(34,211,170,0.10);
         }
-        .fantasy-root {
-            background: var(--fx-page-bg);
-            padding: 0;
-            transition: background 0.2s ease;
-        }
-        .fantasy-root.fantasy-theme-green {
-            padding: 16px;
-            border-radius: 16px;
-            margin: -16px;
+        /* El tinte verde de fondo se aplica a toda la ventana mediante
+           body.fantasy-green-page (ver toggleFantasyTheme/render), no solo
+           a los bloques de Fantasy. */
+        body.fantasy-green-page {
+            background: #070f0b;
         }
 
         .fantasy-positive { color: #16a34a; }
@@ -6423,6 +6419,7 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         function render() {
             const content = document.getElementById('content');
+            if (currentView !== 'fantasy') document.body.classList.remove('fantasy-green-page');
             if (currentView === 'calendar') content.innerHTML = renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();
             else if (currentView === 'stats') content.innerHTML = renderStats();
@@ -9559,6 +9556,37 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             `;
         }
 
+        // Puntos acumulados totales de un usuario a lo largo de todas las jornadas.
+        function fantasyTotalPoints(nombre) {
+            return fantasyData.jornadas.reduce((sum, j) => sum + (j.puntos[nombre] || 0), 0);
+        }
+
+        // Panel a la derecha de la gráfica de puntos: cuánto por delante/detrás
+        // está "Bordalostias" de cada rival, en puntos acumulados.
+        const FANTASY_ME = 'Bordalostias';
+        function renderFantasyPointsGap() {
+            const meExists = fantasyData.usuarios.some(u => u.nombre === FANTASY_ME);
+            if (!meExists || !fantasyData.jornadas.length) {
+                return `<div class="fantasy-empty-state" style="padding:12px 4px">Sin datos suficientes</div>`;
+            }
+            const miTotal = fantasyTotalPoints(FANTASY_ME);
+            const rows = fantasyData.usuarios
+                .filter(u => u.nombre !== FANTASY_ME)
+                .map(u => ({ nombre: u.nombre, diff: miTotal - fantasyTotalPoints(u.nombre) }))
+                .sort((a, b) => b.diff - a.diff);
+            return `
+                <div style="font-size:10px;font-weight:700;color:var(--fx-text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Distancia vs. ${escapeHtml(FANTASY_ME)}</div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                    ${rows.map(r => `
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px">
+                            <span style="color:var(--fx-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(r.nombre)}</span>
+                            <span style="font-weight:700;white-space:nowrap;color:${r.diff >= 0 ? '#16a34a' : '#dc2626'}">${r.diff >= 0 ? '+' : ''}${r.diff} pts</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
         // Mostrar/ocultar la tabla de beneficios por reventa (desplegable).
         let fantasyShowProfitTable = true;
         function toggleFantasyProfitTable() {
@@ -9580,10 +9608,19 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
         // Color estable por usuario (mismo índice que en fantasyData.usuarios),
         // usado tanto en las tarjetas/avatares como en las 4 gráficas para que
-        // un mismo usuario se identifique siempre con el mismo color.
+        // un mismo usuario se identifique siempre con el mismo color — salvo
+        // cuando su efectivo está en números rojos (rojo) o por debajo del
+        // umbral de aviso (amarillo), en cuyo caso ese estado manda en todas
+        // partes donde aparezca ese usuario.
         const FANTASY_PALETTE = ['#8B5CF6', '#F59E0B', '#16a34a', '#dc2626', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
+        const FANTASY_LOW_CASH_COLOR_THRESHOLD = 15000000;
         function fantasyUserColor(nombre) {
             const idx = fantasyData.usuarios.findIndex(u => u.nombre === nombre);
+            const u = idx >= 0 ? fantasyData.usuarios[idx] : null;
+            if (u) {
+                if (u.efectivo < 0) return '#dc2626';
+                if (u.efectivo < FANTASY_LOW_CASH_COLOR_THRESHOLD) return '#f59e0b';
+            }
             return FANTASY_PALETTE[(idx >= 0 ? idx : 0) % FANTASY_PALETTE.length];
         }
 
@@ -10179,9 +10216,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     </div>
 
                     <div class="fantasy-chart-container">
-                        <div class="fantasy-chart-header"><div class="fantasy-section-title">Evolución de puntos por jornada</div></div>
+                        <div class="fantasy-chart-header"><div class="fantasy-section-title">Evolución de puntos (acumulado)</div></div>
                         <div id="fantasy-chips-points" class="fantasy-user-chips">${renderFantasyUserChips('points')}</div>
-                        <div class="fantasy-canvas-wrap"><canvas id="pointsChart"></canvas></div>
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch">
+                            <div class="fantasy-canvas-wrap" style="flex:2 1 240px"><canvas id="pointsChart"></canvas></div>
+                            <div style="flex:1 1 160px;min-width:150px">${renderFantasyPointsGap()}</div>
+                        </div>
                     </div>
 
                     <div class="fantasy-chart-container">
@@ -10415,6 +10455,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         function renderAllFantasyCharts() {
+            document.body.classList.toggle('fantasy-green-page', currentView === 'fantasy' && fantasyTheme === 'green');
             renderFantasyChart();
             renderPointsChart();
             renderEconomicEvolutionChart();
@@ -10437,7 +10478,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 const sorted = fantasyData.usuarios.slice().sort((a, b) => b.efectivo - a.efectivo);
                 const labels = sorted.map(u => u.nombre);
                 const data = sorted.map(u => u.efectivo);
-                const colors = sorted.map(u => u.efectivo < 0 ? '#dc2626' : fantasyUserColor(u.nombre));
+                const colors = sorted.map(u => fantasyUserColor(u.nombre));
 
                 const ctx = canvas.getContext('2d');
                 fantasyChartInstance = new Chart(ctx, {
@@ -10497,7 +10538,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 const sorted = fantasyData.usuarios.slice().sort((a, b) => (b.efectivo + b.valor_plantilla) - (a.efectivo + a.valor_plantilla));
                 const labels = sorted.map(u => u.nombre);
                 const data = sorted.map(u => u.efectivo + u.valor_plantilla);
-                const colors = sorted.map(u => (u.efectivo + u.valor_plantilla) < 0 ? '#dc2626' : fantasyUserColor(u.nombre));
+                const colors = sorted.map(u => fantasyUserColor(u.nombre));
 
                 const ctx = canvas.getContext('2d');
                 patrimonyChartInstance = new Chart(ctx, {
@@ -10571,19 +10612,26 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                 const datasets = fantasyData.usuarios
                     .filter(u => !fantasyHiddenUsers.points.has(u.nombre))
-                    .map((u) => ({
-                        label: u.nombre,
-                        data: jornadasOrdenadas.map(j => j.puntos[u.nombre] !== undefined ? j.puntos[u.nombre] : null),
-                        borderColor: fantasyUserColor(u.nombre),
-                        backgroundColor: 'transparent',
-                        borderWidth: 2.5,
-                        tension: 0.4,
-                        pointRadius: 0,
-                        pointHoverRadius: 5,
-                        pointHoverBackgroundColor: fantasyUserColor(u.nombre),
-                        pointHitRadius: 10,
-                        spanGaps: true
-                    }));
+                    .map((u) => {
+                        let running = 0;
+                        const data = jornadasOrdenadas.map(j => {
+                            const pts = j.puntos[u.nombre];
+                            if (pts !== undefined) running += pts;
+                            return running;
+                        });
+                        return {
+                            label: u.nombre,
+                            data,
+                            borderColor: fantasyUserColor(u.nombre),
+                            backgroundColor: 'transparent',
+                            borderWidth: 2.5,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            pointHoverBackgroundColor: fantasyUserColor(u.nombre),
+                            pointHitRadius: 10
+                        };
+                    });
 
                 const ctx = canvas.getContext('2d');
                 pointsChartInstance = new Chart(ctx, {
