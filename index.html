@@ -541,112 +541,6 @@
             line-height: 1;
         }
 
-        #search-trigger {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--bg-app);
-            border: 1px solid var(--border-strong);
-            color: var(--text-secondary);
-            border-radius: 16px;
-            padding: 8px 12px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: 'Poppins', sans-serif;
-        }
-        #search-trigger:hover {
-            border-color: var(--accent);
-            color: var(--text-primary);
-        }
-        #search-trigger .search-kbd {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 5px;
-            padding: 2px 5px;
-        }
-
-        #search-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: flex-start;
-            justify-content: center;
-            padding-top: 10vh;
-            z-index: 2000;
-        }
-        #search-overlay.open { display: flex; }
-        #search-box {
-            width: 100%;
-            max-width: 520px;
-            max-height: 70vh;
-            background: var(--bg-card);
-            border: 1px solid var(--border-strong);
-            border-radius: 22px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        #search-input-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--border);
-        }
-        #search-icon { font-size: 16px; color: var(--text-secondary); }
-        #search-input {
-            flex: 1;
-            border: none;
-            background: transparent;
-            outline: none;
-            font-family: 'Poppins', sans-serif;
-            font-size: 15px;
-            color: var(--text-primary);
-        }
-        #search-close {
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 14px;
-        }
-        #search-hint {
-            font-size: 11px;
-            color: var(--text-secondary);
-            padding: 8px 16px;
-            opacity: 0.75;
-            border-bottom: 1px solid var(--border);
-        }
-        #search-results {
-            overflow-y: auto;
-            padding: 8px;
-        }
-        .search-result-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 16px;
-            cursor: pointer;
-        }
-        .search-result-item:hover {
-            background: var(--bg-app);
-        }
-        .search-result-icon { font-size: 16px; }
-        .search-result-title { font-weight: 600; font-size: 14px; color: var(--text-primary); }
-        .search-result-meta { font-size: 11px; color: var(--text-secondary); }
-        .search-empty {
-            padding: 24px 16px;
-            text-align: center;
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
         #main-header .menu-hamburger {
             display: none;
             background: none;
@@ -720,8 +614,8 @@
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: var(--bg-fab);
-            color: var(--accent-contrast);
+            background: #000000;
+            color: #ffffff;
             border: none;
             font-size: 28px;
             font-weight: 300;
@@ -741,41 +635,6 @@
             transform: scale(0.92);
         }
 
-        #fab-menu {
-            position: fixed;
-            bottom: 100px;
-            right: 30px;
-            background: var(--bg-card);
-            border-radius: 22px;
-            padding: 8px 0;
-            box-shadow: var(--shadow);
-            z-index: 51;
-            display: none;
-            min-width: 200px;
-            border: 1px solid var(--border-strong);
-        }
-        #fab-menu.open {
-            display: block;
-        }
-
-        #fab-menu button {
-            display: block;
-            width: 100%;
-            padding: 10px 20px;
-            background: none;
-            border: none;
-            color: var(--text-primary);
-            font-family: 'Poppins', sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            text-align: left;
-            cursor: pointer;
-            transition: background 0.15s ease;
-        }
-        #fab-menu button:hover {
-            background: var(--bg-card-hover);
-        }
-
         @media (max-width: 768px) {
             #fab {
                 bottom: 90px;
@@ -783,10 +642,6 @@
                 width: 52px;
                 height: 52px;
                 font-size: 24px;
-            }
-            #fab-menu {
-                bottom: 150px;
-                right: 20px;
             }
         }
 
@@ -1503,6 +1358,15 @@
             justify-content: center;
         }
         .collectible-card-actions button:hover { background: rgba(255,255,255,0.2); }
+        .media-card-external {
+            position: absolute; top: 8px; left: 8px; z-index: 5;
+            width: 22px; height: 22px; border-radius: 50%; border: none;
+            background: rgba(255,255,255,0.1); color: #f2f2f2; font-size: 11px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            opacity: 0; transition: opacity 0.15s ease, background 0.15s ease;
+        }
+        .media-card:hover .media-card-external { opacity: 1; }
+        .media-card-external:hover { background: rgba(255,255,255,0.25); }
 
         .entry-actions {
             display: flex;
@@ -1645,18 +1509,26 @@
         .command-palette-prompt .cp-accent { color: #3b82f6; }
         .command-palette-input {
             width: 100%; border: none; background: transparent; outline: none;
-            font-size: 21px; font-weight: 700; color: var(--text-primary);
+            font-size: 21px; font-weight: 700; color: #3b82f6;
             font-family: inherit; padding: 4px 0 14px; border-bottom: 1px solid var(--border);
         }
-        .command-palette-list { margin-top: 10px; max-height: 320px; overflow-y: auto; }
+        .command-palette-input::placeholder { color: var(--text-secondary); font-weight: 600; }
+        .command-palette-list-wrap { position: relative; margin-top: 10px; }
+        .command-palette-list { max-height: 320px; overflow-y: auto; scrollbar-width: none; }
+        .command-palette-list::-webkit-scrollbar { display: none; }
         .command-palette-item {
-            display: flex; align-items: center; gap: 12px; padding: 11px 12px;
+            display: flex; align-items: center; padding: 11px 12px;
             border-radius: 14px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-primary);
             transition: background 0.12s ease;
         }
         .command-palette-item.active, .command-palette-item:hover { background: var(--bg-card-hover); }
-        .command-palette-icon { width: 22px; text-align: center; color: var(--text-secondary); font-size: 14px; }
         .command-palette-empty { padding: 16px 4px; color: var(--text-secondary); font-size: 12px; text-align: center; }
+        .command-palette-fade {
+            position: absolute; left: 0; right: 0; bottom: 0; height: 36px; border-radius: 0 0 14px 14px;
+            background: linear-gradient(to bottom, transparent, var(--bg-modal));
+            pointer-events: none; opacity: 1; transition: opacity 0.15s ease;
+        }
+        .command-palette-fade.hidden { opacity: 0; }
 
         /* ============================================================
                ALERTA DIARIA
@@ -3361,7 +3233,23 @@ body.beige {
 /* ============================================================
    FINANZAS v0.30 — DASHBOARD ECONÓMICO
    ============================================================ */
-.finance-dashboard { max-width: 980px; padding-bottom: 30px; }
+.finance-dashboard { position: relative; max-width: 980px; padding-bottom: 30px; }
+.finance-blur-toggle {
+    position: absolute; top: -2px; right: 0; width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--border-strong); background: var(--bg-card); color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s ease; z-index: 2;
+}
+.finance-blur-toggle:hover { color: var(--text-primary); background: var(--bg-card-hover); }
+.finance-dashboard.blurred .finance-metric-value,
+.finance-dashboard.blurred .finance-networth-value,
+.finance-dashboard.blurred .finance-income-highlight strong,
+.finance-dashboard.blurred .finance-account-value,
+.finance-dashboard.blurred .finance-goal-bar-text,
+.finance-dashboard.blurred .finance-oneoff-row strong {
+    filter: blur(7px);
+    user-select: none;
+    transition: filter .15s ease;
+}
 .finance-dashboard-head { display:flex; justify-content:space-between; gap:24px; align-items:flex-end; margin-bottom:28px; }
 .finance-dashboard-head h2 { margin:2px 0 8px; font-size:38px; font-weight:800; letter-spacing:-1px; }
 .finance-dashboard-head p { margin:0; color:var(--text-secondary); font-size:13px; max-width:520px; line-height:1.6; }
@@ -3603,6 +3491,24 @@ body.beige {
 /* Transición al cambiar entre vista de día/semana/mes en Home */
 @keyframes calViewIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 .cal-view-anim { animation: calViewIn 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Vista Día de Home: el título del día flota sobre un difuminado azul */
+.cal-day-title { position: relative; display: inline-block; padding: 6px 18px; z-index: 1; }
+.cal-day-title::before {
+    content: '';
+    position: absolute;
+    inset: -8px -16px;
+    background: radial-gradient(ellipse at center, rgba(59,130,246,0.38), rgba(59,130,246,0.14) 60%, transparent 75%);
+    filter: blur(16px);
+    border-radius: 50%;
+    z-index: -1;
+    animation: calDayTitleFloat 4s ease-in-out infinite;
+}
+@keyframes calDayTitleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* Transición suave al cambiar de apartado en la sidebar */
+@keyframes viewFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+#content.view-fade-in { animation: viewFadeIn 0.26s cubic-bezier(0.16,1,0.3,1) both; }
 
 /* Modal "Corregir registros" */
 .finance-correction-row { padding:10px 0; border-bottom:1px solid var(--border); }
@@ -3957,7 +3863,7 @@ body.beige {
         <div id="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-icon"></div>
-                <span class="brand-name">Bitácora v0.25</span>
+                <span class="brand-name">Bitácora</span>
             </div>
 
             <div id="sidebar-progress-row" title="Progreso del día">
@@ -3999,10 +3905,6 @@ body.beige {
                         <span class="add-icon">+</span> Añadir
                     </button>
                     <div id="header-clock" aria-label="Hora actual"></div>
-                    <button id="search-trigger" onclick="openSearch()" title="Buscar (Ctrl+K)">
-                        <span>⌕</span> Buscar
-                        <span class="search-kbd">Ctrl K</span>
-                    </button>
                 </div>
             </div>
             <div id="content"></div>
@@ -4010,43 +3912,17 @@ body.beige {
     </div>
 
     <!-- ============================================================
-    BUSQUEDA GLOBAL
-    ============================================================ -->
-    <div id="search-overlay" onclick="if(event.target===this)closeSearch()">
-        <div id="search-box">
-            <div id="search-input-row">
-                <span id="search-icon">⌕</span>
-                <input type="text" id="search-input" placeholder="Buscar por título, notas o etiquetas..." oninput="runSearch()">
-                <button id="search-close" onclick="closeSearch()">✕</button>
-            </div>
-            <div id="search-hint">La búsqueda por IA (por significado, no solo texto exacto) llegará más adelante. De momento busca en títulos, notas y etiquetas.</div>
-            <div id="search-results"></div>
-        </div>
-    </div>
-
-    <!-- ============================================================
     FAB
     ============================================================ -->
-    <button id="fab" onclick="toggleFabMenu()">+</button>
-    <button id="quick-capture-btn" onclick="openCommandPalette('create')" title="Captura rápida (tecla Q)"
+    <button id="fab" onclick="openCommandPalette('create')" title="Captura rápida">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M13 2 3 14h6l-1 8 10-12h-6z"/></svg>
+    </button>
+    <button id="quick-capture-btn" onclick="openCommandPalette('create')" title="Captura rápida (tecla ESPACIO)"
         style="position:fixed;bottom:96px;right:30px;width:44px;height:44px;border-radius:50%;
         background:var(--bg-card);border:1px solid var(--border-strong);color:var(--text-primary);
         cursor:pointer;z-index:49;font-size:16px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center">
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13.5" r="3.2"/></svg>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M13 2 3 14h6l-1 8 10-12h-6z"/></svg>
     </button>
-    <div id="fab-menu">
-        <button onclick="openNewEntry('book')">Libro</button>
-        <button onclick="openNewEntry('movie')">Película</button>
-        <button onclick="openNewEntry('series')">Serie</button>
-        <button onclick="openNewEntry('game')">Videojuego</button>
-        <button onclick="openNewEntry('travel')">Viaje</button>
-        <button onclick="openNewEntry('work')">Trabajo</button>
-        <button onclick="openNewEntry('project')">Proyecto</button>
-        <button onclick="openNewEntry('event')">Evento</button>
-        <button onclick="openNewEntry('place')">Lugar</button>
-        <button onclick="openNewEntry('goal')">Objetivo</button>
-        <button onclick="openNewEntry('birthday')">Cumpleaños</button>
-    </div>
 
     <!-- ============================================================
     MOBILE MENU
@@ -4714,6 +4590,9 @@ function v22RefreshSummaryIfPresent() {
         };
         let financeSubView = 'menu';
         let devModeActive = false;
+        // Oculta las cifras del dashboard financiero. Se guarda en la nube
+        // (no en localStorage) para que viaje entre dispositivos.
+        let blurFinances = false;
         // Estudios: asignaturas (con exámenes/trabajos y nota), horario semanal
         // recurrente y notas rápidas.
         const STUDIES_DAYS = [
@@ -4833,17 +4712,17 @@ function v22RefreshSummaryIfPresent() {
         ];
 
         const CREATE_PALETTE_ITEMS = [
-            { type: 'book', icon: '◊', text: 'Libro' },
-            { type: 'movie', icon: '▸', text: 'Película' },
-            { type: 'series', icon: '◈', text: 'Serie' },
-            { type: 'game', icon: '◉', text: 'Videojuego' },
-            { type: 'travel', icon: '⌂', text: 'Viaje' },
-            { type: 'work', icon: '◫', text: 'Trabajo' },
-            { type: 'project', icon: '⊞', text: 'Proyecto' },
-            { type: 'event', icon: '◈', text: 'Evento' },
-            { type: 'place', icon: '⌂', text: 'Lugar' },
-            { type: 'goal', icon: '◉', text: 'Objetivo' },
-            { type: 'birthday', icon: '🎂', text: 'Cumpleaños' },
+            { type: 'book', text: 'Libro' },
+            { type: 'movie', text: 'Película' },
+            { type: 'series', text: 'Serie' },
+            { type: 'game', text: 'Videojuego' },
+            { type: 'travel', text: 'Viaje' },
+            { type: 'work', text: 'Trabajo' },
+            { type: 'project', text: 'Proyecto' },
+            { type: 'event', text: 'Evento' },
+            { type: 'place', text: 'Lugar' },
+            { type: 'goal', text: 'Objetivo' },
+            { type: 'birthday', text: 'Cumpleaños' },
         ];
 
         function renderNavButtons(sections, mobile) {
@@ -5033,7 +4912,29 @@ function v22RefreshSummaryIfPresent() {
         let cpSelectedIndex = 0;
 
         function paletteItemsFor(mode) {
-            return mode === 'create' ? CREATE_PALETTE_ITEMS : NAV_SECTIONS.flatMap(s => s.items);
+            return mode === 'create'
+                ? CREATE_PALETTE_ITEMS.map(i => ({ ...i, kind: 'create' }))
+                : NAV_SECTIONS.flatMap(s => s.items).map(i => ({ ...i, kind: 'nav' }));
+        }
+
+        // Cuando se escribe algo que no coincide con ningún apartado (solo
+        // en modo navegación), se buscan entradas y notas por título,
+        // contenido o etiquetas — igual que hacía el buscador antiguo — para
+        // poder saltar directamente a una entrada concreta.
+        function searchEntriesForPalette(q) {
+            const results = [];
+            entries.forEach(e => {
+                if (!e.title) return;
+                const haystack = [e.title, e.notes, e.description, ...(e.tags || [])].filter(Boolean).join(' ').toLowerCase();
+                if (haystack.includes(q)) results.push({ kind: 'entry', id: e.id, text: e.title });
+            });
+            notes.forEach(n => {
+                const label = formatNoteTitle(n.date);
+                if ((n.content || '').toLowerCase().includes(q) || label.toLowerCase().includes(q)) {
+                    results.push({ kind: 'note', id: n.id, text: label });
+                }
+            });
+            return results.slice(0, 30);
         }
 
         function openCommandPalette(mode) {
@@ -5048,29 +4949,51 @@ function v22RefreshSummaryIfPresent() {
                 <div class="command-palette-box">
                     <div class="command-palette-prompt">${mode === 'create' ? '¿Dónde quieres <span class="cp-accent">crear</span> la entrada?' : '¿Dónde quieres <span class="cp-accent">ir</span>?'}</div>
                     <input id="command-palette-input" class="command-palette-input" autocomplete="off" placeholder="Escribe para buscar...">
-                    <div id="command-palette-list" class="command-palette-list"></div>
+                    <div class="command-palette-list-wrap">
+                        <div id="command-palette-list" class="command-palette-list"></div>
+                        <div class="command-palette-fade hidden"></div>
+                    </div>
                 </div>`;
             document.body.appendChild(overlay);
             document.body.classList.add('cp-blur');
             renderCommandPaletteList('');
             const input = document.getElementById('command-palette-input');
+            const list = document.getElementById('command-palette-list');
             input.addEventListener('input', () => { cpSelectedIndex = 0; renderCommandPaletteList(input.value); });
             input.addEventListener('keydown', handleCommandPaletteKeydown);
+            list.addEventListener('scroll', updateCommandPaletteFade);
             setTimeout(() => input.focus(), 30);
+        }
+
+        function updateCommandPaletteFade() {
+            const list = document.getElementById('command-palette-list');
+            const fade = document.querySelector('#command-palette-overlay .command-palette-fade');
+            if (!list || !fade) return;
+            const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 4;
+            fade.classList.toggle('hidden', atBottom || list.scrollHeight <= list.clientHeight);
         }
 
         function renderCommandPaletteList(query) {
             const q = query.trim().toLowerCase();
-            const all = paletteItemsFor(cpMode);
-            const filtered = q ? all.filter(i => i.text.toLowerCase().includes(q)) : all;
+            let filtered;
+            if (cpMode === 'create') {
+                const all = paletteItemsFor('create');
+                filtered = q ? all.filter(i => i.text.toLowerCase().includes(q)) : all;
+            } else {
+                const all = paletteItemsFor('nav');
+                const navMatches = q ? all.filter(i => i.text.toLowerCase().includes(q)) : all;
+                filtered = (q && !navMatches.length) ? searchEntriesForPalette(q) : navMatches;
+            }
             if (cpSelectedIndex >= filtered.length) cpSelectedIndex = 0;
             const list = document.getElementById('command-palette-list');
             if (!list) return;
             list.innerHTML = filtered.length ? filtered.map((item, i) => `
                 <div class="command-palette-item ${i === cpSelectedIndex ? 'active' : ''}" onmousedown="event.preventDefault();selectCommandPaletteItem(${i})">
-                    <span class="command-palette-icon">${item.icon}</span><span>${escapeHtml(item.text)}</span>
+                    <span>${escapeHtml(item.text)}</span>
                 </div>`).join('') : '<div class="command-palette-empty">Sin resultados</div>';
             list._filtered = filtered;
+            list.querySelector('.command-palette-item.active')?.scrollIntoView({ block: 'nearest' });
+            updateCommandPaletteFade();
         }
 
         function handleCommandPaletteKeydown(e) {
@@ -5093,18 +5016,32 @@ function v22RefreshSummaryIfPresent() {
             }
         }
 
+        // Tras crear la entrada, deja el cursor ya puesto en el primer
+        // campo de texto para poder seguir sin usar el ratón.
+        function focusFirstModalField() {
+            requestAnimationFrame(() => {
+                const field = document.querySelector('#modal-container input[type="text"], #modal-container input:not([type]), #modal-container textarea');
+                field?.focus();
+            });
+        }
+
         function selectCommandPaletteItem(index) {
             const list = document.getElementById('command-palette-list');
             const item = list?._filtered?.[index];
             const prefillDate = window._dayPrefillDate;
             closeCommandPalette();
             if (!item) return;
-            if (cpMode === 'create') {
+            if (item.kind === 'create') {
                 openNewEntry(item.type);
                 if (prefillDate) {
                     document.querySelectorAll('#modal-container input[type="date"]').forEach(inp => { if (!inp.value) inp.value = prefillDate; });
                 }
-            } else switchView(item.view);
+                focusFirstModalField();
+            } else if (item.kind === 'entry' || item.kind === 'note') {
+                followMention(item.kind, item.id);
+            } else {
+                switchView(item.view);
+            }
         }
 
         function closeCommandPalette() {
@@ -5116,67 +5053,9 @@ function v22RefreshSummaryIfPresent() {
             setTimeout(() => overlay.remove(), 170);
         }
 
-        // ============================================================
-        //  BUSQUEDA GLOBAL
-        // ============================================================
-        function openSearch() {
-            document.getElementById('search-overlay').classList.add('open');
-            const input = document.getElementById('search-input');
-            input.value = '';
-            document.getElementById('search-results').innerHTML = '';
-            setTimeout(() => input.focus(), 50);
-        }
-
-        function closeSearch() {
-            document.getElementById('search-overlay').classList.remove('open');
-        }
-
-        function runSearch() {
-            const q = document.getElementById('search-input').value.trim().toLowerCase();
-            const resultsEl = document.getElementById('search-results');
-            if (!q) { resultsEl.innerHTML = ''; return; }
-
-            const matches = entries.filter(e => {
-                const haystack = [e.title, e.notes, e.description, ...(e.tags || [])].filter(Boolean).join(' ')
-                    .toLowerCase();
-                return haystack.includes(q);
-            }).slice(0, 30);
-
-            // También buscar en notas
-            const noteMatches = notes.filter(n => {
-                return n.content.toLowerCase().includes(q) || formatNoteTitle(n.date).toLowerCase().includes(q);
-            }).slice(0, 10);
-
-            const allMatches = [...matches, ...noteMatches];
-
-            if (!allMatches.length) {
-                resultsEl.innerHTML = `<div class="search-empty">Sin resultados para "${escapeHtml(q)}"</div>`;
-                return;
-            }
-
-            resultsEl.innerHTML = allMatches.map(e => {
-                const isNote = e.content !== undefined;
-                const icon = isNote ? '✎' : (TYPE_ICONS[e.type] || '◈');
-                const label = isNote ? formatNoteTitle(e.date) : (TYPE_LABELS[e.type] || '');
-                const onclick = isNote ? "openReadNote('" + e.id + "')" : "openEntryFromLink('" + e.id + "')";
-                return `
-                    <div class="search-result-item" onclick="closeSearch();${onclick}">
-                        <span class="search-result-icon">${icon}</span>
-                        <div>
-                            <div class="search-result-title">${isNote ? formatNoteTitle(e.date) : escapeHtml(e.title)}</div>
-                            <div class="search-result-meta">${label}${e.date ? ' · ' + e.date : ''}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
         document.addEventListener('keydown', function(e) {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
-                openSearch();
-            } else if (e.key === 'Escape') {
-                closeSearch();
+            if (e.key === 'Escape') {
+                if (document.getElementById('command-palette-overlay')) { closeCommandPalette(); return; }
                 const modalContainer = document.getElementById('modal-container');
                 if (modalContainer && modalContainer.innerHTML.trim() !== '') {
                     closeModal();
@@ -5184,24 +5063,43 @@ function v22RefreshSummaryIfPresent() {
             }
         });
 
+        // Condición compartida por los atajos globales: nada de esto debe
+        // dispararse si hay un campo con foco, un modal o el buscador ya
+        // abiertos, o si todavía estamos en la pantalla de login.
+        function canUseGlobalShortcut() {
+            const tag = document.activeElement?.tagName;
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || document.activeElement?.isContentEditable) return false;
+            if (document.getElementById('command-palette-overlay')) return false;
+            if (document.getElementById('modal-container')?.innerHTML.trim()) return false;
+            if (document.getElementById('login-screen')?.style.display !== 'none') return false;
+            return true;
+        }
+
+        // ENTER abre "¿dónde quieres ir?"; ESPACIO abre la captura rápida
+        // ("¿dónde quieres crear la entrada?") — mismas condiciones.
         document.addEventListener('keydown', function(e) {
-            if (e.key.toLowerCase() === 'q' && !e.metaKey && !e.ctrlKey &&
-                !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+            if (e.key === 'Enter') {
+                if (!canUseGlobalShortcut()) return;
+                e.preventDefault();
+                openCommandPalette('nav');
+            } else if (e.key === ' ') {
+                if (!canUseGlobalShortcut()) return;
+                e.preventDefault();
                 openCommandPalette('create');
             }
         });
 
-        // ENTER en cualquier sitio (sin nada abierto ni foco en un campo)
-        // abre el buscador "¿dónde quieres ir?".
+        // CTRL + flecha arriba/abajo: salta al apartado inmediatamente
+        // anterior/siguiente del menú, sin tener que usar el ratón.
         document.addEventListener('keydown', function(e) {
-            if (e.key !== 'Enter') return;
-            const tag = document.activeElement?.tagName;
-            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || document.activeElement?.isContentEditable) return;
-            if (document.getElementById('command-palette-overlay')) return;
-            if (document.getElementById('modal-container')?.innerHTML.trim()) return;
-            if (document.getElementById('login-screen')?.style.display !== 'none') return;
+            if (!e.ctrlKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+            if (!canUseGlobalShortcut()) return;
+            const flat = NAV_SECTIONS.flatMap(s => s.items);
+            const idx = flat.findIndex(i => i.view === currentView);
+            if (idx === -1) return;
             e.preventDefault();
-            openCommandPalette('nav');
+            const nextIdx = e.key === 'ArrowDown' ? Math.min(flat.length - 1, idx + 1) : Math.max(0, idx - 1);
+            switchView(flat[nextIdx].view);
         });
 
         // ENTER dentro de un campo de un modal da por completada la
@@ -5312,6 +5210,7 @@ function v22RefreshSummaryIfPresent() {
                 dayPlanner.items = Array.isArray(dayPlanner.items) ? dayPlanner.items : [];
                 financeProfile.chartHistory = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
                 financeProfile.forecastProfile = financeProfile.forecastProfile || { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 };
+                blurFinances = !!saved.blurFinances;
                 studies = (saved.studies && typeof saved.studies === 'object') ? saved.studies : { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, notes: '' };
                 studies.subjects = Array.isArray(studies.subjects) ? studies.subjects : [];
                 studies.schedule = studies.schedule && typeof studies.schedule === 'object' ? studies.schedule : {};
@@ -5401,6 +5300,7 @@ function v22RefreshSummaryIfPresent() {
                 collectibles,
                 dayPlanner,
                 studies,
+                blurFinances,
                 fantasyData,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
@@ -5683,6 +5583,17 @@ function v22RefreshSummaryIfPresent() {
             }
         }
 
+        // Vuelve a disparar la animación de entrada del contenido al
+        // cambiar de apartado (el nodo #content persiste entre renders,
+        // así que hay que forzar un reflow para reiniciar la animación).
+        function animateContentSwitch() {
+            const el = document.getElementById('content');
+            if (!el) return;
+            el.classList.remove('view-fade-in');
+            void el.offsetWidth;
+            el.classList.add('view-fade-in');
+        }
+
         function switchView(view) {
             try {
                 currentView = view;
@@ -5693,6 +5604,7 @@ function v22RefreshSummaryIfPresent() {
 
                 updatePageTitle();
                 render();
+                animateContentSwitch();
 
                 const mobilePanel = document.getElementById('mobile-menu-panel');
                 if (mobilePanel && mobilePanel.classList.contains('open')) {
@@ -6152,19 +6064,10 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         //  FAB
         // ============================================================
-        function toggleFabMenu() {
-            document.getElementById('fab-menu').classList.toggle('open');
-        }
-
-        function closeFabMenu() {
-            document.getElementById('fab-menu').classList.remove('open');
-        }
-
         // ============================================================
         //  OPEN NEW ENTRY (FAB)
         // ============================================================
         function openNewEntry(type) {
-            closeFabMenu();
             editId = null;
             editType = type;
             document.getElementById('modal-container').innerHTML = renderEntryModal(type, null);
@@ -7263,7 +7166,7 @@ function v22RefreshSummaryIfPresent() {
             return `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                 <button class="cal-nav-arrow" onclick="changeDay(-1)">‹</button>
-                <span style="font-size:15px;font-weight:700;color:var(--text-primary);text-transform:capitalize">${dateLabel}</span>
+                <span class="cal-day-title" style="font-size:15px;font-weight:700;color:var(--text-primary);text-transform:capitalize">${dateLabel}</span>
                 <button class="cal-nav-arrow" onclick="changeDay(1)">›</button>
             </div>
             ${body || '<div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}`;
@@ -7734,14 +7637,39 @@ function v22RefreshSummaryIfPresent() {
         // negro por defecto; si la valoración es de 5 estrellas, reborde dorado.
         // El estado ("Viendo"...) y la valoración comparten un único hueco fijo,
         // nunca se muestran a la vez, para que el título quede siempre a la misma altura.
+        // Enlace de una búsqueda ya compuesta (título + IMDb/Goodreads) que
+        // se abre en una pestaña nueva del navegador. No se puede incrustar
+        // esas páginas en un iframe dentro de Bitácora: casi todos los
+        // sitios (IMDb y Goodreads incluidos) bloquean explícitamente que
+        // los carguen dentro de otra página (cabecera X-Frame-Options), así
+        // que una "ventana por encima" con esa búsqueda ya hecha no cargaría
+        // nada — abrir pestaña nueva es la única forma que funciona de verdad.
+        function externalSearchUrl(type, title) {
+            const q = encodeURIComponent(title);
+            if (type === 'book') return 'https://www.goodreads.com/search?q=' + q;
+            if (type === 'movie' || type === 'series') return 'https://www.imdb.com/find/?q=' + q;
+            return null;
+        }
+
+        function openExternalSearch(event, btn) {
+            event.stopPropagation();
+            const url = externalSearchUrl(btn.dataset.extType, btn.dataset.extTitle);
+            if (url) window.open(url, '_blank', 'noopener');
+        }
+
         function renderMediaCard(entry, metaLine, badge) {
             const gold = Number(entry.rating) === 5;
             const stars = entry.rating ? '★'.repeat(entry.rating) : '';
             const statusContent = stars
                 ? `<div class="media-card-stars">${stars}</div>`
                 : (badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : '');
+            const externalUrl = externalSearchUrl(entry.type, entry.title);
+            const externalBtn = externalUrl
+                ? `<button class="media-card-external" title="${entry.type === 'book' ? 'Buscar en Goodreads' : 'Buscar en IMDb'}" data-ext-type="${entry.type}" data-ext-title="${escapeHtml(entry.title)}" onclick="openExternalSearch(event,this)">↗</button>`
+                : '';
             return `
                 <div class="media-card media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" onclick="openEntryDetail('${entry.id}')">
+                    ${externalBtn}
                     <div class="media-card-icon">${mediaCardIcon(entry.type)}</div>
                     <div class="media-card-title">${escapeHtml(entry.title)}</div>
                     <div class="media-card-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
@@ -8815,6 +8743,12 @@ function v22RefreshSummaryIfPresent() {
             return { pct, label: `${pct.toFixed(0)}% del objetivo`, cls: pct >= 100 ? 'finance-goal-complete' : '' };
         }
 
+        async function toggleBlurFinances() {
+            blurFinances = !blurFinances;
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
         async function saveFinanceDashboard() {
             const snap = financeSnapshot();
             const existing = Array.isArray(financeProfile.history) ? financeProfile.history : [];
@@ -9325,7 +9259,12 @@ function v22RefreshSummaryIfPresent() {
             const fc = financeProfile.forecastProfile || {};
 
             return `
-            <div class="finance-dashboard">
+            <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
+                <button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">
+                    ${blurFinances
+                        ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6 0 9.5 5.5 9.9 7a10.9 10.9 0 0 1-3 3.9M6.2 6.2C3.6 7.9 1.9 10.7 1.1 12c.7 1.2 4.2 7 10.9 7 1.6 0 3-.3 4.2-.8"/><path d="M9.5 9.7a3 3 0 0 0 4.2 4.2"/></svg>'
+                        : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.1 12S4.8 5 12 5s10.9 7 10.9 7-3.7 7-10.9 7-10.9-7-10.9-7z"/><circle cx="12" cy="12" r="3"/></svg>'}
+                </button>
                 <div class="finance-hero-row">
                     <section class="finance-floating-chart-wrap">
                         <div class="finance-floating-legend">
@@ -12366,14 +12305,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                 document.getElementById('mobile-menu-overlay').addEventListener('click', function() {
                     if (this.classList.contains('open')) toggleMobileMenu();
-                });
-
-                document.addEventListener('click', function(e) {
-                    const fab = document.getElementById('fab');
-                    const menu = document.getElementById('fab-menu');
-                    if (!fab.contains(e.target) && !menu.contains(e.target)) {
-                        menu.classList.remove('open');
-                    }
                 });
 
                 let resizeTimer;
