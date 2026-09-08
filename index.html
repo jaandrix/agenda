@@ -1242,11 +1242,11 @@
             background: #0c0c0e;
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 16px;
-            padding: 18px 12px 14px 12px;
+            padding: 20px 12px 16px 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             text-align: center;
             gap: 8px;
             cursor: pointer;
@@ -1276,14 +1276,22 @@
             font-weight: 700;
             font-size: 13px;
             line-height: 1.3;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
             overflow: hidden;
+            min-height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .media-card-meta {
             font-size: 11px;
             color: rgba(255,255,255,0.55);
+            min-height: 14px;
+        }
+        .media-card-status-slot {
+            min-height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .media-card-badge {
             font-size: 10px;
@@ -1301,19 +1309,21 @@
             letter-spacing: 1px;
         }
         .media-card-gold {
-            border: 1.5px solid rgba(217,178,60,0.85);
-            box-shadow: 0 0 0 1px rgba(217,178,60,0.2) inset, 0 0 10px rgba(217,178,60,0.15);
+            border: 3px solid rgba(217,178,60,0.95);
+            box-shadow: 0 0 0 1px rgba(217,178,60,0.25) inset, 0 0 12px rgba(217,178,60,0.2);
         }
         .media-card-gold .media-card-icon {
             background: rgba(217,178,60,0.14);
         }
         .media-card-section-title {
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
-            color: var(--text-secondary);
-            letter-spacing: 0.5px;
-            margin: 18px 0 10px 0;
+            color: var(--text-primary);
+            letter-spacing: 0.6px;
+            margin: 22px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-strong);
         }
         .media-card-section-title:first-child { margin-top: 0; }
         .collectible-card { position: relative; }
@@ -3420,7 +3430,7 @@ body.beige {
 .collectibles-total-card { border-color:var(--border-strong); background:var(--bg-card-hover); }
 .collectibles-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
 .collectibles-head-actions { display:flex; gap:8px; }
-.collectibles-table-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; }
+.collectibles-table-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; padding:20px; }
 .collectibles-table { width:100%; border-collapse:collapse; font-size:13px; }
 .collectibles-table th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); font-weight:700; padding:12px 16px; border-bottom:1px solid var(--border-strong); white-space:nowrap; }
 .collectibles-table td { padding:11px 16px; border-bottom:1px solid var(--border); color:var(--text-primary); white-space:nowrap; }
@@ -7361,16 +7371,20 @@ function v22RefreshSummaryIfPresent() {
 
         // Tarjeta común para Ocio (libros, películas, series, videojuegos). Fondo
         // negro por defecto; si la valoración es de 5 estrellas, reborde dorado.
+        // El estado ("Viendo"...) y la valoración comparten un único hueco fijo,
+        // nunca se muestran a la vez, para que el título quede siempre a la misma altura.
         function renderMediaCard(entry, metaLine, badge) {
             const gold = Number(entry.rating) === 5;
             const stars = entry.rating ? '★'.repeat(entry.rating) : '';
+            const statusContent = stars
+                ? `<div class="media-card-stars">${stars}</div>`
+                : (badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : '');
             return `
                 <div class="media-card ${gold ? 'media-card-gold' : ''}" onclick="openEntryDetail('${entry.id}')">
                     <div class="media-card-icon">${mediaCardIcon(entry.type)}</div>
                     <div class="media-card-title">${escapeHtml(entry.title)}</div>
-                    ${metaLine ? `<div class="media-card-meta">${escapeHtml(metaLine)}</div>` : ''}
-                    ${badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : ''}
-                    ${stars ? `<div class="media-card-stars">${stars}</div>` : ''}
+                    <div class="media-card-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
+                    <div class="media-card-status-slot">${statusContent}</div>
                 </div>`;
         }
         function renderMediaCardGrid(items, metaFn, badgeFn) {
@@ -7433,12 +7447,15 @@ function v22RefreshSummaryIfPresent() {
             }
 
             const statusOrder = { 'Viendo': 0, 'Completada': 1, 'Abandonada': 2 };
-            const sorted = [...series].sort((a, b) => (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0));
+            // Estado efectivo: si hay fecha de fin y el estado guardado sigue en
+            // "Viendo" (dato antiguo sin reeditar), se muestra como "Completada".
+            const effectiveStatus = s => (s.endDate && s.status === 'Viendo') ? 'Completada' : s.status;
+            const sorted = [...series].sort((a, b) => (statusOrder[effectiveStatus(a)] || 0) - (statusOrder[effectiveStatus(b)] || 0));
 
             let html = `<div>`;
             html += renderMediaCardGrid(sorted,
                 s => `Inicio: ${s.startDate}${s.endDate ? ' · Fin: ' + s.endDate : ''}`,
-                s => s.status);
+                s => effectiveStatus(s));
             html += `</div>`;
             return html;
         }
