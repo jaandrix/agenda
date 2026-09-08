@@ -156,6 +156,28 @@
             transition: background 0.25s ease, border-color 0.25s ease;
             overflow-y: auto;
             z-index: 10;
+            position: relative;
+            scrollbar-width: none;
+        }
+        #sidebar::-webkit-scrollbar {
+            width: 0;
+            display: none;
+        }
+        #sidebar::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 44px;
+            background: linear-gradient(to bottom, transparent, var(--bg-sidebar) 88%);
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.2s ease;
+            z-index: 5;
+        }
+        #sidebar.at-bottom::after {
+            opacity: 0;
         }
 
         .sidebar-brand {
@@ -2228,19 +2250,16 @@
             ============================================================ */
         #content::-webkit-scrollbar,
         .modal-sheet::-webkit-scrollbar,
-        #sidebar::-webkit-scrollbar,
         #mobile-menu-panel::-webkit-scrollbar {
             width: 4px;
         }
         #content::-webkit-scrollbar-track,
         .modal-sheet::-webkit-scrollbar-track,
-        #sidebar::-webkit-scrollbar-track,
         #mobile-menu-panel::-webkit-scrollbar-track {
             background: transparent;
         }
         #content::-webkit-scrollbar-thumb,
         .modal-sheet::-webkit-scrollbar-thumb,
-        #sidebar::-webkit-scrollbar-thumb,
         #mobile-menu-panel::-webkit-scrollbar-thumb {
             background: var(--border-strong);
             border-radius: 4px;
@@ -12499,6 +12518,23 @@ window.addEventListener('resize', keepApuntesWindowInViewport);
         if (typeof currentView !== 'undefined' && currentView === 'home') {
             requestAnimationFrame(() => v23RenderSummaryDashboard());
         }
+    }
+
+    function initSidebarScrollFade() {
+        const sb = document.getElementById('sidebar');
+        if (!sb) return;
+        const updateFade = () => {
+            const atBottom = sb.scrollHeight - sb.scrollTop - sb.clientHeight < 4;
+            sb.classList.toggle('at-bottom', atBottom || sb.scrollHeight <= sb.clientHeight);
+        };
+        sb.addEventListener('scroll', updateFade);
+        window.addEventListener('resize', updateFade);
+        updateFade();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSidebarScrollFade);
+    } else {
+        initSidebarScrollFade();
     }
 
     if (document.readyState === 'loading') {
