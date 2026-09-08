@@ -154,14 +154,9 @@
             padding: 24px 16px 16px 16px;
             flex-shrink: 0;
             transition: background 0.25s ease, border-color 0.25s ease;
-            overflow-y: auto;
+            overflow: hidden;
             z-index: 10;
             position: relative;
-            scrollbar-width: none;
-        }
-        #sidebar::-webkit-scrollbar {
-            width: 0;
-            display: none;
         }
         #sidebar::after {
             content: '';
@@ -241,6 +236,13 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
+            overflow-y: auto;
+            min-height: 0;
+            scrollbar-width: none;
+        }
+        .sidebar-nav::-webkit-scrollbar {
+            width: 0;
+            display: none;
         }
         .sidebar-nav .nav-label {
             font-size: 10px;
@@ -3324,8 +3326,8 @@ body.beige {
 .finance-progress span { display:block; height:100%; background:var(--accent); border-radius:inherit; }
 .finance-progress-large { height:7px; margin:3px 0 4px; border-radius:99px; }
 .finance-metrics-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
-.finance-metric-card { position:relative; background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:18px 14px; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
-.finance-metric-card:hover { border-color:var(--border-strong); }
+.finance-metric-card { position:relative; background:var(--bg-card); border:3px solid #000; border-radius:20px; padding:22px 14px 18px; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; box-shadow:0 6px 18px rgba(0,0,0,.18); }
+.finance-metric-card:hover { box-shadow:0 8px 22px rgba(0,0,0,.26); }
 .finance-panel-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
 .finance-metric-icon { width:38px; height:38px; border-radius:50%; background:var(--bg-card-hover); display:flex; align-items:center; justify-content:center; font-size:15px; margin-bottom:6px; }
 .finance-metric-label { order:3; font-size:10px; text-transform:uppercase; font-weight:800; color:var(--text-secondary); letter-spacing:.35px; }
@@ -3466,15 +3468,39 @@ body.beige {
 .finance-account-card-readonly:hover { border-color:var(--border-strong); }
 
 /* Tarjeta "camino al objetivo" (verde) */
-.finance-goal-panel { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:20px; padding:18px; margin-bottom:14px; }
-.finance-goal-panel .finance-kicker { color:#16a34a; }
-.finance-goal-panel h3 { margin:3px 0 4px; font-size:15px; color:var(--text-primary); }
-.finance-goal-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
-.finance-goal-grid div { background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.18); border-radius:16px; padding:12px; }
-.finance-goal-grid span { display:block; font-size:9px; color:var(--text-secondary); margin-bottom:5px; }
-.finance-goal-grid strong { font-size:20px; font-weight:800; color:#16a34a; }
+.finance-goal-bar { display:flex; align-items:center; gap:12px; border:1px solid var(--border); border-radius:16px; padding:10px 16px; margin-bottom:14px; }
+.finance-goal-bar-icon { font-size:15px; flex-shrink:0; }
+.finance-goal-bar-text { flex:1; font-size:11px; color:var(--text-secondary); min-width:0; }
+.finance-goal-bar-text strong { color:var(--text-primary); font-weight:700; }
+.finance-goal-bar-progress { flex:0 0 140px; margin:0; }
+@media(max-width:600px){ .finance-goal-bar{flex-wrap:wrap} .finance-goal-bar-progress{flex-basis:100%} }
 
 .finance-dashboard-foot-actions { display:flex; justify-content:center; margin-top:6px; }
+
+/* ============================================================
+   ESTUDIOS
+   ============================================================ */
+.studies-view { max-width: 980px; padding-bottom: 30px; }
+.studies-section { margin-bottom: 22px; }
+.studies-subjects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-top:12px; }
+.studies-subject-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:14px; cursor:pointer; transition:border-color .15s ease; }
+.studies-subject-card:hover { border-color:var(--border-strong); }
+.studies-subject-dot { width:12px; height:12px; border-radius:50%; margin-bottom:8px; }
+.studies-subject-name { font-weight:700; font-size:14px; }
+.studies-subject-meta { font-size:10px; color:var(--text-secondary); margin-top:4px; }
+.studies-subject-avg { font-size:12px; font-weight:700; margin-top:8px; }
+.studies-modal-block { margin:14px 0; }
+.studies-item-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.studies-item-row button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:14px; }
+.studies-schedule-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.studies-day-col { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:6px; min-height:120px; }
+.studies-day-head { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); }
+.studies-block { display:flex; justify-content:space-between; align-items:center; gap:4px; background:var(--bg-card-hover); border-radius:10px; padding:6px 8px; font-size:10px; }
+.studies-block button { background:none; border:0; color:var(--text-secondary); cursor:pointer; }
+.studies-day-empty { font-size:10px; color:var(--text-muted); }
+.studies-day-add { margin-top:auto; background:none; border:1px dashed var(--border-strong); border-radius:10px; padding:6px; font-size:10px; color:var(--text-secondary); cursor:pointer; }
+.studies-notes-box { width:100%; min-height:110px; margin-top:12px; background:var(--bg-input); border:1px solid var(--border); border-radius:16px; padding:14px; color:var(--text-primary); font-family:inherit; font-size:13px; resize:vertical; }
+@media(max-width:850px){ .studies-schedule-grid{grid-template-columns:repeat(2,1fr)} }
 
 /* Modal "Corregir registros" */
 .finance-correction-row { padding:10px 0; border-bottom:1px solid var(--border); }
@@ -3856,10 +3882,6 @@ body.beige {
                     <span class="nav-icon">✎</span>
                     <span class="nav-text">Notas</span>
                 </button>
-                <button onclick="switchView('collectibles')" data-view="collectibles">
-                    <span class="nav-icon">◆</span>
-                    <span class="nav-text">Coleccionables</span>
-                </button>
 
                 <!-- Desarrollo -->
                 <span class="nav-label">Desarrollo</span>
@@ -3870,6 +3892,10 @@ body.beige {
                 <button onclick="switchView('work')" data-view="work">
                     <span class="nav-icon">◫</span>
                     <span class="nav-text">Trabajo</span>
+                </button>
+                <button onclick="switchView('studies')" data-view="studies">
+                    <span class="nav-icon">◎</span>
+                    <span class="nav-text">Estudios</span>
                 </button>
                 <button onclick="switchView('projects')" data-view="projects">
                     <span class="nav-icon">⊞</span>
@@ -3891,7 +3917,7 @@ body.beige {
 
 
                 <!-- Otros -->
-     
+
             <span class="nav-label">Otros</span>
                 <button onclick="switchView('culture')" data-view="culture">
                     <span class="nav-icon">◊</span>
@@ -3900,6 +3926,10 @@ body.beige {
                 <button onclick="switchView('travels')" data-view="travels">
                     <span class="nav-icon">⌂</span>
                     <span class="nav-text">Viajes y Lugares</span>
+                </button>
+                <button onclick="switchView('collectibles')" data-view="collectibles">
+                    <span class="nav-icon">◆</span>
+                    <span class="nav-text">Coleccionables</span>
                 </button>
                 <button onclick="switchView('tags')" data-view="tags">
                     <span class="nav-icon">#</span>
@@ -4012,9 +4042,6 @@ body.beige {
             <button onclick="switchView('notes');toggleMobileMenu()" data-view="notes">
                 <span class="nav-icon">✎</span> Notas
             </button>
-            <button onclick="switchView('collectibles');toggleMobileMenu()" data-view="collectibles">
-                <span class="nav-icon">◆</span> Coleccionables
-            </button>
 
             <span class="nav-label">Desarrollo</span>
             <button onclick="switchView('events');toggleMobileMenu()" data-view="events">
@@ -4022,6 +4049,9 @@ body.beige {
             </button>
             <button onclick="switchView('work');toggleMobileMenu()" data-view="work">
                 <span class="nav-icon">◫</span> Trabajo
+            </button>
+            <button onclick="switchView('studies');toggleMobileMenu()" data-view="studies">
+                <span class="nav-icon">◎</span> Estudios
             </button>
             <button onclick="switchView('projects');toggleMobileMenu()" data-view="projects">
                 <span class="nav-icon">⊞</span> Proyectos
@@ -4044,6 +4074,9 @@ body.beige {
             </button>
             <button onclick="switchView('travels');toggleMobileMenu()" data-view="travels">
                 <span class="nav-icon">⌂</span> Viajes y Lugares
+            </button>
+            <button onclick="switchView('collectibles');toggleMobileMenu()" data-view="collectibles">
+                <span class="nav-icon">◆</span> Coleccionables
             </button>
             <button onclick="switchView('tags');toggleMobileMenu()" data-view="tags">
                 <span class="nav-icon">#</span> Etiquetas
@@ -4699,10 +4732,20 @@ function v22RefreshSummaryIfPresent() {
             movements: [],
             // chartHistory: fotografías mensuales específicas para la gráfica de evolución
             // (efectivo, ingresado, emergencia). Se alimenta con el botón "Actualizar gráfica".
-            chartHistory: []
+            chartHistory: [],
+            // forecastProfile: datos manuales que alimentan la fórmula de provisión
+            // a fin de año (sueldo, duración del contrato, aportaciones planeadas).
+            forecastProfile: { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 }
         };
         let financeSubView = 'menu';
         let devModeActive = false;
+        // Estudios: asignaturas (con exámenes/trabajos y nota), horario semanal
+        // recurrente y notas rápidas.
+        const STUDIES_DAYS = [
+            { key: 'lun', label: 'Lunes' }, { key: 'mar', label: 'Martes' }, { key: 'mie', label: 'Miércoles' },
+            { key: 'jue', label: 'Jueves' }, { key: 'vie', label: 'Viernes' }, { key: 'sab', label: 'Sábado' }, { key: 'dom', label: 'Domingo' }
+        ];
+        let studies = { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, notes: '' };
 
         // ============================================================
         //  ENTRY TYPES
@@ -4778,6 +4821,7 @@ function v22RefreshSummaryIfPresent() {
             goals: 'Objetivos',
             planner: 'Planificador del día',
             collectibles: 'Coleccionables',
+            studies: 'Estudios',
             settings: 'Ajustes'
         };
 
@@ -5062,6 +5106,12 @@ function v22RefreshSummaryIfPresent() {
                 dayPlanner = (saved.dayPlanner && typeof saved.dayPlanner === 'object') ? saved.dayPlanner : { dayKey: '', items: [] };
                 dayPlanner.items = Array.isArray(dayPlanner.items) ? dayPlanner.items : [];
                 financeProfile.chartHistory = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
+                financeProfile.forecastProfile = financeProfile.forecastProfile || { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 };
+                studies = (saved.studies && typeof saved.studies === 'object') ? saved.studies : { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, notes: '' };
+                studies.subjects = Array.isArray(studies.subjects) ? studies.subjects : [];
+                studies.schedule = studies.schedule && typeof studies.schedule === 'object' ? studies.schedule : {};
+                STUDIES_DAYS.forEach(d => { studies.schedule[d.key] = Array.isArray(studies.schedule[d.key]) ? studies.schedule[d.key] : []; });
+                studies.notes = typeof studies.notes === 'string' ? studies.notes : '';
                 resetDayPlannerIfNeeded();
                 if (saved.fantasyData) {
                     fantasyData = saved.fantasyData;
@@ -5131,6 +5181,7 @@ function v22RefreshSummaryIfPresent() {
                 collectibleCategories,
                 collectibles,
                 dayPlanner,
+                studies,
                 fantasyData,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
@@ -6717,6 +6768,7 @@ function v22RefreshSummaryIfPresent() {
             else if (currentView === 'goals') content.innerHTML = renderGoals();
             else if (currentView === 'planner') content.innerHTML = renderPlanner();
             else if (currentView === 'collectibles') content.innerHTML = renderCollectibles();
+            else if (currentView === 'studies') content.innerHTML = renderStudies();
             else if (currentView === 'settings') content.innerHTML = renderSettings();
             updateAddButton();
             updateSidebarPrivacy();
@@ -7701,6 +7753,179 @@ function v22RefreshSummaryIfPresent() {
         }
 
         // ============================================================
+        //  RENDER: ESTUDIOS
+        // ============================================================
+        function findSubject(id) { return studies.subjects.find(s => s.id === id); }
+
+        function renderStudies() {
+            return `
+            <div class="studies-view">
+                <section class="studies-section">
+                    <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Asignaturas</h3></div><button class="finance-icon-btn" title="Añadir asignatura" onclick="openAddSubject()">+</button></div>
+                    ${studies.subjects.length ? `<div class="studies-subjects-grid">${studies.subjects.map(renderSubjectCard).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
+                </section>
+
+                <section class="studies-section">
+                    <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Horario semanal</h3></div></div>
+                    <div class="studies-schedule-grid">${STUDIES_DAYS.map(renderScheduleDay).join('')}</div>
+                </section>
+
+                <section class="studies-section">
+                    <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Notas rápidas</h3></div></div>
+                    <textarea class="studies-notes-box" placeholder="Cosas para recordar otro día..." onchange="saveStudiesNotes(event.target.value)">${escapeHtml(studies.notes || '')}</textarea>
+                </section>
+            </div>`;
+        }
+
+        function renderSubjectCard(s) {
+            const graded = [...(s.exams || []), ...(s.assignments || [])].filter(x => x.grade !== '' && x.grade !== null && x.grade !== undefined && !isNaN(Number(x.grade)));
+            const avg = graded.length ? graded.reduce((sum, x) => sum + Number(x.grade), 0) / graded.length : null;
+            return `
+                <div class="studies-subject-card" onclick="openSubjectDetail('${s.id}')">
+                    <div class="studies-subject-dot" style="background:${s.color || '#5b8def'}"></div>
+                    <div class="studies-subject-name">${escapeHtml(s.name)}</div>
+                    <div class="studies-subject-meta">${(s.exams || []).length} examen${(s.exams || []).length === 1 ? '' : 'es'} · ${(s.assignments || []).length} trabajo${(s.assignments || []).length === 1 ? '' : 's'}</div>
+                    <div class="studies-subject-avg">${avg === null ? 'Sin notas' : 'Media ' + avg.toFixed(2)}</div>
+                </div>`;
+        }
+
+        function openAddSubject() {
+            showModal(`
+                <div class="modal-title">+ Asignatura</div>
+                <div class="modal-label">Nombre</div>
+                <input id="subject-name" class="modal-input" placeholder="Ej: Cálculo I">
+                <div class="modal-label">Color</div>
+                <input id="subject-color" class="modal-input" type="color" value="#5b8def" style="height:40px;padding:4px">
+                <button class="btn-modal-primary" onclick="saveNewSubject()">Añadir asignatura</button>
+            `);
+            setTimeout(() => document.getElementById('subject-name')?.focus(), 50);
+        }
+
+        async function saveNewSubject() {
+            const name = document.getElementById('subject-name')?.value.trim();
+            if (!name) { showToast('Indica un nombre para la asignatura', true); return; }
+            const color = document.getElementById('subject-color')?.value || '#5b8def';
+            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, exams: [], assignments: [] });
+            closeModal();
+            render();
+            try { await saveData(); showToast('Asignatura añadida'); }
+            catch (e) { console.error('Error guardando la asignatura en Supabase:', e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteSubject(id) {
+            if (!confirm('¿Eliminar esta asignatura y todos sus exámenes/trabajos?')) return;
+            studies.subjects = studies.subjects.filter(s => s.id !== id);
+            closeModal();
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openSubjectDetail(id) {
+            const s = findSubject(id);
+            if (!s) return;
+            showModal(renderSubjectDetailModal(s));
+        }
+
+        function renderSubjectDetailModal(s) {
+            return `
+                <div class="modal-title">${escapeHtml(s.name)}</div>
+                <div class="studies-modal-block">
+                    <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">Exámenes <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','exams')">+</button></div>
+                    ${(s.exams || []).length ? s.exams.map((ex, i) => renderSubjectItemRow(s.id, 'exams', ex, i)).join('') : '<div class="finance-empty-line">Sin exámenes todavía.</div>'}
+                </div>
+                <div class="studies-modal-block">
+                    <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">Trabajos <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','assignments')">+</button></div>
+                    ${(s.assignments || []).length ? s.assignments.map((a, i) => renderSubjectItemRow(s.id, 'assignments', a, i)).join('') : '<div class="finance-empty-line">Sin trabajos todavía.</div>'}
+                </div>
+                <button class="finance-oneoff-btn" style="color:#dc2626;border-color:#dc2626" onclick="deleteSubject('${s.id}')">Eliminar asignatura</button>
+            `;
+        }
+
+        function renderSubjectItemRow(subjectId, listKey, item, index) {
+            return `
+                <div class="studies-item-row">
+                    <input class="modal-input" style="flex:2;margin:0" value="${escapeHtml(item.title || '')}" placeholder="Título" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
+                    <input class="modal-input" style="flex:1;margin:0" type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)">
+                    <input class="modal-input" style="flex:0 0 60px;margin:0" type="number" min="0" max="10" step="0.1" value="${item.grade ?? ''}" placeholder="Nota" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'grade',this.value)">
+                    <button title="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})">✕</button>
+                </div>`;
+        }
+
+        function addSubjectItem(subjectId, listKey) {
+            const s = findSubject(subjectId);
+            if (!s) return;
+            s[listKey] = s[listKey] || [];
+            s[listKey].push({ id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: '', date: '', grade: '' });
+            openSubjectDetail(subjectId);
+        }
+
+        async function updateSubjectItem(subjectId, listKey, index, field, value) {
+            const s = findSubject(subjectId);
+            if (!s || !s[listKey] || !s[listKey][index]) return;
+            s[listKey][index][field] = value;
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function removeSubjectItem(subjectId, listKey, index) {
+            const s = findSubject(subjectId);
+            if (!s || !s[listKey]) return;
+            s[listKey].splice(index, 1);
+            openSubjectDetail(subjectId);
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function renderScheduleDay(d) {
+            const blocks = studies.schedule[d.key] || [];
+            return `
+                <div class="studies-day-col">
+                    <div class="studies-day-head">${d.label}</div>
+                    ${blocks.map((b, i) => `
+                        <div class="studies-block">
+                            <span>${escapeHtml(b.time || '')} ${escapeHtml(b.subject || '')}</span>
+                            <button title="Eliminar" onclick="removeScheduleBlock('${d.key}',${i})">✕</button>
+                        </div>`).join('') || '<div class="studies-day-empty">—</div>'}
+                    <button class="studies-day-add" onclick="openAddScheduleBlock('${d.key}')">+ Añadir</button>
+                </div>`;
+        }
+
+        function openAddScheduleBlock(dayKey) {
+            showModal(`
+                <div class="modal-title">Añadir clase</div>
+                <div class="modal-label">Hora</div>
+                <input id="schedule-time" class="modal-input" type="time">
+                <div class="modal-label">Asignatura / texto</div>
+                <input id="schedule-subject" class="modal-input" placeholder="Ej: Cálculo I - Aula 3">
+                <button class="btn-modal-primary" onclick="saveScheduleBlock('${dayKey}')">Añadir</button>
+            `);
+        }
+
+        async function saveScheduleBlock(dayKey) {
+            const time = document.getElementById('schedule-time')?.value || '';
+            const subject = document.getElementById('schedule-subject')?.value.trim();
+            if (!subject) { showToast('Indica el nombre de la clase', true); return; }
+            studies.schedule[dayKey] = studies.schedule[dayKey] || [];
+            studies.schedule[dayKey].push({ time, subject });
+            studies.schedule[dayKey].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+            closeModal();
+            render();
+            try { await saveData(); showToast('Clase añadida'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function removeScheduleBlock(dayKey, index) {
+            if (!studies.schedule[dayKey]) return;
+            studies.schedule[dayKey].splice(index, 1);
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function saveStudiesNotes(value) {
+            studies.notes = value;
+            try { await saveData(); showToast('Notas guardadas'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ============================================================
         //  RENDER: PROJECTS
         // ============================================================
         function renderProjects() {
@@ -8100,6 +8325,50 @@ function v22RefreshSummaryIfPresent() {
         function financeRecurringTotal() {
             return entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false)
                 .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        }
+
+        // ============================================================
+        //  PROVISIÓN A FIN DE AÑO
+        //  Combina la tendencia histórica mensual (financeProfile.history)
+        //  con el plan manual de la tarjeta de Previsión. El peso de la
+        //  tendencia histórica crece con el número de meses registrados
+        //  (0 con poco historial, 1 a partir de 12 meses), así que la
+        //  estimación se vuelve más precisa sola conforme el usuario
+        //  actualiza sus cifras mes a mes.
+        // ============================================================
+        function financeHistoricalDelta(key) {
+            const hist = [...(financeProfile.history || [])].sort((a, b) => String(a.month).localeCompare(String(b.month))).slice(-12);
+            const values = hist.map(h => Number(h[key] || 0));
+            if (values.length < 2) return null;
+            const deltas = values.slice(1).map((v, i) => v - values[i]);
+            return { avg: deltas.reduce((s, d) => s + d, 0) / deltas.length, weight: Math.min(1, deltas.length / 11) };
+        }
+
+        function financeYearEndProvision(key) {
+            const now = new Date();
+            const monthsLeft = 12 - now.getMonth();
+            if (monthsLeft <= 0) return null;
+            const current = Number(financeProfile[key] || 0);
+            const fc = financeProfile.forecastProfile || {};
+            const hist = financeHistoricalDelta(key);
+
+            const blend = (planned) => hist ? (hist.weight * hist.avg + (1 - hist.weight) * planned) : planned;
+
+            if (key === 'cash') {
+                const salary = Number(fc.salary || 0);
+                const recurring = financeRecurringTotal();
+                const plannedDuring = salary - recurring - Number(fc.emergencyMonthlyPlan || 0) - Number(fc.vacationMonthlyPlan || 0) - Number(fc.investMonthlyPlan || 0);
+                const plannedAfter = -recurring;
+                const contractMonths = Number(fc.contractMonths || 0);
+                const monthsInContract = Math.min(monthsLeft, contractMonths > 0 ? contractMonths : monthsLeft);
+                const monthsAfter = monthsLeft - monthsInContract;
+                if (!hist && !(salary > 0) && recurring === 0) return null;
+                return current + blend(plannedDuring) * monthsInContract + blend(plannedAfter) * monthsAfter;
+            }
+
+            const planned = key === 'emergency' ? Number(fc.emergencyMonthlyPlan || 0) : Number(fc.vacationMonthlyPlan || 0);
+            if (!hist && !planned) return null;
+            return current + blend(planned) * monthsLeft;
         }
 
         function financeSnapshot() {
@@ -8634,48 +8903,36 @@ function v22RefreshSummaryIfPresent() {
             showToast('Transferencia realizada');
         }
 
-        function openFinanceSalaryEditor() {
-            const now = new Date();
-            const months = [];
-            for (let i = now.getMonth(); i < 12; i++) {
-                const key = `${now.getFullYear()}-${String(i + 1).padStart(2, '0')}`;
-                months.push({ key, label: financeMonthLabel(key), value: financeProfile.salaryForecast?.[key] || 0 });
-            }
+        function openForecastProfileEditor() {
+            const fc = financeProfile.forecastProfile || {};
             showModal(`
-                <div class="modal-title">Previsión de ingresos</div>
-                <div class="finance-modal-note">Introduce lo que crees que cobrarás en cada mes. Son previsiones y puedes modificarlas cuando cobres realmente.</div>
-                ${months.map(m => `
-                    <div class="finance-salary-row">
-                        <span>${escapeHtml(m.label)}</span>
-                        <input class="modal-input" style="margin:0" type="number" min="0" step="0.01" data-finance-salary="${m.key}" value="${Number(m.value) || ''}" placeholder="0">
-                    </div>`).join('')}
-                <button class="btn-modal-primary" onclick="saveFinanceSalaryForecast()">Guardar previsiones</button>
+                <div class="modal-title">Previsión</div>
+                <div class="finance-modal-note">Estos datos alimentan la provisión a fin de año que se muestra en Efectivo, Emergencia y Vacaciones.</div>
+                <div class="modal-label">Sueldo actual (€/mes)</div>
+                <input id="forecast-salary" class="modal-input" type="number" min="0" step="0.01" value="${Number(fc.salary || 0) || ''}" placeholder="0.00">
+                <div class="modal-label">Meses de contrato con ese sueldo</div>
+                <input id="forecast-contract" class="modal-input" type="number" min="0" step="1" value="${Number(fc.contractMonths || 0) || ''}" placeholder="Ej: 12">
+                <div class="modal-label">Ampliación mensual del fondo de emergencia (€)</div>
+                <input id="forecast-emergency" class="modal-input" type="number" min="0" step="0.01" value="${Number(fc.emergencyMonthlyPlan || 0) || ''}" placeholder="0.00">
+                <div class="modal-label">Ampliación mensual de la reserva de vacaciones (€)</div>
+                <input id="forecast-vacation" class="modal-input" type="number" min="0" step="0.01" value="${Number(fc.vacationMonthlyPlan || 0) || ''}" placeholder="0.00">
+                <div class="modal-label">Aportación mensual a inversiones a largo plazo (€)</div>
+                <input id="forecast-invest" class="modal-input" type="number" min="0" step="0.01" value="${Number(fc.investMonthlyPlan || 0) || ''}" placeholder="0.00">
+                <div class="finance-modal-note">Gasto actual en suscripciones/gastos fijos: ${financeMoney(financeRecurringTotal())}/mes (se descuenta solo, no hace falta indicarlo).</div>
+                <button class="btn-modal-primary" onclick="saveForecastProfileEditor()">Guardar previsión</button>
             `);
         }
 
-        async function saveFinanceSalaryForecast() {
-            financeProfile.salaryForecast = financeProfile.salaryForecast || {};
-            document.querySelectorAll('[data-finance-salary]').forEach(input => {
-                financeProfile.salaryForecast[input.dataset.financeSalary] = Math.max(0, Number(input.value) || 0);
-            });
+        async function saveForecastProfileEditor() {
+            financeProfile.forecastProfile = {
+                salary: Math.max(0, Number(document.getElementById('forecast-salary')?.value) || 0),
+                contractMonths: Math.max(0, Number(document.getElementById('forecast-contract')?.value) || 0),
+                emergencyMonthlyPlan: Math.max(0, Number(document.getElementById('forecast-emergency')?.value) || 0),
+                vacationMonthlyPlan: Math.max(0, Number(document.getElementById('forecast-vacation')?.value) || 0),
+                investMonthlyPlan: Math.max(0, Number(document.getElementById('forecast-invest')?.value) || 0)
+            };
             closeModal();
             await saveFinanceDashboard();
-        }
-
-        function financePaceLabel(key, targetKey) {
-            const current = Number(financeProfile[key] || 0);
-            const target = Number(financeProfile[targetKey] || 0);
-            if (target <= 0) return 'Ritmo: sin objetivo';
-            if (current >= target) return 'Objetivo alcanzado';
-            const previous = financePreviousSnapshot()?.[key];
-            if (previous === undefined || previous === null) return 'Ritmo: falta un registro mensual';
-            const monthlyDelta = current - Number(previous);
-            if (monthlyDelta <= 0) return 'Ritmo actual: no acerca al objetivo';
-            const monthsNeeded = Math.ceil((target - current) / monthlyDelta);
-            const monthsLeft = 12 - new Date().getMonth();
-            return monthsNeeded <= monthsLeft
-                ? `Ritmo: llegarías en ~${monthsNeeded} mes${monthsNeeded === 1 ? '' : 'es'}`
-                : `Ritmo: necesitarías ~${monthsNeeded} meses`;
         }
 
         function renderFinanceMetric(key, targetKey, label, icon, note) {
@@ -8684,10 +8941,10 @@ function v22RefreshSummaryIfPresent() {
             const prev = financePreviousSnapshot()?.[key];
             const change = financePctChange(value, prev);
             const goal = financeGoalStatus(value, target);
+            const provision = financeYearEndProvision(key);
             return `
                 <div class="finance-metric-card ${goal.cls}">
                     <button class="finance-edit-btn" title="Editar" onclick="openFinanceMetricEditor('${key}','${label}','${targetKey}')">✎</button>
-                    <div class="finance-metric-icon">${icon}</div>
                     <div class="finance-metric-value">${financeMoney(value)}</div>
                     <div class="finance-metric-label">${label}</div>
                     <div class="finance-metric-meta">
@@ -8695,7 +8952,7 @@ function v22RefreshSummaryIfPresent() {
                         <span>${goal.pct === null ? 'Sin objetivo' : `${goal.pct.toFixed(0)}% del objetivo`}</span>
                     </div>
                     <div class="finance-progress"><span style="width:${goal.pct === null ? 0 : Math.min(100, goal.pct)}%"></span></div>
-                    <div class="finance-metric-note">Objetivo: ${target > 0 ? financeMoney(target) : 'sin definir'} · ${financePaceLabel(key,targetKey)}${note ? ` · ${note}` : ''}</div>
+                    <div class="finance-metric-note">${provision === null ? 'Provisión fin de año: sin datos suficientes' : `Provisión fin de año: ${financeMoney(provision)}`}${note ? ` · ${note}` : ''}</div>
                 </div>`;
         }
 
@@ -8711,9 +8968,7 @@ function v22RefreshSummaryIfPresent() {
             const now = new Date();
             const monthsLeft = 12 - now.getMonth();
             const remainingToTarget = Math.max(0, target - total);
-            const currentSalary = Number(financeProfile.salaryForecast?.[financeMonthKey()] || financeIncome.current || 0);
-            const nextSalaryKey = `${now.getFullYear()}-${String(now.getMonth() + 2).padStart(2, '0')}`;
-            const nextSalary = Number(financeProfile.salaryForecast?.[nextSalaryKey] || financeIncome.next || 0);
+            const fc = financeProfile.forecastProfile || {};
 
             return `
             <div class="finance-dashboard">
@@ -8756,12 +9011,13 @@ function v22RefreshSummaryIfPresent() {
 
                 <div class="finance-grid-2">
                     <section class="finance-panel">
-                        <div class="finance-panel-head"><div><div class="finance-kicker">Previsión</div><h3>Ingresos próximos</h3></div><button class="finance-icon-btn" onclick="openFinanceSalaryEditor()">✎</button></div>
-                        <div class="finance-income-highlight"><span>Este mes</span><strong>${financeMoney(currentSalary)}</strong></div>
-                        <div class="finance-income-highlight"><span>Mes siguiente</span><strong>${financeMoney(nextSalary)}</strong></div>
-                        <div class="finance-salary-list">
-                            ${Object.keys(financeProfile.salaryForecast || {}).filter(k => k >= financeMonthKey()).sort().slice(0,5).map(k => `<div><span>${escapeHtml(financeMonthLabel(k))}</span><strong>${financeMoney(financeProfile.salaryForecast[k])}</strong></div>`).join('') || '<div class="finance-empty-line">Añade una previsión para que Bitácora pueda calcular tu ritmo.</div>'}
-                        </div>
+                        <div class="finance-panel-head"><div><div class="finance-kicker">Previsión</div><h3>Sueldo y aportaciones</h3></div><button class="finance-icon-btn" onclick="openForecastProfileEditor()">✎</button></div>
+                        <div class="finance-income-highlight"><span>Sueldo actual</span><strong>${financeMoney(fc.salary || 0)}</strong></div>
+                        <div class="finance-income-highlight"><span>Meses de contrato</span><strong>${fc.contractMonths || '—'}</strong></div>
+                        <div class="finance-income-highlight"><span>Ampliación emergencia / mes</span><strong>${financeMoney(fc.emergencyMonthlyPlan || 0)}</strong></div>
+                        <div class="finance-income-highlight"><span>Ampliación vacaciones / mes</span><strong>${financeMoney(fc.vacationMonthlyPlan || 0)}</strong></div>
+                        <div class="finance-income-highlight" style="border-bottom:none"><span>Aportación inversión / mes</span><strong>${financeMoney(fc.investMonthlyPlan || 0)}</strong></div>
+                        <div class="finance-empty-line" style="margin-top:8px">Suscripciones y gastos fijos actuales: ${financeMoney(financeRecurringTotal())}/mes (se descuentan solas de la provisión).</div>
                     </section>
 
                     <section class="finance-panel">
@@ -8778,13 +9034,12 @@ function v22RefreshSummaryIfPresent() {
                     </section>
                 </div>
 
-                <section class="finance-goal-panel">
-                    <div class="finance-panel-head"><div><div class="finance-kicker">Objetivo</div><h3>${remainingToTarget <= 0 && target > 0 ? '🎉 Objetivo alcanzado' : 'Camino al objetivo'}</h3></div></div>
-                    <div class="finance-goal-grid">
-                        <div><span>Objetivo</span><strong>${target > 0 ? financeMoney(target) : 'sin definir'}</strong></div>
-                        <div><span>Meses restantes</span><strong>${monthsLeft}</strong></div>
-                        <div><span>Te falta</span><strong>${target > 0 ? financeMoney(remainingToTarget) : '—'}</strong></div>
-                    </div>
+                <section class="finance-goal-bar">
+                    <span class="finance-goal-bar-icon">${remainingToTarget <= 0 && target > 0 ? '🎉' : '◎'}</span>
+                    <span class="finance-goal-bar-text">${remainingToTarget <= 0 && target > 0
+                        ? '<strong>Objetivo alcanzado</strong>'
+                        : `<strong>Camino al objetivo</strong> · ${target > 0 ? `faltan ${financeMoney(remainingToTarget)}` : 'objetivo sin definir'} · ${monthsLeft} meses restantes`}</span>
+                    <div class="finance-progress finance-goal-bar-progress"><span style="width:${totalPct === null ? 0 : Math.min(100, totalPct)}%"></span></div>
                 </section>
 
                 <section class="finance-accounts-section">
