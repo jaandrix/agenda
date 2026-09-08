@@ -8,7 +8,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
     <title>Bitácora</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         /* ============================================================
@@ -117,7 +117,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            font-family: 'Quicksand', -apple-system, system-ui, sans-serif;
             background: var(--bg-app);
             color: var(--text-primary);
             height: 100dvh;
@@ -240,7 +240,7 @@
             border: none;
             padding: 8px 10px;
             border-radius: 14px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 13px;
             font-weight: 500;
             color: var(--text-secondary);
@@ -391,7 +391,7 @@
             border: none;
             padding: 10px 10px;
             border-radius: 14px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 14px;
             font-weight: 500;
             color: var(--text-secondary);
@@ -503,7 +503,7 @@
             border: none;
             border-radius: 16px;
             padding: 8px 14px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
@@ -529,7 +529,7 @@
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
         }
         #search-trigger:hover {
             border-color: var(--accent);
@@ -580,7 +580,7 @@
             border: none;
             background: transparent;
             outline: none;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 15px;
             color: var(--text-primary);
         }
@@ -649,7 +649,7 @@
             cursor: pointer;
             background: none;
             border: none;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             padding: 2px 8px;
             border-radius: 10px;
             transition: background 0.15s ease;
@@ -693,7 +693,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
         }
         #fab:hover {
             transform: scale(1.05);
@@ -726,7 +726,7 @@
             background: none;
             border: none;
             color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 13px;
             font-weight: 500;
             text-align: left;
@@ -771,7 +771,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 13px;
             font-weight: 800;
             letter-spacing: -.4px;
@@ -824,7 +824,7 @@
             color: #252525;
             border-radius: 14px;
             padding: 5px 8px;
-            font: 700 11px 'Inter', sans-serif;
+            font: 700 11px 'Quicksand', sans-serif;
             cursor: pointer;
             white-space: nowrap;
         }
@@ -1042,7 +1042,7 @@
             padding: 8px 4px;
             cursor: pointer;
             color: var(--text-secondary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             transition: all 0.15s ease;
         }
         .cal-strip-day:hover { background: var(--bg-card-hover); color: var(--text-primary); }
@@ -1148,7 +1148,7 @@
             background: none;
             border: none;
             color: var(--text-secondary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 13px;
             font-weight: 600;
             padding: 8px 16px;
@@ -1204,6 +1204,79 @@
         }
         .entry-item:last-child {
             border-bottom: none;
+        }
+
+        /* ============================================================
+               EFECTO HOVER GLOBAL: difuminado + icono de edición
+               Se aplica a cualquier tarjeta clicable que abra una
+               entrada (detalle/edición), sin tener que tocar cada
+               plantilla una por una.
+            ============================================================ */
+        div[onclick*="openEntryDetail"],
+        div[onclick*="openEditCollectible"],
+        div[onclick*="openReadNote"],
+        div[onclick*="openFundDetail"],
+        div[onclick*="openPromptDetail"],
+        div[onclick*="openEditEntry"],
+        div[onclick*="showDayEntries"] {
+            position: relative;
+            overflow: hidden;
+        }
+        div[onclick*="openEntryDetail"] > *,
+        div[onclick*="openEditCollectible"] > *,
+        div[onclick*="openReadNote"] > *,
+        div[onclick*="openFundDetail"] > *,
+        div[onclick*="openPromptDetail"] > *,
+        div[onclick*="openEditEntry"] > *,
+        div[onclick*="showDayEntries"] > * {
+            transition: filter 0.22s ease, opacity 0.22s ease;
+        }
+        div[onclick*="openEntryDetail"]:hover > *,
+        div[onclick*="openEditCollectible"]:hover > *,
+        div[onclick*="openReadNote"]:hover > *,
+        div[onclick*="openFundDetail"]:hover > *,
+        div[onclick*="openPromptDetail"]:hover > *,
+        div[onclick*="openEditEntry"]:hover > *,
+        div[onclick*="showDayEntries"]:hover > * {
+            filter: blur(3px);
+            opacity: 0.4;
+        }
+        div[onclick*="openEntryDetail"]::after,
+        div[onclick*="openEditCollectible"]::after,
+        div[onclick*="openReadNote"]::after,
+        div[onclick*="openFundDetail"]::after,
+        div[onclick*="openPromptDetail"]::after,
+        div[onclick*="openEditEntry"]::after,
+        div[onclick*="showDayEntries"]::after {
+            content: '✎';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--bg-fab);
+            color: var(--accent-contrast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            transform: translate(-50%,-50%) scale(0.7);
+            transition: opacity 0.22s ease, transform 0.22s ease;
+            z-index: 4;
+        }
+        div[onclick*="openEntryDetail"]:hover::after,
+        div[onclick*="openEditCollectible"]:hover::after,
+        div[onclick*="openReadNote"]:hover::after,
+        div[onclick*="openFundDetail"]:hover::after,
+        div[onclick*="openPromptDetail"]:hover::after,
+        div[onclick*="openEditEntry"]:hover::after,
+        div[onclick*="showDayEntries"]:hover::after {
+            opacity: 1;
+            transform: translate(-50%,-50%) scale(1);
         }
 
         .entry-color-dot {
@@ -1515,7 +1588,7 @@
             padding: 10px 14px;
             border-radius: 16px;
             border: 1px solid var(--border-strong);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 14px;
             font-weight: 500;
             background: var(--bg-input);
@@ -1552,7 +1625,7 @@
             border: none;
             background: var(--accent);
             color: var(--accent-contrast);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-weight: 700;
             font-size: 15px;
             cursor: pointer;
@@ -1570,7 +1643,7 @@
             border: none;
             background: #2a1515;
             color: #dc2626;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-weight: 700;
             font-size: 13px;
             cursor: pointer;
@@ -1594,7 +1667,7 @@
             border: 1px solid var(--border-strong);
             background: var(--bg-input);
             color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
@@ -1663,7 +1736,7 @@
             border: 1px solid var(--border-strong);
             background: var(--bg-input);
             color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 14px;
             outline: none;
         }
@@ -1676,7 +1749,7 @@
             border: none;
             background: var(--vault-accent);
             color: #fff;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-weight: 700;
             font-size: 14px;
             cursor: pointer;
@@ -2370,7 +2443,7 @@
             padding: 20px;
             min-height: 100px;
             width: 100%;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 14px;
             color: #3d3324;
             line-height: 1.6;
@@ -2661,7 +2734,7 @@
             border: 1px solid var(--border-strong);
             background: var(--bg-input);
             color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 14px;
         }
         #login-box button {
@@ -2671,7 +2744,7 @@
             border: none;
             background: #2563eb;
             color: #fff;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -3427,7 +3500,12 @@ body.beige {
    COLECCIONABLES
    ============================================================ */
 .collectibles-dashboard { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; margin-bottom:24px; }
-.collectibles-total-card { border-color:var(--border-strong); background:var(--bg-card-hover); }
+.collectibles-total-card {
+    border: 3px solid rgba(217,178,60,0.95);
+    background: var(--bg-card-hover);
+    box-shadow: 0 0 0 1px rgba(217,178,60,0.25) inset, 0 0 12px rgba(217,178,60,0.2);
+}
+.collectibles-total-card .finance-metric-label span { color: #d9b23c; }
 .collectibles-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
 .collectibles-head-actions { display:flex; gap:8px; }
 .collectibles-table-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; padding:20px; }
@@ -3459,8 +3537,8 @@ body.beige {
 }
 #finance-chart-tooltip strong { font-family:'JetBrains Mono',monospace; }
 
-.tags-view-chip { display:inline-flex; align-items:center; gap:4px; border:1px solid #d9d0c0; background:#f3eee3; color:#292722; border-radius:14px; font-size:12px; font-weight:750; padding:7px 13px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.08); transition:transform .15s ease, background .15s ease, border-color .15s ease; }
-.tags-view-chip:hover { background:#eee7da; border-color:#c9bda9; transform:translateY(-1px); }
+.tags-view-chip { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-primary); border-radius:12px; font-size:12px; font-weight:700; padding:8px 12px; cursor:pointer; box-shadow:var(--shadow); transition:transform .15s ease, background .15s ease, border-color .15s ease; }
+.tags-view-chip:hover { background:var(--bg-card-hover); border-color:var(--border-strong); transform:translateY(-2px); }
 
 /* ============================================================
    VENTANA FLOTANTE DE APUNTES
@@ -3823,10 +3901,6 @@ body.beige {
                     <span class="nav-icon">◆</span>
                     <span class="nav-text">Coleccionables</span>
                 </button>
-                <button onclick="switchView('home')" data-view="home">
-                    <span class="nav-icon">⌂</span>
-                    <span class="nav-text">Centro resumen</span>
-                </button>
 
                 <!-- Desarrollo -->
                 <span class="nav-label">Desarrollo</span>
@@ -3981,9 +4055,6 @@ body.beige {
             </button>
             <button onclick="switchView('collectibles');toggleMobileMenu()" data-view="collectibles">
                 <span class="nav-icon">◆</span> Coleccionables
-            </button>
-            <button onclick="switchView('home');toggleMobileMenu()" data-view="home">
-                <span class="nav-icon">⌂</span> Centro resumen
             </button>
 
             <span class="nav-label">Desarrollo</span>
@@ -4927,6 +4998,10 @@ function v22RefreshSummaryIfPresent() {
                 openSearch();
             } else if (e.key === 'Escape') {
                 closeSearch();
+                const modalContainer = document.getElementById('modal-container');
+                if (modalContainer && modalContainer.innerHTML.trim() !== '') {
+                    closeModal();
+                }
             }
         });
 
@@ -5737,7 +5812,6 @@ function v22RefreshSummaryIfPresent() {
             return `
                 <div class="media-card collectible-card ${isTopValue ? 'media-card-gold' : ''}" onclick="openEditCollectible('${item.id}')">
                     <div class="collectible-card-actions">
-                        <button title="Editar" onclick="event.stopPropagation();openEditCollectible('${item.id}')">✎</button>
                         <button title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')">×</button>
                     </div>
                     <div class="media-card-icon">◆</div>
@@ -7055,7 +7129,6 @@ function v22RefreshSummaryIfPresent() {
                         <div class="entry-meta">${metaHtml}</div>
                     </div>
                     <div class="entry-actions">
-                        <button onclick="event.stopPropagation();openEditEntry('${e.id}')">✎</button>
                         <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')">✕</button>
                     </div>
                 </div>`;
@@ -7474,7 +7547,7 @@ function v22RefreshSummaryIfPresent() {
 
             // Sin badge de estado: muchos juegos no tienen fecha de finalización.
             let html = `<div>`;
-            html += renderMediaCardGrid(sorted, g => `Inicio: ${g.startDate}${g.endDate ? ' · Fin: ' + g.endDate : ''}`);
+            html += renderMediaCardGrid(sorted, g => g.endDate ? `Fin: ${g.endDate}` : '');
             html += `</div>`;
             return html;
         }
@@ -8019,7 +8092,6 @@ function v22RefreshSummaryIfPresent() {
                             </div>
                             <span class="badge ${statusClass}">${e.status}</span>
                             <div class="entry-actions">
-                                <button onclick="event.stopPropagation();openEditEntry('${e.id}')">✎</button>
                                 <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')">✕</button>
                             </div>
                         </div>`;
