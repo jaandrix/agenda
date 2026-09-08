@@ -2862,26 +2862,31 @@
         .login-back:hover {
             color: #3b82f6;
         }
-        #login-box button.pwa-install-btn {
-            width: 100%;
-            margin-top: 18px;
-            padding: 10px 12px;
-            border-radius: 14px;
+        #login-screen button.pwa-install-btn {
+            position: absolute;
+            top: 24px;
+            right: 28px;
+            width: auto;
+            padding: 9px 16px;
+            border-radius: 999px;
             border: 1.5px solid #3b82f6;
             background: transparent;
             color: #3b82f6;
             font-family: 'Poppins', sans-serif;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
+            white-space: nowrap;
             cursor: pointer;
             transition: all 0.15s ease;
             align-items: center;
             justify-content: center;
             gap: 6px;
+            z-index: 2;
         }
-        #login-box button.pwa-install-btn:hover {
+        #login-screen button.pwa-install-btn:hover {
             background: rgba(59,130,246,0.1);
         }
+        @media(max-width:480px){ #login-screen button.pwa-install-btn{ position:static; margin:0 auto 16px; } }
 
         #app {
             display: none;
@@ -3897,6 +3902,7 @@ body.beige {
     <div id="boot-loading">Cargando...</div>
 
     <div id="login-screen">
+        <button id="pwa-install-btn" class="pwa-install-btn" onclick="handlePwaInstallClick()" style="display:none">⭳ descarga Bitácora</button>
         <div id="login-box">
             <div id="mode-login">
                 <h1>bienvenido a <span class="login-brand-accent">Bitácora</span></h1>
@@ -3908,7 +3914,6 @@ body.beige {
                     <a onclick="showAuthMode('signup')">Crear cuenta</a>
                     <a onclick="showAuthMode('forgot')">¿Olvidaste tu contraseña?</a>
                 </div>
-                <button id="pwa-install-btn" class="pwa-install-btn" onclick="handlePwaInstallClick()" style="display:none">⭳ Descargar Bitácora</button>
             </div>
 
             <div id="mode-signup" style="display:none">
