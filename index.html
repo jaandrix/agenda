@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bitácora">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <title>Bitácora</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -2858,6 +2862,26 @@
         .login-back:hover {
             color: #3b82f6;
         }
+        #login-box button.pwa-install-btn {
+            width: 100%;
+            margin-top: 18px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1.5px solid #3b82f6;
+            background: transparent;
+            color: #3b82f6;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        #login-box button.pwa-install-btn:hover {
+            background: rgba(59,130,246,0.1);
+        }
 
         #app {
             display: none;
@@ -3884,6 +3908,7 @@ body.beige {
                     <a onclick="showAuthMode('signup')">Crear cuenta</a>
                     <a onclick="showAuthMode('forgot')">¿Olvidaste tu contraseña?</a>
                 </div>
+                <button id="pwa-install-btn" class="pwa-install-btn" onclick="handlePwaInstallClick()" style="display:none">⭳ Descargar Bitácora</button>
             </div>
 
             <div id="mode-signup" style="display:none">
@@ -5676,6 +5701,65 @@ function v22RefreshSummaryIfPresent() {
             if (!overlay || !document.body.contains(overlay)) return;
             overlay.style.animation = 'modalOverlayOut 0.18s ease both';
             setTimeout(() => overlay.remove(), 170);
+        }
+
+        // ============================================================
+        //  INSTALACIÓN COMO PWA
+        // ============================================================
+        let pwaDeferredPrompt = null;
+        const pwaIsStandalone = () =>
+            window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        function showPwaInstallButton(mode) {
+            const btn = document.getElementById('pwa-install-btn');
+            if (!btn || pwaIsStandalone()) return;
+            btn.dataset.mode = mode;
+            btn.style.display = 'inline-flex';
+        }
+
+        function hidePwaInstallButton() {
+            const btn = document.getElementById('pwa-install-btn');
+            if (btn) btn.style.display = 'none';
+        }
+
+        async function handlePwaInstallClick() {
+            const btn = document.getElementById('pwa-install-btn');
+            if (btn?.dataset.mode === 'install' && pwaDeferredPrompt) {
+                pwaDeferredPrompt.prompt();
+                const { outcome } = await pwaDeferredPrompt.userChoice;
+                pwaDeferredPrompt = null;
+                if (outcome === 'accepted') hidePwaInstallButton();
+                return;
+            }
+            const ua = navigator.userAgent;
+            const isIOS = /iphone|ipad|ipod/i.test(ua);
+            const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+            const text = isIOS
+                ? 'En iPhone/iPad: pulsa el icono Compartir en Safari y elige "Añadir a pantalla de inicio".'
+                : isSafari
+                    ? 'En Safari (Mac): usa el icono de compartir de la barra de direcciones y elige "Añadir al Dock".'
+                    : 'Busca el icono de instalar en la barra de direcciones de tu navegador.';
+            showCenteredMessage(text);
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            pwaDeferredPrompt = e;
+            showPwaInstallButton('install');
+        });
+        window.addEventListener('appinstalled', () => {
+            pwaDeferredPrompt = null;
+            hidePwaInstallButton();
+        });
+        // Si tras un momento ningún navegador ha ofrecido instalación nativa
+        // (Safari, Firefox de escritorio...), el botón se muestra igual,
+        // con instrucciones manuales en vez de quedar oculto sin más.
+        setTimeout(() => { if (!pwaDeferredPrompt) showPwaInstallButton('manual'); }, 1500);
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js').catch(() => {});
+            });
         }
 
         function countWorkingDays(startDate, endDate) {
