@@ -657,6 +657,21 @@
         #main-header h1 .edit-name-btn:hover {
             background: var(--bg-card-hover);
         }
+        #main-header h1 .username-link {
+            color: #3b82f6;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+        #main-header h1 .username-link:hover {
+            color: #60a5fa;
+        }
+        #main-header h1 .title-period {
+            font-weight: 900;
+            font-size: 1.2em;
+            margin-left: 1px;
+        }
 
         /* ============================================================
                CONTENT
@@ -4008,7 +4023,7 @@ body.beige {
             <div id="main-header">
                 <div class="header-left">
                     <button class="menu-hamburger" onclick="toggleMobileMenu()" id="hamburger-btn">☰</button>
-                    <h1 id="page-title">Home <button class="edit-name-btn" onclick="editUserName()">✎</button></h1>
+                    <h1 id="page-title">Home</h1>
                 </div>
                 <div class="header-right">
                     <button id="add-section-btn" class="add-section-btn" onclick="openSectionAdd()">
@@ -5250,14 +5265,14 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         function updatePageTitle() {
             const titleEl = document.getElementById('page-title');
-            const baseTitle = VIEW_LABELS[currentView] || 'Home';
-            titleEl.textContent = baseTitle + ' ';
-            if (currentView === 'calendar' && !titleEl.querySelector('.edit-name-btn')) {
-                const btn = document.createElement('button');
-                btn.className = 'edit-name-btn';
-                btn.textContent = '✎';
-                btn.onclick = editUserName;
-                titleEl.appendChild(btn);
+            if (currentView === 'calendar') {
+                const greeting = greetingText().replace(/\.$/, '');
+                const hasName = userName && userName.trim();
+                const nameDisplay = hasName ? escapeHtml(userName.trim()) : 'tu nombre';
+                titleEl.innerHTML = `Home - ${greeting} <a href="javascript:void(0)" class="username-link" onclick="editUserName()">${nameDisplay}</a><span class="title-period">.</span>`;
+            } else {
+                const baseTitle = VIEW_LABELS[currentView] || 'Home';
+                titleEl.textContent = baseTitle + ' ';
             }
             updateAddButton();
         }
