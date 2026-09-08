@@ -1358,16 +1358,6 @@
             justify-content: center;
         }
         .collectible-card-actions button:hover { background: rgba(255,255,255,0.2); }
-        .media-card-external {
-            position: absolute; top: 8px; left: 8px; z-index: 5;
-            width: 22px; height: 22px; border-radius: 50%; border: none;
-            background: rgba(255,255,255,0.1); color: #f2f2f2; font-size: 11px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            opacity: 0; transition: opacity 0.15s ease, background 0.15s ease;
-        }
-        .media-card:hover .media-card-external { opacity: 1; }
-        .media-card-external:hover { background: rgba(255,255,255,0.25); }
-
         .entry-actions {
             display: flex;
             gap: 4px;
@@ -1522,6 +1512,7 @@
             transition: background 0.12s ease;
         }
         .command-palette-item.active, .command-palette-item:hover { background: var(--bg-card-hover); }
+        .command-palette-item-cmd span { color: #c0605a; text-decoration: underline; text-underline-offset: 2px; }
         .command-palette-empty { padding: 16px 4px; color: var(--text-secondary); font-size: 12px; text-align: center; }
         .command-palette-fade {
             position: absolute; left: 0; right: 0; bottom: 0; height: 36px; border-radius: 0 0 14px 14px;
@@ -1529,6 +1520,25 @@
             pointer-events: none; opacity: 1; transition: opacity 0.15s ease;
         }
         .command-palette-fade.hidden { opacity: 0; }
+
+        /* Mensaje centrado (p. ej. "Modo desarrollador activado") */
+        .centered-message-overlay {
+            position: fixed; inset: 0; z-index: 500;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            animation: modalOverlayIn 0.2s ease both;
+        }
+        .centered-message-box {
+            background: var(--bg-modal); border-radius: 22px; box-shadow: var(--shadow);
+            padding: 28px 32px; max-width: 360px; text-align: center;
+            animation: modalSheetIn 0.24s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .centered-message-text { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 18px; }
+
+        .logout-confirm-box { text-align: center; }
+        .logout-confirm-box .command-palette-prompt { font-size: 17px; }
+        .logout-confirm-actions { display: flex; gap: 10px; }
+        .logout-confirm-actions button { width: auto; flex: 1; }
 
         /* ============================================================
                ALERTA DIARIA
@@ -2559,7 +2569,14 @@
             font-size: 12px;
         }
         #header-clock { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text-secondary); min-width:42px; text-align:right; }
-        .entry-detail-card { max-width:760px; }
+        .entry-detail-card { position:relative; max-width:760px; }
+.entry-detail-external {
+    position:absolute; top:24px; right:26px; background:#000; color:#fff;
+    border:1.5px solid #3b82f6; border-radius:999px; padding:7px 14px;
+    font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;
+}
+.entry-detail-external:hover { background:#161616; }
+@media(max-width:600px){ .entry-detail-external{ position:static; margin-top:12px; } }
         .entry-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
         .entry-detail-field { padding:12px 14px; border:1px solid var(--border); border-radius:16px; background:var(--bg-card); }
         .entry-detail-label { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-secondary); margin-bottom:5px; font-weight:700; }
@@ -2757,9 +2774,14 @@
         #login-box h1 {
             font-size: 20px;
             font-weight: 800;
-            margin-bottom: 4px;
+            margin-bottom: 24px;
             text-align: center;
             color: var(--text-primary);
+        }
+        .login-brand-accent {
+            color: #3b82f6;
+            text-decoration: underline;
+            text-underline-offset: 2px;
         }
         #login-box p.sub {
             font-size: 13px;
@@ -2783,7 +2805,7 @@
             padding: 10px 12px;
             border-radius: 14px;
             border: none;
-            background: #2563eb;
+            background: #3b82f6;
             color: #fff;
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
@@ -2816,7 +2838,7 @@
         }
         .login-links a {
             font-size: 12px;
-            color: #2563eb;
+            color: #3b82f6;
             text-decoration: none;
             cursor: pointer;
         }
@@ -2832,7 +2854,7 @@
             cursor: pointer;
         }
         .login-back:hover {
-            color: #2563eb;
+            color: #3b82f6;
         }
 
         #app {
@@ -3488,6 +3510,9 @@ body.beige {
 .event-card-title { font-size:13px; font-weight:700; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .event-card-place { font-size:11px; color:rgba(255,255,255,0.6); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
+.media-month-label { display:block; font-size:13px; font-weight:800; color:#3b82f6; text-decoration:underline; text-underline-offset:3px; text-transform:lowercase; margin:18px 0 10px; }
+.media-month-label:first-child { margin-top:0; }
+
 /* Transición al cambiar entre vista de día/semana/mes en Home */
 @keyframes calViewIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 .cal-view-anim { animation: calViewIn 0.32s cubic-bezier(0.16,1,0.3,1) both; }
@@ -3497,9 +3522,9 @@ body.beige {
 .cal-day-title::before {
     content: '';
     position: absolute;
-    inset: -8px -16px;
+    inset: -14px -70px;
     background: radial-gradient(ellipse at center, rgba(59,130,246,0.38), rgba(59,130,246,0.14) 60%, transparent 75%);
-    filter: blur(16px);
+    filter: blur(20px);
     border-radius: 50%;
     z-index: -1;
     animation: calDayTitleFloat 4s ease-in-out infinite;
@@ -3809,8 +3834,7 @@ body.beige {
     <div id="login-screen">
         <div id="login-box">
             <div id="mode-login">
-                <h1>Bitácora</h1>
-                <p class="sub">Inicia sesión para continuar</p>
+                <h1>bienvenido a <span class="login-brand-accent">Bitácora</span></h1>
                 <input type="email" id="login-email" placeholder="Email" autocomplete="username">
                 <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
                 <button id="login-btn" onclick="handleLogin()">Entrar</button>
@@ -3914,14 +3938,8 @@ body.beige {
     <!-- ============================================================
     FAB
     ============================================================ -->
-    <button id="fab" onclick="openCommandPalette('create')" title="Captura rápida">
+    <button id="fab" onclick="openCommandPalette('create')" title="Captura rápida (tecla ESPACIO)">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M13 2 3 14h6l-1 8 10-12h-6z"/></svg>
-    </button>
-    <button id="quick-capture-btn" onclick="openCommandPalette('create')" title="Captura rápida (tecla ESPACIO)"
-        style="position:fixed;bottom:96px;right:30px;width:44px;height:44px;border-radius:50%;
-        background:var(--bg-card);border:1px solid var(--border-strong);color:var(--text-primary);
-        cursor:pointer;z-index:49;font-size:16px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center">
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M13 2 3 14h6l-1 8 10-12h-6z"/></svg>
     </button>
 
     <!-- ============================================================
@@ -4725,6 +4743,12 @@ function v22RefreshSummaryIfPresent() {
             { type: 'birthday', text: 'Cumpleaños' },
         ];
 
+        // Comandos del buscador "¿dónde quieres ir?": se activan escribiendo
+        // "/" y se irán ampliando con el tiempo.
+        const PALETTE_COMMANDS = [
+            { cmd: 'admin', text: '/admin' },
+        ];
+
         function renderNavButtons(sections, mobile) {
             return sections.map(sec => `<span class="nav-label">${escapeHtml(sec.label)}</span>` +
                 sec.items.map(i => mobile
@@ -4976,7 +5000,10 @@ function v22RefreshSummaryIfPresent() {
         function renderCommandPaletteList(query) {
             const q = query.trim().toLowerCase();
             let filtered;
-            if (cpMode === 'create') {
+            if (cpMode === 'nav' && q.startsWith('/')) {
+                const cmdQuery = q.slice(1);
+                filtered = PALETTE_COMMANDS.filter(c => c.cmd.startsWith(cmdQuery)).map(c => ({ ...c, kind: 'command' }));
+            } else if (cpMode === 'create') {
                 const all = paletteItemsFor('create');
                 filtered = q ? all.filter(i => i.text.toLowerCase().includes(q)) : all;
             } else {
@@ -4988,7 +5015,7 @@ function v22RefreshSummaryIfPresent() {
             const list = document.getElementById('command-palette-list');
             if (!list) return;
             list.innerHTML = filtered.length ? filtered.map((item, i) => `
-                <div class="command-palette-item ${i === cpSelectedIndex ? 'active' : ''}" onmousedown="event.preventDefault();selectCommandPaletteItem(${i})">
+                <div class="command-palette-item ${item.kind === 'command' ? 'command-palette-item-cmd' : ''} ${i === cpSelectedIndex ? 'active' : ''}" onmousedown="event.preventDefault();selectCommandPaletteItem(${i})">
                     <span>${escapeHtml(item.text)}</span>
                 </div>`).join('') : '<div class="command-palette-empty">Sin resultados</div>';
             list._filtered = filtered;
@@ -5039,9 +5066,46 @@ function v22RefreshSummaryIfPresent() {
                 focusFirstModalField();
             } else if (item.kind === 'entry' || item.kind === 'note') {
                 followMention(item.kind, item.id);
+            } else if (item.kind === 'command') {
+                runPaletteCommand(item.cmd);
             } else {
                 switchView(item.view);
             }
+        }
+
+        function runPaletteCommand(cmd) {
+            if (cmd === 'admin') toggleDeveloperMode();
+        }
+
+        function openLogoutConfirm() {
+            if (document.getElementById('logout-confirm-overlay')) return;
+            const overlay = document.createElement('div');
+            overlay.id = 'logout-confirm-overlay';
+            overlay.className = 'command-palette-overlay';
+            overlay.onclick = (e) => { if (e.target === overlay) closeLogoutConfirm(); };
+            overlay.innerHTML = `
+                <div class="command-palette-box logout-confirm-box">
+                    <div class="command-palette-prompt" style="margin-bottom:20px">¿Quieres cerrar tu <span class="cp-accent">sesión</span>?</div>
+                    <div class="logout-confirm-actions">
+                        <button class="btn-secondary" onclick="closeLogoutConfirm()">No</button>
+                        <button class="btn-modal-primary" onclick="confirmLogout()">Sí</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(overlay);
+            document.body.classList.add('cp-blur');
+        }
+
+        function closeLogoutConfirm() {
+            const overlay = document.getElementById('logout-confirm-overlay');
+            document.body.classList.remove('cp-blur');
+            if (!overlay) return;
+            overlay.style.animation = 'modalOverlayOut 0.18s ease both';
+            setTimeout(() => overlay.remove(), 170);
+        }
+
+        async function confirmLogout() {
+            closeLogoutConfirm();
+            await handleLogout();
         }
 
         function closeCommandPalette() {
@@ -5053,14 +5117,17 @@ function v22RefreshSummaryIfPresent() {
             setTimeout(() => overlay.remove(), 170);
         }
 
+        // ESC: cierra lo que haya abierto (buscador, modal, confirmación de
+        // sesión); si no hay nada abierto, en las mismas condiciones que
+        // ENTER/ESPACIO, pregunta si se quiere cerrar sesión.
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                if (document.getElementById('command-palette-overlay')) { closeCommandPalette(); return; }
-                const modalContainer = document.getElementById('modal-container');
-                if (modalContainer && modalContainer.innerHTML.trim() !== '') {
-                    closeModal();
-                }
-            }
+            if (e.key !== 'Escape') return;
+            if (document.getElementById('logout-confirm-overlay')) { closeLogoutConfirm(); return; }
+            if (document.getElementById('command-palette-overlay')) { closeCommandPalette(); return; }
+            const modalContainer = document.getElementById('modal-container');
+            if (modalContainer && modalContainer.innerHTML.trim() !== '') { closeModal(); return; }
+            if (!canUseGlobalShortcut()) return;
+            openLogoutConfirm();
         });
 
         // Condición compartida por los atajos globales: nada de esto debe
@@ -5454,6 +5521,28 @@ function v22RefreshSummaryIfPresent() {
             t.classList.add('show');
             clearTimeout(t._timer);
             t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        // Mensaje destacado en el centro de la pantalla, para avisos que
+        // merecen más presencia que un toast (p. ej. activar el modo
+        // desarrollador). Mismo estilo que el resto de overlays de la app.
+        function showCenteredMessage(text) {
+            const overlay = document.createElement('div');
+            overlay.className = 'centered-message-overlay';
+            overlay.onclick = (e) => { if (e.target === overlay) closeCenteredMessage(overlay); };
+            overlay.innerHTML = `
+                <div class="centered-message-box">
+                    <div class="centered-message-text">${escapeHtml(text)}</div>
+                    <button class="btn-modal-primary" onclick="closeCenteredMessage(this.closest('.centered-message-overlay'))">Entendido</button>
+                </div>`;
+            document.body.appendChild(overlay);
+            setTimeout(() => closeCenteredMessage(overlay), 2600);
+        }
+
+        function closeCenteredMessage(overlay) {
+            if (!overlay || !document.body.contains(overlay)) return;
+            overlay.style.animation = 'modalOverlayOut 0.18s ease both';
+            setTimeout(() => overlay.remove(), 170);
         }
 
         function countWorkingDays(startDate, endDate) {
@@ -6085,7 +6174,7 @@ function v22RefreshSummaryIfPresent() {
         function getTravelTotal(entry){return(entry.expenses||[]).reduce((sum,x)=>sum+(Number(x.amount)||0),0);}
         function detailField(label,value){if(value===undefined||value===null||value==='')return '';return `<div class="entry-detail-field"><div class="entry-detail-label">${label}</div><div class="entry-detail-value">${value}</div></div>`;}
         function renderEntryDetailModal(entry){
-            const icon=TYPE_ICONS[entry.type]||'◈', label=TYPE_LABELS[entry.type]||'Entrada'; let fields='';
+            const icon=mediaCardIcon(entry.type), label=TYPE_LABELS[entry.type]||'Entrada'; let fields='';
             if(entry.type==='travel'){
                 fields+=detailField('Lugar al que viajé',escapeHtml(entry.destination||entry.title));
                 fields+=detailField('Fechas',escapeHtml(formatTravelRange(entry.startDate,entry.endDate)));
@@ -6105,7 +6194,11 @@ function v22RefreshSummaryIfPresent() {
                 if(entry.company)fields+=detailField('Empresa',escapeHtml(entry.company));
                 if(entry.position)fields+=detailField('Cargo',escapeHtml(entry.position));
             }
-            return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card"><div class="modal-title">${icon} ${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div><div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button></div></div></div>`;
+            const detailExternalUrl = externalSearchUrl(entry.type, entry.title);
+            const detailExternalBtn = detailExternalUrl
+                ? `<button class="entry-detail-external" data-ext-type="${entry.type}" data-ext-title="${escapeHtml(entry.title)}" onclick="openExternalSearch(event,this)">Ver en ${entry.type==='book'?'Goodreads':'IMDb'}</button>`
+                : '';
+            return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title">${icon} ${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div><div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button></div></div></div>`;
         }
         function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);}
         async function toggleProjectTask(projectId,taskIndex){
@@ -7610,14 +7703,15 @@ function v22RefreshSummaryIfPresent() {
                             <span class="culture-tab-count">${t.count}</span>
                         </button>`).join('')}
                 </div>
-                <div class="culture-tab-content">`;
+                <div class="culture-tab-content">
+                <div class="cal-view-anim">`;
 
             if (cultureTab === 'books') html += renderBooks();
             else if (cultureTab === 'series') html += renderSeries();
             else if (cultureTab === 'movies') html += renderMovies();
             else if (cultureTab === 'games') html += renderGames();
 
-            html += `</div></div>`;
+            html += `</div></div></div>`;
             return html;
         }
 
@@ -7663,13 +7757,8 @@ function v22RefreshSummaryIfPresent() {
             const statusContent = stars
                 ? `<div class="media-card-stars">${stars}</div>`
                 : (badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : '');
-            const externalUrl = externalSearchUrl(entry.type, entry.title);
-            const externalBtn = externalUrl
-                ? `<button class="media-card-external" title="${entry.type === 'book' ? 'Buscar en Goodreads' : 'Buscar en IMDb'}" data-ext-type="${entry.type}" data-ext-title="${escapeHtml(entry.title)}" onclick="openExternalSearch(event,this)">↗</button>`
-                : '';
             return `
                 <div class="media-card media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" onclick="openEntryDetail('${entry.id}')">
-                    ${externalBtn}
                     <div class="media-card-icon">${mediaCardIcon(entry.type)}</div>
                     <div class="media-card-title">${escapeHtml(entry.title)}</div>
                     <div class="media-card-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
@@ -7719,9 +7808,24 @@ function v22RefreshSummaryIfPresent() {
             }
 
             const sorted = [...movies].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+            const groups = [];
+            const byKey = {};
+            sorted.forEach(m => {
+                const key = (m.date || '').slice(0, 7) || 'sin-fecha';
+                if (!byKey[key]) { byKey[key] = { key, items: [] }; groups.push(byKey[key]); }
+                byKey[key].items.push(m);
+            });
+            const monthLabel = key => {
+                if (key === 'sin-fecha') return 'sin fecha';
+                const [y, mo] = key.split('-').map(Number);
+                return new Date(y, mo - 1, 1).toLocaleDateString('es-ES', { month: 'long' });
+            };
 
             let html = `<div>`;
-            html += renderMediaCardGrid(sorted, m => m.date || 'Sin fecha');
+            groups.forEach(g => {
+                html += `<div class="media-month-label">${escapeHtml(monthLabel(g.key))}.</div>`;
+                html += renderMediaCardGrid(g.items, m => m.date || 'Sin fecha');
+            });
             html += `</div>`;
             return html;
         }
@@ -11840,7 +11944,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 devModeActive = true;
                 updateSidebarPrivacy();
                 document.getElementById('content').innerHTML = renderSettings();
-                showToast('🔓 Modo desarrollador activado correctamente');
+                showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
                 console.error('Error al guardar la contraseña global:', e);
                 errorEl.textContent = 'Error al guardar la contraseña. Asegúrate de que la tabla global_settings existe en Supabase.';
@@ -11923,7 +12027,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 devModeActive = true;
                 updateSidebarPrivacy();
                 document.getElementById('content').innerHTML = renderSettings();
-                showToast('🔓 Modo desarrollador activado');
+                showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
                 console.error('Error verificando contraseña:', e);
                 errorEl.textContent = 'Error de conexión, intenta de nuevo';
