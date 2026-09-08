@@ -227,6 +227,9 @@
             letter-spacing: 0.8px;
             color: var(--text-secondary);
             padding: 12px 8px 6px 8px;
+            display: inline-block;
+            border-bottom: 1px solid rgba(0,0,0,0.18);
+            margin-bottom: 2px;
         }
 
         .sidebar-nav button {
@@ -278,10 +281,7 @@
         }
 
         .sidebar-nav button .nav-icon {
-            font-size: 16px;
-            width: 24px;
-            text-align: center;
-            flex-shrink: 0;
+            display: none;
         }
         .sidebar-nav button .nav-text {
             flex: 1;
@@ -1015,7 +1015,7 @@
         /* ============================================================
                HOME / CALENDARIO (estilo Stoic)
             ============================================================ */
-        .cal-home { max-width: 760px; }
+        .cal-home { max-width: 980px; }
         .cal-greeting {
             font-size: 30px;
             font-weight: 800;
@@ -1227,6 +1227,110 @@
             color: var(--text-secondary);
             margin-top: 2px;
         }
+
+        /* ============================================================
+               TARJETAS DE MEDIA (Ocio: libros / películas / series)
+               y TARJETAS DE COLECCIONABLES
+            ============================================================ */
+        .media-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+            gap: 14px;
+            margin-bottom: 4px;
+        }
+        .media-card {
+            background: #0c0c0e;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 18px 12px 14px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            color: #f2f2f2;
+        }
+        .media-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+        }
+        .media-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+        }
+        .media-card-title {
+            font-weight: 700;
+            font-size: 13px;
+            line-height: 1.3;
+        }
+        .media-card-meta {
+            font-size: 11px;
+            color: rgba(255,255,255,0.55);
+        }
+        .media-card-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.75);
+        }
+        .media-card-stars {
+            font-size: 11px;
+            color: #d9b23c;
+            letter-spacing: 1px;
+        }
+        .media-card-gold {
+            border: 1px solid rgba(217,178,60,0.55);
+            box-shadow: 0 0 0 1px rgba(217,178,60,0.12) inset;
+        }
+        .media-card-gold .media-card-icon {
+            background: rgba(217,178,60,0.14);
+        }
+        .media-card-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            margin: 18px 0 10px 0;
+        }
+        .media-card-section-title:first-child { margin-top: 0; }
+        .collectible-card { position: relative; }
+        .collectible-card-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        .collectible-card:hover .collectible-card-actions { opacity: 1; }
+        .collectible-card-actions button {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: #f2f2f2;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .collectible-card-actions button:hover { background: rgba(255,255,255,0.2); }
 
         .entry-actions {
             display: flex;
@@ -3699,6 +3803,10 @@ body.beige {
                     <span class="nav-icon">◆</span>
                     <span class="nav-text">Coleccionables</span>
                 </button>
+                <button onclick="switchView('home')" data-view="home">
+                    <span class="nav-icon">⌂</span>
+                    <span class="nav-text">Centro resumen</span>
+                </button>
 
                 <!-- Desarrollo -->
                 <span class="nav-label">Desarrollo</span>
@@ -3727,22 +3835,22 @@ body.beige {
                     <span class="nav-icon">◫</span>
                     <span class="nav-text">Finanzas</span>
                 </button>
-                <button onclick="switchView('tags')" data-view="tags">
-                    <span class="nav-icon">#</span>
-                    <span class="nav-text">Etiquetas</span>
-                </button>
 
 
-                <!-- Ocio -->
+                <!-- Otros -->
      
-            <span class="nav-label">Ocio</span>
+            <span class="nav-label">Otros</span>
                 <button onclick="switchView('culture')" data-view="culture">
                     <span class="nav-icon">◊</span>
-                    <span class="nav-text">Cultura</span>
+                    <span class="nav-text">Ocio</span>
                 </button>
                 <button onclick="switchView('travels')" data-view="travels">
                     <span class="nav-icon">⌂</span>
                     <span class="nav-text">Viajes y Lugares</span>
+                </button>
+                <button onclick="switchView('tags')" data-view="tags">
+                    <span class="nav-icon">#</span>
+                    <span class="nav-text">Etiquetas</span>
                 </button>
 
                 <!-- Privado -->
@@ -3854,6 +3962,9 @@ body.beige {
             <button onclick="switchView('collectibles');toggleMobileMenu()" data-view="collectibles">
                 <span class="nav-icon">◆</span> Coleccionables
             </button>
+            <button onclick="switchView('home');toggleMobileMenu()" data-view="home">
+                <span class="nav-icon">⌂</span> Centro resumen
+            </button>
 
             <span class="nav-label">Desarrollo</span>
             <button onclick="switchView('events');toggleMobileMenu()" data-view="events">
@@ -3875,17 +3986,17 @@ body.beige {
             <button onclick="switchView('finances');toggleMobileMenu()" data-view="finances">
                 <span class="nav-icon">◫</span> Finanzas
             </button>
-            <button onclick="switchView('tags');toggleMobileMenu()" data-view="tags">
-                <span class="nav-icon">#</span> Etiquetas
-            </button>
 
 
-            <span class="nav-label">Ocio</span>
+            <span class="nav-label">Otros</span>
             <button onclick="switchView('culture');toggleMobileMenu()" data-view="culture">
-                <span class="nav-icon">◊</span> Cultura
+                <span class="nav-icon">◊</span> Ocio
             </button>
             <button onclick="switchView('travels');toggleMobileMenu()" data-view="travels">
                 <span class="nav-icon">⌂</span> Viajes y Lugares
+            </button>
+            <button onclick="switchView('tags');toggleMobileMenu()" data-view="tags">
+                <span class="nav-icon">#</span> Etiquetas
             </button>
 
             <span class="nav-label">Privado</span>
@@ -4604,7 +4715,7 @@ function v22RefreshSummaryIfPresent() {
         const VIEW_LABELS = {
             calendar: 'Home',
             home: 'Centro resumen',
-            culture: 'Cultura',
+            culture: 'Ocio',
             travels: 'Viajes y Lugares',
             work: 'Trabajo',
             projects: 'Proyectos',
@@ -5583,29 +5694,36 @@ function v22RefreshSummaryIfPresent() {
                 </div>
 
                 <div class="collectibles-table-wrap">
-                    ${sorted.length ? `
-                    <table class="collectibles-table">
-                        <thead>
-                            <tr><th>Nombre</th><th>Categoría</th><th>Valor de mercado</th><th></th></tr>
-                        </thead>
-                        <tbody>
-                            ${sorted.map(c => `
-                                <tr>
-                                    <td>${escapeHtml(c.name)}</td>
-                                    <td><span class="collectibles-cat-badge">${escapeHtml(collectibleCategoryName(c.category))}</span></td>
-                                    <td>${financeMoney(c.value)}</td>
-                                    <td class="collectibles-row-actions">
-                                        <button title="Editar" onclick="openEditCollectible('${c.id}')">✎</button>
-                                        <button title="Eliminar" onclick="deleteCollectible('${c.id}')">×</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>` : `
+                    ${collectibles.length ? collectibleCategories.map(cat => {
+                        const items = collectibles.filter(c => c.category === cat.id)
+                            .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+                        if (!items.length) return '';
+                        const maxVal = Math.max(...items.map(c => Number(c.value) || 0));
+                        return `
+                            <div class="media-card-section-title">${escapeHtml(cat.name)}</div>
+                            <div class="media-card-grid">
+                                ${items.map(c => renderCollectibleCard(c, maxVal > 0 && (Number(c.value) || 0) === maxVal)).join('')}
+                            </div>`;
+                    }).join('') : `
                         <div class="finance-empty-state">Aún no has añadido coleccionables. Pulsa <strong>+ Coleccionable</strong> para empezar tu catálogo.</div>
                     `}
                 </div>
             </div>`;
+        }
+
+        // Tarjeta de coleccionable: fondo negro común; reborde dorado minimalista
+        // para el objeto de mayor valor de mercado dentro de su categoría.
+        function renderCollectibleCard(item, isTopValue) {
+            return `
+                <div class="media-card collectible-card ${isTopValue ? 'media-card-gold' : ''}" onclick="openEditCollectible('${item.id}')">
+                    <div class="collectible-card-actions">
+                        <button title="Editar" onclick="event.stopPropagation();openEditCollectible('${item.id}')">✎</button>
+                        <button title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')">×</button>
+                    </div>
+                    <div class="media-card-icon">◆</div>
+                    <div class="media-card-title">${escapeHtml(item.name)}</div>
+                    <div class="media-card-meta">${financeMoney(item.value)}</div>
+                </div>`;
         }
 
         function collectibleCategoryOptions(selectedId) {
@@ -7193,7 +7311,7 @@ function v22RefreshSummaryIfPresent() {
                 { id: 'games', label: 'Videojuegos', icon: '◉', count: entries.filter(e => e.type === 'game').length },
             ];
 
-            let html = `<div style="max-width:760px">
+            let html = `<div style="max-width:980px">
                 <div class="culture-tabs">
                     ${tabs.map(t => `
                         <button class="culture-tab ${cultureTab === t.id ? 'active' : ''}" onclick="setCultureTab('${t.id}')">
@@ -7213,6 +7331,24 @@ function v22RefreshSummaryIfPresent() {
             return html;
         }
 
+        // Tarjeta común para Ocio (libros, películas, series). Fondo negro por
+        // defecto; si la valoración es de 5 estrellas, reborde dorado minimalista.
+        function renderMediaCard(entry, metaLine, badge) {
+            const gold = Number(entry.rating) === 5;
+            const stars = entry.rating ? '★'.repeat(entry.rating) : '';
+            return `
+                <div class="media-card ${gold ? 'media-card-gold' : ''}" onclick="openEntryDetail('${entry.id}')">
+                    <div class="media-card-icon">${TYPE_ICONS[entry.type] || '◈'}</div>
+                    <div class="media-card-title">${escapeHtml(entry.title)}</div>
+                    ${metaLine ? `<div class="media-card-meta">${escapeHtml(metaLine)}</div>` : ''}
+                    ${badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : ''}
+                    ${stars ? `<div class="media-card-stars">${stars}</div>` : ''}
+                </div>`;
+        }
+        function renderMediaCardGrid(items, metaFn, badgeFn) {
+            return `<div class="media-card-grid">${items.map(e => renderMediaCard(e, metaFn ? metaFn(e) : '', badgeFn ? badgeFn(e) : '')).join('')}</div>`;
+        }
+
         function renderBooks() {
             const books = entries.filter(e => e.type === 'book');
             if (!books.length) {
@@ -7222,45 +7358,20 @@ function v22RefreshSummaryIfPresent() {
             const reading = books.filter(b => b.status === 'Leyendo');
             const completed = books.filter(b => b.status === 'Completado');
 
-            let html = `<div style="max-width:700px">
+            let html = `<div>
                 <div style="display:flex;gap:16px;margin-bottom:16px">
                     <div class="card" style="flex:1"><div class="card-title">Leyendo</div><div class="card-value">${reading.length}</div></div>
                     <div class="card" style="flex:1"><div class="card-title">Completados</div><div class="card-value">${completed.length}</div></div>
                 </div>`;
 
             if (reading.length) {
-                html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Leyendo</div>`;
-                reading.forEach(b => {
-                    const cat = categories.find(c => c.id === b.categoryId);
-                    const color = cat?.color || 'var(--text-secondary)';
-                    html += `
-                        <div class="entry-item" onclick="openEntryDetail(\'${b.id}\')">
-                            <div class="entry-color-dot" style="background:${color}"></div>
-                            <div class="entry-info">
-                                <div class="entry-title">${b.title}</div>
-                                <div class="entry-meta">${b.author || 'Sin autor'} · Inicio: ${b.startDate}</div>
-                            </div>
-                            <span class="badge badge-progress">Leyendo</span>
-                        </div>`;
-                });
+                html += `<div class="media-card-section-title">Leyendo</div>`;
+                html += renderMediaCardGrid(reading, b => b.author || 'Sin autor');
             }
 
             if (completed.length) {
-                html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:16px 0 8px 0">Completados</div>`;
-                completed.forEach(b => {
-                    const cat = categories.find(c => c.id === b.categoryId);
-                    const color = cat?.color || 'var(--text-secondary)';
-                    const stars = b.rating ? '⭐'.repeat(b.rating) : '';
-                    html += `
-                        <div class="entry-item book-completed-bone" onclick="openEntryDetail(\'${b.id}\')">
-                            <div class="entry-color-dot" style="background:${color}"></div>
-                            <div class="entry-info">
-                                <div class="entry-title">${b.title}</div>
-                                <div class="entry-meta">${b.author || 'Sin autor'} · Fin: ${b.endDate}${stars ? ' · ' + stars : ''}</div>
-                            </div>
-                            <span class="badge badge-done">Completado</span>
-                        </div>`;
-                });
+                html += `<div class="media-card-section-title">Completados</div>`;
+                html += renderMediaCardGrid(completed, b => b.author || 'Sin autor');
             }
 
             html += `</div>`;
@@ -7278,20 +7389,8 @@ function v22RefreshSummaryIfPresent() {
 
             const sorted = [...movies].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-            let html = `<div style="max-width:700px">`;
-            sorted.forEach(m => {
-                const cat = categories.find(c => c.id === m.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
-                const stars = m.rating ? '⭐'.repeat(m.rating) : '';
-                html += `
-                    <div class="entry-item" onclick="openEntryDetail(\'${m.id}\')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${m.title}</div>
-                            <div class="entry-meta">${m.date || 'Sin fecha'}${stars ? ' · ' + stars : ''}</div>
-                        </div>
-                    </div>`;
-            });
+            let html = `<div>`;
+            html += renderMediaCardGrid(sorted, m => m.date || 'Sin fecha');
             html += `</div>`;
             return html;
         }
@@ -7308,23 +7407,10 @@ function v22RefreshSummaryIfPresent() {
             const statusOrder = { 'Viendo': 0, 'Completada': 1, 'Abandonada': 2 };
             const sorted = [...series].sort((a, b) => (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0));
 
-            let html = `<div style="max-width:700px">`;
-            sorted.forEach(s => {
-                const cat = categories.find(c => c.id === s.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
-                const statusClass = s.status === 'Completada' ? 'badge-done' : s.status === 'Abandonada' ?
-                    'badge-pending' : 'badge-progress';
-                const stars = s.rating ? '⭐'.repeat(s.rating) : '';
-                html += `
-                    <div class="entry-item" onclick="openEntryDetail(\'${s.id}\')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${s.title}</div>
-                            <div class="entry-meta">Inicio: ${s.startDate}${s.endDate ? ' · Fin: ' + s.endDate : ''}${stars ? ' · ' + stars : ''}</div>
-                        </div>
-                        <span class="badge ${statusClass}">${s.status}</span>
-                    </div>`;
-            });
+            let html = `<div>`;
+            html += renderMediaCardGrid(sorted,
+                s => `Inicio: ${s.startDate}${s.endDate ? ' · Fin: ' + s.endDate : ''}`,
+                s => s.status);
             html += `</div>`;
             return html;
         }
@@ -10459,7 +10545,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 .sort((a, b) => a.efectivo - b.efectivo);
 
             let html = `
-                <div class="fantasy-root ${fantasyTheme === 'green' ? 'fantasy-theme-green' : ''}" style="max-width:800px">
+                <div class="fantasy-root ${fantasyTheme === 'green' ? 'fantasy-theme-green' : ''}" style="max-width:980px">
                     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px">
                         <div>
                             <div style="font-size:20px;font-weight:800;color:var(--fx-text)">Fantasy</div>
