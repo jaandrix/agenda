@@ -2570,14 +2570,14 @@
         #header-clock { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text-secondary); min-width:42px; text-align:right; }
         .entry-detail-card { position:relative; max-width:760px; }
 .entry-detail-external {
-    position:absolute; top:24px; right:26px; background:#000; color:#3b82f6;
-    border:5px solid #60a5fa; border-radius:999px; padding:7px 14px;
-    font-family:'Poppins',sans-serif; font-size:11px; font-weight:700;
+    position:absolute; top:26px; right:26px; background:none; border:none; color:#3b82f6;
+    padding:0; font-family:'Poppins',sans-serif; font-size:12px; font-weight:700;
     text-decoration:underline; text-underline-offset:2px;
     cursor:pointer; white-space:nowrap; z-index:3;
+    display:flex; align-items:center; gap:4px;
 }
-.entry-detail-external:hover { background:#161616; }
-.entry-detail-title-with-external { padding-right:150px; }
+.entry-detail-external:hover { color:#60a5fa; }
+.entry-detail-title-with-external { padding-right:130px; }
 @media(max-width:600px){ .entry-detail-external{ position:static; margin-top:12px; } .entry-detail-title-with-external{ padding-right:0; } }
         .entry-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
         .entry-detail-field { padding:12px 14px; border:1px solid var(--border); border-radius:16px; background:var(--bg-card); }
@@ -3413,16 +3413,10 @@ body.beige {
 .collectibles-total-card .finance-metric-icon { color: #d9b23c; }
 .collectibles-actions-col { display:flex; flex-direction:column; gap:8px; justify-content:center; flex:0 0 auto; }
 .collectibles-actions-col .btn-modal-primary { width:auto; white-space:nowrap; padding:12px 20px; }
-.collectibles-add-category-btn {
-    width:auto; white-space:nowrap; padding:11px 20px; font-size:11px; font-weight:750; cursor:pointer;
-    background:transparent; color:var(--text-primary); border:1.5px dashed var(--border-strong); border-radius:999px;
-    transition:all .15s ease;
-}
-.collectibles-add-category-btn:hover { background:var(--bg-card-hover); border-color:var(--text-secondary); }
 @media(max-width:700px){ .collectibles-dashboard-row{flex-direction:column} .collectibles-actions-col{flex-direction:row} }
 .collectibles-table-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; padding:20px; }
 .collectibles-table-wrap .media-card-grid { grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; }
-.collectibles-table-wrap .media-card.collectible-card { padding:8px 8px; gap:3px; }
+.collectibles-table-wrap .media-card.collectible-card { height:auto; padding:8px 8px; gap:3px; }
 .collectibles-table-wrap .media-card-icon { width:22px; height:22px; font-size:10px; }
 .collectibles-table-wrap .media-card-title { font-size:11px; min-height:0; line-height:1.25; }
 .collectibles-table-wrap .media-card-meta { font-size:10px; min-height:0; }
@@ -3538,6 +3532,9 @@ body.beige {
 .event-hero-kicker { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; margin-bottom:8px; }
 .event-hero-title { font-size:22px; font-weight:800; color:var(--text-primary); letter-spacing:-.3px; }
 .event-hero-meta { font-size:13px; color:var(--text-secondary); margin-top:6px; }
+.month-filter-banner { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:10px 14px; margin-bottom:16px; }
+.month-filter-banner strong { color:var(--text-primary); }
+.month-filter-banner a { color:#3b82f6; text-decoration:underline; text-underline-offset:2px; cursor:pointer; margin-left:auto; }
 .events-month-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin:20px 0 10px; }
 .events-month-label:first-child { margin-top:0; }
 .events-month-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
@@ -3557,18 +3554,7 @@ body.beige {
 .cal-view-anim { animation: calViewIn 0.32s cubic-bezier(0.16,1,0.3,1) both; }
 
 /* Vista Día de Home: el título del día flota sobre un difuminado azul */
-.cal-day-title { position: relative; display: inline-block; padding: 6px 18px; z-index: 1; }
-.cal-day-title::before {
-    content: '';
-    position: absolute;
-    inset: -14px -70px;
-    background: radial-gradient(ellipse at center, rgba(59,130,246,0.38), rgba(59,130,246,0.14) 60%, transparent 75%);
-    filter: blur(20px);
-    border-radius: 50%;
-    z-index: -1;
-    animation: calDayTitleFloat 4s ease-in-out infinite;
-}
-@keyframes calDayTitleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.cal-day-title { display: inline-block; padding-bottom: 8px; border-bottom: 4px solid #3b82f6; }
 
 /* Vista Día de Home: tarjetas de las entradas de ese día */
 .day-entry-list { margin-top:20px; }
@@ -4804,6 +4790,56 @@ function v22RefreshSummaryIfPresent() {
             { cmd: 'admin', text: '/admin' },
         ];
 
+        // ============================================================
+        //  FILTRO POR MES ("películas septiembre" en el buscador)
+        // ============================================================
+        const MONTH_QUERY_NAMES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        const ENTRY_TYPE_QUERY_WORDS = {
+            book: ['libro', 'libros'],
+            movie: ['pelicula', 'peliculas'],
+            series: ['serie', 'series'],
+            event: ['evento', 'eventos']
+        };
+        const ENTRY_TYPE_LABEL_PLURAL = { book: 'Libros', movie: 'Películas', series: 'Series', event: 'Eventos' };
+        let entryMonthFilter = null;
+
+        function stripAccents(s) {
+            return s.normalize('NFD').split('').filter(function(ch){var c=ch.charCodeAt(0);return !(c>=768&&c<=879);}).join('');
+        }
+
+        // Reconoce "<tipo> <mes>" (en cualquier orden) escrito en el
+        // buscador, p.ej. "peliculas septiembre" o "septiembre eventos".
+        function parseMonthQuery(q) {
+            const words = stripAccents(q.trim().toLowerCase()).split(/\s+/);
+            if (words.length < 2) return null;
+            let type = null;
+            for (const [t, list] of Object.entries(ENTRY_TYPE_QUERY_WORDS)) {
+                if (list.some(w => words.includes(w))) { type = t; break; }
+            }
+            if (!type) return null;
+            const monthIdx = MONTH_QUERY_NAMES.findIndex(m => words.includes(m));
+            if (monthIdx === -1) return null;
+            return { type, month: monthIdx + 1, monthLabel: MONTH_QUERY_NAMES[monthIdx] };
+        }
+
+        function applyEntryMonthFilter(type, month, monthLabel) {
+            entryMonthFilter = { type, month, monthLabel };
+            if (type === 'event') { switchView('events'); return; }
+            switchView('culture');
+            setCultureTab(type === 'book' ? 'books' : type === 'series' ? 'series' : 'movies');
+        }
+
+        function clearEntryMonthFilter() { entryMonthFilter = null; render(); }
+
+        // Filtra por mes (cualquier año) si el filtro activo es de ese tipo,
+        // y en tal caso añade el aviso con el enlace para quitarlo.
+        function applyMonthFilterTo(type, items) {
+            if (!entryMonthFilter || entryMonthFilter.type !== type) return { items, banner: '' };
+            const filtered = items.filter(e => e.date && Number(e.date.slice(5, 7)) === entryMonthFilter.month);
+            const banner = `<div class="month-filter-banner">Mostrando ${ENTRY_TYPE_LABEL_PLURAL[type].toLowerCase()} de <strong>${escapeHtml(entryMonthFilter.monthLabel)}</strong> (todos los años) · <a href="javascript:void(0)" onclick="clearEntryMonthFilter()">Quitar filtro</a></div>`;
+            return { items: filtered, banner };
+        }
+
         function renderNavButtons(sections, mobile) {
             return sections.map(sec => `<span class="nav-label">${escapeHtml(sec.label)}</span>` +
                 sec.items.map(i => mobile
@@ -4908,13 +4944,24 @@ function v22RefreshSummaryIfPresent() {
         // reconstruido en cada búsqueda (las listas son pequeñas, así que
         // no hace falta cachear) para que wikilinks y menciones alcancen
         // cualquier módulo, no solo entries y notas.
+        // Se reconstruía por completo (recorriendo entries/notes/studies/
+        // financeProfile/collectibles) cada vez que un wikilink o mención
+        // había que resolverse — y un solo render puede resolver decenas
+        // (todas las notas/campos con [[...]] o /palabra visibles a la vez).
+        // Se cachea y solo se recalcula cuando render() marca los datos
+        // como cambiados (invalidateLinkableIndex), así que sigue siempre
+        // al día sin repetir el escaneo dentro del mismo render.
+        let _linkableIndexCache = null;
+        function invalidateLinkableIndex() { _linkableIndexCache = null; }
         function buildLinkableIndex() {
+            if (_linkableIndexCache) return _linkableIndexCache;
             const idx = [];
             entries.forEach(e => { if (e.title) idx.push({ title: e.title, kind: 'entry', id: e.id }); });
             (notes || []).forEach(n => idx.push({ title: formatNoteTitle(n.date), kind: 'note', id: n.id }));
             (studies?.subjects || []).forEach(s => idx.push({ title: s.name, kind: 'subject', id: s.id }));
             (financeProfile?.movements || []).forEach(m => { if (m.label) idx.push({ title: m.label, kind: 'movement', id: m.id }); });
             (collectibles || []).forEach(c => idx.push({ title: c.name, kind: 'collectible', id: c.id }));
+            _linkableIndexCache = idx;
             return idx;
         }
 
@@ -5071,7 +5118,12 @@ function v22RefreshSummaryIfPresent() {
                 // que coincida con su nombre y el modo esté activo.
                 const hiddenMatches = (q && devModeActive && 'fantasy'.includes(q))
                     ? [{ kind: 'fantasy', text: 'Fantasy' }] : [];
-                filtered = hiddenMatches.length ? hiddenMatches
+                // "peliculas septiembre" (o cualquier combinación tipo+mes)
+                // lleva directamente a esa sección filtrada por mes.
+                const monthQuery = q ? parseMonthQuery(q) : null;
+                filtered = monthQuery
+                    ? [{ kind: 'month-filter', text: `${ENTRY_TYPE_LABEL_PLURAL[monthQuery.type]} de ${monthQuery.monthLabel}`, type: monthQuery.type, month: monthQuery.month, monthLabel: monthQuery.monthLabel }]
+                    : hiddenMatches.length ? hiddenMatches
                     : (q && !navMatches.length) ? searchEntriesForPalette(q) : navMatches;
             }
             if (cpSelectedIndex >= filtered.length) cpSelectedIndex = 0;
@@ -5137,6 +5189,8 @@ function v22RefreshSummaryIfPresent() {
                 followMention(item.kind, item.id);
             } else if (item.kind === 'fantasy') {
                 openFantasy();
+            } else if (item.kind === 'month-filter') {
+                applyEntryMonthFilter(item.type, item.month, item.monthLabel);
             } else {
                 switchView(item.view);
             }
@@ -6083,7 +6137,7 @@ function v22RefreshSummaryIfPresent() {
                         </div>
                     </div>
                     <div class="collectibles-actions-col">
-                        <button class="collectibles-add-category-btn" onclick="openAddCollectibleCategory()">+ Categoría</button>
+                        <button class="btn-modal-primary" onclick="openAddCollectibleCategory()">+ Categoría</button>
                         <button class="btn-modal-primary" onclick="openAddCollectible()">+ Coleccionable</button>
                     </div>
                 </div>
@@ -6306,7 +6360,7 @@ function v22RefreshSummaryIfPresent() {
             const detailExternal = entryExternalLink(entry);
             const detailExternalUrl = detailExternal?.url;
             const detailExternalBtn = detailExternal
-                ? `<button class="entry-detail-external" data-ext-url="${escapeHtml(detailExternal.url)}" onclick="openExternalSearch(event,this)">${escapeHtml(detailExternal.label)}</button>`
+                ? `<button class="entry-detail-external" data-ext-url="${escapeHtml(detailExternal.url)}" onclick="openExternalSearch(event,this)"><span>↗</span>${escapeHtml(detailExternal.label)}</button>`
                 : '';
             return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div><div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button></div></div></div>`;
         }
@@ -7134,6 +7188,7 @@ function v22RefreshSummaryIfPresent() {
         //  RENDER
         // ============================================================
         function render() {
+            invalidateLinkableIndex();
             const content = document.getElementById('content');
             if (currentView !== 'fantasy') document.body.classList.remove('fantasy-green-page');
             if (currentView === 'calendar') content.innerHTML = renderCalendar();
@@ -7955,7 +8010,7 @@ function v22RefreshSummaryIfPresent() {
             event.stopPropagation();
             const url = btn.dataset.extUrl;
             if (!url) return;
-            const w = 720, h = 640;
+            const w = 1000, h = 520;
             const left = Math.round((screen.width - w) / 2), top = Math.round((screen.height - h) / 2);
             window.open(url, '_blank', `noopener,width=${w},height=${h},left=${left},top=${top}`);
         }
@@ -7979,15 +8034,17 @@ function v22RefreshSummaryIfPresent() {
         }
 
         function renderBooks() {
-            const books = entries.filter(e => e.type === 'book');
-            if (!books.length) {
+            const allBooks = entries.filter(e => e.type === 'book');
+            if (!allBooks.length) {
                 return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin libros</div><div class="empty-sub">Pulsa el botón + y selecciona "Libro"</div></div>`;
             }
+            const { items: books, banner } = applyMonthFilterTo('book', allBooks);
+            if (!books.length) return banner + `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin libros ese mes</div></div>`;
 
             const reading = books.filter(b => b.status === 'Leyendo');
             const completed = books.filter(b => b.status === 'Completado');
 
-            let html = `<div>
+            let html = banner + `<div>
                 <div style="display:flex;gap:16px;margin-bottom:16px">
                     <div class="card" style="flex:1"><div class="card-title">Leyendo</div><div class="card-value">${reading.length}</div></div>
                     <div class="card" style="flex:1"><div class="card-title">Completados</div><div class="card-value">${completed.length}</div></div>
@@ -8011,10 +8068,12 @@ function v22RefreshSummaryIfPresent() {
         //  RENDER: MOVIES
         // ============================================================
         function renderMovies() {
-            const movies = entries.filter(e => e.type === 'movie');
-            if (!movies.length) {
+            const allMovies = entries.filter(e => e.type === 'movie');
+            if (!allMovies.length) {
                 return `<div class="empty-state"><div class="empty-icon">▸</div><div class="empty-title">Sin películas</div><div class="empty-sub">Pulsa el botón + y selecciona "Película"</div></div>`;
             }
+            const { items: movies, banner } = applyMonthFilterTo('movie', allMovies);
+            if (!movies.length) return banner + `<div class="empty-state"><div class="empty-icon">▸</div><div class="empty-title">Sin películas ese mes</div></div>`;
 
             const sorted = [...movies].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             const groups = [];
@@ -8030,7 +8089,7 @@ function v22RefreshSummaryIfPresent() {
                 return new Date(y, mo - 1, 1).toLocaleDateString('es-ES', { month: 'long' });
             };
 
-            let html = `<div>`;
+            let html = banner + `<div>`;
             groups.forEach(g => {
                 html += `<div class="media-month-label">${escapeHtml(monthLabel(g.key))}.</div>`;
                 html += renderMediaCardGrid(g.items, m => m.date || 'Sin fecha');
@@ -8043,10 +8102,12 @@ function v22RefreshSummaryIfPresent() {
         //  RENDER: SERIES
         // ============================================================
         function renderSeries() {
-            const series = entries.filter(e => e.type === 'series');
-            if (!series.length) {
+            const allSeries = entries.filter(e => e.type === 'series');
+            if (!allSeries.length) {
                 return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin series</div><div class="empty-sub">Pulsa el botón + y selecciona "Serie"</div></div>`;
             }
+            const { items: series, banner } = applyMonthFilterTo('series', allSeries);
+            if (!series.length) return banner + `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin series ese mes</div></div>`;
 
             const statusOrder = { 'Viendo': 0, 'Completada': 1, 'Abandonada': 2 };
             // Estado efectivo: si hay fecha de fin y el estado guardado sigue en
@@ -8054,7 +8115,7 @@ function v22RefreshSummaryIfPresent() {
             const effectiveStatus = s => (s.endDate && s.status === 'Viendo') ? 'Completada' : s.status;
             const sorted = [...series].sort((a, b) => (statusOrder[effectiveStatus(a)] || 0) - (statusOrder[effectiveStatus(b)] || 0));
 
-            let html = `<div>`;
+            let html = banner + `<div>`;
             html += renderMediaCardGrid(sorted,
                 null,
                 s => effectiveStatus(s));
@@ -8522,7 +8583,7 @@ function v22RefreshSummaryIfPresent() {
         function renderProjectsKanban(projects) {
             const today = todayISO();
             const columns = ['Pendiente', 'En progreso', 'Completado'];
-            return `<div class="kanban-board">
+            return `<div class="kanban-board" id="projects-kanban-board">
                 ${columns.map(col => {
                     const items = projects.filter(p => projectStatusBucket(p.status) === col);
                     return `
@@ -8555,7 +8616,11 @@ function v22RefreshSummaryIfPresent() {
             const p = entries.find(e => e.id === id && e.type === 'project');
             if (!p || projectStatusBucket(p.status) === status) return;
             p.status = status;
-            render();
+            // Solo se repinta el tablero (no toda la pantalla) para que
+            // soltar una tarjeta se sienta instantáneo.
+            const board = document.getElementById('projects-kanban-board');
+            if (board) board.outerHTML = renderProjectsKanban(entries.filter(e => e.type === 'project'));
+            else render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -8579,13 +8644,15 @@ function v22RefreshSummaryIfPresent() {
         }
 
         function renderEvents() {
-            const events = entries.filter(e => e.type === 'event');
-            if (!events.length) {
+            const allEvents = entries.filter(e => e.type === 'event');
+            if (!allEvents.length) {
                 return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento"</div></div>`;
             }
+            const { items: events, banner } = applyMonthFilterTo('event', allEvents);
+            if (!events.length) return banner + `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin eventos ese mes</div></div>`;
 
             const sorted = [...events].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-            const next = nextUpcomingEvent(events);
+            const next = entryMonthFilter && entryMonthFilter.type === 'event' ? null : nextUpcomingEvent(events);
 
             const groups = [];
             const byKey = {};
@@ -8600,7 +8667,7 @@ function v22RefreshSummaryIfPresent() {
                 return new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
             };
 
-            let html = `<div style="max-width:980px">`;
+            let html = `<div style="max-width:980px">` + banner;
 
             if (next) {
                 const nextCat = categories.find(c => c.id === next.categoryId);
