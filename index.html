@@ -1246,11 +1246,15 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             text-align: center;
             gap: 8px;
             cursor: pointer;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
             color: #f2f2f2;
+            height: 176px;
+            box-sizing: border-box;
+            overflow: hidden;
         }
         .media-card:hover {
             transform: translateY(-3px);
@@ -1265,11 +1269,17 @@
             align-items: center;
             justify-content: center;
             font-size: 17px;
+            flex-shrink: 0;
         }
+        .media-card-icon svg { display: block; }
         .media-card-title {
             font-weight: 700;
             font-size: 13px;
             line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         .media-card-meta {
             font-size: 11px;
@@ -1291,8 +1301,8 @@
             letter-spacing: 1px;
         }
         .media-card-gold {
-            border: 1px solid rgba(217,178,60,0.55);
-            box-shadow: 0 0 0 1px rgba(217,178,60,0.12) inset;
+            border: 1.5px solid rgba(217,178,60,0.85);
+            box-shadow: 0 0 0 1px rgba(217,178,60,0.2) inset, 0 0 10px rgba(217,178,60,0.15);
         }
         .media-card-gold .media-card-icon {
             background: rgba(217,178,60,0.14);
@@ -6259,8 +6269,12 @@ function v22RefreshSummaryIfPresent() {
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.date = entry.startDate;
                 if (editId) {
-                    entry.status = document.getElementById('modal-status')?.value || 'Viendo';
                     entry.endDate = document.getElementById('modal-end')?.value || '';
+                    let status = document.getElementById('modal-status')?.value || 'Viendo';
+                    // Si se indica fecha de finalización y el estado se dejó en el
+                    // valor por defecto "Viendo", se asume completada automáticamente.
+                    if (entry.endDate && status === 'Viendo') status = 'Completada';
+                    entry.status = status;
                     entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
                 } else {
                     entry.status = 'Viendo';
@@ -6271,8 +6285,10 @@ function v22RefreshSummaryIfPresent() {
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.date = entry.startDate;
                 if (editId) {
-                    entry.status = document.getElementById('modal-status')?.value || 'Jugando';
                     entry.endDate = document.getElementById('modal-end')?.value || '';
+                    let status = document.getElementById('modal-status')?.value || 'Jugando';
+                    if (entry.endDate && status === 'Jugando') status = 'Completado';
+                    entry.status = status;
                     entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
                 } else {
                     entry.status = 'Jugando';
@@ -7331,14 +7347,26 @@ function v22RefreshSummaryIfPresent() {
             return html;
         }
 
-        // Tarjeta común para Ocio (libros, películas, series). Fondo negro por
-        // defecto; si la valoración es de 5 estrellas, reborde dorado minimalista.
+        // Iconos minimalistas en SVG para las tarjetas de Ocio (mismo estilo
+        // de trazo/relleno para todos, sustituyen a los símbolos de fuente).
+        const MEDIA_CARD_ICONS = {
+            book: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5c2.5-1 5-1 8 .5v13c-3-1.5-5.5-1.5-8-.5z"/><path d="M21 5.5c-2.5-1-5-1-8 .5v13c3-1.5 5.5-1.5 8-.5z"/><line x1="6" y1="8" x2="9.5" y2="8.6"/><line x1="6" y1="10.8" x2="9.5" y2="11.4"/><line x1="6" y1="13.6" x2="9.5" y2="14.2"/></svg>`,
+            movie: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 4v16l14-8z"/></svg>`,
+            series: `<svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M3 5v14l8-7z"/><path d="M13 5v14l8-7z"/></svg>`,
+            game: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8.5 6.3h1.5v3.2H13v1.5h-3v3.2H8.5v-3.2h-3V9.5h3z"/><circle cx="17.2" cy="8" r="1.25"/><circle cx="14.6" cy="10.6" r="1.25"/><circle cx="19.8" cy="10.6" r="1.25"/><circle cx="17.2" cy="13.2" r="1.25"/></svg>`
+        };
+        function mediaCardIcon(type) {
+            return MEDIA_CARD_ICONS[type] || TYPE_ICONS[type] || '◈';
+        }
+
+        // Tarjeta común para Ocio (libros, películas, series, videojuegos). Fondo
+        // negro por defecto; si la valoración es de 5 estrellas, reborde dorado.
         function renderMediaCard(entry, metaLine, badge) {
             const gold = Number(entry.rating) === 5;
             const stars = entry.rating ? '★'.repeat(entry.rating) : '';
             return `
                 <div class="media-card ${gold ? 'media-card-gold' : ''}" onclick="openEntryDetail('${entry.id}')">
-                    <div class="media-card-icon">${TYPE_ICONS[entry.type] || '◈'}</div>
+                    <div class="media-card-icon">${mediaCardIcon(entry.type)}</div>
                     <div class="media-card-title">${escapeHtml(entry.title)}</div>
                     ${metaLine ? `<div class="media-card-meta">${escapeHtml(metaLine)}</div>` : ''}
                     ${badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : ''}
@@ -7427,23 +7455,9 @@ function v22RefreshSummaryIfPresent() {
             const statusOrder = { 'Jugando': 0, 'Completado': 1, 'Abandonado': 2 };
             const sorted = [...games].sort((a, b) => (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0));
 
-            let html = `<div style="max-width:700px">`;
-            sorted.forEach(g => {
-                const cat = categories.find(c => c.id === g.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
-                const statusClass = g.status === 'Completado' ? 'badge-done' : g.status === 'Abandonado' ?
-                    'badge-pending' : 'badge-progress';
-                const stars = g.rating ? '⭐'.repeat(g.rating) : '';
-                html += `
-                    <div class="entry-item" onclick="openEntryDetail(\'${g.id}\')">
-                        <div class="entry-color-dot" style="background:${color}"></div>
-                        <div class="entry-info">
-                            <div class="entry-title">${g.title}</div>
-                            <div class="entry-meta">Inicio: ${g.startDate}${g.endDate ? ' · Fin: ' + g.endDate : ''}${stars ? ' · ' + stars : ''}</div>
-                        </div>
-                        <span class="badge ${statusClass}">${g.status}</span>
-                    </div>`;
-            });
+            // Sin badge de estado: muchos juegos no tienen fecha de finalización.
+            let html = `<div>`;
+            html += renderMediaCardGrid(sorted, g => `Inicio: ${g.startDate}${g.endDate ? ' · Fin: ' + g.endDate : ''}`);
             html += `</div>`;
             return html;
         }
@@ -7586,7 +7600,7 @@ function v22RefreshSummaryIfPresent() {
             const totalCotized = cotizedStats.practicas + cotizedStats.general;
 
             let html = `
-                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px;max-width:700px">
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px;max-width:980px">
                     <div class="card bone-surface work-total-bone" style="margin:0">
                         <div class="label" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Total de días trabajados hasta hoy</div>
                         <div class="value" style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px">${totalDays} días</div>
@@ -7598,7 +7612,7 @@ function v22RefreshSummaryIfPresent() {
                         <div style="font-size:10px;color:var(--bone-muted);margin-top:6px;opacity:.82">Estimados automáticamente y corregibles desde «Editar → Vida laboral»</div>
                     </div>
                 </div>
-                <div style="max-width:700px">`;
+                <div style="max-width:980px">`;
             sorted.forEach(w => {
                 const cat = categories.find(c => c.id === w.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
@@ -7651,7 +7665,7 @@ function v22RefreshSummaryIfPresent() {
                 return (b.startDate || '').localeCompare(a.startDate || '');
             });
 
-            let html = `<div style="max-width:700px">`;
+            let html = `<div style="max-width:980px">`;
             sorted.forEach(p => {
                 const cat = categories.find(c => c.id === p.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
@@ -7692,7 +7706,7 @@ function v22RefreshSummaryIfPresent() {
             const eventIcons = { social: '◈', teatro: '◊', cine: '▸', concierto: '♪', deporte: '◉', otro: '◈' };
             const sorted = [...events].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-            let html = `<div style="max-width:700px">`;
+            let html = `<div style="max-width:980px">`;
             sorted.forEach(e => {
                 const cat = categories.find(c => c.id === e.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
@@ -7961,7 +7975,7 @@ function v22RefreshSummaryIfPresent() {
                     </div>`;
             }
 
-            let html = `<div style="max-width:700px">`;
+            let html = `<div style="max-width:980px">`;
 
             groups.forEach(g => {
                 const items = goals.filter(e => e.term === g.key);
@@ -9779,7 +9793,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         function renderDocuments() {
             return `
-                <div style="max-width:700px">
+                <div style="max-width:980px">
                     <div class="doc-upload-box" onclick="document.getElementById('doc-upload-input').click()">
                         <div style="font-size:28px;margin-bottom:6px">📄</div>
                         <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF</div>
