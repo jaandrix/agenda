@@ -1649,6 +1649,16 @@
             padding: 0 4px;
         }
 
+        .day-modal-title { align-items: baseline; }
+        .day-modal-weekday {
+            color: #3b82f6;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            font-weight: 800;
+        }
+        .day-modal-list { display: flex; flex-direction: column; gap: 2px; }
+        .day-modal-list .empty-state { padding: 30px 8px; }
+
         .modal-label {
             font-size: 11px;
             font-weight: 700;
@@ -4900,7 +4910,7 @@ function v22RefreshSummaryIfPresent() {
             projects: 'Proyectos',
             events: 'Eventos',
             documents: 'Documentos',
-            finances: 'Finanzas',
+            finances: 'Dashboard',
             tags: 'Etiquetas',
             fantasy: 'Fantasy',
             vault: 'Vault',
@@ -5306,14 +5316,15 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         function updatePageTitle() {
             const titleEl = document.getElementById('page-title');
+            const hasName = userName && userName.trim();
+            const nameDisplay = hasName ? escapeHtml(userName.trim()) : 'tu nombre';
+            const nameLink = `<a href="javascript:void(0)" class="username-link" onclick="editUserName()">${nameDisplay}</a><span class="title-period">.</span>`;
             if (currentView === 'calendar') {
                 const greeting = greetingText().replace(/\.$/, '');
-                const hasName = userName && userName.trim();
-                const nameDisplay = hasName ? escapeHtml(userName.trim()) : 'tu nombre';
-                titleEl.innerHTML = `Home - ${greeting} <a href="javascript:void(0)" class="username-link" onclick="editUserName()">${nameDisplay}</a><span class="title-period">.</span>`;
+                titleEl.innerHTML = `Home - ${greeting} ${nameLink}`;
             } else {
                 const baseTitle = VIEW_LABELS[currentView] || 'Home';
-                titleEl.textContent = baseTitle + ' ';
+                titleEl.innerHTML = `${baseTitle} de ${nameLink}`;
             }
             updateAddButton();
         }
@@ -7050,10 +7061,6 @@ function v22RefreshSummaryIfPresent() {
 
             html += `</div>`;
 
-            if (window._selectedDate) {
-                html += renderDayEntries(window._selectedDate);
-            }
-
             return html;
         }
 
@@ -7135,9 +7142,23 @@ function v22RefreshSummaryIfPresent() {
         }
 
         function showDayEntries(date) {
-            window._selectedDate = window._selectedDate === date ? null : date;
+            window._selectedDate = date;
             calSelectedDate = date;
             render();
+
+            const dateObj = new Date(date + 'T12:00:00');
+            const weekday = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
+            const restDate = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+            const all = getDayAllEntries(date);
+            const rows = all.length ? renderDayEntryRows(all) : `<div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>`;
+
+            showModal(`
+                <div class="modal-title day-modal-title">
+                    <span><span class="day-modal-weekday">${weekday}</span>, ${restDate}:</span>
+                    <button class="modal-close" onclick="closeModal()">✕</button>
+                </div>
+                <div class="day-modal-list">${rows}</div>
+            `);
         }
 
         function isBirthdayOnDate(entry, dateStr) {
@@ -7147,7 +7168,7 @@ function v22RefreshSummaryIfPresent() {
             return m1 === m2 && d1 === d2;
         }
 
-        function renderDayEntries(date) {
+        function getDayAllEntries(date) {
             const dayEntries = entries.filter(e => {
                 if (NON_CALENDAR_TYPES.includes(e.type)) return false;
                 if (isBirthdayOnDate(e, date)) return true;
@@ -7161,21 +7182,11 @@ function v22RefreshSummaryIfPresent() {
                 (!e.endDate || e.endDate >= date)
             );
             const recurringEntries = getRecurringCalendarEntries(date);
-            const all = [...dayEntries, ...activeJobs, ...recurringEntries];
-            if (!all.length) return '';
+            return [...dayEntries, ...activeJobs, ...recurringEntries];
+        }
 
-            const dateObj = new Date(date + 'T12:00:00');
-            const dateLabel = dateObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long',
-                day: 'numeric' });
-
-            let html = `
-            <div style="margin-top:20px">
-                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                    <span>${dateLabel}</span>
-                    <button class="btn-secondary" onclick="window._selectedDate=null;render()">✕ Cerrar</button>
-                </div>`;
-
-            all.forEach(e => {
+        function renderDayEntryRows(all) {
+            return all.map(e => {
                 const cat = categories.find(c => c.id === e.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
                 const catName = cat?.name || 'Sin categoría';
@@ -7201,8 +7212,8 @@ function v22RefreshSummaryIfPresent() {
                     metaHtml = `${catName}${e.notes ? ' · ' + linkifyText(e.notes) : ''}`;
                 }
 
-                html += `
-                <div class="entry-item" onclick="openEntryDetail(\'${e.id}\')">
+                return `
+                <div class="entry-item" onclick="openEntryDetail('${e.id}')">
                     <div class="entry-color-dot" style="background:${color}"></div>
                     <div class="entry-info">
                         <div class="entry-title">${titleHtml}</div>
@@ -7212,8 +7223,25 @@ function v22RefreshSummaryIfPresent() {
                         <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')">✕</button>
                     </div>
                 </div>`;
-            });
+            }).join('');
+        }
 
+        function renderDayEntries(date) {
+            const all = getDayAllEntries(date);
+            if (!all.length) return '';
+
+            const dateObj = new Date(date + 'T12:00:00');
+            const dateLabel = dateObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long',
+                day: 'numeric' });
+
+            let html = `
+            <div style="margin-top:20px">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                    <span>${dateLabel}</span>
+                    <button class="btn-secondary" onclick="window._selectedDate=null;render()">✕ Cerrar</button>
+                </div>`;
+
+            html += renderDayEntryRows(all);
             html += `</div>`;
             return html;
         }
