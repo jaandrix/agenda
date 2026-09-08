@@ -3468,60 +3468,66 @@ body.beige {
    FINANZAS v0.30 — DASHBOARD ECONÓMICO
    ============================================================ */
 .finance-dashboard { max-width: 980px; padding-bottom: 30px; }
-.finance-dashboard-head { display:flex; justify-content:space-between; gap:24px; align-items:flex-end; margin-bottom:20px; }
-.finance-dashboard-head h2 { margin:3px 0 6px; font-size:24px; letter-spacing:-.5px; }
-.finance-dashboard-head p { margin:0; color:var(--text-secondary); font-size:12px; max-width:650px; line-height:1.6; }
+.finance-dashboard-head { display:flex; justify-content:space-between; gap:24px; align-items:flex-end; margin-bottom:28px; }
+.finance-dashboard-head h2 { margin:2px 0 8px; font-size:38px; font-weight:800; letter-spacing:-1px; }
+.finance-dashboard-head p { margin:0; color:var(--text-secondary); font-size:13px; max-width:520px; line-height:1.6; }
 .finance-kicker { font-size:10px; text-transform:uppercase; letter-spacing:.8px; font-weight:800; color:var(--text-secondary); }
-.finance-update-btn { width:auto; white-space:nowrap; padding:9px 14px; }
-.finance-head-actions { display:flex; align-items:center; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
-.finance-oneoff-btn { width:auto; white-space:nowrap; padding:8px 11px; border:1px solid var(--border-strong); border-radius:14px; background:var(--bg-card); color:var(--text-primary); font-size:11px; font-weight:750; cursor:pointer; transition:all .15s ease; }
-.finance-oneoff-btn:hover { border-color:var(--accent); background:var(--bg-card-hover); transform:translateY(-1px); }
+.finance-update-btn { width:auto; white-space:nowrap; padding:12px 20px; border-radius:999px; font-weight:800; }
+.finance-head-actions { display:flex; flex-direction:column; align-items:flex-end; justify-content:flex-start; gap:10px; }
+.finance-head-actions-row { display:flex; align-items:center; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
+.finance-oneoff-btn { width:auto; white-space:nowrap; padding:10px 16px; border:0; border-radius:999px; background:var(--bg-card); color:var(--text-primary); font-size:11px; font-weight:750; cursor:pointer; transition:all .15s ease; box-shadow:inset 0 0 0 1px var(--border-strong); }
+.finance-oneoff-btn:hover { background:var(--bg-card-hover); transform:translateY(-1px); }
 .finance-oneoff-list { margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
-.finance-oneoff-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; font-size:11px; }
+.finance-oneoff-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 8px; font-size:11px; border-radius:12px; transition:background .15s ease; }
+.finance-oneoff-row:hover { background:var(--bg-card-hover); }
 .finance-oneoff-row span { color:var(--text-secondary); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .finance-oneoff-row strong { white-space:nowrap; font-size:11px; }
 .finance-oneoff-row button { border:0; background:transparent; color:var(--text-secondary); cursor:pointer; padding:2px 4px; font-size:12px; }
 .finance-oneoff-row button:hover { color:var(--text-primary); }
-.finance-subnav { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
-.finance-subnav button { border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); border-radius:14px; padding:6px 10px; font-size:10px; font-weight:700; cursor:pointer; }
-.finance-subnav button:hover { color:var(--text-primary); border-color:var(--border-strong); background:var(--bg-card-hover); }
+.finance-subnav { display:flex; gap:4px; flex-wrap:wrap; margin-top:14px; background:var(--bg-card); padding:5px; border-radius:999px; border:1px solid var(--border); width:fit-content; }
+.finance-subnav button { border:0; background:none; color:var(--text-secondary); border-radius:999px; padding:7px 14px; font-size:10px; font-weight:700; cursor:pointer; transition:all .15s ease; }
+.finance-subnav button:hover { color:var(--text-primary); }
 :root { --bone-surface:#f3eee3; --bone-border:#ded6c7; --bone-text:#171717; --bone-muted:#6f695f; }
-        .finance-networth-card { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; background:var(--bone-surface); color:var(--bone-text); border:1px solid var(--bone-border); border-radius:22px; padding:22px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.10); }
-.finance-networth-card .finance-kicker { color:#777064; }
-.finance-networth-card .finance-networth-meta { color:#6f695f; }
-.finance-networth-card .finance-networth-side { border-left-color:#d8d0c2; }
-.finance-networth-card .finance-networth-side span, .finance-networth-card .finance-networth-side small { color:#777064; }
-.finance-networth-card .finance-networth-side strong { color:#171717; }
-.finance-networth-card .finance-progress { background:#ddd5c7; }
-.finance-networth-card .finance-progress span { background:#a67c00; }
-.finance-networth-value { font-size:34px; line-height:1; font-weight:850; letter-spacing:-1px; margin:8px 0; }
+        .finance-networth-card { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; background:#0c0c0e; color:#f2f2f2; border:1px solid rgba(255,255,255,0.06); border-radius:22px; padding:26px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.28); }
+.finance-networth-card .finance-kicker { color:rgba(255,255,255,0.5); }
+.finance-networth-card .finance-networth-meta { color:rgba(255,255,255,0.55); }
+.finance-networth-card .finance-networth-side { border-left-color:rgba(255,255,255,0.12); }
+.finance-networth-card .finance-networth-side span, .finance-networth-card .finance-networth-side small { color:rgba(255,255,255,0.5); }
+.finance-networth-card .finance-networth-side strong { color:#ffffff; }
+.finance-networth-card .finance-progress { background:rgba(255,255,255,0.14); }
+.finance-networth-card .finance-progress span { background:#ffffff; }
+.finance-networth-value { font-size:48px; line-height:1; font-weight:900; letter-spacing:-1.5px; margin:10px 0; }
 .finance-networth-meta { font-size:11px; color:var(--text-secondary); }
 .finance-networth-side { border-left:1px solid var(--border); padding-left:22px; display:flex; flex-direction:column; justify-content:center; gap:5px; }
 .finance-networth-side span,.finance-networth-side small { color:var(--text-secondary); font-size:10px; }
-.finance-networth-side strong { font-size:24px; }
-.finance-progress { height:5px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:8px; }
+.finance-networth-side strong { font-size:30px; font-weight:800; }
+.finance-progress { height:6px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:8px; }
 .finance-progress span { display:block; height:100%; background:var(--accent); border-radius:inherit; }
-.finance-progress-large { height:7px; margin:3px 0 4px; }
-.finance-metrics-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
-.finance-metric-card { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:14px; min-width:0; }
+.finance-progress-large { height:7px; margin:3px 0 4px; border-radius:99px; }
+.finance-metrics-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
+.finance-metric-card { position:relative; background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:18px 14px; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
 .finance-metric-card:hover { border-color:var(--border-strong); }
-.finance-metric-top,.finance-panel-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
-.finance-metric-label { font-size:10px; text-transform:uppercase; font-weight:800; color:var(--text-secondary); letter-spacing:.35px; display:flex; gap:6px; align-items:center; }
+.finance-panel-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.finance-metric-icon { width:38px; height:38px; border-radius:50%; background:var(--bg-card-hover); display:flex; align-items:center; justify-content:center; font-size:15px; margin-bottom:6px; }
+.finance-metric-label { order:3; font-size:10px; text-transform:uppercase; font-weight:800; color:var(--text-secondary); letter-spacing:.35px; }
 .finance-edit-btn,.finance-icon-btn { width:25px; height:25px; border:0; border-radius:12px; background:transparent; color:var(--text-secondary); cursor:pointer; }
 .finance-edit-btn:hover,.finance-icon-btn:hover { background:var(--bg-card-hover); color:var(--text-primary); }
-.finance-metric-value { font-size:20px; font-weight:800; margin-top:10px; }
-.finance-metric-meta { display:flex; justify-content:space-between; gap:6px; margin-top:7px; font-size:9px; color:var(--text-secondary); }
-.finance-metric-note { font-size:9px; color:var(--text-secondary); margin-top:7px; line-height:1.4; }
+.finance-metric-card .finance-edit-btn { position:absolute; top:10px; right:10px; }
+.finance-metric-value { order:2; font-size:22px; font-weight:800; }
+.finance-metric-meta { order:4; display:flex; justify-content:space-between; gap:6px; margin-top:9px; font-size:9px; color:var(--text-secondary); width:100%; }
+.finance-metric-note { order:6; font-size:9px; color:var(--text-secondary); margin-top:7px; line-height:1.4; }
+.finance-metric-card .finance-progress { order:5; width:100%; }
 .finance-positive { color:var(--invest-gain,#22c55e)!important; font-style:normal; }
 .finance-negative { color:var(--invest-loss,#ef4444)!important; font-style:normal; }
 .finance-goal-complete { border-color:var(--accent); }
-.finance-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-.finance-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+.finance-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+.finance-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:14px; align-items:stretch; }
 .finance-mov-income { color:#4ade80; }
 .finance-mov-expense { color:#f87171; }
 .finance-mov-transfer { color:var(--text-secondary); }
-.finance-salary-btn { border-color:var(--accent); }
-.finance-panel,.finance-forecast-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:17px; }
+.finance-salary-btn { background:#0c0c0e; color:#fff; box-shadow:none; }
+.finance-salary-btn:hover { background:#000; }
+.finance-panel,.finance-forecast-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:18px; display:flex; flex-direction:column; }
 .finance-panel h3,.finance-forecast-panel h3 { margin:3px 0 4px; font-size:15px; }
 .finance-panel-head p { margin:0; color:var(--text-secondary); font-size:10px; line-height:1.5; }
 .finance-text-btn { background:none; border:0; color:var(--text-secondary); font-size:10px; cursor:pointer; }
@@ -3529,28 +3535,37 @@ body.beige {
 .finance-income-highlight span { color:var(--text-secondary); }
 .finance-income-highlight strong { font-size:14px; }
 .finance-salary-list { margin-top:5px; }
-.finance-salary-list > div,.finance-mini-bars > div { display:flex; justify-content:space-between; padding:6px 0; font-size:10px; }
-.finance-salary-list span,.finance-mini-bars span { color:var(--text-secondary); }
-.finance-recurring-total { font-size:27px; font-weight:850; margin-top:14px; }
+.finance-salary-list > div { display:flex; justify-content:space-between; padding:6px 0; font-size:10px; }
+.finance-salary-list span { color:var(--text-secondary); }
+.finance-recurring-total { font-size:30px; font-weight:900; margin-top:14px; }
 .finance-recurring-total span { font-size:11px; font-weight:600; color:var(--text-secondary); }
 .finance-recurring-sub { font-size:10px; color:var(--text-secondary); margin-top:2px; }
-.finance-mini-bars { margin-top:10px; border-top:1px solid var(--border); }
-.finance-forecast-panel { margin-bottom:12px; }
+.finance-mini-bars { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.finance-mini-bar-row { padding:7px 0; }
+.finance-mini-bar-row .finance-mini-bar-labels { display:flex; justify-content:space-between; font-size:10px; margin-bottom:5px; }
+.finance-mini-bar-row .finance-mini-bar-labels span { color:var(--text-secondary); }
+.finance-mini-bar-row .finance-mini-bar-labels strong { font-size:10px; }
+.finance-mini-bar-track { height:5px; background:var(--border); border-radius:99px; overflow:hidden; }
+.finance-mini-bar-fill { display:block; height:100%; background:var(--accent); border-radius:inherit; }
+.finance-forecast-panel { margin-bottom:14px; background:#0c0c0e; color:#f2f2f2; border-color:rgba(255,255,255,0.06); }
+.finance-forecast-panel .finance-kicker { color:rgba(255,255,255,0.5); }
+.finance-forecast-panel .finance-panel-head p { color:rgba(255,255,255,0.5); }
 .finance-forecast-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
-.finance-forecast-grid div { background:var(--bg-app); border:1px solid var(--border); border-radius:16px; padding:11px; }
-.finance-forecast-grid span { display:block; font-size:9px; color:var(--text-secondary); margin-bottom:5px; }
-.finance-forecast-grid strong { font-size:16px; }
-.finance-forecast-note,.finance-dashboard-foot,.finance-empty-state,.finance-empty-line,.finance-modal-note { color:var(--text-secondary); font-size:10px; line-height:1.5; }
-.finance-forecast-note { margin-top:10px; }
+.finance-forecast-grid div { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:12px; }
+.finance-forecast-grid span { display:block; font-size:9px; color:rgba(255,255,255,0.5); margin-bottom:5px; }
+.finance-forecast-grid strong { font-size:20px; font-weight:800; color:#ffffff; }
+.finance-forecast-note { color:rgba(255,255,255,0.45); font-size:10px; line-height:1.5; margin-top:10px; }
+.finance-dashboard-foot,.finance-empty-state,.finance-empty-line,.finance-modal-note { color:var(--text-secondary); font-size:10px; line-height:1.5; }
 .finance-history-count { font-size:9px; color:var(--text-secondary); }
 .finance-history-list { margin-top:10px; }
-.finance-history-row { display:grid; grid-template-columns:1fr auto auto; gap:16px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:10px; }
+.finance-history-row { display:grid; grid-template-columns:1fr auto auto; gap:16px; align-items:center; padding:11px 4px; border-bottom:1px solid var(--border); font-size:10px; border-radius:10px; }
+.finance-history-row:hover { background:var(--bg-card-hover); }
 .finance-history-row strong { font-size:12px; }
 .finance-history-row em { font-style:normal; min-width:70px; text-align:right; }
 .finance-dashboard-foot { margin-top:10px; }
 .finance-salary-row { display:grid; grid-template-columns:1fr 130px; gap:10px; align-items:center; margin-bottom:8px; font-size:11px; }
-@media(max-width:850px){ .finance-metrics-grid{grid-template-columns:repeat(2,1fr)} .finance-networth-card{grid-template-columns:1fr}.finance-networth-side{border-left:0;border-top:1px solid var(--border);padding:14px 0 0}.finance-forecast-grid{grid-template-columns:repeat(2,1fr)} .finance-grid-3{grid-template-columns:1fr} }
-@media(max-width:600px){ .finance-dashboard-head,.finance-grid-2,.finance-grid-3{display:block}.finance-head-actions{justify-content:flex-start;margin-top:12px}.finance-update-btn{margin-top:0}.finance-metrics-grid{grid-template-columns:1fr 1fr}.finance-metric-meta{display:block}.finance-metric-meta span{display:block;margin-bottom:2px}.finance-networth-value{font-size:29px} }
+@media(max-width:850px){ .finance-metrics-grid{grid-template-columns:repeat(2,1fr)} .finance-networth-card{grid-template-columns:1fr}.finance-networth-side{border-left:0;border-top:1px solid rgba(255,255,255,0.1);padding:14px 0 0}.finance-forecast-grid{grid-template-columns:repeat(2,1fr)} .finance-grid-3{grid-template-columns:1fr} }
+@media(max-width:600px){ .finance-dashboard-head,.finance-grid-2,.finance-grid-3{display:block}.finance-head-actions{align-items:flex-start;margin-top:12px}.finance-update-btn{margin-top:0}.finance-metrics-grid{grid-template-columns:1fr 1fr}.finance-metric-meta{display:block}.finance-metric-meta span{display:block;margin-bottom:2px}.finance-networth-value{font-size:34px} .finance-dashboard-head h2{font-size:30px} }
 
 /* ============================================================
    PLANIFICADOR DEL DÍA
@@ -3578,7 +3593,7 @@ body.beige {
     background: var(--bg-card-hover);
     box-shadow: 0 0 0 1px rgba(217,178,60,0.25) inset, 0 0 12px rgba(217,178,60,0.2);
 }
-.collectibles-total-card .finance-metric-label span { color: #d9b23c; }
+.collectibles-total-card .finance-metric-icon { color: #d9b23c; }
 .collectibles-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
 .collectibles-head-actions { display:flex; gap:8px; }
 .collectibles-table-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; padding:20px; }
@@ -3598,7 +3613,7 @@ body.beige {
 .finance-chart-panel .finance-panel-head { margin-bottom:6px; }
 .finance-chart-legend { display:flex; gap:16px; flex-wrap:wrap; margin:6px 0 14px; font-size:11px; color:var(--text-secondary); }
 .finance-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
-.finance-chart-legend i { width:9px; height:9px; border-radius:50%; display:inline-block; }
+.finance-chart-legend i { width:14px; height:2px; border-radius:2px; display:inline-block; background:var(--text-primary); }
 .finance-chart-svg-wrap { position:relative; width:100%; overflow-x:auto; }
 .finance-chart-point { cursor:pointer; transition:r .12s ease; }
 .finance-chart-point:hover { r:5.5; }
@@ -5837,18 +5852,16 @@ function v22RefreshSummaryIfPresent() {
                 <div class="collectibles-dashboard">
                     ${totalsByCategory.map(t => `
                         <div class="finance-metric-card">
-                            <div class="finance-metric-top">
-                                <div class="finance-metric-label"><span>◆</span>${escapeHtml(t.cat.name)}</div>
-                            </div>
+                            <div class="finance-metric-icon">◆</div>
                             <div class="finance-metric-value">${financeMoney(t.total)}</div>
+                            <div class="finance-metric-label">${escapeHtml(t.cat.name)}</div>
                             <div class="finance-metric-note">${t.count} objeto${t.count === 1 ? '' : 's'}</div>
                         </div>
                     `).join('')}
                     <div class="finance-metric-card collectibles-total-card">
-                        <div class="finance-metric-top">
-                            <div class="finance-metric-label"><span>Σ</span>Valor total</div>
-                        </div>
+                        <div class="finance-metric-icon">Σ</div>
                         <div class="finance-metric-value">${financeMoney(grandTotal)}</div>
+                        <div class="finance-metric-label">Valor total</div>
                         <div class="finance-metric-note">${collectibles.length} objetos en total</div>
                     </div>
                 </div>
@@ -8325,9 +8338,9 @@ function v22RefreshSummaryIfPresent() {
             const innerW = W - padL - padR, innerH = H - padT - padB;
 
             const series = [
-                { key: 'cash', color: '#e2e8f0', label: 'Efectivo' },
-                { key: 'invested', color: '#93c5fd', label: 'Ingresado' },
-                { key: 'emergency', color: '#fcd34d', label: 'Emergencia' }
+                { key: 'cash', color: 'var(--text-primary)', opacity: 1, dash: '', label: 'Efectivo' },
+                { key: 'invested', color: 'var(--text-primary)', opacity: 0.55, dash: '5,4', label: 'Ingresado' },
+                { key: 'emergency', color: 'var(--text-primary)', opacity: 0.3, dash: '1,4', label: 'Emergencia' }
             ];
 
             const allValues = data.flatMap(d => series.map(s => Number(d[s.key]) || 0));
@@ -8350,11 +8363,11 @@ function v22RefreshSummaryIfPresent() {
                 const points = data.map((d, i) => `${x(i)},${y(Number(d[s.key]) || 0)}`).join(' ');
                 const circles = data.map((d, i) => {
                     const val = Number(d[s.key]) || 0;
-                    return `<circle class="finance-chart-point" cx="${x(i)}" cy="${y(val)}" r="4" fill="${s.color}" stroke="var(--bg-card)" stroke-width="1.5"
+                    return `<circle class="finance-chart-point" cx="${x(i)}" cy="${y(val)}" r="4" fill="${s.color}" fill-opacity="${s.opacity}" stroke="var(--bg-card)" stroke-width="1.5"
                         onmousemove="showFinanceChartTooltip(event,'${escapeHtml(s.label)}','${escapeHtml(financeMonthLabel(d.month))}',${val})"
                         onmouseleave="hideFinanceChartTooltip()"></circle>`;
                 }).join('');
-                return `<polyline points="${points}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${circles}`;
+                return `<polyline points="${points}" fill="none" stroke="${s.color}" stroke-opacity="${s.opacity}" stroke-dasharray="${s.dash}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${circles}`;
             }).join('');
 
             return `
@@ -8369,9 +8382,9 @@ function v22RefreshSummaryIfPresent() {
 
         function renderFinanceSingleChartPoint(d) {
             const series = [
-                { key: 'cash', color: '#e2e8f0', label: 'Efectivo' },
-                { key: 'invested', color: '#93c5fd', label: 'Ingresado' },
-                { key: 'emergency', color: '#fcd34d', label: 'Emergencia' }
+                { key: 'cash', color: 'var(--text-primary)', opacity: 1, label: 'Efectivo' },
+                { key: 'invested', color: 'var(--text-primary)', opacity: 0.55, label: 'Ingresado' },
+                { key: 'emergency', color: 'var(--text-primary)', opacity: 0.3, label: 'Emergencia' }
             ];
             return `
                 <div class="finance-chart-svg-wrap">
@@ -8380,7 +8393,7 @@ function v22RefreshSummaryIfPresent() {
                             const val = Number(d[s.key]) || 0;
                             const cy = 20 + i * 24;
                             return `
-                                <circle class="finance-chart-point" cx="60" cy="${cy}" r="4" fill="${s.color}" stroke="var(--bg-card)" stroke-width="1.5"
+                                <circle class="finance-chart-point" cx="60" cy="${cy}" r="4" fill="${s.color}" fill-opacity="${s.opacity}" stroke="var(--bg-card)" stroke-width="1.5"
                                     onmousemove="showFinanceChartTooltip(event,'${escapeHtml(s.label)}','${escapeHtml(financeMonthLabel(d.month))}',${val})"
                                     onmouseleave="hideFinanceChartTooltip()"></circle>
                                 <text x="76" y="${cy + 4}" font-size="11" fill="var(--text-primary)" font-family="JetBrains Mono, monospace">${escapeHtml(s.label)}: ${financeMoney(val)}</text>`;
@@ -8671,11 +8684,10 @@ function v22RefreshSummaryIfPresent() {
             const goal = financeGoalStatus(value, target);
             return `
                 <div class="finance-metric-card ${goal.cls}">
-                    <div class="finance-metric-top">
-                        <div class="finance-metric-label"><span>${icon}</span>${label}</div>
-                        <button class="finance-edit-btn" title="Editar" onclick="openFinanceMetricEditor('${key}','${label}','${targetKey}')">✎</button>
-                    </div>
+                    <button class="finance-edit-btn" title="Editar" onclick="openFinanceMetricEditor('${key}','${label}','${targetKey}')">✎</button>
+                    <div class="finance-metric-icon">${icon}</div>
                     <div class="finance-metric-value">${financeMoney(value)}</div>
+                    <div class="finance-metric-label">${label}</div>
                     <div class="finance-metric-meta">
                         <span class="${change === null ? '' : change >= 0 ? 'finance-positive' : 'finance-negative'}">${change === null ? 'Sin mes anterior' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}% vs. mes anterior`}</span>
                         <span>${goal.pct === null ? 'Sin objetivo' : `${goal.pct.toFixed(0)}% del objetivo`}</span>
@@ -8706,8 +8718,8 @@ function v22RefreshSummaryIfPresent() {
                 <div class="finance-dashboard-head">
                     <div>
                         <div class="finance-kicker">Finanzas personales</div>
-                        <h2>Tu situación económica</h2>
-                        <p>Actualiza tus cifras cuando cobres o cierres el mes. Bitácora compara la evolución real con tus objetivos y separa los datos de las previsiones.</p>
+                        <h2>Tu dinero.</h2>
+                        <p>Actualiza tus cifras cuando cobres o cierres el mes.</p>
                         <div class="finance-subnav">
                             <button onclick="financeSubView='indexado';render()">Fondo indexado</button>
                             <button onclick="financeSubView='wishlist';render()">Wishlist</button>
@@ -8715,11 +8727,13 @@ function v22RefreshSummaryIfPresent() {
                         </div>
                     </div>
                     <div class="finance-head-actions">
-                        <button class="finance-oneoff-btn finance-salary-btn" onclick="quickPaySalary()">Cobrar sueldo</button>
-                        <button class="finance-oneoff-btn" onclick="openFinanceTransfer()">Transferir</button>
-                        <button class="finance-oneoff-btn" onclick="openFinanceMovement('expense')">− Gasto</button>
-                        <button class="finance-oneoff-btn" onclick="openFinanceMovement('income')">+ Ingreso</button>
                         <button class="btn-modal-primary finance-update-btn" onclick="saveFinanceDashboard()">Guardar actualización</button>
+                        <div class="finance-head-actions-row">
+                            <button class="finance-oneoff-btn finance-salary-btn" onclick="quickPaySalary()">Cobrar sueldo</button>
+                            <button class="finance-oneoff-btn" onclick="openFinanceTransfer()">Transferir</button>
+                            <button class="finance-oneoff-btn" onclick="openFinanceMovement('expense')">− Gasto</button>
+                            <button class="finance-oneoff-btn" onclick="openFinanceMovement('income')">+ Ingreso</button>
+                        </div>
                     </div>
                 </div>
 
@@ -8741,10 +8755,10 @@ function v22RefreshSummaryIfPresent() {
                 </section>
 
                 <div class="finance-metrics-grid">
-                    ${renderFinanceMetric('cash','cashTarget','Efectivo / bancos','€','Liquidez disponible')}
-                    ${renderFinanceMetric('invested','investedTarget','Inversiones','↗','Valor real que hayas registrado')}
-                    ${renderFinanceMetric('emergency','emergencyTarget','Fondo de emergencia','◇','Reserva no destinada al gasto corriente')}
-                    ${renderFinanceMetric('vacation','vacationTarget','Reserva de vacaciones','✦','Se mantiene aparte del patrimonio operativo')}
+                    ${renderFinanceMetric('cash','cashTarget','Efectivo / bancos','◉','Liquidez disponible')}
+                    ${renderFinanceMetric('invested','investedTarget','Inversiones','▸','Valor real que hayas registrado')}
+                    ${renderFinanceMetric('emergency','emergencyTarget','Fondo de emergencia','◈','Reserva no destinada al gasto corriente')}
+                    ${renderFinanceMetric('vacation','vacationTarget','Reserva de vacaciones','◊','Se mantiene aparte del patrimonio operativo')}
                 </div>
 
                 <div class="finance-grid-3">
@@ -8763,7 +8777,7 @@ function v22RefreshSummaryIfPresent() {
                             <div class="finance-oneoff-list" style="margin-top:0;padding-top:0;border-top:none">
                                 ${[...(financeProfile.movements || [])].slice(0,6).map(x => `
                                     <div class="finance-oneoff-row">
-                                        <span>${x.type === 'transfer' ? '🔁 ' : ''}${escapeHtml(x.label)} · ${escapeHtml(x.date)}${(x.type !== 'transfer' && !x.addedToCash) ? ' <em style="opacity:.7">(no aplicado)</em>' : ''}</span>
+                                        <span>${x.type === 'transfer' ? '⇄ ' : ''}${escapeHtml(x.label)} · ${escapeHtml(x.date)}${(x.type !== 'transfer' && !x.addedToCash) ? ' <em style="opacity:.7">(no aplicado)</em>' : ''}</span>
                                         <strong class="${x.type === 'income' ? 'finance-mov-income' : x.type === 'expense' ? 'finance-mov-expense' : 'finance-mov-transfer'}">${x.type === 'income' ? '+' : x.type === 'expense' ? '−' : ''}${financeMoney(x.amount)}</strong>
                                         <button title="Eliminar registro" onclick="deleteFinanceMovement('${x.id}')">×</button>
                                     </div>`).join('')}
@@ -8775,8 +8789,17 @@ function v22RefreshSummaryIfPresent() {
                         <div class="finance-recurring-total">${financeMoney(recurring)} <span>/ mes</span></div>
                         <div class="finance-recurring-sub">${financeMoney(recurring * 12)} al año · se descuentan de la previsión de efectivo</div>
                         <div class="finance-mini-bars">
-                            <div><span>Suscripciones</span><strong>${financeMoney(entries.filter(e=>e.type==='subscription'&&e.active!==false).reduce((s,e)=>s+(Number(e.amount)||0),0))}</strong></div>
-                            <div><span>Gastos fijos</span><strong>${financeMoney(entries.filter(e=>e.type==='fixed_expense'&&e.active!==false).reduce((s,e)=>s+(Number(e.amount)||0),0))}</strong></div>
+                            ${(() => {
+                                const subs = entries.filter(e=>e.type==='subscription'&&e.active!==false).reduce((s,e)=>s+(Number(e.amount)||0),0);
+                                const fixed = entries.filter(e=>e.type==='fixed_expense'&&e.active!==false).reduce((s,e)=>s+(Number(e.amount)||0),0);
+                                const maxVal = Math.max(1, subs, fixed);
+                                const bar = (label, val) => `
+                                    <div class="finance-mini-bar-row">
+                                        <div class="finance-mini-bar-labels"><span>${label}</span><strong>${financeMoney(val)}</strong></div>
+                                        <div class="finance-mini-bar-track"><span class="finance-mini-bar-fill" style="width:${Math.min(100, val / maxVal * 100)}%"></span></div>
+                                    </div>`;
+                                return bar('Suscripciones', subs) + bar('Gastos fijos', fixed);
+                            })()}
                         </div>
                     </section>
                 </div>
@@ -8810,9 +8833,9 @@ function v22RefreshSummaryIfPresent() {
                         <button class="finance-oneoff-btn" onclick="updateFinanceChart()">Actualizar gráfica</button>
                     </div>
                     <div class="finance-chart-legend">
-                        <span><i style="background:#e2e8f0"></i>Efectivo</span>
-                        <span><i style="background:#93c5fd"></i>Ingresado</span>
-                        <span><i style="background:#fcd34d"></i>Emergencia</span>
+                        <span><i style="opacity:1"></i>Efectivo</span>
+                        <span><i style="opacity:.55"></i>Ingresado</span>
+                        <span><i style="opacity:.3"></i>Emergencia</span>
                     </div>
                     ${renderFinanceEvolutionChart()}
                 </section>
