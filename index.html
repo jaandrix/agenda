@@ -1538,7 +1538,7 @@
         .logout-confirm-box { text-align: center; }
         .logout-confirm-box .command-palette-prompt { font-size: 17px; }
         .logout-confirm-actions { display: flex; gap: 10px; }
-        .logout-confirm-actions button { width: auto; flex: 1; }
+        .logout-confirm-actions button { flex: 1; width: auto; margin: 0; padding: 12px; font-size: 15px; border-radius: 18px; }
 
         /* ============================================================
                ALERTA DIARIA
@@ -3256,12 +3256,13 @@ body.beige {
    FINANZAS v0.30 — DASHBOARD ECONÓMICO
    ============================================================ */
 .finance-dashboard { position: relative; max-width: 980px; padding-bottom: 30px; }
+.finance-networth-value-row { display: flex; align-items: center; gap: 10px; }
 .finance-blur-toggle {
-    position: absolute; top: -2px; right: 0; width: 32px; height: 32px; border-radius: 50%;
-    border: 1px solid var(--border-strong); background: var(--bg-card); color: var(--text-secondary);
-    display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s ease; z-index: 2;
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    border: none; background: #3b82f6; color: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s ease;
 }
-.finance-blur-toggle:hover { color: var(--text-primary); background: var(--bg-card-hover); }
+.finance-blur-toggle:hover { background: #2f6fd1; }
 .finance-dashboard.blurred .finance-metric-value,
 .finance-dashboard.blurred .finance-networth-value,
 .finance-dashboard.blurred .finance-income-highlight strong,
@@ -3410,10 +3411,10 @@ body.beige {
 @media(max-width:700px){ .collectibles-dashboard-row{flex-direction:column} .collectibles-actions-col{flex-direction:row} }
 .collectibles-table-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; padding:20px; }
 .collectibles-table-wrap .media-card-grid { grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; }
-.collectibles-table-wrap .media-card.collectible-card { padding:12px 8px 10px; gap:5px; }
-.collectibles-table-wrap .media-card-icon { width:28px; height:28px; font-size:12px; }
-.collectibles-table-wrap .media-card-title { font-size:11px; min-height:24px; }
-.collectibles-table-wrap .media-card-meta { font-size:10px; }
+.collectibles-table-wrap .media-card.collectible-card { padding:8px 8px; gap:3px; }
+.collectibles-table-wrap .media-card-icon { width:22px; height:22px; font-size:10px; }
+.collectibles-table-wrap .media-card-title { font-size:11px; min-height:0; line-height:1.25; }
+.collectibles-table-wrap .media-card-meta { font-size:10px; min-height:0; }
 .collectibles-table { width:100%; border-collapse:collapse; font-size:13px; }
 .collectibles-table th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); font-weight:700; padding:12px 16px; border-bottom:1px solid var(--border-strong); white-space:nowrap; }
 .collectibles-table td { padding:11px 16px; border-bottom:1px solid var(--border); color:var(--text-primary); white-space:nowrap; }
@@ -3439,10 +3440,6 @@ body.beige {
 /* Fila superior: gráfica flotante + tarjeta de patrimonio operativo */
 .finance-hero-row { display:grid; grid-template-columns:2.2fr 1fr; gap:20px; align-items:stretch; margin-bottom:18px; }
 .finance-floating-chart-wrap { display:flex; flex-direction:column; justify-content:center; padding:6px 0; background:none; border:none; box-shadow:none; }
-.finance-floating-legend { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:10px; font-size:10px; color:var(--text-secondary); }
-.finance-floating-legend i { width:14px; height:2px; border-radius:2px; display:inline-block; margin-right:6px; vertical-align:middle; }
-.finance-floating-legend i.dot-total { background:var(--text-primary); }
-.finance-floating-legend i.dot-safe { background:var(--text-secondary); border-top:1px dashed var(--text-secondary); background:none; border-bottom:2px dashed var(--text-secondary); height:0; }
 .finance-floating-svg-wrap { overflow:visible; }
 .finance-floating-single { display:flex; gap:22px; flex-wrap:wrap; }
 .finance-floating-single div { display:flex; flex-direction:column; gap:3px; }
@@ -5009,7 +5006,13 @@ function v22RefreshSummaryIfPresent() {
             } else {
                 const all = paletteItemsFor('nav');
                 const navMatches = q ? all.filter(i => i.text.toLowerCase().includes(q)) : all;
-                filtered = (q && !navMatches.length) ? searchEntriesForPalette(q) : navMatches;
+                // Fantasy es un apartado oculto (requiere Modo Desarrollador):
+                // nunca aparece en la lista inicial, solo si se escribe algo
+                // que coincida con su nombre y el modo esté activo.
+                const hiddenMatches = (q && devModeActive && 'fantasy'.includes(q))
+                    ? [{ kind: 'fantasy', text: 'Fantasy' }] : [];
+                filtered = hiddenMatches.length ? hiddenMatches
+                    : (q && !navMatches.length) ? searchEntriesForPalette(q) : navMatches;
             }
             if (cpSelectedIndex >= filtered.length) cpSelectedIndex = 0;
             const list = document.getElementById('command-palette-list');
@@ -5068,6 +5071,8 @@ function v22RefreshSummaryIfPresent() {
                 followMention(item.kind, item.id);
             } else if (item.kind === 'command') {
                 runPaletteCommand(item.cmd);
+            } else if (item.kind === 'fantasy') {
+                openFantasy();
             } else {
                 switchView(item.view);
             }
@@ -5137,10 +5142,20 @@ function v22RefreshSummaryIfPresent() {
             const tag = document.activeElement?.tagName;
             if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || document.activeElement?.isContentEditable) return false;
             if (document.getElementById('command-palette-overlay')) return false;
+            if (document.getElementById('logout-confirm-overlay')) return false;
             if (document.getElementById('modal-container')?.innerHTML.trim()) return false;
             if (document.getElementById('login-screen')?.style.display !== 'none') return false;
             return true;
         }
+
+        // Con la confirmación de cierre de sesión abierta, ENTER equivale a
+        // pulsar "Sí" — no debe abrir el buscador de navegación.
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter') return;
+            if (!document.getElementById('logout-confirm-overlay')) return;
+            e.preventDefault();
+            confirmLogout();
+        });
 
         // ENTER abre "¿dónde quieres ir?"; ESPACIO abre la captura rápida
         // ("¿dónde quieres crear la entrada?") — mismas condiciones.
@@ -7748,7 +7763,10 @@ function v22RefreshSummaryIfPresent() {
         function openExternalSearch(event, btn) {
             event.stopPropagation();
             const url = externalSearchUrl(btn.dataset.extType, btn.dataset.extTitle);
-            if (url) window.open(url, '_blank', 'noopener');
+            if (!url) return;
+            const w = 720, h = 640;
+            const left = Math.round((screen.width - w) / 2), top = Math.round((screen.height - h) / 2);
+            window.open(url, '_blank', `noopener,width=${w},height=${h},left=${left},top=${top}`);
         }
 
         function renderMediaCard(entry, metaLine, badge) {
@@ -8873,15 +8891,33 @@ function v22RefreshSummaryIfPresent() {
         //  colores usan variables CSS por lo que se invierten solos
         //  con el tema. Incluye una línea de puntos fija en el objetivo.
         // ============================================================
+        // Ventana temporal (nº de meses) que se muestra en la gráfica
+        // flotante; null = todo el histórico disponible. Se ajusta con la
+        // rueda del ratón, como en un gráfico de cotización.
+        let financeChartMonths = null;
+
+        function financeChartWheelZoom(event) {
+            const totalMonths = Array.isArray(financeProfile.history) ? financeProfile.history.length : 0;
+            if (totalMonths <= 2) return;
+            event.preventDefault();
+            const current = financeChartMonths || totalMonths;
+            const next = Math.max(2, Math.min(totalMonths, current + (event.deltaY < 0 ? -1 : 1)));
+            financeChartMonths = next;
+            const wrap = document.getElementById('finance-floating-chart-wrap');
+            if (wrap) wrap.innerHTML = renderFinanceFloatingChart();
+        }
+
         function renderFinanceFloatingChart() {
             const raw = Array.isArray(financeProfile.history) ? [...financeProfile.history] : [];
-            const data = raw
+            const fullData = raw
                 .sort((a, b) => String(a.month).localeCompare(String(b.month)))
                 .map(h => {
                     const safe = h.safe !== undefined ? Number(h.safe) : Number(h.cash || 0) + Number(h.emergency || 0);
                     const total = h.total !== undefined ? Number(h.total) : safe + Number(h.invested || 0);
                     return { month: h.month, safe, total };
                 });
+            const visibleCount = financeChartMonths ? Math.min(financeChartMonths, fullData.length) : fullData.length;
+            const data = fullData.slice(-visibleCount);
             const target = financeTargetTotal();
 
             if (!data.length) {
@@ -9362,19 +9398,15 @@ function v22RefreshSummaryIfPresent() {
             const remainingToTarget = Math.max(0, target - total);
             const fc = financeProfile.forecastProfile || {};
 
+            const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">
+                    ${blurFinances
+                        ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6 0 9.5 5.5 9.9 7a10.9 10.9 0 0 1-3 3.9M6.2 6.2C3.6 7.9 1.9 10.7 1.1 12c.7 1.2 4.2 7 10.9 7 1.6 0 3-.3 4.2-.8"/><path d="M9.5 9.7a3 3 0 0 0 4.2 4.2"/></svg>'
+                        : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.1 12S4.8 5 12 5s10.9 7 10.9 7-3.7 7-10.9 7-10.9-7-10.9-7z"/><circle cx="12" cy="12" r="3"/></svg>'}
+                </button>`;
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
-                <button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">
-                    ${blurFinances
-                        ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6 0 9.5 5.5 9.9 7a10.9 10.9 0 0 1-3 3.9M6.2 6.2C3.6 7.9 1.9 10.7 1.1 12c.7 1.2 4.2 7 10.9 7 1.6 0 3-.3 4.2-.8"/><path d="M9.5 9.7a3 3 0 0 0 4.2 4.2"/></svg>'
-                        : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.1 12S4.8 5 12 5s10.9 7 10.9 7-3.7 7-10.9 7-10.9-7-10.9-7z"/><circle cx="12" cy="12" r="3"/></svg>'}
-                </button>
                 <div class="finance-hero-row">
-                    <section class="finance-floating-chart-wrap">
-                        <div class="finance-floating-legend">
-                            <span><i class="dot-total"></i>Patrimonio total</span>
-                            <span><i class="dot-safe"></i>Efectivo + Emergencia</span>
-                        </div>
+                    <section class="finance-floating-chart-wrap" id="finance-floating-chart-wrap" onwheel="financeChartWheelZoom(event)" title="Rueda del ratón: acercar/alejar el periodo mostrado">
                         ${renderFinanceFloatingChart()}
                     </section>
 
@@ -9382,7 +9414,10 @@ function v22RefreshSummaryIfPresent() {
                         <button class="finance-edit-btn finance-networth-edit-btn" title="Editar objetivo" onclick="openFinanceTargetEditor()">✎</button>
                         <div>
                             <div class="finance-kicker">Patrimonio operativo</div>
-                            <div class="finance-networth-value finance-networth-value-compact">${financeMoney(total)}</div>
+                            <div class="finance-networth-value-row">
+                                <div class="finance-networth-value finance-networth-value-compact">${financeMoney(total)}</div>
+                                ${blurToggleBtn}
+                            </div>
                             <div class="finance-networth-meta">
                                 ${totalChange === null ? 'Primer registro' : `${totalChange >= 0 ? '+' : ''}${totalChange.toFixed(1)}% frente al mes anterior`}
                                 · Objetivo ${target > 0 ? financeMoney(target) : 'sin definir'}
