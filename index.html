@@ -1271,9 +1271,11 @@
             transform: translate(-50%,-50%) scale(1);
         }
 
-        /* Grupo B: tarjetas negras (Coleccionables, Series, Películas,
-           Videojuegos) -> difuminado + lápiz con círculo blanco/icono
-           negro, siempre visible sobre el fondo oscuro de la tarjeta. */
+        /* Grupo B: tarjetas negras (Coleccionables, Libros, Series,
+           Películas, Videojuegos) -> difuminado + lápiz con círculo
+           blanco/icono negro, siempre visible sobre el fondo oscuro
+           de la tarjeta. */
+        .media-card.media-card-type-book,
         .media-card.media-card-type-movie,
         .media-card.media-card-type-series,
         .media-card.media-card-type-game,
@@ -1281,12 +1283,14 @@
             position: relative;
             overflow: hidden;
         }
+        .media-card.media-card-type-book > *,
         .media-card.media-card-type-movie > *,
         .media-card.media-card-type-series > *,
         .media-card.media-card-type-game > *,
         .collectible-card > * {
             transition: filter 0.22s ease, opacity 0.22s ease;
         }
+        .media-card.media-card-type-book:hover > *,
         .media-card.media-card-type-movie:hover > *,
         .media-card.media-card-type-series:hover > *,
         .media-card.media-card-type-game:hover > *,
@@ -1294,6 +1298,7 @@
             filter: blur(3px);
             opacity: 0.4;
         }
+        .media-card.media-card-type-book::after,
         .media-card.media-card-type-movie::after,
         .media-card.media-card-type-series::after,
         .media-card.media-card-type-game::after,
@@ -1318,6 +1323,7 @@
             transition: opacity 0.22s ease, transform 0.22s ease;
             z-index: 4;
         }
+        .media-card.media-card-type-book:hover::after,
         .media-card.media-card-type-movie:hover::after,
         .media-card.media-card-type-series:hover::after,
         .media-card.media-card-type-game:hover::after,
@@ -1424,9 +1430,10 @@
             color: rgba(255,255,255,0.75);
         }
         .media-card-stars {
-            font-size: 11px;
+            font-size: 15px;
             color: #d9b23c;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 0.5px #d9b23c;
         }
         .media-card-gold {
             border: 3px solid rgba(217,178,60,0.95);
@@ -6909,7 +6916,6 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         function renderCalendar() {
             let html = `<div class="cal-home">`;
-            html += renderCalGreetingHeader();
             html += `<div class="culture-tabs" style="margin-bottom:18px">
                 ${[['day','Día'],['week','Semana'],['month','Mes']].map(([id,label]) => `
                     <button class="culture-tab ${calViewMode===id?'active':''}" onclick="setCalView('${id}')">${label}</button>
@@ -6922,11 +6928,6 @@ function v22RefreshSummaryIfPresent() {
 
             html += `</div>`;
             return html;
-        }
-
-        function renderCalGreetingHeader() {
-            return `
-            <div class="cal-greeting">${greetingText()}</div>`;
         }
 
         function changeMonth(delta) {
@@ -7573,7 +7574,7 @@ function v22RefreshSummaryIfPresent() {
 
             let html = `<div>`;
             html += renderMediaCardGrid(sorted,
-                s => `Inicio: ${s.startDate}${s.endDate ? ' · Fin: ' + s.endDate : ''}`,
+                null,
                 s => effectiveStatus(s));
             html += `</div>`;
             return html;
