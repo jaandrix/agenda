@@ -666,7 +666,7 @@
             overflow-y: auto;
             padding: 24px 32px 32px 32px;
             -webkit-overflow-scrolling: touch;
-            max-width: 1100px;
+            max-width: 1600px;
             margin: 0 auto;
             width: 100%;
         }
@@ -6660,29 +6660,8 @@ function v22RefreshSummaryIfPresent() {
         }
 
         function renderCalGreetingHeader() {
-            const base = new Date(calSelectedDate + 'T12:00:00');
-            const dow = base.getDay(); // 0-6, Sunday=0
-            const monday = new Date(base);
-            monday.setDate(base.getDate() - ((dow + 6) % 7));
-            const today = new Date().toISOString().slice(0, 10);
-
-            let strip = '';
-            for (let i = 0; i < 7; i++) {
-                const d = new Date(monday);
-                d.setDate(monday.getDate() + i);
-                const dateStr = d.toISOString().slice(0, 10);
-                const isToday = dateStr === today;
-                const isSelected = dateStr === calSelectedDate;
-                strip += `
-                    <button class="cal-strip-day ${isSelected ? 'selected' : ''} ${isToday ? 'is-today' : ''}" onclick="selectCalDate('${dateStr}');setCalView('day')">
-                        <span class="cal-strip-letter">${CAL_DAY_LETTERS[d.getDay()]}</span>
-                        <span class="cal-strip-num">${String(d.getDate()).padStart(2,'0')}</span>
-                    </button>`;
-            }
-
             return `
-            <div class="cal-greeting">${greetingText()}</div>
-            <div class="cal-strip">${strip}</div>`;
+            <div class="cal-greeting">${greetingText()}</div>`;
         }
 
         function changeMonth(delta) {
@@ -9930,8 +9909,10 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // un mismo usuario se identifique siempre con el mismo color — salvo
         // cuando su efectivo está en números rojos (rojo) o por debajo del
         // umbral de aviso (amarillo), en cuyo caso ese estado manda en todas
-        // partes donde aparezca ese usuario.
-        const FANTASY_PALETTE = ['#8B5CF6', '#F59E0B', '#16a34a', '#dc2626', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
+        // partes donde aparezca ese usuario. La paleta evita a propósito los
+        // tonos rojo/ámbar/naranja para que nunca se confunda un color de
+        // identidad con el aviso de efectivo bajo o negativo.
+        const FANTASY_PALETTE = ['#3b82f6', '#ec4899', '#8B5CF6', '#14b8a6', '#22c55e', '#06b6d4', '#a855f7', '#0ea5e9'];
         const FANTASY_LOW_CASH_COLOR_THRESHOLD = 15000000;
         function fantasyUserColor(nombre) {
             const idx = fantasyData.usuarios.findIndex(u => u.nombre === nombre);
