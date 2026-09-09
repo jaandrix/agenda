@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apuntes · Bitácora</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+<style>
+    :root {
+        --bg-app: #000000;
+        --bg-card: #131313;
+        --bg-input: #161616;
+        --border: #202020;
+        --border-strong: #2b2b2b;
+        --text-primary: #ffffff;
+        --text-secondary: #9a9a9a;
+        --text-muted: #5c5c5c;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        margin: 0; padding: 0; height: 100%;
+        background: var(--bg-app); color: var(--text-primary);
+        font-family: 'Poppins', -apple-system, system-ui, sans-serif;
+    }
+    a { color: inherit; }
+    .apuntes-topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 24px; border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; background: var(--bg-app); z-index: 5;
+    }
+    .apuntes-back { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center; gap: 6px; }
+    .apuntes-back:hover { color: var(--text-primary); }
+    .apuntes-status { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
+    .apuntes-wrap { max-width: 880px; margin: 0 auto; padding: 32px 24px 120px; }
+    #apuntes-title {
+        width: 100%; background: transparent; border: 0; outline: none;
+        color: var(--text-primary); font-family: 'Poppins', sans-serif;
+        font-size: 32px; font-weight: 800; letter-spacing: -.5px;
+        margin-bottom: 24px; padding: 0;
+    }
+    #apuntes-title::placeholder { color: var(--text-muted); }
+
+    /* Quill: retema el theme "snow" al estilo oscuro de la app */
+    .ql-toolbar.ql-snow {
+        border: 1px solid var(--border) !important;
+        border-radius: 14px 14px 0 0;
+        background: var(--bg-card);
+        position: sticky; top: 53px; z-index: 4;
+    }
+    .ql-container.ql-snow {
+        border: 1px solid var(--border) !important;
+        border-top: 0;
+        border-radius: 0 0 14px 14px;
+        background: var(--bg-input);
+        font-family: 'Poppins', sans-serif;
+        font-size: 14px;
+        min-height: 55vh;
+    }
+    .ql-editor { color: var(--text-primary); line-height: 1.65; }
+    .ql-editor.ql-blank::before { color: var(--text-muted); font-style: normal; }
+    .ql-snow .ql-stroke { stroke: var(--text-secondary); }
+    .ql-snow .ql-fill, .ql-snow .ql-stroke.ql-fill { fill: var(--text-secondary); }
+    .ql-snow .ql-picker { color: var(--text-secondary); }
+    .ql-toolbar.ql-snow button:hover .ql-stroke, .ql-toolbar.ql-snow button.ql-active .ql-stroke { stroke: var(--text-primary); }
+    .ql-toolbar.ql-snow button:hover .ql-fill, .ql-toolbar.ql-snow button.ql-active .ql-fill { fill: var(--text-primary); }
+    .ql-toolbar.ql-snow button:hover, .ql-toolbar.ql-snow button.ql-active { color: var(--text-primary); }
+    .ql-snow .ql-picker-options { background: var(--bg-card); border: 1px solid var(--border-strong) !important; }
+    .ql-snow .ql-picker-item:hover, .ql-snow .ql-picker-label:hover { color: var(--text-primary) !important; }
+    .ql-snow .ql-tooltip { background: var(--bg-card); border: 1px solid var(--border-strong); color: var(--text-primary); box-shadow: 0 10px 24px rgba(0,0,0,.4); }
+    .ql-snow .ql-tooltip input[type=text] { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); }
+    .ql-editor img { max-width: 100%; border-radius: 8px; }
+
+    .apuntes-fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; text-align: center; gap: 12px; padding: 24px; }
+    .apuntes-fallback h2 { font-size: 20px; margin: 0; }
+    .apuntes-fallback p { color: var(--text-secondary); font-size: 13px; max-width: 360px; margin: 0; }
+    .apuntes-fallback a { background: #fff; color: #000; padding: 10px 20px; border-radius: 999px; font-weight: 700; font-size: 13px; text-decoration: none; margin-top: 8px; }
+    [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="apuntes-fallback" class="apuntes-fallback" hidden>
+    <h2>No hay sesión iniciada</h2>
+    <p>Inicia sesión en Bitácora para poder ver y editar tus apuntes.</p>
+    <a href="index.html">← Volver a Bitácora</a>
+</div>
+
+<div id="apuntes-app" hidden>
+    <div class="apuntes-topbar">
+        <a class="apuntes-back" href="index.html">← Bitácora</a>
+        <div class="apuntes-status" id="apuntes-status">Cargando...</div>
+    </div>
+    <div class="apuntes-wrap">
+        <input id="apuntes-title" placeholder="Sin título" autocomplete="off">
+        <div id="apuntes-editor"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<script>
+    const SUPABASE_URL = 'https://avdqtnukgbejorieuunj.supabase.co';
+    const SUPABASE_ANON_KEY =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2ZHF0bnVrZ2Jlam9yaWV1dW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMjcyOTUsImV4cCI6MjEwMDkwMzI5NX0.sq1cepXuBaNT6qygyxKEAhVHJh7G9LZyzaeJBhc7s7s';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const noteId = new URLSearchParams(location.search).get('id');
+    let quill = null;
+    let currentUser = null;
+    let saveTimer = null;
+    let statusEl = null;
+
+    async function init() {
+        statusEl = document.getElementById('apuntes-status');
+        if (!noteId) { showFallback(); return; }
+
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) { showFallback(); return; }
+        currentUser = user;
+
+        document.getElementById('apuntes-app').hidden = false;
+
+        quill = new Quill('#apuntes-editor', {
+            theme: 'snow',
+            placeholder: 'Escribe tus apuntes...',
+            modules: {
+                toolbar: {
+                    container: [
+                        [{ header: [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ color: [] }, { background: [] }],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        [{ indent: '-1' }, { indent: '+1' }],
+                        ['blockquote', 'code-block'],
+                        ['link', 'image'],
+                        ['clean']
+                    ],
+                    handlers: { image: handleImageButton }
+                }
+            }
+        });
+
+        const { data: existing, error } = await sb.from('study_notes').select('*').eq('id', noteId).maybeSingle();
+        if (error) console.error('Error cargando la nota:', error);
+
+        if (existing) {
+            document.getElementById('apuntes-title').value = existing.title || '';
+            if (existing.content) quill.setContents(existing.content);
+            setStatus('Guardado');
+        } else {
+            setStatus('Nota nueva');
+        }
+        document.title = (existing?.title || 'Apuntes') + ' · Bitácora';
+
+        document.getElementById('apuntes-title').addEventListener('input', scheduleSave);
+        quill.on('text-change', scheduleSave);
+    }
+
+    function showFallback() {
+        document.getElementById('apuntes-fallback').hidden = false;
+    }
+
+    function setStatus(text) { if (statusEl) statusEl.textContent = text; }
+
+    function scheduleSave() {
+        setStatus('Escribiendo...');
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveNote, 800);
+    }
+
+    async function saveNote() {
+        if (!quill || !currentUser) return;
+        setStatus('Guardando...');
+        const title = document.getElementById('apuntes-title').value.trim() || 'Sin título';
+        document.title = title + ' · Bitácora';
+        try {
+            const { error } = await sb.from('study_notes').upsert({
+                id: noteId,
+                user_id: currentUser.id,
+                title,
+                content: quill.getContents(),
+                updated_at: new Date().toISOString()
+            });
+            if (error) throw error;
+            setStatus('Guardado');
+        } catch (e) {
+            console.error('Error guardando la nota:', e);
+            setStatus('Error al guardar');
+        }
+    }
+
+    // Comprime la imagen a canvas (máx. 1600px de lado, JPEG ~0.8) antes de
+    // subirla: evita que fotos de móvil sin comprimir agoten rápido el
+    // 1GB de Storage gratuito de Supabase.
+    function compressImage(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = () => { img.src = reader.result; };
+            reader.onerror = reject;
+            img.onload = () => {
+                const maxSide = 1600;
+                let { width, height } = img;
+                if (width > maxSide || height > maxSide) {
+                    const scale = maxSide / Math.max(width, height);
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.8);
+            };
+            img.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function handleImageButton() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (!file || !currentUser) return;
+            const range = quill.getSelection(true);
+            setStatus('Subiendo imagen...');
+            try {
+                const blob = await compressImage(file);
+                const path = `${currentUser.id}/study-images/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+                const { error: upErr } = await sb.storage.from('documents').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+                if (upErr) throw upErr;
+                // Firma de larga duración (5 años): las notas embeben la URL,
+                // así que necesita seguir siendo válida mucho después de subida.
+                const { data: signed, error: signErr } = await sb.storage.from('documents').createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
+                if (signErr) throw signErr;
+                quill.insertEmbed(range.index, 'image', signed.signedUrl, 'user');
+                quill.setSelection(range.index + 1);
+                setStatus('Guardado');
+            } catch (e) {
+                console.error('Error subiendo imagen:', e);
+                setStatus('Error al subir imagen');
+            }
+        };
+        input.click();
+    }
+
+    init();
+</script>
+</body>
+</html>
