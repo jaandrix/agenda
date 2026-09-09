@@ -3552,14 +3552,8 @@ body.beige {
 .studies-quicknote-text { font-size:13px; color:var(--text-primary); white-space:pre-wrap; line-height:1.45; }
 .studies-quicknote-meta { display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
 .studies-quicknote-meta button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; }
-.studies-action-btn { display:inline-flex; align-items:center; gap:7px; padding:10px 16px; border-radius:999px; font-size:11px; font-weight:750; cursor:pointer; transition:all .15s ease; white-space:nowrap; border:0; }
-.studies-action-btn span:first-child { font-size:13px; }
-.studies-action-btn.primary { background:var(--accent); color:var(--accent-contrast); }
-.studies-action-btn.primary:hover { transform:translateY(-1px); filter:brightness(1.08); }
-.studies-action-btn.ghost { background:var(--bg-card); color:var(--text-primary); box-shadow:inset 0 0 0 1px var(--border-strong); }
-.studies-action-btn.ghost:hover { background:var(--bg-card-hover); transform:translateY(-1px); }
-.studies-action-count { background:var(--bg-card-hover); color:var(--text-secondary); border-radius:999px; padding:1px 7px; font-size:10px; }
-.studies-action-btn.ghost .studies-action-count { background:rgba(255,255,255,.1); }
+.studies-quick-actions { display:flex; gap:8px; }
+.studies-quick-actions .btn-modal-primary, .studies-inline-add-btn { width:auto; white-space:nowrap; padding:10px 18px; margin-top:0; }
 @media(max-width:850px){ .studies-schedule-grid{grid-template-columns:repeat(2,1fr)} }
 
 /* ============================================================
@@ -4940,6 +4934,7 @@ function v22RefreshSummaryIfPresent() {
             { view: 'culture', text: 'Videojuegos', tab: 'games' },
             { view: 'finances', text: 'Sueldo y aportaciones', anchor: 'finance-forecast-section' },
             { view: 'finances', text: 'Movimientos', anchor: 'finance-movements-section' },
+            { view: 'finances', text: 'Patrimonio operativo', anchor: 'finance-networth-section' },
         ];
 
         const CREATE_PALETTE_ITEMS = [
@@ -8596,9 +8591,9 @@ function v22RefreshSummaryIfPresent() {
             <div class="studies-view">
                 <div class="finance-panel-head" style="margin-bottom:14px">
                     <div><div class="finance-kicker">Estudios</div><h3>Tu grado, de un vistazo</h3></div>
-                    <div style="display:flex;gap:8px">
-                        <button class="studies-action-btn ghost" onclick="openQuickNotesList()"><span>▤</span>Notas rápidas${(studies.quickNotes || []).length ? `<span class="studies-action-count">${studies.quickNotes.length}</span>` : ''}</button>
-                        <button class="studies-action-btn primary" onclick="openAddQuickNote()"><span>✎</span>Nueva nota rápida</button>
+                    <div class="studies-quick-actions">
+                        <button class="btn-modal-primary" onclick="openAddQuickNote()">+ nota rápida</button>
+                        <button class="btn-modal-primary" onclick="openQuickNotesList()">notas rápidas${(studies.quickNotes || []).length ? ` (${studies.quickNotes.length})` : ''}</button>
                     </div>
                 </div>
 
@@ -8610,7 +8605,7 @@ function v22RefreshSummaryIfPresent() {
                 </div>` : ''}
 
                 <section class="studies-section" id="studies-subjects-section">
-                    <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Asignaturas</h3></div><button class="finance-icon-btn" title="Añadir asignatura" onclick="openAddSubject()">+</button></div>
+                    <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Asignaturas</h3></div><button class="btn-modal-primary studies-inline-add-btn" onclick="openAddSubject()">+ Asignatura</button></div>
                     ${studies.subjects.length ? `<div class="studies-subjects-grid">${studies.subjects.map(renderSubjectCard).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
                 </section>
 
@@ -10285,7 +10280,7 @@ function v22RefreshSummaryIfPresent() {
                         ${renderFinanceFloatingChart()}
                     </section>
 
-                    <section class="finance-networth-card">
+                    <section class="finance-networth-card" id="finance-networth-section">
                         <button class="finance-edit-btn finance-networth-edit-btn" title="Editar objetivo" onclick="openFinanceTargetEditor()">✎</button>
                         <div>
                             <div class="finance-kicker">Patrimonio operativo</div>
@@ -13379,18 +13374,19 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
     </script>
 
-function keepApuntesWindowInViewport() {
-    const w = document.getElementById('apuntesWindow');
-    if (!w || !w.classList.contains('maximized')) return;
-    w.style.left = '12px';
-    w.style.top = '12px';
-    w.style.right = '12px';
-    w.style.bottom = '12px';
-    w.style.width = 'auto';
-    w.style.height = 'auto';
-}
-window.addEventListener('resize', keepApuntesWindowInViewport);
-
+    <script>
+        function keepApuntesWindowInViewport() {
+            const w = document.getElementById('apuntesWindow');
+            if (!w || !w.classList.contains('maximized')) return;
+            w.style.left = '12px';
+            w.style.top = '12px';
+            w.style.right = '12px';
+            w.style.bottom = '12px';
+            w.style.width = 'auto';
+            w.style.height = 'auto';
+        }
+        window.addEventListener('resize', keepApuntesWindowInViewport);
+    </script>
 
 <script>
 /* ============================================================
