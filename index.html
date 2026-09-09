@@ -133,6 +133,13 @@
            el modo desarrollador se activa explícitamente. */
         .fantasy-hidden { display:none !important; }
 
+        /* Reborde de foco de los botones (p.ej. los lapicero ✎ de editar):
+           azul Bitácora en vez del dorado por defecto del navegador/SO. */
+        button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px #3b82f6;
+        }
+
         /* ============================================================
                APP LAYOUT
             ============================================================ */
@@ -2721,20 +2728,26 @@
             gap: 6px;
             flex-shrink: 0;
         }
-        .doc-actions button {
-            background: none;
-            border: 1px solid var(--border-strong);
-            border-radius: 10px;
-            padding: 6px 10px;
-            font-size: 13px;
+        .doc-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #fff;
+            border: 0;
             cursor: pointer;
-            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            padding: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,.2);
         }
-        .doc-actions button:hover {
-            background: var(--bg-card-hover);
-        }
+        .doc-action-download { color: #1a1a1a; }
+        .doc-action-download:hover { background: #e5e5e5; }
+        .doc-action-delete { color: #7f1d1d; font-size: 16px; font-weight: 900; }
+        .doc-action-delete:hover { background: #fee2e2; }
         .doc-upload-box {
-            border: 2px dashed var(--border-strong);
+            border: 2px dashed #3b82f6;
             border-radius: 18px;
             padding: 24px;
             text-align: center;
@@ -3551,11 +3564,11 @@ body.beige {
 .link-card { position:relative; background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:16px; transition:border-color .15s ease; }
 .link-card:hover { border-color:var(--border-strong); }
 .link-card-title { font-weight:700; font-size:14px; color:var(--text-primary); padding-right:32px; }
-.link-card-url { display:block; margin-top:8px; font-size:12px; color:#3b82f6; text-decoration:underline; text-underline-offset:2px; word-break:break-all; }
+.link-card-url { display:block; margin-top:8px; font-size:12px; font-weight:700; color:#3b82f6; text-decoration:underline; text-underline-offset:2px; word-break:break-all; }
 .link-card-url:hover { color:#60a5fa; }
 .link-card-actions { position:absolute; top:12px; right:12px; display:flex; flex-direction:column; gap:6px; }
 .link-card-icon-btn { width:24px; height:24px; border-radius:50%; background:#fff; border:0; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:11px; padding:0; box-shadow:0 1px 3px rgba(0,0,0,.2); }
-.link-card-delete { color:#7f1d1d; }
+.link-card-delete { color:#7f1d1d; font-size:15px; font-weight:900; }
 .link-card-delete:hover { background:#fee2e2; }
 .link-card-edit { color:#1a1a1a; }
 .link-card-edit:hover { background:#e5e5e5; }
@@ -3629,10 +3642,9 @@ body.beige {
 .events-month-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin:20px 0 10px; }
 .events-month-label:first-child { margin-top:0; }
 .events-month-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
-.event-card { background:#0c0c0e; color:#fff; border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:12px 14px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+.event-card { background:#0c0c0e; color:#fff; border:3px solid rgba(255,255,255,0.07); border-radius:14px; padding:12px 14px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
 .event-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.35); }
-.event-card-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.event-card-icon { font-size:13px; }
+.event-card-top { display:flex; justify-content:flex-end; align-items:center; gap:8px; }
 .event-card-date { font-size:10px; font-weight:700; color:rgba(255,255,255,0.55); white-space:nowrap; }
 .event-card-title { font-size:13px; font-weight:700; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .event-card-place { font-size:11px; color:rgba(255,255,255,0.6); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -4912,14 +4924,14 @@ function v22RefreshSummaryIfPresent() {
                 { view: 'notes', icon: '✎', text: 'Notas' },
             ] },
             { label: 'Desarrollo', items: [
-                { view: 'links', icon: '⛓', text: 'Enlaces' },
                 { view: 'events', icon: '◈', text: 'Eventos' },
+                { view: 'finances', icon: '◫', text: 'Finanzas' },
                 { view: 'work', icon: '◫', text: 'Trabajo' },
                 { view: 'studies', icon: '◎', text: 'Estudios' },
-                { view: 'projects', icon: '⊞', text: 'Proyectos' },
-                { view: 'goals', icon: '◉', text: 'Objetivos' },
                 { view: 'documents', icon: '▤', text: 'Documentos' },
-                { view: 'finances', icon: '◫', text: 'Finanzas' },
+                { view: 'goals', icon: '◉', text: 'Objetivos' },
+                { view: 'projects', icon: '⊞', text: 'Proyectos' },
+                { view: 'links', icon: '⛓', text: 'Enlaces' },
             ] },
             { label: 'Otros', items: [
                 { view: 'culture', icon: '◊', text: 'Ocio' },
@@ -5028,6 +5040,17 @@ function v22RefreshSummaryIfPresent() {
             const year = new Date().getFullYear();
             const date = `${year}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             return { day, month: monthIdx + 1, monthLabel: MONTH_QUERY_NAMES[monthIdx], date };
+        }
+
+        // Reconoce "hoy", "ayer" y "mañana" sueltos en el buscador.
+        function parseRelativeDayQuery(q) {
+            const word = stripAccents(q.trim().toLowerCase());
+            const offsets = { hoy: 0, ayer: -1, manana: 1 };
+            if (!(word in offsets)) return null;
+            const d = new Date();
+            d.setDate(d.getDate() + offsets[word]);
+            const label = { hoy: 'Hoy', ayer: 'Ayer', manana: 'Mañana' }[word];
+            return { label, date: d.toISOString().slice(0, 10) };
         }
 
         function goToCalendarDate(dateStr) {
@@ -5356,10 +5379,13 @@ function v22RefreshSummaryIfPresent() {
                 // "14 septiembre" lleva directamente a esa fecha en el
                 // calendario, vista por día.
                 const dayQuery = (q && !monthQuery) ? parseDayMonthQuery(q) : null;
+                const relativeDayQuery = (q && !monthQuery && !dayQuery) ? parseRelativeDayQuery(q) : null;
                 filtered = monthQuery
                     ? [{ kind: 'month-filter', text: `${ENTRY_TYPE_LABEL_PLURAL[monthQuery.type]} de ${monthQuery.monthLabel}`, type: monthQuery.type, month: monthQuery.month, monthLabel: monthQuery.monthLabel }]
                     : dayQuery
                     ? [{ kind: 'day-nav', text: `${dayQuery.day} de ${dayQuery.monthLabel} - Calendario`, date: dayQuery.date }]
+                    : relativeDayQuery
+                    ? [{ kind: 'day-nav', text: `${relativeDayQuery.label} - Calendario`, date: relativeDayQuery.date }]
                     : hiddenMatches.length ? hiddenMatches
                     : (navMatches.length || subMatches.length) ? [...navMatches, ...subMatches]
                     : q ? searchEntriesForPalette(q) : navMatches;
@@ -5974,16 +6000,14 @@ function v22RefreshSummaryIfPresent() {
             // Los días cotizados incluyen sábados y domingos.
             // La ocultación de "Trabajando en..." en fin de semana es
             // únicamente una regla visual del detalle del calendario.
+            // Cálculo por diferencia de fechas (no día a día): con un rango
+            // muy grande o una fecha mal escrita, el bucle anterior podía
+            // iterar miles de veces y notarse como un cuelgue momentáneo.
             if (!startDate || !endDate) return 0;
             const current = new Date(startDate + 'T12:00:00');
             const end = new Date(endDate + 'T12:00:00');
-            if (end < current) return 0;
-            let count = 0;
-            while (current <= end) {
-                count++;
-                current.setDate(current.getDate() + 1);
-            }
-            return count;
+            if (isNaN(current.getTime()) || isNaN(end.getTime()) || end < current) return 0;
+            return Math.round((end - current) / 86400000) + 1;
         }
 
         // ============================================================
@@ -8085,9 +8109,9 @@ function v22RefreshSummaryIfPresent() {
 
             let html = `
             <div style="max-width:800px">
-                <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+                <div class="culture-tabs" style="margin-bottom:16px">
                     ${['week','month','year','all'].map(f => `
-                        <button onclick="setHomeFilter('${f}')" style="padding:6px 14px;border-radius:24px;border:1px solid var(--border-strong);background:${homeFilter===f?'var(--accent)':'transparent'};color:${homeFilter===f?'var(--accent-contrast)':'var(--text-primary)'};cursor:pointer;font-size:12px;font-weight:600">
+                        <button class="culture-tab ${homeFilter===f?'active':''}" onclick="setHomeFilter('${f}')">
                             ${({week:'Semana',month:'Mes',year:'Año',all:'Todo'})[f]}
                         </button>`).join('')}
                 </div>
@@ -8763,8 +8787,8 @@ function v22RefreshSummaryIfPresent() {
             <div class="links-view">
                 <div class="studies-actions-row">
                     <div class="studies-actions-stack">
-                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddLinkCategory()">+ categoría</button>
                         <button class="btn-modal-primary studies-inline-add-btn btn-accent-blue" onclick="openAddLink()">+ enlace</button>
+                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddLinkCategory()">+ categoría</button>
                     </div>
                 </div>
                 <h3>Accesos directos de <a href="javascript:void(0)" class="bitacora-username-link" onclick="editUserName()">${nameDisplay}</a></h3>
@@ -9304,7 +9328,7 @@ function v22RefreshSummaryIfPresent() {
                 html += `
                     <div class="event-hero" style="border-color:${nextColor}66" onclick="openEntryDetail('${next.id}')">
                         <div class="event-hero-kicker" style="color:${nextColor}">Próximo evento · ${eventCountdownLabel(next.date)}</div>
-                        <div class="event-hero-title">${EVENT_ICONS[next.eventType] || '◈'} ${escapeHtml(next.title)}</div>
+                        <div class="event-hero-title">${escapeHtml(next.title)}</div>
                         <div class="event-hero-meta">${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
                     </div>`;
             }
@@ -9314,12 +9338,10 @@ function v22RefreshSummaryIfPresent() {
                 g.items.forEach(e => {
                     const cat = categories.find(c => c.id === e.categoryId);
                     const color = cat?.color || 'var(--text-secondary)';
-                    const icon = EVENT_ICONS[e.eventType] || '◈';
                     const dateShort = e.date ? `${e.date.slice(8,10)}/${e.date.slice(5,7)}` : '';
                     html += `
-                        <div class="event-card" style="border-left:4px solid ${color}" onclick="openEntryDetail('${e.id}')">
+                        <div class="event-card" style="border-color:${color}" onclick="openEntryDetail('${e.id}')">
                             <div class="event-card-top">
-                                <span class="event-card-icon">${icon}</span>
                                 <span class="event-card-date">${dateShort}${e.time ? ' · ' + escapeHtml(e.time) : ''}</span>
                             </div>
                             <div class="event-card-title">${escapeHtml(e.title)}</div>
@@ -11478,8 +11500,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                             </div>
                         </div>
                         <div class="doc-actions">
-                            <button onclick="downloadDocument('${escapeHtml(doc.name)}')">⬇ Descargar</button>
-                            <button onclick="deleteDocument('${escapeHtml(doc.name)}')">🗑</button>
+                            <button class="doc-action-btn doc-action-download" title="Descargar" onclick="downloadDocument('${escapeHtml(doc.name)}')">⬇</button>
+                            <button class="doc-action-btn doc-action-delete" title="Eliminar" onclick="deleteDocument('${escapeHtml(doc.name)}')">✕</button>
                         </div>
                     </div>`;
             }).join('');
