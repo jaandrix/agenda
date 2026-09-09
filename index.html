@@ -133,13 +133,6 @@
            el modo desarrollador se activa explícitamente. */
         .fantasy-hidden { display:none !important; }
 
-        /* Reborde de foco de los botones (p.ej. los lapicero ✎ de editar):
-           azul Bitácora en vez del dorado por defecto del navegador/SO. */
-        button:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px #3b82f6;
-        }
-
         /* ============================================================
                APP LAYOUT
             ============================================================ */
@@ -1115,8 +1108,8 @@
         /* ============================================================
                EFECTO HOVER GLOBAL: icono de edición
                Grupo A: tarjetas normales -> solo aparece el lápiz,
-               con un anillo dorado grueso (igual que el borde de las
-               tarjetas destacadas) y sombra para distinguirlo bien.
+               con un anillo azul Bitácora grueso y sombra para
+               distinguirlo bien.
                No se aplica en Centro resumen (usa showDayEntries, que
                queda fuera a propósito).
             ============================================================ */
@@ -1147,7 +1140,7 @@
             font-size: 13px;
             opacity: 0;
             pointer-events: none;
-            border: 3px solid rgba(217,178,60,0.95);
+            border: 4px solid #3b82f6;
             box-shadow: 0 4px 14px rgba(0,0,0,0.45);
             transform: translate(-50%,-50%) scale(0.7);
             transition: opacity 0.2s ease, transform 0.2s ease;
@@ -2728,7 +2721,19 @@
             gap: 6px;
             flex-shrink: 0;
         }
-        .doc-action-btn {
+        .doc-action-download {
+            background: #fff;
+            color: #3b82f6;
+            font-weight: 800;
+            border: 0;
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,.2);
+        }
+        .doc-action-download:hover { background: #e5e5e5; }
+        .doc-action-delete-btn {
             width: 28px;
             height: 28px;
             border-radius: 50%;
@@ -2738,14 +2743,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
             padding: 0;
             box-shadow: 0 1px 3px rgba(0,0,0,.2);
+            color: #7f1d1d;
+            font-size: 17px;
+            font-weight: 900;
         }
-        .doc-action-download { color: #1a1a1a; }
-        .doc-action-download:hover { background: #e5e5e5; }
-        .doc-action-delete { color: #7f1d1d; font-size: 16px; font-weight: 900; }
-        .doc-action-delete:hover { background: #fee2e2; }
+        .doc-action-delete-btn:hover { background: #fee2e2; }
         .doc-upload-box {
             border: 2px dashed #3b82f6;
             border-radius: 18px;
@@ -3667,7 +3671,7 @@ body.beige {
     cursor:pointer; position:relative; transition:border-color .15s ease, transform .15s ease;
 }
 .day-entry-card:hover { border-color:var(--border-strong); transform:translateX(2px); }
-.day-entry-icon { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.day-entry-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 .day-entry-body { min-width:0; flex:1; }
 .day-entry-title { font-weight:700; font-size:14px; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .day-entry-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -4861,7 +4865,7 @@ function v22RefreshSummaryIfPresent() {
             travel: '◈',
             work: '◫',
             project: '⊞',
-            event: '◈',
+            event: '📅',
             restaurant: '◉',
             place: '⌂',
             document: '📄',
@@ -5627,7 +5631,7 @@ function v22RefreshSummaryIfPresent() {
                 { id: 'cat_pelicula', name: 'Película', color: '#f39c12' },
                 { id: 'cat_serie', name: 'Serie', color: '#9b59b6' },
                 { id: 'cat_videojuego', name: 'Videojuego', color: '#e74c3c' },
-                { id: 'cat_evento', name: 'Evento', color: '#ec4899' },
+                { id: 'cat_evento', name: 'Evento', color: '#f9a8d4' },
                 { id: 'cat_restaurante', name: 'Restaurante', color: '#f59e0b' },
                 { id: 'cat_lugar', name: 'Lugar', color: '#14b8a6' },
                 { id: 'cat_suscripcion', name: 'Suscripción', color: '#0984e3' },
@@ -5657,6 +5661,11 @@ function v22RefreshSummaryIfPresent() {
                 entries = saved.entries || [];
                 normalizeWorkCotizationData();
                 categories = saved.categories || getDefaultCategories();
+                // El rosa por defecto de "Evento" era demasiado chillón; a
+                // quien ya tuviera la categoría creada con el tono antiguo
+                // se le actualiza sola al pastel nuevo, una única vez.
+                const eventCat = categories.find(c => c.id === 'cat_evento');
+                if (eventCat && eventCat.color === '#ec4899') eventCat.color = '#f9a8d4';
                 notes = saved.notes || [];
                 prompts = saved.prompts || [];
                 userName = saved.userName || '';
@@ -7878,25 +7887,24 @@ function v22RefreshSummaryIfPresent() {
                 const cat = categories.find(c => c.id === e.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
                 const catName = cat?.name || 'Sin categoría';
-                const icon = TYPE_ICONS[e.type] || '◈';
 
                 let titleHtml, metaHtml;
 
                 if (e._recurringPayment) {
-                    titleHtml = `${icon} Pago: ${e.title}`;
+                    titleHtml = `Pago: ${e.title}`;
                     metaHtml = `${e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'} · ${financeMoney(e.amount)}`;
                 } else if (e.type === 'work') {
                     const start = e.startTime || '';
                     const end = e.endTime || '';
                     const scheduleText = (start || end) ? ` de ${start || '--'} a ${end || '--'}` : '';
-                    titleHtml = `${icon} Trabajando en ${e.company || 'empresa sin nombre'}${scheduleText}`;
+                    titleHtml = `Trabajando en ${e.company || 'empresa sin nombre'}${scheduleText}`;
                     metaHtml = e.position || catName;
                 } else if (e.type === 'birthday') {
                     const years = e.birthDate ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
-                    titleHtml = `${icon} 🎂 ${e.title} (${years} años)`;
+                    titleHtml = `🎂 ${e.title} (${years} años)`;
                     metaHtml = 'Cumpleaños';
                 } else {
-                    titleHtml = `${icon} ${e.title}`;
+                    titleHtml = e.title;
                     metaHtml = `${catName}${e.notes ? ' · ' + linkifyText(e.notes) : ''}`;
                 }
 
@@ -7928,7 +7936,6 @@ function v22RefreshSummaryIfPresent() {
                 const cat = categories.find(c => c.id === e.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
                 const catName = cat?.name || 'Sin categoría';
-                const icon = TYPE_ICONS[e.type] || '◈';
 
                 let titleHtml, metaHtml;
                 if (e._recurringPayment) {
@@ -7951,7 +7958,7 @@ function v22RefreshSummaryIfPresent() {
 
                 return `
                 <div class="day-entry-card" onclick="openEntryDetail('${e.id}')">
-                    <div class="day-entry-icon" style="background:${color}26;color:${color}">${icon}</div>
+                    <div class="day-entry-dot" style="background:${color}"></div>
                     <div class="day-entry-body">
                         <div class="day-entry-title">${titleHtml}</div>
                         <div class="day-entry-meta">${metaHtml}</div>
@@ -8105,8 +8112,6 @@ function v22RefreshSummaryIfPresent() {
                 return dateA.localeCompare(dateB);
             }).slice(0, 5);
 
-            const recentEntries = filtered.slice(0, 5);
-
             let html = `
             <div style="max-width:800px">
                 <div class="culture-tabs" style="margin-bottom:16px">
@@ -8159,9 +8164,8 @@ function v22RefreshSummaryIfPresent() {
                     ${upcoming.map(e => {
                         const cat = categories.find(c => c.id === e.categoryId);
                         const color = cat?.color || 'var(--text-secondary)';
-                        const icon = TYPE_ICONS[e.type] || '◈';
                         const dateInfo = e.birthDate || e.startDate || e.endDate || e.date || '';
-                        const label = e.type === 'birthday' ? '🎂 ' + e.title : icon + ' ' + e.title;
+                        const label = e.type === 'birthday' ? '🎂 ' + e.title : e.title;
                         return `
                             <div class="entry-item" onclick="switchView('calendar');showDayEntries('${dateInfo}')">
                                 <div class="entry-color-dot" style="background:${color}"></div>
@@ -8173,21 +8177,6 @@ function v22RefreshSummaryIfPresent() {
                     }).join('')}
                 ` : ''}
 
-                <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Actividad reciente</div>
-                ${recentEntries.length ? recentEntries.map(e => {
-                    const cat = categories.find(c => c.id === e.categoryId);
-                    const color = cat?.color || 'var(--text-secondary)';
-                    const icon = TYPE_ICONS[e.type] || '◈';
-                    const dateInfo = e.date || e.startDate || '';
-                    return `
-                        <div class="entry-item" onclick="switchView('calendar');showDayEntries('${dateInfo}')">
-                            <div class="entry-color-dot" style="background:${color}"></div>
-                            <div class="entry-info">
-                                <div class="entry-title">${icon} ${e.title}</div>
-                                <div class="entry-meta">${dateInfo}</div>
-                            </div>
-                        </div>`;
-                }).join('') : `<div style="color:var(--text-secondary);padding:12px 0">No hay actividad reciente</div>`}
                 <div id="summaryDashboard" style="margin-top:20px"></div>
             </div>`;
 
@@ -9471,7 +9460,7 @@ function v22RefreshSummaryIfPresent() {
                         <div class="entry-item ${e.status === 'Completado' ? 'bone-surface goal-completed-bone' : ''}" onclick="openEntryDetail(\'${e.id}\')">
                             <div class="entry-color-dot" style="background:${color}"></div>
                             <div class="entry-info">
-                                <div class="entry-title">${TYPE_ICONS[e.type]||'◈'} ${escapeHtml(e.title)}</div>
+                                <div class="entry-title">${escapeHtml(e.title)}</div>
                                 <div class="entry-meta">${TYPE_LABELS[e.type]||''}</div>
                             </div>
                         </div>`;
@@ -11500,8 +11489,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                             </div>
                         </div>
                         <div class="doc-actions">
-                            <button class="doc-action-btn doc-action-download" title="Descargar" onclick="downloadDocument('${escapeHtml(doc.name)}')">⬇</button>
-                            <button class="doc-action-btn doc-action-delete" title="Eliminar" onclick="deleteDocument('${escapeHtml(doc.name)}')">✕</button>
+                            <button class="doc-action-download" onclick="downloadDocument('${escapeHtml(doc.name)}')">Descargar</button>
+                            <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteDocument('${escapeHtml(doc.name)}')">✕</button>
                         </div>
                     </div>`;
             }).join('');
