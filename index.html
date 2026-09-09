@@ -3507,6 +3507,7 @@ body.beige {
    ============================================================ */
 .studies-view { max-width: 980px; padding-bottom: 30px; }
 .studies-section { margin-bottom: 22px; }
+.studies-section h3 { margin: 0 0 4px; font-size: 17px; }
 .studies-subjects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
 .studies-subject-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:16px; transition:border-color .15s ease; }
 .studies-subject-card:hover { border-color:var(--border-strong); }
@@ -3539,11 +3540,14 @@ body.beige {
 .studies-quicknote-text { font-size:13px; color:var(--text-primary); white-space:pre-wrap; line-height:1.45; }
 .studies-quicknote-meta { display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
 .studies-quicknote-meta button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; }
-.studies-quick-actions { display:flex; gap:8px; }
-.studies-quick-actions .btn-modal-primary, .studies-inline-add-btn { width:auto; white-space:nowrap; padding:10px 18px; margin-top:0; }
+.studies-actions-row { display:flex; justify-content:flex-end; margin-bottom:18px; }
+.studies-actions-stack { display:flex; flex-direction:column; gap:8px; align-items:stretch; }
+.studies-inline-add-btn { width:auto; white-space:nowrap; padding:10px 18px; margin-top:0; }
 .links-view { max-width:980px; }
-.links-add-btn { width:auto; white-space:nowrap; padding:10px 18px; margin:0 0 16px; }
-.links-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.links-view h3 { margin:0 0 16px; font-size:17px; }
+.links-add-btn { background:#3b82f6; color:#fff; }
+.links-add-btn:hover { background:#2563eb; }
+.links-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-top:12px; }
 .link-card { position:relative; background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:16px; transition:border-color .15s ease; }
 .link-card:hover { border-color:var(--border-strong); }
 .link-card-title { font-weight:700; font-size:14px; color:var(--text-primary); padding-right:20px; }
@@ -3551,6 +3555,13 @@ body.beige {
 .link-card-url:hover { color:#60a5fa; }
 .link-card-delete { position:absolute; top:12px; right:12px; background:none; border:0; color:var(--text-secondary); cursor:pointer; font-size:12px; }
 .link-card-delete:hover { color:#dc2626; }
+.links-category-head { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:800; color:var(--text-primary); margin-bottom:4px; }
+.links-category-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.link-color-picker { display:flex; gap:10px; margin:6px 0 16px; }
+.link-color-swatch { width:28px; height:28px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; }
+.link-color-swatch.selected { border-color:var(--text-primary); box-shadow:0 0 0 2px var(--bg-modal); }
+.bitacora-username-link { color:#3b82f6; text-decoration:underline; text-underline-offset:2px; cursor:pointer; font-weight:800; }
+.bitacora-username-link:hover { color:#60a5fa; }
 @media(max-width:850px){ .studies-schedule-grid{grid-template-columns:repeat(2,1fr)} }
 
 /* ============================================================
@@ -4803,6 +4814,7 @@ function v22RefreshSummaryIfPresent() {
         ];
         let studies = { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, quickNotes: [] };
         let links = [];
+        let linkCategories = [];
 
         // ============================================================
         //  ENTRY TYPES
@@ -4995,6 +5007,29 @@ function v22RefreshSummaryIfPresent() {
             const monthIdx = MONTH_QUERY_NAMES.findIndex(m => words.includes(m));
             if (monthIdx === -1) return null;
             return { type, month: monthIdx + 1, monthLabel: MONTH_QUERY_NAMES[monthIdx] };
+        }
+
+        // Reconoce "<día> <mes>" en el buscador (p.ej. "14 septiembre") para
+        // saltar directamente a esa fecha en el calendario, vista por día.
+        function parseDayMonthQuery(q) {
+            const words = stripAccents(q.trim().toLowerCase()).split(/\s+/);
+            if (words.length < 2) return null;
+            let day = null;
+            for (const w of words) {
+                if (/^\d{1,2}$/.test(w)) { const n = parseInt(w, 10); if (n >= 1 && n <= 31) { day = n; break; } }
+            }
+            if (day === null) return null;
+            const monthIdx = MONTH_QUERY_NAMES.findIndex(m => words.includes(m));
+            if (monthIdx === -1) return null;
+            const year = new Date().getFullYear();
+            const date = `${year}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            return { day, month: monthIdx + 1, monthLabel: MONTH_QUERY_NAMES[monthIdx], date };
+        }
+
+        function goToCalendarDate(dateStr) {
+            switchView('calendar');
+            calViewMode = 'day';
+            selectCalDate(dateStr);
         }
 
         function applyEntryMonthFilter(type, month, monthLabel) {
@@ -5235,6 +5270,9 @@ function v22RefreshSummaryIfPresent() {
                     results.push({ kind: 'note', id: n.id, text: label });
                 }
             });
+            (studies.subjects || []).forEach(s => {
+                if (s.name && s.name.toLowerCase().includes(q)) results.push({ kind: 'subject', id: s.id, text: s.name });
+            });
             return results.slice(0, 30);
         }
 
@@ -5303,8 +5341,13 @@ function v22RefreshSummaryIfPresent() {
                 // "peliculas septiembre" (o cualquier combinación tipo+mes)
                 // lleva directamente a esa sección filtrada por mes.
                 const monthQuery = q ? parseMonthQuery(q) : null;
+                // "14 septiembre" lleva directamente a esa fecha en el
+                // calendario, vista por día.
+                const dayQuery = (q && !monthQuery) ? parseDayMonthQuery(q) : null;
                 filtered = monthQuery
                     ? [{ kind: 'month-filter', text: `${ENTRY_TYPE_LABEL_PLURAL[monthQuery.type]} de ${monthQuery.monthLabel}`, type: monthQuery.type, month: monthQuery.month, monthLabel: monthQuery.monthLabel }]
+                    : dayQuery
+                    ? [{ kind: 'day-nav', text: `${dayQuery.day} de ${dayQuery.monthLabel} - Calendario`, date: dayQuery.date }]
                     : hiddenMatches.length ? hiddenMatches
                     : (navMatches.length || subMatches.length) ? [...navMatches, ...subMatches]
                     : q ? searchEntriesForPalette(q) : navMatches;
@@ -5368,12 +5411,14 @@ function v22RefreshSummaryIfPresent() {
                     document.querySelectorAll('#modal-container input[type="date"]').forEach(inp => { if (!inp.value) inp.value = prefillDate; });
                 }
                 focusFirstModalField();
-            } else if (item.kind === 'entry' || item.kind === 'note') {
+            } else if (item.kind === 'entry' || item.kind === 'note' || item.kind === 'subject') {
                 followMention(item.kind, item.id);
             } else if (item.kind === 'fantasy') {
                 openFantasy();
             } else if (item.kind === 'month-filter') {
                 applyEntryMonthFilter(item.type, item.month, item.monthLabel);
+            } else if (item.kind === 'day-nav') {
+                goToCalendarDate(item.date);
             } else if (item.kind === 'nav-sub') {
                 goToNavSubsection(item);
             } else {
@@ -5627,6 +5672,7 @@ function v22RefreshSummaryIfPresent() {
                 }
                 delete studies.notes;
                 links = Array.isArray(saved.links) ? saved.links : [];
+                linkCategories = Array.isArray(saved.linkCategories) ? saved.linkCategories : [];
                 resetDayPlannerIfNeeded();
                 if (saved.fantasyData) {
                     fantasyData = saved.fantasyData;
@@ -5712,6 +5758,7 @@ function v22RefreshSummaryIfPresent() {
                 dayPlanner,
                 studies,
                 links,
+                linkCategories,
                 blurFinances,
                 fantasyData,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
@@ -8602,11 +8649,11 @@ function v22RefreshSummaryIfPresent() {
             const nextExam = nextUpcomingExam();
             return `
             <div class="studies-view">
-                <div class="finance-panel-head" style="margin-bottom:14px">
-                    <div><div class="finance-kicker">Estudios</div><h3>Tu grado, de un vistazo</h3></div>
-                    <div class="studies-quick-actions">
-                        <button class="btn-modal-primary" onclick="openAddQuickNote()">+ nota rápida</button>
-                        <button class="btn-modal-primary" onclick="openQuickNotesList()">notas rápidas${(studies.quickNotes || []).length ? ` (${studies.quickNotes.length})` : ''}</button>
+                <div class="studies-actions-row">
+                    <div class="studies-actions-stack">
+                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddSubject()">+ asignatura</button>
+                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddQuickNote()">+ nota rápida</button>
+                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openQuickNotesList()">notas rápidas${(studies.quickNotes || []).length ? ` (${studies.quickNotes.length})` : ''}</button>
                     </div>
                 </div>
 
@@ -8617,14 +8664,14 @@ function v22RefreshSummaryIfPresent() {
                     <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
                 </div>` : ''}
 
-                <section class="studies-section" id="studies-subjects-section">
-                    <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Asignaturas</h3></div><button class="btn-modal-primary studies-inline-add-btn" onclick="openAddSubject()">+ Asignatura</button></div>
-                    ${studies.subjects.length ? `<div class="studies-subjects-grid">${studies.subjects.map(renderSubjectCard).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
+                <section class="studies-section" id="studies-schedule-section">
+                    <h3>Horario semanal</h3>
+                    <div class="studies-schedule-grid" id="studies-schedule-grid">${STUDIES_DAYS.map(renderScheduleDay).join('')}</div>
                 </section>
 
-                <section class="studies-section" id="studies-schedule-section">
-                    <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Horario semanal</h3></div></div>
-                    <div class="studies-schedule-grid" id="studies-schedule-grid">${STUDIES_DAYS.map(renderScheduleDay).join('')}</div>
+                <section class="studies-section" id="studies-subjects-section">
+                    <h3>Asignaturas</h3>
+                    ${studies.subjects.length ? `<div class="studies-subjects-grid">${studies.subjects.map(renderSubjectCard).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
                 </section>
             </div>`;
         }
@@ -8677,22 +8724,50 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         //  RENDER: ENLACES
         // ============================================================
+        const LINK_CATEGORY_COLORS = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#BDB2FF'];
+
         function renderLinks() {
+            const nameDisplay = userName && userName.trim() ? escapeHtml(userName.trim()) : 'tu nombre';
+            const hasCategories = linkCategories.length > 0;
+            let body;
+            if (!links.length) {
+                body = '<div class="finance-empty-line" style="margin-top:14px">Aún no has añadido ningún enlace.</div>';
+            } else if (!hasCategories) {
+                body = `<div class="links-grid">${links.map(l => renderLinkCard(l, null)).join('')}</div>`;
+            } else {
+                const grouped = {};
+                links.forEach(l => {
+                    const key = l.categoryId || '__none__';
+                    (grouped[key] = grouped[key] || []).push(l);
+                });
+                const blocks = linkCategories.filter(c => grouped[c.id]).map(c => renderLinkCategoryBlock(c.name, c.color, grouped[c.id]));
+                if (grouped.__none__) blocks.push(renderLinkCategoryBlock('Sin categoría', null, grouped.__none__));
+                body = blocks.join('');
+            }
             return `
             <div class="links-view">
-                <div class="finance-panel-head" style="margin-bottom:16px">
-                    <div><div class="finance-kicker">Enlaces</div><h3>Tus accesos directos</h3></div>
+                <div class="studies-actions-row">
+                    <div class="studies-actions-stack">
+                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddLinkCategory()">+ categoría</button>
+                        <button class="btn-modal-primary studies-inline-add-btn links-add-btn" onclick="openAddLink()">+ enlace</button>
+                    </div>
                 </div>
-                <button class="btn-modal-primary links-add-btn" onclick="openAddLink()">+ Enlace</button>
-                ${links.length
-                    ? `<div class="links-grid">${links.map(renderLinkCard).join('')}</div>`
-                    : '<div class="finance-empty-line" style="margin-top:14px">Aún no has añadido ningún enlace.</div>'}
+                <h3>Accesos directos de <a href="javascript:void(0)" class="bitacora-username-link" onclick="editUserName()">${nameDisplay}</a></h3>
+                ${body}
             </div>`;
         }
 
-        function renderLinkCard(l) {
+        function renderLinkCategoryBlock(name, color, items) {
             return `
-                <div class="link-card">
+                <section class="studies-section">
+                    <div class="links-category-head">${color ? `<span class="links-category-dot" style="background:${color}"></span>` : ''}${escapeHtml(name)}</div>
+                    <div class="links-grid">${items.map(l => renderLinkCard(l, color)).join('')}</div>
+                </section>`;
+        }
+
+        function renderLinkCard(l, color) {
+            return `
+                <div class="link-card" style="${color ? `border:3px solid ${color}` : ''}">
                     <button class="link-card-delete" title="Eliminar" onclick="deleteLink('${l.id}')">✕</button>
                     <div class="link-card-title">${escapeHtml(l.title)}</div>
                     <a href="javascript:void(0)" class="link-card-url" data-ext-url="${escapeHtml(l.url)}" onclick="openLinkPopup(event,this)">${escapeHtml(l.url)}</a>
@@ -8716,6 +8791,11 @@ function v22RefreshSummaryIfPresent() {
                 <input id="link-title" class="modal-input" placeholder="Ej: Campus virtual">
                 <div class="modal-label">Enlace (URL)</div>
                 <input id="link-url" class="modal-input" placeholder="https://...">
+                <div class="modal-label">Categoría</div>
+                <select id="link-category" class="modal-input">
+                    <option value="">Sin categoría</option>
+                    ${linkCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+                </select>
                 <button class="btn-modal-primary" onclick="saveNewLink()">Añadir enlace</button>
             `);
         }
@@ -8723,9 +8803,10 @@ function v22RefreshSummaryIfPresent() {
         async function saveNewLink() {
             const title = document.getElementById('link-title')?.value.trim();
             let url = document.getElementById('link-url')?.value.trim();
+            const categoryId = document.getElementById('link-category')?.value || null;
             if (!title || !url) { showToast('Indica un título y un enlace', true); return; }
             if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-            links.unshift({ id: 'link_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title, url, createdAt: new Date().toISOString() });
+            links.unshift({ id: 'link_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title, url, categoryId, createdAt: new Date().toISOString() });
             closeModal();
             render();
             try { await saveData(); showToast('Enlace añadido'); }
@@ -8736,6 +8817,37 @@ function v22RefreshSummaryIfPresent() {
             links = links.filter(l => l.id !== id);
             render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openAddLinkCategory() {
+            showModal(`
+                <div class="modal-title">+ Categoría</div>
+                <div class="modal-label">Nombre</div>
+                <input id="link-cat-name" class="modal-input" placeholder="Ej: Universidad">
+                <div class="modal-label">Color</div>
+                <div class="link-color-picker">
+                    ${LINK_CATEGORY_COLORS.map((c, i) => `<button type="button" class="link-color-swatch ${i === 0 ? 'selected' : ''}" style="background:${c}" data-color="${c}" onclick="selectLinkColor(this)"></button>`).join('')}
+                </div>
+                <input type="hidden" id="link-cat-color" value="${LINK_CATEGORY_COLORS[0]}">
+                <button class="btn-modal-primary" onclick="saveNewLinkCategory()">Crear categoría</button>
+            `);
+        }
+
+        function selectLinkColor(btn) {
+            btn.parentElement.querySelectorAll('.link-color-swatch').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('link-cat-color').value = btn.dataset.color;
+        }
+
+        async function saveNewLinkCategory() {
+            const name = document.getElementById('link-cat-name')?.value.trim();
+            const color = document.getElementById('link-cat-color')?.value || LINK_CATEGORY_COLORS[0];
+            if (!name) { showToast('Indica un nombre para la categoría', true); return; }
+            linkCategories.push({ id: 'lcat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color });
+            closeModal();
+            render();
+            try { await saveData(); showToast('Categoría creada'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // Nota final ponderada: si algún examen/trabajo tiene peso indicado,
