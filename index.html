@@ -3507,32 +3507,19 @@ body.beige {
    ============================================================ */
 .studies-view { max-width: 980px; padding-bottom: 30px; }
 .studies-section { margin-bottom: 22px; }
-.studies-subjects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-top:12px; }
-.studies-subject-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:14px; cursor:pointer; transition:border-color .15s ease; }
+.studies-subjects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
+.studies-subject-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:16px; transition:border-color .15s ease; }
 .studies-subject-card:hover { border-color:var(--border-strong); }
-.studies-subject-dot { width:12px; height:12px; border-radius:50%; margin-bottom:8px; }
-.studies-subject-name { font-weight:700; font-size:14px; }
-.studies-subject-meta { font-size:10px; color:var(--text-secondary); margin-top:4px; }
-.studies-subject-avg { font-size:12px; font-weight:700; }
-.studies-subject-card-foot { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
-.studies-subject-notes-btn { background:var(--bg-card-hover); border:0; border-radius:8px; padding:4px 8px; font-size:10px; color:var(--text-secondary); cursor:pointer; font-weight:700; }
-.studies-subject-notes-btn:hover { color:var(--text-primary); }
+.studies-subject-link { display:inline-block; font-weight:700; font-size:15px; color:#3b82f6; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.studies-subject-link:hover { color:#60a5fa; }
+.studies-subject-avg { font-size:12px; font-weight:700; color:var(--text-primary); margin-top:4px; }
+.studies-subject-block { margin-top:12px; border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
+.studies-subject-block-head { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:6px; }
+.studies-subject-item-line { font-size:12px; color:var(--text-primary); line-height:1.6; }
+.studies-subject-block-empty { font-size:11px; color:var(--text-muted); }
 .studies-modal-block { margin:14px 0; }
 .studies-item-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
 .studies-item-row button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:14px; }
-.studies-tree { margin-top:4px; }
-.studies-tree-node { position:relative; }
-.studies-tree-row { display:flex; align-items:center; gap:6px; padding:5px 4px; border-radius:8px; cursor:default; }
-.studies-tree-row:hover { background:var(--bg-card-hover); }
-.studies-tree-row-note { cursor:pointer; }
-.studies-tree-toggle { width:14px; text-align:center; font-size:9px; color:var(--text-muted); cursor:pointer; flex-shrink:0; }
-.studies-tree-icon { font-size:12px; flex-shrink:0; }
-.studies-tree-name { flex:1; font-size:12px; color:var(--text-primary); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.studies-tree-actions { display:flex; gap:2px; opacity:0; transition:opacity .15s; flex-shrink:0; }
-.studies-tree-row:hover .studies-tree-actions { opacity:1; }
-.studies-tree-actions button { background:none; border:0; color:var(--text-secondary); cursor:pointer; font-size:11px; padding:2px 3px; border-radius:6px; }
-.studies-tree-actions button:hover { background:var(--bg-card); color:var(--text-primary); }
-.studies-tree-children { border-left:1px solid var(--border-subtle,rgba(255,255,255,.08)); margin-left:9px; }
 .studies-schedule-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-top:12px; }
 .studies-day-col { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:6px; min-height:120px; }
 .studies-day-head { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); }
@@ -3554,6 +3541,16 @@ body.beige {
 .studies-quicknote-meta button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; }
 .studies-quick-actions { display:flex; gap:8px; }
 .studies-quick-actions .btn-modal-primary, .studies-inline-add-btn { width:auto; white-space:nowrap; padding:10px 18px; margin-top:0; }
+.links-view { max-width:980px; }
+.links-add-btn { width:auto; white-space:nowrap; padding:10px 18px; margin:0 0 16px; }
+.links-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.link-card { position:relative; background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:16px; transition:border-color .15s ease; }
+.link-card:hover { border-color:var(--border-strong); }
+.link-card-title { font-weight:700; font-size:14px; color:var(--text-primary); padding-right:20px; }
+.link-card-url { display:block; margin-top:8px; font-size:12px; color:#3b82f6; text-decoration:underline; text-underline-offset:2px; word-break:break-all; }
+.link-card-url:hover { color:#60a5fa; }
+.link-card-delete { position:absolute; top:12px; right:12px; background:none; border:0; color:var(--text-secondary); cursor:pointer; font-size:12px; }
+.link-card-delete:hover { color:#dc2626; }
 @media(max-width:850px){ .studies-schedule-grid{grid-template-columns:repeat(2,1fr)} }
 
 /* ============================================================
@@ -4805,6 +4802,7 @@ function v22RefreshSummaryIfPresent() {
             { key: 'jue', label: 'Jueves' }, { key: 'vie', label: 'Viernes' }, { key: 'sab', label: 'Sábado' }, { key: 'dom', label: 'Domingo' }
         ];
         let studies = { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, quickNotes: [] };
+        let links = [];
 
         // ============================================================
         //  ENTRY TYPES
@@ -4881,6 +4879,7 @@ function v22RefreshSummaryIfPresent() {
             planner: 'Planificador del día',
             collectibles: 'Coleccionables',
             studies: 'Estudios',
+            links: 'Enlaces',
             settings: 'Ajustes'
         };
 
@@ -4909,6 +4908,7 @@ function v22RefreshSummaryIfPresent() {
                 { view: 'culture', icon: '◊', text: 'Ocio' },
                 { view: 'travels', icon: '⌂', text: 'Viajes y Lugares' },
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
+                { view: 'links', icon: '⛓', text: 'Enlaces' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
             ] },
             { label: 'Sistema', items: [
@@ -4922,19 +4922,27 @@ function v22RefreshSummaryIfPresent() {
         // escribir p.ej. "asignaturas" en el buscador y llegar directo a
         // Estudios > Asignaturas, aunque el nombre no coincida con ninguna
         // sección de primer nivel. `anchor` hace scroll hasta ese bloque,
-        // `tab` cambia de pestaña interna (Ocio), `action` llama a una
+        // `setter`+`value` cambia una pestaña/modo interno (llama a
+        // window[setter](value) tras cambiar de vista), `action` llama a una
         // función tras cambiar de vista (p.ej. abrir un modal).
         const NAV_SUBSECTIONS = [
             { view: 'studies', text: 'Asignaturas', anchor: 'studies-subjects-section' },
             { view: 'studies', text: 'Horario semanal', anchor: 'studies-schedule-section' },
             { view: 'studies', text: 'Notas rápidas', action: 'openQuickNotesList' },
-            { view: 'culture', text: 'Libros', tab: 'books' },
-            { view: 'culture', text: 'Series', tab: 'series' },
-            { view: 'culture', text: 'Películas', tab: 'movies' },
-            { view: 'culture', text: 'Videojuegos', tab: 'games' },
+            { view: 'culture', text: 'Libros', setter: 'setCultureTab', value: 'books' },
+            { view: 'culture', text: 'Series', setter: 'setCultureTab', value: 'series' },
+            { view: 'culture', text: 'Películas', setter: 'setCultureTab', value: 'movies' },
+            { view: 'culture', text: 'Videojuegos', setter: 'setCultureTab', value: 'games' },
             { view: 'finances', text: 'Sueldo y aportaciones', anchor: 'finance-forecast-section' },
             { view: 'finances', text: 'Movimientos', anchor: 'finance-movements-section' },
             { view: 'finances', text: 'Patrimonio operativo', anchor: 'finance-networth-section' },
+            { view: 'finances', text: 'Cuentas', anchor: 'finance-accounts-section' },
+            { view: 'travels', text: 'Viajes', setter: 'setTravelPlacesTab', value: 'travels' },
+            { view: 'travels', text: 'Lugares', setter: 'setTravelPlacesTab', value: 'places' },
+            { view: 'travel-organizer', text: 'Organizador de Viajes', viewLabel: 'Viajes y Lugares' },
+            { view: 'calendar', text: 'Vista Día', setter: 'setCalView', value: 'day' },
+            { view: 'calendar', text: 'Vista Semana', setter: 'setCalView', value: 'week' },
+            { view: 'calendar', text: 'Vista Mes', setter: 'setCalView', value: 'month' },
         ];
 
         const CREATE_PALETTE_ITEMS = [
@@ -5285,7 +5293,7 @@ function v22RefreshSummaryIfPresent() {
                 // juego cuando se escribe algo, para no duplicar la lista
                 // inicial de secciones.
                 const subMatches = q ? NAV_SUBSECTIONS.filter(s => s.text.toLowerCase().includes(q)).map(s => ({
-                    ...s, kind: 'nav-sub', text: `${s.text} - ${NAV_VIEW_LABELS[s.view] || s.view}`
+                    ...s, kind: 'nav-sub', text: `${s.text} - ${s.viewLabel || NAV_VIEW_LABELS[s.view] || s.view}`
                 })) : [];
                 // Fantasy es un apartado oculto (requiere Modo Desarrollador):
                 // nunca aparece en la lista inicial, solo si se escribe algo
@@ -5378,7 +5386,7 @@ function v22RefreshSummaryIfPresent() {
         // hasta el bloque en cuestión con un resalte breve.
         function goToNavSubsection(item) {
             switchView(item.view);
-            if (item.tab) setCultureTab(item.tab);
+            if (item.setter && typeof window[item.setter] === 'function') window[item.setter](item.value);
             if (item.action && typeof window[item.action] === 'function') {
                 setTimeout(() => window[item.action](), 150);
                 return;
@@ -5618,7 +5626,7 @@ function v22RefreshSummaryIfPresent() {
                     studies.quickNotes.push({ id: 'qn_migrated_' + Date.now(), text: studies.notes.trim(), createdAt: new Date().toISOString() });
                 }
                 delete studies.notes;
-                studies.subjects.forEach(s => { s.nodes = Array.isArray(s.nodes) ? s.nodes : []; });
+                links = Array.isArray(saved.links) ? saved.links : [];
                 resetDayPlannerIfNeeded();
                 if (saved.fantasyData) {
                     fantasyData = saved.fantasyData;
@@ -5703,6 +5711,7 @@ function v22RefreshSummaryIfPresent() {
                 collectibles,
                 dayPlanner,
                 studies,
+                links,
                 blurFinances,
                 fantasyData,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
@@ -7447,6 +7456,7 @@ function v22RefreshSummaryIfPresent() {
             else if (currentView === 'planner') content.innerHTML = renderPlanner();
             else if (currentView === 'collectibles') content.innerHTML = renderCollectibles();
             else if (currentView === 'studies') content.innerHTML = renderStudies();
+            else if (currentView === 'links') content.innerHTML = renderLinks();
             else if (currentView === 'settings') content.innerHTML = renderSettings();
             updateAddButton();
             updateSidebarPrivacy();
@@ -7884,7 +7894,10 @@ function v22RefreshSummaryIfPresent() {
             (studies.subjects || []).forEach(s => (s.exams || []).forEach(ex => {
                 if (ex.date === today) exams.push({ subjectId: s.id, subject: s.name, title: ex.title });
             }));
-            const events = entries.filter(e => e.type === 'event' && e.date === today);
+            // Los eventos sincronizados desde un examen (linkedKind==='exams')
+            // ya aparecen en el grupo "Exámenes" de arriba; se excluyen aquí
+            // para no duplicarlos. Los de "Entrega" (trabajos) sí se listan.
+            const events = entries.filter(e => e.type === 'event' && e.date === today && e.linkedKind !== 'exams');
             return { birthdays, exams, events };
         }
 
@@ -8661,38 +8674,107 @@ function v22RefreshSummaryIfPresent() {
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        function countTreeNotes(nodes) {
-            let n = 0;
-            (nodes || []).forEach(node => { if (node.type === 'note') n++; else if (node.children) n += countTreeNotes(node.children); });
-            return n;
+        // ============================================================
+        //  RENDER: ENLACES
+        // ============================================================
+        function renderLinks() {
+            return `
+            <div class="links-view">
+                <div class="finance-panel-head" style="margin-bottom:16px">
+                    <div><div class="finance-kicker">Enlaces</div><h3>Tus accesos directos</h3></div>
+                </div>
+                <button class="btn-modal-primary links-add-btn" onclick="openAddLink()">+ Enlace</button>
+                ${links.length
+                    ? `<div class="links-grid">${links.map(renderLinkCard).join('')}</div>`
+                    : '<div class="finance-empty-line" style="margin-top:14px">Aún no has añadido ningún enlace.</div>'}
+            </div>`;
         }
 
-        function openSubjectApuntes(event, id) {
+        function renderLinkCard(l) {
+            return `
+                <div class="link-card">
+                    <button class="link-card-delete" title="Eliminar" onclick="deleteLink('${l.id}')">✕</button>
+                    <div class="link-card-title">${escapeHtml(l.title)}</div>
+                    <a href="javascript:void(0)" class="link-card-url" data-ext-url="${escapeHtml(l.url)}" onclick="openLinkPopup(event,this)">${escapeHtml(l.url)}</a>
+                </div>`;
+        }
+
+        function openLinkPopup(event, el) {
+            event.preventDefault();
             event.stopPropagation();
-            openSubjectDetail(id);
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                const el = document.getElementById('subject-apuntes-block');
-                if (!el) return;
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                el.classList.add('nav-subsection-flash');
-                setTimeout(() => el.classList.remove('nav-subsection-flash'), 1400);
-            }));
+            const url = el.dataset.extUrl;
+            if (!url) return;
+            const w = 1000, h = 520;
+            const left = Math.round((screen.width - w) / 2), top = Math.round((screen.height - h) / 2);
+            window.open(url, '_blank', `noopener,width=${w},height=${h},left=${left},top=${top}`);
+        }
+
+        function openAddLink() {
+            showModal(`
+                <div class="modal-title">+ Enlace</div>
+                <div class="modal-label">Título</div>
+                <input id="link-title" class="modal-input" placeholder="Ej: Campus virtual">
+                <div class="modal-label">Enlace (URL)</div>
+                <input id="link-url" class="modal-input" placeholder="https://...">
+                <button class="btn-modal-primary" onclick="saveNewLink()">Añadir enlace</button>
+            `);
+        }
+
+        async function saveNewLink() {
+            const title = document.getElementById('link-title')?.value.trim();
+            let url = document.getElementById('link-url')?.value.trim();
+            if (!title || !url) { showToast('Indica un título y un enlace', true); return; }
+            if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+            links.unshift({ id: 'link_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title, url, createdAt: new Date().toISOString() });
+            closeModal();
+            render();
+            try { await saveData(); showToast('Enlace añadido'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteLink(id) {
+            links = links.filter(l => l.id !== id);
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Nota final ponderada: si algún examen/trabajo tiene peso indicado,
+        // se usa media ponderada solo con los que tienen nota Y peso; si no
+        // hay ningún peso indicado, se cae a la media simple de las notas
+        // que haya (compatibilidad con asignaturas ya creadas sin peso).
+        function subjectFinalGrade(s) {
+            const items = [...(s.exams || []), ...(s.assignments || [])];
+            const graded = items.filter(x => x.grade !== '' && x.grade !== null && x.grade !== undefined && !isNaN(Number(x.grade)));
+            if (!graded.length) return null;
+            const weighted = graded.filter(x => x.weight !== '' && x.weight !== null && x.weight !== undefined && !isNaN(Number(x.weight)) && Number(x.weight) > 0);
+            if (weighted.length) {
+                const sumW = weighted.reduce((sum, x) => sum + Number(x.weight), 0);
+                return sumW > 0 ? weighted.reduce((sum, x) => sum + Number(x.grade) * Number(x.weight), 0) / sumW : null;
+            }
+            return graded.reduce((sum, x) => sum + Number(x.grade), 0) / graded.length;
         }
 
         function renderSubjectCard(s) {
-            const graded = [...(s.exams || []), ...(s.assignments || [])].filter(x => x.grade !== '' && x.grade !== null && x.grade !== undefined && !isNaN(Number(x.grade)));
-            const avg = graded.length ? graded.reduce((sum, x) => sum + Number(x.grade), 0) / graded.length : null;
-            const noteCount = countTreeNotes(s.nodes || []);
+            const finalGrade = subjectFinalGrade(s);
             return `
-                <div class="studies-subject-card" onclick="openSubjectDetail('${s.id}')">
-                    <div class="studies-subject-dot" style="background:${s.color || '#5b8def'}"></div>
-                    <div class="studies-subject-name">${escapeHtml(s.name)}</div>
-                    <div class="studies-subject-meta">${(s.exams || []).length} examen${(s.exams || []).length === 1 ? '' : 'es'} · ${(s.assignments || []).length} trabajo${(s.assignments || []).length === 1 ? '' : 's'}</div>
-                    <div class="studies-subject-card-foot">
-                        <div class="studies-subject-avg">${avg === null ? 'Sin notas' : 'Media ' + avg.toFixed(2)}</div>
-                        <button class="studies-subject-notes-btn" title="Ver apuntes" onclick="openSubjectApuntes(event,'${s.id}')">📓 ${noteCount ? noteCount : 'Apuntes'}</button>
+                <div class="studies-subject-card">
+                    <a href="javascript:void(0)" class="studies-subject-link" onclick="openSubjectDetail('${s.id}')">${escapeHtml(s.name)}</a>
+                    ${finalGrade !== null ? `<div class="studies-subject-avg">Nota final: ${finalGrade.toFixed(2)}</div>` : ''}
+                    <div class="studies-subject-block">
+                        <div class="studies-subject-block-head">Trabajos</div>
+                        ${(s.assignments || []).length ? s.assignments.map(renderSubjectCardLine).join('') : '<div class="studies-subject-block-empty">Sin trabajos todavía.</div>'}
+                    </div>
+                    <div class="studies-subject-block">
+                        <div class="studies-subject-block-head">Exámenes</div>
+                        ${(s.exams || []).length ? s.exams.map(renderSubjectCardLine).join('') : '<div class="studies-subject-block-empty">Sin exámenes todavía.</div>'}
                     </div>
                 </div>`;
+        }
+
+        function renderSubjectCardLine(item) {
+            const grade = item.grade !== '' && item.grade !== null && item.grade !== undefined ? item.grade : '—';
+            const weight = item.weight !== '' && item.weight !== null && item.weight !== undefined ? item.weight + '%' : '—';
+            return `<div class="studies-subject-item-line">${escapeHtml(item.title || 'Sin título')} - nota: ${escapeHtml(String(grade))} / peso: ${escapeHtml(String(weight))}</div>`;
         }
 
         function openAddSubject() {
@@ -8711,7 +8793,7 @@ function v22RefreshSummaryIfPresent() {
             const name = document.getElementById('subject-name')?.value.trim();
             if (!name) { showToast('Indica un nombre para la asignatura', true); return; }
             const color = document.getElementById('subject-color')?.value || '#5b8def';
-            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, exams: [], assignments: [], nodes: [] });
+            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, exams: [], assignments: [] });
             closeModal();
             render();
             try { await saveData(); showToast('Asignatura añadida'); }
@@ -8720,6 +8802,8 @@ function v22RefreshSummaryIfPresent() {
 
         async function deleteSubject(id) {
             if (!confirm('¿Eliminar esta asignatura y todos sus exámenes/trabajos?')) return;
+            const s = findSubject(id);
+            if (s) [...(s.exams || []), ...(s.assignments || [])].forEach(item => removeLinkedExamEvent(item.id));
             studies.subjects = studies.subjects.filter(s => s.id !== id);
             closeModal();
             render();
@@ -8743,127 +8827,8 @@ function v22RefreshSummaryIfPresent() {
                     <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">Trabajos <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','assignments')">+</button></div>
                     ${(s.assignments || []).length ? s.assignments.map((a, i) => renderSubjectItemRow(s.id, 'assignments', a, i)).join('') : '<div class="finance-empty-line">Sin trabajos todavía.</div>'}
                 </div>
-                <div class="studies-modal-block" id="subject-apuntes-block">
-                    <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-                        Apuntes
-                        <span>
-                            <button class="finance-icon-btn" title="Nueva carpeta" onclick="openAddTreeNode('${s.id}',null,'folder')">📁+</button>
-                            <button class="finance-icon-btn" title="Nueva nota" onclick="openAddTreeNode('${s.id}',null,'note')">📝+</button>
-                        </span>
-                    </div>
-                    <div class="studies-tree">${renderNotesTree(s.id, s.nodes || [], 0)}</div>
-                </div>
                 <button class="finance-oneoff-btn" style="color:#dc2626;border-color:#dc2626" onclick="deleteSubject('${s.id}')">Eliminar asignatura</button>
             `;
-        }
-
-        // ---- Apuntes por asignatura: árbol de carpetas/notas estilo Notion ----
-        let studiesTreeExpanded = {};
-
-        function findTreeNode(nodes, id) {
-            for (let i = 0; i < nodes.length; i++) {
-                if (nodes[i].id === id) return { node: nodes[i], parent: nodes, index: i };
-                if (nodes[i].type === 'folder' && nodes[i].children) {
-                    const found = findTreeNode(nodes[i].children, id);
-                    if (found) return found;
-                }
-            }
-            return null;
-        }
-
-        function renderNotesTree(subjectId, nodes, depth) {
-            if (!nodes || !nodes.length) {
-                return depth === 0 ? '<div class="finance-empty-line">Aún no hay carpetas ni notas.</div>' : '';
-            }
-            return nodes.map(n => {
-                if (n.type === 'folder') {
-                    const open = !!studiesTreeExpanded[n.id];
-                    return `
-                        <div class="studies-tree-node" style="padding-left:${depth * 18}px">
-                            <div class="studies-tree-row">
-                                <span class="studies-tree-toggle" onclick="toggleTreeNode('${n.id}','${subjectId}')">${open ? '▼' : '▶'}</span>
-                                <span class="studies-tree-icon">📁</span>
-                                <span class="studies-tree-name" onclick="toggleTreeNode('${n.id}','${subjectId}')">${escapeHtml(n.name)}</span>
-                                <span class="studies-tree-actions">
-                                    <button title="Nueva carpeta" onclick="openAddTreeNode('${subjectId}','${n.id}','folder')">📁+</button>
-                                    <button title="Nueva nota" onclick="openAddTreeNode('${subjectId}','${n.id}','note')">📝+</button>
-                                    <button title="Eliminar" onclick="deleteTreeNode('${subjectId}','${n.id}')">✕</button>
-                                </span>
-                            </div>
-                            ${open ? `<div class="studies-tree-children">${renderNotesTree(subjectId, n.children || [], depth + 1)}</div>` : ''}
-                        </div>`;
-                }
-                return `
-                    <div class="studies-tree-node" style="padding-left:${depth * 18}px">
-                        <div class="studies-tree-row studies-tree-row-note" onclick="openTreeNote('${n.noteId}')">
-                            <span class="studies-tree-toggle"></span>
-                            <span class="studies-tree-icon">📝</span>
-                            <span class="studies-tree-name">${escapeHtml(n.name)}</span>
-                            <span class="studies-tree-actions">
-                                <button title="Eliminar" onclick="event.stopPropagation();deleteTreeNode('${subjectId}','${n.id}')">✕</button>
-                            </span>
-                        </div>
-                    </div>`;
-            }).join('');
-        }
-
-        function toggleTreeNode(id, subjectId) {
-            studiesTreeExpanded[id] = !studiesTreeExpanded[id];
-            openSubjectDetail(subjectId);
-        }
-
-        function openAddTreeNode(subjectId, parentId, type) {
-            showModal(`
-                <div class="modal-title">${type === 'folder' ? '+ Carpeta' : '+ Nota'}</div>
-                <div class="modal-label">Nombre</div>
-                <input id="tree-node-name" class="modal-input" placeholder="${type === 'folder' ? 'Ej: Bloque 1' : 'Ej: Apuntes tema 3'}">
-                <button class="btn-modal-primary" onclick="saveNewTreeNode('${subjectId}',${parentId ? `'${parentId}'` : 'null'},'${type}')">Crear</button>
-            `);
-            setTimeout(() => document.getElementById('tree-node-name')?.focus(), 50);
-        }
-
-        async function saveNewTreeNode(subjectId, parentId, type) {
-            const name = document.getElementById('tree-node-name')?.value.trim();
-            if (!name) { showToast('Indica un nombre', true); return; }
-            const s = findSubject(subjectId);
-            if (!s) return;
-            s.nodes = s.nodes || [];
-            let targetArray = s.nodes;
-            if (parentId) {
-                const found = findTreeNode(s.nodes, parentId);
-                if (found && found.node.type === 'folder') {
-                    found.node.children = found.node.children || [];
-                    targetArray = found.node.children;
-                    studiesTreeExpanded[parentId] = true;
-                }
-            }
-            const id = 'node_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-            let noteId = null;
-            if (type === 'folder') {
-                targetArray.push({ id, type: 'folder', name, children: [] });
-            } else {
-                noteId = 'note_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-                targetArray.push({ id, type: 'note', name, noteId });
-            }
-            openSubjectDetail(subjectId);
-            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
-            if (noteId) openTreeNote(noteId);
-        }
-
-        async function deleteTreeNode(subjectId, id) {
-            if (!confirm('¿Eliminar este elemento? Si es una carpeta se eliminará todo su contenido.')) return;
-            const s = findSubject(subjectId);
-            if (!s) return;
-            const found = findTreeNode(s.nodes || [], id);
-            if (!found) return;
-            found.parent.splice(found.index, 1);
-            delete studiesTreeExpanded[id];
-            openSubjectDetail(subjectId);
-            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
-        }
-
-        function openTreeNote(noteId) {
-            window.open('estudios-apuntes.html?id=' + encodeURIComponent(noteId), '_blank');
         }
 
         function renderSubjectItemRow(subjectId, listKey, item, index) {
@@ -8872,6 +8837,7 @@ function v22RefreshSummaryIfPresent() {
                     <input class="modal-input" style="flex:2;margin:0" value="${escapeHtml(item.title || '')}" placeholder="Título" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
                     <input class="modal-input" style="flex:1;margin:0" type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)">
                     <input class="modal-input" style="flex:0 0 60px;margin:0" type="number" min="0" max="10" step="0.1" value="${item.grade ?? ''}" placeholder="Nota" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'grade',this.value)">
+                    <input class="modal-input" style="flex:0 0 60px;margin:0" type="number" min="0" max="100" step="1" value="${item.weight ?? ''}" placeholder="Peso %" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'weight',this.value)">
                     <button title="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})">✕</button>
                 </div>`;
         }
@@ -8880,7 +8846,7 @@ function v22RefreshSummaryIfPresent() {
             const s = findSubject(subjectId);
             if (!s) return;
             s[listKey] = s[listKey] || [];
-            s[listKey].push({ id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: '', date: '', grade: '' });
+            s[listKey].push({ id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: '', date: '', grade: '', weight: '' });
             openSubjectDetail(subjectId);
         }
 
@@ -8888,15 +8854,46 @@ function v22RefreshSummaryIfPresent() {
             const s = findSubject(subjectId);
             if (!s || !s[listKey] || !s[listKey][index]) return;
             s[listKey][index][field] = value;
+            if (field === 'title' || field === 'date') syncExamCalendarEvent(s, listKey, s[listKey][index]);
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         async function removeSubjectItem(subjectId, listKey, index) {
             const s = findSubject(subjectId);
             if (!s || !s[listKey]) return;
+            const item = s[listKey][index];
+            if (item) removeLinkedExamEvent(item.id);
             s[listKey].splice(index, 1);
             openSubjectDetail(subjectId);
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Sincroniza un examen/trabajo con fecha hacia un evento normal de
+        // Bitácora (visible en el calendario y en la alerta diaria), sin
+        // necesidad de crearlo a mano dos veces. Se identifica por
+        // `linkedItemId` para poder actualizarlo o borrarlo cuando cambie.
+        function syncExamCalendarEvent(subject, listKey, item) {
+            const existingIdx = entries.findIndex(e => e.linkedItemId === item.id);
+            if (!item.date) {
+                if (existingIdx !== -1) entries.splice(existingIdx, 1);
+                return;
+            }
+            const label = listKey === 'exams' ? 'Examen' : 'Entrega';
+            const title = `${label}: ${item.title || 'Sin título'} (${subject.name})`;
+            if (existingIdx !== -1) {
+                entries[existingIdx].title = title;
+                entries[existingIdx].date = item.date;
+            } else {
+                entries.push({
+                    id: 'evt_' + item.id, type: 'event', eventType: 'otro', title, date: item.date, notes: '',
+                    linkedItemId: item.id, linkedSubjectId: subject.id, linkedKind: listKey
+                });
+            }
+        }
+
+        function removeLinkedExamEvent(itemId) {
+            const idx = entries.findIndex(e => e.linkedItemId === itemId);
+            if (idx !== -1) entries.splice(idx, 1);
         }
 
         // Resalta el bloque de "ahora mismo": el de hora de inicio más
@@ -10340,7 +10337,7 @@ function v22RefreshSummaryIfPresent() {
                     <div class="finance-progress finance-goal-bar-progress"><span style="width:${totalPct === null ? 0 : Math.min(100, totalPct)}%"></span></div>
                 </section>
 
-                <section class="finance-accounts-section">
+                <section class="finance-accounts-section" id="finance-accounts-section">
                     <div class="finance-kicker" style="margin-bottom:10px">Cuentas</div>
                     <div class="finance-accounts-row">
                         <div class="collectible-card finance-account-card" onclick="openInvestmentAccountEditor()">
