@@ -3513,7 +3513,10 @@ body.beige {
 .studies-subject-dot { width:12px; height:12px; border-radius:50%; margin-bottom:8px; }
 .studies-subject-name { font-weight:700; font-size:14px; }
 .studies-subject-meta { font-size:10px; color:var(--text-secondary); margin-top:4px; }
-.studies-subject-avg { font-size:12px; font-weight:700; margin-top:8px; }
+.studies-subject-avg { font-size:12px; font-weight:700; }
+.studies-subject-card-foot { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+.studies-subject-notes-btn { background:var(--bg-card-hover); border:0; border-radius:8px; padding:4px 8px; font-size:10px; color:var(--text-secondary); cursor:pointer; font-weight:700; }
+.studies-subject-notes-btn:hover { color:var(--text-primary); }
 .studies-modal-block { margin:14px 0; }
 .studies-item-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
 .studies-item-row button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:14px; }
@@ -3537,6 +3540,11 @@ body.beige {
 .studies-block button { background:none; border:0; color:var(--text-secondary); cursor:pointer; }
 .studies-block-now { background:#000; color:#fff; font-weight:600; }
 .studies-block-now button { color:#fff; }
+.nav-subsection-flash { animation: navSubsectionFlash 1.4s ease; border-radius:16px; }
+@keyframes navSubsectionFlash {
+    0% { box-shadow:0 0 0 2px rgba(255,255,255,.55); background:var(--bg-card-hover); }
+    100% { box-shadow:0 0 0 0 rgba(255,255,255,0); }
+}
 .studies-day-empty { font-size:10px; color:var(--text-muted); }
 .studies-day-add { margin-top:auto; background:none; border:1px dashed var(--border-strong); border-radius:10px; padding:6px; font-size:10px; color:var(--text-secondary); cursor:pointer; }
 .studies-notes-box { width:100%; min-height:110px; margin-top:12px; background:var(--bg-input); border:1px solid var(--border); border-radius:16px; padding:14px; color:var(--text-primary); font-family:inherit; font-size:13px; resize:vertical; }
@@ -3544,6 +3552,14 @@ body.beige {
 .studies-quicknote-text { font-size:13px; color:var(--text-primary); white-space:pre-wrap; line-height:1.45; }
 .studies-quicknote-meta { display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
 .studies-quicknote-meta button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; }
+.studies-action-btn { display:inline-flex; align-items:center; gap:7px; padding:10px 16px; border-radius:999px; font-size:11px; font-weight:750; cursor:pointer; transition:all .15s ease; white-space:nowrap; border:0; }
+.studies-action-btn span:first-child { font-size:13px; }
+.studies-action-btn.primary { background:var(--accent); color:var(--accent-contrast); }
+.studies-action-btn.primary:hover { transform:translateY(-1px); filter:brightness(1.08); }
+.studies-action-btn.ghost { background:var(--bg-card); color:var(--text-primary); box-shadow:inset 0 0 0 1px var(--border-strong); }
+.studies-action-btn.ghost:hover { background:var(--bg-card-hover); transform:translateY(-1px); }
+.studies-action-count { background:var(--bg-card-hover); color:var(--text-secondary); border-radius:999px; padding:1px 7px; font-size:10px; }
+.studies-action-btn.ghost .studies-action-count { background:rgba(255,255,255,.1); }
 @media(max-width:850px){ .studies-schedule-grid{grid-template-columns:repeat(2,1fr)} }
 
 /* ============================================================
@@ -3558,6 +3574,27 @@ body.beige {
 /* Proyectos: tablero kanban y detalles de prioridad/vencimiento */
 .project-priority-dot { display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .project-overdue { color:#f87171; font-weight:700; }
+.project-roadmap { position:relative; margin-top:2px; }
+.project-roadmap-item { position:relative; display:flex; align-items:flex-start; gap:12px; padding:6px 0; cursor:pointer; }
+.project-roadmap-item:not(:last-child)::after { content:''; position:absolute; left:10px; top:29px; bottom:-3px; width:2px; background:var(--border-strong); }
+.project-roadmap-checkbox { position:absolute; left:0; top:6px; width:21px; height:21px; margin:0; opacity:0; cursor:pointer; z-index:2; }
+.project-roadmap-check { flex-shrink:0; width:21px; height:21px; border-radius:50%; border:2px solid var(--border-strong); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:var(--text-muted); background:var(--bg-card); transition:all .15s ease; z-index:1; }
+.project-roadmap-check.done { background:#22c55e; border-color:#22c55e; color:#fff; }
+.project-roadmap-text { font-size:13px; padding-top:2px; color:var(--text-primary); }
+.project-roadmap-text.done { color:var(--text-muted); text-decoration:line-through; }
+.project-features { display:flex; flex-wrap:wrap; gap:8px; margin-top:2px; }
+.project-feature-chip { background:var(--bg-card-hover); border-radius:10px; padding:6px 10px; font-size:11px; display:flex; align-items:baseline; gap:5px; }
+.project-feature-chip b { color:var(--text-primary); font-weight:700; }
+.project-feature-chip span { color:var(--text-secondary); }
+.projects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+.project-card { background:var(--bg-card); border:1px solid var(--border); border-top:3px solid var(--text-secondary); border-radius:16px; padding:16px; cursor:pointer; transition:border-color .15s ease,transform .15s ease; }
+.project-card:hover { border-color:var(--border-strong); transform:translateY(-2px); }
+.project-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.project-card-title { font-weight:700; font-size:15px; color:var(--text-primary); line-height:1.3; }
+.project-card-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:8px; font-size:11px; color:var(--text-secondary); }
+.project-card-desc { font-size:12px; color:var(--text-secondary); margin-top:8px; line-height:1.4; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.project-card-progress-label { font-size:11px; color:var(--text-secondary); margin-top:4px; }
+@media(max-width:600px){ .projects-grid { grid-template-columns:1fr; } }
 .kanban-board { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; align-items:start; }
 .kanban-column { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:12px; min-height:120px; }
 .kanban-column-head { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:10px; display:flex; justify-content:space-between; }
@@ -4885,6 +4922,26 @@ function v22RefreshSummaryIfPresent() {
             ] },
         ];
 
+        const NAV_VIEW_LABELS = Object.fromEntries(NAV_SECTIONS.flatMap(s => s.items).map(i => [i.view, i.text]));
+
+        // Apartados "de segundo nivel" dentro de cada sección — para poder
+        // escribir p.ej. "asignaturas" en el buscador y llegar directo a
+        // Estudios > Asignaturas, aunque el nombre no coincida con ninguna
+        // sección de primer nivel. `anchor` hace scroll hasta ese bloque,
+        // `tab` cambia de pestaña interna (Ocio), `action` llama a una
+        // función tras cambiar de vista (p.ej. abrir un modal).
+        const NAV_SUBSECTIONS = [
+            { view: 'studies', text: 'Asignaturas', anchor: 'studies-subjects-section' },
+            { view: 'studies', text: 'Horario semanal', anchor: 'studies-schedule-section' },
+            { view: 'studies', text: 'Notas rápidas', action: 'openQuickNotesList' },
+            { view: 'culture', text: 'Libros', tab: 'books' },
+            { view: 'culture', text: 'Series', tab: 'series' },
+            { view: 'culture', text: 'Películas', tab: 'movies' },
+            { view: 'culture', text: 'Videojuegos', tab: 'games' },
+            { view: 'finances', text: 'Sueldo y aportaciones', anchor: 'finance-forecast-section' },
+            { view: 'finances', text: 'Movimientos', anchor: 'finance-movements-section' },
+        ];
+
         const CREATE_PALETTE_ITEMS = [
             { type: 'book', text: 'Libro' },
             { type: 'movie', text: 'Película' },
@@ -5228,6 +5285,13 @@ function v22RefreshSummaryIfPresent() {
             } else {
                 const all = paletteItemsFor('nav');
                 const navMatches = q ? all.filter(i => i.text.toLowerCase().includes(q)) : all;
+                // Subapartados (p.ej. "Asignaturas" dentro de Estudios): se
+                // muestran como "Asignaturas - Estudios" y solo entran en
+                // juego cuando se escribe algo, para no duplicar la lista
+                // inicial de secciones.
+                const subMatches = q ? NAV_SUBSECTIONS.filter(s => s.text.toLowerCase().includes(q)).map(s => ({
+                    ...s, kind: 'nav-sub', text: `${s.text} - ${NAV_VIEW_LABELS[s.view] || s.view}`
+                })) : [];
                 // Fantasy es un apartado oculto (requiere Modo Desarrollador):
                 // nunca aparece en la lista inicial, solo si se escribe algo
                 // que coincida con su nombre y el modo esté activo.
@@ -5239,7 +5303,8 @@ function v22RefreshSummaryIfPresent() {
                 filtered = monthQuery
                     ? [{ kind: 'month-filter', text: `${ENTRY_TYPE_LABEL_PLURAL[monthQuery.type]} de ${monthQuery.monthLabel}`, type: monthQuery.type, month: monthQuery.month, monthLabel: monthQuery.monthLabel }]
                     : hiddenMatches.length ? hiddenMatches
-                    : (q && !navMatches.length) ? searchEntriesForPalette(q) : navMatches;
+                    : (navMatches.length || subMatches.length) ? [...navMatches, ...subMatches]
+                    : q ? searchEntriesForPalette(q) : navMatches;
             }
             if (cpSelectedIndex >= filtered.length) cpSelectedIndex = 0;
             const list = document.getElementById('command-palette-list');
@@ -5306,8 +5371,31 @@ function v22RefreshSummaryIfPresent() {
                 openFantasy();
             } else if (item.kind === 'month-filter') {
                 applyEntryMonthFilter(item.type, item.month, item.monthLabel);
+            } else if (item.kind === 'nav-sub') {
+                goToNavSubsection(item);
             } else {
                 switchView(item.view);
+            }
+        }
+
+        // Navega a la vista de un subapartado y, según el tipo, cambia de
+        // pestaña interna, llama a una acción (abrir un modal) o hace scroll
+        // hasta el bloque en cuestión con un resalte breve.
+        function goToNavSubsection(item) {
+            switchView(item.view);
+            if (item.tab) setCultureTab(item.tab);
+            if (item.action && typeof window[item.action] === 'function') {
+                setTimeout(() => window[item.action](), 150);
+                return;
+            }
+            if (item.anchor) {
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    const el = document.getElementById(item.anchor);
+                    if (!el) return;
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    el.classList.add('nav-subsection-flash');
+                    setTimeout(() => el.classList.remove('nav-subsection-flash'), 1400);
+                }));
             }
         }
 
@@ -6465,9 +6553,19 @@ function v22RefreshSummaryIfPresent() {
                 const tasks=Array.isArray(entry.tasks)?entry.tasks:[];
                 const doneCount = tasks.filter(t=>t.done).length;
                 const pct = tasks.length ? Math.round(doneCount/tasks.length*100) : 0;
-                fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Tareas${tasks.length?` · ${doneCount}/${tasks.length} · ${pct}%`:''}</div>
-                    ${tasks.length?`<div class="progress-bar-bg" style="margin-bottom:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>`:''}
-                    ${tasks.length?tasks.map((task,i)=>`<label class="project-task-row" onclick="event.stopPropagation()"><input type="checkbox" ${task.done?'checked':''} onchange="toggleProjectTask('${entry.id}',${i})"><span class="${task.done?'done':''}">${escapeHtml(task.text)}</span></label>`).join(''):'<span class="entry-detail-value">Sin tareas</span>'}</div>`;
+                fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Ruta de hitos${tasks.length?` · ${doneCount}/${tasks.length} · ${pct}%`:''}</div>
+                    ${tasks.length?`<div class="progress-bar-bg" style="margin-bottom:4px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>`:''}
+                    ${tasks.length?`<div class="project-roadmap">${tasks.map((task,i)=>`
+                        <label class="project-roadmap-item" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="project-roadmap-checkbox" ${task.done?'checked':''} onchange="toggleProjectTask('${entry.id}',${i})">
+                            <span class="project-roadmap-check ${task.done?'done':''}">${task.done?'✓':i+1}</span>
+                            <span class="project-roadmap-text ${task.done?'done':''}">${escapeHtml(task.text)}</span>
+                        </label>`).join('')}</div>`:'<span class="entry-detail-value">Sin hitos todavía.</span>'}</div>`;
+                const features=Array.isArray(entry.features)?entry.features:[];
+                if(features.length){
+                    fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Características</div>
+                        <div class="project-features">${features.map(f=>`<div class="project-feature-chip"><b>${escapeHtml(f.label)}</b>${f.value?`<span>${escapeHtml(f.value)}</span>`:''}</div>`).join('')}</div></div>`;
+                }
                 if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
             }else if(entry.type==='goal'){
                 const termLabel = { short:'Corto plazo', medium:'Medio plazo', long:'Largo plazo' }[entry.term] || '';
@@ -6735,8 +6833,10 @@ function v22RefreshSummaryIfPresent() {
                         <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
                         <div><div class="modal-label">Fecha límite</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
                     </div>
-                    <div class="modal-label">Tareas (una por línea; añade ✓ al final para marcarla hecha)</div>
+                    <div class="modal-label">Ruta de hitos (uno por línea; añade ✓ al final para marcarlo hecho)</div>
                     <textarea id="modal-tasks" class="modal-input" rows="3">${isEdit ? (entry.tasks || []).map(t => t.text + (t.done ? ' ✓' : '')).join('\n') : ''}</textarea>
+                    <div class="modal-label">Características (una por línea, formato Etiqueta: Valor)</div>
+                    <textarea id="modal-features" class="modal-input" rows="2" placeholder="Presupuesto: 500€&#10;Cliente: Ada&#10;Stack: React + Supabase">${isEdit ? (entry.features || []).map(f => f.label + ': ' + f.value).join('\n') : ''}</textarea>
                     <div class="modal-label">Notas</div>
                     <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
@@ -6982,6 +7082,11 @@ function v22RefreshSummaryIfPresent() {
                 entry.tasks = tasksRaw.map(t => {
                     const done = /(?:^|\s)(?:✓|✔|☑|\[x\]|x)$/i.test(t.trim());
                     return { text: t.replace(/(?:\s+(?:✓|✔|☑|\[x\]|x))$/i, '').trim(), done };
+                });
+                const featuresRaw = document.getElementById('modal-features')?.value?.split('\n').filter(f => f.trim()) || [];
+                entry.features = featuresRaw.map(f => {
+                    const idx = f.indexOf(':');
+                    return idx === -1 ? { label: f.trim(), value: '' } : { label: f.slice(0, idx).trim(), value: f.slice(idx + 1).trim() };
                 });
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
             } else if (type === 'event') {
@@ -8492,8 +8597,8 @@ function v22RefreshSummaryIfPresent() {
                 <div class="finance-panel-head" style="margin-bottom:14px">
                     <div><div class="finance-kicker">Estudios</div><h3>Tu grado, de un vistazo</h3></div>
                     <div style="display:flex;gap:8px">
-                        <button class="finance-oneoff-btn" onclick="openAddQuickNote()">Nueva nota rápida</button>
-                        <button class="finance-oneoff-btn" onclick="openQuickNotesList()">Notas rápidas</button>
+                        <button class="studies-action-btn ghost" onclick="openQuickNotesList()"><span>▤</span>Notas rápidas${(studies.quickNotes || []).length ? `<span class="studies-action-count">${studies.quickNotes.length}</span>` : ''}</button>
+                        <button class="studies-action-btn primary" onclick="openAddQuickNote()"><span>✎</span>Nueva nota rápida</button>
                     </div>
                 </div>
 
@@ -8504,12 +8609,12 @@ function v22RefreshSummaryIfPresent() {
                     <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
                 </div>` : ''}
 
-                <section class="studies-section">
+                <section class="studies-section" id="studies-subjects-section">
                     <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Asignaturas</h3></div><button class="finance-icon-btn" title="Añadir asignatura" onclick="openAddSubject()">+</button></div>
                     ${studies.subjects.length ? `<div class="studies-subjects-grid">${studies.subjects.map(renderSubjectCard).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
                 </section>
 
-                <section class="studies-section">
+                <section class="studies-section" id="studies-schedule-section">
                     <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Horario semanal</h3></div></div>
                     <div class="studies-schedule-grid" id="studies-schedule-grid">${STUDIES_DAYS.map(renderScheduleDay).join('')}</div>
                 </section>
@@ -8561,15 +8666,37 @@ function v22RefreshSummaryIfPresent() {
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+        function countTreeNotes(nodes) {
+            let n = 0;
+            (nodes || []).forEach(node => { if (node.type === 'note') n++; else if (node.children) n += countTreeNotes(node.children); });
+            return n;
+        }
+
+        function openSubjectApuntes(event, id) {
+            event.stopPropagation();
+            openSubjectDetail(id);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                const el = document.getElementById('subject-apuntes-block');
+                if (!el) return;
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                el.classList.add('nav-subsection-flash');
+                setTimeout(() => el.classList.remove('nav-subsection-flash'), 1400);
+            }));
+        }
+
         function renderSubjectCard(s) {
             const graded = [...(s.exams || []), ...(s.assignments || [])].filter(x => x.grade !== '' && x.grade !== null && x.grade !== undefined && !isNaN(Number(x.grade)));
             const avg = graded.length ? graded.reduce((sum, x) => sum + Number(x.grade), 0) / graded.length : null;
+            const noteCount = countTreeNotes(s.nodes || []);
             return `
                 <div class="studies-subject-card" onclick="openSubjectDetail('${s.id}')">
                     <div class="studies-subject-dot" style="background:${s.color || '#5b8def'}"></div>
                     <div class="studies-subject-name">${escapeHtml(s.name)}</div>
                     <div class="studies-subject-meta">${(s.exams || []).length} examen${(s.exams || []).length === 1 ? '' : 'es'} · ${(s.assignments || []).length} trabajo${(s.assignments || []).length === 1 ? '' : 's'}</div>
-                    <div class="studies-subject-avg">${avg === null ? 'Sin notas' : 'Media ' + avg.toFixed(2)}</div>
+                    <div class="studies-subject-card-foot">
+                        <div class="studies-subject-avg">${avg === null ? 'Sin notas' : 'Media ' + avg.toFixed(2)}</div>
+                        <button class="studies-subject-notes-btn" title="Ver apuntes" onclick="openSubjectApuntes(event,'${s.id}')">📓 ${noteCount ? noteCount : 'Apuntes'}</button>
+                    </div>
                 </div>`;
         }
 
@@ -8621,7 +8748,7 @@ function v22RefreshSummaryIfPresent() {
                     <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">Trabajos <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','assignments')">+</button></div>
                     ${(s.assignments || []).length ? s.assignments.map((a, i) => renderSubjectItemRow(s.id, 'assignments', a, i)).join('') : '<div class="finance-empty-line">Sin trabajos todavía.</div>'}
                 </div>
-                <div class="studies-modal-block">
+                <div class="studies-modal-block" id="subject-apuntes-block">
                     <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
                         Apuntes
                         <span>
@@ -8893,7 +9020,7 @@ function v22RefreshSummaryIfPresent() {
                 return (b.startDate || '').localeCompare(a.startDate || '');
             });
 
-            let html = '';
+            let html = '<div class="projects-grid">';
             sorted.forEach(p => {
                 const cat = categories.find(c => c.id === p.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
@@ -8902,25 +9029,28 @@ function v22RefreshSummaryIfPresent() {
                 const { total, done, pct } = projectTaskProgress(p);
                 const overdue = p.endDate && p.endDate < today && bucket !== 'Completado';
                 const priority = p.priority || 'media';
+                const features = Array.isArray(p.features) ? p.features : [];
 
                 html += `
-                    <div class="card ${bucket === 'Completado' ? 'bone-surface project-completed-bone' : ''}" style="margin-bottom:12px;cursor:pointer;border-left:4px solid ${color}" onclick="openEntryDetail(\'${p.id}\')">
-                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                            <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${escapeHtml(p.title)}</span>
-                            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-                                <span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span>
-                                <span class="badge ${statusClass}">${bucket}</span>
-                            </div>
+                    <div class="project-card ${bucket === 'Completado' ? 'bone-surface project-completed-bone' : ''}" style="border-top-color:${color}" onclick="openEntryDetail('${p.id}')">
+                        <div class="project-card-head">
+                            <span class="project-card-title">${escapeHtml(p.title)}</span>
+                            <span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span>
                         </div>
-                        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${escapeHtml(p.projectCategory || 'Sin categoría')} · ${escapeHtml(p.startDate || '')} ${p.endDate ? `→ <span class="${overdue ? 'project-overdue' : ''}">${escapeHtml(p.endDate)}${overdue ? ' (vencido)' : ''}</span>` : ''}</div>
-                        ${p.description ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${escapeHtml(p.description)}</div>` : ''}
+                        <div class="project-card-meta">
+                            <span class="badge ${statusClass}">${bucket}</span>
+                            <span>${escapeHtml(p.projectCategory || 'Sin categoría')}</span>
+                            ${p.endDate ? `<span class="${overdue ? 'project-overdue' : ''}">${overdue ? '⚠ ' : '◷ '}${escapeHtml(p.endDate)}</span>` : ''}
+                        </div>
+                        ${p.description ? `<div class="project-card-desc">${escapeHtml(p.description)}</div>` : ''}
                         ${total > 0 ? `
-                            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
-                            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${done}/${total} tareas · ${pct}%</div>
+                            <div class="progress-bar-bg" style="margin-top:10px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
+                            <div class="project-card-progress-label">${done}/${total} hitos · ${pct}%</div>
                         ` : ''}
-                        ${p.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(p.notes)}</div>` : ''}
+                        ${features.length ? `<div class="project-features" style="margin-top:10px">${features.slice(0, 3).map(f => `<div class="project-feature-chip"><b>${escapeHtml(f.label)}</b>${f.value ? `<span>${escapeHtml(f.value)}</span>` : ''}</div>`).join('')}${features.length > 3 ? `<div class="project-feature-chip">+${features.length - 3}</div>` : ''}</div>` : ''}
                     </div>`;
             });
+            html += '</div>';
             return html;
         }
 
@@ -10183,7 +10313,7 @@ function v22RefreshSummaryIfPresent() {
                 </div>
 
                 <div class="finance-grid-2">
-                    <section class="finance-panel">
+                    <section class="finance-panel" id="finance-forecast-section">
                         <div class="finance-panel-head"><div><div class="finance-kicker">Previsión</div><h3>Sueldo y aportaciones</h3></div><button class="finance-icon-btn" onclick="openForecastProfileEditor()">✎</button></div>
                         <div class="finance-income-highlight"><span>Sueldo actual</span><strong>${financeMoney(fc.salary || 0)}</strong></div>
                         <div class="finance-income-highlight"><span>Meses de contrato</span><strong>${fc.contractMonths || '—'}</strong></div>
@@ -10193,7 +10323,7 @@ function v22RefreshSummaryIfPresent() {
                         <div class="finance-empty-line" style="margin-top:8px">Suscripciones y gastos fijos actuales: ${financeMoney(financeRecurringTotal())}/mes (se descuentan solas de la provisión).</div>
                     </section>
 
-                    <section class="finance-panel">
+                    <section class="finance-panel" id="finance-movements-section">
                         <div class="finance-panel-head"><div><div class="finance-kicker">Registro</div><h3>Movimientos</h3></div></div>
                         ${(financeProfile.movements || []).length ? `
                             <div class="finance-oneoff-list" style="margin-top:0;padding-top:0;border-top:none">
@@ -12544,6 +12674,19 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     </div>
                 </div>
             `;
+            // Deja el cursor listo en el primer campo de escritura del modal,
+            // para no tener que coger el ratón antes de poder escribir. Un
+            // setTimeout(0) en vez de requestAnimationFrame: el foco tiene
+            // que "ganar" a cualquier auto-focus que el propio contenido del
+            // modal dispare (algunos modales ya llaman a su focus() propio).
+            setTimeout(() => {
+                const sheet = container.querySelector('.modal-sheet');
+                const field = sheet?.querySelector(
+                    'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+                );
+                field?.focus();
+                if (field?.tagName === 'INPUT' && (field.type === 'text' || field.type === '')) field.select?.();
+            }, 0);
         }
 
         // ============================================================
