@@ -3517,14 +3517,33 @@ body.beige {
 .studies-modal-block { margin:14px 0; }
 .studies-item-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
 .studies-item-row button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:14px; }
+.studies-tree { margin-top:4px; }
+.studies-tree-node { position:relative; }
+.studies-tree-row { display:flex; align-items:center; gap:6px; padding:5px 4px; border-radius:8px; cursor:default; }
+.studies-tree-row:hover { background:var(--bg-card-hover); }
+.studies-tree-row-note { cursor:pointer; }
+.studies-tree-toggle { width:14px; text-align:center; font-size:9px; color:var(--text-muted); cursor:pointer; flex-shrink:0; }
+.studies-tree-icon { font-size:12px; flex-shrink:0; }
+.studies-tree-name { flex:1; font-size:12px; color:var(--text-primary); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.studies-tree-actions { display:flex; gap:2px; opacity:0; transition:opacity .15s; flex-shrink:0; }
+.studies-tree-row:hover .studies-tree-actions { opacity:1; }
+.studies-tree-actions button { background:none; border:0; color:var(--text-secondary); cursor:pointer; font-size:11px; padding:2px 3px; border-radius:6px; }
+.studies-tree-actions button:hover { background:var(--bg-card); color:var(--text-primary); }
+.studies-tree-children { border-left:1px solid var(--border-subtle,rgba(255,255,255,.08)); margin-left:9px; }
 .studies-schedule-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-top:12px; }
 .studies-day-col { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:6px; min-height:120px; }
 .studies-day-head { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); }
-.studies-block { display:flex; justify-content:space-between; align-items:center; gap:4px; background:var(--bg-card-hover); border-radius:10px; padding:6px 8px; font-size:10px; }
+.studies-block { display:flex; justify-content:space-between; align-items:center; gap:4px; background:var(--bg-card-hover); border-radius:10px; padding:6px 8px; font-size:10px; transition:background .3s,color .3s; }
 .studies-block button { background:none; border:0; color:var(--text-secondary); cursor:pointer; }
+.studies-block-now { background:#000; color:#fff; font-weight:600; }
+.studies-block-now button { color:#fff; }
 .studies-day-empty { font-size:10px; color:var(--text-muted); }
 .studies-day-add { margin-top:auto; background:none; border:1px dashed var(--border-strong); border-radius:10px; padding:6px; font-size:10px; color:var(--text-secondary); cursor:pointer; }
 .studies-notes-box { width:100%; min-height:110px; margin-top:12px; background:var(--bg-input); border:1px solid var(--border); border-radius:16px; padding:14px; color:var(--text-primary); font-family:inherit; font-size:13px; resize:vertical; }
+.studies-quicknote-row { background:var(--bg-card); border-radius:14px; padding:12px 14px; margin-bottom:8px; }
+.studies-quicknote-text { font-size:13px; color:var(--text-primary); white-space:pre-wrap; line-height:1.45; }
+.studies-quicknote-meta { display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
+.studies-quicknote-meta button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; }
 @media(max-width:850px){ .studies-schedule-grid{grid-template-columns:repeat(2,1fr)} }
 
 /* ============================================================
@@ -4754,7 +4773,7 @@ function v22RefreshSummaryIfPresent() {
             { key: 'lun', label: 'Lunes' }, { key: 'mar', label: 'Martes' }, { key: 'mie', label: 'Miércoles' },
             { key: 'jue', label: 'Jueves' }, { key: 'vie', label: 'Viernes' }, { key: 'sab', label: 'Sábado' }, { key: 'dom', label: 'Domingo' }
         ];
-        let studies = { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, notes: '' };
+        let studies = { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, quickNotes: [] };
 
         // ============================================================
         //  ENTRY TYPES
@@ -5511,7 +5530,12 @@ function v22RefreshSummaryIfPresent() {
                 studies.subjects = Array.isArray(studies.subjects) ? studies.subjects : [];
                 studies.schedule = studies.schedule && typeof studies.schedule === 'object' ? studies.schedule : {};
                 STUDIES_DAYS.forEach(d => { studies.schedule[d.key] = Array.isArray(studies.schedule[d.key]) ? studies.schedule[d.key] : []; });
-                studies.notes = typeof studies.notes === 'string' ? studies.notes : '';
+                studies.quickNotes = Array.isArray(studies.quickNotes) ? studies.quickNotes : [];
+                if (typeof studies.notes === 'string' && studies.notes.trim() && !studies.quickNotes.length) {
+                    studies.quickNotes.push({ id: 'qn_migrated_' + Date.now(), text: studies.notes.trim(), createdAt: new Date().toISOString() });
+                }
+                delete studies.notes;
+                studies.subjects.forEach(s => { s.nodes = Array.isArray(s.nodes) ? s.nodes : []; });
                 resetDayPlannerIfNeeded();
                 if (saved.fantasyData) {
                     fantasyData = saved.fantasyData;
@@ -5604,13 +5628,31 @@ function v22RefreshSummaryIfPresent() {
                 _meta: { ...(latestData._meta || {}), lastSnapshotWeek: needsSnapshot ? currentWeek : lastSnapshotWeek }
             };
 
-            const { error } = await sb.from('bitacora').upsert({
-                user_id: user.id,
-                data: mergedData,
-                updated_at: new Date().toISOString()
+            // En vez de reescribir siempre el bloque de datos entero, se
+            // envía solo lo que de verdad cambió desde la lectura de arriba
+            // (comparando clave a clave de primer nivel). Una función de
+            // Supabase hace el merge en el servidor. Si esa función todavía
+            // no existe (o falla por cualquier otro motivo), se cae al
+            // guardado completo de siempre — nunca se pierde un guardado
+            // por este cambio, en el peor caso solo no se ahorra nada.
+            const patch = {};
+            Object.keys(mergedData).forEach(key => {
+                if (JSON.stringify(mergedData[key]) !== JSON.stringify(latestData[key])) {
+                    patch[key] = mergedData[key];
+                }
             });
 
-            if (error) throw error;
+            if (Object.keys(patch).length > 0) {
+                const { error: patchError } = await sb.rpc('merge_bitacora_data', { p_patch: patch });
+                if (patchError) {
+                    const { error: fallbackError } = await sb.from('bitacora').upsert({
+                        user_id: user.id,
+                        data: mergedData,
+                        updated_at: new Date().toISOString()
+                    });
+                    if (fallbackError) throw fallbackError;
+                }
+            }
 
             // Mantener la memoria local sincronizada con lo que realmente
             // quedó almacenado.
@@ -8430,9 +8472,38 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         function findSubject(id) { return studies.subjects.find(s => s.id === id); }
 
+        function nextUpcomingExam() {
+            const today = todayISO();
+            let best = null;
+            studies.subjects.forEach(s => {
+                (s.exams || []).forEach(ex => {
+                    if (ex.date && ex.date >= today && (!best || ex.date < best.date)) {
+                        best = { title: ex.title, date: ex.date, subjectName: s.name, subjectColor: s.color };
+                    }
+                });
+            });
+            return best;
+        }
+
         function renderStudies() {
+            const nextExam = nextUpcomingExam();
             return `
             <div class="studies-view">
+                <div class="finance-panel-head" style="margin-bottom:14px">
+                    <div><div class="finance-kicker">Estudios</div><h3>Tu grado, de un vistazo</h3></div>
+                    <div style="display:flex;gap:8px">
+                        <button class="finance-oneoff-btn" onclick="openAddQuickNote()">Nueva nota rápida</button>
+                        <button class="finance-oneoff-btn" onclick="openQuickNotesList()">Notas rápidas</button>
+                    </div>
+                </div>
+
+                ${nextExam ? `
+                <div class="event-hero" style="border-color:${(nextExam.subjectColor || '#3b82f6')}66;margin-bottom:18px">
+                    <div class="event-hero-kicker" style="color:${nextExam.subjectColor || '#3b82f6'}">Próximo examen · ${eventCountdownLabel(nextExam.date)}</div>
+                    <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')} — ${escapeHtml(nextExam.subjectName)}</div>
+                    <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
+                </div>` : ''}
+
                 <section class="studies-section">
                     <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Asignaturas</h3></div><button class="finance-icon-btn" title="Añadir asignatura" onclick="openAddSubject()">+</button></div>
                     ${studies.subjects.length ? `<div class="studies-subjects-grid">${studies.subjects.map(renderSubjectCard).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
@@ -8440,14 +8511,54 @@ function v22RefreshSummaryIfPresent() {
 
                 <section class="studies-section">
                     <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Horario semanal</h3></div></div>
-                    <div class="studies-schedule-grid">${STUDIES_DAYS.map(renderScheduleDay).join('')}</div>
-                </section>
-
-                <section class="studies-section">
-                    <div class="finance-panel-head"><div><div class="finance-kicker">Estudios</div><h3>Notas rápidas</h3></div></div>
-                    <textarea class="studies-notes-box" placeholder="Cosas para recordar otro día..." onchange="saveStudiesNotes(event.target.value)">${escapeHtml(studies.notes || '')}</textarea>
+                    <div class="studies-schedule-grid" id="studies-schedule-grid">${STUDIES_DAYS.map(renderScheduleDay).join('')}</div>
                 </section>
             </div>`;
+        }
+
+        // ---- Notas rápidas: lista corta, para apuntes largos está el notebook por asignatura ----
+        function openAddQuickNote() {
+            showModal(`
+                <div class="modal-title">Nueva nota rápida</div>
+                <textarea id="quick-note-text" class="studies-notes-box" style="min-height:120px" placeholder="Cosas para recordar otro día..."></textarea>
+                <button class="btn-modal-primary" onclick="saveQuickNote()">Guardar</button>
+            `);
+            setTimeout(() => document.getElementById('quick-note-text')?.focus(), 50);
+        }
+
+        async function saveQuickNote() {
+            const text = document.getElementById('quick-note-text')?.value.trim();
+            if (!text) { showToast('Escribe algo antes de guardar', true); return; }
+            studies.quickNotes = studies.quickNotes || [];
+            studies.quickNotes.unshift({ id: 'qn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), text, createdAt: new Date().toISOString() });
+            closeModal();
+            showToast('Nota guardada');
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openQuickNotesList() {
+            showModal(renderQuickNotesModal());
+        }
+
+        function renderQuickNotesModal() {
+            const notes = studies.quickNotes || [];
+            return `
+                <div class="modal-title">Notas rápidas</div>
+                ${notes.length ? notes.map(n => `
+                    <div class="studies-quicknote-row">
+                        <div class="studies-quicknote-text">${linkifyText(n.text)}</div>
+                        <div class="studies-quicknote-meta">
+                            <span>${new Date(n.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            <button title="Eliminar" onclick="deleteQuickNote('${n.id}')">✕</button>
+                        </div>
+                    </div>`).join('') : '<div class="finance-empty-line">Aún no hay notas rápidas.</div>'}
+            `;
+        }
+
+        async function deleteQuickNote(id) {
+            studies.quickNotes = (studies.quickNotes || []).filter(n => n.id !== id);
+            openQuickNotesList();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function renderSubjectCard(s) {
@@ -8478,7 +8589,7 @@ function v22RefreshSummaryIfPresent() {
             const name = document.getElementById('subject-name')?.value.trim();
             if (!name) { showToast('Indica un nombre para la asignatura', true); return; }
             const color = document.getElementById('subject-color')?.value || '#5b8def';
-            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, exams: [], assignments: [] });
+            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, exams: [], assignments: [], nodes: [] });
             closeModal();
             render();
             try { await saveData(); showToast('Asignatura añadida'); }
@@ -8510,8 +8621,127 @@ function v22RefreshSummaryIfPresent() {
                     <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">Trabajos <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','assignments')">+</button></div>
                     ${(s.assignments || []).length ? s.assignments.map((a, i) => renderSubjectItemRow(s.id, 'assignments', a, i)).join('') : '<div class="finance-empty-line">Sin trabajos todavía.</div>'}
                 </div>
+                <div class="studies-modal-block">
+                    <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
+                        Apuntes
+                        <span>
+                            <button class="finance-icon-btn" title="Nueva carpeta" onclick="openAddTreeNode('${s.id}',null,'folder')">📁+</button>
+                            <button class="finance-icon-btn" title="Nueva nota" onclick="openAddTreeNode('${s.id}',null,'note')">📝+</button>
+                        </span>
+                    </div>
+                    <div class="studies-tree">${renderNotesTree(s.id, s.nodes || [], 0)}</div>
+                </div>
                 <button class="finance-oneoff-btn" style="color:#dc2626;border-color:#dc2626" onclick="deleteSubject('${s.id}')">Eliminar asignatura</button>
             `;
+        }
+
+        // ---- Apuntes por asignatura: árbol de carpetas/notas estilo Notion ----
+        let studiesTreeExpanded = {};
+
+        function findTreeNode(nodes, id) {
+            for (let i = 0; i < nodes.length; i++) {
+                if (nodes[i].id === id) return { node: nodes[i], parent: nodes, index: i };
+                if (nodes[i].type === 'folder' && nodes[i].children) {
+                    const found = findTreeNode(nodes[i].children, id);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function renderNotesTree(subjectId, nodes, depth) {
+            if (!nodes || !nodes.length) {
+                return depth === 0 ? '<div class="finance-empty-line">Aún no hay carpetas ni notas.</div>' : '';
+            }
+            return nodes.map(n => {
+                if (n.type === 'folder') {
+                    const open = !!studiesTreeExpanded[n.id];
+                    return `
+                        <div class="studies-tree-node" style="padding-left:${depth * 18}px">
+                            <div class="studies-tree-row">
+                                <span class="studies-tree-toggle" onclick="toggleTreeNode('${n.id}','${subjectId}')">${open ? '▼' : '▶'}</span>
+                                <span class="studies-tree-icon">📁</span>
+                                <span class="studies-tree-name" onclick="toggleTreeNode('${n.id}','${subjectId}')">${escapeHtml(n.name)}</span>
+                                <span class="studies-tree-actions">
+                                    <button title="Nueva carpeta" onclick="openAddTreeNode('${subjectId}','${n.id}','folder')">📁+</button>
+                                    <button title="Nueva nota" onclick="openAddTreeNode('${subjectId}','${n.id}','note')">📝+</button>
+                                    <button title="Eliminar" onclick="deleteTreeNode('${subjectId}','${n.id}')">✕</button>
+                                </span>
+                            </div>
+                            ${open ? `<div class="studies-tree-children">${renderNotesTree(subjectId, n.children || [], depth + 1)}</div>` : ''}
+                        </div>`;
+                }
+                return `
+                    <div class="studies-tree-node" style="padding-left:${depth * 18}px">
+                        <div class="studies-tree-row studies-tree-row-note" onclick="openTreeNote('${n.noteId}')">
+                            <span class="studies-tree-toggle"></span>
+                            <span class="studies-tree-icon">📝</span>
+                            <span class="studies-tree-name">${escapeHtml(n.name)}</span>
+                            <span class="studies-tree-actions">
+                                <button title="Eliminar" onclick="event.stopPropagation();deleteTreeNode('${subjectId}','${n.id}')">✕</button>
+                            </span>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function toggleTreeNode(id, subjectId) {
+            studiesTreeExpanded[id] = !studiesTreeExpanded[id];
+            openSubjectDetail(subjectId);
+        }
+
+        function openAddTreeNode(subjectId, parentId, type) {
+            showModal(`
+                <div class="modal-title">${type === 'folder' ? '+ Carpeta' : '+ Nota'}</div>
+                <div class="modal-label">Nombre</div>
+                <input id="tree-node-name" class="modal-input" placeholder="${type === 'folder' ? 'Ej: Bloque 1' : 'Ej: Apuntes tema 3'}">
+                <button class="btn-modal-primary" onclick="saveNewTreeNode('${subjectId}',${parentId ? `'${parentId}'` : 'null'},'${type}')">Crear</button>
+            `);
+            setTimeout(() => document.getElementById('tree-node-name')?.focus(), 50);
+        }
+
+        async function saveNewTreeNode(subjectId, parentId, type) {
+            const name = document.getElementById('tree-node-name')?.value.trim();
+            if (!name) { showToast('Indica un nombre', true); return; }
+            const s = findSubject(subjectId);
+            if (!s) return;
+            s.nodes = s.nodes || [];
+            let targetArray = s.nodes;
+            if (parentId) {
+                const found = findTreeNode(s.nodes, parentId);
+                if (found && found.node.type === 'folder') {
+                    found.node.children = found.node.children || [];
+                    targetArray = found.node.children;
+                    studiesTreeExpanded[parentId] = true;
+                }
+            }
+            const id = 'node_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+            let noteId = null;
+            if (type === 'folder') {
+                targetArray.push({ id, type: 'folder', name, children: [] });
+            } else {
+                noteId = 'note_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+                targetArray.push({ id, type: 'note', name, noteId });
+            }
+            openSubjectDetail(subjectId);
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            if (noteId) openTreeNote(noteId);
+        }
+
+        async function deleteTreeNode(subjectId, id) {
+            if (!confirm('¿Eliminar este elemento? Si es una carpeta se eliminará todo su contenido.')) return;
+            const s = findSubject(subjectId);
+            if (!s) return;
+            const found = findTreeNode(s.nodes || [], id);
+            if (!found) return;
+            found.parent.splice(found.index, 1);
+            delete studiesTreeExpanded[id];
+            openSubjectDetail(subjectId);
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openTreeNote(noteId) {
+            window.open('estudios-apuntes.html?id=' + encodeURIComponent(noteId), '_blank');
         }
 
         function renderSubjectItemRow(subjectId, listKey, item, index) {
@@ -8547,13 +8777,37 @@ function v22RefreshSummaryIfPresent() {
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+        // Resalta el bloque de "ahora mismo": el de hora de inicio más
+        // reciente que ya haya pasado, dentro del día de hoy. Al no haber
+        // hora de fin, se asume que sigue siendo la clase actual hasta que
+        // empiece la siguiente (o hasta medianoche si es la última).
+        const STUDIES_DAY_KEYS_BY_JS_DAY = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'];
+        function todayScheduleKey() { return STUDIES_DAY_KEYS_BY_JS_DAY[new Date().getDay()]; }
+
+        function currentScheduleBlockIndex(dayKey) {
+            if (dayKey !== todayScheduleKey()) return -1;
+            const blocks = studies.schedule[dayKey] || [];
+            const nowHM = new Date().toTimeString().slice(0, 5);
+            let idx = -1;
+            blocks.forEach((b, i) => { if (b.time && b.time <= nowHM) idx = i; });
+            return idx;
+        }
+
+        function refreshScheduleHighlight() {
+            if (currentView !== 'studies') return;
+            const grid = document.getElementById('studies-schedule-grid');
+            if (grid) grid.innerHTML = STUDIES_DAYS.map(renderScheduleDay).join('');
+        }
+        if (!window._scheduleHighlightTimer) window._scheduleHighlightTimer = setInterval(refreshScheduleHighlight, 60000);
+
         function renderScheduleDay(d) {
             const blocks = studies.schedule[d.key] || [];
+            const nowIdx = currentScheduleBlockIndex(d.key);
             return `
                 <div class="studies-day-col">
                     <div class="studies-day-head">${d.label}</div>
                     ${blocks.map((b, i) => `
-                        <div class="studies-block">
+                        <div class="studies-block ${i === nowIdx ? 'studies-block-now' : ''}">
                             <span>${escapeHtml(b.time || '')} ${escapeHtml(b.subject || '')}</span>
                             <button title="Eliminar" onclick="removeScheduleBlock('${d.key}',${i})">✕</button>
                         </div>`).join('') || '<div class="studies-day-empty">—</div>'}
@@ -8590,12 +8844,6 @@ function v22RefreshSummaryIfPresent() {
             studies.schedule[dayKey].splice(index, 1);
             render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
-        }
-
-        async function saveStudiesNotes(value) {
-            studies.notes = value;
-            try { await saveData(); showToast('Notas guardadas'); }
-            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================
