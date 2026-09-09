@@ -3541,20 +3541,24 @@ body.beige {
 .studies-quicknote-meta { display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
 .studies-quicknote-meta button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; }
 .studies-actions-row { display:flex; justify-content:flex-end; margin-bottom:18px; }
-.studies-actions-stack { display:flex; flex-direction:column; gap:8px; align-items:stretch; }
+.studies-actions-stack { display:flex; flex-direction:row; flex-wrap:wrap; gap:8px; align-items:center; }
 .studies-inline-add-btn { width:auto; white-space:nowrap; padding:10px 18px; margin-top:0; }
 .links-view { max-width:980px; }
 .links-view h3 { margin:0 0 16px; font-size:17px; }
-.links-add-btn { background:#3b82f6; color:#fff; }
-.links-add-btn:hover { background:#2563eb; }
+.btn-accent-blue { background:#3b82f6; color:#fff; }
+.btn-accent-blue:hover { background:#2563eb; }
 .links-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-top:12px; }
 .link-card { position:relative; background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:16px; transition:border-color .15s ease; }
 .link-card:hover { border-color:var(--border-strong); }
-.link-card-title { font-weight:700; font-size:14px; color:var(--text-primary); padding-right:20px; }
+.link-card-title { font-weight:700; font-size:14px; color:var(--text-primary); padding-right:32px; }
 .link-card-url { display:block; margin-top:8px; font-size:12px; color:#3b82f6; text-decoration:underline; text-underline-offset:2px; word-break:break-all; }
 .link-card-url:hover { color:#60a5fa; }
-.link-card-delete { position:absolute; top:12px; right:12px; background:none; border:0; color:var(--text-secondary); cursor:pointer; font-size:12px; }
-.link-card-delete:hover { color:#dc2626; }
+.link-card-actions { position:absolute; top:12px; right:12px; display:flex; flex-direction:column; gap:6px; }
+.link-card-icon-btn { width:24px; height:24px; border-radius:50%; background:#fff; border:0; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:11px; padding:0; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.link-card-delete { color:#7f1d1d; }
+.link-card-delete:hover { background:#fee2e2; }
+.link-card-edit { color:#1a1a1a; }
+.link-card-edit:hover { background:#e5e5e5; }
 .links-category-head { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:800; color:var(--text-primary); margin-bottom:4px; }
 .links-category-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
 .link-color-picker { display:flex; gap:10px; margin:6px 0 16px; }
@@ -4908,6 +4912,7 @@ function v22RefreshSummaryIfPresent() {
                 { view: 'notes', icon: '✎', text: 'Notas' },
             ] },
             { label: 'Desarrollo', items: [
+                { view: 'links', icon: '⛓', text: 'Enlaces' },
                 { view: 'events', icon: '◈', text: 'Eventos' },
                 { view: 'work', icon: '◫', text: 'Trabajo' },
                 { view: 'studies', icon: '◎', text: 'Estudios' },
@@ -4920,7 +4925,6 @@ function v22RefreshSummaryIfPresent() {
                 { view: 'culture', icon: '◊', text: 'Ocio' },
                 { view: 'travels', icon: '⌂', text: 'Viajes y Lugares' },
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
-                { view: 'links', icon: '⛓', text: 'Enlaces' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
             ] },
             { label: 'Sistema', items: [
@@ -5148,6 +5152,7 @@ function v22RefreshSummaryIfPresent() {
             else if (kind === 'subject') { switchView('studies'); openSubjectDetail(id); }
             else if (kind === 'movement') { switchView('finances'); }
             else if (kind === 'collectible') { switchView('collectibles'); openEditCollectible(id); }
+            else if (kind === 'document') { switchView('documents'); }
         }
 
         // Índice de todo lo que se puede enlazar/mencionar en la app,
@@ -5272,6 +5277,13 @@ function v22RefreshSummaryIfPresent() {
             });
             (studies.subjects || []).forEach(s => {
                 if (s.name && s.name.toLowerCase().includes(q)) results.push({ kind: 'subject', id: s.id, text: s.name });
+            });
+            // Solo busca entre los documentos ya cargados (la lista se trae
+            // de Supabase Storage al entrar en Documentos, no al arrancar
+            // la app) — si aún no has abierto ese apartado esta sesión, no
+            // habrá nada que buscar todavía.
+            (documents || []).forEach(d => {
+                if (d.name && d.name.toLowerCase().includes(q)) results.push({ kind: 'document', id: d.name, text: d.name });
             });
             return results.slice(0, 30);
         }
@@ -5411,7 +5423,7 @@ function v22RefreshSummaryIfPresent() {
                     document.querySelectorAll('#modal-container input[type="date"]').forEach(inp => { if (!inp.value) inp.value = prefillDate; });
                 }
                 focusFirstModalField();
-            } else if (item.kind === 'entry' || item.kind === 'note' || item.kind === 'subject') {
+            } else if (item.kind === 'entry' || item.kind === 'note' || item.kind === 'subject' || item.kind === 'document') {
                 followMention(item.kind, item.id);
             } else if (item.kind === 'fantasy') {
                 openFantasy();
@@ -5422,6 +5434,9 @@ function v22RefreshSummaryIfPresent() {
             } else if (item.kind === 'nav-sub') {
                 goToNavSubsection(item);
             } else {
+                // Ir a "Home" desde el buscador siempre deja la vista en
+                // Mes, aunque el calendario se hubiera quedado en Día/Semana.
+                if (item.view === 'calendar') calViewMode = 'month';
                 switchView(item.view);
             }
         }
@@ -8651,7 +8666,7 @@ function v22RefreshSummaryIfPresent() {
             <div class="studies-view">
                 <div class="studies-actions-row">
                     <div class="studies-actions-stack">
-                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddSubject()">+ asignatura</button>
+                        <button class="btn-modal-primary studies-inline-add-btn btn-accent-blue" onclick="openAddSubject()">+ asignatura</button>
                         <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddQuickNote()">+ nota rápida</button>
                         <button class="btn-modal-primary studies-inline-add-btn" onclick="openQuickNotesList()">notas rápidas${(studies.quickNotes || []).length ? ` (${studies.quickNotes.length})` : ''}</button>
                     </div>
@@ -8749,7 +8764,7 @@ function v22RefreshSummaryIfPresent() {
                 <div class="studies-actions-row">
                     <div class="studies-actions-stack">
                         <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddLinkCategory()">+ categoría</button>
-                        <button class="btn-modal-primary studies-inline-add-btn links-add-btn" onclick="openAddLink()">+ enlace</button>
+                        <button class="btn-modal-primary studies-inline-add-btn btn-accent-blue" onclick="openAddLink()">+ enlace</button>
                     </div>
                 </div>
                 <h3>Accesos directos de <a href="javascript:void(0)" class="bitacora-username-link" onclick="editUserName()">${nameDisplay}</a></h3>
@@ -8768,9 +8783,12 @@ function v22RefreshSummaryIfPresent() {
         function renderLinkCard(l, color) {
             return `
                 <div class="link-card" style="${color ? `border:3px solid ${color}` : ''}">
-                    <button class="link-card-delete" title="Eliminar" onclick="deleteLink('${l.id}')">✕</button>
+                    <div class="link-card-actions">
+                        <button class="link-card-icon-btn link-card-delete" title="Eliminar" onclick="deleteLink('${l.id}')">✕</button>
+                        <button class="link-card-icon-btn link-card-edit" title="Editar" onclick="openEditLink('${l.id}')">✎</button>
+                    </div>
                     <div class="link-card-title">${escapeHtml(l.title)}</div>
-                    <a href="javascript:void(0)" class="link-card-url" data-ext-url="${escapeHtml(l.url)}" onclick="openLinkPopup(event,this)">${escapeHtml(l.url)}</a>
+                    <a href="javascript:void(0)" class="link-card-url" data-ext-url="${escapeHtml(l.url)}" onclick="openLinkPopup(event,this)">enlace</a>
                 </div>`;
         }
 
@@ -8817,6 +8835,39 @@ function v22RefreshSummaryIfPresent() {
             links = links.filter(l => l.id !== id);
             render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openEditLink(id) {
+            const l = links.find(x => x.id === id);
+            if (!l) return;
+            showModal(`
+                <div class="modal-title">Editar enlace</div>
+                <div class="modal-label">Título</div>
+                <input id="link-title" class="modal-input" value="${escapeHtml(l.title)}">
+                <div class="modal-label">Enlace (URL)</div>
+                <input id="link-url" class="modal-input" value="${escapeHtml(l.url)}">
+                <div class="modal-label">Categoría</div>
+                <select id="link-category" class="modal-input">
+                    <option value="">Sin categoría</option>
+                    ${linkCategories.map(c => `<option value="${c.id}" ${c.id === l.categoryId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
+                </select>
+                <button class="btn-modal-primary" onclick="saveEditLink('${id}')">Guardar cambios</button>
+            `);
+        }
+
+        async function saveEditLink(id) {
+            const l = links.find(x => x.id === id);
+            if (!l) return;
+            const title = document.getElementById('link-title')?.value.trim();
+            let url = document.getElementById('link-url')?.value.trim();
+            const categoryId = document.getElementById('link-category')?.value || null;
+            if (!title || !url) { showToast('Indica un título y un enlace', true); return; }
+            if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+            l.title = title; l.url = url; l.categoryId = categoryId;
+            closeModal();
+            render();
+            try { await saveData(); showToast('Enlace actualizado'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function openAddLinkCategory() {
