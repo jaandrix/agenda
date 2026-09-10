@@ -1853,13 +1853,13 @@
             background: var(--text-primary);
             border: 1px solid var(--text-primary);
         }
-        .year-dot-weekend { background: transparent; border-color: var(--border-strong); }
+        .year-dot-weekend { background: transparent; border-width: 1.75px; border-color: var(--text-secondary); }
         .year-dot-holiday { background: #3b82f6; border-color: #3b82f6; }
         .year-dot-today { box-shadow: 0 0 0 2px var(--bg-modal), 0 0 0 3.5px #22c55e; }
         .year-cal-side { flex: 1 1 260px; max-width: 280px; min-width: 220px; }
-        .year-cal-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; font-size: 11px; color: var(--text-secondary); }
+        .year-cal-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; padding: 6px 4px; font-size: 11px; color: var(--text-secondary); }
         .year-cal-legend-item { display: flex; align-items: center; gap: 8px; }
-        .year-cal-legend-dot { width: 8px; height: 8px; border-radius: 50%; box-sizing: border-box; flex-shrink: 0; }
+        .year-cal-legend-dot { flex-shrink: 0; }
         @media (max-width: 900px) {
             .settings-col-main, .settings-col-side { max-width: 100%; }
         }
@@ -7998,12 +7998,6 @@ function v22RefreshSummaryIfPresent() {
                             <div class="year-cal-header-days">${headerDias}</div>
                         </div>
                         ${filas}
-                        <div class="year-cal-legend">
-                            <div class="year-cal-legend-item"><span class="year-cal-legend-dot year-dot-weekday"></span> Día laboral</div>
-                            <div class="year-cal-legend-item"><span class="year-cal-legend-dot year-dot-weekend"></span> Fin de semana</div>
-                            <div class="year-cal-legend-item"><span class="year-cal-legend-dot year-dot-holiday"></span> Día de fiesta</div>
-                            <div class="year-cal-legend-item"><span class="year-cal-legend-dot year-dot-weekday year-dot-today"></span> Hoy</div>
-                        </div>
                     </div>
                     <div class="year-cal-side">
                         <div class="chart-title" style="font-size:13px">Días de fiesta</div>
@@ -8021,6 +8015,12 @@ function v22RefreshSummaryIfPresent() {
                             `).join('') : '<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Sin días de fiesta añadidos este año.</div>'}
                         </div>
                     </div>
+                </div>
+                <div class="year-cal-legend">
+                    <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot"></span> Día laboral</div>
+                    <div class="year-cal-legend-item"><span class="year-dot year-dot-weekend year-cal-legend-dot"></span> Fin de semana</div>
+                    <div class="year-cal-legend-item"><span class="year-dot year-dot-holiday year-cal-legend-dot"></span> Día de fiesta</div>
+                    <div class="year-cal-legend-item"><span class="year-dot year-dot-today year-cal-legend-dot"></span> Hoy</div>
                 </div>
             </div>`;
         }
