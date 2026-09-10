@@ -6027,6 +6027,7 @@ function v22RefreshSummaryIfPresent() {
                     fantasyData = saved.fantasyData;
                     if (!fantasyData.jornadas) fantasyData.jornadas = [];
                     if (!fantasyData.valorHistorico) fantasyData.valorHistorico = [];
+                    hydrateFantasyHiddenUsers();
                     fantasyDataFromCloud = true;
                 } else {
                     fantasyDataFromCloud = false;
@@ -12023,12 +12024,31 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         // Usuarios ocultos (deseleccionados) en las gráficas de puntos y de
-        // evolución económica; cada una mantiene su propia selección.
+        // evolución económica; cada una mantiene su propia selección. Se
+        // guarda en fantasyData.hiddenChartUsers para que la selección viaje
+        // con el resto de datos de Fantasy y siga así al volver a entrar.
         let fantasyHiddenUsers = { points: new Set(), economic: new Set() };
+
+        function hydrateFantasyHiddenUsers() {
+            const saved = fantasyData.hiddenChartUsers || {};
+            fantasyHiddenUsers = {
+                points: new Set(Array.isArray(saved.points) ? saved.points : []),
+                economic: new Set(Array.isArray(saved.economic) ? saved.economic : [])
+            };
+        }
+
+        function persistFantasyHiddenUsers() {
+            fantasyData.hiddenChartUsers = {
+                points: Array.from(fantasyHiddenUsers.points),
+                economic: Array.from(fantasyHiddenUsers.economic)
+            };
+            saveFantasyData();
+        }
 
         function toggleFantasyChartUser(chartKey, nombre) {
             const set = fantasyHiddenUsers[chartKey];
             if (set.has(nombre)) set.delete(nombre); else set.add(nombre);
+            persistFantasyHiddenUsers();
             if (chartKey === 'points') renderPointsChart(); else renderEconomicEvolutionChart();
             const chipsEl = document.getElementById('fantasy-chips-' + chartKey);
             if (chipsEl) chipsEl.innerHTML = renderFantasyUserChips(chartKey);
@@ -12036,6 +12056,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
         function resetFantasyChartUsers(chartKey) {
             fantasyHiddenUsers[chartKey].clear();
+            persistFantasyHiddenUsers();
             if (chartKey === 'points') renderPointsChart(); else renderEconomicEvolutionChart();
             const chipsEl = document.getElementById('fantasy-chips-' + chartKey);
             if (chipsEl) chipsEl.innerHTML = renderFantasyUserChips(chartKey);
@@ -12095,8 +12116,28 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // Ordenar por string (localeCompare) fallaba en cuanto se mezclaban fechas
         // con y sin hora, o si faltaba el campo: por eso el timeline no siempre
         // mostraba las operaciones más recientes arriba.
+        // Las fechas pegadas desde el texto de importación vienen en formato
+        // DD/MM/AAAA (el que usa el propio juego), mientras que el resto de
+        // fechas de la app ya están en ISO (AAAA-MM-DD). new Date() no sabe
+        // parsear "30/08/2026" de forma fiable (en muchos motores devuelve
+        // Invalid Date), así que sin este caso especial todas esas fechas
+        // valían 0 y el orden cronológico entre transacciones quedaba mal —
+        // esto es lo que hacía que un jugador vendido y vuelto a comprar (o
+        // viceversa) pudiera aparecer con el estado equivocado en la plantilla.
         function fantasyDateValue(fecha) {
             if (!fecha) return 0;
+            const partes = String(fecha).trim().split(' ');
+            const fechaParte = partes[0];
+            const horaParte = /^\d{2}:\d{2}/.test(partes[1] || '') ? partes[1] + ':00' : '00:00:00';
+
+            const dmy = fechaParte.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (dmy) {
+                const [, d, m, y] = dmy;
+                const iso = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${horaParte}`;
+                const dt = new Date(iso);
+                return isNaN(dt) ? 0 : dt.getTime();
+            }
+
             const normalized = /\d{2}:\d{2}/.test(fecha) ? fecha.replace(' ', 'T') : fecha + 'T00:00:00';
             const d = new Date(normalized);
             return isNaN(d) ? 0 : d.getTime();
@@ -12152,6 +12193,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     fantasyData = parsed;
                     if (!fantasyData.jornadas) fantasyData.jornadas = [];
                     if (!fantasyData.valorHistorico) fantasyData.valorHistorico = [];
+                    hydrateFantasyHiddenUsers();
                     return true;
                 }
             } catch (e) { console.error('Error cargando datos de Fantasy:', e); }
@@ -12409,6 +12451,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const u = fantasyData.usuarios.find(x => x.nombre === nombre);
             if (!u) return [];
             if (!Array.isArray(u.equipoInicial)) u.equipoInicial = [];
+            if (!Array.isArray(u.plantillaOcultos)) u.plantillaOcultos = [];
 
             const txsByPlayer = {};
             fantasyData.transacciones.forEach(tx => {
@@ -12426,7 +12469,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     if (!isSystemTx && tx.comprador === nombre) openBuy = tx;
                     else if (!isSystemTx && tx.vendedor === nombre) openBuy = null;
                 });
-                if (openBuy) {
+                // "Borrar" un jugador de la plantilla NUNCA toca la transacción de
+                // compra real (eso movería dinero de verdad). Solo se anota su id
+                // en plantillaOcultos para dejar de mostrarlo aquí; si algún día
+                // vuelve a comprarse, la nueva transacción tiene otro id y no
+                // sigue oculta.
+                if (openBuy && !u.plantillaOcultos.includes(openBuy.id)) {
                     squad.push({
                         jugador,
                         source: 'tx',
@@ -12518,22 +12566,29 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             showToast('Jugador añadido a la plantilla inicial');
         }
 
+        // Borrar un jugador de la plantilla es una acción solo visual: nunca
+        // borra ni modifica una transacción real ni el efectivo del usuario
+        // (eso causó un descuadre real de saldo — un jugador "eliminado" así
+        // hacía desaparecer su compra y el dinero volvía a aparecer como
+        // disponible). Si el jugador viene de una compra, simplemente se
+        // apunta su id como oculto; si viene del equipo inicial (sin
+        // transacción ni dinero de por medio), sí se quita del todo porque
+        // ahí no hay ningún movimiento económico que proteger.
         function confirmDeleteSquadPlayer(nombre, jugador, source, refId) {
-            if (!confirm(`¿Seguro que quieres borrar a ${jugador}?`)) return;
+            if (!confirm(`¿Seguro que quieres borrar a ${jugador} de la plantilla? Esto no afecta a ninguna transacción ni a tu efectivo.`)) return;
             const u = fantasyData.usuarios.find(x => x.nombre === nombre);
             if (!u) return;
             if (source === 'tx') {
-                fantasyData.transacciones = fantasyData.transacciones.filter(t => t.id !== refId);
-                recalcFantasyBalances();
+                if (!Array.isArray(u.plantillaOcultos)) u.plantillaOcultos = [];
+                if (!u.plantillaOcultos.includes(refId)) u.plantillaOcultos.push(refId);
             } else {
                 u.equipoInicial = (u.equipoInicial || []).filter(p => p.id !== refId);
-                recalcFantasyBalances();
             }
             saveFantasyData();
             refreshFantasySquadModal(nombre);
             document.getElementById('content').innerHTML = renderFantasy();
             renderAllFantasyCharts();
-            showToast('Jugador eliminado de la plantilla');
+            showToast('Jugador quitado de la plantilla');
         }
 
         // Calculadora de cláusula: el juego duplica en el valor de mercado lo
@@ -12611,78 +12666,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             document.getElementById('content').innerHTML = renderFantasy();
             renderAllFantasyCharts();
             showToast('Transacción eliminada');
-        }
-
-        function openManualClauseExpense(nombre) {
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">Cláusula manual</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Para gastos en cláusulas que no aparecen en el feed de actividad. Resta directamente del efectivo de ${escapeHtml(nombre)}.</div>
-                <div class="modal-label">Jugador (opcional)</div>
-                <input id="manual-clause-player" class="modal-input" placeholder="Ej: Bellingham">
-                <div class="modal-label">Importe (€)</div>
-                <input type="number" id="manual-clause-amount" class="modal-input" step="0.01">
-                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmManualClauseExpense('${nombre}')">Guardar</button>
-            `);
-        }
-
-        function confirmManualClauseExpense(nombre) {
-            const amount = parseFloat(document.getElementById('manual-clause-amount').value);
-            if (isNaN(amount) || amount <= 0) { showToast('Introduce un importe válido', true); return; }
-            const jugador = document.getElementById('manual-clause-player').value.trim() || 'Cláusula manual';
-            fantasyData.transacciones.push({
-                id: 'tx_clausula_' + Date.now(),
-                tipo: 'clausula',
-                jugador,
-                precio: amount,
-                fecha: todayISO(),
-                comprador: nombre,
-                vendedor: 'LALIGA',
-                gastoClausula: 0
-            });
-            recalcFantasyBalances();
-            saveFantasyData();
-            closeModal();
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast('Cláusula manual registrada');
-        }
-
-        function renderClauseButton(tx) {
-            const gasto = tx.gastoClausula || 0;
-            return `
-                <div style="margin-top:4px;display:flex;align-items:center;gap:6px">
-                    <span style="font-size:11px;color:var(--text-secondary)">Cláusula: ${gasto.toLocaleString('es-ES')}€</span>
-                    <button class="btn-secondary" style="padding:2px 10px;font-size:11px" onclick="event.stopPropagation();addClauseExpense('${tx.id}')">✎</button>
-                </div>
-            `;
-        }
-
-        function addClauseExpense(txId) {
-            const tx = fantasyData.transacciones.find(t => t.id === txId);
-            if (!tx) return;
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Gasto en cláusula</div>
-                <div class="modal-label">Importe adicional (€)</div>
-                <input type="number" id="clause-expense-input" class="modal-input" value="${tx.gastoClausula || 0}" step="0.01">
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Este importe se suma al precio de compra (actual: ${tx.precio.toLocaleString('es-ES')}€).</div>
-                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmClauseExpense('${txId}')">Guardar</button>
-            `);
-        }
-
-        function confirmClauseExpense(txId) {
-            const tx = fantasyData.transacciones.find(t => t.id === txId);
-            if (!tx) return;
-            const value = parseFloat(document.getElementById('clause-expense-input').value);
-            if (isNaN(value) || value < 0) { showToast('Introduce un importe válido', true); return; }
-            const previousExpense = tx.gastoClausula || 0;
-            tx.gastoClausula = value;
-            tx.precio = tx.precio - previousExpense + value;
-            recalcFantasyBalances();
-            saveFantasyData();
-            closeModal();
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast('Gasto en cláusula actualizado');
         }
 
         // ============================================================
@@ -12981,7 +12964,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                             </div>
                                             <div class="user-actions">
                                                 <button class="btn-secondary" onclick="event.stopPropagation();editTemplateValue('${u.nombre}')">Plantilla</button>
-                                                <button class="btn-secondary" onclick="event.stopPropagation();openManualClauseExpense('${u.nombre}')">Cláusula</button>
                                                 <button class="btn-secondary fantasy-btn-danger" onclick="event.stopPropagation();deleteFantasyUser('${u.nombre}')">Borrar</button>
                                             </div>
                                         </div>
@@ -13090,7 +13072,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                     <span style="font-size:11px;color:var(--text-secondary)">${dateLabel}</span>
                                     <button class="btn-secondary" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();deleteFantasyTransaction('${tx.id}')">Eliminar</button>
                                 </div>
-                                ${isBuy ? renderClauseButton(tx) : ''}
                             </div>
                         `;
                     }).join('') : '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin transacciones</div>'}
