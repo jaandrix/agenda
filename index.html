@@ -1626,6 +1626,22 @@
         }
         .day-modal-list { display: flex; flex-direction: column; gap: 2px; }
         .day-modal-list .empty-state { padding: 30px 8px; }
+        .day-modal-add-btn {
+            width: 100%;
+            padding: 13px 16px;
+            border: 0;
+            border-radius: 999px;
+            background: #3b82f6;
+            color: #fff;
+            font-family: 'Poppins', -apple-system, system-ui, sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+            box-shadow: 0 4px 12px rgba(59,130,246,.35);
+        }
+        .day-modal-add-btn:hover { background: #2f6fdb; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,.4); }
+        .day-modal-add-btn:active { transform: translateY(0); }
 
         .modal-label {
             font-size: 11px;
@@ -1712,6 +1728,92 @@
         }
         body.beige .btn-modal-danger {
             background: #f3e0d8;
+        }
+
+        .settings-layout { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; }
+        .settings-col-main { flex: 1 1 560px; max-width: 600px; min-width: 0; }
+        .settings-col-side { flex: 1 1 300px; max-width: 380px; min-width: 0; }
+        .friend-code-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-card);
+            border: 1.5px solid var(--border-strong);
+            border-radius: 999px;
+            padding: 8px 8px 8px 20px;
+            width: fit-content;
+        }
+        .friend-code-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: 3px;
+            color: var(--text-primary);
+        }
+        .friend-code-copy-btn {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            border: 0;
+            background: #3b82f6;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform .15s ease, background .15s ease;
+        }
+        .friend-code-copy-btn:hover { background: #2f6fdb; transform: scale(1.06); }
+        .friend-code-copy-btn:active { transform: scale(0.96); }
+        .friend-add-row { display: flex; gap: 8px; margin: 12px 0; }
+        .friend-add-input {
+            flex: 1;
+            min-width: 0;
+            padding: 9px 14px;
+            border-radius: 16px;
+            border: 1px solid var(--border-strong);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .friend-add-input:focus { outline: none; border-color: #3b82f6; }
+        .friend-add-input::placeholder { letter-spacing: normal; font-family: 'Poppins', sans-serif; }
+        .friend-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+        .friend-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 9px 8px 9px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+            border-radius: 14px;
+        }
+        .friend-list-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+        .friend-remove-btn {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            border: 0;
+            background: none;
+            color: #dc2626;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .15s ease;
+        }
+        .friend-remove-btn:hover { background: rgba(220,38,38,.12); }
+        @media (max-width: 900px) {
+            .settings-col-main, .settings-col-side { max-width: 100%; }
         }
 
         .btn-secondary {
@@ -5641,6 +5743,137 @@ function v22RefreshSummaryIfPresent() {
         }
 
         // ============================================================
+        //  CÓDIGO DE AMIGO (conexión entre cuentas)
+        // ============================================================
+        let userFriendCode = null;
+
+        async function cargarCodigoAmigo() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { userFriendCode = null; return; }
+                const { data, error } = await sb.from('codigos_amigo').select('codigo').eq('user_id', user.id).maybeSingle();
+                if (error) { console.error('Error cargando el código de amigo:', error); return; }
+                userFriendCode = data?.codigo || null;
+            } catch (e) {
+                console.error('Error cargando el código de amigo:', e);
+            }
+        }
+
+        function generarCodigoAmigoAleatorio() {
+            // Sin 0/O/1/I para evitar confusiones al leerlo o escribirlo a mano.
+            const alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let codigo = '';
+            for (let i = 0; i < 8; i++) codigo += alfabeto[Math.floor(Math.random() * alfabeto.length)];
+            return codigo;
+        }
+
+        async function generarCodigoAmigo() {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) { showToast('Inicia sesión para generar tu código', true); return; }
+            const btn = document.getElementById('friend-code-generate-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Generando...'; }
+            try {
+                let ultimoError = null;
+                for (let intento = 0; intento < 3; intento++) {
+                    const codigo = generarCodigoAmigoAleatorio();
+                    const { error } = await sb.from('codigos_amigo').insert({ user_id: user.id, codigo });
+                    if (!error) { userFriendCode = codigo; ultimoError = null; break; }
+                    ultimoError = error;
+                    if (error.code !== '23505') break; // solo reintenta si fue una colisión de código único
+                }
+                if (ultimoError) throw ultimoError;
+                if (currentView === 'settings') document.getElementById('content').innerHTML = renderSettings();
+                showToast('Código de amigo generado');
+            } catch (e) {
+                console.error('Error generando el código de amigo:', e);
+                showToast('No se pudo generar el código' + (e?.message ? ': ' + e.message : ''), true);
+                if (btn) { btn.disabled = false; btn.textContent = '🔗 Generar código de amigo'; }
+            }
+        }
+
+        function copiarCodigoAmigo() {
+            if (!userFriendCode) return;
+            const hecho = () => showToast('Código copiado');
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(userFriendCode).then(hecho).catch(() => copiarTextoConFallback(userFriendCode, hecho));
+            } else {
+                copiarTextoConFallback(userFriendCode, hecho);
+            }
+        }
+
+        function copiarTextoConFallback(texto, onDone) {
+            const input = document.createElement('textarea');
+            input.value = texto;
+            input.style.position = 'fixed';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.select();
+            try { document.execCommand('copy'); onDone(); } catch (e) { console.error(e); }
+            input.remove();
+        }
+
+        // ------------------------------------------------------------
+        //  AMIGOS: añadir por código y listar
+        // ------------------------------------------------------------
+        let amigos = [];
+
+        async function cargarAmigos() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { amigos = []; return; }
+                const { data, error } = await sb.from('amistades')
+                    .select('friend_id, friend_nombre, creado_en')
+                    .eq('user_id', user.id)
+                    .order('creado_en', { ascending: false });
+                if (error) { console.error('Error cargando amigos:', error); return; }
+                amigos = data || [];
+            } catch (e) {
+                console.error('Error cargando amigos:', e);
+            }
+        }
+
+        function friendAddInputKeydown(e) {
+            if (e.key === 'Enter') { e.preventDefault(); anadirAmigoPorCodigo(); }
+        }
+
+        async function anadirAmigoPorCodigo() {
+            const input = document.getElementById('friend-add-input');
+            const codigo = input?.value?.trim().toUpperCase();
+            if (!codigo) { showToast('Escribe el código de tu amigo', true); return; }
+            const btn = document.getElementById('friend-add-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Añadiendo...'; }
+            try {
+                const { error } = await sb.rpc('anadir_amigo_por_codigo', { p_codigo: codigo });
+                if (error) throw error;
+                await cargarAmigos();
+                if (currentView === 'settings') document.getElementById('content').innerHTML = renderSettings();
+                showToast('Amigo añadido');
+            } catch (e) {
+                console.error('Error añadiendo amigo:', e);
+                const msg = e?.message || '';
+                const texto = msg.includes('Código no encontrado') ? 'No existe ningún amigo con ese código'
+                    : msg.includes('a ti mismo') ? 'Ese es tu propio código' : 'No se pudo añadir el amigo';
+                showToast(texto, true);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '+ Añadir'; }
+            }
+        }
+
+        async function eliminarAmigo(friendId, nombre) {
+            if (!confirm(`¿Eliminar a ${nombre || 'este amigo'}? Dejaréis de estar conectados en Bitácora.`)) return;
+            try {
+                const { error } = await sb.rpc('eliminar_amigo', { p_friend_id: friendId });
+                if (error) throw error;
+                amigos = amigos.filter(a => a.friend_id !== friendId);
+                if (currentView === 'settings') document.getElementById('content').innerHTML = renderSettings();
+                showToast('Amigo eliminado');
+            } catch (e) {
+                console.error('Error eliminando amigo:', e);
+                showToast('No se pudo eliminar', true);
+            }
+        }
+
+        // ============================================================
         //  LOAD / SAVE (SUPABASE)
         // ============================================================
         async function loadData() {
@@ -7847,7 +8080,7 @@ function v22RefreshSummaryIfPresent() {
                     <button class="modal-close" onclick="closeModal()">✕</button>
                 </div>
                 <div class="day-modal-list">${rows}</div>
-                <button class="finance-oneoff-btn" style="margin-top:14px" onclick="openNewEntryForDay('${date}')">+ Añadir entrada este día</button>
+                <button class="day-modal-add-btn" style="margin-top:14px" onclick="openNewEntryForDay('${date}')">+ Añadir entrada este día</button>
             `);
         }
 
@@ -8492,10 +8725,10 @@ function v22RefreshSummaryIfPresent() {
                     </div>
                     <div class="culture-tabs">
                         <button class="culture-tab ${travelPlacesTab === 'travels' ? 'active' : ''}" onclick="setTravelPlacesTab('travels')">
-                            <span class="culture-tab-icon">◈</span><span>Viajes</span><span class="culture-tab-count">${travels.length}</span>
+                            <span>Viajes</span><span class="culture-tab-count">${travels.length}</span>
                         </button>
                         <button class="culture-tab ${travelPlacesTab === 'places' ? 'active' : ''}" onclick="setTravelPlacesTab('places')">
-                            <span class="culture-tab-icon">⌂</span><span>Lugares</span><span class="culture-tab-count">${places.length}</span>
+                            <span>Lugares</span><span class="culture-tab-count">${places.length}</span>
                         </button>
                     </div>
                     <div class="culture-tab-content">
@@ -9481,7 +9714,8 @@ function v22RefreshSummaryIfPresent() {
             const devColor = devModeActive ? 'var(--fantasy-accent)' : 'var(--text-secondary)';
 
             return `
-                <div style="max-width:600px">
+                <div class="settings-layout">
+                <div class="settings-col-main">
                     <div class="chart-container" style="margin-bottom:16px">
                         <div class="chart-title">Datos de la cuenta</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
@@ -9534,6 +9768,39 @@ function v22RefreshSummaryIfPresent() {
                         </div>
                         <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Esto cerrará tu sesión en todos los navegadores y dispositivos donde hayas iniciado sesión.</div>
                     </div>
+                </div>
+
+                <div class="settings-col-side">
+                    <div class="chart-container">
+                        <div class="chart-title">Amigos</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin:8px 0 14px">Genera tu código de amigo permanente y compártelo para conectar tu cuenta con la de otra persona.</div>
+                        ${userFriendCode ? `
+                            <div class="friend-code-box">
+                                <span class="friend-code-value">${userFriendCode}</span>
+                                <button class="friend-code-copy-btn" onclick="copiarCodigoAmigo()" title="Copiar código">⧉</button>
+                            </div>
+                        ` : `
+                            <button class="btn-secondary" id="friend-code-generate-btn" style="width:auto" onclick="generarCodigoAmigo()">🔗 Generar código de amigo</button>
+                        `}
+                    </div>
+
+                    <div class="chart-container" style="margin-top:16px">
+                        <div class="chart-title">Añadir amigo</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Introduce el código que te ha compartido tu amigo.</div>
+                        <div class="friend-add-row">
+                            <input type="text" id="friend-add-input" class="friend-add-input" placeholder="Código de amigo" maxlength="8" onkeydown="friendAddInputKeydown(event)">
+                            <button class="btn-secondary" id="friend-add-btn" style="width:auto" onclick="anadirAmigoPorCodigo()">+ Añadir</button>
+                        </div>
+                        <div class="friend-list">
+                            ${amigos.length ? amigos.map(a => `
+                                <div class="friend-list-item">
+                                    <span class="friend-list-name">${escapeHtml(a.friend_nombre || 'Amigo sin nombre')}</span>
+                                    <button class="friend-remove-btn" title="Eliminar amigo" onclick="eliminarAmigo('${a.friend_id}', '${escapeHtml(a.friend_nombre || '')}')">✕</button>
+                                </div>
+                            `).join('') : '<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Aún no tienes amigos añadidos.</div>'}
+                        </div>
+                    </div>
+                </div>
                 </div>`;
         }
 
@@ -13476,6 +13743,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         async function init() {
             loadTheme();
             const loaded = await loadData();
+            await cargarCodigoAmigo();
+            await cargarAmigos();
 
             if (!loadFantasyData()) {
                 fantasyData = getDefaultFantasyData();
