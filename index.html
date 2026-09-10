@@ -1297,6 +1297,33 @@
             color: rgba(255,255,255,0.55);
             min-height: 14px;
         }
+        /* Tarjeta "fantasma": recomendación de un amigo aún no añadida a tu
+           biblioteca — opacidad baja, sin color, borde discontinuo. */
+        .media-card-ghost {
+            opacity: 0.55;
+            filter: grayscale(1);
+            border-style: dashed;
+            border-color: rgba(255,255,255,0.3);
+        }
+        .media-card-ghost:hover { opacity: 0.8; }
+        .media-card-ghost-from {
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+            font-weight: 700;
+        }
+        .media-card-ghost-note {
+            font-size: 10px;
+            color: rgba(255,255,255,0.55);
+            font-style: italic;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .culture-shared-toggle {
+            margin-left: auto;
+        }
         .media-card-status-slot {
             min-height: 22px;
             display: flex;
@@ -1833,7 +1860,28 @@
         }
         .year-cal-btn:hover { transform: scale(1.06); opacity: .85; }
         .year-cal-btn:active { transform: scale(0.95); }
-        .modal-sheet:has(.year-cal-modal) { max-width: 920px; }
+        /* Botón "Cambio de vista": mismo lenguaje visual que year-cal-btn pero
+           más pequeño y con un icono de dos círculos superpuestos (comparar
+           entre la vista simple y la vista de comparación). */
+        .year-cal-compare-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border-strong);
+            background: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            padding: 0;
+            transition: background .15s ease, transform .15s ease, border-color .15s ease;
+        }
+        .year-cal-compare-btn:hover { border-color: var(--text-primary); transform: scale(1.06); }
+        .year-cal-compare-btn:active { transform: scale(0.95); }
+        .year-cal-compare-btn.active { background: var(--text-primary); color: var(--bg-modal); border-color: var(--text-primary); }
+        .modal-sheet:has(.year-cal-modal) { max-width: 760px; }
         .year-cal-modal { width: 100%; }
         .year-cal-body { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
         .year-cal-grid-wrap { flex: 1 1 560px; min-width: 0; overflow-x: auto; }
@@ -1852,11 +1900,9 @@
             box-sizing: border-box;
             background: var(--text-primary);
             border: 1px solid var(--text-primary);
+            transition: background .35s ease, border-color .35s ease, box-shadow .35s ease;
         }
-        .year-dot-weekend { background: transparent; border-width: 1.75px; border-color: var(--text-secondary); }
-        .year-dot-holiday { background: #3b82f6; border-color: #3b82f6; }
-        .year-dot-today { box-shadow: 0 0 0 2px var(--bg-modal), 0 0 0 3.5px #22c55e; }
-        .year-cal-side { flex: 1 1 260px; max-width: 280px; min-width: 220px; }
+        .year-dot-future { background: transparent; border-width: 1.75px; border-color: var(--text-secondary); }
         .year-cal-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; padding: 6px 4px; font-size: 11px; color: var(--text-secondary); }
         .year-cal-legend-item { display: flex; align-items: center; gap: 8px; }
         .year-cal-legend-dot { flex-shrink: 0; }
@@ -4775,7 +4821,18 @@ function v22RefreshSummaryIfPresent() {
             const { error } = await sb.auth.signInWithPassword({ email, password });
             btn.disabled = false;
             btn.textContent = 'Entrar';
-            if (error) { errorEl.textContent = 'Credenciales incorrectas o error de conexión.'; return; }
+            if (error) {
+                console.error('Error de inicio de sesión:', error);
+                const msg = (error.message || '').toLowerCase();
+                if (msg.includes('email not confirmed')) {
+                    errorEl.textContent = 'Tu cuenta todavía figura como no confirmada en Supabase.';
+                } else if (msg.includes('invalid login credentials')) {
+                    errorEl.textContent = 'Email o contraseña incorrectos.';
+                } else {
+                    errorEl.textContent = 'No se pudo iniciar sesión: ' + (error.message || 'error de conexión');
+                }
+                return;
+            }
             await startApp();
         }
 
@@ -4977,9 +5034,6 @@ function v22RefreshSummaryIfPresent() {
         // Oculta las cifras del dashboard financiero. Se guarda en la nube
         // (no en localStorage) para que viaje entre dispositivos.
         let blurFinances = false;
-        // Días de fiesta/vacaciones marcados por el usuario para la vista
-        // anual de puntos (fechas ISO "YYYY-MM-DD"), se guardan en la nube.
-        let diasFiesta = [];
         let yearCalYear = new Date().getFullYear();
         // Estudios: asignaturas (con exámenes/trabajos y nota), horario semanal
         // recurrente y notas rápidas.
@@ -5065,6 +5119,7 @@ function v22RefreshSummaryIfPresent() {
             goals: 'Objetivos',
             planner: 'Planificador del día',
             collectibles: 'Coleccionables',
+            friends: 'Amigos',
             studies: 'Estudios',
             links: 'Enlaces',
             settings: 'Ajustes'
@@ -5096,6 +5151,7 @@ function v22RefreshSummaryIfPresent() {
                 { view: 'culture', icon: '◊', text: 'Ocio' },
                 { view: 'travels', icon: '⌂', text: 'Viajes y Lugares' },
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
+                { view: 'friends', icon: '◕', text: 'Amigos' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
             ] },
             { label: 'Sistema', items: [
@@ -5810,6 +5866,12 @@ function v22RefreshSummaryIfPresent() {
         //  CÓDIGO DE AMIGO (conexión entre cuentas)
         // ============================================================
         let userFriendCode = null;
+        // Nombre visible para amigos (independiente del nombre de cuenta / azul
+        // bitácora), y recomendaciones de libros/pelis/series/videojuegos que te
+        // han hecho tus amigos y aún no has revisado.
+        let nombrePublico = null;
+        let recomendaciones = [];
+        let cultureSharedMode = false;
 
         async function cargarCodigoAmigo() {
             try {
@@ -5846,7 +5908,7 @@ function v22RefreshSummaryIfPresent() {
                     if (error.code !== '23505') break; // solo reintenta si fue una colisión de código único
                 }
                 if (ultimoError) throw ultimoError;
-                if (currentView === 'settings') document.getElementById('content').innerHTML = renderSettings();
+                if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
                 showToast('Código de amigo generado');
             } catch (e) {
                 console.error('Error generando el código de amigo:', e);
@@ -5891,6 +5953,18 @@ function v22RefreshSummaryIfPresent() {
                     .order('creado_en', { ascending: false });
                 if (error) { console.error('Error cargando amigos:', error); return; }
                 amigos = data || [];
+
+                // El nombre visible (independiente del nombre de cuenta) manda
+                // sobre el snapshot guardado en su momento en "amistades", si
+                // ese amigo ya se ha puesto uno.
+                if (amigos.length) {
+                    const ids = amigos.map(a => a.friend_id);
+                    const { data: publicos } = await sb.from('perfiles_publicos')
+                        .select('user_id, nombre_publico')
+                        .in('user_id', ids);
+                    const porId = Object.fromEntries((publicos || []).map(p => [p.user_id, p.nombre_publico]));
+                    amigos.forEach(a => { a.nombre_visible = porId[a.friend_id] || a.friend_nombre || 'Amigo sin nombre'; });
+                }
             } catch (e) {
                 console.error('Error cargando amigos:', e);
             }
@@ -5910,7 +5984,7 @@ function v22RefreshSummaryIfPresent() {
                 const { error } = await sb.rpc('anadir_amigo_por_codigo', { p_codigo: codigo });
                 if (error) throw error;
                 await cargarAmigos();
-                if (currentView === 'settings') document.getElementById('content').innerHTML = renderSettings();
+                if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
                 showToast('Amigo añadido');
             } catch (e) {
                 console.error('Error añadiendo amigo:', e);
@@ -5929,12 +6003,117 @@ function v22RefreshSummaryIfPresent() {
                 const { error } = await sb.rpc('eliminar_amigo', { p_friend_id: friendId });
                 if (error) throw error;
                 amigos = amigos.filter(a => a.friend_id !== friendId);
-                if (currentView === 'settings') document.getElementById('content').innerHTML = renderSettings();
+                if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
                 showToast('Amigo eliminado');
             } catch (e) {
                 console.error('Error eliminando amigo:', e);
                 showToast('No se pudo eliminar', true);
             }
+        }
+
+        // ------------------------------------------------------------
+        //  NOMBRE VISIBLE (independiente del nombre de cuenta)
+        // ------------------------------------------------------------
+        async function cargarNombrePublico() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { nombrePublico = null; return; }
+                const { data, error } = await sb.from('perfiles_publicos')
+                    .select('nombre_publico').eq('user_id', user.id).maybeSingle();
+                if (error) { console.error('Error cargando el nombre visible:', error); return; }
+                nombrePublico = data?.nombre_publico || null;
+            } catch (e) {
+                console.error('Error cargando el nombre visible:', e);
+            }
+        }
+
+        async function guardarNombrePublico() {
+            const input = document.getElementById('nombre-publico-input');
+            const nuevo = input?.value?.trim();
+            if (!nuevo) { showToast('Escribe un nombre', true); return; }
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) return;
+            const btn = document.getElementById('nombre-publico-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+            try {
+                const { error } = await sb.from('perfiles_publicos')
+                    .upsert({ user_id: user.id, nombre_publico: nuevo, actualizado_en: new Date().toISOString() }, { onConflict: 'user_id' });
+                if (error) {
+                    if (error.code === '23505') { showToast('Ese nombre ya lo tiene otra persona, prueba otro', true); return; }
+                    throw error;
+                }
+                nombrePublico = nuevo;
+                document.getElementById('content').innerHTML = renderFriendsView();
+                showToast('Nombre visible actualizado');
+            } catch (e) {
+                console.error('Error guardando el nombre visible:', e);
+                showToast('No se pudo guardar el nombre', true);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+            }
+        }
+
+        // ------------------------------------------------------------
+        //  VISTA "AMIGOS"
+        // ------------------------------------------------------------
+        async function loadFriendsViewData() {
+            await Promise.all([cargarCodigoAmigo(), cargarAmigos(), cargarNombrePublico()]);
+            if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
+        }
+
+        function renderFriendsView() {
+            return `
+                <div class="settings-layout">
+                <div class="settings-col-main">
+                    <div class="chart-container" style="margin-bottom:16px">
+                        <div class="chart-title">Tu nombre visible</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin:8px 0 14px">Es el nombre con el que te ven tus amigos dentro de Bitácora. No tiene por qué coincidir con el nombre de tu cuenta, y no puede repetirse con el de otra persona.</div>
+                        <div class="friend-add-row">
+                            <input type="text" id="nombre-publico-input" class="modal-input" style="margin:0;text-transform:none;letter-spacing:normal;font-family:'Poppins',sans-serif" placeholder="Tu nombre visible" value="${escapeHtml(nombrePublico || '')}">
+                            <button class="btn-secondary" id="nombre-publico-btn" style="width:auto" onclick="guardarNombrePublico()">Guardar</button>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">Mis amigos</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Introduce el código que te ha compartido tu amigo para conectar con su cuenta.</div>
+                        <div class="friend-add-row">
+                            <input type="text" id="friend-add-input" class="friend-add-input" placeholder="Código de amigo" maxlength="8" onkeydown="friendAddInputKeydown(event)">
+                            <button class="btn-secondary" id="friend-add-btn" style="width:auto" onclick="anadirAmigoPorCodigo()">+ Añadir</button>
+                        </div>
+                        <div class="friend-list">
+                            ${amigos.length ? amigos.map(a => `
+                                <div class="friend-list-item">
+                                    <span class="friend-list-name">${escapeHtml(a.nombre_visible || a.friend_nombre || 'Amigo sin nombre')}</span>
+                                    <button class="friend-remove-btn" title="Eliminar amigo" onclick="eliminarAmigo('${a.friend_id}', '${escapeHtml(a.nombre_visible || a.friend_nombre || '')}')">✕</button>
+                                </div>
+                            `).join('') : '<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Aún no tienes amigos añadidos.</div>'}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-col-side">
+                    <div class="chart-container">
+                        <div class="chart-title">Tu código de amigo</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin:8px 0 14px">Genera tu código de amigo permanente y compártelo para conectar tu cuenta con la de otra persona.</div>
+                        ${userFriendCode ? `
+                            <div class="friend-code-box">
+                                <span class="friend-code-value">${userFriendCode}</span>
+                                <button class="friend-code-copy-btn" onclick="copiarCodigoAmigo()" title="Copiar código">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2.5"/><path d="M5 15H3.5A1.5 1.5 0 0 1 2 13.5v-10A1.5 1.5 0 0 1 3.5 2h10A1.5 1.5 0 0 1 15 3.5V5"/></svg>
+                                </button>
+                            </div>
+                        ` : `
+                            <button class="btn-secondary" id="friend-code-generate-btn" style="width:auto" onclick="generarCodigoAmigo()">🔗 Generar código de amigo</button>
+                        `}
+                    </div>
+
+                    <div class="chart-container" style="margin-top:16px">
+                        <div class="chart-title">Recomendaciones</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Comparte libros, pelis, series y videojuegos con tus amigos desde la ficha de cada uno en Ocio, y revisa lo que te recomiendan a ti con el botón "Recomendado" de cada apartado.</div>
+                    </div>
+                </div>
+                </div>`;
         }
 
         // ============================================================
@@ -6010,7 +6189,6 @@ function v22RefreshSummaryIfPresent() {
                 financeProfile.chartHistory = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
                 financeProfile.forecastProfile = financeProfile.forecastProfile || { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 };
                 blurFinances = !!saved.blurFinances;
-                diasFiesta = Array.isArray(saved.diasFiesta) ? saved.diasFiesta : [];
                 studies = (saved.studies && typeof saved.studies === 'object') ? saved.studies : { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, notes: '' };
                 studies.subjects = Array.isArray(studies.subjects) ? studies.subjects : [];
                 studies.schedule = studies.schedule && typeof studies.schedule === 'object' ? studies.schedule : {};
@@ -6110,7 +6288,6 @@ function v22RefreshSummaryIfPresent() {
                 links,
                 linkCategories,
                 blurFinances,
-                diasFiesta,
                 fantasyData,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
@@ -6998,7 +7175,11 @@ function v22RefreshSummaryIfPresent() {
             const detailExternalBtn = detailExternal
                 ? `<button class="entry-detail-external" data-ext-url="${escapeHtml(detailExternal.url)}" onclick="openExternalSearch(event,this)"><span>↗</span>${escapeHtml(detailExternal.label)}</button>`
                 : '';
-            return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div><div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button></div></div></div>`;
+            const recomendable = ['book', 'movie', 'series', 'game'].includes(entry.type);
+            const recomendarBtn = recomendable
+                ? `<button class="btn-secondary" style="width:auto;margin-left:auto" onclick="abrirRecomendarModal('${entry.id}')">Recomendar</button>`
+                : '';
+            return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div><div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}</div></div></div>`;
         }
         function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);}
         async function toggleProjectTask(projectId,taskIndex){
@@ -7851,6 +8032,8 @@ function v22RefreshSummaryIfPresent() {
             else if (currentView === 'goals') content.innerHTML = renderGoals();
             else if (currentView === 'planner') content.innerHTML = renderPlanner();
             else if (currentView === 'collectibles') content.innerHTML = renderCollectibles();
+            else if (currentView === 'friends') { content.innerHTML = renderFriendsView();
+                loadFriendsViewData(); }
             else if (currentView === 'studies') content.innerHTML = renderStudies();
             else if (currentView === 'links') content.innerHTML = renderLinks();
             else if (currentView === 'settings') content.innerHTML = renderSettings();
@@ -7947,8 +8130,11 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         //  VISTA ANUAL (calendario de puntos, un punto por día)
         // ============================================================
+        let yearCalCompareMode = false;
+
         function abrirCalendarioAnual() {
             yearCalYear = new Date().getFullYear();
+            yearCalCompareMode = false;
             showModal(renderCalendarioAnual());
         }
 
@@ -7960,6 +8146,75 @@ function v22RefreshSummaryIfPresent() {
         function cambiarYearCal(delta) {
             yearCalYear += delta;
             refrescarCalendarioAnual();
+        }
+
+        // No se regenera todo el modal (eso crearía puntos nuevos de cero y
+        // el cambio se vería como un salto brusco): se actualiza el
+        // box-shadow de cada punto ya existente en su sitio, así la
+        // transición CSS de .year-dot anima de verdad entre una vista y otra.
+        function toggleYearCalCompare() {
+            yearCalCompareMode = !yearCalCompareMode;
+            const hoy = todayISO();
+            document.querySelectorAll('.year-cal-grid-wrap .year-dot[title]').forEach(dot => {
+                const dateStr = dot.getAttribute('title');
+                const esHoy = dateStr === hoy;
+                let sombra = '';
+                if (yearCalCompareMode) {
+                    sombra = anilloDot({ esHoy, trabajado: esDiaTrabajado(dateStr), viaje: esDiaDeViaje(dateStr) });
+                } else if (esHoy) {
+                    sombra = anilloDot({ esHoy: true, trabajado: false, viaje: false });
+                }
+                dot.style.boxShadow = sombra;
+            });
+            const btn = document.querySelector('.year-cal-compare-btn');
+            if (btn) btn.classList.toggle('active', yearCalCompareMode);
+            const legend = document.querySelector('.year-cal-legend');
+            if (legend) legend.innerHTML = renderYearCalLegendHtml();
+        }
+
+        function renderYearCalLegendHtml() {
+            return `
+                ${yearCalCompareMode ? `
+                    <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot" style="box-shadow:0 0 0 1.5px #ef4444"></span> Día trabajado</div>
+                    <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot" style="box-shadow:0 0 0 1.5px #3b82f6"></span> Día de viaje</div>
+                    <div class="year-cal-legend-item"><span class="year-dot year-dot-future year-cal-legend-dot"></span> Día futuro</div>
+                ` : `
+                    <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot"></span> Día transcurrido</div>
+                    <div class="year-cal-legend-item"><span class="year-dot year-dot-future year-cal-legend-dot"></span> Día futuro</div>
+                `}
+                <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot" style="box-shadow:${anilloDot({ esHoy: true, trabajado: false, viaje: false })}"></span> Hoy</div>
+            `;
+        }
+
+        // Punto 2 del rediseño: día trabajado = dentro del rango de un
+        // contrato ("Trabajo", startDate–endDate, sin fecha fin = sigue
+        // vigente) y que no sea fin de semana — los fines de semana nunca se
+        // marcan como trabajados aquí, aunque el contrato siga activo.
+        function esDiaTrabajado(dateStr) {
+            const dow = new Date(dateStr + 'T12:00:00').getDay();
+            if (dow === 0 || dow === 6) return false;
+            return entries.some(e => e.type === 'work' && e.startDate &&
+                dateStr >= e.startDate && dateStr <= (e.endDate || '9999-12-31'));
+        }
+
+        function esDiaDeViaje(dateStr) {
+            return entries.some(e => e.type === 'travel' && e.startDate && e.endDate &&
+                dateStr >= e.startDate && dateStr <= e.endDate);
+        }
+
+        // Construye el box-shadow de un punto combinando los anillos que
+        // apliquen (trabajado, viaje, hoy), cada uno un poco más separado que
+        // el anterior para que no se pisen aunque coincidan varios a la vez.
+        function anilloDot({ esHoy, trabajado, viaje }) {
+            const capas = [];
+            let radio = 0;
+            if (trabajado) { radio += 1.5; capas.push(`0 0 0 ${radio}px #ef4444`); }
+            if (viaje) { radio += 1.5; capas.push(`0 0 0 ${radio}px #3b82f6`); }
+            if (esHoy) {
+                radio += 1.2; capas.push(`0 0 0 ${radio}px var(--bg-modal)`);
+                radio += 1.5; capas.push(`0 0 0 ${radio}px #22c55e`);
+            }
+            return capas.join(', ');
         }
 
         function renderCalendarioAnual() {
@@ -7980,19 +8235,20 @@ function v22RefreshSummaryIfPresent() {
                 for (let d = 1; d <= maxDias; d++) {
                     if (d > diasMes) { celdas += `<div class="year-cal-cell"></div>`; continue; }
                     const dateStr = `${anio}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    const dow = new Date(anio, m, d).getDay();
-                    const esFinde = dow === 0 || dow === 6;
-                    const esFiesta = diasFiesta.includes(dateStr);
                     const esHoy = dateStr === hoy;
-                    let cls = 'year-dot';
-                    cls += esFiesta ? ' year-dot-holiday' : (esFinde ? ' year-dot-weekend' : ' year-dot-weekday');
-                    if (esHoy) cls += ' year-dot-today';
-                    celdas += `<div class="year-cal-cell"><span class="${cls}" title="${dateStr}"></span></div>`;
+                    const esFuturo = dateStr > hoy;
+                    let cls = 'year-dot' + (esFuturo ? ' year-dot-future' : '');
+                    let estiloExtra = '';
+                    if (yearCalCompareMode) {
+                        const sombra = anilloDot({ esHoy, trabajado: esDiaTrabajado(dateStr), viaje: esDiaDeViaje(dateStr) });
+                        if (sombra) estiloExtra = ` style="box-shadow:${sombra}"`;
+                    } else if (esHoy) {
+                        estiloExtra = ` style="box-shadow:${anilloDot({ esHoy: true, trabajado: false, viaje: false })}"`;
+                    }
+                    celdas += `<div class="year-cal-cell"><span class="${cls}" title="${dateStr}"${estiloExtra}></span></div>`;
                 }
                 filas += `<div class="year-cal-row"><div class="year-cal-month-label">${nombreMes}</div><div class="year-cal-days">${celdas}</div></div>`;
             }
-
-            const festivosDelAnio = [...diasFiesta].filter(f => f.startsWith(String(anio))).sort();
 
             return `
             <div class="year-cal-modal">
@@ -8001,6 +8257,9 @@ function v22RefreshSummaryIfPresent() {
                         <button class="cal-nav-arrow" onclick="cambiarYearCal(-1)">‹</button>
                         ${anio}
                         <button class="cal-nav-arrow" onclick="cambiarYearCal(1)">›</button>
+                        <button class="year-cal-compare-btn ${yearCalCompareMode ? 'active' : ''}" onclick="toggleYearCalCompare()" title="Cambiar vista">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="6.5"/><circle cx="15" cy="12" r="6.5"/></svg>
+                        </button>
                     </span>
                     <button class="modal-close" onclick="closeModal()">✕</button>
                 </div>
@@ -8012,56 +8271,91 @@ function v22RefreshSummaryIfPresent() {
                         </div>
                         ${filas}
                     </div>
-                    <div class="year-cal-side">
-                        <div class="chart-title" style="font-size:13px">Días de fiesta</div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin:6px 0 10px">Añade tus vacaciones o días libres. Se marcarán en azul en el calendario.</div>
-                        <div class="friend-add-row" style="margin:0 0 10px">
-                            <input type="date" id="holiday-add-input" class="friend-add-input" style="text-transform:none;letter-spacing:normal;font-family:'Poppins',sans-serif" onkeydown="if(event.key==='Enter'){event.preventDefault();anadirDiaFiesta();}">
-                            <button class="btn-secondary" style="width:auto" onclick="anadirDiaFiesta()">+ Añadir</button>
-                        </div>
-                        <div class="friend-list" id="holiday-list">
-                            ${festivosDelAnio.length ? festivosDelAnio.map(f => `
-                                <div class="friend-list-item">
-                                    <span class="friend-list-name">${new Date(f + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</span>
-                                    <button class="friend-remove-btn" onclick="eliminarDiaFiesta('${f}')">✕</button>
-                                </div>
-                            `).join('') : '<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Sin días de fiesta añadidos este año.</div>'}
-                        </div>
-                    </div>
                 </div>
-                <div class="year-cal-legend">
-                    <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot"></span> Día laboral</div>
-                    <div class="year-cal-legend-item"><span class="year-dot year-dot-weekend year-cal-legend-dot"></span> Fin de semana</div>
-                    <div class="year-cal-legend-item"><span class="year-dot year-dot-holiday year-cal-legend-dot"></span> Día de fiesta</div>
-                    <div class="year-cal-legend-item"><span class="year-dot year-dot-today year-cal-legend-dot"></span> Hoy</div>
-                </div>
+                <div class="year-cal-legend">${renderYearCalLegendHtml()}</div>
             </div>`;
-        }
-
-        function anadirDiaFiesta() {
-            const input = document.getElementById('holiday-add-input');
-            const val = input?.value;
-            if (!val) { showToast('Elige una fecha', true); return; }
-            if (!diasFiesta.includes(val)) {
-                diasFiesta.push(val);
-                diasFiesta.sort();
-                saveData();
-            }
-            yearCalYear = parseInt(val.slice(0, 4), 10);
-            refrescarCalendarioAnual();
-        }
-
-        function eliminarDiaFiesta(fecha) {
-            diasFiesta = diasFiesta.filter(f => f !== fecha);
-            saveData();
-            refrescarCalendarioAnual();
         }
 
         // ============================================================
         //  RENDER: HOME (calendario estilo Stoic)
         // ============================================================
+        // "En este día, hace...": entradas y notas de exactamente el mismo día
+        // y mes (en años anteriores). Se guarda id+tipo (no solo título) para
+        // poder abrir directamente la entrada/nota original al pulsarla.
+        // Fija el mediodía al parsear fechas sin hora ("YYYY-MM-DD") para que
+        // getMonth()/getDate() no se desplacen un día en zonas horarias por
+        // detrás de UTC (mismo patrón ya usado en el resto de la app).
+        function parseFechaSegura(raw) {
+            const soloFecha = /^\d{4}-\d{2}-\d{2}$/.test(raw);
+            return new Date(soloFecha ? raw + 'T12:00:00' : raw);
+        }
+
+        function buildOnThisDayItems() {
+            const hoy = new Date();
+            const mes = hoy.getMonth(), dia = hoy.getDate(), anioActual = hoy.getFullYear();
+            const esMismoDia = d => d && d.getMonth() === mes && d.getDate() === dia && d.getFullYear() < anioActual;
+            const items = [];
+
+            (Array.isArray(entries) ? entries : []).forEach(e => {
+                const raw = e.date || e.startDate || e.createdAt;
+                if (!raw) return;
+                const d = parseFechaSegura(raw);
+                if (isNaN(d) || !esMismoDia(d)) return;
+                items.push({
+                    id: e.id,
+                    kind: 'entry',
+                    title: e.title || e.destination || e.company || 'Entrada',
+                    type: (TYPE_LABELS[e.type] || e.type || 'Entrada'),
+                    year: d.getFullYear()
+                });
+            });
+
+            (Array.isArray(notes) ? notes : []).forEach(n => {
+                const raw = n.date || n.createdAt;
+                if (!raw) return;
+                const d = parseFechaSegura(raw);
+                if (isNaN(d) || !esMismoDia(d)) return;
+                items.push({
+                    id: n.id,
+                    kind: 'note',
+                    title: n.title || (typeof formatNoteTitle === 'function' ? formatNoteTitle(n.date) : 'Nota'),
+                    type: 'Nota',
+                    year: d.getFullYear()
+                });
+            });
+
+            return items.sort((a, b) => b.year - a.year);
+        }
+
+        function openOnThisDayItem(kind, id) {
+            if (kind === 'entry' && typeof openEntryDetail === 'function') openEntryDetail(id);
+            else if (kind === 'note' && typeof openReadNote === 'function') openReadNote(id);
+        }
+
+        function renderOnThisDayCard() {
+            const items = buildOnThisDayItems();
+            if (!items.length) return '';
+            const anioActual = new Date().getFullYear();
+            return `<div class="card" style="margin-bottom:16px">
+                <div class="card-title" style="margin-bottom:10px">En este día, hace...</div>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                    ${items.map(it => {
+                        const anios = anioActual - it.year;
+                        return `<div style="display:flex;align-items:baseline;gap:10px;cursor:pointer" onclick="openOnThisDayItem('${it.kind}','${it.id}')">
+                            <span style="font-size:11px;font-weight:800;color:var(--text-secondary);white-space:nowrap;min-width:56px">${anios} año${anios === 1 ? '' : 's'}</span>
+                            <div style="min-width:0">
+                                <div style="font-size:13px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(it.title)}</div>
+                                <div style="font-size:11px;color:var(--text-secondary)">${escapeHtml(it.type)}</div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+
         function renderCalendar() {
             let html = `<div class="cal-home">`;
+            html += renderOnThisDayCard();
             html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
                 <div class="culture-tabs" style="margin-bottom:0">
                     ${[['day','Día'],['week','Semana'],['month','Mes']].map(([id,label]) => `
@@ -8674,9 +8968,15 @@ function v22RefreshSummaryIfPresent() {
         //  RENDER: CULTURA (Libros + Series + Películas + Videojuegos)
         // ============================================================
         let cultureTab = 'books';
+        const CULTURE_TAB_TO_TYPE = { books: 'book', series: 'series', movies: 'movie', games: 'game' };
 
         function setCultureTab(tab) {
             cultureTab = tab;
+            render();
+        }
+
+        function toggleCultureSharedMode() {
+            cultureSharedMode = !cultureSharedMode;
             render();
         }
 
@@ -8687,19 +8987,28 @@ function v22RefreshSummaryIfPresent() {
                 { id: 'movies', label: 'Películas', icon: '▸', count: entries.filter(e => e.type === 'movie').length },
                 { id: 'games', label: 'Videojuegos', icon: '◉', count: entries.filter(e => e.type === 'game').length },
             ];
+            const tipoActivo = CULTURE_TAB_TO_TYPE[cultureTab];
+            const pendientes = recomendaciones.filter(r => r.tipo === tipoActivo).length;
 
             let html = `<div style="max-width:980px">
-                <div class="culture-tabs">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+                <div class="culture-tabs" style="margin-bottom:0">
                     ${tabs.map(t => `
                         <button class="culture-tab ${cultureTab === t.id ? 'active' : ''}" onclick="setCultureTab('${t.id}')">
                             <span>${t.label}</span>
                             <span class="culture-tab-count">${t.count}</span>
                         </button>`).join('')}
                 </div>
+                <button class="btn-secondary culture-shared-toggle" style="width:auto" onclick="toggleCultureSharedMode()">
+                    ${cultureSharedMode ? '← Mi biblioteca' : `Recomendado${pendientes ? ` (${pendientes})` : ''}`}
+                </button>
+                </div>
                 <div class="culture-tab-content">
                 <div class="cal-view-anim">`;
 
-            if (cultureTab === 'books') html += renderBooks();
+            if (cultureSharedMode) {
+                html += renderGhostGrid(tipoActivo);
+            } else if (cultureTab === 'books') html += renderBooks();
             else if (cultureTab === 'series') html += renderSeries();
             else if (cultureTab === 'movies') html += renderMovies();
             else if (cultureTab === 'games') html += renderGames();
@@ -8885,6 +9194,155 @@ function v22RefreshSummaryIfPresent() {
             html += renderMediaCardGrid(sorted, g => g.endDate ? `Fin: ${g.endDate}` : '');
             html += `</div>`;
             return html;
+        }
+
+        // ============================================================
+        //  RECOMENDACIONES ENTRE AMIGOS (libros, pelis, series, videojuegos)
+        // ============================================================
+        async function cargarRecomendaciones() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { recomendaciones = []; return; }
+                const { data, error } = await sb.from('recomendaciones')
+                    .select('id, remitente_id, tipo, entrada, nota, creado_en')
+                    .eq('destinatario_id', user.id)
+                    .order('creado_en', { ascending: false });
+                if (error) { console.error('Error cargando recomendaciones:', error); return; }
+                recomendaciones = data || [];
+                if (recomendaciones.length) {
+                    const ids = [...new Set(recomendaciones.map(r => r.remitente_id))];
+                    const { data: publicos } = await sb.from('perfiles_publicos').select('user_id, nombre_publico').in('user_id', ids);
+                    const porId = Object.fromEntries((publicos || []).map(p => [p.user_id, p.nombre_publico]));
+                    const amigoPorId = Object.fromEntries(amigos.map(a => [a.friend_id, a.nombre_visible || a.friend_nombre]));
+                    recomendaciones.forEach(r => { r.remitente_nombre = porId[r.remitente_id] || amigoPorId[r.remitente_id] || 'Un amigo'; });
+                }
+            } catch (e) {
+                console.error('Error cargando recomendaciones:', e);
+            }
+        }
+
+        // Abre el selector de amigo + nota, desde el botón "Recomendar" de la
+        // ficha de un libro/peli/serie/videojuego. Solo tiene sentido para esos
+        // 4 tipos, y solo si ya tienes al menos un amigo añadido.
+        function abrirRecomendarModal(entryId) {
+            const entry = entries.find(e => e.id === entryId);
+            if (!entry) return;
+            if (!amigos.length) { showToast('Añade primero un amigo desde el apartado Amigos', true); return; }
+            showModal(`
+                <div class="modal-title">Recomendar "${escapeHtml(entry.title)}"</div>
+                <div class="modal-label">A quién</div>
+                <select id="recomendar-amigo" class="modal-input">
+                    ${amigos.map(a => `<option value="${a.friend_id}">${escapeHtml(a.nombre_visible || a.friend_nombre || 'Amigo')}</option>`).join('')}
+                </select>
+                <div class="modal-label">Nota (opcional)</div>
+                <textarea id="recomendar-nota" class="modal-input" rows="3" placeholder="¿Por qué se lo recomiendas?"></textarea>
+                <button class="btn-modal-primary" onclick="enviarRecomendacion('${entryId}')">Enviar recomendación</button>
+            `);
+        }
+
+        async function enviarRecomendacion(entryId) {
+            const entry = entries.find(e => e.id === entryId);
+            if (!entry) return;
+            const destinatarioId = document.getElementById('recomendar-amigo')?.value;
+            const nota = document.getElementById('recomendar-nota')?.value?.trim() || null;
+            if (!destinatarioId) { showToast('Elige a quién recomendárselo', true); return; }
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) return;
+            try {
+                const { error } = await sb.from('recomendaciones').insert({
+                    remitente_id: user.id,
+                    destinatario_id: destinatarioId,
+                    tipo: entry.type,
+                    entrada: { title: entry.title, author: entry.author || null },
+                    nota
+                });
+                if (error) throw error;
+                closeModal();
+                showToast('Recomendación enviada');
+            } catch (e) {
+                console.error('Error enviando la recomendación:', e);
+                showToast('No se pudo enviar la recomendación', true);
+            }
+        }
+
+        function renderGhostCard(rec) {
+            const entrada = rec.entrada || {};
+            return `
+                <div class="media-card media-card-type-${rec.tipo} media-card-ghost" onclick="abrirGhostDetalle('${rec.id}')">
+                    <div class="media-card-icon">${mediaCardIcon(rec.tipo)}</div>
+                    <div class="media-card-title">${escapeHtml(entrada.title || 'Sin título')}</div>
+                    <div class="media-card-meta">${escapeHtml(entrada.author || '')}</div>
+                    <div class="media-card-ghost-from">De ${escapeHtml(rec.remitente_nombre || 'un amigo')}</div>
+                    ${rec.nota ? `<div class="media-card-ghost-note">"${escapeHtml(rec.nota)}"</div>` : ''}
+                </div>`;
+        }
+
+        function renderGhostGrid(tipo) {
+            const items = recomendaciones.filter(r => r.tipo === tipo);
+            if (!items.length) {
+                return `<div class="empty-state"><div class="empty-icon">◕</div><div class="empty-title">Sin recomendaciones</div><div class="empty-sub">Aquí aparecerá lo que tus amigos te recomienden.</div></div>`;
+            }
+            return `<div class="media-card-grid">${items.map(renderGhostCard).join('')}</div>`;
+        }
+
+        function abrirGhostDetalle(recId) {
+            const rec = recomendaciones.find(r => r.id === recId);
+            if (!rec) return;
+            const entrada = rec.entrada || {};
+            showModal(`
+                <div class="modal-title">${escapeHtml(entrada.title || 'Sin título')}</div>
+                <div style="font-size:11px;color:var(--text-secondary)">${TYPE_LABELS[rec.tipo] || rec.tipo}</div>
+                <div class="entry-detail-grid">
+                    ${entrada.author ? detailField('Autor', escapeHtml(entrada.author)) : ''}
+                    ${detailField('Recomendado por', escapeHtml(rec.remitente_nombre || 'Un amigo'))}
+                    ${rec.nota ? detailField('Nota', escapeHtml(rec.nota)) : ''}
+                </div>
+                <div class="entry-detail-actions">
+                    <button class="btn-modal-primary" onclick="anadirRecomendacionABiblioteca('${recId}')">+ Añadir a mi biblioteca</button>
+                    <button class="btn-secondary" style="width:auto" onclick="descartarRecomendacion('${recId}')">No me interesa</button>
+                    <button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>
+                </div>
+            `);
+        }
+
+        async function anadirRecomendacionABiblioteca(recId) {
+            const rec = recomendaciones.find(r => r.id === recId);
+            if (!rec) return;
+            const entrada = rec.entrada || {};
+            entries.push({
+                id: 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                type: rec.tipo,
+                title: entrada.title || 'Sin título',
+                author: entrada.author || '',
+                status: '',
+                date: todayISO(),
+                notes: rec.nota ? `Recomendado por ${rec.remitente_nombre || 'un amigo'}: ${rec.nota}` : `Recomendado por ${rec.remitente_nombre || 'un amigo'}`,
+                createdAt: new Date().toISOString()
+            });
+            filteredEntries = [...entries];
+            try { await saveData(); } catch (e) { console.error(e); }
+            await quitarRecomendacion(recId);
+            closeModal();
+            render();
+            showToast('Añadido a tu biblioteca');
+        }
+
+        async function descartarRecomendacion(recId) {
+            if (!confirm('¿Descartar esta recomendación?')) return;
+            await quitarRecomendacion(recId);
+            closeModal();
+            render();
+            showToast('Recomendación descartada');
+        }
+
+        async function quitarRecomendacion(recId) {
+            recomendaciones = recomendaciones.filter(r => r.id !== recId);
+            try {
+                const { error } = await sb.from('recomendaciones').delete().eq('id', recId);
+                if (error) console.error('Error quitando la recomendación en Supabase:', error);
+            } catch (e) {
+                console.error('Error quitando la recomendación:', e);
+            }
         }
 
         // ============================================================
@@ -9899,8 +10357,7 @@ function v22RefreshSummaryIfPresent() {
             const devColor = devModeActive ? 'var(--fantasy-accent)' : 'var(--text-secondary)';
 
             return `
-                <div class="settings-layout">
-                <div class="settings-col-main">
+                <div style="max-width:600px">
                     <div class="chart-container" style="margin-bottom:16px">
                         <div class="chart-title">Datos de la cuenta</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
@@ -9953,41 +10410,6 @@ function v22RefreshSummaryIfPresent() {
                         </div>
                         <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Esto cerrará tu sesión en todos los navegadores y dispositivos donde hayas iniciado sesión.</div>
                     </div>
-                </div>
-
-                <div class="settings-col-side">
-                    <div class="chart-container">
-                        <div class="chart-title">Amigos</div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin:8px 0 14px">Genera tu código de amigo permanente y compártelo para conectar tu cuenta con la de otra persona.</div>
-                        ${userFriendCode ? `
-                            <div class="friend-code-box">
-                                <span class="friend-code-value">${userFriendCode}</span>
-                                <button class="friend-code-copy-btn" onclick="copiarCodigoAmigo()" title="Copiar código">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2.5"/><path d="M5 15H3.5A1.5 1.5 0 0 1 2 13.5v-10A1.5 1.5 0 0 1 3.5 2h10A1.5 1.5 0 0 1 15 3.5V5"/></svg>
-                                </button>
-                            </div>
-                        ` : `
-                            <button class="btn-secondary" id="friend-code-generate-btn" style="width:auto" onclick="generarCodigoAmigo()">🔗 Generar código de amigo</button>
-                        `}
-                    </div>
-
-                    <div class="chart-container" style="margin-top:16px">
-                        <div class="chart-title">Añadir amigo</div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Introduce el código que te ha compartido tu amigo.</div>
-                        <div class="friend-add-row">
-                            <input type="text" id="friend-add-input" class="friend-add-input" placeholder="Código de amigo" maxlength="8" onkeydown="friendAddInputKeydown(event)">
-                            <button class="btn-secondary" id="friend-add-btn" style="width:auto" onclick="anadirAmigoPorCodigo()">+ Añadir</button>
-                        </div>
-                        <div class="friend-list">
-                            ${amigos.length ? amigos.map(a => `
-                                <div class="friend-list-item">
-                                    <span class="friend-list-name">${escapeHtml(a.friend_nombre || 'Amigo sin nombre')}</span>
-                                    <button class="friend-remove-btn" title="Eliminar amigo" onclick="eliminarAmigo('${a.friend_id}', '${escapeHtml(a.friend_nombre || '')}')">✕</button>
-                                </div>
-                            `).join('') : '<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Aún no tienes amigos añadidos.</div>'}
-                        </div>
-                    </div>
-                </div>
                 </div>`;
         }
 
@@ -12648,10 +13070,31 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 p.valorActual = nuevo;
                 p.gasto = gastoTotal;
             }
+
+            // El gasto de ESTA subida sí sale de tu bolsillo de verdad, así
+            // que se registra como una transacción real (igual que la vieja
+            // "cláusula manual") y se resta del efectivo — esa es la gracia.
+            // Solo se contabiliza el incremento de esta vez, no el total
+            // acumulado (los incrementos anteriores ya se restaron en su
+            // momento, cuando se guardaron).
+            if (incremento > 0) {
+                fantasyData.transacciones.push({
+                    id: 'tx_clausula_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    tipo: 'clausula',
+                    jugador,
+                    precio: incremento,
+                    fecha: todayISO(),
+                    comprador: nombre,
+                    vendedor: 'LALIGA',
+                    gastoClausula: 0
+                });
+                recalcFantasyBalances();
+            }
+
             saveFantasyData();
             closeModal();
             showFantasySquad(nombre);
-            showToast(incremento > 0 ? `+${incremento.toLocaleString('es-ES')}€ de cláusula añadidos (total ${gastoTotal.toLocaleString('es-ES')}€)` : 'Valor actualizado');
+            showToast(incremento > 0 ? `-${incremento.toLocaleString('es-ES')}€ de cláusula restados de tu efectivo (total gastado ${gastoTotal.toLocaleString('es-ES')}€)` : 'Valor actualizado');
         }
 
         // ============================================================
@@ -14118,6 +14561,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const loaded = await loadData();
             await cargarCodigoAmigo();
             await cargarAmigos();
+            await cargarNombrePublico();
+            await cargarRecomendaciones();
 
             if (!loadFantasyData()) {
                 fantasyData = getDefaultFantasyData();
@@ -14382,11 +14827,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             </div>
 
             <div class="summary-section">
-                <div class="summary-section-head">
+                <div class="summary-section-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
                     <div>
                         <div class="summary-section-title">Actividad reciente</div>
                         <div class="summary-section-desc">Timeline de tu actividad, de lo más reciente hacia atrás.</div>
                     </div>
+                    ${events.length ? `<button class="btn-secondary" style="width:auto;flex-shrink:0" onclick="openConstellationView()">Ver todo →</button>` : ''}
                 </div>
 
                 ${events.length ? `
@@ -14451,6 +14897,51 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 });
             }, 1000);
         }
+    };
+
+    // Vista "constelación": el mismo timeline cronológico de "Actividad
+    // reciente", pero completo y navegable — para hojear todo lo vivido en
+    // vez de gestionarlo. Reutiliza collectEvents() (misma fuente de datos,
+    // ya deduplicada y ordenada) y el mismo estilo visual de timeline.
+    window.openConstellationView = function () {
+        const events = collectEvents();
+        if (typeof showModal === 'function') showModal(renderConstellationModal(events, ''));
+    };
+
+    function renderConstellationTimelineHtml(events) {
+        if (!events.length) return `<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin resultados</div>`;
+        return `<div class="summary-timeline">${events.map(e => `
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-date">${formatDate(e.date)}</div>
+                <div>
+                    <div class="timeline-title">${esc(e.title)}</div>
+                    <div class="timeline-meta">${esc(e.type)}${e.detail ? ' · ' + esc(e.detail) : ''}</div>
+                </div>
+            </div>
+        `).join('')}</div>`;
+    }
+
+    function renderConstellationModal(events, query) {
+        return `
+            <div class="modal-title">
+                <span>Constelación</span>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">${events.length} momentos registrados, de más reciente a más antiguo.</div>
+            <input type="text" id="constellation-search" class="modal-input" placeholder="Buscar..." value="${esc(query || '')}" oninput="filterConstellation(this.value)">
+            <div id="constellation-list" style="margin-top:12px;max-height:50vh;overflow-y:auto">
+                ${renderConstellationTimelineHtml(events)}
+            </div>
+        `;
+    }
+
+    window.filterConstellation = function (query) {
+        const list = document.getElementById('constellation-list');
+        if (!list) return;
+        const q = String(query || '').trim().toLowerCase();
+        const events = collectEvents().filter(e => !q || `${e.title} ${e.type} ${e.detail}`.toLowerCase().includes(q));
+        list.innerHTML = renderConstellationTimelineHtml(events);
     };
 
     window.v23ExportBackup = async function () {
