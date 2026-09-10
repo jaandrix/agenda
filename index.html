@@ -1758,13 +1758,15 @@
             border: 0;
             background: #3b82f6;
             color: #fff;
-            font-size: 14px;
+            padding: 0;
+            line-height: 0;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: transform .15s ease, background .15s ease;
         }
+        .friend-code-copy-btn svg { display: block; }
         .friend-code-copy-btn:hover { background: #2f6fdb; transform: scale(1.06); }
         .friend-code-copy-btn:active { transform: scale(0.96); }
         .friend-add-row { display: flex; gap: 8px; margin: 12px 0; }
@@ -1812,6 +1814,52 @@
             transition: background .15s ease;
         }
         .friend-remove-btn:hover { background: rgba(220,38,38,.12); }
+
+        /* ---------------- Vista anual (calendario de puntos) ---------------- */
+        .year-cal-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 0;
+            background: #000;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            padding: 0;
+            transition: transform .15s ease, opacity .15s ease;
+        }
+        .year-cal-btn:hover { transform: scale(1.06); opacity: .85; }
+        .year-cal-btn:active { transform: scale(0.95); }
+        .modal-sheet:has(.year-cal-modal) { max-width: 920px; }
+        .year-cal-modal { width: 100%; }
+        .year-cal-body { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+        .year-cal-grid-wrap { flex: 1 1 560px; min-width: 0; overflow-x: auto; }
+        .year-cal-header { display: flex; align-items: center; margin-bottom: 6px; }
+        .year-cal-header-spacer { width: 34px; flex-shrink: 0; }
+        .year-cal-header-days { flex: 1; display: grid; grid-template-columns: repeat(31, 1fr); }
+        .year-cal-header-days span { font-size: 9px; color: var(--text-secondary); text-align: center; }
+        .year-cal-row { display: flex; align-items: center; margin-bottom: 3px; }
+        .year-cal-month-label { width: 34px; flex-shrink: 0; font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: capitalize; }
+        .year-cal-days { flex: 1; display: grid; grid-template-columns: repeat(31, 1fr); }
+        .year-cal-cell { display: flex; align-items: center; justify-content: center; padding: 1.5px 0; }
+        .year-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            box-sizing: border-box;
+            background: var(--text-primary);
+            border: 1px solid var(--text-primary);
+        }
+        .year-dot-weekend { background: transparent; border-color: var(--border-strong); }
+        .year-dot-holiday { background: #3b82f6; border-color: #3b82f6; }
+        .year-dot-today { box-shadow: 0 0 0 2px var(--bg-modal), 0 0 0 3.5px #22c55e; }
+        .year-cal-side { flex: 1 1 260px; max-width: 280px; min-width: 220px; }
+        .year-cal-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; font-size: 11px; color: var(--text-secondary); }
+        .year-cal-legend-item { display: flex; align-items: center; gap: 8px; }
+        .year-cal-legend-dot { width: 8px; height: 8px; border-radius: 50%; box-sizing: border-box; flex-shrink: 0; }
         @media (max-width: 900px) {
             .settings-col-main, .settings-col-side { max-width: 100%; }
         }
@@ -4929,6 +4977,10 @@ function v22RefreshSummaryIfPresent() {
         // Oculta las cifras del dashboard financiero. Se guarda en la nube
         // (no en localStorage) para que viaje entre dispositivos.
         let blurFinances = false;
+        // Días de fiesta/vacaciones marcados por el usuario para la vista
+        // anual de puntos (fechas ISO "YYYY-MM-DD"), se guardan en la nube.
+        let diasFiesta = [];
+        let yearCalYear = new Date().getFullYear();
         // Estudios: asignaturas (con exámenes/trabajos y nota), horario semanal
         // recurrente y notas rápidas.
         const STUDIES_DAYS = [
@@ -5946,6 +5998,7 @@ function v22RefreshSummaryIfPresent() {
                 financeProfile.chartHistory = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
                 financeProfile.forecastProfile = financeProfile.forecastProfile || { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 };
                 blurFinances = !!saved.blurFinances;
+                diasFiesta = Array.isArray(saved.diasFiesta) ? saved.diasFiesta : [];
                 studies = (saved.studies && typeof saved.studies === 'object') ? saved.studies : { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, notes: '' };
                 studies.subjects = Array.isArray(studies.subjects) ? studies.subjects : [];
                 studies.schedule = studies.schedule && typeof studies.schedule === 'object' ? studies.schedule : {};
@@ -6044,6 +6097,7 @@ function v22RefreshSummaryIfPresent() {
                 links,
                 linkCategories,
                 blurFinances,
+                diasFiesta,
                 fantasyData,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
@@ -7878,14 +7932,132 @@ function v22RefreshSummaryIfPresent() {
         }
 
         // ============================================================
+        //  VISTA ANUAL (calendario de puntos, un punto por día)
+        // ============================================================
+        function abrirCalendarioAnual() {
+            yearCalYear = new Date().getFullYear();
+            showModal(renderCalendarioAnual());
+        }
+
+        function refrescarCalendarioAnual() {
+            const sheet = document.querySelector('#modal-container .modal-sheet');
+            if (sheet) sheet.innerHTML = renderCalendarioAnual();
+        }
+
+        function cambiarYearCal(delta) {
+            yearCalYear += delta;
+            refrescarCalendarioAnual();
+        }
+
+        function renderCalendarioAnual() {
+            const anio = yearCalYear;
+            const hoy = todayISO();
+            const maxDias = 31;
+
+            let headerDias = '';
+            for (let d = 1; d <= maxDias; d++) {
+                headerDias += `<span>${(d === 1 || d % 5 === 0) ? d : ''}</span>`;
+            }
+
+            let filas = '';
+            for (let m = 0; m < 12; m++) {
+                const nombreMes = new Date(anio, m, 1).toLocaleDateString('es-ES', { month: 'short' }).replace('.', '');
+                const diasMes = new Date(anio, m + 1, 0).getDate();
+                let celdas = '';
+                for (let d = 1; d <= maxDias; d++) {
+                    if (d > diasMes) { celdas += `<div class="year-cal-cell"></div>`; continue; }
+                    const dateStr = `${anio}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const dow = new Date(anio, m, d).getDay();
+                    const esFinde = dow === 0 || dow === 6;
+                    const esFiesta = diasFiesta.includes(dateStr);
+                    const esHoy = dateStr === hoy;
+                    let cls = 'year-dot';
+                    cls += esFiesta ? ' year-dot-holiday' : (esFinde ? ' year-dot-weekend' : ' year-dot-weekday');
+                    if (esHoy) cls += ' year-dot-today';
+                    celdas += `<div class="year-cal-cell"><span class="${cls}" title="${dateStr}"></span></div>`;
+                }
+                filas += `<div class="year-cal-row"><div class="year-cal-month-label">${nombreMes}</div><div class="year-cal-days">${celdas}</div></div>`;
+            }
+
+            const festivosDelAnio = [...diasFiesta].filter(f => f.startsWith(String(anio))).sort();
+
+            return `
+            <div class="year-cal-modal">
+                <div class="modal-title">
+                    <span style="display:flex;align-items:center;gap:10px">
+                        <button class="cal-nav-arrow" onclick="cambiarYearCal(-1)">‹</button>
+                        ${anio}
+                        <button class="cal-nav-arrow" onclick="cambiarYearCal(1)">›</button>
+                    </span>
+                    <button class="modal-close" onclick="closeModal()">✕</button>
+                </div>
+                <div class="year-cal-body">
+                    <div class="year-cal-grid-wrap">
+                        <div class="year-cal-header">
+                            <div class="year-cal-header-spacer"></div>
+                            <div class="year-cal-header-days">${headerDias}</div>
+                        </div>
+                        ${filas}
+                        <div class="year-cal-legend">
+                            <div class="year-cal-legend-item"><span class="year-cal-legend-dot year-dot-weekday"></span> Día laboral</div>
+                            <div class="year-cal-legend-item"><span class="year-cal-legend-dot year-dot-weekend"></span> Fin de semana</div>
+                            <div class="year-cal-legend-item"><span class="year-cal-legend-dot year-dot-holiday"></span> Día de fiesta</div>
+                            <div class="year-cal-legend-item"><span class="year-cal-legend-dot year-dot-weekday year-dot-today"></span> Hoy</div>
+                        </div>
+                    </div>
+                    <div class="year-cal-side">
+                        <div class="chart-title" style="font-size:13px">Días de fiesta</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin:6px 0 10px">Añade tus vacaciones o días libres. Se marcarán en azul en el calendario.</div>
+                        <div class="friend-add-row" style="margin:0 0 10px">
+                            <input type="date" id="holiday-add-input" class="friend-add-input" style="text-transform:none;letter-spacing:normal;font-family:'Poppins',sans-serif" onkeydown="if(event.key==='Enter'){event.preventDefault();anadirDiaFiesta();}">
+                            <button class="btn-secondary" style="width:auto" onclick="anadirDiaFiesta()">+ Añadir</button>
+                        </div>
+                        <div class="friend-list" id="holiday-list">
+                            ${festivosDelAnio.length ? festivosDelAnio.map(f => `
+                                <div class="friend-list-item">
+                                    <span class="friend-list-name">${new Date(f + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</span>
+                                    <button class="friend-remove-btn" onclick="eliminarDiaFiesta('${f}')">✕</button>
+                                </div>
+                            `).join('') : '<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Sin días de fiesta añadidos este año.</div>'}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function anadirDiaFiesta() {
+            const input = document.getElementById('holiday-add-input');
+            const val = input?.value;
+            if (!val) { showToast('Elige una fecha', true); return; }
+            if (!diasFiesta.includes(val)) {
+                diasFiesta.push(val);
+                diasFiesta.sort();
+                saveData();
+            }
+            yearCalYear = parseInt(val.slice(0, 4), 10);
+            refrescarCalendarioAnual();
+        }
+
+        function eliminarDiaFiesta(fecha) {
+            diasFiesta = diasFiesta.filter(f => f !== fecha);
+            saveData();
+            refrescarCalendarioAnual();
+        }
+
+        // ============================================================
         //  RENDER: HOME (calendario estilo Stoic)
         // ============================================================
         function renderCalendar() {
             let html = `<div class="cal-home">`;
-            html += `<div class="culture-tabs" style="margin-bottom:18px">
-                ${[['day','Día'],['week','Semana'],['month','Mes']].map(([id,label]) => `
-                    <button class="culture-tab ${calViewMode===id?'active':''}" onclick="setCalView('${id}')">${label}</button>
-                `).join('')}
+            html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+                <div class="culture-tabs" style="margin-bottom:0">
+                    ${[['day','Día'],['week','Semana'],['month','Mes']].map(([id,label]) => `
+                        <button class="culture-tab ${calViewMode===id?'active':''}" onclick="setCalView('${id}')">${label}</button>
+                    `).join('')}
+                </div>
+                <button class="year-cal-btn" onclick="abrirCalendarioAnual()" title="Vista anual">
+                    <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="3" cy="3" r="1.4" fill="currentColor"/><circle cx="8" cy="3" r="1.4" fill="currentColor"/><circle cx="13" cy="3" r="1.4" fill="currentColor"/><circle cx="3" cy="8" r="1.4" fill="currentColor"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="13" cy="8" r="1.4" fill="currentColor"/><circle cx="3" cy="13" r="1.4" fill="currentColor"/><circle cx="8" cy="13" r="1.4" fill="currentColor"/><circle cx="13" cy="13" r="1.4" fill="currentColor"/></svg>
+                </button>
             </div>`;
 
             const body = calViewMode === 'month' ? renderCalMonth() : calViewMode === 'week' ? renderCalWeek() : renderCalDay();
@@ -9777,7 +9949,9 @@ function v22RefreshSummaryIfPresent() {
                         ${userFriendCode ? `
                             <div class="friend-code-box">
                                 <span class="friend-code-value">${userFriendCode}</span>
-                                <button class="friend-code-copy-btn" onclick="copiarCodigoAmigo()" title="Copiar código">⧉</button>
+                                <button class="friend-code-copy-btn" onclick="copiarCodigoAmigo()" title="Copiar código">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2.5"/><path d="M5 15H3.5A1.5 1.5 0 0 1 2 13.5v-10A1.5 1.5 0 0 1 3.5 2h10A1.5 1.5 0 0 1 15 3.5V5"/></svg>
+                                </button>
                             </div>
                         ` : `
                             <button class="btn-secondary" id="friend-code-generate-btn" style="width:auto" onclick="generarCodigoAmigo()">🔗 Generar código de amigo</button>
