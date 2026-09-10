@@ -5712,6 +5712,7 @@ function v22RefreshSummaryIfPresent() {
             if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || document.activeElement?.isContentEditable) return false;
             if (document.getElementById('command-palette-overlay')) return false;
             if (document.getElementById('logout-confirm-overlay')) return false;
+            if (document.querySelector('.centered-message-overlay')) return false;
             if (document.getElementById('modal-container')?.innerHTML.trim()) return false;
             if (document.getElementById('login-screen')?.style.display !== 'none') return false;
             return true;
@@ -5724,6 +5725,17 @@ function v22RefreshSummaryIfPresent() {
             if (!document.getElementById('logout-confirm-overlay')) return;
             e.preventDefault();
             confirmLogout();
+        });
+
+        // Igual que con la confirmación de cierre de sesión: con un mensaje
+        // centrado abierto (p. ej. "Modo desarrollador activado"), ENTER/ESC
+        // lo cierran en vez de colarse hasta el buscador de navegación.
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter' && e.key !== 'Escape') return;
+            const overlay = document.querySelector('.centered-message-overlay');
+            if (!overlay) return;
+            e.preventDefault();
+            closeCenteredMessage(overlay);
         });
 
         // ENTER abre "¿dónde quieres ir?"; ESPACIO abre la captura rápida
@@ -12385,6 +12397,201 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         // ============================================================
+        //  FANTASY: PLANTILLA ACTUAL POR USUARIO (6.4b)
+        // ============================================================
+        // Un jugador pertenece a "nombre" si, siguiendo sus transacciones en
+        // orden cronológico (misma lógica que calculatePlayerProfits: premio/
+        // clausula/video no cuentan como compra o venta), la última operación
+        // que le afecta es una compra suya sin venta posterior — o si nunca
+        // hubo transacción para ese jugador pero está en su equipo inicial
+        // (jugadores con los que empezó la temporada, sin compra registrada).
+        function getUserSquad(nombre) {
+            const u = fantasyData.usuarios.find(x => x.nombre === nombre);
+            if (!u) return [];
+            if (!Array.isArray(u.equipoInicial)) u.equipoInicial = [];
+
+            const txsByPlayer = {};
+            fantasyData.transacciones.forEach(tx => {
+                if (tx.comprador !== nombre && tx.vendedor !== nombre) return;
+                if (!txsByPlayer[tx.jugador]) txsByPlayer[tx.jugador] = [];
+                txsByPlayer[tx.jugador].push(tx);
+            });
+
+            const squad = [];
+            Object.entries(txsByPlayer).forEach(([jugador, txs]) => {
+                const sorted = txs.slice().sort((a, b) => fantasyDateValue(a.fecha) - fantasyDateValue(b.fecha));
+                let openBuy = null;
+                sorted.forEach(tx => {
+                    const isSystemTx = tx.tipo === 'clausula' || tx.tipo === 'premio' || tx.tipo === 'video';
+                    if (!isSystemTx && tx.comprador === nombre) openBuy = tx;
+                    else if (!isSystemTx && tx.vendedor === nombre) openBuy = null;
+                });
+                if (openBuy) {
+                    squad.push({
+                        jugador,
+                        source: 'tx',
+                        refId: openBuy.id,
+                        fecha: openBuy.fecha,
+                        valorInicial: (typeof openBuy.clausulaValorInicial === 'number') ? openBuy.clausulaValorInicial : openBuy.precio,
+                        valorActual: (typeof openBuy.clausulaValorActual === 'number') ? openBuy.clausulaValorActual : openBuy.precio,
+                        gasto: openBuy.clausulaGasto || 0
+                    });
+                }
+            });
+
+            u.equipoInicial.forEach(p => {
+                if (txsByPlayer[p.jugador]) return; // ya tiene transacciones propias: no es "inicial" a estas alturas
+                squad.push({
+                    jugador: p.jugador,
+                    source: 'inicial',
+                    refId: p.id,
+                    fecha: null,
+                    valorInicial: p.valorInicial,
+                    valorActual: (typeof p.valorActual === 'number') ? p.valorActual : p.valorInicial,
+                    gasto: p.gasto || 0
+                });
+            });
+
+            return squad.sort((a, b) => a.jugador.localeCompare(b.jugador, 'es'));
+        }
+
+        function showFantasySquad(nombre) {
+            const squad = getUserSquad(nombre);
+            const html = `
+                <div class="modal-title" style="color:var(--fantasy-accent)">Plantilla de ${escapeHtml(nombre)}</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">${squad.length} jugador${squad.length === 1 ? '' : 'es'}. Incluye compras sin vender y el equipo inicial.</div>
+
+                <div style="display:flex;gap:6px;margin-bottom:14px">
+                    <input id="squad-add-player" class="modal-input" style="margin:0" placeholder="Jugador (equipo inicial)">
+                    <input id="squad-add-value" type="number" class="modal-input" style="margin:0;max-width:130px" placeholder="Valor inicial" step="0.01">
+                    <button class="btn-secondary" style="width:auto;flex-shrink:0" onclick="addInitialSquadPlayer('${nombre}')">+ Añadir</button>
+                </div>
+
+                <div id="squad-list-${nombre}" style="max-height:360px;overflow-y:auto">
+                    ${renderFantasySquadList(nombre, squad)}
+                </div>
+            `;
+            showModal(html);
+        }
+
+        function renderFantasySquadList(nombre, squad) {
+            if (!squad.length) return '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin jugadores en plantilla</div>';
+            return squad.map(p => `
+                <div class="fantasy-tx-item">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                        <span style="font-weight:700">${escapeHtml(p.jugador)}</span>
+                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px;color:#dc2626;border-color:#dc2626" title="Borrar jugador" onclick="confirmDeleteSquadPlayer('${nombre}', '${escapeHtml(p.jugador).replace(/'/g, "\\'")}', '${p.source}', '${p.refId}')">✕</button>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                        <span style="font-size:11px;color:var(--text-secondary)">
+                            Valor: ${p.valorActual.toLocaleString('es-ES')}€
+                            ${p.gasto > 0 ? `<span style="color:var(--fantasy-accent);font-weight:700"> · Cláusula: ${p.gasto.toLocaleString('es-ES')}€</span>` : ''}
+                        </span>
+                        <button class="btn-secondary" style="padding:2px 10px;font-size:10px" onclick="openSquadClauseCalculator('${nombre}', '${escapeHtml(p.jugador).replace(/'/g, "\\'")}', '${p.source}', '${p.refId}')">Cláusula</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function refreshFantasySquadModal(nombre) {
+            const list = document.getElementById('squad-list-' + nombre);
+            if (list) list.innerHTML = renderFantasySquadList(nombre, getUserSquad(nombre));
+        }
+
+        function addInitialSquadPlayer(nombre) {
+            const u = fantasyData.usuarios.find(x => x.nombre === nombre);
+            if (!u) return;
+            const nameInput = document.getElementById('squad-add-player');
+            const valueInput = document.getElementById('squad-add-value');
+            const jugador = nameInput?.value.trim();
+            const valor = parseFloat(valueInput?.value);
+            if (!jugador) { showToast('Escribe el nombre del jugador', true); return; }
+            if (isNaN(valor) || valor < 0) { showToast('Introduce un valor inicial válido', true); return; }
+            if (!Array.isArray(u.equipoInicial)) u.equipoInicial = [];
+            u.equipoInicial.push({ id: 'inicial_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), jugador, valorInicial: valor });
+            saveFantasyData();
+            nameInput.value = '';
+            valueInput.value = '';
+            refreshFantasySquadModal(nombre);
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderAllFantasyCharts();
+            showToast('Jugador añadido a la plantilla inicial');
+        }
+
+        function confirmDeleteSquadPlayer(nombre, jugador, source, refId) {
+            if (!confirm(`¿Seguro que quieres borrar a ${jugador}?`)) return;
+            const u = fantasyData.usuarios.find(x => x.nombre === nombre);
+            if (!u) return;
+            if (source === 'tx') {
+                fantasyData.transacciones = fantasyData.transacciones.filter(t => t.id !== refId);
+                recalcFantasyBalances();
+            } else {
+                u.equipoInicial = (u.equipoInicial || []).filter(p => p.id !== refId);
+                recalcFantasyBalances();
+            }
+            saveFantasyData();
+            refreshFantasySquadModal(nombre);
+            document.getElementById('content').innerHTML = renderFantasy();
+            renderAllFantasyCharts();
+            showToast('Jugador eliminado de la plantilla');
+        }
+
+        // Calculadora de cláusula: el juego duplica en el valor de mercado lo
+        // que se gasta en subir una cláusula (gastas 1M, el valor sube 2M), así
+        // que el gasto real es la mitad de la diferencia entre el valor actual
+        // y el inicial. Sirve para detectar de un vistazo si a algún jugador
+        // le han subido la cláusula y todavía no lo hemos anotado aquí.
+        function openSquadClauseCalculator(nombre, jugador, source, refId) {
+            const squad = getUserSquad(nombre);
+            const p = squad.find(x => x.source === source && String(x.refId) === String(refId));
+            if (!p) return;
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">Cláusula — ${escapeHtml(jugador)}</div>
+                <div class="modal-label">Valor inicial (€)</div>
+                <input type="number" id="squad-clause-inicial" class="modal-input" value="${p.valorInicial}" step="0.01" oninput="updateSquadClausePreview()">
+                <div class="modal-label">Valor actual (€)</div>
+                <input type="number" id="squad-clause-actual" class="modal-input" value="${p.valorActual}" step="0.01" oninput="updateSquadClausePreview()">
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Gasto en cláusula (mitad de la diferencia): <strong id="squad-clause-preview" style="color:var(--fantasy-accent)">${(Math.max(0, (p.valorActual - p.valorInicial)) / 2).toLocaleString('es-ES')}€</strong></div>
+                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmSquadClauseCalculator('${nombre}', '${escapeHtml(jugador).replace(/'/g, "\\'")}', '${source}', '${refId}')">Guardar</button>
+            `);
+        }
+
+        function updateSquadClausePreview() {
+            const inicial = parseFloat(document.getElementById('squad-clause-inicial')?.value);
+            const actual = parseFloat(document.getElementById('squad-clause-actual')?.value);
+            const preview = document.getElementById('squad-clause-preview');
+            if (!preview) return;
+            const gasto = (!isNaN(inicial) && !isNaN(actual)) ? Math.max(0, (actual - inicial) / 2) : 0;
+            preview.textContent = gasto.toLocaleString('es-ES') + '€';
+        }
+
+        function confirmSquadClauseCalculator(nombre, jugador, source, refId) {
+            const inicial = parseFloat(document.getElementById('squad-clause-inicial').value);
+            const actual = parseFloat(document.getElementById('squad-clause-actual').value);
+            if (isNaN(inicial) || isNaN(actual)) { showToast('Introduce valores numéricos válidos', true); return; }
+            const gasto = Math.max(0, (actual - inicial) / 2);
+
+            if (source === 'tx') {
+                const tx = fantasyData.transacciones.find(t => t.id === refId);
+                if (!tx) return;
+                tx.clausulaValorInicial = inicial;
+                tx.clausulaValorActual = actual;
+                tx.clausulaGasto = gasto;
+            } else {
+                const u = fantasyData.usuarios.find(x => x.nombre === nombre);
+                const p = u?.equipoInicial.find(x => x.id === refId);
+                if (!p) return;
+                p.valorInicial = inicial;
+                p.valorActual = actual;
+                p.gasto = gasto;
+            }
+            saveFantasyData();
+            closeModal();
+            showFantasySquad(nombre);
+            showToast('Cláusula actualizada');
+        }
+
+        // ============================================================
         //  FANTASY: CLAUSE EXPENSE (6.5)
         // ============================================================
         function deleteFantasyTransaction(txId) {
@@ -12841,7 +13048,10 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         <button class="btn-secondary" style="padding:2px 8px;font-size:10px;margin-top:4px" onclick="event.stopPropagation();closeModal();editTemplateValue('${nombre}')">Editar</button>
                     </div>
                 </div>
-                <button class="btn-secondary fantasy-btn-danger" style="width:auto;margin-bottom:16px" onclick="closeModal();deleteFantasyUser('${nombre}')">Borrar usuario</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                    <button class="btn-secondary fantasy-btn-accent" style="width:auto" onclick="closeModal();showFantasySquad('${nombre}')">Ver plantilla (${getUserSquad(nombre).length})</button>
+                    <button class="btn-secondary fantasy-btn-danger" style="width:auto" onclick="closeModal();deleteFantasyUser('${nombre}')">Borrar usuario</button>
+                </div>
 
                 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
                 <div style="max-height:300px;overflow-y:auto">
