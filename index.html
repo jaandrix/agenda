@@ -5872,6 +5872,10 @@ function v22RefreshSummaryIfPresent() {
         let nombrePublico = null;
         let recomendaciones = [];
         let cultureSharedMode = false;
+        // Solicitudes de amistad pendientes que te han enviado (para
+        // aceptar/rechazar) y las que tú has enviado y siguen sin resolver.
+        let solicitudesRecibidas = [];
+        let solicitudesEnviadas = [];
 
         async function cargarCodigoAmigo() {
             try {
@@ -5979,18 +5983,27 @@ function v22RefreshSummaryIfPresent() {
             const codigo = input?.value?.trim().toUpperCase();
             if (!codigo) { showToast('Escribe el código de tu amigo', true); return; }
             const btn = document.getElementById('friend-add-btn');
-            if (btn) { btn.disabled = true; btn.textContent = 'Añadiendo...'; }
+            if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
             try {
-                const { error } = await sb.rpc('anadir_amigo_por_codigo', { p_codigo: codigo });
+                const { data, error } = await sb.rpc('enviar_solicitud_amistad_por_codigo', { p_codigo: codigo });
                 if (error) throw error;
-                await cargarAmigos();
+                if (input) input.value = '';
+                if (data === 'aceptada_directa') {
+                    await cargarAmigos();
+                    showToast('¡Ya sois amigos! (esa persona ya te había enviado una solicitud)');
+                } else {
+                    showToast('Solicitud enviada, a la espera de que la acepte');
+                }
                 if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
-                showToast('Amigo añadido');
             } catch (e) {
-                console.error('Error añadiendo amigo:', e);
+                console.error('Error enviando la solicitud de amistad:', e);
                 const msg = e?.message || '';
-                const texto = msg.includes('Código no encontrado') ? 'No existe ningún amigo con ese código'
-                    : msg.includes('a ti mismo') ? 'Ese es tu propio código' : 'No se pudo añadir el amigo';
+                let texto;
+                if (msg.includes('Código no encontrado')) texto = 'No existe ningún amigo con ese código';
+                else if (msg.includes('a ti mismo')) texto = 'Ese es tu propio código';
+                else if (msg.includes('Ya sois amigos')) texto = 'Ya sois amigos';
+                else if (msg.includes('pendiente de que la acepte')) texto = 'Ya le enviaste una solicitud; está pendiente de que la acepte';
+                else texto = 'No se pudo enviar la solicitud' + (msg ? ': ' + msg : '');
                 showToast(texto, true);
             } finally {
                 if (btn) { btn.disabled = false; btn.textContent = '+ Añadir'; }
@@ -6057,8 +6070,50 @@ function v22RefreshSummaryIfPresent() {
         //  VISTA "AMIGOS"
         // ------------------------------------------------------------
         async function loadFriendsViewData() {
-            await Promise.all([cargarCodigoAmigo(), cargarAmigos(), cargarNombrePublico()]);
+            await Promise.all([cargarCodigoAmigo(), cargarAmigos(), cargarNombrePublico(), cargarSolicitudesAmistad()]);
             if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
+        }
+
+        async function cargarSolicitudesAmistad() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { solicitudesRecibidas = []; solicitudesEnviadas = []; return; }
+                const { data, error } = await sb.from('solicitudes_amistad')
+                    .select('id, remitente_id, destinatario_id, estado, creado_en')
+                    .eq('estado', 'pendiente')
+                    .or(`remitente_id.eq.${user.id},destinatario_id.eq.${user.id}`)
+                    .order('creado_en', { ascending: false });
+                if (error) { console.error('Error cargando solicitudes de amistad:', error); return; }
+                const todas = data || [];
+                const recibidas = todas.filter(s => s.destinatario_id === user.id);
+                const enviadas = todas.filter(s => s.remitente_id === user.id);
+
+                const ids = [...new Set([...recibidas.map(s => s.remitente_id), ...enviadas.map(s => s.destinatario_id)])];
+                let porId = {};
+                if (ids.length) {
+                    const { data: publicos } = await sb.from('perfiles_publicos').select('user_id, nombre_publico').in('user_id', ids);
+                    porId = Object.fromEntries((publicos || []).map(p => [p.user_id, p.nombre_publico]));
+                }
+                recibidas.forEach(s => { s.nombre = porId[s.remitente_id] || 'Alguien'; });
+                enviadas.forEach(s => { s.nombre = porId[s.destinatario_id] || 'Alguien'; });
+                solicitudesRecibidas = recibidas;
+                solicitudesEnviadas = enviadas;
+            } catch (e) {
+                console.error('Error cargando solicitudes de amistad:', e);
+            }
+        }
+
+        async function responderSolicitudAmistad(id, aceptar) {
+            try {
+                const { error } = await sb.rpc('responder_solicitud_amistad', { p_solicitud_id: id, p_aceptar: aceptar });
+                if (error) throw error;
+                await Promise.all([cargarSolicitudesAmistad(), cargarAmigos()]);
+                if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
+                showToast(aceptar ? 'Amigo añadido' : 'Solicitud rechazada');
+            } catch (e) {
+                console.error('Error respondiendo a la solicitud de amistad:', e);
+                showToast('No se pudo procesar la solicitud' + (e?.message ? ': ' + e.message : ''), true);
+            }
         }
 
         function renderFriendsView() {
@@ -6074,13 +6129,34 @@ function v22RefreshSummaryIfPresent() {
                         </div>
                     </div>
 
+                    ${solicitudesRecibidas.length ? `
+                    <div class="chart-container" style="margin-bottom:16px">
+                        <div class="chart-title">Solicitudes recibidas (${solicitudesRecibidas.length})</div>
+                        <div class="friend-list" style="margin-top:10px">
+                            ${solicitudesRecibidas.map(s => `
+                                <div class="friend-list-item">
+                                    <span class="friend-list-name">${escapeHtml(s.nombre)}</span>
+                                    <span style="display:flex;gap:6px">
+                                        <button class="btn-secondary" style="padding:4px 12px;font-size:11px" onclick="responderSolicitudAmistad('${s.id}', true)">Aceptar</button>
+                                        <button class="friend-remove-btn" title="Rechazar" onclick="responderSolicitudAmistad('${s.id}', false)">✕</button>
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
                     <div class="chart-container">
                         <div class="chart-title">Mis amigos</div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Introduce el código que te ha compartido tu amigo para conectar con su cuenta.</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Introduce el código que te ha compartido tu amigo. Le llegará como solicitud y tendrá que aceptarla.</div>
                         <div class="friend-add-row">
                             <input type="text" id="friend-add-input" class="friend-add-input" placeholder="Código de amigo" maxlength="8" onkeydown="friendAddInputKeydown(event)">
                             <button class="btn-secondary" id="friend-add-btn" style="width:auto" onclick="anadirAmigoPorCodigo()">+ Añadir</button>
                         </div>
+                        ${solicitudesEnviadas.length ? `<div style="font-size:11px;color:var(--text-secondary);margin:10px 0 4px">Solicitudes enviadas, pendientes de respuesta:</div>
+                        <div class="friend-list" style="margin-bottom:10px">
+                            ${solicitudesEnviadas.map(s => `<div class="friend-list-item"><span class="friend-list-name" style="font-weight:600;color:var(--text-secondary)">${escapeHtml(s.nombre)}</span><span style="font-size:11px;color:var(--text-secondary)">Pendiente</span></div>`).join('')}
+                        </div>` : ''}
                         <div class="friend-list">
                             ${amigos.length ? amigos.map(a => `
                                 <div class="friend-list-item">
