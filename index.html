@@ -12537,58 +12537,66 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         // Calculadora de cláusula: el juego duplica en el valor de mercado lo
-        // que se gasta en subir una cláusula (gastas 1M, el valor sube 2M), así
-        // que el gasto real es la mitad de la diferencia entre el valor actual
-        // y el inicial. Sirve para detectar de un vistazo si a algún jugador
-        // le han subido la cláusula y todavía no lo hemos anotado aquí.
+        // que se gasta en subir una cláusula (gastas 1M, el valor sube 2M). El
+        // gasto se acumula entre usos: "Valor anterior" viene precargado con
+        // el último valor que Bitácora tenía registrado (editable, por si ese
+        // valor subió por otro motivo y no quieres que cuente como cláusula),
+        // y "Valor nuevo" es lo que ves ahora en el juego. Solo la diferencia
+        // de ESTA subida se suma al total ya gastado — no hay que llevar la
+        // cuenta manualmente de cada subida por separado.
         function openSquadClauseCalculator(nombre, jugador, source, refId) {
             const squad = getUserSquad(nombre);
             const p = squad.find(x => x.source === source && String(x.refId) === String(refId));
             if (!p) return;
             showModal(`
                 <div class="modal-title" style="color:var(--fantasy-accent)">Cláusula — ${escapeHtml(jugador)}</div>
-                <div class="modal-label">Valor inicial (€)</div>
-                <input type="number" id="squad-clause-inicial" class="modal-input" value="${p.valorInicial}" step="0.01" oninput="updateSquadClausePreview()">
-                <div class="modal-label">Valor actual (€)</div>
-                <input type="number" id="squad-clause-actual" class="modal-input" value="${p.valorActual}" step="0.01" oninput="updateSquadClausePreview()">
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Gasto en cláusula (mitad de la diferencia): <strong id="squad-clause-preview" style="color:var(--fantasy-accent)">${(Math.max(0, (p.valorActual - p.valorInicial)) / 2).toLocaleString('es-ES')}€</strong></div>
+                ${p.gasto > 0 ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">Gastado hasta ahora en cláusulas: <strong style="color:var(--fantasy-accent)">${p.gasto.toLocaleString('es-ES')}€</strong></div>` : ''}
+                <div class="modal-label">Valor anterior (antes de esta subida)</div>
+                <input type="number" id="squad-clause-anterior" class="modal-input" value="${p.valorActual}" step="0.01" data-gasto-previo="${p.gasto}" oninput="updateSquadClausePreview()">
+                <div class="modal-label">Valor nuevo (lo que ves ahora en el juego)</div>
+                <input type="number" id="squad-clause-nuevo" class="modal-input" value="${p.valorActual}" step="0.01" oninput="updateSquadClausePreview()">
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Gasto en esta subida (se suma a lo ya gastado): <strong id="squad-clause-incremento" style="color:var(--fantasy-accent)">0€</strong></div>
                 <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmSquadClauseCalculator('${nombre}', '${escapeHtml(jugador).replace(/'/g, "\\'")}', '${source}', '${refId}')">Guardar</button>
             `);
         }
 
         function updateSquadClausePreview() {
-            const inicial = parseFloat(document.getElementById('squad-clause-inicial')?.value);
-            const actual = parseFloat(document.getElementById('squad-clause-actual')?.value);
-            const preview = document.getElementById('squad-clause-preview');
-            if (!preview) return;
-            const gasto = (!isNaN(inicial) && !isNaN(actual)) ? Math.max(0, (actual - inicial) / 2) : 0;
-            preview.textContent = gasto.toLocaleString('es-ES') + '€';
+            const anteriorInput = document.getElementById('squad-clause-anterior');
+            const nuevoInput = document.getElementById('squad-clause-nuevo');
+            const preview = document.getElementById('squad-clause-incremento');
+            if (!anteriorInput || !nuevoInput || !preview) return;
+            const anterior = parseFloat(anteriorInput.value);
+            const nuevo = parseFloat(nuevoInput.value);
+            const incremento = (!isNaN(anterior) && !isNaN(nuevo)) ? Math.max(0, (nuevo - anterior) / 2) : 0;
+            preview.textContent = incremento.toLocaleString('es-ES') + '€';
         }
 
         function confirmSquadClauseCalculator(nombre, jugador, source, refId) {
-            const inicial = parseFloat(document.getElementById('squad-clause-inicial').value);
-            const actual = parseFloat(document.getElementById('squad-clause-actual').value);
-            if (isNaN(inicial) || isNaN(actual)) { showToast('Introduce valores numéricos válidos', true); return; }
-            const gasto = Math.max(0, (actual - inicial) / 2);
+            const anteriorInput = document.getElementById('squad-clause-anterior');
+            const nuevoInput = document.getElementById('squad-clause-nuevo');
+            const anterior = parseFloat(anteriorInput.value);
+            const nuevo = parseFloat(nuevoInput.value);
+            if (isNaN(anterior) || isNaN(nuevo)) { showToast('Introduce valores numéricos válidos', true); return; }
+            const gastoPrevio = parseFloat(anteriorInput.dataset.gastoPrevio) || 0;
+            const incremento = Math.max(0, (nuevo - anterior) / 2);
+            const gastoTotal = gastoPrevio + incremento;
 
             if (source === 'tx') {
                 const tx = fantasyData.transacciones.find(t => t.id === refId);
                 if (!tx) return;
-                tx.clausulaValorInicial = inicial;
-                tx.clausulaValorActual = actual;
-                tx.clausulaGasto = gasto;
+                tx.clausulaValorActual = nuevo;
+                tx.clausulaGasto = gastoTotal;
             } else {
                 const u = fantasyData.usuarios.find(x => x.nombre === nombre);
                 const p = u?.equipoInicial.find(x => x.id === refId);
                 if (!p) return;
-                p.valorInicial = inicial;
-                p.valorActual = actual;
-                p.gasto = gasto;
+                p.valorActual = nuevo;
+                p.gasto = gastoTotal;
             }
             saveFantasyData();
             closeModal();
             showFantasySquad(nombre);
-            showToast('Cláusula actualizada');
+            showToast(incremento > 0 ? `+${incremento.toLocaleString('es-ES')}€ de cláusula añadidos (total ${gastoTotal.toLocaleString('es-ES')}€)` : 'Valor actualizado');
         }
 
         // ============================================================
