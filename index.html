@@ -545,6 +545,91 @@
             line-height: 1;
         }
 
+        .notif-bell-wrap { position: relative; }
+        .notif-bell-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .notif-bell-btn:hover { background: var(--bg-card-hover); border-color: var(--border-strong); }
+        .notif-badge {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            border: 2px solid var(--bg-app);
+        }
+        .notif-panel {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            width: 320px;
+            max-width: calc(100vw - 32px);
+            max-height: 420px;
+            overflow-y: auto;
+            background: var(--bg-modal);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 8px;
+            z-index: 200;
+            box-shadow: var(--shadow);
+        }
+        .notif-panel.open { display: block; }
+        .notif-panel-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            padding: 6px 8px 8px;
+        }
+        .notif-item {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 9px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.12s ease;
+        }
+        .notif-item:hover { background: var(--bg-card-hover); }
+        .notif-item-icon {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            border-radius: 9px;
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+        .notif-item-body { flex: 1; min-width: 0; }
+        .notif-item-title { font-size: 12.5px; font-weight: 600; color: var(--text-primary); line-height: 1.35; }
+        .notif-item-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .notif-empty { padding: 26px 12px; text-align: center; font-size: 12px; color: var(--text-secondary); }
+
         #main-header .menu-hamburger {
             display: none;
             background: none;
@@ -4448,6 +4533,13 @@ body.beige {
                     <button id="add-section-btn" class="add-section-btn" onclick="openSectionAdd()">
                         <span class="add-icon">+</span> Añadir
                     </button>
+                    <div class="notif-bell-wrap">
+                        <button id="notif-bell-btn" class="notif-bell-btn" onclick="toggleNotifPanel()" title="Notificaciones" aria-label="Notificaciones">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                            <span id="notif-badge" class="notif-badge" hidden></span>
+                        </button>
+                        <div id="notif-panel" class="notif-panel"></div>
+                    </div>
                     <div id="header-clock" aria-label="Hora actual"></div>
                 </div>
             </div>
@@ -4891,7 +4983,10 @@ function v22StartCountdowns() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    v22InitGlobalSearch();
+    // v22InitGlobalSearch() ya no se llama: quedó duplicando en paralelo el
+    // buscador global de v23 (ambos escuchaban el mismo input), con una
+    // lista de contenido más corta y desactualizada. v23RunGlobalSearch
+    // sustituye a esto por completo.
     v22StartCountdowns();
 });
 
@@ -5550,6 +5645,8 @@ function v22RefreshSummaryIfPresent() {
             else if (kind === 'movement') { switchView('finances'); }
             else if (kind === 'collectible') { switchView('collectibles'); openEditCollectible(id); }
             else if (kind === 'document') { switchView('documents'); }
+            else if (kind === 'link') { switchView('links'); }
+            else if (kind === 'friend') { switchView('friends'); }
         }
 
         // Índice de todo lo que se puede enlazar/mencionar en la app,
@@ -5681,6 +5778,53 @@ function v22RefreshSummaryIfPresent() {
             // habrá nada que buscar todavía.
             (documents || []).forEach(d => {
                 if (d.name && d.name.toLowerCase().includes(q)) results.push({ kind: 'document', id: d.name, text: d.name });
+            });
+            // Lugares/itinerario/listas viven anidados dentro de cada viaje
+            // (entries de tipo 'travel'), sin título propio a ese nivel —
+            // por eso necesitan su propio recorrido en vez de colar en el
+            // bucle de entries de arriba.
+            entries.filter(e => e.type === 'travel').forEach(trip => {
+                (trip.places || []).forEach(p => {
+                    if (p.nombre && p.nombre.toLowerCase().includes(q)) {
+                        results.push({ kind: 'trip-place', tripId: trip.id, text: `${p.nombre} - ${trip.title || 'Viaje'}` });
+                    }
+                });
+                (trip.itinerario || []).forEach(it => {
+                    if (it.titulo && it.titulo.toLowerCase().includes(q)) {
+                        results.push({ kind: 'trip-itinerary', tripId: trip.id, text: `${it.titulo} - ${trip.title || 'Viaje'}` });
+                    }
+                });
+                (trip.listas || []).forEach(lista => {
+                    (lista.items || []).forEach(item => {
+                        if (item.texto && item.texto.toLowerCase().includes(q)) {
+                            results.push({ kind: 'trip-list', tripId: trip.id, text: `${item.texto} - ${trip.title || 'Viaje'}` });
+                        }
+                    });
+                });
+            });
+            (links || []).forEach(l => {
+                if ((l.title || '').toLowerCase().includes(q) || (l.url || '').toLowerCase().includes(q)) {
+                    results.push({ kind: 'link', id: l.id, text: l.title || l.url });
+                }
+            });
+            (collectibles || []).forEach(c => {
+                if (c.name && c.name.toLowerCase().includes(q)) results.push({ kind: 'collectible', id: c.id, text: c.name });
+            });
+            (typeof amigos !== 'undefined' ? amigos : []).forEach(a => {
+                const nombre = a.nombre_visible || a.friend_nombre;
+                if (nombre && nombre.toLowerCase().includes(q)) results.push({ kind: 'friend', text: `${nombre} - Amigo` });
+            });
+            (typeof recomendaciones !== 'undefined' ? recomendaciones : []).forEach(r => {
+                const titulo = (r.entrada && r.entrada.title) || '';
+                if (titulo && titulo.toLowerCase().includes(q)) {
+                    results.push({ kind: 'recommendation', tipo: r.tipo, text: `${titulo} - Recomendado` });
+                }
+            });
+            (typeof viajesCompartidos !== 'undefined' ? viajesCompartidos : []).forEach(v => {
+                const titulo = (v.viaje && v.viaje.title) || '';
+                if (titulo && titulo.toLowerCase().includes(q)) {
+                    results.push({ kind: 'shared-trip', text: `${titulo} - Viaje compartido` });
+                }
             });
             return results.slice(0, 30);
         }
@@ -5823,8 +5967,18 @@ function v22RefreshSummaryIfPresent() {
                     document.querySelectorAll('#modal-container input[type="date"]').forEach(inp => { if (!inp.value) inp.value = prefillDate; });
                 }
                 focusFirstModalField();
-            } else if (item.kind === 'entry' || item.kind === 'note' || item.kind === 'subject' || item.kind === 'document') {
+            } else if (item.kind === 'entry' || item.kind === 'note' || item.kind === 'subject' || item.kind === 'document' || item.kind === 'link' || item.kind === 'friend') {
                 followMention(item.kind, item.id);
+            } else if (item.kind === 'trip-place' || item.kind === 'trip-itinerary' || item.kind === 'trip-list') {
+                switchView('travels');
+                openTripManager(item.tripId);
+                setTripManagerTab(item.kind === 'trip-place' ? 'lugares' : item.kind === 'trip-itinerary' ? 'itinerario' : 'listas');
+            } else if (item.kind === 'recommendation') {
+                cultureTab = CULTURE_TYPE_TO_TAB[item.tipo] || 'books';
+                cultureSharedMode = true;
+                switchView('culture');
+            } else if (item.kind === 'shared-trip') {
+                switchView('travels');
             } else if (item.kind === 'fantasy') {
                 openFantasy();
             } else if (item.kind === 'month-filter') {
@@ -6268,6 +6422,7 @@ function v22RefreshSummaryIfPresent() {
                 if (error) throw error;
                 await Promise.all([cargarSolicitudesAmistad(), cargarAmigos()]);
                 if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
+                if (typeof updateNotifBadge === 'function') updateNotifBadge();
                 showToast(aceptar ? 'Amigo añadido' : 'Solicitud rechazada');
             } catch (e) {
                 console.error('Error respondiendo a la solicitud de amistad:', e);
@@ -8097,8 +8252,50 @@ function v22RefreshSummaryIfPresent() {
         // ============================================================
         //  EXPORT / IMPORT
         // ============================================================
+        // Única fuente de verdad para lo que entra en una copia de seguridad
+        // completa — exactamente los mismos campos que doSaveData() manda a
+        // Supabase (ver mergedData ahí), para que "Exportar datos" nunca se
+        // quede corto de algo que sí se está guardando en la nube. Antes
+        // había tres listas de campos distintas (este botón, el de Centro
+        // resumen y el propio guardado) que se habían ido desincronizando
+        // según se añadían secciones nuevas.
+        function buildFullBackupPayload() {
+            return {
+                entries, categories, userName, investmentData, notes, prompts, inbox,
+                financeIncome, financeProfile, plannedTrips, weeklyTasks,
+                collectibleCategories, collectibles, dayPlanner, studies, links,
+                linkCategories, blurFinances, fantasyData, apuntes,
+                exportedAt: new Date().toISOString()
+            };
+        }
+
+        function applyBackupPayload(data) {
+            if (!data || typeof data !== 'object') return;
+            if (data.entries) entries = data.entries;
+            if (data.categories) categories = data.categories;
+            if (data.userName) userName = data.userName;
+            if (data.notes) notes = data.notes;
+            if (data.prompts) prompts = data.prompts;
+            if (data.investmentData) { investmentData = data.investmentData; migrateInvestmentData(); }
+            if (data.inbox) inbox = data.inbox;
+            if (data.financeIncome) financeIncome = data.financeIncome;
+            if (data.financeProfile) financeProfile = data.financeProfile;
+            if (data.plannedTrips) plannedTrips = data.plannedTrips;
+            if (data.weeklyTasks) weeklyTasks = Array.isArray(data.weeklyTasks) ? data.weeklyTasks : [];
+            if (data.collectibleCategories) collectibleCategories = data.collectibleCategories;
+            if (data.collectibles) collectibles = data.collectibles;
+            if (data.dayPlanner) dayPlanner = data.dayPlanner;
+            if (data.studies) studies = data.studies;
+            if (data.links) links = data.links;
+            if (data.linkCategories) linkCategories = data.linkCategories;
+            if (typeof data.blurFinances === 'boolean') blurFinances = data.blurFinances;
+            if (data.fantasyData) { fantasyData = data.fantasyData; fantasyDataFromCloud = true; }
+            if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
+            filteredEntries = [...entries];
+        }
+
         function exportData() {
-            const data = { entries, categories, userName, investmentData, notes, prompts, inbox, financeIncome, financeProfile, plannedTrips, weeklyTasks, collectibleCategories, collectibles, dayPlanner, apuntes };
+            const data = buildFullBackupPayload();
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -8116,23 +8313,7 @@ function v22RefreshSummaryIfPresent() {
             reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (data.entries) entries = data.entries;
-                    if (data.categories) categories = data.categories;
-                    if (data.userName) userName = data.userName;
-                    if (data.notes) notes = data.notes;
-                    if (data.prompts) prompts = data.prompts;
-                    if (data.investmentData) investmentData = data.investmentData;
-                    migrateInvestmentData();
-                    if (data.inbox) inbox = data.inbox;
-                    if (data.financeIncome) financeIncome = data.financeIncome;
-                    if (data.financeProfile) financeProfile = data.financeProfile;
-                    if (data.plannedTrips) plannedTrips = data.plannedTrips;
-                    if (data.weeklyTasks) weeklyTasks = Array.isArray(data.weeklyTasks) ? data.weeklyTasks : [];
-                    if (data.collectibleCategories) collectibleCategories = data.collectibleCategories;
-                    if (data.collectibles) collectibles = data.collectibles;
-                    if (data.dayPlanner) dayPlanner = data.dayPlanner;
-                    if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
-                    filteredEntries = [...entries];
+                    applyBackupPayload(data);
                     render();
                     updatePageTitle();
                     try {
@@ -9487,6 +9668,122 @@ function v22RefreshSummaryIfPresent() {
             }
         }
 
+        // ------------------------------------------------------------
+        //  NOTIFICACIONES (solicitudes de amistad + recomendaciones pendientes)
+        // ------------------------------------------------------------
+        const NOTIF_ICON_FRIEND = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M16 8v6M19 11h-6"/></svg>';
+        const NOTIF_ICON_REC = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+        const NOTIF_ICON_TRIP = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.3 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.3-4-10s1.5-7.3 4-10z"/></svg>';
+        const CULTURE_TYPE_TO_TAB = { book: 'books', series: 'series', movie: 'movies', game: 'games' };
+        const CULTURE_TYPE_LABEL = { book: 'un libro', series: 'una serie', movie: 'una película', game: 'un videojuego' };
+
+        function computeNotifItems() {
+            const items = [];
+            (typeof solicitudesRecibidas !== 'undefined' ? solicitudesRecibidas : []).forEach(s => {
+                items.push({
+                    icon: NOTIF_ICON_FRIEND,
+                    title: `${s.nombre || 'Alguien'} quiere ser tu amigo`,
+                    sub: 'Solicitud de amistad pendiente',
+                    date: s.creado_en || '',
+                    onClick: () => { closeNotifPanel(); switchView('friends'); }
+                });
+            });
+            (typeof recomendaciones !== 'undefined' ? recomendaciones : []).forEach(r => {
+                items.push({
+                    icon: NOTIF_ICON_REC,
+                    title: `${r.remitente_nombre || 'Un amigo'} te recomendó ${CULTURE_TYPE_LABEL[r.tipo] || 'algo'}`,
+                    sub: (r.entrada && r.entrada.title) || '',
+                    date: r.creado_en || '',
+                    onClick: () => {
+                        closeNotifPanel();
+                        cultureTab = CULTURE_TYPE_TO_TAB[r.tipo] || 'books';
+                        cultureSharedMode = true;
+                        switchView('culture');
+                    }
+                });
+            });
+            (typeof viajesCompartidos !== 'undefined' ? viajesCompartidos : []).forEach(v => {
+                items.push({
+                    icon: NOTIF_ICON_TRIP,
+                    title: `${v.remitente_nombre || 'Un amigo'} te compartió un viaje`,
+                    sub: (v.viaje && v.viaje.title) || '',
+                    date: v.creado_en || '',
+                    onClick: () => { closeNotifPanel(); switchView('travels'); }
+                });
+            });
+            items.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+            return items;
+        }
+
+        function renderNotifPanelHtml() {
+            const items = computeNotifItems();
+            window._notifItems = items;
+            if (!items.length) {
+                return `<div class="notif-empty">Sin notificaciones nuevas</div>`;
+            }
+            return `
+                <div class="notif-panel-title">Notificaciones</div>
+                ${items.map((it, i) => `
+                    <div class="notif-item" onclick="window._notifItems[${i}].onClick()">
+                        <div class="notif-item-icon">${it.icon}</div>
+                        <div class="notif-item-body">
+                            <div class="notif-item-title">${escapeHtml(it.title)}</div>
+                            ${it.sub ? `<div class="notif-item-sub">${escapeHtml(it.sub)}</div>` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function updateNotifBadge() {
+            const badge = document.getElementById('notif-badge');
+            if (!badge) return;
+            const count = computeNotifItems().length;
+            if (count > 0) {
+                badge.textContent = count > 9 ? '9+' : String(count);
+                badge.hidden = false;
+            } else {
+                badge.hidden = true;
+            }
+            const panel = document.getElementById('notif-panel');
+            if (panel && panel.classList.contains('open')) {
+                panel.innerHTML = renderNotifPanelHtml();
+            }
+        }
+
+        async function refreshNotifData() {
+            try {
+                await Promise.all([cargarSolicitudesAmistad(), cargarRecomendaciones(), cargarViajesCompartidos()]);
+                updateNotifBadge();
+            } catch (e) {
+                console.error('Error actualizando notificaciones:', e);
+            }
+        }
+
+        function closeNotifPanel() {
+            const panel = document.getElementById('notif-panel');
+            if (panel) panel.classList.remove('open');
+        }
+
+        function toggleNotifPanel() {
+            const panel = document.getElementById('notif-panel');
+            if (!panel) return;
+            const willOpen = !panel.classList.contains('open');
+            panel.classList.toggle('open', willOpen);
+            if (willOpen) {
+                panel.innerHTML = renderNotifPanelHtml();
+                setTimeout(() => {
+                    document.addEventListener('click', function closeNotifOnOutsideClick(e) {
+                        const wrap = document.querySelector('.notif-bell-wrap');
+                        if (wrap && !wrap.contains(e.target)) {
+                            panel.classList.remove('open');
+                            document.removeEventListener('click', closeNotifOnOutsideClick);
+                        }
+                    });
+                }, 0);
+            }
+        }
+
         // Abre el selector de amigo + nota, desde el botón "Recomendar" de la
         // ficha de un libro/peli/serie/videojuego. Solo tiene sentido para esos
         // 4 tipos, y solo si ya tienes al menos un amigo añadido.
@@ -9603,12 +9900,160 @@ function v22RefreshSummaryIfPresent() {
 
         async function quitarRecomendacion(recId) {
             recomendaciones = recomendaciones.filter(r => r.id !== recId);
+            if (typeof updateNotifBadge === 'function') updateNotifBadge();
             try {
                 const { error } = await sb.from('recomendaciones').delete().eq('id', recId);
                 if (error) console.error('Error quitando la recomendación en Supabase:', error);
             } catch (e) {
                 console.error('Error quitando la recomendación:', e);
             }
+        }
+
+        // ------------------------------------------------------------
+        //  VIAJES COMPARTIDOS ENTRE AMIGOS
+        //  Mismo patrón que las recomendaciones: se manda una foto fija
+        //  del viaje (no edición conjunta en vivo, ver bitacora_viajes_
+        //  compartidos.sql), y el destinatario decide si la añade a sus
+        //  propios viajes o la descarta.
+        // ------------------------------------------------------------
+        let viajesCompartidos = [];
+
+        async function cargarViajesCompartidos() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { viajesCompartidos = []; return; }
+                const { data, error } = await sb.from('viajes_compartidos')
+                    .select('id, remitente_id, viaje, nota, creado_en')
+                    .eq('destinatario_id', user.id)
+                    .order('creado_en', { ascending: false });
+                if (error) { console.error('Error cargando viajes compartidos:', error); return; }
+                viajesCompartidos = data || [];
+                if (viajesCompartidos.length) {
+                    const ids = [...new Set(viajesCompartidos.map(v => v.remitente_id))];
+                    const { data: publicos } = await sb.from('perfiles_publicos').select('user_id, nombre_publico').in('user_id', ids);
+                    const porId = Object.fromEntries((publicos || []).map(p => [p.user_id, p.nombre_publico]));
+                    const amigoPorId = Object.fromEntries((amigos || []).map(a => [a.friend_id, a.nombre_visible || a.friend_nombre]));
+                    viajesCompartidos.forEach(v => { v.remitente_nombre = porId[v.remitente_id] || amigoPorId[v.remitente_id] || 'Un amigo'; });
+                }
+            } catch (e) {
+                console.error('Error cargando viajes compartidos:', e);
+            }
+        }
+
+        function abrirCompartirViajeModal(tripId) {
+            const t = getTrip(tripId);
+            if (!t) return;
+            if (!amigos.length) { showToast('Añade primero un amigo desde el apartado Amigos', true); return; }
+            showModal(`
+                <div class="modal-title">Compartir "${escapeHtml(t.title)}"</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Se enviará tal como está ahora: lugares, itinerario y listas. Si luego cambias el viaje, no se actualizará lo ya enviado.</div>
+                <div class="modal-label">Con quién</div>
+                <select id="compartir-viaje-amigo" class="modal-input">
+                    ${amigos.map(a => `<option value="${a.friend_id}">${escapeHtml(a.nombre_visible || a.friend_nombre || 'Amigo')}</option>`).join('')}
+                </select>
+                <div class="modal-label">Nota (opcional)</div>
+                <textarea id="compartir-viaje-nota" class="modal-input" rows="3" placeholder="Algo que quieras contarle sobre el viaje"></textarea>
+                <button class="btn-modal-primary" onclick="enviarViajeCompartido('${tripId}')">Enviar viaje</button>
+            `);
+        }
+
+        async function enviarViajeCompartido(tripId) {
+            const t = getTrip(tripId);
+            if (!t) return;
+            const destinatarioId = document.getElementById('compartir-viaje-amigo')?.value;
+            const nota = document.getElementById('compartir-viaje-nota')?.value?.trim() || null;
+            if (!destinatarioId) { showToast('Elige con quién compartirlo', true); return; }
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) return;
+            // No se incluyen documentos (archivos en Storage, no triviales
+            // de copiar a otro usuario) ni gastos (información económica
+            // personal que no tiene sentido compartir por defecto).
+            const viaje = {
+                title: t.title, destination: t.destination || '',
+                startDate: t.startDate || '', endDate: t.endDate || '',
+                places: Array.isArray(t.places) ? t.places.map(p => ({ nombre: p.nombre })) : [],
+                itinerario: Array.isArray(t.itinerario) ? t.itinerario.map(it => ({ dia: it.dia, hora: it.hora, titulo: it.titulo, notas: it.notas })) : [],
+                listas: Array.isArray(t.listas) ? t.listas.map(l => ({ nombre: l.nombre, items: (l.items || []).map(i => ({ texto: i.texto })) })) : []
+            };
+            try {
+                const { error } = await sb.from('viajes_compartidos').insert({
+                    remitente_id: user.id,
+                    destinatario_id: destinatarioId,
+                    viaje,
+                    nota
+                });
+                if (error) throw error;
+                closeModal();
+                showToast('Viaje compartido');
+            } catch (e) {
+                console.error('Error compartiendo el viaje:', e);
+                showToast('No se pudo compartir el viaje', true);
+            }
+        }
+
+        async function quitarViajeCompartido(id) {
+            viajesCompartidos = viajesCompartidos.filter(v => v.id !== id);
+            if (typeof updateNotifBadge === 'function') updateNotifBadge();
+            try {
+                const { error } = await sb.from('viajes_compartidos').delete().eq('id', id);
+                if (error) console.error('Error quitando el viaje compartido en Supabase:', error);
+            } catch (e) {
+                console.error('Error quitando el viaje compartido:', e);
+            }
+        }
+
+        async function anadirViajeCompartidoAMisViajes(id) {
+            const v = viajesCompartidos.find(x => x.id === id);
+            if (!v) return;
+            const viaje = v.viaje || {};
+            entries.push({
+                id: 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                type: 'travel',
+                title: viaje.title || 'Viaje compartido',
+                destination: viaje.destination || '',
+                startDate: viaje.startDate || '', endDate: viaje.endDate || '',
+                companions: '', expenses: [],
+                notes: v.nota ? `Compartido por ${v.remitente_nombre || 'un amigo'}: ${v.nota}` : `Compartido por ${v.remitente_nombre || 'un amigo'}`,
+                places: (viaje.places || []).map(p => ({ id: 'place_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), nombre: p.nombre, visitado: false })),
+                itinerario: (viaje.itinerario || []).map(it => ({ id: 'it_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), dia: it.dia || '', hora: it.hora || '', titulo: it.titulo, notas: it.notas || '' })),
+                listas: (viaje.listas || []).map(l => ({ id: 'lista_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), nombre: l.nombre, items: (l.items || []).map(i => ({ id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), texto: i.texto, hecho: false })) })),
+                createdAt: new Date().toISOString()
+            });
+            filteredEntries = [...entries];
+            try { await saveData(); } catch (e) { console.error(e); }
+            await quitarViajeCompartido(id);
+            render();
+            showToast('Viaje añadido a los tuyos');
+        }
+
+        async function descartarViajeCompartido(id) {
+            if (!confirm('¿Descartar este viaje compartido?')) return;
+            await quitarViajeCompartido(id);
+            render();
+            showToast('Viaje descartado');
+        }
+
+        function renderSharedTripsSection() {
+            if (!viajesCompartidos.length) return '';
+            return `
+                <div style="margin-bottom:18px">
+                    <div style="font-size:13px;font-weight:700;margin-bottom:8px">Viajes compartidos contigo (${viajesCompartidos.length})</div>
+                    ${viajesCompartidos.map(v => {
+                        const viaje = v.viaje || {};
+                        return `
+                        <div class="trip-card" style="background:transparent;border-style:dashed">
+                            <div style="font-weight:800;font-size:15px;color:var(--text-primary)">${escapeHtml(viaje.title || 'Viaje')}</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${escapeHtml(viaje.destination || '')}${viaje.startDate ? ' · ' + escapeHtml(formatTravelRange(viaje.startDate, viaje.endDate)) : ''}</div>
+                            <div style="font-size:11px;color:var(--text-secondary);margin-top:6px">De ${escapeHtml(v.remitente_nombre || 'un amigo')}</div>
+                            ${v.nota ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;font-style:italic">"${escapeHtml(v.nota)}"</div>` : ''}
+                            <div style="display:flex;gap:8px;margin-top:10px">
+                                <button class="btn-modal-primary" style="width:auto;padding:6px 12px;font-size:12px" onclick="anadirViajeCompartidoAMisViajes('${v.id}')">+ Añadir a mis viajes</button>
+                                <button class="btn-secondary" style="width:auto;padding:6px 12px;font-size:12px" onclick="descartarViajeCompartido('${v.id}')">Descartar</button>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            `;
         }
 
         // ============================================================
@@ -9646,6 +10091,7 @@ function v22RefreshSummaryIfPresent() {
                         <div style="font-size:20px;font-weight:800">Viajes</div>
                         <div style="font-size:12px;color:var(--text-secondary)">Tus viajes y lugares, con su propio gestor: lugares que ver, itinerario, documentos y listas.</div>
                     </div>
+                    ${renderSharedTripsSection()}
                     <div class="culture-tabs">
                         <button class="culture-tab ${travelPlacesTab === 'travels' ? 'active' : ''}" onclick="setTravelPlacesTab('travels')">
                             <span>Viajes</span><span class="culture-tab-count">${travels.length}</span>
@@ -9763,6 +10209,7 @@ function v22RefreshSummaryIfPresent() {
                         <div class="trip-manager-sub">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}</div>
                     </div>
                     <div style="display:flex;gap:8px;flex-shrink:0">
+                        <button class="btn-secondary" style="width:auto" onclick="abrirCompartirViajeModal('${t.id}')">Compartir</button>
                         <button class="btn-secondary" style="width:auto" onclick="openEditEntry('${t.id}')">✎ Editar</button>
                         <button class="btn-secondary fantasy-btn-danger" style="width:auto" onclick="deleteTripFromManager('${t.id}')">Eliminar</button>
                     </div>
@@ -15194,6 +15641,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             await cargarAmigos();
             await cargarNombrePublico();
             await cargarRecomendaciones();
+            await cargarSolicitudesAmistad();
+            await cargarViajesCompartidos();
 
             if (!loadFantasyData()) {
                 fantasyData = getDefaultFantasyData();
@@ -15251,6 +15700,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 updateSidebarPrivacy();
                 maybeShowDailyAlert();
                 if (!window._dailyAlertTimer) window._dailyAlertTimer = setInterval(maybeShowDailyAlert, 60000);
+                updateNotifBadge();
+                if (!window._notifTimer) window._notifTimer = setInterval(refreshNotifData, 90000);
             });
         }
 
@@ -15354,6 +15805,22 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     : 'Nota'),
                 type: 'Nota',
                 detail: n.text || n.content || n.body || ''
+            });
+        });
+
+        // Cada punto del itinerario de un viaje tiene su propia fecha
+        // (distinta del inicio/fin del viaje), así que merece su propio
+        // punto en la constelación en vez de quedar oculto dentro del viaje.
+        (Array.isArray(entries) ? entries : []).filter(e => e.type === 'travel').forEach(trip => {
+            (Array.isArray(trip.itinerario) ? trip.itinerario : []).forEach(it => {
+                const d = dateOf(it.dia);
+                if (!d || !it.titulo) return;
+                result.push({
+                    date: d,
+                    title: it.titulo,
+                    type: 'Itinerario de viaje',
+                    detail: `${trip.title || trip.destination || 'Viaje'}${it.hora ? ' · ' + it.hora : ''}`
+                });
             });
         });
 
@@ -15584,18 +16051,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const payload = {
                 exportedAt: new Date().toISOString(),
                 version: 'Bitácora v23',
-                data: {
-                    entries: Array.isArray(entries) ? entries : [],
-                    categories: Array.isArray(categories) ? categories : [],
-                    notes: Array.isArray(notes) ? notes : [],
-                    prompts: Array.isArray(prompts) ? prompts : [],
-                    userName: typeof userName !== 'undefined' ? userName : '',
-                    investmentData: typeof investmentData !== 'undefined' ? investmentData : {},
-                    inbox: Array.isArray(inbox) ? inbox : [],
-                    plannedTrips: Array.isArray(plannedTrips) ? plannedTrips : [],
-                    financeIncome: typeof financeIncome !== 'undefined' ? financeIncome : {current:0,next:0},
-                    apuntes: Array.isArray(apuntes) ? apuntes : []
-                }
+                data: (typeof buildFullBackupPayload === 'function') ? buildFullBackupPayload() : {}
             };
 
             const blob = new Blob(
@@ -15683,6 +16139,61 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     if (typeof openApuntes === 'function') openApuntes();
                 }
             );
+        });
+
+        // Contenido de cada viaje (lugares, itinerario, listas): vive anidado
+        // dentro de cada entry de tipo 'travel', así que el bucle de arriba
+        // (que solo mira title/notes del viaje) no llega a este nivel.
+        (Array.isArray(entries) ? entries : []).filter(e => e.type === 'travel').forEach(trip => {
+            (Array.isArray(trip.places) ? trip.places : []).forEach(p => {
+                push('Lugar de viaje', p.nombre || 'Lugar', trip.title || trip.destination || '', () => {
+                    if (typeof openTripManager === 'function') { openTripManager(trip.id); setTripManagerTab('lugares'); }
+                });
+            });
+            (Array.isArray(trip.itinerario) ? trip.itinerario : []).forEach(it => {
+                push('Itinerario de viaje', it.titulo || 'Plan', trip.title || trip.destination || '', () => {
+                    if (typeof openTripManager === 'function') { openTripManager(trip.id); setTripManagerTab('itinerario'); }
+                });
+            });
+            (Array.isArray(trip.listas) ? trip.listas : []).forEach(lista => {
+                (Array.isArray(lista.items) ? lista.items : []).forEach(item => {
+                    push('Lista de viaje', item.texto || 'Elemento', `${lista.nombre || 'Lista'} · ${trip.title || trip.destination || ''}`, () => {
+                        if (typeof openTripManager === 'function') { openTripManager(trip.id); setTripManagerTab('listas'); }
+                    });
+                });
+            });
+        });
+
+        (typeof studies !== 'undefined' && Array.isArray(studies.subjects) ? studies.subjects : []).forEach(s => {
+            push('Asignatura', s.name || 'Asignatura', '', () => { if (typeof switchView === 'function') switchView('studies'); });
+            (Array.isArray(s.exams) ? s.exams : []).forEach(ex => {
+                push('Examen', ex.title || 'Examen', s.name || '', () => { if (typeof switchView === 'function') switchView('studies'); });
+            });
+            (Array.isArray(s.assignments) ? s.assignments : []).forEach(as => {
+                push('Trabajo', as.title || 'Trabajo', s.name || '', () => { if (typeof switchView === 'function') switchView('studies'); });
+            });
+        });
+
+        (Array.isArray(links) ? links : []).forEach(l => {
+            push('Enlace', l.title || l.url || 'Enlace', l.url || '', () => { if (typeof switchView === 'function') switchView('links'); });
+        });
+
+        (Array.isArray(collectibles) ? collectibles : []).forEach(c => {
+            push('Coleccionable', c.name || 'Coleccionable', c.category || '', () => { if (typeof switchView === 'function') switchView('collectibles'); });
+        });
+
+        (typeof amigos !== 'undefined' && Array.isArray(amigos) ? amigos : []).forEach(a => {
+            push('Amigo', a.nombre_visible || a.friend_nombre || 'Amigo', '', () => { if (typeof switchView === 'function') switchView('friends'); });
+        });
+
+        (typeof recomendaciones !== 'undefined' && Array.isArray(recomendaciones) ? recomendaciones : []).forEach(r => {
+            const tipoLabel = { book: 'Libro', movie: 'Película', series: 'Serie', game: 'Videojuego' }[r.tipo] || 'Recomendación';
+            push(`Recomendación · ${tipoLabel}`, (r.entrada && r.entrada.title) || 'Recomendación', `De ${r.remitente_nombre || 'un amigo'}`, () => {
+                if (typeof switchView !== 'function') return;
+                if (typeof CULTURE_TYPE_TO_TAB !== 'undefined') cultureTab = CULTURE_TYPE_TO_TAB[r.tipo] || 'books';
+                cultureSharedMode = true;
+                switchView('culture');
+            });
         });
 
         return out.filter((r, i, arr) =>
