@@ -1298,22 +1298,34 @@
             min-height: 14px;
         }
         /* Tarjeta "fantasma": recomendación de un amigo aún no añadida a tu
-           biblioteca — opacidad baja, sin color, borde discontinuo. */
+           biblioteca — fondo transparente, letra gris, borde de puntos. */
         .media-card-ghost {
-            opacity: 0.55;
-            filter: grayscale(1);
-            border-style: dashed;
-            border-color: rgba(255,255,255,0.3);
+            background: transparent;
+            border-style: dotted;
+            border-width: 1.5px;
+            border-color: rgba(255,255,255,0.35);
+            color: rgba(255,255,255,0.55);
         }
-        .media-card-ghost:hover { opacity: 0.8; }
+        .media-card-ghost:hover { border-color: rgba(255,255,255,0.6); }
+        /* La tarjeta normal tiene altura fija pensada para icono+título+meta;
+           la fantasma añade "De X" y la nota, así que necesita poder crecer
+           en vez de recortar ese texto. */
+        .media-card-ghost { height: auto; min-height: 176px; padding-bottom: 16px; }
+        .media-card-ghost .media-card-icon {
+            background: transparent;
+            border: 1.5px dotted rgba(255,255,255,0.35);
+            color: rgba(255,255,255,0.55);
+        }
+        .media-card-ghost .media-card-title { color: rgba(255,255,255,0.7); }
+        .media-card-ghost .media-card-meta { color: rgba(255,255,255,0.45); }
         .media-card-ghost-from {
             font-size: 10px;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255,255,255,0.5);
             font-weight: 700;
         }
         .media-card-ghost-note {
             font-size: 10px;
-            color: rgba(255,255,255,0.55);
+            color: rgba(255,255,255,0.5);
             font-style: italic;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1605,7 +1617,10 @@
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(6px);
             -webkit-backdrop-filter: blur(6px);
-            z-index: 200;
+            /* Por encima de #login-screen (z-index:1000) — un modal (p. ej. el
+               pop-up "Qué es Bitácora") debe poder abrirse sobre la pantalla
+               de login, ya que hasta ahora ningún modal se mostraba ahí. */
+            z-index: 1100;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1882,6 +1897,49 @@
         .year-cal-compare-btn:active { transform: scale(0.95); }
         .year-cal-compare-btn.active { background: var(--text-primary); color: var(--bg-modal); border-color: var(--text-primary); }
         .modal-sheet:has(.year-cal-modal) { max-width: 760px; }
+
+        /* ---------------- Pop-up "Qué es Bitácora" (login) ---------------- */
+        .modal-sheet:has(.about-modal) { max-width: 620px; }
+        .about-intro {
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .about-feature {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+        }
+        .about-feature-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--accent-soft, rgba(59,130,246,0.12));
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .about-feature-title { font-size: 13px; font-weight: 800; color: var(--text-primary); margin-bottom: 3px; }
+        .about-feature-desc { font-size: 11.5px; line-height: 1.5; color: var(--text-secondary); }
+        .about-footer {
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+            margin-bottom: 18px;
+        }
+        .about-footer-title { font-size: 13px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
+        .about-footer-desc { font-size: 12px; line-height: 1.55; color: var(--text-secondary); }
+        @media(max-width:520px){ .about-grid { grid-template-columns: 1fr; } }
         .year-cal-modal { width: 100%; }
         .year-cal-body { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
         .year-cal-grid-wrap { flex: 1 1 560px; min-width: 0; overflow-x: auto; }
@@ -1903,6 +1961,12 @@
             transition: background .35s ease, border-color .35s ease, box-shadow .35s ease;
         }
         .year-dot-future { background: transparent; border-width: 1.75px; border-color: var(--text-secondary); }
+        /* Vista de comparación: colorean la bolita entera (no solo el borde),
+           por eso pesan más en especificidad que year-dot-future — así un día
+           futuro que además está trabajado/de viaje se ve relleno igual. */
+        .year-dot.year-dot-worked { background: #ef4444; border-color: #ef4444; }
+        .year-dot.year-dot-travel { background: #3b82f6; border-color: #3b82f6; }
+        .year-dot.year-dot-worked-travel { background: #a855f7; border-color: #a855f7; }
         .year-cal-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; padding: 6px 4px; font-size: 11px; color: var(--text-secondary); }
         .year-cal-legend-item { display: flex; align-items: center; gap: 8px; }
         .year-cal-legend-dot { flex-shrink: 0; }
@@ -2866,6 +2930,32 @@
         .trip-check-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
         @media(max-width:700px){ .entry-detail-grid{grid-template-columns:1fr;} }
 
+        /* ---------------- Gestor de viajes ---------------- */
+        .trip-status-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--badge-color) 18%, transparent);
+            color: var(--badge-color);
+        }
+        .trip-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: background .15s ease, border-color .15s ease, transform .15s ease;
+        }
+        .trip-card:hover { background: var(--bg-card-hover); border-color: var(--border-strong); transform: translateY(-1px); }
+        .trip-manager-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+        .trip-manager-title { font-size: 22px; font-weight: 800; margin-top: 8px; letter-spacing: -.3px; }
+        .trip-manager-sub { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+
         .nota-final {
             font-size: 24px;
             font-weight: 900;
@@ -3076,10 +3166,17 @@
         .login-back:hover {
             color: #3b82f6;
         }
-        #login-screen button.pwa-install-btn {
+        #login-screen .login-top-actions {
             position: absolute;
             top: 24px;
             right: 28px;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        #login-screen button.pwa-install-btn {
             width: auto;
             padding: 9px 16px;
             border-radius: 999px;
@@ -3095,12 +3192,20 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            z-index: 2;
         }
         #login-screen button.pwa-install-btn:hover {
             background: rgba(59,130,246,0.1);
         }
-        @media(max-width:480px){ #login-screen button.pwa-install-btn{ position:static; margin:0 auto 16px; } }
+        #login-screen button.about-bitacora-btn {
+            border-color: rgba(0,0,0,0.15);
+            background: transparent;
+            color: #4b5563;
+        }
+        #login-screen button.about-bitacora-btn:hover {
+            background: rgba(0,0,0,0.04);
+            border-color: rgba(0,0,0,0.3);
+        }
+        @media(max-width:480px){ #login-screen .login-top-actions{ position:static; flex-direction:row; justify-content:center; margin:0 auto 16px; flex-wrap:wrap; } }
 
         #app {
             display: none;
@@ -4177,7 +4282,10 @@ body.beige {
     <div id="boot-loading">Cargando...</div>
 
     <div id="login-screen">
-        <button id="pwa-install-btn" class="pwa-install-btn" onclick="handlePwaInstallClick()" style="display:none">⭳ descarga Bitácora</button>
+        <div class="login-top-actions">
+            <button id="pwa-install-btn" class="pwa-install-btn" onclick="handlePwaInstallClick()" style="display:none">⭳ descarga Bitácora</button>
+            <button class="pwa-install-btn about-bitacora-btn" onclick="openAboutBitacora()">ⓘ qué es Bitácora</button>
+        </div>
         <script>
             // Bloque aislado (no depende del resto del script de la app) para
             // que el botón de instalar funcione aunque algo más falle.
@@ -4872,6 +4980,60 @@ function v22RefreshSummaryIfPresent() {
             await init();
         }
 
+        // Pop-up informativo de la pantalla de login: qué es Bitácora, su
+        // filosofía y un resumen de lo que ofrece. Contenido estático, sin
+        // depender de que haya sesión iniciada ni de datos cargados.
+        function openAboutBitacora() {
+            showModal(`
+                <div class="modal-title">
+                    <span>¿Qué es <span style="color:#3b82f6">Bitácora</span>?</span>
+                    <button class="modal-close" onclick="closeModal()">✕</button>
+                </div>
+                <div class="about-modal">
+                    <p class="about-intro">Bitácora es un espacio único y tranquilo para reunir tu vida entera — desde tu ocio hasta tu trabajo, pasando por tus rutinas y tu forma de organizarte — sin la sobrecarga de tener una app distinta para cada cosa, y sin el ruido del contenido rápido de siempre. No busca ser perfecta en cada rincón: busca que no tengas que abrir diez apps distintas para saberlo todo de tu vida.</p>
+
+                    <div class="about-grid">
+                        <div class="about-feature">
+                            <div class="about-feature-icon">◷</div>
+                            <div class="about-feature-title">Tu día a día</div>
+                            <div class="about-feature-desc">Calendario, planificador diario, notas y un mapa anual de puntos para ver, de un vistazo, cómo ha sido tu año.</div>
+                        </div>
+                        <div class="about-feature">
+                            <div class="about-feature-icon">◊</div>
+                            <div class="about-feature-title">Ocio</div>
+                            <div class="about-feature-desc">Lleva la cuenta de libros, películas, series y videojuegos — y recomiéndaselos a tus amigos dentro de la propia app.</div>
+                        </div>
+                        <div class="about-feature">
+                            <div class="about-feature-icon">✈</div>
+                            <div class="about-feature-title">Viajes</div>
+                            <div class="about-feature-desc">Un gestor completo por viaje: lugares que ver, itinerario con horarios, documentos y listas de qué llevar.</div>
+                        </div>
+                        <div class="about-feature">
+                            <div class="about-feature-icon">◫</div>
+                            <div class="about-feature-title">Trabajo y finanzas</div>
+                            <div class="about-feature-desc">Historial laboral, un dashboard financiero completo y seguimiento de tus inversiones.</div>
+                        </div>
+                        <div class="about-feature">
+                            <div class="about-feature-icon">◉</div>
+                            <div class="about-feature-title">Organización</div>
+                            <div class="about-feature-desc">Objetivos, proyectos, enlaces y coleccionables — cada aspecto de tu vida tiene su sitio propio.</div>
+                        </div>
+                        <div class="about-feature">
+                            <div class="about-feature-icon">◕</div>
+                            <div class="about-feature-title">Amigos</div>
+                            <div class="about-feature-desc">Conecta tu cuenta con la de otras personas mediante un código propio y compartid recomendaciones.</div>
+                        </div>
+                    </div>
+
+                    <div class="about-footer">
+                        <div class="about-footer-title">Accesible desde cualquier sitio, siempre tuyo</div>
+                        <div class="about-footer-desc">Funciona desde cualquier ordenador o móvil del mundo con solo iniciar sesión. Tus datos son siempre tuyos: exporta una copia completa cuando quieras, sin depender de nadie.</div>
+                    </div>
+                </div>
+                <button class="btn-modal-primary" onclick="closeModal()">Entendido</button>
+            `);
+        }
+
         function showAuthMode(mode) {
             ['login', 'signup', 'forgot', 'reset'].forEach(m => {
                 document.getElementById('mode-' + m).style.display = (m === mode) ? 'block' : 'none';
@@ -5105,7 +5267,7 @@ function v22RefreshSummaryIfPresent() {
             calendar: 'Home',
             home: 'Centro resumen',
             culture: 'Ocio',
-            travels: 'Viajes y Lugares',
+            travels: 'Viajes',
             work: 'Trabajo',
             projects: 'Proyectos',
             events: 'Eventos',
@@ -5115,7 +5277,6 @@ function v22RefreshSummaryIfPresent() {
             fantasy: 'Fantasy',
             vault: 'Vault',
             notes: 'Notas',
-            'travel-organizer': 'Organizador de Viajes',
             goals: 'Objetivos',
             planner: 'Planificador del día',
             collectibles: 'Coleccionables',
@@ -5149,7 +5310,7 @@ function v22RefreshSummaryIfPresent() {
             ] },
             { label: 'Otros', items: [
                 { view: 'culture', icon: '◊', text: 'Ocio' },
-                { view: 'travels', icon: '⌂', text: 'Viajes y Lugares' },
+                { view: 'travels', icon: '⌂', text: 'Viajes' },
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
                 { view: 'friends', icon: '◕', text: 'Amigos' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
@@ -5182,7 +5343,6 @@ function v22RefreshSummaryIfPresent() {
             { view: 'finances', text: 'Cuentas', anchor: 'finance-accounts-section' },
             { view: 'travels', text: 'Viajes', setter: 'setTravelPlacesTab', value: 'travels' },
             { view: 'travels', text: 'Lugares', setter: 'setTravelPlacesTab', value: 'places' },
-            { view: 'travel-organizer', text: 'Organizador de Viajes', viewLabel: 'Viajes y Lugares' },
             { view: 'calendar', text: 'Vista Día', setter: 'setCalView', value: 'day' },
             { view: 'calendar', text: 'Vista Semana', setter: 'setCalView', value: 'week' },
             { view: 'calendar', text: 'Vista Mes', setter: 'setCalView', value: 'month' },
@@ -5331,7 +5491,6 @@ function v22RefreshSummaryIfPresent() {
             fantasy: null,
             vault: null,
             notes: null,
-            'travel-organizer': null,
             goals: 'goal',
             settings: null
         };
@@ -6254,6 +6413,42 @@ function v22RefreshSummaryIfPresent() {
                     financeProfile.invested = portfolioCurrentValue();
                 }
                 plannedTrips = saved.plannedTrips || [];
+                // Migración única: el antiguo "Organizador de Viajes" (viajes
+                // planeados aparte, con una sola checklist) se retira — cada uno
+                // pasa a ser un viaje normal con su propio Gestor de viajes, y su
+                // checklist se conserva como una lista llamada "Preparativos".
+                if (plannedTrips.length) {
+                    plannedTrips.forEach(pt => {
+                        // Por si la migración se repitiera antes de que el borrado de
+                        // plannedTrips llegara a guardarse (recarga rápida): no duplicar.
+                        if (pt.id && entries.some(e => e.id === pt.id)) return;
+                        entries.push({
+                            id: pt.id || ('entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
+                            type: 'travel',
+                            title: pt.title || 'Viaje',
+                            destination: pt.destination || '',
+                            startDate: pt.startDate || '',
+                            endDate: pt.endDate || '',
+                            companions: '',
+                            notes: '',
+                            expenses: [],
+                            places: [],
+                            itinerario: [],
+                            listas: (pt.checklist && pt.checklist.length) ? [{
+                                id: 'lista_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                                nombre: 'Preparativos',
+                                items: pt.checklist.map(c => ({ id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), texto: c.text, hecho: !!c.done }))
+                            }] : [],
+                            createdAt: pt.createdAt || new Date().toISOString()
+                        });
+                    });
+                    plannedTrips = [];
+                    filteredEntries = [...entries];
+                    // Se guarda de inmediato para que el borrado de plannedTrips
+                    // quede en la nube y la migración no se repita en la próxima
+                    // carga (si no, cada recarga duplicaría los viajes migrados).
+                    if (typeof saveData === 'function') saveData().catch(e => console.error('Error guardando tras migrar viajes planeados:', e));
+                }
                 apuntes = saved.apuntes || [];
                 weeklyTasks = Array.isArray(saved.weeklyTasks) ? saved.weeklyTasks : [];
                 collectibleCategories = Array.isArray(saved.collectibleCategories) && saved.collectibleCategories.length
@@ -7257,7 +7452,7 @@ function v22RefreshSummaryIfPresent() {
                 : '';
             return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div><div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}</div></div></div>`;
         }
-        function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);}
+        function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);}
         async function toggleProjectTask(projectId,taskIndex){
             const project=entries.find(e=>e.id===projectId); if(!project||!Array.isArray(project.tasks)||!project.tasks[taskIndex])return;
             project.tasks[taskIndex].done=!project.tasks[taskIndex].done;
@@ -8094,8 +8289,8 @@ function v22RefreshSummaryIfPresent() {
             if (currentView === 'calendar') content.innerHTML = renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();
             else if (currentView === 'culture') content.innerHTML = renderCulture();
-            else if (currentView === 'travels') content.innerHTML = renderTravels();
-            else if (currentView === 'travel-organizer') content.innerHTML = renderTravelOrganizer();
+            else if (currentView === 'travels') { content.innerHTML = renderTravels();
+                if (window._openTripId && tripManagerTab === 'documentos') loadTripDocuments(window._openTripId); }
             else if (currentView === 'work') content.innerHTML = renderWork();
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
@@ -8224,23 +8419,35 @@ function v22RefreshSummaryIfPresent() {
             refrescarCalendarioAnual();
         }
 
+        // Anillo verde de "hoy" — el único que sigue siendo un reborde en vez
+        // de rellenar la bolita entera, para que siga siendo identificable
+        // pase lo que pase con el color de fondo en cada vista.
+        const ANILLO_HOY = '0 0 0 1.2px var(--bg-modal), 0 0 0 2.7px #22c55e';
+
+        // En la vista de comparación, trabajado/viaje ya no son un reborde:
+        // colorean la bolita entera (más visual). Cada combinación tiene su
+        // propia clase para poder animarlo con transición suave.
+        function claseCompareDot(trabajado, viaje) {
+            if (trabajado && viaje) return 'year-dot-worked-travel';
+            if (trabajado) return 'year-dot-worked';
+            if (viaje) return 'year-dot-travel';
+            return '';
+        }
+
         // No se regenera todo el modal (eso crearía puntos nuevos de cero y
-        // el cambio se vería como un salto brusco): se actualiza el
-        // box-shadow de cada punto ya existente en su sitio, así la
-        // transición CSS de .year-dot anima de verdad entre una vista y otra.
+        // el cambio se vería como un salto brusco): se cambian las clases de
+        // cada punto ya existente en su sitio, así la transición CSS de
+        // .year-dot (color de fondo/borde) anima de verdad entre una vista y
+        // otra en vez de saltar de golpe.
         function toggleYearCalCompare() {
             yearCalCompareMode = !yearCalCompareMode;
-            const hoy = todayISO();
             document.querySelectorAll('.year-cal-grid-wrap .year-dot[title]').forEach(dot => {
-                const dateStr = dot.getAttribute('title');
-                const esHoy = dateStr === hoy;
-                let sombra = '';
+                dot.classList.remove('year-dot-worked', 'year-dot-travel', 'year-dot-worked-travel');
                 if (yearCalCompareMode) {
-                    sombra = anilloDot({ esHoy, trabajado: esDiaTrabajado(dateStr), viaje: esDiaDeViaje(dateStr) });
-                } else if (esHoy) {
-                    sombra = anilloDot({ esHoy: true, trabajado: false, viaje: false });
+                    const dateStr = dot.getAttribute('title');
+                    const cls = claseCompareDot(esDiaTrabajado(dateStr), esDiaDeViaje(dateStr));
+                    if (cls) dot.classList.add(cls);
                 }
-                dot.style.boxShadow = sombra;
             });
             const btn = document.querySelector('.year-cal-compare-btn');
             if (btn) btn.classList.toggle('active', yearCalCompareMode);
@@ -8251,14 +8458,14 @@ function v22RefreshSummaryIfPresent() {
         function renderYearCalLegendHtml() {
             return `
                 ${yearCalCompareMode ? `
-                    <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot" style="box-shadow:0 0 0 1.5px #ef4444"></span> Día trabajado</div>
-                    <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot" style="box-shadow:0 0 0 1.5px #3b82f6"></span> Día de viaje</div>
+                    <div class="year-cal-legend-item"><span class="year-dot year-dot-worked year-cal-legend-dot"></span> Día trabajado</div>
+                    <div class="year-cal-legend-item"><span class="year-dot year-dot-travel year-cal-legend-dot"></span> Día de viaje</div>
                     <div class="year-cal-legend-item"><span class="year-dot year-dot-future year-cal-legend-dot"></span> Día futuro</div>
                 ` : `
                     <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot"></span> Día transcurrido</div>
                     <div class="year-cal-legend-item"><span class="year-dot year-dot-future year-cal-legend-dot"></span> Día futuro</div>
                 `}
-                <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot" style="box-shadow:${anilloDot({ esHoy: true, trabajado: false, viaje: false })}"></span> Hoy</div>
+                <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot" style="box-shadow:${ANILLO_HOY}"></span> Hoy</div>
             `;
         }
 
@@ -8276,21 +8483,6 @@ function v22RefreshSummaryIfPresent() {
         function esDiaDeViaje(dateStr) {
             return entries.some(e => e.type === 'travel' && e.startDate && e.endDate &&
                 dateStr >= e.startDate && dateStr <= e.endDate);
-        }
-
-        // Construye el box-shadow de un punto combinando los anillos que
-        // apliquen (trabajado, viaje, hoy), cada uno un poco más separado que
-        // el anterior para que no se pisen aunque coincidan varios a la vez.
-        function anilloDot({ esHoy, trabajado, viaje }) {
-            const capas = [];
-            let radio = 0;
-            if (trabajado) { radio += 1.5; capas.push(`0 0 0 ${radio}px #ef4444`); }
-            if (viaje) { radio += 1.5; capas.push(`0 0 0 ${radio}px #3b82f6`); }
-            if (esHoy) {
-                radio += 1.2; capas.push(`0 0 0 ${radio}px var(--bg-modal)`);
-                radio += 1.5; capas.push(`0 0 0 ${radio}px #22c55e`);
-            }
-            return capas.join(', ');
         }
 
         function renderCalendarioAnual() {
@@ -8314,13 +8506,11 @@ function v22RefreshSummaryIfPresent() {
                     const esHoy = dateStr === hoy;
                     const esFuturo = dateStr > hoy;
                     let cls = 'year-dot' + (esFuturo ? ' year-dot-future' : '');
-                    let estiloExtra = '';
                     if (yearCalCompareMode) {
-                        const sombra = anilloDot({ esHoy, trabajado: esDiaTrabajado(dateStr), viaje: esDiaDeViaje(dateStr) });
-                        if (sombra) estiloExtra = ` style="box-shadow:${sombra}"`;
-                    } else if (esHoy) {
-                        estiloExtra = ` style="box-shadow:${anilloDot({ esHoy: true, trabajado: false, viaje: false })}"`;
+                        const compareCls = claseCompareDot(esDiaTrabajado(dateStr), esDiaDeViaje(dateStr));
+                        if (compareCls) cls += ' ' + compareCls;
                     }
+                    const estiloExtra = esHoy ? ` style="box-shadow:${ANILLO_HOY}"` : '';
                     celdas += `<div class="year-cal-cell"><span class="${cls}" title="${dateStr}"${estiloExtra}></span></div>`;
                 }
                 filas += `<div class="year-cal-row"><div class="year-cal-month-label">${nombreMes}</div><div class="year-cal-days">${celdas}</div></div>`;
@@ -9175,9 +9365,9 @@ function v22RefreshSummaryIfPresent() {
             const completed = books.filter(b => b.status === 'Completado');
 
             let html = banner + `<div>
-                <div style="display:flex;gap:16px;margin-bottom:16px">
-                    <div class="card" style="flex:1"><div class="card-title">Leyendo</div><div class="card-value">${reading.length}</div></div>
-                    <div class="card" style="flex:1"><div class="card-title">Completados</div><div class="card-value">${completed.length}</div></div>
+                <div style="display:flex;gap:10px;margin-bottom:16px;max-width:280px">
+                    <div class="card" style="flex:1;padding:10px 12px"><div class="card-title" style="font-size:10px">Leyendo</div><div class="card-value" style="font-size:17px">${reading.length}</div></div>
+                    <div class="card" style="flex:1;padding:10px 12px"><div class="card-title" style="font-size:10px">Completados</div><div class="card-value" style="font-size:17px">${completed.length}</div></div>
                 </div>`;
 
             if (reading.length) {
@@ -9427,20 +9617,34 @@ function v22RefreshSummaryIfPresent() {
         let travelPlacesTab = 'travels';
         function setTravelPlacesTab(tab) { travelPlacesTab = tab; render(); }
 
+        // Próximo / En curso / Completado / Sin fecha — según hoy respecto al
+        // rango del viaje. Se usa tanto en la tarjeta de la lista como en la
+        // cabecera del Gestor de viaje.
+        function tripStatus(t) {
+            const hoy = todayISO();
+            if (!t.startDate) return { label: 'Sin fecha', color: 'var(--text-secondary)' };
+            if (t.startDate > hoy) return { label: 'Próximo', color: '#3b82f6' };
+            if (!t.endDate || t.endDate >= hoy) return { label: 'En curso', color: '#f59e0b' };
+            return { label: 'Completado', color: '#16a34a' };
+        }
+
+        function getTrip(id) { return entries.find(e => e.id === id && e.type === 'travel'); }
+
         function renderTravels() {
+            if (window._openTripId) {
+                const t = getTrip(window._openTripId);
+                if (t) return renderTripManager(t);
+                window._openTripId = null;
+            }
+
             const travels = entries.filter(e => e.type === 'travel');
             const places = entries.filter(e => e.type === 'place');
 
             let html = `
-                <div style="max-width:760px">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-                        <div>
-                            <div style="font-size:20px;font-weight:800">Viajes y Lugares</div>
-                            <div style="font-size:12px;color:var(--text-secondary)">Tus viajes y lugares registrados.</div>
-                        </div>
-                        <button class="btn-secondary" style="width:auto" onclick="switchView('travel-organizer')">
-                            ☷ Organizador de Viajes
-                        </button>
+                <div style="max-width:820px">
+                    <div style="margin-bottom:16px">
+                        <div style="font-size:20px;font-weight:800">Viajes</div>
+                        <div style="font-size:12px;color:var(--text-secondary)">Tus viajes y lugares, con su propio gestor: lugares que ver, itinerario, documentos y listas.</div>
                     </div>
                     <div class="culture-tabs">
                         <button class="culture-tab ${travelPlacesTab === 'travels' ? 'active' : ''}" onclick="setTravelPlacesTab('travels')">
@@ -9457,19 +9661,31 @@ function v22RefreshSummaryIfPresent() {
                 if (!travels.length) {
                     html += `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
                 } else {
-                    travels.forEach(t => {
-                        const cat = categories.find(c => c.id === t.categoryId);
-                        const color = cat?.color || 'var(--text-secondary)';
+                    const orden = { 'En curso': 0, 'Próximo': 1, 'Sin fecha': 2, 'Completado': 3 };
+                    const ordenados = [...travels].sort((a, b) => {
+                        const sa = tripStatus(a), sb = tripStatus(b);
+                        if (orden[sa.label] !== orden[sb.label]) return orden[sa.label] - orden[sb.label];
+                        return (b.startDate || '').localeCompare(a.startDate || '');
+                    });
+                    ordenados.forEach(t => {
+                        const status = tripStatus(t);
+                        const places2 = Array.isArray(t.places) ? t.places : [];
+                        const listas2 = Array.isArray(t.listas) ? t.listas : [];
+                        const itemsTotal = listas2.reduce((s, l) => s + (l.items || []).length, 0);
+                        const itemsHechos = listas2.reduce((s, l) => s + (l.items || []).filter(i => i.hecho).length, 0);
                         html += `
-                            <div class="card bone-surface travel-bone" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${t.id}\')">
-                                <div style="display:flex;justify-content:space-between;align-items:center">
-                                    <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${t.title}</span>
-                                    <span style="font-size:13px;color:var(--text-secondary)">${t.destination || ''}</span>
+                            <div class="trip-card" onclick="switchView('travels');openTripManager('${t.id}')">
+                                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+                                    <div style="min-width:0">
+                                        <span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span>
+                                        <div style="font-weight:800;font-size:16px;margin-top:6px;color:var(--text-primary)">${escapeHtml(t.title)}</div>
+                                        <div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}</div>
+                                    </div>
                                 </div>
-                                <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${t.startDate || ''} ${t.endDate ? '→ ' + t.endDate : ''}</div>
-                                ${t.companions ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${t.companions}</div>` : ''}
-                                ${t.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(t.notes)}</div>` : ''}
-                                <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                                ${(places2.length || itemsTotal) ? `<div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--text-secondary)">
+                                    ${places2.length ? `<span>⌂ ${places2.filter(p => p.visitado).length}/${places2.length} lugares</span>` : ''}
+                                    ${itemsTotal ? `<span>☷ ${itemsHechos}/${itemsTotal} preparativos</span>` : ''}
+                                </div>` : ''}
                             </div>`;
                     });
                 }
@@ -9482,16 +9698,355 @@ function v22RefreshSummaryIfPresent() {
         }
 
         // ============================================================
-        //  TRAVEL ORGANIZER
+        //  GESTOR DE VIAJES
         // ============================================================
-        function renderTravelOrganizer(){
-            return `<div style="max-width:760px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap"><div><div style="font-size:20px;font-weight:800">Organizador de Viajes</div><div style="font-size:12px;color:var(--text-secondary)">Prepara cada viaje con una checklist.</div></div><button class="btn-modal-primary" style="width:auto" onclick="openNewPlannedTrip()">+ Viaje planeado</button></div>${plannedTrips.length?plannedTrips.map(t=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font-weight:800">${escapeHtml(t.title)}</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(t.destination||'')}${t.startDate?' · '+escapeHtml(formatTravelRange(t.startDate,t.endDate)):''}</div></div><button class="btn-secondary" style="width:auto" onclick="deletePlannedTrip('${t.id}')">Eliminar</button></div><div style="margin-top:10px">${(t.checklist||[]).map((x,i)=>`<label class="trip-check-row"><input type="checkbox" ${x.done?'checked':''} onchange="togglePlannedTripItem('${t.id}',${i})"><span style="${x.done?'text-decoration:line-through;opacity:.5':''}">${escapeHtml(x.text)}</span></label>`).join('')}</div><div style="display:flex;gap:8px;margin-top:10px"><input id="trip-new-${t.id}" class="modal-input" placeholder="Añadir cosa que llevar/preparar"><button class="btn-secondary" style="width:auto" onclick="addPlannedTripItem('${t.id}')">Añadir</button></div></div>`).join(''):'<div class="empty-state"><div class="empty-icon">☷</div><div class="empty-title">Sin viajes planeados</div><div class="empty-sub">Crea uno para preparar todo con una checklist.</div></div>'}</div>`;
+        let tripManagerTab = 'resumen';
+        let tripDocumentsCache = {};
+
+        function openTripManager(id) {
+            window._openTripId = id;
+            tripManagerTab = 'resumen';
+            render();
         }
-        function openNewPlannedTrip(){showModal(`<div class="modal-title">Nuevo viaje planeado</div><div class="modal-label">Nombre</div><input id="trip-title" class="modal-input" placeholder="Portugal 2026"><div class="modal-label">Destino</div><input id="trip-destination" class="modal-input" placeholder="Portugal"><div class="modal-row"><div><div class="modal-label">Inicio</div><input id="trip-start" type="date" class="modal-input"></div><div><div class="modal-label">Fin</div><input id="trip-end" type="date" class="modal-input"></div></div><div class="modal-label">Primera tarea (opcional)</div><input id="trip-first" class="modal-input" placeholder="Reservar alojamiento"><button class="btn-modal-primary" onclick="saveNewPlannedTrip()">Crear viaje</button>`);}
-        async function saveNewPlannedTrip(){const title=document.getElementById('trip-title')?.value.trim();if(!title){showToast('Escribe un nombre',true);return;}const first=document.getElementById('trip-first')?.value.trim();plannedTrips.push({id:'trip_'+Date.now(),title,destination:document.getElementById('trip-destination')?.value.trim()||'',startDate:document.getElementById('trip-start')?.value||'',endDate:document.getElementById('trip-end')?.value||'',checklist:first?[{text:first,done:false}]:[],createdAt:new Date().toISOString()});closeModal();try{await saveData();render();showToast('Viaje planeado creado');}catch(e){console.error(e);showToast('No se pudo guardar',true);}}
-        async function togglePlannedTripItem(id,index){const t=plannedTrips.find(x=>x.id===id);if(!t||!t.checklist[index])return;t.checklist[index].done=!t.checklist[index].done;try{await saveData();render();}catch(e){console.error(e);}}
-        async function addPlannedTripItem(id){const input=document.getElementById('trip-new-'+id),text=input?.value.trim();if(!text)return;const t=plannedTrips.find(x=>x.id===id);if(!t)return;t.checklist=t.checklist||[];t.checklist.push({text,done:false});try{await saveData();render();}catch(e){console.error(e);showToast('No se pudo guardar',true);}}
-        async function deletePlannedTrip(id){if(!confirm('¿Eliminar este viaje planeado?'))return;plannedTrips=plannedTrips.filter(x=>x.id!==id);try{await saveData();render();}catch(e){console.error(e);}}
+        function closeTripManager() {
+            window._openTripId = null;
+            render();
+        }
+        function setTripManagerTab(tab) {
+            tripManagerTab = tab;
+            render();
+        }
+
+        async function deleteTripFromManager(id) {
+            if (!confirm('¿Eliminar este viaje? Se perderán sus lugares, itinerario, documentos y listas.')) return;
+            entries = entries.filter(e => e.id !== id);
+            filteredEntries = [...entries];
+            window._openTripId = null;
+            render();
+            try {
+                await saveData();
+                showToast('Viaje eliminado');
+            } catch (err) {
+                console.error('Error eliminando el viaje en Supabase:', err);
+                showToast('No se pudo eliminar en la nube. Revisa tu conexión.', true);
+            }
+        }
+
+        function renderTripManager(t) {
+            if (!Array.isArray(t.places)) t.places = [];
+            if (!Array.isArray(t.itinerario)) t.itinerario = [];
+            if (!Array.isArray(t.listas)) t.listas = [];
+
+            const status = tripStatus(t);
+            const tabs = [
+                { id: 'resumen', label: 'Resumen' },
+                { id: 'lugares', label: 'Lugares', count: t.places.length },
+                { id: 'itinerario', label: 'Itinerario', count: t.itinerario.length },
+                { id: 'documentos', label: 'Documentos' },
+                { id: 'listas', label: 'Listas', count: t.listas.length },
+            ];
+
+            let body = '';
+            if (tripManagerTab === 'resumen') body = renderTripResumenTab(t);
+            else if (tripManagerTab === 'lugares') body = renderTripPlacesTab(t);
+            else if (tripManagerTab === 'itinerario') body = renderTripItineraryTab(t);
+            else if (tripManagerTab === 'documentos') body = renderTripDocumentsTab(t);
+            else if (tripManagerTab === 'listas') body = renderTripListsTab(t);
+
+            return `
+            <div style="max-width:820px">
+                <button class="btn-secondary" style="width:auto;margin-bottom:14px" onclick="closeTripManager()">← Volver a Viajes</button>
+                <div class="trip-manager-header">
+                    <div>
+                        <span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span>
+                        <div class="trip-manager-title">${escapeHtml(t.title)}</div>
+                        <div class="trip-manager-sub">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-shrink:0">
+                        <button class="btn-secondary" style="width:auto" onclick="openEditEntry('${t.id}')">✎ Editar</button>
+                        <button class="btn-secondary fantasy-btn-danger" style="width:auto" onclick="deleteTripFromManager('${t.id}')">Eliminar</button>
+                    </div>
+                </div>
+                <div class="culture-tabs" style="margin-top:16px">
+                    ${tabs.map(tb => `<button class="culture-tab ${tripManagerTab === tb.id ? 'active' : ''}" onclick="setTripManagerTab('${tb.id}')"><span>${tb.label}</span>${tb.count !== undefined ? `<span class="culture-tab-count">${tb.count}</span>` : ''}</button>`).join('')}
+                </div>
+                <div class="culture-tab-content"><div class="cal-view-anim">${body}</div></div>
+            </div>`;
+        }
+
+        // ---- Resumen ----
+        function renderTripResumenTab(t) {
+            const total = getTravelTotal(t);
+            const itemsTotal = t.listas.reduce((s, l) => s + (l.items || []).length, 0);
+            const itemsHechos = t.listas.reduce((s, l) => s + (l.items || []).filter(i => i.hecho).length, 0);
+            return `
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px">
+                    <div class="card"><div class="card-title">Lugares</div><div class="card-value">${t.places.filter(p => p.visitado).length}/${t.places.length}</div></div>
+                    <div class="card"><div class="card-title">Itinerario</div><div class="card-value">${t.itinerario.length}</div></div>
+                    <div class="card"><div class="card-title">Preparativos</div><div class="card-value">${itemsHechos}/${itemsTotal}</div></div>
+                    ${total > 0 ? `<div class="card"><div class="card-title">Gasto total</div><div class="card-value">${total.toLocaleString('es-ES')}€</div></div>` : ''}
+                </div>
+                ${t.companions ? `<div class="entry-detail-field" style="margin-bottom:12px"><div class="entry-detail-label">Viajé con</div><div class="entry-detail-value">${escapeHtml(t.companions)}</div></div>` : ''}
+                ${t.notes ? `<div class="entry-detail-field"><div class="entry-detail-label">Notas</div><div class="entry-detail-value">${linkifyText(t.notes)}</div></div>` : '<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin notas todavía</div><div class="empty-sub">Pulsa "Editar" arriba para añadir notas generales del viaje.</div></div>'}
+            `;
+        }
+
+        // ---- Lugares ----
+        function renderTripPlacesTab(t) {
+            return `
+                <div class="friend-add-row" style="margin-bottom:14px">
+                    <input type="text" id="trip-place-input-${t.id}" class="modal-input" style="margin:0" placeholder="Sitio que quieres ver" onkeydown="if(event.key==='Enter'){event.preventDefault();addTripPlace('${t.id}')}">
+                    <button class="btn-secondary" style="width:auto" onclick="addTripPlace('${t.id}')">+ Añadir</button>
+                </div>
+                ${t.places.length ? t.places.map(p => `
+                    <div class="trip-check-row">
+                        <input type="checkbox" ${p.visitado ? 'checked' : ''} onchange="toggleTripPlace('${t.id}','${p.id}')">
+                        <span style="flex:1;cursor:pointer;${p.visitado ? 'text-decoration:line-through;opacity:.5' : ''}" onclick="toggleTripPlace('${t.id}','${p.id}')">${escapeHtml(p.nombre)}</span>
+                        <button class="friend-remove-btn" title="Quitar" onclick="deleteTripPlace('${t.id}','${p.id}')">✕</button>
+                    </div>
+                `).join('') : '<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin lugares todavía</div><div class="empty-sub">Añade los sitios que quieres visitar.</div></div>'}
+            `;
+        }
+        async function addTripPlace(tripId) {
+            const input = document.getElementById('trip-place-input-' + tripId);
+            const nombre = input?.value.trim();
+            if (!nombre) return;
+            const t = getTrip(tripId); if (!t) return;
+            if (!Array.isArray(t.places)) t.places = [];
+            t.places.push({ id: 'place_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), nombre, visitado: false });
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
+        async function toggleTripPlace(tripId, placeId) {
+            const t = getTrip(tripId); if (!t) return;
+            const p = (t.places || []).find(x => x.id === placeId); if (!p) return;
+            p.visitado = !p.visitado;
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
+        async function deleteTripPlace(tripId, placeId) {
+            const t = getTrip(tripId); if (!t) return;
+            t.places = (t.places || []).filter(x => x.id !== placeId);
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
+
+        // ---- Itinerario ----
+        function renderTripItineraryTab(t) {
+            const sorted = [...t.itinerario].sort((a, b) => (a.dia || '').localeCompare(b.dia || '') || (a.hora || '').localeCompare(b.hora || ''));
+            return `
+                <button class="btn-modal-primary" style="width:auto;margin-bottom:14px" onclick="openAddItineraryItem('${t.id}')">+ Añadir al itinerario</button>
+                ${sorted.length ? sorted.map(it => `
+                    <div class="card" style="margin-bottom:10px">
+                        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+                            <div style="min-width:0">
+                                <div style="font-size:11px;color:var(--text-secondary);font-weight:700">${it.dia ? escapeHtml(new Date(it.dia + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'Sin día'}${it.hora ? ' · ' + escapeHtml(it.hora) : ''}</div>
+                                <div style="font-weight:700;margin-top:2px">${escapeHtml(it.titulo)}</div>
+                                ${it.notas ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${linkifyText(it.notas)}</div>` : ''}
+                            </div>
+                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteItineraryItem('${t.id}','${it.id}')">✕</button>
+                        </div>
+                    </div>
+                `).join('') : '<div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Sin itinerario todavía</div><div class="empty-sub">Añade horarios y planes para cada día del viaje.</div></div>'}
+            `;
+        }
+        function openAddItineraryItem(tripId) {
+            showModal(`
+                <div class="modal-title">Añadir al itinerario</div>
+                <div class="modal-row">
+                    <div><div class="modal-label">Día</div><input type="date" id="it-dia" class="modal-input"></div>
+                    <div><div class="modal-label">Hora (opcional)</div><input type="time" id="it-hora" class="modal-input"></div>
+                </div>
+                <div class="modal-label">Qué</div><input id="it-titulo" class="modal-input" placeholder="Visita al Coliseo">
+                <div class="modal-label">Notas (opcional)</div><textarea id="it-notas" class="modal-input" rows="2"></textarea>
+                <button class="btn-modal-primary" onclick="saveItineraryItem('${tripId}')">Guardar</button>
+            `);
+        }
+        async function saveItineraryItem(tripId) {
+            const t = getTrip(tripId); if (!t) return;
+            const titulo = document.getElementById('it-titulo')?.value.trim();
+            if (!titulo) { showToast('Escribe qué vas a hacer', true); return; }
+            if (!Array.isArray(t.itinerario)) t.itinerario = [];
+            t.itinerario.push({
+                id: 'it_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                dia: document.getElementById('it-dia')?.value || '',
+                hora: document.getElementById('it-hora')?.value || '',
+                titulo,
+                notas: document.getElementById('it-notas')?.value.trim() || ''
+            });
+            closeModal();
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+            showToast('Añadido al itinerario');
+        }
+        async function deleteItineraryItem(tripId, itemId) {
+            const t = getTrip(tripId); if (!t) return;
+            t.itinerario = (t.itinerario || []).filter(i => i.id !== itemId);
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
+
+        // ---- Documentos (reutiliza el bucket "documents" con prefijo por viaje) ----
+        function renderTripDocumentsTab(t) {
+            const docs = tripDocumentsCache[t.id];
+            return `
+                <div class="doc-upload-box" onclick="document.getElementById('trip-doc-input-${t.id}').click()">
+                    <div style="font-size:28px;margin-bottom:6px">📄</div>
+                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF de este viaje</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">Billetes, reservas, seguro de viaje...</div>
+                </div>
+                <input type="file" id="trip-doc-input-${t.id}" accept="application/pdf" style="display:none" onchange="handleTripDocUpload(event,'${t.id}')">
+                <div id="trip-doc-list-${t.id}" style="margin-top:12px">${docs ? renderTripDocList(t.id, docs) : 'Cargando documentos...'}</div>
+            `;
+        }
+        function renderTripDocList(tripId, docs) {
+            if (!docs.length) return '<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube el primero con el botón de arriba</div></div>';
+            return docs.map(doc => {
+                const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
+                const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
+                return `<div class="doc-item">
+                    <div class="doc-info"><span style="font-size:20px">📄</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name)}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
+                    <div class="doc-actions">
+                        <button class="doc-action-download" onclick="downloadTripDocument('${tripId}','${escapeHtml(doc.name)}')">Descargar</button>
+                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteTripDocument('${tripId}','${escapeHtml(doc.name)}')">✕</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        async function loadTripDocuments(tripId) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const { data, error } = await sb.storage.from('documents').list(`${user.id}/trips/${tripId}`, { sortBy: { column: 'created_at', order: 'desc' } });
+                if (error) throw error;
+                tripDocumentsCache[tripId] = data || [];
+                const el = document.getElementById('trip-doc-list-' + tripId);
+                if (el) el.innerHTML = renderTripDocList(tripId, tripDocumentsCache[tripId]);
+            } catch (e) {
+                console.error('Error cargando documentos del viaje:', e);
+                const el = document.getElementById('trip-doc-list-' + tripId);
+                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No se pudieron cargar los documentos</div></div>';
+            }
+        }
+        async function handleTripDocUpload(event, tripId) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            if (file.type !== 'application/pdf') { showToast('Solo se admiten archivos PDF', true); return; }
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/trips/${tripId}/${Date.now()}_${file.name}`;
+                const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false });
+                if (error) throw error;
+                showToast('Documento subido');
+                await loadTripDocuments(tripId);
+            } catch (e) {
+                console.error('Error subiendo documento del viaje:', e);
+                showToast('Error al subir: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+        async function downloadTripDocument(tripId, name) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/trips/${tripId}/${name}`;
+                const { data, error } = await sb.storage.from('documents').createSignedUrl(path, 60);
+                if (error) throw error;
+                window.open(data.signedUrl, '_blank');
+            } catch (e) {
+                console.error('Error descargando documento del viaje:', e);
+                showToast('Error al descargar: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+        async function deleteTripDocument(tripId, name) {
+            if (!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/trips/${tripId}/${name}`;
+                const { error } = await sb.storage.from('documents').remove([path]);
+                if (error) throw error;
+                showToast('Documento eliminado');
+                await loadTripDocuments(tripId);
+            } catch (e) {
+                console.error('Error eliminando documento del viaje:', e);
+                showToast('Error al eliminar: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        // ---- Listas (varias, con nombre propio: qué llevar, qué hacer...) ----
+        function renderTripListsTab(t) {
+            return `
+                <button class="btn-modal-primary" style="width:auto;margin-bottom:14px" onclick="openAddTripList('${t.id}')">+ Nueva lista</button>
+                ${t.listas.length ? t.listas.map(l => `
+                    <div class="card" style="margin-bottom:14px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                            <div style="font-weight:800">${escapeHtml(l.nombre)} <span style="font-weight:400;color:var(--text-secondary);font-size:12px">(${(l.items || []).filter(i => i.hecho).length}/${(l.items || []).length})</span></div>
+                            <button class="friend-remove-btn" title="Eliminar lista" onclick="deleteTripList('${t.id}','${l.id}')">✕</button>
+                        </div>
+                        ${(l.items || []).map(i => `
+                            <div class="trip-check-row">
+                                <input type="checkbox" ${i.hecho ? 'checked' : ''} onchange="toggleTripListItem('${t.id}','${l.id}','${i.id}')">
+                                <span style="flex:1;cursor:pointer;${i.hecho ? 'text-decoration:line-through;opacity:.5' : ''}" onclick="toggleTripListItem('${t.id}','${l.id}','${i.id}')">${escapeHtml(i.texto)}</span>
+                                <button class="friend-remove-btn" title="Quitar" onclick="deleteTripListItem('${t.id}','${l.id}','${i.id}')">✕</button>
+                            </div>
+                        `).join('')}
+                        <div style="display:flex;gap:8px;margin-top:10px">
+                            <input id="trip-list-item-${l.id}" class="modal-input" style="margin:0" placeholder="Añadir elemento" onkeydown="if(event.key==='Enter'){event.preventDefault();addTripListItem('${t.id}','${l.id}')}">
+                            <button class="btn-secondary" style="width:auto" onclick="addTripListItem('${t.id}','${l.id}')">+ Añadir</button>
+                        </div>
+                    </div>
+                `).join('') : '<div class="empty-state"><div class="empty-icon">☷</div><div class="empty-title">Sin listas todavía</div><div class="empty-sub">Crea una lista de qué llevar, qué hacer o lo que necesites.</div></div>'}
+            `;
+        }
+        function openAddTripList(tripId) {
+            showModal(`<div class="modal-title">Nueva lista</div><div class="modal-label">Nombre</div><input id="new-list-name" class="modal-input" placeholder="Qué llevar"><button class="btn-modal-primary" onclick="saveTripList('${tripId}')">Crear</button>`);
+        }
+        async function saveTripList(tripId) {
+            const t = getTrip(tripId); if (!t) return;
+            const nombre = document.getElementById('new-list-name')?.value.trim();
+            if (!nombre) { showToast('Ponle un nombre a la lista', true); return; }
+            if (!Array.isArray(t.listas)) t.listas = [];
+            t.listas.push({ id: 'lista_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), nombre, items: [] });
+            closeModal();
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+            showToast('Lista creada');
+        }
+        async function deleteTripList(tripId, listId) {
+            if (!confirm('¿Eliminar esta lista?')) return;
+            const t = getTrip(tripId); if (!t) return;
+            t.listas = (t.listas || []).filter(l => l.id !== listId);
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
+        async function addTripListItem(tripId, listId) {
+            const input = document.getElementById('trip-list-item-' + listId);
+            const texto = input?.value.trim();
+            if (!texto) return;
+            const t = getTrip(tripId); if (!t) return;
+            const l = (t.listas || []).find(x => x.id === listId); if (!l) return;
+            if (!Array.isArray(l.items)) l.items = [];
+            l.items.push({ id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), texto, hecho: false });
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
+        async function toggleTripListItem(tripId, listId, itemId) {
+            const t = getTrip(tripId); if (!t) return;
+            const l = (t.listas || []).find(x => x.id === listId); if (!l) return;
+            const it = (l.items || []).find(x => x.id === itemId); if (!it) return;
+            it.hecho = !it.hecho;
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
+        async function deleteTripListItem(tripId, listId, itemId) {
+            const t = getTrip(tripId); if (!t) return;
+            const l = (t.listas || []).find(x => x.id === listId); if (!l) return;
+            l.items = (l.items || []).filter(x => x.id !== itemId);
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
 
         // ============================================================
         //  RENDER: WORK
@@ -15118,16 +15673,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             );
         });
 
-        (Array.isArray(plannedTrips) ? plannedTrips : []).forEach(t => {
-            push(
-                'Viaje planeado',
-                t.title || t.name || 'Viaje planeado',
-                t.notes || '',
-                () => {
-                    if (typeof switchView === 'function') switchView('travel-organizer');
-                }
-            );
-        });
 
         (Array.isArray(apuntes) ? apuntes : []).forEach(a => {
             push(
