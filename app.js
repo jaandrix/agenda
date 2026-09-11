@@ -295,6 +295,11 @@
             { key: 'lun', label: 'Lunes' }, { key: 'mar', label: 'Martes' }, { key: 'mie', label: 'Miércoles' },
             { key: 'jue', label: 'Jueves' }, { key: 'vie', label: 'Viernes' }, { key: 'sab', label: 'Sábado' }, { key: 'dom', label: 'Domingo' }
         ];
+        // El horario semanal solo muestra de lunes a viernes (fin de semana
+        // sin clases para este uso). Se mantiene STUDIES_DAYS completo para
+        // no perder datos de sab/dom que ya hubiera guardados, solo se deja
+        // de pintar esas dos columnas.
+        const STUDIES_SCHEDULE_DISPLAY_DAYS = STUDIES_DAYS.filter(d => d.key !== 'sab' && d.key !== 'dom');
         let studies = { subjects: [], schedule: { lun: [], mar: [], mie: [], jue: [], vie: [], sab: [], dom: [] }, quickNotes: [] };
         let links = [];
         let linkCategories = [];
@@ -4744,12 +4749,7 @@
             const bellBtn = document.getElementById('notif-bell-btn');
             if (!badge) return;
             const count = computeNotifItems().length;
-            if (count > 0) {
-                badge.textContent = count > 9 ? '9+' : String(count);
-                badge.hidden = false;
-            } else {
-                badge.hidden = true;
-            }
+            badge.hidden = count === 0;
             if (bellBtn) bellBtn.classList.toggle('has-unread', count > 0);
             const panel = document.getElementById('notif-panel');
             if (panel && panel.classList.contains('open')) {
@@ -5665,7 +5665,7 @@
 
                 <section class="studies-section" id="studies-schedule-section">
                     <h3>Horario semanal</h3>
-                    <div class="studies-schedule-grid" id="studies-schedule-grid">${STUDIES_DAYS.map(renderScheduleDay).join('')}</div>
+                    ${renderScheduleGrid()}
                 </section>
 
                 <section class="studies-section" id="studies-subjects-section">
@@ -6061,23 +6061,74 @@
 
         function refreshScheduleHighlight() {
             if (currentView !== 'studies') return;
-            const grid = document.getElementById('studies-schedule-grid');
-            if (grid) grid.innerHTML = STUDIES_DAYS.map(renderScheduleDay).join('');
+            const wrap = document.getElementById('studies-schedule-grid');
+            if (wrap) wrap.outerHTML = renderScheduleGrid();
         }
         if (!window._scheduleHighlightTimer) window._scheduleHighlightTimer = setInterval(refreshScheduleHighlight, 60000);
 
-        function renderScheduleDay(d) {
+        // Cuadrícula por horas (estilo Google Calendar): todas las celdas
+        // miden lo mismo (ancho por día, alto por hora), y una línea fina
+        // cruza el horario marcando la hora actual. El rango de horas se
+        // calcula a partir de las clases ya guardadas (con un mínimo 8-21)
+        // para no recortar ninguna si hay clases más temprano o más tarde.
+        const SCHEDULE_HOUR_PX = 52;
+        function scheduleHourRange() {
+            let minH = 8, maxH = 21;
+            STUDIES_SCHEDULE_DISPLAY_DAYS.forEach(d => {
+                (studies.schedule[d.key] || []).forEach(b => {
+                    const h = parseInt(String(b.time || '').slice(0, 2), 10);
+                    if (!Number.isNaN(h)) { if (h < minH) minH = h; if (h > maxH) maxH = h; }
+                });
+            });
+            return { start: Math.max(0, minH), end: Math.min(24, maxH + 1) };
+        }
+
+        function renderScheduleGrid() {
+            const { start, end } = scheduleHourRange();
+            const hours = [];
+            for (let h = start; h < end; h++) hours.push(h);
+            const totalHeight = hours.length * SCHEDULE_HOUR_PX;
+
+            const nowHM = new Date();
+            const hDec = nowHM.getHours() + nowHM.getMinutes() / 60;
+            const showNowLine = STUDIES_SCHEDULE_DISPLAY_DAYS.some(d => d.key === todayScheduleKey()) && hDec >= start && hDec < end;
+            const nowTop = showNowLine ? (hDec - start) * SCHEDULE_HOUR_PX : 0;
+
+            return `
+                <div class="studies-schedule-grid" id="studies-schedule-grid">
+                    <div class="studies-schedule-headrow">
+                        <div class="studies-schedule-head-gutter"></div>
+                        ${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => `<div class="studies-day-head">${escapeHtml(d.label)}</div>`).join('')}
+                    </div>
+                    <div class="studies-schedule-body" style="height:${totalHeight}px">
+                        <div class="studies-schedule-hours">
+                            ${hours.map(h => `<div class="studies-hour-label" style="height:${SCHEDULE_HOUR_PX}px">${String(h).padStart(2, '0')}:00</div>`).join('')}
+                        </div>
+                        <div class="studies-schedule-days">
+                            ${hours.map((h, i) => `<div class="studies-hour-line" style="top:${i * SCHEDULE_HOUR_PX}px"></div>`).join('')}
+                            ${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => renderScheduleDayColumn(d, start)).join('')}
+                            ${showNowLine ? `<div class="studies-now-line" style="top:${nowTop}px"><span class="studies-now-dot"></span></div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function renderScheduleDayColumn(d, startHour) {
             const blocks = studies.schedule[d.key] || [];
             const nowIdx = currentScheduleBlockIndex(d.key);
             return `
                 <div class="studies-day-col">
-                    <div class="studies-day-head">${d.label}</div>
-                    ${blocks.map((b, i) => `
-                        <div class="studies-block ${i === nowIdx ? 'studies-block-now' : ''}">
+                    ${blocks.map((b, i) => {
+                        const h = parseInt(String(b.time || '0').slice(0, 2), 10) || 0;
+                        const m = parseInt(String(b.time || '0').slice(3, 5), 10) || 0;
+                        const top = Math.max(0, (h + m / 60 - startHour) * SCHEDULE_HOUR_PX);
+                        return `
+                        <div class="studies-block ${i === nowIdx ? 'studies-block-now' : ''}" style="top:${top}px">
                             <span>${escapeHtml(b.time || '')} ${escapeHtml(b.subject || '')}</span>
                             <button title="Eliminar" onclick="removeScheduleBlock('${d.key}',${i})">✕</button>
-                        </div>`).join('') || '<div class="studies-day-empty">—</div>'}
-                    <button class="studies-day-add" onclick="openAddScheduleBlock('${d.key}')">+ Añadir</button>
+                        </div>`;
+                    }).join('')}
+                    <button class="studies-day-add" title="Añadir clase" onclick="openAddScheduleBlock('${d.key}')">+</button>
                 </div>`;
         }
 
