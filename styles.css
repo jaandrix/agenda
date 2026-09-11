@@ -558,20 +558,12 @@
         }
         .notif-badge {
             position: absolute;
-            top: -4px;
-            right: -4px;
-            min-width: 17px;
-            height: 17px;
-            padding: 0 4px;
+            top: 0px;
+            right: 0px;
+            width: 10px;
+            height: 10px;
             border-radius: 999px;
             background: linear-gradient(135deg, #f87171, #dc2626);
-            color: #ffffff;
-            font-size: 10px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
             border: 2px solid var(--bg-app);
             box-shadow: 0 2px 6px rgba(220,38,38,0.4);
             animation: notif-badge-pop 0.25s ease;
@@ -3936,20 +3928,31 @@ body.beige {
 .studies-modal-block { margin:14px 0; }
 .studies-item-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
 .studies-item-row button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:14px; }
-.studies-schedule-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-top:12px; }
-.studies-day-col { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:6px; min-height:120px; }
-.studies-day-head { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); }
-.studies-block { display:flex; justify-content:space-between; align-items:center; gap:4px; background:var(--bg-card-hover); border-radius:10px; padding:6px 8px; font-size:10px; transition:background .3s,color .3s; }
-.studies-block button { background:none; border:0; color:var(--text-secondary); cursor:pointer; }
-.studies-block-now { background:#000; color:#fff; font-weight:600; }
+.studies-schedule-grid { margin-top:12px; background:var(--bg-card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+.studies-schedule-headrow { display:flex; border-bottom:1px solid var(--border); }
+.studies-schedule-head-gutter { width:44px; flex-shrink:0; }
+.studies-schedule-headrow .studies-day-head { flex:1; }
+.studies-day-head { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); text-align:center; padding:8px 4px; }
+.studies-schedule-body { display:flex; position:relative; }
+.studies-schedule-hours { width:44px; flex-shrink:0; }
+.studies-hour-label { font-size:10px; color:var(--text-muted); text-align:right; padding:2px 6px 0 0; box-sizing:border-box; border-top:1px solid var(--border); }
+.studies-schedule-days { flex:1; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); position:relative; }
+.studies-hour-line { position:absolute; left:0; right:0; height:0; border-top:1px solid var(--border); pointer-events:none; }
+.studies-day-col { position:relative; border-left:1px solid var(--border); }
+.studies-day-col:first-child { border-left:none; }
+.studies-block { position:absolute; left:2px; right:2px; display:flex; justify-content:space-between; align-items:center; gap:4px; background:var(--bg-card-hover); border-radius:8px; padding:4px 6px; font-size:9.5px; line-height:1.25; height:44px; overflow:hidden; transition:background .3s,color .3s; border-left:3px solid transparent; box-sizing:border-box; }
+.studies-block span { overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.studies-block button { background:none; border:0; color:var(--text-secondary); cursor:pointer; flex-shrink:0; }
+.studies-block-now { background:#000; color:#fff; font-weight:600; border-left:3px solid #22c55e; }
 .studies-block-now button { color:#fff; }
+.studies-now-line { position:absolute; left:0; right:0; height:1px; background:rgba(239,68,68,0.55); pointer-events:none; z-index:2; }
+.studies-now-dot { position:absolute; left:-4px; top:50%; transform:translate(-100%,-50%); width:6px; height:6px; border-radius:50%; background:#ef4444; }
+.studies-day-add { position:absolute; right:4px; bottom:4px; width:20px; height:20px; background:none; border:1px dashed var(--border-strong); border-radius:6px; font-size:11px; line-height:1; color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:1; }
 .nav-subsection-flash { animation: navSubsectionFlash 1.4s ease; border-radius:16px; }
 @keyframes navSubsectionFlash {
     0% { box-shadow:0 0 0 2px rgba(255,255,255,.55); background:var(--bg-card-hover); }
     100% { box-shadow:0 0 0 0 rgba(255,255,255,0); }
 }
-.studies-day-empty { font-size:10px; color:var(--text-muted); }
-.studies-day-add { margin-top:auto; background:none; border:1px dashed var(--border-strong); border-radius:10px; padding:6px; font-size:10px; color:var(--text-secondary); cursor:pointer; }
 .studies-notes-box { width:100%; min-height:110px; margin-top:12px; background:var(--bg-input); border:1px solid var(--border); border-radius:16px; padding:14px; color:var(--text-primary); font-family:inherit; font-size:13px; resize:vertical; }
 .studies-quicknote-row { background:var(--bg-card); border-radius:14px; padding:12px 14px; margin-bottom:8px; }
 .studies-quicknote-text { font-size:13px; color:var(--text-primary); white-space:pre-wrap; line-height:1.45; }
@@ -3981,7 +3984,10 @@ body.beige {
 .link-color-swatch.selected { border-color:var(--text-primary); box-shadow:0 0 0 2px var(--bg-modal); }
 .bitacora-username-link { color:#3b82f6; text-decoration:underline; text-underline-offset:2px; cursor:pointer; font-weight:800; }
 .bitacora-username-link:hover { color:#60a5fa; }
-@media(max-width:850px){ .studies-schedule-grid{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:650px){
+    .studies-schedule-headrow, .studies-schedule-body { min-width:520px; }
+    .studies-schedule-grid { overflow-x:auto; }
+}
 
 /* ============================================================
    EVENTOS (agrupados por mes)
@@ -4044,7 +4050,7 @@ body.beige {
 .events-month-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin:20px 0 10px; }
 .events-month-label:first-child { margin-top:0; }
 .events-month-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
-.event-card { background:#0c0c0e; color:#fff; border:3px solid rgba(255,255,255,0.07); border-radius:14px; padding:12px 14px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+.event-card { background:#232327; color:#fff; border:3px solid rgba(255,255,255,0.07); border-radius:14px; padding:12px 14px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
 .event-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.35); }
 .event-card-top { display:flex; justify-content:flex-end; align-items:center; gap:8px; }
 .event-card-date { font-size:10px; font-weight:700; color:rgba(255,255,255,0.55); white-space:nowrap; }
