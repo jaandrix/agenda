@@ -361,7 +361,7 @@
         };
 
         const VIEW_LABELS = {
-            calendar: 'INICIO',
+            calendar: 'Home',
             home: 'Centro resumen',
             culture: 'Ocio',
             travels: 'Viajes',
@@ -390,7 +390,7 @@
         // ============================================================
         const NAV_SECTIONS = [
             { label: 'General', items: [
-                { view: 'calendar', icon: '◷', text: 'INICIO' },
+                { view: 'calendar', icon: '◷', text: 'Home' },
                 { view: 'home', icon: '⌂', text: 'Centro resumen' },
                 { view: 'planner', icon: '▤', text: 'Planificador' },
                 { view: 'notes', icon: '✎', text: 'Notas' },
@@ -1801,9 +1801,9 @@
             const nameLink = `<a href="javascript:void(0)" class="username-link" onclick="editUserName()">${nameDisplay}</a><span class="title-period">.</span>`;
             if (currentView === 'calendar') {
                 const greeting = greetingText().replace(/\.$/, '');
-                titleEl.innerHTML = `INICIO - ${greeting} ${nameLink}`;
+                titleEl.innerHTML = `Home - ${greeting} ${nameLink}`;
             } else {
-                const baseTitle = VIEW_LABELS[currentView] || 'INICIO';
+                const baseTitle = VIEW_LABELS[currentView] || 'Home';
                 titleEl.innerHTML = `${baseTitle} de ${nameLink}`;
             }
             updateAddButton();
