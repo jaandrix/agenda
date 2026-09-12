@@ -361,7 +361,7 @@
         };
 
         const VIEW_LABELS = {
-            calendar: 'Home',
+            calendar: 'INICIO',
             home: 'Centro resumen',
             culture: 'Ocio',
             travels: 'Viajes',
@@ -390,7 +390,7 @@
         // ============================================================
         const NAV_SECTIONS = [
             { label: 'General', items: [
-                { view: 'calendar', icon: '◷', text: 'Home' },
+                { view: 'calendar', icon: '◷', text: 'INICIO' },
                 { view: 'home', icon: '⌂', text: 'Centro resumen' },
                 { view: 'planner', icon: '▤', text: 'Planificador' },
                 { view: 'notes', icon: '✎', text: 'Notas' },
@@ -1801,9 +1801,9 @@
             const nameLink = `<a href="javascript:void(0)" class="username-link" onclick="editUserName()">${nameDisplay}</a><span class="title-period">.</span>`;
             if (currentView === 'calendar') {
                 const greeting = greetingText().replace(/\.$/, '');
-                titleEl.innerHTML = `Home - ${greeting} ${nameLink}`;
+                titleEl.innerHTML = `INICIO - ${greeting} ${nameLink}`;
             } else {
-                const baseTitle = VIEW_LABELS[currentView] || 'Home';
+                const baseTitle = VIEW_LABELS[currentView] || 'INICIO';
                 titleEl.innerHTML = `${baseTitle} de ${nameLink}`;
             }
             updateAddButton();
@@ -6066,36 +6066,46 @@
         }
         if (!window._scheduleHighlightTimer) window._scheduleHighlightTimer = setInterval(refreshScheduleHighlight, 60000);
 
-        // Cuadrícula por horas (estilo Google Calendar): todas las celdas
-        // miden lo mismo (ancho por día, alto por hora). Solo se pintan las
-        // horas en las que hay alguna clase esa semana (en cualquier día) —
-        // así no queda un hueco enorme en blanco entre, por ejemplo, las
-        // 8:00 y las 15:00 si no hay nada a esas horas. Si no hay ninguna
-        // clase todavía, se cae a un rango por defecto (8-21) para que
-        // siempre se pueda añadir la primera.
-        const SCHEDULE_HOUR_PX = 52;
-        function scheduleActiveHours() {
+        // Cuadrícula estilo Google Calendar, en franjas de 30 minutos: solo
+        // se pintan las franjas en las que hay alguna clase esa semana (en
+        // cualquier día) — así no queda un hueco enorme en blanco entre,
+        // por ejemplo, las 8:00 y las 15:00 si no hay nada a esas horas.
+        // Se usan franjas de 30 min (no de 1 hora completa) porque es muy
+        // habitual tener dos clases seguidas dentro de la misma hora (p.ej.
+        // 15:00 y 15:55): con franjas de 1h esas dos clases tenían que
+        // apretarse o desbordar su celda; con 30 min casi siempre caen cada
+        // una en su propia franja. Si no hay ninguna clase todavía, se cae
+        // a un rango por defecto (8:00-21:30) para poder añadir la primera.
+        const SCHEDULE_ROW_PX = 40;
+        const SCHEDULE_ADD_ROW_PX = 24;
+        function scheduleTimeToBucket(time) {
+            const h = parseInt(String(time || '0').slice(0, 2), 10) || 0;
+            const m = parseInt(String(time || '0').slice(3, 5), 10) || 0;
+            return h * 2 + (m >= 30 ? 1 : 0);
+        }
+        function scheduleBucketLabel(bucket) {
+            return `${String(Math.floor(bucket / 2)).padStart(2, '0')}:${bucket % 2 === 0 ? '00' : '30'}`;
+        }
+        function scheduleActiveBuckets() {
             const set = new Set();
             STUDIES_SCHEDULE_DISPLAY_DAYS.forEach(d => {
-                (studies.schedule[d.key] || []).forEach(b => {
-                    const h = parseInt(String(b.time || '').slice(0, 2), 10);
-                    if (!Number.isNaN(h)) set.add(h);
-                });
+                (studies.schedule[d.key] || []).forEach(b => { if (b.time) set.add(scheduleTimeToBucket(b.time)); });
             });
-            if (!set.size) { for (let h = 8; h <= 21; h++) set.add(h); }
+            if (!set.size) { for (let bk = 16; bk <= 43; bk++) set.add(bk); }
             return [...set].sort((a, b) => a - b);
         }
 
         function renderScheduleGrid() {
-            const hours = scheduleActiveHours();
-            const hourRow = new Map(hours.map((h, i) => [h, i]));
-            const totalHeight = hours.length * SCHEDULE_HOUR_PX;
+            const buckets = scheduleActiveBuckets();
+            const bucketRow = new Map(buckets.map((bk, i) => [bk, i]));
+            const contentHeight = buckets.length * SCHEDULE_ROW_PX;
+            const totalHeight = contentHeight + SCHEDULE_ADD_ROW_PX;
 
             const nowHM = new Date();
-            const hDec = nowHM.getHours() + nowHM.getMinutes() / 60;
-            const currentHour = Math.floor(hDec);
-            const showNowLine = STUDIES_SCHEDULE_DISPLAY_DAYS.some(d => d.key === todayScheduleKey()) && hourRow.has(currentHour);
-            const nowTop = showNowLine ? (hourRow.get(currentHour) + (hDec - currentHour)) * SCHEDULE_HOUR_PX : 0;
+            const nowBucket = nowHM.getHours() * 2 + (nowHM.getMinutes() >= 30 ? 1 : 0);
+            const minutesIntoBucket = nowHM.getMinutes() % 30;
+            const showNowLine = STUDIES_SCHEDULE_DISPLAY_DAYS.some(d => d.key === todayScheduleKey()) && bucketRow.has(nowBucket);
+            const nowTop = showNowLine ? (bucketRow.get(nowBucket) + minutesIntoBucket / 30) * SCHEDULE_ROW_PX : 0;
 
             return `
                 <div class="studies-schedule-grid" id="studies-schedule-grid">
@@ -6105,38 +6115,35 @@
                     </div>
                     <div class="studies-schedule-body" style="height:${totalHeight}px">
                         <div class="studies-schedule-hours">
-                            ${hours.map(h => `<div class="studies-hour-label" style="height:${SCHEDULE_HOUR_PX}px">${String(h).padStart(2, '0')}:00</div>`).join('')}
+                            ${buckets.map(bk => `<div class="studies-hour-label" style="height:${SCHEDULE_ROW_PX}px">${scheduleBucketLabel(bk)}</div>`).join('')}
                         </div>
                         <div class="studies-schedule-days">
-                            ${hours.map((h, i) => `<div class="studies-hour-line" style="top:${i * SCHEDULE_HOUR_PX}px"></div>`).join('')}
-                            ${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => renderScheduleDayColumn(d, hourRow)).join('')}
+                            ${buckets.map((bk, i) => `<div class="studies-hour-line" style="top:${i * SCHEDULE_ROW_PX}px"></div>`).join('')}
+                            ${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => renderScheduleDayColumn(d, bucketRow, contentHeight)).join('')}
                             ${showNowLine ? `<div class="studies-now-line" style="top:${nowTop}px"><span class="studies-now-dot"></span></div>` : ''}
                         </div>
                     </div>
                 </div>`;
         }
 
-        function renderScheduleDayColumn(d, hourRow) {
+        function renderScheduleDayColumn(d, bucketRow, contentHeight) {
             const blocks = studies.schedule[d.key] || [];
             const nowIdx = currentScheduleBlockIndex(d.key);
-            // Cada bloque ocupa directamente la fila entera de su hora (sin
-            // desplazarse dentro de ella según los minutos): al comprimir
-            // el horario para quitar huecos, dos horas activas ya no están
-            // necesariamente separadas por 60 minutos reales, así que
-            // colocar un bloque "a los 50 minutos" podía invadir la fila
-            // siguiente. Si dos clases caen en la misma hora del mismo día
-            // (raro), se apilan dentro de esa misma fila.
-            const byHour = new Map();
+            // Cada bloque ocupa directamente la franja entera de sus 30
+            // minutos. Si, aun así, dos clases cayeran en la misma franja
+            // (raro), se apilan dentro de esa misma celda en vez de
+            // solaparse.
+            const byBucket = new Map();
             blocks.forEach((b, i) => {
-                const h = parseInt(String(b.time || '0').slice(0, 2), 10) || 0;
-                if (!byHour.has(h)) byHour.set(h, []);
-                byHour.get(h).push({ b, i });
+                const bk = scheduleTimeToBucket(b.time);
+                if (!byBucket.has(bk)) byBucket.set(bk, []);
+                byBucket.get(bk).push({ b, i });
             });
             let cellsHtml = '';
-            byHour.forEach((items, h) => {
-                const rowIdx = hourRow.has(h) ? hourRow.get(h) : 0;
-                const top = rowIdx * SCHEDULE_HOUR_PX;
-                cellsHtml += `<div class="studies-hour-cell" style="top:${top}px;height:${SCHEDULE_HOUR_PX}px">`;
+            byBucket.forEach((items, bk) => {
+                const rowIdx = bucketRow.has(bk) ? bucketRow.get(bk) : 0;
+                const top = rowIdx * SCHEDULE_ROW_PX;
+                cellsHtml += `<div class="studies-hour-cell" style="top:${top}px;height:${SCHEDULE_ROW_PX}px">`;
                 cellsHtml += items.map(({ b, i }) => `
                     <div class="studies-block ${i === nowIdx ? 'studies-block-now' : ''}">
                         <span>${escapeHtml(b.time || '')} ${escapeHtml(b.subject || '')}</span>
@@ -6147,7 +6154,7 @@
             return `
                 <div class="studies-day-col">
                     ${cellsHtml}
-                    <button class="studies-day-add" title="Añadir clase" onclick="openAddScheduleBlock('${d.key}')">+</button>
+                    <button class="studies-day-add" style="top:${contentHeight}px" title="Añadir clase" onclick="openAddScheduleBlock('${d.key}')">+</button>
                 </div>`;
         }
 

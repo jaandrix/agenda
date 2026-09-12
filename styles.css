@@ -3929,7 +3929,7 @@ body.beige {
 .studies-block-now button { color:#fff; }
 .studies-now-line { position:absolute; left:0; right:0; height:1px; background:rgba(239,68,68,0.55); pointer-events:none; z-index:0; }
 .studies-now-dot { position:absolute; left:-4px; top:50%; transform:translate(-100%,-50%); width:6px; height:6px; border-radius:50%; background:#ef4444; }
-.studies-day-add { position:absolute; right:4px; bottom:4px; width:20px; height:20px; background:none; border:1px dashed var(--border-strong); border-radius:6px; font-size:11px; line-height:1; color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:1; }
+.studies-day-add { position:absolute; left:2px; right:2px; height:20px; margin-top:2px; background:none; border:1px dashed var(--border-strong); border-radius:6px; font-size:11px; line-height:1; color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:1; }
 .nav-subsection-flash { animation: navSubsectionFlash 1.4s ease; border-radius:16px; }
 @keyframes navSubsectionFlash {
     0% { box-shadow:0 0 0 2px rgba(255,255,255,.55); background:var(--bg-card-hover); }
