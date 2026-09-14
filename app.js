@@ -86,32 +86,32 @@
 
                     <div class="about-grid">
                         <div class="about-feature">
-                            <div class="about-feature-icon">◷</div>
+                            
                             <div class="about-feature-title">Tu día a día</div>
                             <div class="about-feature-desc">Calendario, planificador diario, notas y un mapa anual de puntos para ver, de un vistazo, cómo ha sido tu año.</div>
                         </div>
                         <div class="about-feature">
-                            <div class="about-feature-icon">◊</div>
+                            
                             <div class="about-feature-title">Ocio</div>
                             <div class="about-feature-desc">Lleva la cuenta de libros, películas, series y videojuegos — y recomiéndaselos a tus amigos dentro de la propia app.</div>
                         </div>
                         <div class="about-feature">
-                            <div class="about-feature-icon">✈</div>
+                            
                             <div class="about-feature-title">Viajes</div>
                             <div class="about-feature-desc">Un gestor completo por viaje: lugares que ver, itinerario con horarios, documentos y listas de qué llevar.</div>
                         </div>
                         <div class="about-feature">
-                            <div class="about-feature-icon">◫</div>
+                            
                             <div class="about-feature-title">Trabajo y finanzas</div>
                             <div class="about-feature-desc">Historial laboral, un dashboard financiero completo y seguimiento de tus inversiones.</div>
                         </div>
                         <div class="about-feature">
-                            <div class="about-feature-icon">◉</div>
+                            
                             <div class="about-feature-title">Organización</div>
                             <div class="about-feature-desc">Objetivos, proyectos, enlaces y coleccionables — cada aspecto de tu vida tiene su sitio propio.</div>
                         </div>
                         <div class="about-feature">
-                            <div class="about-feature-icon">◕</div>
+                            
                             <div class="about-feature-title">Amigos</div>
                             <div class="about-feature-desc">Conecta tu cuenta con la de otras personas mediante un código propio y compartid recomendaciones.</div>
                         </div>
@@ -552,8 +552,8 @@
         function renderNavButtons(sections, mobile) {
             return sections.map(sec => `<span class="nav-label">${escapeHtml(sec.label)}</span>` +
                 sec.items.map(i => mobile
-                    ? `<button onclick="switchView('${i.view}');toggleMobileMenu()" data-view="${i.view}"><span class="nav-icon">${i.icon}</span> ${escapeHtml(i.text)}</button>`
-                    : `<button onclick="switchView('${i.view}')" data-view="${i.view}"><span class="nav-icon">${i.icon}</span><span class="nav-text">${escapeHtml(i.text)}</span></button>`
+                    ? `<button onclick="switchView('${i.view}');toggleMobileMenu()" data-view="${i.view}">${escapeHtml(i.text)}</button>`
+                    : `<button onclick="switchView('${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span></button>`
                 ).join('')
             ).join('');
         }
@@ -2354,14 +2354,14 @@
                     <div class="collectibles-dashboard">
                         ${totalsByCategory.map(t => `
                             <div class="finance-metric-card">
-                                <div class="finance-metric-icon">◆</div>
+                                
                                 <div class="finance-metric-value">${financeMoney(t.total)}</div>
                                 <div class="finance-metric-label">${escapeHtml(t.cat.name)}</div>
                                 <div class="finance-metric-note">${t.count} objeto${t.count === 1 ? '' : 's'}</div>
                             </div>
                         `).join('')}
                         <div class="finance-metric-card collectibles-total-card">
-                            <div class="finance-metric-icon">Σ</div>
+                            
                             <div class="finance-metric-value">${financeMoney(grandTotal)}</div>
                             <div class="finance-metric-label">Valor total</div>
                             <div class="finance-metric-note">${collectibles.length} objetos en total</div>
@@ -2399,7 +2399,7 @@
                     <div class="collectible-card-actions">
                         <button title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')">×</button>
                     </div>
-                    <div class="media-card-icon">◆</div>
+                    
                     <div class="media-card-title">${escapeHtml(item.name)}</div>
                     <div class="media-card-meta">${financeMoney(item.value)}</div>
                 </div>`;
@@ -2659,7 +2659,6 @@
                 <div class="backlinks-list">
                     ${backlinks.map(b => `
                         <div class="backlink-item" onclick="openEntryFromLink('${b.id}')">
-                            <span>${TYPE_ICONS[b.type] || '◈'}</span>
                             <span>${escapeHtml(b.title)}</span>
                         </div>
                     `).join('')}
@@ -2669,7 +2668,6 @@
         function renderEntryModal(type, entry) {
             const isEdit = !!entry;
             const today = new Date().toISOString().slice(0, 10);
-            const icon = TYPE_ICONS[type] || '◈';
             const label = TYPE_LABELS[type] || 'Entrada';
             const nuevoNueva = TYPE_GENDER[type] === 'a' ? 'Nueva' : 'Nuevo';
             const title = isEdit ? 'Editar ' + label : nuevoNueva + ' ' + label;
@@ -2967,7 +2965,7 @@
             <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
                 <div class="modal-sheet">
                     <div class="modal-title">
-                        ${icon} ${title}
+                        ${title}
                         <button class="modal-close" onclick="closeModal()">✕</button>
                     </div>
 
@@ -3988,7 +3986,7 @@
                 <span class="cal-day-title" style="font-size:15px;font-weight:700;color:var(--text-primary);text-transform:capitalize">${dateLabel}</span>
                 <button class="cal-nav-arrow" onclick="changeDay(1)">›</button>
             </div>
-            ${body || '<div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}`;
+            ${body || '<div class="empty-state"><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}`;
         }
 
         function showDayEntries(date) {
@@ -4000,7 +3998,7 @@
             const weekday = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
             const restDate = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
             const all = getDayAllEntries(date);
-            const rows = all.length ? renderDayEntryRows(all) : `<div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>`;
+            const rows = all.length ? renderDayEntryRows(all) : `<div class="empty-state"><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>`;
 
             showModal(`
                 <div class="modal-title day-modal-title">
@@ -4176,7 +4174,7 @@
                             return `<div class="daily-alert-item">🎂 ${escapeHtml(e.title)}${years ? ` · ${years} años` : ''}</div>`;
                         })}
                         ${group('Exámenes', exams, ex => `<div class="daily-alert-item" onclick="closeDailyAlert();switchView('studies')">📝 ${escapeHtml(ex.subject)}${ex.title ? ' · ' + escapeHtml(ex.title) : ''}</div>`)}
-                        ${group('Eventos', events, e => `<div class="daily-alert-item" onclick="closeDailyAlert();navigateToEntry('${e.id}')">◈ ${escapeHtml(e.title)}${e.time ? ' · ' + escapeHtml(e.time) : ''}</div>`)}
+                        ${group('Eventos', events, e => `<div class="daily-alert-item" onclick="closeDailyAlert();navigateToEntry('${e.id}')">${escapeHtml(e.title)}${e.time ? ' · ' + escapeHtml(e.time) : ''}</div>`)}
                         <button class="daily-alert-close" onclick="closeDailyAlert()">Entendido</button>
                     </div></div>
                 </div>`;
@@ -4539,10 +4537,10 @@
         function renderBooks() {
             const allBooks = entries.filter(e => e.type === 'book');
             if (!allBooks.length) {
-                return `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin libros</div><div class="empty-sub">Pulsa el botón + y selecciona "Libro"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin libros</div><div class="empty-sub">Pulsa el botón + y selecciona "Libro"</div></div>`;
             }
             const { items: books, banner } = applyMonthFilterTo('book', allBooks);
-            if (!books.length) return banner + `<div class="empty-state"><div class="empty-icon">◊</div><div class="empty-title">Sin libros ese mes</div></div>`;
+            if (!books.length) return banner + `<div class="empty-state"><div class="empty-title">Sin libros ese mes</div></div>`;
 
             const reading = books.filter(b => b.status === 'Leyendo');
             const completed = books.filter(b => b.status === 'Completado');
@@ -4573,10 +4571,10 @@
         function renderMovies() {
             const allMovies = entries.filter(e => e.type === 'movie');
             if (!allMovies.length) {
-                return `<div class="empty-state"><div class="empty-icon">▸</div><div class="empty-title">Sin películas</div><div class="empty-sub">Pulsa el botón + y selecciona "Película"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin películas</div><div class="empty-sub">Pulsa el botón + y selecciona "Película"</div></div>`;
             }
             const { items: movies, banner } = applyMonthFilterTo('movie', allMovies);
-            if (!movies.length) return banner + `<div class="empty-state"><div class="empty-icon">▸</div><div class="empty-title">Sin películas ese mes</div></div>`;
+            if (!movies.length) return banner + `<div class="empty-state"><div class="empty-title">Sin películas ese mes</div></div>`;
 
             const sorted = [...movies].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             const groups = [];
@@ -4607,10 +4605,10 @@
         function renderSeries() {
             const allSeries = entries.filter(e => e.type === 'series');
             if (!allSeries.length) {
-                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin series</div><div class="empty-sub">Pulsa el botón + y selecciona "Serie"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin series</div><div class="empty-sub">Pulsa el botón + y selecciona "Serie"</div></div>`;
             }
             const { items: series, banner } = applyMonthFilterTo('series', allSeries);
-            if (!series.length) return banner + `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin series ese mes</div></div>`;
+            if (!series.length) return banner + `<div class="empty-state"><div class="empty-title">Sin series ese mes</div></div>`;
 
             const statusOrder = { 'Viendo': 0, 'Completada': 1, 'Abandonada': 2 };
             // Estado efectivo: si hay fecha de fin y el estado guardado sigue en
@@ -4632,7 +4630,7 @@
         function renderGames() {
             const games = entries.filter(e => e.type === 'game');
             if (!games.length) {
-                return `<div class="empty-state"><div class="empty-icon">◉</div><div class="empty-title">Sin videojuegos</div><div class="empty-sub">Pulsa el botón + y selecciona "Videojuego"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin videojuegos</div><div class="empty-sub">Pulsa el botón + y selecciona "Videojuego"</div></div>`;
             }
 
             const statusOrder = { 'Jugando': 0, 'Completado': 1, 'Abandonado': 2 };
@@ -4859,7 +4857,7 @@
         function renderGhostGrid(tipo) {
             const items = recomendaciones.filter(r => r.tipo === tipo);
             if (!items.length) {
-                return `<div class="empty-state"><div class="empty-icon">◕</div><div class="empty-title">Sin recomendaciones</div><div class="empty-sub">Aquí aparecerá lo que tus amigos te recomienden.</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin recomendaciones</div><div class="empty-sub">Aquí aparecerá lo que tus amigos te recomienden.</div></div>`;
             }
             return `<div class="media-card-grid">${items.map(renderGhostCard).join('')}</div>`;
         }
@@ -5121,7 +5119,7 @@
 
             if (travelPlacesTab === 'travels') {
                 if (!travels.length) {
-                    html += `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
+                    html += `<div class="empty-state"><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
                 } else {
                     const orden = { 'En curso': 0, 'Próximo': 1, 'Sin fecha': 2, 'Completado': 3 };
                     const ordenados = [...travels].sort((a, b) => {
@@ -5145,8 +5143,8 @@
                                     </div>
                                 </div>
                                 ${(places2.length || itemsTotal) ? `<div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--text-secondary)">
-                                    ${places2.length ? `<span>⌂ ${places2.filter(p => p.visitado).length}/${places2.length} lugares</span>` : ''}
-                                    ${itemsTotal ? `<span>☷ ${itemsHechos}/${itemsTotal} preparativos</span>` : ''}
+                                    ${places2.length ? `<span>${places2.filter(p => p.visitado).length}/${places2.length} lugares</span>` : ''}
+                                    ${itemsTotal ? `<span>${itemsHechos}/${itemsTotal} preparativos</span>` : ''}
                                 </div>` : ''}
                             </div>`;
                     });
@@ -5250,7 +5248,7 @@
                     ${total > 0 ? `<div class="card"><div class="card-title">Gasto total</div><div class="card-value">${total.toLocaleString('es-ES')}€</div></div>` : ''}
                 </div>
                 ${t.companions ? `<div class="entry-detail-field" style="margin-bottom:12px"><div class="entry-detail-label">Viajé con</div><div class="entry-detail-value">${escapeHtml(t.companions)}</div></div>` : ''}
-                ${t.notes ? `<div class="entry-detail-field"><div class="entry-detail-label">Notas</div><div class="entry-detail-value">${linkifyText(t.notes)}</div></div>` : '<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin notas todavía</div><div class="empty-sub">Pulsa "Editar" arriba para añadir notas generales del viaje.</div></div>'}
+                ${t.notes ? `<div class="entry-detail-field"><div class="entry-detail-label">Notas</div><div class="entry-detail-value">${linkifyText(t.notes)}</div></div>` : '<div class="empty-state"><div class="empty-title">Sin notas todavía</div><div class="empty-sub">Pulsa "Editar" arriba para añadir notas generales del viaje.</div></div>'}
             `;
         }
 
@@ -5267,7 +5265,7 @@
                         <span style="flex:1;cursor:pointer;${p.visitado ? 'text-decoration:line-through;opacity:.5' : ''}" onclick="toggleTripPlace('${t.id}','${p.id}')">${escapeHtml(p.nombre)}</span>
                         <button class="friend-remove-btn" title="Quitar" onclick="deleteTripPlace('${t.id}','${p.id}')">✕</button>
                     </div>
-                `).join('') : '<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin lugares todavía</div><div class="empty-sub">Añade los sitios que quieres visitar.</div></div>'}
+                `).join('') : '<div class="empty-state"><div class="empty-title">Sin lugares todavía</div><div class="empty-sub">Añade los sitios que quieres visitar.</div></div>'}
             `;
         }
         async function addTripPlace(tripId) {
@@ -5310,7 +5308,7 @@
                             <button class="friend-remove-btn" title="Eliminar" onclick="deleteItineraryItem('${t.id}','${it.id}')">✕</button>
                         </div>
                     </div>
-                `).join('') : '<div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Sin itinerario todavía</div><div class="empty-sub">Añade horarios y planes para cada día del viaje.</div></div>'}
+                `).join('') : '<div class="empty-state"><div class="empty-title">Sin itinerario todavía</div><div class="empty-sub">Añade horarios y planes para cada día del viaje.</div></div>'}
             `;
         }
         function openAddItineraryItem(tripId) {
@@ -5363,7 +5361,7 @@
             `;
         }
         function renderTripDocList(tripId, docs) {
-            if (!docs.length) return '<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube el primero con el botón de arriba</div></div>';
+            if (!docs.length) return '<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube el primero con el botón de arriba</div></div>';
             return docs.map(doc => {
                 const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
@@ -5388,7 +5386,7 @@
             } catch (e) {
                 console.error('Error cargando documentos del viaje:', e);
                 const el = document.getElementById('trip-doc-list-' + tripId);
-                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No se pudieron cargar los documentos</div></div>';
+                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-title">No se pudieron cargar los documentos</div></div>';
             }
         }
         async function handleTripDocUpload(event, tripId) {
@@ -5460,7 +5458,7 @@
                             <button class="btn-secondary" style="width:auto" onclick="addTripListItem('${t.id}','${l.id}')">+ Añadir</button>
                         </div>
                     </div>
-                `).join('') : '<div class="empty-state"><div class="empty-icon">☷</div><div class="empty-title">Sin listas todavía</div><div class="empty-sub">Crea una lista de qué llevar, qué hacer o lo que necesites.</div></div>'}
+                `).join('') : '<div class="empty-state"><div class="empty-title">Sin listas todavía</div><div class="empty-sub">Crea una lista de qué llevar, qué hacer o lo que necesites.</div></div>'}
             `;
         }
         function openAddTripList(tripId) {
@@ -5540,7 +5538,7 @@
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
-                return `<div class="empty-state"><div class="empty-icon">◫</div><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa el botón + y selecciona "Trabajo"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa el botón + y selecciona "Trabajo"</div></div>`;
             }
 
             const todayStr = new Date().toISOString().slice(0, 10);
@@ -6216,7 +6214,7 @@
         function renderProjects() {
             const projects = entries.filter(e => e.type === 'project');
             if (!projects.length) {
-                return `<div class="empty-state"><div class="empty-icon">⊞</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa el botón + y selecciona "Proyecto"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa el botón + y selecciona "Proyecto"</div></div>`;
             }
 
             const toggle = `
@@ -6256,7 +6254,7 @@
                         <div class="project-card-meta">
                             <span class="badge ${statusClass}">${bucket}</span>
                             <span>${escapeHtml(p.projectCategory || 'Sin categoría')}</span>
-                            ${p.endDate ? `<span class="${overdue ? 'project-overdue' : ''}">${overdue ? '⚠ ' : '◷ '}${escapeHtml(p.endDate)}</span>` : ''}
+                            ${p.endDate ? `<span class="${overdue ? 'project-overdue' : ''}">${overdue ? '⚠ ' : ''}${escapeHtml(p.endDate)}</span>` : ''}
                         </div>
                         ${p.description ? `<div class="project-card-desc">${escapeHtml(p.description)}</div>` : ''}
                         ${total > 0 ? `
@@ -6336,10 +6334,10 @@
         function renderEvents() {
             const allEvents = entries.filter(e => e.type === 'event');
             if (!allEvents.length) {
-                return `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento"</div></div>`;
             }
             const { items: events, banner } = applyMonthFilterTo('event', allEvents);
-            if (!events.length) return banner + `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Sin eventos ese mes</div></div>`;
+            if (!events.length) return banner + `<div class="empty-state"><div class="empty-title">Sin eventos ese mes</div></div>`;
 
             const sorted = [...events].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             const next = entryMonthFilter && entryMonthFilter.type === 'event' ? null : nextUpcomingEvent(events);
@@ -6397,7 +6395,7 @@
         function renderPlaces() {
             const places = entries.filter(e => e.type === 'place');
             if (!places.length) {
-                return `<div class="empty-state"><div class="empty-icon">⌂</div><div class="empty-title">Sin lugares</div><div class="empty-sub">Pulsa el botón + y selecciona "Lugar"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin lugares</div><div class="empty-sub">Pulsa el botón + y selecciona "Lugar"</div></div>`;
             }
 
             const sorted = [...places].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -6485,7 +6483,7 @@
             const tagList = Object.keys(tagMap);
 
             if (!tagList.length) {
-                return `<div class="empty-state"><div class="empty-icon">#</div><div class="empty-title">Sin etiquetas todavía</div><div class="empty-sub">Añade etiquetas a tus entradas para verlas aquí</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin etiquetas todavía</div><div class="empty-sub">Añade etiquetas a tus entradas para verlas aquí</div></div>`;
             }
 
             if (window._selectedTag) {
@@ -6546,8 +6544,8 @@
                     <div class="chart-container" style="margin-bottom:16px">
                         <div class="chart-title">Apariencia</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                            <button class="btn-secondary" style="width:auto" onclick="toggleTheme()">◐ Cambiar tema</button>
-                            <button class="btn-secondary" style="width:auto" onclick="toggleMode()">⊞ Alternar modo ancho</button>
+                            <button class="btn-secondary" style="width:auto" onclick="toggleTheme()">Cambiar tema</button>
+                            <button class="btn-secondary" style="width:auto" onclick="toggleMode()">Alternar modo ancho</button>
                         </div>
                     </div>
 
@@ -6596,7 +6594,7 @@
                         <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir nota de hoy</button>
                     </div>
                     <div class="empty-state">
-                        <div class="empty-icon">✎</div>
+                        
                         <div class="empty-title">Todavía no hay notas</div>
                         <div class="empty-sub">Pulsa "Escribir nota de hoy" para crear la nota del día.</div>
                     </div>`;
@@ -6709,7 +6707,7 @@
             if (!goals.length) {
                 return `
                     <div class="empty-state">
-                        <div class="empty-icon">◉</div>
+                        
                         <div class="empty-title">Sin objetivos</div>
                         <div class="empty-sub">Pulsa el botón + y selecciona "Objetivo"</div>
                     </div>`;
@@ -7552,7 +7550,6 @@
                 </div>
 
                 <section class="finance-goal-bar">
-                    <span class="finance-goal-bar-icon">${remainingToTarget <= 0 && target > 0 ? '🎉' : '◎'}</span>
                     <span class="finance-goal-bar-text">${remainingToTarget <= 0 && target > 0
                         ? '<strong>Objetivo alcanzado</strong>'
                         : `<strong>Camino al objetivo</strong> · ${target > 0 ? `faltan ${financeMoney(remainingToTarget)}` : 'objetivo sin definir'} · ${monthsLeft} meses restantes`}</span>
@@ -7563,18 +7560,18 @@
                     <div class="finance-kicker" style="margin-bottom:10px">Cuentas</div>
                     <div class="finance-accounts-row">
                         <div class="collectible-card finance-account-card" onclick="openInvestmentAccountEditor()">
-                            <div class="finance-account-icon">▸</div>
+                            
                             <div class="finance-account-label">Inversiones</div>
                             <div class="finance-account-value">${financeMoney(financeProfile.invested || 0)}</div>
                             ${financeProfile.investedNote ? `<div class="finance-account-note">${escapeHtml(financeProfile.investedNote)}</div>` : ''}
                         </div>
                         <div class="collectible-card finance-account-card" onclick="openRecurringExpensesModal()">
-                            <div class="finance-account-icon">↻</div>
+                            
                             <div class="finance-account-label">Gastos recurrentes</div>
                             <div class="finance-account-value">${financeMoney(recurring)} <span>/ mes</span></div>
                         </div>
                         <div class="finance-account-card finance-account-card-readonly" onclick="switchView('collectibles')">
-                            <div class="finance-account-icon">◆</div>
+                            
                             <div class="finance-account-label">Coleccionables</div>
                             <div class="finance-account-value">${financeMoney(financeCollectiblesTotal())}</div>
                             <div class="finance-account-note">No cuenta para el patrimonio operativo</div>
@@ -8006,7 +8003,6 @@
                     </div>
 
                     <div class="investment-projection-note">
-                        <span>◈</span>
                         <span><strong>Simulación al 5 % anual.</strong> No es una previsión de mercado. Se parte del valor actual y se añaden ${projectionMonthly.toLocaleString('es-ES')}€ al mes, aplicando una capitalización mensual equivalente al 5 % anual.</span>
                     </div>
 
@@ -8512,7 +8508,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             } catch (e) {
                 console.error('Error cargando documentos:', e);
                 if (listEl) listEl.innerHTML =
-                    `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No se pudieron cargar los documentos</div><div class="empty-sub">${(e?.message || 'Comprueba que el bucket "documents" existe en Supabase Storage')}</div></div>`;
+                    `<div class="empty-state"><div class="empty-title">No se pudieron cargar los documentos</div><div class="empty-sub">${(e?.message || 'Comprueba que el bucket "documents" existe en Supabase Storage')}</div></div>`;
             }
         }
 
@@ -8521,7 +8517,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             if (!listEl) return;
             if (!documents.length) {
                 listEl.innerHTML =
-                    `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF con el botón de arriba</div></div>`;
+                    `<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF con el botón de arriba</div></div>`;
                 return;
             }
             listEl.innerHTML = documents.map(doc => {
@@ -8853,7 +8849,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         function addFantasyUserManually() {
             showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Añadir usuario</div>
+                <div class="modal-title" style="color:var(--fantasy-accent)">Añadir usuario</div>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">El nombre debe coincidir exactamente (mayúsculas/minúsculas incluidas) con el que aparece en las transacciones.</div>
                 <div class="modal-label">Nombre de usuario</div>
                 <input id="new-fantasy-user-name" class="modal-input" placeholder="Ej: VEZAMAN">
@@ -10125,7 +10121,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     
                     showModal(`
                         <div class="modal-title" style="color:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
-                            ${type === 'fantasy' ? '◉' : '◈'} Configurar acceso a ${type === 'fantasy' ? 'Fantasy' : 'Vault'}
+                            Configurar acceso a ${type === 'fantasy' ? 'Fantasy' : 'Vault'}
                         </div>
                         <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
                             Establece una contraseña para proteger ${type === 'fantasy' ? 'Fantasy' : 'Vault'}.
@@ -10152,7 +10148,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 
                 showModal(`
                     <div class="modal-title" style="color:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
-                        ${type === 'fantasy' ? '◉' : '◈'} Acceso a ${type === 'fantasy' ? 'Fantasy' : 'Vault'}
+                        Acceso a ${type === 'fantasy' ? 'Fantasy' : 'Vault'}
                     </div>
                     <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
                         Introduce tu contraseña para acceder.
@@ -10525,7 +10521,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     <div style="max-width:600px">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                             <div>
-                                <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
+                                <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Vault</div>
                                 <div style="font-size:13px;color:var(--text-secondary)">Tareas personales</div>
                             </div>
                             <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
@@ -10535,7 +10531,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                             <button onclick="addVaultTask()">Añadir</button>
                         </div>
                         <div class="empty-state">
-                            <div class="empty-icon">◈</div>
+                            
                             <div class="empty-title">Sin tareas</div>
                             <div class="empty-sub">Añade tu primera tarea con el campo de arriba</div>
                         </div>
@@ -10550,7 +10546,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div style="max-width:600px">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                         <div>
-                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">◈ Vault</div>
+                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Vault</div>
                             <div style="font-size:13px;color:var(--text-secondary)">${pending.length} pendientes · ${done.length} completadas</div>
                         </div>
                         <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
@@ -10625,7 +10621,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         function changeVaultPassword() {
             showModal(`
-                <div class="modal-title" style="color:var(--vault-accent)">◈ Cambiar contraseña de Vault</div>
+                <div class="modal-title" style="color:var(--vault-accent)">Cambiar contraseña de Vault</div>
                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce tu contraseña actual y la nueva.</div>
                 <div class="form-row">
                     <label class="modal-label">Contraseña actual</label>
@@ -10676,7 +10672,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         function changeFantasyPassword() {
             showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">◉ Cambiar contraseña de Fantasy</div>
+                <div class="modal-title" style="color:var(--fantasy-accent)">Cambiar contraseña de Fantasy</div>
                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce tu contraseña actual y la nueva.</div>
                 <div class="form-row">
                     <label class="modal-label">Contraseña actual</label>
@@ -10775,7 +10771,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             if (!loaded) {
                 document.getElementById('content').innerHTML =
                     `<div class="empty-state">
-                        <div class="empty-icon">⚠️</div>
+                        
                         <div class="empty-title">No se pudieron cargar tus datos</div>
                         <div class="empty-sub">Revisa tu conexión a internet y vuelve a intentarlo. No se ha modificado nada en la nube.</div>
                         <button class="btn-secondary" style="margin-top:12px" onclick="init()">Reintentar</button>
