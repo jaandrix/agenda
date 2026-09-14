@@ -10085,7 +10085,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             if (!p) return;
             showModal(`
                 <div class="modal-title" style="color:var(--fantasy-accent)">Cláusula — ${escapeHtml(jugador)}</div>
-                ${p.gasto > 0 ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">Gastado hasta ahora en cláusulas: <strong style="color:var(--fantasy-accent)">${p.gasto.toLocaleString('es-ES')}€</strong></div>` : ''}
+                ${p.gasto > 0 ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">Gastado hasta ahora en cláusulas: <strong style="color:var(--fantasy-accent)">${p.gasto.toLocaleString('es-ES')}€</strong> <button class="clause-history-link" onclick="editSquadClauseGasto('${nombre}', '${source}', '${refId}', ${p.gasto})">Corregir</button></div>` : ''}
                 <div class="modal-label">Valor anterior (antes de esta subida)</div>
                 <input type="number" id="squad-clause-anterior" class="modal-input" value="${p.valorActual}" step="0.01" data-gasto-previo="${p.gasto}" oninput="updateSquadClausePreview()">
                 <div class="modal-label">Valor nuevo (lo que ves ahora en el juego)</div>
@@ -10155,6 +10155,34 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             closeModal();
             showFantasySquad(nombre);
             showToast(incremento > 0 ? `-${incremento.toLocaleString('es-ES')}€ de cláusula restados de tu efectivo (total gastado ${gastoTotal.toLocaleString('es-ES')}€)` : 'Valor actualizado');
+        }
+
+        // Corrige a mano el contador "gastado en cláusulas" de un jugador,
+        // sin tocar el efectivo ni crear ninguna transacción — para cuando
+        // ese contador se queda descuadrado (p. ej. tras deshacer una
+        // cláusula añadida por error, que ya se corrigió por su cuenta al
+        // borrar la transacción, pero deja este número suelto).
+        function editSquadClauseGasto(nombre, source, refId, currentGasto) {
+            const input = prompt('Corrige el gasto acumulado en cláusulas para este jugador (€). Esto NO mueve dinero de tu efectivo, solo corrige este contador informativo.', currentGasto);
+            if (input === null) return;
+            const nuevo = parseFloat(input);
+            if (isNaN(nuevo) || nuevo < 0) { showToast('Introduce un número válido (0 o mayor)', true); return; }
+
+            if (source === 'tx') {
+                const tx = fantasyData.transacciones.find(t => t.id === refId);
+                if (!tx) return;
+                tx.clausulaGasto = nuevo;
+            } else {
+                const u = fantasyData.usuarios.find(x => x.nombre === nombre);
+                const p = u?.equipoInicial.find(x => x.id === refId);
+                if (!p) return;
+                p.gasto = nuevo;
+            }
+
+            saveFantasyData();
+            closeModal();
+            showFantasySquad(nombre);
+            showToast('Gasto en cláusulas corregido');
         }
 
         // ============================================================
