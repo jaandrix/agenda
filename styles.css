@@ -2443,6 +2443,58 @@
             color: #fcd34d;
         }
 
+        .fantasy-budget-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .fantasy-budget-card {
+            border-radius: 16px;
+            border: 1px solid var(--fx-border);
+            background: var(--fx-bg);
+            padding: 12px 14px;
+        }
+        .fantasy-budget-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .fantasy-budget-amount {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--fx-text);
+            margin-top: 8px;
+        }
+        .fantasy-budget-sim {
+            font-size: 11px;
+            color: var(--fx-text-secondary);
+            margin-top: 2px;
+        }
+        .fantasy-budget-squad {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--fx-border);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .fantasy-budget-player-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--fx-text);
+            cursor: pointer;
+        }
+        .fantasy-budget-player-row input[type="checkbox"] {
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
         .fantasy-chart-container {
             background: var(--fx-bg);
             border: 1px solid var(--fx-border);

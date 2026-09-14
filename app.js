@@ -8657,6 +8657,99 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // independiente del tema general de la app).
         let fantasyTheme = localStorage.getItem('fantasy_theme') || 'default';
 
+        // ------------------------------------------------------------
+        //  PRESUPUESTO PARA FICHAJES (simulador de "¿y si vendo a...?")
+        //  Estado puramente de pantalla: qué tarjetas están desplegadas y
+        //  qué jugadores están marcados como "a la venta" en la simulación.
+        //  No se guarda ni afecta a los datos reales — solo desaparece al
+        //  recargar, que es justo lo que se quiere de una simulación.
+        // ------------------------------------------------------------
+        let fantasyBudgetOpen = {};
+        let fantasyBudgetSelections = {};
+
+        // Presupuesto real para fichar, según permite el propio juego: tu
+        // efectivo más un 20% del valor de tu plantilla (puedes quedarte en
+        // negativo, pero nunca más allá de ese 20%).
+        function fantasyBudgetFor(efectivo, valorPlantilla) {
+            return efectivo + valorPlantilla * 0.2;
+        }
+
+        function toggleFantasyBudgetCard(nombre) {
+            fantasyBudgetOpen[nombre] = !fantasyBudgetOpen[nombre];
+            render();
+        }
+
+        function toggleFantasyBudgetPlayer(nombre, refId) {
+            if (!fantasyBudgetSelections[nombre]) fantasyBudgetSelections[nombre] = new Set();
+            const set = fantasyBudgetSelections[nombre];
+            if (set.has(refId)) set.delete(refId); else set.add(refId);
+            render();
+        }
+
+        function renderFantasyBudgetSection() {
+            if (!fantasyData.usuarios.length) return '';
+            return `
+                <div style="margin-top:16px">
+                    <div class="fantasy-section-title" style="margin-bottom:8px">Presupuesto para fichajes</div>
+                    <div style="font-size:11px;color:var(--fx-text-secondary);margin-bottom:10px">
+                        Efectivo + 20% del valor de la plantilla — así calcula el propio juego cuánto puedes gastar
+                        (puedes quedarte en negativo, pero nunca más allá de ese 20%). Despliega a un usuario y marca
+                        jugadores como "a la venta" para ver cómo cambiaría su presupuesto sin vender nada de verdad.
+                    </div>
+                    <div class="fantasy-budget-grid">
+                        ${fantasyData.usuarios.map(u => renderFantasyBudgetCard(u)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFantasyBudgetCard(u) {
+            const squad = getUserSquad(u.nombre);
+            const selected = fantasyBudgetSelections[u.nombre] || new Set();
+            const sumSelected = squad
+                .filter(s => selected.has(s.refId))
+                .reduce((sum, s) => sum + (s.valorActual || 0), 0);
+
+            const presupuestoBase = fantasyBudgetFor(u.efectivo, u.valor_plantilla);
+            const efectivoSim = u.efectivo + sumSelected;
+            const plantillaSim = Math.max(0, u.valor_plantilla - sumSelected);
+            const presupuestoSim = fantasyBudgetFor(efectivoSim, plantillaSim);
+            const hayCambios = selected.size > 0;
+            const isOpen = !!fantasyBudgetOpen[u.nombre];
+            const color = fantasyUserColor(u.nombre);
+            const diferencia = presupuestoSim - presupuestoBase;
+
+            return `
+                <div class="fantasy-budget-card" style="border-top:3px solid ${color}">
+                    <div class="fantasy-budget-head" onclick="toggleFantasyBudgetCard('${u.nombre}')">
+                        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+                            <div class="user-avatar" style="background:${color};width:28px;height:28px;font-size:11px;flex-shrink:0">${fantasyInitials(u.nombre)}</div>
+                            <span style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(u.nombre)}</span>
+                        </div>
+                        <span style="font-size:10px;color:var(--fx-text-secondary);flex-shrink:0">${isOpen ? '▲' : '▼'} ${squad.length} jugador${squad.length === 1 ? '' : 'es'}</span>
+                    </div>
+                    <div class="fantasy-budget-amount ${presupuestoBase < 0 ? 'fantasy-negative' : ''}">${presupuestoBase.toLocaleString('es-ES')}€</div>
+                    ${hayCambios ? `
+                        <div class="fantasy-budget-sim ${presupuestoSim < 0 ? 'fantasy-negative' : ''}">
+                            Vendiendo ${selected.size}: ${presupuestoSim.toLocaleString('es-ES')}€
+                            <span style="color:${diferencia >= 0 ? '#16a34a' : '#dc2626'}">(${diferencia >= 0 ? '+' : ''}${diferencia.toLocaleString('es-ES')}€)</span>
+                        </div>
+                    ` : ''}
+                    ${isOpen ? `
+                        <div class="fantasy-budget-squad">
+                            ${squad.length ? squad.map(s => `
+                                <label class="fantasy-budget-player-row">
+                                    <input type="checkbox" ${selected.has(s.refId) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleFantasyBudgetPlayer('${u.nombre}','${s.refId}')">
+                                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(s.jugador)}</span>
+                                    <span style="color:var(--fx-text-secondary);flex-shrink:0">${(s.valorActual || 0).toLocaleString('es-ES')}€</span>
+                                </label>
+                            `).join('') : '<div style="font-size:11px;color:var(--fx-text-secondary);padding:6px 0">Sin jugadores en la plantilla.</div>'}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
         function toggleFantasyTheme() {
             fantasyTheme = fantasyTheme === 'green' ? 'default' : 'green';
             localStorage.setItem('fantasy_theme', fantasyTheme);
@@ -9636,6 +9729,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                             <div class="fantasy-empty-state">Aún no hay usuarios en la liga</div>
                         `}
                     </div>
+
+                    ${renderFantasyBudgetSection()}
                 </div>
             `;
 
