@@ -3727,7 +3727,7 @@
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
-                loadDocuments(); } else if (currentView === 'finances') content.innerHTML = renderFinances();
+                loadDocuments(); loadBackups(); } else if (currentView === 'finances') content.innerHTML = renderFinances();
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
             else if (currentView === 'fantasy') { content.innerHTML = renderFantasy();
                 renderAllFantasyCharts(); } else if (currentView === 'vault') content.innerHTML = renderVault();
@@ -9016,6 +9016,14 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         <div style="font-size:12px;color:var(--text-secondary)">Pulsa aquí para elegir un archivo</div>
                     </div>
                     <div id="doc-list">Cargando documentos...</div>
+
+                    <div class="backups-section">
+                        <div class="events-section-label">Backups automáticos</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin:-6px 0 10px">
+                            Bitácora guarda una copia de seguridad completa la primera vez que abres la app cada día, y conserva las 7 más recientes.
+                        </div>
+                        <div id="backups-list">Cargando backups...</div>
+                    </div>
                 </div>`;
         }
 
@@ -9114,6 +9122,109 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             } catch (e) {
                 console.error('Error eliminando documento:', e);
                 showToast('Error al eliminar: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        // ============================================================
+        //  BACKUPS AUTOMÁTICOS DIARIOS
+        //  Como Bitácora no tiene servidor propio (es una app estática),
+        //  no puede ejecutar nada exactamente a las 00:00h aunque tengas
+        //  la app cerrada. En su lugar, la primera vez que la abres cada
+        //  día (en cualquier dispositivo) se sube una copia de seguridad
+        //  completa a Storage, en documents/<usuario>/backups/. Se
+        //  consulta la lista real de archivos (no localStorage) para que
+        //  funcione igual da igual desde qué dispositivo abras la app.
+        //  Se conservan solo los 7 backups más recientes; al subir el 8º,
+        //  se borra el más antiguo.
+        // ============================================================
+        let backupFiles = [];
+        const BACKUPS_TO_KEEP = 7;
+
+        function backupFileDate(name) {
+            const m = name.match(/(\d{4}-\d{2}-\d{2})/);
+            return m ? m[1] : '';
+        }
+
+        async function runDailyBackupCheck() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const todayName = `bitacora_backup_${todayISO()}.json`;
+                const { data: files, error } = await sb.storage.from('documents').list(`${user.id}/backups`, {
+                    sortBy: { column: 'name', order: 'asc' }
+                });
+                if (error) throw error;
+                const existing = files || [];
+                if (existing.some(f => f.name === todayName)) return; // ya hay backup de hoy
+
+                const payload = buildFullBackupPayload();
+                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                const { error: upErr } = await sb.storage.from('documents').upload(`${user.id}/backups/${todayName}`, blob, { upsert: true, contentType: 'application/json' });
+                if (upErr) throw upErr;
+
+                const updated = [...existing, { name: todayName }].sort((a, b) => a.name.localeCompare(b.name));
+                if (updated.length > BACKUPS_TO_KEEP) {
+                    const toDelete = updated.slice(0, updated.length - BACKUPS_TO_KEEP).map(f => `${user.id}/backups/${f.name}`);
+                    await sb.storage.from('documents').remove(toDelete);
+                }
+
+                if (currentView === 'documents') await loadBackups();
+            } catch (e) {
+                console.error('Error en el backup automático diario:', e);
+            }
+        }
+
+        async function loadBackups() {
+            const el = document.getElementById('backups-list');
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { backupFiles = []; if (el) el.innerHTML = ''; return; }
+                const { data, error } = await sb.storage.from('documents').list(`${user.id}/backups`, {
+                    sortBy: { column: 'name', order: 'desc' }
+                });
+                if (error) throw error;
+                backupFiles = data || [];
+                if (el) renderBackupsListContent();
+            } catch (e) {
+                console.error('Error cargando backups:', e);
+                if (el) el.innerHTML = `<div class="empty-state"><div class="empty-title">No se pudieron cargar los backups</div></div>`;
+            }
+        }
+
+        function renderBackupsListContent() {
+            const el = document.getElementById('backups-list');
+            if (!el) return;
+            if (!backupFiles.length) {
+                el.innerHTML = `<div class="empty-state"><div class="empty-title">Aún no hay backups automáticos</div><div class="empty-sub">Se generará el primero la próxima vez que abras Bitácora.</div></div>`;
+                return;
+            }
+            el.innerHTML = backupFiles.map(f => {
+                const iso = backupFileDate(f.name);
+                const fecha = iso ? new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : f.name;
+                return `<div class="doc-item">
+                    <div class="doc-info"><div><div class="doc-name">${escapeHtml(fecha)}</div><div class="doc-meta">${escapeHtml(iso)}</div></div></div>
+                    <div class="doc-actions"><button class="doc-action-download" onclick="restoreBackupFile('${escapeHtml(f.name)}')">Restaurar</button></div>
+                </div>`;
+            }).join('');
+        }
+
+        async function restoreBackupFile(name) {
+            const iso = backupFileDate(name);
+            if (!confirm(`¿Restaurar el backup del ${iso}? Esto sustituirá TODOS tus datos actuales (de cualquier apartado) por los que había guardados ese día. No se puede deshacer.`)) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const { data, error } = await sb.storage.from('documents').download(`${user.id}/backups/${name}`);
+                if (error) throw error;
+                const payload = JSON.parse(await data.text());
+                applyBackupPayload(payload);
+                await saveData();
+                render();
+                updatePageTitle();
+                showToast('Backup restaurado correctamente');
+            } catch (e) {
+                console.error('Error restaurando backup:', e);
+                showToast('Error al restaurar: ' + (e?.message || 'desconocido'), true);
             }
         }
 
@@ -11573,6 +11684,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 updateSidebarPrivacy();
                 maybeShowDailyAlert();
                 if (!window._dailyAlertTimer) window._dailyAlertTimer = setInterval(maybeShowDailyAlert, 60000);
+                runDailyBackupCheck();
                 updateNotifBadge();
                 if (!window._notifTimer) window._notifTimer = setInterval(refreshNotifData, 90000);
             });
