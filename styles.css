@@ -112,6 +112,17 @@
             transition: background 0.25s ease, color 0.25s ease;
         }
 
+        /* Los navegadores no heredan la tipografía del body en los controles
+           de formulario (button, input, select, textarea) por defecto — usan
+           la fuente del sistema salvo que se indique lo contrario. Con una
+           app de este tamaño, ir fijando "font-family: Poppins" botón a
+           botón deja huecos (como pasó con "+ Añadir entrada este día").
+           Esta única regla lo arregla de raíz para todos, presentes y
+           futuros. */
+        button, input, select, textarea {
+            font-family: inherit;
+        }
+
         /* Fantasy nunca se pinta durante el arranque: solo se revela cuando
            el modo desarrollador se activa explícitamente. */
         .fantasy-hidden { display:none !important; }
