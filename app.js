@@ -9333,6 +9333,118 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // y "Valor nuevo" es lo que ves ahora en el juego. Solo la diferencia
         // de ESTA subida se suma al total ya gastado — no hay que llevar la
         // cuenta manualmente de cada subida por separado.
+        // ------------------------------------------------------------
+        //  CONSULTA EN DIRECTO A LALIGA FANTASY (catálogo + cotización
+        //  histórica pública, vía la función de Supabase "laliga-proxy" —
+        //  ver supabase-edge-function-laliga-proxy.ts). Solo lectura, sin
+        //  sesión de LaLiga: nada de esto necesita ni guarda credenciales.
+        // ------------------------------------------------------------
+        let _laligaCatalogCache = null;
+        let _laligaCatalogCacheAt = 0;
+        const _laligaHistoryCache = {};
+        const LALIGA_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
+
+        async function laligaProxyFetch(params) {
+            const url = `${SUPABASE_URL}/functions/v1/laliga-proxy?${new URLSearchParams(params)}`;
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
+            if (!res.ok) throw new Error(`laliga-proxy respondió ${res.status}`);
+            return res.json();
+        }
+
+        async function getLaligaCatalog() {
+            const now = Date.now();
+            if (_laligaCatalogCache && (now - _laligaCatalogCacheAt) < LALIGA_CATALOG_TTL_MS) return _laligaCatalogCache;
+            const data = await laligaProxyFetch({ type: 'players' });
+            _laligaCatalogCache = data;
+            _laligaCatalogCacheAt = now;
+            return data;
+        }
+
+        async function getLaligaHistory(playerId) {
+            if (_laligaHistoryCache[playerId]) return _laligaHistoryCache[playerId];
+            const data = await laligaProxyFetch({ type: 'market-value', playerId });
+            _laligaHistoryCache[playerId] = data;
+            return data;
+        }
+
+        // Empareja el nombre tal como está guardado en tu plantilla ("jugador")
+        // con el "nickname" del catálogo real. Compara sin acentos/mayúsculas
+        // e ignora espacios de más: los nombres de LaLiga y los que se pegan
+        // desde capturas no siempre coinciden carácter a carácter.
+        function laligaFindPlayerByName(catalog, nombreJugador) {
+            const norm = s => stripAccents(String(s || '').toLowerCase().trim()).replace(/\s+/g, ' ');
+            const target = norm(nombreJugador);
+            if (!target) return null;
+            let match = catalog.find(p => norm(p.nickname) === target);
+            if (match) return match;
+            match = catalog.find(p => norm(p.nickname).includes(target) || target.includes(norm(p.nickname)));
+            return match || null;
+        }
+
+        // Últimos N dígitos como cadena, para comparar "terminan igual".
+        function _trailingDigits(value, n) {
+            return String(Math.round(value)).padStart(n, '0').slice(-n);
+        }
+
+        // Busca, en el histórico real de cotización del jugador, el día más
+        // reciente cuyo valor sea MENOR que la cláusula actual y comparta
+        // sus últimas cifras con ella — señal de que esa cláusula se generó
+        // sumando una cantidad redonda al valor natural de ESE día concreto.
+        // Devuelve { fecha, valor } o null si no hay ninguna coincidencia
+        // razonablemente segura.
+        function laligaFindClauseBaseline(history, clauseActual, digits = 5) {
+            const target = _trailingDigits(clauseActual, digits);
+            const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date));
+            for (const point of sorted) {
+                if (point.marketValue >= clauseActual) continue;
+                if (_trailingDigits(point.marketValue, digits) === target) {
+                    return { fecha: point.date.slice(0, 10), valor: point.marketValue };
+                }
+            }
+            return null;
+        }
+
+        async function buscarClausulaEnHistorico(nombre, jugador) {
+            const btn = document.getElementById('squad-clause-buscar-btn');
+            const status = document.getElementById('squad-clause-buscar-status');
+            const nuevoInput = document.getElementById('squad-clause-nuevo');
+            const anteriorInput = document.getElementById('squad-clause-anterior');
+            const nuevo = parseFloat(nuevoInput?.value);
+            if (isNaN(nuevo) || nuevo <= 0) {
+                if (status) status.textContent = 'Escribe primero el valor nuevo de la cláusula.';
+                return;
+            }
+            if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
+            if (status) status.textContent = '';
+            try {
+                const catalog = await getLaligaCatalog();
+                const player = laligaFindPlayerByName(catalog, jugador);
+                if (!player) {
+                    if (status) status.textContent = `No se ha encontrado a "${jugador}" en el catálogo de LaLiga (¿nombre distinto?).`;
+                    return;
+                }
+                const history = await getLaligaHistory(player.id);
+                const found = laligaFindClauseBaseline(history, nuevo);
+                if (!found) {
+                    if (status) status.textContent = 'No se ha encontrado ningún día del histórico que coincida con esa cláusula.';
+                    return;
+                }
+                if (anteriorInput) {
+                    anteriorInput.value = found.valor;
+                    updateSquadClausePreview();
+                }
+                if (status) {
+                    const fechaBonita = new Date(found.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                    status.innerHTML = `Encontrado: el <strong>${fechaBonita}</strong> valía <strong>${found.valor.toLocaleString('es-ES')}€</strong> — revisa y confirma.`;
+                }
+            } catch (e) {
+                console.error('Error buscando cláusula en el histórico de LaLiga:', e);
+                if (status) status.textContent = 'No se pudo consultar LaLiga ahora mismo. Inténtalo de nuevo en un momento.';
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Buscar en histórico real'; }
+            }
+        }
+
         function openSquadClauseCalculator(nombre, jugador, source, refId) {
             const squad = getUserSquad(nombre);
             const p = squad.find(x => x.source === source && String(x.refId) === String(refId));
@@ -9344,6 +9456,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <input type="number" id="squad-clause-anterior" class="modal-input" value="${p.valorActual}" step="0.01" data-gasto-previo="${p.gasto}" oninput="updateSquadClausePreview()">
                 <div class="modal-label">Valor nuevo (lo que ves ahora en el juego)</div>
                 <input type="number" id="squad-clause-nuevo" class="modal-input" value="${p.valorActual}" step="0.01" oninput="updateSquadClausePreview()">
+                <button class="btn-secondary" id="squad-clause-buscar-btn" style="width:auto;margin-bottom:6px" onclick="buscarClausulaEnHistorico('${nombre}', '${escapeHtml(jugador).replace(/'/g, "\\'")}')">Buscar en histórico real</button>
+                <div id="squad-clause-buscar-status" style="font-size:11px;color:var(--text-secondary);margin-bottom:10px"></div>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Gasto en esta subida (se suma a lo ya gastado): <strong id="squad-clause-incremento" style="color:var(--fantasy-accent)">0€</strong></div>
                 <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmSquadClauseCalculator('${nombre}', '${escapeHtml(jugador).replace(/'/g, "\\'")}', '${source}', '${refId}')">Guardar</button>
             `);
