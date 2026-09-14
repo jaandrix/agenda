@@ -10,6 +10,99 @@
         }[c]));
     }
 
+    // ------------------------------------------------------------
+    //  MIS TAREAS: agrega lo pendiente de Proyectos, Objetivos, el
+    //  Planificador de hoy y las tareas recurrentes en una sola lista,
+    //  para no tener que ir sección por sección a ver qué falta.
+    // ------------------------------------------------------------
+    function collectMyTasks() {
+        const tasks = [];
+        const today = typeof todayISO === 'function' ? todayISO() : new Date().toISOString().slice(0, 10);
+
+        if (typeof recurringTasksDueToday === 'function') {
+            recurringTasksDueToday().forEach(t => {
+                if (!(t.completadas && t.completadas[today])) {
+                    tasks.push({ texto: t.texto, fuente: 'Recurrente de hoy', onclick: `toggleMyTaskRecurring('${t.id}')` });
+                }
+            });
+        }
+
+        if (typeof dayPlanner !== 'undefined' && Array.isArray(dayPlanner.items)) {
+            dayPlanner.items.filter(it => !it.done).forEach(it => {
+                tasks.push({ texto: `${it.time ? it.time + ' · ' : ''}${it.title}`, fuente: 'Hoy', onclick: `toggleMyTaskPlanner('${it.id}')` });
+            });
+        }
+
+        if (typeof entries !== 'undefined') {
+            entries.filter(e => e.type === 'project').forEach(p => {
+                (p.tasks || []).forEach((t, i) => {
+                    if (!t.done) tasks.push({ texto: t.text, fuente: `Proyecto · ${p.title}`, onclick: `toggleMyTaskProjectTask('${p.id}',${i})` });
+                });
+            });
+            entries.filter(e => e.type === 'goal').forEach(g => {
+                (g.milestones || []).forEach((m, i) => {
+                    if (!m.done) tasks.push({ texto: m.text, fuente: `Objetivo · ${g.title}`, onclick: `toggleMyTaskGoalMilestone('${g.id}',${i})` });
+                });
+            });
+        }
+
+        return tasks;
+    }
+
+    function renderMyTasksSection() {
+        const tasks = collectMyTasks();
+        return `
+            <div class="summary-section" id="summary-mytasks-section">
+                <div class="summary-section-head">
+                    <div>
+                        <div class="summary-section-title">Mis tareas</div>
+                        <div class="summary-section-desc">Todo lo pendiente de Proyectos, Objetivos, el Planificador de hoy y las tareas recurrentes, en un solo sitio.</div>
+                    </div>
+                </div>
+                ${tasks.length ? `
+                    <div class="mytasks-list">
+                        ${tasks.map(t => `
+                            <label class="mytasks-row">
+                                <input type="checkbox" onchange="${t.onclick}">
+                                <div class="mytasks-row-body">
+                                    <div class="mytasks-row-text">${esc(t.texto)}</div>
+                                    <div class="mytasks-row-source">${esc(t.fuente)}</div>
+                                </div>
+                            </label>
+                        `).join('')}
+                    </div>
+                ` : `<div style="font-size:12px;color:var(--text-secondary)">Sin tareas pendientes ahora mismo.</div>`}
+            </div>
+        `;
+    }
+
+    // Envoltorios: las funciones "toggle" propias de cada sección hacen
+    // cosas específicas de su vista (reabrir un modal, refrescar el
+    // Planificador...) que no encajan sueltas en Centro resumen — estos
+    // wrappers llaman a la función real y luego solo refrescan este panel.
+    window.toggleMyTaskRecurring = async function (id) {
+        if (typeof toggleRecurringTaskDoneToday === 'function') await toggleRecurringTaskDoneToday(id);
+        if (typeof window.v23RenderSummaryDashboard === 'function') window.v23RenderSummaryDashboard();
+    };
+    window.toggleMyTaskPlanner = async function (id) {
+        if (typeof togglePlannerItemDone === 'function') await togglePlannerItemDone(id);
+        if (typeof window.v23RenderSummaryDashboard === 'function') window.v23RenderSummaryDashboard();
+    };
+    window.toggleMyTaskProjectTask = async function (projectId, taskIndex) {
+        const project = entries.find(e => e.id === projectId);
+        if (!project || !Array.isArray(project.tasks) || !project.tasks[taskIndex]) return;
+        project.tasks[taskIndex].done = !project.tasks[taskIndex].done;
+        try { await saveData(); } catch (e) { console.error(e); }
+        if (typeof window.v23RenderSummaryDashboard === 'function') window.v23RenderSummaryDashboard();
+    };
+    window.toggleMyTaskGoalMilestone = async function (goalId, index) {
+        const goal = entries.find(e => e.id === goalId);
+        if (!goal || !Array.isArray(goal.milestones) || !goal.milestones[index]) return;
+        goal.milestones[index].done = !goal.milestones[index].done;
+        try { await saveData(); } catch (e) { console.error(e); }
+        if (typeof window.v23RenderSummaryDashboard === 'function') window.v23RenderSummaryDashboard();
+    };
+
     function dateOf(value) {
         if (!value) return null;
         const d = new Date(value);
@@ -166,6 +259,8 @@
         const stats = historicalStats();
 
         root.innerHTML = `
+            ${renderMyTasksSection()}
+
             <div class="summary-section" id="summary-week-section">
                 <div class="summary-section-head">
                     <div>

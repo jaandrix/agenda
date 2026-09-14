@@ -258,6 +258,10 @@
         let collectibles = [];
         // Planificador del día: sustituye a Apuntes. Se reinicia cada día a las 4:00 am.
         let dayPlanner = { dayKey: '', items: [] };
+        // Tareas que se repiten (diaria/semanal/mensual). "completadas" guarda,
+        // por fecha, si ya se marcó hecha ese día concreto — así una tarea
+        // recurrente no queda "hecha para siempre" al marcarla una vez.
+        let recurringTasks = [];
         let financeIncome = { current: 0, next: 0 };
         // Perfil económico: cifras reales que el usuario actualiza periódicamente.
         // history conserva una fotografía mensual para poder comparar evolución.
@@ -451,6 +455,7 @@
             { view: 'friends', text: 'Tu nombre visible', anchor: 'friends-name-section' },
             { view: 'friends', text: 'Mis amigos', anchor: 'friends-list-section' },
             { view: 'friends', text: 'Tu código de amigo', anchor: 'friends-code-section' },
+            { view: 'home', text: 'Mis tareas', anchor: 'summary-mytasks-section' },
             { view: 'home', text: 'Esta semana', anchor: 'summary-week-section' },
             { view: 'home', text: 'Actividad reciente', anchor: 'summary-activity-section' },
             { view: 'home', text: 'Estadísticas históricas', anchor: 'summary-stats-section' },
@@ -1642,6 +1647,8 @@
                 collectibles = Array.isArray(saved.collectibles) ? saved.collectibles : [];
                 dayPlanner = (saved.dayPlanner && typeof saved.dayPlanner === 'object') ? saved.dayPlanner : { dayKey: '', items: [] };
                 dayPlanner.items = Array.isArray(dayPlanner.items) ? dayPlanner.items : [];
+                recurringTasks = Array.isArray(saved.recurringTasks) ? saved.recurringTasks : [];
+                recurringTasks.forEach(t => { t.completadas = t.completadas && typeof t.completadas === 'object' ? t.completadas : {}; });
                 financeProfile.chartHistory = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
                 financeProfile.forecastProfile = financeProfile.forecastProfile || { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 };
                 blurFinances = !!saved.blurFinances;
@@ -1740,6 +1747,7 @@
                 collectibleCategories,
                 collectibles,
                 dayPlanner,
+                recurringTasks,
                 studies,
                 links,
                 linkCategories,
@@ -2274,6 +2282,8 @@
             const items = [...dayPlanner.items].sort((a, b) => String(a.time).localeCompare(String(b.time)));
             const now = new Date();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
+            const today = todayISO();
+            const dueToday = recurringTasksDueToday();
 
             return `
             <div class="planner-view">
@@ -2285,8 +2295,23 @@
                             Esta tabla se reinicia vacía automáticamente cada día a las 4:00 am.
                         </p>
                     </div>
-                    <button class="btn-modal-primary" onclick="openAddPlannerItem()">+ Evento</button>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn-secondary" onclick="openManageRecurringTasks()">Recurrentes</button>
+                        <button class="btn-modal-primary" onclick="openAddPlannerItem()">+ Evento</button>
+                    </div>
                 </div>
+
+                ${dueToday.length ? `
+                    <div class="planner-recurring-block">
+                        <div class="planner-recurring-title">Recurrentes de hoy</div>
+                        ${dueToday.map(t => `
+                            <label class="planner-recurring-row">
+                                <input type="checkbox" ${t.completadas?.[today] ? 'checked' : ''} onchange="toggleRecurringTaskDoneToday('${t.id}')">
+                                <span class="${t.completadas?.[today] ? 'done' : ''}">${escapeHtml(t.texto)}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                ` : ''}
 
                 <div class="planner-timeline">
                     ${items.length ? items.map(it => {
@@ -2294,9 +2319,9 @@
                         const itemMinutes = (h || 0) * 60 + (m || 0);
                         const isPast = itemMinutes < nowMinutes;
                         return `
-                        <div class="planner-item ${isPast ? 'planner-item-past' : ''}">
+                        <div class="planner-item ${isPast ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''}">
                             <div class="planner-item-time">${escapeHtml(it.time)}</div>
-                            <div class="planner-item-dot"></div>
+                            <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}')">
                             <div class="planner-item-body">
                                 <div class="planner-item-title">${escapeHtml(it.title)}</div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
@@ -2335,7 +2360,7 @@
 
             dayPlanner.items.push({
                 id: 'planner_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                time, title, notes
+                time, title, notes, done: false
             });
             closeModal();
             if (currentView === 'planner') render();
@@ -2347,6 +2372,138 @@
             dayPlanner.items = dayPlanner.items.filter(it => it.id !== id);
             if (currentView === 'planner') render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function togglePlannerItemDone(id) {
+            resetDayPlannerIfNeeded();
+            const item = dayPlanner.items.find(it => it.id === id);
+            if (!item) return;
+            item.done = !item.done;
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ------------------------------------------------------------
+        //  TAREAS RECURRENTES (diaria / semanal / mensual)
+        // ------------------------------------------------------------
+        const RECURRING_FREQ_LABELS = { diaria: 'Todos los días', semanal: 'Cada semana', mensual: 'Cada mes' };
+        const RECURRING_WEEKDAY_LABELS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+        function isRecurringTaskDueToday(task, dateStr = todayISO()) {
+            if (!task.activo) return false;
+            const d = new Date(dateStr + 'T12:00:00');
+            if (task.frecuencia === 'diaria') return true;
+            if (task.frecuencia === 'semanal') return d.getDay() === task.diaSemana;
+            if (task.frecuencia === 'mensual') return d.getDate() === task.diaMes;
+            return false;
+        }
+
+        function recurringTasksDueToday() {
+            const today = todayISO();
+            return recurringTasks.filter(t => isRecurringTaskDueToday(t, today));
+        }
+
+        async function toggleRecurringTaskDoneToday(id) {
+            const task = recurringTasks.find(t => t.id === id);
+            if (!task) return;
+            const today = todayISO();
+            task.completadas = task.completadas || {};
+            task.completadas[today] = !task.completadas[today];
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openManageRecurringTasks() {
+            showModal(`
+                <div class="modal-title">Tareas recurrentes</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:14px">Se repiten solas cada día/semana/mes; marcarlas hecha un día no las completa para siempre.</div>
+                <div class="modal-label">Texto</div>
+                <input id="recurring-texto" class="modal-input" placeholder="Ej: Sacar la basura">
+                <div class="modal-label">Frecuencia</div>
+                <select id="recurring-frecuencia" class="modal-input" onchange="updateRecurringFreqFields()">
+                    <option value="diaria">Todos los días</option>
+                    <option value="semanal">Cada semana</option>
+                    <option value="mensual">Cada mes</option>
+                </select>
+                <div id="recurring-freq-extra"></div>
+                <button class="btn-modal-primary" onclick="saveRecurringTask()">Añadir</button>
+                <div class="modal-label" style="margin-top:18px">Ya creadas</div>
+                <div id="recurring-tasks-list">${renderRecurringTasksManageList()}</div>
+            `);
+            updateRecurringFreqFields();
+        }
+
+        function updateRecurringFreqFields() {
+            const freq = document.getElementById('recurring-frecuencia')?.value;
+            const extra = document.getElementById('recurring-freq-extra');
+            if (!extra) return;
+            if (freq === 'semanal') {
+                extra.innerHTML = `
+                    <div class="modal-label">Día de la semana</div>
+                    <select id="recurring-dia-semana" class="modal-input">
+                        ${RECURRING_WEEKDAY_LABELS.map((label, i) => `<option value="${i}">${label}</option>`).join('')}
+                    </select>`;
+            } else if (freq === 'mensual') {
+                extra.innerHTML = `
+                    <div class="modal-label">Día del mes</div>
+                    <input id="recurring-dia-mes" type="number" min="1" max="31" class="modal-input" value="1">`;
+            } else {
+                extra.innerHTML = '';
+            }
+        }
+
+        function renderRecurringTasksManageList() {
+            if (!recurringTasks.length) return '<div style="font-size:12px;color:var(--text-secondary);padding:6px 0">Sin tareas recurrentes todavía.</div>';
+            return recurringTasks.map(t => {
+                let detalle = RECURRING_FREQ_LABELS[t.frecuencia] || '';
+                if (t.frecuencia === 'semanal') detalle = `Cada ${RECURRING_WEEKDAY_LABELS[t.diaSemana]}`;
+                if (t.frecuencia === 'mensual') detalle = `Día ${t.diaMes} de cada mes`;
+                return `
+                    <div class="friend-list-item">
+                        <span class="friend-list-name" style="${t.activo ? '' : 'opacity:.5;text-decoration:line-through'}">${escapeHtml(t.texto)} <span style="color:var(--text-secondary);font-weight:400">— ${detalle}</span></span>
+                        <span style="display:flex;gap:6px">
+                            <button class="btn-secondary" style="padding:4px 10px;font-size:11px" onclick="toggleRecurringTaskActiveState('${t.id}')">${t.activo ? 'Pausar' : 'Reactivar'}</button>
+                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteRecurringTask('${t.id}')">✕</button>
+                        </span>
+                    </div>`;
+            }).join('');
+        }
+
+        async function saveRecurringTask() {
+            const texto = document.getElementById('recurring-texto')?.value.trim();
+            const frecuencia = document.getElementById('recurring-frecuencia')?.value;
+            if (!texto) { showToast('Escribe el texto de la tarea', true); return; }
+            const task = {
+                id: 'rt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                texto, frecuencia, activo: true, completadas: {}
+            };
+            if (frecuencia === 'semanal') task.diaSemana = parseInt(document.getElementById('recurring-dia-semana')?.value) || 0;
+            if (frecuencia === 'mensual') task.diaMes = parseInt(document.getElementById('recurring-dia-mes')?.value) || 1;
+            recurringTasks.push(task);
+            document.getElementById('recurring-texto').value = '';
+            const list = document.getElementById('recurring-tasks-list');
+            if (list) list.innerHTML = renderRecurringTasksManageList();
+            if (currentView === 'planner') render();
+            try { await saveData(); showToast('Tarea recurrente añadida'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function toggleRecurringTaskActiveState(id) {
+            const t = recurringTasks.find(x => x.id === id);
+            if (!t) return;
+            t.activo = !t.activo;
+            const list = document.getElementById('recurring-tasks-list');
+            if (list) list.innerHTML = renderRecurringTasksManageList();
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteRecurringTask(id) {
+            if (!confirm('¿Eliminar esta tarea recurrente?')) return;
+            recurringTasks = recurringTasks.filter(t => t.id !== id);
+            const list = document.getElementById('recurring-tasks-list');
+            if (list) list.innerHTML = renderRecurringTasksManageList();
+            if (currentView === 'planner') render();
+            try { await saveData(); showToast('Tarea recurrente eliminada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================
@@ -3291,7 +3448,7 @@
             return {
                 entries, categories, userName, investmentData, notes, prompts, inbox,
                 financeIncome, financeProfile, plannedTrips, weeklyTasks,
-                collectibleCategories, collectibles, dayPlanner, studies, links,
+                collectibleCategories, collectibles, dayPlanner, recurringTasks, studies, links,
                 linkCategories, blurFinances, fantasyData, apuntes,
                 exportedAt: new Date().toISOString()
             };
@@ -3313,6 +3470,7 @@
             if (data.collectibleCategories) collectibleCategories = data.collectibleCategories;
             if (data.collectibles) collectibles = data.collectibles;
             if (data.dayPlanner) dayPlanner = data.dayPlanner;
+            if (data.recurringTasks) recurringTasks = Array.isArray(data.recurringTasks) ? data.recurringTasks : [];
             if (data.studies) studies = data.studies;
             if (data.links) links = data.links;
             if (data.linkCategories) linkCategories = data.linkCategories;
