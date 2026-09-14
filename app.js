@@ -6047,6 +6047,65 @@
             return best;
         }
 
+        // Créditos (ECTS) de una asignatura, si se han rellenado — se usan
+        // como peso en la nota media del expediente; las asignaturas sin
+        // créditos cuentan con peso 1, para no obligar a rellenarlos todos.
+        function subjectCreditsWeight(s) {
+            const c = Number(s.creditos);
+            return Number.isFinite(c) && c > 0 ? c : null;
+        }
+
+        function studiesExpediente() {
+            const subjects = studies.subjects || [];
+            let aprobadas = 0, suspensas = 0, pendientes = 0;
+            let sumGradeWeighted = 0, sumWeight = 0;
+            let creditosSuperados = 0, creditosTotales = 0, hasCreditos = false;
+            subjects.forEach(s => {
+                const grade = subjectFinalGrade(s);
+                const credits = subjectCreditsWeight(s);
+                if (credits !== null) {
+                    hasCreditos = true;
+                    creditosTotales += credits;
+                    if (grade !== null && grade >= 5) creditosSuperados += credits;
+                }
+                if (grade === null) { pendientes++; return; }
+                if (grade >= 5) aprobadas++; else suspensas++;
+                const w = credits !== null ? credits : 1;
+                sumGradeWeighted += grade * w;
+                sumWeight += w;
+            });
+            const media = sumWeight > 0 ? sumGradeWeighted / sumWeight : null;
+            return { total: subjects.length, aprobadas, suspensas, pendientes, media, hasCreditos, creditosSuperados, creditosTotales };
+        }
+
+        function gradeTierClass(grade) {
+            if (grade >= 9) return 'nota-matricula';
+            if (grade >= 5) return 'nota-aprobado';
+            return 'nota-suspenso';
+        }
+
+        function renderStudiesExpediente() {
+            const ex = studiesExpediente();
+            if (!ex.total) return '';
+            return `
+                <section class="studies-section" id="studies-expediente-section">
+                    <h3>Expediente</h3>
+                    <div class="studies-expediente-grid">
+                        <div class="card bone-surface" style="margin:0">
+                            <div class="label" style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Nota media${ex.hasCreditos ? ' (ponderada por créditos)' : ''}</div>
+                            <div class="value" style="font-size:28px;font-weight:800;color:var(--bone-text);margin-top:4px">${ex.media !== null ? `<span class="nota-final ${gradeTierClass(ex.media)}" style="font-size:28px;padding:0">${ex.media.toFixed(2)}</span>` : '—'}</div>
+                        </div>
+                        <div class="card bone-surface" style="margin:0">
+                            <div class="label" style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Asignaturas</div>
+                            <div style="font-size:13px;color:var(--bone-text);margin-top:6px">
+                                <strong style="color:#16a34a">${ex.aprobadas}</strong> aprobadas · <strong style="color:#dc2626">${ex.suspensas}</strong> suspensas · <strong>${ex.pendientes}</strong> pendientes
+                            </div>
+                            ${ex.hasCreditos ? `<div style="font-size:11px;color:var(--bone-muted);margin-top:6px">${ex.creditosSuperados} / ${ex.creditosTotales} créditos superados</div>` : ''}
+                        </div>
+                    </div>
+                </section>`;
+        }
+
         function renderStudies() {
             const nextExam = nextUpcomingExam();
             return `
@@ -6065,6 +6124,8 @@
                     <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')} — ${escapeHtml(nextExam.subjectName)}</div>
                     <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
                 </div>` : ''}
+
+                ${renderStudiesExpediente()}
 
                 <section class="studies-section" id="studies-schedule-section">
                     <h3>Horario semanal</h3>
@@ -6309,7 +6370,7 @@
             return `
                 <div class="studies-subject-card">
                     <a href="javascript:void(0)" class="studies-subject-link" onclick="openSubjectDetail('${s.id}')">${escapeHtml(s.name)}</a>
-                    ${finalGrade !== null ? `<div class="studies-subject-avg">Nota final: ${finalGrade.toFixed(2)}</div>` : ''}
+                    ${finalGrade !== null ? `<div class="studies-subject-avg">Nota final: <span class="nota-final ${gradeTierClass(finalGrade)}" style="font-size:15px;padding:1px 8px">${finalGrade.toFixed(2)}</span></div>` : ''}
                     <div class="studies-subject-block">
                         <div class="studies-subject-block-head">Trabajos</div>
                         ${(s.assignments || []).length ? s.assignments.map(renderSubjectCardLine).join('') : '<div class="studies-subject-block-empty">Sin trabajos todavía.</div>'}
@@ -6334,6 +6395,8 @@
                 <input id="subject-name" class="modal-input" placeholder="Ej: Cálculo I">
                 <div class="modal-label">Color</div>
                 <input id="subject-color" class="modal-input" type="color" value="#5b8def" style="height:40px;padding:4px">
+                <div class="modal-label">Créditos ECTS (opcional)</div>
+                <input id="subject-creditos" class="modal-input" type="number" min="0" step="0.5" placeholder="Ej: 6">
                 <button class="btn-modal-primary" onclick="saveNewSubject()">Añadir asignatura</button>
             `);
             setTimeout(() => document.getElementById('subject-name')?.focus(), 50);
@@ -6343,7 +6406,9 @@
             const name = document.getElementById('subject-name')?.value.trim();
             if (!name) { showToast('Indica un nombre para la asignatura', true); return; }
             const color = document.getElementById('subject-color')?.value || '#5b8def';
-            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, exams: [], assignments: [] });
+            const creditosRaw = document.getElementById('subject-creditos')?.value;
+            const creditos = creditosRaw !== '' && creditosRaw != null ? Math.max(0, parseFloat(creditosRaw) || 0) : null;
+            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, creditos, exams: [], assignments: [] });
             closeModal();
             render();
             try { await saveData(); showToast('Asignatura añadida'); }
@@ -6360,6 +6425,13 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+        async function updateSubjectCredits(id, value) {
+            const s = findSubject(id);
+            if (!s) return;
+            s.creditos = value !== '' && value != null ? Math.max(0, parseFloat(value) || 0) : null;
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
         function openSubjectDetail(id) {
             const s = findSubject(id);
             if (!s) return;
@@ -6369,6 +6441,8 @@
         function renderSubjectDetailModal(s) {
             return `
                 <div class="modal-title">${escapeHtml(s.name)}</div>
+                <div class="modal-label">Créditos ECTS (opcional, para el expediente)</div>
+                <input class="modal-input" type="number" min="0" step="0.5" value="${s.creditos ?? ''}" placeholder="Ej: 6" onchange="updateSubjectCredits('${s.id}',this.value)">
                 <div class="studies-modal-block">
                     <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">Exámenes <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','exams')">+</button></div>
                     ${(s.exams || []).length ? s.exams.map((ex, i) => renderSubjectItemRow(s.id, 'exams', ex, i)).join('') : '<div class="finance-empty-line">Sin exámenes todavía.</div>'}

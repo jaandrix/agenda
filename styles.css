@@ -3985,6 +3985,8 @@ body.beige {
 .studies-section { margin-bottom: 22px; }
 .studies-section h3 { margin: 0 0 4px; font-size: 17px; }
 .studies-subjects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
+.studies-expediente-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:12px; max-width:640px; }
+@media (max-width:620px) { .studies-expediente-grid { grid-template-columns:1fr; } }
 .studies-subject-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:16px; transition:border-color .15s ease; }
 .studies-subject-card:hover { border-color:var(--border-strong); }
 .studies-subject-link { display:inline-block; font-weight:700; font-size:15px; color:#3b82f6; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
