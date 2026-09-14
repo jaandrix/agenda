@@ -3455,6 +3455,40 @@
                         gastoClausula: 0
                     }, nuevaTx));
                     added++;
+                } else if (tipo === 'CLAUSULA' && p.length >= 5) {
+                    // Subida manual de cláusula: a diferencia de COMPRA/VENTA/
+                    // TRASPASO, el importe no viene dado — se calcula igual que
+                    // en la calculadora manual (openSquadClauseCalculator): la
+                    // mitad de la subida respecto al último valor conocido del
+                    // jugador en la plantilla de ese usuario.
+                    const usuario = p[2];
+                    const jugador = p[3];
+                    const nuevo = parseFloat(p[4].replace(/[^\d.-]/g, ''));
+                    if (isNaN(nuevo)) { errors++; return; }
+                    const squadEntry = getUserSquad(usuario).find(s => s.jugador === jugador);
+                    if (!squadEntry) { errors++; return; }
+                    const anterior = squadEntry.valorActual;
+                    const incremento = Math.max(0, (nuevo - anterior) / 2);
+                    const gastoTotal = squadEntry.gasto + incremento;
+                    if (incremento > 0) {
+                        const nuevaTx = { jugador, precio: incremento, fecha: p[1], comprador: usuario, vendedor: 'LALIGA' };
+                        if (!isDuplicate(nuevaTx)) {
+                            fantasyData.transacciones.push(Object.assign({
+                                id: 'tx_clausula_' + Date.now() + '_' + i,
+                                tipo: 'clausula',
+                                gastoClausula: 0
+                            }, nuevaTx));
+                            added++;
+                        } else { duplicates++; }
+                    }
+                    if (squadEntry.source === 'tx') {
+                        const tx = fantasyData.transacciones.find(t => t.id === squadEntry.refId);
+                        if (tx) { tx.clausulaValorActual = nuevo; tx.clausulaGasto = gastoTotal; }
+                    } else {
+                        const u = fantasyData.usuarios.find(x => x.nombre === usuario);
+                        const pj = u?.equipoInicial.find(x => x.id === squadEntry.refId);
+                        if (pj) { pj.valorActual = nuevo; pj.gasto = gastoTotal; }
+                    }
                 } else if (tipo === 'PREMIO' && p.length >= 5) {
                     const precio = parseFloat(p[4].replace(/[^\d.-]/g, ''));
                     if (isNaN(precio)) { errors++; return; }
@@ -9501,7 +9535,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                     <div class="fantasy-chart-container" style="margin-bottom:16px">
                         <div class="fantasy-section-title">Actualizar por texto (pegar traducción de capturas)</div>
-                        <textarea id="fantasy-text-import" class="modal-input" rows="1" placeholder="Pega aquí el texto (COMPRA / VENTA / TRASPASO / PREMIO / NUEVO)..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+                        <textarea id="fantasy-text-import" class="modal-input" rows="1" placeholder="Pega aquí el texto (COMPRA / VENTA / TRASPASO / CLAUSULA / PREMIO / NUEVO)..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
                         <button class="btn-secondary fantasy-btn-accent" style="margin:0;padding:7px 14px;font-size:12px;width:auto;border-radius:14px" onclick="processFantasyTextImport()">Procesar texto</button>
                         <div style="font-size:10px;color:var(--fx-text-secondary);margin-top:6px">Las líneas de tipo "shielded" (protección de jugador) se ignoran automáticamente: no tienen efecto económico.</div>
                         <div id="fantasy-import-summary" style="font-size:12px;margin-top:8px"></div>
