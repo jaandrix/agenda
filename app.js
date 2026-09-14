@@ -9880,6 +9880,11 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             return null;
         }
 
+        // Guarda el resultado de la última búsqueda para que el botón "Ver
+        // histórico completo" pueda abrir el popup sin volver a consultar
+        // la API (y para poder marcar en la tabla el día encontrado).
+        let _lastClauseSearchContext = null;
+
         async function buscarClausulaEnHistorico(nombre, jugador) {
             const btn = document.getElementById('squad-clause-buscar-btn');
             const status = document.getElementById('squad-clause-buscar-status');
@@ -9892,6 +9897,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             }
             if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
             if (status) status.textContent = '';
+            _lastClauseSearchContext = null;
             try {
                 const catalog = await getLaligaCatalog();
                 const player = laligaFindPlayerByName(catalog, jugador);
@@ -9901,8 +9907,10 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 }
                 const history = await getLaligaHistory(player.id);
                 const found = laligaFindClauseBaseline(history, nuevo);
+                _lastClauseSearchContext = { jugador: player.nickname || jugador, history, clauseActual: nuevo, found };
+                const verBtn = `<button class="clause-history-link" onclick="showLaligaHistoryPopup()">Ver histórico completo</button>`;
                 if (!found) {
-                    if (status) status.textContent = 'No se ha encontrado ningún día del histórico que coincida con esa cláusula.';
+                    if (status) status.innerHTML = `No se ha encontrado ningún día del histórico que coincida con esa cláusula. ${verBtn}`;
                     return;
                 }
                 if (anteriorInput) {
@@ -9911,7 +9919,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 }
                 if (status) {
                     const fechaBonita = new Date(found.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-                    status.innerHTML = `Encontrado: el <strong>${fechaBonita}</strong> valía <strong>${found.valor.toLocaleString('es-ES')}€</strong> — revisa y confirma.`;
+                    status.innerHTML = `Encontrado: el <strong>${fechaBonita}</strong> valía <strong>${found.valor.toLocaleString('es-ES')}€</strong> — revisa y confirma. ${verBtn}`;
                 }
             } catch (e) {
                 console.error('Error buscando cláusula en el histórico de LaLiga:', e);
@@ -9919,6 +9927,42 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             } finally {
                 if (btn) { btn.disabled = false; btn.textContent = 'Buscar en histórico real'; }
             }
+        }
+
+        // Popup real (como el de "Ver en IMDb") con la tabla completa de
+        // cotización diaria que ha usado la búsqueda automática, marcando
+        // el día que coincidió — para poder comprobarlo a simple vista.
+        function showLaligaHistoryPopup() {
+            const ctx = _lastClauseSearchContext;
+            if (!ctx) return;
+            const w = 480, h = 640;
+            const left = Math.round((screen.width - w) / 2), top = Math.round((screen.height - h) / 2);
+            const win = window.open('', '_blank', `noopener,width=${w},height=${h},left=${left},top=${top}`);
+            if (!win) return;
+            const rows = [...ctx.history]
+                .sort((a, b) => b.date.localeCompare(a.date))
+                .map(p => {
+                    const isMatch = ctx.found && p.date.slice(0, 10) === ctx.found.fecha;
+                    const fecha = new Date(p.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                    return `<tr class="${isMatch ? 'match' : ''}"><td>${fecha}${isMatch ? ' <span class="tag">coincidencia</span>' : ''}</td><td>${p.marketValue.toLocaleString('es-ES')}€</td></tr>`;
+                }).join('');
+            win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Histórico — ${escapeHtml(ctx.jugador)}</title>
+                <style>
+                    body{font-family:-apple-system,system-ui,sans-serif;background:#111318;color:#e5e7eb;margin:0;padding:18px}
+                    h1{font-size:16px;margin:0 0 4px;color:#fff}
+                    .sub{font-size:12px;color:#9ca3af;margin-bottom:16px}
+                    table{width:100%;border-collapse:collapse;font-size:13px}
+                    th{text-align:left;padding:6px 8px;color:#9ca3af;font-weight:600;border-bottom:1px solid #2a2d36}
+                    td{padding:6px 8px;border-bottom:1px solid #1e2028}
+                    tr.match td{background:rgba(59,130,246,0.18);font-weight:700;color:#93c5fd}
+                    .tag{font-size:10px;font-weight:700;color:#93c5fd;background:rgba(59,130,246,0.25);padding:1px 6px;border-radius:8px;margin-left:6px}
+                </style></head>
+                <body>
+                    <h1>${escapeHtml(ctx.jugador)}</h1>
+                    <div class="sub">Cláusula introducida: ${ctx.clauseActual.toLocaleString('es-ES')}€${ctx.found ? ` · coincidencia el ${new Date(ctx.found.fecha + 'T12:00:00').toLocaleDateString('es-ES')}` : ' · sin coincidencia automática'}</div>
+                    <table><thead><tr><th>Fecha</th><th>Valor de mercado</th></tr></thead><tbody>${rows}</tbody></table>
+                </body></html>`);
+            win.document.close();
         }
 
         function openSquadClauseCalculator(nombre, jugador, source, refId) {

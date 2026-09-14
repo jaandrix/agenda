@@ -2300,6 +2300,17 @@
             border-color: #dc2626 !important;
             color: #dc2626 !important;
         }
+        .clause-history-link {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-left: 4px;
+            color: var(--fantasy-accent, #8B5CF6);
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: underline;
+            cursor: pointer;
+        }
 
         .fantasy-users-grid {
             display: grid;
