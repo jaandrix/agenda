@@ -488,6 +488,10 @@
             event: ['evento', 'eventos']
         };
         const ENTRY_TYPE_LABEL_PLURAL = { book: 'Libros', movie: 'Películas', series: 'Series', event: 'Eventos' };
+        const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', deporte: 'Deporte', otro: 'Otro' };
+        let eventsTypeFilter = 'all';
+        let eventsSearchQuery = '';
+        let eventsShowPast = false;
         let entryMonthFilter = null;
 
         function stripAccents(s) {
@@ -6391,54 +6395,121 @@
             const { items: events, banner } = applyMonthFilterTo('event', allEvents);
             if (!events.length) return banner + `<div class="empty-state"><div class="empty-title">Sin eventos ese mes</div></div>`;
 
-            const sorted = [...events].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             const next = entryMonthFilter && entryMonthFilter.type === 'event' ? null : nextUpcomingEvent(events);
-
-            const groups = [];
-            const byKey = {};
-            sorted.forEach(e => {
-                const key = (e.date || '').slice(0, 7) || 'sin-fecha';
-                if (!byKey[key]) { byKey[key] = { key, items: [] }; groups.push(byKey[key]); }
-                byKey[key].items.push(e);
-            });
-            const monthLabel = key => {
-                if (key === 'sin-fecha') return 'Sin fecha';
-                const [y, m] = key.split('-').map(Number);
-                return new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-            };
 
             let html = `<div style="max-width:980px">` + banner;
 
             if (next) {
                 const nextCat = categories.find(c => c.id === next.categoryId);
                 const nextColor = nextCat?.color || '#3b82f6';
+                const nextType = EVENT_TYPE_LABELS[next.eventType] || '';
                 html += `
                     <div class="event-hero" style="border-color:${nextColor}66" onclick="openEntryDetail('${next.id}')">
                         <div class="event-hero-kicker" style="color:${nextColor}">Próximo evento · ${eventCountdownLabel(next.date)}</div>
                         <div class="event-hero-title">${escapeHtml(next.title)}</div>
-                        <div class="event-hero-meta">${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
+                        <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ' · ' : ''}${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
                     </div>`;
             }
 
-            groups.forEach(g => {
-                html += `<div class="events-month-label">${escapeHtml(monthLabel(g.key))}</div><div class="events-month-grid">`;
-                g.items.forEach(e => {
-                    const cat = categories.find(c => c.id === e.categoryId);
-                    const color = cat?.color || 'var(--text-secondary)';
-                    const dateShort = e.date ? `${e.date.slice(8,10)}/${e.date.slice(5,7)}` : '';
-                    html += `
-                        <div class="event-card" style="border-color:${color}" onclick="openEntryDetail('${e.id}')">
-                            <div class="event-card-top">
-                                <span class="event-card-date">${dateShort}${e.time ? ' · ' + escapeHtml(e.time) : ''}</span>
-                            </div>
-                            <div class="event-card-title">${escapeHtml(e.title)}</div>
-                            <div class="event-card-place">${escapeHtml(e.place || 'Sin lugar')}</div>
-                        </div>`;
-                });
-                html += `</div>`;
-            });
-            html += `</div>`;
+            html += `
+                <div class="events-toolbar">
+                    <input type="text" id="events-search-input" class="modal-input" style="margin:0;max-width:260px" placeholder="Buscar por título o lugar..." value="${escapeHtml(eventsSearchQuery)}" oninput="setEventsSearchQuery(this.value)">
+                    <div class="events-type-chips">
+                        <button class="events-type-chip ${eventsTypeFilter === 'all' ? 'active' : ''}" onclick="setEventsTypeFilter('all')">Todos</button>
+                        ${Object.keys(EVENT_TYPE_LABELS).map(t => `
+                            <button class="events-type-chip ${eventsTypeFilter === t ? 'active' : ''}" onclick="setEventsTypeFilter('${t}')">${EVENT_TYPE_LABELS[t]}</button>
+                        `).join('')}
+                    </div>
+                </div>
+                <div id="events-list-content">${renderEventsListContent(events)}</div>
+            </div>`;
             return html;
+        }
+
+        // Recalcula solo la lista (próximos/pasados) filtrada por tipo y
+        // búsqueda, sin volver a pintar el buscador — así el campo de texto
+        // no pierde el foco ni el cursor mientras escribes.
+        function renderEventsListContent(events) {
+            const q = stripAccents(eventsSearchQuery.toLowerCase().trim());
+            let filtered = events;
+            if (eventsTypeFilter !== 'all') filtered = filtered.filter(e => e.eventType === eventsTypeFilter);
+            if (q) {
+                filtered = filtered.filter(e =>
+                    stripAccents((e.title || '').toLowerCase()).includes(q) ||
+                    stripAccents((e.place || '').toLowerCase()).includes(q)
+                );
+            }
+
+            const today = todayISO();
+            const upcoming = filtered.filter(e => e.date && e.date >= today)
+                .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+            const past = filtered.filter(e => !e.date || e.date < today)
+                .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            const hayFiltro = eventsTypeFilter !== 'all' || !!q;
+            let html = `<div class="events-section-label">Próximos${upcoming.length ? ` (${upcoming.length})` : ''}</div>`;
+            html += upcoming.length
+                ? `<div class="events-month-grid">${upcoming.map(e => renderEventCard(e, true)).join('')}</div>`
+                : `<div class="events-empty-note">Sin eventos próximos${hayFiltro ? ' con este filtro.' : '.'}</div>`;
+
+            if (past.length) {
+                html += `<button class="events-past-toggle" onclick="toggleEventsShowPast()">${eventsShowPast ? 'Ocultar pasados' : `Mostrar pasados (${past.length})`}</button>`;
+                if (eventsShowPast) {
+                    const groups = [];
+                    const byKey = {};
+                    past.forEach(e => {
+                        const key = (e.date || '').slice(0, 7) || 'sin-fecha';
+                        if (!byKey[key]) { byKey[key] = { key, items: [] }; groups.push(byKey[key]); }
+                        byKey[key].items.push(e);
+                    });
+                    const monthLabel = key => {
+                        if (key === 'sin-fecha') return 'Sin fecha';
+                        const [y, m] = key.split('-').map(Number);
+                        return new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                    };
+                    groups.forEach(g => {
+                        html += `<div class="events-month-label">${escapeHtml(monthLabel(g.key))}</div><div class="events-month-grid">${g.items.map(e => renderEventCard(e, false)).join('')}</div>`;
+                    });
+                }
+            }
+            return html;
+        }
+
+        function renderEventCard(e, isUpcoming) {
+            const cat = categories.find(c => c.id === e.categoryId);
+            const color = cat?.color || 'var(--text-secondary)';
+            const dateShort = e.date ? `${e.date.slice(8, 10)}/${e.date.slice(5, 7)}` : '';
+            const typeLabel = EVENT_TYPE_LABELS[e.eventType] || '';
+            return `
+                <div class="event-card ${isUpcoming ? '' : 'event-card-past'}" style="border-color:${color}" onclick="openEntryDetail('${e.id}')">
+                    <div class="event-card-top">
+                        <span class="event-card-date">${dateShort}${e.time ? ' · ' + escapeHtml(e.time) : ''}</span>
+                        ${isUpcoming ? `<span class="event-card-countdown">${eventCountdownLabel(e.date)}</span>` : ''}
+                    </div>
+                    <div class="event-card-title">${escapeHtml(e.title)}</div>
+                    <div class="event-card-meta-row">
+                        ${typeLabel ? `<span class="event-card-type">${escapeHtml(typeLabel)}</span>` : ''}
+                        <span class="event-card-place">${escapeHtml(e.place || 'Sin lugar')}</span>
+                    </div>
+                </div>`;
+        }
+
+        function setEventsSearchQuery(value) {
+            eventsSearchQuery = value;
+            const allEvents = entries.filter(e => e.type === 'event');
+            const { items: events } = applyMonthFilterTo('event', allEvents);
+            const container = document.getElementById('events-list-content');
+            if (container) container.innerHTML = renderEventsListContent(events);
+        }
+
+        function setEventsTypeFilter(type) {
+            eventsTypeFilter = type;
+            render();
+        }
+
+        function toggleEventsShowPast() {
+            eventsShowPast = !eventsShowPast;
+            render();
         }
 
         // ============================================================
