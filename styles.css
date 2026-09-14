@@ -3057,8 +3057,6 @@
         .work-card-logros { font-size:12px; color:var(--text-secondary); margin-top:6px; padding-top:6px; border-top:1px solid var(--border-color); }
         .work-card-logros strong { color:var(--text-primary); }
 
-        .work-salary-chart-wrap { border:1px solid var(--border-color); border-radius:12px; background:var(--surface-2); padding:14px; height:220px; }
-
         .work-docs-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border-color); }
         .work-docs-section .doc-item { margin-bottom:8px; }
 

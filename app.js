@@ -3723,7 +3723,7 @@
             else if (currentView === 'culture') content.innerHTML = renderCulture();
             else if (currentView === 'travels') { content.innerHTML = renderTravels();
                 if (window._openTripId && tripManagerTab === 'documentos') loadTripDocuments(window._openTripId); }
-            else if (currentView === 'work') { content.innerHTML = renderWork(); renderWorkSalaryChart(); }
+            else if (currentView === 'work') content.innerHTML = renderWork();
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
@@ -5898,14 +5898,16 @@
             const endYear = new Date(maxDate).getFullYear();
             const years = [];
             for (let y = startYear; y <= endYear; y++) years.push(y);
-            const totalDays = span / 86400000;
-            const pxWidth = Math.max(680, Math.round(totalDays * 0.65));
             const pctFor = t => ((t - minDate) / span) * 100;
 
+            // Siempre ocupa el ancho disponible de la tarjeta (sin scroll
+            // horizontal): las barras se dimensionan como porcentaje de ESE
+            // ancho, así que un trabajo corto en una carrera larga sale más
+            // fino, pero todo el mapa entra siempre en el espacio visible.
             return `
                 <div class="work-timeline-wrap">
                     <div class="work-timeline-scroll">
-                        <div class="work-timeline" style="width:${pxWidth}px;height:${totalHeight + 26}px">
+                        <div class="work-timeline" style="height:${totalHeight + 26}px">
                             ${years.map(y => {
                                 const yStart = new Date(y, 0, 1).getTime();
                                 if (yStart < minDate) return '';
@@ -5925,66 +5927,6 @@
                         </div>
                     </div>
                 </div>`;
-        }
-
-        let workSalaryChartInstance = null;
-
-        // Muestra el salario de cada trabajo en el orden en que ocurrieron,
-        // como una línea escalonada: cada tramo horizontal es un trabajo,
-        // el escalón siguiente es el cambio de salario al empezar el siguiente.
-        function renderWorkSalaryChart() {
-            setTimeout(() => {
-                const canvas = document.getElementById('work-salary-chart');
-                if (!canvas) return;
-                if (workSalaryChartInstance) { workSalaryChartInstance.destroy(); workSalaryChartInstance = null; }
-
-                const withSalary = entries
-                    .filter(e => e.type === 'work' && e.salary)
-                    .sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
-                if (!withSalary.length) return;
-
-                const cs = getComputedStyle(document.body);
-                const textColor = cs.getPropertyValue('--text-secondary').trim() || '#6b7280';
-                const gridColor = cs.getPropertyValue('--border-color').trim() || 'rgba(255,255,255,0.08)';
-
-                const labels = withSalary.map(w => `${w.startDate || ''}\n${w.company || w.title}`);
-                const data = withSalary.map(w => w.salary);
-
-                const ctx = canvas.getContext('2d');
-                workSalaryChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels,
-                        datasets: [{
-                            label: 'Salario (€/mes)',
-                            data,
-                            stepped: 'before',
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59,130,246,0.15)',
-                            fill: true,
-                            pointBackgroundColor: '#3b82f6',
-                            pointRadius: 4,
-                            tension: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: ctx => `${ctx.formattedValue}€/mes`
-                                }
-                            }
-                        },
-                        scales: {
-                            x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false }, border: { display: false } },
-                            y: { ticks: { color: textColor, font: { size: 11 }, callback: v => v + '€' }, grid: { color: gridColor, drawTicks: false }, border: { display: false }, beginAtZero: true }
-                        }
-                    }
-                });
-            }, 50);
         }
 
         function renderWork() {
@@ -6043,11 +5985,6 @@
                     <div class="events-section-label">Trayectoria</div>
                     ${renderWorkTimeline(sorted, todayStr)}
                 </div>
-                ${sorted.some(w => w.salary) ? `
-                <div class="work-timeline-section">
-                    <div class="events-section-label">Evolución salarial</div>
-                    <div class="work-salary-chart-wrap"><canvas id="work-salary-chart"></canvas></div>
-                </div>` : ''}
                 <div style="max-width:980px">`;
             sorted.forEach(w => {
                 const cat = categories.find(c => c.id === w.categoryId);
@@ -9039,7 +8976,11 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     sortBy: { column: 'created_at', order: 'desc' }
                 });
                 if (error) throw error;
-                documents = data || [];
+                // La carpeta "backups" aparece en este listado como una entrada
+                // más (id null, sin metadata) porque hay archivos dentro de
+                // documents/<usuario>/backups/ — se excluye porque esos backups
+                // ya tienen su propia sección y no son un documento subido.
+                documents = (data || []).filter(d => d.name !== 'backups' && d.id !== null);
                 if (listEl) renderDocList();
             } catch (e) {
                 console.error('Error cargando documentos:', e);
