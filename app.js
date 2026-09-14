@@ -966,7 +966,12 @@
             if (item.kind === 'create') {
                 openNewEntry(item.type);
                 if (prefillDate) {
-                    document.querySelectorAll('#modal-container input[type="date"]').forEach(inp => { if (!inp.value) inp.value = prefillDate; });
+                    // Los campos de fecha ya traen "hoy" como valor por
+                    // defecto (no vacío), así que hay que sobrescribirlos
+                    // siempre aquí, no solo cuando estén vacíos — si no, la
+                    // fecha del día concreto en el que se pulsó "Añadir"
+                    // nunca llegaba a aplicarse.
+                    document.querySelectorAll('#modal-container input[type="date"]').forEach(inp => { inp.value = prefillDate; });
                 }
                 focusFirstModalField();
             } else if (item.kind === 'entry' || item.kind === 'note' || item.kind === 'subject' || item.kind === 'document' || item.kind === 'link' || item.kind === 'friend') {
@@ -4015,6 +4020,7 @@
         window._dayPrefillDate = null;
         function openNewEntryForDay(date) {
             window._dayPrefillDate = date;
+            closeModal();
             openCommandPalette('create');
         }
 
