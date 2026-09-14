@@ -2775,6 +2775,23 @@
                 }
                 if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(' · '));
                 if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
+            }else if(entry.type==='work'){
+                if(entry.company)fields+=detailField('Empresa',escapeHtml(entry.company));
+                if(entry.position)fields+=detailField('Cargo',escapeHtml(entry.position));
+                const modalidadLabel=WORK_MODALIDAD_LABELS[entry.modalidad]||'';
+                if(modalidadLabel)fields+=detailField('Modalidad',modalidadLabel);
+                fields+=detailField('Fechas',escapeHtml((entry.startDate||'')+(entry.endDate?' → '+entry.endDate:' → Actual')));
+                if(entry.schedule)fields+=detailField('Horario',escapeHtml(entry.schedule));
+                if(entry.salary)fields+=detailField('Salario',entry.salary+'€/mes');
+                if(entry.logros)fields+=detailField('Logros / aprendizajes',linkifyText(entry.logros));
+                if(entry.endDate&&entry.motivoSalida)fields+=detailField('Motivo de salida',escapeHtml(entry.motivoSalida));
+                if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
+                fields+=`<div class="entry-detail-field work-docs-section" style="grid-column:1/-1">
+                    <div class="entry-detail-label">Documentos (contratos, nóminas...)</div>
+                    <button class="btn-secondary" style="width:auto;margin-bottom:10px" onclick="document.getElementById('work-doc-input-${entry.id}').click()">+ Subir documento</button>
+                    <input type="file" id="work-doc-input-${entry.id}" accept="application/pdf" style="display:none" onchange="handleWorkDocUpload(event,'${entry.id}')">
+                    <div id="work-doc-list-${entry.id}">Cargando documentos...</div>
+                </div>`;
             }else{
                 fields+=detailField('Fecha',escapeHtml(entry.date||entry.startDate||'')); fields+=detailField('Estado',escapeHtml(entry.status||''));
                 fields+=detailField('Lugar',escapeHtml(entry.place||entry.destination||'')); fields+=detailField('Notas',entry.notes?linkifyText(entry.notes):'');
@@ -2794,7 +2811,7 @@
                 : '';
             return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div><div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}</div></div></div>`;
         }
-        function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);}
+        function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);if(entry.type==='work')loadWorkDocuments(entry.id);}
         async function toggleProjectTask(projectId,taskIndex){
             const project=entries.find(e=>e.id===projectId); if(!project||!Array.isArray(project.tasks)||!project.tasks[taskIndex])return;
             project.tasks[taskIndex].done=!project.tasks[taskIndex].done;
@@ -2995,6 +3012,8 @@
                     <input type="number" id="modal-salary" class="modal-input" value="${isEdit ? entry.salary || '' : ''}" step="0.01" placeholder="0.00">
                     <div class="modal-label">Logros / lo que aprendiste (opcional)</div>
                     <textarea id="modal-logros" class="modal-input" rows="2" placeholder="Ej: Lideré la migración del almacén al nuevo sistema...">${isEdit ? entry.logros || '' : ''}</textarea>
+                    <div class="modal-label">Motivo de salida (opcional)</div>
+                    <input id="modal-motivo-salida" class="modal-input" value="${isEdit ? entry.motivoSalida || '' : ''}" placeholder="Ej: Fin de contrato, cambio voluntario...">
                     <div class="modal-label">Notas</div>
                     <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
@@ -3271,6 +3290,7 @@
                 entry.cotizedDays = cotizedDaysRaw === '' || cotizedDaysRaw == null ? null : Math.max(0, parseInt(cotizedDaysRaw, 10) || 0);
                 entry.salary = parseFloat(document.getElementById('modal-salary')?.value) || null;
                 entry.logros = document.getElementById('modal-logros')?.value?.trim() || '';
+                entry.motivoSalida = document.getElementById('modal-motivo-salida')?.value?.trim() || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 entry.status = entry.endDate ? 'Completado' : 'Trabajo actual';
             } else if (type === 'project') {
@@ -3703,7 +3723,7 @@
             else if (currentView === 'culture') content.innerHTML = renderCulture();
             else if (currentView === 'travels') { content.innerHTML = renderTravels();
                 if (window._openTripId && tripManagerTab === 'documentos') loadTripDocuments(window._openTripId); }
-            else if (currentView === 'work') content.innerHTML = renderWork();
+            else if (currentView === 'work') { content.innerHTML = renderWork(); renderWorkSalaryChart(); }
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
@@ -5668,6 +5688,84 @@
             }
         }
 
+        // ---- Documentos de trabajo (contratos, nóminas...), mismo patrón que los de viaje ----
+        let workDocumentsCache = {};
+        function renderWorkDocList(workId, docs) {
+            if (!docs.length) return '<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube el primero con el botón de arriba</div></div>';
+            return docs.map(doc => {
+                const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
+                const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
+                return `<div class="doc-item">
+                    <div class="doc-info"><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name)}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
+                    <div class="doc-actions">
+                        <button class="doc-action-download" onclick="downloadWorkDocument('${workId}','${escapeHtml(doc.name)}')">Descargar</button>
+                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteWorkDocument('${workId}','${escapeHtml(doc.name)}')">✕</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        async function loadWorkDocuments(workId) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const { data, error } = await sb.storage.from('documents').list(`${user.id}/work/${workId}`, { sortBy: { column: 'created_at', order: 'desc' } });
+                if (error) throw error;
+                workDocumentsCache[workId] = data || [];
+                const el = document.getElementById('work-doc-list-' + workId);
+                if (el) el.innerHTML = renderWorkDocList(workId, workDocumentsCache[workId]);
+            } catch (e) {
+                console.error('Error cargando documentos del trabajo:', e);
+                const el = document.getElementById('work-doc-list-' + workId);
+                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-title">No se pudieron cargar los documentos</div></div>';
+            }
+        }
+        async function handleWorkDocUpload(event, workId) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            if (file.type !== 'application/pdf') { showToast('Solo se admiten archivos PDF', true); return; }
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/work/${workId}/${Date.now()}_${file.name}`;
+                const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false });
+                if (error) throw error;
+                showToast('Documento subido');
+                await loadWorkDocuments(workId);
+            } catch (e) {
+                console.error('Error subiendo documento del trabajo:', e);
+                showToast('Error al subir: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+        async function downloadWorkDocument(workId, name) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/work/${workId}/${name}`;
+                const { data, error } = await sb.storage.from('documents').createSignedUrl(path, 60);
+                if (error) throw error;
+                window.open(data.signedUrl, '_blank');
+            } catch (e) {
+                console.error('Error descargando documento del trabajo:', e);
+                showToast('Error al descargar: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+        async function deleteWorkDocument(workId, name) {
+            if (!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/work/${workId}/${name}`;
+                const { error } = await sb.storage.from('documents').remove([path]);
+                if (error) throw error;
+                showToast('Documento eliminado');
+                await loadWorkDocuments(workId);
+            } catch (e) {
+                console.error('Error eliminando documento del trabajo:', e);
+                showToast('Error al eliminar: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
         // ---- Listas (varias, con nombre propio: qué llevar, qué hacer...) ----
         function renderTripListsTab(t) {
             return `
@@ -5829,6 +5927,66 @@
                 </div>`;
         }
 
+        let workSalaryChartInstance = null;
+
+        // Muestra el salario de cada trabajo en el orden en que ocurrieron,
+        // como una línea escalonada: cada tramo horizontal es un trabajo,
+        // el escalón siguiente es el cambio de salario al empezar el siguiente.
+        function renderWorkSalaryChart() {
+            setTimeout(() => {
+                const canvas = document.getElementById('work-salary-chart');
+                if (!canvas) return;
+                if (workSalaryChartInstance) { workSalaryChartInstance.destroy(); workSalaryChartInstance = null; }
+
+                const withSalary = entries
+                    .filter(e => e.type === 'work' && e.salary)
+                    .sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+                if (!withSalary.length) return;
+
+                const cs = getComputedStyle(document.body);
+                const textColor = cs.getPropertyValue('--text-secondary').trim() || '#6b7280';
+                const gridColor = cs.getPropertyValue('--border-color').trim() || 'rgba(255,255,255,0.08)';
+
+                const labels = withSalary.map(w => `${w.startDate || ''}\n${w.company || w.title}`);
+                const data = withSalary.map(w => w.salary);
+
+                const ctx = canvas.getContext('2d');
+                workSalaryChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Salario (€/mes)',
+                            data,
+                            stepped: 'before',
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59,130,246,0.15)',
+                            fill: true,
+                            pointBackgroundColor: '#3b82f6',
+                            pointRadius: 4,
+                            tension: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => `${ctx.formattedValue}€/mes`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false }, border: { display: false } },
+                            y: { ticks: { color: textColor, font: { size: 11 }, callback: v => v + '€' }, grid: { color: gridColor, drawTicks: false }, border: { display: false }, beginAtZero: true }
+                        }
+                    }
+                });
+            }, 50);
+        }
+
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
@@ -5885,6 +6043,11 @@
                     <div class="events-section-label">Trayectoria</div>
                     ${renderWorkTimeline(sorted, todayStr)}
                 </div>
+                ${sorted.some(w => w.salary) ? `
+                <div class="work-timeline-section">
+                    <div class="events-section-label">Evolución salarial</div>
+                    <div class="work-salary-chart-wrap"><canvas id="work-salary-chart"></canvas></div>
+                </div>` : ''}
                 <div style="max-width:980px">`;
             sorted.forEach(w => {
                 const cat = categories.find(c => c.id === w.categoryId);
@@ -5922,6 +6085,7 @@
                         ${w.salary ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.salary}€/mes</div>` : ''}
                         ${w.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(w.notes)}</div>` : ''}
                         ${w.logros ? `<div class="work-card-logros"><strong>Logros:</strong> ${linkifyText(w.logros)}</div>` : ''}
+                        ${(!isActive && w.motivoSalida) ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px"><strong style="color:var(--text-primary)">Motivo de salida:</strong> ${escapeHtml(w.motivoSalida)}</div>` : ''}
                     </div>`;
             });
             html += `</div>`;
