@@ -2965,6 +2965,13 @@
                     <input id="modal-company" class="modal-input" value="${isEdit ? entry.company || '' : ''}" placeholder="Ej: Empresa X">
                     <div class="modal-label">Cargo</div>
                     <input id="modal-position" class="modal-input" value="${isEdit ? entry.position || '' : ''}" placeholder="Ej: Operario logístico">
+                    <div class="modal-label">Modalidad</div>
+                    <select id="modal-modalidad" class="modal-input">
+                        <option value="" ${isEdit && entry.modalidad ? '' : 'selected'}>Sin especificar</option>
+                        <option value="presencial" ${isEdit && entry.modalidad === 'presencial' ? 'selected' : ''}>Presencial</option>
+                        <option value="hibrido" ${isEdit && entry.modalidad === 'hibrido' ? 'selected' : ''}>Híbrido</option>
+                        <option value="remoto" ${isEdit && entry.modalidad === 'remoto' ? 'selected' : ''}>Remoto</option>
+                    </select>
                     <div class="modal-row">
                         <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
                         <div><div class="modal-label">Fecha fin</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
@@ -2986,6 +2993,8 @@
                     </div>
                     <div class="modal-label">Salario (€/mes, opcional)</div>
                     <input type="number" id="modal-salary" class="modal-input" value="${isEdit ? entry.salary || '' : ''}" step="0.01" placeholder="0.00">
+                    <div class="modal-label">Logros / lo que aprendiste (opcional)</div>
+                    <textarea id="modal-logros" class="modal-input" rows="2" placeholder="Ej: Lideré la migración del almacén al nuevo sistema...">${isEdit ? entry.logros || '' : ''}</textarea>
                     <div class="modal-label">Notas</div>
                     <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
                 `;
@@ -3250,6 +3259,7 @@
             } else if (type === 'work') {
                 entry.company = document.getElementById('modal-company')?.value?.trim() || '';
                 entry.position = document.getElementById('modal-position')?.value?.trim() || '';
+                entry.modalidad = document.getElementById('modal-modalidad')?.value || '';
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.endDate = document.getElementById('modal-end')?.value || '';
                 entry.startTime = document.getElementById('modal-start-time')?.value || '';
@@ -3260,6 +3270,7 @@
                 const cotizedDaysRaw = document.getElementById('modal-cotized-days')?.value;
                 entry.cotizedDays = cotizedDaysRaw === '' || cotizedDaysRaw == null ? null : Math.max(0, parseInt(cotizedDaysRaw, 10) || 0);
                 entry.salary = parseFloat(document.getElementById('modal-salary')?.value) || null;
+                entry.logros = document.getElementById('modal-logros')?.value?.trim() || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 entry.status = entry.endDate ? 'Completado' : 'Trabajo actual';
             } else if (type === 'project') {
@@ -5756,6 +5767,68 @@
             return Number.isFinite(manual) && manual >= 0 ? 'Vida laboral' : 'Estimación';
         }
 
+        const WORK_MODALIDAD_LABELS = { presencial: 'Presencial', hibrido: 'Híbrido', remoto: 'Remoto' };
+
+        // Mapa cronológico: una barra horizontal por trabajo, posicionada y
+        // dimensionada según sus fechas dentro de toda la vida laboral. Si
+        // dos trabajos se solapan en el tiempo (compaginados), se colocan en
+        // filas distintas en vez de superponerse.
+        function renderWorkTimeline(work, todayStr) {
+            if (!work.length) return '';
+            const dateVal = d => new Date(d + 'T12:00:00').getTime();
+            const todayVal = dateVal(todayStr);
+            const spans = work.map(w => ({
+                w,
+                s: dateVal(w.startDate || todayStr),
+                e: dateVal((!w.endDate || w.endDate >= todayStr) ? todayStr : w.endDate)
+            }));
+            const minDate = Math.min(...spans.map(x => x.s));
+            const maxDate = Math.max(...spans.map(x => x.e), todayVal);
+            const span = Math.max(1, maxDate - minDate);
+
+            const sortedByStart = [...spans].sort((a, b) => a.s - b.s);
+            const rowEnds = [];
+            const placed = sortedByStart.map(({ w, s, e }) => {
+                let row = rowEnds.findIndex(end => s >= end);
+                if (row === -1) { row = rowEnds.length; rowEnds.push(e); } else { rowEnds[row] = e; }
+                return { w, s, e, row };
+            });
+
+            const ROW_PX = 38;
+            const totalHeight = rowEnds.length * ROW_PX;
+            const startYear = new Date(minDate).getFullYear();
+            const endYear = new Date(maxDate).getFullYear();
+            const years = [];
+            for (let y = startYear; y <= endYear; y++) years.push(y);
+            const totalDays = span / 86400000;
+            const pxWidth = Math.max(680, Math.round(totalDays * 0.65));
+            const pctFor = t => ((t - minDate) / span) * 100;
+
+            return `
+                <div class="work-timeline-wrap">
+                    <div class="work-timeline-scroll">
+                        <div class="work-timeline" style="width:${pxWidth}px;height:${totalHeight + 26}px">
+                            ${years.map(y => {
+                                const yStart = new Date(y, 0, 1).getTime();
+                                if (yStart < minDate) return '';
+                                return `<div class="work-timeline-year-line" style="left:${pctFor(yStart)}%"><span>${y}</span></div>`;
+                            }).join('')}
+                            ${placed.map(({ w, s, e, row }) => {
+                                const cat = categories.find(c => c.id === w.categoryId);
+                                const color = cat?.color || '#3b82f6';
+                                const left = pctFor(s);
+                                const width = Math.max(0.5, pctFor(e) - pctFor(s));
+                                const label = w.company || w.title || 'Trabajo';
+                                return `
+                                    <div class="work-timeline-bar" style="left:${left}%;width:${width}%;top:${row * ROW_PX + 22}px;background:${color}" onclick="openEntryDetail('${w.id}')" title="${escapeHtml(label)}${w.position ? ' · ' + escapeHtml(w.position) : ''}">
+                                        <span>${escapeHtml(label)}</span>
+                                    </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>`;
+        }
+
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
@@ -5808,6 +5881,10 @@
                         <div style="font-size:10px;color:var(--bone-muted);margin-top:6px;opacity:.82">Estimados automáticamente y corregibles desde «Editar → Vida laboral»</div>
                     </div>
                 </div>
+                <div class="work-timeline-section">
+                    <div class="events-section-label">Trayectoria</div>
+                    ${renderWorkTimeline(sorted, todayStr)}
+                </div>
                 <div style="max-width:980px">`;
             sorted.forEach(w => {
                 const cat = categories.find(c => c.id === w.categoryId);
@@ -5820,25 +5897,31 @@
                     ? manualDaysHere
                     : calculatedDaysHere;
                 const statusClass = isActive ? 'badge-progress' : 'badge-done';
-                const statusLabel = isActive ? `Trabajando en ${w.title}` : (w.status || 'Finalizado');
+                const statusLabel = isActive ? 'Actual' : (w.status || 'Finalizado');
                 const scheduleText = (w.startTime || w.endTime) ? `${w.startTime || '--'} - ${w.endTime || '--'}` : (w
                     .schedule || '');
+                const heading = w.company || w.title;
+                const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
+                const modalidadLabel = WORK_MODALIDAD_LABELS[w.modalidad] || '';
                 html += `
-                    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail(\'${w.id}\')">
-                        <div style="display:flex;justify-content:space-between;align-items:center">
-                            <span style="font-weight:700;font-size:16px;color:var(--text-primary)">${w.title}</span>
-                            <span style="font-size:12px;color:var(--text-secondary)">${w.position || ''}</span>
-                        </div>
-                        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
-                            <span style="font-size:12px;color:var(--text-secondary)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
+                    <div class="card work-card" style="margin-bottom:12px;cursor:pointer;border-left:3px solid ${color}" onclick="openEntryDetail(\'${w.id}\')">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                            <div>
+                                <div style="font-weight:700;font-size:16px;color:var(--text-primary)">${escapeHtml(heading)}</div>
+                                ${subheading ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:1px">${escapeHtml(subheading)}</div>` : ''}
+                            </div>
                             <span class="badge ${statusClass}">${statusLabel}</span>
+                        </div>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+                            <span style="font-size:12px;color:var(--text-secondary)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
                             <span style="font-size:12px;color:var(--text-secondary)">${daysHere} días</span>
                             <span style="font-size:11px;color:var(--text-secondary)">${getCotizationDays(w, todayStr)} días cotizados · ${getCotizationSource(w)}</span>
+                            ${modalidadLabel ? `<span style="font-size:11px;color:var(--text-secondary)">${modalidadLabel}</span>` : ''}
                         </div>
                         ${scheduleText ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${scheduleText}</div>` : ''}
                         ${w.salary ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.salary}€/mes</div>` : ''}
                         ${w.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(w.notes)}</div>` : ''}
-                        <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                        ${w.logros ? `<div class="work-card-logros"><strong>Logros:</strong> ${linkifyText(w.logros)}</div>` : ''}
                     </div>`;
             });
             html += `</div>`;
