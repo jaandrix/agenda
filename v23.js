@@ -166,7 +166,7 @@
         const stats = historicalStats();
 
         root.innerHTML = `
-            <div class="summary-section">
+            <div class="summary-section" id="summary-week-section">
                 <div class="summary-section-head">
                     <div>
                         <div class="summary-section-title">Esta semana</div>
@@ -192,7 +192,7 @@
                 `}
             </div>
 
-            <div class="summary-section">
+            <div class="summary-section" id="summary-activity-section">
                 <div class="summary-section-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
                     <div>
                         <div class="summary-section-title">Actividad reciente</div>
@@ -221,7 +221,7 @@
                 `}
             </div>
 
-            <div class="summary-section">
+            <div class="summary-section" id="summary-stats-section">
                 <div class="summary-section-head">
                     <div>
                         <div class="summary-section-title">Estadísticas históricas</div>
@@ -244,7 +244,7 @@
                 </div>
             </div>
 
-            <div class="summary-section">
+            <div class="summary-section" id="summary-backup-section">
                 <div class="summary-backup-row">
                     <div>
                         <div class="summary-section-title">Copia de seguridad</div>

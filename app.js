@@ -443,6 +443,18 @@
             { view: 'calendar', text: 'Vista Día', setter: 'setCalView', value: 'day' },
             { view: 'calendar', text: 'Vista Semana', setter: 'setCalView', value: 'week' },
             { view: 'calendar', text: 'Vista Mes', setter: 'setCalView', value: 'month' },
+            { view: 'settings', text: 'Datos de la cuenta (exportar/importar)', anchor: 'settings-account-section' },
+            { view: 'settings', text: 'Apariencia', anchor: 'settings-appearance-section' },
+            { view: 'settings', text: 'Modo desarrollador', anchor: 'settings-advanced-section' },
+            { view: 'settings', text: 'Prompts guardados', anchor: 'settings-prompts-section' },
+            { view: 'settings', text: 'Cerrar sesión en todos los dispositivos', anchor: 'settings-danger-section' },
+            { view: 'friends', text: 'Tu nombre visible', anchor: 'friends-name-section' },
+            { view: 'friends', text: 'Mis amigos', anchor: 'friends-list-section' },
+            { view: 'friends', text: 'Tu código de amigo', anchor: 'friends-code-section' },
+            { view: 'home', text: 'Esta semana', anchor: 'summary-week-section' },
+            { view: 'home', text: 'Actividad reciente', anchor: 'summary-activity-section' },
+            { view: 'home', text: 'Estadísticas históricas', anchor: 'summary-stats-section' },
+            { view: 'home', text: 'Copia de seguridad', anchor: 'summary-backup-section' },
         ];
 
         const CREATE_PALETTE_ITEMS = [
@@ -891,8 +903,13 @@
                 // Fantasy es un apartado oculto (requiere Modo Desarrollador):
                 // nunca aparece en la lista inicial, solo si se escribe algo
                 // que coincida con su nombre y el modo esté activo.
-                const hiddenMatches = (q && devModeActive && 'fantasy'.includes(q))
-                    ? [{ kind: 'fantasy', text: 'Fantasy' }] : [];
+                const hiddenMatches = [
+                    ...((q && devModeActive && 'fantasy'.includes(q)) ? [{ kind: 'fantasy', text: 'Fantasy' }] : []),
+                    // Vault no depende del Modo Desarrollador (su botón ya
+                    // está siempre visible en el menú), así que aquí basta
+                    // con que coincida el texto escrito.
+                    ...((q && 'vault'.includes(q)) ? [{ kind: 'vault', text: 'Vault' }] : []),
+                ];
                 // "peliculas septiembre" (o cualquier combinación tipo+mes)
                 // lleva directamente a esa sección filtrada por mes.
                 const monthQuery = q ? parseMonthQuery(q) : null;
@@ -988,6 +1005,8 @@
                 switchView('travels');
             } else if (item.kind === 'fantasy') {
                 openFantasy();
+            } else if (item.kind === 'vault') {
+                openVault();
             } else if (item.kind === 'month-filter') {
                 applyEntryMonthFilter(item.type, item.month, item.monthLabel);
             } else if (item.kind === 'day-nav') {
@@ -1441,7 +1460,7 @@
             return `
                 <div class="settings-layout">
                 <div class="settings-col-main">
-                    <div class="chart-container" style="margin-bottom:16px">
+                    <div class="chart-container" style="margin-bottom:16px" id="friends-name-section">
                         <div class="chart-title">Tu nombre visible</div>
                         <div style="font-size:11px;color:var(--text-secondary);margin:8px 0 14px">Es el nombre con el que te ven tus amigos dentro de Bitácora. No tiene por qué coincidir con el nombre de tu cuenta, y no puede repetirse con el de otra persona.</div>
                         <div class="friend-add-row">
@@ -1467,7 +1486,7 @@
                     </div>
                     ` : ''}
 
-                    <div class="chart-container">
+                    <div class="chart-container" id="friends-list-section">
                         <div class="chart-title">Mis amigos</div>
                         <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Introduce el código que te ha compartido tu amigo. Le llegará como solicitud y tendrá que aceptarla.</div>
                         <div class="friend-add-row">
@@ -1490,7 +1509,7 @@
                 </div>
 
                 <div class="settings-col-side">
-                    <div class="chart-container">
+                    <div class="chart-container" id="friends-code-section">
                         <div class="chart-title">Tu código de amigo</div>
                         <div style="font-size:11px;color:var(--text-secondary);margin:8px 0 14px">Genera tu código de amigo permanente y compártelo para conectar tu cuenta con la de otra persona.</div>
                         ${userFriendCode ? `
@@ -6105,12 +6124,6 @@
             const contentHeight = buckets.length * SCHEDULE_ROW_PX;
             const totalHeight = contentHeight + SCHEDULE_ADD_ROW_PX;
 
-            const nowHM = new Date();
-            const nowBucket = nowHM.getHours() * 2 + (nowHM.getMinutes() >= 30 ? 1 : 0);
-            const minutesIntoBucket = nowHM.getMinutes() % 30;
-            const showNowLine = STUDIES_SCHEDULE_DISPLAY_DAYS.some(d => d.key === todayScheduleKey()) && bucketRow.has(nowBucket);
-            const nowTop = showNowLine ? (bucketRow.get(nowBucket) + minutesIntoBucket / 30) * SCHEDULE_ROW_PX : 0;
-
             return `
                 <div class="studies-schedule-grid" id="studies-schedule-grid">
                     <div class="studies-schedule-headrow">
@@ -6124,7 +6137,6 @@
                         <div class="studies-schedule-days">
                             ${buckets.map((bk, i) => `<div class="studies-hour-line" style="top:${i * SCHEDULE_ROW_PX}px"></div>`).join('')}
                             ${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => renderScheduleDayColumn(d, bucketRow, contentHeight)).join('')}
-                            ${showNowLine ? `<div class="studies-now-line" style="top:${nowTop}px"><span class="studies-now-dot"></span></div>` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -6533,7 +6545,7 @@
 
             return `
                 <div style="max-width:600px">
-                    <div class="chart-container" style="margin-bottom:16px">
+                    <div class="chart-container" style="margin-bottom:16px" id="settings-account-section">
                         <div class="chart-title">Datos de la cuenta</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                             <button class="btn-secondary" style="width:auto" onclick="exportData()">📤 Exportar datos</button>
@@ -6547,7 +6559,7 @@
                         <div style="min-height:20px"></div>
                     </div>
 
-                    <div class="chart-container" style="margin-bottom:16px">
+                    <div class="chart-container" style="margin-bottom:16px" id="settings-appearance-section">
                         <div class="chart-title">Apariencia</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                             <button class="btn-secondary" style="width:auto" onclick="toggleTheme()">Cambiar tema</button>
@@ -6555,7 +6567,7 @@
                         </div>
                     </div>
 
-                    <div class="chart-container" style="margin-bottom:16px">
+                    <div class="chart-container" style="margin-bottom:16px" id="settings-advanced-section">
                         <div class="chart-title">Avanzado</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                             <button class="btn-secondary" style="width:auto;color:${devColor}" onclick="toggleDeveloperMode()">⚙ Modo desarrollador: ${devStatus}</button>
@@ -6563,7 +6575,7 @@
                         <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Activa el modo desarrollador para acceder a funciones ocultas (ej. Fantasy).</div>
                     </div>
 
-                    <div class="chart-container" style="margin-bottom:16px">
+                    <div class="chart-container" style="margin-bottom:16px" id="settings-prompts-section">
                         <div class="chart-title">Prompts guardados</div>
                         <div style="display:flex;gap:8px;margin:12px 0">
                             <button class="btn-secondary" style="width:auto" onclick="openNewPrompt()">✎ Nuevo prompt</button>
@@ -6578,7 +6590,7 @@
                         </div>
                     </div>
 
-                    <div class="chart-container">
+                    <div class="chart-container" id="settings-danger-section">
                         <div class="chart-title" style="color:#dc2626">Zona de riesgo</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                             <button class="btn-secondary" style="width:auto;color:#dc2626" onclick="handleLogoutAllDevices()">⏻ Cerrar sesión en todos los dispositivos</button>
