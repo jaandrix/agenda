@@ -4244,10 +4244,10 @@
                         ${anio}
                         <button class="cal-nav-arrow" onclick="cambiarYearCal(1)">›</button>
                         <button class="year-cal-compare-btn ${yearCalCompareMode ? 'active' : ''}" onclick="toggleYearCalCompare()" title="Comparar trabajado/viaje">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="6.5"/><circle cx="15" cy="12" r="6.5"/></svg>
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="6.5"/><circle cx="15" cy="12" r="6.5"/></svg>
                         </button>
                         <button class="year-cal-compare-btn year-cal-effort-btn ${yearCalEffortMode ? 'active' : ''}" onclick="toggleYearCalEffort()" title="Esfuerzo diario">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18v-5"/><path d="M12 18V9"/><path d="M19 18V6"/></svg>
                         </button>
                     </span>
                     <button class="modal-close" onclick="closeModal()">✕</button>
