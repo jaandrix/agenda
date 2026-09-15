@@ -5039,7 +5039,7 @@
             const monthLabel = key => {
                 if (key === 'sin-fecha') return 'sin fecha';
                 const [y, mo] = key.split('-').map(Number);
-                return new Date(y, mo - 1, 1).toLocaleDateString('es-ES', { month: 'long' });
+                return new Date(y, mo - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
             };
 
             let html = banner + `<div style="max-width:980px">${renderMoviesImportBox()}</div><div>`;
