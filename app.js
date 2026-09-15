@@ -5090,18 +5090,45 @@
                 try {
                     const rows = parseCsv(String(e.target.result));
                     if (rows.length < 2) { showToast('El CSV está vacío o no se ha podido leer', true); return; }
-                    const header = rows[0].map(h => h.trim());
+
+                    // Letterboxd exporta dos formatos muy distintos con la
+                    // misma extensión .csv:
+                    //  - diary.csv / watched.csv: una sola cabecera en la
+                    //    primera línea (Date, Name, Rating, Watched Date...).
+                    //  - la exportación de una LISTA propia: empieza con una
+                    //    línea de título ("Letterboxd list export v7"),
+                    //    luego una cabecera+fila con los metadatos de la
+                    //    lista (nombre, fecha de creación...), y solo DESPUÉS
+                    //    la cabecera real de las películas de la lista
+                    //    (Position, Name, Year, URL...). Si se coge la
+                    //    primera línea como cabecera aquí, se importa basura.
+                    // Se detecta buscando la cabecera de items (contiene
+                    // "Position" y "Name" a la vez) en vez de asumir que
+                    // siempre está en la primera fila.
+                    const isListExport = /letterboxd list export/i.test(rows[0][0] || '');
+                    let headerRowIndex = 0;
+                    let listName = '';
+                    if (isListExport) {
+                        const metaHeaderIdx = rows.findIndex(r => r.includes('Name') && r.includes('Date'));
+                        if (metaHeaderIdx !== -1 && rows[metaHeaderIdx + 1]) {
+                            listName = (rows[metaHeaderIdx + 1][rows[metaHeaderIdx].indexOf('Name')] || '').trim();
+                        }
+                        const itemsHeaderIdx = rows.findIndex(r => r.includes('Position') && r.includes('Name'));
+                        if (itemsHeaderIdx !== -1) headerRowIndex = itemsHeaderIdx;
+                    }
+
+                    const header = rows[headerRowIndex].map(h => h.trim());
                     const idx = name => header.indexOf(name);
                     const iName = idx('Name');
                     const iYear = idx('Year');
                     const iDate = idx('Date');
                     const iWatchedDate = idx('Watched Date');
                     const iRating = idx('Rating');
-                    const iUri = idx('Letterboxd URI');
-                    if (iName === -1) { showToast('Este archivo no parece un CSV de Letterboxd (falta la columna "Name")', true); return; }
+                    const iUri = idx('Letterboxd URI') !== -1 ? idx('Letterboxd URI') : idx('URL');
+                    if (iName === -1) { showToast('Este archivo no parece un CSV de Letterboxd reconocible (falta la columna "Name")', true); return; }
 
                     let added = 0, duplicates = 0, errors = 0;
-                    for (let r = 1; r < rows.length; r++) {
+                    for (let r = headerRowIndex + 1; r < rows.length; r++) {
                         const row = rows[r];
                         const title = (row[iName] || '').trim();
                         if (!title) { errors++; continue; }
@@ -5124,7 +5151,7 @@
                             title,
                             date,
                             rating,
-                            notes: [year ? `Año: ${year}` : '', uri].filter(Boolean).join(' · ')
+                            notes: [listName ? `Lista Letterboxd: ${listName}` : '', year ? `Año: ${year}` : '', uri].filter(Boolean).join(' · ')
                         });
                         added++;
                     }
