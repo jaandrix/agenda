@@ -1649,6 +1649,7 @@
                 dayPlanner.items = Array.isArray(dayPlanner.items) ? dayPlanner.items : [];
                 recurringTasks = Array.isArray(saved.recurringTasks) ? saved.recurringTasks : [];
                 recurringTasks.forEach(t => { t.completadas = t.completadas && typeof t.completadas === 'object' ? t.completadas : {}; });
+                dailyEffort = (saved.dailyEffort && typeof saved.dailyEffort === 'object') ? saved.dailyEffort : {};
                 financeProfile.chartHistory = Array.isArray(financeProfile.chartHistory) ? financeProfile.chartHistory : [];
                 financeProfile.forecastProfile = financeProfile.forecastProfile || { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 };
                 blurFinances = !!saved.blurFinances;
@@ -1748,6 +1749,7 @@
                 collectibles,
                 dayPlanner,
                 recurringTasks,
+                dailyEffort,
                 studies,
                 links,
                 linkCategories,
@@ -3479,7 +3481,7 @@
             return {
                 entries, categories, userName, investmentData, notes, prompts, inbox,
                 financeIncome, financeProfile, plannedTrips, weeklyTasks,
-                collectibleCategories, collectibles, dayPlanner, recurringTasks, studies, links,
+                collectibleCategories, collectibles, dayPlanner, recurringTasks, dailyEffort, studies, links,
                 linkCategories, blurFinances, fantasyData, apuntes,
                 exportedAt: new Date().toISOString()
             };
@@ -3502,6 +3504,7 @@
             if (data.collectibles) collectibles = data.collectibles;
             if (data.dayPlanner) dayPlanner = data.dayPlanner;
             if (data.recurringTasks) recurringTasks = Array.isArray(data.recurringTasks) ? data.recurringTasks : [];
+            if (data.dailyEffort) dailyEffort = (typeof data.dailyEffort === 'object') ? data.dailyEffort : {};
             if (data.studies) studies = data.studies;
             if (data.links) links = data.links;
             if (data.linkCategories) linkCategories = data.linkCategories;
@@ -3834,10 +3837,17 @@
         //  VISTA ANUAL (calendario de puntos, un punto por día)
         // ============================================================
         let yearCalCompareMode = false;
+        // Puntuación de esfuerzo (1-5) por día: cuánto te esforzaste ese día
+        // en cumplir tus objetivos. Es la forma de "categorizar" cada día
+        // desde este mismo calendario — se puntúa haciendo clic en su
+        // casilla mientras la vista de esfuerzo está activa.
+        let dailyEffort = {};
+        let yearCalEffortMode = false;
 
         function abrirCalendarioAnual() {
             yearCalYear = new Date().getFullYear();
             yearCalCompareMode = false;
+            yearCalEffortMode = false;
             showModal(renderCalendarioAnual());
         }
 
@@ -3872,6 +3882,7 @@
         // .year-dot (color de fondo/borde) anima de verdad entre una vista y
         // otra en vez de saltar de golpe.
         function toggleYearCalCompare() {
+            if (yearCalEffortMode) { yearCalEffortMode = false; yearCalCompareMode = true; refrescarCalendarioAnual(); return; }
             yearCalCompareMode = !yearCalCompareMode;
             document.querySelectorAll('.year-cal-grid-wrap .year-dot[title]').forEach(dot => {
                 dot.classList.remove('year-dot-worked', 'year-dot-travel', 'year-dot-worked-travel');
@@ -3887,7 +3898,23 @@
             if (legend) legend.innerHTML = renderYearCalLegendHtml();
         }
 
+        // A diferencia del modo comparar, este cambia también la FORMA de las
+        // casillas (círculo → cuadrado) y añade clics para puntuar, así que
+        // se regenera el modal entero en vez de solo cambiar clases in situ.
+        function toggleYearCalEffort() {
+            yearCalEffortMode = !yearCalEffortMode;
+            if (yearCalEffortMode) yearCalCompareMode = false;
+            refrescarCalendarioAnual();
+        }
+
         function renderYearCalLegendHtml() {
+            if (yearCalEffortMode) {
+                return `
+                    <div class="year-cal-legend-item"><span class="year-dot year-dot-square year-dot-effort-none year-cal-legend-dot"></span> Sin puntuar</div>
+                    ${[1, 2, 3, 4, 5].map(n => `<div class="year-cal-legend-item"><span class="year-dot year-dot-square year-dot-effort-${n} year-cal-legend-dot"></span> ${n}</div>`).join('')}
+                    <div class="year-cal-legend-item"><span class="year-dot year-dot-square year-dot-future year-cal-legend-dot"></span> Día futuro</div>
+                `;
+            }
             return `
                 ${yearCalCompareMode ? `
                     <div class="year-cal-legend-item"><span class="year-dot year-dot-worked year-cal-legend-dot"></span> Día trabajado</div>
@@ -3899,6 +3926,28 @@
                 `}
                 <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot" style="box-shadow:${ANILLO_HOY}"></span> Hoy</div>
             `;
+        }
+
+        // Puntuar el esfuerzo de un día concreto (1-5) — la forma de
+        // "categorizar" cada día desde este calendario. Los días futuros no
+        // se pueden puntuar (el propio onclick no se añade para ellos).
+        function openDailyEffortPicker(dateStr) {
+            const current = dailyEffort[dateStr] || 0;
+            const fecha = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+            showModal(`
+                <div class="modal-title">Esfuerzo — ${escapeHtml(fecha)}</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">¿Cuánto te esforzaste ese día en cumplir tus objetivos?</div>
+                <div class="effort-picker-row">
+                    ${[1, 2, 3, 4, 5].map(n => `<button class="effort-picker-btn year-dot-effort-${n} ${current === n ? 'active' : ''}" onclick="setDailyEffort('${dateStr}',${n})">${n}</button>`).join('')}
+                </div>
+                ${current ? `<button class="btn-secondary" style="width:auto;margin-top:14px" onclick="setDailyEffort('${dateStr}',0)">Quitar puntuación</button>` : ''}
+            `);
+        }
+
+        async function setDailyEffort(dateStr, value) {
+            if (value > 0) dailyEffort[dateStr] = value; else delete dailyEffort[dateStr];
+            showModal(renderCalendarioAnual());
+            try { await saveData(); } catch (e) { console.error('Error guardando el esfuerzo diario:', e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // Punto 2 del rediseño: día trabajado = dentro del rango de un
@@ -3938,12 +3987,20 @@
                     const esHoy = dateStr === hoy;
                     const esFuturo = dateStr > hoy;
                     let cls = 'year-dot' + (esFuturo ? ' year-dot-future' : '');
-                    if (yearCalCompareMode) {
+                    let onclickAttr = '';
+                    if (yearCalEffortMode) {
+                        cls += ' year-dot-square';
+                        if (!esFuturo) {
+                            const score = dailyEffort[dateStr] || 0;
+                            cls += score > 0 ? ' year-dot-effort-' + score : ' year-dot-effort-none';
+                            onclickAttr = ` onclick="openDailyEffortPicker('${dateStr}')"`;
+                        }
+                    } else if (yearCalCompareMode) {
                         const compareCls = claseCompareDot(esDiaTrabajado(dateStr), esDiaDeViaje(dateStr));
                         if (compareCls) cls += ' ' + compareCls;
                     }
                     const estiloExtra = esHoy ? ` style="box-shadow:${ANILLO_HOY}"` : '';
-                    celdas += `<div class="year-cal-cell"><span class="${cls}" title="${dateStr}"${estiloExtra}></span></div>`;
+                    celdas += `<div class="year-cal-cell"><span class="${cls}" title="${dateStr}"${estiloExtra}${onclickAttr}></span></div>`;
                 }
                 filas += `<div class="year-cal-row"><div class="year-cal-month-label">${nombreMes}</div><div class="year-cal-days">${celdas}</div></div>`;
             }
@@ -3955,8 +4012,11 @@
                         <button class="cal-nav-arrow" onclick="cambiarYearCal(-1)">‹</button>
                         ${anio}
                         <button class="cal-nav-arrow" onclick="cambiarYearCal(1)">›</button>
-                        <button class="year-cal-compare-btn ${yearCalCompareMode ? 'active' : ''}" onclick="toggleYearCalCompare()" title="Cambiar vista">
+                        <button class="year-cal-compare-btn ${yearCalCompareMode ? 'active' : ''}" onclick="toggleYearCalCompare()" title="Comparar trabajado/viaje">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="6.5"/><circle cx="15" cy="12" r="6.5"/></svg>
+                        </button>
+                        <button class="year-cal-compare-btn ${yearCalEffortMode ? 'active' : ''}" onclick="toggleYearCalEffort()" title="Esfuerzo diario">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
                         </button>
                     </span>
                     <button class="modal-close" onclick="closeModal()">✕</button>

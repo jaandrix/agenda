@@ -2047,6 +2047,32 @@
         .year-dot.year-dot-worked { background: #ef4444; border-color: #ef4444; }
         .year-dot.year-dot-travel { background: #3b82f6; border-color: #3b82f6; }
         .year-dot.year-dot-worked-travel { background: #a855f7; border-color: #a855f7; }
+
+        /* Vista de esfuerzo: cuadraditos estilo GitHub, azul más intenso
+           cuanto más te esforzaste ese día (1-5). "none" = día ya pasado
+           pero sin puntuar todavía; los días futuros siguen huecos. */
+        .year-dot.year-dot-square { border-radius: 2.5px; }
+        .year-dot.year-dot-square:not(.year-dot-future) { cursor: pointer; }
+        .year-dot.year-dot-square.year-dot-effort-none { background: var(--border); border-color: var(--border); }
+        .year-dot.year-dot-square.year-dot-effort-1 { background: #dbeafe; border-color: #dbeafe; }
+        .year-dot.year-dot-square.year-dot-effort-2 { background: #93c5fd; border-color: #93c5fd; }
+        .year-dot.year-dot-square.year-dot-effort-3 { background: #60a5fa; border-color: #60a5fa; }
+        .year-dot.year-dot-square.year-dot-effort-4 { background: #3b82f6; border-color: #3b82f6; }
+        .year-dot.year-dot-square.year-dot-effort-5 { background: #1e40af; border-color: #1e40af; }
+
+        .effort-picker-row { display: flex; gap: 8px; }
+        .effort-picker-btn {
+            width: 44px; height: 44px; border-radius: 10px; border: 2px solid transparent;
+            font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 800; color: #fff;
+            cursor: pointer; transition: transform .12s ease, border-color .12s ease;
+        }
+        .effort-picker-btn:hover { transform: translateY(-1px); }
+        .effort-picker-btn.active { border-color: var(--text-primary); }
+        .effort-picker-btn.year-dot-effort-1 { background: #dbeafe; color: #1e3a8a; }
+        .effort-picker-btn.year-dot-effort-2 { background: #93c5fd; color: #1e3a8a; }
+        .effort-picker-btn.year-dot-effort-3 { background: #60a5fa; }
+        .effort-picker-btn.year-dot-effort-4 { background: #3b82f6; }
+        .effort-picker-btn.year-dot-effort-5 { background: #1e40af; }
         .year-cal-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; padding: 6px 4px; font-size: 11px; color: var(--text-secondary); }
         .year-cal-legend-item { display: flex; align-items: center; gap: 8px; }
         .year-cal-legend-dot { flex-shrink: 0; }
@@ -3045,22 +3071,22 @@
         .work-total-bone .label { color:var(--bone-muted) !important; }
 
         .work-timeline-section { max-width:980px; margin-bottom:20px; }
-        .work-timeline-wrap { border:1px solid var(--border-color); border-radius:12px; background:var(--surface-2); padding:14px 0 10px; overflow:hidden; }
+        .work-timeline-wrap { border:1px solid var(--border); border-radius:12px; background:var(--bg-card); padding:14px 0 10px; overflow:hidden; }
         .work-timeline-scroll { overflow-x:auto; }
         .work-timeline { position:relative; min-width:100%; }
-        .work-timeline-year-line { position:absolute; top:0; bottom:0; border-left:1px dashed var(--border-color); }
+        .work-timeline-year-line { position:absolute; top:0; bottom:0; border-left:1px dashed var(--border); }
         .work-timeline-year-line span { position:absolute; top:-16px; left:4px; font-size:10px; color:var(--text-secondary); white-space:nowrap; }
         .work-timeline-bar { position:absolute; height:26px; border-radius:6px; display:flex; align-items:center; padding:0 8px; cursor:pointer; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,.15); }
         .work-timeline-bar span { font-size:11px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .work-timeline-bar:hover { filter:brightness(1.1); }
 
-        .work-card-logros { font-size:12px; color:var(--text-secondary); margin-top:6px; padding-top:6px; border-top:1px solid var(--border-color); }
+        .work-card-logros { font-size:12px; color:var(--text-secondary); margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
         .work-card-logros strong { color:var(--text-primary); }
 
-        .work-docs-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border-color); }
+        .work-docs-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
         .work-docs-section .doc-item { margin-bottom:8px; }
 
-        .backups-section { margin-top:28px; padding-top:18px; border-top:1px solid var(--border-color); }
+        .backups-section { margin-top:28px; padding-top:18px; border-top:1px solid var(--border); }
         .backups-section .doc-item { margin-bottom:8px; }
         .project-completed-bone { color:var(--bone-text) !important; }
         .project-completed-bone [style*="color:var(--text-primary)"],
