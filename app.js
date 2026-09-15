@@ -5010,10 +5010,20 @@
         // ============================================================
         //  RENDER: MOVIES
         // ============================================================
+        function renderMoviesImportBox() {
+            return `
+                <div class="doc-upload-box" onclick="document.getElementById('letterboxd-import-input').click()">
+                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Importar desde Letterboxd</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">Sube tu archivo diary.csv o watched.csv — Letterboxd → Settings → Import & Export → Export Your Data</div>
+                </div>
+                <input type="file" id="letterboxd-import-input" accept=".csv,text/csv" style="display:none" onchange="handleLetterboxdImport(event)">
+            `;
+        }
+
         function renderMovies() {
             const allMovies = entries.filter(e => e.type === 'movie');
             if (!allMovies.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin películas</div><div class="empty-sub">Pulsa el botón + y selecciona "Película"</div></div>`;
+                return `<div style="max-width:980px">${renderMoviesImportBox()}</div><div class="empty-state"><div class="empty-title">Sin películas</div><div class="empty-sub">Pulsa el botón + y selecciona "Película", o importa desde Letterboxd arriba</div></div>`;
             }
             const { items: movies, banner } = applyMonthFilterTo('movie', allMovies);
             if (!movies.length) return banner + `<div class="empty-state"><div class="empty-title">Sin películas ese mes</div></div>`;
@@ -5032,13 +5042,104 @@
                 return new Date(y, mo - 1, 1).toLocaleDateString('es-ES', { month: 'long' });
             };
 
-            let html = banner + `<div>`;
+            let html = banner + `<div style="max-width:980px">${renderMoviesImportBox()}</div><div>`;
             groups.forEach(g => {
                 html += `<div class="media-month-label">${escapeHtml(monthLabel(g.key))}.</div>`;
                 html += renderMediaCardGrid(g.items, m => m.date || 'Sin fecha');
             });
             html += `</div>`;
             return html;
+        }
+
+        // Parser CSV mínimo pero correcto: entiende campos entre comillas con
+        // comas dentro (habitual en títulos de película, p.ej. "Paris, Texas")
+        // y comillas escapadas como "" — un split(',') simple los rompería.
+        function parseCsv(text) {
+            const rows = [];
+            let row = [], field = '', inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (inQuotes) {
+                    if (c === '"') {
+                        if (text[i + 1] === '"') { field += '"'; i++; }
+                        else inQuotes = false;
+                    } else field += c;
+                } else if (c === '"') inQuotes = true;
+                else if (c === ',') { row.push(field); field = ''; }
+                else if (c === '\r') { /* ignorar, el salto real es \n */ }
+                else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+                else field += c;
+            }
+            if (field.length || row.length) { row.push(field); rows.push(row); }
+            return rows.filter(r => r.some(f => f !== ''));
+        }
+
+        // Importador de Letterboxd: acepta tanto diary.csv (fecha real de
+        // visionado + valoración) como watched.csv (solo título/fecha, sin
+        // valorar) — busca las columnas por nombre en la cabecera en vez de
+        // por posición fija, así vale para cualquiera de los dos archivos
+        // del export oficial de Letterboxd sin pedir dos importadores
+        // distintos. Duplicados = mismo título (sin acentos/mayúsculas) y
+        // misma fecha ya existentes, para poder reimportar sin duplicar.
+        function handleLetterboxdImport(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                try {
+                    const rows = parseCsv(String(e.target.result));
+                    if (rows.length < 2) { showToast('El CSV está vacío o no se ha podido leer', true); return; }
+                    const header = rows[0].map(h => h.trim());
+                    const idx = name => header.indexOf(name);
+                    const iName = idx('Name');
+                    const iYear = idx('Year');
+                    const iDate = idx('Date');
+                    const iWatchedDate = idx('Watched Date');
+                    const iRating = idx('Rating');
+                    const iUri = idx('Letterboxd URI');
+                    if (iName === -1) { showToast('Este archivo no parece un CSV de Letterboxd (falta la columna "Name")', true); return; }
+
+                    let added = 0, duplicates = 0, errors = 0;
+                    for (let r = 1; r < rows.length; r++) {
+                        const row = rows[r];
+                        const title = (row[iName] || '').trim();
+                        if (!title) { errors++; continue; }
+
+                        const rawDate = (iWatchedDate !== -1 && row[iWatchedDate]) ? row[iWatchedDate] : (iDate !== -1 ? row[iDate] : '');
+                        const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : '';
+                        const ratingRaw = iRating !== -1 ? parseFloat(row[iRating]) : NaN;
+                        const rating = isNaN(ratingRaw) ? 0 : Math.max(0, Math.min(5, Math.round(ratingRaw)));
+                        const year = iYear !== -1 ? (row[iYear] || '').trim() : '';
+                        const uri = iUri !== -1 ? (row[iUri] || '').trim() : '';
+
+                        const normTitle = stripAccents(title.toLowerCase());
+                        const isDup = entries.some(en => en.type === 'movie' &&
+                            stripAccents((en.title || '').toLowerCase()) === normTitle && en.date === date);
+                        if (isDup) { duplicates++; continue; }
+
+                        entries.push({
+                            id: 'movie_lb_' + Date.now() + '_' + r,
+                            type: 'movie',
+                            title,
+                            date,
+                            rating,
+                            notes: [year ? `Año: ${year}` : '', uri].filter(Boolean).join(' · ')
+                        });
+                        added++;
+                    }
+
+                    render();
+                    showToast(`Importadas ${added} película${added === 1 ? '' : 's'}` +
+                        (duplicates ? ` · ${duplicates} ya existían` : '') +
+                        (errors ? ` · ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
+                    try { await saveData(); } catch (err) { console.error('Error guardando la importación de Letterboxd:', err); showToast('No se pudo guardar en la nube', true); }
+                } catch (err) {
+                    console.error('Error importando CSV de Letterboxd:', err);
+                    showToast('Error al leer el archivo CSV', true);
+                }
+            };
+            reader.readAsText(file);
         }
 
         // ============================================================
