@@ -4891,6 +4891,12 @@
                 ${(!cultureSharedMode && cultureTab === 'movies') ? `
                 <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openLetterboxdImportModal()">Importar Letterboxd</button>
                 ` : ''}
+                ${(!cultureSharedMode && cultureTab === 'books') ? `
+                <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openGoodreadsImportModal()">Importar Goodreads</button>
+                ` : ''}
+                ${(!cultureSharedMode && cultureTab === 'series') ? `
+                <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openImdbSeriesImportModal()">Importar IMDb</button>
+                ` : ''}
                 <button class="btn-secondary culture-shared-toggle" style="width:auto" onclick="toggleCultureSharedMode()">
                     ${cultureSharedMode ? '← Mi biblioteca' : `Recomendaciones${pendientes ? ` (${pendientes})` : ''}`}
                 </button>
@@ -4977,6 +4983,95 @@
         }
         function renderMediaCardGrid(items, metaFn, badgeFn) {
             return `<div class="media-card-grid">${items.map(e => renderMediaCard(e, metaFn ? metaFn(e) : '', badgeFn ? badgeFn(e) : '')).join('')}</div>`;
+        }
+
+        function openGoodreadsImportModal() {
+            showModal(`
+                <div class="modal-title">Importar desde Goodreads</div>
+                <div class="doc-upload-box" onclick="document.getElementById('goodreads-import-input').click()">
+                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">Goodreads → My Books → Import and export → Export Library</div>
+                </div>
+                <input type="file" id="goodreads-import-input" accept=".csv,text/csv" style="display:none" onchange="handleGoodreadsImport(event)">
+            `);
+        }
+
+        // Los libros marcados "to-read" (aún no empezados) se omiten a
+        // propósito — importar la pila de pendientes como si fueran lecturas
+        // ensuciaría Ocio con libros que en realidad no has tocado todavía,
+        // igual que se evitó con la lista de Letterboxd.
+        function handleGoodreadsImport(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                try {
+                    const rows = parseCsv(String(e.target.result));
+                    if (rows.length < 2) { showToast('El CSV está vacío o no se ha podido leer', true); return; }
+                    const header = rows[0].map(h => h.trim());
+                    const idx = name => header.indexOf(name);
+                    const iTitle = idx('Title');
+                    const iAuthor = idx('Author');
+                    const iRating = idx('My Rating');
+                    const iDateRead = idx('Date Read');
+                    const iDateAdded = idx('Date Added');
+                    const iShelf = idx('Exclusive Shelf');
+                    if (iTitle === -1) { showToast('Este archivo no parece un CSV de Goodreads (falta la columna "Title")', true); return; }
+
+                    let added = 0, duplicates = 0, skippedToRead = 0, errors = 0;
+                    for (let r = 1; r < rows.length; r++) {
+                        const row = rows[r];
+                        const title = (row[iTitle] || '').trim();
+                        if (!title) { errors++; continue; }
+
+                        const shelf = iShelf !== -1 ? (row[iShelf] || '').trim() : '';
+                        if (shelf === 'to-read') { skippedToRead++; continue; }
+
+                        const dateRead = iDateRead !== -1 ? (row[iDateRead] || '').trim() : '';
+                        const dateAdded = iDateAdded !== -1 ? (row[iDateAdded] || '').trim() : '';
+                        const endDate = normalizeImportDate(dateRead);
+                        // Goodreads no guarda cuándo se EMPEZÓ un libro, solo cuándo
+                        // se añadió y cuándo se terminó — se usa la mejor fecha
+                        // disponible como fecha de inicio en vez de dejarla vacía.
+                        const startDate = endDate || normalizeImportDate(dateAdded);
+                        const status = endDate ? 'Completado' : 'Leyendo';
+                        const ratingRaw = iRating !== -1 ? parseInt(row[iRating], 10) : NaN;
+                        const rating = isNaN(ratingRaw) ? 0 : Math.max(0, Math.min(5, ratingRaw));
+                        const author = iAuthor !== -1 ? (row[iAuthor] || '').trim() : '';
+
+                        const normTitle = stripAccents(title.toLowerCase());
+                        const isDup = entries.some(en => en.type === 'book' &&
+                            stripAccents((en.title || '').toLowerCase()) === normTitle && en.startDate === startDate);
+                        if (isDup) { duplicates++; continue; }
+
+                        entries.push({
+                            id: 'book_gr_' + Date.now() + '_' + r,
+                            type: 'book',
+                            title,
+                            author,
+                            startDate,
+                            endDate,
+                            date: startDate,
+                            status,
+                            rating
+                        });
+                        added++;
+                    }
+
+                    closeModal();
+                    render();
+                    showToast(`Importados ${added} libro${added === 1 ? '' : 's'}` +
+                        (duplicates ? ` · ${duplicates} ya existían` : '') +
+                        (skippedToRead ? ` · ${skippedToRead} pendientes de leer omitidos` : '') +
+                        (errors ? ` · ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
+                    try { await saveData(); } catch (err) { console.error('Error guardando la importación de Goodreads:', err); showToast('No se pudo guardar en la nube', true); }
+                } catch (err) {
+                    console.error('Error importando CSV de Goodreads:', err);
+                    showToast('Error al leer el archivo CSV', true);
+                }
+            };
+            reader.readAsText(file);
         }
 
         function renderBooks() {
@@ -5078,6 +5173,17 @@
             return rows.filter(r => r.some(f => f !== ''));
         }
 
+        // Normaliza una fecha de un CSV externo a AAAA-MM-DD. No todos usan
+        // guiones: Goodreads, por ejemplo, exporta con barras ("2024/03/12").
+        // Devuelve cadena vacía si no reconoce el formato, en vez de intentar
+        // adivinar y arriesgarse a una fecha incorrecta.
+        function normalizeImportDate(raw) {
+            const s = (raw || '').trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+            const m = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(s);
+            return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
+        }
+
         // Importador de Letterboxd: acepta tanto diary.csv (fecha real de
         // visionado + valoración) como watched.csv (solo título/fecha, sin
         // valorar) — busca las columnas por nombre en la cabecera en vez de
@@ -5138,7 +5244,7 @@
                         if (!title) { errors++; continue; }
 
                         const rawDate = (iWatchedDate !== -1 && row[iWatchedDate]) ? row[iWatchedDate] : (iDate !== -1 ? row[iDate] : '');
-                        const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : '';
+                        const date = normalizeImportDate(rawDate);
                         const ratingRaw = iRating !== -1 ? parseFloat(row[iRating]) : NaN;
                         const rating = isNaN(ratingRaw) ? 0 : Math.max(0, Math.min(5, Math.round(ratingRaw)));
                         const year = iYear !== -1 ? (row[iYear] || '').trim() : '';
@@ -5177,6 +5283,93 @@
         // ============================================================
         //  RENDER: SERIES
         // ============================================================
+        function openImdbSeriesImportModal() {
+            showModal(`
+                <div class="modal-title">Importar desde IMDb</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Series según tus valoraciones de IMDb — de un mismo archivo de valoraciones, solo se cogen las series (se ignoran películas y episodios sueltos).</div>
+                <div class="doc-upload-box" onclick="document.getElementById('imdb-series-import-input').click()">
+                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">IMDb → Your Ratings → Export</div>
+                </div>
+                <input type="file" id="imdb-series-import-input" accept=".csv,text/csv" style="display:none" onchange="handleImdbSeriesImport(event)">
+            `);
+        }
+
+        // IMDb no tiene un export de "series" aparte: el mismo archivo de
+        // valoraciones mezcla películas, series y episodios sueltos, así que
+        // se filtra por la columna "Title Type" y solo se importan las de
+        // tipo serie (tvSeries/tvMiniSeries) — los episodios sueltos
+        // valorados aparte se ignoran para no meter un episodio como si
+        // fuera la serie entera.
+        function handleImdbSeriesImport(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                try {
+                    const rows = parseCsv(String(e.target.result));
+                    if (rows.length < 2) { showToast('El CSV está vacío o no se ha podido leer', true); return; }
+                    const header = rows[0].map(h => h.trim());
+                    const idx = name => header.indexOf(name);
+                    const iTitle = idx('Title');
+                    const iRating = idx('Your Rating');
+                    const iDateRated = idx('Date Rated');
+                    const iType = idx('Title Type');
+                    if (iTitle === -1) { showToast('Este archivo no parece un CSV de valoraciones de IMDb (falta la columna "Title")', true); return; }
+
+                    let added = 0, duplicates = 0, skippedNotSeries = 0, errors = 0;
+                    for (let r = 1; r < rows.length; r++) {
+                        const row = rows[r];
+                        const title = (row[iTitle] || '').trim();
+                        if (!title) { errors++; continue; }
+
+                        const titleType = iType !== -1 ? (row[iType] || '').trim() : '';
+                        if (iType !== -1 && titleType !== 'tvSeries' && titleType !== 'tvMiniSeries') { skippedNotSeries++; continue; }
+
+                        const dateRated = iDateRated !== -1 ? (row[iDateRated] || '').trim() : '';
+                        const endDate = normalizeImportDate(dateRated);
+                        // IMDb tampoco guarda cuándo se empezó a ver una serie,
+                        // solo cuándo se valoró — se usa esa misma fecha de inicio.
+                        const startDate = endDate;
+                        const status = endDate ? 'Completada' : 'Viendo';
+                        const ratingRaw = iRating !== -1 ? parseInt(row[iRating], 10) : NaN;
+                        // Escala de IMDb (1-10) a la de Bitácora (0-5).
+                        const rating = isNaN(ratingRaw) ? 0 : Math.max(0, Math.min(5, Math.round(ratingRaw / 2)));
+
+                        const normTitle = stripAccents(title.toLowerCase());
+                        const isDup = entries.some(en => en.type === 'series' &&
+                            stripAccents((en.title || '').toLowerCase()) === normTitle && en.startDate === startDate);
+                        if (isDup) { duplicates++; continue; }
+
+                        entries.push({
+                            id: 'series_imdb_' + Date.now() + '_' + r,
+                            type: 'series',
+                            title,
+                            startDate,
+                            endDate,
+                            date: startDate,
+                            status,
+                            rating
+                        });
+                        added++;
+                    }
+
+                    closeModal();
+                    render();
+                    showToast(`Importadas ${added} serie${added === 1 ? '' : 's'}` +
+                        (duplicates ? ` · ${duplicates} ya existían` : '') +
+                        (skippedNotSeries ? ` · ${skippedNotSeries} no eran series` : '') +
+                        (errors ? ` · ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
+                    try { await saveData(); } catch (err) { console.error('Error guardando la importación de IMDb:', err); showToast('No se pudo guardar en la nube', true); }
+                } catch (err) {
+                    console.error('Error importando CSV de IMDb:', err);
+                    showToast('Error al leer el archivo CSV', true);
+                }
+            };
+            reader.readAsText(file);
+        }
+
         function renderSeries() {
             const allSeries = entries.filter(e => e.type === 'series');
             if (!allSeries.length) {
@@ -7060,15 +7253,100 @@
             return `En ${days} días`;
         }
 
-        function renderEventsImportBox() {
-            return `
-                <div class="card" style="margin-bottom:16px">
-                    <div class="events-section-label">Importar por texto</div>
-                    <textarea id="events-text-import" class="modal-input" rows="1" placeholder="Pega aquí líneas EVENTO|fecha|hora|tipo|título|lugar|notas..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-                    <button class="btn-secondary" style="width:auto;margin:0;padding:7px 14px;font-size:12px;border-radius:14px" onclick="processEventsTextImport()">Procesar texto</button>
-                    <div style="font-size:10px;color:var(--text-secondary);margin-top:6px">Formato: EVENTO|AAAA-MM-DD|HH:MM|tipo|título|lugar|notas — hora, lugar y notas pueden ir vacíos. Tipo: social/teatro/cine/concierto/deporte/otro.</div>
-                    <div id="events-import-summary" style="font-size:12px;margin-top:8px;color:var(--text-secondary)"></div>
-                </div>`;
+        function openEventsImportModal() {
+            showModal(`
+                <div class="modal-title">Importar eventos</div>
+
+                <div class="events-section-label" style="margin-top:0">Desde un calendario (.ics)</div>
+                <div class="doc-upload-box" onclick="document.getElementById('ics-import-input').click()">
+                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir archivo .ics</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">Exportado desde Google Calendar, Apple Calendar u Outlook</div>
+                </div>
+                <input type="file" id="ics-import-input" accept=".ics,text/calendar" style="display:none" onchange="handleIcsImport(event)">
+
+                <div class="events-section-label" style="margin-top:22px">O pega texto</div>
+                <textarea id="events-text-import" class="modal-input" rows="1" placeholder="Pega aquí líneas EVENTO|fecha|hora|tipo|título|lugar|notas..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+                <button class="btn-secondary" style="width:auto;margin:0;padding:7px 14px;font-size:12px;border-radius:14px" onclick="processEventsTextImport()">Procesar texto</button>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:6px">Formato: EVENTO|AAAA-MM-DD|HH:MM|tipo|título|lugar|notas — hora, lugar y notas pueden ir vacíos. Tipo: social/teatro/cine/concierto/deporte/otro. El prompt para generar estas líneas a partir de una foto o un enlace está guardado en Ajustes → Prompts guardados.</div>
+                <div id="events-import-summary" style="font-size:12px;margin-top:8px;color:var(--text-secondary)"></div>
+            `);
+        }
+
+        // Formato .ics (RFC 5545): primero se "desdoblan" las líneas partidas
+        // (una línea que empieza por espacio es continuación de la
+        // anterior), y luego se recorren los bloques BEGIN:VEVENT/END:VEVENT
+        // sacando solo los campos que hacen falta. Los eventos recurrentes
+        // (RRULE) no se expanden: se importa únicamente la fecha base de
+        // cada VEVENT, no cada repetición futura.
+        function parseIcs(text) {
+            const unfolded = text.replace(/\r\n/g, '\n').split('\n').reduce((lines, line) => {
+                if ((line.startsWith(' ') || line.startsWith('\t')) && lines.length) {
+                    lines[lines.length - 1] += line.slice(1);
+                } else {
+                    lines.push(line);
+                }
+                return lines;
+            }, []);
+
+            const events = [];
+            let cur = null;
+            unfolded.forEach(line => {
+                if (line.trim() === 'BEGIN:VEVENT') { cur = {}; return; }
+                if (line.trim() === 'END:VEVENT') { if (cur) events.push(cur); cur = null; return; }
+                if (!cur) return;
+                const idx = line.indexOf(':');
+                if (idx === -1) return;
+                const key = line.slice(0, idx).split(';')[0].trim().toUpperCase();
+                const value = line.slice(idx + 1);
+                if (key === 'SUMMARY') cur.summary = value;
+                else if (key === 'LOCATION') cur.location = value;
+                else if (key === 'DESCRIPTION') cur.description = value;
+                else if (key === 'DTSTART') cur.dtstart = value;
+            });
+            return events;
+        }
+
+        function icsUnescape(s) {
+            return (s || '').replace(/\\n/gi, ' ').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+        }
+
+        function handleIcsImport(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                try {
+                    const vevents = parseIcs(String(e.target.result));
+                    if (!vevents.length) { showToast('No se han encontrado eventos en ese archivo .ics', true); return; }
+
+                    let added = 0, duplicates = 0, errors = 0;
+                    vevents.forEach((ev, i) => {
+                        const title = icsUnescape(ev.summary).trim();
+                        const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/.exec(ev.dtstart || '');
+                        if (!title || !m) { errors++; return; }
+                        const date = `${m[1]}-${m[2]}-${m[3]}`;
+                        const time = m[4] ? `${m[4]}:${m[5]}` : '';
+                        const place = icsUnescape(ev.location).trim();
+                        const notes = icsUnescape(ev.description).trim();
+
+                        if (entries.some(en => en.type === 'event' && en.title === title && en.date === date)) { duplicates++; return; }
+                        entries.push({ id: 'evt_ics_' + Date.now() + '_' + i, type: 'event', title, eventType: 'otro', date, time, place, notes });
+                        added++;
+                    });
+
+                    closeModal();
+                    render();
+                    showToast(`Importados ${added} evento${added === 1 ? '' : 's'}` +
+                        (duplicates ? ` · ${duplicates} ya existían` : '') +
+                        (errors ? ` · ${errors} sin título o fecha válida` : ''));
+                    try { await saveData(); } catch (err) { console.error('Error guardando eventos importados de .ics:', err); showToast('No se pudo guardar en la nube', true); }
+                } catch (err) {
+                    console.error('Error importando .ics:', err);
+                    showToast('Error al leer el archivo .ics', true);
+                }
+            };
+            reader.readAsText(file);
         }
 
         // Mismo patrón que el importador de texto de Fantasy: líneas con
@@ -7114,14 +7392,14 @@
         function renderEvents() {
             const allEvents = entries.filter(e => e.type === 'event');
             if (!allEvents.length) {
-                return `<div style="max-width:980px">${renderEventsImportBox()}</div><div class="empty-state"><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento", o pega texto arriba</div></div>`;
+                return `<div style="max-width:980px"><button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openEventsImportModal()">Importar eventos</button></div><div class="empty-state"><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento", o importa arriba</div></div>`;
             }
             const { items: events, banner } = applyMonthFilterTo('event', allEvents);
             if (!events.length) return banner + `<div class="empty-state"><div class="empty-title">Sin eventos ese mes</div></div>`;
 
             const next = entryMonthFilter && entryMonthFilter.type === 'event' ? null : nextUpcomingEvent(events);
 
-            let html = `<div style="max-width:980px">` + banner + renderEventsImportBox();
+            let html = `<div style="max-width:980px">` + banner;
 
             if (next) {
                 const nextCat = categories.find(c => c.id === next.categoryId);
@@ -7144,6 +7422,7 @@
                             <button class="events-type-chip ${eventsTypeFilter === t ? 'active' : ''}" onclick="setEventsTypeFilter('${t}')">${EVENT_TYPE_LABELS[t]}</button>
                         `).join('')}
                     </div>
+                    <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openEventsImportModal()">Importar eventos</button>
                 </div>
                 <div id="events-list-content">${renderEventsListContent(events)}</div>
             </div>`;
