@@ -3876,35 +3876,49 @@
             return '';
         }
 
+        const YEAR_CAL_MODE_CLASSES = ['year-dot-worked', 'year-dot-travel', 'year-dot-worked-travel',
+            'year-dot-square', 'year-dot-effort-none', 'year-dot-effort-1', 'year-dot-effort-2', 'year-dot-effort-3', 'year-dot-effort-4', 'year-dot-effort-5'];
+
         // No se regenera todo el modal (eso crearía puntos nuevos de cero y
         // el cambio se vería como un salto brusco): se cambian las clases de
         // cada punto ya existente en su sitio, así la transición CSS de
-        // .year-dot (color de fondo/borde) anima de verdad entre una vista y
-        // otra en vez de saltar de golpe.
-        function toggleYearCalCompare() {
-            if (yearCalEffortMode) { yearCalEffortMode = false; yearCalCompareMode = true; refrescarCalendarioAnual(); return; }
-            yearCalCompareMode = !yearCalCompareMode;
+        // .year-dot (color de fondo/borde/forma) anima de verdad entre una
+        // vista y otra en vez de saltar de golpe — incluida la transición
+        // círculo-cuadrado del modo esfuerzo.
+        function applyYearCalDotStates() {
             document.querySelectorAll('.year-cal-grid-wrap .year-dot[title]').forEach(dot => {
-                dot.classList.remove('year-dot-worked', 'year-dot-travel', 'year-dot-worked-travel');
-                if (yearCalCompareMode) {
-                    const dateStr = dot.getAttribute('title');
+                const dateStr = dot.getAttribute('title');
+                const esFuturo = dot.classList.contains('year-dot-future');
+                dot.classList.remove(...YEAR_CAL_MODE_CLASSES);
+                dot.onclick = null;
+                if (yearCalEffortMode) {
+                    dot.classList.add('year-dot-square');
+                    if (!esFuturo) {
+                        const score = dailyEffort[dateStr] || 0;
+                        dot.classList.add(score > 0 ? 'year-dot-effort-' + score : 'year-dot-effort-none');
+                        dot.onclick = () => openDailyEffortPicker(dateStr);
+                    }
+                } else if (yearCalCompareMode) {
                     const cls = claseCompareDot(esDiaTrabajado(dateStr), esDiaDeViaje(dateStr));
                     if (cls) dot.classList.add(cls);
                 }
             });
-            const btn = document.querySelector('.year-cal-compare-btn');
-            if (btn) btn.classList.toggle('active', yearCalCompareMode);
+            document.querySelector('.year-cal-compare-btn')?.classList.toggle('active', yearCalCompareMode);
+            document.querySelector('.year-cal-effort-btn')?.classList.toggle('active', yearCalEffortMode);
             const legend = document.querySelector('.year-cal-legend');
             if (legend) legend.innerHTML = renderYearCalLegendHtml();
         }
 
-        // A diferencia del modo comparar, este cambia también la FORMA de las
-        // casillas (círculo → cuadrado) y añade clics para puntuar, así que
-        // se regenera el modal entero en vez de solo cambiar clases in situ.
+        function toggleYearCalCompare() {
+            yearCalCompareMode = !yearCalCompareMode;
+            if (yearCalCompareMode) yearCalEffortMode = false;
+            applyYearCalDotStates();
+        }
+
         function toggleYearCalEffort() {
             yearCalEffortMode = !yearCalEffortMode;
             if (yearCalEffortMode) yearCalCompareMode = false;
-            refrescarCalendarioAnual();
+            applyYearCalDotStates();
         }
 
         function renderYearCalLegendHtml() {
@@ -4015,7 +4029,7 @@
                         <button class="year-cal-compare-btn ${yearCalCompareMode ? 'active' : ''}" onclick="toggleYearCalCompare()" title="Comparar trabajado/viaje">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="6.5"/><circle cx="15" cy="12" r="6.5"/></svg>
                         </button>
-                        <button class="year-cal-compare-btn ${yearCalEffortMode ? 'active' : ''}" onclick="toggleYearCalEffort()" title="Esfuerzo diario">
+                        <button class="year-cal-compare-btn year-cal-effort-btn ${yearCalEffortMode ? 'active' : ''}" onclick="toggleYearCalEffort()" title="Esfuerzo diario">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
                         </button>
                     </span>
@@ -5927,68 +5941,6 @@
 
         const WORK_MODALIDAD_LABELS = { presencial: 'Presencial', hibrido: 'Híbrido', remoto: 'Remoto' };
 
-        // Mapa cronológico: una barra horizontal por trabajo, posicionada y
-        // dimensionada según sus fechas dentro de toda la vida laboral. Si
-        // dos trabajos se solapan en el tiempo (compaginados), se colocan en
-        // filas distintas en vez de superponerse.
-        function renderWorkTimeline(work, todayStr) {
-            if (!work.length) return '';
-            const dateVal = d => new Date(d + 'T12:00:00').getTime();
-            const todayVal = dateVal(todayStr);
-            const spans = work.map(w => ({
-                w,
-                s: dateVal(w.startDate || todayStr),
-                e: dateVal((!w.endDate || w.endDate >= todayStr) ? todayStr : w.endDate)
-            }));
-            const minDate = Math.min(...spans.map(x => x.s));
-            const maxDate = Math.max(...spans.map(x => x.e), todayVal);
-            const span = Math.max(1, maxDate - minDate);
-
-            const sortedByStart = [...spans].sort((a, b) => a.s - b.s);
-            const rowEnds = [];
-            const placed = sortedByStart.map(({ w, s, e }) => {
-                let row = rowEnds.findIndex(end => s >= end);
-                if (row === -1) { row = rowEnds.length; rowEnds.push(e); } else { rowEnds[row] = e; }
-                return { w, s, e, row };
-            });
-
-            const ROW_PX = 38;
-            const totalHeight = rowEnds.length * ROW_PX;
-            const startYear = new Date(minDate).getFullYear();
-            const endYear = new Date(maxDate).getFullYear();
-            const years = [];
-            for (let y = startYear; y <= endYear; y++) years.push(y);
-            const pctFor = t => ((t - minDate) / span) * 100;
-
-            // Siempre ocupa el ancho disponible de la tarjeta (sin scroll
-            // horizontal): las barras se dimensionan como porcentaje de ESE
-            // ancho, así que un trabajo corto en una carrera larga sale más
-            // fino, pero todo el mapa entra siempre en el espacio visible.
-            return `
-                <div class="work-timeline-wrap">
-                    <div class="work-timeline-scroll">
-                        <div class="work-timeline" style="height:${totalHeight + 26}px">
-                            ${years.map(y => {
-                                const yStart = new Date(y, 0, 1).getTime();
-                                if (yStart < minDate) return '';
-                                return `<div class="work-timeline-year-line" style="left:${pctFor(yStart)}%"><span>${y}</span></div>`;
-                            }).join('')}
-                            ${placed.map(({ w, s, e, row }) => {
-                                const cat = categories.find(c => c.id === w.categoryId);
-                                const color = cat?.color || '#3b82f6';
-                                const left = pctFor(s);
-                                const width = Math.max(0.5, pctFor(e) - pctFor(s));
-                                const label = w.company || w.title || 'Trabajo';
-                                return `
-                                    <div class="work-timeline-bar" style="left:${left}%;width:${width}%;top:${row * ROW_PX + 22}px;background:${color}" onclick="openEntryDetail('${w.id}')" title="${escapeHtml(label)}${w.position ? ' · ' + escapeHtml(w.position) : ''}">
-                                        <span>${escapeHtml(label)}</span>
-                                    </div>`;
-                            }).join('')}
-                        </div>
-                    </div>
-                </div>`;
-        }
-
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
@@ -6040,10 +5992,6 @@
                         <div class="cotization-detail"><strong>${cotizedStats.practicas}</strong> de prácticas formativas · <strong>${cotizedStats.general}</strong> de régimen general</div>
                         <div style="font-size:10px;color:var(--bone-muted);margin-top:6px;opacity:.82">Estimados automáticamente y corregibles desde «Editar → Vida laboral»</div>
                     </div>
-                </div>
-                <div class="work-timeline-section">
-                    <div class="events-section-label">Trayectoria</div>
-                    ${renderWorkTimeline(sorted, todayStr)}
                 </div>
                 <div style="max-width:980px">`;
             sorted.forEach(w => {
