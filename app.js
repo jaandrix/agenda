@@ -4888,6 +4888,9 @@
                             <span class="culture-tab-count">${t.count}</span>
                         </button>`).join('')}
                 </div>
+                ${(!cultureSharedMode && cultureTab === 'movies') ? `
+                <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openLetterboxdImportModal()">Importar Letterboxd</button>
+                ` : ''}
                 <button class="btn-secondary culture-shared-toggle" style="width:auto" onclick="toggleCultureSharedMode()">
                     ${cultureSharedMode ? '← Mi biblioteca' : `Recomendaciones${pendientes ? ` (${pendientes})` : ''}`}
                 </button>
@@ -5010,20 +5013,21 @@
         // ============================================================
         //  RENDER: MOVIES
         // ============================================================
-        function renderMoviesImportBox() {
-            return `
+        function openLetterboxdImportModal() {
+            showModal(`
+                <div class="modal-title">Importar desde Letterboxd</div>
                 <div class="doc-upload-box" onclick="document.getElementById('letterboxd-import-input').click()">
-                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Importar desde Letterboxd</div>
+                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
                     <div style="font-size:12px;color:var(--text-secondary)">Sube tu archivo diary.csv o watched.csv — Letterboxd → Settings → Import & Export → Export Your Data</div>
                 </div>
                 <input type="file" id="letterboxd-import-input" accept=".csv,text/csv" style="display:none" onchange="handleLetterboxdImport(event)">
-            `;
+            `);
         }
 
         function renderMovies() {
             const allMovies = entries.filter(e => e.type === 'movie');
             if (!allMovies.length) {
-                return `<div style="max-width:980px">${renderMoviesImportBox()}</div><div class="empty-state"><div class="empty-title">Sin películas</div><div class="empty-sub">Pulsa el botón + y selecciona "Película", o importa desde Letterboxd arriba</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin películas</div><div class="empty-sub">Pulsa el botón + y selecciona "Película", o "Importar Letterboxd" arriba</div></div>`;
             }
             const { items: movies, banner } = applyMonthFilterTo('movie', allMovies);
             if (!movies.length) return banner + `<div class="empty-state"><div class="empty-title">Sin películas ese mes</div></div>`;
@@ -5042,7 +5046,7 @@
                 return new Date(y, mo - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
             };
 
-            let html = banner + `<div style="max-width:980px">${renderMoviesImportBox()}</div><div>`;
+            let html = banner + `<div>`;
             groups.forEach(g => {
                 html += `<div class="media-month-label">${escapeHtml(monthLabel(g.key))}.</div>`;
                 html += renderMediaCardGrid(g.items, m => m.date || 'Sin fecha');
@@ -5156,6 +5160,7 @@
                         added++;
                     }
 
+                    closeModal();
                     render();
                     showToast(`Importadas ${added} película${added === 1 ? '' : 's'}` +
                         (duplicates ? ` · ${duplicates} ya existían` : '') +
