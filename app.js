@@ -485,6 +485,7 @@
             { cmd: 'tema', text: '/tema' },
             { cmd: 'backup', text: '/backup' },
             { cmd: 'exportar', text: '/exportar' },
+            { cmd: 'fantasy', text: '/fantasy' },
         ];
 
         // ============================================================
@@ -1165,6 +1166,7 @@
             else if (cmd === 'tema') toggleTheme();
             else if (cmd === 'backup') runManualBackupNow();
             else if (cmd === 'exportar') exportData();
+            else if (cmd === 'fantasy') openFantasyQuickAccess();
         }
 
         function openLogoutConfirm() {
@@ -11491,6 +11493,74 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 render();
                 renderAllFantasyCharts();
             });
+        }
+
+        // ============================================================
+        //  COMANDO /fantasy: ACCESO RÁPIDO (admin + Fantasy en un paso)
+        //  El camino normal es Ajustes → activar Modo Desarrollador →
+        //  entrar en Fantasy → contraseña de Fantasy: tres pasos para
+        //  registrar una sola operación. Este popup pide las dos
+        //  contraseñas a la vez y, si ambas son correctas, entra
+        //  directamente y deja el cursor listo en el importador de texto.
+        // ============================================================
+        function openFantasyQuickAccess() {
+            showModal(`
+                <div class="modal-title" style="color:var(--fantasy-accent)">Acceso rápido a Fantasy</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce las dos contraseñas para entrar directamente al importador de texto.</div>
+                <div class="form-row">
+                    <label class="modal-label">Contraseña de admin</label>
+                    <input type="password" id="fq-pw-admin" class="modal-input" placeholder="Contraseña global" onkeydown="if(event.key==='Enter')document.getElementById('fq-pw-fantasy').focus()">
+                </div>
+                <div class="form-row">
+                    <label class="modal-label">Contraseña de Fantasy</label>
+                    <input type="password" id="fq-pw-fantasy" class="modal-input" placeholder="Contraseña de Fantasy" onkeydown="if(event.key==='Enter')verifyFantasyQuickAccess()">
+                </div>
+                <div id="fq-pw-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                <button class="btn-modal-primary" onclick="verifyFantasyQuickAccess()" style="background:var(--fantasy-accent)">🔓 Entrar</button>
+            `);
+            setTimeout(() => document.getElementById('fq-pw-admin')?.focus(), 100);
+        }
+
+        async function verifyFantasyQuickAccess() {
+            const adminPw = document.getElementById('fq-pw-admin').value;
+            const fantasyPw = document.getElementById('fq-pw-fantasy').value;
+            const errorEl = document.getElementById('fq-pw-error');
+            if (!adminPw || !fantasyPw) { errorEl.textContent = 'Rellena las dos contraseñas'; return; }
+
+            try {
+                const [adminHash, fantasyHash] = await Promise.all([getGlobalDevPasswordHash(), getSecret('fantasy')]);
+                if (!adminHash || !fantasyHash) {
+                    errorEl.textContent = 'Falta configurar alguna de las dos contraseñas (Ajustes, o Fantasy → Cambiar contraseña).';
+                    return;
+                }
+                const [adminInputHash, fantasyInputHash] = await Promise.all([hashPassword(adminPw), hashPassword(fantasyPw)]);
+                const adminOk = adminInputHash === adminHash;
+                const fantasyOk = fantasyInputHash === fantasyHash;
+                if (!adminOk || !fantasyOk) {
+                    errorEl.textContent = (!adminOk && !fantasyOk) ? '❌ Las dos contraseñas son incorrectas'
+                        : !adminOk ? '❌ Contraseña de admin incorrecta' : '❌ Contraseña de Fantasy incorrecta';
+                    return;
+                }
+
+                closeModal();
+                devModeActive = true;
+                updateSidebarPrivacy();
+                loadFantasyData();
+                currentView = 'fantasy';
+                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
+                    b.classList.toggle('active', b.dataset.view === 'fantasy');
+                });
+                updatePageTitle();
+                render();
+                renderAllFantasyCharts();
+                setTimeout(() => {
+                    const ta = document.getElementById('fantasy-text-import');
+                    if (ta) { ta.scrollIntoView({ block: 'center' }); ta.focus(); }
+                }, 60);
+            } catch (e) {
+                console.error('Error en el acceso rápido a Fantasy:', e);
+                errorEl.textContent = 'Error de conexión, inténtalo de nuevo';
+            }
         }
 
         function openVault() {
