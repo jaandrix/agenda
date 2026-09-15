@@ -456,6 +456,7 @@
             { view: 'friends', text: 'Mis amigos', anchor: 'friends-list-section' },
             { view: 'friends', text: 'Tu código de amigo', anchor: 'friends-code-section' },
             { view: 'home', text: 'Mis tareas', anchor: 'summary-mytasks-section' },
+            { view: 'home', text: 'Revisión semanal', anchor: 'summary-review-section' },
             { view: 'home', text: 'Esta semana', anchor: 'summary-week-section' },
             { view: 'home', text: 'Actividad reciente', anchor: 'summary-activity-section' },
             { view: 'home', text: 'Estadísticas históricas', anchor: 'summary-stats-section' },
@@ -480,6 +481,10 @@
         // "/" y se irán ampliando con el tiempo.
         const PALETTE_COMMANDS = [
             { cmd: 'admin', text: '/admin' },
+            { cmd: 'año', text: '/año' },
+            { cmd: 'tema', text: '/tema' },
+            { cmd: 'backup', text: '/backup' },
+            { cmd: 'exportar', text: '/exportar' },
         ];
 
         // ============================================================
@@ -752,12 +757,115 @@
             return entries.filter(e => e.id !== entryId && parseWikiLinks(e.notes || '').includes(entryId));
         }
 
+        // La cadena Objetivo → Proyecto se apoya en el mismo mecanismo de
+        // enlaces [[...]]: un proyecto que sirve a un objetivo escribe
+        // [[Título del objetivo]] en sus notas, y aquí se filtran los
+        // backlinks de tipo 'project' para mostrarlos de forma destacada
+        // en el propio objetivo, en vez de mezclados con el resto.
+        function renderGoalLinkedProjects(goalId, goalTitle) {
+            const linked = getBacklinks(goalId).filter(e => e.type === 'project');
+            if (!linked.length) {
+                return `<div class="entry-detail-field" style="grid-column:1/-1">
+                    <div class="entry-detail-label">Proyectos vinculados</div>
+                    <div class="entry-detail-value" style="font-size:12px;color:var(--text-secondary)">Ninguno todavía. Escribe <strong>[[${escapeHtml(goalTitle)}]]</strong> en las notas de un proyecto para vincularlo a este objetivo.</div>
+                </div>`;
+            }
+            return `<div class="entry-detail-field" style="grid-column:1/-1">
+                <div class="entry-detail-label">Proyectos vinculados · ${linked.length}</div>
+                ${linked.map(p => {
+                    const prog = projectTaskProgress(p);
+                    return `<div class="review-item" onclick="event.stopPropagation();openEntryDetail('${p.id}')">
+                        <span class="review-item-text">${escapeHtml(p.title)}</span>
+                        ${prog.total ? `<div class="progress-bar-bg" style="margin:4px 0 0"><div class="progress-bar-fill" style="width:${prog.pct}%;background:#2563eb"></div></div>` : ''}
+                    </div>`;
+                }).join('')}
+            </div>`;
+        }
+
         function openEntryFromLink(entryId) {
             const target = entries.find(e => e.id === entryId);
             if (!target) return;
             closeModal();
             openEditEntry(entryId);
         }
+
+        // ============================================================
+        //  AUTOCOMPLETADO DE ENLACES [[...]] EN LAS NOTAS
+        //  El sistema de wikilinks ya existía (parseWikiLinks/getBacklinks)
+        //  pero había que saber de memoria el título exacto de la otra
+        //  entrada. Esto añade un desplegable en vivo mientras se escribe
+        //  dentro de [[ ]], igual en cualquier textarea de notas de
+        //  cualquier tipo de entrada (todas comparten id="modal-notes").
+        // ============================================================
+        function wikilinkAutocompleteContext(textarea) {
+            const pos = textarea.selectionStart;
+            const before = textarea.value.slice(0, pos);
+            const openIdx = before.lastIndexOf('[[');
+            if (openIdx === -1) return null;
+            const between = before.slice(openIdx + 2);
+            if (between.includes(']]') || between.includes('\n')) return null;
+            return { openIdx, query: between };
+        }
+
+        function hideWikilinkAutocomplete() {
+            const box = document.getElementById('wikilink-autocomplete-box');
+            if (box) box.style.display = 'none';
+        }
+
+        function insertWikilinkAutocomplete(textareaId, openIdx, title) {
+            const textarea = document.getElementById(textareaId);
+            if (!textarea) return;
+            const pos = textarea.selectionStart;
+            const before = textarea.value.slice(0, openIdx);
+            const after = textarea.value.slice(pos);
+            const inserted = before + '[[' + title + ']]';
+            textarea.value = inserted + after;
+            textarea.focus();
+            textarea.setSelectionRange(inserted.length, inserted.length);
+            hideWikilinkAutocomplete();
+        }
+
+        function handleWikilinkAutocompleteInput(textarea) {
+            const ctx = textarea.id ? wikilinkAutocompleteContext(textarea) : null;
+            if (!ctx) { hideWikilinkAutocomplete(); return; }
+            const q = ctx.query.trim().toLowerCase();
+            const matches = buildLinkableIndex()
+                .filter(x => !q || x.title.toLowerCase().includes(q))
+                .slice(0, 6);
+            if (!matches.length) { hideWikilinkAutocomplete(); return; }
+
+            let box = document.getElementById('wikilink-autocomplete-box');
+            if (!box) {
+                box = document.createElement('div');
+                box.id = 'wikilink-autocomplete-box';
+                box.className = 'wikilink-autocomplete';
+                document.body.appendChild(box);
+            }
+            box.innerHTML = matches.map(m =>
+                `<div class="wikilink-autocomplete-item">${escapeHtml(m.title)}</div>`
+            ).join('');
+            [...box.children].forEach((item, i) => {
+                item.onmousedown = (e) => { e.preventDefault(); insertWikilinkAutocomplete(textarea.id, ctx.openIdx, matches[i].title); };
+            });
+            const rect = textarea.getBoundingClientRect();
+            box.style.left = rect.left + 'px';
+            box.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+            box.style.width = Math.min(rect.width, 320) + 'px';
+            box.style.display = 'block';
+        }
+
+        // Delegado en document (no en el textarea, que se recrea cada vez
+        // que se abre un modal): funciona para cualquier campo de notas de
+        // cualquier tipo de entrada sin tener que engancharlo uno a uno.
+        document.addEventListener('input', (e) => {
+            if (e.target?.id === 'modal-notes') handleWikilinkAutocompleteInput(e.target);
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.target?.id === 'modal-notes' && e.key === 'Escape') hideWikilinkAutocomplete();
+        });
+        document.addEventListener('click', (e) => {
+            if (e.target?.id !== 'modal-notes' && !e.target?.closest?.('.wikilink-autocomplete')) hideWikilinkAutocomplete();
+        });
 
         // ============================================================
         //  BUSCADOR "¿DÓNDE QUIERES IR?" / CAPTURA RÁPIDA
@@ -1053,6 +1161,10 @@
 
         function runPaletteCommand(cmd) {
             if (cmd === 'admin') toggleDeveloperMode();
+            else if (cmd === 'año') abrirCalendarioAnual();
+            else if (cmd === 'tema') toggleTheme();
+            else if (cmd === 'backup') runManualBackupNow();
+            else if (cmd === 'exportar') exportData();
         }
 
         function openLogoutConfirm() {
@@ -2775,6 +2887,7 @@
                     fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Hitos · ${msDone}/${milestones.length}</div>
                         ${milestones.map((m,i)=>`<label class="project-task-row" onclick="event.stopPropagation()"><input type="checkbox" ${m.done?'checked':''} onchange="toggleGoalMilestone('${entry.id}',${i})"><span class="${m.done?'done':''}">${escapeHtml(m.text)}</span></label>`).join('')}</div>`;
                 }
+                fields+=renderGoalLinkedProjects(entry.id,entry.title||'');
                 if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(' · '));
                 if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
             }else if(entry.type==='work'){
@@ -2811,7 +2924,7 @@
             const recomendarBtn = recomendable
                 ? `<button class="btn-secondary" style="width:auto;margin-left:auto" onclick="abrirRecomendarModal('${entry.id}')">Recomendar</button>`
                 : '';
-            return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div><div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}</div></div></div>`;
+            return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div>${renderBacklinksBlock(entry.id, entry.type==='goal' ? ['project'] : null)}<div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}</div></div></div>`;
         }
         function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);if(entry.type==='work')loadWorkDocuments(entry.id);}
         async function toggleProjectTask(projectId,taskIndex){
@@ -2855,8 +2968,9 @@
         // ============================================================
         //  RENDER ENTRY MODAL
         // ============================================================
-        function renderBacklinksBlock(entryId) {
-            const backlinks = getBacklinks(entryId);
+        function renderBacklinksBlock(entryId, excludeTypes) {
+            let backlinks = getBacklinks(entryId);
+            if (excludeTypes) backlinks = backlinks.filter(e => !excludeTypes.includes(e.type));
             if (!backlinks.length) return '';
             return `
                 <div class="modal-label">Enlazado desde</div>
@@ -3192,7 +3306,7 @@
                     <div class="modal-label">Etiquetas (separadas por comas)</div>
                     <input id="modal-tags" class="modal-input" value="${isEdit ? (entry.tags || []).join(', ') : ''}" placeholder="p.ej. urgente, 2026, personal">
 
-                    <div class="wikilink-hint">Consejo: escribe [[Título de otra entrada]] en las notas para enlazarla.</div>
+                    <div class="wikilink-hint">Consejo: escribe [[ en las notas y elige de la lista para enlazar otra entrada.</div>
                     ${isEdit ? renderBacklinksBlock(entry.id) : ''}
 
                     <button class="btn-modal-primary" onclick="saveEntry()">Guardar</button>
@@ -9168,6 +9282,26 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             return m ? m[1] : '';
         }
 
+        // Sube (o sustituye) el backup de HOY y aplica la rotación de los
+        // últimos BACKUPS_TO_KEEP. La usan tanto la comprobación diaria
+        // automática como el comando /backup para forzar uno al momento.
+        async function uploadTodayBackupAndRotate(user, existingFiles) {
+            const todayName = `bitacora_backup_${todayISO()}.json`;
+            const payload = buildFullBackupPayload();
+            const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+            const { error: upErr } = await sb.storage.from('documents').upload(`${user.id}/backups/${todayName}`, blob, { upsert: true, contentType: 'application/json' });
+            if (upErr) throw upErr;
+
+            const alreadyListed = existingFiles.some(f => f.name === todayName);
+            const updated = alreadyListed ? existingFiles : [...existingFiles, { name: todayName }];
+            updated.sort((a, b) => a.name.localeCompare(b.name));
+            if (updated.length > BACKUPS_TO_KEEP) {
+                const toDelete = updated.slice(0, updated.length - BACKUPS_TO_KEEP).map(f => `${user.id}/backups/${f.name}`);
+                await sb.storage.from('documents').remove(toDelete);
+            }
+            if (currentView === 'documents') await loadBackups();
+        }
+
         async function runDailyBackupCheck() {
             try {
                 const { data: { user } } = await sb.auth.getUser();
@@ -9179,21 +9313,28 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 if (error) throw error;
                 const existing = files || [];
                 if (existing.some(f => f.name === todayName)) return; // ya hay backup de hoy
-
-                const payload = buildFullBackupPayload();
-                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-                const { error: upErr } = await sb.storage.from('documents').upload(`${user.id}/backups/${todayName}`, blob, { upsert: true, contentType: 'application/json' });
-                if (upErr) throw upErr;
-
-                const updated = [...existing, { name: todayName }].sort((a, b) => a.name.localeCompare(b.name));
-                if (updated.length > BACKUPS_TO_KEEP) {
-                    const toDelete = updated.slice(0, updated.length - BACKUPS_TO_KEEP).map(f => `${user.id}/backups/${f.name}`);
-                    await sb.storage.from('documents').remove(toDelete);
-                }
-
-                if (currentView === 'documents') await loadBackups();
+                await uploadTodayBackupAndRotate(user, existing);
             } catch (e) {
                 console.error('Error en el backup automático diario:', e);
+            }
+        }
+
+        // Comando /backup: fuerza una copia de seguridad AHORA MISMO, sin
+        // esperar a que sea la primera vez que abres la app hoy — útil
+        // justo antes de probar algo que podrías querer deshacer.
+        async function runManualBackupNow() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { showToast('No hay sesión activa', true); return; }
+                const { data: files, error } = await sb.storage.from('documents').list(`${user.id}/backups`, {
+                    sortBy: { column: 'name', order: 'asc' }
+                });
+                if (error) throw error;
+                await uploadTodayBackupAndRotate(user, files || []);
+                showToast('Backup guardado ahora mismo');
+            } catch (e) {
+                console.error('Error en el backup manual:', e);
+                showToast('No se pudo guardar el backup: ' + (e?.message || 'desconocido'), true);
             }
         }
 

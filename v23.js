@@ -76,6 +76,93 @@
         `;
     }
 
+    // ------------------------------------------------------------
+    //  REVISIÓN SEMANAL: un paso atrás antes de seguir añadiendo cosas —
+    //  esfuerzo medio de los últimos 7 días (del calendario anual) y los
+    //  proyectos/objetivos activos, ordenados por el que menos avanza
+    //  primero, para que salte a la vista qué se está quedando atrás.
+    // ------------------------------------------------------------
+    function collectWeeklyReview() {
+        const allEntries = typeof entries !== 'undefined' ? entries : [];
+
+        const projects = allEntries
+            .filter(e => e.type === 'project' && (typeof projectStatusBucket !== 'function' || projectStatusBucket(e.status) !== 'Completado'))
+            .map(p => {
+                const prog = typeof projectTaskProgress === 'function' ? projectTaskProgress(p) : { total: 0, pct: 0 };
+                return { id: p.id, title: p.title, pct: prog.pct };
+            })
+            .sort((a, b) => a.pct - b.pct);
+
+        const goals = allEntries
+            .filter(e => e.type === 'goal' && e.status !== 'Completado' && e.status !== 'Conseguido')
+            .map(g => {
+                let pct = typeof goalProgressPct === 'function' ? goalProgressPct(g) : null;
+                if (pct === null && Array.isArray(g.milestones) && g.milestones.length) {
+                    pct = Math.round(g.milestones.filter(m => m.done).length / g.milestones.length * 100);
+                }
+                return { id: g.id, title: g.title, pct };
+            })
+            .sort((a, b) => (a.pct ?? -1) - (b.pct ?? -1));
+
+        let effortSum = 0, effortCount = 0;
+        if (typeof dailyEffort === 'object' && dailyEffort) {
+            const today = new Date();
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const key = d.toISOString().slice(0, 10);
+                const v = dailyEffort[key] || 0;
+                if (v > 0) { effortSum += v; effortCount++; }
+            }
+        }
+
+        return { projects, goals, effortAvg: effortCount ? effortSum / effortCount : null, effortCount };
+    }
+
+    function renderWeeklyReviewSection() {
+        const r = collectWeeklyReview();
+        const hasContent = r.projects.length || r.goals.length;
+        return `
+            <div class="summary-section" id="summary-review-section">
+                <div class="summary-section-head">
+                    <div>
+                        <div class="summary-section-title">Revisión semanal</div>
+                        <div class="summary-section-desc">Un vistazo a lo que sigue en marcha, antes de seguir añadiendo cosas nuevas.</div>
+                    </div>
+                </div>
+                <div class="review-effort-line">
+                    ${r.effortCount
+                        ? `Esfuerzo medio de los últimos 7 días: <strong>${r.effortAvg.toFixed(1)} / 5</strong> (${r.effortCount} día${r.effortCount === 1 ? '' : 's'} puntuado${r.effortCount === 1 ? '' : 's'})`
+                        : `<span style="color:var(--text-secondary)">Aún no has puntuado ningún día de esta semana en la vista de esfuerzo del calendario anual.</span>`}
+                </div>
+                ${hasContent ? `
+                    <div class="review-grid">
+                        ${r.projects.length ? `
+                            <div class="review-col">
+                                <div class="review-col-title">Proyectos activos</div>
+                                ${r.projects.map(p => `
+                                    <div class="review-item" onclick="openEntryDetail('${p.id}')">
+                                        <span class="review-item-text">${esc(p.title)}</span>
+                                        <div class="progress-bar-bg" style="margin-top:4px"><div class="progress-bar-fill" style="width:${p.pct}%;background:#2563eb"></div></div>
+                                    </div>
+                                `).join('')}
+                            </div>` : ''}
+                        ${r.goals.length ? `
+                            <div class="review-col">
+                                <div class="review-col-title">Objetivos activos</div>
+                                ${r.goals.map(g => `
+                                    <div class="review-item" onclick="openEntryDetail('${g.id}')">
+                                        <span class="review-item-text">${esc(g.title)}</span>
+                                        ${g.pct !== null ? `<div class="progress-bar-bg" style="margin-top:4px"><div class="progress-bar-fill" style="width:${g.pct}%;background:#2563eb"></div></div>` : `<span class="review-item-nodata">sin progreso medible</span>`}
+                                    </div>
+                                `).join('')}
+                            </div>` : ''}
+                    </div>
+                ` : `<div style="font-size:12px;color:var(--text-secondary);margin-top:6px">Sin proyectos ni objetivos activos ahora mismo.</div>`}
+            </div>
+        `;
+    }
+
     // Envoltorios: las funciones "toggle" propias de cada sección hacen
     // cosas específicas de su vista (reabrir un modal, refrescar el
     // Planificador...) que no encajan sueltas en Centro resumen — estos
@@ -260,6 +347,8 @@
 
         root.innerHTML = `
             ${renderMyTasksSection()}
+
+            ${renderWeeklyReviewSection()}
 
             <div class="summary-section" id="summary-week-section">
                 <div class="summary-section-head">
