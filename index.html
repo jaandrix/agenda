@@ -28,10 +28,56 @@
 </head>
 <body>
     <!-- ============================================================
-    LOGIN SCREEN
+    LANDING PÚBLICA — lo primero que ve quien no ha iniciado sesión
     ============================================================ -->
     <div id="boot-loading">Cargando...</div>
 
+    <div id="landing-screen">
+        <div class="landing-topbar">
+            <div class="landing-brand"><span class="d"></span>Bitácora</div>
+            <button class="landing-login-link" onclick="goToLogin()">Iniciar sesión</button>
+        </div>
+
+        <div class="landing-hero">
+            <div class="landing-kicker">Un cuaderno digital para tu vida entera</div>
+            <h1 class="landing-title">Tu vida, <span class="login-brand-accent">en un solo sitio.</span></h1>
+            <p class="landing-sub">Ocio, trabajo, estudios, finanzas y planes — sin scroll infinito, sin ruido, sin depender de decenas de apps.</p>
+            <div class="landing-cta-row">
+                <button class="landing-cta-primary" onclick="goToSignup()">Crear cuenta gratis</button>
+                <button class="landing-cta-secondary" onclick="openPromoVideo()">▶ Ver el vídeo</button>
+            </div>
+        </div>
+
+        <div class="landing-manifesto">
+            <div class="landing-manifesto-line">Sin scroll infinito</div>
+            <div class="landing-manifesto-line">Sin ruido</div>
+            <div class="landing-manifesto-line">Sin competir por tu atención</div>
+        </div>
+
+        <div class="landing-pricing">
+            <div class="landing-pricing-title">Prueba 14 días gratis, luego elige tu plan</div>
+            <div class="paywall-plans landing-plans">
+                <button class="paywall-plan" onclick="goToSignup()">
+                    <span class="paywall-plan-name">Mensual</span>
+                    <span class="paywall-plan-price">1,99€<span class="paywall-plan-period">/mes</span></span>
+                </button>
+                <button class="paywall-plan paywall-plan-highlight" onclick="goToSignup()">
+                    <span class="paywall-plan-badge">Ahorra ~20%</span>
+                    <span class="paywall-plan-name">Anual</span>
+                    <span class="paywall-plan-price">18,99€<span class="paywall-plan-period">/año</span></span>
+                </button>
+            </div>
+            <div class="landing-pricing-note">Cancela cuando quieras. Sin permanencia.</div>
+        </div>
+
+        <div class="landing-footer">
+            <button class="pwa-install-btn about-bitacora-btn" onclick="openAboutBitacora()">ⓘ qué es Bitácora, a fondo</button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    LOGIN SCREEN
+    ============================================================ -->
     <div id="login-screen">
         <div class="login-top-actions">
             <button id="pwa-install-btn" class="pwa-install-btn" onclick="handlePwaInstallClick()" style="display:none">⭳ descarga Bitácora</button>

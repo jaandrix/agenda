@@ -56,10 +56,43 @@
             document.getElementById('app').classList.remove('ready');
             const paywall = document.getElementById('paywall-screen');
             if (paywall) paywall.style.display = 'none';
-            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('login-screen').style.display = 'none';
             document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';
             showAuthMode('login');
+            showLandingScreen();
+        }
+
+        // ============================================================
+        //  LANDING PÚBLICA
+        // ============================================================
+        function showLandingScreen() {
+            document.getElementById('app').classList.remove('ready');
+            document.getElementById('login-screen').style.display = 'none';
+            const paywall = document.getElementById('paywall-screen');
+            if (paywall) paywall.style.display = 'none';
+            document.getElementById('landing-screen').classList.add('visible');
+        }
+
+        function goToLogin() {
+            document.getElementById('landing-screen').classList.remove('visible');
+            document.getElementById('login-screen').style.display = 'flex';
+            showAuthMode('login');
+        }
+
+        function goToSignup() {
+            document.getElementById('landing-screen').classList.remove('visible');
+            document.getElementById('login-screen').style.display = 'flex';
+            showAuthMode('signup');
+        }
+
+        function openPromoVideo() {
+            showModal(`
+                <div class="modal-title">Bitácora en 40 segundos<button class="modal-close" onclick="closeModal()">✕</button></div>
+                <div class="promo-video-modal">
+                    <video src="promo.mp4" controls autoplay playsinline></video>
+                </div>
+            `);
         }
 
         async function handleLogout() {
@@ -332,7 +365,7 @@
             if (session) {
                 await startApp();
             } else {
-                document.getElementById('login-screen').style.display = 'flex';
+                showLandingScreen();
             }
         })();
 
