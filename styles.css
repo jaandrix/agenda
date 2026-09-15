@@ -3398,6 +3398,81 @@
         }
         @media(max-width:480px){ #login-screen .login-top-actions{ position:static; flex-direction:row; justify-content:center; margin:0 auto 16px; flex-wrap:wrap; } }
 
+        /* ============================================================
+               PANTALLA DE PAGO — mismo lenguaje visual que #login-box
+            ============================================================ */
+        #paywall-screen {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-app);
+            z-index: 1000;
+            padding: 24px;
+        }
+        #paywall-box {
+            width: 100%;
+            max-width: 360px;
+            padding: 32px 28px;
+            border-radius: 22px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+        }
+        #paywall-box h1 {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            text-align: center;
+            color: var(--text-primary);
+        }
+        #paywall-box p.sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .paywall-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .paywall-features li {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            padding-left: 18px;
+            position: relative;
+        }
+        .paywall-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #3b82f6;
+            font-weight: 700;
+        }
+        #paywall-box button {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: none;
+            background: #3b82f6;
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .paywall-trial-note {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 10px;
+        }
+
         #app {
             display: none;
         }

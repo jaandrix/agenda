@@ -7,6 +7,18 @@
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ============================================================
+        //  SUSCRIPCIÓN DE PAGO (Stripe)
+        // ============================================================
+        // Toda cuenta creada antes de esta fecha queda con acceso gratis
+        // para siempre ("legado"), sin necesidad de mantener una lista.
+        const CUTOFF_LANZAMIENTO_PAGO = '2026-09-15T00:00:00Z';
+        // TODO: sustituir por el Payment Link real una vez creado en Stripe.
+        const STRIPE_PAYMENT_LINK_URL = 'https://buy.stripe.com/TODO_sustituir_por_tu_enlace';
+        // Margen de gracia si un cobro falla (past_due), antes de cortar
+        // el acceso, contado desde que se guardó ese estado.
+        const DIAS_GRACIA_PAST_DUE = 3;
+
+        // ============================================================
         //  AUTH FUNCTIONS
         // ============================================================
         async function handleLogin() {
@@ -38,6 +50,8 @@
 
         function resetToLoginScreen() {
             document.getElementById('app').classList.remove('ready');
+            const paywall = document.getElementById('paywall-screen');
+            if (paywall) paywall.style.display = 'none';
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';
@@ -64,12 +78,92 @@
         async function startApp() {
             const boot = document.getElementById('boot-loading');
             if (boot) boot.style.display = 'none';
+
+            const { data: { user } } = await sb.auth.getUser();
+            const veniaDeCheckout = new URLSearchParams(window.location.search).get('checkout') === 'success';
+            const sub = await getSubscriptionStatus(user, { allowRetry: veniaDeCheckout });
+
+            if (!hasAccess(sub)) {
+                showPaywallScreen(user, { confirmando: veniaDeCheckout });
+                return;
+            }
+
+            // Limpia el ?checkout=success de la URL para que recargar la
+            // página no repita el reintento cada vez.
+            if (veniaDeCheckout) history.replaceState(null, '', window.location.pathname);
+
             document.getElementById('login-screen').style.display = 'none';
+            const paywall = document.getElementById('paywall-screen');
+            if (paywall) paywall.style.display = 'none';
             document.getElementById('app').classList.add('ready');
 
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
             await init();
+        }
+
+        // Lee el estado de suscripción del usuario. Si vuelve justo del
+        // checkout de Stripe, el webhook puede tardar uno o dos segundos
+        // en escribir la fila — se reintenta unas cuantas veces antes de
+        // rendirse, en vez de enseñar el pago de nuevo de inmediato.
+        async function getSubscriptionStatus(user, opts = {}) {
+            const intentos = opts.allowRetry ? 4 : 1;
+            for (let i = 0; i < intentos; i++) {
+                const { data } = await sb.from('suscripciones').select('*').eq('user_id', user.id).maybeSingle();
+                if (data) return data;
+                if (i < intentos - 1) await new Promise(r => setTimeout(r, 1500));
+            }
+            const esLegado = new Date(user.created_at) < new Date(CUTOFF_LANZAMIENTO_PAGO);
+            return { estado: esLegado ? 'legado' : 'sin_suscripcion', modulos: ['base'] };
+        }
+
+        function hasAccess(sub) {
+            if (['legado', 'active', 'trialing'].includes(sub.estado)) return true;
+            if (sub.estado === 'past_due') {
+                const limite = new Date(sub.actualizado_en || 0);
+                limite.setDate(limite.getDate() + DIAS_GRACIA_PAST_DUE);
+                return new Date() < limite;
+            }
+            return false;
+        }
+
+        function showPaywallScreen(user, opts = {}) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').classList.remove('ready');
+            window._paywallUser = user;
+
+            const screen = document.getElementById('paywall-screen');
+            screen.style.display = 'flex';
+            screen.innerHTML = opts.confirmando ? `
+                <div id="paywall-box">
+                    <h1>Confirmando tu <span class="login-brand-accent">pago</span></h1>
+                    <p class="sub">Puede tardar unos segundos en reflejarse. Si no cambia, pulsa reintentar.</p>
+                    <button onclick="startApp()">Reintentar ahora</button>
+                    <a class="login-back" onclick="handleLogout()">Cerrar sesión</a>
+                </div>
+            ` : `
+                <div id="paywall-box">
+                    <h1>Bitácora <span class="login-brand-accent">1,99€/mes</span></h1>
+                    <p class="sub">Un cuaderno digital para tu vida entera: ocio, trabajo, estudios, finanzas y planes, todos en un solo sitio. Sin scroll infinito, sin ruido, sin depender de decenas de apps.</p>
+                    <ul class="paywall-features">
+                        <li>14 días de prueba gratuita, cancela cuando quieras</li>
+                        <li>Sin permanencia, sin compromiso</li>
+                        <li>Tus datos son tuyos: expórtalos cuando quieras</li>
+                    </ul>
+                    <button onclick="startStripeCheckout()">Empezar prueba gratuita</button>
+                    <div class="paywall-trial-note">Después de la prueba, 1,99€/mes.</div>
+                    <a class="login-back" onclick="handleLogout()">Cerrar sesión</a>
+                </div>
+            `;
+        }
+
+        function startStripeCheckout() {
+            const user = window._paywallUser;
+            if (!user) return;
+            const url = new URL(STRIPE_PAYMENT_LINK_URL);
+            url.searchParams.set('client_reference_id', user.id);
+            if (user.email) url.searchParams.set('prefilled_email', user.email);
+            window.location.href = url.toString();
         }
 
         // Pop-up informativo de la pantalla de login: qué es Bitácora, su
