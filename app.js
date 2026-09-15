@@ -12,8 +12,12 @@
         // Toda cuenta creada antes de esta fecha queda con acceso gratis
         // para siempre ("legado"), sin necesidad de mantener una lista.
         const CUTOFF_LANZAMIENTO_PAGO = '2026-09-15T00:00:00Z';
-        // TODO: sustituir por el Payment Link real una vez creado en Stripe.
-        const STRIPE_PAYMENT_LINK_URL = 'https://buy.stripe.com/TODO_sustituir_por_tu_enlace';
+        // TODO: sustituir por los Payment Link reales una vez creados en Stripe
+        // (un Precio recurrente mensual y otro anual sobre el mismo Producto).
+        const STRIPE_PAYMENT_LINKS = {
+            mensual: 'https://buy.stripe.com/TODO_sustituir_por_tu_enlace_mensual',
+            anual: 'https://buy.stripe.com/TODO_sustituir_por_tu_enlace_anual'
+        };
         // Margen de gracia si un cobro falla (past_due), antes de cortar
         // el acceso, contado desde que se guardó ese estado.
         const DIAS_GRACIA_PAST_DUE = 3;
@@ -143,24 +147,30 @@
                 </div>
             ` : `
                 <div id="paywall-box">
-                    <h1>Bitácora <span class="login-brand-accent">1,99€/mes</span></h1>
+                    <h1>Bienvenido a <span class="login-brand-accent">Bitácora</span></h1>
                     <p class="sub">Un cuaderno digital para tu vida entera: ocio, trabajo, estudios, finanzas y planes, todos en un solo sitio. Sin scroll infinito, sin ruido, sin depender de decenas de apps.</p>
-                    <ul class="paywall-features">
-                        <li>14 días de prueba gratuita, cancela cuando quieras</li>
-                        <li>Sin permanencia, sin compromiso</li>
-                        <li>Tus datos son tuyos: expórtalos cuando quieras</li>
-                    </ul>
-                    <button onclick="startStripeCheckout()">Empezar prueba gratuita</button>
-                    <div class="paywall-trial-note">Después de la prueba, 1,99€/mes.</div>
+                    <div class="paywall-plans">
+                        <button class="paywall-plan" onclick="startStripeCheckout('mensual')">
+                            <span class="paywall-plan-name">Mensual</span>
+                            <span class="paywall-plan-price">1,99€<span class="paywall-plan-period">/mes</span></span>
+                        </button>
+                        <button class="paywall-plan paywall-plan-highlight" onclick="startStripeCheckout('anual')">
+                            <span class="paywall-plan-badge">Ahorra ~20%</span>
+                            <span class="paywall-plan-name">Anual</span>
+                            <span class="paywall-plan-price">18,99€<span class="paywall-plan-period">/año</span></span>
+                        </button>
+                    </div>
+                    <div class="paywall-trial-note">14 días de prueba gratuita en ambos planes. Cancela cuando quieras.</div>
                     <a class="login-back" onclick="handleLogout()">Cerrar sesión</a>
                 </div>
             `;
         }
 
-        function startStripeCheckout() {
+        function startStripeCheckout(plan) {
             const user = window._paywallUser;
-            if (!user) return;
-            const url = new URL(STRIPE_PAYMENT_LINK_URL);
+            const link = STRIPE_PAYMENT_LINKS[plan];
+            if (!user || !link) return;
+            const url = new URL(link);
             url.searchParams.set('client_reference_id', user.id);
             if (user.email) url.searchParams.set('prefilled_email', user.email);
             window.location.href = url.toString();
