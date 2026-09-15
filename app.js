@@ -256,8 +256,14 @@
             { id: 'cat_videojuegos', name: 'Videojuegos' }
         ];
         let collectibles = [];
-        // Planificador del día: sustituye a Apuntes. Se reinicia cada día a las 4:00 am.
-        let dayPlanner = { dayKey: '', items: [] };
+        // Planificador del día: sustituye a Apuntes. Cada día lógico (4:00 am - 4:00 am)
+        // tiene su propia lista de eventos en "days", así se puede planificar hoy,
+        // mañana y pasado mañana por adelantado sin que se borren entre sí.
+        let dayPlanner = { days: {} };
+        // Pestaña de día activa en el planificador: 0 = hoy, 1 = mañana, 2 = pasado mañana.
+        let plannerDayOffset = 0;
+        // Última clave de "hoy" vista, para detectar el cruce de las 4:00 am.
+        let plannerLastTodayKey = '';
         // Tareas que se repiten (diaria/semanal/mensual). "completadas" guarda,
         // por fecha, si ya se marcó hecha ese día concreto — así una tarea
         // recurrente no queda "hecha para siempre" al marcarla una vez.
@@ -1759,8 +1765,7 @@
                     ? saved.collectibleCategories
                     : [{ id: 'cat_cartas', name: 'Cartas' }, { id: 'cat_videojuegos', name: 'Videojuegos' }];
                 collectibles = Array.isArray(saved.collectibles) ? saved.collectibles : [];
-                dayPlanner = (saved.dayPlanner && typeof saved.dayPlanner === 'object') ? saved.dayPlanner : { dayKey: '', items: [] };
-                dayPlanner.items = Array.isArray(dayPlanner.items) ? dayPlanner.items : [];
+                dayPlanner = migratePlannerData(saved.dayPlanner);
                 recurringTasks = Array.isArray(saved.recurringTasks) ? saved.recurringTasks : [];
                 recurringTasks.forEach(t => { t.completadas = t.completadas && typeof t.completadas === 'object' ? t.completadas : {}; });
                 dailyEffort = (saved.dailyEffort && typeof saved.dailyEffort === 'object') ? saved.dailyEffort : {};
@@ -2178,13 +2183,13 @@
                 pctEl.textContent = Math.round(pct) + '%';
             }
 
-            // Comprueba si el planificador debe reiniciarse (cruce de las 4:00 am).
-            if (typeof dayPlanner !== 'undefined' && dayPlanner) {
-                const key = currentPlannerDayKey();
-                if (dayPlanner.dayKey !== key) {
-                    resetDayPlannerIfNeeded();
-                    if (currentView === 'planner') render();
-                }
+            // Comprueba si "hoy" ha cambiado (cruce de las 4:00 am), para
+            // limpiar días pasados y refrescar la pestaña "Hoy" si está abierta.
+            const todayKey = currentPlannerDayKey();
+            if (plannerLastTodayKey !== todayKey) {
+                plannerLastTodayKey = todayKey;
+                resetDayPlannerIfNeeded();
+                if (currentView === 'planner') render();
             }
         }
 
@@ -2202,6 +2207,7 @@
         function switchView(view) {
             try {
                 currentView = view;
+                if (view === 'planner') plannerDayOffset = 0;
 
                 document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
                     b.classList.toggle('active', b.dataset.view === view);
@@ -2374,47 +2380,95 @@
 
         // ============================================================
         //  PLANIFICADOR DEL DÍA (sustituye a Apuntes)
-        //  La tabla se reinicia vacía cada día a las 4:00 am.
+        //  Cada día lógico (4:00 am - 4:00 am) tiene su propia lista de
+        //  eventos, para poder planificar hoy, mañana y pasado mañana
+        //  por adelantado. Los días pasados se limpian solos.
         // ============================================================
 
-        // Clave del "día lógico" actual: antes de las 4:00 am se sigue
-        // considerando parte del día anterior.
-        function currentPlannerDayKey(date = new Date()) {
+        const PLANNER_DAY_TABS = [
+            { offset: 0, label: 'Hoy' },
+            { offset: 1, label: 'Mañana' },
+            { offset: 2, label: 'Pasado mañana' }
+        ];
+
+        // Clave del "día lógico" para un desplazamiento de días dado: antes de
+        // las 4:00 am se sigue considerando parte del día anterior.
+        function currentPlannerDayKey(date = new Date(), offsetDays = 0) {
             const d = new Date(date);
             if (d.getHours() < 4) d.setDate(d.getDate() - 1);
+            d.setDate(d.getDate() + offsetDays);
             return d.toISOString().slice(0, 10);
         }
 
-        function resetDayPlannerIfNeeded() {
-            const key = currentPlannerDayKey();
-            if (!dayPlanner || dayPlanner.dayKey !== key) {
-                dayPlanner = { dayKey: key, items: [] };
+        // Adapta datos guardados con el formato antiguo (un único { dayKey, items })
+        // al nuevo formato multi-día { days: { AAAA-MM-DD: items[] } }.
+        function migratePlannerData(saved) {
+            if (saved && typeof saved === 'object' && saved.days && typeof saved.days === 'object') {
+                const days = {};
+                Object.keys(saved.days).forEach(k => { days[k] = Array.isArray(saved.days[k]) ? saved.days[k] : []; });
+                return { days };
             }
-            dayPlanner.items = Array.isArray(dayPlanner.items) ? dayPlanner.items : [];
+            if (saved && typeof saved === 'object' && Array.isArray(saved.items) && saved.items.length) {
+                const key = saved.dayKey || currentPlannerDayKey();
+                return { days: { [key]: saved.items } };
+            }
+            return { days: {} };
+        }
+
+        function resetDayPlannerIfNeeded() {
+            if (!dayPlanner || typeof dayPlanner !== 'object') dayPlanner = { days: {} };
+            if (!dayPlanner.days || typeof dayPlanner.days !== 'object') dayPlanner.days = {};
+
+            // Limpia días ya pasados para que esto no crezca sin límite.
+            const todayKey = currentPlannerDayKey();
+            Object.keys(dayPlanner.days).forEach(k => {
+                if (k < todayKey) delete dayPlanner.days[k];
+            });
+        }
+
+        function plannerItemsForOffset(offset) {
+            resetDayPlannerIfNeeded();
+            const key = currentPlannerDayKey(new Date(), offset);
+            if (!Array.isArray(dayPlanner.days[key])) dayPlanner.days[key] = [];
+            return dayPlanner.days[key];
+        }
+
+        function setPlannerDayOffset(offset) {
+            plannerDayOffset = offset;
+            if (currentView === 'planner') render();
         }
 
         function renderPlanner() {
             resetDayPlannerIfNeeded();
-            const items = [...dayPlanner.items].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+            const offset = plannerDayOffset;
+            const items = [...plannerItemsForOffset(offset)].sort((a, b) => String(a.time).localeCompare(String(b.time)));
             const now = new Date();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
             const today = todayISO();
-            const dueToday = recurringTasksDueToday();
+            const dueToday = offset === 0 ? recurringTasksDueToday() : [];
+            const activeLabel = PLANNER_DAY_TABS.find(t => t.offset === offset)?.label || 'Hoy';
+            const emptyLabel = offset === 0 ? 'para hoy' : (offset === 1 ? 'para mañana' : 'para pasado mañana');
 
             return `
             <div class="planner-view">
                 <div class="planner-head">
                     <div>
-                        <div class="finance-kicker">Hoy</div>
+                        <div class="finance-kicker">${activeLabel}</div>
                         <h3 style="margin:2px 0 0 0">Planificador del día</h3>
                         <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">
-                            Esta tabla se reinicia vacía automáticamente cada día a las 4:00 am.
+                            Cada día se reinicia vacío automáticamente a las 4:00 am. Puedes ir dejando planificados los próximos dos días.
                         </p>
                     </div>
                     <div style="display:flex;gap:8px">
                         <button class="btn-secondary" onclick="openManageRecurringTasks()">Recurrentes</button>
                         <button class="btn-modal-primary" onclick="openAddPlannerItem()">+ Evento</button>
                     </div>
+                </div>
+
+                <div class="culture-tabs" style="margin-bottom:18px">
+                    ${PLANNER_DAY_TABS.map(t => `
+                        <button class="culture-tab ${offset === t.offset ? 'active' : ''}" onclick="setPlannerDayOffset(${t.offset})">${t.label}</button>
+                    `).join('')}
                 </div>
 
                 ${dueToday.length ? `
@@ -2433,48 +2487,51 @@
                     ${items.length ? items.map(it => {
                         const [h, m] = String(it.time).split(':').map(Number);
                         const itemMinutes = (h || 0) * 60 + (m || 0);
-                        const isPast = itemMinutes < nowMinutes;
+                        const isPast = offset === 0 && itemMinutes < nowMinutes;
                         return `
                         <div class="planner-item ${isPast ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''}">
                             <div class="planner-item-time">${escapeHtml(it.time)}</div>
-                            <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}')">
+                            <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})">
                             <div class="planner-item-body">
                                 <div class="planner-item-title">${escapeHtml(it.title)}</div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
                             </div>
-                            <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}')">×</button>
+                            <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}', ${offset})">×</button>
                         </div>`;
                     }).join('') : `
-                        <div class="finance-empty-state">Aún no has añadido eventos para hoy. Pulsa <strong>+ Evento</strong> para empezar tu planificación.</div>
+                        <div class="finance-empty-state">Aún no has añadido eventos ${emptyLabel}. Pulsa <strong>+ Evento</strong> para empezar tu planificación.</div>
                     `}
                 </div>
             </div>`;
         }
 
         function openAddPlannerItem() {
+            const offset = plannerDayOffset;
             const now = new Date();
-            const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(Math.ceil(now.getMinutes() / 5) * 5 % 60).padStart(2, '0')}`;
+            const defaultTime = offset === 0
+                ? `${String(now.getHours()).padStart(2, '0')}:${String(Math.ceil(now.getMinutes() / 5) * 5 % 60).padStart(2, '0')}`
+                : '09:00';
+            const titleSuffix = offset === 0 ? 'de hoy' : (offset === 1 ? 'de mañana' : 'de pasado mañana');
             showModal(`
-                <div class="modal-title">+ Evento del día</div>
+                <div class="modal-title">+ Evento ${titleSuffix}</div>
                 <div class="modal-label">Hora</div>
                 <input id="planner-item-time" class="modal-input" type="time" value="${defaultTime}">
                 <div class="modal-label">Título</div>
                 <input id="planner-item-title" class="modal-input" type="text" placeholder="¿Qué vas a hacer?">
                 <div class="modal-label">Notas (opcional)</div>
                 <textarea id="planner-item-notes" class="modal-input" rows="2" placeholder="Detalles adicionales..."></textarea>
-                <button class="btn-modal-primary" onclick="savePlannerItem()">Añadir a la timeline</button>
+                <button class="btn-modal-primary" onclick="savePlannerItem(${offset})">Añadir a la timeline</button>
             `);
             setTimeout(() => document.getElementById('planner-item-title')?.focus(), 50);
         }
 
-        async function savePlannerItem() {
-            resetDayPlannerIfNeeded();
+        async function savePlannerItem(offset = plannerDayOffset) {
             const time = document.getElementById('planner-item-time')?.value || '';
             const title = document.getElementById('planner-item-title')?.value.trim() || '';
             const notes = document.getElementById('planner-item-notes')?.value.trim() || '';
             if (!time || !title) { showToast('Indica al menos hora y título', true); return; }
 
-            dayPlanner.items.push({
+            plannerItemsForOffset(offset).push({
                 id: 'planner_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
                 time, title, notes, done: false
             });
@@ -2483,19 +2540,42 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        async function deletePlannerItem(id) {
+        async function deletePlannerItem(id, offset = plannerDayOffset) {
+            const key = currentPlannerDayKey(new Date(), offset);
             resetDayPlannerIfNeeded();
-            dayPlanner.items = dayPlanner.items.filter(it => it.id !== id);
+            if (Array.isArray(dayPlanner.days[key])) {
+                dayPlanner.days[key] = dayPlanner.days[key].filter(it => it.id !== id);
+            }
             if (currentView === 'planner') render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        async function togglePlannerItemDone(id) {
-            resetDayPlannerIfNeeded();
-            const item = dayPlanner.items.find(it => it.id === id);
+        async function togglePlannerItemDone(id, offset = plannerDayOffset) {
+            const item = plannerItemsForOffset(offset).find(it => it.id === id);
             if (!item) return;
             item.done = !item.done;
+
+            // Al completarla, queda constancia como evento en el calendario
+            // (con la fecha real en que se completó); al desmarcarla, se retira.
+            const doneEntryId = 'planner_done_' + item.id;
+            entries = entries.filter(e => e.id !== doneEntryId);
+            if (item.done) {
+                entries.push({
+                    id: doneEntryId,
+                    type: 'event',
+                    eventType: 'otro',
+                    title: 'Completado: ' + item.title,
+                    date: todayISO(),
+                    time: item.time || '',
+                    place: '',
+                    notes: item.notes || '',
+                    category: 'Planificador'
+                });
+            }
+            filteredEntries = [...entries];
+
             if (currentView === 'planner') render();
+            else if (currentView === 'calendar' || currentView === 'home') render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -2525,7 +2605,28 @@
             const today = todayISO();
             task.completadas = task.completadas || {};
             task.completadas[today] = !task.completadas[today];
+
+            // Igual que con los eventos del planificador: cada día que se
+            // completa una recurrente queda su propio evento en el calendario.
+            const doneEntryId = 'recurring_done_' + task.id + '_' + today;
+            entries = entries.filter(e => e.id !== doneEntryId);
+            if (task.completadas[today]) {
+                entries.push({
+                    id: doneEntryId,
+                    type: 'event',
+                    eventType: 'otro',
+                    title: 'Completado: ' + task.texto,
+                    date: today,
+                    time: '',
+                    place: '',
+                    notes: 'Tarea recurrente',
+                    category: 'Tareas recurrentes'
+                });
+            }
+            filteredEntries = [...entries];
+
             if (currentView === 'planner') render();
+            else if (currentView === 'calendar' || currentView === 'home') render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -3618,7 +3719,7 @@
             if (data.weeklyTasks) weeklyTasks = Array.isArray(data.weeklyTasks) ? data.weeklyTasks : [];
             if (data.collectibleCategories) collectibleCategories = data.collectibleCategories;
             if (data.collectibles) collectibles = data.collectibles;
-            if (data.dayPlanner) dayPlanner = data.dayPlanner;
+            if (data.dayPlanner) dayPlanner = migratePlannerData(data.dayPlanner);
             if (data.recurringTasks) recurringTasks = Array.isArray(data.recurringTasks) ? data.recurringTasks : [];
             if (data.dailyEffort) dailyEffort = (typeof data.dailyEffort === 'object') ? data.dailyEffort : {};
             if (data.studies) studies = data.studies;
