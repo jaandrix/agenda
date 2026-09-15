@@ -58,7 +58,13 @@
 
                 if ('serviceWorker' in navigator) {
                     window.addEventListener('load', function () {
-                        navigator.serviceWorker.register('service-worker.js').catch(function () {});
+                        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' }).catch(function () {});
+                        // Comprueba si hay una versión nueva del propio service-worker.js
+                        // cada vez que se abre la app, en vez de fiarse solo de la
+                        // revisión automática del navegador (que puede tardar).
+                        navigator.serviceWorker.getRegistration().then(function (reg) {
+                            if (reg) reg.update().catch(function () {});
+                        });
                     });
                 }
             })();
