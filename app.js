@@ -6927,17 +6927,68 @@
             return `En ${days} días`;
         }
 
+        function renderEventsImportBox() {
+            return `
+                <div class="card" style="margin-bottom:16px">
+                    <div class="events-section-label">Importar por texto</div>
+                    <textarea id="events-text-import" class="modal-input" rows="1" placeholder="Pega aquí líneas EVENTO|fecha|hora|tipo|título|lugar|notas..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+                    <button class="btn-secondary" style="width:auto;margin:0;padding:7px 14px;font-size:12px;border-radius:14px" onclick="processEventsTextImport()">Procesar texto</button>
+                    <div style="font-size:10px;color:var(--text-secondary);margin-top:6px">Formato: EVENTO|AAAA-MM-DD|HH:MM|tipo|título|lugar|notas — hora, lugar y notas pueden ir vacíos. Tipo: social/teatro/cine/concierto/deporte/otro.</div>
+                    <div id="events-import-summary" style="font-size:12px;margin-top:8px;color:var(--text-secondary)"></div>
+                </div>`;
+        }
+
+        // Mismo patrón que el importador de texto de Fantasy: líneas con
+        // campos separados por "|", pensadas para pegar de golpe lo que
+        // genere el prompt de importación de eventos (guardado en Ajustes →
+        // Prompts guardados). Duplicados = mismo título y misma fecha ya
+        // existentes, para poder pegar el mismo bloque dos veces sin miedo.
+        function processEventsTextImport() {
+            const ta = document.getElementById('events-text-import');
+            const raw = ta.value.trim();
+            if (!raw) { showToast('Pega primero el texto a importar', true); return; }
+            const validTypes = ['social', 'teatro', 'cine', 'concierto', 'deporte', 'otro'];
+            let added = 0, errors = 0, duplicates = 0;
+
+            raw.split('\n').map(l => l.trim()).filter(Boolean).forEach((line, i) => {
+                const p = line.split('|').map(s => s.trim());
+                if ((p[0] || '').toUpperCase() !== 'EVENTO' || p.length < 5) { errors++; return; }
+                const date = p[1];
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors++; return; }
+                const time = /^\d{1,2}:\d{2}$/.test(p[2]) ? p[2] : '';
+                let eventType = (p[3] || '').toLowerCase();
+                if (!validTypes.includes(eventType)) eventType = 'otro';
+                const title = p[4] || '';
+                if (!title) { errors++; return; }
+                const place = p[5] || '';
+                const notes = p[6] || '';
+
+                if (entries.some(e => e.type === 'event' && e.title === title && e.date === date)) { duplicates++; return; }
+                entries.push({ id: 'evt_text_' + Date.now() + '_' + i, type: 'event', title, eventType, date, time, place, notes });
+                added++;
+            });
+
+            render();
+            const summaryEl = document.getElementById('events-import-summary');
+            if (summaryEl) {
+                summaryEl.textContent = `Importados: ${added}` +
+                    (duplicates ? ` · ${duplicates} ya existían` : '') +
+                    (errors ? ` · ${errors} línea${errors === 1 ? '' : 's'} con error` : '');
+            }
+            saveData().catch(e => { console.error('Error guardando eventos importados:', e); showToast('No se pudo guardar en la nube', true); });
+        }
+
         function renderEvents() {
             const allEvents = entries.filter(e => e.type === 'event');
             if (!allEvents.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento"</div></div>`;
+                return `<div style="max-width:980px">${renderEventsImportBox()}</div><div class="empty-state"><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento", o pega texto arriba</div></div>`;
             }
             const { items: events, banner } = applyMonthFilterTo('event', allEvents);
             if (!events.length) return banner + `<div class="empty-state"><div class="empty-title">Sin eventos ese mes</div></div>`;
 
             const next = entryMonthFilter && entryMonthFilter.type === 'event' ? null : nextUpcomingEvent(events);
 
-            let html = `<div style="max-width:980px">` + banner;
+            let html = `<div style="max-width:980px">` + banner + renderEventsImportBox();
 
             if (next) {
                 const nextCat = categories.find(c => c.id === next.categoryId);
