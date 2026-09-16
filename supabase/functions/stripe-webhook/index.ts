@@ -19,6 +19,10 @@
 //   https://<tu-project-ref>.supabase.co/functions/v1/stripe-webhook
 // con los eventos: checkout.session.completed, customer.subscription.updated,
 // customer.subscription.deleted
+//
+// Ver también supabase/functions/cancelar-suscripcion — la función que
+// llama la propia app para cancelar (comparte los mismos STRIPE_SECRET_KEY
+// y demás secretos ya fijados aquí, no hace falta repetirlos).
 
 import Stripe from 'https://esm.sh/stripe?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -47,6 +51,26 @@ function centroPeriodoFin(subscription: any): string | null {
 
 function trialFin(subscription: any): string | null {
     return subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
+}
+
+// 'mensual' | 'anual' según el intervalo del precio contratado — para poder
+// mostrar "Suscripción mensual/anual" en Ajustes sin tener que guardar el
+// price_id y mirarlo aparte.
+function centroPlan(subscription: any): string | null {
+    const interval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+    if (interval === 'month') return 'mensual';
+    if (interval === 'year') return 'anual';
+    return null;
+}
+
+function camposComunes(subscription: any) {
+    return {
+        estado: subscription.status,
+        plan: centroPlan(subscription),
+        periodo_fin: centroPeriodoFin(subscription),
+        trial_fin: trialFin(subscription),
+        cancela_al_final_periodo: !!subscription.cancel_at_period_end,
+    };
 }
 
 async function upsertPorUserId(userId: string, fields: Record<string, unknown>) {
@@ -96,10 +120,8 @@ Deno.serve(async (req) => {
                 await upsertPorUserId(userId, {
                     stripe_customer_id: session.customer,
                     stripe_subscription_id: subscription.id,
-                    estado: subscription.status,
                     modulos: ['base'],
-                    periodo_fin: centroPeriodoFin(subscription),
-                    trial_fin: trialFin(subscription),
+                    ...camposComunes(subscription),
                 });
                 break;
             }
@@ -111,11 +133,7 @@ Deno.serve(async (req) => {
                 // de la propia suscripción de Stripe. El margen de gracia
                 // de past_due se aplica en el cliente (app.js); aquí solo
                 // se guarda el estado real que reporta Stripe.
-                await updatePorSubscriptionId(subscription.id, {
-                    estado: subscription.status,
-                    periodo_fin: centroPeriodoFin(subscription),
-                    trial_fin: trialFin(subscription),
-                });
+                await updatePorSubscriptionId(subscription.id, camposComunes(subscription));
                 break;
             }
 

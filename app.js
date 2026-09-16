@@ -84,7 +84,12 @@
             showLandingScreen();
         }
 
-        function goToSignup() {
+        // El plan elegido en la landing (si lo hay) se recuerda para que, una
+        // vez creada la cuenta, la pantalla de pago lo destaque en vez de
+        // hacer que el usuario elija dos veces lo mismo.
+        function goToSignup(plan) {
+            if (plan) sessionStorage.setItem('bitacoraPlanIntencion', plan);
+            else sessionStorage.removeItem('bitacoraPlanIntencion');
             document.getElementById('landing-screen').classList.remove('visible');
             document.getElementById('login-screen').style.display = 'flex';
             showAuthMode('signup');
@@ -182,17 +187,27 @@
                     <button onclick="startApp()">Reintentar ahora</button>
                     <a class="login-back" onclick="handleLogout()">Cerrar sesión</a>
                 </div>
-            ` : `
+            ` : (() => {
+                // Solo se aplica una vez, justo tras venir de elegir un plan
+                // en la landing — no debe quedar "pegado" en visitas futuras.
+                // Sin elección previa, el anual sigue destacado por defecto
+                // (es el de mejor precio).
+                const elegido = sessionStorage.getItem('bitacoraPlanIntencion');
+                sessionStorage.removeItem('bitacoraPlanIntencion');
+                const mensualElegido = elegido === 'mensual';
+                const anualElegido = elegido === 'anual' || !elegido;
+                return `
                 <div id="paywall-box">
                     <h1>Bienvenido a <span class="login-brand-accent">Bitácora</span></h1>
                     <p class="sub">Un cuaderno digital para tu vida entera: ocio, trabajo, estudios, finanzas y planes, todos en un solo sitio. Sin scroll infinito, sin ruido, sin depender de decenas de apps.</p>
                     <div class="paywall-plans">
-                        <button class="paywall-plan" onclick="startStripeCheckout('mensual')">
+                        <button class="paywall-plan ${mensualElegido ? 'paywall-plan-highlight' : ''}" onclick="startStripeCheckout('mensual')">
+                            ${mensualElegido ? '<span class="paywall-plan-badge">Tu elección</span>' : ''}
                             <span class="paywall-plan-name">Mensual</span>
                             <span class="paywall-plan-price">1,99€<span class="paywall-plan-period">/mes</span></span>
                         </button>
-                        <button class="paywall-plan paywall-plan-highlight" onclick="startStripeCheckout('anual')">
-                            <span class="paywall-plan-badge">Ahorra ~20%</span>
+                        <button class="paywall-plan ${anualElegido ? 'paywall-plan-highlight' : ''}" onclick="startStripeCheckout('anual')">
+                            <span class="paywall-plan-badge">${elegido === 'anual' ? 'Tu elección' : 'Ahorra ~20%'}</span>
                             <span class="paywall-plan-name">Anual</span>
                             <span class="paywall-plan-price">18,99€<span class="paywall-plan-period">/año</span></span>
                         </button>
@@ -200,7 +215,7 @@
                     <div class="paywall-trial-note">14 días de prueba gratuita en ambos planes. Cancela cuando quieras.</div>
                     <a class="login-back" onclick="handleLogout()">Cerrar sesión</a>
                 </div>
-            `;
+            `; })();
         }
 
         function startStripeCheckout(plan) {
@@ -4101,7 +4116,8 @@
             else if (currentView === 'studies') content.innerHTML = renderStudies();
             else if (currentView === 'links') content.innerHTML = renderLinks();
             else if (currentView === 'settings') { content.innerHTML = renderSettings();
-                if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton(); }
+                if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
+                loadSettingsSubscriptionInfo(); }
             updateAddButton();
             updateSidebarPrivacy();
 
@@ -7896,6 +7912,11 @@
 
             return `
                 <div style="max-width:600px">
+                    <div class="chart-container" style="margin-bottom:16px" id="settings-subscription-section">
+                        <div class="chart-title">Suscripción</div>
+                        <div id="settings-subscription-body" style="margin-top:10px;font-size:12.5px;color:var(--text-secondary)">Cargando...</div>
+                    </div>
+
                     <div class="chart-container" style="margin-bottom:16px" id="settings-account-section">
                         <div class="chart-title">Datos de la cuenta</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
@@ -7952,6 +7973,64 @@
                         <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Esto cerrará tu sesión en todos los navegadores y dispositivos donde hayas iniciado sesión.</div>
                     </div>
                 </div>`;
+        }
+
+        // Rellena la sección "Suscripción" de Ajustes aparte, porque
+        // necesita una consulta a Supabase (renderSettings() es síncrono,
+        // igual que ya hacen loadDocuments()/loadFriendsViewData() con
+        // sus propias secciones).
+        async function loadSettingsSubscriptionInfo() {
+            const body = document.getElementById('settings-subscription-body');
+            if (!body) return;
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) return;
+            const sub = await getSubscriptionStatus(user, { allowRetry: false });
+
+            if (sub.estado === 'legado') {
+                body.innerHTML = 'Tienes acceso gratuito permanente (cuenta anterior al lanzamiento de pago).';
+                return;
+            }
+            if (sub.estado === 'sin_suscripcion' || sub.estado === 'canceled') {
+                body.innerHTML = sub.estado === 'canceled'
+                    ? 'Tu suscripción ha terminado. Ya no tienes acceso a Bitácora.'
+                    : 'Sin suscripción activa.';
+                return;
+            }
+
+            const planLabel = sub.plan === 'anual' ? 'anual' : 'mensual';
+            const fecha = sub.periodo_fin
+                ? new Date(sub.periodo_fin).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+                : null;
+
+            if (sub.cancela_al_final_periodo) {
+                body.innerHTML = `
+                    <div class="settings-subscription-status">Suscripción ${planLabel} · se cancela${fecha ? ' el ' + fecha : ''}</div>
+                    <div style="margin-top:6px">Mantienes el acceso hasta esa fecha. No se te volverá a cobrar.</div>`;
+                return;
+            }
+
+            body.innerHTML = `
+                <div class="settings-subscription-status">Suscripción ${planLabel}${sub.estado === 'trialing' ? ' (en prueba)' : ''} · se renueva${fecha ? ' el ' + fecha : ''}</div>
+                <button class="btn-secondary" style="width:auto;margin-top:10px;color:#7f1d1d" onclick="cancelSubscription()">Cancelar suscripción</button>`;
+        }
+
+        async function cancelSubscription() {
+            const confirmado = confirm('¿Seguro que quieres cancelar tu suscripción? Mantendrás el acceso hasta el final del periodo ya pagado, y no se te volverá a cobrar después.');
+            if (!confirmado) return;
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/cancelar-suscripcion`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error desconocido');
+                showToast('Suscripción cancelada. Conservas el acceso hasta el final del periodo.');
+                loadSettingsSubscriptionInfo();
+            } catch (e) {
+                console.error('Error cancelando suscripción:', e);
+                showToast('No se pudo cancelar: ' + e.message, true);
+            }
         }
 
         // ============================================================
