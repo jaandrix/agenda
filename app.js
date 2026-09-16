@@ -5701,11 +5701,26 @@
         const NOTIF_ICON_FRIEND = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M16 8v6M19 11h-6"/></svg>';
         const NOTIF_ICON_REC = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
         const NOTIF_ICON_TRIP = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.3 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.3-4-10s1.5-7.3 4-10z"/></svg>';
+        const NOTIF_ICON_EVENT = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>';
         const CULTURE_TYPE_TO_TAB = { book: 'books', series: 'series', movie: 'movies', game: 'games' };
         const CULTURE_TYPE_LABEL = { book: 'un libro', series: 'una serie', movie: 'una película', game: 'un videojuego' };
 
         function computeNotifItems() {
             const items = [];
+            // Eventos de hoy — mismos datos que el popup de bienvenida
+            // (getTodayAlerts), pero también avisados aquí por si el
+            // usuario cerró el popup sin fijarse o entra más tarde.
+            const today = todayISO();
+            getTodayAlerts().events.forEach(e => {
+                items.push({
+                    icon: NOTIF_ICON_EVENT,
+                    iconClass: 'icon-event',
+                    title: e.title,
+                    sub: e.time ? `Hoy · ${e.time}` : 'Hoy',
+                    date: today + 'T' + (e.time || '00:00'),
+                    onClick: () => { closeNotifPanel(); navigateToEntry(e.id); }
+                });
+            });
             (typeof solicitudesRecibidas !== 'undefined' ? solicitudesRecibidas : []).forEach(s => {
                 items.push({
                     icon: NOTIF_ICON_FRIEND,
@@ -5794,6 +5809,71 @@
         function closeNotifPanel() {
             const panel = document.getElementById('notif-panel');
             if (panel) panel.classList.remove('open');
+        }
+
+        // Descripciones breves para el panel de ayuda — se apoyan en
+        // NAV_SECTIONS (la misma fuente que usan la barra lateral y el
+        // buscador) para no mantener dos listas de apartados por separado.
+        const HELP_VIEW_DESC = {
+            calendar: 'Tu calendario: vista de día, semana, mes y año.',
+            home: 'Panorama general: lo próximo, avisos y accesos rápidos.',
+            planner: 'La agenda de hoy, mañana y pasado mañana.',
+            notes: 'Notas libres, una por día.',
+            events: 'Eventos y planes — con importador desde calendario (.ics).',
+            finances: 'Ingresos, gastos e inversiones.',
+            work: 'Tu historial laboral y los documentos de cada empleo.',
+            studies: 'Asignaturas, exámenes y apuntes.',
+            documents: 'Documentos importantes, guardados y organizados.',
+            goals: 'Objetivos a medio/largo plazo, con sus proyectos vinculados.',
+            projects: 'Proyectos con tareas y progreso.',
+            links: 'Enlaces guardados por categoría.',
+            culture: 'Libros, películas, series y videojuegos — con importadores.',
+            travels: 'Viajes, itinerarios y gastos.',
+            collectibles: 'Catálogo de coleccionables y su valor.',
+            friends: 'Amigos dentro de Bitácora: recomendaciones y viajes compartidos.',
+            tags: 'Todas tus entradas, filtradas por etiqueta.',
+            settings: 'Cuenta, suscripción, apariencia y más.',
+        };
+
+        function helpKbd(tecla) {
+            return `<span style="display:inline-block;min-width:34px;text-align:center;padding:3px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--bg-input);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--text-primary)">${tecla}</span>`;
+        }
+
+        function openHelpPanel() {
+            const movimiento = [
+                ['ENTER', 'Abre el buscador — «¿Dónde quieres ir?» — para saltar a cualquier apartado o entrada.'],
+                ['ESPACIO', 'Abre la captura rápida — «¿Dónde quieres crear la entrada?».'],
+                ['ESC', 'Cierra lo que esté abierto. Si no hay nada abierto, pregunta si quieres cerrar sesión.'],
+                ['CTRL + ↑ / ↓', 'Salta al apartado anterior/siguiente del menú.'],
+            ];
+            const secciones = NAV_SECTIONS.map(s => `
+                <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin:16px 0 8px">${escapeHtml(s.label)}</div>
+                <div style="display:flex;flex-direction:column;gap:9px">
+                    ${s.items.map(it => `
+                        <div style="display:flex;gap:10px;align-items:baseline">
+                            <span style="width:18px;flex-shrink:0;color:#3b82f6">${it.icon}</span>
+                            <div>
+                                <span style="font-weight:700;color:var(--text-primary)">${escapeHtml(it.text)}</span>
+                                <span style="color:var(--text-secondary)"> — ${escapeHtml(HELP_VIEW_DESC[it.view] || '')}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>`).join('');
+
+            showModal(`
+                <div class="modal-title">Cómo usar Bitácora<button class="modal-close" onclick="closeModal()">✕</button></div>
+                <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#3b82f6;margin-bottom:10px">Movimiento por Bitácora</div>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:6px">
+                    ${movimiento.map(([tecla, texto]) => `
+                        <div style="display:flex;gap:12px;align-items:baseline">
+                            ${helpKbd(tecla)}
+                            <span style="font-size:12.5px;color:var(--text-secondary);line-height:1.4">${texto}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#3b82f6;margin-top:18px">Apartados</div>
+                <div style="font-size:12.5px">${secciones}</div>
+            `);
         }
 
         function toggleNotifPanel() {
