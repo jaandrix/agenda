@@ -2575,10 +2575,22 @@
             if (!dayPlanner || typeof dayPlanner !== 'object') dayPlanner = { days: {} };
             if (!dayPlanner.days || typeof dayPlanner.days !== 'object') dayPlanner.days = {};
 
-            // Limpia días ya pasados para que esto no crezca sin límite.
+            // Lo que quedó sin marcar como hecho en un día ya pasado se
+            // arrastra a hoy en vez de perderse (se detecta en cuanto
+            // cambia la fecha — ver plannerLastTodayKey en
+            // updateSidebarProgress), marcado como "arrastrado" para
+            // poder destacarlo como prioritario.
             const todayKey = currentPlannerDayKey();
+            if (!Array.isArray(dayPlanner.days[todayKey])) dayPlanner.days[todayKey] = [];
             Object.keys(dayPlanner.days).forEach(k => {
-                if (k < todayKey) delete dayPlanner.days[k];
+                if (k >= todayKey) return;
+                (dayPlanner.days[k] || []).forEach(it => {
+                    if (!it.done) {
+                        it.arrastrado = true;
+                        dayPlanner.days[todayKey].push(it);
+                    }
+                });
+                delete dayPlanner.days[k];
             });
         }
 
@@ -2612,7 +2624,7 @@
                         <div class="finance-kicker">${activeLabel}</div>
                         <h3 style="margin:2px 0 0 0">Planificador del día</h3>
                         <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">
-                            Cada día se reinicia vacío automáticamente a las 4:00 am. Puedes ir dejando planificados los próximos dos días.
+                            Cada día empieza de cero a las 4:00 am — lo que no marques como hecho se arrastra a hoy, destacado en granate. Puedes ir dejando planificados los próximos dos días.
                         </p>
                     </div>
                     <div style="display:flex;gap:8px">
@@ -2645,11 +2657,11 @@
                         const itemMinutes = (h || 0) * 60 + (m || 0);
                         const isPast = offset === 0 && itemMinutes < nowMinutes;
                         return `
-                        <div class="planner-item ${isPast ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''}">
+                        <div class="planner-item ${isPast && !it.arrastrado ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''} ${it.arrastrado && !it.done ? 'planner-item-arrastrado' : ''}">
                             <div class="planner-item-time">${escapeHtml(it.time)}</div>
                             <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})">
                             <div class="planner-item-body">
-                                <div class="planner-item-title">${escapeHtml(it.title)}</div>
+                                <div class="planner-item-title">${escapeHtml(it.title)}${it.arrastrado && !it.done ? '<span class="planner-item-arrastrado-tag">Pendiente de ayer</span>' : ''}</div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
                             </div>
                             <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}', ${offset})">×</button>
