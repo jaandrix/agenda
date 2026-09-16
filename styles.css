@@ -3517,10 +3517,34 @@
             margin-top: 10px;
         }
 
+        .settings-subscription-card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(127,29,29,0.35);
+            background: rgba(127,29,29,0.08);
+        }
+        .settings-subscription-card-legado {
+            border-color: rgba(59,130,246,0.35);
+            background: rgba(59,130,246,0.08);
+        }
+        .settings-subscription-card-legado .settings-subscription-status { color: #3b82f6; }
+        .settings-subscription-card-neutral {
+            border-color: var(--border-strong);
+            background: var(--bg-input);
+        }
+        .settings-subscription-card-neutral .settings-subscription-status { color: var(--text-primary); }
         .settings-subscription-status {
-            font-size: 13px;
-            font-weight: 700;
+            font-size: 13.5px;
+            font-weight: 800;
             color: #7f1d1d;
+        }
+        .settings-subscription-note {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
         }
 
         /* ============================================================

@@ -7987,13 +7987,19 @@
             const sub = await getSubscriptionStatus(user, { allowRetry: false });
 
             if (sub.estado === 'legado') {
-                body.innerHTML = 'Tienes acceso gratuito permanente (cuenta anterior al lanzamiento de pago).';
+                body.innerHTML = `
+                    <div class="settings-subscription-card settings-subscription-card-legado">
+                        <div class="settings-subscription-status">Acceso gratuito permanente</div>
+                        <div class="settings-subscription-note">Cuenta anterior al lanzamiento de pago.</div>
+                    </div>`;
                 return;
             }
             if (sub.estado === 'sin_suscripcion' || sub.estado === 'canceled') {
-                body.innerHTML = sub.estado === 'canceled'
-                    ? 'Tu suscripción ha terminado. Ya no tienes acceso a Bitácora.'
-                    : 'Sin suscripción activa.';
+                body.innerHTML = `
+                    <div class="settings-subscription-card settings-subscription-card-neutral">
+                        <div class="settings-subscription-status">${sub.estado === 'canceled' ? 'Suscripción terminada' : 'Sin suscripción activa'}</div>
+                        <div class="settings-subscription-note">${sub.estado === 'canceled' ? 'Ya no tienes acceso a Bitácora.' : ''}</div>
+                    </div>`;
                 return;
             }
 
@@ -8004,19 +8010,34 @@
 
             if (sub.cancela_al_final_periodo) {
                 body.innerHTML = `
-                    <div class="settings-subscription-status">Suscripción ${planLabel} · se cancela${fecha ? ' el ' + fecha : ''}</div>
-                    <div style="margin-top:6px">Mantienes el acceso hasta esa fecha. No se te volverá a cobrar.</div>`;
+                    <div class="settings-subscription-card">
+                        <div class="settings-subscription-status">Suscripción ${planLabel} · se cancela${fecha ? ' el ' + fecha : ''}</div>
+                        <div class="settings-subscription-note">Mantienes el acceso hasta esa fecha. No se te volverá a cobrar.</div>
+                    </div>`;
                 return;
             }
 
             body.innerHTML = `
-                <div class="settings-subscription-status">Suscripción ${planLabel}${sub.estado === 'trialing' ? ' (en prueba)' : ''} · se renueva${fecha ? ' el ' + fecha : ''}</div>
-                <button class="btn-secondary" style="width:auto;margin-top:10px;color:#7f1d1d" onclick="cancelSubscription()">Cancelar suscripción</button>`;
+                <div class="settings-subscription-card">
+                    <div class="settings-subscription-status">Suscripción ${planLabel}${sub.estado === 'trialing' ? ' (en prueba)' : ''} · se renueva${fecha ? ' el ' + fecha : ''}</div>
+                    <button class="btn-secondary" style="width:auto;margin-top:10px;color:#7f1d1d" onclick="confirmCancelSubscription()">Cancelar suscripción</button>
+                </div>`;
         }
 
-        async function cancelSubscription() {
-            const confirmado = confirm('¿Seguro que quieres cancelar tu suscripción? Mantendrás el acceso hasta el final del periodo ya pagado, y no se te volverá a cobrar después.');
-            if (!confirmado) return;
+        function confirmCancelSubscription() {
+            showModal(`
+                <div class="modal-title">Cancelar suscripción<button class="modal-close" onclick="closeModal()">✕</button></div>
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:22px">
+                    Mantendrás el acceso hasta el final del periodo ya pagado. No se te volverá a cobrar después.
+                </p>
+                <div style="display:flex;gap:8px">
+                    <button class="btn-secondary" style="width:auto;flex:1" onclick="closeModal()">Seguir suscrito</button>
+                    <button class="btn-secondary" style="width:auto;flex:1;background:#7f1d1d;color:#fff;border-color:#7f1d1d" onclick="closeModal();executeCancelSubscription()">Sí, cancelar</button>
+                </div>
+            `);
+        }
+
+        async function executeCancelSubscription() {
             try {
                 const { data: { session } } = await sb.auth.getSession();
                 const res = await fetch(`${SUPABASE_URL}/functions/v1/cancelar-suscripcion`, {
