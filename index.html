@@ -35,7 +35,10 @@
     <div id="landing-screen">
         <div class="landing-topbar">
             <div class="landing-brand"><span class="d"></span>Bitácora</div>
-            <button class="landing-login-link" onclick="goToLogin()">Iniciar sesión</button>
+            <div class="landing-topbar-actions">
+                <button class="landing-about-link" onclick="openAboutBitacora()">Qué es Bitácora</button>
+                <button class="landing-login-link" onclick="goToLogin()">Iniciar sesión</button>
+            </div>
         </div>
 
         <div class="landing-hero">
@@ -46,12 +49,6 @@
                 <button class="landing-cta-primary" onclick="goToSignup()">Crear cuenta gratis</button>
                 <button class="landing-cta-secondary" onclick="openPromoVideo()">▶ Ver el vídeo</button>
             </div>
-        </div>
-
-        <div class="landing-manifesto">
-            <div class="landing-manifesto-line">Sin scroll infinito</div>
-            <div class="landing-manifesto-line">Sin ruido</div>
-            <div class="landing-manifesto-line">Sin competir por tu atención</div>
         </div>
 
         <div class="landing-pricing">
@@ -67,11 +64,7 @@
                     <span class="paywall-plan-price">18,99€<span class="paywall-plan-period">/año</span></span>
                 </button>
             </div>
-            <div class="landing-pricing-note">Cancela cuando quieras. Sin permanencia.</div>
-        </div>
-
-        <div class="landing-footer">
-            <button class="pwa-install-btn about-bitacora-btn" onclick="openAboutBitacora()">ⓘ qué es Bitácora, a fondo</button>
+            <div class="landing-pricing-note">Elige plan y págalo ya con tu cuenta creada. Cancela cuando quieras.</div>
         </div>
     </div>
 
@@ -79,8 +72,8 @@
     LOGIN SCREEN
     ============================================================ -->
     <div id="login-screen">
+        <button class="login-back-corner" onclick="goToLanding()">← Volver</button>
         <div class="login-top-actions">
-            <button id="pwa-install-btn" class="pwa-install-btn" onclick="handlePwaInstallClick()" style="display:none">⭳ descarga Bitácora</button>
             <button class="pwa-install-btn about-bitacora-btn" onclick="openAboutBitacora()">ⓘ qué es Bitácora</button>
         </div>
         <script src="pwa-install.js"></script>

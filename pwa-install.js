@@ -2,19 +2,31 @@
             // que el botón de instalar funcione aunque algo más falle.
             (function () {
                 var pwaDeferredPrompt = null;
+                // El botón solo vive en el DOM cuando la vista Ajustes está
+                // montada (se re-crea cada vez que se renderiza), así que el
+                // estado real de "se puede instalar" se guarda aparte, y
+                // pwaSyncInstallButton() lo vuelve a aplicar cada vez que
+                // Ajustes se renderiza, sin depender de cuándo llegó el evento.
+                var pwaCurrentMode = null;
                 var pwaIsStandalone = function () {
                     return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
                 };
                 function showPwaInstallButton(mode) {
+                    pwaCurrentMode = mode;
+                    if (pwaIsStandalone()) return;
                     var btn = document.getElementById('pwa-install-btn');
-                    if (!btn || pwaIsStandalone()) return;
+                    if (!btn) return;
                     btn.dataset.mode = mode;
                     btn.style.display = 'inline-flex';
                 }
                 function hidePwaInstallButton() {
+                    pwaCurrentMode = null;
                     var btn = document.getElementById('pwa-install-btn');
                     if (btn) btn.style.display = 'none';
                 }
+                window.pwaSyncInstallButton = function () {
+                    if (pwaCurrentMode) showPwaInstallButton(pwaCurrentMode);
+                };
                 function showPwaFallbackMessage() {
                     var ua = navigator.userAgent;
                     var isIOS = /iphone|ipad|ipod/i.test(ua);

@@ -80,6 +80,10 @@
             showAuthMode('login');
         }
 
+        function goToLanding() {
+            showLandingScreen();
+        }
+
         function goToSignup() {
             document.getElementById('landing-screen').classList.remove('visible');
             document.getElementById('login-screen').style.display = 'flex';
@@ -4096,7 +4100,8 @@
                 loadFriendsViewData(); }
             else if (currentView === 'studies') content.innerHTML = renderStudies();
             else if (currentView === 'links') content.innerHTML = renderLinks();
-            else if (currentView === 'settings') content.innerHTML = renderSettings();
+            else if (currentView === 'settings') { content.innerHTML = renderSettings();
+                if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton(); }
             updateAddButton();
             updateSidebarPrivacy();
 
@@ -7902,7 +7907,10 @@
 
                     <div class="chart-container" style="margin-bottom:16px">
                         <div class="chart-title">Qué es Bitácora</div>
-                        <div style="min-height:20px"></div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                            <button class="btn-secondary" style="width:auto" onclick="openAboutBitacora()">ⓘ Qué es Bitácora, a fondo</button>
+                            <button class="btn-secondary" id="pwa-install-btn" style="width:auto;display:none" onclick="handlePwaInstallClick()">⭳ Descargar Bitácora</button>
+                        </div>
                     </div>
 
                     <div class="chart-container" style="margin-bottom:16px" id="settings-appearance-section">
