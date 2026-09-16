@@ -557,6 +557,55 @@
         .notif-bell-btn:hover { background: var(--bg-card-hover); border-color: var(--border-strong); transform: translateY(-1px); }
         .notif-bell-btn:active { transform: translateY(0); }
         #help-btn { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 800; }
+
+        .help-section-label {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .help-kbd-list {
+            display: flex;
+            flex-direction: column;
+            gap: 13px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 4px;
+        }
+        .help-kbd-row {
+            display: grid;
+            grid-template-columns: 108px 1fr;
+            align-items: center;
+            gap: 14px;
+        }
+        .help-kbd-desc {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .help-item-list {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 6px;
+        }
+        .help-item {
+            padding: 11px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .help-item:last-child { border-bottom: none; }
+        .help-item-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+        .help-item-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
         .notif-badge {
             position: absolute;
             top: 0px;

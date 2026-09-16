@@ -5811,68 +5811,67 @@
             if (panel) panel.classList.remove('open');
         }
 
-        // Descripciones breves para el panel de ayuda — se apoyan en
-        // NAV_SECTIONS (la misma fuente que usan la barra lateral y el
-        // buscador) para no mantener dos listas de apartados por separado.
+        // Explicaciones del panel de ayuda — se apoyan en NAV_SECTIONS (la
+        // misma fuente que usan la barra lateral y el buscador) para no
+        // mantener dos listas de apartados por separado. Cada una explica
+        // qué se hace ahí, no solo qué es, pensando en quien entra por
+        // primera vez y no tiene ni idea de por dónde empezar.
         const HELP_VIEW_DESC = {
-            calendar: 'Tu calendario: vista de día, semana, mes y año.',
-            home: 'Panorama general: lo próximo, avisos y accesos rápidos.',
-            planner: 'La agenda de hoy, mañana y pasado mañana.',
-            notes: 'Notas libres, una por día.',
-            events: 'Eventos y planes — con importador desde calendario (.ics).',
-            finances: 'Ingresos, gastos e inversiones.',
-            work: 'Tu historial laboral y los documentos de cada empleo.',
-            studies: 'Asignaturas, exámenes y apuntes.',
-            documents: 'Documentos importantes, guardados y organizados.',
-            goals: 'Objetivos a medio/largo plazo, con sus proyectos vinculados.',
-            projects: 'Proyectos con tareas y progreso.',
-            links: 'Enlaces guardados por categoría.',
-            culture: 'Libros, películas, series y videojuegos — con importadores.',
-            travels: 'Viajes, itinerarios y gastos.',
-            collectibles: 'Catálogo de coleccionables y su valor.',
-            friends: 'Amigos dentro de Bitácora: recomendaciones y viajes compartidos.',
-            tags: 'Todas tus entradas, filtradas por etiqueta.',
-            settings: 'Cuenta, suscripción, apariencia y más.',
+            calendar: 'Tu calendario de toda la vida: cambia entre vista de día, semana, mes o año, y toca cualquier día para ver o añadir lo que tengas planeado ese día.',
+            home: 'Un resumen de un vistazo: lo próximo que tienes encima, cumpleaños cercanos y accesos directos a lo que más usas — para no tener que ir apartado por apartado.',
+            planner: 'La franja horaria de tu día, hora a hora. Tiene pestañas para dejar ya planificados hoy, mañana y pasado mañana, y se vacía sola cada madrugada.',
+            notes: 'Una nota de texto libre por día, como un diario — sin campos ni estructura, escribe lo que quieras.',
+            events: 'Planes con fecha, hora y lugar: conciertos, citas, quedadas... Puedes añadirlos a mano o importar varios de golpe pegando texto o subiendo un archivo .ics de Google/Apple Calendar.',
+            finances: 'Registra cada ingreso y gasto, y sigue tus inversiones — verás tu balance y cómo evoluciona con gráficas.',
+            work: 'El historial de tus empleos: empresa, fechas, sueldo, y los documentos de cada uno (contrato, nóminas) guardados dentro.',
+            studies: 'Tus asignaturas, con los exámenes de cada una y tus propios apuntes guardados sin salir de Bitácora.',
+            documents: 'Un cajón para documentos importantes (DNI, contratos, seguros...), a mano cuando de verdad los necesites.',
+            goals: 'Objetivos que quieres cumplir a medio o largo plazo. Puedes vincular cada uno a los proyectos con los que estás trabajando para conseguirlo.',
+            projects: 'Proyectos con sus propias tareas: ve marcando lo que completas y verás el progreso de cada proyecto.',
+            links: 'Enlaces web guardados por categoría, para no perderlos entre veinte pestañas abiertas.',
+            culture: 'Lleva la cuenta de lo que lees, ves y juegas — libros, películas, series y videojuegos — con tu valoración y notas. Se puede importar desde Letterboxd, Goodreads o IMDb.',
+            travels: 'Cada viaje con su itinerario día a día y los gastos que vas llevando, para no perder el control fuera de casa.',
+            collectibles: 'Un catálogo de tus coleccionables (cartas, videojuegos...) con su valor de mercado actual.',
+            friends: 'Añade amigos dentro de Bitácora para recomendaros películas, libros o series entre vosotros, y compartir viajes.',
+            tags: 'Todas tus entradas de golpe, filtradas por la etiqueta que elijas — útil cuando sabes qué buscas pero no en qué apartado lo metiste.',
+            settings: 'Tu cuenta: exportar o importar tus datos, tu suscripción, el tema claro/oscuro, y el resto de opciones generales.',
         };
 
         function helpKbd(tecla) {
-            return `<span style="display:inline-block;min-width:34px;text-align:center;padding:3px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--bg-input);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--text-primary)">${tecla}</span>`;
+            return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:26px;padding:0 9px;border-radius:7px;border:1px solid var(--border-strong);border-bottom-width:2.5px;background:var(--bg-input);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--text-primary);white-space:nowrap">${tecla}</span>`;
         }
 
         function openHelpPanel() {
             const movimiento = [
-                ['ENTER', 'Abre el buscador — «¿Dónde quieres ir?» — para saltar a cualquier apartado o entrada.'],
-                ['ESPACIO', 'Abre la captura rápida — «¿Dónde quieres crear la entrada?».'],
-                ['ESC', 'Cierra lo que esté abierto. Si no hay nada abierto, pregunta si quieres cerrar sesión.'],
-                ['CTRL + ↑ / ↓', 'Salta al apartado anterior/siguiente del menú.'],
+                ['ENTER', 'Abre el buscador «¿Dónde quieres ir?», para saltar a cualquier apartado o entrada sin tocar el ratón.'],
+                ['ESPACIO', 'Abre la captura rápida «¿Dónde quieres crear la entrada?», para añadir algo nuevo al instante.'],
+                ['ESC', 'Cierra lo que esté abierto (un buscador, un modal...). Si no hay nada abierto, pregunta si quieres cerrar sesión.'],
+                ['CTRL + ↑ / ↓', 'Salta al apartado anterior o siguiente del menú, sin usar el ratón.'],
             ];
             const secciones = NAV_SECTIONS.map(s => `
-                <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin:16px 0 8px">${escapeHtml(s.label)}</div>
-                <div style="display:flex;flex-direction:column;gap:9px">
+                <div class="help-section-label">${escapeHtml(s.label)}</div>
+                <div class="help-item-list">
                     ${s.items.map(it => `
-                        <div style="display:flex;gap:10px;align-items:baseline">
-                            <span style="width:18px;flex-shrink:0;color:#3b82f6">${it.icon}</span>
-                            <div>
-                                <span style="font-weight:700;color:var(--text-primary)">${escapeHtml(it.text)}</span>
-                                <span style="color:var(--text-secondary)"> — ${escapeHtml(HELP_VIEW_DESC[it.view] || '')}</span>
-                            </div>
+                        <div class="help-item">
+                            <div class="help-item-title">${escapeHtml(it.text)}</div>
+                            <div class="help-item-desc">${escapeHtml(HELP_VIEW_DESC[it.view] || '')}</div>
                         </div>
                     `).join('')}
                 </div>`).join('');
 
             showModal(`
                 <div class="modal-title">Cómo usar Bitácora<button class="modal-close" onclick="closeModal()">✕</button></div>
-                <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#3b82f6;margin-bottom:10px">Movimiento por Bitácora</div>
-                <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:6px">
+                <div class="help-section-label" style="color:#3b82f6">Movimiento por Bitácora</div>
+                <div class="help-kbd-list">
                     ${movimiento.map(([tecla, texto]) => `
-                        <div style="display:flex;gap:12px;align-items:baseline">
+                        <div class="help-kbd-row">
                             ${helpKbd(tecla)}
-                            <span style="font-size:12.5px;color:var(--text-secondary);line-height:1.4">${texto}</span>
+                            <span class="help-kbd-desc">${texto}</span>
                         </div>
                     `).join('')}
                 </div>
-                <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#3b82f6;margin-top:18px">Apartados</div>
-                <div style="font-size:12.5px">${secciones}</div>
+                <div class="help-section-label" style="color:#3b82f6;margin-top:22px">Apartados</div>
+                ${secciones}
             `);
         }
 
