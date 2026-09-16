@@ -3620,19 +3620,11 @@
             inset: -200px;
             pointer-events: none;
             background:
-                radial-gradient(circle at 25% 20%, rgba(59,130,246,0.12), transparent 55%),
-                radial-gradient(circle at 80% 60%, rgba(59,130,246,0.08), transparent 50%);
-            opacity: .4;
-        }
-        #landing-screen::after {
-            content: '';
-            position: fixed;
-            inset: -200px;
-            pointer-events: none;
-            background:
+                radial-gradient(circle at 25% 20%, rgba(59,130,246,0.048), transparent 55%),
+                radial-gradient(circle at 80% 60%, rgba(59,130,246,0.032), transparent 50%),
                 linear-gradient(var(--landing-grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--landing-grid-line) 1px, transparent 1px);
-            background-size: 54px 54px, 54px 54px;
+            background-size: auto, auto, 54px 54px, 54px 54px;
         }
         .landing-topbar {
             position: relative;
