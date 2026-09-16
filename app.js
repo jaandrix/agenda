@@ -4462,16 +4462,16 @@
             const items = buildOnThisDayItems();
             if (!items.length) return '';
             const anioActual = new Date().getFullYear();
-            return `<div class="card" style="margin-bottom:16px">
-                <div class="card-title" style="margin-bottom:10px">En este día, hace...</div>
-                <div style="display:flex;flex-direction:column;gap:10px">
+            return `<div class="card" style="margin-top:16px;padding:14px 16px">
+                <div class="card-title" style="margin-bottom:8px;font-size:12px">En este día, hace...</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
                     ${items.map(it => {
                         const anios = anioActual - it.year;
-                        return `<div style="display:flex;align-items:baseline;gap:10px;cursor:pointer" onclick="openOnThisDayItem('${it.kind}','${it.id}')">
-                            <span style="font-size:11px;font-weight:800;color:var(--text-secondary);white-space:nowrap;min-width:56px">${anios} año${anios === 1 ? '' : 's'}</span>
+                        return `<div style="display:flex;align-items:baseline;gap:8px;cursor:pointer" onclick="openOnThisDayItem('${it.kind}','${it.id}')">
+                            <span style="font-size:10px;font-weight:800;color:var(--text-secondary);white-space:nowrap;min-width:48px">${anios} año${anios === 1 ? '' : 's'}</span>
                             <div style="min-width:0">
-                                <div style="font-size:13px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(it.title)}</div>
-                                <div style="font-size:11px;color:var(--text-secondary)">${escapeHtml(it.type)}</div>
+                                <div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(it.title)}</div>
+                                <div style="font-size:10px;color:var(--text-secondary)">${escapeHtml(it.type)}</div>
                             </div>
                         </div>`;
                     }).join('')}
@@ -4481,7 +4481,6 @@
 
         function renderCalendar() {
             let html = `<div class="cal-home">`;
-            html += renderOnThisDayCard();
             html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
                 <div class="culture-tabs" style="margin-bottom:0">
                     ${[['day','Día'],['week','Semana'],['month','Mes']].map(([id,label]) => `
@@ -4496,6 +4495,7 @@
             const body = calViewMode === 'month' ? renderCalMonth() : calViewMode === 'week' ? renderCalWeek() : renderCalDay();
             html += `<div class="cal-view-anim">${body}</div>`;
 
+            html += renderOnThisDayCard();
             html += `</div>`;
             return html;
         }
