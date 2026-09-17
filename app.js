@@ -5732,6 +5732,9 @@
             list.entryIds = Array.isArray(list.entryIds) ? list.entryIds : [];
             if (list.entryIds.includes(entryId)) list.entryIds = list.entryIds.filter(id => id !== entryId);
             else list.entryIds.push(entryId);
+            // Repinta la vista de fondo (la lista, con su contador y sus
+            // tarjetas) sin tocar el modal, que sigue abierto encima.
+            if (currentView === 'culture') render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
