@@ -36,6 +36,16 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 
 const STRIPE_WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 
+// Códigos promocionales que dan acceso gratis hasta una fecha de calendario
+// FIJA (no relativa a cuándo se registra cada persona) — a diferencia de un
+// cupón normal de Stripe, que solo entiende duraciones relativas. Al
+// detectar uno de estos códigos en el checkout, se fuerza el trial_end de
+// esa suscripción a esta fecha exacta y se retira el cupón asociado, para
+// que no afecte también al primer cobro real posterior a la fecha.
+const PROMO_TRIAL_OVERRIDES: Record<string, string> = {
+    YOURSIMPER: '2026-10-31T23:59:59Z',
+};
+
 // Cliente con la service role: se salta RLS, solo vive dentro de esta
 // función (nunca se expone al navegador).
 const sbAdmin = createClient(
@@ -116,7 +126,25 @@ Deno.serve(async (req) => {
                     console.error('checkout.session.completed sin client_reference_id, se ignora');
                     break;
                 }
-                const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+                let subscription = await stripe.subscriptions.retrieve(session.subscription as string, {
+                    expand: ['discounts.promotion_code'],
+                });
+
+                const promoCode = (subscription as any).discounts?.[0]?.promotion_code;
+                const promoCodeStr = promoCode && typeof promoCode === 'object' ? promoCode.code : undefined;
+                const trialOverride = promoCodeStr ? PROMO_TRIAL_OVERRIDES[promoCodeStr] : undefined;
+                if (trialOverride) {
+                    try {
+                        subscription = await stripe.subscriptions.update(subscription.id, {
+                            trial_end: Math.floor(new Date(trialOverride).getTime() / 1000),
+                            proration_behavior: 'none',
+                            coupon: '',
+                        });
+                    } catch (err) {
+                        console.error('Error aplicando trial_end fijo del código promocional:', promoCodeStr, err);
+                    }
+                }
+
                 await upsertPorUserId(userId, {
                     stripe_customer_id: session.customer,
                     stripe_subscription_id: subscription.id,
