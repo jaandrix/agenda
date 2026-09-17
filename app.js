@@ -546,6 +546,7 @@
             friends: 'Amigos',
             studies: 'Estudios',
             links: 'Enlaces',
+            suggestions: 'Sugerencias',
             settings: 'Ajustes'
         };
 
@@ -579,6 +580,7 @@
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
             ] },
             { label: 'Sistema', items: [
+                { view: 'suggestions', icon: '✎', text: 'Sugerencias' },
                 { view: 'settings', icon: '⚙', text: 'Ajustes' },
             ] },
         ];
@@ -738,13 +740,83 @@
             return { items: filtered, banner };
         }
 
+        // Apartados ocultos a mano (clic derecho → Ocultar): preferencia de
+        // pantalla, no datos — se guarda en este dispositivo, no en la nube.
+        let bitacoraHiddenSections = [];
+        try { bitacoraHiddenSections = JSON.parse(localStorage.getItem('bitacora_hidden_sections') || '[]'); } catch (e) { bitacoraHiddenSections = []; }
+        function saveHiddenSections() {
+            try { localStorage.setItem('bitacora_hidden_sections', JSON.stringify(bitacoraHiddenSections)); } catch (e) {}
+        }
+        function isSectionHidden(view) { return bitacoraHiddenSections.includes(view); }
+        function hideSection(view) {
+            if (!bitacoraHiddenSections.includes(view)) bitacoraHiddenSections.push(view);
+            saveHiddenSections();
+            closeNavContextMenu();
+            renderAllNavs();
+        }
+        function showSection(view) {
+            bitacoraHiddenSections = bitacoraHiddenSections.filter(v => v !== view);
+            saveHiddenSections();
+            closeNavContextMenu();
+            renderAllNavs();
+        }
+
+        function closeNavContextMenu() {
+            document.getElementById('nav-context-menu')?.remove();
+        }
+
+        function openNavContextMenu(event, view) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeNavContextMenu();
+            const label = NAV_VIEW_LABELS[view] || view;
+            const menu = document.createElement('div');
+            menu.id = 'nav-context-menu';
+            menu.className = 'nav-context-menu';
+            menu.innerHTML = `<button onclick="hideSection('${view}')">Ocultar «${escapeHtml(label)}»</button>`;
+            document.body.appendChild(menu);
+            const x = Math.min(event.clientX, window.innerWidth - menu.offsetWidth - 8);
+            const y = Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 8);
+            menu.style.left = Math.max(8, x) + 'px';
+            menu.style.top = Math.max(8, y) + 'px';
+            setTimeout(() => document.addEventListener('click', closeNavContextMenu, { once: true }), 0);
+        }
+
+        function toggleHiddenDrawer(el) {
+            el.parentElement.classList.toggle('open');
+        }
+
         function renderNavButtons(sections, mobile) {
             return sections.map(sec => `<span class="nav-label">${escapeHtml(sec.label)}</span>` +
-                sec.items.map(i => mobile
-                    ? `<button onclick="switchView('${i.view}');toggleMobileMenu()" data-view="${i.view}">${escapeHtml(i.text)}</button>`
-                    : `<button onclick="switchView('${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span></button>`
+                sec.items.filter(i => !isSectionHidden(i.view)).map(i => mobile
+                    ? `<button onclick="switchView('${i.view}');toggleMobileMenu()" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}">${escapeHtml(i.text)}</button>`
+                    : `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span></button>`
                 ).join('')
             ).join('');
+        }
+
+        // Los apartados ocultos no desaparecen del todo: quedan aquí, en un
+        // desplegable al final de la barra, para poder recuperarlos.
+        function renderHiddenSectionsDrawer(mobile) {
+            const items = bitacoraHiddenSections
+                .map(view => ({ view, label: NAV_VIEW_LABELS[view] }))
+                .filter(x => x.label);
+            if (!items.length) return '';
+            return `
+                <div class="nav-hidden-drawer">
+                    <button class="nav-hidden-toggle" onclick="toggleHiddenDrawer(this)">
+                        <span class="nav-text">Apartados ocultos (${items.length})</span>
+                        <span class="nav-hidden-arrow">›</span>
+                    </button>
+                    <div class="nav-hidden-list">
+                        ${items.map(x => `
+                            <div class="nav-hidden-item">
+                                <button onclick="switchView('${x.view}')${mobile ? ';toggleMobileMenu()' : ''}">${escapeHtml(x.label)}</button>
+                                <button class="nav-hidden-restore" title="Mostrar de nuevo" onclick="event.stopPropagation();showSection('${x.view}')">↺</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
         }
 
         function renderAllNavs() {
@@ -757,6 +829,10 @@
             targets.forEach(([id, sections, mobile]) => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = renderNavButtons(sections, mobile);
+            });
+            [['sidebar-hidden-drawer', false], ['mobile-hidden-drawer', true]].forEach(([id, mobile]) => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = renderHiddenSectionsDrawer(mobile);
             });
         }
         renderAllNavs();
@@ -4127,6 +4203,7 @@
                 loadFriendsViewData(); }
             else if (currentView === 'studies') content.innerHTML = renderStudies();
             else if (currentView === 'links') content.innerHTML = renderLinks();
+            else if (currentView === 'suggestions') { content.innerHTML = renderSuggestions(); loadMySuggestions(); }
             else if (currentView === 'settings') { content.innerHTML = renderSettings();
                 if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
                 loadSettingsSubscriptionInfo(); }
@@ -7995,6 +8072,58 @@
                 <input class="modal-input" style="margin-bottom:16px" placeholder="Buscar etiqueta..." value="${escapeHtml(window._tagFilter || '')}" oninput="filterTagsView(this.value)">
                 <div id="tags-cloud-list" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${renderTagsCloudList()}</div>
             </div>`;
+        }
+
+        // ============================================================
+        //  SUGERENCIAS
+        // ============================================================
+        function renderSuggestions() {
+            return `
+                <div style="max-width:600px">
+                    <div class="chart-container" style="margin-bottom:16px">
+                        <div class="chart-title">Sugerencias</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 14px">¿Hay algo que eches en falta, o que cambiarías? Cuéntamelo — lo leo yo directamente.</div>
+                        <textarea id="suggestion-text" class="modal-input" rows="4" placeholder="Escribe tu sugerencia..."></textarea>
+                        <button class="btn-modal-primary" style="width:auto" onclick="submitSuggestion()">Enviar sugerencia</button>
+                    </div>
+                    <div class="chart-container" id="my-suggestions-section" style="display:none">
+                        <div class="chart-title">Tus sugerencias anteriores</div>
+                        <div id="my-suggestions-list" style="margin-top:8px"></div>
+                    </div>
+                </div>`;
+        }
+
+        async function submitSuggestion() {
+            const textarea = document.getElementById('suggestion-text');
+            const texto = textarea?.value.trim();
+            if (!texto) { showToast('Escribe algo antes de enviar', true); return; }
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                const { error } = await sb.from('sugerencias').insert({ user_id: user.id, texto });
+                if (error) throw error;
+                textarea.value = '';
+                showToast('Sugerencia enviada, ¡gracias!');
+                loadMySuggestions();
+            } catch (e) {
+                console.error('Error enviando sugerencia:', e);
+                showToast('No se pudo enviar la sugerencia', true);
+            }
+        }
+
+        async function loadMySuggestions() {
+            const section = document.getElementById('my-suggestions-section');
+            const list = document.getElementById('my-suggestions-list');
+            if (!section || !list) return;
+            const { data: { user } } = await sb.auth.getUser();
+            const { data } = await sb.from('sugerencias').select('*').eq('user_id', user.id).order('creado_en', { ascending: false });
+            if (!data || !data.length) { section.style.display = 'none'; return; }
+            section.style.display = '';
+            list.innerHTML = data.map(s => `
+                <div style="padding:9px 0;border-bottom:1px solid var(--border)">
+                    <div style="font-size:12.5px;color:var(--text-primary);white-space:pre-line">${escapeHtml(s.texto)}</div>
+                    <div style="font-size:10.5px;color:var(--text-secondary);margin-top:4px">${new Date(s.creado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                </div>
+            `).join('');
         }
 
         function renderSettings() {
