@@ -4397,6 +4397,14 @@ body.beige {
 .habit-dot { width:11px; height:11px; border-radius:3px; background:var(--border); display:inline-block; }
 .habit-dot.on { background:var(--accent); }
 .habit-streak-text { font-size:11px; color:var(--text-secondary); }
+
+.graph-svg-wrap { border:1px solid var(--border); border-radius:16px; background:var(--bg-card); padding:8px; overflow:hidden; }
+.graph-node { cursor:pointer; }
+.graph-node circle { transition:r .12s ease; }
+.graph-node:hover circle { stroke:var(--accent); }
+.graph-node:hover text { fill:var(--text-primary); }
+
+.trip-map-container { width:100%; height:420px; border-radius:16px; overflow:hidden; border:1px solid var(--border); }
 .planner-item-past { opacity:0.45; }
 .planner-item-done .planner-item-title { text-decoration:line-through; color:var(--text-secondary); }
 .planner-item-arrastrado { background:rgba(127,29,29,0.07); border-radius:10px; padding-left:10px; padding-right:10px; margin:0 -10px; border-bottom-color:rgba(127,29,29,0.2); }

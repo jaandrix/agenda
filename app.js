@@ -547,6 +547,7 @@
             goals: 'Objetivos',
             planner: 'Planificador del día',
             habits: 'Hábitos',
+            graph: 'Grafo',
             collectibles: 'Coleccionables',
             friends: 'Amigos',
             studies: 'Estudios',
@@ -584,6 +585,7 @@
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
                 { view: 'friends', icon: '◕', text: 'Amigos' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
+                { view: 'graph', icon: '◇', text: 'Grafo' },
             ] },
             { label: 'Sistema', items: [
                 { view: 'suggestions', icon: '✎', text: 'Sugerencias' },
@@ -1009,6 +1011,120 @@
 
         function getBacklinks(entryId) {
             return entries.filter(e => e.id !== entryId && parseWikiLinks(e.notes || '').includes(entryId));
+        }
+
+        // ============================================================
+        //  VISTA DE GRAFO
+        //  Grafo de entradas conectadas por [[wikilinks]] en sus notas,
+        //  con un layout de fuerzas calculado una vez (sin física en vivo,
+        //  para no gastar ciclos de más en una app que no lo necesita).
+        // ============================================================
+        const GRAPH_TYPE_COLORS = {
+            book: '#3498db', movie: '#f39c12', series: '#9b59b6', game: '#e74c3c',
+            travel: '#e84393', project: '#00b894', work: '#e67e22', event: '#f9a8d4',
+            goal: '#2ecc71', place: '#14b8a6', birthday: '#ec4899'
+        };
+
+        function buildGraphData() {
+            const edgesRaw = [];
+            entries.forEach(e => {
+                parseWikiLinks(e.notes || '').forEach(targetId => {
+                    if (targetId === e.id) return;
+                    edgesRaw.push({ source: e.id, target: targetId });
+                });
+            });
+            const linkedIds = new Set();
+            edgesRaw.forEach(ed => { linkedIds.add(ed.source); linkedIds.add(ed.target); });
+            const nodes = [...linkedIds].map(id => entries.find(e => e.id === id)).filter(Boolean);
+            const nodeIds = new Set(nodes.map(n => n.id));
+            const edges = edgesRaw.filter(ed => nodeIds.has(ed.source) && nodeIds.has(ed.target));
+            return { nodes, edges };
+        }
+
+        function computeGraphLayout(nodes, edges) {
+            const n = nodes.length;
+            const W = 900, H = 620;
+            const positions = {};
+            nodes.forEach((node, i) => {
+                const angle = (i / n) * Math.PI * 2;
+                positions[node.id] = { x: W / 2 + Math.cos(angle) * 220, y: H / 2 + Math.sin(angle) * 220, vx: 0, vy: 0 };
+            });
+            const edgeList = edges.map(e => [e.source, e.target]);
+            const REPULSION = 2600, SPRING = 0.02, SPRING_LEN = 110, DAMPING = 0.85, CENTER_PULL = 0.01;
+            const iterations = n > 150 ? 60 : 160;
+            for (let iter = 0; iter < iterations; iter++) {
+                for (let i = 0; i < n; i++) {
+                    for (let j = i + 1; j < n; j++) {
+                        const a = positions[nodes[i].id], b = positions[nodes[j].id];
+                        const dx = a.x - b.x, dy = a.y - b.y;
+                        const distSq = Math.max(dx * dx + dy * dy, 0.01);
+                        const dist = Math.sqrt(distSq);
+                        const force = REPULSION / distSq;
+                        const fx = (dx / dist) * force, fy = (dy / dist) * force;
+                        a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+                    }
+                }
+                edgeList.forEach(([sId, tId]) => {
+                    const a = positions[sId], b = positions[tId];
+                    const dx = b.x - a.x, dy = b.y - a.y;
+                    const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 0.01);
+                    const force = (dist - SPRING_LEN) * SPRING;
+                    const fx = (dx / dist) * force, fy = (dy / dist) * force;
+                    a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+                });
+                nodes.forEach(node => {
+                    const p = positions[node.id];
+                    p.vx += (W / 2 - p.x) * CENTER_PULL;
+                    p.vy += (H / 2 - p.y) * CENTER_PULL;
+                    p.vx *= DAMPING; p.vy *= DAMPING;
+                    p.x += p.vx; p.y += p.vy;
+                });
+            }
+            return positions;
+        }
+
+        function renderGraph() {
+            const { nodes, edges } = buildGraphData();
+            if (!nodes.length) {
+                return `<div class="empty-state"><div class="empty-title">Sin conexiones todavía</div><div class="empty-sub">Escribe [[Título de otra entrada]] en las notas de cualquier entrada para enlazarla a otra, y aparecerán aquí conectadas.</div></div>`;
+            }
+            const positions = computeGraphLayout(nodes, edges);
+            const xs = Object.values(positions).map(p => p.x), ys = Object.values(positions).map(p => p.y);
+            const minX = Math.min(...xs) - 50, maxX = Math.max(...xs) + 50;
+            const minY = Math.min(...ys) - 50, maxY = Math.max(...ys) + 50;
+
+            const degree = {};
+            edges.forEach(e => { degree[e.source] = (degree[e.source] || 0) + 1; degree[e.target] = (degree[e.target] || 0) + 1; });
+
+            const edgesSvg = edges.map(e => {
+                const a = positions[e.source], b = positions[e.target];
+                return `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="var(--border-strong)" stroke-width="1.2"/>`;
+            }).join('');
+
+            const nodesSvg = nodes.map(node => {
+                const p = positions[node.id];
+                const cat = categories.find(c => c.id === node.categoryId);
+                const color = cat?.color || GRAPH_TYPE_COLORS[node.type] || 'var(--accent)';
+                const r = 5 + Math.min(11, (degree[node.id] || 0) * 1.6);
+                const label = (node.title || '').length > 22 ? node.title.slice(0, 20) + '…' : (node.title || '');
+                return `
+                    <g class="graph-node" onclick="openEntryDetail('${node.id}')">
+                        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${color}" stroke="var(--bg-app)" stroke-width="1.5"/>
+                        <text x="${p.x.toFixed(1)}" y="${(p.y - r - 5).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--text-secondary)">${escapeHtml(label)}</text>
+                    </g>`;
+            }).join('');
+
+            return `
+            <div>
+                <div style="font-size:20px;font-weight:800;margin-bottom:4px;color:var(--text-primary)">Grafo</div>
+                <div style="color:var(--text-secondary);margin-bottom:16px;font-size:12.5px">${nodes.length} entradas conectadas · escribe [[Título]] en las notas de cualquier entrada para enlazarla a otra.</div>
+                <div class="graph-svg-wrap">
+                    <svg viewBox="${minX.toFixed(1)} ${minY.toFixed(1)} ${(maxX - minX).toFixed(1)} ${(maxY - minY).toFixed(1)}" width="100%" style="min-height:440px">
+                        ${edgesSvg}
+                        ${nodesSvg}
+                    </svg>
+                </div>
+            </div>`;
         }
 
         // La cadena Objetivo → Proyecto se apoya en el mismo mecanismo de
@@ -4387,13 +4503,15 @@
             else if (currentView === 'home') content.innerHTML = renderHome();
             else if (currentView === 'culture') content.innerHTML = renderCulture();
             else if (currentView === 'travels') { content.innerHTML = renderTravels();
-                if (window._openTripId && tripManagerTab === 'documentos') loadTripDocuments(window._openTripId); }
+                if (window._openTripId && tripManagerTab === 'documentos') loadTripDocuments(window._openTripId);
+                if (window._openTripId && tripManagerTab === 'mapa') { const t = getTrip(window._openTripId); if (t) setTimeout(() => initTripMap(t), 0); } }
             else if (currentView === 'work') content.innerHTML = renderWork();
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
                 loadDocuments(); loadBackups(); } else if (currentView === 'finances') content.innerHTML = renderFinances();
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
+            else if (currentView === 'graph') content.innerHTML = renderGraph();
             else if (currentView === 'fantasy') { content.innerHTML = renderFantasy();
                 renderAllFantasyCharts(); } else if (currentView === 'vault') content.innerHTML = renderVault();
             else if (currentView === 'notes') content.innerHTML = renderNotes();
@@ -6752,6 +6870,7 @@
                 { id: 'resumen', label: 'Resumen' },
                 { id: 'lugares', label: 'Lugares', count: t.places.length },
                 { id: 'itinerario', label: 'Itinerario', count: t.itinerario.length },
+                { id: 'mapa', label: 'Mapa', count: t.itinerario.filter(i => i.lat && i.lon).length },
                 { id: 'documentos', label: 'Documentos' },
                 { id: 'listas', label: 'Listas', count: t.listas.length },
             ];
@@ -6760,6 +6879,7 @@
             if (tripManagerTab === 'resumen') body = renderTripResumenTab(t);
             else if (tripManagerTab === 'lugares') body = renderTripPlacesTab(t);
             else if (tripManagerTab === 'itinerario') body = renderTripItineraryTab(t);
+            else if (tripManagerTab === 'mapa') body = renderTripMapTab(t);
             else if (tripManagerTab === 'documentos') body = renderTripDocumentsTab(t);
             else if (tripManagerTab === 'listas') body = renderTripListsTab(t);
 
@@ -6853,6 +6973,7 @@
                             <div style="min-width:0">
                                 <div style="font-size:11px;color:var(--text-secondary);font-weight:700">${it.dia ? escapeHtml(new Date(it.dia + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'Sin día'}${it.hora ? ' · ' + escapeHtml(it.hora) : ''}</div>
                                 <div style="font-weight:700;margin-top:2px">${escapeHtml(it.titulo)}</div>
+                                ${it.lugar ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">📍 ${escapeHtml(it.lugar)}${it.lat ? '' : ' · localizando...'}</div>` : ''}
                                 ${it.notas ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${linkifyText(it.notas)}</div>` : ''}
                             </div>
                             <button class="friend-remove-btn" title="Eliminar" onclick="deleteItineraryItem('${t.id}','${it.id}')">✕</button>
@@ -6861,6 +6982,42 @@
                 `).join('') : '<div class="empty-state"><div class="empty-title">Sin itinerario todavía</div><div class="empty-sub">Añade horarios y planes para cada día del viaje.</div></div>'}
             `;
         }
+        // ---- Mapa del itinerario ----
+        function renderTripMapTab(t) {
+            const withCoords = [...t.itinerario].filter(i => i.lat && i.lon)
+                .sort((a, b) => (a.dia || '').localeCompare(b.dia || '') || (a.hora || '').localeCompare(b.hora || ''));
+            if (!withCoords.length) {
+                return `<div class="empty-state"><div class="empty-title">Sin lugares en el mapa todavía</div><div class="empty-sub">Añade un "Lugar" al crear un punto del itinerario y aparecerá aquí en cuanto se localice.</div></div>`;
+            }
+            return `<div id="trip-map" class="trip-map-container"></div>`;
+        }
+
+        let _tripMapInstance = null;
+        function initTripMap(t) {
+            const container = document.getElementById('trip-map');
+            if (!container || typeof L === 'undefined') return;
+            if (_tripMapInstance) { _tripMapInstance.remove(); _tripMapInstance = null; }
+            const withCoords = [...t.itinerario].filter(i => i.lat && i.lon)
+                .sort((a, b) => (a.dia || '').localeCompare(b.dia || '') || (a.hora || '').localeCompare(b.hora || ''));
+            if (!withCoords.length) return;
+
+            const map = L.map('trip-map');
+            _tripMapInstance = map;
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap',
+                maxZoom: 19
+            }).addTo(map);
+
+            const latlngs = withCoords.map(i => [i.lat, i.lon]);
+            withCoords.forEach((it, i) => {
+                const dayLabel = it.dia ? new Date(it.dia + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '';
+                L.marker([it.lat, it.lon]).addTo(map)
+                    .bindPopup(`<strong>${i + 1}. ${escapeHtml(it.titulo)}</strong><br>${escapeHtml(dayLabel)}${it.hora ? ' · ' + escapeHtml(it.hora) : ''}`);
+            });
+            if (latlngs.length > 1) L.polyline(latlngs, { color: '#3b82f6', weight: 3, opacity: 0.7, dashArray: '6,6' }).addTo(map);
+            map.fitBounds(latlngs, { padding: [30, 30] });
+        }
+
         function openAddItineraryItem(tripId) {
             showModal(`
                 <div class="modal-title">Añadir al itinerario</div>
@@ -6869,26 +7026,51 @@
                     <div><div class="modal-label">Hora (opcional)</div><input type="time" id="it-hora" class="modal-input"></div>
                 </div>
                 <div class="modal-label">Qué</div><input id="it-titulo" class="modal-input" placeholder="Visita al Coliseo">
+                <div class="modal-label">Lugar (opcional, para el mapa)</div><input id="it-lugar" class="modal-input" placeholder="Colosseo, Roma">
                 <div class="modal-label">Notas (opcional)</div><textarea id="it-notas" class="modal-input" rows="2"></textarea>
                 <button class="btn-modal-primary" onclick="saveItineraryItem('${tripId}')">Guardar</button>
             `);
         }
+        // Geocodifica un texto de lugar a lat/lon vía Nominatim (OpenStreetMap,
+        // gratuito y sin API key). Falla en silencio: sin lugar geocodificado
+        // el ítem simplemente no aparece en el mapa, pero sigue en la lista.
+        async function geocodePlace(query) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                if (data && data[0]) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+            } catch (e) { console.error('Error geocodificando lugar:', e); }
+            return null;
+        }
         async function saveItineraryItem(tripId) {
             const t = getTrip(tripId); if (!t) return;
             const titulo = document.getElementById('it-titulo')?.value.trim();
+            const lugar = document.getElementById('it-lugar')?.value.trim() || '';
             if (!titulo) { showToast('Escribe qué vas a hacer', true); return; }
             if (!Array.isArray(t.itinerario)) t.itinerario = [];
-            t.itinerario.push({
+            const item = {
+                lugar,
                 id: 'it_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
                 dia: document.getElementById('it-dia')?.value || '',
                 hora: document.getElementById('it-hora')?.value || '',
                 titulo,
                 notas: document.getElementById('it-notas')?.value.trim() || ''
-            });
+            };
+            t.itinerario.push(item);
             closeModal();
             try { await saveData(); } catch (e) { console.error(e); }
             render();
             showToast('Añadido al itinerario');
+
+            if (lugar) {
+                const coords = await geocodePlace(lugar);
+                if (coords) {
+                    item.lat = coords.lat;
+                    item.lon = coords.lon;
+                    if (tripManagerTab === 'mapa') render();
+                    try { await saveData(); } catch (e) { console.error(e); }
+                }
+            }
         }
         async function deleteItineraryItem(tripId, itemId) {
             const t = getTrip(tripId); if (!t) return;
@@ -8774,6 +8956,9 @@
             return Math.max(0, Math.min(100, Math.round((Number(e.currentValue) || 0) / target * 100)));
         }
 
+        let goalViewMode = 'list';
+        function setGoalViewMode(mode) { goalViewMode = mode; render(); }
+
         function renderGoals() {
             const goals = entries.filter(e => e.type === 'goal');
             const groups = [
@@ -8785,7 +8970,7 @@
             if (!goals.length) {
                 return `
                     <div class="empty-state">
-                        
+
                         <div class="empty-title">Sin objetivos</div>
                         <div class="empty-sub">Pulsa el botón + y selecciona "Objetivo"</div>
                     </div>`;
@@ -8796,11 +8981,21 @@
             const completedThisYear = goals.filter(g => g.status === 'Completado' && (g.date || '').startsWith(thisYear)).length;
 
             let html = `<div style="max-width:980px">
+                <div class="culture-tabs" style="margin-bottom:18px">
+                    <button class="culture-tab ${goalViewMode === 'list' ? 'active' : ''}" onclick="setGoalViewMode('list')">Lista</button>
+                    <button class="culture-tab ${goalViewMode === 'kanban' ? 'active' : ''}" onclick="setGoalViewMode('kanban')">Tablero</button>
+                </div>
                 <div class="goals-summary">
                     <div><strong>${activeCount}</strong><span>activos</span></div>
                     <div><strong>${completedThisYear}</strong><span>completados en ${thisYear}</span></div>
                     <div><strong>${goals.length}</strong><span>en total</span></div>
                 </div>`;
+
+            if (goalViewMode === 'kanban') {
+                html += renderGoalsKanban(goals);
+                html += `</div>`;
+                return html;
+            }
 
             groups.forEach(g => {
                 const items = goals.filter(e => e.term === g.key);
@@ -8845,6 +9040,41 @@
 
             html += `</div>`;
             return html;
+        }
+
+        function renderGoalsKanban(goals) {
+            const columns = ['Pendiente', 'En progreso', 'Completado'];
+            return `<div class="kanban-board" id="goals-kanban-board">
+                ${columns.map(col => {
+                    const items = goals.filter(g => (g.status || 'Pendiente') === col);
+                    return `
+                    <div class="kanban-column" ondragover="event.preventDefault()" ondrop="goalColumnDrop(event,'${col}')">
+                        <div class="kanban-column-head">${col} <span>${items.length}</span></div>
+                        ${items.map(g => {
+                            const cat = categories.find(c => c.id === g.categoryId);
+                            const color = cat?.color || 'var(--text-secondary)';
+                            const pct = goalProgressPct(g);
+                            return `
+                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${g.id}')" onclick="openEntryDetail('${g.id}')" style="border-left:4px solid ${color}">
+                                <div class="kanban-card-title">${escapeHtml(g.title)}</div>
+                                ${pct !== null ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>` : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>`;
+                }).join('')}
+            </div>`;
+        }
+
+        async function goalColumnDrop(event, status) {
+            event.preventDefault();
+            const id = event.dataTransfer.getData('text/plain');
+            const g = entries.find(e => e.id === id && e.type === 'goal');
+            if (!g || (g.status || 'Pendiente') === status) return;
+            g.status = status;
+            const board = document.getElementById('goals-kanban-board');
+            if (board) board.outerHTML = renderGoalsKanban(entries.filter(e => e.type === 'goal'));
+            else render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================
