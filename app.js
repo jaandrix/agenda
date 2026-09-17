@@ -406,6 +406,10 @@
         // Tareas semanales: recordatorios activos de la semana actual.
         // Al completarse se convierten en una entrada real del calendario.
         let weeklyTasks = [];
+        // Listas personalizadas de Ocio: colecciones con nombre de libros/pelis/series/juegos.
+        let cultureLists = [];
+        // Hábitos: seguimiento de constancia sin puntos ni insignias, solo una racha discreta.
+        let habits = [];
         // Coleccionables: catálogo de objetos por categoría con valor de mercado.
         let collectibleCategories = [
             { id: 'cat_cartas', name: 'Cartas' },
@@ -542,6 +546,7 @@
             notes: 'Notas',
             goals: 'Objetivos',
             planner: 'Planificador del día',
+            habits: 'Hábitos',
             collectibles: 'Coleccionables',
             friends: 'Amigos',
             studies: 'Estudios',
@@ -560,6 +565,7 @@
                 { view: 'calendar', icon: '◷', text: 'Home' },
                 { view: 'home', icon: '⌂', text: 'Centro resumen' },
                 { view: 'planner', icon: '▤', text: 'Planificador' },
+                { view: 'habits', icon: '○', text: 'Hábitos' },
                 { view: 'notes', icon: '✎', text: 'Notas' },
             ] },
             { label: 'Desarrollo', items: [
@@ -986,9 +992,18 @@
             return [...ids];
         }
 
+        // Formato ligero tipo Markdown para reseñas y notas: **negrita** y
+        // *cursiva*, sin más sintaxis — deliberadamente mínimo, no es un
+        // editor de texto enriquecido, solo permite dar énfasis puntual.
+        function applyLiteMarkdown(escaped) {
+            return escaped
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
+        }
+
         function linkifyText(text) {
             if (!text) return '';
-            const escaped = escapeHtml(text);
+            const escaped = applyLiteMarkdown(escapeHtml(text));
             return linkifyWikilinks(escaped).replace(/\n/g, '<br>');
         }
 
@@ -1993,6 +2008,9 @@
                 }
                 apuntes = saved.apuntes || [];
                 weeklyTasks = Array.isArray(saved.weeklyTasks) ? saved.weeklyTasks : [];
+                cultureLists = Array.isArray(saved.cultureLists) ? saved.cultureLists : [];
+                habits = Array.isArray(saved.habits) ? saved.habits : [];
+                habits.forEach(h => { h.completadas = h.completadas && typeof h.completadas === 'object' ? h.completadas : {}; });
                 collectibleCategories = Array.isArray(saved.collectibleCategories) && saved.collectibleCategories.length
                     ? saved.collectibleCategories
                     : [{ id: 'cat_cartas', name: 'Cartas' }, { id: 'cat_videojuegos', name: 'Videojuegos' }];
@@ -2096,6 +2114,8 @@
                 financeProfile,
                 plannedTrips,
                 weeklyTasks,
+                cultureLists,
+                habits,
                 collectibleCategories,
                 collectibles,
                 dayPlanner,
@@ -2739,6 +2759,7 @@
                             <div class="planner-item-body">
                                 <div class="planner-item-title">${escapeHtml(it.title)}${it.arrastrado && !it.done ? '<span class="planner-item-arrastrado-tag">Pendiente de ayer</span>' : ''}</div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
+                                ${renderPlannerSubtasks(it, offset)}
                             </div>
                             <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}', ${offset})">×</button>
                         </div>`;
@@ -2747,6 +2768,41 @@
                     `}
                 </div>
             </div>`;
+        }
+
+        // Subtareas de un elemento del planificador: mismo patrón que las
+        // tareas de un proyecto, pero por ítem del día.
+        function renderPlannerSubtasks(it, offset) {
+            const subtasks = Array.isArray(it.subtasks) ? it.subtasks : [];
+            return `
+                <div class="planner-item-subtasks">
+                    ${subtasks.map(st => `
+                        <label class="planner-subtask-row">
+                            <input type="checkbox" ${st.done ? 'checked' : ''} onchange="togglePlannerSubtaskDone('${it.id}','${st.id}',${offset})">
+                            <span class="${st.done ? 'done' : ''}">${escapeHtml(st.text)}</span>
+                        </label>`).join('')}
+                    <button type="button" class="planner-subtask-add" onclick="addPlannerSubtask('${it.id}',${offset})">+ subtarea</button>
+                </div>`;
+        }
+
+        async function addPlannerSubtask(itemId, offset) {
+            const text = prompt('Nueva subtarea');
+            if (!text || !text.trim()) return;
+            const item = plannerItemsForOffset(offset).find(it => it.id === itemId);
+            if (!item) return;
+            item.subtasks = Array.isArray(item.subtasks) ? item.subtasks : [];
+            item.subtasks.push({ id: 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), text: text.trim(), done: false });
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function togglePlannerSubtaskDone(itemId, subtaskId, offset) {
+            const item = plannerItemsForOffset(offset).find(it => it.id === itemId);
+            const sub = item?.subtasks?.find(s => s.id === subtaskId);
+            if (!sub) return;
+            sub.done = !sub.done;
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function openAddPlannerItem() {
@@ -2833,8 +2889,17 @@
             if (!task.activo) return false;
             const d = new Date(dateStr + 'T12:00:00');
             if (task.frecuencia === 'diaria') return true;
-            if (task.frecuencia === 'semanal') return d.getDay() === task.diaSemana;
+            if (task.frecuencia === 'semanal') {
+                const dias = Array.isArray(task.diasSemana) && task.diasSemana.length ? task.diasSemana : [task.diaSemana];
+                return dias.includes(d.getDay());
+            }
             if (task.frecuencia === 'mensual') return d.getDate() === task.diaMes;
+            if (task.frecuencia === 'intervalo') {
+                if (!task.intervaloInicio || !(task.intervaloDias > 0)) return false;
+                const start = new Date(task.intervaloInicio + 'T12:00:00');
+                const diffDays = Math.round((d - start) / 86400000);
+                return diffDays >= 0 && diffDays % task.intervaloDias === 0;
+            }
             return false;
         }
 
@@ -2883,8 +2948,9 @@
                 <div class="modal-label">Frecuencia</div>
                 <select id="recurring-frecuencia" class="modal-input" onchange="updateRecurringFreqFields()">
                     <option value="diaria">Todos los días</option>
-                    <option value="semanal">Cada semana</option>
+                    <option value="semanal">Días concretos de la semana</option>
                     <option value="mensual">Cada mes</option>
+                    <option value="intervalo">Cada N días</option>
                 </select>
                 <div id="recurring-freq-extra"></div>
                 <button class="btn-modal-primary" onclick="saveRecurringTask()">Añadir</button>
@@ -2900,14 +2966,24 @@
             if (!extra) return;
             if (freq === 'semanal') {
                 extra.innerHTML = `
-                    <div class="modal-label">Día de la semana</div>
-                    <select id="recurring-dia-semana" class="modal-input">
-                        ${RECURRING_WEEKDAY_LABELS.map((label, i) => `<option value="${i}">${label}</option>`).join('')}
-                    </select>`;
+                    <div class="modal-label">Días de la semana</div>
+                    <div class="recurring-weekday-picker">
+                        ${RECURRING_WEEKDAY_LABELS.map((label, i) => `
+                            <label class="recurring-weekday-chip">
+                                <input type="checkbox" class="recurring-dia-semana-check" value="${i}" ${i === 1 ? 'checked' : ''}>
+                                ${label.slice(0, 3)}
+                            </label>`).join('')}
+                    </div>`;
             } else if (freq === 'mensual') {
                 extra.innerHTML = `
                     <div class="modal-label">Día del mes</div>
                     <input id="recurring-dia-mes" type="number" min="1" max="31" class="modal-input" value="1">`;
+            } else if (freq === 'intervalo') {
+                extra.innerHTML = `
+                    <div class="modal-label">Cada cuántos días</div>
+                    <input id="recurring-intervalo-dias" type="number" min="2" max="365" class="modal-input" value="2">
+                    <div class="modal-label">A partir de</div>
+                    <input id="recurring-intervalo-inicio" type="date" class="modal-input" value="${todayISO()}">`;
             } else {
                 extra.innerHTML = '';
             }
@@ -2917,8 +2993,12 @@
             if (!recurringTasks.length) return '<div style="font-size:12px;color:var(--text-secondary);padding:6px 0">Sin tareas recurrentes todavía.</div>';
             return recurringTasks.map(t => {
                 let detalle = RECURRING_FREQ_LABELS[t.frecuencia] || '';
-                if (t.frecuencia === 'semanal') detalle = `Cada ${RECURRING_WEEKDAY_LABELS[t.diaSemana]}`;
+                if (t.frecuencia === 'semanal') {
+                    const dias = Array.isArray(t.diasSemana) && t.diasSemana.length ? t.diasSemana : [t.diaSemana];
+                    detalle = dias.map(d => RECURRING_WEEKDAY_LABELS[d]).join(', ');
+                }
                 if (t.frecuencia === 'mensual') detalle = `Día ${t.diaMes} de cada mes`;
+                if (t.frecuencia === 'intervalo') detalle = `Cada ${t.intervaloDias} días desde ${t.intervaloInicio}`;
                 return `
                     <div class="friend-list-item">
                         <span class="friend-list-name" style="${t.activo ? '' : 'opacity:.5;text-decoration:line-through'}">${escapeHtml(t.texto)} <span style="color:var(--text-secondary);font-weight:400">— ${detalle}</span></span>
@@ -2938,8 +3018,15 @@
                 id: 'rt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
                 texto, frecuencia, activo: true, completadas: {}
             };
-            if (frecuencia === 'semanal') task.diaSemana = parseInt(document.getElementById('recurring-dia-semana')?.value) || 0;
+            if (frecuencia === 'semanal') {
+                const dias = [...document.querySelectorAll('.recurring-dia-semana-check:checked')].map(el => parseInt(el.value));
+                task.diasSemana = dias.length ? dias : [1];
+            }
             if (frecuencia === 'mensual') task.diaMes = parseInt(document.getElementById('recurring-dia-mes')?.value) || 1;
+            if (frecuencia === 'intervalo') {
+                task.intervaloDias = parseInt(document.getElementById('recurring-intervalo-dias')?.value) || 2;
+                task.intervaloInicio = document.getElementById('recurring-intervalo-inicio')?.value || todayISO();
+            }
             recurringTasks.push(task);
             document.getElementById('recurring-texto').value = '';
             const list = document.getElementById('recurring-tasks-list');
@@ -2965,6 +3052,118 @@
             if (list) list.innerHTML = renderRecurringTasksManageList();
             if (currentView === 'planner') render();
             try { await saveData(); showToast('Tarea recurrente eliminada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ============================================================
+        //  HÁBITOS
+        //  Seguimiento de constancia deliberadamente sin puntos, insignias
+        //  ni rachas destacadas en rojo/fuego: solo una cuadrícula discreta
+        //  de los últimos días y un número de racha en texto normal.
+        // ============================================================
+        function habitStreak(habit, dateStr = todayISO()) {
+            let streak = 0;
+            let d = new Date(dateStr + 'T12:00:00');
+            while (true) {
+                const iso = d.toISOString().slice(0, 10);
+                if (habit.completadas?.[iso]) { streak++; d.setDate(d.getDate() - 1); }
+                else break;
+            }
+            return streak;
+        }
+
+        function renderHabitDots(habit, days = 14) {
+            const cells = [];
+            const d = new Date();
+            for (let i = days - 1; i >= 0; i--) {
+                const dd = new Date(d);
+                dd.setDate(dd.getDate() - i);
+                const iso = dd.toISOString().slice(0, 10);
+                cells.push(`<span class="habit-dot ${habit.completadas?.[iso] ? 'on' : ''}" title="${iso}"></span>`);
+            }
+            return `<div class="habit-dots">${cells.join('')}</div>`;
+        }
+
+        function renderHabits() {
+            return `
+            <div style="max-width:640px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Hábitos</div>
+                    <button class="btn-modal-primary" style="width:auto" onclick="openAddHabit()">+ Hábito</button>
+                </div>
+                <div style="color:var(--text-secondary);margin-bottom:20px;font-size:12.5px">Solo para llevar la cuenta, sin presión. Marca el día cuando lo hagas.</div>
+                ${habits.length ? habits.filter(h => h.activo !== false).map(h => {
+                    const today = todayISO();
+                    const streak = habitStreak(h);
+                    return `
+                    <div class="habit-card">
+                        <div class="habit-card-head">
+                            <label class="habit-check-row">
+                                <input type="checkbox" ${h.completadas?.[today] ? 'checked' : ''} onchange="toggleHabitToday('${h.id}')">
+                                <span>${escapeHtml(h.texto)}</span>
+                            </label>
+                            <span class="habit-menu" onclick="openHabitMenu('${h.id}')">⋯</span>
+                        </div>
+                        ${renderHabitDots(h)}
+                        <div class="habit-streak-text">${streak > 0 ? `Racha: ${streak} día${streak === 1 ? '' : 's'}` : 'Sin racha activa'}</div>
+                    </div>`;
+                }).join('') : `<div class="empty-state"><div class="empty-title">Sin hábitos todavía</div><div class="empty-sub">Pulsa + Hábito para empezar a seguir alguno, sin más presión que la cuadrícula.</div></div>`}
+            </div>`;
+        }
+
+        function openAddHabit() {
+            showModal(`
+                <div class="modal-title">+ Hábito</div>
+                <div class="modal-label">¿Qué quieres seguir?</div>
+                <input id="habit-texto" class="modal-input" placeholder="Ej: Leer 10 minutos">
+                <button class="btn-modal-primary" onclick="saveHabit()">Añadir</button>
+            `);
+            setTimeout(() => document.getElementById('habit-texto')?.focus(), 50);
+        }
+
+        async function saveHabit() {
+            const texto = document.getElementById('habit-texto')?.value.trim();
+            if (!texto) { showToast('Escribe el hábito', true); return; }
+            habits.push({ id: 'habit_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), texto, activo: true, completadas: {} });
+            closeModal();
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function toggleHabitToday(id) {
+            const h = habits.find(x => x.id === id);
+            if (!h) return;
+            const today = todayISO();
+            h.completadas = h.completadas || {};
+            h.completadas[today] = !h.completadas[today];
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openHabitMenu(id) {
+            const h = habits.find(x => x.id === id);
+            if (!h) return;
+            showModal(`
+                <div class="modal-title">${escapeHtml(h.texto)}</div>
+                <button class="btn-secondary" onclick="toggleHabitActiveState('${id}')">${h.activo === false ? 'Reactivar' : 'Pausar'}</button>
+                <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteHabit('${id}')">Eliminar hábito</button>
+            `);
+        }
+
+        async function toggleHabitActiveState(id) {
+            const h = habits.find(x => x.id === id);
+            if (!h) return;
+            h.activo = h.activo === false ? true : false;
+            closeModal();
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteHabit(id) {
+            if (!confirm('¿Eliminar este hábito? Se pierde su historial.')) return;
+            habits = habits.filter(h => h.id !== id);
+            closeModal();
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================
@@ -3941,7 +4140,7 @@
         function buildFullBackupPayload() {
             return {
                 entries, categories, userName, investmentData, notes, prompts, inbox,
-                financeIncome, financeProfile, plannedTrips, weeklyTasks,
+                financeIncome, financeProfile, plannedTrips, weeklyTasks, cultureLists, habits,
                 collectibleCategories, collectibles, dayPlanner, recurringTasks, dailyEffort, studies, links,
                 linkCategories, blurFinances, fantasyData, apuntes,
                 exportedAt: new Date().toISOString()
@@ -3961,6 +4160,8 @@
             if (data.financeProfile) financeProfile = data.financeProfile;
             if (data.plannedTrips) plannedTrips = data.plannedTrips;
             if (data.weeklyTasks) weeklyTasks = Array.isArray(data.weeklyTasks) ? data.weeklyTasks : [];
+            if (data.cultureLists) cultureLists = Array.isArray(data.cultureLists) ? data.cultureLists : [];
+            if (data.habits) habits = Array.isArray(data.habits) ? data.habits : [];
             if (data.collectibleCategories) collectibleCategories = data.collectibleCategories;
             if (data.collectibles) collectibles = data.collectibles;
             if (data.dayPlanner) dayPlanner = migratePlannerData(data.dayPlanner);
@@ -4198,6 +4399,7 @@
             else if (currentView === 'notes') content.innerHTML = renderNotes();
             else if (currentView === 'goals') content.innerHTML = renderGoals();
             else if (currentView === 'planner') content.innerHTML = renderPlanner();
+            else if (currentView === 'habits') content.innerHTML = renderHabits();
             else if (currentView === 'collectibles') content.innerHTML = renderCollectibles();
             else if (currentView === 'friends') { content.innerHTML = renderFriendsView();
                 loadFriendsViewData(); }
@@ -4220,6 +4422,7 @@
                     renderInvestmentCharts();
                 }, 0);
             }
+            if (currentView === 'finances') setTimeout(() => renderFinanceCategoryChart(), 0);
         }
 
         // ============================================================
@@ -5033,6 +5236,52 @@
             });
         }
 
+        function renderTodayWidget() {
+            resetDayPlannerIfNeeded();
+            const today = todayISO();
+            const plannerToday = [...plannerItemsForOffset(0)].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+            const dueToday = recurringTasksDueToday();
+            const weekly = getCurrentWeeklyTasks();
+
+            const totalCount = plannerToday.length + dueToday.length + weekly.length;
+            const doneCount = plannerToday.filter(it => it.done).length + dueToday.filter(t => t.completadas?.[today]).length;
+
+            if (!totalCount) {
+                return `
+                <div class="card" style="margin-bottom:16px">
+                    <div class="card-title">Hoy</div>
+                    <div class="finance-empty-state" style="padding:8px 0 0 0">
+                        Sin nada planificado para hoy. Ve a <strong>Planificador</strong> o <strong>Tareas semanales</strong> para añadir algo.
+                    </div>
+                </div>`;
+            }
+
+            return `
+            <div class="card" style="margin-bottom:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <div class="card-title">Hoy (${doneCount}/${totalCount})</div>
+                    <button class="btn-secondary" style="width:auto;padding:2px 10px;font-size:11px" onclick="switchView('planner')">Ver planificador</button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                    ${plannerToday.map(it => `
+                        <label class="weekly-task-row">
+                            <input class="weekly-task-check" type="checkbox" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', 0)">
+                            <span class="weekly-task-text" style="${it.done ? 'text-decoration:line-through;opacity:0.6' : ''}">${escapeHtml(it.time)} · ${escapeHtml(it.title)}</span>
+                        </label>`).join('')}
+                    ${dueToday.map(t => `
+                        <label class="weekly-task-row">
+                            <input class="weekly-task-check" type="checkbox" ${t.completadas?.[today] ? 'checked' : ''} onchange="toggleRecurringTaskDoneToday('${t.id}')">
+                            <span class="weekly-task-text" style="${t.completadas?.[today] ? 'text-decoration:line-through;opacity:0.6' : ''}">↻ ${escapeHtml(t.texto)}</span>
+                        </label>`).join('')}
+                    ${weekly.map(t => `
+                        <label class="weekly-task-row">
+                            <input class="weekly-task-check" type="checkbox" onchange="completeWeeklyTask('${String(t.id).replace(/'/g, "\\'")}')">
+                            <span class="weekly-task-text">${escapeHtml(t.title)}</span>
+                        </label>`).join('')}
+                </div>
+            </div>`;
+        }
+
         function renderHome() {
             const range = getFilterRange(homeFilter);
             const subsTotal = entries.filter(e => e.type === 'subscription' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
@@ -5082,6 +5331,8 @@
                 </div>` : ''}
                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
                 <div style="font-size:15px;font-weight:600;margin-bottom:20px;color:var(--text-primary)">${todayEntries.length} entradas hoy</div>
+
+                ${renderTodayWidget()}
 
                 <div class="card-grid">
                     <div class="card"><div class="card-title">Libros</div><div class="card-value">${entries.filter(e=>e.type==='book').length}</div></div>
@@ -5223,6 +5474,7 @@
                 { id: 'series', label: 'Series', icon: '◈', count: entries.filter(e => e.type === 'series').length },
                 { id: 'movies', label: 'Películas', icon: '▸', count: entries.filter(e => e.type === 'movie').length },
                 { id: 'games', label: 'Videojuegos', icon: '◉', count: entries.filter(e => e.type === 'game').length },
+                { id: 'lists', label: 'Listas', icon: '☰', count: cultureLists.length },
             ];
             const tipoActivo = CULTURE_TAB_TO_TYPE[cultureTab];
             const pendientes = recomendaciones.filter(r => r.tipo === tipoActivo).length;
@@ -5258,9 +5510,112 @@
             else if (cultureTab === 'series') html += renderSeries();
             else if (cultureTab === 'movies') html += renderMovies();
             else if (cultureTab === 'games') html += renderGames();
+            else if (cultureTab === 'lists') html += renderCultureLists();
 
             html += `</div></div></div>`;
             return html;
+        }
+
+        // ------------------------------------------------------------
+        //  LISTAS PERSONALIZADAS DE OCIO
+        // ------------------------------------------------------------
+        const CULTURE_MEDIA_TYPES = ['book', 'movie', 'series', 'game'];
+
+        function renderCultureLists() {
+            if (window._selectedCultureList) {
+                const list = cultureLists.find(l => l.id === window._selectedCultureList);
+                if (!list) { window._selectedCultureList = null; return renderCultureLists(); }
+                const items = entries.filter(e => (list.entryIds || []).includes(e.id));
+                return `
+                <div>
+                    <button class="btn-secondary" style="width:auto;margin-bottom:12px" onclick="window._selectedCultureList=null;render()">← Volver a Listas</button>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+                        <div style="font-size:18px;font-weight:800">${escapeHtml(list.name)} · ${items.length}</div>
+                        <div style="display:flex;gap:8px">
+                            <button class="finance-oneoff-btn" onclick="openCultureListPicker('${list.id}')">+ Añadir</button>
+                            <button class="finance-oneoff-btn" style="color:#dc2626" onclick="deleteCultureList('${list.id}')">Eliminar lista</button>
+                        </div>
+                    </div>
+                    ${items.length ? renderMediaCardGrid(items, e => TYPE_LABELS[e.type] || '') : `
+                        <div class="finance-empty-state">Lista vacía. Pulsa <strong>+ Añadir</strong> para meter libros, pelis, series o juegos.</div>
+                    `}
+                </div>`;
+            }
+
+            return `
+            <div>
+                <button class="btn-modal-primary" style="width:auto;margin-bottom:16px" onclick="createCultureList()">+ Nueva lista</button>
+                ${cultureLists.length ? `
+                    <div style="display:flex;flex-direction:column;gap:2px">
+                        ${cultureLists.map(l => `
+                            <div class="entry-item" onclick="window._selectedCultureList='${l.id}';render()">
+                                <div class="entry-color-dot" style="background:var(--accent)"></div>
+                                <div class="entry-info">
+                                    <div class="entry-title">${escapeHtml(l.name)}</div>
+                                    <div class="entry-meta">${(l.entryIds || []).length} elemento${(l.entryIds || []).length === 1 ? '' : 's'}</div>
+                                </div>
+                            </div>`).join('')}
+                    </div>
+                ` : `<div class="finance-empty-state">Aún no tienes listas. Crea una para agrupar tus favoritos, tu "pendiente 2026" o lo que quieras.</div>`}
+            </div>`;
+        }
+
+        async function createCultureList() {
+            const name = prompt('Nombre de la nueva lista');
+            if (!name || !name.trim()) return;
+            const list = { id: 'clist_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name: name.trim(), entryIds: [] };
+            cultureLists.push(list);
+            window._selectedCultureList = list.id;
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteCultureList(id) {
+            const list = cultureLists.find(l => l.id === id);
+            if (!list || !confirm(`¿Eliminar la lista "${list.name}"? Las entradas no se borran, solo la lista.`)) return;
+            cultureLists = cultureLists.filter(l => l.id !== id);
+            window._selectedCultureList = null;
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function openCultureListPicker(listId) {
+            const list = cultureLists.find(l => l.id === listId);
+            if (!list) return;
+            window._cultureListPickerId = listId;
+            const options = entries.filter(e => CULTURE_MEDIA_TYPES.includes(e.type));
+            showModal(`
+                <div class="modal-title">Añadir a "${escapeHtml(list.name)}"</div>
+                <input id="culture-list-picker-filter" class="modal-input" placeholder="Buscar..." oninput="filterCultureListPicker(this.value)">
+                <div id="culture-list-picker-items" style="max-height:340px;overflow-y:auto;margin-top:8px">${renderCultureListPickerItems(options, '')}</div>
+            `);
+            setTimeout(() => document.getElementById('culture-list-picker-filter')?.focus(), 50);
+        }
+
+        function renderCultureListPickerItems(options, q) {
+            const list = cultureLists.find(l => l.id === window._cultureListPickerId);
+            const filtered = q ? options.filter(e => e.title.toLowerCase().includes(q.toLowerCase())) : options;
+            if (!filtered.length) return `<div class="finance-empty-line">Sin resultados</div>`;
+            return filtered.map(e => `
+                <label class="weekly-task-row">
+                    <input type="checkbox" class="weekly-task-check" ${(list?.entryIds || []).includes(e.id) ? 'checked' : ''} onchange="toggleCultureListEntry('${e.id}')">
+                    <span class="weekly-task-text">${escapeHtml(e.title)} <span style="color:var(--text-secondary)">· ${TYPE_LABELS[e.type] || ''}</span></span>
+                </label>`).join('');
+        }
+
+        function filterCultureListPicker(q) {
+            const options = entries.filter(e => CULTURE_MEDIA_TYPES.includes(e.type));
+            const el = document.getElementById('culture-list-picker-items');
+            if (el) el.innerHTML = renderCultureListPickerItems(options, q);
+        }
+
+        async function toggleCultureListEntry(entryId) {
+            const list = cultureLists.find(l => l.id === window._cultureListPickerId);
+            if (!list) return;
+            list.entryIds = Array.isArray(list.entryIds) ? list.entryIds : [];
+            if (list.entryIds.includes(entryId)) list.entryIds = list.entryIds.filter(id => id !== entryId);
+            else list.entryIds.push(entryId);
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // Iconos minimalistas en SVG para las tarjetas de Ocio (mismo estilo
@@ -7986,17 +8341,12 @@
             const tagMap = tagMapFromEntries();
             const tagList = Object.keys(tagMap);
             const q = (window._tagFilter || '').trim().toLowerCase();
-            const filtered = q ? tagList.filter(t => t.toLowerCase().includes(q)) : tagList;
-            const sorted = [...filtered].sort((a, b) => tagMap[b].length - tagMap[a].length || a.localeCompare(b));
-            if (!sorted.length) return `<div class="finance-empty-line">Sin etiquetas que coincidan con "${escapeHtml(window._tagFilter || '')}"</div>`;
-            const counts = tagList.map(t => tagMap[t].length);
-            const maxCount = Math.max(...counts), minCount = Math.min(...counts);
-            const sizeFor = c => maxCount === minCount ? 14 : Math.round(12 + ((c - minCount) / (maxCount - minCount)) * 12);
-            return sorted.map(t => `
-                <span class="tags-view-chip" style="font-size:${sizeFor(tagMap[t].length)}px"
-                    onclick="window._selectedTag='${escapeHtml(t).replace(/'/g, "\\'")}';render()">
-                    #${escapeHtml(t)} · ${tagMap[t].length}
-                </span>`).join('');
+            const filteredMap = {};
+            tagList.forEach(t => { if (!q || t.toLowerCase().includes(q)) filteredMap[t] = tagMap[t]; });
+            if (!Object.keys(filteredMap).length) return `<div class="finance-empty-line">Sin etiquetas que coincidan con "${escapeHtml(window._tagFilter || '')}"</div>`;
+            const tree = buildTagTree(filteredMap);
+            const roots = Object.values(tree).sort((a, b) => a.name.localeCompare(b.name));
+            return `<div class="tags-tree">${roots.map(n => renderTagsTreeNode(n, 0)).join('')}</div>`;
         }
 
         function filterTagsView(value) {
@@ -8031,6 +8381,41 @@
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+        function buildTagTree(tagMap) {
+            const root = {};
+            Object.keys(tagMap).forEach(tag => {
+                const parts = tag.split('/').map(p => p.trim()).filter(Boolean);
+                if (!parts.length) return;
+                let node = root;
+                let path = '';
+                parts.forEach((part, i) => {
+                    path = path ? path + '/' + part : part;
+                    if (!node[part]) node[part] = { name: part, path, children: {}, count: 0 };
+                    if (i === parts.length - 1) node[part].count += tagMap[tag].length;
+                    node = node[part].children;
+                });
+            });
+            return root;
+        }
+
+        function entriesForTagPrefix(prefix) {
+            return entries.filter(e => (e.tags || []).some(t => t === prefix || String(t).startsWith(prefix + '/')));
+        }
+
+        function renderTagsTreeNode(node, depth) {
+            const pathEsc = escapeHtml(node.path).replace(/'/g, "\\'");
+            const label = `#${escapeHtml(node.path)}${node.count ? ' · ' + node.count : ''}`;
+            const children = Object.values(node.children).sort((a, b) => a.name.localeCompare(b.name));
+            if (!children.length) {
+                return `<div class="tags-tree-row" style="padding-left:${depth * 16}px" onclick="window._selectedTag='${pathEsc}';render()">${label}</div>`;
+            }
+            return `
+                <details class="tags-tree-group" style="margin-left:${depth * 16}px" open>
+                    <summary class="tags-tree-row"><span onclick="event.preventDefault();event.stopPropagation();window._selectedTag='${pathEsc}';render()">${label}</span></summary>
+                    ${children.map(c => renderTagsTreeNode(c, depth + 1)).join('')}
+                </details>`;
+        }
+
         function renderTagsView() {
             const tagMap = tagMapFromEntries();
             const tagList = Object.keys(tagMap);
@@ -8040,7 +8425,7 @@
             }
 
             if (window._selectedTag) {
-                const items = tagMap[window._selectedTag] || [];
+                const items = entriesForTagPrefix(window._selectedTag);
                 const tagEsc = escapeHtml(window._selectedTag).replace(/'/g, "\\'");
                 return `
                 <div style="max-width:700px">
@@ -8069,8 +8454,9 @@
 
             return `
             <div style="max-width:700px">
-                <input class="modal-input" style="margin-bottom:16px" placeholder="Buscar etiqueta..." value="${escapeHtml(window._tagFilter || '')}" oninput="filterTagsView(this.value)">
-                <div id="tags-cloud-list" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${renderTagsCloudList()}</div>
+                <input class="modal-input" placeholder="Buscar etiqueta..." value="${escapeHtml(window._tagFilter || '')}" oninput="filterTagsView(this.value)">
+                <div style="font-size:11px;color:var(--text-secondary);margin:8px 0 16px">Consejo: escribe etiquetas como <strong>padre/hijo</strong> (p. ej. "trabajo/urgente") para agruparlas en jerarquías.</div>
+                <div id="tags-cloud-list">${renderTagsCloudList()}</div>
             </div>`;
         }
 
@@ -8926,6 +9312,21 @@
         //  Efectivo automáticamente y queda registrado en el historial.
         // ============================================================
 
+        // Categorías fijas para el gasto puntual (independientes del sistema
+        // general de categorías, que es demasiado amplio/heterogéneo para
+        // agrupar gasto de forma útil en presupuestos y gráficas).
+        const FINANCE_EXPENSE_CATEGORIES = [
+            { id: 'comida', label: 'Comida', color: '#f59e0b' },
+            { id: 'transporte', label: 'Transporte', color: '#3498db' },
+            { id: 'vivienda', label: 'Vivienda', color: '#e17055' },
+            { id: 'ocio', label: 'Ocio', color: '#9b59b6' },
+            { id: 'salud', label: 'Salud', color: '#2ecc71' },
+            { id: 'compras', label: 'Compras', color: '#e84393' },
+            { id: 'otros', label: 'Otros', color: '#6b7280' },
+        ];
+        function financeExpenseCategoryLabel(id) { return FINANCE_EXPENSE_CATEGORIES.find(c => c.id === id)?.label || 'Otros'; }
+        function financeExpenseCategoryColor(id) { return FINANCE_EXPENSE_CATEGORIES.find(c => c.id === id)?.color || '#6b7280'; }
+
         function openFinanceMovement(type = 'income') {
             const today = todayISO();
             const isIncome = type === 'income';
@@ -8938,6 +9339,11 @@
                 <input id="finance-mov-label" class="modal-input" placeholder="${isIncome ? 'Ej: Venta de ropa' : 'Ej: Reparación del coche'}">
                 <div class="modal-label">Importe (€)</div>
                 <input id="finance-mov-amount" class="modal-input" type="number" min="0" step="0.01" placeholder="0.00">
+                ${!isIncome ? `
+                <div class="modal-label">Categoría</div>
+                <select id="finance-mov-category" class="modal-input">
+                    ${FINANCE_EXPENSE_CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join('')}
+                </select>` : ''}
                 <div class="modal-label">Fecha</div>
                 <input id="finance-mov-date" class="modal-input" type="date" value="${today}">
                 <label style="display:flex;align-items:center;gap:8px;margin:10px 0 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">
@@ -8952,6 +9358,7 @@
             const isIncome = type === 'income';
             const label = document.getElementById('finance-mov-label')?.value.trim() || (isIncome ? 'Ingreso puntual' : 'Gasto puntual');
             const amount = Number(document.getElementById('finance-mov-amount')?.value);
+            const categoryId = document.getElementById('finance-mov-category')?.value || 'otros';
             const date = document.getElementById('finance-mov-date')?.value || todayISO();
             const addCash = document.getElementById('finance-mov-addcash')?.checked;
             if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
@@ -8960,7 +9367,8 @@
             financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
             financeProfile.movements.unshift({
                 id: 'mov_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                type, label, amount, date, addedToCash: applied
+                type, label, amount, date, addedToCash: applied,
+                ...(isIncome ? {} : { categoryId })
             });
             financeProfile.movements.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
@@ -9167,6 +9575,136 @@
                 </div>`;
         }
 
+        // ============================================================
+        //  PRESUPUESTOS Y GASTO POR CATEGORÍA
+        // ============================================================
+        function financeExpensesByCategoryThisMonth() {
+            const monthKey = financeMonthKey();
+            const byCategory = {};
+            (financeProfile.movements || []).forEach(m => {
+                if (m.type !== 'expense' || !String(m.date || '').startsWith(monthKey)) return;
+                const cat = m.categoryId || 'otros';
+                byCategory[cat] = (byCategory[cat] || 0) + Number(m.amount || 0);
+            });
+            return byCategory;
+        }
+
+        async function setFinanceBudget(categoryId) {
+            const current = financeProfile.budgets?.[categoryId] || '';
+            const next = prompt(`Presupuesto mensual para "${financeExpenseCategoryLabel(categoryId)}" (€, vacío para quitarlo)`, current);
+            if (next === null) return;
+            financeProfile.budgets = financeProfile.budgets || {};
+            const val = Number(next);
+            if (next.trim() === '' || !(val > 0)) delete financeProfile.budgets[categoryId];
+            else financeProfile.budgets[categoryId] = val;
+            await saveFinanceDashboard();
+        }
+
+        function renderFinanceBudgets() {
+            const spent = financeExpensesByCategoryThisMonth();
+            const budgets = financeProfile.budgets || {};
+            const withBudget = FINANCE_EXPENSE_CATEGORIES.filter(c => budgets[c.id] > 0);
+            return `
+            <section class="finance-panel" id="finance-budgets-section">
+                <div class="finance-panel-head"><div><div class="finance-kicker">Este mes</div><h3>Presupuestos por categoría</h3></div></div>
+                ${FINANCE_EXPENSE_CATEGORIES.map(c => {
+                    const budget = budgets[c.id] || 0;
+                    const used = spent[c.id] || 0;
+                    const pct = budget > 0 ? Math.min(100, (used / budget) * 100) : 0;
+                    const over = budget > 0 && used > budget;
+                    return `
+                    <div class="finance-budget-row" onclick="setFinanceBudget('${c.id}')">
+                        <div class="finance-budget-row-head">
+                            <span>${c.label}</span>
+                            <span>${financeMoney(used)}${budget > 0 ? ' / ' + financeMoney(budget) : ''}</span>
+                        </div>
+                        <div class="finance-progress"><span style="width:${budget > 0 ? pct : (used > 0 ? 100 : 0)}%;background:${over ? '#dc2626' : c.color}"></span></div>
+                    </div>`;
+                }).join('')}
+                ${!withBudget.length ? `<div class="finance-empty-line" style="margin-top:8px">Pulsa una categoría para fijarle un límite mensual.</div>` : ''}
+            </section>`;
+        }
+
+        function renderFinanceCategoryChart() {
+            const ctx = document.getElementById('financeCategoryChart');
+            if (!ctx || typeof Chart === 'undefined') return;
+            const spent = financeExpensesByCategoryThisMonth();
+            const cats = FINANCE_EXPENSE_CATEGORIES.filter(c => spent[c.id] > 0);
+            if (window._financeCategoryChartInstance) { window._financeCategoryChartInstance.destroy(); window._financeCategoryChartInstance = null; }
+            if (!cats.length) return;
+            window._financeCategoryChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: cats.map(c => c.label),
+                    datasets: [{ data: cats.map(c => spent[c.id]), backgroundColor: cats.map(c => c.color), borderWidth: 0 }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'right', labels: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#888', font: { size: 11 } } } }
+                }
+            });
+        }
+
+        // ============================================================
+        //  METAS DE AHORRO
+        // ============================================================
+        function openFinanceSavingsGoalModal(id) {
+            const goal = id ? (financeProfile.savingsGoals || []).find(g => g.id === id) : null;
+            showModal(`
+                <div class="modal-title">${goal ? 'Editar meta' : '+ Meta de ahorro'}</div>
+                <div class="modal-label">Nombre</div>
+                <input id="savings-goal-name" class="modal-input" value="${goal ? escapeHtml(goal.name) : ''}" placeholder="Ej: Viaje a Japón">
+                <div class="modal-label">Objetivo (€)</div>
+                <input id="savings-goal-target" class="modal-input" type="number" min="0" step="0.01" value="${goal ? goal.target : ''}" placeholder="0.00">
+                <div class="modal-label">Ahorrado hasta ahora (€)</div>
+                <input id="savings-goal-current" class="modal-input" type="number" min="0" step="0.01" value="${goal ? goal.current : '0'}" placeholder="0.00">
+                <button class="btn-modal-primary" onclick="saveFinanceSavingsGoal('${goal ? goal.id : ''}')">${goal ? 'Guardar' : 'Crear meta'}</button>
+                ${goal ? `<button class="btn-secondary" style="margin-top:8px" onclick="deleteFinanceSavingsGoal('${goal.id}')">Eliminar meta</button>` : ''}
+            `);
+            setTimeout(() => document.getElementById('savings-goal-name')?.focus(), 50);
+        }
+
+        async function saveFinanceSavingsGoal(id) {
+            const name = document.getElementById('savings-goal-name')?.value.trim();
+            const target = Number(document.getElementById('savings-goal-target')?.value);
+            const current = Number(document.getElementById('savings-goal-current')?.value) || 0;
+            if (!name || !(target > 0)) { showToast('Indica nombre y objetivo válidos', true); return; }
+            financeProfile.savingsGoals = Array.isArray(financeProfile.savingsGoals) ? financeProfile.savingsGoals : [];
+            if (id) {
+                const goal = financeProfile.savingsGoals.find(g => g.id === id);
+                if (goal) { goal.name = name; goal.target = target; goal.current = current; }
+            } else {
+                financeProfile.savingsGoals.push({ id: 'goal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, target, current });
+            }
+            closeModal();
+            await saveFinanceDashboard();
+        }
+
+        async function deleteFinanceSavingsGoal(id) {
+            financeProfile.savingsGoals = (financeProfile.savingsGoals || []).filter(g => g.id !== id);
+            closeModal();
+            await saveFinanceDashboard();
+        }
+
+        function renderFinanceSavingsGoals() {
+            const goals = financeProfile.savingsGoals || [];
+            return `
+            <section class="finance-panel" id="finance-savings-section">
+                <div class="finance-panel-head"><div><div class="finance-kicker">A largo plazo</div><h3>Metas de ahorro</h3></div><button class="finance-icon-btn" onclick="openFinanceSavingsGoalModal()">+</button></div>
+                ${goals.length ? goals.map(g => {
+                    const pct = g.target > 0 ? Math.min(100, (g.current / g.target) * 100) : 0;
+                    return `
+                    <div class="finance-budget-row" onclick="openFinanceSavingsGoalModal('${g.id}')">
+                        <div class="finance-budget-row-head">
+                            <span>${escapeHtml(g.name)}</span>
+                            <span>${financeMoney(g.current)} / ${financeMoney(g.target)}</span>
+                        </div>
+                        <div class="finance-progress"><span style="width:${pct}%"></span></div>
+                    </div>`;
+                }).join('') : `<div class="finance-empty-line">Sin metas todavía. Añade una para ahorrar con un objetivo concreto en mente.</div>`}
+            </section>`;
+        }
+
         function renderFinanceDashboard() {
             ensureCurrentMonthHistory();
             const total = financeCorePatrimony();
@@ -9240,6 +9778,16 @@
                             </div>` : `<div class="finance-empty-line">Aún no hay movimientos. Usa "Cobrar sueldo", "Transferir", "+ Ingreso" o "− Gasto" arriba para empezar a registrarlos.</div>`}
                     </section>
                 </div>
+
+                <div class="finance-grid-2">
+                    ${renderFinanceBudgets()}
+                    <section class="finance-panel" id="finance-category-chart-section">
+                        <div class="finance-panel-head"><div><div class="finance-kicker">Este mes</div><h3>Gasto por categoría</h3></div></div>
+                        ${Object.keys(financeExpensesByCategoryThisMonth()).length ? `<canvas id="financeCategoryChart" height="180"></canvas>` : `<div class="finance-empty-line">Registra algún gasto con categoría para ver la gráfica.</div>`}
+                    </section>
+                </div>
+
+                ${renderFinanceSavingsGoals()}
 
                 <section class="finance-goal-bar">
                     <span class="finance-goal-bar-text">${remainingToTarget <= 0 && target > 0
