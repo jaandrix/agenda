@@ -5650,6 +5650,7 @@
                         <div style="font-size:18px;font-weight:800">${escapeHtml(list.name)} · ${items.length}</div>
                         <div style="display:flex;gap:8px">
                             <button class="finance-oneoff-btn" onclick="openCultureListPicker('${list.id}')">+ Añadir</button>
+                            <button class="finance-oneoff-btn" onclick="abrirCompartirListaModal('${list.id}')">Compartir</button>
                             <button class="finance-oneoff-btn" style="color:#dc2626" onclick="deleteCultureList('${list.id}')">Eliminar lista</button>
                         </div>
                     </div>
@@ -5662,6 +5663,7 @@
             return `
             <div>
                 <button class="btn-modal-primary" style="width:auto;margin-bottom:16px" onclick="createCultureList()">+ Nueva lista</button>
+                ${renderSharedCultureListsSection()}
                 ${cultureLists.length ? `
                     <div style="display:flex;flex-direction:column;gap:2px">
                         ${cultureLists.map(l => `
@@ -5747,6 +5749,139 @@
             closeModal();
             render();
             try { await saveData(); showToast('Lista actualizada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ------------------------------------------------------------
+        //  LISTAS DE OCIO COMPARTIDAS ENTRE AMIGOS
+        //  Mismo patrón que los viajes compartidos: se manda una foto fija
+        //  de la lista (título, tipo y valoración de cada elemento), no una
+        //  referencia en vivo, y el destinatario decide si la añade a las
+        //  suyas o la descarta.
+        // ------------------------------------------------------------
+        let listasOcioCompartidas = [];
+
+        async function cargarListasOcioCompartidas() {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { listasOcioCompartidas = []; return; }
+                const { data, error } = await sb.from('listas_ocio_compartidas')
+                    .select('id, remitente_id, lista, nota, creado_en')
+                    .eq('destinatario_id', user.id)
+                    .order('creado_en', { ascending: false });
+                if (error) { console.error('Error cargando listas de Ocio compartidas:', error); return; }
+                listasOcioCompartidas = data || [];
+                if (listasOcioCompartidas.length) {
+                    const ids = [...new Set(listasOcioCompartidas.map(l => l.remitente_id))];
+                    const { data: publicos } = await sb.from('perfiles_publicos').select('user_id, nombre_publico').in('user_id', ids);
+                    const porId = Object.fromEntries((publicos || []).map(p => [p.user_id, p.nombre_publico]));
+                    const amigoPorId = Object.fromEntries((amigos || []).map(a => [a.friend_id, a.nombre_visible || a.friend_nombre]));
+                    listasOcioCompartidas.forEach(l => { l.remitente_nombre = porId[l.remitente_id] || amigoPorId[l.remitente_id] || 'Un amigo'; });
+                }
+            } catch (e) {
+                console.error('Error cargando listas de Ocio compartidas:', e);
+            }
+        }
+
+        function abrirCompartirListaModal(listId) {
+            const list = cultureLists.find(l => l.id === listId);
+            if (!list) return;
+            if (!amigos.length) { showToast('Añade primero un amigo desde el apartado Amigos', true); return; }
+            showModal(`
+                <div class="modal-title">Compartir "${escapeHtml(list.name)}"</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Se enviará tal como está ahora: los títulos, su tipo y tu valoración. Si luego cambias la lista, no se actualizará lo ya enviado.</div>
+                <div class="modal-label">Con quién</div>
+                <select id="compartir-lista-amigo" class="modal-input">
+                    ${amigos.map(a => `<option value="${a.friend_id}">${escapeHtml(a.nombre_visible || a.friend_nombre || 'Amigo')}</option>`).join('')}
+                </select>
+                <div class="modal-label">Nota (opcional)</div>
+                <textarea id="compartir-lista-nota" class="modal-input" rows="3" placeholder="Algo que quieras contarle sobre la lista"></textarea>
+                <button class="btn-modal-primary" onclick="enviarListaCompartida('${listId}')">Enviar lista</button>
+            `);
+        }
+
+        async function enviarListaCompartida(listId) {
+            const list = cultureLists.find(l => l.id === listId);
+            if (!list) return;
+            const destinatarioId = document.getElementById('compartir-lista-amigo')?.value;
+            const nota = document.getElementById('compartir-lista-nota')?.value?.trim() || null;
+            if (!destinatarioId) { showToast('Elige con quién compartirla', true); return; }
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) return;
+            const items = entries.filter(e => (list.entryIds || []).includes(e.id))
+                .map(e => ({ title: e.title, type: e.type, rating: e.rating || null }));
+            if (!items.length) { showToast('Esta lista está vacía', true); return; }
+            try {
+                const { error } = await sb.from('listas_ocio_compartidas').insert({
+                    remitente_id: user.id,
+                    destinatario_id: destinatarioId,
+                    lista: { name: list.name, items },
+                    nota
+                });
+                if (error) throw error;
+                closeModal();
+                showToast('Lista compartida');
+            } catch (e) {
+                console.error('Error compartiendo la lista:', e);
+                showToast('No se pudo compartir la lista', true);
+            }
+        }
+
+        async function quitarListaCompartida(id) {
+            listasOcioCompartidas = listasOcioCompartidas.filter(l => l.id !== id);
+            if (typeof updateNotifBadge === 'function') updateNotifBadge();
+            try {
+                const { error } = await sb.from('listas_ocio_compartidas').delete().eq('id', id);
+                if (error) console.error('Error quitando la lista compartida en Supabase:', error);
+            } catch (e) {
+                console.error('Error quitando la lista compartida:', e);
+            }
+        }
+
+        async function anadirListaCompartidaAMisListas(id) {
+            const l = listasOcioCompartidas.find(x => x.id === id);
+            if (!l) return;
+            const lista = l.lista || {};
+            const nuevaLista = { id: 'clist_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name: lista.name || 'Lista compartida', entryIds: [] };
+            (lista.items || []).forEach(item => {
+                const entryId = 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+                entries.push({ id: entryId, type: item.type, title: item.title, rating: item.rating || 0, createdAt: new Date().toISOString() });
+                nuevaLista.entryIds.push(entryId);
+            });
+            cultureLists.push(nuevaLista);
+            filteredEntries = [...entries];
+            try { await saveData(); } catch (e) { console.error(e); }
+            await quitarListaCompartida(id);
+            render();
+            showToast('Lista añadida a las tuyas');
+        }
+
+        async function descartarListaCompartida(id) {
+            if (!confirm('¿Descartar esta lista compartida?')) return;
+            await quitarListaCompartida(id);
+            render();
+            showToast('Lista descartada');
+        }
+
+        function renderSharedCultureListsSection() {
+            if (!listasOcioCompartidas.length) return '';
+            return `
+                <div style="margin-bottom:18px">
+                    <div style="font-size:13px;font-weight:700;margin-bottom:8px">Listas compartidas contigo (${listasOcioCompartidas.length})</div>
+                    ${listasOcioCompartidas.map(l => {
+                        const lista = l.lista || {};
+                        const items = lista.items || [];
+                        return `
+                        <div class="card" style="background:transparent;border-style:dashed;margin-bottom:10px">
+                            <div style="font-weight:700">${escapeHtml(lista.name || 'Lista')}</div>
+                            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">De ${escapeHtml(l.remitente_nombre || 'un amigo')} · ${items.length} elemento${items.length === 1 ? '' : 's'}</div>
+                            ${l.nota ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${linkifyText(l.nota)}</div>` : ''}
+                            <div style="display:flex;gap:8px;margin-top:10px">
+                                <button class="btn-modal-primary" style="width:auto" onclick="anadirListaCompartidaAMisListas('${l.id}')">+ Añadir a mis listas</button>
+                                <button class="btn-secondary" style="width:auto" onclick="descartarListaCompartida('${l.id}')">Descartar</button>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
         }
 
         // Iconos minimalistas en SVG para las tarjetas de Ocio (mismo estilo
@@ -6331,6 +6466,16 @@
                     onClick: () => { closeNotifPanel(); switchView('travels'); }
                 });
             });
+            (typeof listasOcioCompartidas !== 'undefined' ? listasOcioCompartidas : []).forEach(l => {
+                items.push({
+                    icon: NOTIF_ICON_TRIP,
+                    iconClass: 'icon-trip',
+                    title: `${l.remitente_nombre || 'Un amigo'} te compartió una lista`,
+                    sub: (l.lista && l.lista.name) || '',
+                    date: l.creado_en || '',
+                    onClick: () => { closeNotifPanel(); cultureTab = 'lists'; window._selectedCultureList = null; switchView('culture'); }
+                });
+            });
             items.sort((a, b) => String(b.date).localeCompare(String(a.date)));
             return items;
         }
@@ -6374,7 +6519,7 @@
 
         async function refreshNotifData() {
             try {
-                await Promise.all([cargarSolicitudesAmistad(), cargarRecomendaciones(), cargarViajesCompartidos()]);
+                await Promise.all([cargarSolicitudesAmistad(), cargarRecomendaciones(), cargarViajesCompartidos(), cargarListasOcioCompartidas()]);
                 updateNotifBadge();
             } catch (e) {
                 console.error('Error actualizando notificaciones:', e);
@@ -13709,6 +13854,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             await cargarRecomendaciones();
             await cargarSolicitudesAmistad();
             await cargarViajesCompartidos();
+            await cargarListasOcioCompartidas();
 
             if (!loadFantasyData()) {
                 fantasyData = getDefaultFantasyData();
