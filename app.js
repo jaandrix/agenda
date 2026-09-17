@@ -7539,7 +7539,11 @@
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin experiencia laboral</div><div class="empty-sub">Pulsa el botón + y selecciona "Trabajo"</div></div>`;
+                return `<div class="empty-state">
+                    <div class="empty-title">Sin experiencia laboral</div>
+                    <div class="empty-sub">Pulsa el botón + y selecciona "Trabajo", o importa tu Informe de Vida Laboral</div>
+                    <button class="btn-secondary" style="width:auto;margin-top:12px;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openWorkImportModal()">Importar Vida Laboral</button>
+                </div>`;
             }
 
             const todayStr = new Date().toISOString().slice(0, 10);
@@ -7581,7 +7585,10 @@
             let html = `
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;max-width:980px;flex-wrap:wrap">
                     <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Trabajo</div>
-                    <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()">⭳ Descargar resumen (PDF)</button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openWorkImportModal()">Importar Vida Laboral</button>
+                        <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()">⭳ Descargar resumen (PDF)</button>
+                    </div>
                 </div>
                 <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:22px;max-width:980px">
                     <div class="card bone-surface work-total-bone" style="margin:0">
@@ -7787,6 +7794,181 @@
             }
 
             doc.save(`vida-laboral-${todayISO()}.pdf`);
+        }
+
+        // ============================================================
+        //  IMPORTAR INFORME DE VIDA LABORAL (Seguridad Social, PDF)
+        //  Todo el proceso ocurre en el propio navegador con pdf.js — el
+        //  PDF nunca se sube a ningún sitio. El formato de la tabla se
+        //  ajustó a partir de un informe real; como el texto extraído de
+        //  un PDF nunca es 100% fiable, se muestra una revisión marcable
+        //  antes de crear nada.
+        // ============================================================
+        function openWorkImportModal() {
+            showModal(`
+                <div class="modal-title">Importar Vida Laboral</div>
+                <div class="doc-upload-box" onclick="document.getElementById('work-import-input').click()">
+                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir el PDF del Informe de Vida Laboral</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">Sede Electrónica de la Seguridad Social → Tu Seguridad Social → Informes y certificados → Informe de vida laboral</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:10px">El PDF se procesa aquí mismo, en tu navegador — no se sube a ningún servidor.</div>
+                <input type="file" id="work-import-input" accept="application/pdf" style="display:none" onchange="handleWorkPdfImport(event)">
+            `);
+        }
+
+        const WORK_IMPORT_REGIMENES = ['GENERAL', 'AUTONOMOS', 'AUTÓNOMOS', 'AGRARIO', 'MAR', 'CARBON', 'CARBÓN', 'HOGAR'];
+
+        // pdf.js no garantiza que content.items llegue en orden de lectura
+        // visual (en este tipo de informe, de hecho, no lo está). Hay que
+        // reagrupar por línea (misma Y, con tolerancia) y ordenar cada
+        // línea de izquierda a derecha antes de poder aplicar ningún regex.
+        function extractPdfPageText(content) {
+            const rows = [];
+            content.items.forEach(it => {
+                if (it.str === undefined) return;
+                const y = it.transform[5];
+                let row = rows.find(r => Math.abs(r.y - y) < 3);
+                if (!row) { row = { y, items: [] }; rows.push(row); }
+                row.items.push(it);
+            });
+            rows.sort((a, b) => b.y - a.y);
+            return rows.map(r => r.items.sort((a, b) => a.transform[4] - b.transform[4]).map(it => it.str).join(' ')).join('\n');
+        }
+
+        function parseVidaLaboralDate(str) {
+            const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec((str || '').trim());
+            return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
+        }
+
+        // Interpreta el texto ya extraído del PDF (una cadena por página,
+        // unidas) y devuelve un borrador por cada periodo de alta. Cada fila
+        // real puede venir seguida de: el nombre de la empresa partido en la
+        // línea siguiente (si es largo), y/o una línea de guiones con el
+        // texto de la "situación asimilada a la de alta" (p. ej. prácticas).
+        function parseVidaLaboralText(fullText) {
+            // A partir de "Notas aclaratorias" empiezan las páginas de
+            // glosario del informe (sin tabla) — cortar ahí evita que ese
+            // texto se cuele como "continuación" del último periodo real.
+            const notesIdx = fullText.indexOf('Notas aclaratorias');
+            const tableText = notesIdx >= 0 ? fullText.slice(0, notesIdx) : fullText;
+            const regimenPattern = WORK_IMPORT_REGIMENES.join('|');
+            const rowRegex = new RegExp(
+                `^(${regimenPattern})\\s+\\d+\\s+(.+?)\\s+(\\d{2}\\.\\d{2}\\.\\d{4})\\s+\\d{2}\\.\\d{2}\\.\\d{4}\\s+(---|\\d{2}\\.\\d{2}\\.\\d{4})\\s+\\S+\\s+\\S+\\s+\\S+\\s+(\\d+)\\s*$`
+            );
+            const lines = tableText.split('\n').map(l => l.trim()).filter(Boolean);
+            const rows = [];
+            let current = null;
+            for (const line of lines) {
+                const m = rowRegex.exec(line);
+                if (m) {
+                    current = {
+                        regimen: m[1],
+                        company: m[2].replace(/\s+/g, ' ').trim(),
+                        startDate: parseVidaLaboralDate(m[3]),
+                        endDate: m[4] === '---' ? '' : parseVidaLaboralDate(m[4]),
+                        cotizedDays: parseInt(m[5]) || 0,
+                        situacion: '',
+                        include: true
+                    };
+                    rows.push(current);
+                } else if (/^-{5,}/.test(line)) {
+                    // Línea de "situación asimilada a la de alta": el texto va
+                    // entre el bloque de guiones inicial y los guiones finales.
+                    const situ = line.replace(/^-+\s*-*\s*/, '').replace(/[\s-]+$/, '').trim();
+                    if (current && situ) current.situacion = situ;
+                } else if (current && line !== 'TVLCEAIM' && !/^(GENERAL|SITUACI|R[ÉE]GIMEN|EMPRESA|FECHA|REFERENCIAS|Id\. CEA|Este documento|DATOS IDENTIFICATIVOS|NOMBRE Y APELLIDOS)/i.test(line) && line.length < 60) {
+                    // Continuación del nombre de la empresa en la línea siguiente.
+                    current.company = (current.company + ' ' + line).replace(/\s+/g, ' ').trim();
+                }
+            }
+            return rows;
+        }
+
+        async function handleWorkPdfImport(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            if (typeof pdfjsLib === 'undefined') { showToast('No se pudo cargar el lector de PDF', true); return; }
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+            showToast('Leyendo el PDF...');
+            try {
+                const buffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    fullText += extractPdfPageText(content) + '\n';
+                }
+
+                const rows = parseVidaLaboralText(fullText);
+                closeModal();
+                if (!rows.length) {
+                    showModal(`
+                        <div class="modal-title">No se ha podido leer la tabla</div>
+                        <div style="font-size:13px;color:var(--text-secondary)">No he reconocido ningún periodo en este PDF. Puede que el formato de tu informe difiera del habitual — añade tu experiencia manualmente con el botón +.</div>
+                        <button class="btn-secondary" style="margin-top:12px" onclick="closeModal()">Entendido</button>
+                    `);
+                    return;
+                }
+                window._workImportDraft = rows;
+                renderWorkImportReview();
+            } catch (e) {
+                console.error('Error leyendo el Informe de Vida Laboral:', e);
+                closeModal();
+                showToast('No se pudo leer el PDF', true);
+            }
+        }
+
+        function renderWorkImportReview() {
+            const rows = window._workImportDraft || [];
+            showModal(`
+                <div class="modal-title">Revisa antes de importar</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">He encontrado ${rows.length} periodo${rows.length === 1 ? '' : 's'}. Desmarca los que no quieras añadir — el texto de un PDF no siempre se lee perfecto, comprueba las fechas.</div>
+                <div id="work-import-review-list" style="max-height:380px;overflow-y:auto">${renderWorkImportRows()}</div>
+                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmWorkImport()">Importar seleccionados</button>
+            `);
+        }
+
+        function renderWorkImportRows() {
+            const rows = window._workImportDraft || [];
+            return rows.map((r, i) => `
+                <label class="weekly-task-row" style="align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)">
+                    <input type="checkbox" class="weekly-task-check" style="margin-top:2px" ${r.include ? 'checked' : ''} onchange="window._workImportDraft[${i}].include=this.checked">
+                    <span class="weekly-task-text">
+                        <strong>${escapeHtml(r.company)}</strong><br>
+                        <span style="color:var(--text-secondary);font-size:11.5px">${r.startDate || '¿?'} → ${r.endDate || 'Actual'} · ${r.cotizedDays} días${r.situacion ? ' · ' + escapeHtml(r.situacion) : ''}</span>
+                    </span>
+                </label>`).join('');
+        }
+
+        async function confirmWorkImport() {
+            const rows = (window._workImportDraft || []).filter(r => r.include);
+            window._workImportDraft = null;
+            if (!rows.length) { closeModal(); return; }
+            rows.forEach(r => {
+                const esPracticas = /pr[aá]cticas formativas/i.test(r.situacion || '');
+                entries.push({
+                    id: 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    type: 'work',
+                    company: r.company,
+                    title: '',
+                    position: '',
+                    startDate: r.startDate,
+                    endDate: r.endDate,
+                    cotizedDays: r.cotizedDays,
+                    cotizationType: esPracticas ? 'practicas' : 'general',
+                    categoryId: 'cat_trabajo',
+                    notes: 'Importado del Informe de Vida Laboral' + (r.situacion ? ` (${r.situacion})` : ''),
+                    createdAt: new Date().toISOString()
+                });
+            });
+            filteredEntries = [...entries];
+            closeModal();
+            render();
+            try { await saveData(); showToast(`${rows.length} periodo${rows.length === 1 ? '' : 's'} importado${rows.length === 1 ? '' : 's'}`); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================
