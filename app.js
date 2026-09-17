@@ -450,7 +450,21 @@
             chartHistory: [],
             // forecastProfile: datos manuales que alimentan la fórmula de provisión
             // a fin de año (sueldo, duración del contrato, aportaciones planeadas).
-            forecastProfile: { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 }
+            forecastProfile: { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 },
+            // Cuentas propias que el usuario añade además de las 4 fijas
+            // (Efectivo/Emergencia/Vacaciones/Inversión): [{id, name, balance}].
+            customAccounts: [],
+            // Líneas configurables de la gráfica de evolución: [{id, name, accountKeys, color}].
+            // Si está vacío se usan las dos líneas de siempre (safe/total).
+            chartSeries: [],
+            // Presupuestos y metas de ahorro (Fase 1) y actualización mensual guiada.
+            budgets: {},
+            savingsGoals: [],
+            // Día del mes (1-28) en que el usuario quiere que se le recuerde
+            // actualizar sus finanzas; null = sin recordatorio.
+            recordatorioDia: null,
+            // Mes (YYYY-MM) del último cierre mensual guiado ya completado.
+            ultimoCierreMensual: null
         };
         let financeSubView = 'menu';
         let devModeActive = false;
@@ -2066,6 +2080,12 @@
                 financeProfile.history = Array.isArray(financeProfile.history) ? financeProfile.history : [];
                 financeProfile.oneOffIncome = Array.isArray(financeProfile.oneOffIncome) ? financeProfile.oneOffIncome : [];
                 financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
+                financeProfile.customAccounts = Array.isArray(financeProfile.customAccounts) ? financeProfile.customAccounts : [];
+                financeProfile.chartSeries = Array.isArray(financeProfile.chartSeries) ? financeProfile.chartSeries : [];
+                financeProfile.budgets = (financeProfile.budgets && typeof financeProfile.budgets === 'object') ? financeProfile.budgets : {};
+                financeProfile.savingsGoals = Array.isArray(financeProfile.savingsGoals) ? financeProfile.savingsGoals : [];
+                financeProfile.recordatorioDia = Number.isFinite(financeProfile.recordatorioDia) ? financeProfile.recordatorioDia : null;
+                financeProfile.ultimoCierreMensual = financeProfile.ultimoCierreMensual || null;
                 // Migración: los antiguos "ingresos puntuales" pasan a formar parte
                 // del registro unificado de movimientos (una sola vez).
                 if (financeProfile.oneOffIncome.length && !financeProfile._oneOffMigrated) {
@@ -6466,6 +6486,17 @@
                     onClick: () => { closeNotifPanel(); switchView('travels'); }
                 });
             });
+            if (financeProfile.recordatorioDia && financeMonthUpdatePending() && new Date().getDate() >= financeProfile.recordatorioDia) {
+                const monthKey = financeMonthKey();
+                items.push({
+                    icon: NOTIF_ICON_EVENT,
+                    iconClass: 'icon-event',
+                    title: 'Cuando tengas la información disponible, puedes actualizar tus finanzas',
+                    sub: financeMonthLabel(monthKey),
+                    date: monthKey + '-' + String(financeProfile.recordatorioDia).padStart(2, '0'),
+                    onClick: () => { closeNotifPanel(); switchView('finances'); openMonthlyFinanceUpdate(); }
+                });
+            }
             (typeof listasOcioCompartidas !== 'undefined' ? listasOcioCompartidas : []).forEach(l => {
                 items.push({
                     icon: NOTIF_ICON_TRIP,
@@ -9473,7 +9504,22 @@
             return current + blend(planned) * monthsLeft;
         }
 
+        // Todas las cuentas con saldo: las 4 fijas de siempre + las que el
+        // usuario haya añadido. "key" identifica cada una para usarla en
+        // financeAccountOptions, financeSnapshot y las líneas de la gráfica.
+        function getAllAccounts() {
+            return [
+                { key: 'cash', label: 'Efectivo / bancos', balance: Number(financeProfile.cash || 0) },
+                { key: 'emergency', label: 'Fondo de emergencia', balance: Number(financeProfile.emergency || 0) },
+                { key: 'vacation', label: 'Reserva de vacaciones', balance: Number(financeProfile.vacation || 0) },
+                { key: 'invested', label: 'Inversiones', balance: Number(financeProfile.invested || 0) },
+                ...(financeProfile.customAccounts || []).map(a => ({ key: a.id, label: a.name, balance: Number(a.balance || 0) }))
+            ];
+        }
+
         function financeSnapshot() {
+            const accounts = {};
+            getAllAccounts().forEach(a => { accounts[a.key] = a.balance; });
             return {
                 month: financeMonthKey(),
                 date: new Date().toISOString(),
@@ -9482,7 +9528,8 @@
                 emergency: Number(financeProfile.emergency || 0),
                 vacation: Number(financeProfile.vacation || 0),
                 safe: Number(financeProfile.cash || 0) + Number(financeProfile.emergency || 0),
-                total: financeCorePatrimony()
+                total: financeCorePatrimony(),
+                accounts
             };
         }
 
@@ -9621,14 +9668,38 @@
             if (wrap) wrap.innerHTML = renderFinanceFloatingChart();
         }
 
+        // Líneas configurables de la gráfica: por defecto, las dos de
+        // siempre (Efectivo+Emergencia y Patrimonio total); si el usuario
+        // ha definido las suyas en "Configurar gráfica", se usan esas.
+        function getFinanceChartSeries() {
+            if (Array.isArray(financeProfile.chartSeries) && financeProfile.chartSeries.length) return financeProfile.chartSeries;
+            return [
+                { id: 'safe', name: 'Efectivo + Emergencia', accountKeys: ['cash', 'emergency'], color: 'var(--text-secondary)' },
+                { id: 'total', name: 'Patrimonio total', accountKeys: ['cash', 'emergency', 'invested'], color: 'var(--text-primary)' }
+            ];
+        }
+
+        // Los puntos guardados antes de tener desglose por cuenta ("accounts")
+        // solo pueden aproximarse con safe/total; cualquier serie nueva del
+        // usuario queda a 0 en esos meses antiguos.
+        function financeSeriesValueForHistoryPoint(h, series) {
+            if (h.accounts && typeof h.accounts === 'object') {
+                return series.accountKeys.reduce((s, k) => s + Number(h.accounts[k] || 0), 0);
+            }
+            if (series.id === 'safe') return h.safe !== undefined ? Number(h.safe) : Number(h.cash || 0) + Number(h.emergency || 0);
+            if (series.id === 'total') return h.total !== undefined ? Number(h.total) : Number(h.cash || 0) + Number(h.emergency || 0) + Number(h.invested || 0);
+            return 0;
+        }
+
         function renderFinanceFloatingChart() {
             const raw = Array.isArray(financeProfile.history) ? [...financeProfile.history] : [];
+            const series = getFinanceChartSeries();
             const fullData = raw
                 .sort((a, b) => String(a.month).localeCompare(String(b.month)))
                 .map(h => {
-                    const safe = h.safe !== undefined ? Number(h.safe) : Number(h.cash || 0) + Number(h.emergency || 0);
-                    const total = h.total !== undefined ? Number(h.total) : safe + Number(h.invested || 0);
-                    return { month: h.month, safe, total };
+                    const point = { month: h.month };
+                    series.forEach(s => { point[s.id] = financeSeriesValueForHistoryPoint(h, s); });
+                    return point;
                 });
             const visibleCount = financeChartMonths ? Math.min(financeChartMonths, fullData.length) : fullData.length;
             const data = fullData.slice(-visibleCount);
@@ -9640,7 +9711,8 @@
 
             const W = 640, H = 220, padX = 6, padT = 14, padB = 24;
             const innerW = W - padX * 2, innerH = H - padT - padB;
-            const maxVal = Math.max(1, target, ...data.map(d => d.total), ...data.map(d => d.safe)) * 1.08;
+            const allValues = data.flatMap(d => series.map(s => d[s.id]));
+            const maxVal = Math.max(1, target, ...allValues) * 1.08;
 
             const x = i => data.length === 1 ? padX + innerW / 2 : padX + (innerW * i) / (data.length - 1);
             const y = v => padT + innerH - (v / maxVal) * innerH;
@@ -9649,9 +9721,9 @@
                 <line x1="${padX}" y1="${y(target).toFixed(1)}" x2="${W - padX}" y2="${y(target).toFixed(1)}" stroke="var(--text-muted)" stroke-width="1.3" stroke-dasharray="1.5,4" stroke-linecap="round"/>
                 <text x="${padX}" y="${(y(target) - 6).toFixed(1)}" font-size="9" fill="var(--text-muted)">Objetivo · ${financeMoney(target)}</text>` : '';
 
-            const dotsOf = (key, label) => data.map((d, i) => `
-                <circle class="finance-chart-point" cx="${x(i).toFixed(1)}" cy="${y(d[key]).toFixed(1)}" r="3.5" fill="var(--bg-app)" stroke="${key === 'total' ? 'var(--text-primary)' : 'var(--text-secondary)'}" stroke-width="2"
-                    onmousemove="showFinanceChartTooltip(event,'${label}','${escapeHtml(financeMonthLabel(d.month))}',${d[key]})"
+            const dotsOf = (s) => data.map((d, i) => `
+                <circle class="finance-chart-point" cx="${x(i).toFixed(1)}" cy="${y(d[s.id]).toFixed(1)}" r="3.5" fill="var(--bg-app)" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="2"
+                    onmousemove="showFinanceChartTooltip(event,'${escapeHtml(s.name).replace(/'/g, "\\'")}','${escapeHtml(financeMonthLabel(d.month))}',${d[s.id]})"
                     onmouseleave="hideFinanceChartTooltip()"></circle>`).join('');
 
             const step = Math.max(1, Math.ceil(data.length / 6));
@@ -9661,12 +9733,11 @@
 
             let linesSvg = '';
             if (data.length > 1) {
-                const pathOf = key => data.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d[key]).toFixed(1)}`).join(' ');
-                const areaPath = `${pathOf('total')} L${x(data.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
-                linesSvg = `
-                    <path d="${areaPath}" fill="url(#financeTotalGradient)" stroke="none"/>
-                    <path d="${pathOf('safe')}" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-dasharray="4,4" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="${pathOf('total')}" fill="none" stroke="var(--text-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+                const pathOf = id => data.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d[id]).toFixed(1)}`).join(' ');
+                const mainSeries = series[series.length - 1];
+                const areaPath = `${pathOf(mainSeries.id)} L${x(data.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
+                linesSvg = `<path d="${areaPath}" fill="url(#financeTotalGradient)" stroke="none"/>` +
+                    series.map((s, idx) => `<path d="${pathOf(s.id)}" fill="none" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="${idx === series.length - 1 ? 2.5 : 2}" ${idx === series.length - 1 ? '' : 'stroke-dasharray="4,4"'} stroke-linecap="round" stroke-linejoin="round"/>`).join('');
             }
 
             return `
@@ -9680,11 +9751,11 @@
                         </defs>
                         ${linesSvg}
                         ${targetLine}
-                        ${dotsOf('safe', 'Efectivo + Emergencia')}
-                        ${dotsOf('total', 'Patrimonio total')}
+                        ${series.map(s => dotsOf(s)).join('')}
                         ${xLabels}
                     </svg>
                 </div>
+                <div class="finance-chart-legend">${series.map(s => `<span class="finance-chart-legend-item"><i style="background:${s.color || 'var(--text-secondary)'}"></i>${escapeHtml(s.name)}</span>`).join('')}</div>
                 ${data.length === 1 ? `<div class="finance-empty-state" style="margin-top:6px">Un solo registro todavía. Usa <strong>Corregir registros</strong> abajo para añadir meses anteriores y ver la evolución completa.</div>` : ''}`;
         }
 
@@ -10250,6 +10321,245 @@
             </section>`;
         }
 
+        // ============================================================
+        //  CUENTAS PROPIAS
+        // ============================================================
+        function openFinanceAccountsConfig() {
+            showModal(`
+                <div class="modal-title">Cuentas propias</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Efectivo, Emergencia, Vacaciones e Inversión son fijas. Aquí puedes añadir otras con nombre y saldo libres (p. ej. "Cripto" o "Ahorro coche").</div>
+                <div id="finance-custom-accounts-list">${renderFinanceCustomAccountsList()}</div>
+                <div class="modal-label" style="margin-top:14px">Nueva cuenta</div>
+                <input id="finance-new-account-name" class="modal-input" placeholder="Nombre">
+                <input id="finance-new-account-balance" class="modal-input" type="number" step="0.01" placeholder="Saldo inicial (€)">
+                <button class="btn-modal-primary" onclick="addFinanceCustomAccount()">+ Añadir cuenta</button>
+            `);
+        }
+
+        function renderFinanceCustomAccountsList() {
+            const accounts = financeProfile.customAccounts || [];
+            if (!accounts.length) return `<div class="finance-empty-line">Aún no tienes cuentas propias.</div>`;
+            return accounts.map(a => `
+                <div class="finance-budget-row" style="display:flex;justify-content:space-between;align-items:center;cursor:default">
+                    <span>${escapeHtml(a.name)}</span>
+                    <span style="display:flex;gap:8px;align-items:center">
+                        <strong style="font-variant-numeric:tabular-nums">${financeMoney(a.balance)}</strong>
+                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px" onclick="editFinanceCustomAccountBalance('${a.id}')">✎</button>
+                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceCustomAccount('${a.id}')">✕</button>
+                    </span>
+                </div>`).join('');
+        }
+
+        async function addFinanceCustomAccount() {
+            const name = document.getElementById('finance-new-account-name')?.value.trim();
+            const balance = Number(document.getElementById('finance-new-account-balance')?.value) || 0;
+            if (!name) { showToast('Ponle un nombre a la cuenta', true); return; }
+            financeProfile.customAccounts = financeProfile.customAccounts || [];
+            financeProfile.customAccounts.push({ id: 'acc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, balance });
+            const list = document.getElementById('finance-custom-accounts-list');
+            if (list) list.innerHTML = renderFinanceCustomAccountsList();
+            document.getElementById('finance-new-account-name').value = '';
+            document.getElementById('finance-new-account-balance').value = '';
+            if (currentView === 'finances') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function editFinanceCustomAccountBalance(id) {
+            const acc = (financeProfile.customAccounts || []).find(a => a.id === id);
+            if (!acc) return;
+            const next = prompt(`Nuevo saldo de "${acc.name}" (€)`, acc.balance);
+            if (next === null) return;
+            acc.balance = Number(next) || 0;
+            const list = document.getElementById('finance-custom-accounts-list');
+            if (list) list.innerHTML = renderFinanceCustomAccountsList();
+            if (currentView === 'finances') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteFinanceCustomAccount(id) {
+            if (!confirm('¿Eliminar esta cuenta?')) return;
+            financeProfile.customAccounts = (financeProfile.customAccounts || []).filter(a => a.id !== id);
+            // Quita también esa cuenta de cualquier línea de la gráfica que la usara.
+            financeProfile.chartSeries = (financeProfile.chartSeries || [])
+                .map(s => ({ ...s, accountKeys: s.accountKeys.filter(k => k !== id) }))
+                .filter(s => s.accountKeys.length);
+            const list = document.getElementById('finance-custom-accounts-list');
+            if (list) list.innerHTML = renderFinanceCustomAccountsList();
+            if (currentView === 'finances') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ============================================================
+        //  CONFIGURAR LÍNEAS DE LA GRÁFICA
+        // ============================================================
+        const FINANCE_SERIES_COLORS = ['#111827', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+        function openFinanceChartSeriesConfig() {
+            window._chartSeriesDraft = JSON.parse(JSON.stringify(getFinanceChartSeries()));
+            showModal(`
+                <div class="modal-title">Configurar gráfica</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Elige qué líneas se dibujan y qué cuentas suma cada una.</div>
+                <div id="finance-series-draft-list">${renderFinanceSeriesDraftList()}</div>
+                <button class="btn-secondary" style="margin-top:10px" onclick="addFinanceSeriesDraft()">+ Nueva línea</button>
+                <button class="btn-modal-primary" style="margin-top:14px" onclick="saveFinanceChartSeries()">Guardar</button>
+            `);
+        }
+
+        function renderFinanceSeriesDraftList() {
+            const accounts = getAllAccounts();
+            const draft = window._chartSeriesDraft || [];
+            if (!draft.length) return `<div class="finance-empty-line">Sin líneas propias — se usarán las dos de siempre.</div>`;
+            return draft.map((s, i) => `
+                <div class="finance-budget-row" style="cursor:default">
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+                        <input class="modal-input" style="margin:0" value="${escapeHtml(s.name)}" oninput="window._chartSeriesDraft[${i}].name=this.value">
+                        <button class="btn-secondary" style="width:auto;padding:2px 8px" onclick="removeFinanceSeriesDraft(${i})">✕</button>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px">
+                        ${accounts.map(a => `
+                            <label class="recurring-weekday-chip">
+                                <input type="checkbox" ${s.accountKeys.includes(a.key) ? 'checked' : ''} onchange="toggleFinanceSeriesDraftAccount(${i},'${a.key}',this.checked)">
+                                ${escapeHtml(a.label)}
+                            </label>`).join('')}
+                    </div>
+                </div>`).join('');
+        }
+
+        function addFinanceSeriesDraft() {
+            window._chartSeriesDraft = window._chartSeriesDraft || [];
+            const color = FINANCE_SERIES_COLORS[window._chartSeriesDraft.length % FINANCE_SERIES_COLORS.length];
+            window._chartSeriesDraft.push({ id: 'serie_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5), name: 'Nueva línea', accountKeys: [], color });
+            const list = document.getElementById('finance-series-draft-list');
+            if (list) list.innerHTML = renderFinanceSeriesDraftList();
+        }
+
+        function removeFinanceSeriesDraft(i) {
+            window._chartSeriesDraft.splice(i, 1);
+            const list = document.getElementById('finance-series-draft-list');
+            if (list) list.innerHTML = renderFinanceSeriesDraftList();
+        }
+
+        function toggleFinanceSeriesDraftAccount(i, key, checked) {
+            const s = window._chartSeriesDraft[i];
+            if (checked) { if (!s.accountKeys.includes(key)) s.accountKeys.push(key); }
+            else s.accountKeys = s.accountKeys.filter(k => k !== key);
+        }
+
+        async function saveFinanceChartSeries() {
+            financeProfile.chartSeries = (window._chartSeriesDraft || []).filter(s => s.accountKeys.length && s.name.trim());
+            window._chartSeriesDraft = null;
+            closeModal();
+            if (currentView === 'finances') render();
+            try { await saveData(); showToast('Gráfica actualizada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ============================================================
+        //  ACTUALIZACIÓN MENSUAL GUIADA
+        // ============================================================
+        function financeMonthUpdatePending() {
+            return financeProfile.ultimoCierreMensual !== financeMonthKey();
+        }
+
+        function setFinanceReminderDay(value) {
+            const day = parseInt(value);
+            financeProfile.recordatorioDia = (Number.isFinite(day) && day >= 1 && day <= 28) ? day : null;
+            saveData().catch(e => console.error(e));
+        }
+
+        function openMonthlyFinanceUpdate() {
+            const monthKey = financeMonthKey();
+            const fc = financeProfile.forecastProfile || {};
+            const forecast = Number(financeProfile.salaryForecast?.[monthKey] || fc.salary || 0);
+            const existingSalaryMov = (financeProfile.movements || []).find(m => m.id === 'mensual_salario_' + monthKey);
+            const spentByCat = financeExpensesByCategoryThisMonth();
+            window._financeUpdateBefore = financeCorePatrimony();
+
+            showModal(`
+                <div class="modal-title">Actualizar ${escapeHtml(financeMonthLabel(monthKey))}</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Rellena solo lo que sepas ahora mismo — no hace falta que sea exacto ni completo.</div>
+
+                <div class="modal-label">Sueldo recibido este mes${forecast > 0 ? ` (previsto: ${financeMoney(forecast)})` : ''}</div>
+                <input id="mfu-salario" class="modal-input" type="number" step="0.01" placeholder="0.00" value="${existingSalaryMov ? existingSalaryMov.amount : ''}">
+
+                <div class="modal-label" style="margin-top:14px">Saldos actuales</div>
+                <div class="modal-row">
+                    <div><div style="font-size:11px;color:var(--text-secondary)">Efectivo</div><input id="mfu-cash" class="modal-input" type="number" step="0.01" value="${financeProfile.cash || 0}"></div>
+                    <div><div style="font-size:11px;color:var(--text-secondary)">Emergencia</div><input id="mfu-emergency" class="modal-input" type="number" step="0.01" value="${financeProfile.emergency || 0}"></div>
+                </div>
+                <div class="modal-label" style="margin-top:8px">Vacaciones</div>
+                <input id="mfu-vacation" class="modal-input" type="number" step="0.01" value="${financeProfile.vacation || 0}">
+
+                <div class="modal-label" style="margin-top:14px">Gasto de este mes por categoría (opcional)</div>
+                ${FINANCE_EXPENSE_CATEGORIES.map(c => `
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <span style="flex:1;font-size:12.5px">${c.label}</span>
+                        <input id="mfu-cat-${c.id}" class="modal-input" style="width:110px;margin:0" type="number" step="0.01" value="${spentByCat[c.id] || ''}" placeholder="0.00">
+                    </div>`).join('')}
+
+                <button class="btn-modal-primary" style="margin-top:16px" onclick="saveMonthlyFinanceUpdate('${monthKey}')">Guardar actualización</button>
+            `);
+        }
+
+        async function saveMonthlyFinanceUpdate(monthKey) {
+            const salario = Number(document.getElementById('mfu-salario')?.value);
+            const cash = Number(document.getElementById('mfu-cash')?.value);
+            const emergency = Number(document.getElementById('mfu-emergency')?.value);
+            const vacation = Number(document.getElementById('mfu-vacation')?.value);
+            const before = window._financeUpdateBefore ?? financeCorePatrimony();
+
+            financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
+
+            // El sueldo aquí es solo un registro para el historial de
+            // movimientos: el saldo de Efectivo que se guarda abajo ya lo
+            // recoge, así que no se vuelve a sumar aparte (evitaría contarlo
+            // dos veces).
+            const salarioMovId = 'mensual_salario_' + monthKey;
+            financeProfile.movements = financeProfile.movements.filter(m => m.id !== salarioMovId);
+            if (salario > 0) {
+                financeProfile.movements.unshift({ id: salarioMovId, type: 'income', label: 'Sueldo de ' + financeMonthLabel(monthKey), amount: salario, date: todayISO(), addedToCash: false });
+            }
+
+            if (Number.isFinite(cash)) financeProfile.cash = Math.max(0, cash);
+            if (Number.isFinite(emergency)) financeProfile.emergency = Math.max(0, emergency);
+            if (Number.isFinite(vacation)) financeProfile.vacation = Math.max(0, vacation);
+
+            FINANCE_EXPENSE_CATEGORIES.forEach(c => {
+                const val = Number(document.getElementById('mfu-cat-' + c.id)?.value);
+                const movId = 'mensual_gasto_' + monthKey + '_' + c.id;
+                financeProfile.movements = financeProfile.movements.filter(m => m.id !== movId);
+                if (val > 0) {
+                    financeProfile.movements.unshift({ id: movId, type: 'expense', categoryId: c.id, label: `Gasto de ${c.label} (${financeMonthLabel(monthKey)})`, amount: val, date: todayISO(), addedToCash: false });
+                }
+            });
+            financeProfile.movements.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+            // El cierre mensual sustituye el snapshot automático de este mes
+            // por uno fiel a lo que el usuario acaba de confirmar.
+            const snap = financeSnapshot();
+            financeProfile.history = Array.isArray(financeProfile.history) ? financeProfile.history : [];
+            const idx = financeProfile.history.findIndex(h => h.month === monthKey);
+            if (idx >= 0) financeProfile.history[idx] = snap; else financeProfile.history.push(snap);
+            financeProfile.history.sort((a, b) => String(a.month).localeCompare(String(b.month)));
+
+            financeProfile.ultimoCierreMensual = monthKey;
+            const after = financeCorePatrimony();
+
+            closeModal();
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+
+            const delta = after - before;
+            showModal(`
+                <div class="modal-title">Actualización guardada</div>
+                <div style="text-align:center;padding:12px 0">
+                    <div style="font-size:12px;color:var(--text-secondary)">Patrimonio operativo</div>
+                    <div style="font-size:24px;font-weight:800;margin:8px 0">${financeMoney(before)} → ${financeMoney(after)}</div>
+                    <div style="font-size:15px;font-weight:700;color:${delta >= 0 ? '#10b981' : '#dc2626'}">${delta >= 0 ? '+' : ''}${financeMoney(delta)} este mes</div>
+                </div>
+                <button class="btn-modal-primary" onclick="closeModal()">Aceptar</button>
+            `);
+        }
+
         function renderFinanceDashboard() {
             ensureCurrentMonthHistory();
             const total = financeCorePatrimony();
@@ -10265,15 +10575,23 @@
             const fc = financeProfile.forecastProfile || {};
 
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
+            const updatePending = financeMonthUpdatePending();
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
+                ${(financeProfile.recordatorioDia && updatePending && new Date().getDate() >= financeProfile.recordatorioDia) ? `
+                <div class="finance-reminder-banner">
+                    <span>Cuando tengas la información disponible, puedes actualizar tus finanzas de ${escapeHtml(financeMonthLabel(financeMonthKey()))}.</span>
+                    <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">Actualizar ahora</button>
+                </div>` : ''}
                 <div class="finance-hero-row">
                     <section class="finance-floating-chart-wrap" id="finance-floating-chart-wrap" onwheel="financeChartWheelZoom(event)" title="Rueda del ratón: acercar/alejar el periodo mostrado">
+                        <button class="finance-icon-btn" style="position:absolute;top:8px;right:8px;z-index:2" title="Configurar gráfica" onclick="event.stopPropagation();openFinanceChartSeriesConfig()">⚙</button>
                         ${renderFinanceFloatingChart()}
                     </section>
 
                     <section class="finance-networth-card" id="finance-networth-section">
                         <button class="finance-edit-btn finance-networth-edit-btn" title="Editar objetivo" onclick="openFinanceTargetEditor()">✎</button>
+                        <button class="btn-modal-primary finance-monthly-update-btn" style="width:auto" onclick="openMonthlyFinanceUpdate()">${updatePending ? 'Actualizar este mes' : '✓ Mes actualizado'}</button>
                         <div>
                             <div class="finance-kicker">Patrimonio operativo</div>
                             <div class="finance-networth-value-row">
@@ -10342,30 +10660,46 @@
                 </section>
 
                 <section class="finance-accounts-section" id="finance-accounts-section">
-                    <div class="finance-kicker" style="margin-bottom:10px">Cuentas</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                        <div class="finance-kicker" style="margin-bottom:0">Cuentas</div>
+                        <button class="finance-oneoff-btn" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
+                    </div>
                     <div class="finance-accounts-row">
                         <div class="collectible-card finance-account-card" onclick="openInvestmentAccountEditor()">
-                            
+
                             <div class="finance-account-label">Inversiones</div>
                             <div class="finance-account-value">${financeMoney(financeProfile.invested || 0)}</div>
                             ${financeProfile.investedNote ? `<div class="finance-account-note">${escapeHtml(financeProfile.investedNote)}</div>` : ''}
                         </div>
                         <div class="collectible-card finance-account-card" onclick="openRecurringExpensesModal()">
-                            
+
                             <div class="finance-account-label">Gastos recurrentes</div>
                             <div class="finance-account-value">${financeMoney(recurring)} <span>/ mes</span></div>
                         </div>
                         <div class="finance-account-card finance-account-card-readonly" onclick="switchView('collectibles')">
-                            
+
                             <div class="finance-account-label">Coleccionables</div>
                             <div class="finance-account-value">${financeMoney(financeCollectiblesTotal())}</div>
                             <div class="finance-account-note">No cuenta para el patrimonio operativo</div>
                         </div>
+                        ${(financeProfile.customAccounts || []).map(a => `
+                        <div class="collectible-card finance-account-card" onclick="editFinanceCustomAccountBalance('${a.id}')">
+                            <div class="finance-account-label">${escapeHtml(a.name)}</div>
+                            <div class="finance-account-value">${financeMoney(a.balance)}</div>
+                        </div>`).join('')}
                     </div>
                 </section>
 
                 <div class="finance-dashboard-foot-actions">
                     <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()">Corregir registros</button>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary)">
+                        Recordarme actualizar el día
+                        <select class="modal-input" style="width:auto;margin:0;padding:4px 8px" onchange="setFinanceReminderDay(this.value)">
+                            <option value="">Sin recordatorio</option>
+                            ${Array.from({ length: 28 }, (_, i) => i + 1).map(d => `<option value="${d}" ${financeProfile.recordatorioDia === d ? 'selected' : ''}>${d}</option>`).join('')}
+                        </select>
+                        de cada mes
+                    </label>
                 </div>
 
                 <div class="finance-dashboard-foot">${monthsLeft > 0 ? `Quedan ${monthsLeft} meses del año. ` : ''}La reserva de vacaciones (${financeMoney(financeProfile.vacation || 0)}) queda fuera del patrimonio operativo para evitar contar dos veces el dinero disponible.</div>
