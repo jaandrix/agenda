@@ -5700,22 +5700,28 @@
             const list = cultureLists.find(l => l.id === listId);
             if (!list) return;
             window._cultureListPickerId = listId;
+            // Selección "en borrador": los ticks se acumulan aquí y solo se
+            // aplican a la lista real al pulsar "Confirmar", para poder
+            // marcar varios elementos seguidos sin que el modal se repinte
+            // ni se guarde nada hasta terminar.
+            window._cultureListPickerPending = [...(list.entryIds || [])];
             const options = entries.filter(e => CULTURE_MEDIA_TYPES.includes(e.type));
             showModal(`
                 <div class="modal-title">Añadir a "${escapeHtml(list.name)}"</div>
                 <input id="culture-list-picker-filter" class="modal-input" placeholder="Buscar..." oninput="filterCultureListPicker(this.value)">
                 <div id="culture-list-picker-items" style="max-height:340px;overflow-y:auto;margin-top:8px">${renderCultureListPickerItems(options, '')}</div>
+                <button class="btn-modal-primary" style="margin-top:12px" onclick="confirmCultureListPicker()">Confirmar</button>
             `);
             setTimeout(() => document.getElementById('culture-list-picker-filter')?.focus(), 50);
         }
 
         function renderCultureListPickerItems(options, q) {
-            const list = cultureLists.find(l => l.id === window._cultureListPickerId);
+            const pending = window._cultureListPickerPending || [];
             const filtered = q ? options.filter(e => e.title.toLowerCase().includes(q.toLowerCase())) : options;
             if (!filtered.length) return `<div class="finance-empty-line">Sin resultados</div>`;
             return filtered.map(e => `
                 <label class="weekly-task-row">
-                    <input type="checkbox" class="weekly-task-check" ${(list?.entryIds || []).includes(e.id) ? 'checked' : ''} onchange="toggleCultureListEntry('${e.id}')">
+                    <input type="checkbox" class="weekly-task-check" ${pending.includes(e.id) ? 'checked' : ''} onchange="toggleCultureListEntry('${e.id}')">
                     <span class="weekly-task-text">${escapeHtml(e.title)} <span style="color:var(--text-secondary)">· ${TYPE_LABELS[e.type] || ''}</span></span>
                 </label>`).join('');
         }
@@ -5726,16 +5732,21 @@
             if (el) el.innerHTML = renderCultureListPickerItems(options, q);
         }
 
-        async function toggleCultureListEntry(entryId) {
+        // Solo marca/desmarca en el borrador (window._cultureListPickerPending),
+        // no toca la lista real todavía.
+        function toggleCultureListEntry(entryId) {
+            const pending = window._cultureListPickerPending || (window._cultureListPickerPending = []);
+            if (pending.includes(entryId)) window._cultureListPickerPending = pending.filter(id => id !== entryId);
+            else pending.push(entryId);
+        }
+
+        async function confirmCultureListPicker() {
             const list = cultureLists.find(l => l.id === window._cultureListPickerId);
-            if (!list) return;
-            list.entryIds = Array.isArray(list.entryIds) ? list.entryIds : [];
-            if (list.entryIds.includes(entryId)) list.entryIds = list.entryIds.filter(id => id !== entryId);
-            else list.entryIds.push(entryId);
-            // Repinta la vista de fondo (la lista, con su contador y sus
-            // tarjetas) sin tocar el modal, que sigue abierto encima.
-            if (currentView === 'culture') render();
-            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            if (list) list.entryIds = [...(window._cultureListPickerPending || [])];
+            window._cultureListPickerPending = null;
+            closeModal();
+            render();
+            try { await saveData(); showToast('Lista actualizada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // Iconos minimalistas en SVG para las tarjetas de Ocio (mismo estilo
