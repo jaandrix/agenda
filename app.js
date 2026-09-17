@@ -7543,23 +7543,46 @@
             }, { practicas: 0, general: 0 });
 
             const totalCotized = cotizedStats.practicas + cotizedStats.general;
+            const empresas = new Set(sorted.map(w => w.company).filter(Boolean)).size;
+            const actuales = sorted.filter(w => !w.endDate || w.endDate >= todayStr);
+            const historial = sorted.filter(w => w.endDate && w.endDate < todayStr);
 
             let html = `
-                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px;max-width:980px">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;max-width:980px;flex-wrap:wrap">
+                    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Trabajo</div>
+                    <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()">⭳ Descargar resumen (PDF)</button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:22px;max-width:980px">
                     <div class="card bone-surface work-total-bone" style="margin:0">
-                        <div class="label" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Total de días trabajados hasta hoy</div>
-                        <div class="value" style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px">${totalDays} días</div>
+                        <div class="label" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Días trabajados</div>
+                        <div class="value" style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px">${totalDays}</div>
                     </div>
                     <div class="card bone-surface work-cotization-bone" style="margin:0">
                         <div style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Días cotizados</div>
-                        <div class="cotization-main">${totalCotized} días</div>
-                        <div class="cotization-detail"><strong>${cotizedStats.practicas}</strong> de prácticas formativas · <strong>${cotizedStats.general}</strong> de régimen general</div>
-                        <div style="font-size:10px;color:var(--bone-muted);margin-top:6px;opacity:.82">Estimados automáticamente y corregibles desde «Editar → Vida laboral»</div>
+                        <div class="cotization-main">${totalCotized}</div>
+                        <div class="cotization-detail"><strong>${cotizedStats.practicas}</strong> prácticas · <strong>${cotizedStats.general}</strong> régimen general</div>
+                    </div>
+                    <div class="card" style="margin:0">
+                        <div class="card-title">Empresas</div>
+                        <div class="card-value">${empresas || sorted.length}</div>
                     </div>
                 </div>
                 <div style="max-width:980px">`;
-            sorted.forEach(w => {
-                const cat = categories.find(c => c.id === w.categoryId);
+
+            if (actuales.length) {
+                html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:10px">Actual</div>`;
+                actuales.forEach(w => { html += renderWorkCard(w, todayStr, daysBetween); });
+            }
+            if (historial.length) {
+                html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:${actuales.length ? '22px' : '0'} 0 10px 0">Historial</div>`;
+                historial.forEach(w => { html += renderWorkCard(w, todayStr, daysBetween); });
+            }
+            html += `</div>`;
+            return html;
+        }
+
+        function renderWorkCard(w, todayStr, daysBetween) {
+            const cat = categories.find(c => c.id === w.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
                 const isActive = !w.endDate || w.endDate >= todayStr;
                 const effectiveEnd = isActive ? todayStr : w.endDate;
@@ -7575,7 +7598,7 @@
                 const heading = w.company || w.title;
                 const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
                 const modalidadLabel = WORK_MODALIDAD_LABELS[w.modalidad] || '';
-                html += `
+                return `
                     <div class="card work-card" style="margin-bottom:12px;cursor:pointer;border-left:3px solid ${color}" onclick="openEntryDetail(\'${w.id}\')">
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                             <div>
@@ -7596,9 +7619,143 @@
                         ${w.logros ? `<div class="work-card-logros"><strong>Logros:</strong> ${linkifyText(w.logros)}</div>` : ''}
                         ${(!isActive && w.motivoSalida) ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px"><strong style="color:var(--text-primary)">Motivo de salida:</strong> ${escapeHtml(w.motivoSalida)}</div>` : ''}
                     </div>`;
+        }
+
+        // Genera un PDF descargable con el resumen de vida laboral (jsPDF,
+        // cargado por CDN). Reutiliza los mismos cálculos que la vista en
+        // pantalla para que ambos coincidan siempre.
+        function generateWorkResumePDF() {
+            if (typeof window.jspdf === 'undefined') { showToast('No se pudo cargar el generador de PDF', true); return; }
+            const work = entries.filter(e => e.type === 'work');
+            if (!work.length) { showToast('Añade primero experiencia laboral', true); return; }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+            const marginX = 48;
+            let y = 0;
+
+            const ACCENT = [59, 130, 246], DARK = [20, 20, 20], GRAY = [110, 110, 110], LIGHT_GRAY = [220, 220, 220];
+
+            doc.setFillColor(...ACCENT);
+            doc.rect(0, 0, pageW, 92, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(22);
+            doc.text('Resumen de vida laboral', marginX, 48);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+            doc.text(`${userName || 'Bitácora'} · generado el ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`, marginX, 70);
+            y = 92 + 36;
+
+            const todayStr = todayISO();
+            const daysBetween = (start, end) => countWorkingDays(start, end || todayISO());
+            const sorted = [...work].sort((a, b) => {
+                const aActive = !a.endDate || a.endDate >= todayStr;
+                const bActive = !b.endDate || b.endDate >= todayStr;
+                if (aActive !== bActive) return aActive ? -1 : 1;
+                return (b.startDate || '').localeCompare(a.startDate || '');
             });
-            html += `</div>`;
-            return html;
+            const totalDays = sorted.reduce((sum, w) => {
+                const isActive = !w.endDate || w.endDate >= todayStr;
+                const calculatedDays = daysBetween(w.startDate, isActive ? todayStr : w.endDate);
+                const manual = Number(w.cotizedDays);
+                return sum + (Number.isFinite(manual) && manual >= 0 ? manual : calculatedDays);
+            }, 0);
+            const cotizedStats = sorted.reduce((acc, w) => {
+                const c = getCotizationDays(w, todayStr);
+                if (w.cotizationType === 'practicas') acc.practicas += c; else acc.general += c;
+                return acc;
+            }, { practicas: 0, general: 0 });
+            const totalCotized = cotizedStats.practicas + cotizedStats.general;
+            const empresas = new Set(sorted.map(w => w.company).filter(Boolean)).size;
+
+            const stats = [
+                { label: 'Días trabajados', value: String(totalDays) },
+                { label: 'Días cotizados', value: String(totalCotized) },
+                { label: 'Empresas', value: String(empresas || sorted.length) }
+            ];
+            const cardGap = 12;
+            const cardW = (pageW - marginX * 2 - cardGap * 2) / 3;
+            stats.forEach((s, i) => {
+                const x = marginX + i * (cardW + cardGap);
+                doc.setDrawColor(...LIGHT_GRAY); doc.setLineWidth(1);
+                doc.roundedRect(x, y, cardW, 60, 6, 6, 'S');
+                doc.setTextColor(...DARK); doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+                doc.text(s.value, x + 14, y + 34);
+                doc.setTextColor(...GRAY); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+                doc.text(s.label.toUpperCase(), x + 14, y + 48);
+            });
+            y += 60 + 34;
+
+            doc.setTextColor(...DARK); doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+            doc.text('Experiencia', marginX, y);
+            y += 14;
+            doc.setDrawColor(...LIGHT_GRAY); doc.line(marginX, y, pageW - marginX, y);
+            y += 22;
+
+            const ensureSpace = (needed) => { if (y + needed > pageH - 50) { doc.addPage(); y = 50; } };
+
+            sorted.forEach(w => {
+                ensureSpace(70);
+                const isActive = !w.endDate || w.endDate >= todayStr;
+                const calculatedDaysHere = daysBetween(w.startDate, isActive ? todayStr : w.endDate);
+                const manualDaysHere = Number(w.cotizedDays);
+                const daysHere = Number.isFinite(manualDaysHere) && manualDaysHere >= 0 ? manualDaysHere : calculatedDaysHere;
+                const heading = w.company || w.title || 'Puesto';
+                const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
+
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...DARK);
+                doc.text(heading, marginX, y);
+                const badgeText = (isActive ? 'ACTUAL' : (w.status || 'FINALIZADO')).toUpperCase();
+                doc.setFontSize(8);
+                const badgeW = doc.getTextWidth(badgeText) + 14;
+                doc.setFillColor(...(isActive ? ACCENT : [170, 170, 170]));
+                doc.roundedRect(pageW - marginX - badgeW, y - 11, badgeW, 16, 8, 8, 'F');
+                doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold');
+                doc.text(badgeText, pageW - marginX - badgeW + 7, y);
+                y += 16;
+
+                if (subheading) {
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(...GRAY);
+                    doc.text(subheading, marginX, y);
+                    y += 14;
+                }
+                const metaParts = [`${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}`, `${daysHere} días`];
+                if (WORK_MODALIDAD_LABELS[w.modalidad]) metaParts.push(WORK_MODALIDAD_LABELS[w.modalidad]);
+                if (w.salary) metaParts.push(`${w.salary}€/mes`);
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...GRAY);
+                doc.text(metaParts.join('   ·   '), marginX, y);
+                y += 16;
+
+                if (w.logros) {
+                    const logrosLines = doc.splitTextToSize(w.logros, pageW - marginX * 2 - 48);
+                    ensureSpace(logrosLines.length * 12 + 10);
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
+                    doc.text('Logros:', marginX, y);
+                    doc.setFont('helvetica', 'normal'); doc.setTextColor(...GRAY);
+                    doc.text(logrosLines, marginX + 42, y);
+                    y += logrosLines.length * 12 + 6;
+                }
+                if (w.notes) {
+                    const notesLines = doc.splitTextToSize(w.notes, pageW - marginX * 2);
+                    ensureSpace(notesLines.length * 12 + 10);
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...GRAY);
+                    doc.text(notesLines, marginX, y);
+                    y += notesLines.length * 12 + 6;
+                }
+                y += 8;
+                doc.setDrawColor(...LIGHT_GRAY); doc.line(marginX, y, pageW - marginX, y);
+                y += 22;
+            });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRAY);
+                doc.text(`Bitácora · Página ${i} de ${pageCount}`, marginX, pageH - 24);
+            }
+
+            doc.save(`vida-laboral-${todayISO()}.pdf`);
         }
 
         // ============================================================
