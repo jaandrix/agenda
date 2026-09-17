@@ -12,11 +12,10 @@
         // Toda cuenta creada antes de esta fecha queda con acceso gratis
         // para siempre ("legado"), sin necesidad de mantener una lista.
         const CUTOFF_LANZAMIENTO_PAGO = '2026-09-15T00:00:00Z';
-        // Payment Links de Stripe en modo TEST — sustituir por los de modo
-        // real (live) antes de cobrar dinero de verdad (ver Fase G de la guía).
+        // Payment Links de Stripe en modo real (live).
         const STRIPE_PAYMENT_LINKS = {
-            mensual: 'https://buy.stripe.com/test_6oUbJ0cgP5Sj8njgpya3u00',
-            anual: 'https://buy.stripe.com/test_14A3cuft180rdHDehqa3u01'
+            mensual: 'https://buy.stripe.com/7sYdR8bk5aTI3DZ7E28Zq00',
+            anual: 'https://buy.stripe.com/6oUcN4bk58LAdez5vU8Zq01'
         };
         // Margen de gracia si un cobro falla (past_due), antes de cortar
         // el acceso, contado desde que se guardó ese estado.
