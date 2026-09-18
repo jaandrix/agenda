@@ -4336,7 +4336,7 @@ body.beige {
 .finance-salary-btn { background:#0c0c0e; color:#fff; box-shadow:none; }
 .finance-salary-btn:hover { background:#000; }
 .finance-panel,.finance-forecast-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:18px; display:flex; flex-direction:column; }
-.finance-panel h3,.finance-forecast-panel h3 { margin:3px 0 4px; font-size:15px; }
+.finance-panel h3,.finance-forecast-panel h3 { margin:3px 0 4px; font-size:15px; color:var(--text-primary); }
 .finance-panel-head p { margin:0; color:var(--text-secondary); font-size:10px; line-height:1.5; }
 .finance-text-btn { background:none; border:0; color:var(--text-secondary); font-size:10px; cursor:pointer; }
 .finance-income-highlight { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:11px; }
@@ -4466,7 +4466,8 @@ body.beige {
    ============================================================ */
 .finance-chart-panel { margin-bottom:18px; background:none; border:none; box-shadow:none; padding:6px 0 0; }
 .finance-chart-panel .finance-panel-head { margin-bottom:10px; }
-.finance-chart-config-btn { box-shadow:inset 0 0 0 1.5px var(--border-strong); }
+.finance-chart-config-btn { background:var(--accent); color:var(--accent-contrast); box-shadow:none; }
+.finance-chart-config-btn:hover { background:var(--accent); opacity:.85; }
 .finance-chart-svg-wrap { position:relative; width:100%; overflow-x:auto; }
 .finance-chart-point { cursor:pointer; transition:r .12s ease; }
 .finance-chart-point:hover { r:5.5; }
