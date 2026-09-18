@@ -10812,6 +10812,12 @@
 
                     <section class="finance-panel" id="finance-movements-section">
                         <div class="finance-panel-head"><div><div class="finance-kicker">Registro</div><h3>Movimientos</h3></div></div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+                            <button class="finance-oneoff-btn" onclick="quickPaySalary()">Cobrar sueldo</button>
+                            <button class="finance-oneoff-btn" onclick="openFinanceTransfer()">Transferir</button>
+                            <button class="finance-oneoff-btn" onclick="openFinanceMovement('income')">+ Ingreso</button>
+                            <button class="finance-oneoff-btn" onclick="openFinanceMovement('expense')">− Gasto</button>
+                        </div>
                         ${(financeProfile.movements || []).length ? `
                             <div class="finance-oneoff-list" style="margin-top:0;padding-top:0;border-top:none">
                                 ${[...(financeProfile.movements || [])].slice(0,6).map(x => `
