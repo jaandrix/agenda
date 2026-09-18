@@ -979,6 +979,18 @@
             position: relative;
         }
         .weekly-task-check:hover { border-color: #333; }
+        .weekly-task-check:checked { background: var(--accent, #3b82f6); border-color: var(--accent, #3b82f6); }
+        .weekly-task-check:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 4px;
+            height: 8px;
+            border: solid var(--accent-contrast, #000);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
         .weekly-task-text {
             min-width: 0;
             font-size: 12px;
