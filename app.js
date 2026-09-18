@@ -454,6 +454,11 @@
             // Cuentas propias que el usuario añade además de las 4 fijas
             // (Efectivo/Emergencia/Vacaciones/Inversión): [{id, name, balance}].
             customAccounts: [],
+            // Sueldo real cobrado cada mes ({ 'YYYY-MM': importe }), aparte
+            // de salaryForecast (la previsión) para poder comparar ambos.
+            salaryReal: {},
+            // Aportaciones a inversión a largo plazo: [{month:'YYYY-MM', amount}].
+            investmentContributions: [],
             // Líneas configurables de la gráfica de evolución: [{id, name, accountKeys, color}].
             // Si está vacío se usan las dos líneas de siempre (safe/total).
             chartSeries: [],
@@ -624,7 +629,7 @@
             { view: 'culture', text: 'Películas', setter: 'setCultureTab', value: 'movies' },
             { view: 'culture', text: 'Videojuegos', setter: 'setCultureTab', value: 'games' },
             { view: 'finances', text: 'Sueldo y aportaciones', anchor: 'finance-forecast-section' },
-            { view: 'finances', text: 'Movimientos', anchor: 'finance-movements-section' },
+            { view: 'finances', text: 'Inversión', anchor: 'finance-investment-section' },
             { view: 'finances', text: 'Patrimonio operativo', anchor: 'finance-networth-section' },
             { view: 'finances', text: 'Cuentas', anchor: 'finance-accounts-section' },
             { view: 'travels', text: 'Viajes', setter: 'setTravelPlacesTab', value: 'travels' },
@@ -2081,6 +2086,8 @@
                 financeProfile.oneOffIncome = Array.isArray(financeProfile.oneOffIncome) ? financeProfile.oneOffIncome : [];
                 financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
                 financeProfile.customAccounts = Array.isArray(financeProfile.customAccounts) ? financeProfile.customAccounts : [];
+                financeProfile.salaryReal = (financeProfile.salaryReal && typeof financeProfile.salaryReal === 'object') ? financeProfile.salaryReal : {};
+                financeProfile.investmentContributions = Array.isArray(financeProfile.investmentContributions) ? financeProfile.investmentContributions : [];
                 financeProfile.chartSeries = Array.isArray(financeProfile.chartSeries) ? financeProfile.chartSeries : [];
                 financeProfile.budgets = (financeProfile.budgets && typeof financeProfile.budgets === 'object') ? financeProfile.budgets : {};
                 financeProfile.savingsGoals = Array.isArray(financeProfile.savingsGoals) ? financeProfile.savingsGoals : [];
@@ -4559,7 +4566,6 @@
                     renderInvestmentCharts();
                 }, 0);
             }
-            if (currentView === 'finances') setTimeout(() => renderFinanceCategoryChart(), 0);
         }
 
         // ============================================================
@@ -9688,7 +9694,7 @@
 
         // Todas las cuentas con saldo: las 4 fijas de siempre + las que el
         // usuario haya añadido. "key" identifica cada una para usarla en
-        // financeAccountOptions, financeSnapshot y las líneas de la gráfica.
+        // financeSnapshot y en las líneas configurables de la gráfica.
         function getAllAccounts() {
             return [
                 { key: 'cash', label: 'Efectivo / bancos', balance: Number(financeProfile.cash || 0) },
@@ -10110,216 +10116,6 @@
         //  Efectivo automáticamente y queda registrado en el historial.
         // ============================================================
 
-        // Categorías fijas para el gasto puntual (independientes del sistema
-        // general de categorías, que es demasiado amplio/heterogéneo para
-        // agrupar gasto de forma útil en presupuestos y gráficas).
-        const FINANCE_EXPENSE_CATEGORIES = [
-            { id: 'comida', label: 'Comida', color: '#f59e0b' },
-            { id: 'transporte', label: 'Transporte', color: '#3498db' },
-            { id: 'vivienda', label: 'Vivienda', color: '#e17055' },
-            { id: 'ocio', label: 'Ocio', color: '#9b59b6' },
-            { id: 'salud', label: 'Salud', color: '#2ecc71' },
-            { id: 'compras', label: 'Compras', color: '#e84393' },
-            { id: 'otros', label: 'Otros', color: '#6b7280' },
-        ];
-        function financeExpenseCategoryLabel(id) { return FINANCE_EXPENSE_CATEGORIES.find(c => c.id === id)?.label || 'Otros'; }
-        function financeExpenseCategoryColor(id) { return FINANCE_EXPENSE_CATEGORIES.find(c => c.id === id)?.color || '#6b7280'; }
-
-        function openFinanceMovement(type = 'income') {
-            const today = todayISO();
-            const isIncome = type === 'income';
-            showModal(`
-                <div class="modal-title">${isIncome ? '+ Ingreso puntual' : '+ Gasto puntual'}</div>
-                <div class="finance-modal-note">${isIncome
-                    ? 'Registra una venta, regalo, devolución u otro ingreso que no forme parte de tu sueldo habitual.'
-                    : 'Registra una compra o gasto puntual que quieras descontar de tu efectivo.'}</div>
-                <div class="modal-label">Concepto</div>
-                <input id="finance-mov-label" class="modal-input" placeholder="${isIncome ? 'Ej: Venta de ropa' : 'Ej: Reparación del coche'}">
-                <div class="modal-label">Importe (€)</div>
-                <input id="finance-mov-amount" class="modal-input" type="number" min="0" step="0.01" placeholder="0.00">
-                ${!isIncome ? `
-                <div class="modal-label">Categoría</div>
-                <select id="finance-mov-category" class="modal-input">
-                    ${FINANCE_EXPENSE_CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join('')}
-                </select>` : ''}
-                <div class="modal-label">Fecha</div>
-                <input id="finance-mov-date" class="modal-input" type="date" value="${today}">
-                <label style="display:flex;align-items:center;gap:8px;margin:10px 0 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">
-                    <input id="finance-mov-addcash" type="checkbox" checked> ${isIncome ? 'Sumarlo también al efectivo actual' : 'Restarlo también del efectivo actual'}
-                </label>
-                <button class="btn-modal-primary" onclick="saveFinanceMovement('${type}')">Guardar ${isIncome ? 'ingreso' : 'gasto'}</button>
-            `);
-            setTimeout(() => document.getElementById('finance-mov-label')?.focus(), 50);
-        }
-
-        async function saveFinanceMovement(type = 'income') {
-            const isIncome = type === 'income';
-            const label = document.getElementById('finance-mov-label')?.value.trim() || (isIncome ? 'Ingreso puntual' : 'Gasto puntual');
-            const amount = Number(document.getElementById('finance-mov-amount')?.value);
-            const categoryId = document.getElementById('finance-mov-category')?.value || 'otros';
-            const date = document.getElementById('finance-mov-date')?.value || todayISO();
-            const addCash = document.getElementById('finance-mov-addcash')?.checked;
-            if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
-
-            const applied = !!(addCash && date <= todayISO());
-            financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
-            financeProfile.movements.unshift({
-                id: 'mov_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                type, label, amount, date, addedToCash: applied,
-                ...(isIncome ? {} : { categoryId })
-            });
-            financeProfile.movements.sort((a, b) => String(b.date).localeCompare(String(a.date)));
-
-            if (applied) {
-                const delta = isIncome ? amount : -amount;
-                financeProfile.cash = Math.max(0, Number(financeProfile.cash || 0) + delta);
-            }
-
-            closeModal();
-            await saveFinanceDashboard();
-            showToast(isIncome ? 'Ingreso registrado' : 'Gasto registrado');
-        }
-
-        // Botón rápido "Cobrar sueldo": sugiere la previsión del mes actual
-        // pero permite ajustar la cifra real antes de aplicarla, ya que el
-        // importe cobrado puede diferir de lo previsto.
-        function quickPaySalary() {
-            const monthKey = financeMonthKey();
-            const forecast = Number(financeProfile.salaryForecast?.[monthKey] || financeIncome.current || 0);
-            const today = todayISO();
-            showModal(`
-                <div class="modal-title">Cobrar sueldo</div>
-                <div class="finance-modal-note">${forecast > 0
-                    ? `Tu previsión para ${escapeHtml(financeMonthLabel(monthKey))} era ${financeMoney(forecast)}. Ajusta la cifra si has cobrado algo distinto.`
-                    : `No tienes previsión definida para ${escapeHtml(financeMonthLabel(monthKey))}. Indica el importe real que has cobrado.`}</div>
-                <div class="modal-label">Concepto</div>
-                <input id="finance-salary-label" class="modal-input" value="Sueldo de ${escapeHtml(financeMonthLabel(monthKey))}">
-                <div class="modal-label">Importe cobrado (€)</div>
-                <input id="finance-salary-amount" class="modal-input" type="number" min="0" step="0.01" value="${forecast > 0 ? forecast : ''}" placeholder="0.00">
-                <div class="modal-label">Fecha</div>
-                <input id="finance-salary-date" class="modal-input" type="date" value="${today}">
-                ${forecast > 0 ? `
-                <label style="display:flex;align-items:center;gap:8px;margin:10px 0 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">
-                    <input id="finance-salary-updateforecast" type="checkbox"> Actualizar también la previsión de este mes con esta cifra
-                </label>` : ''}
-                <button class="btn-modal-primary" onclick="saveQuickPaySalary('${monthKey}')">Sumar al efectivo</button>
-            `);
-            setTimeout(() => document.getElementById('finance-salary-amount')?.select(), 50);
-        }
-
-        async function saveQuickPaySalary(monthKey) {
-            const label = document.getElementById('finance-salary-label')?.value.trim() || ('Sueldo de ' + financeMonthLabel(monthKey));
-            const amount = Number(document.getElementById('finance-salary-amount')?.value);
-            const date = document.getElementById('finance-salary-date')?.value || todayISO();
-            const updateForecast = document.getElementById('finance-salary-updateforecast')?.checked;
-            if (!(amount > 0)) { showToast('Introduce el importe cobrado', true); return; }
-
-            financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
-            financeProfile.movements.unshift({
-                id: 'mov_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                type: 'income', label, amount, date, addedToCash: true
-            });
-            financeProfile.movements.sort((a, b) => String(b.date).localeCompare(String(a.date)));
-            financeProfile.cash = Math.max(0, Number(financeProfile.cash || 0) + amount);
-
-            if (updateForecast) {
-                financeProfile.salaryForecast = financeProfile.salaryForecast || {};
-                financeProfile.salaryForecast[monthKey] = amount;
-            }
-
-            closeModal();
-            await saveFinanceDashboard();
-            showToast(`Sueldo de ${financeMoney(amount)} añadido al efectivo`);
-        }
-
-        async function deleteFinanceMovement(id) {
-            const mov = (financeProfile.movements || []).find(x => x.id === id);
-            if (!mov) return;
-            if (mov.type === 'transfer') {
-                // Deshace la transferencia: devuelve el importe de destino a origen.
-                financeProfile[mov.toKey] = Math.max(0, Number(financeProfile[mov.toKey] || 0) - mov.amount);
-                financeProfile[mov.fromKey] = Math.max(0, Number(financeProfile[mov.fromKey] || 0) + mov.amount);
-            } else if (mov.addedToCash) {
-                const delta = mov.type === 'income' ? -mov.amount : mov.amount;
-                financeProfile.cash = Math.max(0, Number(financeProfile.cash || 0) + delta);
-            }
-            financeProfile.movements = (financeProfile.movements || []).filter(x => x.id !== id);
-            await saveFinanceDashboard();
-        }
-
-        // ============================================================
-        //  TRANSFERENCIAS ENTRE CUENTAS
-        //  Repartir el sueldo (u otro importe) entre Efectivo, Inversiones,
-        //  Emergencia y Vacaciones sin que cuente como ingreso/gasto nuevo.
-        // ============================================================
-        const FINANCE_ACCOUNT_LABELS = {
-            cash: 'Efectivo / bancos',
-            invested: 'Inversiones',
-            emergency: 'Fondo de emergencia',
-            vacation: 'Reserva de vacaciones'
-        };
-
-        function financeAccountOptions(excludeKey) {
-            return Object.entries(FINANCE_ACCOUNT_LABELS)
-                .filter(([key]) => key !== excludeKey)
-                .map(([key, label]) => `<option value="${key}">${label} (${financeMoney(financeProfile[key] || 0)})</option>`)
-                .join('');
-        }
-
-        function openFinanceTransfer() {
-            showModal(`
-                <div class="modal-title">Transferir entre cuentas</div>
-                <div class="finance-modal-note">Mueve dinero de una cuenta a otra (por ejemplo, repartir el sueldo entre Efectivo, Inversiones y Emergencia). No se cuenta como ingreso ni gasto nuevo, solo cambia de sitio.</div>
-                <div class="modal-label">Desde</div>
-                <select id="finance-transfer-from" class="modal-input" onchange="updateFinanceTransferOptions()">
-                    ${Object.entries(FINANCE_ACCOUNT_LABELS).map(([key, label]) => `<option value="${key}">${label} (${financeMoney(financeProfile[key] || 0)})</option>`).join('')}
-                </select>
-                <div class="modal-label">Hacia</div>
-                <select id="finance-transfer-to" class="modal-input">
-                    ${financeAccountOptions('cash')}
-                </select>
-                <div class="modal-label">Importe (€)</div>
-                <input id="finance-transfer-amount" class="modal-input" type="number" min="0" step="0.01" placeholder="0.00">
-                <button class="btn-modal-primary" onclick="saveFinanceTransfer()">Transferir</button>
-            `);
-            setTimeout(() => document.getElementById('finance-transfer-amount')?.focus(), 50);
-        }
-
-        function updateFinanceTransferOptions() {
-            const fromKey = document.getElementById('finance-transfer-from')?.value;
-            const toSelect = document.getElementById('finance-transfer-to');
-            if (toSelect) toSelect.innerHTML = financeAccountOptions(fromKey);
-        }
-
-        async function saveFinanceTransfer() {
-            const fromKey = document.getElementById('finance-transfer-from')?.value;
-            const toKey = document.getElementById('finance-transfer-to')?.value;
-            const amount = Number(document.getElementById('finance-transfer-amount')?.value);
-            if (!fromKey || !toKey || fromKey === toKey) { showToast('Elige dos cuentas distintas', true); return; }
-            if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
-            const available = Number(financeProfile[fromKey] || 0);
-            if (amount > available) {
-                showToast(`No hay suficiente en ${FINANCE_ACCOUNT_LABELS[fromKey]} (disponible: ${financeMoney(available)})`, true);
-                return;
-            }
-
-            financeProfile[fromKey] = Math.max(0, available - amount);
-            financeProfile[toKey] = Math.max(0, Number(financeProfile[toKey] || 0) + amount);
-
-            financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
-            financeProfile.movements.unshift({
-                id: 'mov_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                type: 'transfer',
-                label: `${FINANCE_ACCOUNT_LABELS[fromKey]} → ${FINANCE_ACCOUNT_LABELS[toKey]}`,
-                amount, date: todayISO(), fromKey, toKey, addedToCash: true
-            });
-            financeProfile.movements.sort((a, b) => String(b.date).localeCompare(String(a.date)));
-
-            closeModal();
-            await saveFinanceDashboard();
-            showToast('Transferencia realizada');
-        }
-
         function openForecastProfileEditor() {
             const fc = financeProfile.forecastProfile || {};
             showModal(`
@@ -10371,76 +10167,6 @@
                     <div class="finance-progress"><span style="width:${goal.pct === null ? 0 : Math.min(100, goal.pct)}%"></span></div>
                     <div class="finance-metric-note">${provision === null ? 'Provisión fin de año: sin datos suficientes' : `Provisión fin de año: ${financeMoney(provision)}`}${note ? ` · ${note}` : ''}</div>
                 </div>`;
-        }
-
-        // ============================================================
-        //  PRESUPUESTOS Y GASTO POR CATEGORÍA
-        // ============================================================
-        function financeExpensesByCategoryThisMonth() {
-            const monthKey = financeMonthKey();
-            const byCategory = {};
-            (financeProfile.movements || []).forEach(m => {
-                if (m.type !== 'expense' || !String(m.date || '').startsWith(monthKey)) return;
-                const cat = m.categoryId || 'otros';
-                byCategory[cat] = (byCategory[cat] || 0) + Number(m.amount || 0);
-            });
-            return byCategory;
-        }
-
-        async function setFinanceBudget(categoryId) {
-            const current = financeProfile.budgets?.[categoryId] || '';
-            const next = prompt(`Presupuesto mensual para "${financeExpenseCategoryLabel(categoryId)}" (€, vacío para quitarlo)`, current);
-            if (next === null) return;
-            financeProfile.budgets = financeProfile.budgets || {};
-            const val = Number(next);
-            if (next.trim() === '' || !(val > 0)) delete financeProfile.budgets[categoryId];
-            else financeProfile.budgets[categoryId] = val;
-            await saveFinanceDashboard();
-        }
-
-        function renderFinanceBudgets() {
-            const spent = financeExpensesByCategoryThisMonth();
-            const budgets = financeProfile.budgets || {};
-            const withBudget = FINANCE_EXPENSE_CATEGORIES.filter(c => budgets[c.id] > 0);
-            return `
-            <section class="finance-panel" id="finance-budgets-section">
-                <div class="finance-panel-head"><div><div class="finance-kicker">Este mes</div><h3>Presupuestos por categoría</h3></div></div>
-                ${FINANCE_EXPENSE_CATEGORIES.map(c => {
-                    const budget = budgets[c.id] || 0;
-                    const used = spent[c.id] || 0;
-                    const pct = budget > 0 ? Math.min(100, (used / budget) * 100) : 0;
-                    const over = budget > 0 && used > budget;
-                    return `
-                    <div class="finance-budget-row" onclick="setFinanceBudget('${c.id}')">
-                        <div class="finance-budget-row-head">
-                            <span>${c.label}</span>
-                            <span>${financeMoney(used)}${budget > 0 ? ' / ' + financeMoney(budget) : ''}</span>
-                        </div>
-                        <div class="finance-progress"><span style="width:${budget > 0 ? pct : (used > 0 ? 100 : 0)}%;background:${over ? '#dc2626' : c.color}"></span></div>
-                    </div>`;
-                }).join('')}
-                ${!withBudget.length ? `<div class="finance-empty-line" style="margin-top:8px">Pulsa una categoría para fijarle un límite mensual.</div>` : ''}
-            </section>`;
-        }
-
-        function renderFinanceCategoryChart() {
-            const ctx = document.getElementById('financeCategoryChart');
-            if (!ctx || typeof Chart === 'undefined') return;
-            const spent = financeExpensesByCategoryThisMonth();
-            const cats = FINANCE_EXPENSE_CATEGORIES.filter(c => spent[c.id] > 0);
-            if (window._financeCategoryChartInstance) { window._financeCategoryChartInstance.destroy(); window._financeCategoryChartInstance = null; }
-            if (!cats.length) return;
-            window._financeCategoryChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: cats.map(c => c.label),
-                    datasets: [{ data: cats.map(c => spent[c.id]), backgroundColor: cats.map(c => c.color), borderWidth: 0 }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'right', labels: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#888', font: { size: 11 } } } }
-                }
-            });
         }
 
         // ============================================================
@@ -10652,8 +10378,7 @@
             const monthKey = financeMonthKey();
             const fc = financeProfile.forecastProfile || {};
             const forecast = Number(financeProfile.salaryForecast?.[monthKey] || fc.salary || 0);
-            const existingSalaryMov = (financeProfile.movements || []).find(m => m.id === 'mensual_salario_' + monthKey);
-            const spentByCat = financeExpensesByCategoryThisMonth();
+            const existingSalary = financeProfile.salaryReal?.[monthKey];
             window._financeUpdateBefore = financeCorePatrimony();
 
             showModal(`
@@ -10661,7 +10386,7 @@
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Rellena solo lo que sepas ahora mismo — no hace falta que sea exacto ni completo.</div>
 
                 <div class="modal-label">Sueldo recibido este mes${forecast > 0 ? ` (previsto: ${financeMoney(forecast)})` : ''}</div>
-                <input id="mfu-salario" class="modal-input" type="number" step="0.01" placeholder="0.00" value="${existingSalaryMov ? existingSalaryMov.amount : ''}">
+                <input id="mfu-salario" class="modal-input" type="number" step="0.01" placeholder="0.00" value="${existingSalary !== undefined ? existingSalary : (forecast || '')}">
 
                 <div class="modal-label" style="margin-top:14px">Saldos actuales</div>
                 <div class="modal-row">
@@ -10670,13 +10395,6 @@
                 </div>
                 <div class="modal-label" style="margin-top:8px">Vacaciones</div>
                 <input id="mfu-vacation" class="modal-input" type="number" step="0.01" value="${financeProfile.vacation || 0}">
-
-                <div class="modal-label" style="margin-top:14px">Gasto de este mes por categoría (opcional)</div>
-                ${FINANCE_EXPENSE_CATEGORIES.map(c => `
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                        <span style="flex:1;font-size:12.5px">${c.label}</span>
-                        <input id="mfu-cat-${c.id}" class="modal-input" style="width:110px;margin:0" type="number" step="0.01" value="${spentByCat[c.id] || ''}" placeholder="0.00">
-                    </div>`).join('')}
 
                 <button class="btn-modal-primary" style="margin-top:16px" onclick="saveMonthlyFinanceUpdate('${monthKey}')">Guardar actualización</button>
             `);
@@ -10689,31 +10407,17 @@
             const vacation = Number(document.getElementById('mfu-vacation')?.value);
             const before = window._financeUpdateBefore ?? financeCorePatrimony();
 
-            financeProfile.movements = Array.isArray(financeProfile.movements) ? financeProfile.movements : [];
-
-            // El sueldo aquí es solo un registro para el historial de
-            // movimientos: el saldo de Efectivo que se guarda abajo ya lo
-            // recoge, así que no se vuelve a sumar aparte (evitaría contarlo
-            // dos veces).
-            const salarioMovId = 'mensual_salario_' + monthKey;
-            financeProfile.movements = financeProfile.movements.filter(m => m.id !== salarioMovId);
+            // El sueldo real de cada mes se guarda aparte de la previsión,
+            // para poder comparar "lo previsto" con "lo que de verdad cobré"
+            // sin que uno pise al otro.
             if (salario > 0) {
-                financeProfile.movements.unshift({ id: salarioMovId, type: 'income', label: 'Sueldo de ' + financeMonthLabel(monthKey), amount: salario, date: todayISO(), addedToCash: false });
+                financeProfile.salaryReal = financeProfile.salaryReal || {};
+                financeProfile.salaryReal[monthKey] = salario;
             }
 
             if (Number.isFinite(cash)) financeProfile.cash = Math.max(0, cash);
             if (Number.isFinite(emergency)) financeProfile.emergency = Math.max(0, emergency);
             if (Number.isFinite(vacation)) financeProfile.vacation = Math.max(0, vacation);
-
-            FINANCE_EXPENSE_CATEGORIES.forEach(c => {
-                const val = Number(document.getElementById('mfu-cat-' + c.id)?.value);
-                const movId = 'mensual_gasto_' + monthKey + '_' + c.id;
-                financeProfile.movements = financeProfile.movements.filter(m => m.id !== movId);
-                if (val > 0) {
-                    financeProfile.movements.unshift({ id: movId, type: 'expense', categoryId: c.id, label: `Gasto de ${c.label} (${financeMonthLabel(monthKey)})`, amount: val, date: todayISO(), addedToCash: false });
-                }
-            });
-            financeProfile.movements.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
             // El cierre mensual sustituye el snapshot automático de este mes
             // por uno fiel a lo que el usuario acaba de confirmar.
@@ -10742,6 +10446,74 @@
             `);
         }
 
+        // Tarjeta simple para cuentas sin objetivo/previsión propios (cuentas
+        // propias, gastos recurrentes, coleccionables) — mismo estilo visual
+        // que renderFinanceMetric para que toda la fila de Cuentas sea coherente.
+        function renderFinanceSimpleTile(value, label, onClick, note, muted) {
+            return `
+                <div class="finance-metric-card finance-metric-card-simple ${muted ? 'finance-metric-card-muted' : ''}" ${onClick ? `onclick="${onClick}"` : ''}>
+                    <div class="finance-metric-value">${financeMoney(value)}</div>
+                    <div class="finance-metric-label">${escapeHtml(label)}</div>
+                    ${note ? `<div class="finance-metric-note">${escapeHtml(note)}</div>` : ''}
+                </div>`;
+        }
+
+        // ============================================================
+        //  INVERSIÓN A LARGO PLAZO: aportaciones vs. valor actual
+        // ============================================================
+        function financeInvestmentStats() {
+            const contributions = Array.isArray(financeProfile.investmentContributions) ? financeProfile.investmentContributions : [];
+            const totalAportado = contributions.reduce((s, c) => s + Number(c.amount || 0), 0);
+            const valorActual = Number(financeProfile.invested || 0);
+            const gain = valorActual - totalAportado;
+            const gainPct = totalAportado > 0 ? (gain / totalAportado) * 100 : null;
+            return { meses: contributions.length, totalAportado, valorActual, gain, gainPct };
+        }
+
+        function renderInvestmentPanel() {
+            const stats = financeInvestmentStats();
+            const fc = financeProfile.forecastProfile || {};
+            const monthKey = financeMonthKey();
+            const yaMarcado = (financeProfile.investmentContributions || []).some(c => c.month === monthKey);
+            const maxBar = Math.max(stats.totalAportado, stats.valorActual, 1);
+            return `
+            <section class="finance-panel" id="finance-investment-section">
+                <div class="finance-panel-head"><div><div class="finance-kicker">Largo plazo</div><h3>Inversión</h3></div><button class="finance-icon-btn" onclick="openInvestmentAccountEditor()">✎</button></div>
+                <div class="finance-income-highlight"><span>Valor actual</span><strong>${financeMoney(stats.valorActual)}</strong></div>
+                <div class="finance-income-highlight" style="border-bottom:none"><span>Aportación mensual marcada</span><strong>${financeMoney(fc.investMonthlyPlan || 0)}</strong></div>
+                <div class="finance-invest-bars">
+                    <div class="finance-invest-bar-row"><span>Aportado</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill" style="width:${(stats.totalAportado / maxBar) * 100}%"></div></div><strong>${financeMoney(stats.totalAportado)}</strong></div>
+                    <div class="finance-invest-bar-row"><span>Valor actual</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill finance-invest-bar-fill-accent" style="width:${(stats.valorActual / maxBar) * 100}%"></div></div><strong>${financeMoney(stats.valorActual)}</strong></div>
+                </div>
+                <div class="finance-empty-line" style="margin-top:10px">${stats.meses} mes${stats.meses === 1 ? '' : 'es'} aportando · rendimiento ${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}${stats.gainPct !== null ? ` (${stats.gain >= 0 ? '+' : ''}${stats.gainPct.toFixed(1)}%)` : ''}</div>
+                <button class="finance-oneoff-btn" style="margin-top:10px" onclick="markInvestmentContribution()" ${yaMarcado ? 'disabled' : ''}>${yaMarcado ? `✓ Aportación de ${financeMonthLabel(monthKey)} marcada` : 'Marcar aportación de este mes'}</button>
+            </section>`;
+        }
+
+        function markInvestmentContribution() {
+            const fc = financeProfile.forecastProfile || {};
+            const monthKey = financeMonthKey();
+            const existing = (financeProfile.investmentContributions || []).find(c => c.month === monthKey);
+            showModal(`
+                <div class="modal-title">Aportación de ${escapeHtml(financeMonthLabel(monthKey))}</div>
+                <div class="modal-label">Importe aportado (€)</div>
+                <input id="invest-contrib-amount" class="modal-input" type="number" min="0" step="0.01" value="${existing ? existing.amount : (fc.investMonthlyPlan || '')}">
+                <button class="btn-modal-primary" onclick="saveInvestmentContribution('${monthKey}')">Guardar</button>
+            `);
+            setTimeout(() => document.getElementById('invest-contrib-amount')?.focus(), 50);
+        }
+
+        async function saveInvestmentContribution(monthKey) {
+            const amount = Number(document.getElementById('invest-contrib-amount')?.value);
+            if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
+            financeProfile.investmentContributions = Array.isArray(financeProfile.investmentContributions) ? financeProfile.investmentContributions : [];
+            financeProfile.investmentContributions = financeProfile.investmentContributions.filter(c => c.month !== monthKey);
+            financeProfile.investmentContributions.push({ month: monthKey, amount });
+            closeModal();
+            if (currentView === 'finances') render();
+            try { await saveData(); showToast('Aportación registrada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
         function renderFinanceDashboard() {
             ensureCurrentMonthHistory();
             const total = financeCorePatrimony();
@@ -10765,15 +10537,19 @@
                     <span>Cuando tengas la información disponible, puedes actualizar tus finanzas de ${escapeHtml(financeMonthLabel(financeMonthKey()))}.</span>
                     <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">Actualizar ahora</button>
                 </div>` : ''}
-                <div class="finance-hero-row">
-                    <section class="finance-floating-chart-wrap" id="finance-floating-chart-wrap" onwheel="financeChartWheelZoom(event)" title="Rueda del ratón: acercar/alejar el periodo mostrado">
-                        <button class="finance-icon-btn" style="position:absolute;top:8px;right:8px;z-index:2" title="Configurar gráfica" onclick="event.stopPropagation();openFinanceChartSeriesConfig()">⚙</button>
-                        ${renderFinanceFloatingChart()}
-                    </section>
 
-                    <section class="finance-networth-card" id="finance-networth-section">
-                        <button class="finance-edit-btn finance-networth-edit-btn" title="Editar objetivo" onclick="openFinanceTargetEditor()">✎</button>
-                        <button class="btn-modal-primary finance-monthly-update-btn" style="width:auto" onclick="openMonthlyFinanceUpdate()">${updatePending ? 'Actualizar este mes' : '✓ Mes actualizado'}</button>
+                <section class="finance-panel finance-chart-panel" id="finance-floating-chart-wrap">
+                    <div class="finance-panel-head">
+                        <div><div class="finance-kicker">Evolución</div><h3>Tu patrimonio en el tiempo</h3></div>
+                        <button class="finance-oneoff-btn" onclick="openFinanceChartSeriesConfig()">⚙ Configurar gráfica</button>
+                    </div>
+                    <div onwheel="financeChartWheelZoom(event)" title="Rueda del ratón: acercar/alejar el periodo mostrado">
+                        ${renderFinanceFloatingChart()}
+                    </div>
+                </section>
+
+                <section class="finance-networth-card finance-networth-card-wide" id="finance-networth-section">
+                    <div class="finance-networth-main">
                         <div>
                             <div class="finance-kicker">Patrimonio operativo</div>
                             <div class="finance-networth-value-row">
@@ -10790,52 +10566,37 @@
                             <strong>${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</strong>
                             <div class="finance-progress finance-progress-large"><span style="width:${totalPct === null ? 0 : totalPct}%"></span></div>
                         </div>
-                    </section>
-                </div>
+                    </div>
+                    <div class="finance-networth-actions">
+                        <button class="finance-networth-action-btn" onclick="openFinanceTargetEditor()">✎ Objetivo</button>
+                        <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">${updatePending ? 'Actualizar este mes' : '✓ Mes actualizado'}</button>
+                    </div>
+                </section>
 
+                <div id="finance-accounts-section" style="display:flex;justify-content:space-between;align-items:center;margin:24px 0 10px">
+                    <div class="finance-kicker" style="margin-bottom:0">Cuentas</div>
+                    <button class="finance-oneoff-btn" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
+                </div>
                 <div class="finance-metrics-grid">
                     ${renderFinanceMetric('cash','cashTarget','Efectivo / bancos','◉','Liquidez disponible')}
                     ${renderFinanceMetric('emergency','emergencyTarget','Fondo de emergencia','◈','Reserva no destinada al gasto corriente')}
                     ${renderFinanceMetric('vacation','vacationTarget','Reserva de vacaciones','◊','Se mantiene aparte del patrimonio operativo')}
+                    ${(financeProfile.customAccounts || []).map(a => renderFinanceSimpleTile(a.balance, a.name, `editFinanceCustomAccountBalance('${a.id}')`)).join('')}
+                    ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true)}
+                    ${renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true)}
                 </div>
 
-                <div class="finance-grid-2">
+                <div class="finance-grid-2" style="margin-top:18px">
                     <section class="finance-panel" id="finance-forecast-section">
                         <div class="finance-panel-head"><div><div class="finance-kicker">Previsión</div><h3>Sueldo y aportaciones</h3></div><button class="finance-icon-btn" onclick="openForecastProfileEditor()">✎</button></div>
                         <div class="finance-income-highlight"><span>Sueldo actual</span><strong>${financeMoney(fc.salary || 0)}</strong></div>
                         <div class="finance-income-highlight"><span>Meses de contrato</span><strong>${fc.contractMonths || '—'}</strong></div>
                         <div class="finance-income-highlight"><span>Ampliación emergencia / mes</span><strong>${financeMoney(fc.emergencyMonthlyPlan || 0)}</strong></div>
-                        <div class="finance-income-highlight"><span>Ampliación vacaciones / mes</span><strong>${financeMoney(fc.vacationMonthlyPlan || 0)}</strong></div>
-                        <div class="finance-income-highlight" style="border-bottom:none"><span>Aportación inversión / mes</span><strong>${financeMoney(fc.investMonthlyPlan || 0)}</strong></div>
-                        <div class="finance-empty-line" style="margin-top:8px">Suscripciones y gastos fijos actuales: ${financeMoney(financeRecurringTotal())}/mes (se descuentan solas de la provisión).</div>
+                        <div class="finance-income-highlight" style="border-bottom:none"><span>Ampliación vacaciones / mes</span><strong>${financeMoney(fc.vacationMonthlyPlan || 0)}</strong></div>
+                        <div class="finance-empty-line" style="margin-top:8px">Suscripciones y gastos fijos: ${financeMoney(recurring)}/mes (se descuentan solos de la provisión).</div>
                     </section>
 
-                    <section class="finance-panel" id="finance-movements-section">
-                        <div class="finance-panel-head"><div><div class="finance-kicker">Registro</div><h3>Movimientos</h3></div></div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-                            <button class="finance-oneoff-btn" onclick="quickPaySalary()">Cobrar sueldo</button>
-                            <button class="finance-oneoff-btn" onclick="openFinanceTransfer()">Transferir</button>
-                            <button class="finance-oneoff-btn" onclick="openFinanceMovement('income')">+ Ingreso</button>
-                            <button class="finance-oneoff-btn" onclick="openFinanceMovement('expense')">− Gasto</button>
-                        </div>
-                        ${(financeProfile.movements || []).length ? `
-                            <div class="finance-oneoff-list" style="margin-top:0;padding-top:0;border-top:none">
-                                ${[...(financeProfile.movements || [])].slice(0,6).map(x => `
-                                    <div class="finance-oneoff-row">
-                                        <span>${x.type === 'transfer' ? '⇄ ' : ''}${escapeHtml(x.label)} · ${escapeHtml(x.date)}${(x.type !== 'transfer' && !x.addedToCash) ? ' <em style="opacity:.7">(no aplicado)</em>' : ''}</span>
-                                        <strong class="${x.type === 'income' ? 'finance-mov-income' : x.type === 'expense' ? 'finance-mov-expense' : 'finance-mov-transfer'}">${x.type === 'income' ? '+' : x.type === 'expense' ? '−' : ''}${financeMoney(x.amount)}</strong>
-                                        <button title="Eliminar registro" onclick="deleteFinanceMovement('${x.id}')">×</button>
-                                    </div>`).join('')}
-                            </div>` : `<div class="finance-empty-line">Aún no hay movimientos. Usa "Cobrar sueldo", "Transferir", "+ Ingreso" o "− Gasto" arriba para empezar a registrarlos.</div>`}
-                    </section>
-                </div>
-
-                <div class="finance-grid-2">
-                    ${renderFinanceBudgets()}
-                    <section class="finance-panel" id="finance-category-chart-section">
-                        <div class="finance-panel-head"><div><div class="finance-kicker">Este mes</div><h3>Gasto por categoría</h3></div></div>
-                        ${Object.keys(financeExpensesByCategoryThisMonth()).length ? `<canvas id="financeCategoryChart" height="180"></canvas>` : `<div class="finance-empty-line">Registra algún gasto con categoría para ver la gráfica.</div>`}
-                    </section>
+                    ${renderInvestmentPanel()}
                 </div>
 
                 ${renderFinanceSavingsGoals()}
@@ -10845,37 +10606,6 @@
                         ? '<strong>Objetivo alcanzado</strong>'
                         : `<strong>Camino al objetivo</strong> · ${target > 0 ? `faltan ${financeMoney(remainingToTarget)}` : 'objetivo sin definir'} · ${monthsLeft} meses restantes`}</span>
                     <div class="finance-progress finance-goal-bar-progress"><span style="width:${totalPct === null ? 0 : Math.min(100, totalPct)}%"></span></div>
-                </section>
-
-                <section class="finance-accounts-section" id="finance-accounts-section">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                        <div class="finance-kicker" style="margin-bottom:0">Cuentas</div>
-                        <button class="finance-oneoff-btn" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
-                    </div>
-                    <div class="finance-accounts-row">
-                        <div class="collectible-card finance-account-card" onclick="openInvestmentAccountEditor()">
-
-                            <div class="finance-account-label">Inversiones</div>
-                            <div class="finance-account-value">${financeMoney(financeProfile.invested || 0)}</div>
-                            ${financeProfile.investedNote ? `<div class="finance-account-note">${escapeHtml(financeProfile.investedNote)}</div>` : ''}
-                        </div>
-                        <div class="collectible-card finance-account-card" onclick="openRecurringExpensesModal()">
-
-                            <div class="finance-account-label">Gastos recurrentes</div>
-                            <div class="finance-account-value">${financeMoney(recurring)} <span>/ mes</span></div>
-                        </div>
-                        <div class="finance-account-card finance-account-card-readonly" onclick="switchView('collectibles')">
-
-                            <div class="finance-account-label">Coleccionables</div>
-                            <div class="finance-account-value">${financeMoney(financeCollectiblesTotal())}</div>
-                            <div class="finance-account-note">No cuenta para el patrimonio operativo</div>
-                        </div>
-                        ${(financeProfile.customAccounts || []).map(a => `
-                        <div class="collectible-card finance-account-card" onclick="editFinanceCustomAccountBalance('${a.id}')">
-                            <div class="finance-account-label">${escapeHtml(a.name)}</div>
-                            <div class="finance-account-value">${financeMoney(a.balance)}</div>
-                        </div>`).join('')}
-                    </div>
                 </section>
 
                 <div class="finance-dashboard-foot-actions">

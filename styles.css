@@ -4462,42 +4462,40 @@ body.beige {
 @media(max-width:600px){ .collectibles-dashboard{grid-template-columns:repeat(2,1fr)} }
 
 /* ============================================================
-   GRÁFICA DE FINANZAS (Efectivo / Ingresado / Emergencia)
+   GRÁFICA DE FINANZAS — a todo el ancho, propia fila
    ============================================================ */
-.finance-chart-panel .finance-panel-head { margin-bottom:6px; }
-.finance-chart-legend { display:flex; gap:16px; flex-wrap:wrap; margin:6px 0 14px; font-size:11px; color:var(--text-secondary); }
-.finance-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
-.finance-chart-legend i { width:14px; height:2px; border-radius:2px; display:inline-block; background:var(--text-primary); }
+.finance-chart-panel { margin-bottom:18px; }
+.finance-chart-panel .finance-panel-head { margin-bottom:10px; }
 .finance-chart-svg-wrap { position:relative; width:100%; overflow-x:auto; }
 .finance-chart-point { cursor:pointer; transition:r .12s ease; }
 .finance-chart-point:hover { r:5.5; }
-
-/* Toolbar (sustituye a la cabecera de texto de Finanzas) */
-/* Fila superior: gráfica flotante + tarjeta de patrimonio operativo */
-.finance-hero-row { display:grid; grid-template-columns:2.2fr 1fr; gap:20px; align-items:stretch; margin-bottom:18px; }
-.finance-floating-chart-wrap { position:relative; display:flex; flex-direction:column; justify-content:center; padding:6px 0; background:none; border:none; box-shadow:none; }
-.finance-floating-svg-wrap { overflow:visible; }
-.finance-floating-single { display:flex; gap:22px; flex-wrap:wrap; }
-.finance-floating-single div { display:flex; flex-direction:column; gap:3px; }
-.finance-floating-single span { font-size:10px; color:var(--text-secondary); }
-.finance-floating-single strong { font-size:20px; font-weight:800; }
 .finance-chart-legend { display:flex; flex-wrap:wrap; gap:14px; margin-top:6px; padding-left:6px; }
 .finance-chart-legend-item { display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-secondary); }
 .finance-chart-legend-item i { width:9px; height:9px; border-radius:50%; display:inline-block; }
-.finance-networth-card { position:relative; }
-.finance-networth-edit-btn { position:absolute; top:14px; right:14px; color:rgba(255,255,255,0.5); }
-.finance-networth-edit-btn:hover { color:#fff; background:rgba(255,255,255,0.08); }
-.finance-monthly-update-btn { align-self:flex-start; padding:6px 12px; font-size:11px; margin-right:34px; }
+
+/* Patrimonio operativo — su propia fila a todo el ancho */
+.finance-networth-card { position:relative; margin-bottom:22px; }
+.finance-networth-card-wide { display:flex; flex-direction:column; gap:18px; }
+.finance-networth-main { display:flex; justify-content:space-between; align-items:center; gap:28px; flex-wrap:wrap; }
+.finance-networth-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.finance-networth-action-btn { width:auto; padding:9px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.15); background:transparent; color:rgba(255,255,255,0.75); font-size:12px; font-weight:700; cursor:pointer; }
+.finance-networth-action-btn:hover { color:#fff; border-color:rgba(255,255,255,0.3); }
 .finance-reminder-banner { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; background:var(--bg-card); border:1px dashed var(--accent); border-radius:14px; padding:12px 16px; margin-bottom:16px; font-size:12.5px; color:var(--text-primary); }
 
-/* Cuentas: tarjetas minimalistas y borrosas (reutiliza .collectible-card) */
-.finance-accounts-section { margin-top:4px; margin-bottom:14px; }
-.finance-accounts-row { display:flex; gap:12px; flex-wrap:wrap; }
-.finance-account-card { flex:1 1 200px; min-width:180px; max-width:260px; background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:16px 18px; cursor:pointer; transition:border-color .15s ease; }
-.finance-account-card:hover { border-color:var(--border-strong); }
-.finance-account-note { font-size:9px; color:var(--text-secondary); margin-top:6px; line-height:1.4; }
-.finance-account-card-readonly { cursor:pointer; }
-.finance-account-card-readonly:hover { border-color:var(--border-strong); }
+/* Cuentas: mismo estilo de tarjeta que .finance-metric-card, para que toda
+   la fila (fijas + propias + informativas) se vea como un único sistema. */
+.finance-metric-card-simple { cursor:pointer; justify-content:center; min-height:96px; }
+.finance-metric-card-muted { opacity:0.72; }
+.finance-metric-card-muted:hover { opacity:1; }
+
+/* Inversión a largo plazo: barras aportado vs. valor actual */
+.finance-invest-bars { display:flex; flex-direction:column; gap:9px; margin-top:12px; }
+.finance-invest-bar-row { display:flex; align-items:center; gap:8px; font-size:11px; }
+.finance-invest-bar-row span { width:72px; color:var(--text-secondary); flex-shrink:0; }
+.finance-invest-bar-track { flex:1; height:8px; background:var(--border); border-radius:99px; overflow:hidden; }
+.finance-invest-bar-fill { height:100%; background:var(--text-secondary); border-radius:inherit; }
+.finance-invest-bar-fill-accent { background:var(--accent); }
+.finance-invest-bar-row strong { flex-shrink:0; font-variant-numeric:tabular-nums; min-width:64px; text-align:right; }
 
 /* Tarjeta "camino al objetivo" (verde) */
 .finance-goal-bar { display:flex; align-items:center; gap:12px; border:1px solid var(--border); border-radius:16px; padding:10px 16px; margin-bottom:14px; }
