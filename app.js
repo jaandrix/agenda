@@ -9897,7 +9897,7 @@
                 return `<div class="finance-empty-state">Aún no hay histórico. Edita tus cifras o usa <strong>Corregir registros</strong> abajo para registrar meses anteriores y empezar a ver la evolución.</div>`;
             }
 
-            const W = 640, H = 220, padX = 6, padT = 14, padB = 24;
+            const W = 950, H = 220, padX = 26, padT = 16, padB = 26;
             const innerW = W - padX * 2, innerH = H - padT - padB;
             const allValues = data.flatMap(d => series.map(s => d[s.id]));
             const maxVal = Math.max(1, target, ...allValues) * 1.08;
@@ -10302,15 +10302,38 @@
         // ============================================================
         const FINANCE_SERIES_COLORS = ['#111827', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
+        // Atajos para las combinaciones de cuentas más habituales, para que
+        // no haga falta montar una línea a mano marcando casillas una a una.
+        const FINANCE_SERIES_PRESETS = [
+            { key: 'ahorro', name: 'Efectivo + Emergencia', accountKeys: ['cash', 'emergency'] },
+            { key: 'inversion', name: 'Inversiones', accountKeys: ['invested'] },
+            { key: 'patrimonio', name: 'Patrimonio operativo', accountKeys: ['cash', 'emergency', 'invested'] }
+        ];
+
         function openFinanceChartSeriesConfig() {
             window._chartSeriesDraft = JSON.parse(JSON.stringify(getFinanceChartSeries()));
             showModal(`
-                <div class="modal-title">Configurar gráfica</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Elige qué líneas se dibujan y qué cuentas suma cada una.</div>
+                <div class="modal-title">Elegir qué se muestra en la gráfica</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Cada línea suma las cuentas que marques — incluidas las que tú mismo has creado.</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">Atajos:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+                    ${FINANCE_SERIES_PRESETS.map(p => `<button class="finance-oneoff-btn" style="padding:7px 12px" onclick="addFinanceSeriesPreset('${p.key}')">+ ${escapeHtml(p.name)}</button>`).join('')}
+                </div>
                 <div id="finance-series-draft-list">${renderFinanceSeriesDraftList()}</div>
                 <button class="btn-secondary" style="margin-top:10px" onclick="addFinanceSeriesDraft()">+ Nueva línea</button>
                 <button class="btn-modal-primary" style="margin-top:14px" onclick="saveFinanceChartSeries()">Guardar</button>
             `);
+        }
+
+        function addFinanceSeriesPreset(key) {
+            const preset = FINANCE_SERIES_PRESETS.find(p => p.key === key);
+            if (!preset) return;
+            window._chartSeriesDraft = window._chartSeriesDraft || [];
+            if (window._chartSeriesDraft.some(s => s.name === preset.name)) return;
+            const color = FINANCE_SERIES_COLORS[window._chartSeriesDraft.length % FINANCE_SERIES_COLORS.length];
+            window._chartSeriesDraft.push({ id: 'serie_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5), name: preset.name, accountKeys: [...preset.accountKeys], color });
+            const list = document.getElementById('finance-series-draft-list');
+            if (list) list.innerHTML = renderFinanceSeriesDraftList();
         }
 
         function renderFinanceSeriesDraftList() {
@@ -10532,6 +10555,8 @@
             const updatePending = financeMonthUpdatePending();
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
+                <div class="finance-toolbar-row">${blurToggleBtn}</div>
+
                 ${(financeProfile.recordatorioDia && updatePending && new Date().getDate() >= financeProfile.recordatorioDia) ? `
                 <div class="finance-reminder-banner">
                     <span>Cuando tengas la información disponible, puedes actualizar tus finanzas de ${escapeHtml(financeMonthLabel(financeMonthKey()))}.</span>
@@ -10541,7 +10566,7 @@
                 <section class="finance-panel finance-chart-panel" id="finance-floating-chart-wrap">
                     <div class="finance-panel-head">
                         <div><div class="finance-kicker">Evolución</div><h3>Tu patrimonio en el tiempo</h3></div>
-                        <button class="finance-oneoff-btn" onclick="openFinanceChartSeriesConfig()">⚙ Configurar gráfica</button>
+                        <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceChartSeriesConfig()">⚙ Elegir qué mostrar</button>
                     </div>
                     <div onwheel="financeChartWheelZoom(event)" title="Rueda del ratón: acercar/alejar el periodo mostrado">
                         ${renderFinanceFloatingChart()}
@@ -10552,10 +10577,7 @@
                     <div class="finance-networth-main">
                         <div>
                             <div class="finance-kicker">Patrimonio operativo</div>
-                            <div class="finance-networth-value-row">
-                                <div class="finance-networth-value finance-networth-value-compact">${financeMoney(total)}</div>
-                                ${blurToggleBtn}
-                            </div>
+                            <div class="finance-networth-value finance-networth-value-compact">${financeMoney(total)}</div>
                             <div class="finance-networth-meta">
                                 ${totalChange === null ? 'Primer registro' : `${totalChange >= 0 ? '+' : ''}${totalChange.toFixed(1)}% frente al mes anterior`}
                                 · Objetivo ${target > 0 ? financeMoney(target) : 'sin definir'}
