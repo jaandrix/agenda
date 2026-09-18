@@ -9801,6 +9801,18 @@
         const FINANCE_EYE_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.1 12S4.8 5 12 5s10.9 7 10.9 7-3.7 7-10.9 7-10.9-7-10.9-7z"/><circle cx="12" cy="12" r="3"/></svg>';
         const FINANCE_EYE_OFF_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6 0 9.5 5.5 9.9 7a10.9 10.9 0 0 1-3 3.9M6.2 6.2C3.6 7.9 1.9 10.7 1.1 12c.7 1.2 4.2 7 10.9 7 1.6 0 3-.3 4.2-.8"/><path d="M9.5 9.7a3 3 0 0 0 4.2 4.2"/></svg>';
 
+        // Iconos de las cuentas de Finanzas — mismo trazo/estilo que los
+        // iconos de ojo de arriba, para que todo el dashboard comparta un
+        // único lenguaje visual (stroke, sin relleno).
+        const FINANCE_ICON_CASH = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.4"/><path d="M6 9h.01M18 15h.01"/></svg>';
+        const FINANCE_ICON_SHIELD = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3.2v5.3c0 4.6-3 7.7-7 9-4-1.3-7-4.4-7-9V6.2L12 3z"/><path d="M9 12l2 2 4-4"/></svg>';
+        const FINANCE_ICON_SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M4.3 4.3l1.8 1.8M17.9 17.9l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.3 19.7l1.8-1.8M17.9 6.1l1.8-1.8"/></svg>';
+        const FINANCE_ICON_TREND = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5l6.2-6.2 4 4L21 6.5"/><path d="M15 6.5h6v6"/></svg>';
+        const FINANCE_ICON_CARD = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/></svg>';
+        const FINANCE_ICON_REPEAT = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.5l3.5 3.5L17 9.5"/><path d="M3.5 10.5V9a4 4 0 0 1 4-4h13"/><path d="M7 21.5L3.5 18 7 14.5"/><path d="M20.5 13.5V15a4 4 0 0 1-4 4h-13"/></svg>';
+        const FINANCE_ICON_STAR = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l2.95 6.1 6.55.7-4.9 4.5 1.3 6.5L12 16.9l-5.9 3.4 1.3-6.5-4.9-4.5 6.55-.7z"/></svg>';
+        const FINANCE_ICON_TARGET = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.7"/><circle cx="12" cy="12" r="0.9" fill="currentColor"/></svg>';
+
         // Cambia solo la clase "blurred" y el icono del botón sobre el DOM ya
         // pintado (en vez de volver a llamar a render(), que sustituiría
         // todo el contenido y perdería la animación de transición del blur).
@@ -9820,11 +9832,20 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        async function saveFinanceDashboard() {
+        // Sustituye (o crea) el punto del mes en curso en el histórico por
+        // uno fresco con las cifras en vivo. Se llama desde cualquier sitio
+        // que edite una cuenta fuera del flujo de "Actualizar este mes",
+        // para que la gráfica nunca se quede desincronizada de lo que el
+        // usuario ve en las tarjetas.
+        function refreshCurrentMonthSnapshot() {
             const snap = financeSnapshot();
-            const existing = Array.isArray(financeProfile.history) ? financeProfile.history : [];
-            const withoutCurrent = existing.filter(h => h.month !== snap.month);
-            financeProfile.history = [...withoutCurrent, snap].sort((a, b) => String(a.month).localeCompare(String(b.month))).slice(-24);
+            const history = Array.isArray(financeProfile.history) ? financeProfile.history : [];
+            const withoutCurrent = history.filter(h => h.month !== snap.month);
+            financeProfile.history = [...withoutCurrent, snap].sort((a, b) => String(a.month).localeCompare(String(b.month))).slice(-36);
+        }
+
+        async function saveFinanceDashboard() {
+            refreshCurrentMonthSnapshot();
             try { await saveData(); showToast('Finanzas actualizadas'); render(); }
             catch (e) { console.error(e); showToast('No se pudieron guardar las finanzas', true); }
         }
@@ -10060,33 +10081,34 @@
         function openFinanceHistoryCorrectionModal() {
             const months = financeRecentEditableMonths();
             const history = Array.isArray(financeProfile.history) ? financeProfile.history : [];
+            const accounts = getAllAccounts();
             const rows = months.map(m => {
                 const h = history.find(x => x.month === m);
-                const safe = h ? (h.safe !== undefined ? Number(h.safe) : Number(h.cash || 0) + Number(h.emergency || 0)) : '';
-                const total = h ? Number(h.total || 0) : '';
+                const acc = h && h.accounts && typeof h.accounts === 'object' ? h.accounts : {};
+                const fields = accounts.map(a => `
+                    <div>
+                        <div class="modal-label">${escapeHtml(a.label)}</div>
+                        <input class="modal-input finance-correction-input" data-month="${m}" data-field="${a.key}" type="number" min="0" step="0.01" value="${acc[a.key] !== undefined ? acc[a.key] : ''}" placeholder="0.00">
+                    </div>`).join('');
                 return `
                     <div class="finance-correction-row">
                         <div class="finance-correction-month">${escapeHtml(financeMonthLabel(m))}</div>
-                        <div class="finance-correction-inputs">
-                            <div>
-                                <div class="modal-label">Efectivo + Emergencia (€)</div>
-                                <input class="modal-input finance-correction-input" data-month="${m}" data-field="safe" type="number" min="0" step="0.01" value="${safe}" placeholder="0.00">
-                            </div>
-                            <div>
-                                <div class="modal-label">Patrimonio total (€)</div>
-                                <input class="modal-input finance-correction-input" data-month="${m}" data-field="total" type="number" min="0" step="0.01" value="${total}" placeholder="0.00">
-                            </div>
-                        </div>
+                        <div class="finance-correction-inputs">${fields}</div>
                     </div>`;
             }).join('');
             showModal(`
                 <div class="modal-title">Corregir registros</div>
-                <div class="finance-modal-note" style="margin-bottom:12px">Ajusta o rellena los valores de la gráfica para los 3 meses anteriores. El mes actual se actualiza solo con tus cifras en vivo.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Ajusta o rellena el saldo de cada cuenta para los 3 meses anteriores. Deja en blanco lo que no sepas. El mes actual se actualiza solo con tus cifras en vivo.</div>
                 ${rows}
                 <button class="btn-modal-primary" onclick="saveFinanceHistoryCorrection()">Guardar correcciones</button>
             `);
         }
 
+        // Guarda un desglose por cuenta completo (igual que financeSnapshot())
+        // para cada mes corregido — no solo "safe"/"total" — así cualquier
+        // línea que el usuario configure en la gráfica (incluidas cuentas
+        // propias o Inversión) tiene datos reales también en estos meses,
+        // en vez de caer a 0 por no tener un desglose "accounts".
         async function saveFinanceHistoryCorrection() {
             const byMonth = {};
             document.querySelectorAll('.finance-correction-input').forEach(inp => {
@@ -10096,12 +10118,17 @@
             });
             let history = Array.isArray(financeProfile.history) ? [...financeProfile.history] : [];
             Object.keys(byMonth).forEach(m => {
-                const { safe, total } = byMonth[m];
-                if (safe === null && total === null) return;
+                const fields = byMonth[m];
+                if (Object.values(fields).every(v => v === null)) return;
                 const idx = history.findIndex(h => h.month === m);
                 const base = idx >= 0 ? history[idx] : { month: m, date: new Date().toISOString() };
-                const baseSafe = base.safe !== undefined ? Number(base.safe) : Number(base.cash || 0) + Number(base.emergency || 0);
-                const entry = { ...base, month: m, safe: safe !== null ? safe : baseSafe, total: total !== null ? total : Number(base.total || 0) };
+                const accounts = { ...(base.accounts && typeof base.accounts === 'object' ? base.accounts : {}) };
+                Object.keys(fields).forEach(key => { if (fields[key] !== null) accounts[key] = fields[key]; });
+                const cash = Number(accounts.cash || 0);
+                const emergency = Number(accounts.emergency || 0);
+                const vacation = Number(accounts.vacation || 0);
+                const invested = Number(accounts.invested || 0);
+                const entry = { ...base, month: m, cash, emergency, vacation, invested, safe: cash + emergency, total: cash + emergency + invested, accounts };
                 if (idx >= 0) history[idx] = entry; else history.push(entry);
             });
             financeProfile.history = history.sort((a, b) => String(a.month).localeCompare(String(b.month))).slice(-36);
@@ -10148,20 +10175,23 @@
             await saveFinanceDashboard();
         }
 
-        function renderFinanceMetric(key, targetKey, label, icon, note) {
+        function renderFinanceMetric(key, targetKey, label, iconSvg, iconClass, note) {
             const value = Number(financeProfile[key] || 0);
             const target = Number(financeProfile[targetKey] || 0);
             const prev = financePreviousSnapshot()?.[key];
             const change = financePctChange(value, prev);
             const goal = financeGoalStatus(value, target);
             const provision = financeYearEndProvision(key);
+            const trendCls = change === null ? 'neutral' : change >= 0 ? 'positive' : 'negative';
+            const trendText = change === null ? 'Sin mes anterior' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
             return `
-                <div class="finance-metric-card ${goal.cls}">
-                    <button class="finance-edit-btn" title="Editar" onclick="openFinanceMetricEditor('${key}','${label}','${targetKey}')">✎</button>
+                <div class="finance-metric-card ${goal.cls}" onclick="openFinanceMetricEditor('${key}','${label}','${targetKey}')">
+                    <button class="finance-edit-btn" title="Editar" onclick="event.stopPropagation();openFinanceMetricEditor('${key}','${label}','${targetKey}')">✎</button>
+                    <div class="finance-metric-icon ${iconClass}">${iconSvg}</div>
                     <div class="finance-metric-value">${financeMoney(value)}</div>
                     <div class="finance-metric-label">${label}</div>
                     <div class="finance-metric-meta">
-                        <span class="${change === null ? '' : change >= 0 ? 'finance-positive' : 'finance-negative'}">${change === null ? 'Sin mes anterior' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}% vs. mes anterior`}</span>
+                        <span class="finance-trend-chip ${trendCls}">${trendText}</span>
                         <span>${goal.pct === null ? 'Sin objetivo' : `${goal.pct.toFixed(0)}% del objetivo`}</span>
                     </div>
                     <div class="finance-progress"><span style="width:${goal.pct === null ? 0 : Math.min(100, goal.pct)}%"></span></div>
@@ -10252,7 +10282,7 @@
                     <span>${escapeHtml(a.name)}</span>
                     <span style="display:flex;gap:8px;align-items:center">
                         <strong style="font-variant-numeric:tabular-nums">${financeMoney(a.balance)}</strong>
-                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px" onclick="editFinanceCustomAccountBalance('${a.id}')">✎</button>
+                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px" onclick="openCustomAccountEditor('${a.id}', true)">✎</button>
                         <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceCustomAccount('${a.id}')">✕</button>
                     </span>
                 </div>`).join('');
@@ -10272,15 +10302,34 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        async function editFinanceCustomAccountBalance(id) {
+        // returnToList: true cuando se abre desde dentro del modal "Cuentas
+        // propias" (que se reemplazaría al abrir este modal encima) — así
+        // saber si hay que volver a él al guardar, o simplemente cerrar.
+        function openCustomAccountEditor(id, returnToList) {
             const acc = (financeProfile.customAccounts || []).find(a => a.id === id);
             if (!acc) return;
-            const next = prompt(`Nuevo saldo de "${acc.name}" (€)`, acc.balance);
-            if (next === null) return;
-            acc.balance = Number(next) || 0;
-            const list = document.getElementById('finance-custom-accounts-list');
-            if (list) list.innerHTML = renderFinanceCustomAccountsList();
-            if (currentView === 'finances') render();
+            window._customAcctEditorReturnToList = !!returnToList;
+            showModal(`
+                <div class="modal-title">Editar cuenta</div>
+                <div class="modal-label">Nombre</div>
+                <input id="edit-acc-name" class="modal-input" value="${escapeHtml(acc.name)}">
+                <div class="modal-label">Saldo actual (€)</div>
+                <input id="edit-acc-balance" class="modal-input" type="number" step="0.01" value="${Number(acc.balance || 0)}">
+                <button class="btn-modal-primary" onclick="saveCustomAccountEditor('${id}')">Guardar</button>
+                <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceCustomAccount('${id}')">Eliminar cuenta</button>
+            `);
+            setTimeout(() => document.getElementById('edit-acc-name')?.focus(), 50);
+        }
+
+        async function saveCustomAccountEditor(id) {
+            const acc = (financeProfile.customAccounts || []).find(a => a.id === id);
+            if (!acc) return;
+            const name = document.getElementById('edit-acc-name')?.value.trim();
+            if (!name) { showToast('Ponle un nombre a la cuenta', true); return; }
+            acc.name = name;
+            acc.balance = Number(document.getElementById('edit-acc-balance')?.value) || 0;
+            if (window._customAcctEditorReturnToList) openFinanceAccountsConfig(); else closeModal();
+            if (currentView === 'finances') { refreshCurrentMonthSnapshot(); render(); }
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -10293,7 +10342,9 @@
                 .filter(s => s.accountKeys.length);
             const list = document.getElementById('finance-custom-accounts-list');
             if (list) list.innerHTML = renderFinanceCustomAccountsList();
-            if (currentView === 'finances') render();
+            else if (window._customAcctEditorReturnToList) openFinanceAccountsConfig();
+            else closeModal();
+            if (currentView === 'finances') { refreshCurrentMonthSnapshot(); render(); }
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -10472,9 +10523,10 @@
         // Tarjeta simple para cuentas sin objetivo/previsión propios (cuentas
         // propias, gastos recurrentes, coleccionables) — mismo estilo visual
         // que renderFinanceMetric para que toda la fila de Cuentas sea coherente.
-        function renderFinanceSimpleTile(value, label, onClick, note, muted) {
+        function renderFinanceSimpleTile(value, label, onClick, note, muted, iconSvg, iconClass) {
             return `
                 <div class="finance-metric-card finance-metric-card-simple ${muted ? 'finance-metric-card-muted' : ''}" ${onClick ? `onclick="${onClick}"` : ''}>
+                    ${iconSvg ? `<div class="finance-metric-icon ${iconClass || ''}">${iconSvg}</div>` : ''}
                     <div class="finance-metric-value">${financeMoney(value)}</div>
                     <div class="finance-metric-label">${escapeHtml(label)}</div>
                     ${note ? `<div class="finance-metric-note">${escapeHtml(note)}</div>` : ''}
@@ -10497,44 +10549,96 @@
             const stats = financeInvestmentStats();
             const fc = financeProfile.forecastProfile || {};
             const monthKey = financeMonthKey();
-            const yaMarcado = (financeProfile.investmentContributions || []).some(c => c.month === monthKey);
+            const yaActualizado = (financeProfile.investmentContributions || []).some(c => c.month === monthKey);
+            const needsOnboarding = !(financeProfile.investmentContributions || []).length;
+
+            if (needsOnboarding) {
+                return `
+                <section class="finance-panel" id="finance-investment-section">
+                    <div class="finance-panel-head"><div><div class="finance-kicker">Largo plazo</div><h3>Inversión</h3></div></div>
+                    <div class="finance-metric-icon fin-purple" style="width:44px;height:44px;margin:4px auto 12px">${FINANCE_ICON_TREND}</div>
+                    <div class="finance-empty-line" style="text-align:center">Indica tu punto de partida — cuánto llevas invertido y cuánto vale ahora mismo — para poder comparar aportaciones con valor actual mes a mes.</div>
+                    <button class="finance-oneoff-btn" style="margin-top:12px" onclick="openInvestmentOnboarding()">Configurar inversión</button>
+                </section>`;
+            }
+
             const maxBar = Math.max(stats.totalAportado, stats.valorActual, 1);
+            const gainCls = stats.gain > 0 ? 'positive' : stats.gain < 0 ? 'negative' : 'neutral';
             return `
             <section class="finance-panel" id="finance-investment-section">
-                <div class="finance-panel-head"><div><div class="finance-kicker">Largo plazo</div><h3>Inversión</h3></div><button class="finance-icon-btn" onclick="openInvestmentAccountEditor()">✎</button></div>
-                <div class="finance-income-highlight"><span>Valor actual</span><strong>${financeMoney(stats.valorActual)}</strong></div>
-                <div class="finance-income-highlight" style="border-bottom:none"><span>Aportación mensual marcada</span><strong>${financeMoney(fc.investMonthlyPlan || 0)}</strong></div>
+                <div class="finance-panel-head"><div><div class="finance-kicker">Largo plazo</div><h3>Inversión</h3></div><button class="finance-icon-btn" title="Ajustes" onclick="openInvestmentAccountEditor()">✎</button></div>
+                <div class="finance-invest-headline">
+                    <div><span>Valor actual</span><strong>${financeMoney(stats.valorActual)}</strong></div>
+                    <span class="finance-trend-chip ${gainCls}">${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}${stats.gainPct !== null ? ` · ${stats.gain >= 0 ? '+' : ''}${stats.gainPct.toFixed(1)}%` : ''}</span>
+                </div>
                 <div class="finance-invest-bars">
                     <div class="finance-invest-bar-row"><span>Aportado</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill" style="width:${(stats.totalAportado / maxBar) * 100}%"></div></div><strong>${financeMoney(stats.totalAportado)}</strong></div>
                     <div class="finance-invest-bar-row"><span>Valor actual</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill finance-invest-bar-fill-accent" style="width:${(stats.valorActual / maxBar) * 100}%"></div></div><strong>${financeMoney(stats.valorActual)}</strong></div>
                 </div>
-                <div class="finance-empty-line" style="margin-top:10px">${stats.meses} mes${stats.meses === 1 ? '' : 'es'} aportando · rendimiento ${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}${stats.gainPct !== null ? ` (${stats.gain >= 0 ? '+' : ''}${stats.gainPct.toFixed(1)}%)` : ''}</div>
-                <button class="finance-oneoff-btn" style="margin-top:10px" onclick="markInvestmentContribution()" ${yaMarcado ? 'disabled' : ''}>${yaMarcado ? `✓ Aportación de ${financeMonthLabel(monthKey)} marcada` : 'Marcar aportación de este mes'}</button>
+                <div class="finance-empty-line" style="margin-top:10px">${stats.meses} aportación${stats.meses === 1 ? '' : 'es'} registrada${stats.meses === 1 ? '' : 's'}${fc.investMonthlyPlan ? ` · plan: ${financeMoney(fc.investMonthlyPlan)}/mes` : ''}</div>
+                <button class="finance-oneoff-btn" style="margin-top:10px" onclick="openInvestmentMonthlyUpdate()" ${yaActualizado ? 'disabled' : ''}>${yaActualizado ? `✓ ${financeMonthLabel(monthKey)} actualizado` : 'Actualizar este mes'}</button>
             </section>`;
         }
 
-        function markInvestmentContribution() {
+        // Primer contacto con la tarjeta de Inversión: fija el punto de
+        // partida (dinero realmente puesto vs. valor de partida del fondo,
+        // que pueden no coincidir si ya venía de antes) antes de empezar
+        // con las actualizaciones mensuales.
+        function openInvestmentOnboarding() {
+            showModal(`
+                <div class="modal-title">Configurar inversión</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">A partir de aquí, cada mes solo tendrás que actualizar estos dos datos.</div>
+                <div class="modal-label">Dinero inicial aportado (€)</div>
+                <input id="invest-onboard-initial" class="modal-input" type="number" min="0" step="0.01" placeholder="0.00">
+                <div class="modal-label">Valor inicial del fondo (€)</div>
+                <input id="invest-onboard-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.invested || 0) || ''}" placeholder="0.00">
+                <button class="btn-modal-primary" onclick="saveInvestmentOnboarding()">Empezar a hacer seguimiento</button>
+            `);
+            setTimeout(() => document.getElementById('invest-onboard-initial')?.focus(), 50);
+        }
+
+        async function saveInvestmentOnboarding() {
+            const initial = Math.max(0, Number(document.getElementById('invest-onboard-initial')?.value) || 0);
+            const value = Math.max(0, Number(document.getElementById('invest-onboard-value')?.value) || 0);
+            financeProfile.investmentContributions = [{ month: financeMonthKey(), amount: initial, initial: true }];
+            financeProfile.invested = value;
+            closeModal();
+            refreshCurrentMonthSnapshot();
+            try { await saveData(); showToast('Inversión configurada'); render(); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Ritual mensual único: valor actual del fondo + aportación de este
+        // mes en el mismo paso, en vez de dos acciones sueltas (editar valor
+        // por un lado, marcar aportación por otro) que era fácil olvidar
+        // hacer juntas.
+        function openInvestmentMonthlyUpdate() {
             const fc = financeProfile.forecastProfile || {};
             const monthKey = financeMonthKey();
             const existing = (financeProfile.investmentContributions || []).find(c => c.month === monthKey);
             showModal(`
-                <div class="modal-title">Aportación de ${escapeHtml(financeMonthLabel(monthKey))}</div>
-                <div class="modal-label">Importe aportado (€)</div>
-                <input id="invest-contrib-amount" class="modal-input" type="number" min="0" step="0.01" value="${existing ? existing.amount : (fc.investMonthlyPlan || '')}">
-                <button class="btn-modal-primary" onclick="saveInvestmentContribution('${monthKey}')">Guardar</button>
+                <div class="modal-title">Actualizar ${escapeHtml(financeMonthLabel(monthKey))}</div>
+                <div class="modal-label">Valor actual del fondo (€)</div>
+                <input id="invest-update-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.invested || 0)}">
+                <div class="modal-label">Aportación de este mes (€)</div>
+                <input id="invest-update-contrib" class="modal-input" type="number" min="0" step="0.01" value="${existing ? existing.amount : (fc.investMonthlyPlan || '')}" placeholder="0.00">
+                <button class="btn-modal-primary" onclick="saveInvestmentMonthlyUpdate('${monthKey}')">Guardar</button>
             `);
-            setTimeout(() => document.getElementById('invest-contrib-amount')?.focus(), 50);
+            setTimeout(() => document.getElementById('invest-update-value')?.focus(), 50);
         }
 
-        async function saveInvestmentContribution(monthKey) {
-            const amount = Number(document.getElementById('invest-contrib-amount')?.value);
-            if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
-            financeProfile.investmentContributions = Array.isArray(financeProfile.investmentContributions) ? financeProfile.investmentContributions : [];
-            financeProfile.investmentContributions = financeProfile.investmentContributions.filter(c => c.month !== monthKey);
-            financeProfile.investmentContributions.push({ month: monthKey, amount });
+        async function saveInvestmentMonthlyUpdate(monthKey) {
+            const value = Math.max(0, Number(document.getElementById('invest-update-value')?.value) || 0);
+            const contribRaw = document.getElementById('invest-update-contrib')?.value;
+            const contrib = contribRaw === '' ? 0 : Math.max(0, Number(contribRaw) || 0);
+
+            financeProfile.invested = value;
+            financeProfile.investmentContributions = (financeProfile.investmentContributions || []).filter(c => c.month !== monthKey);
+            if (contrib > 0) financeProfile.investmentContributions.push({ month: monthKey, amount: contrib });
             closeModal();
+            refreshCurrentMonthSnapshot();
             if (currentView === 'finances') render();
-            try { await saveData(); showToast('Aportación registrada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            try { await saveData(); showToast('Inversión actualizada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function renderFinanceDashboard() {
@@ -10600,12 +10704,12 @@
                     <button class="finance-oneoff-btn" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
                 </div>
                 <div class="finance-metrics-grid">
-                    ${renderFinanceMetric('cash','cashTarget','Efectivo / bancos','◉','Liquidez disponible')}
-                    ${renderFinanceMetric('emergency','emergencyTarget','Fondo de emergencia','◈','Reserva no destinada al gasto corriente')}
-                    ${renderFinanceMetric('vacation','vacationTarget','Reserva de vacaciones','◊','Se mantiene aparte del patrimonio operativo')}
-                    ${(financeProfile.customAccounts || []).map(a => renderFinanceSimpleTile(a.balance, a.name, `editFinanceCustomAccountBalance('${a.id}')`)).join('')}
-                    ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true)}
-                    ${renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true)}
+                    ${renderFinanceMetric('cash','cashTarget','Efectivo / bancos',FINANCE_ICON_CASH,'fin-blue','Liquidez disponible')}
+                    ${renderFinanceMetric('emergency','emergencyTarget','Fondo de emergencia',FINANCE_ICON_SHIELD,'fin-amber','Reserva no destinada al gasto corriente')}
+                    ${renderFinanceMetric('vacation','vacationTarget','Reserva de vacaciones',FINANCE_ICON_SUN,'fin-teal','Se mantiene aparte del patrimonio operativo')}
+                    ${(financeProfile.customAccounts || []).map(a => renderFinanceSimpleTile(a.balance, a.name, `openCustomAccountEditor('${a.id}')`, null, false, FINANCE_ICON_CARD, 'fin-slate')).join('')}
+                    ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true, FINANCE_ICON_REPEAT, 'fin-red')}
+                    ${renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR, 'fin-gold')}
                 </div>
 
                 <div class="finance-grid-2" style="margin-top:18px">
@@ -10623,17 +10727,21 @@
 
                 ${renderFinanceSavingsGoals()}
 
-                <section class="finance-goal-bar">
-                    <span class="finance-goal-bar-text">${remainingToTarget <= 0 && target > 0
-                        ? '<strong>Objetivo alcanzado</strong>'
-                        : `<strong>Camino al objetivo</strong> · ${target > 0 ? `faltan ${financeMoney(remainingToTarget)}` : 'objetivo sin definir'} · ${monthsLeft} meses restantes`}</span>
-                    <div class="finance-progress finance-goal-bar-progress"><span style="width:${totalPct === null ? 0 : Math.min(100, totalPct)}%"></span></div>
+                <section class="finance-goal-bar ${remainingToTarget <= 0 && target > 0 ? 'finance-goal-bar-complete' : ''}">
+                    <div class="finance-metric-icon fin-teal finance-goal-bar-icon">${FINANCE_ICON_TARGET}</div>
+                    <div class="finance-goal-bar-body">
+                        <span class="finance-goal-bar-text">${remainingToTarget <= 0 && target > 0
+                            ? '<strong>Objetivo alcanzado</strong>'
+                            : `<strong>Camino al objetivo</strong> · ${target > 0 ? `faltan ${financeMoney(remainingToTarget)}` : 'objetivo sin definir'} · ${monthsLeft} meses restantes`}</span>
+                        <div class="finance-progress finance-goal-bar-progress"><span style="width:${totalPct === null ? 0 : Math.min(100, totalPct)}%"></span></div>
+                    </div>
+                    <strong class="finance-goal-bar-pct">${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</strong>
                 </section>
 
                 <div class="finance-dashboard-foot-actions">
-                    <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()">Corregir registros</button>
-                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary)">
-                        Recordarme actualizar el día
+                    <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()">✎ Corregir registros</button>
+                    <label class="finance-foot-reminder">
+                        Recordarme el día
                         <select class="modal-input" style="width:auto;margin:0;padding:4px 8px" onchange="setFinanceReminderDay(this.value)">
                             <option value="">Sin recordatorio</option>
                             ${Array.from({ length: 28 }, (_, i) => i + 1).map(d => `<option value="${d}" ${financeProfile.recordatorioDia === d ? 'selected' : ''}>${d}</option>`).join('')}
