@@ -9852,6 +9852,35 @@
         const FINANCE_ICON_UPLOAD = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>';
         const FINANCE_ICON_SWAP = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14M7 17l-3.5-3.5M7 17l3.5-3.5"/><path d="M17 21V7M17 7l3.5 3.5M17 7l-3.5 3.5"/></svg>';
 
+        // ============================================================
+        //  FINANZAS PRO — iconos de categoría (sin emoticonos: mismo
+        //  trazo/estilo que el resto de iconos de Finanzas).
+        // ============================================================
+        function financeProSvgIcon(inner) {
+            return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+        }
+        const FINANCE_PRO_CATEGORY_ICON_SET = [
+            { key: 'food', label: 'Comida y bebida', svg: financeProSvgIcon('<path d="M4 3h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V3z"/><path d="M17 6h1.5a2.5 2.5 0 0 1 0 5H17"/>') },
+            { key: 'home', label: 'Vivienda', svg: financeProSvgIcon('<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>') },
+            { key: 'car', label: 'Transporte', svg: financeProSvgIcon('<path d="M4 16V9a2 2 0 0 1 2-2h1l2-3h6l2 3h1a2 2 0 0 1 2 2v7"/><path d="M4 16h16"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/>') },
+            { key: 'bag', label: 'Compras', svg: financeProSvgIcon('<path d="M6 8V6a6 6 0 0 1 12 0v2"/><rect x="3" y="8" width="18" height="13" rx="2"/>') },
+            { key: 'ticket', label: 'Ocio', svg: financeProSvgIcon('<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M9 6v12" stroke-dasharray="2 2"/>') },
+            { key: 'heart', label: 'Salud', svg: financeProSvgIcon('<path d="M12 20s-7.5-4.6-9.7-9A5.2 5.2 0 0 1 12 6a5.2 5.2 0 0 1 9.7 5c-2.2 4.4-9.7 9-9.7 9z"/>') },
+            { key: 'phone', label: 'Comunicación', svg: financeProSvgIcon('<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>') },
+            { key: 'bank', label: 'Comisiones e impuestos', svg: financeProSvgIcon('<path d="M12 3l9 5H3z"/><path d="M5 8v10M9.5 8v10M14.5 8v10M19 8v10"/><path d="M3 21h18"/>') },
+            { key: 'book', label: 'Educación', svg: financeProSvgIcon('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 19H6"/>') },
+            { key: 'family', label: 'Familia y mascotas', svg: financeProSvgIcon('<circle cx="8" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M3 20v-1a5 5 0 0 1 5-5h1a5 5 0 0 1 5 5v1"/><path d="M14 20v-.5a3.8 3.8 0 0 1 3.8-3.8h.4a3.8 3.8 0 0 1 3.8 3.8v.5"/>') },
+            { key: 'briefcase', label: 'Sueldo / trabajo', svg: financeProSvgIcon('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>') },
+            { key: 'coin', label: 'Ingreso extra', svg: financeProSvgIcon('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8.5 10.5h5a1.75 1.75 0 0 1 0 3.5h-4a1.75 1.75 0 0 0 0 3.5h5"/>') },
+            { key: 'trend', label: 'Inversiones', svg: FINANCE_ICON_TREND },
+            { key: 'gift', label: 'Regalos', svg: financeProSvgIcon('<rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 9h18M12 9v12"/><path d="M12 9C10 4 4 5 5 8c.6 1.8 4 1 7 1zM12 9c2-5 8-4 7-1-.6 1.8-4 1-7 1z"/>') },
+            { key: 'repeat', label: 'Reembolsos', svg: FINANCE_ICON_REPEAT },
+            { key: 'other', label: 'Otros', svg: financeProSvgIcon('<circle cx="12" cy="12" r="8"/>') }
+        ];
+        function financeProCategoryIconSvg(key) {
+            return (FINANCE_PRO_CATEGORY_ICON_SET.find(i => i.key === key) || FINANCE_PRO_CATEGORY_ICON_SET[FINANCE_PRO_CATEGORY_ICON_SET.length - 1]).svg;
+        }
+
         // Cabecera de panel con icono de color — mismo lenguaje visual que
         // las tarjetas de cuentas, para que cada panel de Finanzas se
         // identifique de un vistazo (gráfica, previsión, inversión, metas).
@@ -9964,7 +9993,7 @@
                 return `<div class="finance-empty-state">Aún no hay histórico. Edita tus cifras o usa <strong>Corregir registros</strong> abajo para registrar meses anteriores y empezar a ver la evolución.</div>`;
             }
 
-            const W = 950, H = 220, padX = 26, padT = 16, padB = 26;
+            const W = 950, H = 220, padX = 26, padT = 30, padB = 26;
             const innerW = W - padX * 2, innerH = H - padT - padB;
             const allValues = data.flatMap(d => series.map(s => d[s.id]));
             const maxVal = Math.max(1, target, ...allValues) * 1.08;
@@ -9976,10 +10005,13 @@
                 <line x1="${padX}" y1="${y(target).toFixed(1)}" x2="${W - padX}" y2="${y(target).toFixed(1)}" stroke="var(--text-muted)" stroke-width="1.3" stroke-dasharray="1.5,4" stroke-linecap="round"/>
                 <text x="${padX}" y="${(y(target) - 6).toFixed(1)}" font-size="9" fill="var(--text-muted)">Objetivo · ${financeMoney(target)}</text>` : '';
 
-            const dotsOf = (s) => data.map((d, i) => `
+            // Valor en pequeño encima de cada punto, para poder leer la
+            // gráfica sin tener que pasar el ratón por cada uno.
+            const dotsOf = (s, sIdx) => data.map((d, i) => `
                 <circle class="finance-chart-point" cx="${x(i).toFixed(1)}" cy="${y(d[s.id]).toFixed(1)}" r="3.5" fill="var(--bg-app)" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="2"
                     onmousemove="showFinanceChartTooltip(event,'${escapeHtml(s.name).replace(/'/g, "\\'")}','${escapeHtml(financeMonthLabel(d.month))}',${d[s.id]})"
-                    onmouseleave="hideFinanceChartTooltip()"></circle>`).join('');
+                    onmouseleave="hideFinanceChartTooltip()"></circle>
+                <text x="${x(i).toFixed(1)}" y="${(y(d[s.id]) - 8 - (sIdx % 2) * 9).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="${s.color || 'var(--text-secondary)'}">${financeMoney(d[s.id]).replace(',00€', '€')}</text>`).join('');
 
             const step = Math.max(1, Math.ceil(data.length / 6));
             const xLabels = data.map((d, i) => (data.length === 1 || i % step === 0 || i === data.length - 1)
@@ -10006,7 +10038,7 @@
                         </defs>
                         ${linesSvg}
                         ${targetLine}
-                        ${series.map(s => dotsOf(s)).join('')}
+                        ${series.map((s, sIdx) => dotsOf(s, sIdx)).join('')}
                         ${xLabels}
                     </svg>
                 </div>
@@ -10155,6 +10187,16 @@
         // línea que el usuario configure en la gráfica (incluidas cuentas
         // propias o Inversión) tiene datos reales también en estos meses,
         // en vez de caer a 0 por no tener un desglose "accounts".
+        // Punto de partida del desglose por cuenta de un mes histórico: si
+        // ya tenía .accounts se reutiliza tal cual; si es un registro
+        // antiguo sin desglose, se reconstruye desde sus campos planos
+        // (cash/emergency/vacation/invested) en vez de partir de cero —
+        // si no, corregir un solo campo borraría el resto a 0.
+        function financeHistoryEntryAccountsBaseline(base) {
+            if (base.accounts && typeof base.accounts === 'object') return { ...base.accounts };
+            return { cash: base.cash, emergency: base.emergency, vacation: base.vacation, invested: base.invested };
+        }
+
         async function saveFinanceHistoryCorrection() {
             const byMonth = {};
             document.querySelectorAll('.finance-correction-input').forEach(inp => {
@@ -10168,7 +10210,7 @@
                 if (Object.values(fields).every(v => v === null)) return;
                 const idx = history.findIndex(h => h.month === m);
                 const base = idx >= 0 ? history[idx] : { month: m, date: new Date().toISOString() };
-                const accounts = { ...(base.accounts && typeof base.accounts === 'object' ? base.accounts : {}) };
+                const accounts = financeHistoryEntryAccountsBaseline(base);
                 Object.keys(fields).forEach(key => { if (fields[key] !== null) accounts[key] = fields[key]; });
                 const cash = Number(accounts.cash || 0);
                 const emergency = Number(accounts.emergency || 0);
@@ -10657,17 +10699,32 @@
         // mes en el mismo paso, en vez de dos acciones sueltas (editar valor
         // por un lado, marcar aportación por otro) que era fácil olvidar
         // hacer juntas.
-        function openInvestmentMonthlyUpdate() {
+        // Permite corregir el valor de la inversión (y su aportación) no
+        // solo del mes en curso, sino también de los 2 meses anteriores —
+        // útil si te olvidaste de actualizarla a tiempo. Corregir un mes
+        // pasado solo toca ese registro histórico, nunca el valor en vivo.
+        function openInvestmentMonthlyUpdate(monthKey) {
+            monthKey = monthKey || financeMonthKey();
+            const isCurrent = monthKey === financeMonthKey();
             const fc = financeProfile.forecastProfile || {};
-            const monthKey = financeMonthKey();
             const existing = (financeProfile.investmentContributions || []).find(c => c.month === monthKey);
+            const histEntry = (financeProfile.history || []).find(h => h.month === monthKey);
+            const histValue = histEntry?.accounts?.invested ?? histEntry?.invested;
+            const currentValue = isCurrent ? Number(financeProfile.invested || 0) : (histValue !== undefined ? Number(histValue) : '');
+            const now = new Date();
+            const monthOptions = [0, 1, 2].map(back => financeMonthKey(new Date(now.getFullYear(), now.getMonth() - back, 1)));
             showModal(`
-                <div class="modal-title">Actualizar ${escapeHtml(financeMonthLabel(monthKey))}</div>
-                <div class="modal-label">Valor actual del fondo (€)</div>
-                <input id="invest-update-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.invested || 0)}">
-                <div class="modal-label">Aportación de este mes (€)</div>
-                <input id="invest-update-contrib" class="modal-input" type="number" min="0" step="0.01" value="${existing ? existing.amount : (fc.investMonthlyPlan || '')}" placeholder="0.00">
-                <button class="btn-modal-primary" onclick="saveInvestmentMonthlyUpdate('${monthKey}')">Guardar</button>
+                <div class="modal-title">Actualizar inversión</div>
+                <div class="modal-label">Mes</div>
+                <select class="modal-input" onchange="openInvestmentMonthlyUpdate(this.value)">
+                    ${monthOptions.map(m => `<option value="${m}" ${m === monthKey ? 'selected' : ''}>${escapeHtml(financeMonthLabel(m))}</option>`).join('')}
+                </select>
+                <div class="modal-label">Valor del fondo (€)</div>
+                <input id="invest-update-value" class="modal-input" type="number" min="0" step="0.01" value="${currentValue}">
+                <div class="modal-label">Aportación de ${escapeHtml(financeMonthLabel(monthKey))} (€)</div>
+                <input id="invest-update-contrib" class="modal-input" type="number" min="0" step="0.01" value="${existing ? existing.amount : (isCurrent ? (fc.investMonthlyPlan || '') : '')}" placeholder="0.00">
+                ${!isCurrent ? `<div class="finance-modal-note" style="margin-top:8px">Estás corrigiendo un mes anterior — no cambia el valor actual de tu inversión, solo el registro histórico de ese mes (y su línea en la gráfica).</div>` : ''}
+                <button class="btn-modal-primary" style="margin-top:10px" onclick="saveInvestmentMonthlyUpdate('${monthKey}')">Guardar</button>
             `);
             setTimeout(() => document.getElementById('invest-update-value')?.focus(), 50);
         }
@@ -10676,12 +10733,25 @@
             const value = Math.max(0, Number(document.getElementById('invest-update-value')?.value) || 0);
             const contribRaw = document.getElementById('invest-update-contrib')?.value;
             const contrib = contribRaw === '' ? 0 : Math.max(0, Number(contribRaw) || 0);
+            const isCurrent = monthKey === financeMonthKey();
 
-            financeProfile.invested = value;
             financeProfile.investmentContributions = (financeProfile.investmentContributions || []).filter(c => c.month !== monthKey);
             if (contrib > 0) financeProfile.investmentContributions.push({ month: monthKey, amount: contrib });
+
+            if (isCurrent) {
+                financeProfile.invested = value;
+                refreshCurrentMonthSnapshot();
+            } else {
+                let history = Array.isArray(financeProfile.history) ? [...financeProfile.history] : [];
+                const idx = history.findIndex(h => h.month === monthKey);
+                const base = idx >= 0 ? history[idx] : { month: monthKey, date: new Date().toISOString() };
+                const accounts = { ...financeHistoryEntryAccountsBaseline(base), invested: value };
+                const cash = Number(accounts.cash || 0), emergency = Number(accounts.emergency || 0);
+                const entry = { ...base, month: monthKey, invested: value, cash, emergency, safe: cash + emergency, total: cash + emergency + value, accounts };
+                if (idx >= 0) history[idx] = entry; else history.push(entry);
+                financeProfile.history = history.sort((a, b) => String(a.month).localeCompare(String(b.month))).slice(-36);
+            }
             closeModal();
-            refreshCurrentMonthSnapshot();
             if (currentView === 'finances') render();
             try { await saveData(); showToast('Inversión actualizada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
@@ -10705,6 +10775,7 @@
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
                 <div class="finance-toolbar-row">${blurToggleBtn}</div>
+                ${renderFinanceProToggleBanner()}
                 ${financePro.enabled ? renderFinanceProSubnav() : ''}
 
                 ${(financeProfile.recordatorioDia && updatePending && new Date().getDate() >= financeProfile.recordatorioDia) ? `
@@ -10737,7 +10808,7 @@
                             <span>Progreso</span>
                             <strong>${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</strong>
                             <div class="finance-progress finance-progress-large"><span style="width:${totalPct === null ? 0 : totalPct}%"></span></div>
-                            <small>${remainingToTarget <= 0 && target > 0 ? '🎉 Objetivo alcanzado' : target > 0 ? `Faltan ${financeMoney(remainingToTarget)} · ${monthsLeft} meses` : 'Define un objetivo para ver el camino'}</small>
+                            <small>${remainingToTarget <= 0 && target > 0 ? 'Objetivo alcanzado' : target > 0 ? `Faltan ${financeMoney(remainingToTarget)} · ${monthsLeft} meses` : 'Define un objetivo para ver el camino'}</small>
                         </div>
                     </div>
                     <div class="finance-networth-actions">
@@ -10797,16 +10868,6 @@
                     </label>
                 </div>
 
-                <div class="finance-pro-toggle-row">
-                    <div>
-                        <div class="finance-pro-toggle-title">Modo PRO</div>
-                        <div class="finance-pro-toggle-desc">Registra cada movimiento con categorías, tres cuentas independientes (Efectivo / Bancos / Online) e importación de extractos bancarios.</div>
-                    </div>
-                    <button class="finance-pro-switch ${financePro.enabled ? 'on' : ''}" onclick="toggleFinancePro()" title="${financePro.enabled ? 'Desactivar' : 'Activar'} modo PRO" aria-label="Modo PRO">
-                        <span class="finance-pro-switch-knob"></span>
-                    </button>
-                </div>
-
                 <div class="finance-dashboard-foot">${monthsLeft > 0 ? `Quedan ${monthsLeft} meses del año. ` : ''}La reserva de vacaciones (${financeMoney(financeProfile.vacation || 0)}) queda fuera del patrimonio operativo para evitar contar dos veces el dinero disponible.</div>
             </div>`;
         }
@@ -10822,23 +10883,23 @@
         // ============================================================
         function financeProDefaultCategories() {
             return [
-                { id: 'cat_comida', name: 'Comida y bebida', icon: '🍔', type: 'expense' },
-                { id: 'cat_vivienda', name: 'Vivienda', icon: '🏠', type: 'expense' },
-                { id: 'cat_transporte', name: 'Transporte', icon: '🚗', type: 'expense' },
-                { id: 'cat_compras', name: 'Compras', icon: '🛍️', type: 'expense' },
-                { id: 'cat_ocio', name: 'Ocio', icon: '🎉', type: 'expense' },
-                { id: 'cat_salud', name: 'Salud', icon: '💊', type: 'expense' },
-                { id: 'cat_comunicacion', name: 'Comunicación', icon: '📱', type: 'expense' },
-                { id: 'cat_finanzas_gasto', name: 'Comisiones e impuestos', icon: '🏦', type: 'expense' },
-                { id: 'cat_educacion', name: 'Educación', icon: '📚', type: 'expense' },
-                { id: 'cat_familia', name: 'Familia y mascotas', icon: '🐾', type: 'expense' },
-                { id: 'cat_otros_gasto', name: 'Otros gastos', icon: '🔘', type: 'expense' },
-                { id: 'cat_sueldo', name: 'Sueldo', icon: '💼', type: 'income' },
-                { id: 'cat_extra', name: 'Trabajo extra', icon: '💵', type: 'income' },
-                { id: 'cat_inversion_ing', name: 'Inversiones', icon: '📈', type: 'income' },
-                { id: 'cat_regalo', name: 'Regalos', icon: '🎁', type: 'income' },
-                { id: 'cat_reembolso', name: 'Reembolsos', icon: '🔄', type: 'income' },
-                { id: 'cat_otros_ingreso', name: 'Otros ingresos', icon: '🔘', type: 'income' }
+                { id: 'cat_comida', name: 'Comida y bebida', icon: 'food', type: 'expense' },
+                { id: 'cat_vivienda', name: 'Vivienda', icon: 'home', type: 'expense' },
+                { id: 'cat_transporte', name: 'Transporte', icon: 'car', type: 'expense' },
+                { id: 'cat_compras', name: 'Compras', icon: 'bag', type: 'expense' },
+                { id: 'cat_ocio', name: 'Ocio', icon: 'ticket', type: 'expense' },
+                { id: 'cat_salud', name: 'Salud', icon: 'heart', type: 'expense' },
+                { id: 'cat_comunicacion', name: 'Comunicación', icon: 'phone', type: 'expense' },
+                { id: 'cat_finanzas_gasto', name: 'Comisiones e impuestos', icon: 'bank', type: 'expense' },
+                { id: 'cat_educacion', name: 'Educación', icon: 'book', type: 'expense' },
+                { id: 'cat_familia', name: 'Familia y mascotas', icon: 'family', type: 'expense' },
+                { id: 'cat_otros_gasto', name: 'Otros gastos', icon: 'other', type: 'expense' },
+                { id: 'cat_sueldo', name: 'Sueldo', icon: 'briefcase', type: 'income' },
+                { id: 'cat_extra', name: 'Trabajo extra', icon: 'coin', type: 'income' },
+                { id: 'cat_inversion_ing', name: 'Inversiones', icon: 'trend', type: 'income' },
+                { id: 'cat_regalo', name: 'Regalos', icon: 'gift', type: 'income' },
+                { id: 'cat_reembolso', name: 'Reembolsos', icon: 'repeat', type: 'income' },
+                { id: 'cat_otros_ingreso', name: 'Otros ingresos', icon: 'other', type: 'income' }
             ];
         }
 
@@ -10859,6 +10920,18 @@
         function switchFinanceProView(toPro) {
             financeProView = toPro;
             render();
+        }
+
+        function renderFinanceProToggleBanner() {
+            return `<div class="finance-pro-banner">
+                <div class="finance-pro-banner-text">
+                    <div class="finance-pro-toggle-title">Modo PRO</div>
+                    <div class="finance-pro-toggle-desc">Registra cada movimiento con categorías, tres cuentas independientes (Efectivo / Bancos / Online) e importación de extractos bancarios.</div>
+                </div>
+                <button class="finance-pro-switch ${financePro.enabled ? 'on' : ''}" onclick="toggleFinancePro()" title="${financePro.enabled ? 'Desactivar' : 'Activar'} modo PRO" aria-label="Modo PRO">
+                    <span class="finance-pro-switch-knob"></span>
+                </button>
+            </div>`;
         }
 
         function financeProAccountBalance(key) {
@@ -10980,6 +11053,7 @@
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
                 <div class="finance-toolbar-row">${blurToggleBtn}</div>
+                ${renderFinanceProToggleBanner()}
                 ${renderFinanceProSubnav()}
 
                 <section class="finance-panel finance-chart-panel">
@@ -11042,13 +11116,33 @@
         // ============================================================
         //  FINANZAS PRO — lista de movimientos
         // ============================================================
-        let financeProTxFilter = { account: '' };
+        let financeProTxFilter = { account: '', month: '', year: '' };
+        const FINANCE_PRO_MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        function financeProTxFilterYears() {
+            const years = new Set(financePro.transactions.map(t => t.date.slice(0, 4)));
+            years.add(String(new Date().getFullYear()));
+            return Array.from(years).sort().reverse();
+        }
+
+        function financeProApplyTxFilter(key, value) {
+            financeProTxFilter[key] = value;
+            document.getElementById('finance-pro-tx-list').innerHTML = renderFinanceProTransactionList();
+        }
 
         function renderFinanceProTransactionFilters() {
-            return `<div style="margin:14px 0 6px">
-                <select class="modal-input" style="width:auto;margin:0" onchange="financeProTxFilter.account=this.value;document.getElementById('finance-pro-tx-list').innerHTML=renderFinanceProTransactionList()">
+            return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px">
+                <select class="modal-input" style="width:auto;margin:0" onchange="financeProApplyTxFilter('account',this.value)">
                     <option value="">Todas las cuentas</option>
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${financeProTxFilter.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                </select>
+                <select class="modal-input" style="width:auto;margin:0" onchange="financeProApplyTxFilter('month',this.value)">
+                    <option value="">Todos los meses</option>
+                    ${FINANCE_PRO_MONTH_NAMES.map((name, i) => `<option value="${String(i + 1).padStart(2, '0')}" ${financeProTxFilter.month === String(i + 1).padStart(2, '0') ? 'selected' : ''}>${name}</option>`).join('')}
+                </select>
+                <select class="modal-input" style="width:auto;margin:0" onchange="financeProApplyTxFilter('year',this.value)">
+                    <option value="">Todos los años</option>
+                    ${financeProTxFilterYears().map(y => `<option value="${y}" ${financeProTxFilter.year === y ? 'selected' : ''}>${y}</option>`).join('')}
                 </select>
             </div>`;
         }
@@ -11062,7 +11156,9 @@
         function renderFinanceProTransactionList() {
             let txs = [...financePro.transactions];
             if (financeProTxFilter.account) txs = txs.filter(t => t.account === financeProTxFilter.account || t.transferTo === financeProTxFilter.account);
-            if (!txs.length) return `<div class="finance-empty-state">Todavía no hay movimientos. Añade uno o importa un extracto bancario.</div>`;
+            if (financeProTxFilter.year) txs = txs.filter(t => t.date.slice(0, 4) === financeProTxFilter.year);
+            if (financeProTxFilter.month) txs = txs.filter(t => t.date.slice(5, 7) === financeProTxFilter.month);
+            if (!txs.length) return `<div class="finance-empty-state">${financePro.transactions.length ? 'Ningún movimiento coincide con este filtro.' : 'Todavía no hay movimientos. Añade uno o importa un extracto bancario.'}</div>`;
             txs.sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
             const groups = {};
             txs.forEach(t => { const m = t.date.slice(0, 7); groups[m] = groups[m] || []; groups[m].push(t); });
@@ -11088,7 +11184,7 @@
             }
             const cat = financeProCategoryById(t.category);
             return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
-                <div class="finance-metric-icon ${t.type === 'income' ? 'fin-teal' : 'fin-red'} finance-pro-tx-icon">${cat ? cat.icon : '🔘'}</div>
+                <div class="finance-metric-icon ${t.type === 'income' ? 'fin-teal' : 'fin-red'} finance-pro-tx-icon">${financeProCategoryIconSvg(cat ? cat.icon : 'other')}</div>
                 <div class="finance-pro-tx-main">
                     <div class="finance-pro-tx-title">${escapeHtml(cat ? cat.name : 'Sin categoría')}</div>
                     <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)}${t.note ? ' · ' + escapeHtml(t.note) : ''} · ${financeDateLabelShort(t.date)}</div>
@@ -11138,7 +11234,7 @@
                 <div class="modal-label">Categoría</div>
                 <select class="modal-input" onchange="financeProDraftSet('category',this.value)">
                     <option value="">Sin categoría</option>
-                    ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${c.icon} ${escapeHtml(c.name)}</option>`).join('')}
+                    ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>`}
                 <div class="modal-label">Nota (opcional)</div>
                 <input class="modal-input" value="${escapeHtml(d.note || '')}" onchange="financeProDraftSet('note',this.value)" placeholder="Ej. Cena con amigos">
@@ -11189,24 +11285,34 @@
         // ============================================================
         //  FINANZAS PRO — categorías
         // ============================================================
+        let financeProNewCatIcon = 'other';
+
         function openFinanceProCategoriesModal() {
+            financeProNewCatIcon = 'other';
             showModal(`
                 <div class="modal-title">Categorías</div>
                 <div id="finance-pro-cat-list">${renderFinanceProCategoryList()}</div>
                 <div class="modal-label" style="margin-top:14px">Nueva categoría</div>
                 <input id="new-cat-name" class="modal-input" placeholder="Nombre">
-                <input id="new-cat-icon" class="modal-input" placeholder="Emoji (opcional, ej. 🎯)" maxlength="4">
                 <select id="new-cat-type" class="modal-input">
                     <option value="expense">Gasto</option>
                     <option value="income">Ingreso</option>
                 </select>
-                <button class="btn-modal-primary" onclick="addFinanceProCategory()">+ Añadir categoría</button>
+                <div class="modal-label">Icono</div>
+                <div id="new-cat-icon-picker">${renderFinanceProIconPicker()}</div>
+                <button class="btn-modal-primary" style="margin-top:10px" onclick="addFinanceProCategory()">+ Añadir categoría</button>
             `);
+        }
+
+        function renderFinanceProIconPicker() {
+            return `<div class="finance-pro-icon-picker">
+                ${FINANCE_PRO_CATEGORY_ICON_SET.map(i => `<button type="button" class="finance-pro-icon-choice ${financeProNewCatIcon === i.key ? 'selected' : ''}" title="${escapeHtml(i.label)}" onclick="financeProNewCatIcon='${i.key}';document.getElementById('new-cat-icon-picker').innerHTML=renderFinanceProIconPicker()">${i.svg}</button>`).join('')}
+            </div>`;
         }
 
         function renderFinanceProCategoryList() {
             const row = c => `<div class="finance-budget-row" style="display:flex;justify-content:space-between;align-items:center;cursor:default">
-                <span>${c.icon} ${escapeHtml(c.name)}</span>
+                <span style="display:flex;align-items:center;gap:8px"><span class="finance-metric-icon fin-slate finance-pro-tx-icon">${financeProCategoryIconSvg(c.icon)}</span>${escapeHtml(c.name)}</span>
                 <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceProCategory('${c.id}')">✕</button>
             </div>`;
             const expense = financePro.categories.filter(c => c.type === 'expense');
@@ -11217,13 +11323,13 @@
 
         async function addFinanceProCategory() {
             const name = document.getElementById('new-cat-name')?.value.trim();
-            const icon = document.getElementById('new-cat-icon')?.value.trim() || '🔘';
             const type = document.getElementById('new-cat-type')?.value || 'expense';
             if (!name) { showToast('Ponle un nombre a la categoría', true); return; }
-            financePro.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, icon, type });
+            financePro.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, icon: financeProNewCatIcon, type });
+            financeProNewCatIcon = 'other';
             document.getElementById('finance-pro-cat-list').innerHTML = renderFinanceProCategoryList();
+            document.getElementById('new-cat-icon-picker').innerHTML = renderFinanceProIconPicker();
             document.getElementById('new-cat-name').value = '';
-            document.getElementById('new-cat-icon').value = '';
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 

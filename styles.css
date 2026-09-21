@@ -122,7 +122,7 @@
            botón deja huecos (como pasó con "+ Añadir entrada este día").
            Esta única regla lo arregla de raíz para todos, presentes y
            futuros. */
-        button, input, select, textarea {
+        button, input, select, textarea, option, optgroup {
             font-family: inherit;
         }
 
@@ -4539,7 +4539,7 @@ body.beige {
 /* ============================================================
    FINANZAS PRO
    ============================================================ */
-.finance-pro-toggle-row { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border); }
+.finance-pro-banner { display:flex; justify-content:space-between; align-items:center; gap:16px; background:var(--bg-card); border:1px solid var(--border-strong); border-radius:16px; padding:14px 18px; margin-bottom:16px; }
 .finance-pro-toggle-title { font-size:13px; font-weight:800; margin-bottom:3px; }
 .finance-pro-toggle-desc { font-size:11px; color:var(--text-secondary); line-height:1.5; max-width:440px; }
 .finance-pro-switch { position:relative; width:60px; height:32px; border-radius:999px; border:2px solid var(--border-strong); background:var(--bg-input); cursor:pointer; flex-shrink:0; padding:0; transition:background .2s ease, border-color .2s ease; }
@@ -4570,6 +4570,11 @@ body.beige {
 .finance-import-preview-row { display:flex; gap:10px; padding:7px 10px; font-size:10.5px; border-bottom:1px solid var(--border); }
 .finance-import-preview-row:last-child { border-bottom:none; }
 .finance-import-preview-row span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-secondary); }
+
+.finance-pro-icon-picker { display:flex; flex-wrap:wrap; gap:6px; }
+.finance-pro-icon-choice { width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--bg-input); color:var(--text-secondary); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s ease; }
+.finance-pro-icon-choice:hover { border-color:var(--border-strong); color:var(--text-primary); }
+.finance-pro-icon-choice.selected { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast); }
 
 /* ============================================================
    ESTUDIOS
