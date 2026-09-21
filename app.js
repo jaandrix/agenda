@@ -9812,6 +9812,15 @@
         const FINANCE_ICON_REPEAT = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.5l3.5 3.5L17 9.5"/><path d="M3.5 10.5V9a4 4 0 0 1 4-4h13"/><path d="M7 21.5L3.5 18 7 14.5"/><path d="M20.5 13.5V15a4 4 0 0 1-4 4h-13"/></svg>';
         const FINANCE_ICON_STAR = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l2.95 6.1 6.55.7-4.9 4.5 1.3 6.5L12 16.9l-5.9 3.4 1.3-6.5-4.9-4.5 6.55-.7z"/></svg>';
         const FINANCE_ICON_TARGET = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.7"/><circle cx="12" cy="12" r="0.9" fill="currentColor"/></svg>';
+        const FINANCE_ICON_CHART = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10M11 21V4M18 21v-7"/><path d="M2.5 21h19"/></svg>';
+        const FINANCE_ICON_CALENDAR = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/></svg>';
+
+        // Cabecera de panel con icono de color — mismo lenguaje visual que
+        // las tarjetas de cuentas, para que cada panel de Finanzas se
+        // identifique de un vistazo (gráfica, previsión, inversión, metas).
+        function financePanelHeadIcon(iconSvg, iconClass, kicker, title) {
+            return `<div class="finance-panel-head-icon"><div class="finance-metric-icon ${iconClass}" style="width:32px;height:32px;margin:0">${iconSvg}</div><div><div class="finance-kicker">${escapeHtml(kicker)}</div><h3>${escapeHtml(title)}</h3></div></div>`;
+        }
 
         // Cambia solo la clase "blurred" y el icono del botón sobre el DOM ya
         // pintado (en vez de volver a llamar a render(), que sustituiría
@@ -10244,7 +10253,7 @@
             const goals = financeProfile.savingsGoals || [];
             return `
             <section class="finance-panel" id="finance-savings-section">
-                <div class="finance-panel-head"><div><div class="finance-kicker">A largo plazo</div><h3>Metas de ahorro</h3></div><button class="finance-icon-btn" onclick="openFinanceSavingsGoalModal()">+</button></div>
+                <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TARGET, 'fin-pink', 'A largo plazo', 'Metas de ahorro')}<button class="finance-icon-btn" title="Nueva meta" onclick="openFinanceSavingsGoalModal()">+</button></div>
                 ${goals.length ? goals.map(g => {
                     const pct = g.target > 0 ? Math.min(100, (g.current / g.target) * 100) : 0;
                     return `
@@ -10555,9 +10564,8 @@
             if (needsOnboarding) {
                 return `
                 <section class="finance-panel" id="finance-investment-section">
-                    <div class="finance-panel-head"><div><div class="finance-kicker">Largo plazo</div><h3>Inversión</h3></div></div>
-                    <div class="finance-metric-icon fin-purple" style="width:44px;height:44px;margin:4px auto 12px">${FINANCE_ICON_TREND}</div>
-                    <div class="finance-empty-line" style="text-align:center">Indica tu punto de partida — cuánto llevas invertido y cuánto vale ahora mismo — para poder comparar aportaciones con valor actual mes a mes.</div>
+                    <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}</div>
+                    <div class="finance-empty-line" style="text-align:center;margin-top:4px">Indica tu punto de partida — cuánto llevas invertido y cuánto vale ahora mismo — para poder comparar aportaciones con valor actual mes a mes.</div>
                     <button class="finance-oneoff-btn" style="margin-top:12px" onclick="openInvestmentOnboarding()">Configurar inversión</button>
                 </section>`;
             }
@@ -10566,7 +10574,7 @@
             const gainCls = stats.gain > 0 ? 'positive' : stats.gain < 0 ? 'negative' : 'neutral';
             return `
             <section class="finance-panel" id="finance-investment-section">
-                <div class="finance-panel-head"><div><div class="finance-kicker">Largo plazo</div><h3>Inversión</h3></div><button class="finance-icon-btn" title="Ajustes" onclick="openInvestmentAccountEditor()">✎</button></div>
+                <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}<button class="finance-icon-btn" title="Ajustes" onclick="openInvestmentAccountEditor()">✎</button></div>
                 <div class="finance-invest-headline">
                     <div><span>Valor actual</span><strong>${financeMoney(stats.valorActual)}</strong></div>
                     <span class="finance-trend-chip ${gainCls}">${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}${stats.gainPct !== null ? ` · ${stats.gain >= 0 ? '+' : ''}${stats.gainPct.toFixed(1)}%` : ''}</span>
@@ -10667,12 +10675,12 @@
                     <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">Actualizar ahora</button>
                 </div>` : ''}
 
-                <section class="finance-panel finance-chart-panel" id="finance-floating-chart-wrap">
+                <section class="finance-panel finance-chart-panel">
                     <div class="finance-panel-head">
-                        <div><div class="finance-kicker">Evolución</div><h3>Tu patrimonio en el tiempo</h3></div>
+                        ${financePanelHeadIcon(FINANCE_ICON_CHART, 'fin-slate', 'Evolución', 'Tu patrimonio en el tiempo')}
                         <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceChartSeriesConfig()">⚙ Elegir qué mostrar</button>
                     </div>
-                    <div onwheel="financeChartWheelZoom(event)" title="Rueda del ratón: acercar/alejar el periodo mostrado">
+                    <div id="finance-floating-chart-wrap" onwheel="financeChartWheelZoom(event)" title="Rueda del ratón: acercar/alejar el periodo mostrado">
                         ${renderFinanceFloatingChart()}
                     </div>
                 </section>
@@ -10691,6 +10699,7 @@
                             <span>Progreso</span>
                             <strong>${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</strong>
                             <div class="finance-progress finance-progress-large"><span style="width:${totalPct === null ? 0 : totalPct}%"></span></div>
+                            <small>${remainingToTarget <= 0 && target > 0 ? '🎉 Objetivo alcanzado' : target > 0 ? `Faltan ${financeMoney(remainingToTarget)} · ${monthsLeft} meses` : 'Define un objetivo para ver el camino'}</small>
                         </div>
                     </div>
                     <div class="finance-networth-actions">
@@ -10699,8 +10708,8 @@
                     </div>
                 </section>
 
-                <div id="finance-accounts-section" style="display:flex;justify-content:space-between;align-items:center;margin:24px 0 10px">
-                    <div class="finance-kicker" style="margin-bottom:0">Cuentas</div>
+                <div id="finance-accounts-section" class="finance-section-head">
+                    <div class="finance-kicker">Cuentas</div>
                     <button class="finance-oneoff-btn" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
                 </div>
                 <div class="finance-metrics-grid">
@@ -10712,32 +10721,32 @@
                     ${renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR, 'fin-gold')}
                 </div>
 
-                <div class="finance-grid-2" style="margin-top:18px">
+                <div class="finance-section-head" style="margin-top:24px">
+                    <div class="finance-kicker">Planificación a futuro</div>
+                </div>
+                <div class="finance-grid-3">
                     <section class="finance-panel" id="finance-forecast-section">
-                        <div class="finance-panel-head"><div><div class="finance-kicker">Previsión</div><h3>Sueldo y aportaciones</h3></div><button class="finance-icon-btn" onclick="openForecastProfileEditor()">✎</button></div>
-                        <div class="finance-income-highlight"><span>Sueldo actual</span><strong>${financeMoney(fc.salary || 0)}</strong></div>
-                        <div class="finance-income-highlight"><span>Meses de contrato</span><strong>${fc.contractMonths || '—'}</strong></div>
-                        <div class="finance-income-highlight"><span>Ampliación emergencia / mes</span><strong>${financeMoney(fc.emergencyMonthlyPlan || 0)}</strong></div>
-                        <div class="finance-income-highlight" style="border-bottom:none"><span>Ampliación vacaciones / mes</span><strong>${financeMoney(fc.vacationMonthlyPlan || 0)}</strong></div>
-                        <div class="finance-empty-line" style="margin-top:8px">Suscripciones y gastos fijos: ${financeMoney(recurring)}/mes (se descuentan solos de la provisión).</div>
+                        <div class="finance-panel-head">
+                            ${financePanelHeadIcon(FINANCE_ICON_CALENDAR, 'fin-indigo', 'Previsión', 'Sueldo y aportaciones')}
+                            <button class="finance-icon-btn" title="Editar previsión" onclick="openForecastProfileEditor()">✎</button>
+                        </div>
+                        <div class="finance-stat-grid">
+                            <div class="finance-stat-box"><span>Sueldo actual</span><strong>${financeMoney(fc.salary || 0)}</strong></div>
+                            <div class="finance-stat-box"><span>Meses de contrato</span><strong>${fc.contractMonths || '—'}</strong></div>
+                            <div class="finance-stat-box"><span>+Emergencia/mes</span><strong>${financeMoney(fc.emergencyMonthlyPlan || 0)}</strong></div>
+                            <div class="finance-stat-box"><span>+Vacaciones/mes</span><strong>${financeMoney(fc.vacationMonthlyPlan || 0)}</strong></div>
+                        </div>
+                        <div class="finance-empty-line" style="margin-top:10px">Suscripciones y gastos fijos: ${financeMoney(recurring)}/mes (se descuentan solos de la provisión).</div>
                     </section>
 
                     ${renderInvestmentPanel()}
+
+                    ${renderFinanceSavingsGoals()}
                 </div>
 
-                ${renderFinanceSavingsGoals()}
-
-                <section class="finance-goal-bar ${remainingToTarget <= 0 && target > 0 ? 'finance-goal-bar-complete' : ''}">
-                    <div class="finance-metric-icon fin-teal finance-goal-bar-icon">${FINANCE_ICON_TARGET}</div>
-                    <div class="finance-goal-bar-body">
-                        <span class="finance-goal-bar-text">${remainingToTarget <= 0 && target > 0
-                            ? '<strong>Objetivo alcanzado</strong>'
-                            : `<strong>Camino al objetivo</strong> · ${target > 0 ? `faltan ${financeMoney(remainingToTarget)}` : 'objetivo sin definir'} · ${monthsLeft} meses restantes`}</span>
-                        <div class="finance-progress finance-goal-bar-progress"><span style="width:${totalPct === null ? 0 : Math.min(100, totalPct)}%"></span></div>
-                    </div>
-                    <strong class="finance-goal-bar-pct">${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</strong>
-                </section>
-
+                <div class="finance-section-head" style="margin-top:6px">
+                    <div class="finance-kicker">Ajustes</div>
+                </div>
                 <div class="finance-dashboard-foot-actions">
                     <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()">✎ Corregir registros</button>
                     <label class="finance-foot-reminder">
