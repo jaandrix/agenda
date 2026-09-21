@@ -837,7 +837,7 @@
         function renderNavButtons(sections, mobile) {
             return sections.map(sec => `<span class="nav-label">${escapeHtml(sec.label)}</span>` +
                 sec.items.filter(i => !isSectionHidden(i.view)).map(i => mobile
-                    ? `<button onclick="switchView('${i.view}');toggleMobileMenu()" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}">${escapeHtml(i.text)}</button>`
+                    ? `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}">${escapeHtml(i.text)}</button>`
                     : `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span></button>`
                 ).join('')
             ).join('');
@@ -859,7 +859,7 @@
                     <div class="nav-hidden-list">
                         ${items.map(x => `
                             <div class="nav-hidden-item">
-                                <button onclick="switchView('${x.view}')${mobile ? ';toggleMobileMenu()' : ''}">${escapeHtml(x.label)}</button>
+                                <button onclick="switchView('${x.view}')">${escapeHtml(x.label)}</button>
                                 <button class="nav-hidden-restore" title="Mostrar de nuevo" onclick="event.stopPropagation();showSection('${x.view}')">↺</button>
                             </div>
                         `).join('')}
@@ -9859,6 +9859,8 @@
         const FINANCE_ICON_UPLOAD = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>';
         const FINANCE_ICON_SWAP = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14M7 17l-3.5-3.5M7 17l3.5-3.5"/><path d="M17 21V7M17 7l3.5 3.5M17 7l-3.5 3.5"/></svg>';
         const FINANCE_ICON_ALERT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v6"/><circle cx="12" cy="16.5" r="0.75" fill="currentColor" stroke="none"/></svg>';
+        const FINANCE_ICON_SCALE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M7 7h10"/><path d="M4 7l-2.5 5.5A2.7 2.7 0 0 0 4 16a2.7 2.7 0 0 0 2.5-3.5z"/><path d="M20 7l-2.5 5.5A2.7 2.7 0 0 0 20 16a2.7 2.7 0 0 0 2.5-3.5z"/></svg>';
+        const FINANCE_ICON_STATS = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>';
 
         // ============================================================
         //  FINANZAS PRO — iconos de categoría (sin emoticonos: mismo
@@ -9883,6 +9885,12 @@
             { key: 'trend', label: 'Inversiones', svg: FINANCE_ICON_TREND },
             { key: 'gift', label: 'Regalos', svg: financeProSvgIcon('<rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 9h18M12 9v12"/><path d="M12 9C10 4 4 5 5 8c.6 1.8 4 1 7 1zM12 9c2-5 8-4 7-1-.6 1.8-4 1-7 1z"/>') },
             { key: 'repeat', label: 'Reembolsos', svg: FINANCE_ICON_REPEAT },
+            { key: 'plane', label: 'Viajes', svg: financeProSvgIcon('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>') },
+            { key: 'paw', label: 'Mascotas', svg: financeProSvgIcon('<circle cx="12" cy="15" r="4" fill="currentColor" stroke="none"/><circle cx="6" cy="9" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="5" r="2" fill="currentColor" stroke="none"/><circle cx="14" cy="5" r="2" fill="currentColor" stroke="none"/><circle cx="18" cy="9" r="2" fill="currentColor" stroke="none"/>') },
+            { key: 'dumbbell', label: 'Deporte', svg: financeProSvgIcon('<path d="M7 12h10"/><rect x="2" y="9" width="4" height="6" rx="1.2"/><rect x="18" y="9" width="4" height="6" rx="1.2"/><rect x="5.5" y="10.2" width="2.2" height="3.6" rx="0.6"/><rect x="16.3" y="10.2" width="2.2" height="3.6" rx="0.6"/>') },
+            { key: 'laptop', label: 'Tecnología', svg: financeProSvgIcon('<rect x="4" y="4" width="16" height="10" rx="1.5"/><path d="M2 18h20"/><path d="M9 18l1-2h4l1 2"/>') },
+            { key: 'sparkle', label: 'Bienestar y belleza', svg: financeProSvgIcon('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>') },
+            { key: 'key', label: 'Alquileres', svg: financeProSvgIcon('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/>') },
             { key: 'other', label: 'Otros', svg: financeProSvgIcon('<circle cx="12" cy="12" r="8"/>') }
         ];
         function financeProCategoryIconSvg(key) {
@@ -10924,7 +10932,13 @@
                 { id: 'cat_inversion_ing', name: 'Inversiones', icon: 'trend', type: 'income', color: FINANCE_PRO_PALETTE[12] },
                 { id: 'cat_regalo', name: 'Regalos', icon: 'gift', type: 'income', color: FINANCE_PRO_PALETTE[13] },
                 { id: 'cat_reembolso', name: 'Reembolsos', icon: 'repeat', type: 'income', color: FINANCE_PRO_PALETTE[14] },
-                { id: 'cat_otros_ingreso', name: 'Otros ingresos', icon: 'other', type: 'income', color: FINANCE_PRO_PALETTE[15] }
+                { id: 'cat_otros_ingreso', name: 'Otros ingresos', icon: 'other', type: 'income', color: FINANCE_PRO_PALETTE[15] },
+                { id: 'cat_viajes', name: 'Viajes y vacaciones', icon: 'plane', type: 'expense', color: FINANCE_PRO_PALETTE[8] },
+                { id: 'cat_mascotas', name: 'Mascotas', icon: 'paw', type: 'expense', color: FINANCE_PRO_PALETTE[9] },
+                { id: 'cat_deporte', name: 'Deporte', icon: 'dumbbell', type: 'expense', color: FINANCE_PRO_PALETTE[2] },
+                { id: 'cat_tecnologia', name: 'Tecnología', icon: 'laptop', type: 'expense', color: FINANCE_PRO_PALETTE[6] },
+                { id: 'cat_bienestar', name: 'Bienestar y belleza', icon: 'sparkle', type: 'expense', color: FINANCE_PRO_PALETTE[13] },
+                { id: 'cat_alquileres', name: 'Alquileres', icon: 'key', type: 'income', color: FINANCE_PRO_PALETTE[7] }
             ];
         }
 
@@ -11045,7 +11059,7 @@
         // ============================================================
         //  FINANZAS PRO — gráficas (saldo acumulado mes a mes)
         // ============================================================
-        function financeProMonthlyBalances(key) {
+        function financeProMonthlyBalances(key, rangeMonths) {
             const txs = financePro.transactions;
             if (!txs.length) return [];
             const sorted = [...txs].sort((a, b) => a.date.localeCompare(b.date));
@@ -11063,7 +11077,7 @@
             let cursor = new Date(Number(startMonth.slice(0, 4)), Number(startMonth.slice(5, 7)) - 1, 1);
             const end = new Date(Number(endMonth.slice(0, 4)), Number(endMonth.slice(5, 7)) - 1, 1);
             while (cursor <= end) { months.push(financeMonthKey(cursor)); cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1); }
-            return months.map(m => {
+            const results = months.map(m => {
                 const cutoff = m + '-31';
                 let bal = keys.reduce((s, k) => s + Number(financePro.accounts[k]?.balance0 || 0), 0);
                 txs.forEach(t => {
@@ -11077,6 +11091,11 @@
                 });
                 return { month: m, balance: bal };
             });
+            // El saldo de cada mes ya se calcula desde cero hasta ese mes, así
+            // que recortar los primeros puntos para un rango más corto (3M,
+            // 6M, 1A) no requiere volver a calcular nada — el primer punto que
+            // quede ya lleva arrastrado todo lo anterior.
+            return (rangeMonths && results.length > rangeMonths) ? results.slice(-rangeMonths) : results;
         }
 
         function renderFinanceProLineChart(dataPoints, color, idSuffix, compact) {
@@ -11101,6 +11120,14 @@
             // negativo pero "menos negativo que antes" dibuja una línea
             // ascendente indistinguible de una que de verdad está en positivo.
             const zeroLine = (minVal < 0 && maxVal > 0) ? `<line x1="${padX}" y1="${y(0).toFixed(1)}" x2="${W - padX}" y2="${y(0).toFixed(1)}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="1.5,3"/>${compact ? '' : `<text x="${padX}" y="${(y(0) - 4).toFixed(1)}" font-size="8" fill="var(--text-muted)">0€</text>`}` : '';
+            // Puntos: uno visible pequeño + uno invisible más grande encima
+            // para ampliar el área donde el hover muestra el valor exacto,
+            // sin que el punto dibujado se vea desproporcionado.
+            const points = compact ? '' : dataPoints.map((d, i) => {
+                const tip = escapeHtml(`${financeMonthLabel(d.month)}: ${financeMoney(d.balance)}`).replace(/"/g, '&quot;');
+                return `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="10" fill="transparent" onmousemove="financeProChartTooltipShow(event,'${idSuffix}-${i}',&quot;${tip}&quot;)" onmouseleave="financeProChartTooltipHide('${idSuffix}-${i}')" onclick="financeProChartTooltipShow(event,'${idSuffix}-${i}',&quot;${tip}&quot;)"/>
+                <circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3" fill="var(--bg-card)" stroke="${color}" stroke-width="2" style="pointer-events:none"/>`;
+            }).join('');
             return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:${compact ? 140 : 280}px;display:block">
                 <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" style="stop-color:${color};stop-opacity:0.25"/>
@@ -11109,9 +11136,148 @@
                 <path d="${area}" fill="url(#${gradId})" stroke="none"/>
                 ${zeroLine}
                 <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                ${compact ? '' : dataPoints.map((d, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3" fill="var(--bg-card)" stroke="${color}" stroke-width="2"/>`).join('')}
+                ${points}
                 ${labels}
             </svg>`;
+        }
+
+        // Tooltip flotante compartido por todas las gráficas PRO — un único
+        // div reutilizado (no uno por punto) para no ensuciar el DOM.
+        function financeProChartTooltipShow(evt, pointId, text) {
+            let tip = document.getElementById('finance-pro-chart-tooltip');
+            if (!tip) {
+                tip = document.createElement('div');
+                tip.id = 'finance-pro-chart-tooltip';
+                tip.className = 'finance-pro-chart-tooltip';
+                document.body.appendChild(tip);
+            }
+            tip.dataset.point = pointId;
+            tip.textContent = text;
+            tip.style.display = 'block';
+            const x = evt.clientX, y = evt.clientY;
+            tip.style.left = Math.min(x + 14, window.innerWidth - tip.offsetWidth - 10) + 'px';
+            tip.style.top = Math.max(y - 34, 6) + 'px';
+        }
+        function financeProChartTooltipHide(pointId) {
+            const tip = document.getElementById('finance-pro-chart-tooltip');
+            if (tip && (!pointId || tip.dataset.point === pointId)) tip.style.display = 'none';
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — rango de la gráfica y estadísticas
+        // ============================================================
+        let financeProChartRange = 'all';
+        const FINANCE_PRO_CHART_RANGES = [
+            { key: '3m', label: '3M', months: 3 },
+            { key: '6m', label: '6M', months: 6 },
+            { key: '1y', label: '1A', months: 12 },
+            { key: 'all', label: 'Todo', months: null }
+        ];
+
+        function financeProSetChartRange(key) {
+            financeProChartRange = key;
+            const panel = document.getElementById('finance-pro-chart-panel');
+            if (panel) panel.outerHTML = renderFinanceProChartPanel();
+        }
+
+        function renderFinanceProChartPanel() {
+            const total = financeProTotalBalance();
+            const rangeDef = FINANCE_PRO_CHART_RANGES.find(r => r.key === financeProChartRange) || FINANCE_PRO_CHART_RANGES[3];
+            const totalSeries = financeProMonthlyBalances(null, rangeDef.months);
+            return `<section class="finance-panel finance-chart-panel" id="finance-pro-chart-panel">
+                <div class="finance-panel-head">
+                    ${financePanelHeadIcon(FINANCE_ICON_CHART, 'fin-slate', 'Total PRO', 'Efectivo + Bancos + Online')}
+                    <button class="finance-icon-btn" title="Ver estadísticas" onclick="openFinanceProStatsModal()">${FINANCE_ICON_STATS}</button>
+                </div>
+                <div class="finance-networth-value finance-networth-value-compact" style="margin:2px 0 10px">${financeMoney(total)}</div>
+                <div class="finance-pro-range-tabs">
+                    ${FINANCE_PRO_CHART_RANGES.map(r => `<button class="${financeProChartRange === r.key ? 'active' : ''}" onclick="financeProSetChartRange('${r.key}')">${r.label}</button>`).join('')}
+                </div>
+                ${renderFinanceProLineChart(totalSeries, 'var(--text-primary)', 'total', false)}
+            </section>`;
+        }
+
+        function financeProMonthTotals(monthKey) {
+            let income = 0, expense = 0;
+            financePro.transactions.forEach(t => {
+                if (t.date.slice(0, 7) !== monthKey) return;
+                if (t.type === 'income') income += Number(t.amount) || 0;
+                else if (t.type === 'expense') expense += Number(t.amount) || 0;
+            });
+            return { income, expense };
+        }
+
+        function financeProPctLabel(pct) {
+            if (pct === null || !Number.isFinite(pct)) return '—';
+            return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+        }
+
+        function financeProStatsData() {
+            const now = financeMonthKey();
+            const prevDate = new Date(); prevDate.setMonth(prevDate.getMonth() - 1);
+            const prevMonth = financeMonthKey(prevDate);
+            const curTotals = financeProMonthTotals(now);
+            const prevTotals = financeProMonthTotals(prevMonth);
+            const avgMonths = [];
+            for (let i = 1; i <= 6; i++) { const d = new Date(); d.setMonth(d.getMonth() - i); avgMonths.push(financeMonthKey(d)); }
+            const avgData = avgMonths.map(m => financeProMonthTotals(m));
+            const avgExpense = avgData.reduce((s, t) => s + t.expense, 0) / avgMonths.length;
+            const avgIncome = avgData.reduce((s, t) => s + t.income, 0) / avgMonths.length;
+            const series = financeProMonthlyBalances(null);
+            const firstBal = series.length ? series[0].balance : 0;
+            const lastBal = series.length ? series[series.length - 1].balance : financeProTotalBalance();
+            const prevBal = series.length >= 2 ? series[series.length - 2].balance : null;
+            const pctSinceStart = firstBal ? ((lastBal - firstBal) / Math.abs(firstBal)) * 100 : null;
+            const pctVsPrevMonth = (prevBal !== null && prevBal !== 0) ? ((lastBal - prevBal) / Math.abs(prevBal)) * 100 : null;
+            const catTotals = {};
+            financePro.transactions.forEach(t => {
+                if (t.type !== 'expense' || t.date.slice(0, 7) !== now) return;
+                const k = t.category || '_none';
+                catTotals[k] = (catTotals[k] || 0) + (Number(t.amount) || 0);
+            });
+            let topCat = null, topAmt = 0;
+            Object.keys(catTotals).forEach(k => { if (catTotals[k] > topAmt) { topAmt = catTotals[k]; topCat = k; } });
+            const savingsRate = curTotals.income ? ((curTotals.income - curTotals.expense) / curTotals.income) * 100 : null;
+            return { now, curTotals, prevTotals, avgExpense, avgIncome, pctSinceStart, pctVsPrevMonth, topCat, topAmt, savingsRate };
+        }
+
+        function openFinanceProStatsModal() {
+            const s = financeProStatsData();
+            const expVsPrev = s.prevTotals.expense ? ((s.curTotals.expense - s.prevTotals.expense) / s.prevTotals.expense) * 100 : null;
+            const incVsPrev = s.prevTotals.income ? ((s.curTotals.income - s.prevTotals.income) / s.prevTotals.income) * 100 : null;
+            const expVsAvg = s.avgExpense ? ((s.curTotals.expense - s.avgExpense) / s.avgExpense) * 100 : null;
+            const incVsAvg = s.avgIncome ? ((s.curTotals.income - s.avgIncome) / s.avgIncome) * 100 : null;
+            const topCatObj = s.topCat && s.topCat !== '_none' ? financeProCategoryById(s.topCat) : null;
+            showModal(`
+                <div class="modal-title">Estadísticas · ${escapeHtml(financeMonthLabel(s.now))}</div>
+                <div class="finance-stats-grid">
+                    <div class="finance-stats-card">
+                        <div class="finance-stats-label">Gastos este mes</div>
+                        <div class="finance-stats-value finance-negative">${financeMoney(s.curTotals.expense)}</div>
+                        <div class="finance-stats-sub">${financeProPctLabel(expVsPrev)} vs mes anterior · ${financeProPctLabel(expVsAvg)} vs media (6m)</div>
+                    </div>
+                    <div class="finance-stats-card">
+                        <div class="finance-stats-label">Ingresos este mes</div>
+                        <div class="finance-stats-value finance-positive">${financeMoney(s.curTotals.income)}</div>
+                        <div class="finance-stats-sub">${financeProPctLabel(incVsPrev)} vs mes anterior · ${financeProPctLabel(incVsAvg)} vs media (6m)</div>
+                    </div>
+                    <div class="finance-stats-card">
+                        <div class="finance-stats-label">Evolución del saldo</div>
+                        <div class="finance-stats-value">${financeProPctLabel(s.pctVsPrevMonth)}</div>
+                        <div class="finance-stats-sub">vs mes anterior · ${financeProPctLabel(s.pctSinceStart)} desde el primer registro</div>
+                    </div>
+                    <div class="finance-stats-card">
+                        <div class="finance-stats-label">Tasa de ahorro</div>
+                        <div class="finance-stats-value">${s.savingsRate === null ? '—' : financeProPctLabel(s.savingsRate)}</div>
+                        <div class="finance-stats-sub">de lo ingresado este mes que no se ha gastado</div>
+                    </div>
+                    <div class="finance-stats-card" style="grid-column:1/-1">
+                        <div class="finance-stats-label">Categoría con más gasto este mes</div>
+                        <div class="finance-stats-value">${topCatObj ? escapeHtml(topCatObj.name) : (s.topCat === '_none' ? 'Sin categoría' : '—')}</div>
+                        <div class="finance-stats-sub">${s.topAmt ? financeMoney(s.topAmt) + ' este mes' : 'Sin gastos registrados todavía'}</div>
+                    </div>
+                </div>
+            `);
         }
 
         const FINANCE_PRO_ACCOUNT_META = {
@@ -11132,11 +11298,52 @@
             <div class="finance-panel finance-pro-account-card">
                 <div class="finance-panel-head">
                     ${financePanelHeadIcon(meta.icon, meta.badge, 'Cuenta', acc.name)}
-                    <button class="finance-icon-btn" title="Movimiento en ${escapeHtml(acc.name)}" onclick="openFinanceProTransactionModal(null,'${key}')">+</button>
+                    <div style="display:flex;gap:6px">
+                        <button class="finance-icon-btn" title="Modificar saldo de ${escapeHtml(acc.name)}" onclick="openFinanceProBalanceAdjustModal('${key}')">${FINANCE_ICON_SCALE}</button>
+                        <button class="finance-icon-btn" title="Movimiento en ${escapeHtml(acc.name)}" onclick="openFinanceProTransactionModal(null,'${key}')">+</button>
+                    </div>
                 </div>
                 <div class="finance-networth-value finance-networth-value-compact" style="margin:4px 0 10px">${financeMoney(balance)}</div>
                 <div class="finance-pro-mini-chart">${renderFinanceProLineChart(series, meta.color, key, true)}</div>
             </div>`;
+        }
+
+        // Modificar saldo: el usuario pone el saldo real de la cuenta y se
+        // crea un único movimiento "Ajuste de saldo" con la diferencia, en
+        // vez de tener que editar el saldo inicial (que desplazaría todo el
+        // histórico) o añadir movimientos sueltos para cuadrar la cuenta.
+        function openFinanceProBalanceAdjustModal(key) {
+            const acc = financePro.accounts[key];
+            const current = financeProAccountBalance(key);
+            window._financeProAdjustKey = key;
+            showModal(`
+                <div class="modal-title">Modificar saldo · ${escapeHtml(acc.name)}</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Saldo actual: ${financeMoney(current)}. Escribe el saldo real y se creará un movimiento "Ajuste de saldo" con la diferencia para cuadrarlo, sin tocar tu histórico.</div>
+                <div class="modal-label">Saldo real (€)</div>
+                <input class="modal-input" id="pro-acc-adjust-target" type="number" step="0.01" value="${current.toFixed(2)}">
+                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProBalanceAdjust()">Guardar</button>
+            `);
+        }
+
+        async function saveFinanceProBalanceAdjust() {
+            const key = window._financeProAdjustKey;
+            const target = Number(document.getElementById('pro-acc-adjust-target')?.value);
+            if (!Number.isFinite(target)) { showToast('Introduce un importe válido', true); return; }
+            const current = financeProAccountBalance(key);
+            const diff = Math.round((target - current) * 100) / 100;
+            closeModal();
+            if (Math.abs(diff) < 0.01) { showToast('El saldo ya coincidía'); return; }
+            financePro.transactions.push({
+                id: 'ptx_adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                date: new Date().toISOString().slice(0, 10),
+                account: key,
+                type: diff > 0 ? 'income' : 'expense',
+                amount: Math.abs(diff),
+                note: 'Ajuste de saldo'
+            });
+            render();
+            try { await saveData(); showToast(`Saldo ajustado · ${diff > 0 ? '+' : '-'}${financeMoney(Math.abs(diff))}`); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function financeProCategorySpend(catId, monthKey) {
@@ -11180,21 +11387,14 @@
         }
 
         function renderFinanceProDashboard() {
-            const total = financeProTotalBalance();
-            const totalSeries = financeProMonthlyBalances(null);
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
                 <div class="finance-toolbar-row">${renderFinanceProInlineToggle()}${blurToggleBtn}</div>
                 ${renderFinanceProSyncWarning()}
+                ${renderFinanceProReviewBanner()}
 
-                <section class="finance-panel finance-chart-panel">
-                    <div class="finance-panel-head">
-                        ${financePanelHeadIcon(FINANCE_ICON_CHART, 'fin-slate', 'Total PRO', 'Efectivo + Bancos + Online')}
-                    </div>
-                    <div class="finance-networth-value finance-networth-value-compact" style="margin:2px 0 10px">${financeMoney(total)}</div>
-                    ${renderFinanceProLineChart(totalSeries, 'var(--text-primary)', 'total', false)}
-                </section>
+                ${renderFinanceProChartPanel()}
 
                 <div class="finance-section-head" style="margin-top:20px">
                     <div class="finance-kicker">Cuentas</div>
@@ -11211,6 +11411,7 @@
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         <button class="finance-oneoff-btn" onclick="openFinanceProCategoriesModal()">Categorías</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
+                        <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">Registro rápido</button>
                         <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
                     </div>
                 </div>
@@ -11245,6 +11446,122 @@
             closeModal();
             render();
             try { await saveData(); showToast('Cuentas actualizadas'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — registro rápido (móvil) y ajuste posterior
+        // ============================================================
+        // Pensado para registrar un movimiento en el móvil en el mínimo de
+        // toques posible: importe + tocar la cuenta = guardado al instante,
+        // sin categoría. Queda marcado "needsReview" y aparece en el aviso
+        // "Ajustar movimientos" para completarlo con calma luego (categoría,
+        // y la cuenta si hiciera falta corregirla).
+        function openFinanceProQuickCaptureModal() {
+            window._financeProQuickDraft = { type: 'expense', amount: '' };
+            showModal(`
+                <div class="modal-title">Registro rápido</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">Escribe el importe y toca la cuenta — se guarda al instante sin categoría. Lo ajustas luego desde "Ajustar movimientos".</div>
+                <div id="finance-quick-capture-body">${renderFinanceProQuickCaptureBody()}</div>
+            `);
+        }
+
+        function renderFinanceProQuickCaptureBody() {
+            const d = window._financeProQuickDraft;
+            return `
+                <div class="finance-pro-type-tabs">
+                    <button class="${d.type === 'expense' ? 'active' : ''}" onclick="financeProQuickSet('type','expense')">Gasto</button>
+                    <button class="${d.type === 'income' ? 'active' : ''}" onclick="financeProQuickSet('type','income')">Ingreso</button>
+                </div>
+                <input class="modal-input finance-quick-amount-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" value="${d.amount}" oninput="financeProQuickSet('amount', this.value)" autofocus>
+                <div class="modal-label" style="margin-top:12px">Toca la cuenta para guardar</div>
+                <div class="finance-quick-account-row">
+                    ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<button class="finance-quick-account-btn" onclick="financeProQuickSave('${k}')">${FINANCE_PRO_ACCOUNT_META[k].icon}<span>${escapeHtml(financePro.accounts[k].name)}</span></button>`).join('')}
+                </div>
+            `;
+        }
+
+        function financeProQuickSet(key, value) {
+            window._financeProQuickDraft[key] = value;
+            if (key === 'type') document.getElementById('finance-quick-capture-body').innerHTML = renderFinanceProQuickCaptureBody();
+        }
+
+        async function financeProQuickSave(account) {
+            const d = window._financeProQuickDraft;
+            const amount = Math.abs(Number(d.amount));
+            if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
+            financePro.transactions.push({
+                id: 'ptx_q_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                date: new Date().toISOString().slice(0, 10),
+                account, type: d.type, amount, needsReview: true
+            });
+            window._financeProQuickDraft = null;
+            closeModal();
+            render();
+            try { await saveData(); showToast('Guardado · ajústalo luego en «Ajustar movimientos»'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function financeProPendingReviewCount() {
+            return financePro.transactions.filter(t => t.needsReview).length;
+        }
+
+        function renderFinanceProReviewBanner() {
+            const pending = financeProPendingReviewCount();
+            if (!pending) return '';
+            return `<div class="finance-sync-warning finance-review-banner" onclick="openFinanceProReviewModal()" role="button" tabindex="0">
+                <div class="finance-metric-icon fin-blue finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>
+                <div>
+                    <strong>${pending} movimiento${pending === 1 ? '' : 's'} rápido${pending === 1 ? '' : 's'} por ajustar</strong>
+                    <span>Toca para ponerles categoría y revisar la cuenta.</span>
+                </div>
+            </div>`;
+        }
+
+        function openFinanceProReviewModal() {
+            showModal(`
+                <div class="modal-title">Ajustar movimientos rápidos</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Movimientos guardados desde el registro rápido. Ponles categoría (y corrige la cuenta si hace falta) para completarlos.</div>
+                <div id="finance-pro-review-list">${renderFinanceProReviewList()}</div>
+            `);
+        }
+
+        function renderFinanceProReviewList() {
+            const pending = financePro.transactions.filter(t => t.needsReview).sort((a, b) => b.date.localeCompare(a.date));
+            if (!pending.length) return `<div class="finance-empty-state">No queda ningún movimiento rápido por ajustar.</div>`;
+            return pending.map(t => {
+                const cats = financePro.categories.filter(c => c.type === t.type);
+                return `<div class="finance-review-row">
+                    <div class="finance-review-row-head">
+                        <span class="finance-pro-tx-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</span>
+                        <span class="finance-metric-note">${financeDateLabelShort(t.date)}</span>
+                    </div>
+                    <select class="modal-input" style="margin:6px 0" onchange="financeProReviewSetAccount('${t.id}', this.value)">
+                        ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${t.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                    </select>
+                    <select class="modal-input" onchange="financeProReviewSetCategory('${t.id}', this.value)">
+                        <option value="">Sin categoría</option>
+                        ${cats.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+                    </select>
+                </div>`;
+            }).join('');
+        }
+
+        async function financeProReviewSetAccount(id, value) {
+            const t = financePro.transactions.find(x => x.id === id);
+            if (!t) return;
+            t.account = value;
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function financeProReviewSetCategory(id, value) {
+            const t = financePro.transactions.find(x => x.id === id);
+            if (!t) return;
+            t.category = value || undefined;
+            t.needsReview = false;
+            const list = document.getElementById('finance-pro-review-list');
+            if (list) list.innerHTML = renderFinanceProReviewList();
+            render();
+            try { await saveData(); showToast('Movimiento ajustado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================
