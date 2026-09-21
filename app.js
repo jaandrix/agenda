@@ -472,10 +472,6 @@
             ultimoCierreMensual: null
         };
         let financeSubView = 'menu';
-        // Vista activa dentro de Finanzas cuando el modo PRO está activado
-        // (Resumen de siempre vs. Movimientos detallados). No se guarda:
-        // cada sesión arranca en el resumen.
-        let financeProView = false;
         // ============================================================
         //  FINANZAS PRO — registro de movimientos por cuenta (Efectivo /
         //  Bancos / Online), categorías al estilo Wallet, e importación
@@ -9851,6 +9847,7 @@
         const FINANCE_ICON_GLOBE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.8 2.5 4.3 5.7 4.3 9s-1.5 6.5-4.3 9c-2.8-2.5-4.3-5.7-4.3-9s1.5-6.5 4.3-9z"/></svg>';
         const FINANCE_ICON_UPLOAD = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>';
         const FINANCE_ICON_SWAP = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14M7 17l-3.5-3.5M7 17l3.5-3.5"/><path d="M17 21V7M17 7l3.5 3.5M17 7l-3.5 3.5"/></svg>';
+        const FINANCE_ICON_ALERT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v6"/><circle cx="12" cy="16.5" r="0.75" fill="currentColor" stroke="none"/></svg>';
 
         // ============================================================
         //  FINANZAS PRO — iconos de categoría (sin emoticonos: mismo
@@ -9993,7 +9990,7 @@
                 return `<div class="finance-empty-state">Aún no hay histórico. Edita tus cifras o usa <strong>Corregir registros</strong> abajo para registrar meses anteriores y empezar a ver la evolución.</div>`;
             }
 
-            const W = 950, H = 220, padX = 26, padT = 30, padB = 26;
+            const W = 950, H = 220, padX = 48, padT = 30, padB = 26;
             const innerW = W - padX * 2, innerH = H - padT - padB;
             const allValues = data.flatMap(d => series.map(s => d[s.id]));
             const maxVal = Math.max(1, target, ...allValues) * 1.08;
@@ -10005,13 +10002,16 @@
                 <line x1="${padX}" y1="${y(target).toFixed(1)}" x2="${W - padX}" y2="${y(target).toFixed(1)}" stroke="var(--text-muted)" stroke-width="1.3" stroke-dasharray="1.5,4" stroke-linecap="round"/>
                 <text x="${padX}" y="${(y(target) - 6).toFixed(1)}" font-size="9" fill="var(--text-muted)">Objetivo · ${financeMoney(target)}</text>` : '';
 
-            // Valor en pequeño encima de cada punto, para poder leer la
-            // gráfica sin tener que pasar el ratón por cada uno.
-            const dotsOf = (s, sIdx) => data.map((d, i) => `
+            // Valores de guía en el eje Y (0 / mitad / máximo), para poder
+            // situar cada punto sin tener que pasar el ratón por encima.
+            const yAxisGuides = [0, maxVal / 2, maxVal].map(v => `
+                <line x1="${padX}" y1="${y(v).toFixed(1)}" x2="${W - padX}" y2="${y(v).toFixed(1)}" stroke="var(--border)" stroke-width="0.6"/>
+                <text x="${padX - 6}" y="${(y(v) - 3).toFixed(1)}" text-anchor="end" font-size="8" fill="var(--text-muted)">${financeMoney(v).replace(',00€', '€')}</text>`).join('');
+
+            const dotsOf = (s) => data.map((d, i) => `
                 <circle class="finance-chart-point" cx="${x(i).toFixed(1)}" cy="${y(d[s.id]).toFixed(1)}" r="3.5" fill="var(--bg-app)" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="2"
                     onmousemove="showFinanceChartTooltip(event,'${escapeHtml(s.name).replace(/'/g, "\\'")}','${escapeHtml(financeMonthLabel(d.month))}',${d[s.id]})"
-                    onmouseleave="hideFinanceChartTooltip()"></circle>
-                <text x="${x(i).toFixed(1)}" y="${(y(d[s.id]) - 8 - (sIdx % 2) * 9).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="${s.color || 'var(--text-secondary)'}">${financeMoney(d[s.id]).replace(',00€', '€')}</text>`).join('');
+                    onmouseleave="hideFinanceChartTooltip()"></circle>`).join('');
 
             const step = Math.max(1, Math.ceil(data.length / 6));
             const xLabels = data.map((d, i) => (data.length === 1 || i % step === 0 || i === data.length - 1)
@@ -10036,9 +10036,10 @@
                                 <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0"/>
                             </linearGradient>
                         </defs>
+                        ${yAxisGuides}
                         ${linesSvg}
                         ${targetLine}
-                        ${series.map((s, sIdx) => dotsOf(s, sIdx)).join('')}
+                        ${series.map(s => dotsOf(s)).join('')}
                         ${xLabels}
                     </svg>
                 </div>
@@ -10774,9 +10775,8 @@
             const updatePending = financeMonthUpdatePending();
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
-                <div class="finance-toolbar-row">${blurToggleBtn}</div>
-                ${renderFinanceProToggleBanner()}
-                ${financePro.enabled ? renderFinanceProSubnav() : ''}
+                <div class="finance-toolbar-row">${renderFinanceProInlineToggle()}${blurToggleBtn}</div>
+                ${renderFinanceProSyncWarning()}
 
                 ${(financeProfile.recordatorioDia && updatePending && new Date().getDate() >= financeProfile.recordatorioDia) ? `
                 <div class="finance-reminder-banner">
@@ -10874,8 +10874,7 @@
 
         function renderFinances() {
             migrateInvestmentData();
-            if (financePro.enabled && financeProView) return renderFinanceProDashboard();
-            return renderFinanceDashboard();
+            return financePro.enabled ? renderFinanceProDashboard() : renderFinanceDashboard();
         }
 
         // ============================================================
@@ -10910,27 +10909,44 @@
             if (financePro.enabled && !financePro.categories.length) {
                 financePro.categories = financeProDefaultCategories();
             }
-            if (financePro.enabled) financeProView = true;
-            else financeProView = false;
             render();
             try { await saveData(); showToast(financePro.enabled ? 'Modo PRO activado' : 'Modo PRO desactivado'); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        function switchFinanceProView(toPro) {
-            financeProView = toPro;
-            render();
-        }
-
-        function renderFinanceProToggleBanner() {
-            return `<div class="finance-pro-banner">
-                <div class="finance-pro-banner-text">
-                    <div class="finance-pro-toggle-title">Modo PRO</div>
-                    <div class="finance-pro-toggle-desc">Registra cada movimiento con categorías, tres cuentas independientes (Efectivo / Bancos / Online) e importación de extractos bancarios.</div>
-                </div>
+        // Interruptor compacto — comparte fila con el de ocultar cifras
+        // para no ocupar una línea entera solo para esto.
+        function renderFinanceProInlineToggle() {
+            return `<div class="finance-pro-inline-toggle">
+                <span>Modo PRO</span>
                 <button class="finance-pro-switch ${financePro.enabled ? 'on' : ''}" onclick="toggleFinancePro()" title="${financePro.enabled ? 'Desactivar' : 'Activar'} modo PRO" aria-label="Modo PRO">
                     <span class="finance-pro-switch-knob"></span>
                 </button>
+            </div>`;
+        }
+
+        // Compara la cuenta "Efectivo / bancos" del Resumen con la suma de
+        // Efectivo + Bancos del modo PRO — son dos caminos independientes
+        // para llevar las mismas cuentas, así que pueden desincronizarse
+        // si se actualiza uno y no el otro. "Online" no tiene equivalente
+        // en el Resumen, así que no entra en la comparación.
+        function financeProSyncStatus() {
+            const proCashLike = financeProAccountBalance('efectivo') + financeProAccountBalance('bancos');
+            const resumenCash = Number(financeProfile.cash || 0);
+            const diff = proCashLike - resumenCash;
+            return { proCashLike, resumenCash, diff, inSync: Math.abs(diff) < 1 };
+        }
+
+        function renderFinanceProSyncWarning() {
+            if (!financePro.enabled) return '';
+            const status = financeProSyncStatus();
+            if (status.inSync) return '';
+            return `<div class="finance-sync-warning">
+                <div class="finance-metric-icon fin-amber finance-pro-tx-icon">${FINANCE_ICON_ALERT}</div>
+                <div>
+                    <strong>Efectivo + Bancos no coincide entre el Resumen y el modo PRO</strong>
+                    <span>Resumen: ${financeMoney(status.resumenCash)} · PRO: ${financeMoney(status.proCashLike)} — diferencia de ${financeMoney(Math.abs(status.diff))}</span>
+                </div>
             </div>`;
         }
 
@@ -11036,13 +11052,6 @@
         // ============================================================
         //  FINANZAS PRO — panel principal
         // ============================================================
-        function renderFinanceProSubnav() {
-            return `<div class="finance-subnav">
-                <button ${!financeProView ? 'class="active"' : ''} onclick="switchFinanceProView(false)">Resumen</button>
-                <button ${financeProView ? 'class="active"' : ''} onclick="switchFinanceProView(true)">Movimientos PRO</button>
-            </div>`;
-        }
-
         function renderFinanceProAccountCard(key) {
             const meta = FINANCE_PRO_ACCOUNT_META[key];
             const acc = financePro.accounts[key];
@@ -11065,9 +11074,8 @@
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
-                <div class="finance-toolbar-row">${blurToggleBtn}</div>
-                ${renderFinanceProToggleBanner()}
-                ${renderFinanceProSubnav()}
+                <div class="finance-toolbar-row">${renderFinanceProInlineToggle()}${blurToggleBtn}</div>
+                ${renderFinanceProSyncWarning()}
 
                 <section class="finance-panel finance-chart-panel">
                     <div class="finance-panel-head">
