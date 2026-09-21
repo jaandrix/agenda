@@ -472,6 +472,30 @@
             ultimoCierreMensual: null
         };
         let financeSubView = 'menu';
+        // Vista activa dentro de Finanzas cuando el modo PRO está activado
+        // (Resumen de siempre vs. Movimientos detallados). No se guarda:
+        // cada sesión arranca en el resumen.
+        let financeProView = false;
+        // ============================================================
+        //  FINANZAS PRO — registro de movimientos por cuenta (Efectivo /
+        //  Bancos / Online), categorías al estilo Wallet, e importación
+        //  desde CSV/Excel del banco. Capa opcional y totalmente aparte
+        //  del resumen de Finanzas: activarla no toca ninguna cifra del
+        //  dashboard de siempre.
+        // ============================================================
+        let financePro = {
+            enabled: false,
+            accounts: {
+                efectivo: { name: 'Efectivo', balance0: 0 },
+                bancos: { name: 'Bancos', balance0: 0 },
+                online: { name: 'Online', balance0: 0 }
+            },
+            categories: [],
+            // {id, date:'YYYY-MM-DD', account, type:'income'|'expense'|'transfer',
+            //  amount (siempre positivo), category (id, solo income/expense),
+            //  transferTo (cuenta destino, solo transfer), note, importBatch}
+            transactions: []
+        };
         let devModeActive = false;
         // Oculta las cifras del dashboard financiero. Se guarda en la nube
         // (no en localStorage) para que viaje entre dispositivos.
@@ -2093,6 +2117,14 @@
                 financeProfile.savingsGoals = Array.isArray(financeProfile.savingsGoals) ? financeProfile.savingsGoals : [];
                 financeProfile.recordatorioDia = Number.isFinite(financeProfile.recordatorioDia) ? financeProfile.recordatorioDia : null;
                 financeProfile.ultimoCierreMensual = financeProfile.ultimoCierreMensual || null;
+                financePro = saved.financePro || financePro;
+                financePro.enabled = !!financePro.enabled;
+                financePro.accounts = (financePro.accounts && typeof financePro.accounts === 'object') ? financePro.accounts : {};
+                ['efectivo', 'bancos', 'online'].forEach(k => {
+                    financePro.accounts[k] = financePro.accounts[k] || { name: k[0].toUpperCase() + k.slice(1), balance0: 0 };
+                });
+                financePro.categories = Array.isArray(financePro.categories) && financePro.categories.length ? financePro.categories : financeProDefaultCategories();
+                financePro.transactions = Array.isArray(financePro.transactions) ? financePro.transactions : [];
                 // Migración: los antiguos "ingresos puntuales" pasan a formar parte
                 // del registro unificado de movimientos (una sola vez).
                 if (financeProfile.oneOffIncome.length && !financeProfile._oneOffMigrated) {
@@ -2254,6 +2286,7 @@
                 inbox,
                 financeIncome,
                 financeProfile,
+                financePro,
                 plannedTrips,
                 weeklyTasks,
                 cultureLists,
@@ -4282,7 +4315,7 @@
         function buildFullBackupPayload() {
             return {
                 entries, categories, userName, investmentData, notes, prompts, inbox,
-                financeIncome, financeProfile, plannedTrips, weeklyTasks, cultureLists, habits,
+                financeIncome, financeProfile, financePro, plannedTrips, weeklyTasks, cultureLists, habits,
                 collectibleCategories, collectibles, dayPlanner, recurringTasks, dailyEffort, studies, links,
                 linkCategories, blurFinances, fantasyData, apuntes,
                 exportedAt: new Date().toISOString()
@@ -4300,6 +4333,7 @@
             if (data.inbox) inbox = data.inbox;
             if (data.financeIncome) financeIncome = data.financeIncome;
             if (data.financeProfile) financeProfile = data.financeProfile;
+            if (data.financePro) financePro = data.financePro;
             if (data.plannedTrips) plannedTrips = data.plannedTrips;
             if (data.weeklyTasks) weeklyTasks = Array.isArray(data.weeklyTasks) ? data.weeklyTasks : [];
             if (data.cultureLists) cultureLists = Array.isArray(data.cultureLists) ? data.cultureLists : [];
@@ -9814,6 +9848,9 @@
         const FINANCE_ICON_TARGET = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.7"/><circle cx="12" cy="12" r="0.9" fill="currentColor"/></svg>';
         const FINANCE_ICON_CHART = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10M11 21V4M18 21v-7"/><path d="M2.5 21h19"/></svg>';
         const FINANCE_ICON_CALENDAR = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/></svg>';
+        const FINANCE_ICON_GLOBE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.8 2.5 4.3 5.7 4.3 9s-1.5 6.5-4.3 9c-2.8-2.5-4.3-5.7-4.3-9s1.5-6.5 4.3-9z"/></svg>';
+        const FINANCE_ICON_UPLOAD = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>';
+        const FINANCE_ICON_SWAP = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14M7 17l-3.5-3.5M7 17l3.5-3.5"/><path d="M17 21V7M17 7l3.5 3.5M17 7l-3.5 3.5"/></svg>';
 
         // Cabecera de panel con icono de color — mismo lenguaje visual que
         // las tarjetas de cuentas, para que cada panel de Finanzas se
@@ -10668,6 +10705,7 @@
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
                 <div class="finance-toolbar-row">${blurToggleBtn}</div>
+                ${financePro.enabled ? renderFinanceProSubnav() : ''}
 
                 ${(financeProfile.recordatorioDia && updatePending && new Date().getDate() >= financeProfile.recordatorioDia) ? `
                 <div class="finance-reminder-banner">
@@ -10759,13 +10797,590 @@
                     </label>
                 </div>
 
+                <div class="finance-pro-toggle-row">
+                    <div>
+                        <div class="finance-pro-toggle-title">Modo PRO</div>
+                        <div class="finance-pro-toggle-desc">Registra cada movimiento con categorías, tres cuentas independientes (Efectivo / Bancos / Online) e importación de extractos bancarios.</div>
+                    </div>
+                    <button class="finance-pro-switch ${financePro.enabled ? 'on' : ''}" onclick="toggleFinancePro()" title="${financePro.enabled ? 'Desactivar' : 'Activar'} modo PRO" aria-label="Modo PRO">
+                        <span class="finance-pro-switch-knob"></span>
+                    </button>
+                </div>
+
                 <div class="finance-dashboard-foot">${monthsLeft > 0 ? `Quedan ${monthsLeft} meses del año. ` : ''}La reserva de vacaciones (${financeMoney(financeProfile.vacation || 0)}) queda fuera del patrimonio operativo para evitar contar dos veces el dinero disponible.</div>
             </div>`;
         }
 
         function renderFinances() {
             migrateInvestmentData();
+            if (financePro.enabled && financeProView) return renderFinanceProDashboard();
             return renderFinanceDashboard();
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — activación y navegación
+        // ============================================================
+        function financeProDefaultCategories() {
+            return [
+                { id: 'cat_comida', name: 'Comida y bebida', icon: '🍔', type: 'expense' },
+                { id: 'cat_vivienda', name: 'Vivienda', icon: '🏠', type: 'expense' },
+                { id: 'cat_transporte', name: 'Transporte', icon: '🚗', type: 'expense' },
+                { id: 'cat_compras', name: 'Compras', icon: '🛍️', type: 'expense' },
+                { id: 'cat_ocio', name: 'Ocio', icon: '🎉', type: 'expense' },
+                { id: 'cat_salud', name: 'Salud', icon: '💊', type: 'expense' },
+                { id: 'cat_comunicacion', name: 'Comunicación', icon: '📱', type: 'expense' },
+                { id: 'cat_finanzas_gasto', name: 'Comisiones e impuestos', icon: '🏦', type: 'expense' },
+                { id: 'cat_educacion', name: 'Educación', icon: '📚', type: 'expense' },
+                { id: 'cat_familia', name: 'Familia y mascotas', icon: '🐾', type: 'expense' },
+                { id: 'cat_otros_gasto', name: 'Otros gastos', icon: '🔘', type: 'expense' },
+                { id: 'cat_sueldo', name: 'Sueldo', icon: '💼', type: 'income' },
+                { id: 'cat_extra', name: 'Trabajo extra', icon: '💵', type: 'income' },
+                { id: 'cat_inversion_ing', name: 'Inversiones', icon: '📈', type: 'income' },
+                { id: 'cat_regalo', name: 'Regalos', icon: '🎁', type: 'income' },
+                { id: 'cat_reembolso', name: 'Reembolsos', icon: '🔄', type: 'income' },
+                { id: 'cat_otros_ingreso', name: 'Otros ingresos', icon: '🔘', type: 'income' }
+            ];
+        }
+
+        const FINANCE_PRO_ACCOUNT_KEYS = ['efectivo', 'bancos', 'online'];
+
+        async function toggleFinancePro() {
+            financePro.enabled = !financePro.enabled;
+            if (financePro.enabled && !financePro.categories.length) {
+                financePro.categories = financeProDefaultCategories();
+            }
+            if (financePro.enabled) financeProView = true;
+            else financeProView = false;
+            render();
+            try { await saveData(); showToast(financePro.enabled ? 'Modo PRO activado' : 'Modo PRO desactivado'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function switchFinanceProView(toPro) {
+            financeProView = toPro;
+            render();
+        }
+
+        function financeProAccountBalance(key) {
+            let bal = Number(financePro.accounts[key]?.balance0 || 0);
+            financePro.transactions.forEach(t => {
+                if (t.type === 'transfer') {
+                    if (t.account === key) bal -= Number(t.amount) || 0;
+                    if (t.transferTo === key) bal += Number(t.amount) || 0;
+                } else if (t.account === key) {
+                    bal += (t.type === 'income' ? 1 : -1) * (Number(t.amount) || 0);
+                }
+            });
+            return bal;
+        }
+
+        function financeProTotalBalance() {
+            return FINANCE_PRO_ACCOUNT_KEYS.reduce((s, k) => s + financeProAccountBalance(k), 0);
+        }
+
+        function financeProCategoryById(id) {
+            return financePro.categories.find(c => c.id === id) || null;
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — gráficas (saldo acumulado mes a mes)
+        // ============================================================
+        function financeProMonthlyBalances(key) {
+            const txs = financePro.transactions;
+            if (!txs.length) return [];
+            const startMonth = [...txs].sort((a, b) => a.date.localeCompare(b.date))[0].date.slice(0, 7);
+            const endMonth = financeMonthKey();
+            const keys = key ? [key] : FINANCE_PRO_ACCOUNT_KEYS;
+            const months = [];
+            let cursor = new Date(Number(startMonth.slice(0, 4)), Number(startMonth.slice(5, 7)) - 1, 1);
+            const end = new Date(Number(endMonth.slice(0, 4)), Number(endMonth.slice(5, 7)) - 1, 1);
+            while (cursor <= end) { months.push(financeMonthKey(cursor)); cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1); }
+            return months.map(m => {
+                const cutoff = m + '-31';
+                let bal = keys.reduce((s, k) => s + Number(financePro.accounts[k]?.balance0 || 0), 0);
+                txs.forEach(t => {
+                    if (t.date > cutoff) return;
+                    if (t.type === 'transfer') {
+                        if (keys.includes(t.account) && !keys.includes(t.transferTo)) bal -= Number(t.amount) || 0;
+                        if (keys.includes(t.transferTo) && !keys.includes(t.account)) bal += Number(t.amount) || 0;
+                    } else if (keys.includes(t.account)) {
+                        bal += (t.type === 'income' ? 1 : -1) * (Number(t.amount) || 0);
+                    }
+                });
+                return { month: m, balance: bal };
+            });
+        }
+
+        function renderFinanceProLineChart(dataPoints, color, idSuffix, compact) {
+            if (dataPoints.length < 2) {
+                return `<div class="finance-empty-state" style="padding:${compact ? '10px 0' : '30px 0'}">Sin histórico suficiente todavía — necesitas movimientos en al menos 2 meses distintos.</div>`;
+            }
+            const W = compact ? 320 : 900, H = compact ? 90 : 200, padX = compact ? 8 : 24, padT = 8, padB = compact ? 16 : 22;
+            const innerW = W - padX * 2, innerH = H - padT - padB;
+            const values = dataPoints.map(d => d.balance);
+            const minVal = Math.min(0, ...values);
+            const maxVal = Math.max(1, ...values) * 1.08;
+            const range = (maxVal - minVal) || 1;
+            const x = i => dataPoints.length === 1 ? padX + innerW / 2 : padX + innerW * i / (dataPoints.length - 1);
+            const y = v => padT + innerH - ((v - minVal) / range) * innerH;
+            const path = dataPoints.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d.balance).toFixed(1)}`).join(' ');
+            const area = `${path} L${x(dataPoints.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
+            const step = Math.max(1, Math.ceil(dataPoints.length / (compact ? 3 : 6)));
+            const gradId = 'fpGrad_' + idSuffix;
+            const labels = compact ? '' : dataPoints.map((d, i) => (i % step === 0 || i === dataPoints.length - 1)
+                ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${escapeHtml(financeMonthLabel(d.month).split(' de ')[0])}</text>` : '').join('');
+            return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:${compact ? 140 : 280}px;display:block">
+                <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" style="stop-color:${color};stop-opacity:0.25"/>
+                    <stop offset="100%" style="stop-color:${color};stop-opacity:0"/>
+                </linearGradient></defs>
+                <path d="${area}" fill="url(#${gradId})" stroke="none"/>
+                <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                ${compact ? '' : dataPoints.map((d, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3" fill="var(--bg-card)" stroke="${color}" stroke-width="2"/>`).join('')}
+                ${labels}
+            </svg>`;
+        }
+
+        const FINANCE_PRO_ACCOUNT_META = {
+            efectivo: { icon: FINANCE_ICON_CASH, badge: 'fin-teal', color: '#0d9488' },
+            bancos: { icon: FINANCE_ICON_CARD, badge: 'fin-blue', color: '#3b82f6' },
+            online: { icon: FINANCE_ICON_GLOBE, badge: 'fin-purple', color: '#8b5cf6' }
+        };
+
+        // ============================================================
+        //  FINANZAS PRO — panel principal
+        // ============================================================
+        function renderFinanceProSubnav() {
+            return `<div class="finance-subnav">
+                <button ${!financeProView ? 'class="active"' : ''} onclick="switchFinanceProView(false)">Resumen</button>
+                <button ${financeProView ? 'class="active"' : ''} onclick="switchFinanceProView(true)">Movimientos PRO</button>
+            </div>`;
+        }
+
+        function renderFinanceProAccountCard(key) {
+            const meta = FINANCE_PRO_ACCOUNT_META[key];
+            const acc = financePro.accounts[key];
+            const balance = financeProAccountBalance(key);
+            const series = financeProMonthlyBalances(key);
+            return `
+            <div class="finance-panel finance-pro-account-card">
+                <div class="finance-panel-head">
+                    ${financePanelHeadIcon(meta.icon, meta.badge, 'Cuenta', acc.name)}
+                    <button class="finance-icon-btn" title="Movimiento en ${escapeHtml(acc.name)}" onclick="openFinanceProTransactionModal(null,'${key}')">+</button>
+                </div>
+                <div class="finance-networth-value finance-networth-value-compact" style="margin:4px 0 10px">${financeMoney(balance)}</div>
+                <div class="finance-pro-mini-chart">${renderFinanceProLineChart(series, meta.color, key, true)}</div>
+            </div>`;
+        }
+
+        function renderFinanceProDashboard() {
+            const total = financeProTotalBalance();
+            const totalSeries = financeProMonthlyBalances(null);
+            const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
+            return `
+            <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
+                <div class="finance-toolbar-row">${blurToggleBtn}</div>
+                ${renderFinanceProSubnav()}
+
+                <section class="finance-panel finance-chart-panel">
+                    <div class="finance-panel-head">
+                        ${financePanelHeadIcon(FINANCE_ICON_CHART, 'fin-slate', 'Total PRO', 'Efectivo + Bancos + Online')}
+                    </div>
+                    <div class="finance-networth-value finance-networth-value-compact" style="margin:2px 0 10px">${financeMoney(total)}</div>
+                    ${renderFinanceProLineChart(totalSeries, 'var(--text-primary)', 'total', false)}
+                </section>
+
+                <div class="finance-section-head" style="margin-top:20px">
+                    <div class="finance-kicker">Cuentas</div>
+                    <button class="finance-oneoff-btn" onclick="openFinanceProAccountsSettings()">✎ Renombrar / saldo inicial</button>
+                </div>
+                <div class="finance-pro-accounts-grid">
+                    ${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}
+                </div>
+
+                <div class="finance-section-head" style="margin-top:24px">
+                    <div class="finance-kicker">Movimientos</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="finance-oneoff-btn" onclick="openFinanceProCategoriesModal()">Categorías</button>
+                        <button class="finance-oneoff-btn" onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
+                        <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
+                    </div>
+                </div>
+                ${renderFinanceProTransactionFilters()}
+                <div id="finance-pro-tx-list">${renderFinanceProTransactionList()}</div>
+            </div>`;
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — cuentas (renombrar / saldo inicial)
+        // ============================================================
+        function openFinanceProAccountsSettings() {
+            showModal(`
+                <div class="modal-title">Cuentas PRO</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">El saldo inicial es el punto de partida de cada cuenta antes de tus movimientos registrados — útil si no vas a importar todo tu historial.</div>
+                ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
+                    <div class="modal-label">Nombre</div>
+                    <input class="modal-input" id="pro-acc-name-${k}" value="${escapeHtml(financePro.accounts[k].name)}">
+                    <div class="modal-label">Saldo inicial (€)</div>
+                    <input class="modal-input" id="pro-acc-balance0-${k}" type="number" step="0.01" value="${Number(financePro.accounts[k].balance0 || 0)}" style="margin-bottom:16px">
+                `).join('')}
+                <button class="btn-modal-primary" onclick="saveFinanceProAccountsSettings()">Guardar</button>
+            `);
+        }
+
+        async function saveFinanceProAccountsSettings() {
+            FINANCE_PRO_ACCOUNT_KEYS.forEach(k => {
+                const name = document.getElementById('pro-acc-name-' + k)?.value.trim();
+                if (name) financePro.accounts[k].name = name;
+                financePro.accounts[k].balance0 = Number(document.getElementById('pro-acc-balance0-' + k)?.value) || 0;
+            });
+            closeModal();
+            render();
+            try { await saveData(); showToast('Cuentas actualizadas'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — lista de movimientos
+        // ============================================================
+        let financeProTxFilter = { account: '' };
+
+        function renderFinanceProTransactionFilters() {
+            return `<div style="margin:14px 0 6px">
+                <select class="modal-input" style="width:auto;margin:0" onchange="financeProTxFilter.account=this.value;document.getElementById('finance-pro-tx-list').innerHTML=renderFinanceProTransactionList()">
+                    <option value="">Todas las cuentas</option>
+                    ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${financeProTxFilter.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                </select>
+            </div>`;
+        }
+
+        function financeDateLabelShort(dateStr) {
+            const [y, m, d] = String(dateStr).split('-').map(Number);
+            if (!y) return dateStr;
+            return new Date(y, m - 1, d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        }
+
+        function renderFinanceProTransactionList() {
+            let txs = [...financePro.transactions];
+            if (financeProTxFilter.account) txs = txs.filter(t => t.account === financeProTxFilter.account || t.transferTo === financeProTxFilter.account);
+            if (!txs.length) return `<div class="finance-empty-state">Todavía no hay movimientos. Añade uno o importa un extracto bancario.</div>`;
+            txs.sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+            const groups = {};
+            txs.forEach(t => { const m = t.date.slice(0, 7); groups[m] = groups[m] || []; groups[m].push(t); });
+            return Object.keys(groups).sort().reverse().map(m => {
+                const monthTotal = groups[m].reduce((s, t) => t.type === 'income' ? s + Number(t.amount) : t.type === 'expense' ? s - Number(t.amount) : s, 0);
+                return `<div class="finance-pro-tx-month-group">
+                    <div class="finance-pro-tx-month-head"><span>${escapeHtml(financeMonthLabel(m))}</span><span class="finance-trend-chip ${monthTotal >= 0 ? 'positive' : 'negative'}">${monthTotal >= 0 ? '+' : ''}${financeMoney(monthTotal)}</span></div>
+                    ${groups[m].map(t => renderFinanceProTxRow(t)).join('')}
+                </div>`;
+            }).join('');
+        }
+
+        function renderFinanceProTxRow(t) {
+            if (t.type === 'transfer') {
+                return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
+                    <div class="finance-metric-icon fin-slate finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>
+                    <div class="finance-pro-tx-main">
+                        <div class="finance-pro-tx-title">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} → ${escapeHtml(financePro.accounts[t.transferTo]?.name || t.transferTo)}</div>
+                        <div class="finance-pro-tx-sub">${t.note ? escapeHtml(t.note) + ' · ' : ''}${financeDateLabelShort(t.date)}</div>
+                    </div>
+                    <div class="finance-pro-tx-amount">${financeMoney(t.amount)}</div>
+                </div>`;
+            }
+            const cat = financeProCategoryById(t.category);
+            return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
+                <div class="finance-metric-icon ${t.type === 'income' ? 'fin-teal' : 'fin-red'} finance-pro-tx-icon">${cat ? cat.icon : '🔘'}</div>
+                <div class="finance-pro-tx-main">
+                    <div class="finance-pro-tx-title">${escapeHtml(cat ? cat.name : 'Sin categoría')}</div>
+                    <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)}${t.note ? ' · ' + escapeHtml(t.note) : ''} · ${financeDateLabelShort(t.date)}</div>
+                </div>
+                <div class="finance-pro-tx-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</div>
+            </div>`;
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — crear / editar / eliminar movimiento
+        // ============================================================
+        function openFinanceProTransactionModal(id, presetAccount) {
+            window._financeProTxEditId = id || null;
+            const existing = id ? financePro.transactions.find(t => t.id === id) : null;
+            window._financeProTxDraft = existing
+                ? { ...existing, category: existing.category || '', transferTo: existing.transferTo || '', note: existing.note || '' }
+                : { type: 'expense', account: presetAccount || FINANCE_PRO_ACCOUNT_KEYS[0], date: new Date().toISOString().slice(0, 10), amount: '', category: '', note: '', transferTo: '' };
+            showModal(`
+                <div class="modal-title">${existing ? 'Editar movimiento' : '+ Movimiento'}</div>
+                <div id="finance-pro-tx-modal-body">${renderFinanceProTxModalBody()}</div>
+            `);
+        }
+
+        function renderFinanceProTxModalBody() {
+            const d = window._financeProTxDraft;
+            const cats = financePro.categories.filter(c => c.type === d.type);
+            return `
+                <div class="finance-pro-type-tabs">
+                    <button class="${d.type === 'expense' ? 'active' : ''}" onclick="financeProDraftSet('type','expense')">Gasto</button>
+                    <button class="${d.type === 'income' ? 'active' : ''}" onclick="financeProDraftSet('type','income')">Ingreso</button>
+                    <button class="${d.type === 'transfer' ? 'active' : ''}" onclick="financeProDraftSet('type','transfer')">Transferencia</button>
+                </div>
+                <div class="modal-label">Fecha</div>
+                <input class="modal-input" type="date" value="${d.date}" onchange="financeProDraftSet('date',this.value)">
+                <div class="modal-label">Importe (€)</div>
+                <input class="modal-input" type="number" min="0" step="0.01" value="${d.amount}" onchange="financeProDraftSet('amount',this.value)" placeholder="0.00">
+                <div class="modal-label">${d.type === 'transfer' ? 'Cuenta origen' : 'Cuenta'}</div>
+                <select class="modal-input" onchange="financeProDraftSet('account',this.value)">
+                    ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${d.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                </select>
+                ${d.type === 'transfer' ? `
+                <div class="modal-label">Cuenta destino</div>
+                <select class="modal-input" onchange="financeProDraftSet('transferTo',this.value)">
+                    <option value="">Elige una cuenta</option>
+                    ${FINANCE_PRO_ACCOUNT_KEYS.filter(k => k !== d.account).map(k => `<option value="${k}" ${d.transferTo === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                </select>` : `
+                <div class="modal-label">Categoría</div>
+                <select class="modal-input" onchange="financeProDraftSet('category',this.value)">
+                    <option value="">Sin categoría</option>
+                    ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${c.icon} ${escapeHtml(c.name)}</option>`).join('')}
+                </select>`}
+                <div class="modal-label">Nota (opcional)</div>
+                <input class="modal-input" value="${escapeHtml(d.note || '')}" onchange="financeProDraftSet('note',this.value)" placeholder="Ej. Cena con amigos">
+                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction()">Guardar</button>
+                ${window._financeProTxEditId ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceProTransaction('${window._financeProTxEditId}')">Eliminar movimiento</button>` : ''}
+            `;
+        }
+
+        function financeProDraftSet(key, value) {
+            window._financeProTxDraft[key] = value;
+            if (key === 'type' || key === 'account') {
+                document.getElementById('finance-pro-tx-modal-body').innerHTML = renderFinanceProTxModalBody();
+            }
+        }
+
+        async function saveFinanceProTransaction() {
+            const d = window._financeProTxDraft;
+            const amount = Math.abs(Number(d.amount));
+            if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
+            if (d.type === 'transfer' && (!d.transferTo || d.transferTo === d.account)) { showToast('Elige una cuenta destino distinta', true); return; }
+            const entry = {
+                id: window._financeProTxEditId || ('ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
+                date: d.date || new Date().toISOString().slice(0, 10),
+                account: d.account,
+                type: d.type,
+                amount,
+                category: d.type === 'transfer' ? undefined : (d.category || undefined),
+                transferTo: d.type === 'transfer' ? d.transferTo : undefined,
+                note: (d.note || '').trim() || undefined
+            };
+            const idx = financePro.transactions.findIndex(t => t.id === entry.id);
+            if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
+            window._financeProTxEditId = null; window._financeProTxDraft = null;
+            closeModal();
+            render();
+            try { await saveData(); showToast('Movimiento guardado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteFinanceProTransaction(id) {
+            if (!confirm('¿Eliminar este movimiento?')) return;
+            financePro.transactions = financePro.transactions.filter(t => t.id !== id);
+            window._financeProTxEditId = null; window._financeProTxDraft = null;
+            closeModal();
+            render();
+            try { await saveData(); showToast('Movimiento eliminado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — categorías
+        // ============================================================
+        function openFinanceProCategoriesModal() {
+            showModal(`
+                <div class="modal-title">Categorías</div>
+                <div id="finance-pro-cat-list">${renderFinanceProCategoryList()}</div>
+                <div class="modal-label" style="margin-top:14px">Nueva categoría</div>
+                <input id="new-cat-name" class="modal-input" placeholder="Nombre">
+                <input id="new-cat-icon" class="modal-input" placeholder="Emoji (opcional, ej. 🎯)" maxlength="4">
+                <select id="new-cat-type" class="modal-input">
+                    <option value="expense">Gasto</option>
+                    <option value="income">Ingreso</option>
+                </select>
+                <button class="btn-modal-primary" onclick="addFinanceProCategory()">+ Añadir categoría</button>
+            `);
+        }
+
+        function renderFinanceProCategoryList() {
+            const row = c => `<div class="finance-budget-row" style="display:flex;justify-content:space-between;align-items:center;cursor:default">
+                <span>${c.icon} ${escapeHtml(c.name)}</span>
+                <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceProCategory('${c.id}')">✕</button>
+            </div>`;
+            const expense = financePro.categories.filter(c => c.type === 'expense');
+            const income = financePro.categories.filter(c => c.type === 'income');
+            return `<div class="finance-kicker" style="margin:8px 0 4px">Gastos</div>${expense.map(row).join('') || '<div class="finance-empty-line">Ninguna</div>'}
+                <div class="finance-kicker" style="margin:14px 0 4px">Ingresos</div>${income.map(row).join('') || '<div class="finance-empty-line">Ninguna</div>'}`;
+        }
+
+        async function addFinanceProCategory() {
+            const name = document.getElementById('new-cat-name')?.value.trim();
+            const icon = document.getElementById('new-cat-icon')?.value.trim() || '🔘';
+            const type = document.getElementById('new-cat-type')?.value || 'expense';
+            if (!name) { showToast('Ponle un nombre a la categoría', true); return; }
+            financePro.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, icon, type });
+            document.getElementById('finance-pro-cat-list').innerHTML = renderFinanceProCategoryList();
+            document.getElementById('new-cat-name').value = '';
+            document.getElementById('new-cat-icon').value = '';
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteFinanceProCategory(id) {
+            if (!confirm('¿Eliminar esta categoría? Los movimientos que la usaban quedarán sin categoría.')) return;
+            financePro.categories = financePro.categories.filter(c => c.id !== id);
+            financePro.transactions.forEach(t => { if (t.category === id) t.category = undefined; });
+            document.getElementById('finance-pro-cat-list').innerHTML = renderFinanceProCategoryList();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — importar movimientos (CSV genérico del banco)
+        // ============================================================
+        function openFinanceProImportModal() {
+            window._financeProImport = null;
+            showModal(`
+                <div class="modal-title">Importar movimientos</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Sube el CSV que exporta tu banco o tu app de finanzas (si tienes un Excel, guárdalo primero como CSV). En el siguiente paso indicas qué columna es cada dato.</div>
+                <input type="file" id="finance-pro-import-file" accept=".csv,text/csv" class="modal-input" onchange="handleFinanceProImportFile(event)">
+                <div id="finance-pro-import-body"></div>
+            `);
+        }
+
+        // Parser CSV manual (soporta comillas, campos con comas dentro, y
+        // detecta solo si el separador es "," o ";" — este último es muy
+        // habitual en extractos de bancos españoles).
+        function financeProParseCSV(text) {
+            const firstLine = text.split(/\r?\n/)[0] || '';
+            const sep = (firstLine.match(/;/g) || []).length >= (firstLine.match(/,/g) || []).length ? ';' : ',';
+            const rows = [];
+            let row = [], field = '', inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (inQuotes) {
+                    if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false; }
+                    else field += c;
+                } else if (c === '"') inQuotes = true;
+                else if (c === sep) { row.push(field); field = ''; }
+                else if (c === '\n' || c === '\r') {
+                    if (c === '\r' && text[i + 1] === '\n') i++;
+                    row.push(field); field = '';
+                    if (row.some(f => f !== '')) rows.push(row);
+                    row = [];
+                } else field += c;
+            }
+            if (field !== '' || row.length) { row.push(field); if (row.some(f => f !== '')) rows.push(row); }
+            return rows;
+        }
+
+        function handleFinanceProImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                const rows = financeProParseCSV(String(reader.result));
+                if (rows.length < 2) { showToast('El archivo no tiene filas suficientes', true); return; }
+                window._financeProImport = { rows, mapping: { hasHeader: true, date: 0, amount: 1, description: rows[0].length > 2 ? 2 : 0, amountOut: 0, amountIn: 1, splitAmount: false, account: FINANCE_PRO_ACCOUNT_KEYS[0] } };
+                document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
+            };
+            reader.onerror = () => showToast('No se pudo leer el archivo', true);
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function renderFinanceProImportMapping() {
+            const imp = window._financeProImport;
+            const headerRow = imp.rows[0];
+            const previewRows = imp.rows.slice(imp.mapping.hasHeader ? 1 : 0, imp.mapping.hasHeader ? 4 : 3);
+            const colOptions = (selected) => headerRow.map((h, i) => `<option value="${i}" ${Number(selected) === i ? 'selected' : ''}>${imp.mapping.hasHeader ? escapeHtml(String(h).slice(0, 24)) : 'Columna ' + (i + 1)}</option>`).join('');
+            return `
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-primary);margin:14px 0 10px">
+                    <input type="checkbox" ${imp.mapping.hasHeader ? 'checked' : ''} onchange="financeProImportSet('hasHeader', this.checked)"> La primera fila es cabecera
+                </label>
+                <div class="modal-label">Cuenta destino</div>
+                <select class="modal-input" onchange="financeProImportSet('account', this.value)">
+                    ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${imp.mapping.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                </select>
+                <div class="finance-correction-inputs">
+                    <div><div class="modal-label">Columna de fecha</div><select class="modal-input" onchange="financeProImportSet('date', this.value)">${colOptions(imp.mapping.date)}</select></div>
+                    <div><div class="modal-label">Columna de concepto</div><select class="modal-input" onchange="financeProImportSet('description', this.value)">${colOptions(imp.mapping.description)}</select></div>
+                </div>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-primary);margin:4px 0 10px">
+                    <input type="checkbox" ${imp.mapping.splitAmount ? 'checked' : ''} onchange="financeProImportSet('splitAmount', this.checked)"> Mi banco separa cargo y abono en dos columnas
+                </label>
+                ${imp.mapping.splitAmount ? `
+                <div class="finance-correction-inputs">
+                    <div><div class="modal-label">Columna de cargo (gastos)</div><select class="modal-input" onchange="financeProImportSet('amountOut', this.value)">${colOptions(imp.mapping.amountOut)}</select></div>
+                    <div><div class="modal-label">Columna de abono (ingresos)</div><select class="modal-input" onchange="financeProImportSet('amountIn', this.value)">${colOptions(imp.mapping.amountIn)}</select></div>
+                </div>` : `
+                <div class="modal-label">Columna de importe (negativo = gasto)</div>
+                <select class="modal-input" onchange="financeProImportSet('amount', this.value)">${colOptions(imp.mapping.amount)}</select>`}
+                <div class="finance-modal-note" style="margin:12px 0 6px">Vista previa (${imp.rows.length - (imp.mapping.hasHeader ? 1 : 0)} filas detectadas):</div>
+                <div class="finance-import-preview">${previewRows.map(r => `<div class="finance-import-preview-row">${(r || []).slice(0, 4).map(c => `<span>${escapeHtml(String(c || '').slice(0, 20))}</span>`).join('')}</div>`).join('')}</div>
+                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmFinanceProImport()">Importar movimientos</button>
+            `;
+        }
+
+        function financeProImportSet(key, value) {
+            const m = window._financeProImport.mapping;
+            if (key === 'hasHeader' || key === 'splitAmount' || key === 'account') m[key] = value;
+            else m[key] = Number(value);
+            document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
+        }
+
+        function financeProParseEuroAmount(str) {
+            if (str === undefined || str === null) return NaN;
+            let s = String(str).trim().replace(/[€\s]/g, '');
+            if (!s) return NaN;
+            if (s.includes(',') && s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+            else s = s.replace(/,/g, '');
+            return Number(s);
+        }
+
+        function financeProParseDate(str) {
+            const s = String(str || '').trim();
+            let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+            if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+            m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+            if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+            return null;
+        }
+
+        async function confirmFinanceProImport() {
+            const imp = window._financeProImport;
+            const m = imp.mapping;
+            const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
+            const existingKeys = new Set(financePro.transactions.map(t => `${t.date}|${t.amount}|${t.note || ''}`));
+            let added = 0, skipped = 0;
+            rows.forEach(r => {
+                const date = financeProParseDate(r[m.date]);
+                if (!date) { skipped++; return; }
+                const description = (r[m.description] || '').trim();
+                let amount, type;
+                if (m.splitAmount) {
+                    const out = financeProParseEuroAmount(r[m.amountOut]);
+                    const inAmt = financeProParseEuroAmount(r[m.amountIn]);
+                    if (Number.isFinite(inAmt) && inAmt > 0) { amount = inAmt; type = 'income'; }
+                    else if (Number.isFinite(out) && out !== 0) { amount = Math.abs(out); type = 'expense'; }
+                    else { skipped++; return; }
+                } else {
+                    const val = financeProParseEuroAmount(r[m.amount]);
+                    if (!Number.isFinite(val) || val === 0) { skipped++; return; }
+                    amount = Math.abs(val); type = val < 0 ? 'expense' : 'income';
+                }
+                const dedupeKey = `${date}|${amount}|${description}`;
+                if (existingKeys.has(dedupeKey)) { skipped++; return; }
+                existingKeys.add(dedupeKey);
+                financePro.transactions.push({
+                    id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
+                    date, account: m.account, type, amount, note: description || undefined
+                });
+                added++;
+            });
+            closeModal();
+            render();
+            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================

@@ -4267,7 +4267,9 @@ body.beige {
 .finance-dashboard .finance-invest-headline strong,
 .finance-dashboard .finance-invest-bar-row strong,
 .finance-dashboard .finance-oneoff-row span,
-.finance-dashboard .finance-oneoff-row strong {
+.finance-dashboard .finance-oneoff-row strong,
+.finance-dashboard .finance-pro-tx-amount,
+.finance-dashboard .finance-pro-tx-month-head .finance-trend-chip {
     transition: filter .4s cubic-bezier(0.4,0,0.2,1);
 }
 .finance-dashboard.blurred .finance-metric-value,
@@ -4280,7 +4282,9 @@ body.beige {
 .finance-dashboard.blurred .finance-invest-headline strong,
 .finance-dashboard.blurred .finance-invest-bar-row strong,
 .finance-dashboard.blurred .finance-oneoff-row span,
-.finance-dashboard.blurred .finance-oneoff-row strong {
+.finance-dashboard.blurred .finance-oneoff-row strong,
+.finance-dashboard.blurred .finance-pro-tx-amount,
+.finance-dashboard.blurred .finance-pro-tx-month-head .finance-trend-chip {
     filter: blur(8px);
     user-select: none;
 }
@@ -4299,9 +4303,10 @@ body.beige {
 .finance-oneoff-row strong { white-space:nowrap; font-size:11px; }
 .finance-oneoff-row button { border:0; background:transparent; color:var(--text-secondary); cursor:pointer; padding:2px 4px; font-size:12px; }
 .finance-oneoff-row button:hover { color:var(--text-primary); }
-.finance-subnav { display:flex; gap:4px; flex-wrap:wrap; margin-top:14px; background:var(--bg-card); padding:5px; border-radius:999px; border:1px solid var(--border); width:fit-content; }
+.finance-subnav { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px; background:var(--bg-card); padding:5px; border-radius:999px; border:1px solid var(--border); width:fit-content; }
 .finance-subnav button { border:0; background:none; color:var(--text-secondary); border-radius:999px; padding:7px 14px; font-size:10px; font-weight:700; cursor:pointer; transition:all .15s ease; }
 .finance-subnav button:hover { color:var(--text-primary); }
+.finance-subnav button.active { background:var(--accent); color:var(--accent-contrast); }
 :root { --bone-surface:#f3eee3; --bone-border:#ded6c7; --bone-text:#171717; --bone-muted:#6f695f; }
         .finance-networth-card { display:flex; flex-direction:column; justify-content:space-between; gap:14px; background:#0c0c0e; color:#f2f2f2; border:1px solid rgba(255,255,255,0.06); border-radius:22px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,.28); height:100%; }
 .finance-networth-card .finance-kicker { color:rgba(255,255,255,0.5); }
@@ -4530,6 +4535,41 @@ body.beige {
 
 .finance-dashboard-foot-actions { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; padding-top:16px; border-top:1px solid var(--border); }
 .finance-foot-reminder { display:flex; align-items:center; flex-wrap:wrap; gap:6px; font-size:11px; color:var(--text-secondary); }
+
+/* ============================================================
+   FINANZAS PRO
+   ============================================================ */
+.finance-pro-toggle-row { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border); }
+.finance-pro-toggle-title { font-size:13px; font-weight:800; margin-bottom:3px; }
+.finance-pro-toggle-desc { font-size:11px; color:var(--text-secondary); line-height:1.5; max-width:440px; }
+.finance-pro-switch { position:relative; width:60px; height:32px; border-radius:999px; border:2px solid var(--border-strong); background:var(--bg-input); cursor:pointer; flex-shrink:0; padding:0; transition:background .2s ease, border-color .2s ease; }
+.finance-pro-switch-knob { position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; background:var(--text-secondary); box-shadow:0 2px 6px rgba(0,0,0,.25); transition:transform .2s cubic-bezier(.4,0,.2,1), background .2s ease; }
+.finance-pro-switch.on { border-color:#3b82f6; }
+.finance-pro-switch.on .finance-pro-switch-knob { transform:translateX(28px); background:#3b82f6; }
+
+.finance-pro-accounts-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.finance-pro-account-card { padding:16px; }
+.finance-pro-mini-chart { margin-top:2px; }
+@media(max-width:850px){ .finance-pro-accounts-grid{grid-template-columns:1fr} }
+
+.finance-pro-type-tabs { display:flex; gap:4px; background:var(--bg-input); padding:4px; border-radius:999px; margin-bottom:16px; }
+.finance-pro-type-tabs button { flex:1; border:0; background:none; color:var(--text-secondary); border-radius:999px; padding:8px 10px; font-size:11.5px; font-weight:700; cursor:pointer; transition:all .15s ease; }
+.finance-pro-type-tabs button.active { background:var(--accent); color:var(--accent-contrast); }
+
+.finance-pro-tx-month-group { margin-bottom:6px; }
+.finance-pro-tx-month-head { display:flex; justify-content:space-between; align-items:center; padding:14px 4px 6px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); }
+.finance-pro-tx-row { display:flex; align-items:center; gap:12px; padding:9px 4px; border-radius:12px; cursor:pointer; transition:background .15s ease; }
+.finance-pro-tx-row:hover { background:var(--bg-card-hover); }
+.finance-pro-tx-icon.finance-metric-icon { width:34px; height:34px; margin:0; font-size:15px; flex-shrink:0; }
+.finance-pro-tx-main { flex:1; min-width:0; }
+.finance-pro-tx-title { font-size:12.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.finance-pro-tx-sub { font-size:10.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.finance-pro-tx-amount { font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; flex-shrink:0; }
+
+.finance-import-preview { border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.finance-import-preview-row { display:flex; gap:10px; padding:7px 10px; font-size:10.5px; border-bottom:1px solid var(--border); }
+.finance-import-preview-row:last-child { border-bottom:none; }
+.finance-import-preview-row span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-secondary); }
 
 /* ============================================================
    ESTUDIOS
