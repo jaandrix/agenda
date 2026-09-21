@@ -10961,8 +10961,16 @@
         function financeProMonthlyBalances(key) {
             const txs = financePro.transactions;
             if (!txs.length) return [];
-            const startMonth = [...txs].sort((a, b) => a.date.localeCompare(b.date))[0].date.slice(0, 7);
-            const endMonth = financeMonthKey();
+            const sorted = [...txs].sort((a, b) => a.date.localeCompare(b.date));
+            const startMonth = sorted[0].date.slice(0, 7);
+            // Normalmente el último mes es "ahora", pero si hay algún
+            // movimiento fechado más adelante, el rango tiene que llegar
+            // hasta ahí — si no, el último punto de la gráfica no incluiría
+            // ese movimiento aunque sí cuente en el saldo total mostrado
+            // arriba, y los dos números dejarían de cuadrar entre sí.
+            const lastTxMonth = sorted[sorted.length - 1].date.slice(0, 7);
+            const todayMonth = financeMonthKey();
+            const endMonth = lastTxMonth > todayMonth ? lastTxMonth : todayMonth;
             const keys = key ? [key] : FINANCE_PRO_ACCOUNT_KEYS;
             const months = [];
             let cursor = new Date(Number(startMonth.slice(0, 4)), Number(startMonth.slice(5, 7)) - 1, 1);
@@ -11002,12 +11010,17 @@
             const gradId = 'fpGrad_' + idSuffix;
             const labels = compact ? '' : dataPoints.map((d, i) => (i % step === 0 || i === dataPoints.length - 1)
                 ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${escapeHtml(financeMonthLabel(d.month).split(' de ')[0])}</text>` : '').join('');
+            // Línea de referencia en 0 — sin ella, un saldo que sigue siendo
+            // negativo pero "menos negativo que antes" dibuja una línea
+            // ascendente indistinguible de una que de verdad está en positivo.
+            const zeroLine = (minVal < 0 && maxVal > 0) ? `<line x1="${padX}" y1="${y(0).toFixed(1)}" x2="${W - padX}" y2="${y(0).toFixed(1)}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="1.5,3"/>${compact ? '' : `<text x="${padX}" y="${(y(0) - 4).toFixed(1)}" font-size="8" fill="var(--text-muted)">0€</text>`}` : '';
             return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:${compact ? 140 : 280}px;display:block">
                 <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" style="stop-color:${color};stop-opacity:0.25"/>
                     <stop offset="100%" style="stop-color:${color};stop-opacity:0"/>
                 </linearGradient></defs>
                 <path d="${area}" fill="url(#${gradId})" stroke="none"/>
+                ${zeroLine}
                 <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 ${compact ? '' : dataPoints.map((d, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3" fill="var(--bg-card)" stroke="${color}" stroke-width="2"/>`).join('')}
                 ${labels}
