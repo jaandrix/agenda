@@ -490,7 +490,9 @@
             // {id, date:'YYYY-MM-DD', account, type:'income'|'expense'|'transfer',
             //  amount (siempre positivo), category (id, solo income/expense),
             //  transferTo (cuenta destino, solo transfer), note, importBatch}
-            transactions: []
+            transactions: [],
+            // Presupuesto mensual opcional por categoría de gasto: { catId: importe }
+            categoryBudgets: {}
         };
         let devModeActive = false;
         // Oculta las cifras del dashboard financiero. Se guarda en la nube
@@ -2121,6 +2123,7 @@
                 });
                 financePro.categories = Array.isArray(financePro.categories) && financePro.categories.length ? financePro.categories : financeProDefaultCategories();
                 financePro.transactions = Array.isArray(financePro.transactions) ? financePro.transactions : [];
+                financePro.categoryBudgets = (financePro.categoryBudgets && typeof financePro.categoryBudgets === 'object') ? financePro.categoryBudgets : {};
                 // Migración: los antiguos "ingresos puntuales" pasan a formar parte
                 // del registro unificado de movimientos (una sola vez).
                 if (financeProfile.oneOffIncome.length && !financeProfile._oneOffMigrated) {
@@ -3991,6 +3994,13 @@
                         <option value="true" ${!isEdit || entry.active !== false ? 'selected' : ''}>Activo</option>
                         <option value="false" ${isEdit && entry.active === false ? 'selected' : ''}>Inactivo</option>
                     </select>
+                    ${financePro.enabled ? `
+                    <div class="modal-label">Cuenta PRO a la que se carga</div>
+                    <select id="modal-recurring-account" class="modal-input">
+                        <option value="">No registrar como movimiento PRO</option>
+                        ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${isEdit && entry.proAccount === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                    </select>
+                    <div class="finance-modal-note">Si eliges una cuenta, este cargo se registrará solo como movimiento PRO el día indicado de cada mes.</div>` : ''}
                 `;
             }
 
@@ -4179,6 +4189,7 @@
                 entry.amount = parseFloat(document.getElementById('modal-recurring-amount')?.value) || 0;
                 entry.renewalDay = parseInt(document.getElementById('modal-recurring-day')?.value) || 1;
                 entry.active = document.getElementById('modal-recurring-active')?.value !== 'false';
+                if (financePro.enabled) entry.proAccount = document.getElementById('modal-recurring-account')?.value || '';
                 entry.date = entry.date || todayISO();
             } else if (type === 'birthday') {
                 entry.firstName = document.getElementById('modal-bday-name')?.value?.trim() || '';
@@ -10274,17 +10285,21 @@
             const trendCls = change === null ? 'neutral' : change >= 0 ? 'positive' : 'negative';
             const trendText = change === null ? 'Sin mes anterior' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
             return `
-                <div class="finance-metric-card ${goal.cls}" onclick="openFinanceMetricEditor('${key}','${label}','${targetKey}')">
+                <div class="finance-metric-card finance-metric-card-compact ${goal.cls}" onclick="openFinanceMetricEditor('${key}','${label}','${targetKey}')">
                     <button class="finance-edit-btn" title="Editar" onclick="event.stopPropagation();openFinanceMetricEditor('${key}','${label}','${targetKey}')">✎</button>
-                    <div class="finance-metric-icon ${iconClass}">${iconSvg}</div>
-                    <div class="finance-metric-value">${financeMoney(value)}</div>
-                    <div class="finance-metric-label">${label}</div>
-                    <div class="finance-metric-meta">
-                        <span class="finance-trend-chip ${trendCls}">${trendText}</span>
-                        <span>${goal.pct === null ? 'Sin objetivo' : `${goal.pct.toFixed(0)}% del objetivo`}</span>
+                    <div class="finance-metric-compact-head">
+                        <div class="finance-metric-icon ${iconClass}" style="width:28px;height:28px;margin:0;flex-shrink:0">${iconSvg}</div>
+                        <div class="finance-metric-compact-info">
+                            <div class="finance-metric-label">${label}</div>
+                            <div class="finance-metric-value">${financeMoney(value)}</div>
+                        </div>
                     </div>
                     <div class="finance-progress"><span style="width:${goal.pct === null ? 0 : Math.min(100, goal.pct)}%"></span></div>
-                    <div class="finance-metric-note">${provision === null ? 'Provisión fin de año: sin datos suficientes' : `Provisión fin de año: ${financeMoney(provision)}`}${note ? ` · ${note}` : ''}</div>
+                    <div class="finance-metric-compact-foot">
+                        <span class="finance-trend-chip ${trendCls}">${trendText}</span>
+                        <span>${goal.pct === null ? 'Sin objetivo' : `${goal.pct.toFixed(0)}% obj.`}</span>
+                    </div>
+                    <div class="finance-metric-note">${provision === null ? 'Provisión: sin datos suficientes' : `Provisión: ${financeMoney(provision)}`}${note ? ` · ${note}` : ''}</div>
                 </div>`;
         }
 
@@ -10614,10 +10629,14 @@
         // que renderFinanceMetric para que toda la fila de Cuentas sea coherente.
         function renderFinanceSimpleTile(value, label, onClick, note, muted, iconSvg, iconClass) {
             return `
-                <div class="finance-metric-card finance-metric-card-simple ${muted ? 'finance-metric-card-muted' : ''}" ${onClick ? `onclick="${onClick}"` : ''}>
-                    ${iconSvg ? `<div class="finance-metric-icon ${iconClass || ''}">${iconSvg}</div>` : ''}
-                    <div class="finance-metric-value">${financeMoney(value)}</div>
-                    <div class="finance-metric-label">${escapeHtml(label)}</div>
+                <div class="finance-metric-card finance-metric-card-compact finance-metric-card-simple ${muted ? 'finance-metric-card-muted' : ''}" ${onClick ? `onclick="${onClick}"` : ''}>
+                    <div class="finance-metric-compact-head">
+                        ${iconSvg ? `<div class="finance-metric-icon ${iconClass || ''}" style="width:28px;height:28px;margin:0;flex-shrink:0">${iconSvg}</div>` : ''}
+                        <div class="finance-metric-compact-info">
+                            <div class="finance-metric-label">${escapeHtml(label)}</div>
+                            <div class="finance-metric-value">${financeMoney(value)}</div>
+                        </div>
+                    </div>
                     ${note ? `<div class="finance-metric-note">${escapeHtml(note)}</div>` : ''}
                 </div>`;
         }
@@ -10874,31 +10893,38 @@
 
         function renderFinances() {
             migrateInvestmentData();
+            if (financePro.enabled) ensureRecurringProCharges();
             return financePro.enabled ? renderFinanceProDashboard() : renderFinanceDashboard();
         }
 
         // ============================================================
         //  FINANZAS PRO — activación y navegación
         // ============================================================
+        // Paleta fija — cada categoría por defecto tiene su propio color,
+        // así se distinguen entre sí de un vistazo en la lista de
+        // movimientos (antes solo había color de ingreso/gasto, igual
+        // para todas las categorías).
+        const FINANCE_PRO_PALETTE = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78716c'];
+
         function financeProDefaultCategories() {
             return [
-                { id: 'cat_comida', name: 'Comida y bebida', icon: 'food', type: 'expense' },
-                { id: 'cat_vivienda', name: 'Vivienda', icon: 'home', type: 'expense' },
-                { id: 'cat_transporte', name: 'Transporte', icon: 'car', type: 'expense' },
-                { id: 'cat_compras', name: 'Compras', icon: 'bag', type: 'expense' },
-                { id: 'cat_ocio', name: 'Ocio', icon: 'ticket', type: 'expense' },
-                { id: 'cat_salud', name: 'Salud', icon: 'heart', type: 'expense' },
-                { id: 'cat_comunicacion', name: 'Comunicación', icon: 'phone', type: 'expense' },
-                { id: 'cat_finanzas_gasto', name: 'Comisiones e impuestos', icon: 'bank', type: 'expense' },
-                { id: 'cat_educacion', name: 'Educación', icon: 'book', type: 'expense' },
-                { id: 'cat_familia', name: 'Familia y mascotas', icon: 'family', type: 'expense' },
-                { id: 'cat_otros_gasto', name: 'Otros gastos', icon: 'other', type: 'expense' },
-                { id: 'cat_sueldo', name: 'Sueldo', icon: 'briefcase', type: 'income' },
-                { id: 'cat_extra', name: 'Trabajo extra', icon: 'coin', type: 'income' },
-                { id: 'cat_inversion_ing', name: 'Inversiones', icon: 'trend', type: 'income' },
-                { id: 'cat_regalo', name: 'Regalos', icon: 'gift', type: 'income' },
-                { id: 'cat_reembolso', name: 'Reembolsos', icon: 'repeat', type: 'income' },
-                { id: 'cat_otros_ingreso', name: 'Otros ingresos', icon: 'other', type: 'income' }
+                { id: 'cat_comida', name: 'Comida y bebida', icon: 'food', type: 'expense', color: FINANCE_PRO_PALETTE[0] },
+                { id: 'cat_vivienda', name: 'Vivienda', icon: 'home', type: 'expense', color: FINANCE_PRO_PALETTE[1] },
+                { id: 'cat_transporte', name: 'Transporte', icon: 'car', type: 'expense', color: FINANCE_PRO_PALETTE[2] },
+                { id: 'cat_compras', name: 'Compras', icon: 'bag', type: 'expense', color: FINANCE_PRO_PALETTE[3] },
+                { id: 'cat_ocio', name: 'Ocio', icon: 'ticket', type: 'expense', color: FINANCE_PRO_PALETTE[4] },
+                { id: 'cat_salud', name: 'Salud', icon: 'heart', type: 'expense', color: FINANCE_PRO_PALETTE[5] },
+                { id: 'cat_comunicacion', name: 'Comunicación', icon: 'phone', type: 'expense', color: FINANCE_PRO_PALETTE[6] },
+                { id: 'cat_finanzas_gasto', name: 'Comisiones e impuestos', icon: 'bank', type: 'expense', color: FINANCE_PRO_PALETTE[7] },
+                { id: 'cat_educacion', name: 'Educación', icon: 'book', type: 'expense', color: FINANCE_PRO_PALETTE[8] },
+                { id: 'cat_familia', name: 'Familia y mascotas', icon: 'family', type: 'expense', color: FINANCE_PRO_PALETTE[9] },
+                { id: 'cat_otros_gasto', name: 'Otros gastos', icon: 'other', type: 'expense', color: FINANCE_PRO_PALETTE[15] },
+                { id: 'cat_sueldo', name: 'Sueldo', icon: 'briefcase', type: 'income', color: FINANCE_PRO_PALETTE[10] },
+                { id: 'cat_extra', name: 'Trabajo extra', icon: 'coin', type: 'income', color: FINANCE_PRO_PALETTE[11] },
+                { id: 'cat_inversion_ing', name: 'Inversiones', icon: 'trend', type: 'income', color: FINANCE_PRO_PALETTE[12] },
+                { id: 'cat_regalo', name: 'Regalos', icon: 'gift', type: 'income', color: FINANCE_PRO_PALETTE[13] },
+                { id: 'cat_reembolso', name: 'Reembolsos', icon: 'repeat', type: 'income', color: FINANCE_PRO_PALETTE[14] },
+                { id: 'cat_otros_ingreso', name: 'Otros ingresos', icon: 'other', type: 'income', color: FINANCE_PRO_PALETTE[15] }
             ];
         }
 
@@ -10950,6 +10976,38 @@
             </div>`;
         }
 
+        // Un gasto recurrente con cuenta PRO asignada se registra solo como
+        // movimiento el día de cargo de cada mes — una vez por mes y por
+        // gasto (_proLastCharged evita duplicarlo si se re-renderiza varias
+        // veces el mismo día). Queda sin categoría, igual que un movimiento
+        // importado, para no adivinar mal una categoría.
+        function ensureRecurringProCharges() {
+            const monthKey = financeMonthKey();
+            const today = new Date();
+            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            let changed = false;
+            entries.forEach(e => {
+                if (!(e.type === 'subscription' || e.type === 'fixed_expense')) return;
+                if (e.active === false) return;
+                if (!e.proAccount || !FINANCE_PRO_ACCOUNT_KEYS.includes(e.proAccount)) return;
+                const chargeDay = Math.min(Number(e.renewalDay) || 1, daysInMonth);
+                if (today.getDate() < chargeDay) return;
+                if (e._proLastCharged === monthKey) return;
+                financePro.transactions.push({
+                    id: 'ptx_rec_' + e.id + '_' + monthKey,
+                    date: monthKey + '-' + String(chargeDay).padStart(2, '0'),
+                    account: e.proAccount,
+                    type: 'expense',
+                    amount: Number(e.amount) || 0,
+                    note: e.title || (e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'),
+                    recurringEntryId: e.id
+                });
+                e._proLastCharged = monthKey;
+                changed = true;
+            });
+            if (changed) saveData().catch(err => console.error(err));
+        }
+
         function financeProAccountBalance(key) {
             let bal = Number(financePro.accounts[key]?.balance0 || 0);
             financePro.transactions.forEach(t => {
@@ -10969,6 +11027,19 @@
 
         function financeProCategoryById(id) {
             return financePro.categories.find(c => c.id === id) || null;
+        }
+
+        function financeProCategoryColor(cat) {
+            return (cat && cat.color) || '#78716c';
+        }
+
+        // Insignia de icono con el color propio de la categoría (en vez del
+        // color fijo de ingreso/gasto), calculado inline porque el color
+        // es arbitrario — no encaja en el set de clases .fin-*.
+        function financeProCategoryBadge(cat, extraClass) {
+            const color = financeProCategoryColor(cat);
+            const icon = financeProCategoryIconSvg(cat ? cat.icon : 'other');
+            return `<div class="finance-metric-icon finance-pro-tx-icon ${extraClass || ''}" style="background:${color}22;color:${color}">${icon}</div>`;
         }
 
         // ============================================================
@@ -11068,6 +11139,46 @@
             </div>`;
         }
 
+        function financeProCategorySpend(catId, monthKey) {
+            monthKey = monthKey || financeMonthKey();
+            return financePro.transactions
+                .filter(t => t.type === 'expense' && t.category === catId && t.date.slice(0, 7) === monthKey)
+                .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+        }
+
+        // Solo se muestran las categorías de gasto con presupuesto puesto
+        // (Categorías → presupuesto mensual). Sin ninguna, el panel entero
+        // desaparece en vez de quedar vacío ocupando sitio.
+        function renderFinanceProBudgetsPanel() {
+            const budgets = financePro.categoryBudgets || {};
+            const ids = Object.keys(budgets).filter(id => budgets[id] > 0 && financeProCategoryById(id));
+            if (!ids.length) return '';
+            const monthKey = financeMonthKey();
+            return `<section class="finance-panel" style="margin-top:16px">
+                <div class="finance-panel-head">
+                    ${financePanelHeadIcon(FINANCE_ICON_TARGET, 'fin-pink', financeMonthLabel(monthKey), 'Presupuestos')}
+                    <button class="finance-icon-btn" title="Editar presupuestos" onclick="openFinanceProCategoriesModal()">✎</button>
+                </div>
+                ${ids.map(id => {
+                    const cat = financeProCategoryById(id);
+                    const spent = financeProCategorySpend(id, monthKey);
+                    const budget = budgets[id];
+                    const pct = Math.min(100, (spent / budget) * 100);
+                    const over = spent > budget;
+                    const near = !over && pct >= 80;
+                    const barColor = over ? '#dc2626' : near ? '#d97706' : financeProCategoryColor(cat);
+                    return `<div class="finance-budget-row" style="cursor:default">
+                        <div class="finance-budget-row-head">
+                            <span style="display:flex;align-items:center;gap:8px;color:var(--text-primary)">${financeProCategoryBadge(cat)}${escapeHtml(cat.name)}</span>
+                            <span class="${over ? 'finance-negative' : ''}">${financeMoney(spent)} / ${financeMoney(budget)}</span>
+                        </div>
+                        <div class="finance-progress"><span style="width:${pct}%;background:${barColor}"></span></div>
+                        ${over ? `<div class="finance-metric-note" style="color:#dc2626;margin-top:4px">Presupuesto superado en ${financeMoney(spent - budget)}</div>` : near ? `<div class="finance-metric-note" style="color:#d97706;margin-top:4px">Cerca del límite</div>` : ''}
+                    </div>`;
+                }).join('')}
+            </section>`;
+        }
+
         function renderFinanceProDashboard() {
             const total = financeProTotalBalance();
             const totalSeries = financeProMonthlyBalances(null);
@@ -11092,6 +11203,8 @@
                 <div class="finance-pro-accounts-grid">
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}
                 </div>
+
+                ${renderFinanceProBudgetsPanel()}
 
                 <div class="finance-section-head" style="margin-top:24px">
                     <div class="finance-kicker">Movimientos</div>
@@ -11205,7 +11318,7 @@
             }
             const cat = financeProCategoryById(t.category);
             return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
-                <div class="finance-metric-icon ${t.type === 'income' ? 'fin-teal' : 'fin-red'} finance-pro-tx-icon">${financeProCategoryIconSvg(cat ? cat.icon : 'other')}</div>
+                ${financeProCategoryBadge(cat)}
                 <div class="finance-pro-tx-main">
                     <div class="finance-pro-tx-title">${escapeHtml(cat ? cat.name : 'Sin categoría')}</div>
                     <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)}${t.note ? ' · ' + escapeHtml(t.note) : ''} · ${financeDateLabelShort(t.date)}</div>
@@ -11307,11 +11420,14 @@
         //  FINANZAS PRO — categorías
         // ============================================================
         let financeProNewCatIcon = 'other';
+        let financeProNewCatColor = FINANCE_PRO_PALETTE[0];
 
         function openFinanceProCategoriesModal() {
             financeProNewCatIcon = 'other';
+            financeProNewCatColor = FINANCE_PRO_PALETTE[0];
             showModal(`
                 <div class="modal-title">Categorías</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">En las de gasto puedes poner un presupuesto mensual — cuando te acerques o te pases, se avisa en Movimientos.</div>
                 <div id="finance-pro-cat-list">${renderFinanceProCategoryList()}</div>
                 <div class="modal-label" style="margin-top:14px">Nueva categoría</div>
                 <input id="new-cat-name" class="modal-input" placeholder="Nombre">
@@ -11321,6 +11437,8 @@
                 </select>
                 <div class="modal-label">Icono</div>
                 <div id="new-cat-icon-picker">${renderFinanceProIconPicker()}</div>
+                <div class="modal-label">Color</div>
+                <div id="new-cat-color-picker">${renderFinanceProColorPicker()}</div>
                 <button class="btn-modal-primary" style="margin-top:10px" onclick="addFinanceProCategory()">+ Añadir categoría</button>
             `);
         }
@@ -11331,10 +11449,23 @@
             </div>`;
         }
 
+        function renderFinanceProColorPicker() {
+            return `<div class="finance-pro-icon-picker">
+                ${FINANCE_PRO_PALETTE.map(c => `<button type="button" class="finance-pro-color-choice ${financeProNewCatColor === c ? 'selected' : ''}" style="background:${c}" title="${c}" onclick="financeProNewCatColor='${c}';document.getElementById('new-cat-color-picker').innerHTML=renderFinanceProColorPicker()"></button>`).join('')}
+            </div>`;
+        }
+
         function renderFinanceProCategoryList() {
-            const row = c => `<div class="finance-budget-row" style="display:flex;justify-content:space-between;align-items:center;cursor:default">
-                <span style="display:flex;align-items:center;gap:8px"><span class="finance-metric-icon fin-slate finance-pro-tx-icon">${financeProCategoryIconSvg(c.icon)}</span>${escapeHtml(c.name)}</span>
-                <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceProCategory('${c.id}')">✕</button>
+            const row = c => `<div class="finance-budget-row" style="cursor:default">
+                <div class="finance-budget-row-head" style="align-items:center">
+                    <span style="display:flex;align-items:center;gap:8px;color:var(--text-primary)">${financeProCategoryBadge(c)}${escapeHtml(c.name)}</span>
+                    <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceProCategory('${c.id}')">✕</button>
+                </div>
+                ${c.type === 'expense' ? `
+                <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+                    <span style="font-size:10px;color:var(--text-secondary)">Presupuesto mensual (€)</span>
+                    <input class="modal-input" style="margin:0;width:90px;padding:5px 8px;font-size:11px" type="number" min="0" step="1" value="${financePro.categoryBudgets[c.id] || ''}" placeholder="Sin límite" onchange="setFinanceProCategoryBudget('${c.id}', this.value)">
+                </div>` : ''}
             </div>`;
             const expense = financePro.categories.filter(c => c.type === 'expense');
             const income = financePro.categories.filter(c => c.type === 'income');
@@ -11342,14 +11473,23 @@
                 <div class="finance-kicker" style="margin:14px 0 4px">Ingresos</div>${income.map(row).join('') || '<div class="finance-empty-line">Ninguna</div>'}`;
         }
 
+        async function setFinanceProCategoryBudget(id, value) {
+            const amount = Math.max(0, Number(value) || 0);
+            financePro.categoryBudgets = financePro.categoryBudgets || {};
+            if (amount > 0) financePro.categoryBudgets[id] = amount; else delete financePro.categoryBudgets[id];
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
         async function addFinanceProCategory() {
             const name = document.getElementById('new-cat-name')?.value.trim();
             const type = document.getElementById('new-cat-type')?.value || 'expense';
             if (!name) { showToast('Ponle un nombre a la categoría', true); return; }
-            financePro.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, icon: financeProNewCatIcon, type });
+            financePro.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, icon: financeProNewCatIcon, color: financeProNewCatColor, type });
             financeProNewCatIcon = 'other';
+            financeProNewCatColor = FINANCE_PRO_PALETTE[0];
             document.getElementById('finance-pro-cat-list').innerHTML = renderFinanceProCategoryList();
             document.getElementById('new-cat-icon-picker').innerHTML = renderFinanceProIconPicker();
+            document.getElementById('new-cat-color-picker').innerHTML = renderFinanceProColorPicker();
             document.getElementById('new-cat-name').value = '';
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }

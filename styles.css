@@ -4519,8 +4519,20 @@ body.beige {
 
 /* Cuentas: mismo estilo de tarjeta que .finance-metric-card, para que toda
    la fila (fijas + propias + informativas) se vea como un único sistema. */
-.finance-metric-card-simple { cursor:pointer; justify-content:center; min-height:72px; }
+.finance-metric-card-simple { cursor:pointer; justify-content:center; min-height:56px; }
 .finance-metric-card-muted { opacity:0.72; }
+
+/* Variante compacta: icono y valor en línea en vez de apilados y
+   centrados, para que la fila de Cuentas ocupe mucho menos alto sin
+   perder ningún dato de la tarjeta original. */
+.finance-metric-card-compact { align-items:stretch; text-align:left; padding:12px 14px 10px; gap:6px; }
+.finance-metric-compact-head { display:flex; align-items:center; gap:10px; }
+.finance-metric-compact-info { flex:1; min-width:0; display:flex; flex-direction:column; padding-right:22px; }
+.finance-metric-card-compact .finance-metric-label { order:1; }
+.finance-metric-card-compact .finance-metric-value { order:2; font-size:17px; }
+.finance-metric-card-compact .finance-progress { margin-top:0; }
+.finance-metric-compact-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:9px; color:var(--text-secondary); }
+.finance-metric-card-compact .finance-metric-note { margin-top:0; }
 .finance-metric-card-muted:hover { opacity:1; }
 
 /* Inversión a largo plazo: valor + rendimiento, barras aportado vs. valor actual */
@@ -4580,6 +4592,9 @@ body.beige {
 .finance-pro-icon-choice { width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--bg-input); color:var(--text-secondary); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s ease; }
 .finance-pro-icon-choice:hover { border-color:var(--border-strong); color:var(--text-primary); }
 .finance-pro-icon-choice.selected { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast); }
+.finance-pro-color-choice { width:26px; height:26px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; transition:transform .15s ease; }
+.finance-pro-color-choice:hover { transform:scale(1.12); }
+.finance-pro-color-choice.selected { border-color:var(--text-primary); box-shadow:0 0 0 2px var(--bg-modal); }
 
 /* ============================================================
    ESTUDIOS
