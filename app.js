@@ -11617,7 +11617,7 @@
             const imp = window._financeProImport;
             const m = imp.mapping;
             const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
-            const existingKeys = new Set(financePro.transactions.map(t => `${t.date}|${t.amount}|${t.note || ''}`));
+            const existingKeys = new Set(financePro.transactions.map(t => `${t.account}|${t.date}|${t.amount}|${t.note || ''}`));
             let added = 0, skipped = 0;
             rows.forEach(r => {
                 const date = financeProParseDate(r[m.date]);
@@ -11635,7 +11635,7 @@
                     if (!Number.isFinite(val) || val === 0) { skipped++; return; }
                     amount = Math.abs(val); type = val < 0 ? 'expense' : 'income';
                 }
-                const dedupeKey = `${date}|${amount}|${description}`;
+                const dedupeKey = `${m.account}|${date}|${amount}|${description}`;
                 if (existingKeys.has(dedupeKey)) { skipped++; return; }
                 existingKeys.add(dedupeKey);
                 financePro.transactions.push({
