@@ -4325,11 +4325,11 @@ body.beige {
 .finance-progress { height:6px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:8px; }
 .finance-progress span { display:block; height:100%; background:var(--accent); border-radius:inherit; }
 .finance-progress-large { height:7px; margin:3px 0 4px; border-radius:99px; }
-.finance-metrics-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
-.finance-metric-card { position:relative; background:var(--bg-card); border:3px solid #000; border-radius:20px; padding:22px 14px 18px; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; box-shadow:0 6px 18px rgba(0,0,0,.18); cursor:pointer; transition:box-shadow .15s ease, transform .15s ease; }
+.finance-metrics-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+.finance-metric-card { position:relative; background:var(--bg-card); border:2px solid #000; border-radius:16px; padding:14px 12px 12px; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:3px; box-shadow:0 4px 12px rgba(0,0,0,.14); cursor:pointer; transition:box-shadow .15s ease, transform .15s ease; }
 .finance-metric-card:hover { box-shadow:0 8px 22px rgba(0,0,0,.26); transform:translateY(-1px); }
 .finance-panel-head { display:flex; justify-content:space-between; align-items:center; gap:8px 14px; flex-wrap:wrap; }
-.finance-metric-icon { width:38px; height:38px; border-radius:50%; background:var(--bg-card-hover); color:var(--text-secondary); display:flex; align-items:center; justify-content:center; font-size:15px; margin-bottom:6px; }
+.finance-metric-icon { width:30px; height:30px; border-radius:50%; background:var(--bg-card-hover); color:var(--text-secondary); display:flex; align-items:center; justify-content:center; font-size:13px; margin-bottom:4px; }
 .finance-metric-icon.fin-blue { background:rgba(59,130,246,.14); color:#3b82f6; }
 .finance-metric-icon.fin-amber { background:rgba(245,158,11,.16); color:#d97706; }
 .finance-metric-icon.fin-teal { background:rgba(20,184,166,.15); color:#0d9488; }
@@ -4346,13 +4346,13 @@ body.beige {
 .finance-stat-box span { display:block; font-size:9px; text-transform:uppercase; letter-spacing:.3px; color:var(--text-secondary); margin-bottom:4px; }
 .finance-stat-box strong { font-size:15px; font-weight:800; font-variant-numeric:tabular-nums; }
 .finance-networth-side small { display:block; margin-top:6px; }
-.finance-metric-label { order:3; font-size:10px; text-transform:uppercase; font-weight:800; color:var(--text-secondary); letter-spacing:.35px; }
-.finance-edit-btn,.finance-icon-btn { width:25px; height:25px; border:0; border-radius:12px; background:transparent; color:var(--text-secondary); cursor:pointer; }
+.finance-metric-label { order:3; font-size:9px; text-transform:uppercase; font-weight:800; color:var(--text-secondary); letter-spacing:.3px; }
+.finance-edit-btn,.finance-icon-btn { width:22px; height:22px; border:0; border-radius:10px; background:transparent; color:var(--text-secondary); cursor:pointer; }
 .finance-edit-btn:hover,.finance-icon-btn:hover { background:var(--bg-card-hover); color:var(--text-primary); }
-.finance-metric-card .finance-edit-btn { position:absolute; top:10px; right:10px; }
-.finance-metric-value { order:2; font-size:22px; font-weight:800; }
-.finance-metric-meta { order:4; display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:9px; font-size:9px; color:var(--text-secondary); width:100%; }
-.finance-metric-note { order:6; font-size:9px; color:var(--text-secondary); margin-top:7px; line-height:1.4; }
+.finance-metric-card .finance-edit-btn { position:absolute; top:8px; right:8px; }
+.finance-metric-value { order:2; font-size:18px; font-weight:800; }
+.finance-metric-meta { order:4; display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:6px; font-size:8.5px; color:var(--text-secondary); width:100%; }
+.finance-metric-note { order:6; font-size:8.5px; color:var(--text-secondary); margin-top:5px; line-height:1.35; }
 .finance-metric-card .finance-progress { order:5; width:100%; }
 .finance-trend-chip { display:inline-flex; align-items:center; padding:2px 7px; border-radius:99px; font-size:9px; font-weight:700; }
 .finance-trend-chip.positive { background:rgba(34,197,94,.14); color:#16a34a; }
@@ -4517,7 +4517,7 @@ body.beige {
 
 /* Cuentas: mismo estilo de tarjeta que .finance-metric-card, para que toda
    la fila (fijas + propias + informativas) se vea como un único sistema. */
-.finance-metric-card-simple { cursor:pointer; justify-content:center; min-height:96px; }
+.finance-metric-card-simple { cursor:pointer; justify-content:center; min-height:72px; }
 .finance-metric-card-muted { opacity:0.72; }
 .finance-metric-card-muted:hover { opacity:1; }
 

@@ -10756,7 +10756,7 @@
                     ${renderFinanceMetric('vacation','vacationTarget','Reserva de vacaciones',FINANCE_ICON_SUN,'fin-teal','Se mantiene aparte del patrimonio operativo')}
                     ${(financeProfile.customAccounts || []).map(a => renderFinanceSimpleTile(a.balance, a.name, `openCustomAccountEditor('${a.id}')`, null, false, FINANCE_ICON_CARD, 'fin-slate')).join('')}
                     ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true, FINANCE_ICON_REPEAT, 'fin-red')}
-                    ${renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR, 'fin-gold')}
+                    ${collectibles.length ? renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR, 'fin-gold') : ''}
                 </div>
 
                 <div class="finance-section-head" style="margin-top:24px">
