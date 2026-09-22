@@ -2364,6 +2364,91 @@
                     console.error('No se pudo guardar el snapshot semanal:', snapErr);
                 }
             }
+
+            bitacoraNativeSyncSnapshot();
+        }
+
+        // ============================================================
+        //  PUENTE CON LA APP NATIVA DE iOS (widgets)
+        //  La app nativa envuelve esta misma web en un WKWebView y registra
+        //  un manejador de mensajes llamado "bitacoraNative". Cada vez que
+        //  se guarda algo, le mandamos un resumen (racha, tareas de hoy,
+        //  saldo, próximos eventos) que la app nativa deja en un App Group
+        //  para que los widgets lo lean sin conexión. En la PWA/web normal
+        //  ese manejador no existe, así que esto no hace nada.
+        // ============================================================
+        function bitacoraActivityDates() {
+            const dates = new Set();
+            (entries || []).forEach(e => { if (e && e.date && !isCalendarLogEntry(e)) dates.add(String(e.date).slice(0, 10)); });
+            (financePro && Array.isArray(financePro.transactions) ? financePro.transactions : []).forEach(t => { if (t && t.date) dates.add(String(t.date).slice(0, 10)); });
+            return dates;
+        }
+
+        // Racha de días seguidos con algo añadido/editado en Bitácora. Si
+        // hoy todavía no hay actividad no se da la racha por rota hasta que
+        // acabe el día — se cuenta hacia atrás desde ayer mientras tanto.
+        function bitacoraUpdateStreak() {
+            const dates = bitacoraActivityDates();
+            const today = new Date();
+            const todayStr = today.toISOString().slice(0, 10);
+            const cursor = new Date(today);
+            if (!dates.has(todayStr)) cursor.setDate(cursor.getDate() - 1);
+            let streak = 0;
+            while (dates.has(cursor.toISOString().slice(0, 10))) {
+                streak++;
+                cursor.setDate(cursor.getDate() - 1);
+            }
+            return streak;
+        }
+
+        function bitacoraSnapshotPayload() {
+            const today = todayISO();
+            const tasksToday = (typeof plannerItemsForOffset === 'function' ? plannerItemsForOffset(0) : [])
+                .slice(0, 7)
+                .map(it => ({ done: !!it.done }));
+            const todaysEvents = (entries || [])
+                .filter(e => e.type === 'event' && e.date === today && !isCalendarLogEntry(e))
+                .sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')))
+                .slice(0, 3)
+                .map(e => ({ time: e.time || '', title: e.title || '' }));
+            let balancePct = null;
+            if (financePro && financePro.enabled) {
+                try { balancePct = financeProStatsData().pctVsPrevMonth; } catch (e) { balancePct = null; }
+            }
+            return {
+                streakDays: bitacoraUpdateStreak(),
+                tasksToday,
+                balance: (financePro && financePro.enabled) ? financeProTotalBalance() : 0,
+                balancePct,
+                events: todaysEvents,
+                updatedAtISO: new Date().toISOString()
+            };
+        }
+
+        function bitacoraNativeSyncSnapshot() {
+            try {
+                if (!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bitacoraNative)) return;
+                window.webkit.messageHandlers.bitacoraNative.postMessage(JSON.stringify(bitacoraSnapshotPayload()));
+            } catch (e) { console.error('bitacoraNativeSyncSnapshot', e); }
+        }
+
+        // Cuando un widget abre la app con bitacora://quick?type=expense|income
+        // (ver ContentView.swift), la app nativa carga
+        // https://appbitacora.es/?quick=expense — aquí se detecta y se abre
+        // el registro rápido de Finanzas PRO ya preparado en ese tipo.
+        function handleWidgetDeepLink() {
+            const params = new URLSearchParams(window.location.search);
+            const quick = params.get('quick');
+            if (quick !== 'expense' && quick !== 'income') return;
+            history.replaceState(null, '', window.location.pathname + window.location.hash);
+            if (!financePro || !financePro.enabled) { showToast('Activa el modo PRO de Finanzas para usar el registro rápido', true); return; }
+            switchView('finance');
+            setTimeout(() => {
+                if (typeof openFinanceProQuickCaptureModal === 'function') {
+                    openFinanceProQuickCaptureModal();
+                    if (typeof financeProQuickSet === 'function') financeProQuickSet('type', quick);
+                }
+            }, 150);
         }
 
         // Normaliza registros laborales antiguos para que el nuevo sistema
@@ -4605,7 +4690,8 @@
             else if (currentView === 'suggestions') { content.innerHTML = renderSuggestions(); loadMySuggestions(); }
             else if (currentView === 'settings') { content.innerHTML = renderSettings();
                 if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
-                loadSettingsSubscriptionInfo(); }
+                loadSettingsSubscriptionInfo();
+                loadSettingsPushInfo(); }
             updateAddButton();
             updateSidebarPrivacy();
 
@@ -9278,6 +9364,119 @@
             `).join('');
         }
 
+        // ============================================================
+        //  NOTIFICACIONES PUSH
+        //  Web Push estándar (funciona en PWA — iOS 16.4+, Android, escritorio
+        //  — y dentro de la app nativa, porque ambas cargan esta misma web).
+        //  La clave pública VAPID es pública por diseño, no es un secreto.
+        //  El envío real lo hace la función de Supabase "send-push" con la
+        //  clave privada correspondiente guardada como secreto.
+        // ============================================================
+        const BITACORA_VAPID_PUBLIC_KEY = 'BG0bTxTamqFW-3hdbkN5gGFV52wc9iA8Nuig-pMwXQmWG1ErG-kdwO44qXm0XWCSEyZ4qJma50aVTK_EN-Hs62c';
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            const output = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; i++) output[i] = rawData.charCodeAt(i);
+            return output;
+        }
+
+        async function pushNotificationsStatus() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
+            if (typeof Notification === 'undefined') return 'unsupported';
+            if (Notification.permission === 'denied') return 'denied';
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                const sub = await reg.pushManager.getSubscription();
+                return sub ? 'enabled' : 'disabled';
+            } catch (e) { return 'unsupported'; }
+        }
+
+        async function enablePushNotifications() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                showToast('Este navegador no soporta notificaciones push', true);
+                return false;
+            }
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') { showToast('No se han activado las notificaciones', true); return false; }
+                const reg = await navigator.serviceWorker.ready;
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    sub = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(BITACORA_VAPID_PUBLIC_KEY)
+                    });
+                }
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return false;
+                const { error } = await sb.from('push_subscriptions').upsert({
+                    user_id: user.id,
+                    endpoint: sub.endpoint,
+                    subscription: sub.toJSON(),
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'endpoint' });
+                if (error) throw error;
+                showToast('Notificaciones activadas');
+                return true;
+            } catch (e) {
+                console.error('enablePushNotifications', e);
+                showToast('No se pudieron activar las notificaciones', true);
+                return false;
+            }
+        }
+
+        async function disablePushNotifications() {
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                const sub = await reg.pushManager.getSubscription();
+                if (sub) {
+                    try { await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); } catch (e) { console.error(e); }
+                    await sub.unsubscribe();
+                }
+                showToast('Notificaciones desactivadas');
+            } catch (e) {
+                console.error('disablePushNotifications', e);
+                showToast('No se pudieron desactivar', true);
+            }
+        }
+
+        async function togglePushNotifications() {
+            const status = await pushNotificationsStatus();
+            if (status === 'enabled') await disablePushNotifications();
+            else await enablePushNotifications();
+            loadSettingsPushInfo();
+        }
+
+        function renderPushSettingsBody(status) {
+            if (status === 'unsupported') {
+                return `<div style="font-size:12.5px;color:var(--text-secondary)">Este navegador no soporta notificaciones push.</div>`;
+            }
+            if (status === 'denied') {
+                return `<div style="font-size:12.5px;color:var(--text-secondary)">Bloqueadas desde los ajustes del navegador/sistema — actívalas ahí para poder usarlas aquí.</div>`;
+            }
+            if (status === 'cargando') {
+                return `<div style="font-size:12.5px;color:var(--text-secondary)">Cargando...</div>`;
+            }
+            const enabled = status === 'enabled';
+            return `
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                    <div style="font-size:12.5px;color:var(--text-secondary)">${enabled ? 'Activadas en este dispositivo.' : 'Recibe avisos de Bitácora en este dispositivo.'}</div>
+                    <button class="finance-pro-switch ${enabled ? 'on' : ''}" onclick="togglePushNotifications()" title="${enabled ? 'Desactivar' : 'Activar'} notificaciones" aria-label="Notificaciones">
+                        <span class="finance-pro-switch-knob"></span>
+                    </button>
+                </div>`;
+        }
+
+        async function loadSettingsPushInfo() {
+            const body = document.getElementById('settings-push-body');
+            if (!body) return;
+            const status = await pushNotificationsStatus();
+            body.innerHTML = renderPushSettingsBody(status);
+        }
+
         function renderSettings() {
             const devStatus = devModeActive ? 'Activado' : 'Desactivado';
             const devColor = devModeActive ? 'var(--fantasy-accent)' : 'var(--text-secondary)';
@@ -9296,6 +9495,11 @@
                             <button class="btn-secondary" style="width:auto" onclick="document.getElementById('import-input').click()">📥 Importar datos</button>
                         </div>
                         <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Exporta o importa todos tus datos (entradas, categorías, notas, etc.) en formato JSON.</div>
+                    </div>
+
+                    <div class="chart-container" style="margin-bottom:16px" id="settings-push-section">
+                        <div class="chart-title">Notificaciones</div>
+                        <div id="settings-push-body" style="margin-top:10px">${renderPushSettingsBody('cargando')}</div>
                     </div>
 
                     <div class="chart-container" style="margin-bottom:16px">
@@ -12169,10 +12373,6 @@
         // ============================================================
         //  FONDO INDEXADO — CARTERA MULTIFONDO
         // ============================================================
-
-        function todayISO() {
-            return new Date().toISOString().slice(0, 10);
-        }
 
         function migrateInvestmentData() {
             // La proyección de Bitácora utiliza siempre un supuesto del 5 % anual.
@@ -15708,6 +15908,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 runDailyBackupCheck();
                 updateNotifBadge();
                 if (!window._notifTimer) window._notifTimer = setInterval(refreshNotifData, 90000);
+                bitacoraNativeSyncSnapshot();
+                handleWidgetDeepLink();
             });
         }
 

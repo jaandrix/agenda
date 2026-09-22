@@ -2,7 +2,7 @@ name: BitacoraApp
 options:
   bundleIdPrefix: com.bitacora
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
   createIntermediateGroups: true
   # Por defecto XcodeGen genera el .pbxproj en formato Xcode 16 (object
   # version 77), que el Xcode instalado en el runner de CI (15.4) no sabe
@@ -14,33 +14,72 @@ configs:
   Debug: debug
   Release: release
 
+# Ajustes comunes a los dos targets (app + extensión de widgets) — evita
+# repetirlos dos veces y que se desincronicen.
+settingGroups:
+  unsignedBuild:
+    # Todo se compila sin firma (unsigned) — AltStore/SideStore firman con
+    # un Apple ID gratuito al instalarlo, no hace falta cuenta de pago.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    DEVELOPMENT_TEAM: ""
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
 targets:
   BitacoraApp:
     type: application
     platform: iOS
-    deploymentTarget: "16.0"
+    deploymentTarget: "17.0"
     sources:
       - path: BitacoraApp
         excludes:
           - Info.plist
+      - path: Shared
     info:
       path: BitacoraApp/Info.plist
+    entitlements:
+      path: BitacoraApp/BitacoraApp.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.bitacora.app
+    dependencies:
+      - target: BitacoraWidgets
+        embed: true
     settings:
       base:
         PRODUCT_NAME: BitacoraApp
         PRODUCT_BUNDLE_IDENTIFIER: com.bitacora.app
-        MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"
-        TARGETED_DEVICE_FAMILY: "1"
-        SWIFT_VERSION: "5.0"
-        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ENABLE_PREVIEWS: YES
-        # Hito 1 se compila sin firma (unsigned .app) — AltStore/SideStore
-        # se encargan de firmarlo con un Apple ID gratuito al instalarlo.
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: ""
-        CODE_SIGNING_REQUIRED: "NO"
-        CODE_SIGNING_ALLOWED: "NO"
-        DEVELOPMENT_TEAM: ""
+      groups:
+        - unsignedBuild
+
+  BitacoraWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: BitacoraWidgets
+        excludes:
+          - Info.plist
+      - path: Shared
+    info:
+      path: BitacoraWidgets/Info.plist
+    entitlements:
+      path: BitacoraWidgets/BitacoraWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.bitacora.app
+    settings:
+      base:
+        PRODUCT_NAME: BitacoraWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.bitacora.app.widgets
+        ENABLE_PREVIEWS: YES
+      groups:
+        - unsignedBuild

@@ -1,12 +1,14 @@
 import SwiftUI
 import WebKit
+import WidgetKit
 
-// Hito 1: una cáscara nativa mínima que carga appbitacora.es dentro de un
-// WKWebView. Nada de widgets/Siri/Compartir todavía — el único objetivo de
-// esta primera versión es confirmar que el circuito completo (Xcode project
-// generado por XcodeGen -> build sin firmar en GitHub Actions -> sideload
-// con AltStore) funciona de punta a punta antes de invertir tiempo en
-// funciones nativas de verdad.
+// Cáscara nativa: carga appbitacora.es dentro de un WKWebView. Dos piezas
+// nativas de verdad la acompañan:
+// 1. Un WKScriptMessageHandler ("bitacoraNative") que recibe el resumen que
+//    la web calcula tras cada guardado (bitacoraNativeSyncSnapshot() en
+//    app.js) y lo deja en el App Group para que los widgets lo lean.
+// 2. bitacora://quick?type=expense|income, que los widgets de Registro
+//    rápido abren para saltar directos al registro rápido de Finanzas PRO.
 struct ContentView: View {
     @StateObject private var model = WebViewModel()
 
@@ -38,11 +40,14 @@ struct ContentView: View {
                 .padding(24)
             }
         }
+        .onOpenURL { url in
+            model.handleIncomingURL(url)
+        }
     }
 }
 
 @MainActor
-final class WebViewModel: ObservableObject {
+final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
     @Published var isLoading = true
     @Published var errorMessage: String?
     let webView: WKWebView
@@ -51,11 +56,13 @@ final class WebViewModel: ObservableObject {
     // contenido propio, solo envuelve la web que ya existe.
     static let entryURL = URL(string: "https://appbitacora.es/")!
 
-    init() {
+    override init() {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsBackForwardNavigationGestures = true
+        super.init()
+        config.userContentController.add(self, name: "bitacoraNative")
     }
 
     func load() {
@@ -66,6 +73,34 @@ final class WebViewModel: ObservableObject {
 
     func reload() {
         load()
+    }
+
+    /// La web llama a window.webkit.messageHandlers.bitacoraNative.postMessage(json)
+    /// (ver bitacoraNativeSyncSnapshot() en app.js) con el JSON de
+    /// BitacoraSnapshot ya calculado — aquí solo se guarda y se pide a
+    /// WidgetKit que refresque.
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "bitacoraNative", let body = message.body as? String else { return }
+        guard let defaults = UserDefaults(suiteName: BitacoraSnapshot.appGroupID) else { return }
+        defaults.set(body.data(using: .utf8), forKey: BitacoraSnapshot.defaultsKey)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// bitacora://quick?type=expense|income (desde el widget "Registro
+    /// rápido") se traduce en cargar la web con ?quick=expense|income, que
+    /// handleWidgetDeepLink() en app.js detecta y usa para abrir el
+    /// registro rápido ya preparado en ese tipo.
+    func handleIncomingURL(_ url: URL) {
+        guard url.scheme == "bitacora", url.host == "quick" else { return }
+        guard let type = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first(where: { $0.name == "type" })?.value,
+            type == "expense" || type == "income" else { return }
+
+        var target = URLComponents(url: Self.entryURL, resolvingAgainstBaseURL: false)!
+        target.queryItems = [URLQueryItem(name: "quick", value: type)]
+        guard let targetURL = target.url else { return }
+        isLoading = true
+        webView.load(URLRequest(url: targetURL))
     }
 }
 
