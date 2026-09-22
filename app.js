@@ -11824,15 +11824,7 @@
                     ${renderFinanceSavingsGoals()}
                 </div>
 
-                <div class="finance-section-head" style="margin-top:24px">
-                    <div class="finance-kicker">Movimientos</div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap">
-                        <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">Registro rápido</button>
-                        <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
-                    </div>
-                </div>
-                ${renderFinanceProTransactionFilters()}
-                <div id="finance-pro-tx-list">${renderFinanceProTransactionList()}</div>
+                ${renderFinanceProTxSection()}
 
                 <div class="finance-dashboard-foot-actions" style="margin-top:20px">
                     <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()">✎ Corregir registros</button>
@@ -12039,6 +12031,33 @@
             document.getElementById('finance-pro-tx-list').innerHTML = renderFinanceProTransactionList();
         }
 
+        // El listado de movimientos empieza plegado (solo los 5 más
+        // recientes, sin filtros) para que los botones de abajo (Corregir
+        // registros, Renombrar/Categorías/Importar) queden a un toque,
+        // sin tener que hacer scroll por todo el historial primero.
+        let financeProTxListExpanded = false;
+
+        function toggleFinanceProTxListExpanded() {
+            financeProTxListExpanded = !financeProTxListExpanded;
+            const el = document.getElementById('finance-pro-tx-section');
+            if (el) el.outerHTML = renderFinanceProTxSection();
+        }
+
+        function renderFinanceProTxSection() {
+            return `<div id="finance-pro-tx-section">
+                <div class="finance-section-head" style="margin-top:24px">
+                    <div class="finance-kicker">Movimientos</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">Registro rápido</button>
+                        <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
+                    </div>
+                </div>
+                ${financeProTxListExpanded ? renderFinanceProTransactionFilters() : ''}
+                <div id="finance-pro-tx-list">${renderFinanceProTransactionList()}</div>
+                <button class="finance-oneoff-btn finance-pro-tx-expand-btn" onclick="toggleFinanceProTxListExpanded()">${financeProTxListExpanded ? '▲ Mostrar menos' : '▾ Ver todos los movimientos'}</button>
+            </div>`;
+        }
+
         function renderFinanceProTransactionFilters() {
             return `<div style="margin:14px 0 6px">
                 <input class="modal-input" style="margin:0 0 8px" type="search" placeholder="Buscar por categoría, nota o cuenta..." value="${escapeHtml(financeProTxFilter.search)}" oninput="financeProApplyTxFilter('search',this.value)">
@@ -12067,24 +12086,29 @@
 
         function renderFinanceProTransactionList() {
             let txs = [...financePro.transactions];
-            if (financeProTxFilter.account) txs = txs.filter(t => t.account === financeProTxFilter.account || t.transferTo === financeProTxFilter.account);
-            if (financeProTxFilter.year) txs = txs.filter(t => t.date.slice(0, 4) === financeProTxFilter.year);
-            if (financeProTxFilter.month) txs = txs.filter(t => t.date.slice(5, 7) === financeProTxFilter.month);
-            if (financeProTxFilter.search.trim()) {
-                const q = financeProTxFilter.search.trim().toLowerCase();
-                txs = txs.filter(t => {
-                    const cat = financeProCategoryById(t.category);
-                    const haystack = [
-                        cat ? cat.name : '',
-                        t.note || '',
-                        financePro.accounts[t.account]?.name || '',
-                        t.transferTo ? financePro.accounts[t.transferTo]?.name || '' : ''
-                    ].join(' ').toLowerCase();
-                    return haystack.includes(q);
-                });
+            // Plegado: los filtros ni se muestran, así que se ignoran y se
+            // recortan directamente los 5 movimientos más recientes.
+            if (financeProTxListExpanded) {
+                if (financeProTxFilter.account) txs = txs.filter(t => t.account === financeProTxFilter.account || t.transferTo === financeProTxFilter.account);
+                if (financeProTxFilter.year) txs = txs.filter(t => t.date.slice(0, 4) === financeProTxFilter.year);
+                if (financeProTxFilter.month) txs = txs.filter(t => t.date.slice(5, 7) === financeProTxFilter.month);
+                if (financeProTxFilter.search.trim()) {
+                    const q = financeProTxFilter.search.trim().toLowerCase();
+                    txs = txs.filter(t => {
+                        const cat = financeProCategoryById(t.category);
+                        const haystack = [
+                            cat ? cat.name : '',
+                            t.note || '',
+                            financePro.accounts[t.account]?.name || '',
+                            t.transferTo ? financePro.accounts[t.transferTo]?.name || '' : ''
+                        ].join(' ').toLowerCase();
+                        return haystack.includes(q);
+                    });
+                }
             }
             if (!txs.length) return `<div class="finance-empty-state">${financePro.transactions.length ? 'Ningún movimiento coincide con este filtro.' : 'Todavía no hay movimientos. Añade uno o importa un extracto bancario.'}</div>`;
             txs.sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+            if (!financeProTxListExpanded) txs = txs.slice(0, 5);
             const groups = {};
             txs.forEach(t => { const m = t.date.slice(0, 7); groups[m] = groups[m] || []; groups[m].push(t); });
             // El detalle mes a mes (ingresos/gastos, barra) vive ahora en la
