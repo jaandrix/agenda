@@ -68,7 +68,12 @@ targets:
       - path: BitacoraWidgets
         excludes:
           - Info.plist
+          - Fonts
       - path: Shared
+    # Poppins de verdad (no hay forma de cargar Google Fonts en un widget:
+    # no tiene red en tiempo de render), registrada en Info.plist más abajo.
+    resources:
+      - path: BitacoraWidgets/Fonts
     info:
       path: BitacoraWidgets/Info.plist
     entitlements:

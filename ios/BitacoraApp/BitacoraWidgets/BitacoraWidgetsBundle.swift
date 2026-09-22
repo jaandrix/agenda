@@ -43,6 +43,24 @@ struct SnapshotProvider: TimelineProvider {
     }
 }
 
+// Poppins real (letra Bitácora), incrustada en BitacoraWidgets/Fonts y
+// registrada en Info.plist — un widget no puede cargar Google Fonts (sin
+// red en tiempo de render). `Font.bitacora(.black, size: 52)` en vez de
+// `.system(size: 52, weight: .black, design: .rounded)` en todas las
+// vistas de este target.
+extension Font {
+    static func bitacora(_ weight: Font.Weight, size: CGFloat) -> Font {
+        let name: String
+        if weight == .black { name = "Poppins-Black" }
+        else if weight == .heavy { name = "Poppins-ExtraBold" }
+        else if weight == .bold { name = "Poppins-Bold" }
+        else if weight == .semibold { name = "Poppins-SemiBold" }
+        else if weight == .medium { name = "Poppins-Medium" }
+        else { name = "Poppins-Regular" }
+        return .custom(name, size: size)
+    }
+}
+
 // Paleta compartida — mismos valores que el mockup aprobado (Widgets de
 // Bitácora), no el azul/verde por defecto de iOS.
 enum BitacoraColor {

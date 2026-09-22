@@ -40,7 +40,7 @@ struct RegistroRapidoWidgetView: View {
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(iconColor)
             Text(label)
-                .font(.system(size: 16, weight: .heavy, design: .rounded))
+                .font(.bitacora(.heavy, size: 16))
                 .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -18,7 +18,7 @@ struct LockCircularView: View {
             Text("Bitácora")
         } currentValueLabel: {
             Text("\(Int(progress * 100))%")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .font(.bitacora(.bold, size: 15))
         }
         .gaugeStyle(.accessoryCircularCapacity)
         .containerBackground(for: .widget) { Color.clear }
@@ -45,14 +45,14 @@ struct LockRectangularView: View {
         VStack(alignment: .leading, spacing: 2) {
             if let next = snapshot.events.first {
                 Text(next.title)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.bitacora(.bold, size: 14))
                     .lineLimit(1)
                 Text(next.time)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.bitacora(.semibold, size: 13))
                     .opacity(0.75)
             } else {
                 Text("Sin eventos hoy")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.bitacora(.bold, size: 14))
             }
         }
         .containerBackground(for: .widget) { Color.clear }

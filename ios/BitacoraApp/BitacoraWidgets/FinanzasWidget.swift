@@ -29,17 +29,17 @@ struct FinanzasWidgetView: View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("SITUACIÓN FINANCIERA")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.bitacora(.bold, size: 11))
                     .tracking(1.2)
                     .foregroundColor(BitacoraColor.labelMuted)
                 Text(formattedBalance)
-                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .font(.bitacora(.black, size: 30))
                     .foregroundColor(.white)
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
                 if let pct = snapshot.balancePct {
                     Text(String(format: "%+.1f%%", pct))
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .font(.bitacora(.bold, size: 13))
                         .foregroundColor(pct >= 0 ? BitacoraColor.good : BitacoraColor.bad)
                 }
             }

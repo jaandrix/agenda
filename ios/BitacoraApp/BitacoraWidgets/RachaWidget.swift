@@ -30,7 +30,7 @@ struct RachaWidgetView: View {
             TickRing()
             VStack(alignment: .leading, spacing: 0) {
                 Text("RACHA · BITÁCORA")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.bitacora(.bold, size: 11))
                     .tracking(1.2)
                     .foregroundColor(BitacoraColor.labelMuted)
 
@@ -38,10 +38,10 @@ struct RachaWidgetView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(snapshot.streakDays)")
-                        .font(.system(size: 52, weight: .black, design: .rounded))
+                        .font(.bitacora(.black, size: 52))
                         .foregroundColor(.white)
                     Text("días actualizando")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .font(.bitacora(.semibold, size: 12))
                         .foregroundColor(Color(white: 0.62))
                 }
 
@@ -56,7 +56,7 @@ struct RachaWidgetView: View {
                         }
                     }
                     Text("TAREAS DE HOY")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .font(.bitacora(.bold, size: 9))
                         .tracking(0.5)
                         .foregroundColor(BitacoraColor.labelFaint)
                 }
