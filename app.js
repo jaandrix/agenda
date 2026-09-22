@@ -11643,7 +11643,6 @@
 
                 <div class="finance-section-head" style="margin-top:20px">
                     <div class="finance-kicker">Cuentas</div>
-                    <button class="finance-oneoff-btn" onclick="openFinanceProAccountsSettings()">✎ Renombrar / saldo inicial</button>
                 </div>
                 <div class="finance-pro-accounts-grid">
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}
@@ -11654,14 +11653,22 @@
                 <div class="finance-section-head" style="margin-top:24px">
                     <div class="finance-kicker">Movimientos</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
-                        <button class="finance-oneoff-btn" onclick="openFinanceProCategoriesModal()">Categorías</button>
-                        <button class="finance-oneoff-btn" onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">Registro rápido</button>
                         <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
                     </div>
                 </div>
                 ${renderFinanceProTransactionFilters()}
                 <div id="finance-pro-tx-list">${renderFinanceProTransactionList()}</div>
+
+                <!-- Acciones menos frecuentes, apartadas del flujo principal
+                     para que no compitan visualmente con registrar movimientos -->
+                <div class="finance-pro-settings-links">
+                    <button onclick="openFinanceProAccountsSettings()">✎ Renombrar / saldo inicial</button>
+                    <span>·</span>
+                    <button onclick="openFinanceProCategoriesModal()">Categorías</button>
+                    <span>·</span>
+                    <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
+                </div>
             </div>`;
         }
 
@@ -11832,7 +11839,7 @@
         // ============================================================
         //  FINANZAS PRO — lista de movimientos
         // ============================================================
-        let financeProTxFilter = { account: '', month: '', year: '' };
+        let financeProTxFilter = { account: '', month: '', year: '', search: '' };
         const FINANCE_PRO_MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
         function financeProTxFilterYears() {
@@ -11847,7 +11854,9 @@
         }
 
         function renderFinanceProTransactionFilters() {
-            return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px">
+            return `<div style="margin:14px 0 6px">
+                <input class="modal-input" style="margin:0 0 8px" type="search" placeholder="Buscar por categoría, nota o cuenta..." value="${escapeHtml(financeProTxFilter.search)}" oninput="financeProApplyTxFilter('search',this.value)">
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <select class="modal-input" style="width:auto;margin:0" onchange="financeProApplyTxFilter('account',this.value)">
                     <option value="">Todas las cuentas</option>
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${financeProTxFilter.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
@@ -11860,6 +11869,7 @@
                     <option value="">Todos los años</option>
                     ${financeProTxFilterYears().map(y => `<option value="${y}" ${financeProTxFilter.year === y ? 'selected' : ''}>${y}</option>`).join('')}
                 </select>
+                </div>
             </div>`;
         }
 
@@ -11874,6 +11884,19 @@
             if (financeProTxFilter.account) txs = txs.filter(t => t.account === financeProTxFilter.account || t.transferTo === financeProTxFilter.account);
             if (financeProTxFilter.year) txs = txs.filter(t => t.date.slice(0, 4) === financeProTxFilter.year);
             if (financeProTxFilter.month) txs = txs.filter(t => t.date.slice(5, 7) === financeProTxFilter.month);
+            if (financeProTxFilter.search.trim()) {
+                const q = financeProTxFilter.search.trim().toLowerCase();
+                txs = txs.filter(t => {
+                    const cat = financeProCategoryById(t.category);
+                    const haystack = [
+                        cat ? cat.name : '',
+                        t.note || '',
+                        financePro.accounts[t.account]?.name || '',
+                        t.transferTo ? financePro.accounts[t.transferTo]?.name || '' : ''
+                    ].join(' ').toLowerCase();
+                    return haystack.includes(q);
+                });
+            }
             if (!txs.length) return `<div class="finance-empty-state">${financePro.transactions.length ? 'Ningún movimiento coincide con este filtro.' : 'Todavía no hay movimientos. Añade uno o importa un extracto bancario.'}</div>`;
             txs.sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
             const groups = {};
