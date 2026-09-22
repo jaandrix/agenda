@@ -4,6 +4,11 @@ options:
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
+  # Por defecto XcodeGen genera el .pbxproj en formato Xcode 16 (object
+  # version 77), que el Xcode instalado en el runner de CI (15.4) no sabe
+  # leer. Se fija al formato de Xcode 15 explícitamente para que sea
+  # compatible con la versión de Xcode disponible en macos-latest.
+  projectFormat: xcode15_3
 
 configs:
   Debug: debug
