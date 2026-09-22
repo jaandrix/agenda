@@ -10,13 +10,23 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     defaults:
       run:
         working-directory: ios/BitacoraApp
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Usar la versión de Xcode más reciente instalada en el runner
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$LATEST" ]; then
+            echo "No se encontró ningún /Applications/Xcode_*.app, se usa el que ya esté seleccionado."
+          else
+            sudo xcode-select -s "$LATEST/Contents/Developer"
+          fi
+          xcodebuild -version
 
       - name: Instalar XcodeGen
         run: brew install xcodegen
