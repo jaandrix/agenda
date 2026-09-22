@@ -15,6 +15,8 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             WebView(model: model)
+                .ignoresSafeArea()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if model.isLoading {
                 ProgressView()
