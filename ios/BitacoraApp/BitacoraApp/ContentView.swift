@@ -23,6 +23,20 @@ struct ContentView: View {
                     .progressViewStyle(.circular)
             }
 
+            // Marca de diagnóstico temporal — si NO ves esta franja amarilla
+            // al abrir la app, el .ipa instalado no es este build, por
+            // mucho que hayas repetido el proceso de instalación.
+            VStack {
+                Text("BUILD DIAGNÓSTICO v2 — 7ca0cb8+")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.black)
+                    .padding(4)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.yellow)
+                Spacer()
+            }
+            .ignoresSafeArea(edges: .top)
+
             if let message = model.errorMessage {
                 VStack(spacing: 14) {
                     Text("No se ha podido cargar Bitácora")
