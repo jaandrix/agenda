@@ -11392,6 +11392,49 @@
             </svg>`;
         }
 
+        // Vista general: dos líneas sobre la misma escala — la suma de las
+        // cuentas PRO (con relleno degradado, la serie "principal") y el
+        // patrimonio total (+ emergencia + fondo a largo), en discontinuo
+        // para diferenciarla sin saturar el gráfico con dos áreas.
+        function renderFinanceProMultiLineChart(seriesList, idSuffix) {
+            const base = seriesList[0].data;
+            if (!base || base.length < 2) {
+                return `<div class="finance-empty-state" style="padding:30px 0">Sin histórico suficiente todavía — necesitas movimientos en al menos 2 meses distintos.</div>`;
+            }
+            const W = 900, H = 200, padX = 24, padT = 8, padB = 22;
+            const innerW = W - padX * 2, innerH = H - padT - padB;
+            const allValues = seriesList.flatMap(s => s.data.map(d => d.balance));
+            const minVal = Math.min(0, ...allValues);
+            const maxVal = Math.max(1, ...allValues) * 1.08;
+            const range = (maxVal - minVal) || 1;
+            const n = base.length;
+            const x = i => n === 1 ? padX + innerW / 2 : padX + innerW * i / (n - 1);
+            const y = v => padT + innerH - ((v - minVal) / range) * innerH;
+            const step = Math.max(1, Math.ceil(n / 6));
+            const labels = base.map((d, i) => (i % step === 0 || i === n - 1)
+                ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${escapeHtml(financeMonthLabel(d.month).split(' de ')[0])}</text>` : '').join('');
+            const zeroLine = (minVal < 0 && maxVal > 0) ? `<line x1="${padX}" y1="${y(0).toFixed(1)}" x2="${W - padX}" y2="${y(0).toFixed(1)}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="1.5,3"/>` : '';
+            const lines = seriesList.map((s, si) => {
+                const path = s.data.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d.balance).toFixed(1)}`).join(' ');
+                const points = s.data.map((d, i) => {
+                    const tip = escapeHtml(`${s.label} · ${financeMonthLabel(d.month)}: ${financeMoney(d.balance)}`).replace(/"/g, '&quot;');
+                    return `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="9" fill="transparent" onmousemove="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)" onmouseleave="financeProChartTooltipHide('${idSuffix}-${si}-${i}')" onclick="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)"/>
+                        <circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3" fill="var(--bg-card)" stroke="${s.color}" stroke-width="2" style="pointer-events:none"/>`;
+                }).join('');
+                const area = si === 0 ? `<path d="${path} L${x(n - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z" fill="url(#fpGrad_${idSuffix}_${si})" stroke="none"/>` : '';
+                return `<defs><linearGradient id="fpGrad_${idSuffix}_${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:${s.color};stop-opacity:0.22"/><stop offset="100%" style="stop-color:${s.color};stop-opacity:0"/></linearGradient></defs>
+                    ${area}
+                    <path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${si === 1 ? 'stroke-dasharray="5,4"' : ''}/>
+                    ${points}`;
+            }).join('');
+            const legend = `<div class="finance-chart-legend">${seriesList.map((s, si) => `<span><i style="background:${s.color};${si === 1 ? 'border-radius:0;height:2px;width:12px;margin-top:5px' : ''}"></i>${escapeHtml(s.label)}</span>`).join('')}</div>`;
+            return `${legend}<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:280px;display:block">
+                ${zeroLine}
+                ${lines}
+                ${labels}
+            </svg>`;
+        }
+
         // Tooltip flotante compartido por todas las gráficas PRO — un único
         // div reutilizado (no uno por punto) para no ensuciar el DOM.
         function financeProChartTooltipShow(evt, pointId, text) {
@@ -11434,17 +11477,21 @@
         function renderFinanceProChartPanel() {
             const total = financeProTotalBalance();
             const rangeDef = FINANCE_PRO_CHART_RANGES.find(r => r.key === financeProChartRange) || FINANCE_PRO_CHART_RANGES[3];
-            const totalSeries = financeProMonthlyBalances(null, rangeDef.months);
+            const mainSeries = financeProMonthlyBalances(null, rangeDef.months);
+            const totalSeries = financeUnifiedPatrimonySeries(rangeDef.months);
             return `<section class="finance-panel finance-chart-panel" id="finance-pro-chart-panel">
                 <div class="finance-panel-head">
-                    ${financePanelHeadIcon(FINANCE_ICON_CHART, 'fin-slate', 'Total PRO', 'Efectivo + Bancos + Online')}
+                    ${financePanelHeadIcon(FINANCE_ICON_CHART, 'fin-slate', 'Vista general', 'Suma cuentas principales')}
                     <button class="finance-icon-btn" title="Ver estadísticas" onclick="openFinanceProStatsModal()">${FINANCE_ICON_STATS}</button>
                 </div>
                 <div class="finance-networth-value finance-networth-value-compact" style="margin:2px 0 10px">${financeMoney(total)}</div>
                 <div class="finance-pro-range-tabs">
                     ${FINANCE_PRO_CHART_RANGES.map(r => `<button class="${financeProChartRange === r.key ? 'active' : ''}" onclick="financeProSetChartRange('${r.key}')">${r.label}</button>`).join('')}
                 </div>
-                ${renderFinanceProLineChart(totalSeries, 'var(--text-primary)', 'total', false)}
+                ${renderFinanceProMultiLineChart([
+                    { data: mainSeries, color: 'var(--text-primary)', label: 'Suma cuentas principales' },
+                    { data: totalSeries, color: '#b3872a', label: 'Patrimonio total' }
+                ], 'total')}
             </section>`;
         }
 
@@ -11659,6 +11706,23 @@
             return { total, change: financePctChange(total, prevProBalance + prevInvested + prevEmergency) };
         }
 
+        // Serie histórica del "Patrimonio total" (cuentas PRO + fondo de
+        // emergencia + fondo a largo/inversión) para la segunda línea de la
+        // gráfica — emergencia e inversión no tienen un valor por mes real
+        // (se actualizan a mano), así que para cada mes se usa el snapshot
+        // del histórico más cercano, sin pasarse de la fecha de ese mes.
+        function financeUnifiedPatrimonySeries(rangeMonths) {
+            const proSeries = financeProMonthlyBalances(null, rangeMonths);
+            const history = [...(financeProfile.history || [])].sort((a, b) => String(a.month).localeCompare(String(b.month)));
+            let histIdx = -1;
+            return proSeries.map(p => {
+                while (histIdx + 1 < history.length && history[histIdx + 1].month <= p.month) histIdx++;
+                const snap = histIdx >= 0 ? history[histIdx] : null;
+                const extra = snap ? (Number(snap.emergency || 0) + Number(snap.invested || 0)) : (Number(financeProfile.emergency || 0) + Number(financeProfile.invested || 0));
+                return { month: p.month, balance: p.balance + extra };
+            });
+        }
+
         // Sustituye la antigua "Previsión" (sueldo/aportaciones editados a
         // mano) por una señal calculada del ritmo real de los últimos meses
         // en las cuentas PRO frente al objetivo fijado.
@@ -11679,15 +11743,11 @@
             return { text: `A este ritmo (+${financeMoney(avgDelta)}/mes de media), llegarías a tu objetivo en ${monthsToGo} mes${monthsToGo === 1 ? '' : 'es'}.` };
         }
 
-        // Tarjeta ampliable con el balance neto (ingresos - gastos) de cada
-        // mes de un año, para ver el año completo de un vistazo sin que el
-        // detalle mes a mes ocupe espacio permanente en el listado.
-        let financeYearSummaryOpen = false;
-        let financeYearSummarySelectedYear = null;
+        // Variación del patrimonio PRO (Efectivo+Bancos+Online) mes a mes,
+        // en un popup con navegación por años — ya no una tarjeta fija en
+        // el panel, se abre desde el botón de % en "Patrimonio operativo".
+        let financeYearlyPctSelectedYear = null;
 
-        // % de variación del patrimonio PRO (Efectivo+Bancos+Online) mes a
-        // mes frente al mes anterior, para cada mes de un año — no el
-        // ingreso/gasto neto del mes, sino cuánto creció o bajó el saldo.
         function financeProYearlyPctChanges(year) {
             const series = financeProMonthlyBalances(null);
             const balanceByMonth = {};
@@ -11704,57 +11764,103 @@
             return months;
         }
 
-        function toggleFinanceYearSummary() {
-            financeYearSummaryOpen = !financeYearSummaryOpen;
-            if (!financeYearSummarySelectedYear) financeYearSummarySelectedYear = new Date().getFullYear();
-            const el = document.getElementById('finance-year-summary-card');
-            if (el) el.outerHTML = renderFinanceYearSummaryCard();
+        function openFinanceYearlyChangeModal() {
+            if (!financeYearlyPctSelectedYear) financeYearlyPctSelectedYear = new Date().getFullYear();
+            showModal(`<div class="modal-title">Variación mes a mes</div><div id="finance-yearly-pct-body">${renderFinanceYearlyPctBody()}</div>`);
         }
 
-        function financeShiftYearSummaryYear(delta) {
+        function financeShiftYearlyPctYear(delta) {
             const current = new Date().getFullYear();
-            const next = (financeYearSummarySelectedYear || current) + delta;
-            financeYearSummarySelectedYear = Math.min(current, next);
-            const el = document.getElementById('finance-year-summary-card');
-            if (el) el.outerHTML = renderFinanceYearSummaryCard();
+            const next = (financeYearlyPctSelectedYear || current) + delta;
+            financeYearlyPctSelectedYear = Math.min(current, next);
+            const el = document.getElementById('finance-yearly-pct-body');
+            if (el) el.outerHTML = `<div id="finance-yearly-pct-body">${renderFinanceYearlyPctBody()}</div>`;
         }
 
-        function renderFinanceYearSummaryCard() {
-            const year = financeYearSummarySelectedYear || new Date().getFullYear();
-            const months = financeYearSummaryOpen ? financeProYearlyPctChanges(year) : [];
+        function renderFinanceYearlyPctBody() {
+            const year = financeYearlyPctSelectedYear || new Date().getFullYear();
+            const months = financeProYearlyPctChanges(year);
             const atCurrentYear = year >= new Date().getFullYear();
-            return `<section class="finance-panel finance-year-summary-card" id="finance-year-summary-card" style="margin-top:16px">
-                <div class="finance-panel-head" style="cursor:pointer" onclick="toggleFinanceYearSummary()">
-                    ${financePanelHeadIcon(FINANCE_ICON_CALENDAR, 'fin-slate', 'Resumen anual', financeYearSummaryOpen ? 'Toca para cerrar' : '% de variación mes a mes')}
-                    <span style="font-size:20px;color:var(--text-secondary);line-height:1">${financeYearSummaryOpen ? '−' : '+'}</span>
+            return `
+                <div class="finance-year-summary-nav">
+                    <button onclick="financeShiftYearlyPctYear(-1)" aria-label="Año anterior">‹</button>
+                    <strong>${year}</strong>
+                    <button onclick="financeShiftYearlyPctYear(1)" aria-label="Año siguiente" ${atCurrentYear ? 'disabled' : ''}>›</button>
                 </div>
-                ${financeYearSummaryOpen ? `
-                    <div class="finance-year-summary-nav" onclick="event.stopPropagation()">
-                        <button onclick="financeShiftYearSummaryYear(-1)" aria-label="Año anterior">‹</button>
-                        <strong>${year}</strong>
-                        <button onclick="financeShiftYearSummaryYear(1)" aria-label="Año siguiente" ${atCurrentYear ? 'disabled' : ''}>›</button>
+                <div class="finance-year-summary-list">
+                    ${months.map(m => `
+                        <div class="finance-year-summary-row">
+                            <span>${FINANCE_PRO_MONTH_NAMES[Number(m.month.slice(5, 7)) - 1]}</span>
+                            <span class="${m.pct === null ? '' : m.pct >= 0 ? 'finance-positive' : 'finance-negative'}">${m.pct === null ? '—' : `${m.pct >= 0 ? '+' : ''}${m.pct.toFixed(1)}%`}</span>
+                        </div>`).join('')}
+                </div>
+            `;
+        }
+
+        // ============================================================
+        //  FINANZAS PRO — tarjeta de Patrimonio operativo
+        // ============================================================
+        function renderFinanceNetworthCard() {
+            const updatePending = financeMonthUpdatePending();
+            const { total, change: totalChange } = financeUnifiedPatrimonyChange();
+            const target = financeTargetTotal();
+            const totalPct = target > 0 ? Math.min(100, total / target * 100) : null;
+            const remainingToTarget = Math.max(0, target - total);
+            const R = 42, C = 2 * Math.PI * R;
+            const ringOffset = totalPct === null ? C : (C * (1 - totalPct / 100)).toFixed(1);
+            const pctBtnClass = totalChange === null ? 'neutral' : totalChange >= 0 ? 'positive' : 'negative';
+            return `<section class="finance-panel finance-networth-redesign" id="finance-networth-section">
+                <div class="finance-panel-head">
+                    ${financePanelHeadIcon(FINANCE_ICON_TARGET, 'fin-gold', 'Patrimonio', 'Operativo')}
+                    <button class="finance-networth-pct-btn ${pctBtnClass}" onclick="openFinanceYearlyChangeModal()" title="Ver variación mes a mes">
+                        ${totalChange === null ? 'Variación' : `${totalChange >= 0 ? '+' : ''}${totalChange.toFixed(1)}%`}
+                    </button>
+                </div>
+                <div class="finance-networth-redesign-body">
+                    <div class="finance-networth-ring-wrap">
+                        <svg viewBox="0 0 100 100" width="92" height="92">
+                            <circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--border)" stroke-width="9"/>
+                            ${totalPct !== null ? `<circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${ringOffset}" transform="rotate(-90 50 50)"/>` : ''}
+                        </svg>
+                        <div class="finance-networth-ring-label">${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</div>
                     </div>
-                    <div class="finance-year-summary-list">
-                        ${months.map(m => `
-                            <div class="finance-year-summary-row">
-                                <span>${FINANCE_PRO_MONTH_NAMES[Number(m.month.slice(5, 7)) - 1]}</span>
-                                <span class="${m.pct === null ? '' : m.pct >= 0 ? 'finance-positive' : 'finance-negative'}">${m.pct === null ? '—' : `${m.pct >= 0 ? '+' : ''}${m.pct.toFixed(1)}%`}</span>
-                            </div>`).join('')}
+                    <div class="finance-networth-redesign-info">
+                        <div class="finance-networth-redesign-value">${financeMoney(total)}</div>
+                        <div class="finance-networth-redesign-target">Objetivo ${target > 0 ? financeMoney(target) : 'sin definir'}</div>
+                        <div class="finance-networth-redesign-remaining">${remainingToTarget <= 0 && target > 0 ? 'Objetivo alcanzado' : target > 0 ? `Faltan ${financeMoney(remainingToTarget)}` : 'Define un objetivo para ver el camino'}</div>
                     </div>
-                ` : ''}
+                </div>
+                <div class="finance-networth-actions">
+                    <button class="finance-networth-action-btn" onclick="openFinanceTargetEditor()">✎ Objetivo</button>
+                    <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">${updatePending ? 'Actualizar este mes' : '✓ Mes actualizado'}</button>
+                </div>
             </section>`;
+        }
+
+        // Fondo de emergencia, reserva de vacaciones, cuentas propias,
+        // gastos recurrentes y coleccionables — cifras manuales que no son
+        // cuentas PRO transaccionales, así que se apartan a un popup en vez
+        // de ocupar espacio fijo en el panel principal.
+        function openFinanceOtherSavingsModal() {
+            const recurring = financeRecurringTotal();
+            showModal(`
+                <div class="modal-title">Otros ahorros</div>
+                <div class="finance-metrics-grid">
+                    ${renderFinanceSimpleTile(Number(financeProfile.emergency || 0), 'Fondo de emergencia', 'openMonthlyFinanceUpdate()', null, false, FINANCE_ICON_SHIELD, 'fin-amber')}
+                    ${renderFinanceSimpleTile(Number(financeProfile.vacation || 0), 'Reserva de vacaciones', 'openMonthlyFinanceUpdate()', 'Queda fuera del patrimonio operativo', true, FINANCE_ICON_SUN, 'fin-teal')}
+                    ${(financeProfile.customAccounts || []).map(a => renderFinanceSimpleTile(a.balance, a.name, `openCustomAccountEditor('${a.id}')`, null, false, FINANCE_ICON_CARD, 'fin-slate')).join('')}
+                    ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true, FINANCE_ICON_REPEAT, 'fin-red')}
+                    ${collectibles.length ? renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR, 'fin-gold') : ''}
+                </div>
+                <button class="finance-oneoff-btn" style="width:100%;text-align:center;margin-top:14px" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
+            `);
         }
 
         function renderFinanceProDashboard() {
             ensureCurrentMonthHistory();
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
             const updatePending = financeMonthUpdatePending();
-            const { total, change: totalChange } = financeUnifiedPatrimonyChange();
-            const target = financeTargetTotal();
-            const totalPct = target > 0 ? Math.min(100, total / target * 100) : null;
-            const remainingToTarget = Math.max(0, target - total);
             const trend = financeGoalTrendSignal();
-            const recurring = financeRecurringTotal();
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
                 <div class="finance-toolbar-row" style="justify-content:flex-end">${blurToggleBtn}</div>
@@ -11768,28 +11874,7 @@
 
                 ${renderFinanceProChartPanel()}
 
-                <section class="finance-networth-card" id="finance-networth-section">
-                    <div class="finance-networth-main">
-                        <div>
-                            <div class="finance-kicker">Patrimonio operativo</div>
-                            <div class="finance-networth-value finance-networth-value-compact">${financeMoney(total)}</div>
-                            <div class="finance-networth-meta">
-                                ${totalChange === null ? 'Primer registro' : `${totalChange >= 0 ? '+' : ''}${totalChange.toFixed(1)}% frente al mes anterior`}
-                                · Objetivo ${target > 0 ? financeMoney(target) : 'sin definir'}
-                            </div>
-                        </div>
-                        <div class="finance-networth-side">
-                            <span>Progreso</span>
-                            <strong>${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</strong>
-                            <div class="finance-progress finance-progress-large"><span style="width:${totalPct === null ? 0 : totalPct}%"></span></div>
-                            <small>${remainingToTarget <= 0 && target > 0 ? 'Objetivo alcanzado' : target > 0 ? `Faltan ${financeMoney(remainingToTarget)}` : 'Define un objetivo para ver el camino'}</small>
-                        </div>
-                    </div>
-                    <div class="finance-networth-actions">
-                        <button class="finance-networth-action-btn" onclick="openFinanceTargetEditor()">✎ Objetivo</button>
-                        <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">${updatePending ? 'Actualizar este mes' : '✓ Mes actualizado'}</button>
-                    </div>
-                </section>
+                ${renderFinanceNetworthCard()}
 
                 <div class="finance-section-head" style="margin-top:20px">
                     <div class="finance-kicker">Cuentas</div>
@@ -11798,19 +11883,7 @@
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}
                 </div>
 
-                ${renderFinanceYearSummaryCard()}
-
-                <div class="finance-section-head" style="margin-top:20px">
-                    <div class="finance-kicker">Otros ahorros</div>
-                    <button class="finance-oneoff-btn" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
-                </div>
-                <div class="finance-metrics-grid">
-                    ${renderFinanceSimpleTile(Number(financeProfile.emergency || 0), 'Fondo de emergencia', 'openMonthlyFinanceUpdate()', null, false, FINANCE_ICON_SHIELD, 'fin-amber')}
-                    ${renderFinanceSimpleTile(Number(financeProfile.vacation || 0), 'Reserva de vacaciones', 'openMonthlyFinanceUpdate()', 'Queda fuera del patrimonio operativo', true, FINANCE_ICON_SUN, 'fin-teal')}
-                    ${(financeProfile.customAccounts || []).map(a => renderFinanceSimpleTile(a.balance, a.name, `openCustomAccountEditor('${a.id}')`, null, false, FINANCE_ICON_CARD, 'fin-slate')).join('')}
-                    ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true, FINANCE_ICON_REPEAT, 'fin-red')}
-                    ${collectibles.length ? renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR, 'fin-gold') : ''}
-                </div>
+                <button class="finance-oneoff-btn finance-other-savings-btn" onclick="openFinanceOtherSavingsModal()">${FINANCE_ICON_SHIELD} Otros ahorros</button>
 
                 ${renderFinanceProBudgetsPanel()}
 
@@ -12032,23 +12105,19 @@
             return Array.from(years).sort().reverse();
         }
 
+        // Los filtros solo se muestran dentro del popup de "todos los
+        // movimientos" — ahí es donde financeProApplyTxFilter actualiza.
         function financeProApplyTxFilter(key, value) {
             financeProTxFilter[key] = value;
-            document.getElementById('finance-pro-tx-list').innerHTML = renderFinanceProTransactionList();
+            const el = document.getElementById('finance-pro-tx-modal-list');
+            if (el) el.innerHTML = renderFinanceProTransactionList(true);
         }
 
-        // El listado de movimientos empieza plegado (solo los 5 más
-        // recientes, sin filtros) para que los botones de abajo (Corregir
-        // registros, Renombrar/Categorías/Importar) queden a un toque,
-        // sin tener que hacer scroll por todo el historial primero.
-        let financeProTxListExpanded = false;
-
-        function toggleFinanceProTxListExpanded() {
-            financeProTxListExpanded = !financeProTxListExpanded;
-            const el = document.getElementById('finance-pro-tx-section');
-            if (el) el.outerHTML = renderFinanceProTxSection();
-        }
-
+        // El listado del panel principal muestra solo los 5 movimientos más
+        // recientes (sin filtros); "Ver todos los movimientos" abre un
+        // popup con el listado completo y filtrable — así cerrar el popup
+        // no obliga a hacer scroll de vuelta hasta arriba como pasaba con
+        // el desplegable inline de antes.
         function renderFinanceProTxSection() {
             return `<div id="finance-pro-tx-section">
                 <div class="finance-section-head" style="margin-top:24px">
@@ -12058,10 +12127,17 @@
                         <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
                     </div>
                 </div>
-                ${financeProTxListExpanded ? renderFinanceProTransactionFilters() : ''}
-                <div id="finance-pro-tx-list">${renderFinanceProTransactionList()}</div>
-                <button class="finance-oneoff-btn finance-pro-tx-expand-btn" onclick="toggleFinanceProTxListExpanded()">${financeProTxListExpanded ? '▲ Mostrar menos' : '▾ Ver todos los movimientos'}</button>
+                <div id="finance-pro-tx-list">${renderFinanceProTransactionList(false)}</div>
+                <button class="finance-oneoff-btn finance-pro-tx-expand-btn" onclick="openFinanceProAllTxModal()">▾ Ver todos los movimientos</button>
             </div>`;
+        }
+
+        function openFinanceProAllTxModal() {
+            showModal(`
+                <div class="modal-title">Movimientos</div>
+                ${renderFinanceProTransactionFilters()}
+                <div id="finance-pro-tx-modal-list">${renderFinanceProTransactionList(true)}</div>
+            `);
         }
 
         function renderFinanceProTransactionFilters() {
@@ -12090,11 +12166,11 @@
             return new Date(y, m - 1, d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
         }
 
-        function renderFinanceProTransactionList() {
+        function renderFinanceProTransactionList(full) {
             let txs = [...financePro.transactions];
-            // Plegado: los filtros ni se muestran, así que se ignoran y se
-            // recortan directamente los 5 movimientos más recientes.
-            if (financeProTxListExpanded) {
+            // Vista plegada del panel principal: sin filtros, se recortan
+            // directamente los 5 movimientos más recientes.
+            if (full) {
                 if (financeProTxFilter.account) txs = txs.filter(t => t.account === financeProTxFilter.account || t.transferTo === financeProTxFilter.account);
                 if (financeProTxFilter.year) txs = txs.filter(t => t.date.slice(0, 4) === financeProTxFilter.year);
                 if (financeProTxFilter.month) txs = txs.filter(t => t.date.slice(5, 7) === financeProTxFilter.month);
@@ -12114,7 +12190,7 @@
             }
             if (!txs.length) return `<div class="finance-empty-state">${financePro.transactions.length ? 'Ningún movimiento coincide con este filtro.' : 'Todavía no hay movimientos. Añade uno o importa un extracto bancario.'}</div>`;
             txs.sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
-            if (!financeProTxListExpanded) txs = txs.slice(0, 5);
+            if (!full) txs = txs.slice(0, 5);
             const groups = {};
             txs.forEach(t => { const m = t.date.slice(0, 7); groups[m] = groups[m] || []; groups[m].push(t); });
             // El detalle mes a mes (ingresos/gastos, barra) vive ahora en la

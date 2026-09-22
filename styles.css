@@ -4273,7 +4273,11 @@ body.beige {
 .finance-dashboard .finance-pro-tx-amount,
 .finance-dashboard .finance-pro-tx-month-net,
 .finance-dashboard .finance-pro-tx-month-summary-legend span,
-.finance-dashboard .finance-year-summary-row span:last-child {
+.finance-dashboard .finance-networth-redesign-value,
+.finance-dashboard .finance-networth-redesign-target,
+.finance-dashboard .finance-networth-redesign-remaining,
+.finance-dashboard .finance-networth-pct-btn,
+.finance-dashboard .finance-networth-ring-label {
     transition: filter .4s cubic-bezier(0.4,0,0.2,1);
 }
 .finance-dashboard.blurred .finance-metric-value,
@@ -4290,7 +4294,11 @@ body.beige {
 .finance-dashboard.blurred .finance-pro-tx-amount,
 .finance-dashboard.blurred .finance-pro-tx-month-net,
 .finance-dashboard.blurred .finance-pro-tx-month-summary-legend span,
-.finance-dashboard.blurred .finance-year-summary-row span:last-child {
+.finance-dashboard.blurred .finance-networth-redesign-value,
+.finance-dashboard.blurred .finance-networth-redesign-target,
+.finance-dashboard.blurred .finance-networth-redesign-remaining,
+.finance-dashboard.blurred .finance-networth-pct-btn,
+.finance-dashboard.blurred .finance-networth-ring-label {
     filter: blur(8px);
     user-select: none;
 }
@@ -4331,6 +4339,28 @@ body.beige {
 .finance-progress { height:6px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:8px; }
 .finance-progress span { display:block; height:100%; background:var(--accent); border-radius:inherit; }
 .finance-progress-large { height:7px; margin:3px 0 4px; border-radius:99px; }
+
+/* Tarjeta de Patrimonio operativo — mismo lenguaje visual que el resto
+   del panel (.finance-panel), no la caja negra especial de antes. */
+.finance-networth-redesign { gap:14px; }
+.finance-networth-pct-btn { border:0; border-radius:999px; padding:6px 13px; font-size:12px; font-weight:800; cursor:pointer; background:var(--bg-input); color:var(--text-secondary); transition:all .15s ease; }
+.finance-networth-pct-btn:hover { background:var(--bg-card-hover); }
+.finance-networth-pct-btn.positive { background:rgba(79,206,143,.16); color:#2f9e6b; }
+.finance-networth-pct-btn.negative { background:rgba(194,69,92,.14); color:#c2455c; }
+.finance-networth-redesign-body { display:flex; align-items:center; gap:18px; }
+.finance-networth-ring-wrap { position:relative; flex-shrink:0; width:92px; height:92px; display:flex; align-items:center; justify-content:center; }
+.finance-networth-ring-wrap svg circle { transition:stroke-dashoffset .5s ease; }
+.finance-networth-ring-label { position:absolute; font-size:17px; font-weight:800; font-variant-numeric:tabular-nums; }
+.finance-networth-redesign-info { min-width:0; flex:1; }
+.finance-networth-redesign-value { font-size:30px; font-weight:900; letter-spacing:-1px; line-height:1.1; }
+.finance-networth-redesign-target { font-size:11.5px; color:var(--text-secondary); margin-top:6px; }
+.finance-networth-redesign-remaining { font-size:11.5px; color:var(--text-secondary); margin-top:2px; }
+.finance-other-savings-btn { width:100%; text-align:center; padding:13px 16px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:2px; }
+.finance-other-savings-btn svg { width:15px; height:15px; }
+
+.finance-chart-legend { display:flex; gap:16px; flex-wrap:wrap; margin:2px 0 8px; font-size:10.5px; font-weight:700; color:var(--text-secondary); }
+.finance-chart-legend span { display:flex; align-items:center; gap:6px; }
+.finance-chart-legend i { display:inline-block; width:9px; height:9px; border-radius:50%; }
 .finance-metrics-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
 .finance-metric-card { position:relative; background:var(--bg-card); border:2px solid #000; border-radius:16px; padding:14px 12px 12px; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:3px; box-shadow:0 4px 12px rgba(0,0,0,.14); cursor:pointer; transition:box-shadow .15s ease, transform .15s ease; }
 .finance-metric-card:hover { box-shadow:0 8px 22px rgba(0,0,0,.26); transform:translateY(-1px); }
@@ -4636,7 +4666,6 @@ body.beige {
 .finance-positive { color:var(--text-primary); }
 .finance-negative { color:#c2455c; }
 
-.finance-year-summary-card .finance-panel-head { cursor:pointer; }
 .finance-year-summary-list { display:flex; flex-direction:column; gap:1px; }
 .finance-year-summary-row { display:flex; justify-content:space-between; padding:8px 4px; font-size:12.5px; border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums; }
 .finance-year-summary-row:last-child { border-bottom:0; }
