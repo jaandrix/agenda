@@ -1566,21 +1566,26 @@
         // pestaña interna, llama a una acción (abrir un modal) o hace scroll
         // hasta el bloque en cuestión con un resalte breve.
         function goToNavSubsection(item) {
-            switchView(item.view);
-            if (item.setter && typeof window[item.setter] === 'function') window[item.setter](item.value);
-            if (item.action && typeof window[item.action] === 'function') {
-                setTimeout(() => window[item.action](), 150);
-                return;
-            }
-            if (item.anchor) {
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    const el = document.getElementById(item.anchor);
-                    if (!el) return;
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    el.classList.add('nav-subsection-flash');
-                    setTimeout(() => el.classList.remove('nav-subsection-flash'), 1400);
-                }));
-            }
+            // Empaquetado en un callback porque, si item.view es 'finances',
+            // switchView primero pregunta por el modo privacidad y no cambia
+            // de vista hasta que se responde — sin esto, el scroll/acción
+            // se ejecutaría contra la vista anterior.
+            switchView(item.view, () => {
+                if (item.setter && typeof window[item.setter] === 'function') window[item.setter](item.value);
+                if (item.action && typeof window[item.action] === 'function') {
+                    setTimeout(() => window[item.action](), 150);
+                    return;
+                }
+                if (item.anchor) {
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                        const el = document.getElementById(item.anchor);
+                        if (!el) return;
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        el.classList.add('nav-subsection-flash');
+                        setTimeout(() => el.classList.remove('nav-subsection-flash'), 1400);
+                    }));
+                }
+            });
         }
 
         function runPaletteCommand(cmd) {
@@ -2730,7 +2735,46 @@
             el.classList.add('view-fade-in');
         }
 
-        function switchView(view) {
+        // "afterEnter" es un callback opcional para cuando switchView('finances')
+        // va seguido de otra acción que necesita que la vista ya esté activa
+        // (p. ej. abrir un modal encima) — con el aviso de privacidad de por
+        // medio, ese "seguido de" deja de ser síncrono, así que se guarda
+        // para lanzarlo en cuanto se responda la pregunta.
+        function switchView(view, afterEnter) {
+            // Al entrar en Finanzas (desde otra sección) se pregunta si
+            // activar el modo privacidad (cifras ocultas) antes de mostrar
+            // el panel — con Intro se responde "Sí" (botón enfocado de
+            // salida) por ser la opción más prudente por defecto.
+            if (view === 'finances' && currentView !== 'finances') {
+                promptFinancePrivacyThenEnter(afterEnter);
+                return;
+            }
+            performSwitchView(view);
+            if (typeof afterEnter === 'function') afterEnter();
+        }
+
+        function promptFinancePrivacyThenEnter(afterEnter) {
+            window._financePrivacyPromptCallback = afterEnter || null;
+            showModal(`
+                <div class="modal-title">Modo privacidad</div>
+                <div class="finance-modal-note" style="margin:4px 0 18px">¿Quieres entrar a tu dashboard de Finanzas con el modo privacidad activado (cifras ocultas)?</div>
+                <button class="btn-modal-primary" id="finance-privacy-yes-btn" onclick="answerFinancePrivacyPrompt(true)">Sí</button>
+                <button class="btn-secondary" style="margin-top:10px" onclick="answerFinancePrivacyPrompt(false)">No</button>
+            `);
+            setTimeout(() => document.getElementById('finance-privacy-yes-btn')?.focus(), 0);
+        }
+
+        function answerFinancePrivacyPrompt(wantsPrivacy) {
+            blurFinances = wantsPrivacy;
+            closeModal();
+            performSwitchView('finances');
+            const cb = window._financePrivacyPromptCallback;
+            window._financePrivacyPromptCallback = null;
+            if (typeof cb === 'function') cb();
+            saveData().catch(e => console.error(e));
+        }
+
+        function performSwitchView(view) {
             try {
                 currentView = view;
                 if (view === 'planner') plannerDayOffset = 0;
@@ -6642,7 +6686,7 @@
                     title: 'Cuando tengas la información disponible, puedes actualizar tus finanzas',
                     sub: financeMonthLabel(monthKey),
                     date: monthKey + '-' + String(financeProfile.recordatorioDia).padStart(2, '0'),
-                    onClick: () => { closeNotifPanel(); switchView('finances'); openMonthlyFinanceUpdate(); }
+                    onClick: () => { closeNotifPanel(); switchView('finances', openMonthlyFinanceUpdate); }
                 });
             }
             (typeof listasOcioCompartidas !== 'undefined' ? listasOcioCompartidas : []).forEach(l => {
