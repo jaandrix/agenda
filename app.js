@@ -11685,54 +11685,60 @@
         let financeYearSummaryOpen = false;
         let financeYearSummarySelectedYear = null;
 
-        function financeProYearlyNet(year) {
+        // % de variación del patrimonio PRO (Efectivo+Bancos+Online) mes a
+        // mes frente al mes anterior, para cada mes de un año — no el
+        // ingreso/gasto neto del mes, sino cuánto creció o bajó el saldo.
+        function financeProYearlyPctChanges(year) {
+            const series = financeProMonthlyBalances(null);
+            const balanceByMonth = {};
+            series.forEach(p => { balanceByMonth[p.month] = p.balance; });
             const months = [];
             for (let m = 1; m <= 12; m++) {
                 const mk = `${year}-${String(m).padStart(2, '0')}`;
-                const txs = financePro.transactions.filter(t => t.date.slice(0, 7) === mk && t.type !== 'transfer');
-                const income = txs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-                const expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
-                months.push({ month: mk, net: income - expense });
+                const prevKey = financeMonthKey(new Date(Number(year), m - 2, 1));
+                const cur = balanceByMonth[mk];
+                const prev = balanceByMonth[prevKey];
+                const pct = (cur !== undefined && prev !== undefined) ? financePctChange(cur, prev) : null;
+                months.push({ month: mk, pct });
             }
             return months;
         }
 
-        function financeProYearSummaryYears() {
-            const years = new Set(financePro.transactions.map(t => t.date.slice(0, 4)));
-            years.add(String(new Date().getFullYear()));
-            return Array.from(years).sort().reverse();
-        }
-
         function toggleFinanceYearSummary() {
             financeYearSummaryOpen = !financeYearSummaryOpen;
-            if (!financeYearSummarySelectedYear) financeYearSummarySelectedYear = String(new Date().getFullYear());
+            if (!financeYearSummarySelectedYear) financeYearSummarySelectedYear = new Date().getFullYear();
             const el = document.getElementById('finance-year-summary-card');
             if (el) el.outerHTML = renderFinanceYearSummaryCard();
         }
 
-        function financeSetYearSummaryYear(y) {
-            financeYearSummarySelectedYear = y;
+        function financeShiftYearSummaryYear(delta) {
+            const current = new Date().getFullYear();
+            const next = (financeYearSummarySelectedYear || current) + delta;
+            financeYearSummarySelectedYear = Math.min(current, next);
             const el = document.getElementById('finance-year-summary-card');
             if (el) el.outerHTML = renderFinanceYearSummaryCard();
         }
 
         function renderFinanceYearSummaryCard() {
-            const year = financeYearSummarySelectedYear || String(new Date().getFullYear());
-            const months = financeYearSummaryOpen ? financeProYearlyNet(year) : [];
+            const year = financeYearSummarySelectedYear || new Date().getFullYear();
+            const months = financeYearSummaryOpen ? financeProYearlyPctChanges(year) : [];
+            const atCurrentYear = year >= new Date().getFullYear();
             return `<section class="finance-panel finance-year-summary-card" id="finance-year-summary-card" style="margin-top:16px">
                 <div class="finance-panel-head" style="cursor:pointer" onclick="toggleFinanceYearSummary()">
-                    ${financePanelHeadIcon(FINANCE_ICON_CALENDAR, 'fin-slate', 'Resumen anual', financeYearSummaryOpen ? 'Toca para cerrar' : 'Balance neto de cada mes')}
+                    ${financePanelHeadIcon(FINANCE_ICON_CALENDAR, 'fin-slate', 'Resumen anual', financeYearSummaryOpen ? 'Toca para cerrar' : '% de variación mes a mes')}
                     <span style="font-size:20px;color:var(--text-secondary);line-height:1">${financeYearSummaryOpen ? '−' : '+'}</span>
                 </div>
                 ${financeYearSummaryOpen ? `
-                    <select class="modal-input" style="width:auto;margin:12px 0 6px" onchange="financeSetYearSummaryYear(this.value)">
-                        ${financeProYearSummaryYears().map(y => `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`).join('')}
-                    </select>
+                    <div class="finance-year-summary-nav" onclick="event.stopPropagation()">
+                        <button onclick="financeShiftYearSummaryYear(-1)" aria-label="Año anterior">‹</button>
+                        <strong>${year}</strong>
+                        <button onclick="financeShiftYearSummaryYear(1)" aria-label="Año siguiente" ${atCurrentYear ? 'disabled' : ''}>›</button>
+                    </div>
                     <div class="finance-year-summary-list">
                         ${months.map(m => `
                             <div class="finance-year-summary-row">
                                 <span>${FINANCE_PRO_MONTH_NAMES[Number(m.month.slice(5, 7)) - 1]}</span>
-                                <span class="${m.net >= 0 ? 'finance-positive' : 'finance-negative'}">${m.net >= 0 ? '+' : ''}${financeMoney(m.net)}</span>
+                                <span class="${m.pct === null ? '' : m.pct >= 0 ? 'finance-positive' : 'finance-negative'}">${m.pct === null ? '—' : `${m.pct >= 0 ? '+' : ''}${m.pct.toFixed(1)}%`}</span>
                             </div>`).join('')}
                     </div>
                 ` : ''}
