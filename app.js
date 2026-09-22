@@ -887,6 +887,15 @@
 
         const NON_CALENDAR_TYPES = ['document', 'restaurant', 'place', 'goal', 'subscription', 'fixed_expense'];
 
+        // Las marcas de "tarea completada" (tareas semanales, del
+        // planificador o recurrentes) se guardan como entradas de tipo
+        // 'event' para llevar historial, pero no son eventos reales — no
+        // deben aparecer en el calendario. calendarLog cubre las nuevas;
+        // el prefijo de id cubre las que ya existían antes de este cambio.
+        function isCalendarLogEntry(e) {
+            return !!(e && (e.calendarLog === true || /^(weekly_task_done_|planner_done_|recurring_done_)/.test(e.id || '')));
+        }
+
         const VIEW_TO_ENTRY_TYPE = {
             calendar: null,
             home: null,
@@ -2788,7 +2797,8 @@
                 date: completedDate,
                 notes: 'Tarea semanal completada',
                 category: 'Tareas semanales',
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                calendarLog: true
             });
 
             filteredEntries = [...entries];
@@ -3043,7 +3053,8 @@
                     time: item.time || '',
                     place: '',
                     notes: item.notes || '',
-                    category: 'Planificador'
+                    category: 'Planificador',
+                    calendarLog: true
                 });
             }
             filteredEntries = [...entries];
@@ -3103,7 +3114,8 @@
                     time: '',
                     place: '',
                     notes: 'Tarea recurrente',
-                    category: 'Tareas recurrentes'
+                    category: 'Tareas recurrentes',
+                    calendarLog: true
                 });
             }
             filteredEntries = [...entries];
@@ -4639,6 +4651,7 @@
             const entriesByDate = {};
             entries.forEach(e => {
                 if (NON_CALENDAR_TYPES.includes(e.type)) return;
+                if (isCalendarLogEntry(e)) return;
                 if (e.type === 'birthday' && e.birthDate) {
                     const [, m, d] = e.birthDate.split('-');
                     const projectedDate = `${year}-${m}-${d}`;
@@ -5200,6 +5213,7 @@
         function getDayAllEntries(date) {
             const dayEntries = entries.filter(e => {
                 if (NON_CALENDAR_TYPES.includes(e.type)) return false;
+                if (isCalendarLogEntry(e)) return false;
                 if (isBirthdayOnDate(e, date)) return true;
                 return e.date === date || e.startDate === date;
             });
@@ -5322,7 +5336,7 @@
             // Los eventos sincronizados desde un examen (linkedKind==='exams')
             // ya aparecen en el grupo "Exámenes" de arriba; se excluyen aquí
             // para no duplicarlos. Los de "Entrega" (trabajos) sí se listan.
-            const events = entries.filter(e => e.type === 'event' && e.date === today && e.linkedKind !== 'exams');
+            const events = entries.filter(e => e.type === 'event' && e.date === today && e.linkedKind !== 'exams' && !isCalendarLogEntry(e));
             return { birthdays, exams, events };
         }
 
