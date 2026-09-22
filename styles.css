@@ -4615,7 +4615,7 @@ body.beige {
 .finance-pro-tx-title { font-size:12.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .finance-pro-tx-sub { font-size:10.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .finance-pro-tx-amount { font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; flex-shrink:0; }
-.finance-positive { color:#4fce8f; }
+.finance-positive { color:var(--text-primary); }
 .finance-negative { color:#c2455c; }
 
 .finance-pro-settings-links { display:flex; align-items:center; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:28px; padding-top:14px; border-top:1px solid var(--border); }
