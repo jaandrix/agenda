@@ -1,0 +1,41 @@
+name: BitacoraApp
+options:
+  bundleIdPrefix: com.bitacora
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+configs:
+  Debug: debug
+  Release: release
+
+targets:
+  BitacoraApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: BitacoraApp
+        excludes:
+          - Info.plist
+    info:
+      path: BitacoraApp/Info.plist
+    settings:
+      base:
+        PRODUCT_NAME: BitacoraApp
+        PRODUCT_BUNDLE_IDENTIFIER: com.bitacora.app
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+        # Hito 1 se compila sin firma (unsigned .app) — AltStore/SideStore
+        # se encargan de firmarlo con un Apple ID gratuito al instalarlo.
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+        DEVELOPMENT_TEAM: ""

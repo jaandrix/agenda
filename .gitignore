@@ -1,1 +1,7 @@
 supabase/.temp/
+
+# iOS - el .xcodeproj lo genera XcodeGen a partir de project.yml, no se versiona
+ios/BitacoraApp/BitacoraApp.xcodeproj/
+ios/BitacoraApp/build/
+ios/BitacoraApp/*.ipa
+ios/BitacoraApp/Payload/

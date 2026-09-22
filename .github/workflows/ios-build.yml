@@ -1,0 +1,60 @@
+name: iOS - Build Bitácora (sin firmar)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: ios/BitacoraApp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar XcodeGen
+        run: brew install xcodegen
+
+      - name: Generar el proyecto Xcode (project.yml -> .xcodeproj)
+        run: xcodegen generate
+
+      - name: Compilar (sin firma) para dispositivo
+        run: |
+          xcodebuild \
+            -project BitacoraApp.xcodeproj \
+            -scheme BitacoraApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            build
+
+      - name: Empaquetar como .ipa (sin firmar)
+        run: |
+          set -e
+          APP_PATH="build/Build/Products/Release-iphoneos/BitacoraApp.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "No se encontró el .app compilado en $APP_PATH"
+            find build/Build/Products -maxdepth 2
+            exit 1
+          fi
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          zip -r -y BitacoraApp-unsigned.ipa Payload
+          rm -rf Payload
+
+      - name: Subir el .ipa como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: BitacoraApp-unsigned-ipa
+          path: ios/BitacoraApp/BitacoraApp-unsigned.ipa
+          retention-days: 30
