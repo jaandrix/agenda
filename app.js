@@ -11902,9 +11902,23 @@
             const groups = {};
             txs.forEach(t => { const m = t.date.slice(0, 7); groups[m] = groups[m] || []; groups[m].push(t); });
             return Object.keys(groups).sort().reverse().map(m => {
-                const monthTotal = groups[m].reduce((s, t) => t.type === 'income' ? s + Number(t.amount) : t.type === 'expense' ? s - Number(t.amount) : s, 0);
+                const income = groups[m].filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+                const expense = groups[m].filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+                const monthTotal = income - expense;
+                const flow = income + expense;
+                const incomePct = flow > 0 ? (income / flow * 100) : 50;
                 return `<div class="finance-pro-tx-month-group">
-                    <div class="finance-pro-tx-month-head"><span>${escapeHtml(financeMonthLabel(m))}</span><span class="finance-trend-chip ${monthTotal >= 0 ? 'positive' : 'negative'}">${monthTotal >= 0 ? '+' : ''}${financeMoney(monthTotal)}</span></div>
+                    <div class="finance-pro-tx-month-summary">
+                        <div class="finance-pro-tx-month-summary-top">
+                            <span class="finance-pro-tx-month-title">${escapeHtml(financeMonthLabel(m))}</span>
+                            <span class="finance-pro-tx-month-net ${monthTotal >= 0 ? 'positive' : 'negative'}">${monthTotal >= 0 ? '+' : ''}${financeMoney(monthTotal)}</span>
+                        </div>
+                        ${flow > 0 ? `<div class="finance-pro-tx-month-bar"><span style="width:${incomePct.toFixed(1)}%"></span></div>` : ''}
+                        <div class="finance-pro-tx-month-summary-legend">
+                            <span class="fp-legend-income"><i></i>Ingresos ${financeMoney(income)}</span>
+                            <span class="fp-legend-expense"><i></i>Gastos ${financeMoney(expense)}</span>
+                        </div>
+                    </div>
                     ${groups[m].map(t => renderFinanceProTxRow(t)).join('')}
                 </div>`;
             }).join('');
