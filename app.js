@@ -5051,22 +5051,17 @@
                 const isSelected = dateStr === window._selectedDate;
                 const dayEntries = entriesByDate[dateStr] || [];
 
-                const colors = [];
-                const seen = new Set();
-                dayEntries.forEach(e => {
+                // Una línea por evento (no una por color distinto) para que
+                // el número de líneas refleje cuántos eventos hay ese día,
+                // de un vistazo, sin tener que abrirlo.
+                const barsHtml = dayEntries.slice(0, 4).map(e => {
                     const cat = categories.find(c => c.id === e.categoryId);
-                    if (cat && !seen.has(cat.color)) {
-                        seen.add(cat.color);
-                        colors.push(cat.color);
-                    }
-                });
+                    const color = cat ? cat.color : 'var(--text-muted)';
+                    return `<span style="width:20px;height:3px;border-radius:4px;display:block;background:${color}"></span>`;
+                }).join('');
 
-                const barsHtml = colors.slice(0, 4).map(color =>
-                    `<span style="width:20px;height:3px;border-radius:4px;display:block;background:${color}"></span>`
-                ).join('');
-
-                const extra = colors.length > 4 ?
-                    `<span style="width:12px;height:3px;border-radius:4px;display:block;background:var(--text-muted);font-size:7px;text-align:center;color:var(--text-secondary)">+${colors.length - 4}</span>` :
+                const extra = dayEntries.length > 4 ?
+                    `<span style="width:12px;height:3px;border-radius:4px;display:block;background:var(--text-muted);font-size:7px;text-align:center;color:var(--text-secondary)">+${dayEntries.length - 4}</span>` :
                     '';
 
                 html += `
@@ -10802,7 +10797,13 @@
             const updatePending = financeMonthUpdatePending();
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
-                <div class="finance-toolbar-row">${renderFinanceProInlineToggle()}${blurToggleBtn}</div>
+                <div class="finance-toolbar-row">
+                    ${renderFinanceProInlineToggle()}
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceChartSeriesConfig()">⚙ Elegir qué mostrar</button>
+                        ${blurToggleBtn}
+                    </div>
+                </div>
                 ${renderFinanceProSyncWarning()}
 
                 ${(financeProfile.recordatorioDia && updatePending && new Date().getDate() >= financeProfile.recordatorioDia) ? `
@@ -10814,7 +10815,6 @@
                 <section class="finance-panel finance-chart-panel">
                     <div class="finance-panel-head">
                         ${financePanelHeadIcon(FINANCE_ICON_CHART, 'fin-slate', 'Evolución', 'Tu patrimonio en el tiempo')}
-                        <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceChartSeriesConfig()">⚙ Elegir qué mostrar</button>
                     </div>
                     <div id="finance-floating-chart-wrap" onwheel="financeChartWheelZoom(event)" title="Rueda del ratón: acercar/alejar el periodo mostrado">
                         ${renderFinanceFloatingChart()}
@@ -11434,7 +11434,27 @@
                     <input class="modal-input" id="pro-acc-balance0-${k}" type="number" step="0.01" value="${Number(financePro.accounts[k].balance0 || 0)}" style="margin-bottom:16px">
                 `).join('')}
                 <button class="btn-modal-primary" onclick="saveFinanceProAccountsSettings()">Guardar</button>
+                <button class="btn-secondary" style="margin-top:14px;color:#dc2626" onclick="resetFinancePro()">Restablecer Finanzas PRO</button>
             `);
+        }
+
+        // Borra todo el histórico de Finanzas PRO (cuentas, movimientos,
+        // categorías personalizadas y presupuestos) y vuelve a los valores
+        // de fábrica — para empezar de cero sin desactivar el modo PRO.
+        async function resetFinancePro() {
+            if (!confirm('¿Restablecer Finanzas PRO?\n\nSe borrarán todos los movimientos, las categorías personalizadas, los presupuestos y los saldos de las 3 cuentas. Esta acción no se puede deshacer.')) return;
+            financePro.accounts = {
+                efectivo: { name: 'Efectivo', balance0: 0 },
+                bancos: { name: 'Bancos', balance0: 0 },
+                online: { name: 'Online', balance0: 0 }
+            };
+            financePro.categories = financeProDefaultCategories();
+            financePro.transactions = [];
+            financePro.categoryBudgets = {};
+            closeModal();
+            render();
+            try { await saveData(); showToast('Finanzas PRO restablecido'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         async function saveFinanceProAccountsSettings() {
@@ -11865,7 +11885,7 @@
             reader.onload = () => {
                 const rows = financeProParseCSV(String(reader.result));
                 if (rows.length < 2) { showToast('El archivo no tiene filas suficientes', true); return; }
-                window._financeProImport = { rows, mapping: { hasHeader: true, date: 0, amount: 1, description: rows[0].length > 2 ? 2 : 0, amountOut: 0, amountIn: 1, splitAmount: false, account: FINANCE_PRO_ACCOUNT_KEYS[0] } };
+                window._financeProImport = { rows, mapping: { hasHeader: true, date: 0, amount: 1, description: rows[0].length > 2 ? 2 : 0, category: rows[0].length > 3 ? 3 : -1, amountOut: 0, amountIn: 1, splitAmount: false, account: FINANCE_PRO_ACCOUNT_KEYS[0] } };
                 document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
             };
             reader.onerror = () => showToast('No se pudo leer el archivo', true);
@@ -11889,6 +11909,12 @@
                     <div><div class="modal-label">Columna de fecha</div><select class="modal-input" onchange="financeProImportSet('date', this.value)">${colOptions(imp.mapping.date)}</select></div>
                     <div><div class="modal-label">Columna de concepto</div><select class="modal-input" onchange="financeProImportSet('description', this.value)">${colOptions(imp.mapping.description)}</select></div>
                 </div>
+                <div class="modal-label">Columna de categoría (opcional)</div>
+                <select class="modal-input" onchange="financeProImportSet('category', this.value)">
+                    <option value="-1" ${imp.mapping.category === -1 ? 'selected' : ''}>Sin categoría</option>
+                    ${colOptions(imp.mapping.category)}
+                </select>
+                <div class="finance-modal-note" style="margin:4px 0 10px">Si el texto de esa columna coincide con el nombre de una de tus categorías (Comida y bebida, Transporte...), se asigna sola. Si no coincide con ninguna, el movimiento entra sin categoría.</div>
                 <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-primary);margin:4px 0 10px">
                     <input type="checkbox" ${imp.mapping.splitAmount ? 'checked' : ''} onchange="financeProImportSet('splitAmount', this.checked)"> Mi banco separa cargo y abono en dos columnas
                 </label>
@@ -11955,9 +11981,15 @@
                 const dedupeKey = `${m.account}|${date}|${amount}|${description}`;
                 if (existingKeys.has(dedupeKey)) { skipped++; return; }
                 existingKeys.add(dedupeKey);
+                let category;
+                if (m.category >= 0) {
+                    const raw = (r[m.category] || '').trim().toLowerCase();
+                    const match = raw && financePro.categories.find(c => c.type === type && c.name.toLowerCase() === raw);
+                    if (match) category = match.id;
+                }
                 financePro.transactions.push({
                     id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
-                    date, account: m.account, type, amount, note: description || undefined
+                    date, account: m.account, type, amount, category, note: description || undefined
                 });
                 added++;
             });

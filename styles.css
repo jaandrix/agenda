@@ -4352,6 +4352,12 @@ body.beige {
 .finance-edit-btn,.finance-icon-btn { width:22px; height:22px; border:0; border-radius:10px; background:transparent; color:var(--text-secondary); cursor:pointer; }
 .finance-edit-btn:hover,.finance-icon-btn:hover { background:var(--bg-card-hover); color:var(--text-primary); }
 .finance-metric-card .finance-edit-btn { position:absolute; top:8px; right:8px; }
+
+/* Botones de la cabecera de cada cuenta PRO (ajustar saldo / + movimiento):
+   chip cuadrado negro para que destaquen sobre la tarjeta en vez de
+   confundirse con el resto de iconos secundarios de Finanzas. */
+.finance-pro-account-card .finance-icon-btn { width:30px; height:30px; border-radius:10px; background:#000; color:#fff; border:1px solid rgba(255,255,255,.1); font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.finance-pro-account-card .finance-icon-btn:hover { background:#181818; color:#fff; }
 .finance-metric-value { order:2; font-size:18px; font-weight:800; }
 .finance-metric-meta { order:4; display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:6px; font-size:8.5px; color:var(--text-secondary); width:100%; }
 .finance-metric-note { order:6; font-size:8.5px; color:var(--text-secondary); margin-top:5px; line-height:1.35; }
