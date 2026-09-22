@@ -10204,6 +10204,27 @@
             return 0;
         }
 
+        // Curva suave a través de todos los puntos (Catmull-Rom -> Bézier
+        // cúbica), en vez de segmentos rectos — inspirado en cómo dibuja
+        // sus gráficas Stoic, sin picos angulosos entre mes y mes.
+        function financeSmoothPath(points) {
+            if (points.length < 2) return '';
+            if (points.length === 2) return `M${points[0].x},${points[0].y} L${points[1].x},${points[1].y}`;
+            let d = `M${points[0].x},${points[0].y}`;
+            for (let i = 0; i < points.length - 1; i++) {
+                const p0 = points[i === 0 ? 0 : i - 1];
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+                const cp1x = p1.x + (p2.x - p0.x) / 6;
+                const cp1y = p1.y + (p2.y - p0.y) / 6;
+                const cp2x = p2.x - (p3.x - p1.x) / 6;
+                const cp2y = p2.y - (p3.y - p1.y) / 6;
+                d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+            }
+            return d;
+        }
+
         function renderFinanceFloatingChart() {
             const raw = Array.isArray(financeProfile.history) ? [...financeProfile.history] : [];
             const series = getFinanceChartSeries();
@@ -10240,10 +10261,16 @@
                 <line x1="${padX}" y1="${y(v).toFixed(1)}" x2="${W - padX}" y2="${y(v).toFixed(1)}" stroke="var(--border)" stroke-width="0.6"/>
                 <text x="${padX - 6}" y="${(y(v) - 3).toFixed(1)}" text-anchor="end" font-size="8" fill="var(--text-muted)">${financeMoney(v).replace(',00€', '€')}</text>`).join('');
 
-            const dotsOf = (s) => data.map((d, i) => `
-                <circle class="finance-chart-point" cx="${x(i).toFixed(1)}" cy="${y(d[s.id]).toFixed(1)}" r="3.5" fill="var(--bg-app)" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="2"
+            // El último punto de la serie principal se marca más grande y
+            // relleno, como el punto de "hoy" en las gráficas de Stoic —
+            // el resto quedan como aros finos, discretos.
+            const dotsOf = (s, isMain) => data.map((d, i) => {
+                const isLast = isMain && i === data.length - 1;
+                return `
+                <circle class="finance-chart-point" cx="${x(i).toFixed(1)}" cy="${y(d[s.id]).toFixed(1)}" r="${isLast ? 5 : 3.5}" fill="${isLast ? (s.color || 'var(--text-secondary)') : 'var(--bg-app)'}" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="2"
                     onmousemove="showFinanceChartTooltip(event,'${escapeHtml(s.name).replace(/'/g, "\\'")}','${escapeHtml(financeMonthLabel(d.month))}',${d[s.id]})"
-                    onmouseleave="hideFinanceChartTooltip()"></circle>`).join('');
+                    onmouseleave="hideFinanceChartTooltip()"></circle>`;
+            }).join('');
 
             const step = Math.max(1, Math.ceil(data.length / 6));
             const xLabels = data.map((d, i) => (data.length === 1 || i % step === 0 || i === data.length - 1)
@@ -10252,7 +10279,7 @@
 
             let linesSvg = '';
             if (data.length > 1) {
-                const pathOf = id => data.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d[id]).toFixed(1)}`).join(' ');
+                const pathOf = id => financeSmoothPath(data.map((d, i) => ({ x: Number(x(i).toFixed(1)), y: Number(y(d[id]).toFixed(1)) })));
                 const mainSeries = series[series.length - 1];
                 const areaPath = `${pathOf(mainSeries.id)} L${x(data.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
                 linesSvg = `<path d="${areaPath}" fill="url(#financeTotalGradient)" stroke="none"/>` +
@@ -10271,7 +10298,7 @@
                         ${yAxisGuides}
                         ${linesSvg}
                         ${targetLine}
-                        ${series.map(s => dotsOf(s)).join('')}
+                        ${series.map((s, idx) => dotsOf(s, idx === series.length - 1)).join('')}
                         ${xLabels}
                     </svg>
                 </div>
