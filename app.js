@@ -492,7 +492,12 @@
             //  transferTo (cuenta destino, solo transfer), note, importBatch}
             transactions: [],
             // Presupuesto mensual opcional por categoría de gasto: { catId: importe }
-            categoryBudgets: {}
+            categoryBudgets: {},
+            // Reglas de traspaso para la importación: {id, enabled, matchText,
+            // otherAccount} — un movimiento importado cuyo concepto contenga
+            // matchText se registra como traspaso con otherAccount en vez de
+            // como ingreso/gasto normal (ver confirmFinanceProImport()).
+            rules: []
         };
         let devModeActive = false;
         // Oculta las cifras del dashboard financiero. Se guarda en la nube
@@ -2133,6 +2138,7 @@
                 financePro.categories = Array.isArray(financePro.categories) && financePro.categories.length ? financePro.categories : financeProDefaultCategories();
                 financePro.transactions = Array.isArray(financePro.transactions) ? financePro.transactions : [];
                 financePro.categoryBudgets = (financePro.categoryBudgets && typeof financePro.categoryBudgets === 'object') ? financePro.categoryBudgets : {};
+                financePro.rules = Array.isArray(financePro.rules) ? financePro.rules : [];
                 // Migración: los antiguos "ingresos puntuales" pasan a formar parte
                 // del registro unificado de movimientos (una sola vez).
                 if (financeProfile.oneOffIncome.length && !financeProfile._oneOffMigrated) {
@@ -11925,6 +11931,8 @@
                     <button onclick="openFinanceProCategoriesModal()">Categorías</button>
                     <span>·</span>
                     <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
+                    <span>·</span>
+                    <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} Reglas</button>
                 </div>
             </div>`;
         }
@@ -11951,7 +11959,7 @@
         // categorías personalizadas y presupuestos) y vuelve a los valores
         // de fábrica — para empezar de cero sin desactivar el modo PRO.
         async function resetFinancePro() {
-            if (!confirm('¿Restablecer Finanzas PRO?\n\nSe borrarán todos los movimientos, las categorías personalizadas, los presupuestos y los saldos de las 3 cuentas. Esta acción no se puede deshacer.')) return;
+            if (!confirm('¿Restablecer Finanzas PRO?\n\nSe borrarán todos los movimientos, las categorías personalizadas, los presupuestos, las reglas de traspaso y los saldos de las 3 cuentas. Esta acción no se puede deshacer.')) return;
             financePro.accounts = {
                 efectivo: { name: 'Efectivo', balance0: 0 },
                 bancos: { name: 'Bancos', balance0: 0 },
@@ -11960,6 +11968,7 @@
             financePro.categories = financeProDefaultCategories();
             financePro.transactions = [];
             financePro.categoryBudgets = {};
+            financePro.rules = [];
             closeModal();
             render();
             try { await saveData(); showToast('Finanzas PRO restablecido'); }
@@ -12412,6 +12421,72 @@
         // ============================================================
         //  FINANZAS PRO — importar movimientos (CSV genérico del banco)
         // ============================================================
+        // ============================================================
+        //  FINANZAS PRO — reglas de traspaso (para la importación)
+        //  Un movimiento entre dos cuentas propias (p. ej. traer saldo de
+        //  un banco no llevado en Bitácora a la cuenta que sí lo está, o
+        //  entre dos cuentas PRO) no es ni ingreso ni gasto real — infla
+        //  las estadísticas si se importa tal cual. Una regla dice: "si el
+        //  concepto contiene este texto, es un traspaso con esta otra
+        //  cuenta", y la importación (confirmFinanceProImport) resta de un
+        //  lado y suma en el otro en vez de crear un ingreso/gasto.
+        // ============================================================
+        function openFinanceProRulesModal() {
+            showModal(`
+                <div class="modal-title">Reglas de traspaso</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Para movimientos recurrentes que en realidad son traspasos entre tus propias cuentas (traer saldo de un banco a otro, por ejemplo) — al importar, si el concepto contiene el texto de una regla activa, se registra como traspaso en vez de como ingreso o gasto.</div>
+                <div id="finance-pro-rules-list">${renderFinanceProRulesList()}</div>
+                <div class="finance-panel" style="margin-top:14px">
+                    <div class="modal-label">El concepto contiene</div>
+                    <input class="modal-input" id="new-rule-text" placeholder="p. ej. Top-up by *1185">
+                    <div class="modal-label">Es un traspaso con</div>
+                    <select class="modal-input" id="new-rule-account">
+                        ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}">${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                    </select>
+                    <div class="finance-modal-note" style="margin:4px 0 10px">Si el importe del movimiento importado es positivo, se suma aquí y se resta de esa otra cuenta; si es negativo, al revés.</div>
+                    <button class="btn-modal-primary" onclick="addFinanceProRule()">+ Añadir regla</button>
+                </div>
+            `);
+        }
+
+        function renderFinanceProRulesList() {
+            if (!financePro.rules.length) return `<div class="finance-empty-state">Todavía no tienes reglas. Los movimientos importados se registran como ingreso o gasto normal.</div>`;
+            return financePro.rules.map(r => `
+                <div class="finance-rule-row">
+                    <button class="finance-pro-switch ${r.enabled ? 'on' : ''}" onclick="toggleFinanceProRule('${r.id}')" title="${r.enabled ? 'Desactivar' : 'Activar'}"><span class="finance-pro-switch-knob"></span></button>
+                    <div class="finance-rule-info">
+                        <div class="finance-rule-text">"${escapeHtml(r.matchText)}"</div>
+                        <div class="finance-rule-sub">Traspaso con ${escapeHtml(financePro.accounts[r.otherAccount]?.name || r.otherAccount)}</div>
+                    </div>
+                    <button class="finance-icon-btn" title="Eliminar" onclick="deleteFinanceProRule('${r.id}')">✕</button>
+                </div>`).join('');
+        }
+
+        async function addFinanceProRule() {
+            const text = document.getElementById('new-rule-text').value.trim();
+            if (!text) { showToast('Escribe el texto a buscar en el concepto', true); return; }
+            const otherAccount = document.getElementById('new-rule-account').value;
+            financePro.rules.push({ id: 'prule_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), enabled: true, matchText: text, otherAccount });
+            document.getElementById('finance-pro-rules-list').innerHTML = renderFinanceProRulesList();
+            document.getElementById('new-rule-text').value = '';
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function toggleFinanceProRule(id) {
+            const rule = financePro.rules.find(r => r.id === id);
+            if (!rule) return;
+            rule.enabled = !rule.enabled;
+            document.getElementById('finance-pro-rules-list').innerHTML = renderFinanceProRulesList();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteFinanceProRule(id) {
+            if (!confirm('¿Eliminar esta regla?')) return;
+            financePro.rules = financePro.rules.filter(r => r.id !== id);
+            document.getElementById('finance-pro-rules-list').innerHTML = renderFinanceProRulesList();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
         function openFinanceProImportModal() {
             window._financeProImport = null;
             showModal(`
@@ -12455,7 +12530,7 @@
             reader.onload = () => {
                 const rows = financeProParseCSV(String(reader.result));
                 if (rows.length < 2) { showToast('El archivo no tiene filas suficientes', true); return; }
-                window._financeProImport = { rows, mapping: { hasHeader: true, date: 0, amount: 1, description: rows[0].length > 2 ? 2 : 0, category: rows[0].length > 3 ? 3 : -1, amountOut: 0, amountIn: 1, splitAmount: false, account: FINANCE_PRO_ACCOUNT_KEYS[0] } };
+                window._financeProImport = { rows, mapping: { hasHeader: true, date: 0, amount: 1, description: rows[0].length > 2 ? 2 : 0, category: rows[0].length > 3 ? 3 : -1, amountOut: 0, amountIn: 1, splitAmount: false, account: FINANCE_PRO_ACCOUNT_KEYS[0], status: -1, skipPending: false } };
                 document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
             };
             reader.onerror = () => showToast('No se pudo leer el archivo', true);
@@ -12485,6 +12560,15 @@
                     ${colOptions(imp.mapping.category)}
                 </select>
                 <div class="finance-modal-note" style="margin:4px 0 10px">Si el texto de esa columna coincide con el nombre de una de tus categorías (Comida y bebida, Transporte...), se asigna sola. Si no coincide con ninguna, el movimiento entra sin categoría.</div>
+                <div class="modal-label">Columna de estado (opcional)</div>
+                <select class="modal-input" onchange="financeProImportSet('status', this.value)">
+                    <option value="-1" ${imp.mapping.status === -1 ? 'selected' : ''}>No tengo esta columna</option>
+                    ${colOptions(imp.mapping.status)}
+                </select>
+                ${imp.mapping.status >= 0 ? `
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-primary);margin:4px 0 10px">
+                    <input type="checkbox" ${imp.mapping.skipPending ? 'checked' : ''} onchange="financeProImportSet('skipPending', this.checked)"> Omitir movimientos pendientes (PENDING)
+                </label>` : `<div class="finance-modal-note" style="margin:4px 0 10px">Si tu fecha viene de la columna de "fecha de finalización" y un movimiento está pendiente (todavía sin esa fecha), se importa igual usando cualquier otra fecha de la fila.</div>`}
                 <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-primary);margin:4px 0 10px">
                     <input type="checkbox" ${imp.mapping.splitAmount ? 'checked' : ''} onchange="financeProImportSet('splitAmount', this.checked)"> Mi banco separa cargo y abono en dos columnas
                 </label>
@@ -12503,7 +12587,7 @@
 
         function financeProImportSet(key, value) {
             const m = window._financeProImport.mapping;
-            if (key === 'hasHeader' || key === 'splitAmount' || key === 'account') m[key] = value;
+            if (key === 'hasHeader' || key === 'splitAmount' || key === 'skipPending' || key === 'account') m[key] = value;
             else m[key] = Number(value);
             document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
         }
@@ -12531,9 +12615,24 @@
             const m = imp.mapping;
             const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
             const existingKeys = new Set(financePro.transactions.map(t => `${t.account}|${t.date}|${t.amount}|${t.note || ''}`));
+            const activeRules = financePro.rules.filter(r => r.enabled);
             let added = 0, skipped = 0;
             rows.forEach(r => {
-                const date = financeProParseDate(r[m.date]);
+                if (m.status >= 0 && m.skipPending) {
+                    const statusVal = (r[m.status] || '').trim().toLowerCase();
+                    if (/pending|pendiente|processing|procesando/.test(statusVal)) { skipped++; return; }
+                }
+                let date = financeProParseDate(r[m.date]);
+                if (!date) {
+                    // Fecha vacía en la columna elegida — típico de "fecha de
+                    // finalización" en un movimiento todavía pendiente. Se
+                    // prueba con cualquier otra columna de la fila que sí
+                    // parezca una fecha en vez de descartarlo sin más.
+                    for (let i = 0; i < r.length && !date; i++) {
+                        if (i === m.date) continue;
+                        date = financeProParseDate(r[i]);
+                    }
+                }
                 if (!date) { skipped++; return; }
                 const description = (r[m.description] || '').trim();
                 let amount, type;
@@ -12548,9 +12647,26 @@
                     if (!Number.isFinite(val) || val === 0) { skipped++; return; }
                     amount = Math.abs(val); type = val < 0 ? 'expense' : 'income';
                 }
-                const dedupeKey = `${m.account}|${date}|${amount}|${description}`;
+                // Regla de traspaso: en vez de ingreso/gasto, se registra
+                // como movimiento entre m.account y la otra cuenta de la
+                // regla — restando de un lado y sumando en el otro, sin
+                // contar como ingreso o gasto real en las estadísticas.
+                const rule = activeRules.find(rl => description.toLowerCase().includes(rl.matchText.toLowerCase()) && rl.otherAccount !== m.account);
+                const effectiveAccount = rule ? (type === 'income' ? rule.otherAccount : m.account) : m.account;
+                const dedupeKey = `${effectiveAccount}|${date}|${amount}|${description}`;
                 if (existingKeys.has(dedupeKey)) { skipped++; return; }
                 existingKeys.add(dedupeKey);
+                if (rule) {
+                    financePro.transactions.push({
+                        id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
+                        date, type: 'transfer',
+                        account: effectiveAccount,
+                        transferTo: type === 'income' ? m.account : rule.otherAccount,
+                        amount, note: description || undefined
+                    });
+                    added++;
+                    return;
+                }
                 let category;
                 if (m.category >= 0) {
                     const raw = (r[m.category] || '').trim().toLowerCase();
