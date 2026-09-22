@@ -29,12 +29,12 @@
          Fonts (sin red en tiempo de render), así que va incrustada aquí. -->
     <key>UIAppFonts</key>
     <array>
-        <string>Fonts/Poppins-Regular.ttf</string>
-        <string>Fonts/Poppins-Medium.ttf</string>
-        <string>Fonts/Poppins-SemiBold.ttf</string>
-        <string>Fonts/Poppins-Bold.ttf</string>
-        <string>Fonts/Poppins-ExtraBold.ttf</string>
-        <string>Fonts/Poppins-Black.ttf</string>
+        <string>Poppins-Regular.ttf</string>
+        <string>Poppins-Medium.ttf</string>
+        <string>Poppins-SemiBold.ttf</string>
+        <string>Poppins-Bold.ttf</string>
+        <string>Poppins-ExtraBold.ttf</string>
+        <string>Poppins-Black.ttf</string>
     </array>
 </dict>
 </plist>

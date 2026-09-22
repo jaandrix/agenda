@@ -72,8 +72,15 @@ targets:
       - path: Shared
     # Poppins de verdad (no hay forma de cargar Google Fonts en un widget:
     # no tiene red en tiempo de render), registrada en Info.plist más abajo.
+    # Listados uno a uno (en vez de la carpeta entera) para que XcodeGen los
+    # añada sin ambigüedad como recursos sueltos en la raíz del bundle.
     resources:
-      - path: BitacoraWidgets/Fonts
+      - path: BitacoraWidgets/Fonts/Poppins-Regular.ttf
+      - path: BitacoraWidgets/Fonts/Poppins-Medium.ttf
+      - path: BitacoraWidgets/Fonts/Poppins-SemiBold.ttf
+      - path: BitacoraWidgets/Fonts/Poppins-Bold.ttf
+      - path: BitacoraWidgets/Fonts/Poppins-ExtraBold.ttf
+      - path: BitacoraWidgets/Fonts/Poppins-Black.ttf
     info:
       path: BitacoraWidgets/Info.plist
     entitlements:
