@@ -59,8 +59,14 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
     override init() {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
+        // Sin esto, WKWebView negocia el sitio como si fuera de escritorio
+        // (ignora el "width=device-width" del viewport) y todo sale
+        // gigante y con scroll horizontal — Safari sí lo hace bien solo,
+        // un WKWebView desnudo no.
+        config.defaultWebpagePreferences.preferredContentMode = .mobile
         webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsBackForwardNavigationGestures = true
+        webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         super.init()
         config.userContentController.add(self, name: "bitacoraNative")
     }
