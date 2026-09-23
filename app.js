@@ -11383,11 +11383,44 @@
             return (rangeMonths && results.length > rangeMonths) ? results.slice(-rangeMonths) : results;
         }
 
+        // Curva suave (Catmull-Rom → Bézier cúbica, tensión 1/6) en vez de
+        // segmentos rectos entre puntos — mismo aspecto que las gráficas de
+        // apps de finanzas tipo Stoic, sin depender de ninguna librería.
+        function financeSmoothPath(pts) {
+            if (pts.length < 2) return '';
+            if (pts.length === 2) return `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)} L${pts[1][0].toFixed(1)},${pts[1][1].toFixed(1)}`;
+            let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+            for (let i = 0; i < pts.length - 1; i++) {
+                const p0 = pts[i === 0 ? i : i - 1];
+                const p1 = pts[i];
+                const p2 = pts[i + 1];
+                const p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
+                const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+                const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+                d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+            }
+            return d;
+        }
+
+        // Líneas guía horizontales de fondo con su valor a la izquierda —
+        // igual que el eje Y discreto de Stoic, en vez de solo la línea de
+        // referencia en 0€.
+        function financeChartGridLines(minVal, maxVal, padX, padT, innerW, innerH, W, count) {
+            const lines = [];
+            for (let i = 0; i <= count; i++) {
+                const v = minVal + (maxVal - minVal) * (i / count);
+                const yPos = padT + innerH - ((v - minVal) / (maxVal - minVal || 1)) * innerH;
+                lines.push(`<line x1="${padX}" y1="${yPos.toFixed(1)}" x2="${W - padX}" y2="${yPos.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`);
+                lines.push(`<text x="2" y="${(yPos - 3).toFixed(1)}" font-size="8" fill="var(--text-muted)">${financeMoney(v).replace(',00', '')}</text>`);
+            }
+            return lines.join('');
+        }
+
         function renderFinanceProLineChart(dataPoints, color, idSuffix, compact) {
             if (dataPoints.length < 2) {
                 return `<div class="finance-empty-state" style="padding:${compact ? '10px 0' : '30px 0'}">Sin histórico suficiente todavía — necesitas movimientos en al menos 2 meses distintos.</div>`;
             }
-            const W = compact ? 320 : 900, H = compact ? 90 : 200, padX = compact ? 8 : 24, padT = 8, padB = compact ? 16 : 22;
+            const W = compact ? 320 : 900, H = compact ? 90 : 200, padX = compact ? 8 : 28, padT = 8, padB = compact ? 16 : 22;
             const innerW = W - padX * 2, innerH = H - padT - padB;
             const values = dataPoints.map(d => d.balance);
             const minVal = Math.min(0, ...values);
@@ -11395,16 +11428,14 @@
             const range = (maxVal - minVal) || 1;
             const x = i => dataPoints.length === 1 ? padX + innerW / 2 : padX + innerW * i / (dataPoints.length - 1);
             const y = v => padT + innerH - ((v - minVal) / range) * innerH;
-            const path = dataPoints.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d.balance).toFixed(1)}`).join(' ');
+            const pts = dataPoints.map((d, i) => [x(i), y(d.balance)]);
+            const path = financeSmoothPath(pts);
             const area = `${path} L${x(dataPoints.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
             const step = Math.max(1, Math.ceil(dataPoints.length / (compact ? 3 : 6)));
             const gradId = 'fpGrad_' + idSuffix;
             const labels = compact ? '' : dataPoints.map((d, i) => (i % step === 0 || i === dataPoints.length - 1)
                 ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${escapeHtml(financeMonthLabel(d.month).split(' de ')[0])}</text>` : '').join('');
-            // Línea de referencia en 0 — sin ella, un saldo que sigue siendo
-            // negativo pero "menos negativo que antes" dibuja una línea
-            // ascendente indistinguible de una que de verdad está en positivo.
-            const zeroLine = (minVal < 0 && maxVal > 0) ? `<line x1="${padX}" y1="${y(0).toFixed(1)}" x2="${W - padX}" y2="${y(0).toFixed(1)}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="1.5,3"/>${compact ? '' : `<text x="${padX}" y="${(y(0) - 4).toFixed(1)}" font-size="8" fill="var(--text-muted)">0€</text>`}` : '';
+            const gridLines = compact ? '' : financeChartGridLines(minVal, maxVal, padX, padT, innerW, innerH, W, 3);
             // Puntos: uno visible pequeño + uno invisible más grande encima
             // para ampliar el área donde el hover muestra el valor exacto,
             // sin que el punto dibujado se vea desproporcionado.
@@ -11418,8 +11449,8 @@
                     <stop offset="0%" style="stop-color:${color};stop-opacity:0.25"/>
                     <stop offset="100%" style="stop-color:${color};stop-opacity:0"/>
                 </linearGradient></defs>
+                ${gridLines}
                 <path d="${area}" fill="url(#${gradId})" stroke="none"/>
-                ${zeroLine}
                 <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 ${points}
                 ${labels}
@@ -11435,21 +11466,20 @@
             if (!base || base.length < 2) {
                 return `<div class="finance-empty-state" style="padding:30px 0">Sin histórico suficiente todavía — necesitas movimientos en al menos 2 meses distintos.</div>`;
             }
-            const W = 900, H = 200, padX = 24, padT = 8, padB = 22;
+            const W = 900, H = 200, padX = 28, padT = 8, padB = 22;
             const innerW = W - padX * 2, innerH = H - padT - padB;
             const allValues = seriesList.flatMap(s => s.data.map(d => d.balance));
             const minVal = Math.min(0, ...allValues);
             const maxVal = Math.max(1, ...allValues) * 1.08;
-            const range = (maxVal - minVal) || 1;
             const n = base.length;
             const x = i => n === 1 ? padX + innerW / 2 : padX + innerW * i / (n - 1);
-            const y = v => padT + innerH - ((v - minVal) / range) * innerH;
+            const y = v => padT + innerH - ((v - minVal) / (maxVal - minVal || 1)) * innerH;
             const step = Math.max(1, Math.ceil(n / 6));
             const labels = base.map((d, i) => (i % step === 0 || i === n - 1)
                 ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${escapeHtml(financeMonthLabel(d.month).split(' de ')[0])}</text>` : '').join('');
-            const zeroLine = (minVal < 0 && maxVal > 0) ? `<line x1="${padX}" y1="${y(0).toFixed(1)}" x2="${W - padX}" y2="${y(0).toFixed(1)}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="1.5,3"/>` : '';
+            const gridLines = financeChartGridLines(minVal, maxVal, padX, padT, innerW, innerH, W, 3);
             const lines = seriesList.map((s, si) => {
-                const path = s.data.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d.balance).toFixed(1)}`).join(' ');
+                const path = financeSmoothPath(s.data.map((d, i) => [x(i), y(d.balance)]));
                 const points = s.data.map((d, i) => {
                     const tip = escapeHtml(`${s.label} · ${financeMonthLabel(d.month)}: ${financeMoney(d.balance)}`).replace(/"/g, '&quot;');
                     return `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="9" fill="transparent" onmousemove="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)" onmouseleave="financeProChartTooltipHide('${idSuffix}-${si}-${i}')" onclick="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)"/>
@@ -11463,7 +11493,7 @@
             }).join('');
             const legend = `<div class="finance-chart-legend">${seriesList.map((s, si) => `<span><i style="background:${s.color};${si === 1 ? 'border-radius:0;height:2px;width:12px;margin-top:5px' : ''}"></i>${escapeHtml(s.label)}</span>`).join('')}</div>`;
             return `${legend}<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:280px;display:block">
-                ${zeroLine}
+                ${gridLines}
                 ${lines}
                 ${labels}
             </svg>`;
