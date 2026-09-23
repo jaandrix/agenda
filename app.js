@@ -6678,17 +6678,6 @@
                     onClick: () => { closeNotifPanel(); switchView('travels'); }
                 });
             });
-            if (financeProfile.recordatorioDia && financeMonthUpdatePending() && new Date().getDate() >= financeProfile.recordatorioDia) {
-                const monthKey = financeMonthKey();
-                items.push({
-                    icon: NOTIF_ICON_EVENT,
-                    iconClass: 'icon-event',
-                    title: 'Cuando tengas la información disponible, puedes actualizar tus finanzas',
-                    sub: financeMonthLabel(monthKey),
-                    date: monthKey + '-' + String(financeProfile.recordatorioDia).padStart(2, '0'),
-                    onClick: () => { closeNotifPanel(); switchView('finances', openMonthlyFinanceUpdate); }
-                });
-            }
             (typeof listasOcioCompartidas !== 'undefined' ? listasOcioCompartidas : []).forEach(l => {
                 items.push({
                     icon: NOTIF_ICON_TRIP,
@@ -10844,11 +10833,6 @@
             return financeProfile.ultimoCierreMensual !== financeMonthKey();
         }
 
-        function setFinanceReminderDay(value) {
-            const day = parseInt(value);
-            financeProfile.recordatorioDia = (Number.isFinite(day) && day >= 1 && day <= 28) ? day : null;
-            saveData().catch(e => console.error(e));
-        }
 
         function openMonthlyFinanceUpdate() {
             const monthKey = financeMonthKey();
@@ -11909,18 +11893,11 @@
         function renderFinanceProDashboard() {
             ensureCurrentMonthHistory();
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
-            const updatePending = financeMonthUpdatePending();
             const trend = financeGoalTrendSignal();
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
                 <div class="finance-toolbar-row" style="justify-content:flex-end">${blurToggleBtn}</div>
                 ${renderFinanceProReviewBanner()}
-
-                ${(financeProfile.recordatorioDia && updatePending && new Date().getDate() >= financeProfile.recordatorioDia) ? `
-                <div class="finance-reminder-banner">
-                    <span>Cuando tengas la información disponible, puedes actualizar tus finanzas de ${escapeHtml(financeMonthLabel(financeMonthKey()))}.</span>
-                    <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">Actualizar ahora</button>
-                </div>` : ''}
 
                 ${renderFinanceProChartPanel()}
 
@@ -11957,14 +11934,6 @@
 
                 <div class="finance-dashboard-foot-actions" style="margin-top:20px">
                     <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()">✎ Corregir registros</button>
-                    <label class="finance-foot-reminder">
-                        Recordarme el día
-                        <select class="modal-input" style="width:auto;margin:0;padding:4px 8px" onchange="setFinanceReminderDay(this.value)">
-                            <option value="">Sin recordatorio</option>
-                            ${Array.from({ length: 28 }, (_, i) => i + 1).map(d => `<option value="${d}" ${financeProfile.recordatorioDia === d ? 'selected' : ''}>${d}</option>`).join('')}
-                        </select>
-                        de cada mes
-                    </label>
                 </div>
 
                 <!-- Acciones menos frecuentes, apartadas del flujo principal
@@ -15718,10 +15687,10 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     </div>
                     <div id="pw-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
                     <button class="btn-modal-primary" onclick="verifyPassword('${type}')" style="background:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
-                        🔓 Verificar
+                        Verificar
                     </button>
                 `);
-                
+
                 // Enfocar el input después de renderizar
                 setTimeout(() => {
                     const input = document.getElementById('pw-input');
