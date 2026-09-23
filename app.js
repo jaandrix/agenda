@@ -10129,12 +10129,17 @@
         const FINANCE_ICON_CROSSHAIR = '<svg viewBox="0 0 100 100" fill="none"><rect x="45" y="1" width="10" height="20" rx="5" fill="currentColor"/><rect x="45" y="79" width="10" height="20" rx="5" fill="currentColor"/><rect x="1" y="45" width="20" height="10" rx="5" fill="currentColor"/><rect x="79" y="45" width="20" height="10" rx="5" fill="currentColor"/><circle cx="50" cy="50" r="23" stroke="currentColor" stroke-width="9"/><circle cx="50" cy="50" r="9" fill="currentColor"/></svg>';
         const FINANCE_ICON_ARROW_UP = '<svg viewBox="0 0 100 100" fill="none"><path d="M25 75 L75 25 M50 22 H78 V50" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         // Misma familia sólida/geométrica que los tres anteriores, para las
-        // tarjetas de "Otros ahorros" (fondo de emergencia, vacaciones,
-        // gastos recurrentes, coleccionables).
-        const FINANCE_ICON_SHIELD_BOLD = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 2 L90 18 V46 C90 72 74 90 50 98 C26 90 10 72 10 46 V18 Z"/></svg>';
-        const FINANCE_ICON_SUN_BOLD = '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="20"/><rect x="44" y="2" width="12" height="18" rx="6"/><rect x="44" y="80" width="12" height="18" rx="6"/><rect x="2" y="44" width="18" height="12" rx="6"/><rect x="80" y="44" width="18" height="12" rx="6"/><g transform="rotate(45 50 50)"><rect x="44" y="2" width="12" height="18" rx="6"/><rect x="44" y="80" width="12" height="18" rx="6"/><rect x="2" y="44" width="18" height="12" rx="6"/><rect x="80" y="44" width="18" height="12" rx="6"/></g></svg>';
-        const FINANCE_ICON_LOOP_BOLD = '<svg viewBox="0 0 100 100" fill="none"><path d="M50 8 A42 42 0 1 1 12 32" stroke="currentColor" stroke-width="15" stroke-linecap="round"/><path d="M6 12 L14 36 L35 26 Z" fill="currentColor"/></svg>';
-        const FINANCE_ICON_STAR_BOLD = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 2 L61 36 L97 36 L68 57 L79 91 L50 70 L21 91 L32 57 L3 36 L39 36 Z"/></svg>';
+        // 4 TARJETA BITACORA de "Otros ahorros" (fondo de emergencia,
+        // vacaciones, gastos recurrentes, coleccionables) — inspirados en
+        // las 4 referencias que se pidió replicar.
+        const FINANCE_ICON_ASTERISK_BOLD = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M44 2 H56 V38 L84 18 L90 28 L60 46 L90 64 L84 74 L56 56 V98 H44 V56 L16 74 L10 64 L40 46 L10 28 L16 18 L44 38 Z"/></svg>';
+        const FINANCE_ICON_FAN_BOLD = '<svg viewBox="0 0 100 100" fill="currentColor"><g transform="translate(50,96)"><path d="M0 0 L-6 -84 Q0 -91 6 -84 Z" transform="rotate(-60)"/><path d="M0 0 L-6 -84 Q0 -91 6 -84 Z" transform="rotate(-36)"/><path d="M0 0 L-6 -84 Q0 -91 6 -84 Z" transform="rotate(-12)"/><path d="M0 0 L-6 -84 Q0 -91 6 -84 Z" transform="rotate(12)"/><path d="M0 0 L-6 -84 Q0 -91 6 -84 Z" transform="rotate(36)"/><path d="M0 0 L-6 -84 Q0 -91 6 -84 Z" transform="rotate(60)"/></g></svg>';
+        const FINANCE_ICON_REFRESH_BOLD = '<svg viewBox="0 0 100 100" fill="none"><path d="M50 12 A38 38 0 0 1 88 50" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><path d="M50 88 A38 38 0 0 1 12 50" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><path d="M78 30 L91 27 L93 42 Z" fill="currentColor"/><path d="M22 70 L9 73 L7 58 Z" fill="currentColor"/></svg>';
+        const FINANCE_ICON_CLUSTER_BOLD = (() => {
+            const petal = '<circle cx="50" cy="18" r="9"/><rect x="46" y="26" width="8" height="14" rx="4"/>';
+            const angles = [0, 60, 120, 180, 240, 300];
+            return `<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="12"/>${angles.map(a => `<g transform="rotate(${a} 50 50)">${petal}</g>`).join('')}</svg>`;
+        })();
 
         // ============================================================
         //  FINANZAS PRO — iconos de categoría (sin emoticonos: mismo
@@ -11939,21 +11944,42 @@
             showModal(renderFinanceSavingsGoals());
         }
 
+        // TARJETA BITACORA: mismo molde que ritmo/largo plazo/metas (nombre
+        // arriba a la izquierda, icono grande abajo a la derecha, sólido/
+        // contorno alternando) pero mostrando además una cifra — para
+        // cuentas que sí hace falta ver de un vistazo, no solo un botón
+        // que abre un popup.
+        function renderFinanceBitacoraCard(label, value, iconSvg, variant, onClick) {
+            return `
+                <button class="finance-plan-btn finance-plan-btn-${variant} finance-bitacora-card" ${onClick ? `onclick="${onClick}"` : ''}>
+                    <div class="finance-bitacora-card-top">
+                        <div class="finance-plan-btn-label">${escapeHtml(label)}</div>
+                        <div class="finance-bitacora-card-value">${financeMoney(value)}</div>
+                    </div>
+                    <div class="finance-plan-btn-icon">${iconSvg}</div>
+                </button>`;
+        }
+
         // Fondo de emergencia, reserva de vacaciones, cuentas propias,
         // gastos recurrentes y coleccionables — cifras manuales que no son
         // cuentas PRO transaccionales, así que se apartan a un popup en vez
-        // de ocupar espacio fijo en el panel principal.
+        // de ocupar espacio fijo en el panel principal. Las 4 fijas van en
+        // una sola fila de TARJETA BITACORA; las cuentas propias, si las
+        // hay, siguen debajo en la misma rejilla de 4 columnas.
         function openFinanceOtherSavingsModal() {
             const recurring = financeRecurringTotal();
+            const cards = [
+                renderFinanceBitacoraCard('fondo de emergencia.', Number(financeProfile.emergency || 0), FINANCE_ICON_ASTERISK_BOLD, 'solid', 'openMonthlyFinanceUpdate()'),
+                renderFinanceBitacoraCard('vacaciones.', Number(financeProfile.vacation || 0), FINANCE_ICON_FAN_BOLD, 'outline', 'openMonthlyFinanceUpdate()'),
+                renderFinanceBitacoraCard('recurrentes.', recurring, FINANCE_ICON_REFRESH_BOLD, 'solid', 'openRecurringExpensesModal()'),
+                collectibles.length ? renderFinanceBitacoraCard('coleccionables.', financeCollectiblesTotal(), FINANCE_ICON_CLUSTER_BOLD, 'outline', "closeModal();switchView('collectibles')") : ''
+            ];
+            const customCards = (financeProfile.customAccounts || []).map((a, i) =>
+                renderFinanceBitacoraCard(`${a.name.toLowerCase()}.`, a.balance, FINANCE_ICON_CARD, i % 2 === 0 ? 'solid' : 'outline', `openCustomAccountEditor('${a.id}')`)
+            );
             showModal(`
                 <div class="modal-title">Otros ahorros</div>
-                <div class="finance-metrics-grid">
-                    ${renderFinanceSimpleTile(Number(financeProfile.emergency || 0), 'Fondo de emergencia', 'openMonthlyFinanceUpdate()', null, false, FINANCE_ICON_SHIELD_BOLD, 'fin-amber')}
-                    ${renderFinanceSimpleTile(Number(financeProfile.vacation || 0), 'Reserva de vacaciones', 'openMonthlyFinanceUpdate()', 'Queda fuera del patrimonio operativo', true, FINANCE_ICON_SUN_BOLD, 'fin-teal')}
-                    ${(financeProfile.customAccounts || []).map(a => renderFinanceSimpleTile(a.balance, a.name, `openCustomAccountEditor('${a.id}')`, null, false, FINANCE_ICON_CARD, 'fin-slate')).join('')}
-                    ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true, FINANCE_ICON_LOOP_BOLD, 'fin-red')}
-                    ${collectibles.length ? renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR_BOLD, 'fin-gold') : ''}
-                </div>
+                <div class="finance-bitacora-grid">${cards.join('') + customCards.join('')}</div>
                 <button class="finance-oneoff-btn" style="width:100%;text-align:center;margin-top:14px" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
             `);
         }
@@ -11977,7 +12003,7 @@
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}
                 </div>
 
-                <button class="finance-oneoff-btn finance-other-savings-btn" onclick="openFinanceOtherSavingsModal()">${FINANCE_ICON_SHIELD} Otros ahorros</button>
+                <button class="finance-oneoff-btn finance-other-savings-btn" onclick="openFinanceOtherSavingsModal()">Otros ahorros</button>
 
                 ${renderFinanceProBudgetsPanel()}
 
