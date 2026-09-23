@@ -11944,44 +11944,42 @@
             showModal(renderFinanceSavingsGoals());
         }
 
-        // TARJETA BITACORA: mismo molde que ritmo/largo plazo/metas (nombre
-        // arriba a la izquierda, icono grande abajo a la derecha, sólido/
-        // contorno alternando) pero mostrando además una cifra — para
-        // cuentas que sí hace falta ver de un vistazo, no solo un botón
-        // que abre un popup.
-        function renderFinanceBitacoraCard(label, value, iconSvg, variant, onClick) {
+        // TARJETA BITACORA: el molde único (nombre arriba a la izquierda,
+        // icono abajo a la izquierda, cifra abajo a la derecha cuando la
+        // hay, sólido/contorno alternando). "Planificación a futuro" y
+        // "Otros ahorros" ya no van separados (uno inline, el otro en un
+        // popup aparte) — las 7 tarjetas fijas + las cuentas propias viven
+        // todas juntas en una sola fila con scroll horizontal.
+        function renderFinanceBitacoraCard(label, iconSvg, variant, onClick, value) {
+            const hasValue = value !== undefined;
             return `
                 <button class="finance-plan-btn finance-plan-btn-${variant} finance-bitacora-card" ${onClick ? `onclick="${onClick}"` : ''}>
-                    <div class="finance-bitacora-card-top">
-                        <div class="finance-plan-btn-label">${escapeHtml(label)}</div>
-                        <div class="finance-bitacora-card-value">${financeMoney(value)}</div>
+                    <div class="finance-plan-btn-label">${escapeHtml(label)}</div>
+                    <div class="finance-bitacora-card-foot ${hasValue ? 'finance-bitacora-card-foot-with-value' : ''}">
+                        <div class="finance-plan-btn-icon">${iconSvg}</div>
+                        ${hasValue ? `<div class="finance-bitacora-card-value">${financeMoney(value)}</div>` : ''}
                     </div>
-                    <div class="finance-plan-btn-icon">${iconSvg}</div>
                 </button>`;
         }
 
-        // Fondo de emergencia, reserva de vacaciones, cuentas propias,
-        // gastos recurrentes y coleccionables — cifras manuales que no son
-        // cuentas PRO transaccionales, así que se apartan a un popup en vez
-        // de ocupar espacio fijo en el panel principal. Las 4 fijas van en
-        // una sola fila de TARJETA BITACORA; las cuentas propias, si las
-        // hay, siguen debajo en la misma rejilla de 4 columnas.
-        function openFinanceOtherSavingsModal() {
+        function renderFinancePlanRow() {
             const recurring = financeRecurringTotal();
             const cards = [
-                renderFinanceBitacoraCard('fondo de emergencia.', Number(financeProfile.emergency || 0), FINANCE_ICON_ASTERISK_BOLD, 'solid', 'openMonthlyFinanceUpdate()'),
-                renderFinanceBitacoraCard('vacaciones.', Number(financeProfile.vacation || 0), FINANCE_ICON_FAN_BOLD, 'outline', 'openMonthlyFinanceUpdate()'),
-                renderFinanceBitacoraCard('recurrentes.', recurring, FINANCE_ICON_REFRESH_BOLD, 'solid', 'openRecurringExpensesModal()'),
-                collectibles.length ? renderFinanceBitacoraCard('coleccionables.', financeCollectiblesTotal(), FINANCE_ICON_CLUSTER_BOLD, 'outline', "closeModal();switchView('collectibles')") : ''
+                renderFinanceBitacoraCard('ritmo.', FINANCE_ICON_PULSE, 'solid', 'openFinanceRitmoModal()'),
+                renderFinanceBitacoraCard('largo plazo.', FINANCE_ICON_GROWTH_BARS, 'outline', 'openFinanceLargoPlazoModal()'),
+                renderFinanceBitacoraCard('metas.', FINANCE_ICON_CROSSHAIR, 'solid', 'openFinanceMetasModal()'),
+                renderFinanceBitacoraCard('fondo de emergencia.', FINANCE_ICON_ASTERISK_BOLD, 'outline', 'openMonthlyFinanceUpdate()', Number(financeProfile.emergency || 0)),
+                renderFinanceBitacoraCard('vacaciones.', FINANCE_ICON_FAN_BOLD, 'solid', 'openMonthlyFinanceUpdate()', Number(financeProfile.vacation || 0)),
+                renderFinanceBitacoraCard('recurrentes.', FINANCE_ICON_REFRESH_BOLD, 'outline', 'openRecurringExpensesModal()', recurring),
+                collectibles.length ? renderFinanceBitacoraCard('coleccionables.', FINANCE_ICON_CLUSTER_BOLD, 'solid', "closeModal();switchView('collectibles')", financeCollectiblesTotal()) : ''
             ];
             const customCards = (financeProfile.customAccounts || []).map((a, i) =>
-                renderFinanceBitacoraCard(`${a.name.toLowerCase()}.`, a.balance, FINANCE_ICON_CARD, i % 2 === 0 ? 'solid' : 'outline', `openCustomAccountEditor('${a.id}')`)
+                renderFinanceBitacoraCard(`${a.name.toLowerCase()}.`, FINANCE_ICON_CARD, i % 2 === 0 ? 'outline' : 'solid', `openCustomAccountEditor('${a.id}')`, a.balance)
             );
-            showModal(`
-                <div class="modal-title">Otros ahorros</div>
-                <div class="finance-bitacora-grid">${cards.join('') + customCards.join('')}</div>
-                <button class="finance-oneoff-btn" style="width:100%;text-align:center;margin-top:14px" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
-            `);
+            return `<div class="finance-bitacora-row">
+                ${cards.join('') + customCards.join('')}
+                <button class="finance-plan-btn finance-plan-btn-outline finance-bitacora-add" onclick="openFinanceAccountsConfig()" title="Cuenta propia">+</button>
+            </div>`;
         }
 
         function renderFinanceProDashboard() {
@@ -12003,27 +12001,12 @@
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}
                 </div>
 
-                <button class="finance-oneoff-btn finance-other-savings-btn" onclick="openFinanceOtherSavingsModal()">Otros ahorros</button>
-
                 ${renderFinanceProBudgetsPanel()}
 
                 <div class="finance-section-head" style="margin-top:24px">
                     <div class="finance-kicker">Planificación a futuro</div>
                 </div>
-                <div class="finance-plan-buttons">
-                    <button class="finance-plan-btn finance-plan-btn-solid" onclick="openFinanceRitmoModal()">
-                        <div class="finance-plan-btn-label">ritmo.</div>
-                        <div class="finance-plan-btn-icon">${FINANCE_ICON_PULSE}</div>
-                    </button>
-                    <button class="finance-plan-btn finance-plan-btn-outline" onclick="openFinanceLargoPlazoModal()">
-                        <div class="finance-plan-btn-label">largo plazo.</div>
-                        <div class="finance-plan-btn-icon">${FINANCE_ICON_GROWTH_BARS}</div>
-                    </button>
-                    <button class="finance-plan-btn finance-plan-btn-solid" onclick="openFinanceMetasModal()">
-                        <div class="finance-plan-btn-label">metas.</div>
-                        <div class="finance-plan-btn-icon">${FINANCE_ICON_CROSSHAIR}</div>
-                    </button>
-                </div>
+                ${renderFinancePlanRow()}
 
                 ${renderFinanceProTxSection()}
 

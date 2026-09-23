@@ -4359,44 +4359,31 @@ body.beige {
 .finance-other-savings-btn { width:100%; text-align:center; padding:13px 16px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:2px; }
 .finance-other-savings-btn svg { width:15px; height:15px; }
 
-/* TARJETA BITACORA: el molde base — tarjeta cuadrada de alto contraste
-   (nombre arriba a la izquierda, icono grande abajo a la derecha), al
-   estilo de una tarjeta de producto minimalista. Alternan relleno
-   sólido y contorno para que se note el contraste entre tarjetas
-   contiguas, como en la referencia. Este mismo molde (.finance-plan-btn)
-   lo usan tanto los botones de "Planificación a futuro" (abren un
-   popup) como las TARJETA BITACORA de "Otros ahorros" (muestran además
-   una cifra) — cada grupo fija su propio tamaño por separado. */
+/* TARJETA BITACORA: el molde único — tarjeta cuadrada de alto
+   contraste (nombre arriba a la izquierda, icono abajo a la izquierda,
+   cifra abajo a la derecha cuando la hay), al estilo de una tarjeta de
+   producto minimalista. Alternan relleno sólido y contorno para que se
+   note el contraste entre tarjetas contiguas, como en la referencia.
+   "Planificación a futuro" (ritmo/largo plazo/metas) y "Otros ahorros"
+   (fondo de emergencia/vacaciones/recurrentes/coleccionables/cuentas
+   propias) ya no van separados — comparten una única fila con scroll
+   horizontal en vez de un popup aparte. */
+.finance-bitacora-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin; }
 .finance-plan-btn {
-    position:relative; aspect-ratio:1/1; border-radius:18px; padding:12px;
+    position:relative; flex:0 0 auto; width:112px; aspect-ratio:1/1; border-radius:18px; padding:12px;
     display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start;
     cursor:pointer; transition:transform .15s ease, opacity .15s ease;
 }
 .finance-plan-btn:hover { transform:translateY(-2px); opacity:.9; }
 .finance-plan-btn-solid { background:var(--accent); color:var(--accent-contrast); border:0; }
 .finance-plan-btn-outline { background:var(--bg-card); color:var(--text-primary); border:1.5px solid var(--border-strong); }
-.finance-plan-btn-icon { align-self:flex-end; width:38%; max-width:44px; }
+.finance-plan-btn-label { font-weight:900; font-size:14px; letter-spacing:-.2px; line-height:1.2; text-align:left; }
+.finance-bitacora-card-foot { width:100%; display:flex; align-items:flex-end; justify-content:flex-end; gap:6px; }
+.finance-bitacora-card-foot-with-value { justify-content:space-between; }
+.finance-plan-btn-icon { width:30%; max-width:34px; flex-shrink:0; }
 .finance-plan-btn-icon svg { width:100%; height:auto; display:block; }
-.finance-plan-btn-label { font-weight:900; font-size:12.5px; letter-spacing:-.1px; line-height:1.2; text-align:left; }
-
-/* "Planificación a futuro" (ritmo. / largo plazo. / metas.) — a la
-   mitad de tamaño: la fila de 3 tarjetas ocupa la mitad del ancho en
-   vez del ancho completo, en vez de una rejilla que las estira a 1/3
-   del contenedor. */
-.finance-plan-buttons { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; max-width:50%; }
-.finance-plan-buttons .finance-plan-btn { border-radius:13px; padding:8px; }
-.finance-plan-buttons .finance-plan-btn-label { font-size:9px; }
-.finance-plan-buttons .finance-plan-btn-icon { max-width:26px; }
-
-/* "Otros ahorros" — 4 TARJETA BITACORA en una sola fila (nunca 2x2),
-   más grandes que las de "Planificación a futuro" al ir a ancho
-   completo. Muestran además una cifra bajo el nombre. */
-.finance-bitacora-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
-.finance-bitacora-card-top { display:flex; flex-direction:column; gap:2px; min-width:0; }
-.finance-bitacora-card-value { font-size:10.5px; font-weight:800; font-variant-numeric:tabular-nums; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.finance-bitacora-grid .finance-plan-btn-label { font-size:10px; overflow-wrap:break-word; }
-.finance-bitacora-grid .finance-plan-btn { padding:9px; border-radius:14px; }
-.finance-bitacora-grid .finance-plan-btn-icon { max-width:28px; }
+.finance-bitacora-card-value { font-size:14px; font-weight:900; font-variant-numeric:tabular-nums; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.finance-bitacora-add { align-items:center; justify-content:center; font-size:28px; font-weight:300; color:var(--text-secondary); }
 
 /* Cuando un .finance-panel (pensado para vivir dentro de la rejilla del
    dashboard) se muestra directamente como contenido de un popup, se le
