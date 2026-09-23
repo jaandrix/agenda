@@ -7127,6 +7127,11 @@
 
         function getTrip(id) { return entries.find(e => e.id === id && e.type === 'travel'); }
 
+        // Icono propio de Viajes — misma familia sólida/geométrica que los
+        // iconos de Finanzas (ritmo/largo plazo/metas), a modo de logo fijo
+        // para toda tarjeta de viaje.
+        const TRAVEL_ICON_MOUNTAIN = '<svg viewBox="0 0 100 80" fill="currentColor"><path d="M4 76 L32 16 C34 12 40 12 42 16 L54 40 L62 28 C64 25 68 25 70 28 L96 76 Z"/></svg>';
+
         function renderTravels() {
             if (window._openTripId) {
                 const t = getTrip(window._openTripId);
@@ -7179,6 +7184,7 @@
                                         <div style="font-weight:800;font-size:16px;margin-top:6px;color:var(--text-primary)">${escapeHtml(t.title)}</div>
                                         <div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}</div>
                                     </div>
+                                    <div class="trip-card-icon">${TRAVEL_ICON_MOUNTAIN}</div>
                                 </div>
                                 ${(places2.length || itemsTotal) ? `<div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--text-secondary)">
                                     ${places2.length ? `<span>${places2.filter(p => p.visitado).length}/${places2.length} lugares</span>` : ''}
@@ -10121,6 +10127,7 @@
         const FINANCE_ICON_PULSE = '<svg viewBox="0 0 120 80" fill="currentColor"><rect x="2" y="6" width="15" height="68" rx="7.5"/><rect x="23" y="13" width="15" height="54" rx="7.5"/><rect x="44" y="20" width="13" height="40" rx="6.5"/><rect x="63" y="27" width="11" height="26" rx="5.5"/><rect x="80" y="32" width="9" height="16" rx="4.5"/><rect x="95" y="35.5" width="7" height="9" rx="3.5"/></svg>';
         const FINANCE_ICON_GROWTH_BARS = '<svg viewBox="0 0 100 80" fill="currentColor"><rect x="2" y="50" width="22" height="28" rx="9"/><rect x="32" y="28" width="22" height="50" rx="9"/><rect x="62" y="2" width="22" height="76" rx="9"/></svg>';
         const FINANCE_ICON_CROSSHAIR = '<svg viewBox="0 0 100 100" fill="none"><rect x="45" y="1" width="10" height="20" rx="5" fill="currentColor"/><rect x="45" y="79" width="10" height="20" rx="5" fill="currentColor"/><rect x="1" y="45" width="20" height="10" rx="5" fill="currentColor"/><rect x="79" y="45" width="20" height="10" rx="5" fill="currentColor"/><circle cx="50" cy="50" r="23" stroke="currentColor" stroke-width="9"/><circle cx="50" cy="50" r="9" fill="currentColor"/></svg>';
+        const FINANCE_ICON_ARROW_UP = '<svg viewBox="0 0 100 100" fill="none"><path d="M25 75 L75 25 M50 22 H78 V50" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         // Misma familia sólida/geométrica que los tres anteriores, para las
         // tarjetas de "Otros ahorros" (fondo de emergencia, vacaciones,
         // gastos recurrentes, coleccionables).
@@ -11883,35 +11890,28 @@
             const updatePending = financeMonthUpdatePending();
             const { total, change: totalChange } = financeUnifiedPatrimonyChange();
             const target = financeTargetTotal();
-            const totalPct = target > 0 ? Math.min(100, total / target * 100) : null;
             const remainingToTarget = Math.max(0, target - total);
-            const R = 42, C = 2 * Math.PI * R;
-            const ringOffset = totalPct === null ? C : (C * (1 - totalPct / 100)).toFixed(1);
             const pctBtnClass = totalChange === null ? 'neutral' : totalChange >= 0 ? 'positive' : 'negative';
-            return `<section class="finance-panel finance-networth-redesign" id="finance-networth-section">
+            const noteText = target > 0
+                ? (remainingToTarget <= 0
+                    ? 'Objetivo alcanzado. Esta cuenta es tu patrimonio operativo.'
+                    : `Faltan ${financeMoney(remainingToTarget)} para alcanzar tu meta de ${financeMoney(target)}. Esta cuenta es tu patrimonio operativo.`)
+                : 'Define un objetivo para ver tu camino. Esta cuenta es tu patrimonio operativo.';
+            return `<section class="finance-panel finance-networth-compact" id="finance-networth-section">
                 <div class="finance-panel-head">
-                    ${financePanelHeadIcon(FINANCE_ICON_TARGET, 'fin-gold', 'Patrimonio', 'Operativo')}
+                    <div>
+                        <div class="finance-kicker">Patrimonio</div>
+                        <div class="finance-networth-compact-value">${financeMoney(total)}</div>
+                    </div>
                     <button class="finance-networth-pct-btn ${pctBtnClass}" onclick="openFinanceYearlyChangeModal()" title="Ver variación mes a mes">
                         ${totalChange === null ? 'Variación' : `${totalChange >= 0 ? '+' : ''}${totalChange.toFixed(1)}%`}
                     </button>
                 </div>
-                <div class="finance-networth-redesign-body">
-                    <div class="finance-networth-ring-wrap">
-                        <svg viewBox="0 0 100 100" width="92" height="92">
-                            <circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--border)" stroke-width="9"/>
-                            ${totalPct !== null ? `<circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${ringOffset}" transform="rotate(-90 50 50)"/>` : ''}
-                        </svg>
-                        <div class="finance-networth-ring-label">${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</div>
-                    </div>
-                    <div class="finance-networth-redesign-info">
-                        <div class="finance-networth-redesign-value">${financeMoney(total)}</div>
-                        <div class="finance-networth-redesign-target">Objetivo ${target > 0 ? financeMoney(target) : 'sin definir'}</div>
-                        <div class="finance-networth-redesign-remaining">${remainingToTarget <= 0 && target > 0 ? 'Objetivo alcanzado' : target > 0 ? `Faltan ${financeMoney(remainingToTarget)}` : 'Define un objetivo para ver el camino'}</div>
-                    </div>
-                </div>
-                <div class="finance-networth-actions">
+                <div class="finance-networth-compact-note">${escapeHtml(noteText)}</div>
+                <div class="finance-networth-compact-foot">
                     <button class="finance-networth-action-btn" onclick="openFinanceTargetEditor()">✎ Objetivo</button>
                     <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">${updatePending ? 'Actualizar este mes' : '✓ Mes actualizado'}</button>
+                    <div class="finance-networth-compact-icon">${FINANCE_ICON_ARROW_UP}</div>
                 </div>
             </section>`;
         }
