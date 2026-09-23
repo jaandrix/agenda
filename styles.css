@@ -24,7 +24,11 @@
             --badge-done-text: #000000;
             --badge-default-bg: #262626;
             --badge-default-text: #e5e5e5;
-            --shadow: 0 4px 20px rgba(0,0,0,0.45);
+            /* Una sombra negra sobre fondo ya casi negro (--bg-app:#000) no
+               aporta ninguna profundidad — más contraste/difuminado para
+               que al menos se note sobre tarjetas y superficies más claras
+               que el fondo. */
+            --shadow: 0 8px 28px rgba(0,0,0,0.6);
             --radius: 20px;
             --radius-full: 999px;
             --fantasy-accent: #8B5CF6;
@@ -842,8 +846,8 @@
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: #000000;
-            color: #ffffff;
+            background: var(--bg-fab);
+            color: var(--accent-contrast);
             border: none;
             font-size: 28px;
             font-weight: 300;
@@ -908,11 +912,11 @@
             bottom: 100px;
             width: min(320px, calc(100vw - 32px));
             max-height: min(390px, calc(100vh - 150px));
-            background: #f8f5ed;
-            color: #242424;
-            border: 1px solid rgba(0,0,0,.10);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
             border-radius: 22px;
-            box-shadow: 0 18px 50px rgba(0,0,0,.28);
+            box-shadow: var(--shadow);
             z-index: 52;
             display: none;
             overflow: visible;
@@ -925,9 +929,9 @@
             bottom: -8px;
             width: 15px;
             height: 15px;
-            background: #f8f5ed;
-            border-right: 1px solid rgba(0,0,0,.10);
-            border-bottom: 1px solid rgba(0,0,0,.10);
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
             transform: rotate(45deg);
         }
         .weekly-tasks-head {
@@ -936,21 +940,21 @@
             justify-content: space-between;
             gap: 10px;
             padding: 14px 15px 11px;
-            border-bottom: 1px solid rgba(0,0,0,.08);
+            border-bottom: 1px solid var(--border);
         }
         .weekly-tasks-title { font-size: 14px; font-weight: 800; letter-spacing: -.2px; }
-        .weekly-tasks-week { margin-top: 2px; font-size: 10px; color: #77736a; }
+        .weekly-tasks-week { margin-top: 2px; font-size: 10px; color: var(--text-secondary); }
         .weekly-tasks-add {
-            border: 1px solid rgba(0,0,0,.14);
-            background: #fffdf7;
-            color: #252525;
+            border: 1px solid var(--border-strong);
+            background: var(--bg-input);
+            color: var(--text-primary);
             border-radius: 14px;
             padding: 5px 8px;
             font: 700 11px 'Poppins', sans-serif;
             cursor: pointer;
             white-space: nowrap;
         }
-        .weekly-tasks-add:hover { background: #ffffff; border-color: rgba(0,0,0,.24); }
+        .weekly-tasks-add:hover { background: var(--bg-card-hover); border-color: var(--border-strong); }
         .weekly-tasks-list {
             padding: 8px 10px 12px;
             overflow-y: auto;
@@ -964,7 +968,7 @@
             border-radius: 14px;
             transition: background .15s ease;
         }
-        .weekly-task-row:hover { background: rgba(0,0,0,.035); }
+        .weekly-task-row:hover { background: var(--bg-card-hover); }
         .weekly-task-check {
             appearance: none;
             -webkit-appearance: none;
@@ -972,13 +976,13 @@
             height: 17px;
             flex: 0 0 17px;
             margin: 0;
-            border: 1.5px solid #8b877d;
+            border: 1.5px solid var(--border-strong);
             border-radius: 5px;
             background: transparent;
             cursor: pointer;
             position: relative;
         }
-        .weekly-task-check:hover { border-color: #333; }
+        .weekly-task-check:hover { border-color: var(--text-secondary); }
         .weekly-task-check:checked { background: var(--accent, #3b82f6); border-color: var(--accent, #3b82f6); }
         .weekly-task-check:checked::after {
             content: '';
@@ -996,13 +1000,13 @@
             font-size: 12px;
             line-height: 1.35;
             font-weight: 600;
-            color: #292929;
+            color: var(--text-primary);
             overflow-wrap: anywhere;
         }
         .weekly-tasks-empty {
             padding: 24px 12px 26px;
             text-align: center;
-            color: #817d74;
+            color: var(--text-secondary);
             font-size: 11px;
             line-height: 1.5;
         }
@@ -1430,8 +1434,8 @@
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            background: #ffffff;
-            color: #000000;
+            background: var(--bg-fab);
+            color: var(--accent-contrast);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2226,7 +2230,7 @@
         .effort-picker-btn.active { border-color: var(--text-primary); }
         .effort-picker-btn.year-dot-effort-1 { background: #dbeafe; color: #1e3a8a; }
         .effort-picker-btn.year-dot-effort-2 { background: #93c5fd; color: #1e3a8a; }
-        .effort-picker-btn.year-dot-effort-3 { background: #60a5fa; }
+        .effort-picker-btn.year-dot-effort-3 { background: #60a5fa; color: #1e3a8a; }
         .effort-picker-btn.year-dot-effort-4 { background: #3b82f6; }
         .effort-picker-btn.year-dot-effort-5 { background: #1e40af; }
         .year-cal-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; padding: 6px 4px; font-size: 11px; color: var(--text-secondary); }
@@ -3060,8 +3064,8 @@
             gap: 14px;
         }
         .note-card {
-            background: #f7f0e2;
-            border: 1px solid #e6d9bd;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 20px;
             padding: 22px 18px;
             cursor: pointer;
@@ -3072,11 +3076,11 @@
         }
         .note-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            box-shadow: var(--shadow);
         }
         .note-card-title {
             font-weight: 800;
-            color: #1c1c1c;
+            color: var(--text-primary);
             font-size: 14px;
             letter-spacing: -0.2px;
         }
@@ -3090,21 +3094,21 @@
         .note-detail-wide .note-readonly { width:100%; }
         .note-detail-title {
             font-weight: 800;
-            color: #1c1c1c;
+            color: var(--text-primary);
             font-size: 22px;
             margin-bottom: 16px;
         }
         .note-textarea,
         .note-readonly {
-            background: #f7f0e2;
-            border: 1px solid #e6d9bd;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 20px;
             padding: 20px;
             min-height: 100px;
             width: 100%;
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
-            color: #3d3324;
+            color: var(--text-primary);
             line-height: 1.6;
         }
         .note-textarea {
@@ -3114,7 +3118,7 @@
             min-height: 120px;
         }
         .note-textarea:focus {
-            border-color: #cdb98c;
+            border-color: var(--border-strong);
         }
         .note-readonly {
             min-height: 0;
@@ -3355,35 +3359,33 @@
             flex-shrink: 0;
         }
         .doc-item .doc-actions .doc-action-download {
-            background: #fff;
+            background: var(--bg-card-hover);
             color: #3b82f6;
             font-family: 'Poppins', -apple-system, system-ui, sans-serif;
             font-weight: 800;
-            border: 0;
+            border: 1px solid var(--border);
             border-radius: 999px;
             padding: 6px 14px;
             font-size: 12px;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,.2);
         }
-        .doc-action-download:hover { background: #e5e5e5; }
+        .doc-action-download:hover { opacity: .85; }
         .doc-action-delete-btn {
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            background: #fff;
-            border: 0;
+            background: var(--bg-card-hover);
+            border: 1px solid var(--border);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,.2);
-            color: #7f1d1d;
+            color: #dc2626;
             font-size: 17px;
             font-weight: 900;
         }
-        .doc-action-delete-btn:hover { background: #fee2e2; }
+        .doc-action-delete-btn:hover { opacity: .85; }
         .doc-upload-box {
             border: 2px dashed #3b82f6;
             border-radius: 18px;
@@ -4362,7 +4364,7 @@ body.beige {
 .finance-chart-legend span { display:flex; align-items:center; gap:6px; }
 .finance-chart-legend i { display:inline-block; width:9px; height:9px; border-radius:50%; }
 .finance-metrics-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
-.finance-metric-card { position:relative; background:var(--bg-card); border:2px solid #000; border-radius:16px; padding:14px 12px 12px; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:3px; box-shadow:0 4px 12px rgba(0,0,0,.14); cursor:pointer; transition:box-shadow .15s ease, transform .15s ease; }
+.finance-metric-card { position:relative; background:var(--bg-card); border:2px solid var(--border-strong); border-radius:16px; padding:14px 12px 12px; min-width:0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:3px; box-shadow:var(--shadow); cursor:pointer; transition:box-shadow .15s ease, transform .15s ease; }
 .finance-metric-card:hover { box-shadow:0 8px 22px rgba(0,0,0,.26); transform:translateY(-1px); }
 .finance-panel-head { display:flex; justify-content:space-between; align-items:center; gap:8px 14px; flex-wrap:wrap; }
 .finance-metric-icon { width:30px; height:30px; border-radius:50%; background:var(--bg-card-hover); color:var(--text-secondary); display:flex; align-items:center; justify-content:center; font-size:13px; margin-bottom:4px; }
@@ -4390,8 +4392,8 @@ body.beige {
 /* Botones de la cabecera de cada cuenta PRO (ajustar saldo / + movimiento):
    chip cuadrado negro para que destaquen sobre la tarjeta en vez de
    confundirse con el resto de iconos secundarios de Finanzas. */
-.finance-pro-account-card .finance-icon-btn { width:30px; height:30px; border-radius:10px; background:#000; color:#fff; border:1px solid rgba(255,255,255,.1); font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; }
-.finance-pro-account-card .finance-icon-btn:hover { background:#181818; color:#fff; }
+.finance-pro-account-card .finance-icon-btn { width:30px; height:30px; border-radius:10px; background:var(--bg-fab); color:var(--accent-contrast); border:1px solid var(--border-strong); font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.finance-pro-account-card .finance-icon-btn:hover { opacity:.85; }
 .finance-metric-value { order:2; font-size:18px; font-weight:800; }
 .finance-metric-meta { order:4; display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:6px; font-size:8.5px; color:var(--text-secondary); width:100%; }
 .finance-metric-note { order:6; font-size:8.5px; color:var(--text-secondary); margin-top:5px; line-height:1.35; }
