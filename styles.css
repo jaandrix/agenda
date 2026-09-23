@@ -3255,6 +3255,53 @@
         .work-card-logros { font-size:12px; color:var(--text-secondary); margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
         .work-card-logros strong { color:var(--text-primary); }
 
+        /* TARJETA BITACORA — apartado Trabajo: fondo negro fijo (no sigue
+           el tema claro/oscuro), icono de portátil abajo a la derecha. */
+        .work-card-bitacora {
+            position: relative;
+            background: #0c0c0e;
+            color: #fff;
+            border-radius: var(--radius);
+            padding: 16px 84px 16px 18px;
+            box-sizing: border-box;
+        }
+        .work-card-bitacora-badge {
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.14);
+            color: #fff;
+        }
+        .work-card-bitacora-logros {
+            font-size: 12px;
+            color: rgba(255,255,255,.75);
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(255,255,255,.14);
+        }
+        .work-card-bitacora-logros strong { color: #fff; }
+        .work-card-bitacora-icon {
+            position: absolute;
+            right: 16px;
+            bottom: 14px;
+            width: 26px;
+            height: 26px;
+            color: #fff;
+        }
+        .work-card-bitacora-icon svg { width: 100%; height: 100%; display: block; }
+
+        .work-bubble-flow-card { padding: 16px 18px 10px; }
+        .work-bubble-flow-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .work-bubble-flow-wrap { width: 100%; overflow-x: auto; }
+        .work-bubble-flow-wrap svg { display: block; min-width: 480px; }
+
         .work-docs-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
         .work-docs-section .doc-item { margin-bottom:8px; }
 

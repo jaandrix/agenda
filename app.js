@@ -7777,6 +7777,10 @@
 
         const WORK_MODALIDAD_LABELS = { presencial: 'Presencial', hibrido: 'Híbrido', remoto: 'Remoto' };
 
+        // Icono de portátil — misma familia sólida de las TARJETA BITACORA,
+        // pensado para ir en blanco sobre el fondo negro de la tarjeta.
+        const WORK_ICON_LAPTOP = '<svg viewBox="0 0 100 80" fill="none"><rect x="6" y="6" width="88" height="56" rx="8" fill="currentColor"/><rect x="18" y="16" width="64" height="36" rx="3" fill="#000"/><rect x="0" y="66" width="100" height="10" rx="5" fill="currentColor"/></svg>';
+
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
@@ -7811,15 +7815,6 @@
                 return sum + displayDays;
             }, 0);
 
-            const cotizedStats = sorted.reduce((acc, w) => {
-                const cotizationDays = getCotizationDays(w, todayStr);
-                if (w.cotizationType === 'practicas') acc.practicas += cotizationDays;
-                else acc.general += cotizationDays;
-                return acc;
-            }, { practicas: 0, general: 0 });
-
-            const totalCotized = cotizedStats.practicas + cotizedStats.general;
-            const empresas = new Set(sorted.map(w => w.company).filter(Boolean)).size;
             const actuales = sorted.filter(w => !w.endDate || w.endDate >= todayStr);
             const historial = sorted.filter(w => w.endDate && w.endDate < todayStr);
 
@@ -7831,20 +7826,9 @@
                         <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()">⭳ Descargar resumen (PDF)</button>
                     </div>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:22px;max-width:980px">
-                    <div class="card bone-surface work-total-bone" style="margin:0">
-                        <div class="label" style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Días trabajados</div>
-                        <div class="value" style="font-size:28px;font-weight:800;color:var(--text-primary);margin-top:4px">${totalDays}</div>
-                    </div>
-                    <div class="card bone-surface work-cotization-bone" style="margin:0">
-                        <div style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Días cotizados</div>
-                        <div class="cotization-main">${totalCotized}</div>
-                        <div class="cotization-detail"><strong>${cotizedStats.practicas}</strong> prácticas · <strong>${cotizedStats.general}</strong> régimen general</div>
-                    </div>
-                    <div class="card" style="margin:0">
-                        <div class="card-title">Empresas</div>
-                        <div class="card-value">${empresas || sorted.length}</div>
-                    </div>
+                <div class="card work-bubble-flow-card" style="max-width:980px;margin-bottom:22px">
+                    <div class="work-bubble-flow-title">evolución de tus empleos. ${totalDays} días trabajados en total.</div>
+                    ${renderWorkBubbleFlow(sorted)}
                 </div>
                 <div style="max-width:980px">`;
 
@@ -7860,44 +7844,105 @@
             return html;
         }
 
-        function renderWorkCard(w, todayStr, daysBetween) {
-            const cat = categories.find(c => c.id === w.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
+        // Gráfico de bolas conectadas por flechas curvas — una bola por
+        // trabajo, en orden cronológico (más antiguo a la izquierda). El
+        // tamaño crece con los días trabajados ahí (raíz cuadrada, para que
+        // el ÁREA sea proporcional, no el radio) con un límite en 365 días.
+        function renderWorkBubbleFlow(sortedByRecency) {
+            const todayStr = todayISO();
+            const daysBetween = (start, end) => countWorkingDays(start, end || todayStr);
+            const chrono = [...sortedByRecency].sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+            const items = chrono.map(w => {
                 const isActive = !w.endDate || w.endDate >= todayStr;
                 const effectiveEnd = isActive ? todayStr : w.endDate;
-                const calculatedDaysHere = daysBetween(w.startDate, effectiveEnd);
-                const manualDaysHere = Number(w.cotizedDays);
-                const daysHere = Number.isFinite(manualDaysHere) && manualDaysHere >= 0
-                    ? manualDaysHere
-                    : calculatedDaysHere;
-                const statusClass = isActive ? 'badge-progress' : 'badge-done';
-                const statusLabel = isActive ? 'Actual' : (w.status || 'Finalizado');
-                const scheduleText = (w.startTime || w.endTime) ? `${w.startTime || '--'} - ${w.endTime || '--'}` : (w
-                    .schedule || '');
-                const heading = w.company || w.title;
-                const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
-                const modalidadLabel = WORK_MODALIDAD_LABELS[w.modalidad] || '';
-                return `
-                    <div class="card work-card" style="margin-bottom:12px;cursor:pointer;border-left:3px solid ${color}" onclick="openEntryDetail(\'${w.id}\')">
-                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-                            <div>
-                                <div style="font-weight:700;font-size:16px;color:var(--text-primary)">${escapeHtml(heading)}</div>
-                                ${subheading ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:1px">${escapeHtml(subheading)}</div>` : ''}
-                            </div>
-                            <span class="badge ${statusClass}">${statusLabel}</span>
+                const calculatedDays = daysBetween(w.startDate, effectiveEnd);
+                const manual = Number(w.cotizedDays);
+                const days = Number.isFinite(manual) && manual >= 0 ? manual : calculatedDays;
+                return { label: w.company || w.title || 'Trabajo', days: Math.max(0, days) };
+            });
+            const n = items.length;
+            if (!n) return '';
+            const rMin = 26, rMax = 62;
+            const scaleR = d => rMin + (rMax - rMin) * Math.sqrt(Math.min(d, 365) / 365);
+            const gap = 26, cy = 150, amp = n > 1 ? 46 : 0;
+            let x = rMax + 10;
+            const points = items.map((it, i) => {
+                const r = scaleR(it.days);
+                const cx = x + Math.max(r, rMin);
+                x = cx + Math.max(r, rMin) + gap;
+                return { cx, cy: cy + (i % 2 === 0 ? -amp : amp), r };
+            });
+            const totalWidth = Math.max(x, 200);
+            const totalHeight = cy + amp + rMax + 26;
+
+            const arrows = [];
+            for (let i = 0; i < n - 1; i++) {
+                const a = points[i], b = points[i + 1];
+                const dx = b.cx - a.cx, dy = b.cy - a.cy;
+                const dist = Math.hypot(dx, dy) || 1;
+                const ux = dx / dist, uy = dy / dist;
+                const startX = a.cx + ux * a.r, startY = a.cy + uy * a.r;
+                const endX = b.cx - ux * (b.r + 11), endY = b.cy - uy * (b.r + 11);
+                const midX = (startX + endX) / 2, midY = (startY + endY) / 2;
+                const perpX = -uy, perpY = ux;
+                const curveAmount = 34 * (i % 2 === 0 ? 1 : -1);
+                const ctrlX = midX + perpX * curveAmount, ctrlY = midY + perpY * curveAmount;
+                const angleEnd = Math.atan2(endY - ctrlY, endX - ctrlX);
+                const arrowLen = 9;
+                const ax1 = endX - arrowLen * Math.cos(angleEnd - Math.PI / 7), ay1 = endY - arrowLen * Math.sin(angleEnd - Math.PI / 7);
+                const ax2 = endX - arrowLen * Math.cos(angleEnd + Math.PI / 7), ay2 = endY - arrowLen * Math.sin(angleEnd + Math.PI / 7);
+                arrows.push(`<path d="M${startX.toFixed(1)},${startY.toFixed(1)} Q${ctrlX.toFixed(1)},${ctrlY.toFixed(1)} ${endX.toFixed(1)},${endY.toFixed(1)}" fill="none" stroke="var(--text-secondary)" stroke-width="2"/>
+                    <path d="M${endX.toFixed(1)},${endY.toFixed(1)} L${ax1.toFixed(1)},${ay1.toFixed(1)} M${endX.toFixed(1)},${endY.toFixed(1)} L${ax2.toFixed(1)},${ay2.toFixed(1)}" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round"/>`);
+            }
+
+            const bubbles = points.map((p, i) => {
+                const it = items[i];
+                const fontSize = Math.max(9, Math.min(13, p.r * 0.26));
+                const label = it.label.length > 14 ? it.label.slice(0, 13) + '…' : it.label;
+                return `<circle cx="${p.cx.toFixed(1)}" cy="${p.cy.toFixed(1)}" r="${p.r.toFixed(1)}" fill="#000"/>
+                    <text x="${p.cx.toFixed(1)}" y="${(p.cy - 3).toFixed(1)}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-weight="800" font-family="Poppins, sans-serif">${escapeHtml(label)}</text>
+                    <text x="${p.cx.toFixed(1)}" y="${(p.cy + 11).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="${Math.max(8, fontSize * 0.72).toFixed(1)}" font-family="Poppins, sans-serif">(${it.days})</text>`;
+            }).join('');
+
+            return `<div class="work-bubble-flow-wrap"><svg viewBox="0 0 ${totalWidth.toFixed(0)} ${totalHeight.toFixed(0)}" width="100%" style="display:block">${arrows.join('')}${bubbles}</svg></div>`;
+        }
+
+        function renderWorkCard(w, todayStr, daysBetween) {
+            const isActive = !w.endDate || w.endDate >= todayStr;
+            const effectiveEnd = isActive ? todayStr : w.endDate;
+            const calculatedDaysHere = daysBetween(w.startDate, effectiveEnd);
+            const manualDaysHere = Number(w.cotizedDays);
+            const daysHere = Number.isFinite(manualDaysHere) && manualDaysHere >= 0
+                ? manualDaysHere
+                : calculatedDaysHere;
+            const statusLabel = isActive ? 'Actual' : (w.status || 'Finalizado');
+            const scheduleText = (w.startTime || w.endTime) ? `${w.startTime || '--'} - ${w.endTime || '--'}` : (w
+                .schedule || '');
+            const heading = w.company || w.title;
+            const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
+            const modalidadLabel = WORK_MODALIDAD_LABELS[w.modalidad] || '';
+            return `
+                <div class="work-card-bitacora" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail('${w.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                        <div>
+                            <div style="font-weight:800;font-size:16px">${escapeHtml(heading)}</div>
+                            ${subheading ? `<div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:1px">${escapeHtml(subheading)}</div>` : ''}
                         </div>
-                        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
-                            <span style="font-size:12px;color:var(--text-secondary)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
-                            <span style="font-size:12px;color:var(--text-secondary)">${daysHere} días</span>
-                            <span style="font-size:11px;color:var(--text-secondary)">${getCotizationDays(w, todayStr)} días cotizados · ${getCotizationSource(w)}</span>
-                            ${modalidadLabel ? `<span style="font-size:11px;color:var(--text-secondary)">${modalidadLabel}</span>` : ''}
-                        </div>
-                        ${scheduleText ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${scheduleText}</div>` : ''}
-                        ${w.salary ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${w.salary}€/mes</div>` : ''}
-                        ${w.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${linkifyText(w.notes)}</div>` : ''}
-                        ${w.logros ? `<div class="work-card-logros"><strong>Logros:</strong> ${linkifyText(w.logros)}</div>` : ''}
-                        ${(!isActive && w.motivoSalida) ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px"><strong style="color:var(--text-primary)">Motivo de salida:</strong> ${escapeHtml(w.motivoSalida)}</div>` : ''}
-                    </div>`;
+                        <span class="work-card-bitacora-badge">${statusLabel}</span>
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+                        <span style="font-size:12px;color:rgba(255,255,255,.6)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
+                        <span style="font-size:12px;color:rgba(255,255,255,.6)">${daysHere} días</span>
+                        <span style="font-size:11px;color:rgba(255,255,255,.5)">${getCotizationDays(w, todayStr)} días cotizados · ${getCotizationSource(w)}</span>
+                        ${modalidadLabel ? `<span style="font-size:11px;color:rgba(255,255,255,.5)">${modalidadLabel}</span>` : ''}
+                    </div>
+                    ${scheduleText ? `<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">${scheduleText}</div>` : ''}
+                    ${w.salary ? `<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">${w.salary}€/mes</div>` : ''}
+                    ${w.notes ? `<div style="font-size:13px;color:rgba(255,255,255,.75);margin-top:6px">${linkifyText(w.notes)}</div>` : ''}
+                    ${w.logros ? `<div class="work-card-bitacora-logros"><strong>Logros:</strong> ${linkifyText(w.logros)}</div>` : ''}
+                    ${(!isActive && w.motivoSalida) ? `<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:4px"><strong style="color:#fff">Motivo de salida:</strong> ${escapeHtml(w.motivoSalida)}</div>` : ''}
+                    <div class="work-card-bitacora-icon">${WORK_ICON_LAPTOP}</div>
+                </div>`;
         }
 
         // Genera un PDF descargable con el resumen de vida laboral (jsPDF,
