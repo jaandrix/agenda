@@ -31,7 +31,7 @@ settingGroups:
     # Subir esto en cada build ayuda a confirmar a simple vista (Ajustes
     # > General > VPN y gestión de dispositivos > la app) que el .ipa
     # instalado es el que se cree que es.
-    CURRENT_PROJECT_VERSION: "3"
+    CURRENT_PROJECT_VERSION: "4"
 
 targets:
   BitacoraApp:
@@ -50,9 +50,6 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.bitacora.app
-    dependencies:
-      - target: BitacoraWidgets
-        embed: true
     settings:
       base:
         PRODUCT_NAME: BitacoraApp
@@ -63,33 +60,14 @@ targets:
       groups:
         - unsignedBuild
 
-  BitacoraWidgets:
-    type: app-extension
-    platform: iOS
-    deploymentTarget: "17.0"
-    # Poppins de verdad (no hay forma de cargar Google Fonts en un widget:
-    # no tiene red en tiempo de render), registrada en Info.plist más abajo.
-    # XcodeGen no reconoce una clave "resources:" en el target (se ignoraba
-    # en silencio, el build compilaba pero el .appex se quedaba sin las
-    # fuentes) — igual que el icono de la app, los archivos que no son
-    # código se clasifican solos como recurso con solo listarlos dentro de
-    # "sources".
-    sources:
-      - path: BitacoraWidgets
-        excludes:
-          - Info.plist
-      - path: Shared
-    info:
-      path: BitacoraWidgets/Info.plist
-    entitlements:
-      path: BitacoraWidgets/BitacoraWidgets.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.bitacora.app
-    settings:
-      base:
-        PRODUCT_NAME: BitacoraWidgets
-        PRODUCT_BUNDLE_IDENTIFIER: com.bitacora.app.widgets
-        ENABLE_PREVIEWS: YES
-      groups:
-        - unsignedBuild
+# BitacoraWidgets (target de app-extension) queda fuera del build a
+# propósito: SideStore/AltStore, al firmar con un Apple ID gratuito, no
+# consiguen instalar la extensión de WidgetKit — falla siempre con
+# "Failed to create app extension placeholder... extensionDictionary
+# must be set in placeholder attributes", tanto registrando un App ID
+# propio para la extensión como usando el perfil principal. Es una
+# limitación conocida del sideloading gratuito con WidgetKit, no un bug
+# de este proyecto. El código de los widgets (BitacoraWidgets/, Shared/)
+# se queda intacto en el repo — para recuperarlos basta con volver a
+# añadir aquí el target BitacoraWidgets (ver el historial de git) y la
+# dependencia "embed: true" en BitacoraApp de más arriba.
