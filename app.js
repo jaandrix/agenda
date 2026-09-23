@@ -11897,11 +11897,12 @@
             const target = financeTargetTotal();
             const remainingToTarget = Math.max(0, target - total);
             const pctBtnClass = totalChange === null ? 'neutral' : totalChange >= 0 ? 'positive' : 'negative';
+            const composition = 'compuesto de la suma de tus cuentas principales, tu inversión y tu fondo de emergencia';
             const noteText = target > 0
                 ? (remainingToTarget <= 0
-                    ? 'Objetivo alcanzado. Esta cuenta es tu patrimonio operativo.'
-                    : `Faltan ${financeMoney(remainingToTarget)} para alcanzar tu meta de ${financeMoney(target)}. Esta cuenta es tu patrimonio operativo.`)
-                : 'Define un objetivo para ver tu camino. Esta cuenta es tu patrimonio operativo.';
+                    ? `Objetivo alcanzado. Esta cuenta es tu patrimonio operativo, ${composition}.`
+                    : `Faltan ${financeMoney(remainingToTarget)} para alcanzar tu meta de ${financeMoney(target)}. Esta cuenta es tu patrimonio operativo, ${composition}.`)
+                : `Define un objetivo para ver tu camino. Esta cuenta es tu patrimonio operativo, ${composition}.`;
             return `<section class="finance-panel finance-networth-compact" id="finance-networth-section">
                 <div class="finance-panel-head">
                     <div>
@@ -11945,19 +11946,19 @@
         }
 
         // TARJETA BITACORA: el molde único (nombre arriba a la izquierda,
-        // icono abajo a la izquierda, cifra abajo a la derecha cuando la
-        // hay, sólido/contorno alternando). "Planificación a futuro" y
-        // "Otros ahorros" ya no van separados (uno inline, el otro en un
-        // popup aparte) — las 7 tarjetas fijas + las cuentas propias viven
-        // todas juntas en una sola fila con scroll horizontal.
+        // icono SIEMPRE abajo a la derecha, cifra abajo a la izquierda del
+        // icono cuando la hay, sólido/contorno alternando). "Planificación
+        // a futuro" y "Otros ahorros" ya no van separados (uno inline, el
+        // otro en un popup aparte) — las 7 tarjetas fijas + las cuentas
+        // propias viven todas juntas en una sola fila con scroll horizontal.
         function renderFinanceBitacoraCard(label, iconSvg, variant, onClick, value) {
             const hasValue = value !== undefined;
             return `
-                <button class="finance-plan-btn finance-plan-btn-${variant} finance-bitacora-card" ${onClick ? `onclick="${onClick}"` : ''}>
+                <button class="finance-plan-btn finance-plan-btn-${variant} finance-bitacora-card ${hasValue ? 'finance-bitacora-card-with-value' : ''}" ${onClick ? `onclick="${onClick}"` : ''}>
                     <div class="finance-plan-btn-label">${escapeHtml(label)}</div>
-                    <div class="finance-bitacora-card-foot ${hasValue ? 'finance-bitacora-card-foot-with-value' : ''}">
-                        <div class="finance-plan-btn-icon">${iconSvg}</div>
+                    <div class="finance-bitacora-card-foot">
                         ${hasValue ? `<div class="finance-bitacora-card-value">${financeMoney(value)}</div>` : ''}
+                        <div class="finance-plan-btn-icon">${iconSvg}</div>
                     </div>
                 </button>`;
         }
@@ -11987,7 +11988,18 @@
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
-                <div class="finance-toolbar-row" style="justify-content:flex-end">${blurToggleBtn}</div>
+                <div class="finance-toolbar-row">
+                    <div class="finance-pro-settings-links">
+                        <button onclick="openFinanceProAccountsSettings()">✎ Renombrar / saldo inicial</button>
+                        <span>·</span>
+                        <button onclick="openFinanceProCategoriesModal()">Categorías</button>
+                        <span>·</span>
+                        <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
+                        <span>·</span>
+                        <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} Reglas</button>
+                    </div>
+                    ${blurToggleBtn}
+                </div>
                 ${renderFinanceProReviewBanner()}
 
                 ${renderFinanceProChartPanel()}
@@ -12004,7 +12016,7 @@
                 ${renderFinanceProBudgetsPanel()}
 
                 <div class="finance-section-head" style="margin-top:24px">
-                    <div class="finance-kicker">Planificación a futuro</div>
+                    <div class="finance-kicker">planificación.</div>
                 </div>
                 ${renderFinancePlanRow()}
 
@@ -12012,18 +12024,6 @@
 
                 <div class="finance-dashboard-foot-actions" style="margin-top:20px">
                     <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()">✎ Corregir registros</button>
-                </div>
-
-                <!-- Acciones menos frecuentes, apartadas del flujo principal
-                     para que no compitan visualmente con registrar movimientos -->
-                <div class="finance-pro-settings-links">
-                    <button onclick="openFinanceProAccountsSettings()">✎ Renombrar / saldo inicial</button>
-                    <span>·</span>
-                    <button onclick="openFinanceProCategoriesModal()">Categorías</button>
-                    <span>·</span>
-                    <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
-                    <span>·</span>
-                    <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} Reglas</button>
                 </div>
             </div>`;
         }
