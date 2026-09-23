@@ -12614,6 +12614,21 @@
             return rows;
         }
 
+        // Antes se adivinaban las columnas por posición (fecha=0, importe=1,
+        // concepto=2) — funcionaba solo por casualidad según el orden de
+        // cada banco. Revolut, por ejemplo, trae "Type,Product,Started
+        // Date,Completed Date,Description,Amount,..." — con la posición fija
+        // el importe caía en la columna "Product" (siempre "Current", nunca
+        // un número), así que TODAS las filas fallaban al no poder leer un
+        // importe y se omitían en silencio. Ahora se busca cada columna por
+        // su nombre de cabecera (en español e inglés, las variantes más
+        // habituales) y solo se cae a la posición fija si no se reconoce
+        // ninguna cabecera así.
+        function financeProGuessColumn(headerRow, patterns, fallback) {
+            const idx = headerRow.findIndex(h => patterns.some(p => String(h || '').trim().toLowerCase() === p));
+            return idx >= 0 ? idx : fallback;
+        }
+
         function handleFinanceProImportFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -12621,7 +12636,13 @@
             reader.onload = () => {
                 const rows = financeProParseCSV(String(reader.result));
                 if (rows.length < 2) { showToast('El archivo no tiene filas suficientes', true); return; }
-                window._financeProImport = { rows, mapping: { hasHeader: true, date: 0, amount: 1, description: rows[0].length > 2 ? 2 : 0, category: rows[0].length > 3 ? 3 : -1, amountOut: 0, amountIn: 1, splitAmount: false, account: FINANCE_PRO_ACCOUNT_KEYS[0], status: -1, skipPending: false } };
+                const header = rows[0];
+                const date = financeProGuessColumn(header, ['completed date', 'fecha de finalización', 'date', 'fecha'], 0);
+                const amount = financeProGuessColumn(header, ['amount', 'importe'], 1);
+                const description = financeProGuessColumn(header, ['description', 'descripción', 'concepto'], header.length > 2 ? 2 : 0);
+                const category = financeProGuessColumn(header, ['category', 'categoría', 'categoria'], -1);
+                const status = financeProGuessColumn(header, ['state', 'estado'], -1);
+                window._financeProImport = { rows, mapping: { hasHeader: true, date, amount, description, category, amountOut: 0, amountIn: 1, splitAmount: false, account: FINANCE_PRO_ACCOUNT_KEYS[0], status, skipPending: false } };
                 document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
             };
             reader.onerror = () => showToast('No se pudo leer el archivo', true);
