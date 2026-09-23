@@ -27,7 +27,7 @@ struct ContentView: View {
             // al abrir la app, el .ipa instalado no es este build, por
             // mucho que hayas repetido el proceso de instalación.
             VStack {
-                Text("BUILD v3 — fix teclado/login")
+                Text("BUILD v4 — fix zoom/viewport")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.black)
                     .padding(4)
@@ -80,7 +80,14 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
         // gigante y con scroll horizontal — Safari sí lo hace bien solo,
         // un WKWebView desnudo no.
         config.defaultWebpagePreferences.preferredContentMode = .mobile
-        webView = WKWebView(frame: .zero, configuration: config)
+        // Crear el WKWebView con frame .zero y cargar la página antes de
+        // que SwiftUI le dé su tamaño real de pantalla hace que WebKit
+        // calcule mal la escala del viewport desde el primer instante (todo
+        // sale "zoomado" de forma uniforme, sin poder desplazarse a los
+        // lados porque no hay un lienzo ancho extra, solo un cálculo de
+        // escala equivocado) — se le da directamente el tamaño real de la
+        // pantalla para que ese primer cálculo ya sea correcto.
+        webView = WKWebView(frame: UIScreen.main.bounds, configuration: config)
         webView.allowsBackForwardNavigationGestures = true
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         // Un WKWebView desnudo recalcula solo los "content insets" de su
