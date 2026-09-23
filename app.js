@@ -5685,19 +5685,19 @@
             }).slice(0, 5);
 
             let html = `
-            <div style="max-width:800px">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap-reverse">
-                    <div class="culture-tabs" style="margin-bottom:16px">
-                        ${['week','month','year','all'].map(f => `
-                            <button class="culture-tab ${homeFilter===f?'active':''}" onclick="setHomeFilter('${f}')">
-                                ${({week:'Semana',month:'Mes',year:'Año',all:'Todo'})[f]}
-                            </button>`).join('')}
-                    </div>
-                    <div class="bitacora-activity-card">
-                        <div class="bitacora-activity-title">Tu uso en Bitácora</div>
-                        <div class="bitacora-activity-radial">${renderBitacoraActivityRadial(90)}</div>
-                    </div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap-reverse;max-width:1200px">
+                <div class="culture-tabs" style="margin-bottom:16px">
+                    ${['week','month','year','all'].map(f => `
+                        <button class="culture-tab ${homeFilter===f?'active':''}" onclick="setHomeFilter('${f}')">
+                            ${({week:'Semana',month:'Mes',year:'Año',all:'Todo'})[f]}
+                        </button>`).join('')}
                 </div>
+                <div class="bitacora-activity-card">
+                    <div class="bitacora-activity-title">tu estancia en bitácora.</div>
+                    <div class="bitacora-activity-radial">${renderBitacoraActivityRadial(90)}</div>
+                </div>
+            </div>
+            <div style="max-width:800px">
 
                 ${inbox.length ? `
                 <div class="card" style="margin-bottom:16px;border-left:3px solid #f59e0b">

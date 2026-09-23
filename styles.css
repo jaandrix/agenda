@@ -4395,10 +4395,10 @@ body.beige {
 /* "Tu uso en Bitácora" — gráfica circular de barras en Centro resumen.
    Fondo negro y barras blancas fijos (no siguen el tema): es una
    pieza gráfica propia, no una superficie de contenido normal. */
-.bitacora-activity-card { background:#000; border-radius:20px; padding:14px 12px; width:132px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:16px; }
-.bitacora-activity-title { color:rgba(255,255,255,.55); font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; text-align:center; line-height:1.3; }
-.bitacora-activity-radial { width:108px; height:108px; }
-@media(max-width:480px){ .bitacora-activity-card{ width:112px; } .bitacora-activity-radial{ width:92px; height:92px; } }
+.bitacora-activity-card { background:#000; border-radius:22px; padding:18px; width:220px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:16px; margin-left:auto; }
+.bitacora-activity-title { color:rgba(255,255,255,.55); font-size:11px; font-weight:800; letter-spacing:.2px; text-align:center; line-height:1.3; }
+.bitacora-activity-radial { width:184px; height:184px; }
+@media(max-width:600px){ .bitacora-activity-card{ width:150px; margin-left:0; } .bitacora-activity-radial{ width:122px; height:122px; } .bitacora-activity-title{ font-size:9px; } }
 
 /* Cuando un .finance-panel (pensado para vivir dentro de la rejilla del
    dashboard) se muestra directamente como contenido de un popup, se le
