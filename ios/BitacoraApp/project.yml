@@ -31,7 +31,7 @@ settingGroups:
     # Subir esto en cada build ayuda a confirmar a simple vista (Ajustes
     # > General > VPN y gestión de dispositivos > la app) que el .ipa
     # instalado es el que se cree que es.
-    CURRENT_PROJECT_VERSION: "4"
+    CURRENT_PROJECT_VERSION: "5"
 
 targets:
   BitacoraApp:

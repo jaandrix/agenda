@@ -27,7 +27,7 @@ struct ContentView: View {
             // al abrir la app, el .ipa instalado no es este build, por
             // mucho que hayas repetido el proceso de instalación.
             VStack {
-                Text("BUILD DIAGNÓSTICO v2 — 7ca0cb8+")
+                Text("BUILD v3 — fix teclado/login")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.black)
                     .padding(4)
@@ -83,6 +83,13 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
         webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsBackForwardNavigationGestures = true
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+        // Un WKWebView desnudo recalcula solo los "content insets" de su
+        // scroll view interno cuando aparece el teclado — con `position:
+        // fixed` (el login, por ejemplo) eso descuadra el contenido hacia
+        // un lado, algo que Safari de verdad no hace porque gestiona el
+        // viewport visual de otra forma. Desactivarlo dejaselo a la propia
+        // web, que ya maneja su layout sin depender de ese ajuste nativo.
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
         super.init()
         config.userContentController.add(self, name: "bitacoraNative")
     }
