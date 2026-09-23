@@ -12734,16 +12734,23 @@
                     const statusVal = (r[m.status] || '').trim().toLowerCase();
                     if (/pending|pendiente|processing|procesando/.test(statusVal)) { skipped++; return; }
                 }
+                // Otras columnas de la fila que también parezcan una fecha
+                // (normalmente "fecha de inicio") — un movimiento que se
+                // importó pendiente usó esa fecha porque la de finalización
+                // todavía estaba vacía; cuando se vuelve a importar ya
+                // completado, aparece con la fecha de verdad y dejaría de
+                // coincidir con el que ya existe si solo se comparase esa.
+                const altDates = [];
+                r.forEach((cell, i) => {
+                    if (i === m.date) return;
+                    const d = financeProParseDate(cell);
+                    if (d) altDates.push(d);
+                });
                 let date = financeProParseDate(r[m.date]);
                 if (!date) {
                     // Fecha vacía en la columna elegida — típico de "fecha de
-                    // finalización" en un movimiento todavía pendiente. Se
-                    // prueba con cualquier otra columna de la fila que sí
-                    // parezca una fecha en vez de descartarlo sin más.
-                    for (let i = 0; i < r.length && !date; i++) {
-                        if (i === m.date) continue;
-                        date = financeProParseDate(r[i]);
-                    }
+                    // finalización" en un movimiento todavía pendiente.
+                    date = altDates[0] || null;
                 }
                 if (!date) { skipped++; return; }
                 const description = (r[m.description] || '').trim();
@@ -12766,7 +12773,11 @@
                 const rule = activeRules.find(rl => description.toLowerCase().includes(rl.matchText.toLowerCase()) && rl.otherAccount !== m.account);
                 const effectiveAccount = rule ? (type === 'income' ? rule.otherAccount : m.account) : m.account;
                 const dedupeKey = `${effectiveAccount}|${date}|${amount}|${description}`;
-                if (existingKeys.has(dedupeKey)) { skipped++; return; }
+                // Se comprueba también con las fechas alternativas de la
+                // fila (ver altDates arriba) para no duplicar un movimiento
+                // que ya se importó pendiente con otra fecha.
+                const isDuplicate = existingKeys.has(dedupeKey) || altDates.some(d => existingKeys.has(`${effectiveAccount}|${d}|${amount}|${description}`));
+                if (isDuplicate) { skipped++; return; }
                 existingKeys.add(dedupeKey);
                 if (rule) {
                     financePro.transactions.push({
