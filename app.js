@@ -10121,6 +10121,13 @@
         const FINANCE_ICON_PULSE = '<svg viewBox="0 0 120 80" fill="currentColor"><rect x="2" y="6" width="15" height="68" rx="7.5"/><rect x="23" y="13" width="15" height="54" rx="7.5"/><rect x="44" y="20" width="13" height="40" rx="6.5"/><rect x="63" y="27" width="11" height="26" rx="5.5"/><rect x="80" y="32" width="9" height="16" rx="4.5"/><rect x="95" y="35.5" width="7" height="9" rx="3.5"/></svg>';
         const FINANCE_ICON_GROWTH_BARS = '<svg viewBox="0 0 100 80" fill="currentColor"><rect x="2" y="50" width="22" height="28" rx="9"/><rect x="32" y="28" width="22" height="50" rx="9"/><rect x="62" y="2" width="22" height="76" rx="9"/></svg>';
         const FINANCE_ICON_CROSSHAIR = '<svg viewBox="0 0 100 100" fill="none"><rect x="45" y="1" width="10" height="20" rx="5" fill="currentColor"/><rect x="45" y="79" width="10" height="20" rx="5" fill="currentColor"/><rect x="1" y="45" width="20" height="10" rx="5" fill="currentColor"/><rect x="79" y="45" width="20" height="10" rx="5" fill="currentColor"/><circle cx="50" cy="50" r="23" stroke="currentColor" stroke-width="9"/><circle cx="50" cy="50" r="9" fill="currentColor"/></svg>';
+        // Misma familia sólida/geométrica que los tres anteriores, para las
+        // tarjetas de "Otros ahorros" (fondo de emergencia, vacaciones,
+        // gastos recurrentes, coleccionables).
+        const FINANCE_ICON_SHIELD_BOLD = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 2 L90 18 V46 C90 72 74 90 50 98 C26 90 10 72 10 46 V18 Z"/></svg>';
+        const FINANCE_ICON_SUN_BOLD = '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="20"/><rect x="44" y="2" width="12" height="18" rx="6"/><rect x="44" y="80" width="12" height="18" rx="6"/><rect x="2" y="44" width="18" height="12" rx="6"/><rect x="80" y="44" width="18" height="12" rx="6"/><g transform="rotate(45 50 50)"><rect x="44" y="2" width="12" height="18" rx="6"/><rect x="44" y="80" width="12" height="18" rx="6"/><rect x="2" y="44" width="18" height="12" rx="6"/><rect x="80" y="44" width="18" height="12" rx="6"/></g></svg>';
+        const FINANCE_ICON_LOOP_BOLD = '<svg viewBox="0 0 100 100" fill="none"><path d="M50 8 A42 42 0 1 1 12 32" stroke="currentColor" stroke-width="15" stroke-linecap="round"/><path d="M6 12 L14 36 L35 26 Z" fill="currentColor"/></svg>';
+        const FINANCE_ICON_STAR_BOLD = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 2 L61 36 L97 36 L68 57 L79 91 L50 70 L21 91 L32 57 L3 36 L39 36 Z"/></svg>';
 
         // ============================================================
         //  FINANZAS PRO — iconos de categoría (sin emoticonos: mismo
@@ -10921,7 +10928,7 @@
             return `
                 <div class="finance-metric-card finance-metric-card-compact finance-metric-card-simple ${muted ? 'finance-metric-card-muted' : ''}" ${onClick ? `onclick="${onClick}"` : ''}>
                     <div class="finance-metric-compact-head">
-                        ${iconSvg ? `<div class="finance-metric-icon ${iconClass || ''}" style="width:28px;height:28px;margin:0;flex-shrink:0">${iconSvg}</div>` : ''}
+                        ${iconSvg ? `<div class="finance-metric-icon ${iconClass || ''}" style="width:14px;height:14px;margin:0;flex-shrink:0;padding:4px">${iconSvg}</div>` : ''}
                         <div class="finance-metric-compact-info">
                             <div class="finance-metric-label">${escapeHtml(label)}</div>
                             <div class="finance-metric-value">${financeMoney(value)}</div>
@@ -11941,11 +11948,11 @@
             showModal(`
                 <div class="modal-title">Otros ahorros</div>
                 <div class="finance-metrics-grid">
-                    ${renderFinanceSimpleTile(Number(financeProfile.emergency || 0), 'Fondo de emergencia', 'openMonthlyFinanceUpdate()', null, false, FINANCE_ICON_SHIELD, 'fin-amber')}
-                    ${renderFinanceSimpleTile(Number(financeProfile.vacation || 0), 'Reserva de vacaciones', 'openMonthlyFinanceUpdate()', 'Queda fuera del patrimonio operativo', true, FINANCE_ICON_SUN, 'fin-teal')}
+                    ${renderFinanceSimpleTile(Number(financeProfile.emergency || 0), 'Fondo de emergencia', 'openMonthlyFinanceUpdate()', null, false, FINANCE_ICON_SHIELD_BOLD, 'fin-amber')}
+                    ${renderFinanceSimpleTile(Number(financeProfile.vacation || 0), 'Reserva de vacaciones', 'openMonthlyFinanceUpdate()', 'Queda fuera del patrimonio operativo', true, FINANCE_ICON_SUN_BOLD, 'fin-teal')}
                     ${(financeProfile.customAccounts || []).map(a => renderFinanceSimpleTile(a.balance, a.name, `openCustomAccountEditor('${a.id}')`, null, false, FINANCE_ICON_CARD, 'fin-slate')).join('')}
-                    ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true, FINANCE_ICON_REPEAT, 'fin-red')}
-                    ${collectibles.length ? renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR, 'fin-gold') : ''}
+                    ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true, FINANCE_ICON_LOOP_BOLD, 'fin-red')}
+                    ${collectibles.length ? renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR_BOLD, 'fin-gold') : ''}
                 </div>
                 <button class="finance-oneoff-btn" style="width:100%;text-align:center;margin-top:14px" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
             `);

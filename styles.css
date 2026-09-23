@@ -4393,6 +4393,7 @@ body.beige {
 .finance-metric-card:hover { box-shadow:0 8px 22px rgba(0,0,0,.26); transform:translateY(-1px); }
 .finance-panel-head { display:flex; justify-content:space-between; align-items:center; gap:8px 14px; flex-wrap:wrap; }
 .finance-metric-icon { width:30px; height:30px; border-radius:50%; background:var(--bg-card-hover); color:var(--text-secondary); display:flex; align-items:center; justify-content:center; font-size:13px; margin-bottom:4px; }
+.finance-metric-icon svg { width:100%; height:100%; }
 .finance-metric-icon.fin-blue { background:rgba(59,130,246,.14); color:#3b82f6; }
 .finance-metric-icon.fin-amber { background:rgba(245,158,11,.16); color:#d97706; }
 .finance-metric-icon.fin-teal { background:rgba(20,184,166,.15); color:#0d9488; }
@@ -4547,9 +4548,13 @@ body.beige {
 @media(max-width:700px){ .collectibles-dashboard-row{flex-direction:column} .collectibles-actions-col{flex-direction:row} }
 .collectibles-table-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; padding:20px; }
 .collectibles-table-wrap .media-card-grid { grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; }
-.collectibles-table-wrap .media-card.collectible-card { height:auto; padding:8px 8px; gap:3px; }
+/* Cuadradas y del mismo tamaño siempre: el ancho lo pone la rejilla
+   (uniforme), la altura sigue ese mismo ancho (aspect-ratio) en vez de
+   depender del contenido — los nombres largos se recortan con "…" en
+   dos líneas en vez de estirar la tarjeta. */
+.collectibles-table-wrap .media-card.collectible-card { height:auto; aspect-ratio:1/1; padding:8px 8px; gap:3px; justify-content:center; }
 .collectibles-table-wrap .media-card-icon { width:22px; height:22px; font-size:10px; }
-.collectibles-table-wrap .media-card-title { font-size:11px; min-height:0; line-height:1.25; }
+.collectibles-table-wrap .media-card-title { font-size:11px; min-height:0; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .collectibles-table-wrap .media-card-meta { font-size:10px; min-height:0; }
 .collectibles-table { width:100%; border-collapse:collapse; font-size:13px; }
 .collectibles-table th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); font-weight:700; padding:12px 16px; border-bottom:1px solid var(--border-strong); white-space:nowrap; }
@@ -4586,20 +4591,22 @@ body.beige {
 
 /* Cuentas: mismo estilo de tarjeta que .finance-metric-card, para que toda
    la fila (fijas + propias + informativas) se vea como un único sistema. */
-.finance-metric-card-simple { cursor:pointer; justify-content:center; min-height:56px; }
+.finance-metric-card-simple { cursor:pointer; justify-content:center; min-height:28px; }
 .finance-metric-card-muted { opacity:0.72; }
 
 /* Variante compacta: icono y valor en línea en vez de apilados y
    centrados, para que la fila de Cuentas ocupe mucho menos alto sin
-   perder ningún dato de la tarjeta original. */
-.finance-metric-card-compact { align-items:stretch; text-align:left; padding:12px 14px 10px; gap:6px; }
-.finance-metric-compact-head { display:flex; align-items:center; gap:10px; }
-.finance-metric-compact-info { flex:1; min-width:0; display:flex; flex-direction:column; padding-right:22px; }
-.finance-metric-card-compact .finance-metric-label { order:1; }
-.finance-metric-card-compact .finance-metric-value { order:2; font-size:17px; }
+   perder ningún dato de la tarjeta original. Tamaño reducido a la
+   mitad del original (padding, icono y tipografía) para el popup de
+   "Otros ahorros". */
+.finance-metric-card-compact { align-items:stretch; text-align:left; padding:6px 7px 5px; gap:3px; }
+.finance-metric-compact-head { display:flex; align-items:center; gap:5px; }
+.finance-metric-compact-info { flex:1; min-width:0; display:flex; flex-direction:column; padding-right:11px; }
+.finance-metric-card-compact .finance-metric-label { order:1; font-size:7.5px; }
+.finance-metric-card-compact .finance-metric-value { order:2; font-size:11px; }
 .finance-metric-card-compact .finance-progress { margin-top:0; }
-.finance-metric-compact-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:9px; color:var(--text-secondary); }
-.finance-metric-card-compact .finance-metric-note { margin-top:0; }
+.finance-metric-compact-foot { display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:7px; color:var(--text-secondary); }
+.finance-metric-card-compact .finance-metric-note { margin-top:0; font-size:7px; }
 .finance-metric-card-muted:hover { opacity:1; }
 
 /* Inversión a largo plazo: valor + rendimiento, barras aportado vs. valor actual */
