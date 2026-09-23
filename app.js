@@ -2537,6 +2537,26 @@
             if (type) openNewEntry(type);
         }
 
+        const FAB_ICON_DEFAULT = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M13 2 3 14h6l-1 8 10-12h-6z"/></svg>';
+
+        // El FAB (captura rápida) cambia de icono según el apartado activo
+        // y añade un anillo de pulso cuando hay uno contextual — misma idea
+        // que el resto de icono TARJETA BITACORA, sin cambiar su acción
+        // (sigue abriendo la paleta de comandos / tecla ESPACIO).
+        function updateFabIcon() {
+            const fab = document.getElementById('fab');
+            if (!fab) return;
+            if (currentView === 'work') {
+                fab.innerHTML = typeof FAB_ICON_LAPTOP !== 'undefined' ? FAB_ICON_LAPTOP : FAB_ICON_DEFAULT;
+                fab.classList.add('fab-pulse');
+                fab.title = 'Captura rápida · Trabajo (tecla ESPACIO)';
+            } else {
+                fab.innerHTML = FAB_ICON_DEFAULT;
+                fab.classList.remove('fab-pulse');
+                fab.title = 'Captura rápida (tecla ESPACIO)';
+            }
+        }
+
         // ============================================================
         //  THEME
         // ============================================================
@@ -4744,6 +4764,7 @@
                 loadSettingsPushInfo(); }
             updateAddButton();
             updateSidebarPrivacy();
+            updateFabIcon();
 
             if (currentView === 'home' && typeof v23RenderSummaryDashboard === 'function') {
                 requestAnimationFrame(() => v23RenderSummaryDashboard());
@@ -7780,6 +7801,10 @@
         // Icono de portátil — misma familia sólida de las TARJETA BITACORA,
         // pensado para ir en blanco sobre el fondo negro de la tarjeta.
         const WORK_ICON_LAPTOP = '<svg viewBox="0 0 100 80" fill="none"><rect x="6" y="6" width="88" height="56" rx="8" fill="currentColor"/><rect x="18" y="16" width="64" height="36" rx="3" fill="#000"/><rect x="0" y="66" width="100" height="10" rx="5" fill="currentColor"/></svg>';
+        // Misma silueta, pero el "hueco" de la pantalla toma el color de
+        // fondo del FAB (var(--bg-fab)) en vez de negro fijo, porque el FAB
+        // sí cambia de blanco a negro según el tema.
+        const FAB_ICON_LAPTOP = '<svg viewBox="0 0 100 80" fill="none"><rect x="6" y="6" width="88" height="56" rx="8" fill="currentColor"/><rect x="18" y="16" width="64" height="36" rx="3" fill="var(--bg-fab)"/><rect x="0" y="66" width="100" height="10" rx="5" fill="currentColor"/></svg>';
 
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
@@ -7840,7 +7865,7 @@
                 html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:${actuales.length ? '22px' : '0'} 0 10px 0">Historial</div>`;
                 historial.forEach(w => { html += renderWorkCard(w, todayStr, daysBetween); });
             }
-            html += `</div>`;
+            html += `</div><div style="height:70px"></div>`;
             return html;
         }
 
