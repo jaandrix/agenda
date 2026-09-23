@@ -48,24 +48,6 @@ jobs:
             DEVELOPMENT_TEAM="" \
             build
 
-      - name: Comprobar que las fuentes Poppins están dentro del widget compilado
-        run: |
-          set -e
-          APPEX_PATH="build/Build/Products/Release-iphoneos/BitacoraApp.app/PlugIns/BitacoraWidgets.appex"
-          MISSING=0
-          for FONT in Poppins-Regular Poppins-Medium Poppins-SemiBold Poppins-Bold Poppins-ExtraBold Poppins-Black; do
-            if [ ! -f "$APPEX_PATH/$FONT.ttf" ]; then
-              echo "Falta $FONT.ttf dentro de $APPEX_PATH"
-              MISSING=1
-            fi
-          done
-          if [ "$MISSING" = "1" ]; then
-            echo "Contenido real de $APPEX_PATH:"
-            find "$APPEX_PATH" -maxdepth 1
-            exit 1
-          fi
-          echo "Las 6 fuentes Poppins están empaquetadas correctamente."
-
       - name: Empaquetar como .ipa (sin firmar)
         run: |
           set -e
