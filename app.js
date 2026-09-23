@@ -5623,11 +5623,12 @@
             return count;
         }
 
-        // Gráfica circular de barras — un radio por día de los últimos
+        // Gráfica ovalada de barras — un radio por día de los últimos
         // `days`, más largo cuanta más actividad hubo ese día. Cada radio
         // lleva además una guía fina hasta el borde con un punto en la
         // punta (referencia de la escala completa), visible incluso en los
-        // días sin nada registrado.
+        // días sin nada registrado. Óvalo en vez de círculo — mucho más
+        // bajo de alto — para que la tarjeta quepa arriba sin tapar nada.
         function renderBitacoraActivityRadial(days) {
             days = days || 90;
             const today = new Date();
@@ -5638,21 +5639,24 @@
                 counts.push(bitacoraActivityCount(iso));
             }
             const maxCount = Math.max(1, ...counts);
-            const cx = 100, cy = 100, rInner = 38, rOuter = 92, dotR = 1.3;
+            const cx = 170, cy = 60;
+            const rxInner = 55, ryInner = 17;
+            const rxOuter = 160, ryOuter = 53;
+            const dotR = 1.2;
             const n = counts.length;
             const bars = counts.map((c, i) => {
                 const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
                 const cos = Math.cos(angle), sin = Math.sin(angle);
-                const x1 = cx + rInner * cos, y1 = cy + rInner * sin;
-                const xGuide = cx + rOuter * cos, yGuide = cy + rOuter * sin;
-                const frac = c / maxCount;
-                const rBar = rInner + Math.max(4, (rOuter - rInner) * frac);
-                const xBar = cx + rBar * cos, yBar = cy + rBar * sin;
+                const x1 = cx + rxInner * cos, y1 = cy + ryInner * sin;
+                const xGuide = cx + rxOuter * cos, yGuide = cy + ryOuter * sin;
+                const t = Math.max(0.1, c / maxCount);
+                const xBar = cx + (rxInner + (rxOuter - rxInner) * t) * cos;
+                const yBar = cy + (ryInner + (ryOuter - ryInner) * t) * sin;
                 return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xGuide.toFixed(1)}" y2="${yGuide.toFixed(1)}" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
                     <circle cx="${xGuide.toFixed(1)}" cy="${yGuide.toFixed(1)}" r="${dotR}" fill="rgba(255,255,255,0.28)"/>
-                    <line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xBar.toFixed(1)}" y2="${yBar.toFixed(1)}" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>`;
+                    <line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xBar.toFixed(1)}" y2="${yBar.toFixed(1)}" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>`;
             }).join('');
-            return `<svg viewBox="0 0 200 200" width="100%" height="100%" style="display:block">${bars}</svg>`;
+            return `<svg viewBox="0 0 340 120" width="100%" height="100%" style="display:block">${bars}</svg>`;
         }
 
         function renderHome() {
