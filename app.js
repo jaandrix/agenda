@@ -11901,6 +11901,29 @@
             </section>`;
         }
 
+        // "Planificación a futuro" — tres botones a modo de tarjeta (blanco
+        // y negro, icono grande) que abren cada uno su popup, en vez de tres
+        // paneles anchos siempre visibles ocupando toda esa franja.
+        function openFinanceRitmoModal() {
+            const trend = financeGoalTrendSignal();
+            showModal(`
+                <section class="finance-panel" id="finance-forecast-section">
+                    <div class="finance-panel-head">
+                        ${financePanelHeadIcon(FINANCE_ICON_CALENDAR, 'fin-indigo', 'Previsión automática', 'Según tu ritmo real')}
+                    </div>
+                    <div class="finance-empty-line" style="margin-top:10px">${trend ? escapeHtml(trend.text) : 'Necesitas al menos 2 meses de histórico en tus cuentas PRO para calcular tu previsión.'}</div>
+                </section>
+            `);
+        }
+
+        function openFinanceLargoPlazoModal() {
+            showModal(renderInvestmentPanel());
+        }
+
+        function openFinanceMetasModal() {
+            showModal(renderFinanceSavingsGoals());
+        }
+
         // Fondo de emergencia, reserva de vacaciones, cuentas propias,
         // gastos recurrentes y coleccionables — cifras manuales que no son
         // cuentas PRO transaccionales, así que se apartan a un popup en vez
@@ -11923,7 +11946,6 @@
         function renderFinanceProDashboard() {
             ensureCurrentMonthHistory();
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
-            const trend = financeGoalTrendSignal();
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
                 <div class="finance-toolbar-row" style="justify-content:flex-end">${blurToggleBtn}</div>
@@ -11947,17 +11969,19 @@
                 <div class="finance-section-head" style="margin-top:24px">
                     <div class="finance-kicker">Planificación a futuro</div>
                 </div>
-                <div class="finance-grid-3">
-                    <section class="finance-panel" id="finance-forecast-section">
-                        <div class="finance-panel-head">
-                            ${financePanelHeadIcon(FINANCE_ICON_CALENDAR, 'fin-indigo', 'Previsión automática', 'Según tu ritmo real')}
-                        </div>
-                        <div class="finance-empty-line" style="margin-top:10px">${trend ? escapeHtml(trend.text) : 'Necesitas al menos 2 meses de histórico en tus cuentas PRO para calcular tu previsión.'}</div>
-                    </section>
-
-                    ${renderInvestmentPanel()}
-
-                    ${renderFinanceSavingsGoals()}
+                <div class="finance-plan-buttons">
+                    <button class="finance-plan-btn" onclick="openFinanceRitmoModal()">
+                        <div class="finance-plan-btn-icon">${FINANCE_ICON_CALENDAR}</div>
+                        <div class="finance-plan-btn-label">Ritmo</div>
+                    </button>
+                    <button class="finance-plan-btn" onclick="openFinanceLargoPlazoModal()">
+                        <div class="finance-plan-btn-icon">${FINANCE_ICON_TREND}</div>
+                        <div class="finance-plan-btn-label">Largo plazo</div>
+                    </button>
+                    <button class="finance-plan-btn" onclick="openFinanceMetasModal()">
+                        <div class="finance-plan-btn-icon">${FINANCE_ICON_TARGET}</div>
+                        <div class="finance-plan-btn-label">Metas</div>
+                    </button>
                 </div>
 
                 ${renderFinanceProTxSection()}

@@ -4360,6 +4360,28 @@ body.beige {
 .finance-other-savings-btn { width:100%; text-align:center; padding:13px 16px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:2px; }
 .finance-other-savings-btn svg { width:15px; height:15px; }
 
+/* Botones de "Planificación a futuro" — tarjetas en blanco y negro de
+   alto contraste (icono grande + una palabra), al estilo de un póster
+   minimalista, que abren cada una su popup en vez de tres paneles
+   anchos siempre visibles. */
+.finance-plan-buttons { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.finance-plan-btn {
+    background:var(--accent); color:var(--accent-contrast);
+    border:0; border-radius:18px; padding:20px 8px 16px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    cursor:pointer; min-height:110px;
+    transition:transform .15s ease, opacity .15s ease;
+}
+.finance-plan-btn:hover { transform:translateY(-2px); opacity:.9; }
+.finance-plan-btn-icon svg { width:26px; height:26px; display:block; }
+.finance-plan-btn-label { font-weight:900; font-size:12.5px; letter-spacing:-.1px; text-align:center; line-height:1.25; }
+
+/* Cuando un .finance-panel (pensado para vivir dentro de la rejilla del
+   dashboard) se muestra directamente como contenido de un popup, se le
+   quita su propio fondo/borde para no verse como "tarjeta dentro de
+   tarjeta" contra el fondo ya propio del modal. */
+.modal-sheet .finance-panel { background:none; border:0; padding:0; }
+
 .finance-chart-legend { display:flex; gap:16px; flex-wrap:wrap; margin:2px 0 8px; font-size:10.5px; font-weight:700; color:var(--text-secondary); }
 .finance-chart-legend span { display:flex; align-items:center; gap:6px; }
 .finance-chart-legend i { display:inline-block; width:9px; height:9px; border-radius:50%; }
