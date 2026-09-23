@@ -5685,16 +5685,16 @@
             }).slice(0, 5);
 
             let html = `
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap-reverse;max-width:1200px">
+            <div style="position:relative;max-width:1200px">
+                <div class="bitacora-activity-card">
+                    <div class="bitacora-activity-title">tu estancia en bitácora.</div>
+                    <div class="bitacora-activity-radial">${renderBitacoraActivityRadial(90)}</div>
+                </div>
                 <div class="culture-tabs" style="margin-bottom:16px">
                     ${['week','month','year','all'].map(f => `
                         <button class="culture-tab ${homeFilter===f?'active':''}" onclick="setHomeFilter('${f}')">
                             ${({week:'Semana',month:'Mes',year:'Año',all:'Todo'})[f]}
                         </button>`).join('')}
-                </div>
-                <div class="bitacora-activity-card">
-                    <div class="bitacora-activity-title">tu estancia en bitácora.</div>
-                    <div class="bitacora-activity-radial">${renderBitacoraActivityRadial(90)}</div>
                 </div>
             </div>
             <div style="max-width:800px">
