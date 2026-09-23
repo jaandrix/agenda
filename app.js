@@ -10114,6 +10114,14 @@
         const FINANCE_ICON_SCALE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M7 7h10"/><path d="M4 7l-2.5 5.5A2.7 2.7 0 0 0 4 16a2.7 2.7 0 0 0 2.5-3.5z"/><path d="M20 7l-2.5 5.5A2.7 2.7 0 0 0 20 16a2.7 2.7 0 0 0 2.5-3.5z"/></svg>';
         const FINANCE_ICON_STATS = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>';
 
+        // Iconos propios de los botones de "Planificación a futuro" — sólidos
+        // (fill, no stroke), pensados para verse grandes y de alto contraste
+        // sobre el fondo de la tarjeta, al estilo de las tarjetas de
+        // referencia (nombre arriba, icono grande abajo).
+        const FINANCE_ICON_PULSE = '<svg viewBox="0 0 120 80" fill="currentColor"><rect x="2" y="6" width="15" height="68" rx="7.5"/><rect x="23" y="13" width="15" height="54" rx="7.5"/><rect x="44" y="20" width="13" height="40" rx="6.5"/><rect x="63" y="27" width="11" height="26" rx="5.5"/><rect x="80" y="32" width="9" height="16" rx="4.5"/><rect x="95" y="35.5" width="7" height="9" rx="3.5"/></svg>';
+        const FINANCE_ICON_GROWTH_BARS = '<svg viewBox="0 0 100 80" fill="currentColor"><rect x="2" y="50" width="22" height="28" rx="9"/><rect x="32" y="28" width="22" height="50" rx="9"/><rect x="62" y="2" width="22" height="76" rx="9"/></svg>';
+        const FINANCE_ICON_CROSSHAIR = '<svg viewBox="0 0 100 100" fill="none"><rect x="45" y="1" width="10" height="20" rx="5" fill="currentColor"/><rect x="45" y="79" width="10" height="20" rx="5" fill="currentColor"/><rect x="1" y="45" width="20" height="10" rx="5" fill="currentColor"/><rect x="79" y="45" width="20" height="10" rx="5" fill="currentColor"/><circle cx="50" cy="50" r="23" stroke="currentColor" stroke-width="9"/><circle cx="50" cy="50" r="9" fill="currentColor"/></svg>';
+
         // ============================================================
         //  FINANZAS PRO — iconos de categoría (sin emoticonos: mismo
         //  trazo/estilo que el resto de iconos de Finanzas).
@@ -11442,7 +11450,7 @@
             const points = compact ? '' : dataPoints.map((d, i) => {
                 const tip = escapeHtml(`${financeMonthLabel(d.month)}: ${financeMoney(d.balance)}`).replace(/"/g, '&quot;');
                 return `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="10" fill="transparent" onmousemove="financeProChartTooltipShow(event,'${idSuffix}-${i}',&quot;${tip}&quot;)" onmouseleave="financeProChartTooltipHide('${idSuffix}-${i}')" onclick="financeProChartTooltipShow(event,'${idSuffix}-${i}',&quot;${tip}&quot;)"/>
-                <circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3" fill="var(--bg-card)" stroke="${color}" stroke-width="2" style="pointer-events:none"/>`;
+                <circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3.5" fill="${color}" style="pointer-events:none"/>`;
             }).join('');
             return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:${compact ? 140 : 280}px;display:block">
                 <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
@@ -11483,7 +11491,7 @@
                 const points = s.data.map((d, i) => {
                     const tip = escapeHtml(`${s.label} · ${financeMonthLabel(d.month)}: ${financeMoney(d.balance)}`).replace(/"/g, '&quot;');
                     return `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="9" fill="transparent" onmousemove="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)" onmouseleave="financeProChartTooltipHide('${idSuffix}-${si}-${i}')" onclick="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)"/>
-                        <circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3" fill="var(--bg-card)" stroke="${s.color}" stroke-width="2" style="pointer-events:none"/>`;
+                        <circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3.5" fill="${s.color}" style="pointer-events:none"/>`;
                 }).join('');
                 const area = si === 0 ? `<path d="${path} L${x(n - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z" fill="url(#fpGrad_${idSuffix}_${si})" stroke="none"/>` : '';
                 return `<defs><linearGradient id="fpGrad_${idSuffix}_${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:${s.color};stop-opacity:0.22"/><stop offset="100%" style="stop-color:${s.color};stop-opacity:0"/></linearGradient></defs>
@@ -11970,17 +11978,17 @@
                     <div class="finance-kicker">Planificación a futuro</div>
                 </div>
                 <div class="finance-plan-buttons">
-                    <button class="finance-plan-btn" onclick="openFinanceRitmoModal()">
-                        <div class="finance-plan-btn-icon">${FINANCE_ICON_CALENDAR}</div>
-                        <div class="finance-plan-btn-label">Ritmo</div>
+                    <button class="finance-plan-btn finance-plan-btn-solid" onclick="openFinanceRitmoModal()">
+                        <div class="finance-plan-btn-label">ritmo.</div>
+                        <div class="finance-plan-btn-icon">${FINANCE_ICON_PULSE}</div>
                     </button>
-                    <button class="finance-plan-btn" onclick="openFinanceLargoPlazoModal()">
-                        <div class="finance-plan-btn-icon">${FINANCE_ICON_TREND}</div>
-                        <div class="finance-plan-btn-label">Largo plazo</div>
+                    <button class="finance-plan-btn finance-plan-btn-outline" onclick="openFinanceLargoPlazoModal()">
+                        <div class="finance-plan-btn-label">largo plazo.</div>
+                        <div class="finance-plan-btn-icon">${FINANCE_ICON_GROWTH_BARS}</div>
                     </button>
-                    <button class="finance-plan-btn" onclick="openFinanceMetasModal()">
-                        <div class="finance-plan-btn-icon">${FINANCE_ICON_TARGET}</div>
-                        <div class="finance-plan-btn-label">Metas</div>
+                    <button class="finance-plan-btn finance-plan-btn-solid" onclick="openFinanceMetasModal()">
+                        <div class="finance-plan-btn-label">metas.</div>
+                        <div class="finance-plan-btn-icon">${FINANCE_ICON_CROSSHAIR}</div>
                     </button>
                 </div>
 

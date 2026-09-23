@@ -4360,21 +4360,24 @@ body.beige {
 .finance-other-savings-btn { width:100%; text-align:center; padding:13px 16px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:2px; }
 .finance-other-savings-btn svg { width:15px; height:15px; }
 
-/* Botones de "Planificación a futuro" — tarjetas en blanco y negro de
-   alto contraste (icono grande + una palabra), al estilo de un póster
-   minimalista, que abren cada una su popup en vez de tres paneles
-   anchos siempre visibles. */
+/* Botones de "Planificación a futuro" — tarjetas cuadradas de alto
+   contraste (nombre arriba a la izquierda, icono grande abajo a la
+   derecha), al estilo de una tarjeta de producto minimalista, que
+   abren cada una su popup en vez de tres paneles anchos siempre
+   visibles. Alternan relleno sólido y contorno para que se note el
+   contraste entre tarjetas contiguas, como en la referencia. */
 .finance-plan-buttons { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
 .finance-plan-btn {
-    background:var(--accent); color:var(--accent-contrast);
-    border:0; border-radius:18px; padding:20px 8px 16px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
-    cursor:pointer; min-height:110px;
-    transition:transform .15s ease, opacity .15s ease;
+    position:relative; aspect-ratio:1/1; border-radius:18px; padding:12px;
+    display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start;
+    cursor:pointer; transition:transform .15s ease, opacity .15s ease;
 }
 .finance-plan-btn:hover { transform:translateY(-2px); opacity:.9; }
-.finance-plan-btn-icon svg { width:26px; height:26px; display:block; }
-.finance-plan-btn-label { font-weight:900; font-size:12.5px; letter-spacing:-.1px; text-align:center; line-height:1.25; }
+.finance-plan-btn-solid { background:var(--accent); color:var(--accent-contrast); border:0; }
+.finance-plan-btn-outline { background:var(--bg-card); color:var(--text-primary); border:1.5px solid var(--border-strong); }
+.finance-plan-btn-icon { align-self:flex-end; width:38%; max-width:44px; }
+.finance-plan-btn-icon svg { width:100%; height:auto; display:block; }
+.finance-plan-btn-label { font-weight:900; font-size:12.5px; letter-spacing:-.1px; line-height:1.2; text-align:left; }
 
 /* Cuando un .finance-panel (pensado para vivir dentro de la rejilla del
    dashboard) se muestra directamente como contenido de un popup, se le
