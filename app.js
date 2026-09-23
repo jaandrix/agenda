@@ -5611,6 +5611,50 @@
             </div>`;
         }
 
+        // "Tu uso en Bitácora" — cuánto se registró un día concreto, sumando
+        // entradas (cualquier tipo), notas y movimientos de Finanzas PRO.
+        // No pretende ser un recuento exhaustivo de cada rincón de la app,
+        // solo una señal razonable de actividad real por día.
+        function bitacoraActivityCount(dateISO) {
+            let count = 0;
+            count += entries.filter(e => e.date === dateISO || e.startDate === dateISO).length;
+            count += (Array.isArray(notes) ? notes : []).filter(n => String(n.date || n.createdAt || '').slice(0, 10) === dateISO).length;
+            count += (financePro?.transactions || []).filter(t => t.date === dateISO).length;
+            return count;
+        }
+
+        // Gráfica circular de barras — un radio por día de los últimos
+        // `days`, más largo cuanta más actividad hubo ese día. Cada radio
+        // lleva además una guía fina hasta el borde con un punto en la
+        // punta (referencia de la escala completa), visible incluso en los
+        // días sin nada registrado.
+        function renderBitacoraActivityRadial(days) {
+            days = days || 90;
+            const today = new Date();
+            const counts = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+                const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                counts.push(bitacoraActivityCount(iso));
+            }
+            const maxCount = Math.max(1, ...counts);
+            const cx = 100, cy = 100, rInner = 38, rOuter = 92, dotR = 1.3;
+            const n = counts.length;
+            const bars = counts.map((c, i) => {
+                const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+                const cos = Math.cos(angle), sin = Math.sin(angle);
+                const x1 = cx + rInner * cos, y1 = cy + rInner * sin;
+                const xGuide = cx + rOuter * cos, yGuide = cy + rOuter * sin;
+                const frac = c / maxCount;
+                const rBar = rInner + Math.max(4, (rOuter - rInner) * frac);
+                const xBar = cx + rBar * cos, yBar = cy + rBar * sin;
+                return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xGuide.toFixed(1)}" y2="${yGuide.toFixed(1)}" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
+                    <circle cx="${xGuide.toFixed(1)}" cy="${yGuide.toFixed(1)}" r="${dotR}" fill="rgba(255,255,255,0.28)"/>
+                    <line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xBar.toFixed(1)}" y2="${yBar.toFixed(1)}" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>`;
+            }).join('');
+            return `<svg viewBox="0 0 200 200" width="100%" height="100%" style="display:block">${bars}</svg>`;
+        }
+
         function renderHome() {
             const range = getFilterRange(homeFilter);
             const subsTotal = entries.filter(e => e.type === 'subscription' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
@@ -5642,11 +5686,17 @@
 
             let html = `
             <div style="max-width:800px">
-                <div class="culture-tabs" style="margin-bottom:16px">
-                    ${['week','month','year','all'].map(f => `
-                        <button class="culture-tab ${homeFilter===f?'active':''}" onclick="setHomeFilter('${f}')">
-                            ${({week:'Semana',month:'Mes',year:'Año',all:'Todo'})[f]}
-                        </button>`).join('')}
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap-reverse">
+                    <div class="culture-tabs" style="margin-bottom:16px">
+                        ${['week','month','year','all'].map(f => `
+                            <button class="culture-tab ${homeFilter===f?'active':''}" onclick="setHomeFilter('${f}')">
+                                ${({week:'Semana',month:'Mes',year:'Año',all:'Todo'})[f]}
+                            </button>`).join('')}
+                    </div>
+                    <div class="bitacora-activity-card">
+                        <div class="bitacora-activity-title">Tu uso en Bitácora</div>
+                        <div class="bitacora-activity-radial">${renderBitacoraActivityRadial(90)}</div>
+                    </div>
                 </div>
 
                 ${inbox.length ? `
