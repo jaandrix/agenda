@@ -8066,12 +8066,10 @@
                 const maxChars = Math.max(6, Math.floor((p.rx * 1.7) / (fontSize * 0.56)));
                 const lines = wrapOvalLabel(it.label, maxChars);
                 const lineGap = fontSize * 1.15;
-                const firstY = lines.length > 1 ? p.cy - lineGap * 0.55 : p.cy - 2;
+                const firstY = lines.length > 1 ? p.cy - lineGap * 0.5 + fontSize * 0.35 : p.cy + fontSize * 0.35;
                 const nameLines = lines.map((ln, li) => `<text x="${p.cx.toFixed(1)}" y="${(firstY + li * lineGap).toFixed(1)}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-weight="800" font-family="Poppins, sans-serif">${escapeHtml(ln)}</text>`).join('');
-                const daysY = p.cy + (lines.length > 1 ? lineGap * 0.9 : 12);
                 return `<ellipse cx="${p.cx.toFixed(1)}" cy="${p.cy.toFixed(1)}" rx="${p.rx.toFixed(1)}" ry="${p.ry.toFixed(1)}" fill="#000"/>
-                    ${nameLines}
-                    <text x="${p.cx.toFixed(1)}" y="${daysY.toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="${Math.max(8, fontSize * 0.72).toFixed(1)}" font-family="Poppins, sans-serif">(${it.days})</text>`;
+                    ${nameLines}`;
             }).join('');
 
             return `<div class="work-bubble-flow-wrap"><svg viewBox="0 0 ${totalWidth.toFixed(0)} ${totalHeight.toFixed(0)}" width="100%" style="display:block">${arrows.join('')}${bubbles}</svg></div>`;
@@ -8523,8 +8521,6 @@
                     <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
                 </div>` : ''}
 
-                ${renderStudiesExpediente()}
-
                 <section class="studies-section" id="studies-schedule-section">
                     <h3>Horario semanal</h3>
                     ${renderScheduleGrid()}
@@ -8532,7 +8528,7 @@
 
                 <section class="studies-section" id="studies-subjects-section">
                     <h3>Asignaturas</h3>
-                    ${studies.subjects.length ? `<div class="studies-subjects-grid">${studies.subjects.map(renderSubjectCard).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
+                    ${studies.subjects.length ? `<div class="studies-subjects-list">${studies.subjects.map((s, i) => renderSubjectRow(s, i)).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
                 </section>
             </div>`;
         }
@@ -8763,27 +8759,41 @@
             return graded.reduce((sum, x) => sum + Number(x.grade), 0) / graded.length;
         }
 
-        function renderSubjectCard(s) {
-            const finalGrade = subjectFinalGrade(s);
+        // Una línea por asignatura, por orden de creación — nombre en
+        // negrita, profesor en gris debajo ("añadir nombre." si no se ha
+        // indicado todavía, pulsable aparte sin abrir el detalle). El
+        // desglose de trabajos/exámenes vive solo en el popup de detalle.
+        function renderSubjectRow(s, index) {
+            const hasProfessor = !!(s.professor && s.professor.trim());
             return `
-                <div class="studies-subject-card">
-                    <a href="javascript:void(0)" class="studies-subject-link" onclick="openSubjectDetail('${s.id}')">${escapeHtml(s.name)}</a>
-                    ${finalGrade !== null ? `<div class="studies-subject-avg">Nota final: <span class="nota-final ${gradeTierClass(finalGrade)}" style="font-size:15px;padding:1px 8px">${finalGrade.toFixed(2)}</span></div>` : ''}
-                    <div class="studies-subject-block">
-                        <div class="studies-subject-block-head">Trabajos</div>
-                        ${(s.assignments || []).length ? s.assignments.map(renderSubjectCardLine).join('') : '<div class="studies-subject-block-empty">Sin trabajos todavía.</div>'}
-                    </div>
-                    <div class="studies-subject-block">
-                        <div class="studies-subject-block-head">Exámenes</div>
-                        ${(s.exams || []).length ? s.exams.map(renderSubjectCardLine).join('') : '<div class="studies-subject-block-empty">Sin exámenes todavía.</div>'}
+                <div class="studies-subject-row" onclick="openSubjectDetail('${s.id}')">
+                    <div class="studies-subject-index">${String(index + 1).padStart(2, '0')}</div>
+                    <div class="studies-subject-row-body">
+                        <div class="studies-subject-row-name">${escapeHtml(s.name)}</div>
+                        <div class="studies-subject-row-prof ${hasProfessor ? '' : 'studies-subject-row-prof-empty'}" onclick="event.stopPropagation();editSubjectProfessor('${s.id}')">${hasProfessor ? escapeHtml(s.professor) : 'añadir nombre.'}</div>
                     </div>
                 </div>`;
         }
 
-        function renderSubjectCardLine(item) {
-            const grade = item.grade !== '' && item.grade !== null && item.grade !== undefined ? item.grade : '—';
-            const weight = item.weight !== '' && item.weight !== null && item.weight !== undefined ? item.weight + '%' : '—';
-            return `<div class="studies-subject-item-line">${escapeHtml(item.title || 'Sin título')} - nota: ${escapeHtml(String(grade))} / peso: ${escapeHtml(String(weight))}</div>`;
+        function editSubjectProfessor(id) {
+            const s = findSubject(id);
+            if (!s) return;
+            showModal(`
+                <div class="modal-title">Profesor — ${escapeHtml(s.name)}</div>
+                <input id="subject-professor-input" class="modal-input" placeholder="Nombre del profesor" value="${escapeHtml(s.professor || '')}">
+                <button class="btn-modal-primary" onclick="saveSubjectProfessor('${id}')">Guardar</button>
+            `);
+            setTimeout(() => document.getElementById('subject-professor-input')?.focus(), 50);
+        }
+
+        async function saveSubjectProfessor(id) {
+            const s = findSubject(id);
+            if (!s) return;
+            const val = document.getElementById('subject-professor-input')?.value.trim();
+            s.professor = val || null;
+            closeModal();
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function openAddSubject() {

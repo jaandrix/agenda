@@ -4816,18 +4816,22 @@ body.papel {
 .studies-view { max-width: 980px; padding-bottom: 30px; }
 .studies-section { margin-bottom: 22px; }
 .studies-section h3 { margin: 0 0 4px; font-size: 17px; }
-.studies-subjects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
 .studies-expediente-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:12px; max-width:640px; }
 @media (max-width:620px) { .studies-expediente-grid { grid-template-columns:1fr; } }
-.studies-subject-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:16px; transition:border-color .15s ease; }
-.studies-subject-card:hover { border-color:var(--border-strong); }
-.studies-subject-link { display:inline-block; font-weight:600; font-size:15px; color:#3b82f6; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
-.studies-subject-link:hover { color:#60a5fa; }
-.studies-subject-avg { font-size:12px; font-weight:600; color:var(--text-primary); margin-top:4px; }
-.studies-subject-block { margin-top:12px; border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
-.studies-subject-block-head { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:6px; }
-.studies-subject-item-line { font-size:12px; color:var(--text-primary); line-height:1.6; }
-.studies-subject-block-empty { font-size:11px; color:var(--text-muted); }
+
+/* Asignaturas como lista de líneas (una por asignatura, orden de
+   creación) — número de índice grande a la izquierda, nombre en
+   negrita y profesor en gris debajo, separadas por una línea fina. */
+.studies-subjects-list { margin-top:8px; }
+.studies-subject-row { display:flex; align-items:center; gap:18px; padding:16px 4px; border-bottom:1px solid var(--border); cursor:pointer; transition:opacity .15s ease; }
+.studies-subject-row:last-child { border-bottom:none; }
+.studies-subject-row:hover { opacity:.75; }
+.studies-subject-index { font-size:26px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; flex-shrink:0; width:40px; }
+.studies-subject-row-body { min-width:0; }
+.studies-subject-row-name { font-size:15px; font-weight:700; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.studies-subject-row-prof { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+.studies-subject-row-prof-empty { text-decoration:underline; text-underline-offset:2px; }
+.studies-subject-row-prof:hover { color:var(--text-primary); }
 .studies-modal-block { margin:14px 0; }
 .studies-item-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
 .studies-item-row button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:14px; }
