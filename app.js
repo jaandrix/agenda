@@ -11132,8 +11132,8 @@
                     <div class="finance-invest-bar-row"><span>Aportado</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill" data-target-width="${(stats.totalAportado / maxBar) * 100}%" style="width:0"></div></div><strong>${financeMoney(stats.totalAportado)}</strong></div>
                     <div class="finance-invest-bar-row"><span>Valor actual</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill finance-invest-bar-fill-accent" data-target-width="${(stats.valorActual / maxBar) * 100}%" style="width:0"></div></div><strong>${financeMoney(stats.valorActual)}</strong></div>
                 </div>
-                <div class="finance-empty-line" style="margin-top:10px">${stats.meses} aportación${stats.meses === 1 ? '' : 'es'} registrada${stats.meses === 1 ? '' : 's'}${fc.investMonthlyPlan ? ` · plan: ${financeMoney(fc.investMonthlyPlan)}/mes` : ''}</div>
-                <button class="finance-oneoff-btn" style="margin-top:10px" onclick="openInvestmentMonthlyUpdate()" ${yaActualizado ? 'disabled' : ''}>${yaActualizado ? `✓ ${financeMonthLabel(monthKey)} actualizado` : 'Actualizar este mes'}</button>
+                <div class="finance-empty-line" style="margin-top:10px">${stats.meses} aportación${stats.meses === 1 ? '' : 'es'} registrada${stats.meses === 1 ? '' : 's'}${fc.investMonthlyPlan ? ` · plan: ${financeMoney(fc.investMonthlyPlan)}/mes` : ''}${yaActualizado ? ` · ✓ ${financeMonthLabel(monthKey)} ya registrado` : ''}</div>
+                <button class="finance-oneoff-btn" style="margin-top:10px" onclick="openInvestmentMonthlyUpdate()">nueva aportación.</button>
             </section>`;
         }
 

@@ -347,13 +347,15 @@
                 </div>
 
                 ${week.length ? `
-                    <div class="summary-week-events">
-                        ${week.map(e => `
-                            <div class="summary-event-card">
-                                <div class="event-type">${esc(e.type)}</div>
-                                <div class="event-name">${esc(e.title)}</div>
-                                <div class="summary-countdown" data-v23-countdown="${e.date.toISOString()}">${countdown(e.date)}</div>
-                                <div class="summary-countdown-label">${formatDate(e.date)}</div>
+                    <div class="week-events-list">
+                        ${week.map((e, i) => `
+                            <div class="week-event-row">
+                                <div class="week-event-index">${String(i + 1).padStart(2, '0')}</div>
+                                <div class="week-event-body">
+                                    <div class="week-event-title">${esc(e.title)}</div>
+                                    <div class="week-event-meta">${esc(e.type)} · ${formatDate(e.date)}</div>
+                                </div>
+                                <div class="week-event-countdown" data-v23-countdown="${e.date.toISOString()}">${countdown(e.date)}</div>
                             </div>
                         `).join('')}
                     </div>

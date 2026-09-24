@@ -4314,7 +4314,8 @@ body.papel {
 /* Ahora vive en la fila de arriba, junto al icono del ojo de "ocultar
    cifras" — ya no al pie del panel, así que sin borde/margen superior. */
 .finance-pro-settings-links { display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:0; }
-.finance-pro-settings-links button { background:none; border:0; color:var(--text-secondary); font-size:10.5px; font-weight:500; cursor:pointer; padding:4px; white-space:nowrap; }
+.finance-pro-settings-links button { display:inline-flex; align-items:center; gap:4px; background:none; border:0; color:var(--text-secondary); font-size:10.5px; font-weight:500; cursor:pointer; padding:4px; white-space:nowrap; }
+.finance-pro-settings-links button svg { width:12px; height:12px; flex-shrink:0; display:block; }
 .finance-pro-settings-links button:hover { color:var(--text-primary); }
 .finance-pro-settings-links span { color:var(--border-strong); font-size:11px; }
 
@@ -4722,42 +4723,18 @@ body.papel {
 .review-item:hover { background:var(--bg-card-hover); }
 .review-item-text { font-size:13px; color:var(--text-primary); }
 .review-item-nodata { display:block; font-size:10.5px; color:var(--text-secondary); margin-top:2px; }
-.summary-week-events {
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-    gap:10px;
-}
-.summary-event-card {
-    border:1px solid var(--border);
-    border-radius:16px;
-    padding:11px 12px;
-    background:var(--bg-card-hover);
-}
-.summary-event-card .event-type {
-    font-size:9px;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.5px;
-    color:var(--text-secondary);
-}
-.summary-event-card .event-name {
-    margin-top:4px;
-    font-size:13px;
-    font-weight:600;
-    color:var(--text-primary);
-}
-.summary-countdown {
-    margin-top:8px;
-    font-variant-numeric:tabular-nums;
-    font-size:16px;
-    font-weight:700;
-    letter-spacing:.3px;
-}
-.summary-countdown-label {
-    margin-top:3px;
-    font-size:10px;
-    color:var(--text-secondary);
-}
+/* "Esta semana" — misma línea de diseño que Asignaturas/Documentos/
+   Proyectos: fila numerada con separador grueso, en vez de tarjetas
+   sueltas en rejilla. La cuenta atrás en vivo queda como valor de
+   cabecera a la derecha de cada fila. */
+.week-events-list { margin-top:4px; }
+.week-event-row { display:flex; align-items:center; gap:16px; padding:13px 4px; border-bottom:2px solid var(--border-strong); }
+.week-event-row:last-child { border-bottom:none; }
+.week-event-index { font-size:16px; font-weight:800; color:var(--text-secondary); width:26px; flex-shrink:0; font-variant-numeric:tabular-nums; }
+.week-event-body { flex:1 1 auto; min-width:0; }
+.week-event-title { font-size:14px; font-weight:700; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.week-event-meta { font-size:10.5px; color:var(--text-secondary); margin-top:2px; text-transform:uppercase; letter-spacing:.4px; }
+.week-event-countdown { font-variant-numeric:tabular-nums; font-size:14px; font-weight:800; color:var(--text-primary); flex-shrink:0; text-align:right; white-space:nowrap; }
 .summary-timeline {
     position:relative;
     margin-left:5px;
