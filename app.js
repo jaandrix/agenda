@@ -7182,28 +7182,32 @@
                         if (orden[sa.label] !== orden[sb.label]) return orden[sa.label] - orden[sb.label];
                         return (b.startDate || '').localeCompare(a.startDate || '');
                     });
+                    html += `<div class="line-row-list">`;
                     ordenados.forEach(t => {
                         const status = tripStatus(t);
                         const places2 = Array.isArray(t.places) ? t.places : [];
                         const listas2 = Array.isArray(t.listas) ? t.listas : [];
                         const itemsTotal = listas2.reduce((s, l) => s + (l.items || []).length, 0);
                         const itemsHechos = listas2.reduce((s, l) => s + (l.items || []).filter(i => i.hecho).length, 0);
+                        const dateObj = t.startDate ? new Date(t.startDate + 'T00:00:00') : null;
+                        const extra = [];
+                        if (places2.length) extra.push(`${places2.filter(p => p.visitado).length}/${places2.length} lugares`);
+                        if (itemsTotal) extra.push(`${itemsHechos}/${itemsTotal} preparativos`);
                         html += `
-                            <div class="trip-card" onclick="switchView('travels');openTripManager('${t.id}')">
-                                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-                                    <div style="min-width:0">
-                                        <span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span>
-                                        <div style="font-weight:700;font-size:16px;margin-top:6px;color:var(--text-primary)">${escapeHtml(t.title)}</div>
-                                        <div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}</div>
-                                    </div>
-                                    <div class="trip-card-icon">${TRAVEL_ICON_MOUNTAIN}</div>
+                            <div class="line-row" onclick="switchView('travels');openTripManager('${t.id}')">
+                                <div class="line-row-date">
+                                    <div class="line-row-date-day">${dateObj ? String(dateObj.getDate()).padStart(2, '0') : '–'}</div>
+                                    ${dateObj ? `<div class="line-row-date-month">${dateObj.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')}</div>` : ''}
                                 </div>
-                                ${(places2.length || itemsTotal) ? `<div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--text-secondary)">
-                                    ${places2.length ? `<span>${places2.filter(p => p.visitado).length}/${places2.length} lugares</span>` : ''}
-                                    ${itemsTotal ? `<span>${itemsHechos}/${itemsTotal} preparativos</span>` : ''}
-                                </div>` : ''}
+                                <div class="line-row-icon">${TRAVEL_ICON_MOUNTAIN}</div>
+                                <div class="line-row-body">
+                                    <div class="line-row-title"><span class="line-row-title-text">${escapeHtml(t.title)}</span></div>
+                                    <div class="line-row-meta">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${extra.length ? ' · ' + extra.join(' · ') : ''}</div>
+                                </div>
+                                <div class="line-row-side"><span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span></div>
                             </div>`;
                     });
+                    html += `</div>`;
                 }
             } else {
                 html += renderPlaces();
@@ -8932,6 +8936,9 @@
 
         const PROJECT_PRIORITY_COLOR = { alta: '#f87171', media: '#eab308', baja: '#4ade80' };
         const PROJECT_PRIORITY_LABEL = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+        // Icono genérico (bandera de hito) — misma familia TARJETA BITACORA,
+        // reutilizado para todas las filas de Proyectos.
+        const PROJECT_ICON_FLAG = '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="16" y="6" width="10" height="88" rx="3"/><path d="M26 10h58l-14 20 14 20H26z"/></svg>';
 
         function projectTaskProgress(p) {
             const total = p.tasks?.length || 0;
@@ -8958,10 +8965,10 @@
         }
 
         // Lista de proyectos con la misma línea de diseño que Asignaturas/
-        // Documentos: fila numerada, sin la tarjeta con borde de color de
-        // categoría, separador grueso. La descripción y las features
-        // detalladas quedan solo en el popup de detalle (openEntryDetail),
-        // aquí se ve lo justo para escanear la lista de un vistazo.
+        // Documentos/Viajes: fila con la fecha a la izquierda (fin
+        // previsto), icono, título en negrita + categoría, y estado a la
+        // derecha. La descripción y las features detalladas quedan solo en
+        // el popup de detalle (openEntryDetail).
         function renderProjectsList(projects) {
             const today = todayISO();
             const sorted = [...projects].sort((a, b) => {
@@ -8970,31 +8977,26 @@
                 return (b.startDate || '').localeCompare(a.startDate || '');
             });
 
-            return `<div class="projects-list">${sorted.map((p, i) => {
+            return `<div class="line-row-list">${sorted.map((p) => {
                 const bucket = projectStatusBucket(p.status);
                 const statusClass = bucket === 'Completado' ? 'badge-done' : bucket === 'En progreso' ? 'badge-progress' : 'badge-pending';
                 const { total, done, pct } = projectTaskProgress(p);
                 const overdue = p.endDate && p.endDate < today && bucket !== 'Completado';
                 const priority = p.priority || 'media';
+                const dateObj = p.endDate ? new Date(p.endDate + 'T00:00:00') : null;
 
                 return `
-                    <div class="projects-row" data-open-entry="${p.id}">
-                        <div class="projects-row-index">${String(i + 1).padStart(2, '0')}</div>
-                        <div class="projects-row-body">
-                            <div class="projects-row-top">
-                                <span class="projects-row-title">${escapeHtml(p.title)}</span>
-                                <span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span>
-                            </div>
-                            <div class="projects-row-meta">
-                                <span class="badge ${statusClass}">${bucket}</span>
-                                <span>${escapeHtml(p.projectCategory || 'Sin categoría')}</span>
-                                ${p.endDate ? `<span class="${overdue ? 'project-overdue' : ''}">${overdue ? '⚠ ' : ''}${escapeHtml(p.endDate)}</span>` : ''}
-                            </div>
-                            ${total > 0 ? `
-                                <div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
-                                <div class="project-card-progress-label">${done}/${total} hitos · ${pct}%</div>
-                            ` : ''}
+                    <div class="line-row" data-open-entry="${p.id}">
+                        <div class="line-row-date">
+                            <div class="line-row-date-day ${overdue ? 'line-row-date-overdue' : ''}">${dateObj ? String(dateObj.getDate()).padStart(2, '0') : '–'}</div>
+                            ${dateObj ? `<div class="line-row-date-month">${dateObj.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')}</div>` : ''}
                         </div>
+                        <div class="line-row-icon">${PROJECT_ICON_FLAG}</div>
+                        <div class="line-row-body">
+                            <div class="line-row-title"><span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span><span class="line-row-title-text">${escapeHtml(p.title)}</span></div>
+                            <div class="line-row-meta">${escapeHtml(p.projectCategory || 'Sin categoría')}${total > 0 ? ` · ${done}/${total} hitos · ${pct}%` : ''}</div>
+                        </div>
+                        <div class="line-row-side"><span class="badge ${statusClass}">${bucket}</span></div>
                     </div>`;
             }).join('')}</div>`;
         }
