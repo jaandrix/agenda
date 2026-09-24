@@ -4714,7 +4714,8 @@ body.beige {
 .finance-invest-bar-row { display:flex; align-items:center; gap:8px; font-size:11px; }
 .finance-invest-bar-row span { width:72px; color:var(--text-secondary); flex-shrink:0; }
 .finance-invest-bar-track { flex:1; height:8px; background:var(--border); border-radius:99px; overflow:hidden; }
-.finance-invest-bar-fill { height:100%; background:var(--text-secondary); border-radius:inherit; }
+.finance-invest-bar-fill { height:100%; background:var(--text-secondary); border-radius:inherit; transition:width .8s cubic-bezier(.16,1,.3,1); }
+@media (prefers-reduced-motion: reduce) { .finance-invest-bar-fill { transition:none; } }
 .finance-invest-bar-fill-accent { background:var(--accent); }
 .finance-invest-bar-row strong { flex-shrink:0; font-variant-numeric:tabular-nums; min-width:64px; text-align:right; }
 

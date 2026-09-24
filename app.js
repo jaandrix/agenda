@@ -4743,7 +4743,8 @@
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
-                loadDocuments(); loadBackups(); } else if (currentView === 'finances') content.innerHTML = renderFinances();
+                loadDocuments(); loadBackups(); } else if (currentView === 'finances') { content.innerHTML = renderFinances();
+                requestAnimationFrame(animateFinanceProChartPanel); }
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
             else if (currentView === 'graph') content.innerHTML = renderGraph();
             else if (currentView === 'fantasy') { content.innerHTML = renderFantasy();
@@ -11108,12 +11109,12 @@
             <section class="finance-panel" id="finance-investment-section">
                 <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}<button class="finance-icon-btn" title="Ajustes" onclick="openInvestmentAccountEditor()">✎</button></div>
                 <div class="finance-invest-headline">
-                    <div><span>Valor actual</span><strong>${financeMoney(stats.valorActual)}</strong></div>
+                    <div><span>Valor actual</span><strong id="finance-invest-value" data-value="${stats.valorActual}">${financeMoney(stats.valorActual)}</strong></div>
                     <span class="finance-trend-chip ${gainCls}">${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}${stats.gainPct !== null ? ` · ${stats.gain >= 0 ? '+' : ''}${stats.gainPct.toFixed(1)}%` : ''}</span>
                 </div>
                 <div class="finance-invest-bars">
-                    <div class="finance-invest-bar-row"><span>Aportado</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill" style="width:${(stats.totalAportado / maxBar) * 100}%"></div></div><strong>${financeMoney(stats.totalAportado)}</strong></div>
-                    <div class="finance-invest-bar-row"><span>Valor actual</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill finance-invest-bar-fill-accent" style="width:${(stats.valorActual / maxBar) * 100}%"></div></div><strong>${financeMoney(stats.valorActual)}</strong></div>
+                    <div class="finance-invest-bar-row"><span>Aportado</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill" data-target-width="${(stats.totalAportado / maxBar) * 100}%" style="width:0"></div></div><strong>${financeMoney(stats.totalAportado)}</strong></div>
+                    <div class="finance-invest-bar-row"><span>Valor actual</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill finance-invest-bar-fill-accent" data-target-width="${(stats.valorActual / maxBar) * 100}%" style="width:0"></div></div><strong>${financeMoney(stats.valorActual)}</strong></div>
                 </div>
                 <div class="finance-empty-line" style="margin-top:10px">${stats.meses} aportación${stats.meses === 1 ? '' : 'es'} registrada${stats.meses === 1 ? '' : 's'}${fc.investMonthlyPlan ? ` · plan: ${financeMoney(fc.investMonthlyPlan)}/mes` : ''}</div>
                 <button class="finance-oneoff-btn" style="margin-top:10px" onclick="openInvestmentMonthlyUpdate()" ${yaActualizado ? 'disabled' : ''}>${yaActualizado ? `✓ ${financeMonthLabel(monthKey)} actualizado` : 'Actualizar este mes'}</button>
@@ -11608,6 +11609,58 @@
             </svg>`;
         }
 
+        // ============================================================
+        //  MICRO-ANIMACIONES: cifra que cuenta hacia arriba + gráfica de
+        //  líneas que se dibuja al aparecer, inspirado en el vídeo de
+        //  referencia de Pinterest (Lift, app de gimnasio). Genéricas a
+        //  propósito para poder reutilizarlas en cualquier cifra/gráfica.
+        // ============================================================
+        function bitacoraAnimateNumber(el, endValue, formatFn, duration) {
+            if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                if (el) el.textContent = formatFn(endValue);
+                return;
+            }
+            duration = duration || 700;
+            const startTime = performance.now();
+            const ease = t => 1 - Math.pow(1 - t, 3); // easeOutCubic
+            function tick(now) {
+                const t = Math.min(1, (now - startTime) / duration);
+                el.textContent = formatFn(endValue * ease(t));
+                if (t < 1) requestAnimationFrame(tick);
+                else el.textContent = formatFn(endValue);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // Dibuja cada <path> con stroke (líneas, nunca el área de relleno)
+        // desde cero mediante el truco de stroke-dasharray/-dashoffset, con
+        // un pequeño desfase por serie, y desvanece los puntos y el área
+        // detrás. `container` es cualquier elemento que contenga el <svg>.
+        function bitacoraAnimateChart(container) {
+            if (!container) return;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const lines = container.querySelectorAll('svg path[stroke]:not([stroke="none"])');
+            lines.forEach((path, i) => {
+                const len = path.getTotalLength();
+                path.style.transition = 'none';
+                path.style.strokeDasharray = len;
+                path.style.strokeDashoffset = len;
+                path.getBoundingClientRect(); // fuerza reflow: fija el estado inicial antes de animar
+                path.style.transition = `stroke-dashoffset .9s cubic-bezier(.16,1,.3,1) ${i * 0.12}s`;
+                requestAnimationFrame(() => { path.style.strokeDashoffset = '0'; });
+            });
+            container.querySelectorAll('svg path[fill^="url("]').forEach(area => {
+                area.style.opacity = '0';
+                area.style.transition = 'opacity .6s ease .2s';
+                requestAnimationFrame(() => { area.style.opacity = '1'; });
+            });
+            container.querySelectorAll('svg circle[fill]:not([fill="transparent"])').forEach((c, i) => {
+                c.style.opacity = '0';
+                c.style.transition = `opacity .35s ease ${0.5 + i * 0.015}s`;
+                requestAnimationFrame(() => { c.style.opacity = '1'; });
+            });
+        }
+
         // Vista general: dos líneas sobre la misma escala — la suma de las
         // cuentas PRO (con relleno degradado, la serie "principal") y el
         // patrimonio total (+ emergencia + fondo a largo), en discontinuo
@@ -11687,6 +11740,16 @@
             financeProChartRange = key;
             const panel = document.getElementById('finance-pro-chart-panel');
             if (panel) panel.outerHTML = renderFinanceProChartPanel();
+            requestAnimationFrame(animateFinanceProChartPanel);
+        }
+
+        // Dispara las dos micro-animaciones (cifra + líneas) del panel
+        // "Vista general" — se llama tras insertarlo en el DOM, nunca desde
+        // dentro del propio render*() (necesita medir el <svg> ya montado).
+        function animateFinanceProChartPanel() {
+            const valueEl = document.getElementById('finance-pro-chart-total');
+            if (valueEl) bitacoraAnimateNumber(valueEl, Number(valueEl.dataset.value || 0), financeMoney);
+            bitacoraAnimateChart(document.getElementById('finance-pro-chart-panel'));
         }
 
         function renderFinanceProChartPanel() {
@@ -11699,7 +11762,7 @@
                     ${financePanelHeadIcon(FINANCE_ICON_CHART, 'fin-slate', 'Vista general', 'Suma cuentas principales')}
                     <button class="finance-icon-btn" title="Ver estadísticas" onclick="openFinanceProStatsModal()">${FINANCE_ICON_STATS}</button>
                 </div>
-                <div class="finance-networth-value finance-networth-value-compact" style="margin:2px 0 10px">${financeMoney(total)}</div>
+                <div class="finance-networth-value finance-networth-value-compact" id="finance-pro-chart-total" data-value="${total}" style="margin:2px 0 10px">${financeMoney(total)}</div>
                 <div class="finance-pro-range-tabs">
                     ${FINANCE_PRO_CHART_RANGES.map(r => `<button class="${financeProChartRange === r.key ? 'active' : ''}" onclick="financeProSetChartRange('${r.key}')">${r.label}</button>`).join('')}
                 </div>
@@ -12063,6 +12126,17 @@
 
         function openFinanceLargoPlazoModal() {
             showModal(renderInvestmentPanel());
+            requestAnimationFrame(animateInvestmentPanel);
+        }
+
+        // Cifra "Valor actual" contando hacia arriba + barras de
+        // aportado/valor actual creciendo desde 0 al abrir el popup.
+        function animateInvestmentPanel() {
+            const valueEl = document.getElementById('finance-invest-value');
+            if (valueEl) bitacoraAnimateNumber(valueEl, Number(valueEl.dataset.value || 0), financeMoney);
+            document.querySelectorAll('#finance-investment-section .finance-invest-bar-fill[data-target-width]').forEach(bar => {
+                requestAnimationFrame(() => { bar.style.width = bar.dataset.targetWidth; });
+            });
         }
 
         function openFinanceMetasModal() {
