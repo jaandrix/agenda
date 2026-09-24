@@ -4954,15 +4954,19 @@ body.papel {
 .project-feature-chip { background:var(--bg-card-hover); border-radius:10px; padding:6px 10px; font-size:11px; display:flex; align-items:baseline; gap:5px; }
 .project-feature-chip b { color:var(--text-primary); font-weight:600; }
 .project-feature-chip span { color:var(--text-secondary); }
-.projects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
-.project-card { background:var(--bg-card); border:1px solid var(--border); border-top:3px solid var(--text-secondary); border-radius:16px; padding:16px; cursor:pointer; transition:border-color .15s ease,transform .15s ease; }
-.project-card:hover { border-color:var(--border-strong); transform:translateY(-2px); }
-.project-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
-.project-card-title { font-weight:600; font-size:15px; color:var(--text-primary); line-height:1.3; }
-.project-card-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:8px; font-size:11px; color:var(--text-secondary); }
-.project-card-desc { font-size:12px; color:var(--text-secondary); margin-top:8px; line-height:1.4; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+/* Lista de proyectos — misma línea de diseño que Asignaturas/
+   Documentos: fila numerada con separador grueso, sin tarjeta ni
+   borde de color de categoría. */
+.projects-list { margin-top:4px; }
+.projects-row { display:flex; align-items:flex-start; gap:16px; padding:14px 4px; border-bottom:2px solid var(--border-strong); cursor:pointer; transition:opacity .15s ease; }
+.projects-row:last-child { border-bottom:none; }
+.projects-row:hover { opacity:.75; }
+.projects-row-index { font-size:20px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; flex-shrink:0; width:34px; padding-top:2px; }
+.projects-row-body { flex:1 1 auto; min-width:0; }
+.projects-row-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.projects-row-title { font-weight:700; font-size:15px; color:var(--text-primary); line-height:1.3; }
+.projects-row-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:6px; font-size:11px; color:var(--text-secondary); }
 .project-card-progress-label { font-size:11px; color:var(--text-secondary); margin-top:4px; }
-@media(max-width:600px){ .projects-grid { grid-template-columns:1fr; } }
 .kanban-board { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; align-items:start; }
 .kanban-column { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:12px; min-height:120px; }
 .kanban-column-head { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:10px; display:flex; justify-content:space-between; }

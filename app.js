@@ -5721,7 +5721,7 @@
             ].join('');
 
             return `
-            <div style="display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap;max-width:1100px">
+            <div style="display:flex;gap:36px;align-items:center;flex-wrap:wrap;max-width:1100px">
                 <div style="flex:1 1 360px;min-width:280px">
                     <div style="font-size:13px;color:var(--text-secondary);margin-bottom:2px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
                     <div style="font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text-primary)">Centro de resumen</div>
@@ -9133,6 +9133,11 @@
             return `<div style="max-width:980px">${toggle}<div class="cal-view-anim">${projectViewMode === 'kanban' ? renderProjectsKanban(projects) : renderProjectsList(projects)}</div></div>`;
         }
 
+        // Lista de proyectos con la misma línea de diseño que Asignaturas/
+        // Documentos: fila numerada, sin la tarjeta con borde de color de
+        // categoría, separador grueso. La descripción y las features
+        // detalladas quedan solo en el popup de detalle (openEntryDetail),
+        // aquí se ve lo justo para escanear la lista de un vistazo.
         function renderProjectsList(projects) {
             const today = todayISO();
             const sorted = [...projects].sort((a, b) => {
@@ -9141,38 +9146,33 @@
                 return (b.startDate || '').localeCompare(a.startDate || '');
             });
 
-            let html = '<div class="projects-grid">';
-            sorted.forEach(p => {
-                const cat = categories.find(c => c.id === p.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
+            return `<div class="projects-list">${sorted.map((p, i) => {
                 const bucket = projectStatusBucket(p.status);
                 const statusClass = bucket === 'Completado' ? 'badge-done' : bucket === 'En progreso' ? 'badge-progress' : 'badge-pending';
                 const { total, done, pct } = projectTaskProgress(p);
                 const overdue = p.endDate && p.endDate < today && bucket !== 'Completado';
                 const priority = p.priority || 'media';
-                const features = Array.isArray(p.features) ? p.features : [];
 
-                html += `
-                    <div class="project-card ${bucket === 'Completado' ? 'bone-surface project-completed-bone' : ''}" style="border-top-color:${color}" onclick="openEntryDetail('${p.id}')">
-                        <div class="project-card-head">
-                            <span class="project-card-title">${escapeHtml(p.title)}</span>
-                            <span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span>
+                return `
+                    <div class="projects-row" onclick="openEntryDetail('${p.id}')">
+                        <div class="projects-row-index">${String(i + 1).padStart(2, '0')}</div>
+                        <div class="projects-row-body">
+                            <div class="projects-row-top">
+                                <span class="projects-row-title">${escapeHtml(p.title)}</span>
+                                <span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span>
+                            </div>
+                            <div class="projects-row-meta">
+                                <span class="badge ${statusClass}">${bucket}</span>
+                                <span>${escapeHtml(p.projectCategory || 'Sin categoría')}</span>
+                                ${p.endDate ? `<span class="${overdue ? 'project-overdue' : ''}">${overdue ? '⚠ ' : ''}${escapeHtml(p.endDate)}</span>` : ''}
+                            </div>
+                            ${total > 0 ? `
+                                <div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
+                                <div class="project-card-progress-label">${done}/${total} hitos · ${pct}%</div>
+                            ` : ''}
                         </div>
-                        <div class="project-card-meta">
-                            <span class="badge ${statusClass}">${bucket}</span>
-                            <span>${escapeHtml(p.projectCategory || 'Sin categoría')}</span>
-                            ${p.endDate ? `<span class="${overdue ? 'project-overdue' : ''}">${overdue ? '⚠ ' : ''}${escapeHtml(p.endDate)}</span>` : ''}
-                        </div>
-                        ${p.description ? `<div class="project-card-desc">${escapeHtml(p.description)}</div>` : ''}
-                        ${total > 0 ? `
-                            <div class="progress-bar-bg" style="margin-top:10px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
-                            <div class="project-card-progress-label">${done}/${total} hitos · ${pct}%</div>
-                        ` : ''}
-                        ${features.length ? `<div class="project-features" style="margin-top:10px">${features.slice(0, 3).map(f => `<div class="project-feature-chip"><b>${escapeHtml(f.label)}</b>${f.value ? `<span>${escapeHtml(f.value)}</span>` : ''}</div>`).join('')}${features.length > 3 ? `<div class="project-feature-chip">+${features.length - 3}</div>` : ''}</div>` : ''}
                     </div>`;
-            });
-            html += '</div>';
-            return html;
+            }).join('')}</div>`;
         }
 
         function renderProjectsKanban(projects) {
