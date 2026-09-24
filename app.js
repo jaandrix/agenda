@@ -1170,7 +1170,7 @@
 
             return `
             <div>
-                <div style="font-size:20px;font-weight:800;margin-bottom:4px;color:var(--text-primary)">Grafo</div>
+                <div style="font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text-primary)">Grafo</div>
                 <div style="color:var(--text-secondary);margin-bottom:16px;font-size:12.5px">${nodes.length} entradas conectadas · escribe [[Título]] en las notas de cualquier entrada para enlazarla a otra.</div>
                 <div class="graph-svg-wrap">
                     <svg viewBox="${minX.toFixed(1)} ${minY.toFixed(1)} ${(maxX - minX).toFixed(1)} ${(maxY - minY).toFixed(1)}" width="100%" style="min-height:440px">
@@ -2046,7 +2046,7 @@
                         </div>
                         ${solicitudesEnviadas.length ? `<div style="font-size:11px;color:var(--text-secondary);margin:10px 0 4px">Solicitudes enviadas, pendientes de respuesta:</div>
                         <div class="friend-list" style="margin-bottom:10px">
-                            ${solicitudesEnviadas.map(s => `<div class="friend-list-item"><span class="friend-list-name" style="font-weight:600;color:var(--text-secondary)">${escapeHtml(s.nombre)}</span><span style="font-size:11px;color:var(--text-secondary)">Pendiente</span></div>`).join('')}
+                            ${solicitudesEnviadas.map(s => `<div class="friend-list-item"><span class="friend-list-name" style="font-weight:500;color:var(--text-secondary)">${escapeHtml(s.nombre)}</span><span style="font-size:11px;color:var(--text-secondary)">Pendiente</span></div>`).join('')}
                         </div>` : ''}
                         <div class="friend-list">
                             ${amigos.length ? amigos.map(a => `
@@ -3441,7 +3441,7 @@
             return `
             <div style="max-width:640px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Hábitos</div>
+                    <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Hábitos</div>
                     <button class="btn-modal-primary" style="width:auto" onclick="openAddHabit()">+ Hábito</button>
                 </div>
                 <div style="color:var(--text-secondary);margin-bottom:20px;font-size:12.5px">Solo para llevar la cuenta, sin presión. Marca el día cuando lo hagas.</div>
@@ -5149,9 +5149,9 @@
                     ${items.map(it => {
                         const anios = anioActual - it.year;
                         return `<div style="display:flex;align-items:baseline;gap:8px;cursor:pointer" onclick="openOnThisDayItem('${it.kind}','${it.id}')">
-                            <span style="font-size:10px;font-weight:800;color:var(--text-secondary);white-space:nowrap;min-width:48px">${anios} año${anios === 1 ? '' : 's'}</span>
+                            <span style="font-size:10px;font-weight:700;color:var(--text-secondary);white-space:nowrap;min-width:48px">${anios} año${anios === 1 ? '' : 's'}</span>
                             <div style="min-width:0">
-                                <div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(it.title)}</div>
+                                <div style="font-size:12px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(it.title)}</div>
                                 <div style="font-size:10px;color:var(--text-secondary)">${escapeHtml(it.type)}</div>
                             </div>
                         </div>`;
@@ -5212,20 +5212,20 @@
             let html = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                 <button class="cal-nav-arrow" onclick="changeMonth(-1)">‹</button>
-                <span style="font-size:17px;font-weight:700;color:var(--text-primary)">${CAL_MONTH_NAMES[calMonth]} ${calYear}</span>
+                <span style="font-size:17px;font-weight:600;color:var(--text-primary)">${CAL_MONTH_NAMES[calMonth]} ${calYear}</span>
                 <button class="cal-nav-arrow" onclick="changeMonth(1)">›</button>
             </div>
             <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
 
             dayNames.forEach(d => {
                 html +=
-                    `<div style="text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);padding:6px 0 10px 0">${d}</div>`;
+                    `<div style="text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text-secondary);padding:6px 0 10px 0">${d}</div>`;
             });
 
             for (let i = 0; i < offset; i++) {
                 const day = daysInPrevMonth - offset + i + 1;
                 html +=
-                    `<div style="background:transparent;border-radius:16px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3;color:var(--text-secondary)">${day}</span></div>`;
+                    `<div style="background:transparent;border-radius:16px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:600;opacity:0.3;color:var(--text-secondary)">${day}</span></div>`;
             }
 
             for (let d = 1; d <= daysInMonth; d++) {
@@ -5250,7 +5250,7 @@
 
                 html += `
                 <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" onclick="showDayEntries('${dateStr}')">
-                    <span style="font-size:13px;font-weight:700;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
+                    <span style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
                     <div style="display:flex;flex-direction:column;gap:2px;align-items:center">${barsHtml}${extra}</div>
                 </div>`;
             }
@@ -5259,7 +5259,7 @@
             const remaining = (7 - (totalDays % 7)) % 7;
             for (let d = 1; d <= remaining; d++) {
                 html +=
-                    `<div style="background:transparent;border-radius:16px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:700;opacity:0.3;color:var(--text-secondary)">${d}</span></div>`;
+                    `<div style="background:transparent;border-radius:16px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:600;opacity:0.3;color:var(--text-secondary)">${d}</span></div>`;
             }
 
             html += `</div>`;
@@ -5287,7 +5287,7 @@
             let html = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                 <button class="cal-nav-arrow" onclick="changeWeek(-1)">‹</button>
-                <span style="font-size:15px;font-weight:700;color:var(--text-primary)">Semana del ${monday.getDate()} de ${CAL_MONTH_NAMES[monday.getMonth()]}</span>
+                <span style="font-size:15px;font-weight:600;color:var(--text-primary)">Semana del ${monday.getDate()} de ${CAL_MONTH_NAMES[monday.getMonth()]}</span>
                 <button class="cal-nav-arrow" onclick="changeWeek(1)">›</button>
             </div>
             <div class="cal-week-grid">`;
@@ -5338,7 +5338,7 @@
             return `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                 <button class="cal-nav-arrow" onclick="changeDay(-1)">‹</button>
-                <span class="cal-day-title" style="font-size:15px;font-weight:700;color:var(--text-primary);text-transform:capitalize">${dateLabel}</span>
+                <span class="cal-day-title" style="font-size:15px;font-weight:600;color:var(--text-primary);text-transform:capitalize">${dateLabel}</span>
                 <button class="cal-nav-arrow" onclick="changeDay(1)">›</button>
             </div>
             ${body || '<div class="empty-state"><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}`;
@@ -5748,7 +5748,7 @@
                         </div>`).join('')}
                 </div>` : ''}
                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
-                <div style="font-size:15px;font-weight:600;margin-bottom:20px;color:var(--text-primary)">${todayEntries.length} entradas hoy</div>
+                <div style="font-size:15px;font-weight:500;margin-bottom:20px;color:var(--text-primary)">${todayEntries.length} entradas hoy</div>
 
                 ${renderTodayWidget()}
 
@@ -5767,7 +5767,7 @@
                 </div>
 
                 ${rangeBirthdays.length ? `
-                    <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Cumpleaños en este periodo</div>
+                    <div style="font-weight:600;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Cumpleaños en este periodo</div>
                     ${rangeBirthdays.map(b => `
                         <div class="entry-item">
                             <div class="entry-color-dot" style="background:#ec4899"></div>
@@ -5779,7 +5779,7 @@
                 ` : ''}
 
                 ${upcoming.length ? `
-                    <div style="font-weight:700;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Próximamente</div>
+                    <div style="font-weight:600;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Próximamente</div>
                     ${upcoming.map(e => {
                         const cat = categories.find(c => c.id === e.categoryId);
                         const color = cat?.color || 'var(--text-secondary)';
@@ -5826,7 +5826,7 @@
 
             let html = `
             <div style="max-width:700px">
-                <div style="font-size:20px;font-weight:800;margin-bottom:4px;color:var(--text-primary)">Estadísticas</div>
+                <div style="font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text-primary)">Estadísticas</div>
                 <div style="color:var(--text-secondary);margin-bottom:20px">Resumen de tu actividad</div>
 
                 <div class="card-grid">
@@ -5847,7 +5847,7 @@
 
             if (sortedMonths.length) {
                 html += `
-                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:20px 0 12px 0">Entradas por mes</div>
+                <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:20px 0 12px 0">Entradas por mes</div>
                 <div style="display:flex;gap:8px;align-items:flex-end;height:100px;padding-top:8px">`;
                 sortedMonths.forEach(m => {
                     const count = monthCount[m] || 0;
@@ -5855,7 +5855,7 @@
                     const label = m.slice(5);
                     html += `
                     <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-                        <div style="font-weight:600;font-size:12px;color:var(--text-primary)">${count}</div>
+                        <div style="font-weight:500;font-size:12px;color:var(--text-primary)">${count}</div>
                         <div style="width:100%;height:${Math.max(4, pct)}px;background:var(--border-strong);border-radius:4px 4px 0 0;min-height:4px"></div>
                         <div style="font-size:10px;color:var(--text-secondary)">${label}</div>
                     </div>`;
@@ -5948,7 +5948,7 @@
                 <div>
                     <button class="btn-secondary" style="width:auto;margin-bottom:12px" onclick="window._selectedCultureList=null;render()">← Volver a Listas</button>
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-                        <div style="font-size:18px;font-weight:800">${escapeHtml(list.name)} · ${items.length}</div>
+                        <div style="font-size:18px;font-weight:700">${escapeHtml(list.name)} · ${items.length}</div>
                         <div style="display:flex;gap:8px">
                             <button class="finance-oneoff-btn" onclick="openCultureListPicker('${list.id}')">+ Añadir</button>
                             <button class="finance-oneoff-btn" onclick="abrirCompartirListaModal('${list.id}')">Compartir</button>
@@ -6167,13 +6167,13 @@
             if (!listasOcioCompartidas.length) return '';
             return `
                 <div style="margin-bottom:18px">
-                    <div style="font-size:13px;font-weight:700;margin-bottom:8px">Listas compartidas contigo (${listasOcioCompartidas.length})</div>
+                    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Listas compartidas contigo (${listasOcioCompartidas.length})</div>
                     ${listasOcioCompartidas.map(l => {
                         const lista = l.lista || {};
                         const items = lista.items || [];
                         return `
                         <div class="card" style="background:transparent;border-style:dashed;margin-bottom:10px">
-                            <div style="font-weight:700">${escapeHtml(lista.name || 'Lista')}</div>
+                            <div style="font-weight:600">${escapeHtml(lista.name || 'Lista')}</div>
                             <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">De ${escapeHtml(l.remitente_nombre || 'un amigo')} · ${items.length} elemento${items.length === 1 ? '' : 's'}</div>
                             ${l.nota ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${linkifyText(l.nota)}</div>` : ''}
                             <div style="display:flex;gap:8px;margin-top:10px">
@@ -6259,7 +6259,7 @@
             showModal(`
                 <div class="modal-title">Importar desde Goodreads</div>
                 <div class="doc-upload-box" onclick="document.getElementById('goodreads-import-input').click()">
-                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
+                    <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
                     <div style="font-size:12px;color:var(--text-secondary)">Goodreads → My Books → Import and export → Export Library</div>
                 </div>
                 <input type="file" id="goodreads-import-input" accept=".csv,text/csv" style="display:none" onchange="handleGoodreadsImport(event)">
@@ -6382,7 +6382,7 @@
             showModal(`
                 <div class="modal-title">Importar desde Letterboxd</div>
                 <div class="doc-upload-box" onclick="document.getElementById('letterboxd-import-input').click()">
-                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
+                    <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
                     <div style="font-size:12px;color:var(--text-secondary)">Sube tu archivo diary.csv o watched.csv — Letterboxd → Settings → Import & Export → Export Your Data</div>
                 </div>
                 <input type="file" id="letterboxd-import-input" accept=".csv,text/csv" style="display:none" onchange="handleLetterboxdImport(event)">
@@ -6558,7 +6558,7 @@
                 <div class="modal-title">Importar desde IMDb</div>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Series según tus valoraciones de IMDb — de un mismo archivo de valoraciones, solo se cogen las series (se ignoran películas y episodios sueltos).</div>
                 <div class="doc-upload-box" onclick="document.getElementById('imdb-series-import-input').click()">
-                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
+                    <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
                     <div style="font-size:12px;color:var(--text-secondary)">IMDb → Your Ratings → Export</div>
                 </div>
                 <input type="file" id="imdb-series-import-input" accept=".csv,text/csv" style="display:none" onchange="handleImdbSeriesImport(event)">
@@ -6859,7 +6859,7 @@
         };
 
         function helpKbd(tecla) {
-            return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:26px;padding:0 9px;border-radius:7px;border:1px solid var(--border-strong);border-bottom-width:2.5px;background:var(--bg-input);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--text-primary);white-space:nowrap">${tecla}</span>`;
+            return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:26px;padding:0 9px;border-radius:7px;border:1px solid var(--border-strong);border-bottom-width:2.5px;background:var(--bg-input);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text-primary);white-space:nowrap">${tecla}</span>`;
         }
 
         function openHelpPanel() {
@@ -7178,12 +7178,12 @@
             if (!viajesCompartidos.length) return '';
             return `
                 <div style="margin-bottom:18px">
-                    <div style="font-size:13px;font-weight:700;margin-bottom:8px">Viajes compartidos contigo (${viajesCompartidos.length})</div>
+                    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Viajes compartidos contigo (${viajesCompartidos.length})</div>
                     ${viajesCompartidos.map(v => {
                         const viaje = v.viaje || {};
                         return `
                         <div class="trip-card" style="background:transparent;border-style:dashed">
-                            <div style="font-weight:800;font-size:15px;color:var(--text-primary)">${escapeHtml(viaje.title || 'Viaje')}</div>
+                            <div style="font-weight:700;font-size:15px;color:var(--text-primary)">${escapeHtml(viaje.title || 'Viaje')}</div>
                             <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${escapeHtml(viaje.destination || '')}${viaje.startDate ? ' · ' + escapeHtml(formatTravelRange(viaje.startDate, viaje.endDate)) : ''}</div>
                             <div style="font-size:11px;color:var(--text-secondary);margin-top:6px">De ${escapeHtml(v.remitente_nombre || 'un amigo')}</div>
                             ${v.nota ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;font-style:italic">"${escapeHtml(v.nota)}"</div>` : ''}
@@ -7234,7 +7234,7 @@
             let html = `
                 <div style="max-width:820px">
                     <div style="margin-bottom:16px">
-                        <div style="font-size:20px;font-weight:800">Viajes</div>
+                        <div style="font-size:20px;font-weight:700">Viajes</div>
                         <div style="font-size:12px;color:var(--text-secondary)">Tus viajes y lugares, con su propio gestor: lugares que ver, itinerario, documentos y listas.</div>
                     </div>
                     ${renderSharedTripsSection()}
@@ -7270,7 +7270,7 @@
                                 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
                                     <div style="min-width:0">
                                         <span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span>
-                                        <div style="font-weight:800;font-size:16px;margin-top:6px;color:var(--text-primary)">${escapeHtml(t.title)}</div>
+                                        <div style="font-weight:700;font-size:16px;margin-top:6px;color:var(--text-primary)">${escapeHtml(t.title)}</div>
                                         <div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}</div>
                                     </div>
                                     <div class="trip-card-icon">${TRAVEL_ICON_MOUNTAIN}</div>
@@ -7436,8 +7436,8 @@
                     <div class="card" style="margin-bottom:10px">
                         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
                             <div style="min-width:0">
-                                <div style="font-size:11px;color:var(--text-secondary);font-weight:700">${it.dia ? escapeHtml(new Date(it.dia + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'Sin día'}${it.hora ? ' · ' + escapeHtml(it.hora) : ''}</div>
-                                <div style="font-weight:700;margin-top:2px">${escapeHtml(it.titulo)}</div>
+                                <div style="font-size:11px;color:var(--text-secondary);font-weight:600">${it.dia ? escapeHtml(new Date(it.dia + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'Sin día'}${it.hora ? ' · ' + escapeHtml(it.hora) : ''}</div>
+                                <div style="font-weight:600;margin-top:2px">${escapeHtml(it.titulo)}</div>
                                 ${it.lugar ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">📍 ${escapeHtml(it.lugar)}${it.lat ? '' : ' · localizando...'}</div>` : ''}
                                 ${it.notas ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${linkifyText(it.notas)}</div>` : ''}
                             </div>
@@ -7550,7 +7550,7 @@
             return `
                 <div class="doc-upload-box" onclick="document.getElementById('trip-doc-input-${t.id}').click()">
                     <div style="font-size:28px;margin-bottom:6px">📄</div>
-                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF de este viaje</div>
+                    <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF de este viaje</div>
                     <div style="font-size:12px;color:var(--text-secondary)">Billetes, reservas, seguro de viaje...</div>
                 </div>
                 <input type="file" id="trip-doc-input-${t.id}" accept="application/pdf" style="display:none" onchange="handleTripDocUpload(event,'${t.id}')">
@@ -7718,7 +7718,7 @@
                 ${t.listas.length ? t.listas.map(l => `
                     <div class="card" style="margin-bottom:14px">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                            <div style="font-weight:800">${escapeHtml(l.nombre)} <span style="font-weight:400;color:var(--text-secondary);font-size:12px">(${(l.items || []).filter(i => i.hecho).length}/${(l.items || []).length})</span></div>
+                            <div style="font-weight:700">${escapeHtml(l.nombre)} <span style="font-weight:400;color:var(--text-secondary);font-size:12px">(${(l.items || []).filter(i => i.hecho).length}/${(l.items || []).length})</span></div>
                             <button class="friend-remove-btn" title="Eliminar lista" onclick="deleteTripList('${t.id}','${l.id}')">✕</button>
                         </div>
                         ${(l.items || []).map(i => `
@@ -7859,7 +7859,7 @@
 
             let html = `
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;max-width:980px;flex-wrap:wrap">
-                    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Trabajo</div>
+                    <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Trabajo</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openWorkImportModal()">Importar Vida Laboral</button>
                         <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()">⭳ Descargar resumen (PDF)</button>
@@ -7872,11 +7872,11 @@
                 <div style="max-width:980px">`;
 
             if (actuales.length) {
-                html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:10px">Actual</div>`;
+                html += `<div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:10px">Actual</div>`;
                 actuales.forEach(w => { html += renderWorkCard(w, todayStr, daysBetween); });
             }
             if (historial.length) {
-                html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:${actuales.length ? '22px' : '0'} 0 10px 0">Historial</div>`;
+                html += `<div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:${actuales.length ? '22px' : '0'} 0 10px 0">Historial</div>`;
                 historial.forEach(w => { html += renderWorkCard(w, todayStr, daysBetween); });
             }
             html += `</div><div style="height:70px"></div>`;
@@ -7964,7 +7964,7 @@
                 <div class="work-card-bitacora" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail('${w.id}')">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                         <div>
-                            <div style="font-weight:800;font-size:16px">${escapeHtml(heading)}</div>
+                            <div style="font-weight:700;font-size:16px">${escapeHtml(heading)}</div>
                             ${subheading ? `<div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:1px">${escapeHtml(subheading)}</div>` : ''}
                         </div>
                         <span class="work-card-bitacora-badge">${statusLabel}</span>
@@ -8133,7 +8133,7 @@
             showModal(`
                 <div class="modal-title">Importar Vida Laboral</div>
                 <div class="doc-upload-box" onclick="document.getElementById('work-import-input').click()">
-                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir el PDF del Informe de Vida Laboral</div>
+                    <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir el PDF del Informe de Vida Laboral</div>
                     <div style="font-size:12px;color:var(--text-secondary)">Sede Electrónica de la Seguridad Social → Tu Seguridad Social → Informes y certificados → Informe de vida laboral</div>
                 </div>
                 <div style="font-size:11px;color:var(--text-secondary);margin-top:10px">El PDF se procesa aquí mismo, en tu navegador — no se sube a ningún servidor.</div>
@@ -8359,11 +8359,11 @@
                     <h3>Expediente</h3>
                     <div class="studies-expediente-grid">
                         <div class="card bone-surface" style="margin:0">
-                            <div class="label" style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Nota media${ex.hasCreditos ? ' (ponderada por créditos)' : ''}</div>
-                            <div class="value" style="font-size:28px;font-weight:800;color:var(--bone-text);margin-top:4px">${ex.media !== null ? `<span class="nota-final ${gradeTierClass(ex.media)}" style="font-size:28px;padding:0">${ex.media.toFixed(2)}</span>` : '—'}</div>
+                            <div class="label" style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">Nota media${ex.hasCreditos ? ' (ponderada por créditos)' : ''}</div>
+                            <div class="value" style="font-size:28px;font-weight:700;color:var(--bone-text);margin-top:4px">${ex.media !== null ? `<span class="nota-final ${gradeTierClass(ex.media)}" style="font-size:28px;padding:0">${ex.media.toFixed(2)}</span>` : '—'}</div>
                         </div>
                         <div class="card bone-surface" style="margin:0">
-                            <div class="label" style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:700">Asignaturas</div>
+                            <div class="label" style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">Asignaturas</div>
                             <div style="font-size:13px;color:var(--bone-text);margin-top:6px">
                                 <strong style="color:#16a34a">${ex.aprobadas}</strong> aprobadas · <strong style="color:#dc2626">${ex.suspensas}</strong> suspensas · <strong>${ex.pendientes}</strong> pendientes
                             </div>
@@ -9076,7 +9076,7 @@
 
                 <div class="events-section-label" style="margin-top:0">Desde un calendario (.ics)</div>
                 <div class="doc-upload-box" onclick="document.getElementById('ics-import-input').click()">
-                    <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Elegir archivo .ics</div>
+                    <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir archivo .ics</div>
                     <div style="font-size:12px;color:var(--text-secondary)">Exportado desde Google Calendar, Apple Calendar u Outlook</div>
                 </div>
                 <input type="file" id="ics-import-input" accept=".ics,text/calendar" style="display:none" onchange="handleIcsImport(event)">
@@ -9466,7 +9466,7 @@
                 <div style="max-width:700px">
                     <button class="btn-secondary" style="width:auto;margin-bottom:12px" onclick="window._selectedTag=null;render()">← Volver a Etiquetas</button>
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-                        <div style="font-size:18px;font-weight:800">#${escapeHtml(window._selectedTag)} · ${items.length}</div>
+                        <div style="font-size:18px;font-weight:700">#${escapeHtml(window._selectedTag)} · ${items.length}</div>
                         <div style="display:flex;gap:8px">
                             <button class="finance-oneoff-btn" onclick="renameTag('${tagEsc}')">✎ Renombrar</button>
                             <button class="finance-oneoff-btn" style="color:#dc2626" onclick="deleteTagEverywhere('${tagEsc}')">Eliminar etiqueta</button>
@@ -11064,8 +11064,8 @@
                 <div class="modal-title">Actualización guardada</div>
                 <div style="text-align:center;padding:12px 0">
                     <div style="font-size:12px;color:var(--text-secondary)">Patrimonio operativo</div>
-                    <div style="font-size:24px;font-weight:800;margin:8px 0">${financeMoney(before)} → ${financeMoney(after)}</div>
-                    <div style="font-size:15px;font-weight:700;color:${delta >= 0 ? '#10b981' : '#dc2626'}">${delta >= 0 ? '+' : ''}${financeMoney(delta)} este mes</div>
+                    <div style="font-size:24px;font-weight:700;margin:8px 0">${financeMoney(before)} → ${financeMoney(after)}</div>
+                    <div style="font-size:15px;font-weight:600;color:${delta >= 0 ? '#10b981' : '#dc2626'}">${delta >= 0 ? '+' : ''}${financeMoney(delta)} este mes</div>
                 </div>
                 <button class="btn-modal-primary" onclick="closeModal()">Aceptar</button>
             `);
@@ -13035,7 +13035,7 @@
             return `
             <div style="flex:1;min-width:260px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                    <div style="font-weight:800;font-size:14px">${icon} ${label}</div>
+                    <div style="font-weight:700;font-size:14px">${icon} ${label}</div>
                     <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:12px" onclick="openNewEntry('${type}')">+ Añadir</button>
                 </div>
                 <div class="card" style="margin-bottom:12px">
@@ -13052,7 +13052,7 @@
                             <div class="entry-title">${escapeHtml(s.title)}</div>
                             <div class="entry-meta">Día ${s.renewalDay} · en ${daysUntil} días</div>
                         </div>
-                        <span style="font-weight:700;font-size:13px">${s.amount.toLocaleString('es-ES')}€</span>
+                        <span style="font-weight:600;font-size:13px">${s.amount.toLocaleString('es-ES')}€</span>
                     </div>`;
                 }).join('') : `<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Nada por aquí todavía</div>`}
             </div>`;
@@ -13907,7 +13907,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div style="max-width:980px">
                     <div class="doc-upload-box" onclick="document.getElementById('doc-upload-input').click()">
                         <div style="font-size:28px;margin-bottom:6px">📄</div>
-                        <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF</div>
+                        <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF</div>
                         <div style="font-size:12px;color:var(--text-secondary)">Pulsa aquí para elegir un archivo</div>
                     </div>
                     <div id="doc-list">Cargando documentos...</div>
@@ -14237,7 +14237,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     <div class="fantasy-budget-head" onclick="toggleFantasyBudgetCard('${u.nombre}')">
                         <div style="display:flex;align-items:center;gap:8px;min-width:0">
                             <div class="user-avatar" style="background:${color};width:28px;height:28px;font-size:11px;flex-shrink:0">${fantasyInitials(u.nombre)}</div>
-                            <span style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(u.nombre)}</span>
+                            <span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(u.nombre)}</span>
                         </div>
                         <span style="font-size:10px;color:var(--fx-text-secondary);flex-shrink:0">${isOpen ? '▲' : '▼'} ${squad.length} jugador${squad.length === 1 ? '' : 'es'}</span>
                     </div>
@@ -14339,12 +14339,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 .map(u => ({ nombre: u.nombre, diff: miTotal - fantasyTotalPoints(u.nombre) }))
                 .sort((a, b) => b.diff - a.diff);
             return `
-                <div style="font-size:10px;font-weight:700;color:var(--fx-text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Distancia vs. ${escapeHtml(FANTASY_ME)}</div>
+                <div style="font-size:10px;font-weight:600;color:var(--fx-text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Distancia vs. ${escapeHtml(FANTASY_ME)}</div>
                 <div style="display:flex;flex-direction:column;gap:7px">
                     ${rows.map(r => `
                         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px">
                             <span style="color:var(--fx-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(r.nombre)}</span>
-                            <span style="font-weight:700;white-space:nowrap;color:${r.diff >= 0 ? '#16a34a' : '#dc2626'}">${r.diff >= 0 ? '+' : ''}${r.diff} pts</span>
+                            <span style="font-weight:600;white-space:nowrap;color:${r.diff >= 0 ? '#16a34a' : '#dc2626'}">${r.diff >= 0 ? '+' : ''}${r.diff} pts</span>
                         </div>
                     `).join('')}
                 </div>
@@ -14596,7 +14596,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div class="modal-title" style="color:var(--fantasy-accent)">Editar valor de plantilla</div>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">${escapeHtml(nombre)} · manual, no se ve afectado por compras/ventas</div>
                 <input type="number" id="template-value-input" class="modal-input" value="${u.valor_plantilla}" step="100000"
-                    style="font-size:20px;font-weight:800;text-align:center"
+                    style="font-size:20px;font-weight:700;text-align:center"
                     onkeydown="if(event.key==='Enter'){event.preventDefault();confirmEditTemplateValue('${nombre}');}">
                 <div style="display:flex;gap:6px;justify-content:center;margin:10px 0 16px">
                     <button class="btn-secondary" style="width:auto;padding:6px 10px;font-size:12px" onclick="adjustTemplateValue(-5000000,'${nombre}')">-5M</button>
@@ -14774,13 +14774,13 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             return squad.map(p => `
                 <div class="fantasy-tx-item">
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                        <span style="font-weight:700">${escapeHtml(p.jugador)}</span>
+                        <span style="font-weight:600">${escapeHtml(p.jugador)}</span>
                         <button class="btn-secondary" style="padding:2px 8px;font-size:10px;color:#dc2626;border-color:#dc2626" title="Borrar jugador" onclick="confirmDeleteSquadPlayer('${nombre}', '${escapeHtml(p.jugador).replace(/'/g, "\\'")}', '${p.source}', '${p.refId}')">✕</button>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
                         <span style="font-size:11px;color:var(--text-secondary)">
                             Valor: ${p.valorActual.toLocaleString('es-ES')}€
-                            ${p.gasto > 0 ? `<span style="color:var(--fantasy-accent);font-weight:700"> · Cláusula: ${p.gasto.toLocaleString('es-ES')}€</span>` : ''}
+                            ${p.gasto > 0 ? `<span style="color:var(--fantasy-accent);font-weight:600"> · Cláusula: ${p.gasto.toLocaleString('es-ES')}€</span>` : ''}
                         </span>
                         <button class="btn-secondary" style="padding:2px 10px;font-size:10px" onclick="openSquadClauseCalculator('${nombre}', '${escapeHtml(p.jugador).replace(/'/g, "\\'")}', '${p.source}', '${p.refId}')">Cláusula</button>
                     </div>
@@ -14992,10 +14992,10 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     h1{font-size:16px;margin:0 0 4px;color:#fff}
                     .sub{font-size:12px;color:#9ca3af;margin-bottom:16px}
                     table{width:100%;border-collapse:collapse;font-size:13px}
-                    th{text-align:left;padding:6px 8px;color:#9ca3af;font-weight:600;border-bottom:1px solid #2a2d36}
+                    th{text-align:left;padding:6px 8px;color:#9ca3af;font-weight:500;border-bottom:1px solid #2a2d36}
                     td{padding:6px 8px;border-bottom:1px solid #1e2028}
-                    tr.match td{background:rgba(59,130,246,0.18);font-weight:700;color:#93c5fd}
-                    .tag{font-size:10px;font-weight:700;color:#93c5fd;background:rgba(59,130,246,0.25);padding:1px 6px;border-radius:8px;margin-left:6px}
+                    tr.match td{background:rgba(59,130,246,0.18);font-weight:600;color:#93c5fd}
+                    .tag{font-size:10px;font-weight:600;color:#93c5fd;background:rgba(59,130,246,0.25);padding:1px 6px;border-radius:8px;margin-left:6px}
                 </style></head>
                 <body>
                     <h1>${escapeHtml(ctx.jugador)}</h1>
@@ -15196,7 +15196,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         <div style="display:flex;justify-content:space-between;align-items:center">
                             <div>
                                 <span class="tx-type ${isNegative ? 'buy' : 'sell'}">${typeLabel}</span>
-                                <span style="font-weight:700;margin-left:6px">${escapeHtml(actor)}</span>
+                                <span style="font-weight:600;margin-left:6px">${escapeHtml(actor)}</span>
                                 ${(isClausula || isPremio || isVideo) ? '' : `<span style="font-size:11px;color:var(--fx-text-secondary)"> · ${escapeHtml(tx.jugador)} (${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)})</span>`}
                             </div>
                             <span class="tx-amount ${isNegative ? 'negative' : 'positive'}">${isNegative ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
@@ -15273,7 +15273,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                             <td>${p.fechaVenta}</td>
                                             <td>${p.precioCompra.toLocaleString('es-ES')}€</td>
                                             <td>${p.precioVenta.toLocaleString('es-ES')}€</td>
-                                            <td class="${p.beneficio >= 0 ? 'fantasy-positive' : 'fantasy-negative'}" style="font-weight:700">${p.beneficio >= 0 ? '+' : ''}${p.beneficio.toLocaleString('es-ES')}€</td>
+                                            <td class="${p.beneficio >= 0 ? 'fantasy-positive' : 'fantasy-negative'}" style="font-weight:600">${p.beneficio >= 0 ? '+' : ''}${p.beneficio.toLocaleString('es-ES')}€</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -15303,7 +15303,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div class="fantasy-root ${fantasyTheme === 'green' ? 'fantasy-theme-green' : ''}" style="max-width:980px">
                     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px">
                         <div>
-                            <div style="font-size:20px;font-weight:800;color:var(--fx-text)">Fantasy</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--fx-text)">Fantasy</div>
                             <div style="font-size:13px;color:var(--fx-text-secondary)">Análisis económico de la liga</div>
                         </div>
                         <div class="fantasy-toolbar">
@@ -15392,7 +15392,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                             <div class="fantasy-section-title" style="margin-bottom:8px">Efectivo bajo — oportunidad de negociación</div>
                             ${lowCashUsers.map(u => `
                                 <div class="fantasy-alert ${u.efectivo < 0 ? 'high' : 'medium'}">
-                                    <div style="font-weight:700">${escapeHtml(u.nombre)}</div>
+                                    <div style="font-weight:600">${escapeHtml(u.nombre)}</div>
                                     <div>${u.efectivo < 0 ? 'Efectivo negativo' : 'Efectivo por debajo de 20M€'}: ${u.efectivo.toLocaleString('es-ES')}€</div>
                                 </div>
                             `).join('')}
@@ -15483,17 +15483,17 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const contenidoHTML = `
                 <div class="modal-title">${escapeHtml(nombre)}</div>
                 <div style="text-align:center;padding:14px;margin-bottom:12px;border-radius:18px;background:var(--fantasy-accent-soft)">
-                    <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Efectivo</div>
-                    <div style="font-size:28px;font-weight:800;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
+                    <div style="font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Efectivo</div>
+                    <div style="font-size:28px;font-weight:700;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
                     <div style="text-align:center">
-                        <div style="font-size:16px;font-weight:800;color:var(--text-primary)">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Total</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--text-primary)">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
+                        <div style="font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">Total</div>
                     </div>
                     <div style="text-align:center;position:relative">
-                        <div style="font-size:16px;font-weight:800;color:var(--text-primary)">${u.valor_plantilla.toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase">Plantilla</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--text-primary)">${u.valor_plantilla.toLocaleString('es-ES')}€</div>
+                        <div style="font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">Plantilla</div>
                         <button class="btn-secondary" style="padding:2px 8px;font-size:10px;margin-top:4px" onclick="event.stopPropagation();closeModal();editTemplateValue('${nombre}')">Editar</button>
                     </div>
                 </div>
@@ -15502,7 +15502,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     <button class="btn-secondary fantasy-btn-danger" style="width:auto" onclick="closeModal();deleteFantasyUser('${nombre}')">Borrar usuario</button>
                 </div>
 
-                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
                 <div style="max-height:300px;overflow-y:auto">
                     ${txs.length ? txs.map(tx => {
                         const isClausula = tx.tipo === 'clausula';
@@ -15522,7 +15522,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                                 <div style="display:flex;justify-content:space-between;align-items:center">
                                     <div>
                                         <span class="tx-type ${isNegative ? 'buy' : 'sell'}">${typeLabel}</span>
-                                        <span style="font-weight:700;margin-left:6px">${escapeHtml(tx.jugador)}</span>
+                                        <span style="font-weight:600;margin-left:6px">${escapeHtml(tx.jugador)}</span>
                                         ${(isClausula || isPremio || isVideo) ? '' : `<span style="font-size:11px;color:var(--text-secondary)">${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)}</span>`}
                                     </div>
                                     <span class="tx-amount ${isNegative ? 'negative' : 'positive'}">${isNegative ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
@@ -15537,17 +15537,17 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 </div>
 
                 ${withProfit.length ? `
-                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">Beneficios por reventa</div>
+                    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">Beneficios por reventa</div>
                     ${withProfit.map(p => `
                         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
                             <span>${escapeHtml(p.jugador)} <span style="color:var(--text-secondary);font-size:11px">(${p.fechaCompra} → ${p.fechaVenta})</span></span>
-                            <span style="font-weight:700;color:${p.beneficio >= 0 ? '#16a34a' : '#dc2626'}">${p.beneficio >= 0 ? '+' : ''}${p.beneficio.toLocaleString('es-ES')}€</span>
+                            <span style="font-weight:600;color:${p.beneficio >= 0 ? '#16a34a' : '#dc2626'}">${p.beneficio >= 0 ? '+' : ''}${p.beneficio.toLocaleString('es-ES')}€</span>
                         </div>
                     `).join('')}
                 ` : ''}
 
                 ${withoutBuy.length ? `
-                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">Ventas sin compra registrada</div>
+                    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">Ventas sin compra registrada</div>
                     ${withoutBuy.map(p => `
                         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-secondary)">
                             <span>${escapeHtml(p.jugador)}</span>
@@ -16438,7 +16438,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     <div style="max-width:600px">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                             <div>
-                                <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Vault</div>
+                                <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Vault</div>
                                 <div style="font-size:13px;color:var(--text-secondary)">Tareas personales</div>
                             </div>
                             <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
@@ -16463,7 +16463,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div style="max-width:600px">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                         <div>
-                            <div style="font-size:20px;font-weight:800;color:var(--text-primary)">Vault</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Vault</div>
                             <div style="font-size:13px;color:var(--text-secondary)">${pending.length} pendientes · ${done.length} completadas</div>
                         </div>
                         <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
@@ -16474,7 +16474,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     </div>
 
                     ${pending.length ? `
-                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Pendientes</div>
+                        <div style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Pendientes</div>
                         ${pending.map((t, i) => {
                             const realIdx = vaultTasks.indexOf(t);
                             return `
@@ -16488,7 +16488,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     ` : ''}
 
                     ${done.length ? `
-                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Completadas</div>
+                        <div style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:12px 0 8px 0">Completadas</div>
                         ${done.map((t, i) => {
                             const realIdx = vaultTasks.indexOf(t);
                             return `
