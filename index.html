@@ -153,9 +153,6 @@
 
                 <!-- Privado -->
                <span class="nav-label">Privado</span>
-                <button class="fantasy-btn fantasy-hidden" onclick="openFantasy()" data-view="fantasy" id="sidebar-fantasy-btn">
-                    <span class="nav-text">Fantasy</span>
-                </button>
                 <button class="vault-btn" onclick="openVault()" data-view="vault">
                     <span class="nav-text">Vault</span>
                 </button>
@@ -215,9 +212,6 @@
             <div id="mobile-nav-top"></div>
 
             <span class="nav-label">Privado</span>
-            <button class="fantasy-btn fantasy-hidden" onclick="openFantasy();toggleMobileMenu()" data-view="fantasy" id="mobile-fantasy-btn">
-                Fantasy
-            </button>
             <button class="vault-btn" onclick="openVault();toggleMobileMenu()" data-view="vault">
                 Vault
             </button>
@@ -241,7 +235,6 @@
     ============================================================ -->
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
     <input type="file" id="doc-upload-input" accept="application/pdf" style="display:none" onchange="handleDocUpload(event)">
-    <input type="file" id="fantasy-import-input" accept=".json" style="display:none" onchange="importFantasyData(event)">
 
     <!-- ============================================================
     SUPABASE + CHART.JS + LEAFLET (mapa del itinerario de Viajes)

@@ -141,7 +141,7 @@
                             <div class="review-col">
                                 <div class="review-col-title">Proyectos activos</div>
                                 ${r.projects.map(p => `
-                                    <div class="review-item" onclick="openEntryDetail('${p.id}')">
+                                    <div class="review-item" data-open-entry="${p.id}">
                                         <span class="review-item-text">${esc(p.title)}</span>
                                         <div class="progress-bar-bg" style="margin-top:4px"><div class="progress-bar-fill" style="width:${p.pct}%;background:#2563eb"></div></div>
                                     </div>
@@ -151,7 +151,7 @@
                             <div class="review-col">
                                 <div class="review-col-title">Objetivos activos</div>
                                 ${r.goals.map(g => `
-                                    <div class="review-item" onclick="openEntryDetail('${g.id}')">
+                                    <div class="review-item" data-open-entry="${g.id}">
                                         <span class="review-item-text">${esc(g.title)}</span>
                                         ${g.pct !== null ? `<div class="progress-bar-bg" style="margin-top:4px"><div class="progress-bar-fill" style="width:${g.pct}%;background:#2563eb"></div></div>` : `<span class="review-item-nodata">sin progreso medible</span>`}
                                     </div>

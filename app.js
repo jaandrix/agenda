@@ -1177,7 +1177,7 @@
                 const r = 5 + Math.min(11, (degree[node.id] || 0) * 1.6);
                 const label = (node.title || '').length > 22 ? node.title.slice(0, 20) + '…' : (node.title || '');
                 return `
-                    <g class="graph-node" onclick="openEntryDetail('${node.id}')">
+                    <g class="graph-node" data-open-entry="${node.id}">
                         <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${color}" stroke="var(--bg-app)" stroke-width="1.5"/>
                         <text x="${p.x.toFixed(1)}" y="${(p.y - r - 5).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--text-secondary)">${escapeHtml(label)}</text>
                     </g>`;
@@ -1213,7 +1213,7 @@
                 <div class="entry-detail-label">Proyectos vinculados · ${linked.length}</div>
                 ${linked.map(p => {
                     const prog = projectTaskProgress(p);
-                    return `<div class="review-item" onclick="event.stopPropagation();openEntryDetail('${p.id}')">
+                    return `<div class="review-item" data-open-entry="${p.id}">
                         <span class="review-item-text">${escapeHtml(p.title)}</span>
                         ${prog.total ? `<div class="progress-bar-bg" style="margin:4px 0 0"><div class="progress-bar-fill" style="width:${prog.pct}%;background:#2563eb"></div></div>` : ''}
                     </div>`;
@@ -1304,6 +1304,17 @@
         });
         document.addEventListener('click', (e) => {
             if (e.target?.id !== 'modal-notes' && !e.target?.closest?.('.wikilink-autocomplete')) hideWikilinkAutocomplete();
+        });
+
+        // Delegación de eventos para las tarjetas/filas de entrada (libros,
+        // películas, viajes, trabajos, proyectos, eventos, objetivos...):
+        // un único listener en document en vez de un onclick="openEntryDetail(...)"
+        // por cada tarjeta repartido por decenas de render*() distintos.
+        // Cada tarjeta solo lleva data-open-entry="<id>"; closest() ya
+        // resuelve bien el caso de una fila anidada dentro de otra.
+        document.addEventListener('click', (e) => {
+            const el = e.target.closest('[data-open-entry]');
+            if (el) openEntryDetail(el.dataset.openEntry);
         });
 
         // ============================================================
@@ -4766,7 +4777,7 @@
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
-                loadDocuments(); loadBackups(); } else if (currentView === 'finances') { content.innerHTML = renderFinances();
+                loadDocuments(); loadBackups(); renderBackupFailureBanner(); } else if (currentView === 'finances') { content.innerHTML = renderFinances();
                 requestAnimationFrame(animateFinanceProChartPanel); }
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
             else if (currentView === 'graph') content.innerHTML = renderGraph();
@@ -5432,7 +5443,7 @@
                 }
 
                 return `
-                <div class="entry-item" onclick="openEntryDetail('${e.id}')">
+                <div class="entry-item" data-open-entry="${e.id}">
                     <div class="entry-color-dot" style="background:${color}"></div>
                     <div class="entry-info">
                         <div class="entry-title">${titleHtml}</div>
@@ -5480,7 +5491,7 @@
                 }
 
                 return `
-                <div class="day-entry-card" onclick="openEntryDetail('${e.id}')">
+                <div class="day-entry-card" data-open-entry="${e.id}">
                     <div class="day-entry-dot" style="background:${color}"></div>
                     <div class="day-entry-body">
                         <div class="day-entry-title">${titleHtml}</div>
@@ -6343,7 +6354,7 @@
                 ? `<div class="media-card-stars">${stars}</div>`
                 : (badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : '');
             return `
-                <div class="media-card media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" onclick="openEntryDetail('${entry.id}')">
+                <div class="media-card media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" data-open-entry="${entry.id}">
                     <div class="media-card-icon">${mediaCardIcon(entry.type)}</div>
                     <div class="media-card-title">${escapeHtml(entry.title)}</div>
                     <div class="media-card-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
@@ -7459,7 +7470,7 @@
                     <div style="display:flex;gap:8px;flex-shrink:0">
                         <button class="btn-secondary" style="width:auto" onclick="abrirCompartirViajeModal('${t.id}')">Compartir</button>
                         <button class="btn-secondary" style="width:auto" onclick="openEditEntry('${t.id}')">✎ Editar</button>
-                        <button class="btn-secondary fantasy-btn-danger" style="width:auto" onclick="deleteTripFromManager('${t.id}')">Eliminar</button>
+                        <button class="btn-secondary btn-danger-pill" style="width:auto" onclick="deleteTripFromManager('${t.id}')">Eliminar</button>
                     </div>
                 </div>
                 <div class="culture-tabs" style="margin-top:16px">
@@ -8090,7 +8101,7 @@
             const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
             const modalidadLabel = WORK_MODALIDAD_LABELS[w.modalidad] || '';
             return `
-                <div class="work-card-bitacora" style="margin-bottom:12px;cursor:pointer" onclick="openEntryDetail('${w.id}')">
+                <div class="work-card-bitacora" style="margin-bottom:12px;cursor:pointer" data-open-entry="${w.id}">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                         <div>
                             <div style="font-weight:700;font-size:16px">${escapeHtml(heading)}</div>
@@ -9154,7 +9165,7 @@
                 const priority = p.priority || 'media';
 
                 return `
-                    <div class="projects-row" onclick="openEntryDetail('${p.id}')">
+                    <div class="projects-row" data-open-entry="${p.id}">
                         <div class="projects-row-index">${String(i + 1).padStart(2, '0')}</div>
                         <div class="projects-row-body">
                             <div class="projects-row-top">
@@ -9191,7 +9202,7 @@
                             const overdue = p.endDate && p.endDate < today && col !== 'Completado';
                             const priority = p.priority || 'media';
                             return `
-                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${p.id}')" onclick="openEntryDetail('${p.id}')" style="border-left:4px solid ${color}">
+                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${p.id}')" data-open-entry="${p.id}" style="border-left:4px solid ${color}">
                                 <div class="kanban-card-title">${escapeHtml(p.title)}</div>
                                 ${total > 0 ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>` : ''}
                                 <div class="kanban-card-foot">
@@ -9391,7 +9402,7 @@
                 const nextColor = nextCat?.color || '#3b82f6';
                 const nextType = EVENT_TYPE_LABELS[next.eventType] || '';
                 html += `
-                    <div class="event-hero" style="border-color:${nextColor}66" onclick="openEntryDetail('${next.id}')">
+                    <div class="event-hero" style="border-color:${nextColor}66" data-open-entry="${next.id}">
                         <div class="event-hero-kicker" style="color:${nextColor}">Próximo evento · ${eventCountdownLabel(next.date)}</div>
                         <div class="event-hero-title">${escapeHtml(next.title)}</div>
                         <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ' · ' : ''}${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
@@ -9483,7 +9494,7 @@
             const day = e.date ? e.date.slice(8, 10) : '–';
             const isPast = e.date && e.date < todayISO();
             return `
-                <div class="event-sq-card ${isPast ? 'event-sq-card-past' : ''}" onclick="openEntryDetail('${e.id}')">
+                <div class="event-sq-card ${isPast ? 'event-sq-card-past' : ''}" data-open-entry="${e.id}">
                     <div class="event-sq-icon">${icon}</div>
                     <div class="event-sq-body">
                         <div class="event-sq-title">${escapeHtml(e.title)}</div>
@@ -9527,7 +9538,7 @@
                 const cat = categories.find(c => c.id === p.categoryId);
                 const color = cat?.color || 'var(--text-secondary)';
                 html += `
-                    <div class="entry-item" onclick="openEntryDetail(\'${p.id}\')">
+                    <div class="entry-item" data-open-entry="${p.id}">
                         <div class="entry-color-dot" style="background:${color}"></div>
                         <div class="entry-info">
                             <div class="entry-title">${p.title}</div>
@@ -9655,7 +9666,7 @@
                         const cat = categories.find(c => c.id === e.categoryId);
                         const color = cat?.color || 'var(--text-secondary)';
                         return `
-                        <div class="entry-item ${e.status === 'Completado' ? 'bone-surface goal-completed-bone' : ''}" onclick="openEntryDetail(\'${e.id}\')">
+                        <div class="entry-item ${e.status === 'Completado' ? 'bone-surface goal-completed-bone' : ''}" data-open-entry="${e.id}">
                             <div class="entry-color-dot" style="background:${color}"></div>
                             <div class="entry-info">
                                 <div class="entry-title">${escapeHtml(e.title)}</div>
@@ -10167,7 +10178,7 @@
                     const msDone = milestones.filter(m => m.done).length;
 
                     html += `
-                        <div class="entry-item" style="align-items:flex-start" onclick="openEntryDetail(\'${e.id}\')">
+                        <div class="entry-item" style="align-items:flex-start" data-open-entry="${e.id}">
                             <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
                             <div class="entry-info">
                                 <div class="entry-title">${escapeHtml(e.title)}</div>
@@ -10205,7 +10216,7 @@
                             const color = cat?.color || 'var(--text-secondary)';
                             const pct = goalProgressPct(g);
                             return `
-                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${g.id}')" onclick="openEntryDetail('${g.id}')" style="border-left:4px solid ${color}">
+                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${g.id}')" data-open-entry="${g.id}" style="border-left:4px solid ${color}">
                                 <div class="kanban-card-title">${escapeHtml(g.title)}</div>
                                 ${pct !== null ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>` : ''}
                             </div>`;
@@ -13270,7 +13281,7 @@
                 ${sorted.length ? sorted.map(s => {
                     const daysUntil = s.renewalDay >= todayDay ? s.renewalDay - todayDay : s.renewalDay + 31 - todayDay;
                     return `
-                    <div class="entry-item" onclick="openEntryDetail(\'${s.id}\')">
+                    <div class="entry-item" data-open-entry="${s.id}">
                         <div class="entry-color-dot" style="background:${daysUntil <= 3 ? '#e17055' : 'var(--text-secondary)'}"></div>
                         <div class="entry-info">
                             <div class="entry-title">${escapeHtml(s.title)}</div>
@@ -14141,6 +14152,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         <div style="font-size:11px;color:var(--text-secondary);margin:-6px 0 10px">
                             Bitácora guarda una copia de seguridad completa la primera vez que abres la app cada día, y conserva las 7 más recientes.
                         </div>
+                        <div id="backup-failure-banner"></div>
                         <div id="backups-list">Cargando backups...</div>
                     </div>
                 </div>`;
@@ -14260,10 +14272,53 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         let backupFiles = [];
         const BACKUPS_TO_KEEP = 7;
+        const BACKUP_LAST_ERROR_KEY = 'bitacora_backup_last_error';
 
         function backupFileDate(name) {
             const m = name.match(/(\d{4}-\d{2}-\d{2})/);
             return m ? m[1] : '';
+        }
+
+        // Traduce el error crudo de Supabase (network/auth/RLS/bucket/cuota...)
+        // a un mensaje concreto en vez de "desconocido" — para que si falla
+        // el backup sepas de un vistazo qué ha pasado, sin tener que abrir
+        // la consola del navegador.
+        function describeBackupError(e) {
+            const raw = (e?.message || String(e || '')).toLowerCase();
+            const status = e?.status || e?.statusCode;
+            if (!navigator.onLine || raw.includes('failed to fetch') || raw.includes('network')) {
+                return 'Sin conexión a internet en ese momento.';
+            }
+            if (status === 401 || raw.includes('jwt') || raw.includes('not authenticated') || raw.includes('invalid token')) {
+                return 'La sesión había caducado — vuelve a iniciar sesión y se reintentará solo.';
+            }
+            if (status === 403 || raw.includes('row-level security') || raw.includes('permission denied') || raw.includes('policy')) {
+                return 'Permiso denegado por Supabase (revisa las políticas RLS del bucket "documents").';
+            }
+            if (status === 404 || raw.includes('bucket not found')) {
+                return 'El bucket "documents" no existe o no es accesible en Supabase Storage.';
+            }
+            if (status === 413 || raw.includes('payload too large') || raw.includes('exceeded') || raw.includes('quota')) {
+                return 'La copia de seguridad supera el límite de tamaño o se agotó la cuota de almacenamiento.';
+            }
+            return e?.message ? `Error de Supabase: ${e.message}` : 'Error desconocido al subir el backup.';
+        }
+
+        function recordBackupFailure(e) {
+            try {
+                localStorage.setItem(BACKUP_LAST_ERROR_KEY, JSON.stringify({ date: todayISO(), message: describeBackupError(e) }));
+            } catch (_) { /* localStorage no disponible: no es crítico, se pierde el aviso persistente */ }
+        }
+
+        function clearBackupFailure() {
+            try { localStorage.removeItem(BACKUP_LAST_ERROR_KEY); } catch (_) { /* no-op */ }
+        }
+
+        function getBackupFailure() {
+            try {
+                const raw = localStorage.getItem(BACKUP_LAST_ERROR_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (_) { return null; }
         }
 
         // Sube (o sustituye) el backup de HOY y aplica la rotación de los
@@ -14275,6 +14330,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
             const { error: upErr } = await sb.storage.from('documents').upload(`${user.id}/backups/${todayName}`, blob, { upsert: true, contentType: 'application/json' });
             if (upErr) throw upErr;
+            clearBackupFailure();
 
             const alreadyListed = existingFiles.some(f => f.name === todayName);
             const updated = alreadyListed ? existingFiles : [...existingFiles, { name: todayName }];
@@ -14283,9 +14339,14 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 const toDelete = updated.slice(0, updated.length - BACKUPS_TO_KEEP).map(f => `${user.id}/backups/${f.name}`);
                 await sb.storage.from('documents').remove(toDelete);
             }
-            if (currentView === 'documents') await loadBackups();
+            if (currentView === 'documents') { await loadBackups(); renderBackupFailureBanner(); }
         }
 
+        // El chequeo diario corre en silencio al abrir la app — si falla, el
+        // usuario podría no enterarse nunca (nadie mira la consola). Ahora
+        // se avisa con un toast la primera vez que falla cada día, y además
+        // queda un aviso persistente (leído por renderBackupFailureBanner)
+        // hasta que un backup se suba con éxito.
         async function runDailyBackupCheck() {
             try {
                 const { data: { user } } = await sb.auth.getUser();
@@ -14300,6 +14361,11 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 await uploadTodayBackupAndRotate(user, existing);
             } catch (e) {
                 console.error('Error en el backup automático diario:', e);
+                const already = getBackupFailure();
+                recordBackupFailure(e);
+                if (!already || already.date !== todayISO()) {
+                    showToast('No se pudo hacer la copia de seguridad de hoy: ' + describeBackupError(e), true);
+                }
             }
         }
 
@@ -14318,8 +14384,27 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 showToast('Backup guardado ahora mismo');
             } catch (e) {
                 console.error('Error en el backup manual:', e);
-                showToast('No se pudo guardar el backup: ' + (e?.message || 'desconocido'), true);
+                recordBackupFailure(e);
+                showToast('No se pudo guardar el backup: ' + describeBackupError(e), true);
+                renderBackupFailureBanner();
             }
+        }
+
+        // Aviso persistente (no solo el toast, que se puede perder) en la
+        // propia sección Documentos si el último intento de backup falló.
+        function renderBackupFailureBanner() {
+            const el = document.getElementById('backup-failure-banner');
+            if (!el) return;
+            const failure = getBackupFailure();
+            if (!failure) { el.innerHTML = ''; return; }
+            el.innerHTML = `
+                <div class="backup-failure-banner">
+                    <div>
+                        <strong>⚠ El backup automático falló</strong>
+                        <div class="backup-failure-banner-msg">${escapeHtml(failure.message)} (${escapeHtml(failure.date)})</div>
+                    </div>
+                    <button class="btn-secondary" style="width:auto" onclick="runManualBackupNow()">Reintentar ahora</button>
+                </div>`;
         }
 
         async function loadBackups() {
