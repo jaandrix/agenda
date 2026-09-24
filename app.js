@@ -716,16 +716,20 @@
             event: ['evento', 'eventos']
         };
         const ENTRY_TYPE_LABEL_PLURAL = { book: 'Libros', movie: 'Películas', series: 'Series', event: 'Eventos' };
-        const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', deporte: 'Deporte', otro: 'Otro' };
+        const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', futbol: 'Fútbol', baloncesto: 'Baloncesto', f1: 'F1', motogp: 'Moto GP', otro: 'Otro' };
         // Iconos sólidos (misma familia TARJETA BITACORA) para el chip a la
         // izquierda de cada tarjeta de evento — uno por tipo, más un
-        // genérico de reserva.
+        // genérico de reserva. "Deporte" se divide en cuatro disciplinas
+        // propias en vez de un único icono genérico.
         const EVENT_TYPE_ICONS = {
             social: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="36" cy="46" r="26"/><circle cx="68" cy="50" r="20" opacity=".5"/></svg>',
             teatro: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M10 92V55a40 40 0 0 1 80 0v37z"/></svg>',
             cine: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M8 26a18 18 0 0 1 18-18h48a18 18 0 0 1 18 18v48a18 18 0 0 1-18 18H26A18 18 0 0 1 8 74zM40 32l28 18-28 18z"/></svg>',
             concierto: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="76" r="16"/><rect x="40" y="15" width="9" height="61"/><path d="M40 15l38-11v20l-38 11z"/></svg>',
-            deporte: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M46 4h8v38l27-27 6 6-27 27h38v8H60l27 27-6 6-27-27v38h-8V60L23 87l-6-6 27-27H6v-8h38L17 19l6-6z"/></svg>',
+            futbol: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 4a46 46 0 1 0 0 92 46 46 0 0 0 0-92zM50 32l15 11-6 18H41l-6-18z"/></svg>',
+            baloncesto: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 4a46 46 0 1 0 0 92 46 46 0 0 0 0-92zM46 6h8v88h-8zM13 30c9 6 16 15 16 20s-7 14-16 20l-5-7c7-5 12-11 12-13s-5-8-12-13z M87 30c-9 6-16 15-16 20s7 14 16 20l5-7c-7-5-12-11-12-13s5-8 12-13z"/></svg>',
+            f1: '<svg viewBox="0 0 100 100" fill="currentColor"><text x="50" y="66" text-anchor="middle" font-size="54" font-weight="800" font-family="Poppins, sans-serif">F1</text></svg>',
+            motogp: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="22" cy="74" r="13"/><circle cx="78" cy="74" r="13"/><circle cx="60" cy="28" r="8"/><path d="M18 74l16-20h14l10-14c3-4 9-5 12-1l-7 9 9 11h10l6 15H70l-8-13H42z"/></svg>',
             otro: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="23"/></svg>'
         };
         let eventsTypeFilter = 'all';
@@ -1755,7 +1759,7 @@
                 { id: 'cat_pelicula', name: 'Película', color: '#f39c12' },
                 { id: 'cat_serie', name: 'Serie', color: '#9b59b6' },
                 { id: 'cat_videojuego', name: 'Videojuego', color: '#e74c3c' },
-                { id: 'cat_evento', name: 'Evento', color: '#f9a8d4' },
+                { id: 'cat_evento', name: 'Evento', color: '#000000' },
                 { id: 'cat_restaurante', name: 'Restaurante', color: '#f59e0b' },
                 { id: 'cat_lugar', name: 'Lugar', color: '#14b8a6' },
                 { id: 'cat_suscripcion', name: 'Suscripción', color: '#0984e3' },
@@ -2116,11 +2120,11 @@
                 entries = saved.entries || [];
                 normalizeWorkCotizationData();
                 categories = saved.categories || getDefaultCategories();
-                // El rosa por defecto de "Evento" era demasiado chillón; a
-                // quien ya tuviera la categoría creada con el tono antiguo
-                // se le actualiza sola al pastel nuevo, una única vez.
+                // El rosa de "Evento" (en cualquiera de sus dos tonos
+                // anteriores) pasa a negro — a quien ya tuviera la categoría
+                // creada se le actualiza sola, una única vez.
                 const eventCat = categories.find(c => c.id === 'cat_evento');
-                if (eventCat && eventCat.color === '#ec4899') eventCat.color = '#f9a8d4';
+                if (eventCat && (eventCat.color === '#ec4899' || eventCat.color === '#f9a8d4')) eventCat.color = '#000000';
                 notes = saved.notes || [];
                 prompts = saved.prompts || [];
                 userName = saved.userName || '';
@@ -4094,12 +4098,7 @@
                 extraFields = `
                     <div class="modal-label">Tipo</div>
                     <select id="modal-event-type" class="modal-input">
-                        <option value="social" ${isEdit && entry.eventType === 'social' ? 'selected' : ''}>Social</option>
-                        <option value="teatro" ${isEdit && entry.eventType === 'teatro' ? 'selected' : ''}>Teatro</option>
-                        <option value="cine" ${isEdit && entry.eventType === 'cine' ? 'selected' : ''}>Cine</option>
-                        <option value="concierto" ${isEdit && entry.eventType === 'concierto' ? 'selected' : ''}>Concierto</option>
-                        <option value="deporte" ${isEdit && entry.eventType === 'deporte' ? 'selected' : ''}>Deporte</option>
-                        <option value="otro" ${isEdit && entry.eventType === 'otro' ? 'selected' : ''}>Otro</option>
+                        ${Object.keys(EVENT_TYPE_LABELS).map(t => `<option value="${t}" ${isEdit && entry.eventType === t ? 'selected' : ''}>${EVENT_TYPE_LABELS[t]}</option>`).join('')}
                     </select>
                     <div class="modal-label">Fecha</div>
                     <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
@@ -5678,9 +5677,9 @@
                 const t = Math.max(0.1, c / maxCount);
                 const r = rInner + (rOuter - rInner) * t;
                 const xBar = cx + r * cos, yBar = cy + r * sin;
-                return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xGuide.toFixed(1)}" y2="${yGuide.toFixed(1)}" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
-                    <circle cx="${xGuide.toFixed(1)}" cy="${yGuide.toFixed(1)}" r="${dotR}" fill="rgba(255,255,255,0.28)"/>
-                    <line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xBar.toFixed(1)}" y2="${yBar.toFixed(1)}" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>`;
+                return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xGuide.toFixed(1)}" y2="${yGuide.toFixed(1)}" stroke="var(--text-primary)" opacity="0.14" stroke-width="1"/>
+                    <circle cx="${xGuide.toFixed(1)}" cy="${yGuide.toFixed(1)}" r="${dotR}" fill="var(--text-primary)" opacity="0.28"/>
+                    <line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xBar.toFixed(1)}" y2="${yBar.toFixed(1)}" stroke="var(--text-primary)" stroke-width="2" stroke-linecap="round"/>`;
             }).join('');
             return `<svg viewBox="0 0 200 200" width="100%" height="100%" style="display:block">${bars}</svg>`;
         }
@@ -7987,6 +7986,28 @@
         // trabajo, en orden cronológico (más antiguo a la izquierda). El
         // tamaño crece con los días trabajados ahí (raíz cuadrada, para que
         // el ÁREA sea proporcional, no el radio) con un límite en 365 días.
+        // Reparte `label` en como mucho 2 líneas que quepan en `maxChars`
+        // caracteres cada una (estimación por caracteres, no medida real de
+        // texto) — la 2ª línea se trunca con "…" si aún sobra contenido.
+        function wrapOvalLabel(label, maxChars) {
+            const words = label.split(' ');
+            const lines = [''];
+            for (let i = 0; i < words.length; i++) {
+                const w = words[i];
+                const li = lines.length - 1;
+                const candidate = lines[li] ? lines[li] + ' ' + w : w;
+                if (candidate.length <= maxChars || !lines[li]) {
+                    lines[li] = candidate;
+                } else if (lines.length < 2) {
+                    lines.push(w);
+                } else {
+                    lines[1] = (lines[1].length > maxChars - 1 ? lines[1].slice(0, maxChars - 1) : lines[1]) + '…';
+                    return lines;
+                }
+            }
+            return lines;
+        }
+
         function renderWorkBubbleFlow(sortedByRecency) {
             const todayStr = todayISO();
             const daysBetween = (start, end) => countWorkingDays(start, end || todayStr);
@@ -8001,18 +8022,23 @@
             });
             const n = items.length;
             if (!n) return '';
-            const rMin = 26, rMax = 62;
-            const scaleR = d => rMin + (rMax - rMin) * Math.sqrt(Math.min(d, 365) / 365);
-            const gap = 26, cy = 150, amp = n > 1 ? 46 : 0;
-            let x = rMax + 10;
+            // Óvalos (rx > ry) en vez de círculos — mucho más ancho que
+            // alto, para que quepa el nombre completo de la empresa (hasta
+            // 2 líneas) sin que se salga del contorno.
+            const rxMin = 40, rxMax = 96, ryMin = 26, ryMax = 56;
+            const scale = d => Math.sqrt(Math.min(d, 365) / 365);
+            const gap = 30, cy = 150, amp = n > 1 ? 50 : 0;
+            let x = rxMax + 10;
             const points = items.map((it, i) => {
-                const r = scaleR(it.days);
-                const cx = x + Math.max(r, rMin);
-                x = cx + Math.max(r, rMin) + gap;
-                return { cx, cy: cy + (i % 2 === 0 ? -amp : amp), r };
+                const t = scale(it.days);
+                const rx = rxMin + (rxMax - rxMin) * t;
+                const ry = ryMin + (ryMax - ryMin) * t;
+                const cx = x + Math.max(rx, rxMin);
+                x = cx + Math.max(rx, rxMin) + gap;
+                return { cx, cy: cy + (i % 2 === 0 ? -amp : amp), rx, ry, r: (rx + ry) / 2 };
             });
             const totalWidth = Math.max(x, 200);
-            const totalHeight = cy + amp + rMax + 26;
+            const totalHeight = cy + amp + ryMax + 30;
 
             const arrows = [];
             for (let i = 0; i < n - 1; i++) {
@@ -8036,11 +8062,16 @@
 
             const bubbles = points.map((p, i) => {
                 const it = items[i];
-                const fontSize = Math.max(9, Math.min(13, p.r * 0.26));
-                const label = it.label.length > 14 ? it.label.slice(0, 13) + '…' : it.label;
-                return `<circle cx="${p.cx.toFixed(1)}" cy="${p.cy.toFixed(1)}" r="${p.r.toFixed(1)}" fill="#000"/>
-                    <text x="${p.cx.toFixed(1)}" y="${(p.cy - 3).toFixed(1)}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-weight="800" font-family="Poppins, sans-serif">${escapeHtml(label)}</text>
-                    <text x="${p.cx.toFixed(1)}" y="${(p.cy + 11).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="${Math.max(8, fontSize * 0.72).toFixed(1)}" font-family="Poppins, sans-serif">(${it.days})</text>`;
+                const fontSize = Math.max(9, Math.min(13, p.ry * 0.34));
+                const maxChars = Math.max(6, Math.floor((p.rx * 1.7) / (fontSize * 0.56)));
+                const lines = wrapOvalLabel(it.label, maxChars);
+                const lineGap = fontSize * 1.15;
+                const firstY = lines.length > 1 ? p.cy - lineGap * 0.55 : p.cy - 2;
+                const nameLines = lines.map((ln, li) => `<text x="${p.cx.toFixed(1)}" y="${(firstY + li * lineGap).toFixed(1)}" text-anchor="middle" fill="#fff" font-size="${fontSize}" font-weight="800" font-family="Poppins, sans-serif">${escapeHtml(ln)}</text>`).join('');
+                const daysY = p.cy + (lines.length > 1 ? lineGap * 0.9 : 12);
+                return `<ellipse cx="${p.cx.toFixed(1)}" cy="${p.cy.toFixed(1)}" rx="${p.rx.toFixed(1)}" ry="${p.ry.toFixed(1)}" fill="#000"/>
+                    ${nameLines}
+                    <text x="${p.cx.toFixed(1)}" y="${daysY.toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="${Math.max(8, fontSize * 0.72).toFixed(1)}" font-family="Poppins, sans-serif">(${it.days})</text>`;
             }).join('');
 
             return `<div class="work-bubble-flow-wrap"><svg viewBox="0 0 ${totalWidth.toFixed(0)} ${totalHeight.toFixed(0)}" width="100%" style="display:block">${arrows.join('')}${bubbles}</svg></div>`;
@@ -9275,7 +9306,7 @@
             const ta = document.getElementById('events-text-import');
             const raw = ta.value.trim();
             if (!raw) { showToast('Pega primero el texto a importar', true); return; }
-            const validTypes = ['social', 'teatro', 'cine', 'concierto', 'deporte', 'otro'];
+            const validTypes = Object.keys(EVENT_TYPE_LABELS);
             let added = 0, errors = 0, duplicates = 0;
 
             raw.split('\n').map(l => l.trim()).filter(Boolean).forEach((line, i) => {
@@ -9397,14 +9428,14 @@
                 const [y, m] = key.split('-').map(Number);
                 return new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long' });
             };
-            return `<div class="events-month-columns">
-                ${groups.map(g => `
-                    <div class="events-month-col">
-                        <div class="events-month-col-title"><span class="events-month-col-title-text">${escapeHtml(monthLabel(g.key))}.</span> <span class="events-month-col-count">(${g.items.length})</span></div>
+            return groups.map(g => `
+                <div class="events-month-section">
+                    <div class="events-month-col-title"><span class="events-month-col-title-text">${escapeHtml(monthLabel(g.key))}.</span> <span class="events-month-col-count">(${g.items.length})</span></div>
+                    <div class="events-month-row">
                         ${g.items.sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(e => renderEventSquareCard(e)).join('')}
                     </div>
-                `).join('')}
-            </div>`;
+                </div>
+            `).join('');
         }
 
         function renderEventSquareCard(e) {
