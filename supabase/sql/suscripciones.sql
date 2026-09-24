@@ -18,7 +18,7 @@ create table if not exists suscripciones (
     -- periodo_fin, pero no se renovará después.
     cancela_al_final_periodo boolean not null default false,
     -- Módulos que esta suscripción desbloquea. Hoy solo existe "base";
-    -- el día que se venda un módulo extra (p. ej. Fantasy), se amplía
+    -- el día que se venda un módulo extra cualquiera, se amplía
     -- este array según el price_id que llegue en el webhook, sin tocar
     -- el esquema.
     modulos jsonb not null default '["base"]'::jsonb,

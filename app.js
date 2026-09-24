@@ -586,7 +586,6 @@
             documents: 'Documentos',
             finances: 'Dashboard',
             tags: 'Etiquetas',
-            fantasy: 'Fantasy',
             vault: 'Vault',
             notes: 'Notas',
             goals: 'Objetivos',
@@ -702,7 +701,6 @@
             { cmd: 'tema', text: '/tema' },
             { cmd: 'backup', text: '/backup' },
             { cmd: 'exportar', text: '/exportar' },
-            { cmd: 'fantasy', text: '/fantasy' },
         ];
 
         // ============================================================
@@ -927,7 +925,6 @@
             documents: null,
             finances: null,
             tags: null,
-            fantasy: null,
             vault: null,
             notes: null,
             goals: 'goal',
@@ -1467,14 +1464,10 @@
                 const subMatches = q ? NAV_SUBSECTIONS.filter(s => s.text.toLowerCase().includes(q)).map(s => ({
                     ...s, kind: 'nav-sub', text: `${s.text} - ${s.viewLabel || NAV_VIEW_LABELS[s.view] || s.view}`
                 })) : [];
-                // Fantasy es un apartado oculto (requiere Modo Desarrollador):
-                // nunca aparece en la lista inicial, solo si se escribe algo
-                // que coincida con su nombre y el modo esté activo.
+                // Vault no depende del Modo Desarrollador (su botón ya
+                // está siempre visible en el menú), así que aquí basta
+                // con que coincida el texto escrito.
                 const hiddenMatches = [
-                    ...((q && devModeActive && 'fantasy'.includes(q)) ? [{ kind: 'fantasy', text: 'Fantasy' }] : []),
-                    // Vault no depende del Modo Desarrollador (su botón ya
-                    // está siempre visible en el menú), así que aquí basta
-                    // con que coincida el texto escrito.
                     ...((q && 'vault'.includes(q)) ? [{ kind: 'vault', text: 'Vault' }] : []),
                 ];
                 // "peliculas septiembre" (o cualquier combinación tipo+mes)
@@ -1570,8 +1563,6 @@
                 switchView('culture');
             } else if (item.kind === 'shared-trip') {
                 switchView('travels');
-            } else if (item.kind === 'fantasy') {
-                openFantasy();
             } else if (item.kind === 'vault') {
                 openVault();
             } else if (item.kind === 'month-filter') {
@@ -1620,7 +1611,6 @@
             else if (cmd === 'tema') toggleTheme();
             else if (cmd === 'backup') runManualBackupNow();
             else if (cmd === 'exportar') exportData();
-            else if (cmd === 'fantasy') openFantasyQuickAccess();
         }
 
         function openLogoutConfirm() {
@@ -2253,15 +2243,6 @@
                 links = Array.isArray(saved.links) ? saved.links : [];
                 linkCategories = Array.isArray(saved.linkCategories) ? saved.linkCategories : [];
                 resetDayPlannerIfNeeded();
-                if (saved.fantasyData) {
-                    fantasyData = saved.fantasyData;
-                    if (!fantasyData.jornadas) fantasyData.jornadas = [];
-                    if (!fantasyData.valorHistorico) fantasyData.valorHistorico = [];
-                    hydrateFantasyHiddenUsers();
-                    fantasyDataFromCloud = true;
-                } else {
-                    fantasyDataFromCloud = false;
-                }
             } catch (e) {
                 console.error('Error cargando datos de Supabase:', e);
                 return false;
@@ -2345,7 +2326,6 @@
                 links,
                 linkCategories,
                 blurFinances,
-                fantasyData,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
                 apuntes: apuntesDirty ? apuntes : latestApuntes,
@@ -4525,7 +4505,7 @@
                 entries, categories, userName, investmentData, notes, prompts, inbox,
                 financeIncome, financeProfile, financePro, plannedTrips, weeklyTasks, cultureLists, habits,
                 collectibleCategories, collectibles, dayPlanner, recurringTasks, dailyEffort, studies, links,
-                linkCategories, blurFinances, fantasyData, apuntes,
+                linkCategories, blurFinances, apuntes,
                 exportedAt: new Date().toISOString()
             };
         }
@@ -4555,7 +4535,6 @@
             if (data.links) links = data.links;
             if (data.linkCategories) linkCategories = data.linkCategories;
             if (typeof data.blurFinances === 'boolean') blurFinances = data.blurFinances;
-            if (data.fantasyData) { fantasyData = data.fantasyData; fantasyDataFromCloud = true; }
             if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
             filteredEntries = [...entries];
         }
@@ -4598,175 +4577,11 @@
         }
 
         // ============================================================
-        //  FANTASY EXPORT / IMPORT
-        // ============================================================
-        function exportFantasyData() {
-            const blob = new Blob([JSON.stringify(fantasyData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'fantasy_' + new Date().toISOString().slice(0, 10) + '.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast('Fantasy exportado');
-        }
-
-        function importFantasyData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (!data.usuarios || !data.transacciones) {
-                        showToast('El archivo no tiene el formato esperado de Fantasy', true);
-                        return;
-                    }
-                    fantasyData = data;
-                    recalcFantasyBalances();
-                    saveFantasyData();
-                    document.getElementById('content').innerHTML = renderFantasy();
-                    renderAllFantasyCharts();
-                    showToast('Fantasy importado correctamente');
-                } catch (err) {
-                    showToast('Error al importar el archivo de Fantasy', true);
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        }
-
-
-        // ============================================================
-        //  FANTASY TEXT IMPORT (paste block, from screenshot translation)
-        // ============================================================
-        function processFantasyTextImport() {
-            const ta = document.getElementById('fantasy-text-import');
-            const raw = ta.value.trim();
-            if (!raw) { showToast('Pega primero el texto a importar', true); return; }
-            const ensureUser = nombre => {
-                if (nombre !== 'LALIGA' && !fantasyData.usuarios.find(u => u.nombre === nombre)) {
-                    fantasyData.usuarios.push({ nombre, efectivo: 100000000, valor_plantilla: 100000000 });
-                }
-            };
-            const isDuplicate = t => fantasyData.transacciones.some(e => e.jugador === t.jugador &&
-                e.precio === t.precio && e.fecha === t.fecha && e.comprador === t.comprador &&
-                e.vendedor === t.vendedor);
-            let added = 0, users = 0, errors = 0, duplicates = 0, ignoradas = 0;
-            raw.split('\n').map(l => l.trim()).filter(Boolean).forEach((line, i) => {
-                // Operaciones tipo "(usuario) shielded (jugador)" no tienen ningún efecto
-                // económico (protección de cláusula): se ignoran sin contar como error.
-                if (/\bshielded\b/i.test(line)) { ignoradas++; return; }
-
-                const p = line.split('|').map(s => s.trim());
-                const tipo = (p[0] || '').toUpperCase();
-                if (tipo === 'NUEVO' && p.length >= 3) {
-                    const before = fantasyData.usuarios.length;
-                    ensureUser(p[2]);
-                    if (fantasyData.usuarios.length > before) users++;
-                } else if ((tipo === 'COMPRA' || tipo === 'VENTA') && p.length >= 5) {
-                    const precio = parseFloat(p[4].replace(/[^\d.-]/g, ''));
-                    if (isNaN(precio)) { errors++; return; }
-                    const nuevaTx = {
-                        jugador: p[3],
-                        precio,
-                        fecha: p[1],
-                        comprador: tipo === 'COMPRA' ? p[2] : 'LALIGA',
-                        vendedor: tipo === 'COMPRA' ? 'LALIGA' : p[2]
-                    };
-                    if (isDuplicate(nuevaTx)) { duplicates++; return; }
-                    ensureUser(p[2]);
-                    fantasyData.transacciones.push(Object.assign({
-                        id: 'tx_text_' + Date.now() + '_' + i,
-                        tipo: tipo === 'COMPRA' ? 'compra' : 'venta',
-                        gastoClausula: 0
-                    }, nuevaTx));
-                    added++;
-                } else if (tipo === 'TRASPASO' && p.length >= 6) {
-                    const precio = parseFloat(p[5].replace(/[^\d.-]/g, ''));
-                    if (isNaN(precio)) { errors++; return; }
-                    const nuevaTx = { jugador: p[4], precio, fecha: p[1], comprador: p[2], vendedor: p[3] };
-                    if (isDuplicate(nuevaTx)) { duplicates++; return; }
-                    ensureUser(p[2]);
-                    ensureUser(p[3]);
-                    fantasyData.transacciones.push(Object.assign({
-                        id: 'tx_text_' + Date.now() + '_' + i,
-                        tipo: 'compra',
-                        gastoClausula: 0
-                    }, nuevaTx));
-                    added++;
-                } else if (tipo === 'CLAUSULA' && p.length >= 5) {
-                    // Subida manual de cláusula: a diferencia de COMPRA/VENTA/
-                    // TRASPASO, el importe no viene dado — se calcula igual que
-                    // en la calculadora manual (openSquadClauseCalculator): la
-                    // mitad de la subida respecto al último valor conocido del
-                    // jugador en la plantilla de ese usuario.
-                    const usuario = p[2];
-                    const jugador = p[3];
-                    const nuevo = parseFloat(p[4].replace(/[^\d.-]/g, ''));
-                    if (isNaN(nuevo)) { errors++; return; }
-                    const squadEntry = getUserSquad(usuario).find(s => s.jugador === jugador);
-                    if (!squadEntry) { errors++; return; }
-                    const anterior = squadEntry.valorActual;
-                    const incremento = Math.max(0, (nuevo - anterior) / 2);
-                    const gastoTotal = squadEntry.gasto + incremento;
-                    if (incremento > 0) {
-                        const nuevaTx = { jugador, precio: incremento, fecha: p[1], comprador: usuario, vendedor: 'LALIGA' };
-                        if (!isDuplicate(nuevaTx)) {
-                            fantasyData.transacciones.push(Object.assign({
-                                id: 'tx_clausula_' + Date.now() + '_' + i,
-                                tipo: 'clausula',
-                                gastoClausula: 0
-                            }, nuevaTx));
-                            added++;
-                        } else { duplicates++; }
-                    }
-                    if (squadEntry.source === 'tx') {
-                        const tx = fantasyData.transacciones.find(t => t.id === squadEntry.refId);
-                        if (tx) { tx.clausulaValorActual = nuevo; tx.clausulaGasto = gastoTotal; }
-                    } else {
-                        const u = fantasyData.usuarios.find(x => x.nombre === usuario);
-                        const pj = u?.equipoInicial.find(x => x.id === squadEntry.refId);
-                        if (pj) { pj.valorActual = nuevo; pj.gasto = gastoTotal; }
-                    }
-                } else if (tipo === 'PREMIO' && p.length >= 5) {
-                    const precio = parseFloat(p[4].replace(/[^\d.-]/g, ''));
-                    if (isNaN(precio)) { errors++; return; }
-                    const jornada = p[3];
-                    const nuevaTx = { jugador: 'Premio jornada ' + jornada, precio, fecha: p[1], comprador: 'LALIGA', vendedor: p[2] };
-                    if (isDuplicate(nuevaTx)) { duplicates++; return; }
-                    ensureUser(p[2]);
-                    fantasyData.transacciones.push(Object.assign({
-                        id: 'tx_premio_' + Date.now() + '_' + i,
-                        tipo: 'premio',
-                        gastoClausula: 0
-                    }, nuevaTx));
-                    added++;
-                } else { errors++; }
-            });
-            recalcFantasyBalances();
-            saveFantasyData();
-            ta.value = '';
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            const summaryEl = document.getElementById('fantasy-import-summary');
-            if (summaryEl) {
-                summaryEl.innerHTML = `<strong>${added}</strong> operaciones y <strong>${users}</strong> usuarios nuevos importados` +
-                    (duplicates ? `, ${duplicates} duplicadas omitidas` : '') +
-                    (ignoradas ? `, ${ignoradas} líneas ignoradas` : '') +
-                    (errors ? `, <span style="color:#dc2626">${errors} líneas con error</span>` : '');
-            }
-        }
-
-        // ============================================================
         //  RENDER
         // ============================================================
         function render() {
             invalidateLinkableIndex();
             const content = document.getElementById('content');
-            if (currentView !== 'fantasy') document.body.classList.remove('fantasy-green-page');
             if (currentView === 'calendar') content.innerHTML = renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();
             else if (currentView === 'culture') content.innerHTML = renderCulture();
@@ -4781,8 +4596,7 @@
                 requestAnimationFrame(animateFinanceProChartPanel); }
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
             else if (currentView === 'graph') content.innerHTML = renderGraph();
-            else if (currentView === 'fantasy') { content.innerHTML = renderFantasy();
-                renderAllFantasyCharts(); } else if (currentView === 'vault') content.innerHTML = renderVault();
+            else if (currentView === 'vault') content.innerHTML = renderVault();
             else if (currentView === 'notes') content.innerHTML = renderNotes();
             else if (currentView === 'goals') content.innerHTML = renderGoals();
             else if (currentView === 'planner') content.innerHTML = renderPlanner();
@@ -4798,7 +4612,6 @@
                 loadSettingsSubscriptionInfo();
                 loadSettingsPushInfo(); }
             updateAddButton();
-            updateSidebarPrivacy();
             updateFabIcon();
 
             if(currentView==='finances' && financeSubView==='indexado') {
@@ -9345,7 +9158,7 @@
             reader.readAsText(file);
         }
 
-        // Mismo patrón que el importador de texto de Fantasy: líneas con
+        // Mismo patrón que otros importadores de texto de la app: líneas con
         // campos separados por "|", pensadas para pegar de golpe lo que
         // genere el prompt de importación de eventos (guardado en Ajustes →
         // Prompts guardados). Duplicados = mismo título y misma fecha ya
@@ -9852,7 +9665,7 @@
 
         function renderSettings() {
             const devStatus = devModeActive ? 'Activado' : 'Desactivado';
-            const devColor = devModeActive ? 'var(--fantasy-accent)' : 'var(--text-secondary)';
+            const devColor = devModeActive ? 'var(--accent-purple)' : 'var(--text-secondary)';
 
             return `
                 <div style="max-width:600px">
@@ -9896,7 +9709,7 @@
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                             <button class="btn-secondary" style="width:auto;color:${devColor}" onclick="toggleDeveloperMode()">⚙ Modo desarrollador: ${devStatus}</button>
                         </div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Activa el modo desarrollador para acceder a funciones ocultas (ej. Fantasy).</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Activa el modo desarrollador para acceder a funciones ocultas (ej. Vault).</div>
                     </div>
 
                     <div class="chart-container" style="margin-bottom:16px" id="settings-prompts-section">
@@ -14463,1726 +14276,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         // ============================================================
-        //  FANTASY
-        // ============================================================
-        let fantasyData = { usuarios: [], transacciones: [], jornadas: [], valorHistorico: [] };
-        // true cuando fantasyData procede de Supabase (loadData()) en vez de
-        // solo del localStorage de este dispositivo.
-        let fantasyDataFromCloud = false;
-        let fantasyChartInstance = null;
-        let patrimonyChartInstance = null;
-        let pointsChartInstance = null;
-        let economicChartInstance = null;
-
-        // Preferencia de tema visual de Fantasy (persistida en localStorage,
-        // independiente del tema general de la app).
-        let fantasyTheme = localStorage.getItem('fantasy_theme') || 'default';
-
-        // ------------------------------------------------------------
-        //  PRESUPUESTO PARA FICHAJES (simulador de "¿y si vendo a...?")
-        //  Estado puramente de pantalla: qué tarjetas están desplegadas y
-        //  qué jugadores están marcados como "a la venta" en la simulación.
-        //  No se guarda ni afecta a los datos reales — solo desaparece al
-        //  recargar, que es justo lo que se quiere de una simulación.
-        // ------------------------------------------------------------
-        let fantasyBudgetOpen = {};
-        let fantasyBudgetSelections = {};
-
-        // Presupuesto real para fichar, según permite el propio juego: tu
-        // efectivo más un 20% del valor de tu plantilla (puedes quedarte en
-        // negativo, pero nunca más allá de ese 20%).
-        function fantasyBudgetFor(efectivo, valorPlantilla) {
-            return efectivo + valorPlantilla * 0.2;
-        }
-
-        function toggleFantasyBudgetCard(nombre) {
-            fantasyBudgetOpen[nombre] = !fantasyBudgetOpen[nombre];
-            render();
-        }
-
-        function toggleFantasyBudgetPlayer(nombre, refId) {
-            if (!fantasyBudgetSelections[nombre]) fantasyBudgetSelections[nombre] = new Set();
-            const set = fantasyBudgetSelections[nombre];
-            if (set.has(refId)) set.delete(refId); else set.add(refId);
-            render();
-        }
-
-        function renderFantasyBudgetSection() {
-            if (!fantasyData.usuarios.length) return '';
-            return `
-                <div style="margin-top:16px">
-                    <div class="fantasy-section-title" style="margin-bottom:8px">Presupuesto para fichajes</div>
-                    <div style="font-size:11px;color:var(--fx-text-secondary);margin-bottom:10px">
-                        Efectivo + 20% del valor de la plantilla — así calcula el propio juego cuánto puedes gastar
-                        (puedes quedarte en negativo, pero nunca más allá de ese 20%). Despliega a un usuario y marca
-                        jugadores como "a la venta" para ver cómo cambiaría su presupuesto sin vender nada de verdad.
-                    </div>
-                    <div class="fantasy-budget-grid">
-                        ${fantasyData.usuarios.map(u => renderFantasyBudgetCard(u)).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderFantasyBudgetCard(u) {
-            const squad = getUserSquad(u.nombre);
-            const selected = fantasyBudgetSelections[u.nombre] || new Set();
-            const sumSelected = squad
-                .filter(s => selected.has(s.refId))
-                .reduce((sum, s) => sum + (s.valorActual || 0), 0);
-
-            const presupuestoBase = fantasyBudgetFor(u.efectivo, u.valor_plantilla);
-            const efectivoSim = u.efectivo + sumSelected;
-            const plantillaSim = Math.max(0, u.valor_plantilla - sumSelected);
-            const presupuestoSim = fantasyBudgetFor(efectivoSim, plantillaSim);
-            const hayCambios = selected.size > 0;
-            const isOpen = !!fantasyBudgetOpen[u.nombre];
-            const color = fantasyUserColor(u.nombre);
-            const diferencia = presupuestoSim - presupuestoBase;
-
-            return `
-                <div class="fantasy-budget-card" style="border-top:3px solid ${color}">
-                    <div class="fantasy-budget-head" onclick="toggleFantasyBudgetCard('${u.nombre}')">
-                        <div style="display:flex;align-items:center;gap:8px;min-width:0">
-                            <div class="user-avatar" style="background:${color};width:28px;height:28px;font-size:11px;flex-shrink:0">${fantasyInitials(u.nombre)}</div>
-                            <span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(u.nombre)}</span>
-                        </div>
-                        <span style="font-size:10px;color:var(--fx-text-secondary);flex-shrink:0">${isOpen ? '▲' : '▼'} ${squad.length} jugador${squad.length === 1 ? '' : 'es'}</span>
-                    </div>
-                    <div class="fantasy-budget-amount ${presupuestoBase < 0 ? 'fantasy-negative' : ''}">${presupuestoBase.toLocaleString('es-ES')}€</div>
-                    ${hayCambios ? `
-                        <div class="fantasy-budget-sim ${presupuestoSim < 0 ? 'fantasy-negative' : ''}">
-                            Vendiendo ${selected.size}: ${presupuestoSim.toLocaleString('es-ES')}€
-                            <span style="color:${diferencia >= 0 ? '#16a34a' : '#dc2626'}">(${diferencia >= 0 ? '+' : ''}${diferencia.toLocaleString('es-ES')}€)</span>
-                        </div>
-                    ` : ''}
-                    ${isOpen ? `
-                        <div class="fantasy-budget-squad">
-                            ${squad.length ? squad.map(s => `
-                                <label class="fantasy-budget-player-row">
-                                    <input type="checkbox" ${selected.has(s.refId) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleFantasyBudgetPlayer('${u.nombre}','${s.refId}')">
-                                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(s.jugador)}</span>
-                                    <span style="color:var(--fx-text-secondary);flex-shrink:0">${(s.valorActual || 0).toLocaleString('es-ES')}€</span>
-                                </label>
-                            `).join('') : '<div style="font-size:11px;color:var(--fx-text-secondary);padding:6px 0">Sin jugadores en la plantilla.</div>'}
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        }
-
-        function toggleFantasyTheme() {
-            fantasyTheme = fantasyTheme === 'green' ? 'default' : 'green';
-            localStorage.setItem('fantasy_theme', fantasyTheme);
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-        }
-
-        // Usuarios ocultos (deseleccionados) en las gráficas de puntos y de
-        // evolución económica; cada una mantiene su propia selección. Se
-        // guarda en fantasyData.hiddenChartUsers para que la selección viaje
-        // con el resto de datos de Fantasy y siga así al volver a entrar.
-        let fantasyHiddenUsers = { points: new Set(), economic: new Set() };
-
-        function hydrateFantasyHiddenUsers() {
-            const saved = fantasyData.hiddenChartUsers || {};
-            fantasyHiddenUsers = {
-                points: new Set(Array.isArray(saved.points) ? saved.points : []),
-                economic: new Set(Array.isArray(saved.economic) ? saved.economic : [])
-            };
-        }
-
-        function persistFantasyHiddenUsers() {
-            fantasyData.hiddenChartUsers = {
-                points: Array.from(fantasyHiddenUsers.points),
-                economic: Array.from(fantasyHiddenUsers.economic)
-            };
-            saveFantasyData();
-        }
-
-        function toggleFantasyChartUser(chartKey, nombre) {
-            const set = fantasyHiddenUsers[chartKey];
-            if (set.has(nombre)) set.delete(nombre); else set.add(nombre);
-            persistFantasyHiddenUsers();
-            if (chartKey === 'points') renderPointsChart(); else renderEconomicEvolutionChart();
-            const chipsEl = document.getElementById('fantasy-chips-' + chartKey);
-            if (chipsEl) chipsEl.innerHTML = renderFantasyUserChips(chartKey);
-        }
-
-        function resetFantasyChartUsers(chartKey) {
-            fantasyHiddenUsers[chartKey].clear();
-            persistFantasyHiddenUsers();
-            if (chartKey === 'points') renderPointsChart(); else renderEconomicEvolutionChart();
-            const chipsEl = document.getElementById('fantasy-chips-' + chartKey);
-            if (chipsEl) chipsEl.innerHTML = renderFantasyUserChips(chartKey);
-        }
-
-        function renderFantasyUserChips(chartKey) {
-            const allOff = fantasyData.usuarios.length > 0 && fantasyHiddenUsers[chartKey].size === 0;
-            return `
-                <button class="fantasy-user-chip all ${!allOff ? 'off' : ''}" style="--chip-color:var(--fx-text-secondary)" onclick="resetFantasyChartUsers('${chartKey}')">Todos</button>
-                ${fantasyData.usuarios.map(u => {
-                    const hidden = fantasyHiddenUsers[chartKey].has(u.nombre);
-                    return `<button class="fantasy-user-chip ${hidden ? 'off' : ''}" style="--chip-color:${fantasyUserColor(u.nombre)}" onclick="toggleFantasyChartUser('${chartKey}','${u.nombre}')">${escapeHtml(u.nombre)}</button>`;
-                }).join('')}
-            `;
-        }
-
-        // Puntos acumulados totales de un usuario a lo largo de todas las jornadas.
-        function fantasyTotalPoints(nombre) {
-            return fantasyData.jornadas.reduce((sum, j) => sum + (j.puntos[nombre] || 0), 0);
-        }
-
-        // Panel a la derecha de la gráfica de puntos: cuánto por delante/detrás
-        // está "Bordalostias" de cada rival, en puntos acumulados.
-        const FANTASY_ME = 'Bordalostias';
-        function renderFantasyPointsGap() {
-            const meExists = fantasyData.usuarios.some(u => u.nombre === FANTASY_ME);
-            if (!meExists || !fantasyData.jornadas.length) {
-                return `<div class="fantasy-empty-state" style="padding:12px 4px">Sin datos suficientes</div>`;
-            }
-            const miTotal = fantasyTotalPoints(FANTASY_ME);
-            const rows = fantasyData.usuarios
-                .filter(u => u.nombre !== FANTASY_ME)
-                .map(u => ({ nombre: u.nombre, diff: miTotal - fantasyTotalPoints(u.nombre) }))
-                .sort((a, b) => b.diff - a.diff);
-            return `
-                <div style="font-size:10px;font-weight:600;color:var(--fx-text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Distancia vs. ${escapeHtml(FANTASY_ME)}</div>
-                <div style="display:flex;flex-direction:column;gap:7px">
-                    ${rows.map(r => `
-                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px">
-                            <span style="color:var(--fx-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(r.nombre)}</span>
-                            <span style="font-weight:600;white-space:nowrap;color:${r.diff >= 0 ? '#16a34a' : '#dc2626'}">${r.diff >= 0 ? '+' : ''}${r.diff} pts</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        // Mostrar/ocultar la tabla de beneficios por reventa (desplegable).
-        let fantasyShowProfitTable = false;
-        function toggleFantasyProfitTable() {
-            fantasyShowProfitTable = !fantasyShowProfitTable;
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-        }
-
-        // Convierte 'YYYY-MM-DD' o 'YYYY-MM-DD HH:MM' en un timestamp comparable.
-        // Ordenar por string (localeCompare) fallaba en cuanto se mezclaban fechas
-        // con y sin hora, o si faltaba el campo: por eso el timeline no siempre
-        // mostraba las operaciones más recientes arriba.
-        // Las fechas pegadas desde el texto de importación vienen en formato
-        // DD/MM/AAAA (el que usa el propio juego), mientras que el resto de
-        // fechas de la app ya están en ISO (AAAA-MM-DD). new Date() no sabe
-        // parsear "30/08/2026" de forma fiable (en muchos motores devuelve
-        // Invalid Date), así que sin este caso especial todas esas fechas
-        // valían 0 y el orden cronológico entre transacciones quedaba mal —
-        // esto es lo que hacía que un jugador vendido y vuelto a comprar (o
-        // viceversa) pudiera aparecer con el estado equivocado en la plantilla.
-        function fantasyDateValue(fecha) {
-            if (!fecha) return 0;
-            const partes = String(fecha).trim().split(' ');
-            const fechaParte = partes[0];
-            const horaParte = /^\d{2}:\d{2}/.test(partes[1] || '') ? partes[1] + ':00' : '00:00:00';
-
-            const dmy = fechaParte.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-            if (dmy) {
-                const [, d, m, y] = dmy;
-                const iso = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${horaParte}`;
-                const dt = new Date(iso);
-                return isNaN(dt) ? 0 : dt.getTime();
-            }
-
-            const normalized = /\d{2}:\d{2}/.test(fecha) ? fecha.replace(' ', 'T') : fecha + 'T00:00:00';
-            const d = new Date(normalized);
-            return isNaN(d) ? 0 : d.getTime();
-        }
-
-        // Color estable por usuario (mismo índice que en fantasyData.usuarios),
-        // usado tanto en las tarjetas/avatares como en las 4 gráficas para que
-        // un mismo usuario se identifique siempre con el mismo color — salvo
-        // cuando su efectivo está en números rojos (rojo) o por debajo del
-        // umbral de aviso (amarillo), en cuyo caso ese estado manda en todas
-        // partes donde aparezca ese usuario. La paleta evita a propósito los
-        // tonos rojo/ámbar/naranja para que nunca se confunda un color de
-        // identidad con el aviso de efectivo bajo o negativo.
-        const FANTASY_PALETTE = ['#3b82f6', '#ec4899', '#8B5CF6', '#14b8a6', '#22c55e', '#06b6d4', '#a855f7', '#0ea5e9'];
-        const FANTASY_LOW_CASH_COLOR_THRESHOLD = 15000000;
-        function fantasyUserColor(nombre) {
-            const idx = fantasyData.usuarios.findIndex(u => u.nombre === nombre);
-            const u = idx >= 0 ? fantasyData.usuarios[idx] : null;
-            if (u) {
-                if (u.efectivo < 0) return '#dc2626';
-                if (u.efectivo < FANTASY_LOW_CASH_COLOR_THRESHOLD) return '#f59e0b';
-            }
-            return FANTASY_PALETTE[(idx >= 0 ? idx : 0) % FANTASY_PALETTE.length];
-        }
-
-        // Formatea cifras grandes de forma compacta (18,2M€ / 950K€) para que las
-        // tarjetas no se vean saturadas de dígitos; el valor exacto va en el title.
-        function fantasyAbbreviate(value) {
-            const abs = Math.abs(value);
-            const sign = value < 0 ? '-' : '';
-            if (abs >= 1000000) return sign + (abs / 1000000).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + 'M€';
-            if (abs >= 1000) return sign + (abs / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + 'K€';
-            return sign + abs.toLocaleString('es-ES') + '€';
-        }
-
-        function fantasyInitials(nombre) {
-            const clean = (nombre || '').trim();
-            if (!clean) return '?';
-            const parts = clean.split(/[\s_]+/).filter(Boolean);
-            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-            return clean.slice(0, 2).toUpperCase();
-        }
-
-        function loadFantasyData() {
-            // Si Supabase ya nos dio datos de Fantasy en loadData(), esos son
-            // la fuente de verdad (viajan entre dispositivos); el localStorage
-            // solo se usa como caché offline cuando aún no hay nada en la nube.
-            if (fantasyDataFromCloud) return true;
-            try {
-                const stored = localStorage.getItem('fantasy_data');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    fantasyData = parsed;
-                    if (!fantasyData.jornadas) fantasyData.jornadas = [];
-                    if (!fantasyData.valorHistorico) fantasyData.valorHistorico = [];
-                    hydrateFantasyHiddenUsers();
-                    return true;
-                }
-            } catch (e) { console.error('Error cargando datos de Fantasy:', e); }
-            return false;
-        }
-
-        function saveFantasyData() {
-            try {
-                localStorage.setItem('fantasy_data', JSON.stringify(fantasyData));
-                fantasyDataFromCloud = true;
-                if (typeof saveData === 'function') saveData();
-                return true;
-            } catch (e) {
-                console.error('Error guardando datos de Fantasy:', e);
-                return false;
-            }
-        }
-
-        function getDefaultFantasyData() {
-            return { usuarios: [], transacciones: [], jornadas: [], valorHistorico: [] };
-        }
-
-        function snapshotValoresActuales() {
-            const today = todayISO();
-            fantasyData.usuarios.forEach(u => {
-                const valorTotal = u.efectivo + u.valor_plantilla;
-                const existing = fantasyData.valorHistorico.find(s => s.fecha === today && s.nombre === u.nombre);
-                if (existing) {
-                    existing.valorTotal = valorTotal;
-                } else {
-                    fantasyData.valorHistorico.push({ fecha: today, nombre: u.nombre, valorTotal: valorTotal });
-                }
-            });
-            fantasyData.valorHistorico.sort((a, b) => a.fecha.localeCompare(b.fecha));
-        }
-
-        function recalcFantasyBalances() {
-            const INITIAL_CASH = 100000000;
-            const INITIAL_TEAM = 100000000;
-
-            fantasyData.usuarios.forEach(u => {
-                u.efectivo = INITIAL_CASH;
-                u.valor_plantilla = (typeof u.valor_plantilla_manual === 'number') ? u.valor_plantilla_manual :
-                    INITIAL_TEAM;
-            });
-
-            fantasyData.transacciones.forEach(tx => {
-                const comprador = fantasyData.usuarios.find(u => u.nombre === tx.comprador);
-                const vendedor = fantasyData.usuarios.find(u => u.nombre === tx.vendedor);
-
-                if (comprador && comprador.nombre !== 'LALIGA') {
-                    comprador.efectivo -= tx.precio;
-                }
-                if (vendedor && vendedor.nombre !== 'LALIGA') {
-                    vendedor.efectivo += tx.precio;
-                }
-            });
-
-            snapshotValoresActuales();
-        }
-
-        // ============================================================
-        //  FANTASY: ADD USER MANUALLY (6.1)
-        // ============================================================
-        function addFantasyUserManually() {
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">Añadir usuario</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">El nombre debe coincidir exactamente (mayúsculas/minúsculas incluidas) con el que aparece en las transacciones.</div>
-                <div class="modal-label">Nombre de usuario</div>
-                <input id="new-fantasy-user-name" class="modal-input" placeholder="Ej: VEZAMAN">
-                <div id="new-fantasy-user-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmAddFantasyUser()">Añadir</button>
-            `);
-        }
-
-        function confirmAddFantasyUser() {
-            const name = document.getElementById('new-fantasy-user-name').value.trim();
-            const errorEl = document.getElementById('new-fantasy-user-error');
-            if (!name) { errorEl.textContent = 'Escribe un nombre'; return; }
-            if (fantasyData.usuarios.find(u => u.nombre === name)) {
-                errorEl.textContent = 'Ya existe un usuario con ese nombre exacto';
-                return;
-            }
-            fantasyData.usuarios.push({ nombre: name, efectivo: 100000000, valor_plantilla: 100000000 });
-            saveFantasyData();
-            closeModal();
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast('Usuario "' + name + '" añadido');
-        }
-
-        // ============================================================
-        //  FANTASY: RECOMPENSA DIARIA POR VÍDEO (+100.000€)
-        //  Se puede otorgar una vez al día por usuario, seleccionando a quién.
-        // ============================================================
-        function openVideoRewardModal() {
-            const today = todayISO();
-            const alreadyGranted = new Set(
-                fantasyData.transacciones
-                    .filter(t => t.tipo === 'video' && t.fecha === today)
-                    .map(t => t.vendedor)
-            );
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">Recompensa por vídeo (+100.000€)</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Selecciona quién ha visto hoy el vídeo opcional del juego. Cada usuario solo puede recibirla una vez al día.</div>
-                <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:280px;overflow-y:auto">
-                    ${fantasyData.usuarios.length ? fantasyData.usuarios.map(u => {
-                        const granted = alreadyGranted.has(u.nombre);
-                        return `
-                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;${granted ? 'opacity:.5' : 'cursor:pointer'}">
-                            <input type="checkbox" class="video-reward-check" value="${escapeHtml(u.nombre)}" ${granted ? 'disabled checked' : ''}>
-                            ${escapeHtml(u.nombre)}${granted ? ' <span style="font-size:11px">(ya otorgado hoy)</span>' : ''}
-                        </label>`;
-                    }).join('') : '<div style="font-size:12px;color:var(--text-secondary)">Aún no hay usuarios en Fantasy</div>'}
-                </div>
-                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmVideoReward()">Otorgar 100.000€</button>
-            `);
-        }
-
-        function confirmVideoReward() {
-            const today = todayISO();
-            const checked = Array.from(document.querySelectorAll('.video-reward-check:not(:disabled):checked')).map(el => el.value);
-            if (!checked.length) { showToast('Selecciona al menos un usuario', true); return; }
-
-            checked.forEach(nombre => {
-                fantasyData.transacciones.push({
-                    id: 'tx_video_' + Date.now() + '_' + nombre,
-                    tipo: 'video',
-                    jugador: 'Recompensa por vídeo',
-                    precio: 100000,
-                    fecha: today,
-                    comprador: 'LALIGA',
-                    vendedor: nombre,
-                    gastoClausula: 0
-                });
-            });
-
-            recalcFantasyBalances();
-            saveFantasyData();
-            closeModal();
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast(`Recompensa otorgada a ${checked.length} usuario${checked.length === 1 ? '' : 's'}`);
-        }
-
-        // ============================================================
-        //  FANTASY: EDIT TEMPLATE VALUE (6.2)
-        // ============================================================
-        function editTemplateValue(nombre) {
-            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
-            if (!u) return;
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">Editar valor de plantilla</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">${escapeHtml(nombre)} · manual, no se ve afectado por compras/ventas</div>
-                <input type="number" id="template-value-input" class="modal-input" value="${u.valor_plantilla}" step="100000"
-                    style="font-size:20px;font-weight:700;text-align:center"
-                    onkeydown="if(event.key==='Enter'){event.preventDefault();confirmEditTemplateValue('${nombre}');}">
-                <div style="display:flex;gap:6px;justify-content:center;margin:10px 0 16px">
-                    <button class="btn-secondary" style="width:auto;padding:6px 10px;font-size:12px" onclick="adjustTemplateValue(-5000000,'${nombre}')">-5M</button>
-                    <button class="btn-secondary" style="width:auto;padding:6px 10px;font-size:12px" onclick="adjustTemplateValue(-1000000,'${nombre}')">-1M</button>
-                    <button class="btn-secondary" style="width:auto;padding:6px 10px;font-size:12px" onclick="adjustTemplateValue(1000000,'${nombre}')">+1M</button>
-                    <button class="btn-secondary" style="width:auto;padding:6px 10px;font-size:12px" onclick="adjustTemplateValue(5000000,'${nombre}')">+5M</button>
-                </div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Valor total resultante: <span id="template-value-total">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</span></div>
-                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmEditTemplateValue('${nombre}')">Guardar</button>
-            `);
-            setTimeout(() => document.getElementById('template-value-input')?.select(), 50);
-        }
-
-        function adjustTemplateValue(delta, nombre) {
-            const input = document.getElementById('template-value-input');
-            const totalEl = document.getElementById('template-value-total');
-            if (!input) return;
-            const newValue = (parseFloat(input.value) || 0) + delta;
-            input.value = newValue;
-            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
-            if (totalEl && u) totalEl.textContent = (u.efectivo + newValue).toLocaleString('es-ES') + '€';
-        }
-
-        function confirmEditTemplateValue(nombre) {
-            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
-            if (!u) return;
-            const value = parseFloat(document.getElementById('template-value-input').value);
-            if (isNaN(value)) { showToast('Introduce un valor numérico', true); return; }
-            u.valor_plantilla_manual = value;
-            recalcFantasyBalances();
-            saveFantasyData();
-            closeModal();
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast('Valor de plantilla actualizado');
-        }
-
-        // ============================================================
-        //  FANTASY: CALCULATE PLAYER PROFITS (6.4)
-        // ============================================================
-        function calculatePlayerProfits(nombre) {
-            const txsByPlayer = {};
-            fantasyData.transacciones.forEach(tx => {
-                if (tx.comprador !== nombre && tx.vendedor !== nombre) return;
-                if (!txsByPlayer[tx.jugador]) txsByPlayer[tx.jugador] = [];
-                txsByPlayer[tx.jugador].push(tx);
-            });
-
-            const profits = [];
-            Object.entries(txsByPlayer).forEach(([jugador, txs]) => {
-                const sorted = txs.slice().sort((a, b) => fantasyDateValue(a.fecha) - fantasyDateValue(b.fecha));
-                let openBuy = null;
-                sorted.forEach(tx => {
-                    // No usamos únicamente tx.tipo, ya que en un TRASPASO (compraventa entre
-                    // usuarios, ninguno "LALIGA") el lado del vendedor no debe perderse aunque
-                    // el campo tipo esté etiquetado como "compra" (dato antiguo o traspaso).
-                    const isSystemTx = tx.tipo === 'clausula' || tx.tipo === 'premio' || tx.tipo === 'video';
-                    const boughtByUser = !isSystemTx && tx.comprador === nombre;
-                    const soldByUser = !isSystemTx && tx.vendedor === nombre;
-
-                    if (boughtByUser) {
-                        openBuy = tx;
-                    } else if (soldByUser && openBuy) {
-                        profits.push({
-                            jugador,
-                            fechaCompra: openBuy.fecha,
-                            fechaVenta: tx.fecha,
-                            precioCompra: openBuy.precio,
-                            precioVenta: tx.precio,
-                            beneficio: tx.precio - openBuy.precio,
-                            sinCompraRegistrada: false
-                        });
-                        openBuy = null;
-                    } else if (soldByUser && !openBuy) {
-                        profits.push({
-                            jugador,
-                            fechaVenta: tx.fecha,
-                            precioVenta: tx.precio,
-                            sinCompraRegistrada: true,
-                            beneficio: null
-                        });
-                    }
-                });
-            });
-
-            return profits;
-        }
-
-        // ============================================================
-        //  FANTASY: PLANTILLA ACTUAL POR USUARIO (6.4b)
-        // ============================================================
-        // Un jugador pertenece a "nombre" si, siguiendo sus transacciones en
-        // orden cronológico (misma lógica que calculatePlayerProfits: premio/
-        // clausula/video no cuentan como compra o venta), la última operación
-        // que le afecta es una compra suya sin venta posterior — o si nunca
-        // hubo transacción para ese jugador pero está en su equipo inicial
-        // (jugadores con los que empezó la temporada, sin compra registrada).
-        function getUserSquad(nombre) {
-            const u = fantasyData.usuarios.find(x => x.nombre === nombre);
-            if (!u) return [];
-            if (!Array.isArray(u.equipoInicial)) u.equipoInicial = [];
-            if (!Array.isArray(u.plantillaOcultos)) u.plantillaOcultos = [];
-
-            const txsByPlayer = {};
-            fantasyData.transacciones.forEach(tx => {
-                if (tx.comprador !== nombre && tx.vendedor !== nombre) return;
-                if (!txsByPlayer[tx.jugador]) txsByPlayer[tx.jugador] = [];
-                txsByPlayer[tx.jugador].push(tx);
-            });
-
-            const squad = [];
-            Object.entries(txsByPlayer).forEach(([jugador, txs]) => {
-                const sorted = txs.slice().sort((a, b) => fantasyDateValue(a.fecha) - fantasyDateValue(b.fecha));
-                let openBuy = null;
-                sorted.forEach(tx => {
-                    const isSystemTx = tx.tipo === 'clausula' || tx.tipo === 'premio' || tx.tipo === 'video';
-                    if (!isSystemTx && tx.comprador === nombre) openBuy = tx;
-                    else if (!isSystemTx && tx.vendedor === nombre) openBuy = null;
-                });
-                // "Borrar" un jugador de la plantilla NUNCA toca la transacción de
-                // compra real (eso movería dinero de verdad). Solo se anota su id
-                // en plantillaOcultos para dejar de mostrarlo aquí; si algún día
-                // vuelve a comprarse, la nueva transacción tiene otro id y no
-                // sigue oculta.
-                if (openBuy && !u.plantillaOcultos.includes(openBuy.id)) {
-                    squad.push({
-                        jugador,
-                        source: 'tx',
-                        refId: openBuy.id,
-                        fecha: openBuy.fecha,
-                        valorInicial: (typeof openBuy.clausulaValorInicial === 'number') ? openBuy.clausulaValorInicial : openBuy.precio,
-                        valorActual: (typeof openBuy.clausulaValorActual === 'number') ? openBuy.clausulaValorActual : openBuy.precio,
-                        gasto: openBuy.clausulaGasto || 0
-                    });
-                }
-            });
-
-            u.equipoInicial.forEach(p => {
-                if (txsByPlayer[p.jugador]) return; // ya tiene transacciones propias: no es "inicial" a estas alturas
-                squad.push({
-                    jugador: p.jugador,
-                    source: 'inicial',
-                    refId: p.id,
-                    fecha: null,
-                    valorInicial: p.valorInicial,
-                    valorActual: (typeof p.valorActual === 'number') ? p.valorActual : p.valorInicial,
-                    gasto: p.gasto || 0
-                });
-            });
-
-            return squad.sort((a, b) => a.jugador.localeCompare(b.jugador, 'es'));
-        }
-
-        function showFantasySquad(nombre) {
-            const squad = getUserSquad(nombre);
-            const html = `
-                <div class="modal-title" style="color:var(--fantasy-accent)">Plantilla de ${escapeHtml(nombre)}</div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">${squad.length} jugador${squad.length === 1 ? '' : 'es'}. Incluye compras sin vender y el equipo inicial.</div>
-
-                <div style="display:flex;gap:6px;margin-bottom:14px">
-                    <input id="squad-add-player" class="modal-input" style="margin:0" placeholder="Jugador (equipo inicial)">
-                    <input id="squad-add-value" type="number" class="modal-input" style="margin:0;max-width:130px" placeholder="Valor inicial" step="0.01">
-                    <button class="btn-secondary" style="width:auto;flex-shrink:0" onclick="addInitialSquadPlayer('${nombre}')">+ Añadir</button>
-                </div>
-
-                <div id="squad-list-${nombre}" style="max-height:360px;overflow-y:auto">
-                    ${renderFantasySquadList(nombre, squad)}
-                </div>
-            `;
-            showModal(html);
-        }
-
-        function renderFantasySquadList(nombre, squad) {
-            if (!squad.length) return '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin jugadores en plantilla</div>';
-            return squad.map(p => `
-                <div class="fantasy-tx-item">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                        <span style="font-weight:600">${escapeHtml(p.jugador)}</span>
-                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px;color:#dc2626;border-color:#dc2626" title="Borrar jugador" onclick="confirmDeleteSquadPlayer('${nombre}', '${escapeHtml(p.jugador).replace(/'/g, "\\'")}', '${p.source}', '${p.refId}')">✕</button>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-                        <span style="font-size:11px;color:var(--text-secondary)">
-                            Valor: ${p.valorActual.toLocaleString('es-ES')}€
-                            ${p.gasto > 0 ? `<span style="color:var(--fantasy-accent);font-weight:600"> · Cláusula: ${p.gasto.toLocaleString('es-ES')}€</span>` : ''}
-                        </span>
-                        <button class="btn-secondary" style="padding:2px 10px;font-size:10px" onclick="openSquadClauseCalculator('${nombre}', '${escapeHtml(p.jugador).replace(/'/g, "\\'")}', '${p.source}', '${p.refId}')">Cláusula</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function refreshFantasySquadModal(nombre) {
-            const list = document.getElementById('squad-list-' + nombre);
-            if (list) list.innerHTML = renderFantasySquadList(nombre, getUserSquad(nombre));
-        }
-
-        function addInitialSquadPlayer(nombre) {
-            const u = fantasyData.usuarios.find(x => x.nombre === nombre);
-            if (!u) return;
-            const nameInput = document.getElementById('squad-add-player');
-            const valueInput = document.getElementById('squad-add-value');
-            const jugador = nameInput?.value.trim();
-            const valor = parseFloat(valueInput?.value);
-            if (!jugador) { showToast('Escribe el nombre del jugador', true); return; }
-            if (isNaN(valor) || valor < 0) { showToast('Introduce un valor inicial válido', true); return; }
-            if (!Array.isArray(u.equipoInicial)) u.equipoInicial = [];
-            u.equipoInicial.push({ id: 'inicial_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), jugador, valorInicial: valor });
-            saveFantasyData();
-            nameInput.value = '';
-            valueInput.value = '';
-            refreshFantasySquadModal(nombre);
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast('Jugador añadido a la plantilla inicial');
-        }
-
-        // Borrar un jugador de la plantilla es una acción solo visual: nunca
-        // borra ni modifica una transacción real ni el efectivo del usuario
-        // (eso causó un descuadre real de saldo — un jugador "eliminado" así
-        // hacía desaparecer su compra y el dinero volvía a aparecer como
-        // disponible). Si el jugador viene de una compra, simplemente se
-        // apunta su id como oculto; si viene del equipo inicial (sin
-        // transacción ni dinero de por medio), sí se quita del todo porque
-        // ahí no hay ningún movimiento económico que proteger.
-        function confirmDeleteSquadPlayer(nombre, jugador, source, refId) {
-            if (!confirm(`¿Seguro que quieres borrar a ${jugador} de la plantilla? Esto no afecta a ninguna transacción ni a tu efectivo.`)) return;
-            const u = fantasyData.usuarios.find(x => x.nombre === nombre);
-            if (!u) return;
-            if (source === 'tx') {
-                if (!Array.isArray(u.plantillaOcultos)) u.plantillaOcultos = [];
-                if (!u.plantillaOcultos.includes(refId)) u.plantillaOcultos.push(refId);
-            } else {
-                u.equipoInicial = (u.equipoInicial || []).filter(p => p.id !== refId);
-            }
-            saveFantasyData();
-            refreshFantasySquadModal(nombre);
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast('Jugador quitado de la plantilla');
-        }
-
-        // Calculadora de cláusula: el juego duplica en el valor de mercado lo
-        // que se gasta en subir una cláusula (gastas 1M, el valor sube 2M). El
-        // gasto se acumula entre usos: "Valor anterior" viene precargado con
-        // el último valor que Bitácora tenía registrado (editable, por si ese
-        // valor subió por otro motivo y no quieres que cuente como cláusula),
-        // y "Valor nuevo" es lo que ves ahora en el juego. Solo la diferencia
-        // de ESTA subida se suma al total ya gastado — no hay que llevar la
-        // cuenta manualmente de cada subida por separado.
-        // ------------------------------------------------------------
-        //  CONSULTA EN DIRECTO A LALIGA FANTASY (catálogo + cotización
-        //  histórica pública, vía la función de Supabase "laliga-proxy" —
-        //  ver supabase-edge-function-laliga-proxy.ts). Solo lectura, sin
-        //  sesión de LaLiga: nada de esto necesita ni guarda credenciales.
-        // ------------------------------------------------------------
-        let _laligaCatalogCache = null;
-        let _laligaCatalogCacheAt = 0;
-        const _laligaHistoryCache = {};
-        const LALIGA_CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
-
-        async function laligaProxyFetch(params) {
-            const url = `${SUPABASE_URL}/functions/v1/laliga-proxy?${new URLSearchParams(params)}`;
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
-            if (!res.ok) throw new Error(`laliga-proxy respondió ${res.status}`);
-            return res.json();
-        }
-
-        async function getLaligaCatalog() {
-            const now = Date.now();
-            if (_laligaCatalogCache && (now - _laligaCatalogCacheAt) < LALIGA_CATALOG_TTL_MS) return _laligaCatalogCache;
-            const data = await laligaProxyFetch({ type: 'players' });
-            _laligaCatalogCache = data;
-            _laligaCatalogCacheAt = now;
-            return data;
-        }
-
-        async function getLaligaHistory(playerId) {
-            if (_laligaHistoryCache[playerId]) return _laligaHistoryCache[playerId];
-            const data = await laligaProxyFetch({ type: 'market-value', playerId });
-            _laligaHistoryCache[playerId] = data;
-            return data;
-        }
-
-        // Empareja el nombre tal como está guardado en tu plantilla ("jugador")
-        // con el "nickname" del catálogo real. Compara sin acentos/mayúsculas
-        // e ignora espacios de más: los nombres de LaLiga y los que se pegan
-        // desde capturas no siempre coinciden carácter a carácter.
-        function laligaFindPlayerByName(catalog, nombreJugador) {
-            const norm = s => stripAccents(String(s || '').toLowerCase().trim()).replace(/\s+/g, ' ');
-            const target = norm(nombreJugador);
-            if (!target) return null;
-            let match = catalog.find(p => norm(p.nickname) === target);
-            if (match) return match;
-            match = catalog.find(p => norm(p.nickname).includes(target) || target.includes(norm(p.nickname)));
-            return match || null;
-        }
-
-        // Últimos N dígitos como cadena, para comparar "terminan igual".
-        function _trailingDigits(value, n) {
-            return String(Math.round(value)).padStart(n, '0').slice(-n);
-        }
-
-        // Busca, en el histórico real de cotización del jugador, el día más
-        // reciente cuyo valor sea MENOR que la cláusula actual y comparta
-        // sus últimas cifras con ella — señal de que esa cláusula se generó
-        // sumando una cantidad redonda al valor natural de ESE día concreto.
-        // Devuelve { fecha, valor } o null si no hay ninguna coincidencia
-        // razonablemente segura.
-        function laligaFindClauseBaseline(history, clauseActual, digits = 5) {
-            const target = _trailingDigits(clauseActual, digits);
-            const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date));
-            for (const point of sorted) {
-                if (point.marketValue >= clauseActual) continue;
-                if (_trailingDigits(point.marketValue, digits) === target) {
-                    return { fecha: point.date.slice(0, 10), valor: point.marketValue };
-                }
-            }
-            return null;
-        }
-
-        // Guarda el resultado de la última búsqueda para que el botón "Ver
-        // histórico completo" pueda abrir el popup sin volver a consultar
-        // la API (y para poder marcar en la tabla el día encontrado).
-        let _lastClauseSearchContext = null;
-
-        async function buscarClausulaEnHistorico(nombre, jugador) {
-            const btn = document.getElementById('squad-clause-buscar-btn');
-            const status = document.getElementById('squad-clause-buscar-status');
-            const nuevoInput = document.getElementById('squad-clause-nuevo');
-            const anteriorInput = document.getElementById('squad-clause-anterior');
-            const nuevo = parseFloat(nuevoInput?.value);
-            if (isNaN(nuevo) || nuevo <= 0) {
-                if (status) status.textContent = 'Escribe primero el valor nuevo de la cláusula.';
-                return;
-            }
-            if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
-            if (status) status.textContent = '';
-            _lastClauseSearchContext = null;
-            try {
-                const catalog = await getLaligaCatalog();
-                const player = laligaFindPlayerByName(catalog, jugador);
-                if (!player) {
-                    if (status) status.textContent = `No se ha encontrado a "${jugador}" en el catálogo de LaLiga (¿nombre distinto?).`;
-                    return;
-                }
-                const history = await getLaligaHistory(player.id);
-                const found = laligaFindClauseBaseline(history, nuevo);
-                _lastClauseSearchContext = { jugador: player.nickname || jugador, history, clauseActual: nuevo, found };
-                const verBtn = `<button class="clause-history-link" onclick="showLaligaHistoryPopup()">Ver histórico completo</button>`;
-                if (!found) {
-                    if (status) status.innerHTML = `No se ha encontrado ningún día del histórico que coincida con esa cláusula. ${verBtn}`;
-                    return;
-                }
-                if (anteriorInput) {
-                    anteriorInput.value = found.valor;
-                    updateSquadClausePreview();
-                }
-                if (status) {
-                    const fechaBonita = new Date(found.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-                    status.innerHTML = `Encontrado: el <strong>${fechaBonita}</strong> valía <strong>${found.valor.toLocaleString('es-ES')}€</strong> — revisa y confirma. ${verBtn}`;
-                }
-            } catch (e) {
-                console.error('Error buscando cláusula en el histórico de LaLiga:', e);
-                if (status) status.textContent = 'No se pudo consultar LaLiga ahora mismo. Inténtalo de nuevo en un momento.';
-            } finally {
-                if (btn) { btn.disabled = false; btn.textContent = 'Buscar en histórico real'; }
-            }
-        }
-
-        // Popup real (como el de "Ver en IMDb") con la tabla completa de
-        // cotización diaria que ha usado la búsqueda automática, marcando
-        // el día que coincidió — para poder comprobarlo a simple vista.
-        function showLaligaHistoryPopup() {
-            const ctx = _lastClauseSearchContext;
-            if (!ctx) return;
-            const w = 480, h = 640;
-            const left = Math.round((screen.width - w) / 2), top = Math.round((screen.height - h) / 2);
-            // Sin "noopener": aquí necesitamos la referencia de la ventana
-            // para escribir en ella. No hay riesgo de tabnabbing porque no
-            // navega a ningún sitio externo, solo pinta HTML propio en blanco.
-            const win = window.open('', '_blank', `width=${w},height=${h},left=${left},top=${top}`);
-            if (!win) return;
-            const rows = [...ctx.history]
-                .sort((a, b) => b.date.localeCompare(a.date))
-                .map(p => {
-                    const isMatch = ctx.found && p.date.slice(0, 10) === ctx.found.fecha;
-                    const fecha = new Date(p.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-                    return `<tr class="${isMatch ? 'match' : ''}"><td>${fecha}${isMatch ? ' <span class="tag">coincidencia</span>' : ''}</td><td>${p.marketValue.toLocaleString('es-ES')}€</td></tr>`;
-                }).join('');
-            win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Histórico — ${escapeHtml(ctx.jugador)}</title>
-                <style>
-                    body{font-family:-apple-system,system-ui,sans-serif;background:#111318;color:#e5e7eb;margin:0;padding:18px}
-                    h1{font-size:16px;margin:0 0 4px;color:#fff}
-                    .sub{font-size:12px;color:#9ca3af;margin-bottom:16px}
-                    table{width:100%;border-collapse:collapse;font-size:13px}
-                    th{text-align:left;padding:6px 8px;color:#9ca3af;font-weight:500;border-bottom:1px solid #2a2d36}
-                    td{padding:6px 8px;border-bottom:1px solid #1e2028}
-                    tr.match td{background:rgba(59,130,246,0.18);font-weight:600;color:#93c5fd}
-                    .tag{font-size:10px;font-weight:600;color:#93c5fd;background:rgba(59,130,246,0.25);padding:1px 6px;border-radius:8px;margin-left:6px}
-                </style></head>
-                <body>
-                    <h1>${escapeHtml(ctx.jugador)}</h1>
-                    <div class="sub">Cláusula introducida: ${ctx.clauseActual.toLocaleString('es-ES')}€${ctx.found ? ` · coincidencia el ${new Date(ctx.found.fecha + 'T12:00:00').toLocaleDateString('es-ES')}` : ' · sin coincidencia automática'}</div>
-                    <table><thead><tr><th>Fecha</th><th>Valor de mercado</th></tr></thead><tbody>${rows}</tbody></table>
-                </body></html>`);
-            win.document.close();
-        }
-
-        function openSquadClauseCalculator(nombre, jugador, source, refId) {
-            const squad = getUserSquad(nombre);
-            const p = squad.find(x => x.source === source && String(x.refId) === String(refId));
-            if (!p) return;
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">Cláusula — ${escapeHtml(jugador)}</div>
-                ${p.gasto > 0 ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">Gastado hasta ahora en cláusulas: <strong style="color:var(--fantasy-accent)">${p.gasto.toLocaleString('es-ES')}€</strong> <button class="clause-history-link" onclick="editSquadClauseGasto('${nombre}', '${source}', '${refId}', ${p.gasto})">Corregir</button></div>` : ''}
-                <div class="modal-label">Valor anterior (antes de esta subida)</div>
-                <input type="number" id="squad-clause-anterior" class="modal-input" value="${p.valorActual}" step="0.01" data-gasto-previo="${p.gasto}" oninput="updateSquadClausePreview()">
-                <div class="modal-label">Valor nuevo (lo que ves ahora en el juego)</div>
-                <input type="number" id="squad-clause-nuevo" class="modal-input" value="${p.valorActual}" step="0.01" oninput="updateSquadClausePreview()">
-                <button class="btn-secondary" id="squad-clause-buscar-btn" style="width:auto;margin-bottom:6px" onclick="buscarClausulaEnHistorico('${nombre}', '${escapeHtml(jugador).replace(/'/g, "\\'")}')">Buscar en histórico real</button>
-                <div id="squad-clause-buscar-status" style="font-size:11px;color:var(--text-secondary);margin-bottom:10px"></div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Gasto en esta subida (se suma a lo ya gastado): <strong id="squad-clause-incremento" style="color:var(--fantasy-accent)">0€</strong></div>
-                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="confirmSquadClauseCalculator('${nombre}', '${escapeHtml(jugador).replace(/'/g, "\\'")}', '${source}', '${refId}')">Guardar</button>
-            `);
-        }
-
-        function updateSquadClausePreview() {
-            const anteriorInput = document.getElementById('squad-clause-anterior');
-            const nuevoInput = document.getElementById('squad-clause-nuevo');
-            const preview = document.getElementById('squad-clause-incremento');
-            if (!anteriorInput || !nuevoInput || !preview) return;
-            const anterior = parseFloat(anteriorInput.value);
-            const nuevo = parseFloat(nuevoInput.value);
-            const incremento = (!isNaN(anterior) && !isNaN(nuevo)) ? Math.max(0, (nuevo - anterior) / 2) : 0;
-            preview.textContent = incremento.toLocaleString('es-ES') + '€';
-        }
-
-        function confirmSquadClauseCalculator(nombre, jugador, source, refId) {
-            const anteriorInput = document.getElementById('squad-clause-anterior');
-            const nuevoInput = document.getElementById('squad-clause-nuevo');
-            const anterior = parseFloat(anteriorInput.value);
-            const nuevo = parseFloat(nuevoInput.value);
-            if (isNaN(anterior) || isNaN(nuevo)) { showToast('Introduce valores numéricos válidos', true); return; }
-            const gastoPrevio = parseFloat(anteriorInput.dataset.gastoPrevio) || 0;
-            const incremento = Math.max(0, (nuevo - anterior) / 2);
-            const gastoTotal = gastoPrevio + incremento;
-
-            if (source === 'tx') {
-                const tx = fantasyData.transacciones.find(t => t.id === refId);
-                if (!tx) return;
-                tx.clausulaValorActual = nuevo;
-                tx.clausulaGasto = gastoTotal;
-            } else {
-                const u = fantasyData.usuarios.find(x => x.nombre === nombre);
-                const p = u?.equipoInicial.find(x => x.id === refId);
-                if (!p) return;
-                p.valorActual = nuevo;
-                p.gasto = gastoTotal;
-            }
-
-            // El gasto de ESTA subida sí sale de tu bolsillo de verdad, así
-            // que se registra como una transacción real (igual que la vieja
-            // "cláusula manual") y se resta del efectivo — esa es la gracia.
-            // Solo se contabiliza el incremento de esta vez, no el total
-            // acumulado (los incrementos anteriores ya se restaron en su
-            // momento, cuando se guardaron).
-            if (incremento > 0) {
-                fantasyData.transacciones.push({
-                    id: 'tx_clausula_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                    tipo: 'clausula',
-                    jugador,
-                    precio: incremento,
-                    fecha: todayISO(),
-                    comprador: nombre,
-                    vendedor: 'LALIGA',
-                    gastoClausula: 0
-                });
-                recalcFantasyBalances();
-            }
-
-            saveFantasyData();
-            closeModal();
-            showFantasySquad(nombre);
-            showToast(incremento > 0 ? `-${incremento.toLocaleString('es-ES')}€ de cláusula restados de tu efectivo (total gastado ${gastoTotal.toLocaleString('es-ES')}€)` : 'Valor actualizado');
-        }
-
-        // Corrige a mano el contador "gastado en cláusulas" de un jugador,
-        // sin tocar el efectivo ni crear ninguna transacción — para cuando
-        // ese contador se queda descuadrado (p. ej. tras deshacer una
-        // cláusula añadida por error, que ya se corrigió por su cuenta al
-        // borrar la transacción, pero deja este número suelto).
-        function editSquadClauseGasto(nombre, source, refId, currentGasto) {
-            const input = prompt('Corrige el gasto acumulado en cláusulas para este jugador (€). Esto NO mueve dinero de tu efectivo, solo corrige este contador informativo.', currentGasto);
-            if (input === null) return;
-            const nuevo = parseFloat(input);
-            if (isNaN(nuevo) || nuevo < 0) { showToast('Introduce un número válido (0 o mayor)', true); return; }
-
-            if (source === 'tx') {
-                const tx = fantasyData.transacciones.find(t => t.id === refId);
-                if (!tx) return;
-                tx.clausulaGasto = nuevo;
-            } else {
-                const u = fantasyData.usuarios.find(x => x.nombre === nombre);
-                const p = u?.equipoInicial.find(x => x.id === refId);
-                if (!p) return;
-                p.gasto = nuevo;
-            }
-
-            saveFantasyData();
-            closeModal();
-            showFantasySquad(nombre);
-            showToast('Gasto en cláusulas corregido');
-        }
-
-        // ============================================================
-        //  FANTASY: CLAUSE EXPENSE (6.5)
-        // ============================================================
-        function deleteFantasyTransaction(txId) {
-            if (!confirm('¿Eliminar esta transacción? Esto recalculará los saldos.')) return;
-            fantasyData.transacciones = fantasyData.transacciones.filter(t => t.id !== txId);
-            recalcFantasyBalances();
-            saveFantasyData();
-            closeModal();
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast('Transacción eliminada');
-        }
-
-        // ============================================================
-        //  FANTASY: POINTS BY JORNADA (6.6)
-        // ============================================================
-        function openJornadaForm(numero) {
-            const existing = fantasyData.jornadas.find(j => j.numero === numero);
-            const puntos = existing ? existing.puntos : {};
-
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">Jornada ${numero}</div>
-                ${fantasyData.usuarios.map(u => `
-                    <div class="modal-label">${escapeHtml(u.nombre)}</div>
-                    <input type="number" class="modal-input jornada-points-input" data-user="${escapeHtml(u.nombre)}" value="${puntos[u.nombre] || ''}" placeholder="Puntos">
-                `).join('')}
-                <button class="btn-modal-primary" style="background:var(--fantasy-accent)" onclick="saveJornada(${numero})">Guardar jornada</button>
-            `);
-        }
-
-        function saveJornada(numero) {
-            const puntos = {};
-            document.querySelectorAll('.jornada-points-input').forEach(input => {
-                const value = parseInt(input.value);
-                if (!isNaN(value)) {
-                    puntos[input.dataset.user] = value;
-                }
-            });
-            const idx = fantasyData.jornadas.findIndex(j => j.numero === numero);
-            if (idx >= 0) {
-                fantasyData.jornadas[idx].puntos = puntos;
-            } else {
-                fantasyData.jornadas.push({ numero, puntos });
-            }
-            fantasyData.jornadas.sort((a, b) => a.numero - b.numero);
-            saveFantasyData();
-            closeModal();
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast('Jornada ' + numero + ' guardada');
-        }
-
-        // ============================================================
-        //  FANTASY: TABLA DE BENEFICIOS POR REVENTA (todos los usuarios)
-        // ============================================================
-        // ============================================================
-        //  FANTASY: TIMELINE (con buscador)
-        // ============================================================
-        function renderFantasyTimelineItems(filterText) {
-            const q = (filterText || '').trim().toLowerCase();
-            const items = fantasyData.transacciones
-                .filter(tx => !q || [tx.jugador, tx.comprador, tx.vendedor].some(v => (v || '').toLowerCase().includes(q)))
-                .slice()
-                .sort((a, b) => fantasyDateValue(b.fecha) - fantasyDateValue(a.fecha));
-
-            if (!items.length) {
-                return `<div style="padding:16px;color:var(--fx-text-secondary);text-align:center">Sin resultados</div>`;
-            }
-
-            return items.map(tx => {
-                const isClausula = tx.tipo === 'clausula';
-                const isPremio = tx.tipo === 'premio';
-                const isVideo = tx.tipo === 'video';
-                const isBuy = tx.tipo === 'compra';
-                const isNegative = isBuy || isClausula;
-                const typeLabel = isVideo ? 'VÍDEO' : (isPremio ? 'PREMIO' : (isClausula ? 'CLÁUSULA' : (isBuy ? 'COMPRA' : 'VENTA')));
-                const actor = tx.comprador !== 'LALIGA' ? tx.comprador : tx.vendedor;
-                const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
-                const dateLabel = isNaN(dateObj) ? (tx.fecha || '—') : dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                return `
-                    <div class="fantasy-tx-item" style="cursor:pointer" onclick="showFantasyUserDetail('${actor}')">
-                        <div style="display:flex;justify-content:space-between;align-items:center">
-                            <div>
-                                <span class="tx-type ${isNegative ? 'buy' : 'sell'}">${typeLabel}</span>
-                                <span style="font-weight:600;margin-left:6px">${escapeHtml(actor)}</span>
-                                ${(isClausula || isPremio || isVideo) ? '' : `<span style="font-size:11px;color:var(--fx-text-secondary)"> · ${escapeHtml(tx.jugador)} (${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)})</span>`}
-                            </div>
-                            <span class="tx-amount ${isNegative ? 'negative' : 'positive'}">${isNegative ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
-                        </div>
-                        <div style="font-size:11px;color:var(--fx-text-secondary);margin-top:2px">${dateLabel}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function filterFantasyTimeline() {
-            const input = document.getElementById('fantasy-timeline-search');
-            const list = document.getElementById('fantasy-timeline-list');
-            if (!input || !list) return;
-            list.innerHTML = renderFantasyTimelineItems(input.value);
-        }
-
-        function toggleFantasyMoreMenu() {
-            const menu = document.getElementById('fantasy-more-menu');
-            if (!menu) return;
-            const willOpen = !menu.classList.contains('open');
-            menu.classList.toggle('open', willOpen);
-            if (willOpen) {
-                setTimeout(() => {
-                    document.addEventListener('click', function closeFantasyMoreMenu(e) {
-                        if (!menu.contains(e.target)) {
-                            menu.classList.remove('open');
-                            document.removeEventListener('click', closeFantasyMoreMenu);
-                        }
-                    });
-                }, 0);
-            }
-        }
-
-        function getAllFantasyProfits() {
-            const rows = [];
-            fantasyData.usuarios.forEach(u => {
-                calculatePlayerProfits(u.nombre)
-                    .filter(p => !p.sinCompraRegistrada)
-                    .forEach(p => rows.push(Object.assign({ usuario: u.nombre }, p)));
-            });
-            return rows.sort((a, b) => fantasyDateValue(b.fechaVenta) - fantasyDateValue(a.fechaVenta));
-        }
-
-        function renderFantasyProfitTable() {
-            const rows = getAllFantasyProfits();
-            if (!rows.length) return '';
-            return `
-                <div class="fantasy-chart-container" style="margin-top:16px">
-                    <div class="fantasy-chart-header">
-                        <div class="fantasy-section-title" style="margin-bottom:0">Beneficios por reventa de jugadores (${rows.length})</div>
-                        <button class="fantasy-collapse-toggle" onclick="toggleFantasyProfitTable()">${fantasyShowProfitTable ? 'Ocultar' : 'Mostrar'}</button>
-                    </div>
-                    ${fantasyShowProfitTable ? `
-                        <div style="overflow-x:auto">
-                            <table class="fantasy-profit-table">
-                                <thead>
-                                    <tr>
-                                        <th>Usuario</th>
-                                        <th>Jugador</th>
-                                        <th>Compra</th>
-                                        <th>Venta</th>
-                                        <th>Precio compra</th>
-                                        <th>Precio venta</th>
-                                        <th>Beneficio</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rows.map(p => `
-                                        <tr>
-                                            <td class="profit-user" onclick="showFantasyUserDetail('${p.usuario}')">${escapeHtml(p.usuario)}</td>
-                                            <td>${escapeHtml(p.jugador)}</td>
-                                            <td>${p.fechaCompra}</td>
-                                            <td>${p.fechaVenta}</td>
-                                            <td>${p.precioCompra.toLocaleString('es-ES')}€</td>
-                                            <td>${p.precioVenta.toLocaleString('es-ES')}€</td>
-                                            <td class="${p.beneficio >= 0 ? 'fantasy-positive' : 'fantasy-negative'}" style="font-weight:600">${p.beneficio >= 0 ? '+' : ''}${p.beneficio.toLocaleString('es-ES')}€</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        }
-
-        // ============================================================
-        //  RENDER: FANTASY (main)
-        // ============================================================
-        function renderFantasy() {
-            if (!fantasyData.usuarios.length) {
-                fantasyData = getDefaultFantasyData();
-                recalcFantasyBalances();
-                saveFantasyData();
-            }
-
-            const LOW_CASH_THRESHOLD = 20000000;
-            const lowCashUsers = fantasyData.usuarios
-                .filter(u => u.efectivo < LOW_CASH_THRESHOLD)
-                .sort((a, b) => a.efectivo - b.efectivo);
-
-            let html = `
-                <div class="fantasy-root ${fantasyTheme === 'green' ? 'fantasy-theme-green' : ''}" style="max-width:980px">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px">
-                        <div>
-                            <div style="font-size:20px;font-weight:700;color:var(--fx-text)">Fantasy</div>
-                            <div style="font-size:13px;color:var(--fx-text-secondary)">Análisis económico de la liga</div>
-                        </div>
-                        <div class="fantasy-toolbar">
-                            <button class="btn-secondary fantasy-btn-accent" onclick="openVideoRewardModal()">Vídeo +100.000€</button>
-                            <button class="btn-secondary" onclick="addFantasyUserManually()">Añadir usuario</button>
-                            <div style="position:relative;display:inline-block">
-                                <button class="btn-secondary" onclick="toggleFantasyMoreMenu()">Más opciones</button>
-                                <div id="fantasy-more-menu" class="fantasy-more-menu">
-                                    <div class="fantasy-theme-toggle">
-                                        <span>Tema verde</span>
-                                        <label class="fantasy-switch">
-                                            <input type="checkbox" ${fantasyTheme === 'green' ? 'checked' : ''} onchange="toggleFantasyTheme()">
-                                            <span class="fantasy-switch-track"></span>
-                                        </label>
-                                    </div>
-                                    <button class="btn-secondary" onclick="toggleFantasyMoreMenu();exportFantasyData()">Exportar</button>
-                                    <button class="btn-secondary" onclick="toggleFantasyMoreMenu();document.getElementById('fantasy-import-input').click()">Restaurar copia</button>
-                                    <button class="btn-secondary" onclick="toggleFantasyMoreMenu();resetFantasyData()">Reiniciar</button>
-                                    <button class="btn-secondary fantasy-btn-accent" onclick="toggleFantasyMoreMenu();changeFantasyPassword()">Cambiar contraseña</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="fantasy-chart-container" style="margin-bottom:16px">
-                        <div class="fantasy-section-title">Actualizar por texto (pegar traducción de capturas)</div>
-                        <textarea id="fantasy-text-import" class="modal-input" rows="1" placeholder="Pega aquí el texto (COMPRA / VENTA / TRASPASO / CLAUSULA / PREMIO / NUEVO)..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-                        <button class="btn-secondary fantasy-btn-accent" style="margin:0;padding:7px 14px;font-size:12px;width:auto;border-radius:14px" onclick="processFantasyTextImport()">Procesar texto</button>
-                        <div style="font-size:10px;color:var(--fx-text-secondary);margin-top:6px">Las líneas de tipo "shielded" (protección de jugador) se ignoran automáticamente: no tienen efecto económico.</div>
-                        <div id="fantasy-import-summary" style="font-size:12px;margin-top:8px"></div>
-                    </div>
-
-                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-                        <select id="jornada-selector" class="modal-input" style="width:auto;display:inline-block;margin-bottom:0;padding:6px 12px">
-                            ${Array.from({length: 38}, (_, i) => i + 1).map(n => {
-                                const registrada = fantasyData.jornadas.some(j => j.numero === n);
-                                return `<option value="${n}">${registrada ? '✓ ' : ''}Jornada ${n}</option>`;
-                            }).join('')}
-                        </select>
-                        <button class="btn-secondary" style="width:auto" onclick="openJornadaForm(parseInt(document.getElementById('jornada-selector').value))">Registrar jornada</button>
-                    </div>
-
-                    <div class="fantasy-chart-container">
-                        <div class="fantasy-chart-header"><div class="fantasy-section-title">Efectivo por usuario</div></div>
-                        <div class="fantasy-canvas-wrap"><canvas id="fantasyChart"></canvas></div>
-                    </div>
-
-                    <div class="fantasy-chart-container">
-                        <div class="fantasy-chart-header"><div class="fantasy-section-title">Patrimonio total por usuario (efectivo + plantilla)</div></div>
-                        <div class="fantasy-canvas-wrap"><canvas id="patrimonyChart"></canvas></div>
-                    </div>
-
-                    <div class="fantasy-chart-container">
-                        <div class="fantasy-chart-header"><div class="fantasy-section-title">Evolución de puntos (acumulado)</div></div>
-                        <div id="fantasy-chips-points" class="fantasy-user-chips">${renderFantasyUserChips('points')}</div>
-                        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch">
-                            <div class="fantasy-canvas-wrap" style="flex:2 1 240px"><canvas id="pointsChart"></canvas></div>
-                            <div style="flex:1 1 160px;min-width:150px">${renderFantasyPointsGap()}</div>
-                        </div>
-                    </div>
-
-                    <div class="fantasy-chart-container">
-                        <div class="fantasy-chart-header"><div class="fantasy-section-title">Evolución económica (valor total)</div></div>
-                        <div id="fantasy-chips-economic" class="fantasy-user-chips">${renderFantasyUserChips('economic')}</div>
-                        <div class="fantasy-canvas-wrap"><canvas id="economicChart"></canvas></div>
-                    </div>
-
-                    ${renderFantasyProfitTable()}
-
-                    ${fantasyData.transacciones.length ? `
-                        <div class="fantasy-chart-container" style="margin-top:16px">
-                            <div class="fantasy-section-title">Timeline de actividad (todos los rivales)</div>
-                            <input id="fantasy-timeline-search" class="modal-input" placeholder="Buscar por jugador o usuario..." style="margin-bottom:8px" oninput="filterFantasyTimeline()">
-                            <div id="fantasy-timeline-list" style="max-height:340px;overflow-y:auto">
-                                ${renderFantasyTimelineItems('')}
-                            </div>
-                        </div>
-                    ` : `
-                        <div class="fantasy-chart-container" style="margin-top:16px">
-                            <div class="fantasy-empty-state">Todavía no hay operaciones registradas</div>
-                        </div>
-                    `}
-
-                    ${lowCashUsers.length ? `
-                        <div style="margin-top:16px">
-                            <div class="fantasy-section-title" style="margin-bottom:8px">Efectivo bajo — oportunidad de negociación</div>
-                            ${lowCashUsers.map(u => `
-                                <div class="fantasy-alert ${u.efectivo < 0 ? 'high' : 'medium'}">
-                                    <div style="font-weight:600">${escapeHtml(u.nombre)}</div>
-                                    <div>${u.efectivo < 0 ? 'Efectivo negativo' : 'Efectivo por debajo de 20M€'}: ${u.efectivo.toLocaleString('es-ES')}€</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-
-                    <div style="margin-top:16px">
-                        <div class="fantasy-section-title" style="margin-bottom:8px">Usuarios</div>
-                        ${fantasyData.usuarios.length ? `
-                            <div class="fantasy-users-grid">
-                                ${fantasyData.usuarios.map(u => {
-                                    const total = u.efectivo + u.valor_plantilla;
-                                    const txs = fantasyData.transacciones.filter(t => t.comprador === u.nombre || t.vendedor === u.nombre);
-                                    const color = fantasyUserColor(u.nombre);
-                                    return `
-                                        <div class="fantasy-user-card" style="border-top:3px solid ${color}" onclick="showFantasyUserDetail('${u.nombre}')">
-                                            <div>
-                                                <div class="user-avatar" style="background:${color}">${fantasyInitials(u.nombre)}</div>
-                                                <div class="user-name">${escapeHtml(u.nombre)}</div>
-                                                <div class="user-meta">${txs.length} operaciones</div>
-                                            </div>
-                                            <div class="user-balance">
-                                                <div class="cash-label">Efectivo</div>
-                                                <div class="cash ${u.efectivo < 0 ? 'fantasy-negative' : ''}" title="${u.efectivo.toLocaleString('es-ES')}€">${fantasyAbbreviate(u.efectivo)}</div>
-                                                <div class="total" title="${total.toLocaleString('es-ES')}€">${fantasyAbbreviate(total)} total</div>
-                                            </div>
-                                            <div class="user-actions">
-                                                <button class="btn-secondary" onclick="event.stopPropagation();editTemplateValue('${u.nombre}')">Plantilla</button>
-                                                <button class="btn-secondary fantasy-btn-danger" onclick="event.stopPropagation();deleteFantasyUser('${u.nombre}')">Borrar</button>
-                                            </div>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        ` : `
-                            <div class="fantasy-empty-state">Aún no hay usuarios en la liga</div>
-                        `}
-                    </div>
-
-                    ${renderFantasyBudgetSection()}
-                </div>
-            `;
-
-            return html;
-        }
-
-        function deleteFantasyUser(nombre) {
-            if (!confirm(`¿Borrar al usuario "${nombre}"? Esto también eliminará todas sus transacciones y recalculará los saldos.`)) return;
-            fantasyData.usuarios = fantasyData.usuarios.filter(u => u.nombre !== nombre);
-            fantasyData.transacciones = fantasyData.transacciones.filter(t => t.comprador !== nombre && t.vendedor !== nombre);
-            if (fantasyData.jornadas) {
-                fantasyData.jornadas.forEach(j => { delete j.puntos[nombre]; });
-            }
-            if (fantasyData.valorHistorico) {
-                fantasyData.valorHistorico = fantasyData.valorHistorico.filter(s => s.nombre !== nombre);
-            }
-            recalcFantasyBalances();
-            saveFantasyData();
-            document.getElementById('content').innerHTML = renderFantasy();
-            renderAllFantasyCharts();
-            showToast('Usuario "' + nombre + '" eliminado');
-        }
-
-        function resetFantasyData() {
-            if (!confirm('¿Reiniciar todos los datos de Fantasy? Esto eliminará todas las transacciones y balances.')) return;
-            fantasyData = getDefaultFantasyData();
-            recalcFantasyBalances();
-            saveFantasyData();
-            render();
-            renderAllFantasyCharts();
-            showToast('Fantasy reiniciado');
-        }
-
-        // ============================================================
-        //  SHOW FANTASY USER DETAIL (with 6.3, 6.4, 6.5)
-        // ============================================================
-        function showFantasyUserDetail(nombre) {
-            const u = fantasyData.usuarios.find(u => u.nombre === nombre);
-            if (!u) return;
-            const txs = fantasyData.transacciones
-                .filter(t => t.comprador === nombre || t.vendedor === nombre)
-                .slice().reverse();
-
-            const profits = calculatePlayerProfits(nombre);
-            const withProfit = profits.filter(p => !p.sinCompraRegistrada);
-            const withoutBuy = profits.filter(p => p.sinCompraRegistrada);
-
-            const contenidoHTML = `
-                <div class="modal-title">${escapeHtml(nombre)}</div>
-                <div style="text-align:center;padding:14px;margin-bottom:12px;border-radius:18px;background:var(--fantasy-accent-soft)">
-                    <div style="font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Efectivo</div>
-                    <div style="font-size:28px;font-weight:700;color:${u.efectivo < 0 ? '#dc2626' : '#16a34a'}">${u.efectivo.toLocaleString('es-ES')}€</div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-                    <div style="text-align:center">
-                        <div style="font-size:16px;font-weight:700;color:var(--text-primary)">${(u.efectivo + u.valor_plantilla).toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">Total</div>
-                    </div>
-                    <div style="text-align:center;position:relative">
-                        <div style="font-size:16px;font-weight:700;color:var(--text-primary)">${u.valor_plantilla.toLocaleString('es-ES')}€</div>
-                        <div style="font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">Plantilla</div>
-                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px;margin-top:4px" onclick="event.stopPropagation();closeModal();editTemplateValue('${nombre}')">Editar</button>
-                    </div>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-                    <button class="btn-secondary fantasy-btn-accent" style="width:auto" onclick="closeModal();showFantasySquad('${nombre}')">Ver plantilla (${getUserSquad(nombre).length})</button>
-                    <button class="btn-secondary fantasy-btn-danger" style="width:auto" onclick="closeModal();deleteFantasyUser('${nombre}')">Borrar usuario</button>
-                </div>
-
-                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px">Historial de transacciones (${txs.length})</div>
-                <div style="max-height:300px;overflow-y:auto">
-                    ${txs.length ? txs.map(tx => {
-                        const isClausula = tx.tipo === 'clausula';
-                        const isPremio = tx.tipo === 'premio';
-                        const isVideo = tx.tipo === 'video';
-                        // isBuy se calcula respecto al usuario que se está viendo (nombre), no
-                        // según el campo global tx.tipo: en un TRASPASO ambos lados (comprador
-                        // y vendedor) son usuarios reales, así que hay que mirar quién de los
-                        // dos es "nombre" para saber si a él le suma o le resta el efectivo.
-                        const isBuy = !isClausula && !isPremio && !isVideo && tx.comprador === nombre;
-                        const isNegative = isBuy || isClausula;
-                        const typeLabel = isVideo ? 'VÍDEO' : (isPremio ? 'PREMIO' : (isClausula ? 'CLÁUSULA' : (isBuy ? 'COMPRA' : 'VENTA')));
-                        const dateObj = new Date(/\d{2}:\d{2}/.test(tx.fecha) ? tx.fecha.replace(' ', 'T') : tx.fecha + 'T12:00:00');
-                        const dateLabel = isNaN(dateObj) ? (tx.fecha || '—') : dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                        return `
-                            <div class="fantasy-tx-item">
-                                <div style="display:flex;justify-content:space-between;align-items:center">
-                                    <div>
-                                        <span class="tx-type ${isNegative ? 'buy' : 'sell'}">${typeLabel}</span>
-                                        <span style="font-weight:600;margin-left:6px">${escapeHtml(tx.jugador)}</span>
-                                        ${(isClausula || isPremio || isVideo) ? '' : `<span style="font-size:11px;color:var(--text-secondary)">${escapeHtml(tx.comprador)} → ${escapeHtml(tx.vendedor)}</span>`}
-                                    </div>
-                                    <span class="tx-amount ${isNegative ? 'negative' : 'positive'}">${isNegative ? '-' : '+'}${tx.precio.toLocaleString('es-ES')}€</span>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
-                                    <span style="font-size:11px;color:var(--text-secondary)">${dateLabel}</span>
-                                    <button class="btn-secondary" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();deleteFantasyTransaction('${tx.id}')">Eliminar</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('') : '<div style="padding:16px;color:var(--text-secondary);text-align:center">Sin transacciones</div>'}
-                </div>
-
-                ${withProfit.length ? `
-                    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">Beneficios por reventa</div>
-                    ${withProfit.map(p => `
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
-                            <span>${escapeHtml(p.jugador)} <span style="color:var(--text-secondary);font-size:11px">(${p.fechaCompra} → ${p.fechaVenta})</span></span>
-                            <span style="font-weight:600;color:${p.beneficio >= 0 ? '#16a34a' : '#dc2626'}">${p.beneficio >= 0 ? '+' : ''}${p.beneficio.toLocaleString('es-ES')}€</span>
-                        </div>
-                    `).join('')}
-                ` : ''}
-
-                ${withoutBuy.length ? `
-                    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-top:12px;margin-bottom:8px">Ventas sin compra registrada</div>
-                    ${withoutBuy.map(p => `
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-secondary)">
-                            <span>${escapeHtml(p.jugador)}</span>
-                            <span>${p.precioVenta.toLocaleString('es-ES')}€ (${p.fechaVenta})</span>
-                        </div>
-                    `).join('')}
-                ` : ''}
-            `;
-
-            showModal(contenidoHTML);
-        }
-
-        // ============================================================
-        //  RENDER: FANTASY CHART (efectivo)
-        // ============================================================
-        // Refresca las 4 gráficas de Fantasy. Como cada renderFantasy() reemplaza
-        // los <canvas> del DOM, las instancias de Chart.js anteriores quedan
-        // apuntando a nodos ya desmontados: hay que reconstruirlas todas juntas
-        // cada vez que cambian los datos, o algunas se quedan en blanco.
-        // Lee los colores del tema activo de Fantasy (default o verde) para
-        // que las 4 gráficas de Chart.js coincidan siempre con el tema visual.
-        function fantasyChartTheme() {
-            const root = document.querySelector('.fantasy-root');
-            const cs = root ? getComputedStyle(root) : null;
-            const read = (name, fallback) => (cs && cs.getPropertyValue(name).trim()) || fallback;
-            return {
-                text: read('--fx-text-secondary', '#6b7280'),
-                grid: read('--fx-grid', 'rgba(255,255,255,0.06)'),
-                accent: read('--fx-accent', '#8B5CF6'),
-                tooltipBg: read('--fx-bg-hover', '#1a1a2e')
-            };
-        }
-
-        function fantasyTooltipOptions(theme, currency) {
-            return {
-                backgroundColor: theme.tooltipBg,
-                titleColor: theme.text,
-                bodyColor: theme.text,
-                borderColor: theme.grid,
-                borderWidth: 1,
-                padding: 10,
-                cornerRadius: 8,
-                displayColors: true,
-                boxPadding: 4,
-                callbacks: currency ? {
-                    label: ctx => `${ctx.dataset.label}: ${fantasyAbbreviate(ctx.parsed.y ?? ctx.parsed.x ?? ctx.parsed)}`
-                } : undefined
-            };
-        }
-
-        function renderAllFantasyCharts() {
-            document.body.classList.toggle('fantasy-green-page', currentView === 'fantasy' && fantasyTheme === 'green');
-            renderFantasyChart();
-            renderPointsChart();
-            renderEconomicEvolutionChart();
-        }
-
-        function renderFantasyChart() {
-            renderPatrimonyChart();
-            setTimeout(() => {
-                const canvas = document.getElementById('fantasyChart');
-                if (!canvas) return;
-
-                if (fantasyChartInstance) {
-                    fantasyChartInstance.destroy();
-                    fantasyChartInstance = null;
-                }
-
-                if (!fantasyData || !fantasyData.usuarios || fantasyData.usuarios.length === 0) return;
-
-                const theme = fantasyChartTheme();
-                const sorted = fantasyData.usuarios.slice().sort((a, b) => b.efectivo - a.efectivo);
-                const labels = sorted.map(u => u.nombre);
-                const data = sorted.map(u => u.efectivo);
-                const colors = sorted.map(u => fantasyUserColor(u.nombre));
-
-                const ctx = canvas.getContext('2d');
-                fantasyChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Efectivo (€)',
-                            data: data,
-                            backgroundColor: colors,
-                            borderRadius: 6,
-                            borderSkipped: false,
-                            maxBarThickness: 34
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: fantasyTooltipOptions(theme, true)
-                        },
-                        scales: {
-                            x: {
-                                ticks: { color: theme.text, font: { size: 11 } },
-                                grid: { display: false },
-                                border: { display: false }
-                            },
-                            y: {
-                                ticks: {
-                                    color: theme.text,
-                                    font: { size: 11 },
-                                    callback: value => fantasyAbbreviate(value)
-                                },
-                                grid: { color: theme.grid, drawTicks: false },
-                                border: { display: false }
-                            }
-                        }
-                    }
-                });
-            }, 100);
-        }
-
-        function renderPatrimonyChart() {
-            setTimeout(() => {
-                const canvas = document.getElementById('patrimonyChart');
-                if (!canvas) return;
-
-                if (patrimonyChartInstance) {
-                    patrimonyChartInstance.destroy();
-                    patrimonyChartInstance = null;
-                }
-
-                if (!fantasyData || !fantasyData.usuarios || fantasyData.usuarios.length === 0) return;
-
-                const theme = fantasyChartTheme();
-                const sorted = fantasyData.usuarios.slice().sort((a, b) => (b.efectivo + b.valor_plantilla) - (a.efectivo + a.valor_plantilla));
-                const labels = sorted.map(u => u.nombre);
-                const data = sorted.map(u => u.efectivo + u.valor_plantilla);
-                const colors = sorted.map(u => fantasyUserColor(u.nombre));
-
-                const ctx = canvas.getContext('2d');
-                patrimonyChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Patrimonio total (€)',
-                            data: data,
-                            backgroundColor: colors,
-                            borderRadius: 6,
-                            borderSkipped: false,
-                            maxBarThickness: 34
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: fantasyTooltipOptions(theme, true)
-                        },
-                        scales: {
-                            x: {
-                                ticks: { color: theme.text, font: { size: 11 } },
-                                grid: { display: false },
-                                border: { display: false }
-                            },
-                            y: {
-                                ticks: {
-                                    color: theme.text,
-                                    font: { size: 11 },
-                                    callback: value => fantasyAbbreviate(value)
-                                },
-                                grid: { color: theme.grid, drawTicks: false },
-                                border: { display: false }
-                            }
-                        }
-                    }
-                });
-            }, 100);
-        }
-
-        // ============================================================
-        //  RENDER: POINTS CHART (6.6)
-        // ============================================================
-        function renderPointsChart() {
-            setTimeout(() => {
-                const canvas = document.getElementById('pointsChart');
-                if (!canvas) return;
-
-                if (pointsChartInstance) {
-                    pointsChartInstance.destroy();
-                    pointsChartInstance = null;
-                }
-
-                const theme = fantasyChartTheme();
-
-                if (!fantasyData.jornadas || fantasyData.jornadas.length === 0) {
-                    const ctx = canvas.getContext('2d');
-                    pointsChartInstance = new Chart(ctx, {
-                        type: 'line',
-                        data: { labels: ['Sin datos'], datasets: [{ label: 'Esperando jornadas...', data: [0] }] },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                    });
-                    return;
-                }
-
-                const jornadasOrdenadas = fantasyData.jornadas.slice().sort((a, b) => a.numero - b.numero);
-                const labels = jornadasOrdenadas.map(j => 'J' + j.numero);
-
-                const datasets = fantasyData.usuarios
-                    .filter(u => !fantasyHiddenUsers.points.has(u.nombre))
-                    .map((u) => {
-                        let running = 0;
-                        const data = jornadasOrdenadas.map(j => {
-                            const pts = j.puntos[u.nombre];
-                            if (pts !== undefined) running += pts;
-                            return running;
-                        });
-                        return {
-                            label: u.nombre,
-                            data,
-                            borderColor: fantasyUserColor(u.nombre),
-                            backgroundColor: 'transparent',
-                            borderWidth: 2.5,
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHoverRadius: 5,
-                            pointHoverBackgroundColor: fantasyUserColor(u.nombre),
-                            pointHitRadius: 10
-                        };
-                    });
-
-                const ctx = canvas.getContext('2d');
-                pointsChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: { labels, datasets },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: fantasyTooltipOptions(theme, false)
-                        },
-                        scales: {
-                            x: { ticks: { color: theme.text, font: { size: 11 } }, grid: { display: false }, border: { display: false } },
-                            y: { ticks: { color: theme.text, font: { size: 11 } }, grid: { color: theme.grid, drawTicks: false }, border: { display: false } }
-                        }
-                    }
-                });
-            }, 150);
-        }
-
-        // ============================================================
-        //  RENDER: ECONOMIC EVOLUTION CHART (6.8)
-        // ============================================================
-        function renderEconomicEvolutionChart() {
-            setTimeout(() => {
-                const canvas = document.getElementById('economicChart');
-                if (!canvas) return;
-
-                if (economicChartInstance) {
-                    economicChartInstance.destroy();
-                    economicChartInstance = null;
-                }
-
-                const theme = fantasyChartTheme();
-
-                if (!fantasyData.valorHistorico || fantasyData.valorHistorico.length === 0) {
-                    const ctx = canvas.getContext('2d');
-                    economicChartInstance = new Chart(ctx, {
-                        type: 'line',
-                        data: { labels: ['Sin datos'], datasets: [{ label: 'Esperando histórico...', data: [0] }] },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                    });
-                    return;
-                }
-
-                const fechas = [...new Set(fantasyData.valorHistorico.map(s => s.fecha))].sort();
-
-                const datasets = fantasyData.usuarios
-                    .filter(u => !fantasyHiddenUsers.economic.has(u.nombre))
-                    .map((u) => ({
-                        label: u.nombre,
-                        data: fechas.map(f => {
-                            const snap = fantasyData.valorHistorico.find(s => s.fecha === f && s.nombre === u.nombre);
-                            return snap ? snap.valorTotal : null;
-                        }),
-                        borderColor: fantasyUserColor(u.nombre),
-                        backgroundColor: 'transparent',
-                        borderWidth: 2.5,
-                        tension: 0.4,
-                        pointRadius: 0,
-                        pointHoverRadius: 5,
-                        pointHoverBackgroundColor: fantasyUserColor(u.nombre),
-                        pointHitRadius: 10,
-                        spanGaps: true
-                    }));
-
-                const ctx = canvas.getContext('2d');
-                economicChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: { labels: fechas, datasets },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: fantasyTooltipOptions(theme, true)
-                        },
-                        scales: {
-                            x: { ticks: { color: theme.text, font: { size: 11 } }, grid: { display: false }, border: { display: false } },
-                            y: {
-                                ticks: {
-                                    color: theme.text,
-                                    font: { size: 11 },
-                                    callback: value => fantasyAbbreviate(value)
-                                },
-                                grid: { color: theme.grid, drawTicks: false },
-                                border: { display: false }
-                            }
-                        }
-                    }
-                });
-            }, 150);
-        }
-
-        // ============================================================
-        //  FANTASY & VAULT: CONTRASEÑAS EN SUPABASE
+        //  VAULT: CONTRASEÑAS EN SUPABASE
         // ============================================================
 
         async function hashPassword(password) {
@@ -16264,7 +14358,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         // ============================================================
-        //  PASSWORD ACCESS SYSTEM (para Vault y Fantasy) - CORREGIDO
+        //  PASSWORD ACCESS SYSTEM (para Vault) - CORREGIDO
         // ============================================================
 
         async function requestPasswordAccess(type, onSuccess) {
@@ -16277,11 +14371,11 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     window._passwordType = type;
                     
                     showModal(`
-                        <div class="modal-title" style="color:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
-                            Configurar acceso a ${type === 'fantasy' ? 'Fantasy' : 'Vault'}
+                        <div class="modal-title" style="color:var(--vault-accent)">
+                            Configurar acceso a Vault
                         </div>
                         <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
-                            Establece una contraseña para proteger ${type === 'fantasy' ? 'Fantasy' : 'Vault'}.
+                            Establece una contraseña para proteger Vault.
                         </div>
                         <div class="form-row">
                             <label class="modal-label">Nueva contraseña</label>
@@ -16292,20 +14386,20 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                             <input type="password" id="pw-new2" class="modal-input" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')createPassword('${type}')">
                         </div>
                         <div id="pw-create-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                        <button class="btn-modal-primary" onclick="createPassword('${type}')" style="background:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
+                        <button class="btn-modal-primary" onclick="createPassword('${type}')" style="background:var(--vault-accent)">
                             🔐 Crear contraseña
                         </button>
                     `);
                     return;
                 }
-                
+
                 // Ya hay contraseña guardada → verificar acceso
                 window._passwordSuccessCallback = onSuccess;
                 window._passwordType = type;
-                
+
                 showModal(`
-                    <div class="modal-title" style="color:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
-                        Acceso a ${type === 'fantasy' ? 'Fantasy' : 'Vault'}
+                    <div class="modal-title" style="color:var(--vault-accent)">
+                        Acceso a Vault
                     </div>
                     <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
                         Introduce tu contraseña para acceder.
@@ -16315,7 +14409,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         <input type="password" id="pw-input" class="modal-input" placeholder="Tu contraseña" onkeydown="if(event.key==='Enter')verifyPassword('${type}')">
                     </div>
                     <div id="pw-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                    <button class="btn-modal-primary" onclick="verifyPassword('${type}')" style="background:${type === 'fantasy' ? 'var(--fantasy-accent)' : 'var(--vault-accent)'}">
+                    <button class="btn-modal-primary" onclick="verifyPassword('${type}')" style="background:var(--vault-accent)">
                         Verificar
                     </button>
                 `);
@@ -16400,7 +14494,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
         async function createDevPassword() {
             showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">⚙ Configurar Modo Desarrollador</div>
+                <div class="modal-title" style="color:var(--accent-purple)">⚙ Configurar Modo Desarrollador</div>
                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
                     Esta es la contraseña global que se usará para activar el Modo Desarrollador.
                     <br><strong>Guárdala bien</strong> — no hay forma de recuperarla si la pierdes.
@@ -16414,7 +14508,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     <input type="password" id="dev-pw-new2" class="modal-input" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')confirmCreateDevPassword()">
                 </div>
                 <div id="dev-pw-create-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" onclick="confirmCreateDevPassword()" style="background:var(--fantasy-accent)">
+                <button class="btn-modal-primary" onclick="confirmCreateDevPassword()" style="background:var(--accent-purple)">
                     🔐 Establecer contraseña
                 </button>
             `);
@@ -16424,7 +14518,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const pw1 = document.getElementById('dev-pw-new').value;
             const pw2 = document.getElementById('dev-pw-new2').value;
             const errorEl = document.getElementById('dev-pw-create-error');
-            
+
             if (!pw1 || pw1.length < 6) {
                 errorEl.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
                 return;
@@ -16433,13 +14527,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 errorEl.textContent = '❌ Las contraseñas no coinciden';
                 return;
             }
-            
+
             try {
                 const hash = await hashPassword(pw1);
                 await setGlobalDevPasswordHash(hash);
                 closeModal();
                 devModeActive = true;
-                updateSidebarPrivacy();
                 document.getElementById('content').innerHTML = renderSettings();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
@@ -16455,12 +14548,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             if (devModeActive) {
                 // Desactivar
                 devModeActive = false;
-                updateSidebarPrivacy();
-                if (currentView === 'fantasy') {
-                    switchView('settings');
-                } else {
-                    document.getElementById('content').innerHTML = renderSettings();
-                }
+                document.getElementById('content').innerHTML = renderSettings();
                 showToast('Modo desarrollador desactivado');
                 return;
             }
@@ -16476,21 +14564,21 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                 // Pedir la contraseña
                 showModal(`
-                    <div class="modal-title" style="color:var(--fantasy-accent)">⚙ Modo Desarrollador</div>
+                    <div class="modal-title" style="color:var(--accent-purple)">⚙ Modo Desarrollador</div>
                     <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce la contraseña global del Modo Desarrollador para activarlo.</div>
                     <div class="form-row">
                         <label class="modal-label">Contraseña</label>
                         <input type="password" id="pw-dev-input" class="modal-input" placeholder="Contraseña global" onkeydown="if(event.key==='Enter')verifyDevPassword()">
                     </div>
                     <div id="pw-dev-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                    <button class="btn-modal-primary" onclick="verifyDevPassword()" style="background:var(--fantasy-accent)">🔓 Activar</button>
+                    <button class="btn-modal-primary" onclick="verifyDevPassword()" style="background:var(--accent-purple)">🔓 Activar</button>
                 `);
-                
+
                 setTimeout(() => {
                     const input = document.getElementById('pw-dev-input');
                     if (input) input.focus();
                 }, 100);
-                
+
             } catch (e) {
                 console.error('Error al obtener la contraseña global:', e);
                 showToast('Error al conectar con el servidor. Asegúrate de que la tabla global_settings existe.', true);
@@ -16522,112 +14610,11 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
                 closeModal();
                 devModeActive = true;
-                updateSidebarPrivacy();
                 document.getElementById('content').innerHTML = renderSettings();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
                 console.error('Error verificando contraseña:', e);
                 errorEl.textContent = 'Error de conexión, intenta de nuevo';
-            }
-        }
-
-        // ============================================================
-        //  UPDATE SIDEBAR PRIVACY
-        // ============================================================
-        function updateSidebarPrivacy() {
-            const fantasyBtns = document.querySelectorAll('[data-view="fantasy"]');
-            fantasyBtns.forEach(btn => {
-                btn.classList.toggle('fantasy-hidden', !devModeActive);
-                if (devModeActive) btn.style.display = 'flex';
-                else btn.style.removeProperty('display');
-            });
-        }
-
-        // ============================================================
-        //  OPEN FANTASY (with password, only if dev mode active) - CORREGIDO
-        // ============================================================
-        function openFantasy() {
-            if (!devModeActive) {
-                showToast('Activa el Modo Desarrollador en Ajustes para acceder a Fantasy', true);
-                return;
-            }
-            loadFantasyData();
-            requestPasswordAccess('fantasy', () => {
-                currentView = 'fantasy';
-                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                    b.classList.toggle('active', b.dataset.view === 'fantasy');
-                });
-                updatePageTitle();
-                render();
-                renderAllFantasyCharts();
-            });
-        }
-
-        // ============================================================
-        //  COMANDO /fantasy: ACCESO RÁPIDO (admin + Fantasy en un paso)
-        //  El camino normal es Ajustes → activar Modo Desarrollador →
-        //  entrar en Fantasy → contraseña de Fantasy: tres pasos para
-        //  registrar una sola operación. Este popup pide las dos
-        //  contraseñas a la vez y, si ambas son correctas, entra
-        //  directamente y deja el cursor listo en el importador de texto.
-        // ============================================================
-        function openFantasyQuickAccess() {
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">Acceso rápido a Fantasy</div>
-                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce las dos contraseñas para entrar directamente al importador de texto.</div>
-                <div class="form-row">
-                    <label class="modal-label">Contraseña de admin</label>
-                    <input type="password" id="fq-pw-admin" class="modal-input" placeholder="Contraseña global" onkeydown="if(event.key==='Enter')document.getElementById('fq-pw-fantasy').focus()">
-                </div>
-                <div class="form-row">
-                    <label class="modal-label">Contraseña de Fantasy</label>
-                    <input type="password" id="fq-pw-fantasy" class="modal-input" placeholder="Contraseña de Fantasy" onkeydown="if(event.key==='Enter')verifyFantasyQuickAccess()">
-                </div>
-                <div id="fq-pw-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" onclick="verifyFantasyQuickAccess()" style="background:var(--fantasy-accent)">🔓 Entrar</button>
-            `);
-            setTimeout(() => document.getElementById('fq-pw-admin')?.focus(), 100);
-        }
-
-        async function verifyFantasyQuickAccess() {
-            const adminPw = document.getElementById('fq-pw-admin').value;
-            const fantasyPw = document.getElementById('fq-pw-fantasy').value;
-            const errorEl = document.getElementById('fq-pw-error');
-            if (!adminPw || !fantasyPw) { errorEl.textContent = 'Rellena las dos contraseñas'; return; }
-
-            try {
-                const [adminHash, fantasyHash] = await Promise.all([getGlobalDevPasswordHash(), getSecret('fantasy')]);
-                if (!adminHash || !fantasyHash) {
-                    errorEl.textContent = 'Falta configurar alguna de las dos contraseñas (Ajustes, o Fantasy → Cambiar contraseña).';
-                    return;
-                }
-                const [adminInputHash, fantasyInputHash] = await Promise.all([hashPassword(adminPw), hashPassword(fantasyPw)]);
-                const adminOk = adminInputHash === adminHash;
-                const fantasyOk = fantasyInputHash === fantasyHash;
-                if (!adminOk || !fantasyOk) {
-                    errorEl.textContent = (!adminOk && !fantasyOk) ? '❌ Las dos contraseñas son incorrectas'
-                        : !adminOk ? '❌ Contraseña de admin incorrecta' : '❌ Contraseña de Fantasy incorrecta';
-                    return;
-                }
-
-                closeModal();
-                devModeActive = true;
-                updateSidebarPrivacy();
-                loadFantasyData();
-                currentView = 'fantasy';
-                document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                    b.classList.toggle('active', b.dataset.view === 'fantasy');
-                });
-                updatePageTitle();
-                render();
-                renderAllFantasyCharts();
-                setTimeout(() => {
-                    const ta = document.getElementById('fantasy-text-import');
-                    if (ta) { ta.scrollIntoView({ block: 'center' }); ta.focus(); }
-                }, 60);
-            } catch (e) {
-                console.error('Error en el acceso rápido a Fantasy:', e);
-                errorEl.textContent = 'Error de conexión, inténtalo de nuevo';
             }
         }
 
@@ -16662,13 +14649,13 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const content = p ? p.content : '';
 
             return `
-                <div class="modal-title" style="font-family:'JetBrains Mono',monospace;color:var(--fantasy-accent)">&gt; ${p ? 'Editar prompt' : 'Nuevo prompt'}</div>
+                <div class="modal-title" style="font-family:'JetBrains Mono',monospace;color:var(--accent-purple)">&gt; ${p ? 'Editar prompt' : 'Nuevo prompt'}</div>
                 <div class="modal-label">Título</div>
                 <input id="prompt-title-input" class="modal-input console-font" value="${escapeHtml(title)}" placeholder="Nombre del prompt...">
                 <div class="modal-label">Contenido</div>
                 <textarea id="prompt-content-input" class="modal-input console-font console-textarea" rows="8" placeholder="Escribe tu prompt aquí...">${escapeHtml(content)}</textarea>
                 <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-                    <button class="btn-modal-primary" style="width:auto;background:var(--fantasy-accent)" onclick="savePrompt()">💾 Guardar</button>
+                    <button class="btn-modal-primary" style="width:auto;background:var(--accent-purple)" onclick="savePrompt()">💾 Guardar</button>
                     <button class="btn-secondary" style="width:auto" onclick="copyPromptToClipboard()">📋 Copiar</button>
                     ${p ? `<button class="btn-secondary" style="width:auto;color:#dc2626" onclick="deletePrompt('${p.id}')">🗑 Eliminar</button>` : ''}
                 </div>
@@ -16893,57 +14880,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         // ============================================================
-        //  FANTASY PASSWORD CHANGE
-        // ============================================================
-        function changeFantasyPassword() {
-            showModal(`
-                <div class="modal-title" style="color:var(--fantasy-accent)">Cambiar contraseña de Fantasy</div>
-                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Introduce tu contraseña actual y la nueva.</div>
-                <div class="form-row">
-                    <label class="modal-label">Contraseña actual</label>
-                    <input type="password" id="pw-old" class="modal-input" placeholder="Tu contraseña actual">
-                </div>
-                <div class="form-row">
-                    <label class="modal-label">Nueva contraseña</label>
-                    <input type="password" id="pw-new-f" class="modal-input" placeholder="Mínimo 6 caracteres">
-                </div>
-                <div class="form-row">
-                    <label class="modal-label">Repetir nueva contraseña</label>
-                    <input type="password" id="pw-new2-f" class="modal-input" placeholder="Repite la contraseña">
-                </div>
-                <div id="pw-change-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
-                <button class="btn-modal-primary" onclick="updateFantasyPassword()" style="background:var(--fantasy-accent)">Cambiar contraseña</button>
-            `);
-        }
-
-        async function updateFantasyPassword() {
-            const old = document.getElementById('pw-old').value;
-            const pw1 = document.getElementById('pw-new-f').value;
-            const pw2 = document.getElementById('pw-new2-f').value;
-            const errorEl = document.getElementById('pw-change-error');
-
-            if (!old) { errorEl.textContent = 'Introduce tu contraseña actual'; return; }
-            if (!pw1 || pw1.length < 6) { errorEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres'; return; }
-            if (pw1 !== pw2) { errorEl.textContent = 'Las contraseñas no coinciden'; return; }
-
-            try {
-                const storedHash = await getSecret('fantasy');
-                const oldHash = await hashPassword(old);
-                if (oldHash !== storedHash) {
-                    errorEl.textContent = 'Contraseña actual incorrecta';
-                    return;
-                }
-                const newHash = await hashPassword(pw1);
-                await setSecret('fantasy', newHash);
-                closeModal();
-                showToast('Contraseña de Fantasy actualizada');
-            } catch (e) {
-                console.error('Error cambiando contraseña:', e);
-                errorEl.textContent = 'Error de conexión, intenta de nuevo';
-            }
-        }
-
-        // ============================================================
         //  INIT
         // ============================================================
         let appInitialized = false;
@@ -16959,11 +14895,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             await cargarViajesCompartidos();
             await cargarListasOcioCompartidas();
 
-            if (!loadFantasyData()) {
-                fantasyData = getDefaultFantasyData();
-                recalcFantasyBalances();
-                saveFantasyData();
-            }
             if (!loadVaultData()) {
                 vaultTasks = [];
                 saveVaultData();
