@@ -4431,7 +4431,10 @@ body.beige {
    (fondo de emergencia/vacaciones/recurrentes/coleccionables/cuentas
    propias) ya no van separados — comparten una única fila con scroll
    horizontal en vez de un popup aparte. */
-.finance-bitacora-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin; }
+/* padding-top: overflow-x:auto activa también el recorte vertical
+   (overflow-y pasa a "auto"), y sin este margen el translateY(-2px)
+   del :hover de las tarjetas se comía el borde superior. */
+.finance-bitacora-row { display:flex; gap:8px; overflow-x:auto; padding-top:4px; padding-bottom:4px; scrollbar-width:thin; }
 .finance-plan-btn {
     position:relative; flex:0 0 auto; width:112px; aspect-ratio:1/1; border-radius:18px; padding:12px;
     display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start;
