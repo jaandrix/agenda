@@ -7799,12 +7799,15 @@
                 <div style="max-width:980px">`;
 
             if (actuales.length) {
-                html += `<div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:10px">Actual</div>`;
-                actuales.forEach(w => { html += renderWorkCard(w, todayStr, daysBetween); });
+                html += `<div class="work-current-list">`;
+                actuales.forEach(w => { html += renderWorkCurrentCard(w, todayStr, daysBetween); });
+                html += `</div>`;
             }
             if (historial.length) {
-                html += `<div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:${actuales.length ? '22px' : '0'} 0 10px 0">Historial</div>`;
-                historial.forEach(w => { html += renderWorkCard(w, todayStr, daysBetween); });
+                html += `<div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:${actuales.length ? '4px' : '0'} 0 6px 0">Historial</div>`;
+                html += `<div class="line-row-list">`;
+                historial.forEach(w => { html += renderWorkHistoryRow(w, todayStr, daysBetween); });
+                html += `</div>`;
             }
             html += `</div><div style="height:70px"></div>`;
             return html;
@@ -7903,7 +7906,7 @@
             return `<div class="work-bubble-flow-wrap"><svg viewBox="0 0 ${totalWidth.toFixed(0)} ${totalHeight.toFixed(0)}" width="100%" style="display:block">${arrows.join('')}${bubbles}</svg></div>`;
         }
 
-        function renderWorkCard(w, todayStr, daysBetween) {
+        function computeWorkDaysHere(w, todayStr, daysBetween) {
             const isActive = !w.endDate || w.endDate >= todayStr;
             const effectiveEnd = isActive ? todayStr : w.endDate;
             const calculatedDaysHere = daysBetween(w.startDate, effectiveEnd);
@@ -7911,33 +7914,64 @@
             const daysHere = Number.isFinite(manualDaysHere) && manualDaysHere >= 0
                 ? manualDaysHere
                 : calculatedDaysHere;
-            const statusLabel = isActive ? 'Actual' : (w.status || 'Finalizado');
+            return { isActive, daysHere };
+        }
+
+        // Trabajo actual: tarjeta negra destacada arriba de todo (a la
+        // manera de la fila resaltada de un calendario), con el número
+        // grande de días totales a la derecha.
+        function renderWorkCurrentCard(w, todayStr, daysBetween) {
+            const { daysHere } = computeWorkDaysHere(w, todayStr, daysBetween);
             const scheduleText = (w.startTime || w.endTime) ? `${w.startTime || '--'} - ${w.endTime || '--'}` : (w
                 .schedule || '');
             const heading = w.company || w.title;
             const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
             const modalidadLabel = WORK_MODALIDAD_LABELS[w.modalidad] || '';
             return `
-                <div class="work-card-bitacora" style="margin-bottom:12px;cursor:pointer" data-open-entry="${w.id}">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-                        <div>
-                            <div style="font-weight:700;font-size:16px">${escapeHtml(heading)}</div>
-                            ${subheading ? `<div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:1px">${escapeHtml(subheading)}</div>` : ''}
+                <div class="work-current-card" data-open-entry="${w.id}">
+                    <div class="work-current-card-icon">${WORK_ICON_LAPTOP}</div>
+                    <div class="work-current-card-body">
+                        <div class="work-current-card-eyebrow">Trabajo actual</div>
+                        <div class="work-current-card-title">${escapeHtml(heading)}</div>
+                        ${subheading ? `<div class="work-current-card-sub">${escapeHtml(subheading)}</div>` : ''}
+                        <div class="work-current-card-meta">
+                            <span>${w.startDate || ''} → Actual</span>
+                            <span>${getCotizationDays(w, todayStr)} días cotizados · ${getCotizationSource(w)}</span>
+                            ${modalidadLabel ? `<span>${modalidadLabel}</span>` : ''}
+                            ${scheduleText ? `<span>${scheduleText}</span>` : ''}
+                            ${w.salary ? `<span>${w.salary}€/mes</span>` : ''}
                         </div>
-                        <span class="work-card-bitacora-badge">${statusLabel}</span>
+                        ${w.notes ? `<div style="font-size:13px;color:rgba(255,255,255,.75);margin-top:8px">${linkifyText(w.notes)}</div>` : ''}
+                        ${w.logros ? `<div class="work-current-card-logros"><strong>Logros:</strong> ${linkifyText(w.logros)}</div>` : ''}
                     </div>
-                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
-                        <span style="font-size:12px;color:rgba(255,255,255,.6)">${w.startDate || ''} ${w.endDate ? '→ ' + w.endDate : '→ Actual'}</span>
-                        <span style="font-size:12px;color:rgba(255,255,255,.6)">${daysHere} días</span>
-                        <span style="font-size:11px;color:rgba(255,255,255,.5)">${getCotizationDays(w, todayStr)} días cotizados · ${getCotizationSource(w)}</span>
-                        ${modalidadLabel ? `<span style="font-size:11px;color:rgba(255,255,255,.5)">${modalidadLabel}</span>` : ''}
+                    <div class="work-current-card-side">
+                        <div class="work-current-card-days">${daysHere}</div>
+                        <div class="work-current-card-days-label">días</div>
                     </div>
-                    ${scheduleText ? `<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">${scheduleText}</div>` : ''}
-                    ${w.salary ? `<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">${w.salary}€/mes</div>` : ''}
-                    ${w.notes ? `<div style="font-size:13px;color:rgba(255,255,255,.75);margin-top:6px">${linkifyText(w.notes)}</div>` : ''}
-                    ${w.logros ? `<div class="work-card-bitacora-logros"><strong>Logros:</strong> ${linkifyText(w.logros)}</div>` : ''}
-                    ${(!isActive && w.motivoSalida) ? `<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:4px"><strong style="color:#fff">Motivo de salida:</strong> ${escapeHtml(w.motivoSalida)}</div>` : ''}
-                    <div class="work-card-bitacora-icon">${WORK_ICON_LAPTOP}</div>
+                </div>`;
+        }
+
+        // Historial: fila numerada (misma familia visual que Proyectos,
+        // Viajes, Documentos...) con el total de días trabajados ahí como
+        // número grande a la derecha, igual que las cifras de un calendario.
+        function renderWorkHistoryRow(w, todayStr, daysBetween) {
+            const { isActive, daysHere } = computeWorkDaysHere(w, todayStr, daysBetween);
+            const heading = w.company || w.title;
+            const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
+            const dateRange = `${w.startDate || ''}${w.endDate ? ' → ' + w.endDate : ' → Actual'}`;
+            const modalidadLabel = WORK_MODALIDAD_LABELS[w.modalidad] || '';
+            const meta = [subheading, dateRange, modalidadLabel].filter(Boolean).join(' · ');
+            return `
+                <div class="line-row" data-open-entry="${w.id}">
+                    <div class="line-row-icon">${WORK_ICON_LAPTOP}</div>
+                    <div class="line-row-body">
+                        <div class="line-row-title"><span class="line-row-title-text">${escapeHtml(heading)}</span></div>
+                        <div class="line-row-meta">${escapeHtml(meta)}${!isActive && w.motivoSalida ? ' · ' + escapeHtml(w.motivoSalida) : ''}</div>
+                    </div>
+                    <div class="line-row-side">
+                        <div class="work-history-days">${daysHere}</div>
+                        <div class="work-history-days-label">días</div>
+                    </div>
                 </div>`;
         }
 

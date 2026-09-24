@@ -2631,40 +2631,91 @@
 
         /* TARJETA BITACORA — apartado Trabajo: fondo negro fijo (no sigue
            el tema claro/oscuro), icono de portátil abajo a la derecha. */
-        .work-card-bitacora {
+        .work-current-list { margin-bottom: 22px; }
+        .work-current-card {
             position: relative;
             background: #0c0c0e;
             color: #fff;
-            border-radius: var(--radius);
-            padding: 16px 84px 16px 18px;
+            border-radius: 20px;
+            padding: 20px 22px;
             box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            box-shadow: 0 14px 32px rgba(0,0,0,.35);
+            transition: transform 0.15s ease;
         }
-        .work-card-bitacora-badge {
+        .work-current-card:hover { transform: translateY(-2px); }
+        .work-current-card:last-child { margin-bottom: 0; }
+        .work-current-card-icon {
+            width: 44px;
+            height: 44px;
             flex-shrink: 0;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 9px;
-            border-radius: 999px;
-            background: rgba(255,255,255,.14);
+            background: rgba(255,255,255,.1);
+            border-radius: 12px;
+            padding: 10px;
+            box-sizing: border-box;
             color: #fff;
         }
-        .work-card-bitacora-logros {
+        .work-current-card-icon svg { width: 100%; height: 100%; display: block; }
+        .work-current-card-body { flex: 1 1 auto; min-width: 0; }
+        .work-current-card-eyebrow {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: rgba(255,255,255,.5);
+        }
+        .work-current-card-title { font-size: 19px; font-weight: 800; margin-top: 3px; }
+        .work-current-card-sub { font-size: 13px; color: rgba(255,255,255,.6); margin-top: 1px; }
+        .work-current-card-meta {
+            font-size: 11px;
+            color: rgba(255,255,255,.5);
+            margin-top: 9px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .work-current-card-logros {
             font-size: 12px;
             color: rgba(255,255,255,.75);
-            margin-top: 6px;
-            padding-top: 6px;
+            margin-top: 10px;
+            padding-top: 10px;
             border-top: 1px solid rgba(255,255,255,.14);
         }
-        .work-card-bitacora-logros strong { color: #fff; }
-        .work-card-bitacora-icon {
-            position: absolute;
-            right: 16px;
-            bottom: 14px;
-            width: 26px;
-            height: 26px;
-            color: #fff;
+        .work-current-card-logros strong { color: #fff; }
+        .work-current-card-side { flex-shrink: 0; text-align: right; }
+        .work-current-card-days {
+            font-size: 44px;
+            font-weight: 800;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
         }
-        .work-card-bitacora-icon svg { width: 100%; height: 100%; display: block; }
+        .work-current-card-days-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: rgba(255,255,255,.45);
+            margin-top: 4px;
+        }
+        .work-history-days {
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+        .work-history-days-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
 
         .work-bubble-flow-card { padding: 16px 18px 10px; }
         .work-bubble-flow-title {
