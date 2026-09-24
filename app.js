@@ -12092,7 +12092,6 @@
         //  FINANZAS PRO — tarjeta de Patrimonio operativo
         // ============================================================
         function renderFinanceNetworthCard() {
-            const updatePending = financeMonthUpdatePending();
             const { total, change: totalChange } = financeUnifiedPatrimonyChange();
             const target = financeTargetTotal();
             const remainingToTarget = Math.max(0, target - total);
@@ -12115,11 +12114,57 @@
                 </div>
                 <div class="finance-networth-compact-note">${escapeHtml(noteText)}</div>
                 <div class="finance-networth-compact-foot">
-                    <button class="finance-networth-action-btn" onclick="openFinanceTargetEditor()">✎ Objetivo</button>
-                    <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">${updatePending ? 'Actualizar este mes' : '✓ Mes actualizado'}</button>
+                    <button class="finance-networth-action-btn" onclick="openFinanceTargetEditor()">Objetivo.</button>
+                    <button class="finance-networth-action-btn" onclick="openFinanceMonthlyBalancesModal()">saldos.</button>
                     <div class="finance-networth-compact-icon">${FINANCE_ICON_ARROW_UP}</div>
                 </div>
             </section>`;
+        }
+
+        // Saldo neto (ingresos − gastos) de cada uno de los últimos 6 meses,
+        // del más antiguo al más reciente.
+        function financeLast6MonthsNetBalances() {
+            const now = new Date();
+            const months = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                months.push(financeMonthKey(d));
+            }
+            return months.map(month => {
+                const { income, expense } = financeProMonthTotals(month);
+                return { month, net: income - expense };
+            });
+        }
+
+        // Gráfica de barras redondeadas con línea base al centro: las barras
+        // de meses en positivo suben, las de meses en negativo cuelgan hacia
+        // abajo — mismo lenguaje visual que los iconos sólidos TARJETA
+        // BITACORA (ver FINANCE_ICON_PULSE), aplicado aquí a datos reales.
+        function renderFinanceMonthlyBalancesChart() {
+            const data = financeLast6MonthsNetBalances();
+            const maxAbs = Math.max(1, ...data.map(d => Math.abs(d.net)));
+            const W = 340, H = 180, baseY = H / 2, maxBarH = H / 2 - 24;
+            const barW = 34, gap = (W - barW * data.length) / (data.length + 1);
+            const bars = data.map((d, i) => {
+                const x = gap + i * (barW + gap);
+                const h = Math.max(6, (Math.abs(d.net) / maxAbs) * maxBarH);
+                const y = d.net >= 0 ? baseY - h : baseY;
+                const rx = barW / 2;
+                const label = FINANCE_PRO_MONTH_NAMES[Number(d.month.slice(5, 7)) - 1].slice(0, 3);
+                return `
+                    <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW}" height="${h.toFixed(1)}" rx="${rx}" fill="var(--text-primary)" opacity="${d.net >= 0 ? '1' : '.45'}"/>
+                    <text x="${(x + barW / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text-muted)">${label}</text>`;
+            }).join('');
+            return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:400px;margin:0 auto">
+                <line x1="0" y1="${baseY}" x2="${W}" y2="${baseY}" stroke="var(--border)" stroke-width="1"/>
+                ${bars}
+            </svg>`;
+        }
+
+        function openFinanceMonthlyBalancesModal() {
+            showModal(`<div class="modal-title">Saldos netos · últimos 6 meses</div>
+                <div class="finance-modal-note" style="margin-bottom:6px">Ingresos menos gastos de cada mes en tus cuentas PRO. Las barras tenues por debajo de la línea son meses en negativo.</div>
+                ${renderFinanceMonthlyBalancesChart()}`);
         }
 
         // "Planificación a futuro" — tres botones a modo de tarjeta (blanco
