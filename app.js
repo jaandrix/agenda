@@ -9450,7 +9450,7 @@
                     <div class="event-sq-icon">${icon}</div>
                     <div class="event-sq-body">
                         <div class="event-sq-title">${escapeHtml(e.title)}</div>
-                        <div class="event-sq-meta"><span class="event-sq-dot" style="background:${color}"></span>${escapeHtml(typeLabel || e.place || 'Evento')}</div>
+                        <div class="event-sq-meta"><span class="event-sq-dot" style="background:${color}"></span>${escapeHtml(typeLabel || e.place || 'Evento')}${e.time ? `,&nbsp;<em>${escapeHtml(e.time)}.</em>` : ''}</div>
                     </div>
                     <div class="event-sq-day">${day}</div>
                 </div>`;
