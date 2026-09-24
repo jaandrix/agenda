@@ -9078,7 +9078,7 @@
                 <div class="events-section-label" style="margin-top:22px">O pega texto</div>
                 <textarea id="events-text-import" class="modal-input" rows="1" placeholder="Pega aquí líneas EVENTO|fecha|hora|tipo|título|lugar|notas..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
                 <button class="btn-secondary" style="width:auto;margin:0;padding:7px 14px;font-size:12px;border-radius:14px" onclick="processEventsTextImport()">Procesar texto</button>
-                <div style="font-size:10px;color:var(--text-secondary);margin-top:6px">Formato: EVENTO|AAAA-MM-DD|HH:MM|tipo|título|lugar|notas — hora, lugar y notas pueden ir vacíos. Tipo: social/teatro/cine/concierto/deporte/otro. El prompt para generar estas líneas a partir de una foto o un enlace está guardado en Ajustes → Prompts guardados.</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:6px">Formato: EVENTO|AAAA-MM-DD|HH:MM|tipo|título|lugar|notas — hora, lugar y notas pueden ir vacíos. Tipo: ${Object.keys(EVENT_TYPE_LABELS).join('/')}. El prompt para generar estas líneas a partir de una foto o un enlace está guardado en Ajustes → Prompts guardados.</div>
                 <div id="events-import-summary" style="font-size:12px;margin-top:8px;color:var(--text-secondary)"></div>
             `);
         }
