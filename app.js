@@ -14179,24 +14179,22 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     `<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF con el botón de arriba</div></div>`;
                 return;
             }
-            listEl.innerHTML = documents.map(doc => {
+            listEl.innerHTML = `<div class="docs-list">${documents.map((doc, i) => {
                 const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
                 return `
-                    <div class="doc-item">
-                        <div class="doc-info">
-                            <span style="font-size:20px">📄</span>
-                            <div style="min-width:0">
-                                <div class="doc-name">${escapeHtml(doc.name)}</div>
-                                <div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
-                            </div>
+                    <div class="docs-row">
+                        <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
+                        <div class="docs-row-body">
+                            <div class="docs-row-name">${escapeHtml(doc.name)}</div>
+                            <div class="docs-row-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
                         </div>
                         <div class="doc-actions">
                             <button class="doc-action-download" onclick="downloadDocument('${escapeHtml(doc.name)}')">Descargar</button>
                             <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteDocument('${escapeHtml(doc.name)}')">✕</button>
                         </div>
                     </div>`;
-            }).join('');
+            }).join('')}</div>`;
         }
 
         async function handleDocUpload(event) {
@@ -14348,14 +14346,15 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 el.innerHTML = `<div class="empty-state"><div class="empty-title">Aún no hay backups automáticos</div><div class="empty-sub">Se generará el primero la próxima vez que abras Bitácora.</div></div>`;
                 return;
             }
-            el.innerHTML = backupFiles.map(f => {
+            el.innerHTML = `<div class="docs-list">${backupFiles.map((f, i) => {
                 const iso = backupFileDate(f.name);
                 const fecha = iso ? new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : f.name;
-                return `<div class="doc-item">
-                    <div class="doc-info"><div><div class="doc-name">${escapeHtml(fecha)}</div><div class="doc-meta">${escapeHtml(iso)}</div></div></div>
+                return `<div class="docs-row">
+                    <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
+                    <div class="docs-row-body"><div class="docs-row-name">${escapeHtml(fecha)}</div><div class="docs-row-meta">${escapeHtml(iso)}</div></div>
                     <div class="doc-actions"><button class="doc-action-download" onclick="restoreBackupFile('${escapeHtml(f.name)}')">Restaurar</button></div>
                 </div>`;
-            }).join('');
+            }).join('')}</div>`;
         }
 
         async function restoreBackupFile(name) {

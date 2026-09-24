@@ -3417,6 +3417,17 @@
             font-weight: 700;
         }
         .doc-action-delete-btn:hover { opacity: .85; }
+        /* Documentos y backups — misma línea de diseño que las
+           asignaturas (número de índice + texto), pero sin negrita y en
+           tamaño más pequeño, ya que aquí cada fila lleva además botones
+           de acción a la derecha. */
+        .docs-list { margin-top:4px; }
+        .docs-row { display:flex; align-items:center; gap:16px; padding:13px 4px; border-bottom:2px solid var(--border-strong); }
+        .docs-row:last-child { border-bottom:none; }
+        .docs-row-index { font-size:16px; font-weight:700; color:var(--text-secondary); width:26px; flex-shrink:0; font-variant-numeric:tabular-nums; }
+        .docs-row-body { flex:1 1 auto; min-width:0; }
+        .docs-row-name { font-size:13px; font-weight:400; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .docs-row-meta { font-size:11px; color:var(--text-secondary); margin-top:2px; }
         .doc-upload-box {
             border: 2px dashed #3b82f6;
             border-radius: 18px;
