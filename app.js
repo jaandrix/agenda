@@ -8846,31 +8846,56 @@
             showModal(renderSubjectDetailModal(s));
         }
 
+        const STUDIES_ICON_EXAM = '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6M9 13h6M9 17h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+        const STUDIES_ICON_WORK = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 20l1-5 11-11 4 4-11 11-5 1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><path d="M14 5l4 4" stroke="currentColor" stroke-width="1.8"/></svg>';
+
         function renderSubjectDetailModal(s) {
+            const finalGrade = subjectFinalGrade(s);
+            const hasProfessor = !!(s.professor && s.professor.trim());
             return `
-                <div class="modal-title">${escapeHtml(s.name)}</div>
-                <div class="modal-label">Créditos ECTS (opcional, para el expediente)</div>
-                <input class="modal-input" type="number" min="0" step="0.5" value="${s.creditos ?? ''}" placeholder="Ej: 6" onchange="updateSubjectCredits('${s.id}',this.value)">
-                <div class="studies-modal-block">
-                    <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">Exámenes <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','exams')">+</button></div>
-                    ${(s.exams || []).length ? s.exams.map((ex, i) => renderSubjectItemRow(s.id, 'exams', ex, i)).join('') : '<div class="finance-empty-line">Sin exámenes todavía.</div>'}
+                <div class="subject-detail-modal">
+                    <div class="subject-detail-head">
+                        <div>
+                            <div class="modal-title" style="margin-bottom:0">${escapeHtml(s.name)}</div>
+                            <div class="subject-detail-prof ${hasProfessor ? '' : 'subject-detail-prof-empty'}" onclick="editSubjectProfessor('${s.id}')">${hasProfessor ? escapeHtml(s.professor) : 'añadir nombre.'}</div>
+                        </div>
+                        ${finalGrade !== null ? `<div class="subject-detail-grade"><span class="nota-final ${gradeTierClass(finalGrade)}">${finalGrade.toFixed(2)}</span><div class="subject-detail-grade-label">Nota final</div></div>` : ''}
+                    </div>
+                    <div class="modal-label">Créditos ECTS (opcional, para el expediente)</div>
+                    <input class="modal-input" type="number" min="0" step="0.5" value="${s.creditos ?? ''}" placeholder="Ej: 6" onchange="updateSubjectCredits('${s.id}',this.value)">
+                    <div class="studies-modal-block">
+                        <div class="modal-label studies-modal-block-title" style="justify-content:space-between">
+                            <span style="display:flex;align-items:center;gap:8px"><span class="studies-block-icon">${STUDIES_ICON_EXAM}</span>Exámenes</span>
+                            <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','exams')">+</button>
+                        </div>
+                        ${(s.exams || []).length ? s.exams.map((ex, i) => renderSubjectItemRow(s.id, 'exams', ex, i)).join('') : '<div class="finance-empty-line">Sin exámenes todavía.</div>'}
+                    </div>
+                    <div class="studies-modal-block">
+                        <div class="modal-label studies-modal-block-title" style="justify-content:space-between">
+                            <span style="display:flex;align-items:center;gap:8px"><span class="studies-block-icon">${STUDIES_ICON_WORK}</span>Trabajos</span>
+                            <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','assignments')">+</button>
+                        </div>
+                        ${(s.assignments || []).length ? s.assignments.map((a, i) => renderSubjectItemRow(s.id, 'assignments', a, i)).join('') : '<div class="finance-empty-line">Sin trabajos todavía.</div>'}
+                    </div>
+                    <button class="finance-oneoff-btn" style="color:#dc2626;border-color:#dc2626" onclick="deleteSubject('${s.id}')">Eliminar asignatura</button>
                 </div>
-                <div class="studies-modal-block">
-                    <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">Trabajos <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','assignments')">+</button></div>
-                    ${(s.assignments || []).length ? s.assignments.map((a, i) => renderSubjectItemRow(s.id, 'assignments', a, i)).join('') : '<div class="finance-empty-line">Sin trabajos todavía.</div>'}
-                </div>
-                <button class="finance-oneoff-btn" style="color:#dc2626;border-color:#dc2626" onclick="deleteSubject('${s.id}')">Eliminar asignatura</button>
             `;
         }
 
         function renderSubjectItemRow(subjectId, listKey, item, index) {
+            const gradeNum = item.grade !== '' && item.grade !== null && item.grade !== undefined && !isNaN(Number(item.grade)) ? Number(item.grade) : null;
+            const gradeCls = gradeNum !== null ? gradeTierClass(gradeNum) : '';
             return `
-                <div class="studies-item-row">
-                    <input class="modal-input" style="flex:2;margin:0" value="${escapeHtml(item.title || '')}" placeholder="Título" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
-                    <input class="modal-input" style="flex:1;margin:0" type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)">
-                    <input class="modal-input" style="flex:0 0 60px;margin:0" type="number" min="0" max="10" step="0.1" value="${item.grade ?? ''}" placeholder="Nota" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'grade',this.value)">
-                    <input class="modal-input" style="flex:0 0 60px;margin:0" type="number" min="0" max="100" step="1" value="${item.weight ?? ''}" placeholder="Peso %" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'weight',this.value)">
-                    <button title="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})">✕</button>
+                <div class="studies-item-card">
+                    <div class="studies-item-card-head">
+                        <input class="modal-input studies-item-title-input" value="${escapeHtml(item.title || '')}" placeholder="Título" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
+                        <button class="studies-item-remove" title="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})">✕</button>
+                    </div>
+                    <div class="studies-item-fields">
+                        <div class="studies-item-field"><label>Fecha</label><input class="modal-input" type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)"></div>
+                        <div class="studies-item-field"><label>Nota</label><input class="modal-input ${gradeCls}" type="number" min="0" max="10" step="0.1" value="${item.grade ?? ''}" placeholder="0-10" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'grade',this.value)"></div>
+                        <div class="studies-item-field"><label>Peso %</label><input class="modal-input" type="number" min="0" max="100" step="1" value="${item.weight ?? ''}" placeholder="0-100" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'weight',this.value)"></div>
+                    </div>
                 </div>`;
         }
 

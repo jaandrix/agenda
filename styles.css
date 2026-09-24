@@ -4832,9 +4832,30 @@ body.papel {
 .studies-subject-row-prof { font-size:12px; color:var(--text-secondary); margin-top:2px; }
 .studies-subject-row-prof-empty { text-decoration:underline; text-underline-offset:2px; }
 .studies-subject-row-prof:hover { color:var(--text-primary); }
-.studies-modal-block { margin:14px 0; }
-.studies-item-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
-.studies-item-row button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:14px; }
+/* Popup de detalle de asignatura — más ancho que el modal estándar
+   para que quepan los campos de cada examen/trabajo con espacio de
+   verdad, en vez de cuatro cajitas apretadas en una sola fila. */
+.modal-sheet:has(.subject-detail-modal) { max-width:680px; }
+.subject-detail-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:4px; }
+.subject-detail-prof { font-size:13px; color:var(--text-secondary); margin-top:2px; }
+.subject-detail-prof-empty { text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.subject-detail-grade { text-align:right; flex-shrink:0; }
+.subject-detail-grade .nota-final { font-size:22px; padding:2px 10px; }
+.subject-detail-grade-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-top:2px; }
+.studies-modal-block { margin:18px 0; }
+.studies-modal-block-title { display:flex; align-items:center; gap:8px; }
+.studies-modal-block-title .studies-block-icon { width:16px; height:16px; color:var(--text-secondary); flex-shrink:0; }
+.studies-modal-block-title .studies-block-icon svg { width:100%; height:100%; display:block; }
+
+.studies-item-card { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+.studies-item-card-head { display:flex; align-items:center; gap:10px; }
+.studies-item-title-input { flex:1; margin:0; font-weight:600; }
+.studies-item-remove { background:none; border:0; color:#dc2626; cursor:pointer; font-size:15px; padding:4px 6px; flex-shrink:0; }
+.studies-item-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:10px; }
+@media (max-width:520px) { .studies-item-fields { grid-template-columns:1fr 1fr; } }
+.studies-item-field label { display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); margin-bottom:4px; }
+.studies-item-field input { margin:0; }
+.studies-item-field input.nota-aprobado, .studies-item-field input.nota-suspenso, .studies-item-field input.nota-matricula { font-weight:700; }
 .studies-schedule-grid { margin-top:12px; background:var(--bg-card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
 .studies-schedule-headrow { display:flex; border-bottom:1px solid var(--border); }
 .studies-schedule-head-gutter { width:44px; flex-shrink:0; }
