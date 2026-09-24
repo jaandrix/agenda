@@ -4954,20 +4954,30 @@ body.papel {
 .events-empty-note { font-size:12px; color:var(--text-secondary); padding:4px 0 6px; }
 .events-past-toggle { display:block; margin:22px 0 0; background:none; border:1px dashed var(--border-strong); border-radius:12px; padding:9px 14px; font-size:12px; color:var(--text-secondary); cursor:pointer; width:auto; }
 .events-past-toggle:hover { color:var(--text-primary); border-color:var(--text-secondary); }
-.events-month-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin:20px 0 10px; }
-.events-month-label:first-child { margin-top:0; }
-.events-month-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
-.event-card { background:rgba(75,85,99,0.7); color:#fff; border:3px solid rgba(255,255,255,0.07); border-radius:14px; padding:12px 14px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease; }
-.event-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.35); }
-.event-card-past { opacity:.5; }
-.event-card-past:hover { opacity:.85; }
-.event-card-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.event-card-date { font-size:10px; font-weight:600; color:rgba(255,255,255,0.55); white-space:nowrap; }
-.event-card-countdown { font-size:9.5px; font-weight:600; color:rgba(255,255,255,0.9); background:rgba(255,255,255,0.16); padding:2px 7px; border-radius:999px; white-space:nowrap; flex-shrink:0; }
-.event-card-title { font-size:13px; font-weight:600; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.event-card-meta-row { display:flex; align-items:center; gap:6px; margin-top:4px; }
-.event-card-type { font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:.3px; color:rgba(255,255,255,0.85); background:rgba(255,255,255,0.14); border-radius:6px; padding:2px 6px; flex-shrink:0; }
-.event-card-place { font-size:11px; color:rgba(255,255,255,0.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Eventos por mes en columnas (una por mes, en vez de una rejilla
+   larga) — cada columna lleva su propio título "mes. (n)" en minúscula,
+   subrayado y con el recuento entre paréntesis sin subrayar. */
+.events-month-columns { display:flex; gap:22px; overflow-x:auto; padding-bottom:8px; align-items:flex-start; }
+.events-month-col { flex:0 0 240px; min-width:220px; }
+.events-month-col-title { font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:12px; }
+.events-month-col-title-text { text-transform:lowercase; text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--border-strong); }
+.events-month-col-count { color:var(--text-secondary); font-weight:500; }
+
+/* Tarjetas cuadradas — sin el borde de color de categoría que las
+   recubría antes; el color se conserva solo como un punto discreto
+   junto al tipo. Icono a la izquierda, día (sin mes) a la derecha. */
+.event-sq-card { display:flex; align-items:center; gap:12px; background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:11px 12px; margin-bottom:10px; cursor:pointer; transition:transform .15s ease, background .15s ease; }
+.event-sq-card:hover { background:var(--bg-card-hover); transform:translateY(-2px); }
+.event-sq-card::after { content:none !important; }
+.event-sq-card-past { opacity:.55; }
+.event-sq-card-past:hover { opacity:.9; }
+.event-sq-icon { width:38px; height:38px; border-radius:11px; background:var(--accent); color:var(--accent-contrast); display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:8px; box-sizing:border-box; }
+.event-sq-icon svg { width:100%; height:100%; display:block; }
+.event-sq-body { flex:1 1 auto; min-width:0; }
+.event-sq-title { font-size:13px; font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.event-sq-meta { display:flex; align-items:center; gap:6px; margin-top:3px; font-size:11px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.event-sq-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.event-sq-day { width:32px; height:32px; border-radius:10px; background:var(--bg-input); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:var(--text-primary); flex-shrink:0; font-variant-numeric:tabular-nums; }
 
 .media-month-label { display:block; font-size:13px; font-weight:700; color:#3b82f6; text-decoration:underline; text-underline-offset:3px; text-transform:lowercase; margin:18px 0 10px; }
 .media-month-label:first-child { margin-top:0; }
@@ -5252,6 +5262,17 @@ body.papel {
     color:var(--text-secondary);
     margin-top:2px;
 }
+
+/* Popup "estadísticas." — cifras cabecera (días/entradas/acciones) +
+   gráfica de actividad + desglose por categoría, inspirado en un panel
+   de analíticas de app: tres números grandes arriba, tendencia debajo. */
+.home-stats-headline { display:flex; gap:0; margin-bottom:18px; }
+.home-stats-headline-item { flex:1 1 0; padding-right:14px; }
+.home-stats-headline-item .num { font-size:26px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.home-stats-headline-item .txt { font-size:11px; color:var(--text-secondary); margin-top:2px; }
+.home-stats-chart-label, .home-stats-breakdown-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:8px; }
+.home-stats-breakdown-label { margin-top:20px; }
+#home-stats-chart { margin-bottom:4px; }
 .global-search-results {
     position:absolute;
     top:calc(100% + 8px);

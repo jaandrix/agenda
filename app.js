@@ -717,6 +717,17 @@
         };
         const ENTRY_TYPE_LABEL_PLURAL = { book: 'Libros', movie: 'Películas', series: 'Series', event: 'Eventos' };
         const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', deporte: 'Deporte', otro: 'Otro' };
+        // Iconos sólidos (misma familia TARJETA BITACORA) para el chip a la
+        // izquierda de cada tarjeta de evento — uno por tipo, más un
+        // genérico de reserva.
+        const EVENT_TYPE_ICONS = {
+            social: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="36" cy="46" r="26"/><circle cx="68" cy="50" r="20" opacity=".5"/></svg>',
+            teatro: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M10 92V55a40 40 0 0 1 80 0v37z"/></svg>',
+            cine: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M8 26a18 18 0 0 1 18-18h48a18 18 0 0 1 18 18v48a18 18 0 0 1-18 18H26A18 18 0 0 1 8 74zM40 32l28 18-28 18z"/></svg>',
+            concierto: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="76" r="16"/><rect x="40" y="15" width="9" height="61"/><path d="M40 15l38-11v20l-38 11z"/></svg>',
+            deporte: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M46 4h8v38l27-27 6 6-27 27h38v8H60l27 27-6 6-27-27v38h-8V60L23 87l-6-6 27-27H6v-8h38L17 19l6-6z"/></svg>',
+            otro: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="23"/></svg>'
+        };
         let eventsTypeFilter = 'all';
         let eventsSearchQuery = '';
         let eventsShowPast = false;
@@ -5782,27 +5793,93 @@
             `);
         }
 
+        // Primera fecha con algo registrado (entrada, nota o movimiento de
+        // Finanzas PRO) — punto de partida para contar "días" de uso real.
+        function bitacoraFirstActivityDate() {
+            const dates = [];
+            entries.forEach(e => { if (e.date) dates.push(e.date); if (e.startDate) dates.push(e.startDate); });
+            (notes || []).forEach(n => { const d = String(n.date || n.createdAt || '').slice(0, 10); if (d) dates.push(d); });
+            (financePro?.transactions || []).forEach(t => { if (t.date) dates.push(t.date); });
+            dates.sort();
+            return dates[0] || todayISO();
+        }
+
         function openHomeStatsModal() {
             const subsTotal = entries.filter(e => e.type === 'subscription' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
             const fixedTotal = entries.filter(e => e.type === 'fixed_expense' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
             const activeProjects = entries.filter(e => e.type === 'project' && e.status !== 'Completado');
             const workDays = entries.filter(e => e.type === 'work').reduce((sum, job) => sum + countWorkingDays(job.startDate, job.endDate || todayISO()), 0);
+
+            // días: nº de días distintos con algo registrado desde la
+            // primera entrada · entradas: total de entries · acciones:
+            // entries + notas + movimientos de Finanzas PRO — misma idea
+            // que "Days / Participants / Actions" de la referencia.
+            const firstDate = new Date(bitacoraFirstActivityDate());
+            const totalDaySpan = Math.max(1, Math.round((new Date(todayISO()) - firstDate) / 86400000) + 1);
+            let activeDays = 0;
+            for (let i = 0; i < totalDaySpan; i++) {
+                const d = new Date(firstDate); d.setDate(d.getDate() + i);
+                const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                if (bitacoraActivityCount(iso) > 0) activeDays++;
+            }
+            const totalActions = entries.length + (notes || []).length + (financePro?.transactions || []).length;
+
             const stats = [
-                [entries.length, 'entradas'], [entries.filter(e=>e.type==='book').length, 'libros'],
-                [entries.filter(e=>e.type==='movie').length, 'películas'], [entries.filter(e=>e.type==='series').length, 'series'],
-                [entries.filter(e=>e.type==='game').length, 'videojuegos'], [entries.filter(e=>e.type==='travel').length, 'viajes'],
-                [activeProjects.length, 'proyectos activos'], [notes.length, 'notas'],
-                [entries.filter(e=>e.type==='goal').length, 'objetivos'], [entries.filter(e=>e.type==='place').length, 'lugares'],
-                [entries.filter(e=>e.type==='birthday').length, 'cumpleaños'], [workDays, 'días cotizados'],
-                [subsTotal.toLocaleString('es-ES') + '€', 'suscripciones/mes'], [fixedTotal.toLocaleString('es-ES') + '€', 'gastos fijos/mes']
+                [entries.filter(e=>e.type==='book').length, 'libros'], [entries.filter(e=>e.type==='movie').length, 'películas'],
+                [entries.filter(e=>e.type==='series').length, 'series'], [entries.filter(e=>e.type==='game').length, 'videojuegos'],
+                [entries.filter(e=>e.type==='travel').length, 'viajes'], [activeProjects.length, 'proyectos activos'],
+                [notes.length, 'notas'], [entries.filter(e=>e.type==='goal').length, 'objetivos'],
+                [entries.filter(e=>e.type==='place').length, 'lugares'], [entries.filter(e=>e.type==='birthday').length, 'cumpleaños'],
+                [workDays, 'días cotizados'], [subsTotal.toLocaleString('es-ES') + '€', 'suscripciones/mes'],
+                [fixedTotal.toLocaleString('es-ES') + '€', 'gastos fijos/mes']
             ];
+
             showModal(`
                 <div class="modal-title">estadísticas.</div>
-                <div class="finance-modal-note" style="margin-bottom:10px">La dimensión real de todo lo que has ido registrando en Bitácora.</div>
+                <div class="home-stats-headline">
+                    <div class="home-stats-headline-item"><div class="num" id="home-stats-days" data-value="${activeDays}">0</div><div class="txt">días</div></div>
+                    <div class="home-stats-headline-item"><div class="num" id="home-stats-entries" data-value="${entries.length}">0</div><div class="txt">entradas</div></div>
+                    <div class="home-stats-headline-item"><div class="num" id="home-stats-actions" data-value="${totalActions}">0</div><div class="txt">acciones</div></div>
+                </div>
+                <div class="home-stats-chart-label">actividad · últimos 30 días</div>
+                <div id="home-stats-chart">${renderHomeStatsChart(30)}</div>
+                <div class="home-stats-breakdown-label">por categoría</div>
                 <div class="summary-stat-list">
                     ${stats.map(([num, txt]) => `<div class="summary-stat"><div class="num">${num}</div><div class="txt">${txt}</div></div>`).join('')}
                 </div>
             `);
+            ['home-stats-days', 'home-stats-entries', 'home-stats-actions'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) bitacoraAnimateNumber(el, Number(el.dataset.value || 0), v => Math.round(v).toLocaleString('es-ES'));
+            });
+            bitacoraAnimateChart(document.getElementById('home-stats-chart'));
+        }
+
+        // Línea de actividad diaria de los últimos `days` — mismo dato que
+        // el óvalo radial de "tu estancia en bitácora." pero en formato
+        // lineal, a juego con el resto de gráficas PRO de la app.
+        function renderHomeStatsChart(days) {
+            const today = new Date();
+            const counts = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+                const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                counts.push(bitacoraActivityCount(iso));
+            }
+            const W = 400, H = 90, padX = 4, padT = 8, padB = 4;
+            const innerW = W - padX * 2, innerH = H - padT - padB;
+            const maxC = Math.max(1, ...counts);
+            const n = counts.length;
+            const x = i => padX + innerW * i / (n - 1);
+            const y = c => padT + innerH - (c / maxC) * innerH;
+            const pathPts = counts.map((c, i) => [x(i), y(c)]);
+            const path = pathPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+            const area = `${path} L${x(n - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
+            return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
+                <defs><linearGradient id="homeStatsGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:var(--text-primary);stop-opacity:.22"/><stop offset="100%" style="stop-color:var(--text-primary);stop-opacity:0"/></linearGradient></defs>
+                <path d="${area}" fill="url(#homeStatsGrad)" stroke="none"/>
+                <path d="${path}" fill="none" stroke="var(--text-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>`;
         }
 
         function openHomeInboxModal() {
@@ -9292,48 +9369,59 @@
             const hayFiltro = eventsTypeFilter !== 'all' || !!q;
             let html = `<div class="events-section-label">Próximos${upcoming.length ? ` (${upcoming.length})` : ''}</div>`;
             html += upcoming.length
-                ? `<div class="events-month-grid">${upcoming.map(e => renderEventCard(e, true)).join('')}</div>`
+                ? renderEventsMonthColumns(upcoming, { reverse: false })
                 : `<div class="events-empty-note">Sin eventos próximos${hayFiltro ? ' con este filtro.' : '.'}</div>`;
 
             if (past.length) {
                 html += `<button class="events-past-toggle" onclick="toggleEventsShowPast()">${eventsShowPast ? 'Ocultar pasados' : `Mostrar pasados (${past.length})`}</button>`;
-                if (eventsShowPast) {
-                    const groups = [];
-                    const byKey = {};
-                    past.forEach(e => {
-                        const key = (e.date || '').slice(0, 7) || 'sin-fecha';
-                        if (!byKey[key]) { byKey[key] = { key, items: [] }; groups.push(byKey[key]); }
-                        byKey[key].items.push(e);
-                    });
-                    const monthLabel = key => {
-                        if (key === 'sin-fecha') return 'Sin fecha';
-                        const [y, m] = key.split('-').map(Number);
-                        return new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-                    };
-                    groups.forEach(g => {
-                        html += `<div class="events-month-label">${escapeHtml(monthLabel(g.key))}</div><div class="events-month-grid">${g.items.map(e => renderEventCard(e, false)).join('')}</div>`;
-                    });
-                }
+                if (eventsShowPast) html += renderEventsMonthColumns(past, { reverse: true });
             }
             return html;
         }
 
-        function renderEventCard(e, isUpcoming) {
+        // Agrupa eventos por mes en columnas separadas (una por mes) en vez
+        // de una única rejilla larga — cada columna lleva su propio
+        // encabezado "mes. (n)" y sus tarjetas ordenadas por día.
+        function renderEventsMonthColumns(events, opts) {
+            const reverse = opts && opts.reverse;
+            const groups = [];
+            const byKey = {};
+            events.forEach(e => {
+                const key = (e.date || '').slice(0, 7) || 'sin-fecha';
+                if (!byKey[key]) { byKey[key] = { key, items: [] }; groups.push(byKey[key]); }
+                byKey[key].items.push(e);
+            });
+            groups.sort((a, b) => reverse ? b.key.localeCompare(a.key) : a.key.localeCompare(b.key));
+            const monthLabel = key => {
+                if (key === 'sin-fecha') return 'sin fecha';
+                const [y, m] = key.split('-').map(Number);
+                return new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long' });
+            };
+            return `<div class="events-month-columns">
+                ${groups.map(g => `
+                    <div class="events-month-col">
+                        <div class="events-month-col-title"><span class="events-month-col-title-text">${escapeHtml(monthLabel(g.key))}.</span> <span class="events-month-col-count">(${g.items.length})</span></div>
+                        ${g.items.sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(e => renderEventSquareCard(e)).join('')}
+                    </div>
+                `).join('')}
+            </div>`;
+        }
+
+        function renderEventSquareCard(e) {
             const cat = categories.find(c => c.id === e.categoryId);
             const color = cat?.color || 'var(--text-secondary)';
-            const dateShort = e.date ? `${e.date.slice(8, 10)}/${e.date.slice(5, 7)}` : '';
             const typeLabel = EVENT_TYPE_LABELS[e.eventType] || '';
+            const icon = EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro;
+            const day = e.date ? e.date.slice(8, 10) : '–';
+            const isPast = e.date && e.date < todayISO();
             return `
-                <div class="event-card ${isUpcoming ? '' : 'event-card-past'}" style="border-color:${color}" onclick="openEntryDetail('${e.id}')">
-                    <div class="event-card-top">
-                        <span class="event-card-date">${dateShort}${e.time ? ' · ' + escapeHtml(e.time) : ''}</span>
-                        ${isUpcoming ? `<span class="event-card-countdown">${eventCountdownLabel(e.date)}</span>` : ''}
+                <div class="event-sq-card ${isPast ? 'event-sq-card-past' : ''}" onclick="openEntryDetail('${e.id}')">
+                    <div class="event-sq-icon">${icon}</div>
+                    <div class="event-sq-body">
+                        <div class="event-sq-title">${escapeHtml(e.title)}</div>
+                        <div class="event-sq-meta"><span class="event-sq-dot" style="background:${color}"></span>${escapeHtml(typeLabel || e.place || 'Evento')}</div>
                     </div>
-                    <div class="event-card-title">${escapeHtml(e.title)}</div>
-                    <div class="event-card-meta-row">
-                        ${typeLabel ? `<span class="event-card-type">${escapeHtml(typeLabel)}</span>` : ''}
-                        <span class="event-card-place">${escapeHtml(e.place || 'Sin lugar')}</span>
-                    </div>
+                    <div class="event-sq-day">${day}</div>
                 </div>`;
         }
 
