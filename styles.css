@@ -4822,9 +4822,11 @@ body.papel {
 /* Asignaturas como lista de líneas (una por asignatura, orden de
    creación) — número de índice grande a la izquierda, nombre en
    negrita y profesor en gris debajo, separadas por una línea fina. */
-.studies-subjects-list { margin-top:8px; }
-.studies-subject-row { display:flex; align-items:center; gap:18px; padding:16px 4px; border-bottom:1px solid var(--border); cursor:pointer; transition:opacity .15s ease; }
-.studies-subject-row:last-child { border-bottom:none; }
+.studies-subjects-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:36px; margin-top:8px; }
+@media (max-width:560px) { .studies-subjects-list { grid-template-columns:1fr; } }
+.studies-subject-row { display:flex; align-items:center; gap:18px; padding:16px 4px; border-bottom:2px solid var(--border-strong); cursor:pointer; transition:opacity .15s ease; }
+.studies-subject-row.studies-subject-row-lastrow { border-bottom:none; }
+@media (max-width:560px) { .studies-subject-row.studies-subject-row-lastrow { border-bottom:2px solid var(--border-strong); } .studies-subjects-list .studies-subject-row:last-child { border-bottom:none; } }
 .studies-subject-row:hover { opacity:.75; }
 .studies-subject-index { font-size:26px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; flex-shrink:0; width:40px; }
 .studies-subject-row-body { min-width:0; }

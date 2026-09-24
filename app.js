@@ -8528,7 +8528,7 @@
 
                 <section class="studies-section" id="studies-subjects-section">
                     <h3>Asignaturas</h3>
-                    ${studies.subjects.length ? `<div class="studies-subjects-list">${studies.subjects.map((s, i) => renderSubjectRow(s, i)).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
+                    ${studies.subjects.length ? `<div class="studies-subjects-list">${studies.subjects.map((s, i) => renderSubjectRow(s, i, studies.subjects.length)).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
                 </section>
             </div>`;
         }
@@ -8763,10 +8763,12 @@
         // negrita, profesor en gris debajo ("añadir nombre." si no se ha
         // indicado todavía, pulsable aparte sin abrir el detalle). El
         // desglose de trabajos/exámenes vive solo en el popup de detalle.
-        function renderSubjectRow(s, index) {
+        function renderSubjectRow(s, index, total) {
             const hasProfessor = !!(s.professor && s.professor.trim());
+            const lastRowStart = total - (total % 2 === 0 ? 2 : 1);
+            const isLastRow = index >= lastRowStart;
             return `
-                <div class="studies-subject-row" onclick="openSubjectDetail('${s.id}')">
+                <div class="studies-subject-row ${isLastRow ? 'studies-subject-row-lastrow' : ''}" onclick="openSubjectDetail('${s.id}')">
                     <div class="studies-subject-index">${String(index + 1).padStart(2, '0')}</div>
                     <div class="studies-subject-row-body">
                         <div class="studies-subject-row-name">${escapeHtml(s.name)}</div>
