@@ -1,103 +1,73 @@
         /* ============================================================
                CSS VARIABLES & TEMAS
+               Dos tonos únicos: asfalto (oscuro, por defecto, sin clase
+               en <body>) y papel (claro, body.papel) — sustituyen a los
+               tres temas anteriores (oscuro puro / claro puro / beige).
             ============================================================ */
         :root {
-            --bg-app: #000000;
-            --bg-sidebar: #0a0a0a;
-            --bg-card: #131313;
-            --bg-card-hover: #1c1c1c;
-            --bg-input: #161616;
-            --bg-modal: #141414;
-            --bg-fab: #ffffff;
-            --border: #202020;
-            --border-strong: #2b2b2b;
-            --text-primary: #ffffff;
-            --text-secondary: #9a9a9a;
-            --text-muted: #5c5c5c;
-            --accent: #ffffff;
-            --accent-contrast: #000000;
-            --badge-pending-bg: #2a2a2a;
-            --badge-pending-text: #e5e5e5;
-            --badge-progress-bg: #3a3a3a;
-            --badge-progress-text: #ffffff;
-            --badge-done-bg: #ffffff;
-            --badge-done-text: #000000;
-            --badge-default-bg: #262626;
-            --badge-default-text: #e5e5e5;
-            /* Una sombra negra sobre fondo ya casi negro (--bg-app:#000) no
-               aporta ninguna profundidad — más contraste/difuminado para
-               que al menos se note sobre tarjetas y superficies más claras
-               que el fondo. */
-            --shadow: 0 8px 28px rgba(0,0,0,0.6);
+            --bg-app: #302f2c;
+            --bg-sidebar: #2a2925;
+            --bg-card: #3a3934;
+            --bg-card-hover: #45443d;
+            --bg-input: #38372f;
+            --bg-modal: #363530;
+            --bg-fab: #efede3;
+            --border: #4a4941;
+            --border-strong: #5a5850;
+            --text-primary: #efede3;
+            --text-secondary: #a9a89c;
+            --text-muted: #79776c;
+            --accent: #efede3;
+            --accent-contrast: #302f2c;
+            --badge-pending-bg: #47453c;
+            --badge-pending-text: #e8e6da;
+            --badge-progress-bg: #57554a;
+            --badge-progress-text: #efede3;
+            --badge-done-bg: #efede3;
+            --badge-done-text: #302f2c;
+            --badge-default-bg: #3f3e37;
+            --badge-default-text: #d9d7cb;
+            /* Sombra tintada hacia el propio asfalto en vez de negro puro,
+               para que combine con el fondo en vez de contrastar en frío. */
+            --shadow: 0 8px 28px rgba(20,19,17,0.5);
             --radius: 20px;
             --radius-full: 999px;
             --fantasy-accent: #8B5CF6;
             --fantasy-accent-soft: #1a152e;
             --vault-accent: #F59E0B;
             --vault-accent-soft: #2a1f0a;
-            --landing-grid-line: rgba(226,231,238,0.14);
+            --landing-grid-line: rgba(239,237,227,0.14);
         }
 
-        body.light {
-            --bg-app: #f7f7f5;
-            --bg-sidebar: #ffffff;
-            --bg-card: #ffffff;
-            --bg-card-hover: #f2f2f0;
-            --bg-input: #f2f2f0;
-            --bg-modal: #ffffff;
-            --bg-fab: #000000;
-            --border: #e8e8e6;
-            --border-strong: #d8d8d5;
-            --text-primary: #000000;
-            --text-secondary: #6b6b6b;
-            --text-muted: #a3a3a3;
-            --accent: #000000;
-            --accent-contrast: #ffffff;
-            --badge-pending-bg: #ededea;
-            --badge-pending-text: #3d3d3d;
-            --badge-progress-bg: #e2e2df;
-            --badge-progress-text: #1a1a1a;
-            --badge-done-bg: #000000;
-            --badge-done-text: #ffffff;
-            --badge-default-bg: #ededea;
-            --badge-default-text: #1a1a1a;
-            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+        body.papel {
+            --bg-app: #efede3;
+            --bg-sidebar: #f7f5ec;
+            --bg-card: #f7f5ec;
+            --bg-card-hover: #e7e3d4;
+            --bg-input: #e7e3d4;
+            --bg-modal: #f7f5ec;
+            --bg-fab: #302f2c;
+            --border: #ddd8c6;
+            --border-strong: #c9c3ac;
+            --text-primary: #302f2c;
+            --text-secondary: #6c6a5e;
+            --text-muted: #9d9a8a;
+            --accent: #302f2c;
+            --accent-contrast: #efede3;
+            --badge-pending-bg: #e6e1d0;
+            --badge-pending-text: #3f3e37;
+            --badge-progress-bg: #d9d3bd;
+            --badge-progress-text: #302f2c;
+            --badge-done-bg: #302f2c;
+            --badge-done-text: #efede3;
+            --badge-default-bg: #e6e1d0;
+            --badge-default-text: #302f2c;
+            --shadow: 0 4px 20px rgba(48,47,44,0.10);
             --fantasy-accent: #7C3AED;
             --fantasy-accent-soft: #ede9fe;
             --vault-accent: #D97706;
             --vault-accent-soft: #fef3c7;
-            --landing-grid-line: rgba(0,0,0,0.06);
-        }
-
-        body.beige {
-            --bg-app: #f2ead9;
-            --bg-sidebar: #ece1cb;
-            --bg-card: #f7f0e2;
-            --bg-card-hover: #efe4cd;
-            --bg-input: #ece0c8;
-            --bg-modal: #f7f0e2;
-            --bg-fab: #6b5c3f;
-            --border: #ddccaa;
-            --border-strong: #cdb98c;
-            --text-primary: #3d3324;
-            --text-secondary: #8a7a5c;
-            --text-muted: #b5a68a;
-            --accent: #6b5c3f;
-            --accent-contrast: #f7f0e2;
-            --badge-pending-bg: #fef3c7;
-            --badge-pending-text: #92400e;
-            --badge-progress-bg: #dbeafe;
-            --badge-progress-text: #1d4ed8;
-            --badge-done-bg: #dcfce7;
-            --badge-done-text: #15803d;
-            --badge-default-bg: #ddccaa;
-            --badge-default-text: #3d3324;
-            --shadow: 0 4px 20px rgba(60,50,30,0.15);
-            --fantasy-accent: #7C3AED;
-            --fantasy-accent-soft: #ede9fe;
-            --vault-accent: #D97706;
-            --vault-accent-soft: #fef3c7;
-            --landing-grid-line: rgba(61,51,36,0.10);
+            --landing-grid-line: rgba(48,47,44,0.08);
         }
 
         /* ============================================================
@@ -1682,11 +1652,8 @@
         .entry-actions button.delete:hover {
             background: #2a1515;
         }
-        body.light .entry-actions button.delete:hover {
+        body.papel .entry-actions button.delete:hover {
             background: #fee2e2;
-        }
-        body.beige .entry-actions button.delete:hover {
-            background: #f3e0d8;
         }
 
         .progress-bar-bg {
@@ -2021,11 +1988,8 @@
         .btn-modal-danger:hover {
             opacity: 0.85;
         }
-        body.light .btn-modal-danger {
+        body.papel .btn-modal-danger {
             background: #fee2e2;
-        }
-        body.beige .btn-modal-danger {
-            background: #f3e0d8;
         }
 
         .settings-layout { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; }
@@ -3936,13 +3900,9 @@
     --invest-gain: #22c55e;
     --invest-loss: #ef4444;
 }
-body.light {
+body.papel {
     --invest-accent: #ca8a04;
     --invest-accent-soft: #fef9c3;
-}
-body.beige {
-    --invest-accent: #b45309;
-    --invest-accent-soft: #fef3c7;
 }
 
 .invest-hero {

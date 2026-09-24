@@ -2560,22 +2560,35 @@
         // ============================================================
         //  THEME
         // ============================================================
-        const THEMES = ['dark', 'light', 'beige'];
+        // Dos tonos únicos — "asfalto" (oscuro, por defecto, sin clase en
+        // <body>) y "papel" (claro, body.papel). Sustituyen a los tres
+        // temas anteriores (oscuro puro / claro puro / beige).
+        const THEMES = ['asfalto', 'papel'];
+        const THEME_LABELS = { asfalto: 'asfalto', papel: 'papel' };
+        // Los temas antiguos ('dark'/'light'/'beige') que ya hubiera
+        // guardados en localStorage de sesiones previas migran al tono más
+        // parecido la primera vez que se cargan, para no cambiarle el tema
+        // a quien ya tenía uno elegido.
+        const THEME_MIGRATION = { dark: 'asfalto', light: 'papel', beige: 'papel' };
 
         function loadTheme() {
-            const theme = localStorage.getItem('bitacora_theme') || 'dark';
+            let theme = localStorage.getItem('bitacora_theme') || 'asfalto';
+            if (THEME_MIGRATION[theme]) {
+                theme = THEME_MIGRATION[theme];
+                localStorage.setItem('bitacora_theme', theme);
+            }
             THEMES.forEach(t => document.body.classList.remove(t));
-            if (theme !== 'dark') document.body.classList.add(theme);
+            if (theme !== 'asfalto') document.body.classList.add(theme);
         }
 
         function toggleTheme() {
-            const current = THEMES.find(t => document.body.classList.contains(t)) || 'dark';
+            const current = THEMES.find(t => document.body.classList.contains(t)) || 'asfalto';
             const idx = (THEMES.indexOf(current) + 1) % THEMES.length;
             const next = THEMES[idx];
             THEMES.forEach(t => document.body.classList.remove(t));
-            if (next !== 'dark') document.body.classList.add(next);
+            if (next !== 'asfalto') document.body.classList.add(next);
             localStorage.setItem('bitacora_theme', next);
-            showToast('Tema cambiado a ' + next);
+            showToast('Tema cambiado a ' + THEME_LABELS[next]);
         }
 
         let modeWide = false;
