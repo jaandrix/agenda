@@ -40,34 +40,34 @@
         }
 
         body.papel {
-            --bg-app: #efede3;
-            --bg-sidebar: #f7f5ec;
-            --bg-card: #f7f5ec;
-            --bg-card-hover: #e7e3d4;
-            --bg-input: #e7e3d4;
-            --bg-modal: #f7f5ec;
+            --bg-app: #FAF8F5;
+            --bg-sidebar: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-hover: #F1EEE8;
+            --bg-input: #F1EEE8;
+            --bg-modal: #ffffff;
             --bg-fab: #302f2c;
-            --border: #ddd8c6;
-            --border-strong: #c9c3ac;
+            --border: #E8E4DC;
+            --border-strong: #D8D2C4;
             --text-primary: #302f2c;
-            --text-secondary: #6c6a5e;
-            --text-muted: #9d9a8a;
+            --text-secondary: #736F63;
+            --text-muted: #A6A196;
             --accent: #302f2c;
-            --accent-contrast: #efede3;
-            --badge-pending-bg: #e6e1d0;
-            --badge-pending-text: #3f3e37;
-            --badge-progress-bg: #d9d3bd;
+            --accent-contrast: #FAF8F5;
+            --badge-pending-bg: #F1EEE8;
+            --badge-pending-text: #4A473E;
+            --badge-progress-bg: #E3DECF;
             --badge-progress-text: #302f2c;
             --badge-done-bg: #302f2c;
-            --badge-done-text: #efede3;
-            --badge-default-bg: #e6e1d0;
+            --badge-done-text: #FAF8F5;
+            --badge-default-bg: #F1EEE8;
             --badge-default-text: #302f2c;
-            --shadow: 0 4px 20px rgba(48,47,44,0.10);
+            --shadow: 0 4px 20px rgba(48,47,44,0.08);
             --fantasy-accent: #7C3AED;
             --fantasy-accent-soft: #ede9fe;
             --vault-accent: #D97706;
             --vault-accent-soft: #fef3c7;
-            --landing-grid-line: rgba(48,47,44,0.08);
+            --landing-grid-line: rgba(48,47,44,0.06);
         }
 
         /* ============================================================
