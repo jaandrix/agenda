@@ -4780,10 +4780,6 @@
             updateSidebarPrivacy();
             updateFabIcon();
 
-            if (currentView === 'home' && typeof v23RenderSummaryDashboard === 'function') {
-                requestAnimationFrame(() => v23RenderSummaryDashboard());
-            }
-
             if(currentView==='finances' && financeSubView==='indexado') {
                 setTimeout(() => {
                     reorderInvestmentCharts();
@@ -5567,21 +5563,6 @@
         // ============================================================
         //  RENDER: HOME
         // ============================================================
-        let homeFilter = 'month';
-
-        function getFilterRange(filter) {
-            const now = new Date();
-            let start;
-            if (filter === 'week') { start = new Date(now);
-                start.setDate(now.getDate() - 7); } else if (filter === 'month') { start = new Date(now.getFullYear(), now
-                    .getMonth(), 1); } else if (filter === 'year') { start = new Date(now.getFullYear(), 0, 1); } else
-                return null;
-            return start.toISOString().slice(0, 10);
-        }
-
-        function setHomeFilter(f) { homeFilter = f;
-            render(); }
-
         function getBirthdaysInRange(filter) {
             const birthdays = entries.filter(e => e.type === 'birthday' && e.birthDate);
             const today = new Date();
@@ -5658,12 +5639,12 @@
             return count;
         }
 
-        // Gráfica ovalada de barras — un radio por día de los últimos
-        // `days`, más largo cuanta más actividad hubo ese día. Cada radio
-        // lleva además una guía fina hasta el borde con un punto en la
-        // punta (referencia de la escala completa), visible incluso en los
-        // días sin nada registrado. Óvalo en vez de círculo — mucho más
-        // bajo de alto — para que la tarjeta quepa arriba sin tapar nada.
+        // Gráfica radial circular — un radio por día de los últimos `days`,
+        // más largo cuanta más actividad hubo ese día. Cada radio lleva
+        // además una guía fina hasta el borde con un punto en la punta
+        // (referencia de la escala completa), visible incluso en los días
+        // sin nada registrado. Círculo (no óvalo) para encajar en la
+        // tarjeta cuadrada del lateral.
         function renderBitacoraActivityRadial(days) {
             days = days || 90;
             const today = new Date();
@@ -5674,100 +5655,104 @@
                 counts.push(bitacoraActivityCount(iso));
             }
             const maxCount = Math.max(1, ...counts);
-            const cx = 170, cy = 60;
-            const rxInner = 55, ryInner = 17;
-            const rxOuter = 160, ryOuter = 53;
-            const dotR = 1.2;
+            const cx = 100, cy = 100;
+            const rInner = 30, rOuter = 92;
+            const dotR = 1.4;
             const n = counts.length;
             const bars = counts.map((c, i) => {
                 const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
                 const cos = Math.cos(angle), sin = Math.sin(angle);
-                const x1 = cx + rxInner * cos, y1 = cy + ryInner * sin;
-                const xGuide = cx + rxOuter * cos, yGuide = cy + ryOuter * sin;
+                const x1 = cx + rInner * cos, y1 = cy + rInner * sin;
+                const xGuide = cx + rOuter * cos, yGuide = cy + rOuter * sin;
                 const t = Math.max(0.1, c / maxCount);
-                const xBar = cx + (rxInner + (rxOuter - rxInner) * t) * cos;
-                const yBar = cy + (ryInner + (ryOuter - ryInner) * t) * sin;
+                const r = rInner + (rOuter - rInner) * t;
+                const xBar = cx + r * cos, yBar = cy + r * sin;
                 return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xGuide.toFixed(1)}" y2="${yGuide.toFixed(1)}" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
                     <circle cx="${xGuide.toFixed(1)}" cy="${yGuide.toFixed(1)}" r="${dotR}" fill="rgba(255,255,255,0.28)"/>
                     <line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xBar.toFixed(1)}" y2="${yBar.toFixed(1)}" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>`;
             }).join('');
-            return `<svg viewBox="0 0 340 120" width="100%" height="100%" style="display:block">${bars}</svg>`;
+            return `<svg viewBox="0 0 200 200" width="100%" height="100%" style="display:block">${bars}</svg>`;
+        }
+
+        // Iconos lineales (trazo fino, sin relleno) para las categorías de
+        // Centro resumen — familia deliberadamente distinta de los iconos
+        // sólidos TARJETA BITACORA del resto de la app, inspirada en un
+        // lenguaje más geométrico y abstracto.
+        const HOME_ICON_TODAY = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3v6M12 15v6M3 12h6M15 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>';
+        const HOME_ICON_TASKS = '<svg viewBox="0 0 24 24" fill="none"><path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="4" cy="6" r="1.6" fill="currentColor"/><circle cx="4" cy="12" r="1.6" fill="currentColor"/><circle cx="4" cy="18" r="1.6" fill="currentColor"/></svg>';
+        const HOME_ICON_WEEK = '<svg viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const HOME_ICON_UPCOMING = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>';
+        const HOME_ICON_REVIEW = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>';
+        const HOME_ICON_ACTIVITY = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2-6 4 12 2-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const HOME_ICON_STATS = '<svg viewBox="0 0 24 24" fill="none"><path d="M5 18V13M11 18V8M17 18V11M21 18V5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+        const HOME_ICON_INBOX = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 8V5h4M20 8V5h-4M4 16v3h4M20 16v3h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+        const HOME_ICON_BACKUP = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 4v11M8 11l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+        function renderHomeLauncherRow(icon, label, onClick, badge) {
+            return `
+                <button class="home-launcher-row" onclick="${onClick}">
+                    <div class="home-launcher-icon">${icon}</div>
+                    <span class="home-launcher-label">${escapeHtml(label)}</span>
+                    ${badge ? `<span class="home-launcher-badge">${badge}</span>` : ''}
+                </button>`;
         }
 
         function renderHome() {
-            const range = getFilterRange(homeFilter);
-            const subsTotal = entries.filter(e => e.type === 'subscription' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
-            const fixedTotal = entries.filter(e => e.type === 'fixed_expense' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
-            const rangeBirthdays = getBirthdaysInRange(homeFilter);
-            const filtered = range ? entries.filter(e => (e.date || '') >= range) : entries;
-            const today = new Date().toISOString().slice(0, 10);
-            const todayEntries = filtered.filter(e => e.date === today || e.startDate === today);
+            const rows = [
+                renderHomeLauncherRow(HOME_ICON_TODAY, 'hoy.', 'openHomeTodayModal()'),
+                renderHomeLauncherRow(HOME_ICON_TASKS, 'tareas.', 'openHomeTasksModal()'),
+                renderHomeLauncherRow(HOME_ICON_WEEK, 'esta semana.', 'openHomeWeekModal()'),
+                renderHomeLauncherRow(HOME_ICON_UPCOMING, 'próximamente.', 'openHomeUpcomingModal()'),
+                renderHomeLauncherRow(HOME_ICON_REVIEW, 'revisión semanal.', 'openHomeReviewModal()'),
+                renderHomeLauncherRow(HOME_ICON_ACTIVITY, 'actividad.', 'openConstellationView()'),
+                renderHomeLauncherRow(HOME_ICON_STATS, 'estadísticas.', 'openHomeStatsModal()'),
+                inbox.length ? renderHomeLauncherRow(HOME_ICON_INBOX, 'inbox.', 'openHomeInboxModal()', inbox.length) : '',
+                renderHomeLauncherRow(HOME_ICON_BACKUP, 'copia de seguridad.', 'openHomeBackupModal()')
+            ].join('');
 
-            const activeProjects = filtered.filter(e => e.type === 'project' && e.status !== 'Completado');
-
-            const upcoming = filtered.filter(e => {
-                if (e.type === 'travel' && e.startDate && e.startDate > today) return true;
-                if (e.type === 'project' && e.endDate && e.endDate > today) return true;
-                if (e.type === 'work' && e.endDate && e.endDate > today) return true;
-                if (e.type === 'event' && e.date && e.date > today) return true;
-                if (e.type === 'birthday' && e.birthDate) {
-                    const [, m, d] = e.birthDate.split('-');
-                    const todayM = today.split('-')[1],
-                        todayD = today.split('-')[2];
-                    return m + '-' + d >= todayM + '-' + todayD;
-                }
-                return false;
-            }).sort((a, b) => {
-                const dateA = a.startDate || a.endDate || a.date || a.birthDate || '';
-                const dateB = b.startDate || b.endDate || b.date || b.birthDate || '';
-                return dateA.localeCompare(dateB);
-            }).slice(0, 5);
-
-            let html = `
-            <div style="position:relative;max-width:1200px">
+            return `
+            <div style="display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap;max-width:1100px">
+                <div style="flex:1 1 360px;min-width:280px">
+                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:2px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
+                    <div style="font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text-primary)">Centro de resumen</div>
+                    <div class="home-launcher-list">${rows}</div>
+                </div>
                 <div class="bitacora-activity-card">
                     <div class="bitacora-activity-title">tu estancia en bitácora.</div>
                     <div class="bitacora-activity-radial">${renderBitacoraActivityRadial(90)}</div>
                 </div>
-                <div class="culture-tabs" style="margin-bottom:16px">
-                    ${['week','month','year','all'].map(f => `
-                        <button class="culture-tab ${homeFilter===f?'active':''}" onclick="setHomeFilter('${f}')">
-                            ${({week:'Semana',month:'Mes',year:'Año',all:'Todo'})[f]}
-                        </button>`).join('')}
-                </div>
-            </div>
-            <div style="max-width:800px">
+            </div>`;
+        }
 
-                ${inbox.length ? `
-                <div class="card" style="margin-bottom:16px;border-left:3px solid #f59e0b">
-                    <div class="card-title">📥 Inbox (${inbox.length} sin organizar)</div>
-                    ${inbox.map(i => `
-                        <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
-                            <span style="font-size:13px">${escapeHtml(i.text)}</span>
-                            <button class="btn-secondary" style="width:auto;padding:2px 10px;font-size:11px" onclick="deleteInboxItem('${i.id}')">✕</button>
-                        </div>`).join('')}
-                </div>` : ''}
-                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
-                <div style="font-size:15px;font-weight:500;margin-bottom:20px;color:var(--text-primary)">${todayEntries.length} entradas hoy</div>
-
+        function openHomeTodayModal() {
+            const today = todayISO();
+            const todayEntries = entries.filter(e => e.date === today || e.startDate === today);
+            showModal(`
+                <div class="modal-title">hoy.</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">${todayEntries.length} entrada${todayEntries.length === 1 ? '' : 's'} registrada${todayEntries.length === 1 ? '' : 's'} hoy.</div>
                 ${renderTodayWidget()}
+            `);
+        }
 
-                <div class="card-grid">
-                    <div class="card"><div class="card-title">Libros</div><div class="card-value">${entries.filter(e=>e.type==='book').length}</div></div>
-                    <div class="card"><div class="card-title">Películas</div><div class="card-value">${entries.filter(e=>e.type==='movie').length}</div></div>
-                    <div class="card"><div class="card-title">Series</div><div class="card-value">${entries.filter(e=>e.type==='series').length}</div></div>
-                    <div class="card"><div class="card-title">Videojuegos</div><div class="card-value">${entries.filter(e=>e.type==='game').length}</div></div>
-                    <div class="card"><div class="card-title">Viajes</div><div class="card-value">${entries.filter(e=>e.type==='travel').length}</div></div>
-                    <div class="card"><div class="card-title">Proyectos activos</div><div class="card-value">${activeProjects.length}</div></div>
-                    <div class="card"><div class="card-title">Notas</div><div class="card-value">${notes.length}</div></div>
-                    <div class="card"><div class="card-title">Objetivos</div><div class="card-value">${entries.filter(e=>e.type==='goal').length}</div></div>
-                    <div class="card"><div class="card-title">Cumpleaños</div><div class="card-value">${entries.filter(e=>e.type==='birthday').length}</div></div>
-                    <div class="card"><div class="card-title">Suscripciones/mes</div><div class="card-value">${subsTotal.toLocaleString('es-ES')}€</div></div>
-                    <div class="card"><div class="card-title">Gastos fijos/mes</div><div class="card-value">${fixedTotal.toLocaleString('es-ES')}€</div></div>
-                </div>
+        function openHomeUpcomingModal() {
+            const rangeBirthdays = getBirthdaysInRange('month');
+            const today = new Date().toISOString().slice(0, 10);
+            const upcoming = entries.filter(e => {
+                if (e.type === 'travel' && e.startDate && e.startDate > today) return true;
+                if (e.type === 'project' && e.endDate && e.endDate > today) return true;
+                if (e.type === 'work' && e.endDate && e.endDate > today) return true;
+                if (e.type === 'event' && e.date && e.date > today) return true;
+                return false;
+            }).sort((a, b) => {
+                const dateA = a.startDate || a.endDate || a.date || '';
+                const dateB = b.startDate || b.endDate || b.date || '';
+                return dateA.localeCompare(dateB);
+            }).slice(0, 8);
 
+            showModal(`
+                <div class="modal-title">próximamente.</div>
                 ${rangeBirthdays.length ? `
-                    <div style="font-weight:600;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Cumpleaños en este periodo</div>
+                    <div style="font-weight:600;font-size:13px;margin:4px 0 8px 0;color:var(--text-primary)">Cumpleaños</div>
                     ${rangeBirthdays.map(b => `
                         <div class="entry-item">
                             <div class="entry-color-dot" style="background:#ec4899"></div>
@@ -5777,29 +5762,67 @@
                             </div>
                         </div>`).join('')}
                 ` : ''}
-
                 ${upcoming.length ? `
-                    <div style="font-weight:600;font-size:14px;margin:16px 0 8px 0;color:var(--text-primary)">Próximamente</div>
+                    <div style="font-weight:600;font-size:13px;margin:16px 0 8px 0;color:var(--text-primary)">Fechas próximas</div>
                     ${upcoming.map(e => {
                         const cat = categories.find(c => c.id === e.categoryId);
                         const color = cat?.color || 'var(--text-secondary)';
-                        const dateInfo = e.birthDate || e.startDate || e.endDate || e.date || '';
-                        const label = e.type === 'birthday' ? '🎂 ' + e.title : e.title;
+                        const dateInfo = e.startDate || e.endDate || e.date || '';
                         return `
-                            <div class="entry-item" onclick="switchView('calendar');showDayEntries('${dateInfo}')">
+                            <div class="entry-item" onclick="closeModal();switchView('calendar');showDayEntries('${dateInfo}')">
                                 <div class="entry-color-dot" style="background:${color}"></div>
                                 <div class="entry-info">
-                                    <div class="entry-title">${label}</div>
+                                    <div class="entry-title">${escapeHtml(e.title)}</div>
                                     <div class="entry-meta">${dateInfo}</div>
                                 </div>
                             </div>`;
                     }).join('')}
                 ` : ''}
+                ${(!rangeBirthdays.length && !upcoming.length) ? `<div style="font-size:12px;color:var(--text-secondary)">Nada próximo registrado por ahora.</div>` : ''}
+            `);
+        }
 
-                <div id="summaryDashboard" style="margin-top:20px"></div>
-            </div>`;
+        function openHomeStatsModal() {
+            const subsTotal = entries.filter(e => e.type === 'subscription' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
+            const fixedTotal = entries.filter(e => e.type === 'fixed_expense' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
+            const activeProjects = entries.filter(e => e.type === 'project' && e.status !== 'Completado');
+            const workDays = entries.filter(e => e.type === 'work').reduce((sum, job) => sum + countWorkingDays(job.startDate, job.endDate || todayISO()), 0);
+            const stats = [
+                [entries.length, 'entradas'], [entries.filter(e=>e.type==='book').length, 'libros'],
+                [entries.filter(e=>e.type==='movie').length, 'películas'], [entries.filter(e=>e.type==='series').length, 'series'],
+                [entries.filter(e=>e.type==='game').length, 'videojuegos'], [entries.filter(e=>e.type==='travel').length, 'viajes'],
+                [activeProjects.length, 'proyectos activos'], [notes.length, 'notas'],
+                [entries.filter(e=>e.type==='goal').length, 'objetivos'], [entries.filter(e=>e.type==='place').length, 'lugares'],
+                [entries.filter(e=>e.type==='birthday').length, 'cumpleaños'], [workDays, 'días cotizados'],
+                [subsTotal.toLocaleString('es-ES') + '€', 'suscripciones/mes'], [fixedTotal.toLocaleString('es-ES') + '€', 'gastos fijos/mes']
+            ];
+            showModal(`
+                <div class="modal-title">estadísticas.</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">La dimensión real de todo lo que has ido registrando en Bitácora.</div>
+                <div class="summary-stat-list">
+                    ${stats.map(([num, txt]) => `<div class="summary-stat"><div class="num">${num}</div><div class="txt">${txt}</div></div>`).join('')}
+                </div>
+            `);
+        }
 
-            return html;
+        function openHomeInboxModal() {
+            showModal(`
+                <div class="modal-title">inbox.</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">${inbox.length} sin organizar.</div>
+                ${inbox.map(i => `
+                    <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+                        <span style="font-size:13px">${escapeHtml(i.text)}</span>
+                        <button class="btn-secondary" style="width:auto;padding:2px 10px;font-size:11px" onclick="deleteInboxItem('${i.id}');closeModal();openHomeInboxModal()">✕</button>
+                    </div>`).join('')}
+            `);
+        }
+
+        function openHomeBackupModal() {
+            showModal(`
+                <div class="modal-title">copia de seguridad.</div>
+                <div class="finance-modal-note" style="margin-bottom:14px">Descarga una copia completa de los datos que Bitácora tiene actualmente cargados.</div>
+                <button class="btn-modal-primary" onclick="v23ExportBackup()">↧ Descargar copia de seguridad</button>
+            `);
         }
 
         // ============================================================

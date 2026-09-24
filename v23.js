@@ -166,28 +166,47 @@
     // Envoltorios: las funciones "toggle" propias de cada sección hacen
     // cosas específicas de su vista (reabrir un modal, refrescar el
     // Planificador...) que no encajan sueltas en Centro resumen — estos
-    // wrappers llaman a la función real y luego solo refrescan este panel.
+    // wrappers llaman a la función real y luego solo refrescan el popup
+    // abierto (Centro resumen ya no tiene un panel fijo en la página).
+    function v23RefreshOpenPopup() {
+        const sheet = document.querySelector('.modal-sheet');
+        if (!sheet) return;
+        if (sheet.querySelector('#summary-mytasks-section')) sheet.innerHTML = renderMyTasksSection();
+        else if (sheet.querySelector('#summary-review-section')) sheet.innerHTML = renderWeeklyReviewSection();
+    }
     window.toggleMyTaskRecurring = async function (id) {
         if (typeof toggleRecurringTaskDoneToday === 'function') await toggleRecurringTaskDoneToday(id);
-        if (typeof window.v23RenderSummaryDashboard === 'function') window.v23RenderSummaryDashboard();
+        v23RefreshOpenPopup();
     };
     window.toggleMyTaskPlanner = async function (id) {
         if (typeof togglePlannerItemDone === 'function') await togglePlannerItemDone(id);
-        if (typeof window.v23RenderSummaryDashboard === 'function') window.v23RenderSummaryDashboard();
+        v23RefreshOpenPopup();
     };
     window.toggleMyTaskProjectTask = async function (projectId, taskIndex) {
         const project = entries.find(e => e.id === projectId);
         if (!project || !Array.isArray(project.tasks) || !project.tasks[taskIndex]) return;
         project.tasks[taskIndex].done = !project.tasks[taskIndex].done;
         try { await saveData(); } catch (e) { console.error(e); }
-        if (typeof window.v23RenderSummaryDashboard === 'function') window.v23RenderSummaryDashboard();
+        v23RefreshOpenPopup();
     };
     window.toggleMyTaskGoalMilestone = async function (goalId, index) {
         const goal = entries.find(e => e.id === goalId);
         if (!goal || !Array.isArray(goal.milestones) || !goal.milestones[index]) return;
         goal.milestones[index].done = !goal.milestones[index].done;
         try { await saveData(); } catch (e) { console.error(e); }
-        if (typeof window.v23RenderSummaryDashboard === 'function') window.v23RenderSummaryDashboard();
+        v23RefreshOpenPopup();
+    };
+
+    // Centro resumen (categorías → popup): estos tres abren en modal las
+    // secciones que antes vivían fijas en la página.
+    window.openHomeTasksModal = function () {
+        if (typeof showModal === 'function') showModal(renderMyTasksSection());
+    };
+    window.openHomeReviewModal = function () {
+        if (typeof showModal === 'function') showModal(renderWeeklyReviewSection());
+    };
+    window.openHomeWeekModal = function () {
+        if (typeof showModal === 'function') showModal(renderWeekSection());
     };
 
     function dateOf(value) {
@@ -311,45 +330,14 @@
         return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
     }
 
-    function historicalStats() {
-        const countType = type => Array.isArray(entries)
-            ? entries.filter(e => e.type === type).length
-            : 0;
-
-        const workDays = Array.isArray(entries)
-            ? entries.filter(e => e.type === 'work').reduce((sum, job) => {
-                return sum + countWorkingDays(job.startDate, job.endDate || todayISO());
-            }, 0)
-            : 0;
-
-        return {
-            total: Array.isArray(entries) ? entries.length : 0,
-            books: countType('book'),
-            movies: countType('movie'),
-            series: countType('series'),
-            games: countType('game'),
-            trips: countType('travel'),
-            projects: countType('project'),
-            places: countType('place'),
-            goals: countType('goal'),
-            notes: Array.isArray(notes) ? notes.length : 0,
-            workDays
-        };
-    }
-
-    window.v23RenderSummaryDashboard = function () {
-        const root = document.getElementById('summaryDashboard');
-        if (!root) return;
-
-        const events = collectEvents();
-        const week = thisWeek(events);
-        const stats = historicalStats();
-
-        root.innerHTML = `
-            ${renderMyTasksSection()}
-
-            ${renderWeeklyReviewSection()}
-
+    // "Esta semana" — antes vivía fija en el panel de Centro resumen,
+    // ahora es el contenido de la categoría "esta semana." (popup). El
+    // contador en vivo sigue actualizándose mientras el popup está abierto
+    // (el intervalo ya solo toca elementos [data-v23-countdown] que existan).
+    function renderWeekSection() {
+        const week = thisWeek(collectEvents());
+        v23StartCountdownTimer();
+        return `
             <div class="summary-section" id="summary-week-section">
                 <div class="summary-section-head">
                     <div>
@@ -375,79 +363,18 @@
                     </div>
                 `}
             </div>
-
-            <div class="summary-section" id="summary-activity-section">
-                <div class="summary-section-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-                    <div>
-                        <div class="summary-section-title">Actividad reciente</div>
-                        <div class="summary-section-desc">Timeline de tu actividad, de lo más reciente hacia atrás.</div>
-                    </div>
-                    ${events.length ? `<button class="btn-secondary" style="width:auto;flex-shrink:0" onclick="openConstellationView()">Ver todo →</button>` : ''}
-                </div>
-
-                ${events.length ? `
-                    <div class="summary-timeline">
-                        ${events.slice(0, 12).map(e => `
-                            <div class="timeline-item">
-                                <div class="timeline-dot"></div>
-                                <div class="timeline-date">${formatDate(e.date)}</div>
-                                <div>
-                                    <div class="timeline-title">${esc(e.title)}</div>
-                                    <div class="timeline-meta">${esc(e.type)}${e.detail ? ' · ' + esc(e.detail) : ''}</div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : `
-                    <div style="font-size:12px;color:var(--text-secondary)">
-                        Todavía no hay actividad fechada suficiente para mostrar la timeline.
-                    </div>
-                `}
-            </div>
-
-            <div class="summary-section" id="summary-stats-section">
-                <div class="summary-section-head">
-                    <div>
-                        <div class="summary-section-title">Estadísticas históricas</div>
-                        <div class="summary-section-desc">La dimensión real de todo lo que has ido registrando en Bitácora.</div>
-                    </div>
-                </div>
-
-                <div class="summary-stat-list">
-                    <div class="summary-stat"><div class="num">${stats.total}</div><div class="txt">entradas</div></div>
-                    <div class="summary-stat"><div class="num">${stats.books}</div><div class="txt">libros</div></div>
-                    <div class="summary-stat"><div class="num">${stats.movies}</div><div class="txt">películas</div></div>
-                    <div class="summary-stat"><div class="num">${stats.series}</div><div class="txt">series</div></div>
-                    <div class="summary-stat"><div class="num">${stats.games}</div><div class="txt">videojuegos</div></div>
-                    <div class="summary-stat"><div class="num">${stats.trips}</div><div class="txt">viajes</div></div>
-                    <div class="summary-stat"><div class="num">${stats.projects}</div><div class="txt">proyectos</div></div>
-                    <div class="summary-stat"><div class="num">${stats.places}</div><div class="txt">lugares</div></div>
-                    <div class="summary-stat"><div class="num">${stats.goals}</div><div class="txt">objetivos</div></div>
-                    <div class="summary-stat"><div class="num">${stats.notes}</div><div class="txt">notas</div></div>
-                    <div class="summary-stat"><div class="num">${stats.workDays}</div><div class="txt">días cotizados</div></div>
-                </div>
-            </div>
-
-            <div class="summary-section" id="summary-backup-section">
-                <div class="summary-backup-row">
-                    <div>
-                        <div class="summary-section-title">Copia de seguridad</div>
-                        <div class="desc">Descarga una copia completa de los datos que Bitácora tiene actualmente cargados.</div>
-                    </div>
-                    <button class="btn-secondary" style="width:auto" onclick="v23ExportBackup()">↧ Copia de seguridad</button>
-                </div>
-            </div>
         `;
+    }
 
-        if (!window._v23Timer) {
-            window._v23Timer = setInterval(() => {
-                document.querySelectorAll('[data-v23-countdown]').forEach(el => {
-                    const d = new Date(el.dataset.v23Countdown);
-                    el.textContent = countdown(d);
-                });
-            }, 1000);
-        }
-    };
+    function v23StartCountdownTimer() {
+        if (window._v23Timer) return;
+        window._v23Timer = setInterval(() => {
+            document.querySelectorAll('[data-v23-countdown]').forEach(el => {
+                const d = new Date(el.dataset.v23Countdown);
+                el.textContent = countdown(d);
+            });
+        }, 1000);
+    }
 
     // Vista "constelación": el mismo timeline cronológico de "Actividad
     // reciente", pero completo y navegable — para hojear todo lo vivido en
@@ -715,9 +642,6 @@
 
     function init() {
         initSearch();
-        if (typeof currentView !== 'undefined' && currentView === 'home') {
-            requestAnimationFrame(() => v23RenderSummaryDashboard());
-        }
     }
 
     function initSidebarScrollFade() {
