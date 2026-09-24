@@ -8506,14 +8506,6 @@
             const nextExam = nextUpcomingExam();
             return `
             <div class="studies-view">
-                <div class="studies-actions-row">
-                    <div class="studies-actions-stack">
-                        <button class="btn-modal-primary studies-inline-add-btn btn-accent-blue" onclick="openAddSubject()">+ asignatura</button>
-                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddQuickNote()">+ nota rápida</button>
-                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openQuickNotesList()">notas rápidas${(studies.quickNotes || []).length ? ` (${studies.quickNotes.length})` : ''}</button>
-                    </div>
-                </div>
-
                 ${nextExam ? `
                 <div class="event-hero" style="border-color:${(nextExam.subjectColor || '#3b82f6')}66;margin-bottom:18px">
                     <div class="event-hero-kicker" style="color:${nextExam.subjectColor || '#3b82f6'}">Próximo examen · ${eventCountdownLabel(nextExam.date)}</div>
@@ -8525,6 +8517,14 @@
                     <h3>Horario semanal</h3>
                     ${renderScheduleGrid()}
                 </section>
+
+                <div class="studies-actions-row studies-actions-row-center">
+                    <div class="studies-actions-stack">
+                        <button class="btn-modal-primary studies-inline-add-btn btn-accent-blue" onclick="openAddSubject()">+ asignatura</button>
+                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddQuickNote()">+ nota rápida</button>
+                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openQuickNotesList()">notas rápidas${(studies.quickNotes || []).length ? ` (${studies.quickNotes.length})` : ''}</button>
+                    </div>
+                </div>
 
                 <section class="studies-section" id="studies-subjects-section">
                     <h3>Asignaturas</h3>

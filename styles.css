@@ -4888,6 +4888,7 @@ body.papel {
 .studies-quicknote-meta { display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
 .studies-quicknote-meta button { background:none; border:0; color:#dc2626; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; }
 .studies-actions-row { display:flex; justify-content:flex-end; margin-bottom:18px; }
+.studies-actions-row-center { justify-content:center; margin-top:22px; }
 .studies-actions-stack { display:flex; flex-direction:row; flex-wrap:wrap; gap:8px; align-items:center; }
 .studies-inline-add-btn { width:auto; white-space:nowrap; padding:10px 18px; margin-top:0; }
 .links-view { max-width:980px; }
