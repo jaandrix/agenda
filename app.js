@@ -584,6 +584,7 @@
             projects: 'Proyectos',
             events: 'Eventos',
             documents: 'Documentos',
+            viewer: 'Visor',
             finances: 'Dashboard',
             tags: 'Etiquetas',
             vault: 'Vault',
@@ -619,6 +620,7 @@
                 { view: 'work', icon: '◫', text: 'Trabajo' },
                 { view: 'studies', icon: '◎', text: 'Estudios' },
                 { view: 'documents', icon: '▤', text: 'Documentos' },
+                { view: 'viewer', icon: '▥', text: 'Visor' },
                 { view: 'goals', icon: '◉', text: 'Objetivos' },
                 { view: 'projects', icon: '⊞', text: 'Proyectos' },
                 { view: 'links', icon: '⛓', text: 'Enlaces' },
@@ -4592,7 +4594,10 @@
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
-                loadDocuments(); loadBackups(); renderBackupFailureBanner(); } else if (currentView === 'finances') { content.innerHTML = renderFinances();
+                loadDocuments(); loadBackups(); renderBackupFailureBanner(); }
+            else if (currentView === 'viewer') { content.innerHTML = renderViewer();
+                loadViewerFiles(); }
+            else if (currentView === 'finances') { content.innerHTML = renderFinances();
                 requestAnimationFrame(animateFinanceProChartPanel); }
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
             else if (currentView === 'graph') content.innerHTML = renderGraph();
@@ -14103,6 +14108,139 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 await loadDocuments();
             } catch (e) {
                 console.error('Error eliminando documento:', e);
+                showToast('Error al eliminar: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        // ============================================================
+        //  RENDER: VISOR
+        //  Guías/checklists en HTML sueltas (como la de coleccionismo)
+        //  que el usuario sube y luego abre en un visor propio, en vez
+        //  de tener que guardarlas y abrirlas fuera de Bitácora. Usa el
+        //  mismo bucket "documents" que Documentos, en su propia carpeta
+        //  "viewer/" para no mezclarse con los PDFs.
+        // ============================================================
+        let viewerFiles = [];
+
+        function renderViewer() {
+            return `
+                <div style="max-width:980px">
+                    <div class="doc-upload-box" onclick="document.getElementById('viewer-upload-input').click()">
+                        <div style="font-size:28px;margin-bottom:6px">▥</div>
+                        <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube una página HTML</div>
+                        <div style="font-size:12px;color:var(--text-secondary)">Guías, listas de checkboxes, resúmenes... Pulsa aquí para elegir un archivo .html</div>
+                    </div>
+                    <div id="viewer-list">Cargando...</div>
+                </div>`;
+        }
+
+        async function loadViewerFiles() {
+            const listEl = document.getElementById('viewer-list');
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) { viewerFiles = [];
+                    if (listEl) listEl.innerHTML = ''; return; }
+                const { data, error } = await sb.storage.from('documents').list(`${user.id}/viewer`, {
+                    sortBy: { column: 'created_at', order: 'desc' }
+                });
+                if (error) throw error;
+                viewerFiles = (data || []).filter(d => d.id !== null);
+                if (listEl) renderViewerList();
+            } catch (e) {
+                console.error('Error cargando el visor:', e);
+                if (listEl) listEl.innerHTML =
+                    `<div class="empty-state"><div class="empty-title">No se pudo cargar el visor</div><div class="empty-sub">${(e?.message || 'Comprueba que el bucket "documents" existe en Supabase Storage')}</div></div>`;
+            }
+        }
+
+        function renderViewerList() {
+            const listEl = document.getElementById('viewer-list');
+            if (!listEl) return;
+            if (!viewerFiles.length) {
+                listEl.innerHTML =
+                    `<div class="empty-state"><div class="empty-title">Sin archivos</div><div class="empty-sub">Sube tu primera página HTML con el botón de arriba</div></div>`;
+                return;
+            }
+            listEl.innerHTML = `<div class="docs-list">${viewerFiles.map((f, i) => {
+                const sizeKb = f.metadata?.size ? Math.round(f.metadata.size / 1024) + ' KB' : '';
+                const date = f.created_at ? new Date(f.created_at).toLocaleDateString('es-ES') : '';
+                return `
+                    <div class="docs-row">
+                        <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
+                        <div class="docs-row-body">
+                            <div class="docs-row-name">${escapeHtml(f.name)}</div>
+                            <div class="docs-row-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
+                        </div>
+                        <div class="doc-actions">
+                            <button class="doc-action-download" onclick="openViewerFile('${escapeHtml(f.name)}')">Ver</button>
+                            <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteViewerFile('${escapeHtml(f.name)}')">✕</button>
+                        </div>
+                    </div>`;
+            }).join('')}</div>`;
+        }
+
+        async function handleViewerUpload(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const isHtml = file.type === 'text/html' || /\.html?$/i.test(file.name);
+            if (!isHtml) { showToast('Solo se admiten archivos HTML', true); return; }
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/viewer/${Date.now()}_${file.name}`;
+                const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false, contentType: 'text/html' });
+                if (error) throw error;
+                showToast('Página subida correctamente');
+                await loadViewerFiles();
+            } catch (e) {
+                console.error('Error subiendo al visor:', e);
+                showToast('Error al subir: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        async function openViewerFile(name) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/viewer/${name}`;
+                // 6 horas de validez: es para leer/marcar checkboxes con
+                // calma dentro del visor, no una descarga puntual como en
+                // Documentos (ahí 60s basta).
+                const { data, error } = await sb.storage.from('documents').createSignedUrl(path, 21600);
+                if (error) throw error;
+                document.getElementById('modal-container').innerHTML = renderViewerFrameModal(name, data.signedUrl);
+            } catch (e) {
+                console.error('Error abriendo el archivo:', e);
+                showToast('Error al abrir: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        function renderViewerFrameModal(name, url) {
+            return `
+                <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                    <div class="modal-sheet viewer-modal-sheet">
+                        <div class="viewer-modal-head">
+                            <div class="viewer-modal-title">${escapeHtml(name)}</div>
+                            <button class="modal-close" onclick="closeModal()">✕</button>
+                        </div>
+                        <iframe class="viewer-modal-iframe" src="${escapeHtml(url)}" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+                    </div>
+                </div>`;
+        }
+
+        async function deleteViewerFile(name) {
+            if (!confirm('¿Eliminar este archivo del visor? No se puede deshacer.')) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/viewer/${name}`;
+                const { error } = await sb.storage.from('documents').remove([path]);
+                if (error) throw error;
+                showToast('Archivo eliminado');
+                await loadViewerFiles();
+            } catch (e) {
+                console.error('Error eliminando del visor:', e);
                 showToast('Error al eliminar: ' + (e?.message || 'desconocido'), true);
             }
         }
