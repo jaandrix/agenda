@@ -14173,6 +14173,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         </div>
                         <div class="doc-actions">
                             <button class="doc-action-download" onclick="openViewerFile('${escapeHtml(f.name)}')">Ver</button>
+                            <button class="doc-action-delete-btn" title="Renombrar" style="color:var(--text-secondary)" onclick="renameViewerFile('${escapeHtml(f.name)}')">✎</button>
                             <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteViewerFile('${escapeHtml(f.name)}')">✕</button>
                         </div>
                     </div>`;
@@ -14211,6 +14212,29 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             } catch (e) {
                 console.error('Error subiendo al visor:', e);
                 showToast('Error al subir: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        async function renameViewerFile(oldName) {
+            const currentBase = oldName.replace(/\.html?$/i, '');
+            const input = prompt('Nuevo nombre para el archivo:', currentBase);
+            if (input === null) return;
+            const trimmed = input.trim();
+            if (!trimmed) return;
+            const newName = sanitizeStorageFilename(trimmed.replace(/\.html?$/i, '') + '.html');
+            if (newName === oldName) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const fromPath = `${user.id}/viewer/${oldName}`;
+                const toPath = `${user.id}/viewer/${newName}`;
+                const { error } = await sb.storage.from('documents').move(fromPath, toPath);
+                if (error) throw error;
+                showToast('Nombre actualizado');
+                await loadViewerFiles();
+            } catch (e) {
+                console.error('Error renombrando:', e);
+                showToast('Error al renombrar: ' + (e?.message || 'ya existe un archivo con ese nombre'), true);
             }
         }
 
