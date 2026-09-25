@@ -9253,13 +9253,11 @@
             let html = `<div style="max-width:980px">` + banner;
 
             if (next) {
-                const nextCat = categories.find(c => c.id === next.categoryId);
-                const nextColor = nextCat?.color || '#3b82f6';
                 const nextType = EVENT_TYPE_LABELS[next.eventType] || '';
                 html += `
-                    <div class="event-hero" style="border-color:${nextColor}66" data-open-entry="${next.id}">
+                    <div class="event-hero event-hero-flat" data-open-entry="${next.id}">
                         <div class="event-hero-body">
-                            <div class="event-hero-kicker" style="color:${nextColor}">Próximo evento · ${eventCountdownLabel(next.date)}</div>
+                            <div class="event-hero-kicker">próximo evento ${eventCountdownLabel(next.date).toLowerCase()}.</div>
                             <div class="event-hero-title">${escapeHtml(next.title)}</div>
                             <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ' · ' : ''}${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
                         </div>
