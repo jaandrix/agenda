@@ -730,6 +730,9 @@
             motogp: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="22" cy="74" r="13"/><circle cx="78" cy="74" r="13"/><circle cx="60" cy="28" r="8"/><path d="M18 74l16-20h14l10-14c3-4 9-5 12-1l-7 9 9 11h10l6 15H70l-8-13H42z"/></svg>',
             otro: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="23"/></svg>'
         };
+        // Icono de la tarjeta "Próximo evento · hoy" — signo de exclamación
+        // grueso y ligeramente inclinado, misma familia TARJETA BITACORA.
+        const EVENT_HERO_ICON_ALERT = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M46 4 L70 10 L58 62 L40 58 Z"/><path d="M30 74 L52 79 L46 96 L26 91 Z"/></svg>';
         let eventsTypeFilter = 'all';
         let eventsSearchQuery = '';
         let eventsShowPast = false;
@@ -8371,9 +8374,11 @@
             <div class="studies-view">
                 ${nextExam ? `
                 <div class="event-hero" style="border-color:${(nextExam.subjectColor || '#3b82f6')}66;margin-bottom:18px">
-                    <div class="event-hero-kicker" style="color:${nextExam.subjectColor || '#3b82f6'}">Próximo examen · ${eventCountdownLabel(nextExam.date)}</div>
-                    <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')} — ${escapeHtml(nextExam.subjectName)}</div>
-                    <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
+                    <div class="event-hero-body">
+                        <div class="event-hero-kicker" style="color:${nextExam.subjectColor || '#3b82f6'}">Próximo examen · ${eventCountdownLabel(nextExam.date)}</div>
+                        <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')} — ${escapeHtml(nextExam.subjectName)}</div>
+                        <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
+                    </div>
                 </div>` : ''}
 
                 <section class="studies-section" id="studies-schedule-section">
@@ -9253,9 +9258,12 @@
                 const nextType = EVENT_TYPE_LABELS[next.eventType] || '';
                 html += `
                     <div class="event-hero" style="border-color:${nextColor}66" data-open-entry="${next.id}">
-                        <div class="event-hero-kicker" style="color:${nextColor}">Próximo evento · ${eventCountdownLabel(next.date)}</div>
-                        <div class="event-hero-title">${escapeHtml(next.title)}</div>
-                        <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ' · ' : ''}${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
+                        <div class="event-hero-body">
+                            <div class="event-hero-kicker" style="color:${nextColor}">Próximo evento · ${eventCountdownLabel(next.date)}</div>
+                            <div class="event-hero-title">${escapeHtml(next.title)}</div>
+                            <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ' · ' : ''}${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
+                        </div>
+                        <div class="event-hero-icon">${EVENT_HERO_ICON_ALERT}</div>
                     </div>`;
             }
 

@@ -4485,11 +4485,18 @@ body.papel {
 .event-hero {
     background:var(--bg-card); border:1.5px solid var(--border-strong); border-radius:20px;
     padding:20px 22px; margin-bottom:24px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
 }
 .event-hero:hover { transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.12); }
+.event-hero-body { min-width:0; }
 .event-hero-kicker { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; margin-bottom:8px; }
 .event-hero-title { font-size:22px; font-weight:700; color:var(--text-primary); letter-spacing:-.3px; }
 .event-hero-meta { font-size:13px; color:var(--text-secondary); margin-top:6px; }
+.event-hero-icon {
+    width:46px; height:46px; flex-shrink:0; background:var(--bg-card-hover); color:var(--text-primary);
+    border-radius:13px; padding:11px; box-sizing:border-box;
+}
+.event-hero-icon svg { width:100%; height:100%; display:block; }
 .month-filter-banner { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:10px 14px; margin-bottom:16px; }
 .month-filter-banner strong { color:var(--text-primary); }
 .month-filter-banner a { color:#3b82f6; text-decoration:underline; text-underline-offset:2px; cursor:pointer; margin-left:auto; }
