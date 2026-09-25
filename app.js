@@ -5345,38 +5345,40 @@
             return { birthdays, exams, events };
         }
 
+        // Icono de cumpleaños (misma familia TARJETA BITACORA que el resto
+        // de chips de línea: bola de tarta con vela, solo relleno).
+        const BIRTHDAY_ICON_CAKE = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M12 46h76v42a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6z"/><path d="M12 60c8-6 16 6 24 0s16 6 24 0 16 6 24 0v10c-8 6-16-6-24 0s-16-6-24 0-16-6-24 0z" opacity=".5"/><rect x="46" y="18" width="8" height="20"/><path d="M50 6c6 6 6 10 0 16-6-6-6-10 0-16z"/></svg>';
+
         function showDailyAlertPopup() {
             const { birthdays, exams, events } = getTodayAlerts();
             if (!birthdays.length && !exams.length && !events.length) return;
 
-            const group = (label, items, renderItem) => items.length ? `
-                <div class="daily-alert-group">
-                    <div class="daily-alert-group-label">${label}</div>
-                    ${items.map(renderItem).join('')}
-                </div>` : '';
+            const row = (icon, title, meta, onclick) => `
+                <div class="line-row"${onclick ? ` onclick="${onclick}"` : ' style="cursor:default"'}>
+                    <div class="line-row-icon">${icon}</div>
+                    <div class="line-row-body">
+                        <div class="line-row-title"><span class="line-row-title-text">${title}</span></div>
+                        ${meta ? `<div class="line-row-meta">${meta}</div>` : ''}
+                    </div>
+                </div>`;
+
+            const rows = [
+                ...birthdays.map(e => {
+                    const years = e.birthDate ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : null;
+                    return row(BIRTHDAY_ICON_CAKE, escapeHtml(e.title), years ? `${years} años` : '');
+                }),
+                ...exams.map(ex => row(STUDIES_ICON_EXAM, escapeHtml(ex.title || 'Examen'), escapeHtml(ex.subject), "closeModal();switchView('studies')")),
+                ...events.map(e => row(EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro, escapeHtml(e.title), e.time ? escapeHtml(e.time) : '', `closeModal();navigateToEntry('${e.id}')`))
+            ].join('');
 
             document.getElementById('modal-container').innerHTML = `
-                <div class="daily-alert-overlay" onclick="if(event.target===this) closeDailyAlert()">
-                    <div class="daily-alert-sheet"><div class="daily-alert-inner">
-                        <div class="daily-alert-kicker">Hoy</div>
-                        <div class="daily-alert-title">Esto es lo que tienes</div>
-                        ${group('Cumpleaños', birthdays, e => {
-                            const years = e.birthDate ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : null;
-                            return `<div class="daily-alert-item">🎂 ${escapeHtml(e.title)}${years ? ` · ${years} años` : ''}</div>`;
-                        })}
-                        ${group('Exámenes', exams, ex => `<div class="daily-alert-item" onclick="closeDailyAlert();switchView('studies')">📝 ${escapeHtml(ex.subject)}${ex.title ? ' · ' + escapeHtml(ex.title) : ''}</div>`)}
-                        ${group('Eventos', events, e => `<div class="daily-alert-item" onclick="closeDailyAlert();navigateToEntry('${e.id}')">${escapeHtml(e.title)}${e.time ? ' · ' + escapeHtml(e.time) : ''}</div>`)}
-                        <button class="daily-alert-close" onclick="closeDailyAlert()">Entendido</button>
-                    </div></div>
+                <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                    <div class="modal-sheet">
+                        <div class="modal-title">tienes esto para hoy.<button class="modal-close" onclick="closeModal()">✕</button></div>
+                        <div class="line-row-list">${rows}</div>
+                        <button class="btn-secondary" style="width:100%;margin-top:14px" onclick="closeModal()">entendido.</button>
+                    </div>
                 </div>`;
-        }
-
-        function closeDailyAlert() {
-            const container = document.getElementById('modal-container');
-            const overlay = container.querySelector('.daily-alert-overlay');
-            if (!overlay) { container.innerHTML = ''; return; }
-            overlay.style.animation = 'modalOverlayOut 0.18s ease both';
-            setTimeout(() => { if (container.contains(overlay)) container.innerHTML = ''; }, 170);
         }
 
         function maybeShowDailyAlert() {

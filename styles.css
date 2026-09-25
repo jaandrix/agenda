@@ -1668,35 +1668,6 @@
         .logout-confirm-actions { display: flex; gap: 10px; }
         .logout-confirm-actions button { flex: 1; width: auto; margin: 0; padding: 12px; font-size: 15px; border-radius: 18px; }
 
-        /* ============================================================
-               ALERTA DIARIA
-            ============================================================ */
-        @keyframes dailyAlertIn {
-            from { opacity: 0; transform: scale(0.9) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .daily-alert-overlay {
-            position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center; padding: 20px;
-            animation: modalOverlayIn 0.3s cubic-bezier(0.16,1,0.3,1) both;
-        }
-        .daily-alert-sheet {
-            width: 100%; max-width: 420px; max-height: 85dvh; overflow-y: auto;
-            border-radius: 26px; padding: 2px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6, #f59e0b);
-            animation: dailyAlertIn 0.45s cubic-bezier(0.16,1,0.3,1) both;
-        }
-        .daily-alert-inner { background: #0a0a0c; border-radius: 24px; padding: 26px 22px; }
-        .daily-alert-kicker { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #60a5fa; }
-        .daily-alert-title { font-size: 22px; font-weight: 700; color: #fff; margin: 4px 0 18px; }
-        .daily-alert-group { margin-bottom: 14px; }
-        .daily-alert-group-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
-        .daily-alert-item { padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: #fff; font-size: 13px; cursor: default; }
-        .daily-alert-item:last-child { border-bottom: none; }
-        .daily-alert-item[onclick] { cursor: pointer; }
-        .daily-alert-item[onclick]:hover { color: #93c5fd; }
-        .daily-alert-close { width: 100%; margin-top: 10px; padding: 12px; border: 0; border-radius: 16px; background: #fff; color: #000; font-weight: 700; cursor: pointer; }
         .modal-overlay {
             position: fixed;
             inset: 0;
