@@ -584,7 +584,6 @@
             projects: 'Proyectos',
             events: 'Eventos',
             documents: 'Documentos',
-            viewer: 'Visor',
             finances: 'Dashboard',
             tags: 'Etiquetas',
             vault: 'Vault',
@@ -620,7 +619,6 @@
                 { view: 'work', icon: '◫', text: 'Trabajo' },
                 { view: 'studies', icon: '◎', text: 'Estudios' },
                 { view: 'documents', icon: '▤', text: 'Documentos' },
-                { view: 'viewer', icon: '▥', text: 'Visor' },
                 { view: 'goals', icon: '◉', text: 'Objetivos' },
                 { view: 'projects', icon: '⊞', text: 'Proyectos' },
                 { view: 'links', icon: '⛓', text: 'Enlaces' },
@@ -4594,9 +4592,7 @@
             else if (currentView === 'projects') content.innerHTML = renderProjects();
             else if (currentView === 'events') content.innerHTML = renderEvents();
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
-                loadDocuments(); loadBackups(); renderBackupFailureBanner(); }
-            else if (currentView === 'viewer') { content.innerHTML = renderViewer();
-                loadViewerFiles(); }
+                loadDocuments(); loadViewerFiles(); }
             else if (currentView === 'finances') { content.innerHTML = renderFinances();
                 requestAnimationFrame(animateFinanceProChartPanel); }
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
@@ -13996,68 +13992,93 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 <div style="max-width:980px">
                     <div class="doc-upload-box" onclick="document.getElementById('doc-upload-input').click()">
                         <div style="font-size:28px;margin-bottom:6px">📄</div>
-                        <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF</div>
-                        <div style="font-size:12px;color:var(--text-secondary)">Pulsa aquí para elegir un archivo</div>
+                        <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube un documento</div>
+                        <div style="font-size:12px;color:var(--text-secondary)">PDF o página HTML (guías, checklists con animaciones...) — pulsa aquí para elegir un archivo</div>
+                    </div>
+                    <div class="doc-list-toolbar">
+                        <input type="text" id="doc-search-input" class="modal-input doc-search-input" placeholder="Buscar documentos por nombre..." value="${escapeHtml(docSearchQuery)}" oninput="setDocSearchQuery(this.value)">
+                        <button class="btn-secondary" style="width:auto" onclick="openBackupsModal()">backups.</button>
                     </div>
                     <div id="doc-list">Cargando documentos...</div>
-
-                    <div class="backups-section">
-                        <div class="events-section-label">Backups automáticos</div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin:-6px 0 10px">
-                            Bitácora guarda una copia de seguridad completa la primera vez que abres la app cada día, y conserva las 7 más recientes.
-                        </div>
-                        <div id="backup-failure-banner"></div>
-                        <div id="backups-list">Cargando backups...</div>
-                    </div>
                 </div>`;
         }
 
         let documents = [];
+        let docSearchQuery = '';
 
         async function loadDocuments() {
-            const listEl = document.getElementById('doc-list');
             try {
                 const { data: { user } } = await sb.auth.getUser();
-                if (!user) { documents = [];
-                    if (listEl) listEl.innerHTML = ''; return; }
+                if (!user) { documents = []; renderDocList(); return; }
                 const { data, error } = await sb.storage.from('documents').list(user.id, {
                     sortBy: { column: 'created_at', order: 'desc' }
                 });
                 if (error) throw error;
-                // La carpeta "backups" aparece en este listado como una entrada
-                // más (id null, sin metadata) porque hay archivos dentro de
-                // documents/<usuario>/backups/ — se excluye porque esos backups
-                // ya tienen su propia sección y no son un documento subido.
-                documents = (data || []).filter(d => d.name !== 'backups' && d.id !== null);
-                if (listEl) renderDocList();
+                // Las carpetas "backups" y "viewer" aparecen en este listado
+                // como una entrada más (id null, sin metadata) porque hay
+                // archivos dentro — se excluyen porque no son un documento
+                // subido en sí (backups tiene su propio popup; viewer se
+                // carga aparte con loadViewerFiles).
+                documents = (data || []).filter(d => d.name !== 'backups' && d.name !== 'viewer' && d.id !== null);
+                renderDocList();
             } catch (e) {
                 console.error('Error cargando documentos:', e);
+                const listEl = document.getElementById('doc-list');
                 if (listEl) listEl.innerHTML =
                     `<div class="empty-state"><div class="empty-title">No se pudieron cargar los documentos</div><div class="empty-sub">${(e?.message || 'Comprueba que el bucket "documents" existe en Supabase Storage')}</div></div>`;
             }
         }
 
+        function setDocSearchQuery(value) {
+            docSearchQuery = value;
+            renderDocList();
+        }
+
+        // Documentos (PDF) y Visor (HTML) comparten exactamente la misma
+        // función — un archivo que subes y luego abres — así que se
+        // fusionan en una sola lista. "kind" distingue cómo se abre cada
+        // fila (descarga directa vs. el visor con srcdoc) y de qué
+        // carpeta de Storage viene.
         function renderDocList() {
             const listEl = document.getElementById('doc-list');
             if (!listEl) return;
-            if (!documents.length) {
+            const all = [
+                ...documents.map(d => ({ ...d, kind: 'pdf' })),
+                ...viewerFiles.map(f => ({ ...f, kind: 'html' }))
+            ].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+            const q = stripAccents(docSearchQuery.toLowerCase().trim());
+            const filtered = q ? all.filter(d => stripAccents(d.name.toLowerCase()).includes(q)) : all;
+
+            if (!all.length) {
                 listEl.innerHTML =
-                    `<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF con el botón de arriba</div></div>`;
+                    `<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF o página HTML con el botón de arriba</div></div>`;
                 return;
             }
-            listEl.innerHTML = `<div class="docs-list">${documents.map((doc, i) => {
+            if (!filtered.length) {
+                listEl.innerHTML = `<div class="empty-state"><div class="empty-title">Sin resultados</div><div class="empty-sub">Nada coincide con "${escapeHtml(docSearchQuery)}"</div></div>`;
+                return;
+            }
+            listEl.innerHTML = `<div class="docs-list docs-2col">${filtered.map((doc, i) => {
                 const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
+                const n = escapeHtml(doc.name);
+                const openBtn = doc.kind === 'pdf'
+                    ? `<button class="doc-action-download" onclick="downloadDocument('${n}')">Descargar</button>`
+                    : `<button class="doc-action-download" onclick="openViewerFile('${n}')">Ver</button>`;
+                const renameFn = doc.kind === 'pdf' ? 'renameDocument' : 'renameViewerFile';
+                const deleteFn = doc.kind === 'pdf' ? 'deleteDocument' : 'deleteViewerFile';
                 return `
                     <div class="docs-row">
                         <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
                         <div class="docs-row-body">
-                            <div class="docs-row-name">${escapeHtml(doc.name)}</div>
+                            <div class="docs-row-name">${n}<span class="docs-row-kind">${doc.kind === 'pdf' ? 'PDF' : 'HTML'}</span></div>
                             <div class="docs-row-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
                         </div>
                         <div class="doc-actions">
-                            <button class="doc-action-download" onclick="downloadDocument('${escapeHtml(doc.name)}')">Descargar</button>
-                            <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteDocument('${escapeHtml(doc.name)}')">✕</button>
+                            ${openBtn}
+                            <button class="doc-action-delete-btn" title="Renombrar" style="color:var(--text-secondary)" onclick="${renameFn}('${n}')">✎</button>
+                            <button class="doc-action-delete-btn" title="Eliminar" onclick="${deleteFn}('${n}')">✕</button>
                         </div>
                     </div>`;
             }).join('')}</div>`;
@@ -14067,18 +14088,52 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const file = event.target.files[0];
             event.target.value = '';
             if (!file) return;
-            if (file.type !== 'application/pdf') { showToast('Solo se admiten archivos PDF', true); return; }
+            const isHtml = file.type === 'text/html' || /\.html?$/i.test(file.name);
+            const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+            if (!isPdf && !isHtml) { showToast('Solo se admiten archivos PDF o HTML', true); return; }
             try {
                 const { data: { user } } = await sb.auth.getUser();
                 if (!user) return;
-                const path = `${user.id}/${Date.now()}_${file.name}`;
-                const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false });
-                if (error) throw error;
+                if (isPdf) {
+                    const path = `${user.id}/${Date.now()}_${sanitizeStorageFilename(file.name)}`;
+                    const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false });
+                    if (error) throw error;
+                    await loadDocuments();
+                } else {
+                    const path = `${user.id}/viewer/${Date.now()}_${sanitizeStorageFilename(file.name)}`;
+                    const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false, contentType: 'text/html' });
+                    if (error) throw error;
+                    await loadViewerFiles();
+                }
                 showToast('Documento subido correctamente');
-                await loadDocuments();
             } catch (e) {
                 console.error('Error subiendo documento:', e);
                 showToast('Error al subir: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        async function renameDocument(oldName) {
+            const dot = oldName.lastIndexOf('.');
+            const currentBase = dot > 0 ? oldName.slice(0, dot) : oldName;
+            const ext = dot > 0 ? oldName.slice(dot) : '';
+            const input = prompt('Nuevo nombre para el documento:', currentBase);
+            if (input === null) return;
+            const trimmed = input.trim();
+            if (!trimmed) return;
+            const newName = sanitizeStorageFilename(trimmed + ext);
+            if (newName === oldName) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const fromPath = `${user.id}/${oldName}`;
+                const toPath = `${user.id}/${newName}`;
+                const { error } = await sb.storage.from('documents').move(fromPath, toPath);
+                if (error) throw error;
+                showToast('Nombre actualizado');
+                await loadDocuments();
+            } catch (e) {
+                console.error('Error renombrando:', e);
+                showToast('Error al renombrar: ' + (e?.message || 'ya existe un archivo con ese nombre'), true);
             }
         }
 
@@ -14113,71 +14168,28 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         // ============================================================
-        //  RENDER: VISOR
-        //  Guías/checklists en HTML sueltas (como la de coleccionismo)
-        //  que el usuario sube y luego abre en un visor propio, en vez
-        //  de tener que guardarlas y abrirlas fuera de Bitácora. Usa el
-        //  mismo bucket "documents" que Documentos, en su propia carpeta
-        //  "viewer/" para no mezclarse con los PDFs.
+        //  VISOR: guías/checklists en HTML sueltas (como la de
+        //  coleccionismo) que el usuario sube y luego abre en un visor
+        //  propio, en vez de tener que guardarlas y abrirlas fuera de
+        //  Bitácora. Fusionado visualmente con Documentos (misma lista,
+        //  ver renderDocList), pero vive en su propia carpeta "viewer/"
+        //  del bucket "documents" para no mezclarse con los PDFs.
         // ============================================================
         let viewerFiles = [];
 
-        function renderViewer() {
-            return `
-                <div style="max-width:980px">
-                    <div class="doc-upload-box" onclick="document.getElementById('viewer-upload-input').click()">
-                        <div style="font-size:28px;margin-bottom:6px">▥</div>
-                        <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube una página HTML</div>
-                        <div style="font-size:12px;color:var(--text-secondary)">Guías, listas de checkboxes, resúmenes... Pulsa aquí para elegir un archivo .html</div>
-                    </div>
-                    <div id="viewer-list">Cargando...</div>
-                </div>`;
-        }
-
         async function loadViewerFiles() {
-            const listEl = document.getElementById('viewer-list');
             try {
                 const { data: { user } } = await sb.auth.getUser();
-                if (!user) { viewerFiles = [];
-                    if (listEl) listEl.innerHTML = ''; return; }
+                if (!user) { viewerFiles = []; renderDocList(); return; }
                 const { data, error } = await sb.storage.from('documents').list(`${user.id}/viewer`, {
                     sortBy: { column: 'created_at', order: 'desc' }
                 });
                 if (error) throw error;
                 viewerFiles = (data || []).filter(d => d.id !== null);
-                if (listEl) renderViewerList();
+                renderDocList();
             } catch (e) {
                 console.error('Error cargando el visor:', e);
-                if (listEl) listEl.innerHTML =
-                    `<div class="empty-state"><div class="empty-title">No se pudo cargar el visor</div><div class="empty-sub">${(e?.message || 'Comprueba que el bucket "documents" existe en Supabase Storage')}</div></div>`;
             }
-        }
-
-        function renderViewerList() {
-            const listEl = document.getElementById('viewer-list');
-            if (!listEl) return;
-            if (!viewerFiles.length) {
-                listEl.innerHTML =
-                    `<div class="empty-state"><div class="empty-title">Sin archivos</div><div class="empty-sub">Sube tu primera página HTML con el botón de arriba</div></div>`;
-                return;
-            }
-            listEl.innerHTML = `<div class="docs-list">${viewerFiles.map((f, i) => {
-                const sizeKb = f.metadata?.size ? Math.round(f.metadata.size / 1024) + ' KB' : '';
-                const date = f.created_at ? new Date(f.created_at).toLocaleDateString('es-ES') : '';
-                return `
-                    <div class="docs-row">
-                        <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
-                        <div class="docs-row-body">
-                            <div class="docs-row-name">${escapeHtml(f.name)}</div>
-                            <div class="docs-row-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
-                        </div>
-                        <div class="doc-actions">
-                            <button class="doc-action-download" onclick="openViewerFile('${escapeHtml(f.name)}')">Ver</button>
-                            <button class="doc-action-delete-btn" title="Renombrar" style="color:var(--text-secondary)" onclick="renameViewerFile('${escapeHtml(f.name)}')">✎</button>
-                            <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteViewerFile('${escapeHtml(f.name)}')">✕</button>
-                        </div>
-                    </div>`;
-            }).join('')}</div>`;
         }
 
         // Supabase Storage rechaza claves con tildes, "·" y otros
@@ -14193,26 +14205,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 .replace(/_+/g, '_')
                 .replace(/^_+|_+$/g, '');
             return (clean || 'archivo') + ext;
-        }
-
-        async function handleViewerUpload(event) {
-            const file = event.target.files[0];
-            event.target.value = '';
-            if (!file) return;
-            const isHtml = file.type === 'text/html' || /\.html?$/i.test(file.name);
-            if (!isHtml) { showToast('Solo se admiten archivos HTML', true); return; }
-            try {
-                const { data: { user } } = await sb.auth.getUser();
-                if (!user) return;
-                const path = `${user.id}/viewer/${Date.now()}_${sanitizeStorageFilename(file.name)}`;
-                const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false, contentType: 'text/html' });
-                if (error) throw error;
-                showToast('Página subida correctamente');
-                await loadViewerFiles();
-            } catch (e) {
-                console.error('Error subiendo al visor:', e);
-                showToast('Error al subir: ' + (e?.message || 'desconocido'), true);
-            }
         }
 
         async function renameViewerFile(oldName) {
@@ -14439,6 +14431,27 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 </div>`;
         }
 
+        function renderBackupsModal() {
+            return `
+                <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                    <div class="modal-sheet">
+                        <div class="modal-title">Backups automáticos<button class="modal-close" onclick="closeModal()">✕</button></div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin:-10px 0 14px">
+                            Bitácora guarda una copia de seguridad completa la primera vez que abres la app cada día, y conserva las 7 más recientes.
+                        </div>
+                        <div id="backup-failure-banner"></div>
+                        <button class="btn-secondary" style="width:auto;margin-bottom:14px" onclick="runManualBackupNow()">Guardar backup ahora</button>
+                        <div id="backups-list">Cargando backups...</div>
+                    </div>
+                </div>`;
+        }
+
+        function openBackupsModal() {
+            document.getElementById('modal-container').innerHTML = renderBackupsModal();
+            loadBackups();
+            renderBackupFailureBanner();
+        }
+
         async function loadBackups() {
             const el = document.getElementById('backups-list');
             try {
@@ -14477,6 +14490,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         async function restoreBackupFile(name) {
             const iso = backupFileDate(name);
             if (!confirm(`¿Restaurar el backup del ${iso}? Esto sustituirá TODOS tus datos actuales (de cualquier apartado) por los que había guardados ese día. No se puede deshacer.`)) return;
+            if (!confirm(`Segunda confirmación: ¿seguro que quieres restaurar el backup del ${iso}? Se perderá cualquier cambio hecho después de esa fecha. Esta acción no se puede deshacer.`)) return;
             try {
                 const { data: { user } } = await sb.auth.getUser();
                 if (!user) return;

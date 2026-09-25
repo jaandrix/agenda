@@ -2730,8 +2730,6 @@
         .work-docs-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
         .work-docs-section .doc-item { margin-bottom:8px; }
 
-        .backups-section { margin-top:28px; padding-top:18px; border-top:1px solid var(--border); }
-        .backups-section .doc-item { margin-bottom:8px; }
         .backup-failure-banner { display:flex; align-items:center; justify-content:space-between; gap:14px; background:#2a1515; border:1px solid #dc2626; border-radius:14px; padding:12px 16px; margin-bottom:14px; color:#fca5a5; }
         .backup-failure-banner strong { color:#fca5a5; font-size:13px; }
         .backup-failure-banner-msg { font-size:12px; color:#fca5a5; opacity:.85; margin-top:2px; }
@@ -2876,6 +2874,17 @@
         .docs-row-body { flex:1 1 auto; min-width:0; }
         .docs-row-name { font-size:13px; font-weight:400; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .docs-row-meta { font-size:11px; color:var(--text-secondary); margin-top:2px; }
+        .docs-row-kind { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); background:var(--bg-card-hover); border-radius:5px; padding:1px 6px; margin-left:6px; flex-shrink:0; }
+
+        /* Documentos: dos columnas para ver más cantidad de un vistazo.
+           "columns" (no grid) para que se rellene primero toda la
+           columna izquierda y luego la derecha, como una lista impresa. */
+        .docs-list.docs-2col { columns:2; column-gap:32px; }
+        .docs-2col .docs-row { break-inside:avoid; }
+        @media (max-width:640px) { .docs-list.docs-2col { columns:1; } }
+
+        .doc-list-toolbar { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+        .doc-search-input { flex:1 1 220px; margin:0 !important; }
         .doc-upload-box {
             border: 2px dashed #3b82f6;
             border-radius: 18px;
