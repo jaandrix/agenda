@@ -14219,19 +14219,25 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 const { data: { user } } = await sb.auth.getUser();
                 if (!user) return;
                 const path = `${user.id}/viewer/${name}`;
-                // 6 horas de validez: es para leer/marcar checkboxes con
-                // calma dentro del visor, no una descarga puntual como en
-                // Documentos (ahí 60s basta).
-                const { data, error } = await sb.storage.from('documents').createSignedUrl(path, 21600);
+                // Se descarga el contenido y se inyecta con srcdoc en vez de
+                // apuntar el iframe a la URL firmada: Supabase Storage no
+                // siempre devuelve Content-Type: text/html al servir el
+                // archivo, y entonces el navegador lo enseña como texto en
+                // vez de ejecutarlo. Con srcdoc da igual qué Content-Type
+                // haya puesto Storage, el navegador siempre lo trata como
+                // HTML.
+                const { data, error } = await sb.storage.from('documents').download(path);
                 if (error) throw error;
-                document.getElementById('modal-container').innerHTML = renderViewerFrameModal(name, data.signedUrl);
+                const html = await data.text();
+                document.getElementById('modal-container').innerHTML = renderViewerFrameModal(name);
+                document.getElementById('viewer-modal-iframe').srcdoc = html;
             } catch (e) {
                 console.error('Error abriendo el archivo:', e);
                 showToast('Error al abrir: ' + (e?.message || 'desconocido'), true);
             }
         }
 
-        function renderViewerFrameModal(name, url) {
+        function renderViewerFrameModal(name) {
             return `
                 <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
                     <div class="modal-sheet viewer-modal-sheet">
@@ -14239,7 +14245,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                             <div class="viewer-modal-title">${escapeHtml(name)}</div>
                             <button class="modal-close" onclick="closeModal()">✕</button>
                         </div>
-                        <iframe class="viewer-modal-iframe" src="${escapeHtml(url)}" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+                        <iframe id="viewer-modal-iframe" class="viewer-modal-iframe" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
                     </div>
                 </div>`;
         }
