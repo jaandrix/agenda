@@ -14179,6 +14179,21 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             }).join('')}</div>`;
         }
 
+        // Supabase Storage rechaza claves con tildes, "·" y otros
+        // caracteres fuera de un set seguro (error "Invalid key") — se
+        // limpia el nombre del archivo antes de usarlo como ruta, sin
+        // tocar el nombre visible en ningún otro sitio.
+        function sanitizeStorageFilename(name) {
+            const dot = name.lastIndexOf('.');
+            const base = dot > 0 ? name.slice(0, dot) : name;
+            const ext = dot > 0 ? name.slice(dot).toLowerCase() : '';
+            const clean = base.normalize('NFD').replace(/[̀-ͯ]/g, '')
+                .replace(/[^a-zA-Z0-9._-]+/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_+|_+$/g, '');
+            return (clean || 'archivo') + ext;
+        }
+
         async function handleViewerUpload(event) {
             const file = event.target.files[0];
             event.target.value = '';
@@ -14188,7 +14203,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             try {
                 const { data: { user } } = await sb.auth.getUser();
                 if (!user) return;
-                const path = `${user.id}/viewer/${Date.now()}_${file.name}`;
+                const path = `${user.id}/viewer/${Date.now()}_${sanitizeStorageFilename(file.name)}`;
                 const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false, contentType: 'text/html' });
                 if (error) throw error;
                 showToast('Página subida correctamente');
