@@ -3780,6 +3780,7 @@
                         <div class="project-features">${features.map(f=>`<div class="project-feature-chip"><b>${escapeHtml(f.label)}</b>${f.value?`<span>${escapeHtml(f.value)}</span>`:''}</div>`).join('')}</div></div>`;
                 }
                 if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
+                fields+=renderEntryDocsSection('projects',entry.id,'Documentos');
             }else if(entry.type==='goal'){
                 const termLabel = { short:'Corto plazo', medium:'Medio plazo', long:'Largo plazo' }[entry.term] || '';
                 fields+=detailField('Plazo',termLabel);
@@ -3799,6 +3800,7 @@
                 fields+=renderGoalLinkedProjects(entry.id,entry.title||'');
                 if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(' · '));
                 if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
+                fields+=renderEntryDocsSection('goals',entry.id,'Documentos');
             }else if(entry.type==='work'){
                 if(entry.company)fields+=detailField('Empresa',escapeHtml(entry.company));
                 if(entry.position)fields+=detailField('Cargo',escapeHtml(entry.position));
@@ -3816,6 +3818,15 @@
                     <input type="file" id="work-doc-input-${entry.id}" accept="application/pdf" style="display:none" onchange="handleWorkDocUpload(event,'${entry.id}')">
                     <div id="work-doc-list-${entry.id}">Cargando documentos...</div>
                 </div>`;
+            }else if(entry.type==='event'){
+                fields+=detailField('Fecha',escapeHtml(entry.date||''));
+                if(entry.time)fields+=detailField('Hora',escapeHtml(entry.time));
+                if(entry.place)fields+=detailField('Lugar',escapeHtml(entry.place));
+                const evTypeLabel=EVENT_TYPE_LABELS[entry.eventType]||'';
+                if(evTypeLabel)fields+=detailField('Tipo',evTypeLabel);
+                if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
+                if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(' · '));
+                fields+=renderEntryDocsSection('events',entry.id,'Documentos');
             }else{
                 fields+=detailField('Fecha',escapeHtml(entry.date||entry.startDate||'')); fields+=detailField('Estado',escapeHtml(entry.status||''));
                 fields+=detailField('Lugar',escapeHtml(entry.place||entry.destination||'')); fields+=detailField('Notas',entry.notes?linkifyText(entry.notes):'');
@@ -3835,7 +3846,7 @@
                 : '';
             return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div>${renderBacklinksBlock(entry.id, entry.type==='goal' ? ['project'] : null)}<div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}</div></div></div>`;
         }
-        function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);if(entry.type==='work')loadWorkDocuments(entry.id);}
+        function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);if(entry.type==='work')loadWorkDocuments(entry.id);if(['project','goal','event'].includes(entry.type))loadEntryDocs(entry.type==='project'?'projects':entry.type==='goal'?'goals':'events',entry.id);}
         async function toggleProjectTask(projectId,taskIndex){
             const project=entries.find(e=>e.id===projectId); if(!project||!Array.isArray(project.tasks)||!project.tasks[taskIndex])return;
             project.tasks[taskIndex].done=!project.tasks[taskIndex].done;
@@ -7483,10 +7494,10 @@
             return `
                 <div class="doc-upload-box" onclick="document.getElementById('trip-doc-input-${t.id}').click()">
                     <div style="font-size:28px;margin-bottom:6px">📄</div>
-                    <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube un documento PDF de este viaje</div>
-                    <div style="font-size:12px;color:var(--text-secondary)">Billetes, reservas, seguro de viaje...</div>
+                    <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube un documento de este viaje</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">Billetes, reservas, seguro de viaje... (PDF o HTML)</div>
                 </div>
-                <input type="file" id="trip-doc-input-${t.id}" accept="application/pdf" style="display:none" onchange="handleTripDocUpload(event,'${t.id}')">
+                <input type="file" id="trip-doc-input-${t.id}" accept="application/pdf,.pdf,.html,.htm,text/html" style="display:none" onchange="handleTripDocUpload(event,'${t.id}')">
                 <div id="trip-doc-list-${t.id}" style="margin-top:12px">${docs ? renderTripDocList(t.id, docs) : 'Cargando documentos...'}</div>
             `;
         }
@@ -7495,10 +7506,14 @@
             return docs.map(doc => {
                 const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
+                const isHtml = /\.html?$/i.test(doc.name);
+                const openBtn = isHtml
+                    ? `<button class="doc-action-download" onclick="openEntryDocHtml('trips','${tripId}','${escapeHtml(doc.name)}')">Ver</button>`
+                    : `<button class="doc-action-download" onclick="downloadTripDocument('${tripId}','${escapeHtml(doc.name)}')">Descargar</button>`;
                 return `<div class="doc-item">
-                    <div class="doc-info"><span style="font-size:20px">📄</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name)}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
+                    <div class="doc-info"><span style="font-size:20px">${isHtml ? '▥' : '📄'}</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name)}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
-                        <button class="doc-action-download" onclick="downloadTripDocument('${tripId}','${escapeHtml(doc.name)}')">Descargar</button>
+                        ${openBtn}
                         <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteTripDocument('${tripId}','${escapeHtml(doc.name)}')">✕</button>
                     </div>
                 </div>`;
@@ -7523,12 +7538,14 @@
             const file = event.target.files[0];
             event.target.value = '';
             if (!file) return;
-            if (file.type !== 'application/pdf') { showToast('Solo se admiten archivos PDF', true); return; }
+            const isHtml = file.type === 'text/html' || /\.html?$/i.test(file.name);
+            const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+            if (!isPdf && !isHtml) { showToast('Solo se admiten archivos PDF o HTML', true); return; }
             try {
                 const { data: { user } } = await sb.auth.getUser();
                 if (!user) return;
-                const path = `${user.id}/trips/${tripId}/${Date.now()}_${file.name}`;
-                const { error } = await sb.storage.from('documents').upload(path, file, { upsert: false });
+                const path = `${user.id}/trips/${tripId}/${Date.now()}_${sanitizeStorageFilename(file.name)}`;
+                const { error } = await sb.storage.from('documents').upload(path, file, isHtml ? { upsert: false, contentType: 'text/html' } : { upsert: false });
                 if (error) throw error;
                 showToast('Documento subido');
                 await loadTripDocuments(tripId);
@@ -8716,6 +8733,7 @@
             const s = findSubject(id);
             if (!s) return;
             showModal(renderSubjectDetailModal(s));
+            loadEntryDocs('studies', s.id);
         }
 
         const STUDIES_ICON_EXAM = '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6M9 13h6M9 17h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
@@ -8749,6 +8767,7 @@
                         </div>
                         ${(s.assignments || []).length ? s.assignments.map((a, i) => renderSubjectItemRow(s.id, 'assignments', a, i)).join('') : '<div class="finance-empty-line">Sin trabajos todavía.</div>'}
                     </div>
+                    ${renderEntryDocsSection('studies', s.id, 'Documentos (apuntes, resúmenes...)')}
                     <button class="finance-oneoff-btn" style="color:#dc2626;border-color:#dc2626" onclick="deleteSubject('${s.id}')">Eliminar asignatura</button>
                 </div>
             `;
@@ -14169,6 +14188,132 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 if (error) throw error;
                 showToast('Documento eliminado');
                 await loadDocuments();
+            } catch (e) {
+                console.error('Error eliminando documento:', e);
+                showToast('Error al eliminar: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        // ============================================================
+        //  DOCUMENTOS ENLAZADOS A UNA ENTRADA (viajes ya tenía su propio
+        //  patrón con carpeta por viaje; esto lo generaliza a cualquier
+        //  tipo — eventos, asignaturas, objetivos, proyectos — usando la
+        //  misma carpeta por entrada dentro del bucket "documents":
+        //  <usuario>/<kind>/<entryId>/. Admite PDF y HTML (este último se
+        //  abre en el mismo visor con srcdoc que usa Documentos).
+        // ============================================================
+        let entryDocsCache = {};
+        function entryDocsKey(kind, id) { return kind + ':' + id; }
+
+        function renderEntryDocsSection(kind, id, label) {
+            return `<div class="entry-detail-field entry-docs-section" style="grid-column:1/-1">
+                <div class="entry-detail-label">${label}</div>
+                <button class="btn-secondary" style="width:auto;margin-bottom:10px" onclick="document.getElementById('entry-doc-input-${kind}-${id}').click()">+ Subir documento</button>
+                <input type="file" id="entry-doc-input-${kind}-${id}" accept="application/pdf,.pdf,.html,.htm,text/html" style="display:none" onchange="handleEntryDocUpload(event,'${kind}','${id}')">
+                <div id="entry-doc-list-${kind}-${id}">Cargando documentos...</div>
+            </div>`;
+        }
+
+        async function loadEntryDocs(kind, id) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const { data, error } = await sb.storage.from('documents').list(`${user.id}/${kind}/${id}`, { sortBy: { column: 'created_at', order: 'desc' } });
+                if (error) throw error;
+                entryDocsCache[entryDocsKey(kind, id)] = (data || []).filter(d => d.id !== null);
+                const el = document.getElementById(`entry-doc-list-${kind}-${id}`);
+                if (el) el.innerHTML = renderEntryDocsList(kind, id);
+            } catch (e) {
+                console.error('Error cargando documentos:', e);
+                const el = document.getElementById(`entry-doc-list-${kind}-${id}`);
+                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-title">No se pudieron cargar los documentos</div></div>';
+            }
+        }
+
+        function renderEntryDocsList(kind, id) {
+            const docs = entryDocsCache[entryDocsKey(kind, id)] || [];
+            if (!docs.length) return '<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube un PDF o una página HTML</div></div>';
+            return `<div class="docs-list">${docs.map((doc, i) => {
+                const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
+                const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
+                const isHtml = /\.html?$/i.test(doc.name);
+                const n = escapeHtml(doc.name);
+                const openBtn = isHtml
+                    ? `<button class="doc-action-download" onclick="openEntryDocHtml('${kind}','${id}','${n}')">Ver</button>`
+                    : `<button class="doc-action-download" onclick="downloadEntryDoc('${kind}','${id}','${n}')">Descargar</button>`;
+                return `
+                    <div class="docs-row">
+                        <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
+                        <div class="docs-row-body">
+                            <div class="docs-row-name">${n}<span class="docs-row-kind">${isHtml ? 'HTML' : 'PDF'}</span></div>
+                            <div class="docs-row-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
+                        </div>
+                        <div class="doc-actions">${openBtn}<button class="doc-action-delete-btn" title="Eliminar" onclick="deleteEntryDoc('${kind}','${id}','${n}')">✕</button></div>
+                    </div>`;
+            }).join('')}</div>`;
+        }
+
+        async function handleEntryDocUpload(event, kind, id) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const isHtml = file.type === 'text/html' || /\.html?$/i.test(file.name);
+            const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+            if (!isPdf && !isHtml) { showToast('Solo se admiten archivos PDF o HTML', true); return; }
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${kind}/${id}/${Date.now()}_${sanitizeStorageFilename(file.name)}`;
+                const { error } = await sb.storage.from('documents').upload(path, file, isHtml ? { upsert: false, contentType: 'text/html' } : { upsert: false });
+                if (error) throw error;
+                showToast('Documento subido');
+                await loadEntryDocs(kind, id);
+            } catch (e) {
+                console.error('Error subiendo documento:', e);
+                showToast('Error al subir: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        async function downloadEntryDoc(kind, id, name) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${kind}/${id}/${name}`;
+                const { data, error } = await sb.storage.from('documents').createSignedUrl(path, 60);
+                if (error) throw error;
+                window.open(data.signedUrl, '_blank');
+            } catch (e) {
+                console.error('Error descargando documento:', e);
+                showToast('Error al descargar: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        async function openEntryDocHtml(kind, id, name) {
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${kind}/${id}/${name}`;
+                const { data, error } = await sb.storage.from('documents').download(path);
+                if (error) throw error;
+                const html = await data.text();
+                document.getElementById('modal-container').innerHTML = renderViewerFrameModal(name);
+                document.getElementById('viewer-modal-iframe').srcdoc = html;
+            } catch (e) {
+                console.error('Error abriendo el documento:', e);
+                showToast('Error al abrir: ' + (e?.message || 'desconocido'), true);
+            }
+        }
+
+        async function deleteEntryDoc(kind, id, name) {
+            if (!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const path = `${user.id}/${kind}/${id}/${name}`;
+                const { error } = await sb.storage.from('documents').remove([path]);
+                if (error) throw error;
+                showToast('Documento eliminado');
+                await loadEntryDocs(kind, id);
             } catch (e) {
                 console.error('Error eliminando documento:', e);
                 showToast('Error al eliminar: ' + (e?.message || 'desconocido'), true);
