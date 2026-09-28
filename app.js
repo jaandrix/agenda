@@ -722,7 +722,11 @@
             const shell = document.getElementById('mobile-shell');
             if (!shell) return;
             shell.innerHTML = mobileScreen === 'welcome' ? renderMobileWelcome() : renderMobileCarousel();
-            if (mobileScreen === 'carousel') setTimeout(attachMobileSwipeHandlers, 0);
+            if (mobileScreen === 'carousel') {
+                setTimeout(attachMobileSwipeHandlers, 0);
+                const effect = MOBILE_SECTION_EFFECTS[currentView];
+                if (effect) setTimeout(effect, 0);
+            }
         }
 
         function renderMobileWelcome() {
@@ -731,11 +735,7 @@
             return `
             <div class="mobile-welcome">
                 <div class="mobile-welcome-top">
-                    <div>
-                        <div class="mobile-welcome-greeting">bienvenido a</div>
-                        <div class="mobile-welcome-brand"><u>bitácora${name ? ',' : '.'}</u>${name ? `<br><u>${escapeHtml(name.toLowerCase())}.</u>` : ''}</div>
-                    </div>
-                    <button class="mobile-close-btn" onclick="exitMobileToDesktop()" title="Ver versión completa">✕</button>
+                    <div class="mobile-welcome-line">bienvenido a bitácora${name ? `, ${escapeHtml(name.toLowerCase())}` : ''}.</div>
                 </div>
                 <div class="mobile-menu-label">menú.</div>
                 <div class="mobile-menu-rows">
@@ -756,21 +756,77 @@
                 <div class="mobile-page-top">
                     <button class="mobile-icon-btn" onclick="backToMobileMenu()" title="Menú">☰</button>
                     <div class="mobile-page-title">${escapeHtml(current.text.toLowerCase())}.</div>
-                    <button class="mobile-icon-btn" onclick="exitMobileToDesktop()" title="Ver versión completa">⤢</button>
+                    <span class="mobile-icon-btn-spacer"></span>
                 </div>
                 <div class="mobile-page-dots">${sections.map((s, i) => `<span class="mobile-dot ${i === mobileCarouselIndex ? 'active' : ''}"></span>`).join('')}</div>
                 <div class="mobile-page-body" id="mobile-page-body">${renderMobileSectionBody(current.view)}</div>
             </div>`;
         }
 
-        // Cada apartado adaptado vive aquí. Los que todavía no tienen
-        // versión propia caen en el aviso genérico — se amplía esta
-        // lista sesión a sesión, sin tocar el resto de la infraestructura.
+        // Botón de acción rápida por apartado — arriba de cada vista,
+        // mismo patrón que ya usaban calendario/planificador. Cada
+        // apartado apunta a la misma función de "añadir" que usa la
+        // versión de escritorio, así el dato se guarda exactamente igual.
+        const MOBILE_QUICK_ADD = {
+            habits: { label: '+ nuevo hábito.', action: 'openAddHabit()' },
+            notes: { label: '+ nota de hoy.', action: 'openWriteNote()' },
+            events: { label: '+ nuevo evento.', action: "openNewEntry('event')" },
+            work: { label: '+ nuevo trabajo.', action: "openNewEntry('work')" },
+            documents: { label: '+ subir documento.', action: "document.getElementById('doc-upload-input')?.click()" },
+            goals: { label: '+ nuevo objetivo.', action: "openNewEntry('goal')" },
+            projects: { label: '+ nuevo proyecto.', action: "openNewEntry('project')" },
+            links: { label: '+ nuevo enlace.', action: 'openAddLink()' },
+            travels: { label: '+ nuevo viaje.', action: "openNewEntry('travel')" },
+            collectibles: { label: '+ nuevo coleccionable.', action: 'openAddCollectible()' },
+            culture: { label: '+ añadir.', action: "openNewEntry(({books:'book',series:'series',movies:'movie',games:'game'})[cultureTab] || 'book')" },
+        };
+
+        // Apartados que reutilizan directamente el render de escritorio
+        // (dentro de un contenedor con tipografía/espaciado a tamaño
+        // móvil) en vez de una vista propia rediseñada — finanzas y
+        // estudios sí tienen vista propia por lo específico de su uso.
+        const MOBILE_GENERIC_RENDERERS = {
+            habits: renderHabits, notes: renderNotes, events: renderEvents, work: renderWork,
+            goals: renderGoals, projects: renderProjects, links: renderLinks, culture: renderCulture,
+            travels: renderTravels, collectibles: renderCollectibles, documents: renderDocuments,
+            friends: renderFriendsView, tags: renderTagsView, graph: renderGraph,
+            suggestions: renderSuggestions, settings: renderSettings,
+        };
+
+        // Efectos que en la versión de escritorio se disparan tras pintar
+        // ciertas vistas (cargar datos remotos, enganchar botones...) — el
+        // carrusel móvil pinta esas mismas vistas por su cuenta, así que
+        // hay que repetirlos aquí para que no se queden a medio cargar.
+        const MOBILE_SECTION_EFFECTS = {
+            documents: () => { loadDocuments(); loadViewerFiles(); },
+            friends: () => loadFriendsViewData(),
+            suggestions: () => loadMySuggestions(),
+            settings: () => {
+                if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
+                loadSettingsSubscriptionInfo();
+                loadSettingsPushInfo();
+            },
+        };
+
+        // Cada apartado adaptado vive aquí. Finanzas y estudios tienen
+        // vista propia; el resto reutiliza su render de escritorio
+        // (MOBILE_GENERIC_RENDERERS) dentro de un contenedor adaptado.
         function renderMobileSectionBody(view) {
             if (view === 'home') return renderMobileHome();
             if (view === 'calendar') return renderMobileCalendar();
             if (view === 'planner') return renderMobilePlanner();
+            if (view === 'finances') return renderMobileFinances();
+            if (view === 'studies') return renderMobileStudies();
+            if (MOBILE_GENERIC_RENDERERS[view]) return renderMobileGeneric(view);
             return renderMobileComingSoon(view);
+        }
+
+        function renderMobileGeneric(view) {
+            const quick = MOBILE_QUICK_ADD[view];
+            return `<div class="mobile-generic-wrap">
+                ${quick ? `<button class="mobile-cta-btn" onclick="${quick.action}">${quick.label}</button>` : ''}
+                ${MOBILE_GENERIC_RENDERERS[view]()}
+            </div>`;
         }
 
         function renderMobileComingSoon(view) {
@@ -778,8 +834,7 @@
             return `
             <div class="mobile-empty">
                 <div class="mobile-empty-title">${escapeHtml(label.toLowerCase())}.</div>
-                <div class="mobile-empty-sub">Todavía sin versión reducida para móvil — se va ampliando poco a poco.</div>
-                <button class="mobile-cta-btn" onclick="exitMobileToDesktop();switchView('${view}')">abrir versión completa.</button>
+                <div class="mobile-empty-sub">Todavía sin versión reducida para móvil.</div>
             </div>`;
         }
 
@@ -803,6 +858,68 @@
             return `<div class="mobile-planner-wrap">
                 <button class="mobile-cta-btn" onclick="openAddPlannerItem()">+ nueva tarea.</button>
                 ${renderPlanner()}
+            </div>`;
+        }
+
+        // -- Finanzas: patrimonio + ingresos/gastos del mes + últimos
+        //    movimientos, con "+ movimiento." arriba para registrar un
+        //    ingreso o gasto en dos toques (mismo registro rápido que
+        //    usa el escritorio, sin categoría, se ajusta luego) --
+        function renderMobileFinances() {
+            const { income, expense } = financeProMonthTotals(financeMonthKey());
+            return `<div class="mobile-finance-wrap">
+                <button class="mobile-cta-btn" onclick="openFinanceProQuickCaptureModal()">+ movimiento.</button>
+                ${renderFinanceNetworthCard()}
+                <div class="mobile-finance-month-row">
+                    <div class="mobile-finance-month-tile">
+                        <div class="mobile-finance-month-label">ingresos este mes.</div>
+                        <div class="mobile-finance-month-value mobile-finance-pos">${financeMoney(income)}</div>
+                    </div>
+                    <div class="mobile-finance-month-tile">
+                        <div class="mobile-finance-month-label">gastos este mes.</div>
+                        <div class="mobile-finance-month-value mobile-finance-neg">(${financeMoney(expense)})</div>
+                    </div>
+                </div>
+                <div class="mobile-section-label">últimos movimientos.</div>
+                <div class="mobile-finance-tx-list">${renderFinanceProTransactionList(false)}</div>
+            </div>`;
+        }
+
+        // -- Estudios: horario semanal como agenda vertical día a día
+        //    (la rejilla de escritorio no cabe/no se lee en móvil) +
+        //    lista de asignaturas, con "+ asignatura." arriba --
+        function renderMobileStudies() {
+            const nextExam = nextUpcomingExam();
+            return `<div class="mobile-studies-wrap">
+                <button class="mobile-cta-btn" onclick="openAddSubject()">+ asignatura.</button>
+                ${nextExam ? `
+                <div class="event-hero event-hero-flat" style="margin-bottom:16px">
+                    <div class="event-hero-body">
+                        <div class="event-hero-kicker">próximo examen ${eventCountdownLabel(nextExam.date).toLowerCase()}.</div>
+                        <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')}</div>
+                        <div class="event-hero-meta">${escapeHtml(nextExam.subjectName)} · ${escapeHtml(nextExam.date)}</div>
+                    </div>
+                </div>` : ''}
+                <div class="mobile-section-label">horario de la semana.</div>
+                <div class="mobile-studies-schedule">
+                    ${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => renderMobileStudiesDay(d)).join('')}
+                </div>
+                <div class="mobile-section-label" style="margin-top:20px">asignaturas.</div>
+                <div class="studies-subjects-list">
+                    ${studies.subjects.length ? studies.subjects.map((s, i) => renderSubjectRow(s, i, studies.subjects.length)).join('') : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
+                </div>
+            </div>`;
+        }
+
+        function renderMobileStudiesDay(d) {
+            const blocks = (studies.schedule[d.key] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            return `<div class="mobile-studies-day">
+                <div class="mobile-studies-day-label">${escapeHtml(d.label)}</div>
+                ${blocks.length ? blocks.map(b => `
+                    <div class="mobile-studies-block">
+                        <span class="mobile-studies-block-time">${escapeHtml(b.time || '')}</span>
+                        <span class="mobile-studies-block-subject">${escapeHtml(b.subject || '')}</span>
+                    </div>`).join('') : '<div class="mobile-studies-day-empty">sin clases.</div>'}
             </div>`;
         }
 

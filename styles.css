@@ -5018,10 +5018,8 @@ body.mobile-standalone #mobile-shell {
 
 .mobile-welcome, .mobile-carousel { min-height:100dvh; display:flex; flex-direction:column; padding:env(safe-area-inset-top,22px) 22px calc(env(safe-area-inset-bottom,22px) + 10px); box-sizing:border-box; }
 
-.mobile-welcome-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:44px; }
-.mobile-welcome-greeting { font-size:13px; color:var(--text-secondary); margin-bottom:2px; }
-.mobile-welcome-brand { font-size:32px; font-weight:800; line-height:1.08; letter-spacing:-0.5px; color:var(--text-primary); max-width:280px; }
-.mobile-welcome-brand u { text-decoration-thickness:2px; text-underline-offset:6px; text-decoration-color:var(--border-strong); }
+.mobile-welcome-top { margin-bottom:28px; }
+.mobile-welcome-line { font-size:19px; font-weight:700; letter-spacing:-0.2px; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .mobile-menu-label { font-size:12px; color:var(--text-secondary); margin-bottom:2px; }
 .mobile-menu-rows { display:flex; flex-direction:column; flex:1; overflow-y:auto; }
 .mobile-menu-row { display:flex; align-items:baseline; gap:16px; padding:16px 2px; border-bottom:1px solid var(--border); cursor:pointer; }
@@ -5029,10 +5027,11 @@ body.mobile-standalone #mobile-shell {
 .mobile-menu-idx { font-size:11px; color:var(--text-secondary); width:20px; flex-shrink:0; font-variant-numeric:tabular-nums; }
 .mobile-menu-label-text { font-size:23px; font-weight:600; letter-spacing:-0.3px; color:var(--text-primary); }
 
-.mobile-close-btn, .mobile-icon-btn {
+.mobile-icon-btn {
     width:38px; height:38px; border-radius:50%; border:1.5px solid var(--border-strong); background:none;
     color:var(--text-primary); font-size:15px; display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;
 }
+.mobile-icon-btn-spacer { width:38px; height:38px; flex-shrink:0; }
 
 .mobile-page-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; }
 .mobile-page-title { font-size:18px; font-weight:700; color:var(--text-primary); flex:1; text-align:center; }
@@ -5070,4 +5069,40 @@ body.mobile-standalone #mobile-shell {
 .mobile-planner-wrap .planner-item { padding:16px 10px; }
 .mobile-planner-wrap .planner-item-title { font-size:16px; }
 .mobile-planner-wrap .planner-item-time { font-size:14px; }
+
+.mobile-section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin:14px 0 8px; }
+
+/* Finanzas: patrimonio (tarjeta reutilizada) + dos cifras del mes +
+   últimos movimientos — resto del dashboard de escritorio (gráficas,
+   presupuestos, metas...) se deja fuera a propósito: en móvil prima
+   ver el saldo y poder registrar rápido, no el panel completo. */
+.mobile-finance-month-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+.mobile-finance-month-tile { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:14px; }
+.mobile-finance-month-label { font-size:11px; color:var(--text-secondary); margin-bottom:6px; }
+.mobile-finance-month-value { font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; }
+.mobile-finance-month-value.mobile-finance-pos { color:#1f6b45; }
+.mobile-finance-month-value.mobile-finance-neg { color:#7c2836; }
+.mobile-finance-tx-list .finance-pro-tx-row { padding:14px 6px; }
+
+/* Estudios: horario como agenda vertical día a día (la rejilla de
+   escritorio, con sus 5 columnas estrechas, no se lee a este ancho) */
+.mobile-studies-schedule { display:flex; flex-direction:column; gap:10px; }
+.mobile-studies-day { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; }
+.mobile-studies-day-label { font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:6px; }
+.mobile-studies-day-empty { font-size:12px; color:var(--text-secondary); }
+.mobile-studies-block { display:flex; align-items:baseline; gap:10px; padding:6px 0; font-size:14.5px; }
+.mobile-studies-block + .mobile-studies-block { border-top:1px solid var(--border); }
+.mobile-studies-block-time { font-variant-numeric:tabular-nums; color:var(--text-secondary); font-size:12.5px; flex-shrink:0; }
+.mobile-studies-block-subject { color:var(--text-primary); font-weight:600; }
+.mobile-studies-wrap .studies-subject-row { padding:14px 4px; }
+.mobile-studies-wrap .studies-subject-row-name { font-size:16px; }
+
+/* Resto de apartados: reutilizan el render de escritorio tal cual,
+   solo con tipografía y controles a tamaño de dedo — sus rejillas ya
+   pasan a una columna por debajo de 850px (ver .kanban-board y
+   similares), así que basta con esto para que quede legible. */
+.mobile-generic-wrap { font-size:15px; }
+.mobile-generic-wrap input, .mobile-generic-wrap select, .mobile-generic-wrap textarea { font-size:16px; }
+.mobile-generic-wrap button { min-height:38px; }
+.mobile-generic-wrap table { display:block; overflow-x:auto; }
 
