@@ -720,7 +720,7 @@
         // genérico de reserva. "Deporte" se divide en cuatro disciplinas
         // propias en vez de un único icono genérico.
         const EVENT_TYPE_ICONS = {
-            social: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="36" cy="46" r="26"/><circle cx="68" cy="50" r="20" opacity=".5"/></svg>',
+            social: '<svg viewBox="0 0 100 100"><g fill="none" stroke="currentColor" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><path d="M27 32 C29 40 29 47 27 53"/><path d="M28 34 C36 33 43 30 50 27"/><path d="M27 53 C20 56 14 55 9 50"/><path d="M27 53 C29 62 30 70 30 78"/><path d="M73 25 C69 33 66 41 65 48"/><path d="M72 27 C65 27 58 27 52 28"/><path d="M65 48 C65 60 66 72 67 83"/><path d="M65 48 C75 50 84 47 90 38"/></g><circle cx="25" cy="22" r="8.5" fill="currentColor"/><circle cx="75" cy="16" r="8.5" fill="currentColor"/></svg>',
             teatro: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M10 92V55a40 40 0 0 1 80 0v37z"/></svg>',
             cine: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M8 26a18 18 0 0 1 18-18h48a18 18 0 0 1 18 18v48a18 18 0 0 1-18 18H26A18 18 0 0 1 8 74zM40 32l28 18-28 18z"/></svg>',
             concierto: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="76" r="16"/><rect x="40" y="15" width="9" height="61"/><path d="M40 15l38-11v20l-38 11z"/></svg>',
