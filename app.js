@@ -893,7 +893,7 @@
             teatro: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M10 92V55a40 40 0 0 1 80 0v37z"/></svg>',
             cine: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M8 26a18 18 0 0 1 18-18h48a18 18 0 0 1 18 18v48a18 18 0 0 1-18 18H26A18 18 0 0 1 8 74zM40 32l28 18-28 18z"/></svg>',
             concierto: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="28" cy="76" r="16"/><rect x="40" y="15" width="9" height="61"/><path d="M40 15l38-11v20l-38 11z"/></svg>',
-            futbol: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 4a46 46 0 1 0 0 92 46 46 0 0 0 0-92zM50 35l10.46 7.6-4 12.3h-12.92l-4-12.3zM52.2 35L52.2 10 47.8 10 47.8 35zM61.73 44.4L83.97 28.7 81.43 25.1 59.19 40.8zM55.13 56.65L80.57 75.95 83.23 72.45 57.79 53.15zM42.21 53.15L16.77 72.45 19.43 75.95 44.87 56.65zM40.81 40.8L18.57 25.1 16.03 28.7 38.27 44.4z"/></svg>',
+            futbol: '<svg viewBox="0 0 367 362"><g transform="translate(0,362) scale(0.1,-0.1)" fill="currentColor" stroke="none"><path d="M0 1810 l0 -1810 1835 0 1835 0 0 1810 0 1810 -1835 0 -1835 0 0\n-1810z m2217 1512 c310 -77 554 -218 772 -448 200 -211 344 -494 397 -779 27\n-149 30 -386 5 -537 -105 -638 -567 -1138 -1201 -1298 -172 -43 -435 -54 -615\n-25 -739 119 -1289 723 -1320 1450 l-4 110 14 -80 c39 -220 37 -214 133 -307\n48 -45 147 -132 219 -192 125 -103 133 -112 133 -145 0 -60 29 -217 50 -273\n33 -88 73 -138 152 -191 145 -96 366 -188 525 -218 57 -10 65 -10 108 11 56\n27 131 84 206 157 l55 54 119 4 c134 5 229 16 398 47 64 11 120 18 123 15 4\n-3 2 -37 -4 -74 -5 -37 -8 -70 -6 -72 8 -9 173 99 258 170 145 120 255 251\n349 414 49 85 113 232 105 240 -3 3 -85 -40 -183 -95 -98 -55 -179 -100 -180\n-100 -1 0 -41 92 -90 204 l-88 205 61 148 c119 292 204 488 213 498 8 7 197\n-48 318 -93 17 -6 11 31 -25 156 -64 219 -183 429 -345 606 -54 59 -196 186\n-209 186 -3 0 -3 -26 1 -57 9 -73 11 -241 3 -280 -6 -29 -7 -29 -52 -22 -105\n17 -424 2 -532 -26 -23 -6 -33 3 -95 86 -38 51 -127 152 -198 226 -114 117\n-128 135 -116 149 21 26 155 113 254 166 104 56 102 56 292 10z m-1294 -403\nc107 -72 104 -61 36 -142 -98 -117 -171 -247 -229 -411 l-29 -79 -144 -57\nc-80 -31 -161 -67 -182 -78 -20 -12 -38 -22 -41 -22 -20 0 28 209 70 303 42\n96 119 216 204 318 91 110 217 223 238 215 8 -3 42 -24 77 -47z m943 -967 c43\n-70 124 -201 181 -290 57 -90 103 -168 103 -174 0 -6 -26 -40 -58 -77 -63 -71\n-315 -378 -347 -423 -11 -15 -25 -28 -32 -28 -6 0 -80 32 -165 71 -84 39 -218\n100 -298 136 -80 35 -149 68 -153 72 -20 19 -2 423 27 625 l11 79 115 24 c63\n13 207 45 320 71 113 27 208 47 212 45 4 -2 42 -61 84 -131z"/></g></svg>',
             baloncesto: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 4a46 46 0 1 0 0 92 46 46 0 0 0 0-92zM46 6h8v88h-8zM13 30c9 6 16 15 16 20s-7 14-16 20l-5-7c7-5 12-11 12-13s-5-8-12-13z M87 30c-9 6-16 15-16 20s7 14 16 20l5-7c-7-5-12-11-12-13s5-8 12-13z"/></svg>',
             f1: '<svg viewBox="0 0 100 100" fill="currentColor"><text x="50" y="66" text-anchor="middle" font-size="54" font-weight="800" font-family="Poppins, sans-serif">F1</text></svg>',
             motogp: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="22" cy="74" r="13"/><circle cx="78" cy="74" r="13"/><circle cx="60" cy="28" r="8"/><path d="M18 74l16-20h14l10-14c3-4 9-5 12-1l-7 9 9 11h10l6 15H70l-8-13H42z"/></svg>',
@@ -9490,16 +9490,42 @@
             let html = `<div style="max-width:980px">` + banner;
 
             if (next) {
-                const nextType = EVENT_TYPE_LABELS[next.eventType] || '';
-                html += `
-                    <div class="event-hero event-hero-flat" data-open-entry="${next.id}">
-                        <div class="event-hero-body">
-                            <div class="event-hero-kicker">próximo evento ${eventCountdownLabel(next.date).toLowerCase()}.</div>
-                            <div class="event-hero-title">${escapeHtml(next.title)}</div>
-                            <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ' · ' : ''}${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
-                        </div>
-                        <div class="event-hero-icon">${EVENT_HERO_ICON_ALERT}</div>
-                    </div>`;
+                const isToday = next.date === todayISO();
+                const todayEvents = isToday
+                    ? events.filter(e => e.date === next.date).sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+                    : [next];
+                const kicker = `próximo evento ${eventCountdownLabel(next.date).toLowerCase()}.`;
+
+                if (todayEvents.length > 1) {
+                    html += `
+                        <div class="event-hero event-hero-flat event-hero-multi">
+                            <div class="event-hero-kicker" style="margin-bottom:8px">${kicker} · ${todayEvents.length} eventos</div>
+                            <div class="event-hero-multi-list">
+                                ${todayEvents.map(e => {
+                                    const t = EVENT_TYPE_LABELS[e.eventType] || '';
+                                    const icon = EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro;
+                                    return `<div class="event-hero-multi-row" data-open-entry="${e.id}">
+                                        <div class="event-hero-multi-icon">${icon}</div>
+                                        <div class="event-hero-multi-body">
+                                            <div class="event-hero-multi-title">${escapeHtml(e.title)}</div>
+                                            <div class="event-hero-multi-meta">${t ? escapeHtml(t) + ' · ' : ''}${e.time ? escapeHtml(e.time) : 'sin hora'}${e.place ? ' · ' + escapeHtml(e.place) : ''}</div>
+                                        </div>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>`;
+                } else {
+                    const nextType = EVENT_TYPE_LABELS[next.eventType] || '';
+                    html += `
+                        <div class="event-hero event-hero-flat" data-open-entry="${next.id}">
+                            <div class="event-hero-body">
+                                <div class="event-hero-kicker">${kicker}</div>
+                                <div class="event-hero-title">${escapeHtml(next.title)}</div>
+                                <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ' · ' : ''}${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
+                            </div>
+                            <div class="event-hero-icon">${EVENT_HERO_ICON_ALERT}</div>
+                        </div>`;
+                }
             }
 
             html += `
