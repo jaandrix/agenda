@@ -10608,9 +10608,7 @@
             if (data.length > 1) {
                 const pathOf = id => financeSmoothPathObj(data.map((d, i) => ({ x: Number(x(i).toFixed(1)), y: Number(y(d[id]).toFixed(1)) })));
                 const mainSeries = series[series.length - 1];
-                const areaPath = `${pathOf(mainSeries.id)} L${x(data.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
-                linesSvg = `<path d="${areaPath}" fill="url(#financeTotalGradient)" stroke="none"/>` +
-                    series.map((s, idx) => `<path d="${pathOf(s.id)}" fill="none" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="${idx === series.length - 1 ? 2.5 : 2}" ${idx === series.length - 1 ? '' : 'stroke-dasharray="4,4"'} stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+                linesSvg = series.map((s, idx) => `<path d="${pathOf(s.id)}" fill="none" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="${idx === series.length - 1 ? 2.5 : 2}" ${idx === series.length - 1 ? '' : 'stroke-dasharray="4,4"'} stroke-linecap="round" stroke-linejoin="round"/>`).join('');
 
                 // "Mismo mes, año pasado" — línea de referencia gris tenue,
                 // superpuesta en la misma posición X que el punto actual
@@ -10645,12 +10643,6 @@
             return `
                 <div class="finance-chart-svg-wrap finance-floating-svg-wrap">
                     <svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:280px">
-                        <defs>
-                            <linearGradient id="financeTotalGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" style="stop-color:var(--accent);stop-opacity:0.22"/>
-                                <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0"/>
-                            </linearGradient>
-                        </defs>
                         ${yAxisGuides}
                         ${lastYearSvg}
                         ${linesSvg}
@@ -11339,10 +11331,9 @@
         }
 
         function renderLongTermMonthNav(month) {
-            const isCurrent = month === financeMonthKey();
             return `<div class="longterm-month-nav">
                 <button class="lt-nav-btn" onclick="setLongtermViewMonth('${longtermMonthOffset(month, -1)}')" title="Mes anterior">‹</button>
-                <div class="longterm-month-nav-label">${escapeHtml(financeMonthLabel(month))}${isCurrent ? '<span class="lt-nav-current-badge">actual</span>' : ''}</div>
+                <div class="longterm-month-nav-label">${escapeHtml(financeMonthLabel(month))}</div>
                 <button class="lt-nav-btn" onclick="setLongtermViewMonth('${longtermMonthOffset(month, 1)}')" title="Mes siguiente">›</button>
             </div>`;
         }
@@ -11395,7 +11386,7 @@
                     </div>
                     <div class="lt-card lt-card-number">
                         <div class="lt-card-number-value">${financeMoney(stats.valorActual)}</div>
-                        <div class="lt-card-title">Cartera</div>
+                        <div class="lt-card-title">carteras de inversiones a largo.</div>
                         <div class="lt-card-sub">${stats.cuentas} cuenta${stats.cuentas === 1 ? '' : 's'}</div>
                     </div>
                 </div>
@@ -11476,12 +11467,21 @@
             ensureLongTermData();
             const plan = getBudgetPlanForMonth(longtermViewMonth || financeMonthKey());
             const cats = (financePro.categories || []).filter(c => c.type === 'expense');
-            return plan.allocations.length
-                ? plan.allocations.map(a => renderBudgetAllocationRow(a, cats)).join('')
-                : '<div class="finance-empty-line" style="margin:8px 0">Sin casillas todavía — añade una por cada sitio al que quieras llevar el sueldo (alquiler, ahorro, ocio...).</div>';
+            if (!plan.allocations.length) return '<div class="finance-empty-line" style="margin:8px 0">Sin casillas todavía — añade una por cada sitio al que quieras llevar el sueldo (alquiler, ahorro, ocio...).</div>';
+            return `
+                <div class="budget-alloc-row budget-alloc-row-head">
+                    <span>Casilla</span><span>Previsto</span><span>Categoría</span><span>Gastado</span><span></span>
+                </div>
+                ${plan.allocations.map(a => renderBudgetAllocationRow(a, cats)).join('')}`;
         }
 
         function renderBudgetAllocationRow(a, cats) {
+            const month = longtermViewMonth || financeMonthKey();
+            // Gasto real hasta ahora este mes en la categoría vinculada —
+            // para poder ajustar el importe previsto sobre la marcha en
+            // vez de descubrir la desviación al grabar el mes.
+            const spent = a.categoryId ? financeProCategorySpend(a.categoryId, month) : null;
+            const over = spent != null && Number(a.amount) > 0 && spent > Number(a.amount);
             return `
             <div class="budget-alloc-row">
                 <input class="modal-input budget-alloc-label" value="${escapeHtml(a.label || '')}" placeholder="Ej. Alquiler, Ahorro..." oninput="updateBudgetAllocation('${a.id}','label',this.value,false)" onchange="updateBudgetAllocation('${a.id}','label',this.value,true)">
@@ -11490,6 +11490,7 @@
                     <option value="">Sin vincular</option>
                     ${cats.map(c => `<option value="${c.id}" ${a.categoryId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
+                <div class="budget-alloc-spent${over ? ' over' : ''}">${spent != null ? financeMoney(spent) : '—'}</div>
                 <button class="doc-action-delete-btn" title="Eliminar" onclick="removeBudgetAllocation('${a.id}')">✕</button>
             </div>`;
         }
@@ -11521,6 +11522,12 @@
             if (!a) return;
             a[field] = field === 'amount' ? Math.max(0, Number(value) || 0) : value;
             if (field === 'amount') refreshBudgetRemainingBar();
+            if (field === 'categoryId') {
+                // La columna "Gastado" depende de la categoría vinculada —
+                // hay que recalcularla, no basta con la barra de restante.
+                const listEl = document.getElementById('budget-allocations-list');
+                if (listEl) listEl.innerHTML = renderBudgetAllocationsList();
+            }
             if (persist) { try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); } }
         }
 
@@ -11577,11 +11584,16 @@
                 // (ingresos de la categoría de ingreso con el mismo nombre).
                 actuals[a.id] = a.categoryId ? financeProCategorySpend(a.categoryId, month) : null;
             });
+            // El sueldo sin asignar a ninguna casilla se archiva como
+            // ahorro de ese mes, en vez de perderse sin más al reiniciar
+            // la planificación.
+            const assigned = plan.allocations.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+            const saved = Math.max(0, (Number(plan.salary) || 0) - assigned);
             financeProfile.budgetHistory = (financeProfile.budgetHistory || []).filter(h => h.month !== month);
             financeProfile.budgetHistory.push({
                 month, salary: plan.salary,
                 allocations: plan.allocations.map(a => ({ ...a })),
-                actuals, recordedAt: new Date().toISOString()
+                actuals, saved, recordedAt: new Date().toISOString()
             });
             financeProfile.budgetHistory = financeProfile.budgetHistory.sort((a, b) => a.month.localeCompare(b.month)).slice(-36);
             delete financeProfile.budgetPlans[month];
@@ -11609,6 +11621,7 @@
                 }).join('')}
                 <tr class="budget-history-total-row"><td>Total</td><td>${financeMoney(totalPrevisto)}</td><td>${financeMoney(totalReal)}</td><td>${financeMoney(totalPrevisto - totalReal)}</td></tr>
             </table>
+            ${h.saved ? `<div class="finance-empty-line" style="margin-top:10px">Sin asignar a ninguna casilla, ahorrado: <strong style="color:var(--text-primary)">${financeMoney(h.saved)}</strong></div>` : ''}
             <button class="finance-oneoff-btn" style="margin-top:10px;color:#c2455c;border-color:#c2455c" onclick="deleteBudgetHistoryMonth('${h.month}')">Eliminar registro</button>`;
         }
 
