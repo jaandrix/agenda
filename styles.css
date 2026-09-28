@@ -4454,22 +4454,51 @@ body.papel {
 .subject-detail-prof { font-size:13px; color:var(--text-secondary); margin-top:2px; }
 .subject-detail-prof-empty { text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
 .subject-detail-grade { text-align:right; flex-shrink:0; }
-.subject-detail-grade .nota-final { font-size:22px; padding:2px 10px; }
+.subject-detail-grade .nota-final { font-size:22px; padding:2px 10px; color:var(--text-primary) !important; }
 .subject-detail-grade-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-top:2px; }
-.studies-modal-block { margin:18px 0; }
-.studies-modal-block-title { display:flex; align-items:center; gap:8px; }
-.studies-modal-block-title .studies-block-icon { width:16px; height:16px; color:var(--text-secondary); flex-shrink:0; }
-.studies-modal-block-title .studies-block-icon svg { width:100%; height:100%; display:block; }
+.studies-weight-note { font-size:11px; color:var(--text-secondary); margin:6px 0 0; }
 
-.studies-item-card { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
-.studies-item-card-head { display:flex; align-items:center; gap:10px; }
-.studies-item-title-input { flex:1; margin:0; font-weight:600; }
-.studies-item-remove { background:none; border:0; color:#dc2626; cursor:pointer; font-size:15px; padding:4px 6px; flex-shrink:0; }
-.studies-item-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:10px; }
-@media (max-width:520px) { .studies-item-fields { grid-template-columns:1fr 1fr; } }
-.studies-item-field label { display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); margin-bottom:4px; }
-.studies-item-field input { margin:0; }
-.studies-item-field input.nota-aprobado, .studies-item-field input.nota-suspenso, .studies-item-field input.nota-matricula { font-weight:700; }
+/* Exámenes / Trabajos — portada editorial en blanco y negro: regla
+   gruesa, texto pequeño en mayúsculas, título grande, cero color. Las
+   filas debajo son una lista plana separada por líneas finas, sin
+   tarjetas ni fondos — los campos se editan como texto subrayado, no
+   como inputs con caja. */
+.studies-editorial-block { margin:24px 0 0; }
+.studies-editorial-rule { height:2px; background:var(--text-primary); margin-bottom:8px; }
+.studies-editorial-kicker { display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--text-secondary); margin-bottom:6px; }
+.studies-editorial-kicker span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.studies-editorial-kicker button { flex-shrink:0; background:none; border:0; padding:0; font:inherit; font-weight:700; color:var(--text-primary); cursor:pointer; }
+.studies-editorial-kicker button:hover { text-decoration:underline; text-underline-offset:2px; }
+.studies-editorial-heading { font-size:23px; font-weight:800; letter-spacing:-.3px; color:var(--text-primary); margin-bottom:8px; }
+.studies-editorial-empty { font-size:12px; color:var(--text-secondary); padding:12px 0; border-top:1px solid var(--border); }
+
+.studies-editorial-group-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-secondary); padding:12px 0 2px; cursor:pointer; list-style:none; }
+.studies-editorial-group-label::-webkit-details-marker { display:none; }
+.studies-editorial-group-label::before { content:'+ '; }
+details[open] > .studies-editorial-group-label::before { content:'– '; }
+
+.studies-row { border-top:1px solid var(--border); padding:12px 0; }
+.studies-row:last-child { padding-bottom:0; }
+.studies-row-head { display:flex; align-items:flex-start; gap:10px; }
+.studies-row-title-input { flex:1; background:none; border:0; padding:0; margin:0; font-size:15px; font-weight:700; color:var(--text-primary); font-family:var(--font-family); min-width:0; }
+.studies-row-title-input::placeholder { color:var(--text-secondary); font-weight:600; }
+.studies-row-title-input:focus { outline:0; }
+.studies-row-countdown { font-size:11px; color:var(--text-secondary); white-space:nowrap; flex-shrink:0; padding-top:3px; }
+.studies-row-countdown.due-soon { color:var(--text-primary); font-weight:700; }
+.studies-row-countdown.past { opacity:.7; }
+.studies-row-remove { background:none; border:0; color:var(--text-secondary); cursor:pointer; font-size:13px; padding:2px 0 2px 6px; flex-shrink:0; }
+.studies-row-remove:hover { color:var(--text-primary); }
+
+.studies-row-fields { display:flex; gap:24px; margin-top:10px; flex-wrap:wrap; }
+.studies-row-field { display:flex; flex-direction:column; gap:3px; }
+.studies-row-field label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); }
+.studies-row-field input {
+    background:none; border:0; border-bottom:1px solid var(--border-strong); border-radius:0;
+    padding:2px 0; margin:0; font-size:13px; color:var(--text-primary); font-family:var(--font-family);
+    width:88px; font-variant-numeric:tabular-nums;
+}
+.studies-row-field input:focus { outline:0; border-bottom-color:var(--text-primary); }
+.studies-row-field.grade input { font-weight:700; }
 .studies-schedule-grid { margin-top:12px; background:var(--bg-card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
 .studies-schedule-headrow { display:flex; border-bottom:1px solid var(--border); }
 .studies-schedule-head-gutter { width:44px; flex-shrink:0; }

@@ -9087,53 +9087,131 @@
                             <div class="modal-title" style="margin-bottom:0">${escapeHtml(s.name)}</div>
                             <div class="subject-detail-prof ${hasProfessor ? '' : 'subject-detail-prof-empty'}" onclick="editSubjectProfessor('${s.id}')">${hasProfessor ? escapeHtml(s.professor) : 'añadir nombre.'}</div>
                         </div>
-                        ${finalGrade !== null ? `<div class="subject-detail-grade"><span class="nota-final ${gradeTierClass(finalGrade)}">${finalGrade.toFixed(2)}</span><div class="subject-detail-grade-label">Nota final</div></div>` : ''}
+                        <div class="subject-detail-grade" id="subject-detail-grade-wrap" style="${finalGrade === null ? 'display:none' : ''}">
+                            <span class="nota-final ${finalGrade !== null ? gradeTierClass(finalGrade) : ''}">${finalGrade !== null ? finalGrade.toFixed(2) : ''}</span>
+                            <div class="subject-detail-grade-label">Nota final</div>
+                        </div>
                     </div>
                     <div class="modal-label">Créditos ECTS (opcional, para el expediente)</div>
                     <input class="modal-input" type="number" min="0" step="0.5" value="${s.creditos ?? ''}" placeholder="Ej: 6" onchange="updateSubjectCredits('${s.id}',this.value)">
-                    <div class="studies-modal-block">
-                        <div class="modal-label studies-modal-block-title" style="justify-content:space-between">
-                            <span style="display:flex;align-items:center;gap:8px"><span class="studies-block-icon">${STUDIES_ICON_EXAM}</span>Exámenes</span>
-                            <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','exams')">+</button>
-                        </div>
-                        ${(s.exams || []).length ? s.exams.map((ex, i) => renderSubjectItemRow(s.id, 'exams', ex, i)).join('') : '<div class="finance-empty-line">Sin exámenes todavía.</div>'}
-                    </div>
-                    <div class="studies-modal-block">
-                        <div class="modal-label studies-modal-block-title" style="justify-content:space-between">
-                            <span style="display:flex;align-items:center;gap:8px"><span class="studies-block-icon">${STUDIES_ICON_WORK}</span>Trabajos</span>
-                            <button class="finance-icon-btn" onclick="addSubjectItem('${s.id}','assignments')">+</button>
-                        </div>
-                        ${(s.assignments || []).length ? s.assignments.map((a, i) => renderSubjectItemRow(s.id, 'assignments', a, i)).join('') : '<div class="finance-empty-line">Sin trabajos todavía.</div>'}
-                    </div>
+                    <div class="studies-weight-note" id="subject-weight-note">${renderSubjectWeightNote(s)}</div>
+                    ${renderSubjectItemsBlock(s, 'exams')}
+                    ${renderSubjectItemsBlock(s, 'assignments')}
                     ${renderEntryDocsSection('studies', s.id, 'Documentos (apuntes, resúmenes...)')}
                     <button class="finance-oneoff-btn" style="color:#dc2626;border-color:#dc2626" onclick="deleteSubject('${s.id}')">Eliminar asignatura</button>
                 </div>
             `;
         }
 
-        function renderSubjectItemRow(subjectId, listKey, item, index) {
-            const gradeNum = item.grade !== '' && item.grade !== null && item.grade !== undefined && !isNaN(Number(item.grade)) ? Number(item.grade) : null;
-            const gradeCls = gradeNum !== null ? gradeTierClass(gradeNum) : '';
+        // Cuánto falta/pasó para la fecha de un examen o trabajo — a
+        // diferencia de eventCountdownLabel (solo futuro), aquí también
+        // hacen falta los ya pasados para poder agruparlos aparte.
+        function studiesItemCountdown(dateStr) {
+            if (!dateStr) return null;
+            const days = Math.round((new Date(dateStr + 'T00:00:00') - new Date(todayISO() + 'T00:00:00')) / 86400000);
+            if (days === 0) return { text: 'hoy', due: true, past: false };
+            if (days === 1) return { text: 'mañana', due: true, past: false };
+            if (days > 1) return { text: `en ${days} días`, due: days <= 7, past: false };
+            return { text: `hace ${Math.abs(days)} día${Math.abs(days) === 1 ? '' : 's'}`, due: false, past: true };
+        }
+
+        // Suma de los pesos ya repartidos entre exámenes y trabajos de la
+        // asignatura (solo cuenta los que tienen peso indicado) — para
+        // avisar si no llegan al 100% o si se han pasado.
+        function subjectWeightTotal(s) {
+            const items = [...(s.exams || []), ...(s.assignments || [])];
+            return items.reduce((sum, x) => sum + (x.weight !== '' && x.weight != null && !isNaN(Number(x.weight)) ? Number(x.weight) : 0), 0);
+        }
+
+        function renderSubjectWeightNote(s) {
+            const total = subjectWeightTotal(s);
+            if (!total) return '';
+            if (total === 100) return 'Peso repartido: 100%.';
+            if (total > 100) return `Peso repartido: ${total}% — te has pasado ${total - 100}%.`;
+            return `Peso repartido: ${total}% (quedan ${100 - total}% sin asignar).`;
+        }
+
+        function refreshSubjectDetailStats(s) {
+            const finalGrade = subjectFinalGrade(s);
+            const wrap = document.getElementById('subject-detail-grade-wrap');
+            if (wrap) {
+                wrap.style.display = finalGrade === null ? 'none' : '';
+                wrap.querySelector('.nota-final').textContent = finalGrade !== null ? finalGrade.toFixed(2) : '';
+                wrap.querySelector('.nota-final').className = `nota-final ${finalGrade !== null ? gradeTierClass(finalGrade) : ''}`;
+            }
+            const note = document.getElementById('subject-weight-note');
+            if (note) note.textContent = renderSubjectWeightNote(s);
+        }
+
+        // Bloque "Exámenes"/"Trabajos" del detalle de asignatura — estética
+        // editorial en blanco y negro (regla gruesa + texto pequeño en
+        // mayúsculas + título grande), pendientes primero y ya pasados
+        // colapsados debajo para no acumular ruido con el tiempo.
+        function renderSubjectItemsBlock(s, listKey) {
+            const items = s[listKey] || [];
+            const label = listKey === 'exams' ? 'Exámenes' : 'Trabajos';
+            const singular = listKey === 'exams' ? 'examen' : 'trabajo';
+            const noDate = items.filter(it => !it.date);
+            const withDate = items.filter(it => !!it.date);
+            const upcoming = withDate.filter(it => it.date >= todayISO()).sort((a, b) => a.date.localeCompare(b.date));
+            const past = withDate.filter(it => it.date < todayISO()).sort((a, b) => b.date.localeCompare(a.date));
+            const next = upcoming[0];
+            const kicker = items.length
+                ? `${items.length} ${label.toLowerCase()}${next ? ` · próximo ${studiesItemCountdown(next.date).text}` : ''}`
+                : `sin ${label.toLowerCase()} todavía`;
             return `
-                <div class="studies-item-card">
-                    <div class="studies-item-card-head">
-                        <input class="modal-input studies-item-title-input" value="${escapeHtml(item.title || '')}" placeholder="Título" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
-                        <button class="studies-item-remove" title="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})">✕</button>
+            <div class="studies-editorial-block" id="studies-block-${listKey}-${s.id}">
+                <div class="studies-editorial-rule"></div>
+                <div class="studies-editorial-kicker">
+                    <span>${escapeHtml(kicker)}</span>
+                    <button onclick="addSubjectItem('${s.id}','${listKey}')">+ añadir</button>
+                </div>
+                <div class="studies-editorial-heading">${label}</div>
+                ${!items.length ? `<div class="studies-editorial-empty">Todavía no has añadido ningún ${singular}.</div>` : `
+                    ${noDate.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
+                    ${upcoming.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
+                    ${past.length ? `
+                    <details class="studies-past-group">
+                        <summary class="studies-editorial-group-label">pasados (${past.length})</summary>
+                        ${past.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
+                    </details>` : ''}
+                `}
+            </div>`;
+        }
+
+        function refreshSubjectItemsBlock(s, listKey) {
+            const el = document.getElementById(`studies-block-${listKey}-${s.id}`);
+            if (el) el.outerHTML = renderSubjectItemsBlock(s, listKey);
+        }
+
+        function renderSubjectItemRow(subjectId, listKey, item, index) {
+            const cd = studiesItemCountdown(item.date);
+            return `
+                <div class="studies-row">
+                    <div class="studies-row-head">
+                        <input class="studies-row-title-input" value="${escapeHtml(item.title || '')}" placeholder="${listKey === 'exams' ? 'Examen sin título' : 'Trabajo sin título'}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
+                        ${cd ? `<span class="studies-row-countdown ${cd.due ? 'due-soon' : ''} ${cd.past ? 'past' : ''}">${cd.text}</span>` : ''}
+                        <button class="studies-row-remove" title="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})">✕</button>
                     </div>
-                    <div class="studies-item-fields">
-                        <div class="studies-item-field"><label>Fecha</label><input class="modal-input" type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)"></div>
-                        <div class="studies-item-field"><label>Nota</label><input class="modal-input ${gradeCls}" type="number" min="0" max="10" step="0.1" value="${item.grade ?? ''}" placeholder="0-10" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'grade',this.value)"></div>
-                        <div class="studies-item-field"><label>Peso %</label><input class="modal-input" type="number" min="0" max="100" step="1" value="${item.weight ?? ''}" placeholder="0-100" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'weight',this.value)"></div>
+                    <div class="studies-row-fields">
+                        <div class="studies-row-field"><label>Fecha</label><input type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)"></div>
+                        <div class="studies-row-field grade"><label>Nota</label><input type="number" min="0" max="10" step="0.1" value="${item.grade ?? ''}" placeholder="—" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'grade',this.value)"></div>
+                        <div class="studies-row-field"><label>Peso %</label><input type="number" min="0" max="100" step="1" value="${item.weight ?? ''}" placeholder="—" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'weight',this.value)"></div>
                     </div>
                 </div>`;
         }
 
+        // Añadir/quitar solo refresca el bloque afectado (en vez de
+        // reabrir el modal entero, que también volvía a pedir los
+        // documentos a Supabase cada vez) — más rápido y sin perder el
+        // scroll de lo que ya estabas mirando.
         function addSubjectItem(subjectId, listKey) {
             const s = findSubject(subjectId);
             if (!s) return;
             s[listKey] = s[listKey] || [];
             s[listKey].push({ id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: '', date: '', grade: '', weight: '' });
-            openSubjectDetail(subjectId);
+            refreshSubjectItemsBlock(s, listKey);
+            setTimeout(() => document.querySelector(`#studies-block-${listKey}-${s.id} .studies-row-title-input`)?.focus(), 30);
         }
 
         async function updateSubjectItem(subjectId, listKey, index, field, value) {
@@ -9141,6 +9219,11 @@
             if (!s || !s[listKey] || !s[listKey][index]) return;
             s[listKey][index][field] = value;
             if (field === 'title' || field === 'date') syncExamCalendarEvent(s, listKey, s[listKey][index]);
+            // La fecha cambia el grupo (pendiente/pasado) y el "próximo en..."
+            // del bloque; la nota o el peso cambian la nota final y el aviso
+            // de reparto — cada uno refresca solo lo que de verdad depende de él.
+            if (field === 'date') refreshSubjectItemsBlock(s, listKey);
+            if (field === 'grade' || field === 'weight') refreshSubjectDetailStats(s);
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -9150,7 +9233,8 @@
             const item = s[listKey][index];
             if (item) removeLinkedExamEvent(item.id);
             s[listKey].splice(index, 1);
-            openSubjectDetail(subjectId);
+            refreshSubjectItemsBlock(s, listKey);
+            refreshSubjectDetailStats(s);
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
