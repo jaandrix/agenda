@@ -12587,6 +12587,7 @@
                 <div class="finance-section-head" style="margin-top:24px">
                     <div class="finance-kicker">Movimientos</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="finance-oneoff-btn" onclick="openFinanceProDuplicatesModal()">Buscar duplicados</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">Registro rápido</button>
                         <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
                     </div>
@@ -12785,6 +12786,59 @@
             closeModal();
             render();
             try { await saveData(); showToast('Movimiento eliminado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Detector de posibles duplicados: casos típicos de importar dos
+        // extractos con periodos solapados (p. ej. un movimiento que se
+        // importó "pendiente" con una fecha y luego "completado" con otra,
+        // sin que el saneado de fechas del importador los reconociera como
+        // el mismo). Exige misma cuenta, mismo tipo, mismo importe y misma
+        // nota, con fechas a 2 días o menos — bastante estricto a
+        // propósito, para no marcar como duplicados dos cafés del mismo
+        // sitio en días distintos.
+        function findFinanceProDuplicates() {
+            const txs = financePro.transactions.filter(t => t.type !== 'transfer');
+            const pairs = [];
+            const used = new Set();
+            for (let i = 0; i < txs.length; i++) {
+                if (used.has(txs[i].id)) continue;
+                for (let j = i + 1; j < txs.length; j++) {
+                    if (used.has(txs[j].id)) continue;
+                    const a = txs[i], b = txs[j];
+                    if (a.account !== b.account || a.type !== b.type) continue;
+                    if (Math.abs(Number(a.amount) - Number(b.amount)) > 0.005) continue;
+                    const noteA = (a.note || '').trim().toLowerCase();
+                    const noteB = (b.note || '').trim().toLowerCase();
+                    if (noteA !== noteB) continue;
+                    const daysDiff = Math.abs((new Date(a.date) - new Date(b.date)) / 86400000);
+                    if (daysDiff > 2) continue;
+                    pairs.push([a, b]);
+                    used.add(a.id); used.add(b.id);
+                    break;
+                }
+            }
+            return pairs;
+        }
+
+        function openFinanceProDuplicatesModal() {
+            const pairs = findFinanceProDuplicates();
+            if (!pairs.length) { showToast('No se han encontrado duplicados probables'); return; }
+            showModal(`
+                <div class="modal-title">Posibles duplicados</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Mismo importe, misma cuenta y misma nota, con fechas muy cercanas — típico de importar dos extractos con periodos solapados. Revisa cada pareja y elimina la copia sobrante.</div>
+                ${pairs.map(([a, b]) => `
+                    <div class="finance-dup-pair">
+                        ${[a, b].map(t => `
+                            <div class="finance-dup-item">
+                                <div class="finance-dup-item-main">
+                                    <div>${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}</div>
+                                    ${t.note ? `<div class="finance-dup-item-note">${escapeHtml(t.note)}</div>` : ''}
+                                </div>
+                                <div class="finance-dup-item-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</div>
+                                <button class="doc-action-delete-btn" title="Eliminar esta copia" onclick="deleteFinanceProTransaction('${t.id}')">✕</button>
+                            </div>`).join('')}
+                    </div>`).join('')}
+            `);
         }
 
         // ============================================================
