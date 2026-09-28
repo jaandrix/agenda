@@ -11502,6 +11502,17 @@
                 }
             }
             if (!Array.isArray(financeProfile.investmentAccounts)) migrateToInvestmentAccounts();
+            if (!Array.isArray(financeProfile.wishlist)) financeProfile.wishlist = [];
+        }
+
+        // Suma de lo sobrante (sueldo sin asignar) de todos los meses ya
+        // grabados/cerrados — el criterio de la wishlist compara cada
+        // precio contra este colchón acumulado "a mes vencido", nunca
+        // contra el mes en curso (que puede seguir cambiando).
+        function wishlistAvailableSavings() {
+            const hist = financeProfile.budgetHistory || [];
+            const total = hist.reduce((sum, h) => sum + (Number(h.saved) || 0), 0);
+            return Math.max(0, total);
         }
 
         function getBudgetPlanForMonth(month) {
@@ -11613,7 +11624,84 @@
                     </div>
                     <span class="lt-strip-icon">${FINANCE_ICON_TREND}</span>
                 </div>` : ''}
+
+                ${renderWishlistSection()}
             </div>`;
+        }
+
+        // -- Whishlist --
+        // Marca cada deseo como ya alcanzable (✓) o todavía no (✕)
+        // comparando su precio contra el colchón de sueldo sin asignar
+        // acumulado en los meses ya cerrados (wishlistAvailableSavings) —
+        // nunca contra el mes en curso, que aún puede cambiar.
+        function renderWishlistSection() {
+            ensureLongTermData();
+            const available = wishlistAvailableSavings();
+            const items = financeProfile.wishlist || [];
+            return `
+            <div class="lt-card">
+                <div class="longterm-section-head">
+                    <div class="longterm-section-title">whishlist.</div>
+                    <div class="wishlist-available" title="Sueldo sin asignar acumulado en los meses ya cerrados">${financeMoney(available)} disponibles</div>
+                </div>
+                <div id="wishlist-list">
+                    ${items.length ? items.map(it => renderWishlistRow(it, available)).join('') : '<div class="finance-empty-line" style="margin:8px 0">Todavía no has añadido nada — apunta aquí lo que te gustaría comprarte más adelante.</div>'}
+                </div>
+                <button class="finance-oneoff-btn" style="margin-top:8px" onclick="addWishlistItem()">+ Añadir deseo</button>
+            </div>`;
+        }
+
+        function renderWishlistRow(item, available) {
+            const price = Number(item.price) || 0;
+            const affordable = price > 0 && available >= price;
+            return `
+            <div class="wishlist-row">
+                <input class="modal-input wishlist-label" value="${escapeHtml(item.title || '')}" placeholder="Ej. Auriculares, viaje, videoconsola..." oninput="updateWishlistItem('${item.id}','title',this.value,false)" onchange="updateWishlistItem('${item.id}','title',this.value,true)">
+                <input class="modal-input wishlist-price" type="number" min="0" step="0.01" value="${item.price || ''}" placeholder="0.00" oninput="updateWishlistItem('${item.id}','price',this.value,false)" onchange="updateWishlistItem('${item.id}','price',this.value,true)">
+                <span id="wishlist-badge-${item.id}" class="wishlist-badge ${affordable ? 'wishlist-badge-yes' : 'wishlist-badge-no'}" title="${affordable ? 'Ya es buen momento para comprarlo' : 'Todavía no es buen momento'}">${affordable ? '✓' : '✕'}</span>
+                <button class="doc-action-delete-btn" title="Eliminar" onclick="removeWishlistItem('${item.id}')">✕</button>
+            </div>`;
+        }
+
+        function refreshWishlistBadge(id) {
+            const badge = document.getElementById('wishlist-badge-' + id);
+            if (!badge) return;
+            const it = (financeProfile.wishlist || []).find(x => x.id === id);
+            if (!it) return;
+            const price = Number(it.price) || 0;
+            const affordable = price > 0 && wishlistAvailableSavings() >= price;
+            badge.className = 'wishlist-badge ' + (affordable ? 'wishlist-badge-yes' : 'wishlist-badge-no');
+            badge.title = affordable ? 'Ya es buen momento para comprarlo' : 'Todavía no es buen momento';
+            badge.textContent = affordable ? '✓' : '✕';
+        }
+
+        function renderWishlistList() {
+            const available = wishlistAvailableSavings();
+            const items = financeProfile.wishlist || [];
+            return items.length ? items.map(it => renderWishlistRow(it, available)).join('') : '<div class="finance-empty-line" style="margin:8px 0">Todavía no has añadido nada — apunta aquí lo que te gustaría comprarte más adelante.</div>';
+        }
+
+        function addWishlistItem() {
+            ensureLongTermData();
+            financeProfile.wishlist.push({ id: 'wl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: '', price: 0 });
+            const el = document.getElementById('wishlist-list');
+            if (el) el.innerHTML = renderWishlistList();
+        }
+
+        async function updateWishlistItem(id, field, value, persist) {
+            const items = financeProfile.wishlist || [];
+            const it = items.find(x => x.id === id);
+            if (!it) return;
+            it[field] = field === 'price' ? Math.max(0, Number(value) || 0) : value;
+            if (field === 'price') refreshWishlistBadge(id);
+            if (persist) { try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); } }
+        }
+
+        async function removeWishlistItem(id) {
+            financeProfile.wishlist = (financeProfile.wishlist || []).filter(it => it.id !== id);
+            const el = document.getElementById('wishlist-list');
+            if (el) el.innerHTML = renderWishlistList();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // -- Planificación del sueldo --
