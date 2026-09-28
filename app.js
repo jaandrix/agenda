@@ -12745,10 +12745,7 @@
                     return `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="9" fill="transparent" onmousemove="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)" onmouseleave="financeProChartTooltipHide('${idSuffix}-${si}-${i}')" onclick="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)"/>
                         <circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3.5" fill="${s.color}" style="pointer-events:none"/>`;
                 }).join('');
-                const area = si === 0 ? `<path d="${path} L${x(n - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z" fill="url(#fpGrad_${idSuffix}_${si})" stroke="none"/>` : '';
-                return `<defs><linearGradient id="fpGrad_${idSuffix}_${si}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:${s.color};stop-opacity:0.22"/><stop offset="100%" style="stop-color:${s.color};stop-opacity:0"/></linearGradient></defs>
-                    ${area}
-                    <path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${si === 1 ? 'stroke-dasharray="5,4"' : ''}/>
+                return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${si === 1 ? 'stroke-dasharray="5,4"' : ''}/>
                     ${points}`;
             }).join('');
             const legend = `<div class="finance-chart-legend">${seriesList.map((s, si) => `<span><i style="background:${s.color};${si === 1 ? 'border-radius:0;height:2px;width:12px;margin-top:5px' : ''}"></i>${escapeHtml(s.label)}</span>`).join('')}</div>`;
