@@ -5,6 +5,10 @@
                tres temas anteriores (oscuro puro / claro puro / beige).
             ============================================================ */
         :root {
+            /* Tipografía elegida en Ajustes (localStorage) — JS la
+               sobreescribe con setProperty en <html>; este valor es solo
+               el arranque por defecto. */
+            --font-family: 'Poppins', -apple-system, system-ui, sans-serif;
             --bg-app: #302f2c;
             --bg-sidebar: #2a2925;
             --bg-card: #3a3934;
@@ -81,7 +85,7 @@
         }
 
         body {
-            font-family: 'Poppins', -apple-system, system-ui, sans-serif;
+            font-family: var(--font-family);
             background: var(--bg-app);
             color: var(--text-primary);
             height: 100dvh;
@@ -235,7 +239,7 @@
             border: none;
             padding: 8px 10px;
             border-radius: 14px;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 13px;
             font-weight: 400;
             color: var(--text-secondary);
@@ -294,7 +298,7 @@
             border: none;
             padding: 8px 10px;
             border-radius: 8px;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 12.5px;
             font-weight: 400;
             color: var(--text-primary);
@@ -313,7 +317,7 @@
             border: none;
             padding: 8px 10px;
             border-radius: 14px;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 12px;
             font-weight: 400;
             color: var(--text-muted);
@@ -342,7 +346,7 @@
             border: none;
             padding: 7px 10px;
             border-radius: 12px;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 12px;
             color: var(--text-muted);
             cursor: pointer;
@@ -465,7 +469,7 @@
             border: none;
             padding: 10px 10px;
             border-radius: 14px;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 14px;
             font-weight: 400;
             color: var(--text-secondary);
@@ -566,7 +570,7 @@
             border: none;
             border-radius: 16px;
             padding: 8px 14px;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
@@ -597,7 +601,7 @@
         }
         .notif-bell-btn:hover { background: var(--bg-card-hover); border-color: var(--border-strong); transform: translateY(-1px); }
         .notif-bell-btn:active { transform: translateY(0); }
-        #help-btn { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; }
+        #help-btn { font-family: var(--font-family); font-size: 15px; font-weight: 700; }
 
         .help-section-label {
             font-size: 11px;
@@ -743,7 +747,7 @@
             cursor: pointer;
             background: none;
             border: none;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             padding: 2px 8px;
             border-radius: 10px;
             transition: background 0.15s ease;
@@ -802,7 +806,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
         }
         #fab:hover {
             transform: scale(1.05);
@@ -857,7 +861,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 13px;
             font-weight: 700;
             letter-spacing: -.4px;
@@ -910,7 +914,7 @@
             color: var(--text-primary);
             border-radius: 14px;
             padding: 5px 8px;
-            font: 600 11px 'Poppins', sans-serif;
+            font: 600 11px var(--font-family);
             cursor: pointer;
             white-space: nowrap;
         }
@@ -1140,7 +1144,7 @@
             padding: 8px 4px;
             cursor: pointer;
             color: var(--text-secondary);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             transition: all 0.15s ease;
         }
         .cal-strip-day:hover { background: var(--bg-card-hover); color: var(--text-primary); }
@@ -1246,7 +1250,7 @@
             background: none;
             border: none;
             color: var(--text-secondary);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 13px;
             font-weight: 500;
             padding: 8px 16px;
@@ -1732,7 +1736,7 @@
             border-radius: 999px;
             background: #3b82f6;
             color: #fff;
-            font-family: 'Poppins', -apple-system, system-ui, sans-serif;
+            font-family: var(--font-family);
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
@@ -1757,7 +1761,7 @@
             padding: 10px 14px;
             border-radius: 16px;
             border: 1px solid var(--border-strong);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 14px;
             font-weight: 400;
             background: var(--bg-input);
@@ -1794,7 +1798,7 @@
             border: none;
             background: var(--accent);
             color: var(--accent-contrast);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-weight: 600;
             font-size: 15px;
             cursor: pointer;
@@ -1812,7 +1816,7 @@
             border: none;
             background: #2a1515;
             color: #dc2626;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-weight: 600;
             font-size: 13px;
             cursor: pointer;
@@ -1880,7 +1884,7 @@
             text-transform: uppercase;
         }
         .friend-add-input:focus { outline: none; border-color: #3b82f6; }
-        .friend-add-input::placeholder { letter-spacing: normal; font-family: 'Poppins', sans-serif; }
+        .friend-add-input::placeholder { letter-spacing: normal; font-family: var(--font-family); }
         .friend-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
         .friend-list-item {
             display: flex;
@@ -2037,7 +2041,7 @@
         .effort-picker-row { display: flex; gap: 8px; }
         .effort-picker-btn {
             width: 44px; height: 44px; border-radius: 10px; border: 2px solid transparent;
-            font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; color: #fff;
+            font-family: var(--font-family); font-size: 15px; font-weight: 700; color: #fff;
             cursor: pointer; transition: transform .12s ease, border-color .12s ease;
         }
         .effort-picker-btn:hover { transform: translateY(-1px); }
@@ -2061,7 +2065,7 @@
             border: 1px solid var(--border-strong);
             background: var(--bg-input);
             color: var(--text-primary);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -2134,7 +2138,7 @@
             border: 1px solid var(--border-strong);
             background: var(--bg-input);
             color: var(--text-primary);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 14px;
             outline: none;
         }
@@ -2147,7 +2151,7 @@
             border: none;
             background: var(--vault-accent);
             color: #fff;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-weight: 600;
             font-size: 14px;
             cursor: pointer;
@@ -2451,7 +2455,7 @@
             padding: 20px;
             min-height: 100px;
             width: 100%;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 14px;
             color: var(--text-primary);
             line-height: 1.6;
@@ -2498,6 +2502,33 @@
             border-color: #4ade80;
             box-shadow: 0 0 0 1px #4ade80;
         }
+        /* Selector de tipografía (Ajustes → Apariencia): cada fila se
+           renderiza literalmente en su propia fuente, para poder ver
+           cómo queda antes de elegirla — nada de una lista genérica con
+           los nombres en la fuente de la app. */
+        .font-option-list {
+            display: flex;
+            flex-direction: column;
+            margin-top: 4px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .font-option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            transition: background .15s ease;
+        }
+        .font-option-row:last-child { border-bottom: none; }
+        .font-option-row:hover { background: var(--bg-card-hover); }
+        .font-option-row-active { background: var(--bg-card-hover); }
+        .font-option-preview { font-size: 17px; color: var(--text-primary); }
+        .font-option-check { width: 18px; text-align: center; font-size: 13px; font-weight: 700; color: var(--text-primary); flex-shrink: 0; }
         .prompts-list {
             display: flex;
             flex-direction: column;
@@ -2531,7 +2562,7 @@
         .entry-detail-card { position:relative; max-width:760px; }
 .entry-detail-external {
     position:absolute; top:26px; right:26px; background:none; border:none; color:#3b82f6;
-    padding:0; font-family:'Poppins',sans-serif; font-size:12px; font-weight:600;
+    padding:0; font-family:var(--font-family); font-size:12px; font-weight:600;
     text-decoration:underline; text-underline-offset:2px;
     cursor:pointer; white-space:nowrap; z-index:3;
     display:flex; align-items:center; gap:4px;
@@ -2810,7 +2841,7 @@
         .doc-item .doc-actions .doc-action-download {
             background: var(--bg-card-hover);
             color: #3b82f6;
-            font-family: 'Poppins', -apple-system, system-ui, sans-serif;
+            font-family: var(--font-family);
             font-weight: 700;
             border: 1px solid var(--border);
             border-radius: 999px;
@@ -2927,7 +2958,7 @@
             border: 1px solid var(--border-strong);
             background: var(--bg-input);
             color: var(--text-primary);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 14px;
         }
         #login-box button {
@@ -2937,7 +2968,7 @@
             border: none;
             background: #3b82f6;
             color: #fff;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
@@ -2994,7 +3025,7 @@
             background: none;
             border: none;
             color: var(--text-secondary);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -3019,7 +3050,7 @@
             border: 1.5px solid #3b82f6;
             background: #ffffff;
             color: #3b82f6;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
@@ -3134,7 +3165,7 @@
             border: none;
             background: #3b82f6;
             color: #fff;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
@@ -3222,7 +3253,7 @@
             background: none;
             border: none;
             color: var(--text-secondary);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -3232,7 +3263,7 @@
             background: none;
             border: 1.5px solid var(--border-strong);
             color: var(--text-primary);
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 13px;
             font-weight: 500;
             padding: 9px 18px;
@@ -3270,7 +3301,7 @@
             flex-wrap: wrap;
         }
         .landing-cta-primary, .landing-cta-secondary {
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-family);
             font-size: 14.5px;
             font-weight: 500;
             padding: 13px 26px;
@@ -3877,7 +3908,7 @@ body.papel {
    Iconos de trazo fino (familia propia, ver HOME_ICON_* en app.js),
    etiqueta en minúscula subrayada acabada en punto. */
 .home-launcher-list { display:flex; flex-direction:column; }
-.home-launcher-row { display:flex; align-items:center; gap:14px; padding:13px 4px; border:none; border-bottom:1px solid var(--border); background:none; width:100%; text-align:left; cursor:pointer; font-family:'Poppins', sans-serif; }
+.home-launcher-row { display:flex; align-items:center; gap:14px; padding:13px 4px; border:none; border-bottom:1px solid var(--border); background:none; width:100%; text-align:left; cursor:pointer; font-family:var(--font-family); }
 .home-launcher-row:last-child { border-bottom:none; }
 .home-launcher-row:hover .home-launcher-icon { background:var(--bg-card-hover); border-color:var(--border-strong); }
 .home-launcher-icon { width:42px; height:42px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--text-primary); transition:background .15s ease, border-color .15s ease; }

@@ -2034,7 +2034,7 @@
                         <div class="chart-title">Tu nombre visible</div>
                         <div style="font-size:11px;color:var(--text-secondary);margin:8px 0 14px">Es el nombre con el que te ven tus amigos dentro de Bitácora. No tiene por qué coincidir con el nombre de tu cuenta, y no puede repetirse con el de otra persona.</div>
                         <div class="friend-add-row">
-                            <input type="text" id="nombre-publico-input" class="modal-input" style="margin:0;text-transform:none;letter-spacing:normal;font-family:'Poppins',sans-serif" placeholder="Tu nombre visible" value="${escapeHtml(nombrePublico || '')}">
+                            <input type="text" id="nombre-publico-input" class="modal-input" style="margin:0;text-transform:none;letter-spacing:normal;font-family:var(--font-family)" placeholder="Tu nombre visible" value="${escapeHtml(nombrePublico || '')}">
                             <button class="btn-secondary" id="nombre-publico-btn" style="width:auto" onclick="guardarNombrePublico()">Guardar</button>
                         </div>
                     </div>
@@ -2598,6 +2598,45 @@
             if (next !== 'asfalto') document.body.classList.add(next);
             localStorage.setItem('bitacora_theme', next);
             showToast('Tema cambiado a ' + THEME_LABELS[next]);
+        }
+
+        // ============================================================
+        //  TIPOGRAFÍA (Ajustes) — cambia var(--font-family) al vuelo, sin
+        //  recargar. Guardado por dispositivo en localStorage, igual que
+        //  el tema.
+        // ============================================================
+        const FONT_OPTIONS = [
+            { id: 'poppins', label: 'Poppins', stack: "'Poppins', -apple-system, system-ui, sans-serif" },
+            { id: 'inter', label: 'Inter', stack: "'Inter', -apple-system, system-ui, sans-serif" },
+            { id: 'space-grotesk', label: 'Space Grotesk', stack: "'Space Grotesk', -apple-system, system-ui, sans-serif" },
+            { id: 'dm-sans', label: 'DM Sans', stack: "'DM Sans', -apple-system, system-ui, sans-serif" },
+            { id: 'lora', label: 'Lora', stack: "'Lora', Georgia, serif" },
+            { id: 'jetbrains-mono', label: 'JetBrains Mono', stack: "'JetBrains Mono', 'Courier New', monospace" }
+        ];
+
+        function loadFontPref() {
+            const id = localStorage.getItem('bitacora_font') || 'poppins';
+            const opt = FONT_OPTIONS.find(f => f.id === id) || FONT_OPTIONS[0];
+            document.documentElement.style.setProperty('--font-family', opt.stack);
+        }
+
+        function setFontPref(id) {
+            const opt = FONT_OPTIONS.find(f => f.id === id);
+            if (!opt) return;
+            document.documentElement.style.setProperty('--font-family', opt.stack);
+            localStorage.setItem('bitacora_font', id);
+            const container = document.getElementById('font-options-container');
+            if (container) container.innerHTML = renderFontOptionsList();
+            showToast('Letra cambiada a ' + opt.label);
+        }
+
+        function renderFontOptionsList() {
+            const current = localStorage.getItem('bitacora_font') || 'poppins';
+            return `<div class="font-option-list">${FONT_OPTIONS.map(f => `
+                <div class="font-option-row${f.id === current ? ' font-option-row-active' : ''}" onclick="setFontPref('${f.id}')">
+                    <div class="font-option-preview" style="font-family:${f.stack}">${escapeHtml(f.label)}</div>
+                    <div class="font-option-check">${f.id === current ? '✓' : ''}</div>
+                </div>`).join('')}</div>`;
         }
 
         let modeWide = false;
@@ -9766,6 +9805,8 @@
                             <button class="btn-secondary" style="width:auto" onclick="toggleTheme()">Cambiar tema</button>
                             <button class="btn-secondary" style="width:auto" onclick="toggleMode()">Alternar modo ancho</button>
                         </div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin:14px 0 8px">Tipografía</div>
+                        <div id="font-options-container">${renderFontOptionsList()}</div>
                     </div>
 
                     <div class="chart-container" style="margin-bottom:16px" id="settings-advanced-section">
@@ -15272,6 +15313,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
         async function init() {
             loadTheme();
+            loadFontPref();
             const loaded = await loadData();
             await cargarCodigoAmigo();
             await cargarAmigos();
