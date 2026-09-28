@@ -12786,6 +12786,159 @@
             </div>`;
         }
 
+        function mdEscape(s) {
+            return String(s ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+        }
+        function mdTable(headers, rows) {
+            if (!rows.length) return '_Sin datos._\n';
+            return `| ${headers.join(' | ')} |\n| ${headers.map(() => '---').join(' | ')} |\n` +
+                rows.map(r => `| ${r.map(mdEscape).join(' | ')} |`).join('\n') + '\n';
+        }
+
+        // Exporta TODO lo que el usuario ha metido en Finanzas — cuentas,
+        // categorías, reglas, movimientos, recurrentes, metas, histórico
+        // mensual, y todo el apartado "largo plazo" (cuentas de inversión
+        // y planificación de sueldo, grabada y en curso) — en Markdown:
+        // un único documento de texto plano, fácil de leer tanto para un
+        // humano como para pegárselo a una IA y pedirle que lo analice.
+        function buildFinanceExportMarkdown() {
+            const today = todayISO();
+            const lines = [];
+            lines.push(`# Finanzas — Bitácora`);
+            lines.push(`Exportado el ${today}. Todas las cifras en euros salvo que se indique lo contrario.`);
+            lines.push('');
+
+            lines.push('## Patrimonio operativo');
+            lines.push(mdTable(['Cuenta', 'Saldo', 'Objetivo'], [
+                ['Efectivo / bancos', financeMoney(financeProfile.cash || 0), financeMoney(financeProfile.cashTarget || 0)],
+                ['Fondo de emergencia', financeMoney(financeProfile.emergency || 0), financeMoney(financeProfile.emergencyTarget || 0)],
+                ['Reserva de vacaciones (fuera del patrimonio operativo)', financeMoney(financeProfile.vacation || 0), '—'],
+                ['Inversión a largo plazo', financeMoney(financeProfile.invested || 0), financeMoney(financeProfile.investedTarget || 0)],
+                ...(financeProfile.customAccounts || []).map(a => [mdEscape(a.name), financeMoney(a.balance || 0), '—'])
+            ]));
+            lines.push(`**Patrimonio operativo total**: ${financeMoney(financeCorePatrimony())} · **Objetivo total**: ${financeMoney(financeTargetTotal())}`);
+            lines.push('');
+
+            lines.push('## Cuentas (Finanzas PRO)');
+            lines.push(mdTable(['Cuenta', 'Saldo inicial', 'Saldo actual'],
+                FINANCE_PRO_ACCOUNT_KEYS.map(k => [financePro.accounts[k]?.name || k, financeMoney(financePro.accounts[k]?.balance0 || 0), financeMoney(financeProAccountBalance(k))])
+            ));
+            lines.push(`**Total cuentas PRO**: ${financeMoney(financeProTotalBalance())}`);
+            lines.push('');
+
+            lines.push('## Categorías');
+            const cats = financePro.categories || [];
+            lines.push('### Gasto');
+            lines.push(mdTable(['Nombre', 'Presupuesto mensual'], cats.filter(c => c.type === 'expense').map(c => [c.name, financePro.categoryBudgets[c.id] ? financeMoney(financePro.categoryBudgets[c.id]) : '—'])));
+            lines.push('### Ingreso');
+            lines.push(mdTable(['Nombre'], cats.filter(c => c.type === 'income').map(c => [c.name])));
+            lines.push('');
+
+            const rules = financePro.rules || [];
+            if (rules.length) {
+                lines.push('## Reglas de traspaso');
+                lines.push(mdTable(['Texto que busca', 'Cuenta destino', 'Activa'], rules.map(r => [r.matchText, financePro.accounts[r.otherAccount]?.name || r.otherAccount, r.enabled ? 'sí' : 'no'])));
+                lines.push('');
+            }
+
+            lines.push('## Movimientos');
+            const txs = [...(financePro.transactions || [])].sort((a, b) => a.date.localeCompare(b.date));
+            lines.push(`${txs.length} movimientos en total.`);
+            lines.push(mdTable(['Fecha', 'Cuenta', 'Tipo', 'Categoría / destino', 'Importe', 'Nota'], txs.map(t => [
+                t.date,
+                financePro.accounts[t.account]?.name || t.account,
+                t.type === 'income' ? 'Ingreso' : t.type === 'expense' ? 'Gasto' : 'Traspaso',
+                t.type === 'transfer' ? (financePro.accounts[t.transferTo]?.name || t.transferTo) : (financeProCategoryById(t.category)?.name || '—'),
+                financeMoney(t.amount || 0),
+                t.note || ''
+            ])));
+            lines.push('');
+
+            const recurring = entries.filter(e => e.type === 'subscription' || e.type === 'fixed_expense');
+            if (recurring.length) {
+                lines.push('## Gastos recurrentes y suscripciones');
+                lines.push(mdTable(['Nombre', 'Tipo', 'Importe/mes', 'Día de renovación', 'Activo'], recurring.map(e => [
+                    e.title, e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo', financeMoney(e.amount || 0), e.renewalDay || '—', e.active === false ? 'no' : 'sí'
+                ])));
+                lines.push('');
+            }
+
+            const goals = financeProfile.savingsGoals || [];
+            if (goals.length) {
+                lines.push('## Metas de ahorro');
+                lines.push(mdTable(['Nombre', 'Actual', 'Objetivo', '%'], goals.map(g => [g.name, financeMoney(g.current || 0), financeMoney(g.target || 0), g.target > 0 ? Math.round((g.current || 0) / g.target * 100) + '%' : '—'])));
+                lines.push('');
+            }
+
+            const hist = (financeProfile.history || []).slice().sort((a, b) => a.month.localeCompare(b.month));
+            if (hist.length) {
+                lines.push('## Histórico mensual de patrimonio');
+                lines.push(mdTable(['Mes', 'Efectivo', 'Emergencia', 'Inversión', 'Total'], hist.map(h => [financeMonthLabel(h.month), financeMoney(h.cash || 0), financeMoney(h.emergency || 0), financeMoney(h.invested || 0), financeMoney(h.total || 0)])));
+                lines.push('');
+            }
+
+            lines.push('## Largo plazo — previsión de sueldo (perfil general)');
+            const fc = financeProfile.forecastProfile || {};
+            lines.push(mdTable(['Campo', 'Valor'], [
+                ['Sueldo actual', financeMoney(fc.salary || 0)],
+                ['Meses de contrato', fc.contractMonths || '—'],
+                ['Plan mensual · emergencia', financeMoney(fc.emergencyMonthlyPlan || 0)],
+                ['Plan mensual · vacaciones', financeMoney(fc.vacationMonthlyPlan || 0)],
+                ['Plan mensual · inversión', financeMoney(fc.investMonthlyPlan || 0)]
+            ]));
+            lines.push('');
+
+            const invAccounts = financeProfile.investmentAccounts || [];
+            if (invAccounts.length) {
+                lines.push('## Largo plazo — cuentas de inversión');
+                invAccounts.forEach(acc => {
+                    lines.push(`### ${mdEscape(acc.name)}${acc.notes ? ' — ' + mdEscape(acc.notes) : ''}`);
+                    lines.push(`Aportado: ${financeMoney(investmentAccountInvested(acc))} · Valor actual: ${financeMoney(investmentAccountValue(acc))}`);
+                    const contribs = (acc.contributions || []).slice().sort((a, b) => a.month.localeCompare(b.month));
+                    lines.push(mdTable(['Mes', 'Aportación', 'Valor registrado'], contribs.map(c => [financeMonthLabel(c.month), financeMoney(c.amount || 0), c.value !== undefined ? financeMoney(c.value) : '—'])));
+                });
+                lines.push('');
+            }
+
+            const budgetHist = (financeProfile.budgetHistory || []).slice().sort((a, b) => a.month.localeCompare(b.month));
+            if (budgetHist.length) {
+                lines.push('## Largo plazo — planificación de sueldo (meses grabados)');
+                budgetHist.forEach(h => {
+                    lines.push(`### ${financeMonthLabel(h.month)}`);
+                    lines.push(`Sueldo: ${financeMoney(h.salary || 0)}${h.saved ? ` · Ahorrado (sin asignar): ${financeMoney(h.saved)}` : ''}`);
+                    lines.push(mdTable(['Casilla', 'Previsto', 'Real'], h.allocations.map(a => [a.label || '(sin nombre)', financeMoney(a.amount || 0), h.actuals[a.id] != null ? financeMoney(h.actuals[a.id]) : '—'])));
+                });
+                lines.push('');
+            }
+
+            const plans = financeProfile.budgetPlans || {};
+            const pendingMonths = Object.keys(plans).filter(m => (plans[m].salary || (plans[m].allocations || []).length) && !budgetHist.some(h => h.month === m)).sort();
+            if (pendingMonths.length) {
+                lines.push('## Largo plazo — planificación en curso (todavía sin grabar)');
+                pendingMonths.forEach(m => {
+                    const p = plans[m];
+                    lines.push(`### ${financeMonthLabel(m)}`);
+                    lines.push(`Sueldo previsto: ${financeMoney(p.salary || 0)}`);
+                    lines.push(mdTable(['Casilla', 'Previsto'], (p.allocations || []).map(a => [a.label || '(sin nombre)', financeMoney(a.amount || 0)])));
+                });
+                lines.push('');
+            }
+
+            return lines.join('\n');
+        }
+
+        function exportFinanceMarkdown() {
+            const md = buildFinanceExportMarkdown();
+            const blob = new Blob([md], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bitacora_finanzas_${todayISO()}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Finanzas exportadas');
+        }
+
         function renderFinanceProDashboard() {
             ensureCurrentMonthHistory();
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
@@ -12798,6 +12951,8 @@
                         <button onclick="openFinanceProCategoriesModal()">Categorías</button>
                         <span>·</span>
                         <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
+                        <span>·</span>
+                        <button onclick="exportFinanceMarkdown()">⭳ Exportar</button>
                         <span>·</span>
                         <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} Reglas</button>
                     </div>
