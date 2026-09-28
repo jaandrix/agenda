@@ -4165,9 +4165,11 @@ body.papel {
    (inspirada en la referencia de dashboard tipo app de entrenamiento
    enviada), en vez de secciones apiladas con separadores finos. */
 .modal-sheet:has(.longterm-modal) { max-width:760px; }
-/* Acento cálido propio de este popup — solo vive dentro de
-   .longterm-modal, no toca los tokens globales de tema. */
-.longterm-modal { --lt-accent:#E2683A; --lt-accent-soft:rgba(226,104,58,.14); }
+/* Monocromo puro (negro/blanco/gris, sin tono de color) — mismo
+   lenguaje TARJETA BITACORA del resto de la app y de la referencia
+   enviada. var(--accent)/var(--accent-contrast) ya se invierten solos
+   entre asfalto y papel, así que basta con apuntar ahí. */
+.longterm-modal { --lt-accent:var(--accent); --lt-accent-contrast:var(--accent-contrast); }
 
 .longterm-modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
 .longterm-modal-title { font-size:26px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); }
@@ -4212,7 +4214,7 @@ body.papel {
 .longterm-remaining-bar.over { background:rgba(194,69,92,.12); }
 .longterm-remaining-bar.over .longterm-remaining-highlight strong { color:#c2455c; }
 
-.longterm-cta { display:block; width:100%; margin-top:12px; padding:13px; border:0; border-radius:16px; background:var(--lt-accent); color:#fff; font-family:var(--font-family); font-size:14px; font-weight:700; cursor:pointer; transition:opacity .15s ease; }
+.longterm-cta { display:block; width:100%; margin-top:12px; padding:13px; border:0; border-radius:16px; background:var(--lt-accent); color:var(--lt-accent-contrast); font-family:var(--font-family); font-size:14px; font-weight:700; cursor:pointer; transition:opacity .15s ease; }
 .longterm-cta:hover { opacity:.9; }
 
 /* Franja inferior destacada, tipo "Volume lifted" de la referencia:

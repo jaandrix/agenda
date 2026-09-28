@@ -12724,19 +12724,11 @@
             `);
         }
 
+        // Resto en desuso desde el rediseño: esto abría la tarjeta
+        // resumen (renderInvestmentPanel) metida dentro de otro modal —
+        // un doble popup sin sentido. Va directa al modal real.
         function openFinanceLargoPlazoModal() {
-            showModal(renderInvestmentPanel());
-            requestAnimationFrame(animateInvestmentPanel);
-        }
-
-        // Cifra "Valor actual" contando hacia arriba + barras de
-        // aportado/valor actual creciendo desde 0 al abrir el popup.
-        function animateInvestmentPanel() {
-            const valueEl = document.getElementById('finance-invest-value');
-            if (valueEl) bitacoraAnimateNumber(valueEl, Number(valueEl.dataset.value || 0), financeMoney);
-            document.querySelectorAll('#finance-investment-section .finance-invest-bar-fill[data-target-width]').forEach(bar => {
-                requestAnimationFrame(() => { bar.style.width = bar.dataset.targetWidth; });
-            });
+            openLongTermModal();
         }
 
         function openFinanceMetasModal() {
