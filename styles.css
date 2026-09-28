@@ -4966,3 +4966,73 @@ body.papel {
     .summary-section { padding:13px; }
 }
 
+/* ============================================================
+   VERSIÓN MÓVIL (PWA en pantalla de inicio) — ver
+   isMobileStandaloneMode()/renderMobileShell() en app.js.
+   Sustituye #app entero mientras body.mobile-standalone está
+   activo. Tipografía grande, pocas filas, mucho aire: pensada para
+   consultar y añadir algo rápido con el pulgar, no para trabajar
+   a fondo (para eso, "ver versión completa" existe siempre).
+   ============================================================ */
+#mobile-shell { display:none; }
+body.mobile-standalone #app { display:none; }
+body.mobile-standalone #mobile-shell {
+    display:block; position:fixed; inset:0; z-index:50; background:var(--bg-app);
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+
+.mobile-welcome, .mobile-carousel { min-height:100dvh; display:flex; flex-direction:column; padding:env(safe-area-inset-top,22px) 22px calc(env(safe-area-inset-bottom,22px) + 10px); box-sizing:border-box; }
+
+.mobile-welcome-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:44px; }
+.mobile-welcome-greeting { font-size:13px; color:var(--text-secondary); margin-bottom:2px; }
+.mobile-welcome-brand { font-size:32px; font-weight:800; line-height:1.08; letter-spacing:-0.5px; color:var(--text-primary); max-width:280px; }
+.mobile-welcome-brand u { text-decoration-thickness:2px; text-underline-offset:6px; text-decoration-color:var(--border-strong); }
+.mobile-menu-label { font-size:12px; color:var(--text-secondary); margin-bottom:2px; }
+.mobile-menu-rows { display:flex; flex-direction:column; flex:1; overflow-y:auto; }
+.mobile-menu-row { display:flex; align-items:baseline; gap:16px; padding:16px 2px; border-bottom:1px solid var(--border); cursor:pointer; }
+.mobile-menu-row:active { opacity:.6; }
+.mobile-menu-idx { font-size:11px; color:var(--text-secondary); width:20px; flex-shrink:0; font-variant-numeric:tabular-nums; }
+.mobile-menu-label-text { font-size:23px; font-weight:600; letter-spacing:-0.3px; color:var(--text-primary); }
+
+.mobile-close-btn, .mobile-icon-btn {
+    width:38px; height:38px; border-radius:50%; border:1.5px solid var(--border-strong); background:none;
+    color:var(--text-primary); font-size:15px; display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;
+}
+
+.mobile-page-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; }
+.mobile-page-title { font-size:18px; font-weight:700; color:var(--text-primary); flex:1; text-align:center; }
+.mobile-page-dots { display:flex; gap:4px; justify-content:center; flex-wrap:wrap; margin-bottom:18px; padding:0 30px; }
+.mobile-dot { width:5px; height:5px; border-radius:50%; background:var(--border-strong); }
+.mobile-dot.active { background:var(--text-primary); width:14px; border-radius:3px; }
+.mobile-page-body { flex:1; }
+
+.mobile-cta-btn {
+    display:block; width:100%; padding:16px; border:0; border-radius:16px;
+    background:var(--accent); color:var(--accent-contrast); font-family:var(--font-family);
+    font-size:15px; font-weight:700; cursor:pointer; margin-bottom:18px;
+}
+.mobile-cta-btn:active { opacity:.85; }
+
+.mobile-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; flex:1; padding:30px 10px; gap:8px; }
+.mobile-empty-title { font-size:26px; font-weight:800; color:var(--text-primary); }
+.mobile-empty-sub { font-size:13px; color:var(--text-secondary); max-width:280px; margin-bottom:14px; }
+
+/* Reutiliza Centro resumen/Calendario/Planificador tal cual, solo
+   escalados: mismas funciones de render, mismos datos, letra e
+   iconos más grandes para tocar con el pulgar sin apretar. */
+.mobile-home-wrap .home-launcher-icon { width:52px; height:52px; }
+.mobile-home-wrap .home-launcher-icon svg { width:22px; height:22px; }
+.mobile-home-wrap .home-launcher-label { font-size:19px; }
+.mobile-home-wrap .home-launcher-row { padding:16px 4px; }
+.mobile-home-wrap .bitacora-activity-card { display:none; }
+
+.mobile-calendar-wrap .cal-day-title { font-size:18px !important; }
+.mobile-calendar-wrap .cal-nav-arrow { width:40px; height:40px; font-size:20px; }
+.mobile-calendar-wrap .day-entry-card,
+.mobile-calendar-wrap .entry-item { padding:16px 10px; font-size:15px; }
+
+.mobile-planner-wrap .planner-head { flex-direction:column; align-items:flex-start; gap:10px; }
+.mobile-planner-wrap .planner-item { padding:16px 10px; }
+.mobile-planner-wrap .planner-item-title { font-size:16px; }
+.mobile-planner-wrap .planner-item-time { font-size:14px; }
+

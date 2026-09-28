@@ -637,6 +637,175 @@
             ] },
         ];
 
+        // ============================================================
+        //  VERSIÓN MÓVIL (PWA añadida a "pantalla de inicio")
+        //  Cuando Bitácora se abre en modo standalone (icono de inicio,
+        //  no pestaña de Safari/Chrome) se sustituye TODA la interfaz de
+        //  escritorio por una versión hiperreducida: pantalla de
+        //  bienvenida con menú numerado + un carrusel deslizable de
+        //  apartados, pensada para consulta rápida y añadir cosas sobre
+        //  la marcha — no para trabajar a fondo (para eso, "ver versión
+        //  completa" lleva a la app de siempre, intacta debajo).
+        //  Los apartados que todavía no tienen vista propia muestran un
+        //  aviso con acceso directo a su versión completa; se van
+        //  añadiendo sesión a sesión (ver renderMobileSectionBody).
+        // ============================================================
+        function isMobileStandaloneMode() {
+            try {
+                return (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
+            } catch (e) { return false; }
+        }
+        let mobileStandaloneActive = false;
+        let mobileExitedToDesktop = false;
+        let mobileScreen = 'welcome'; // 'welcome' | 'carousel'
+        let mobileCarouselIndex = 0;
+        // Mismo orden que NAV_SECTIONS, aplanado — calendario/centro
+        // resumen/planificador quedan primeros porque ya son los tres
+        // primeros de esa lista.
+        function mobileCarouselSections() {
+            return NAV_SECTIONS.flatMap(s => s.items);
+        }
+
+        function initMobileShell() {
+            mobileStandaloneActive = isMobileStandaloneMode();
+            document.body.classList.toggle('mobile-standalone', mobileStandaloneActive && !mobileExitedToDesktop);
+        }
+
+        function exitMobileToDesktop() {
+            mobileExitedToDesktop = true;
+            document.body.classList.remove('mobile-standalone');
+            render();
+        }
+
+        function backToMobileMenu() {
+            mobileScreen = 'welcome';
+            render();
+        }
+
+        function openMobileSection(view) {
+            const idx = mobileCarouselSections().findIndex(s => s.view === view);
+            mobileCarouselIndex = idx >= 0 ? idx : 0;
+            currentView = view;
+            mobileScreen = 'carousel';
+            render();
+        }
+
+        function mobileCarouselGo(delta) {
+            const list = mobileCarouselSections();
+            mobileCarouselIndex = Math.max(0, Math.min(list.length - 1, mobileCarouselIndex + delta));
+            currentView = list[mobileCarouselIndex].view;
+            render();
+        }
+
+        // Swipe táctil: se reengancha en cada render porque el propio
+        // render() reemplaza el HTML entero del carrusel.
+        function attachMobileSwipeHandlers() {
+            const el = document.getElementById('mobile-page-body');
+            if (!el) return;
+            let startX = 0, startY = 0, dragging = false;
+            el.addEventListener('touchstart', e => {
+                startX = e.touches[0].clientX; startY = e.touches[0].clientY; dragging = true;
+            }, { passive: true });
+            el.addEventListener('touchend', e => {
+                if (!dragging) return;
+                dragging = false;
+                const dx = e.changedTouches[0].clientX - startX;
+                const dy = e.changedTouches[0].clientY - startY;
+                if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+                    mobileCarouselGo(dx < 0 ? 1 : -1);
+                }
+            }, { passive: true });
+        }
+
+        function renderMobileShell() {
+            if (!mobileStandaloneActive || mobileExitedToDesktop) return;
+            const shell = document.getElementById('mobile-shell');
+            if (!shell) return;
+            shell.innerHTML = mobileScreen === 'welcome' ? renderMobileWelcome() : renderMobileCarousel();
+            if (mobileScreen === 'carousel') setTimeout(attachMobileSwipeHandlers, 0);
+        }
+
+        function renderMobileWelcome() {
+            const name = (nombrePublico || '').trim();
+            const sections = mobileCarouselSections();
+            return `
+            <div class="mobile-welcome">
+                <div class="mobile-welcome-top">
+                    <div>
+                        <div class="mobile-welcome-greeting">bienvenido a</div>
+                        <div class="mobile-welcome-brand"><u>bitácora${name ? ',' : '.'}</u>${name ? `<br><u>${escapeHtml(name.toLowerCase())}.</u>` : ''}</div>
+                    </div>
+                    <button class="mobile-close-btn" onclick="exitMobileToDesktop()" title="Ver versión completa">✕</button>
+                </div>
+                <div class="mobile-menu-label">menú.</div>
+                <div class="mobile-menu-rows">
+                    ${sections.map((s, i) => `
+                        <div class="mobile-menu-row" onclick="openMobileSection('${s.view}')">
+                            <span class="mobile-menu-idx">${String(i).padStart(2, '0')}</span>
+                            <span class="mobile-menu-label-text">${escapeHtml(s.text.toLowerCase())}.</span>
+                        </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        function renderMobileCarousel() {
+            const sections = mobileCarouselSections();
+            const current = sections[mobileCarouselIndex] || sections[0];
+            return `
+            <div class="mobile-carousel">
+                <div class="mobile-page-top">
+                    <button class="mobile-icon-btn" onclick="backToMobileMenu()" title="Menú">☰</button>
+                    <div class="mobile-page-title">${escapeHtml(current.text.toLowerCase())}.</div>
+                    <button class="mobile-icon-btn" onclick="exitMobileToDesktop()" title="Ver versión completa">⤢</button>
+                </div>
+                <div class="mobile-page-dots">${sections.map((s, i) => `<span class="mobile-dot ${i === mobileCarouselIndex ? 'active' : ''}"></span>`).join('')}</div>
+                <div class="mobile-page-body" id="mobile-page-body">${renderMobileSectionBody(current.view)}</div>
+            </div>`;
+        }
+
+        // Cada apartado adaptado vive aquí. Los que todavía no tienen
+        // versión propia caen en el aviso genérico — se amplía esta
+        // lista sesión a sesión, sin tocar el resto de la infraestructura.
+        function renderMobileSectionBody(view) {
+            if (view === 'home') return renderMobileHome();
+            if (view === 'calendar') return renderMobileCalendar();
+            if (view === 'planner') return renderMobilePlanner();
+            return renderMobileComingSoon(view);
+        }
+
+        function renderMobileComingSoon(view) {
+            const label = VIEW_LABELS[view] || view;
+            return `
+            <div class="mobile-empty">
+                <div class="mobile-empty-title">${escapeHtml(label.toLowerCase())}.</div>
+                <div class="mobile-empty-sub">Todavía sin versión reducida para móvil — se va ampliando poco a poco.</div>
+                <button class="mobile-cta-btn" onclick="exitMobileToDesktop();switchView('${view}')">abrir versión completa.</button>
+            </div>`;
+        }
+
+        // -- Centro resumen: mismos launcher rows de siempre, a tamaño móvil --
+        function renderMobileHome() {
+            return `<div class="mobile-home-wrap">${renderHome()}</div>`;
+        }
+
+        // -- Calendario: agenda del día (reutiliza renderCalDay/changeDay),
+        //    con un botón grande de añadir entrada ese mismo día --
+        function renderMobileCalendar() {
+            calViewMode = 'day';
+            return `<div class="mobile-calendar-wrap">${renderCalDay()}
+                <button class="mobile-cta-btn" style="margin-top:16px" onclick="openNewEntryForDay('${calSelectedDate}')">+ añadir este día.</button>
+            </div>`;
+        }
+
+        // -- Planificador: mismo timeline del día, con "+ evento." grande
+        //    siempre visible arriba para añadir rápido --
+        function renderMobilePlanner() {
+            return `<div class="mobile-planner-wrap">
+                <button class="mobile-cta-btn" onclick="openAddPlannerItem()">+ nueva tarea.</button>
+                ${renderPlanner()}
+            </div>`;
+        }
+
         const NAV_VIEW_LABELS = Object.fromEntries(NAV_SECTIONS.flatMap(s => s.items).map(i => [i.view, i.text]));
 
         // Apartados "de segundo nivel" dentro de cada sección — para poder
@@ -4680,6 +4849,8 @@
                     renderInvestmentCharts();
                 }, 0);
             }
+
+            renderMobileShell();
         }
 
         // ============================================================
@@ -15966,6 +16137,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             await cargarCodigoAmigo();
             await cargarAmigos();
             await cargarNombrePublico();
+            initMobileShell();
             await cargarRecomendaciones();
             await cargarSolicitudesAmistad();
             await cargarViajesCompartidos();
