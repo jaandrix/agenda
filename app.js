@@ -10689,27 +10689,6 @@
             `);
         }
 
-        function openInvestmentAccountEditor() {
-            showModal(`
-                <div class="modal-title">Editar Inversiones</div>
-                <div class="modal-label">Valor actual (€)</div>
-                <input id="finance-invest-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.invested || 0)}">
-                <div class="modal-label">Objetivo para final de año (€)</div>
-                <input id="finance-invest-target" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.investedTarget || 0)}">
-                <div class="modal-label">Descripción (en qué está invertido)</div>
-                <textarea id="finance-invest-note" class="modal-input" rows="2" placeholder="Ej. Fondo indexado MSCI World, cuenta remunerada...">${escapeHtml(financeProfile.investedNote || '')}</textarea>
-                <button class="btn-modal-primary" onclick="saveInvestmentAccountEditor()">Guardar</button>
-            `);
-        }
-
-        async function saveInvestmentAccountEditor() {
-            financeProfile.invested = Math.max(0, Number(document.getElementById('finance-invest-value')?.value) || 0);
-            financeProfile.investedTarget = Math.max(0, Number(document.getElementById('finance-invest-target')?.value) || 0);
-            financeProfile.investedNote = (document.getElementById('finance-invest-note')?.value || '').trim();
-            closeModal();
-            await saveFinanceDashboard();
-        }
-
         function financeCollectiblesTotal() {
             return (Array.isArray(collectibles) ? collectibles : []).reduce((s, c) => s + (Number(c.value) || 0), 0);
         }
@@ -11199,28 +11178,69 @@
         // ============================================================
         //  INVERSIÓN A LARGO PLAZO: aportaciones vs. valor actual
         // ============================================================
+        // ============================================================
+        //  LARGO PLAZO: varias cuentas de inversión + planificación del
+        //  sueldo mensual, todo dentro de un único popup ("largo plazo.").
+        //  Sustituye al antiguo modelo de un solo valor (financeProfile.
+        //  invested como número suelto); ahora es la suma de las cuentas
+        //  registradas — migrateToInvestmentAccounts() trae los datos
+        //  antiguos como la primera cuenta la primera vez que se carga.
+        // ============================================================
+        function investmentAccountInvested(acc) {
+            return (acc.contributions || []).reduce((s, c) => s + Number(c.amount || 0), 0);
+        }
+        function investmentAccountValue(acc) {
+            const withValue = (acc.contributions || []).filter(c => c.value !== undefined && c.value !== null && c.value !== '');
+            if (!withValue.length) return 0;
+            withValue.sort((a, b) => a.month.localeCompare(b.month));
+            return Number(withValue[withValue.length - 1].value) || 0;
+        }
+        // financeProfile.invested sigue siendo la cifra que usan el resto de
+        // cálculos de patrimonio (financeCorePatrimony, historial...) — se
+        // recalcula aquí después de cualquier cambio en las cuentas, en vez
+        // de tocar los ~15 sitios que ya la leen.
+        function syncInvestedTotal() {
+            financeProfile.invested = (financeProfile.investmentAccounts || []).reduce((s, a) => s + investmentAccountValue(a), 0);
+        }
+        function migrateToInvestmentAccounts() {
+            if (Array.isArray(financeProfile.investmentAccounts)) return;
+            const oldContribs = Array.isArray(financeProfile.investmentContributions) ? financeProfile.investmentContributions : [];
+            const hasOldData = oldContribs.length > 0 || Number(financeProfile.invested) > 0;
+            if (!hasOldData) { financeProfile.investmentAccounts = []; return; }
+            const contributions = oldContribs.map(c => ({ month: c.month, amount: Number(c.amount) || 0 }));
+            const currentMonth = financeMonthKey();
+            const currentEntry = contributions.find(c => c.month === currentMonth);
+            if (currentEntry) currentEntry.value = Number(financeProfile.invested || 0);
+            else contributions.push({ month: currentMonth, amount: 0, value: Number(financeProfile.invested || 0) });
+            financeProfile.investmentAccounts = [{
+                id: 'inv_' + Date.now(),
+                name: (financeProfile.investedNote || '').split(',')[0].trim().slice(0, 40) || 'Mi inversión',
+                notes: financeProfile.investedNote || '',
+                contributions
+            }];
+            syncInvestedTotal();
+        }
+
         function financeInvestmentStats() {
-            const contributions = Array.isArray(financeProfile.investmentContributions) ? financeProfile.investmentContributions : [];
-            const totalAportado = contributions.reduce((s, c) => s + Number(c.amount || 0), 0);
-            const valorActual = Number(financeProfile.invested || 0);
+            const accounts = financeProfile.investmentAccounts || [];
+            const totalAportado = accounts.reduce((s, a) => s + investmentAccountInvested(a), 0);
+            const valorActual = accounts.reduce((s, a) => s + investmentAccountValue(a), 0);
             const gain = valorActual - totalAportado;
             const gainPct = totalAportado > 0 ? (gain / totalAportado) * 100 : null;
-            return { meses: contributions.length, totalAportado, valorActual, gain, gainPct };
+            const months = new Set();
+            accounts.forEach(a => (a.contributions || []).forEach(c => months.add(c.month)));
+            return { meses: months.size, totalAportado, valorActual, gain, gainPct, cuentas: accounts.length };
         }
 
         function renderInvestmentPanel() {
             const stats = financeInvestmentStats();
-            const fc = financeProfile.forecastProfile || {};
-            const monthKey = financeMonthKey();
-            const yaActualizado = (financeProfile.investmentContributions || []).some(c => c.month === monthKey);
-            const needsOnboarding = !(financeProfile.investmentContributions || []).length;
 
-            if (needsOnboarding) {
+            if (!stats.cuentas) {
                 return `
                 <section class="finance-panel" id="finance-investment-section">
                     <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}</div>
-                    <div class="finance-empty-line" style="text-align:center;margin-top:4px">Indica tu punto de partida — cuánto llevas invertido y cuánto vale ahora mismo — para poder comparar aportaciones con valor actual mes a mes.</div>
-                    <button class="finance-oneoff-btn" style="margin-top:12px" onclick="openInvestmentOnboarding()">Configurar inversión</button>
+                    <div class="finance-empty-line" style="text-align:center;margin-top:4px">Planifica tu sueldo mensual y lleva el seguimiento de tus cuentas de inversión — fondos, ETFs, cuentas remuneradas...</div>
+                    <button class="finance-oneoff-btn" style="margin-top:12px" onclick="openLongTermModal()">largo plazo.</button>
                 </section>`;
             }
 
@@ -11228,7 +11248,7 @@
             const gainCls = stats.gain > 0 ? 'positive' : stats.gain < 0 ? 'negative' : 'neutral';
             return `
             <section class="finance-panel" id="finance-investment-section">
-                <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}<button class="finance-icon-btn" title="Ajustes" onclick="openInvestmentAccountEditor()">✎</button></div>
+                <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}<button class="finance-icon-btn" title="Abrir" onclick="openLongTermModal()">✎</button></div>
                 <div class="finance-invest-headline">
                     <div><span>Valor actual</span><strong id="finance-invest-value" data-value="${stats.valorActual}">${financeMoney(stats.valorActual)}</strong></div>
                     <span class="finance-trend-chip ${gainCls}">${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}${stats.gainPct !== null ? ` · ${stats.gain >= 0 ? '+' : ''}${stats.gainPct.toFixed(1)}%` : ''}</span>
@@ -11237,98 +11257,315 @@
                     <div class="finance-invest-bar-row"><span>Aportado</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill" data-target-width="${(stats.totalAportado / maxBar) * 100}%" style="width:0"></div></div><strong>${financeMoney(stats.totalAportado)}</strong></div>
                     <div class="finance-invest-bar-row"><span>Valor actual</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill finance-invest-bar-fill-accent" data-target-width="${(stats.valorActual / maxBar) * 100}%" style="width:0"></div></div><strong>${financeMoney(stats.valorActual)}</strong></div>
                 </div>
-                <div class="finance-empty-line" style="margin-top:10px">${stats.meses} aportación${stats.meses === 1 ? '' : 'es'} registrada${stats.meses === 1 ? '' : 's'}${fc.investMonthlyPlan ? ` · plan: ${financeMoney(fc.investMonthlyPlan)}/mes` : ''}${yaActualizado ? ` · ✓ ${financeMonthLabel(monthKey)} ya registrado` : ''}</div>
-                <button class="finance-oneoff-btn" style="margin-top:10px" onclick="openInvestmentMonthlyUpdate()">nueva aportación.</button>
+                <div class="finance-empty-line" style="margin-top:10px">${stats.cuentas} cuenta${stats.cuentas === 1 ? '' : 's'} · ${stats.meses} mes${stats.meses === 1 ? '' : 'es'} con registro</div>
+                <button class="finance-oneoff-btn" style="margin-top:10px" onclick="openLongTermModal()">largo plazo.</button>
             </section>`;
         }
 
-        // Primer contacto con la tarjeta de Inversión: fija el punto de
-        // partida (dinero realmente puesto vs. valor de partida del fondo,
-        // que pueden no coincidir si ya venía de antes) antes de empezar
-        // con las actualizaciones mensuales.
-        function openInvestmentOnboarding() {
-            showModal(`
-                <div class="modal-title">Configurar inversión</div>
-                <div class="finance-modal-note" style="margin-bottom:12px">A partir de aquí, cada mes solo tendrás que actualizar estos dos datos.</div>
-                <div class="modal-label">Dinero inicial aportado (€)</div>
-                <input id="invest-onboard-initial" class="modal-input" type="number" min="0" step="0.01" placeholder="0.00">
-                <div class="modal-label">Valor inicial del fondo (€)</div>
-                <input id="invest-onboard-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.invested || 0) || ''}" placeholder="0.00">
-                <button class="btn-modal-primary" onclick="saveInvestmentOnboarding()">Empezar a hacer seguimiento</button>
-            `);
-            setTimeout(() => document.getElementById('invest-onboard-initial')?.focus(), 50);
+        // ---- Popup "largo plazo." ----
+        function ensureBudgetPlanning() {
+            if (!financeProfile.budgetPlanning || typeof financeProfile.budgetPlanning !== 'object') financeProfile.budgetPlanning = { salary: 0, allocations: [] };
+            if (!Array.isArray(financeProfile.budgetPlanning.allocations)) financeProfile.budgetPlanning.allocations = [];
+            if (!Array.isArray(financeProfile.budgetHistory)) financeProfile.budgetHistory = [];
+            if (!Array.isArray(financeProfile.investmentAccounts)) migrateToInvestmentAccounts();
         }
 
-        async function saveInvestmentOnboarding() {
-            const initial = Math.max(0, Number(document.getElementById('invest-onboard-initial')?.value) || 0);
-            const value = Math.max(0, Number(document.getElementById('invest-onboard-value')?.value) || 0);
-            financeProfile.investmentContributions = [{ month: financeMonthKey(), amount: initial, initial: true }];
-            financeProfile.invested = value;
-            closeModal();
-            refreshCurrentMonthSnapshot();
-            try { await saveData(); showToast('Inversión configurada'); render(); }
-            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        function openLongTermModal() {
+            ensureBudgetPlanning();
+            showModal(renderLongTermModalBody());
         }
 
-        // Ritual mensual único: valor actual del fondo + aportación de este
-        // mes en el mismo paso, en vez de dos acciones sueltas (editar valor
-        // por un lado, marcar aportación por otro) que era fácil olvidar
-        // hacer juntas.
-        // Permite corregir el valor de la inversión (y su aportación) no
-        // solo del mes en curso, sino también de los 2 meses anteriores —
-        // útil si te olvidaste de actualizarla a tiempo. Corregir un mes
-        // pasado solo toca ese registro histórico, nunca el valor en vivo.
-        function openInvestmentMonthlyUpdate(monthKey) {
-            monthKey = monthKey || financeMonthKey();
-            const isCurrent = monthKey === financeMonthKey();
-            const fc = financeProfile.forecastProfile || {};
-            const existing = (financeProfile.investmentContributions || []).find(c => c.month === monthKey);
-            const histEntry = (financeProfile.history || []).find(h => h.month === monthKey);
-            const histValue = histEntry?.accounts?.invested ?? histEntry?.invested;
-            const currentValue = isCurrent ? Number(financeProfile.invested || 0) : (histValue !== undefined ? Number(histValue) : '');
-            const now = new Date();
-            const monthOptions = [0, 1, 2].map(back => financeMonthKey(new Date(now.getFullYear(), now.getMonth() - back, 1)));
-            showModal(`
-                <div class="modal-title">Actualizar inversión</div>
-                <div class="modal-label">Mes</div>
-                <select class="modal-input" onchange="openInvestmentMonthlyUpdate(this.value)">
-                    ${monthOptions.map(m => `<option value="${m}" ${m === monthKey ? 'selected' : ''}>${escapeHtml(financeMonthLabel(m))}</option>`).join('')}
+        function renderLongTermModalBody() {
+            const stats = financeInvestmentStats();
+            return `
+            <div class="longterm-modal">
+                <div class="modal-title">largo plazo.<button class="modal-close" onclick="closeModal()">✕</button></div>
+                <div class="finance-modal-note" style="margin-bottom:14px">Planifica tu sueldo mes a mes y sigue tus cuentas de inversión a largo plazo, todo en un mismo sitio.</div>
+
+                ${renderBudgetPlanningSection()}
+                <div class="longterm-divider"></div>
+
+                <div class="longterm-section">
+                    <div class="longterm-section-head">
+                        <div class="longterm-section-title">cuentas de inversión.</div>
+                    </div>
+                    <div id="longterm-accounts-list">
+                        ${stats.cuentas ? (financeProfile.investmentAccounts || []).map(a => renderInvestmentAccountRow(a)).join('') : '<div class="finance-empty-line" style="margin:8px 0">Todavía no tienes ninguna cuenta.</div>'}
+                    </div>
+                    <button class="finance-oneoff-btn" style="margin-top:8px" onclick="openAddInvestmentAccountModal()">+ Nueva cuenta</button>
+                    ${stats.cuentas > 1 ? `<div class="finance-empty-line" style="margin-top:10px">Total conjunto: ${financeMoney(stats.valorActual)} · ${financeMoney(stats.totalAportado)} aportado</div>` : ''}
+                </div>
+                <div class="longterm-divider"></div>
+
+                <div class="longterm-section">
+                    <div class="longterm-section-title">historial mensual.</div>
+                    <div id="longterm-history-list">${renderBudgetHistoryTables()}</div>
+                </div>
+            </div>`;
+        }
+
+        // -- Planificación del sueldo --
+        function budgetPlanningRemaining() {
+            ensureBudgetPlanning();
+            const bp = financeProfile.budgetPlanning;
+            const salary = Number(bp.salary) || 0;
+            const assigned = bp.allocations.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+            return { salary, assigned, remaining: salary - assigned };
+        }
+
+        function renderBudgetPlanningSection() {
+            ensureBudgetPlanning();
+            const bp = financeProfile.budgetPlanning;
+            const cats = (financePro.categories || []).filter(c => c.type === 'expense');
+            return `
+            <div class="longterm-section">
+                <div class="longterm-section-head">
+                    <div class="longterm-section-title">planificación del sueldo.</div>
+                    <button class="finance-icon-btn" title="Heredar sueldo del mes anterior" onclick="inheritPreviousSalary()">↺</button>
+                </div>
+                <div class="modal-label">Sueldo esperado este mes (€)</div>
+                <input id="budget-salary-input" class="modal-input" type="number" min="0" step="0.01" value="${bp.salary || ''}" placeholder="0.00" oninput="updateBudgetSalary(this.value,false)" onchange="updateBudgetSalary(this.value,true)">
+                <div id="budget-allocations-list">${renderBudgetAllocationsList()}</div>
+                <button class="finance-oneoff-btn" style="margin-top:8px" onclick="addBudgetAllocation()">+ Añadir casilla</button>
+                <div id="budget-remaining-bar">${renderBudgetRemainingBar()}</div>
+                <button class="btn-modal-primary" style="margin-top:12px" onclick="recordBudgetMonth()">grabar datos.</button>
+            </div>`;
+        }
+
+        function renderBudgetAllocationsList() {
+            ensureBudgetPlanning();
+            const bp = financeProfile.budgetPlanning;
+            const cats = (financePro.categories || []).filter(c => c.type === 'expense');
+            return bp.allocations.length
+                ? bp.allocations.map(a => renderBudgetAllocationRow(a, cats)).join('')
+                : '<div class="finance-empty-line" style="margin:8px 0">Sin casillas todavía — añade una por cada sitio al que quieras llevar el sueldo (alquiler, ahorro, ocio...).</div>';
+        }
+
+        function renderBudgetAllocationRow(a, cats) {
+            return `
+            <div class="budget-alloc-row">
+                <input class="modal-input budget-alloc-label" value="${escapeHtml(a.label || '')}" placeholder="Ej. Alquiler, Ahorro..." oninput="updateBudgetAllocation('${a.id}','label',this.value,false)" onchange="updateBudgetAllocation('${a.id}','label',this.value,true)">
+                <input class="modal-input budget-alloc-amount" type="number" min="0" step="0.01" value="${a.amount || ''}" placeholder="0.00" oninput="updateBudgetAllocation('${a.id}','amount',this.value,false)" onchange="updateBudgetAllocation('${a.id}','amount',this.value,true)">
+                <select class="modal-input budget-alloc-cat" onchange="updateBudgetAllocation('${a.id}','categoryId',this.value,true)">
+                    <option value="">Sin vincular</option>
+                    ${cats.map(c => `<option value="${c.id}" ${a.categoryId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
-                <div class="modal-label">Valor del fondo (€)</div>
-                <input id="invest-update-value" class="modal-input" type="number" min="0" step="0.01" value="${currentValue}">
-                <div class="modal-label">Aportación de ${escapeHtml(financeMonthLabel(monthKey))} (€)</div>
-                <input id="invest-update-contrib" class="modal-input" type="number" min="0" step="0.01" value="${existing ? existing.amount : (isCurrent ? (fc.investMonthlyPlan || '') : '')}" placeholder="0.00">
-                ${!isCurrent ? `<div class="finance-modal-note" style="margin-top:8px">Estás corrigiendo un mes anterior — no cambia el valor actual de tu inversión, solo el registro histórico de ese mes (y su línea en la gráfica).</div>` : ''}
-                <button class="btn-modal-primary" style="margin-top:10px" onclick="saveInvestmentMonthlyUpdate('${monthKey}')">Guardar</button>
-            `);
-            setTimeout(() => document.getElementById('invest-update-value')?.focus(), 50);
+                <button class="doc-action-delete-btn" title="Eliminar" onclick="removeBudgetAllocation('${a.id}')">✕</button>
+            </div>`;
         }
 
-        async function saveInvestmentMonthlyUpdate(monthKey) {
-            const value = Math.max(0, Number(document.getElementById('invest-update-value')?.value) || 0);
-            const contribRaw = document.getElementById('invest-update-contrib')?.value;
-            const contrib = contribRaw === '' ? 0 : Math.max(0, Number(contribRaw) || 0);
-            const isCurrent = monthKey === financeMonthKey();
+        function renderBudgetRemainingBar() {
+            const { salary, assigned, remaining } = budgetPlanningRemaining();
+            return `<div class="longterm-remaining-bar ${remaining < 0 ? 'over' : ''}">
+                <span>Sueldo <strong>${financeMoney(salary)}</strong></span>
+                <span>Asignado <strong>${financeMoney(assigned)}</strong></span>
+                <span class="longterm-remaining-highlight">Sin asignar <strong>${financeMoney(remaining)}</strong></span>
+            </div>`;
+        }
 
-            financeProfile.investmentContributions = (financeProfile.investmentContributions || []).filter(c => c.month !== monthKey);
-            if (contrib > 0) financeProfile.investmentContributions.push({ month: monthKey, amount: contrib });
+        function refreshBudgetRemainingBar() {
+            const el = document.getElementById('budget-remaining-bar');
+            if (el) el.innerHTML = renderBudgetRemainingBar();
+        }
 
-            if (isCurrent) {
-                financeProfile.invested = value;
-                refreshCurrentMonthSnapshot();
-            } else {
-                let history = Array.isArray(financeProfile.history) ? [...financeProfile.history] : [];
-                const idx = history.findIndex(h => h.month === monthKey);
-                const base = idx >= 0 ? history[idx] : { month: monthKey, date: new Date().toISOString() };
-                const accounts = { ...financeHistoryEntryAccountsBaseline(base), invested: value };
-                const cash = Number(accounts.cash || 0), emergency = Number(accounts.emergency || 0);
-                const entry = { ...base, month: monthKey, invested: value, cash, emergency, safe: cash + emergency, total: cash + emergency + value, accounts };
-                if (idx >= 0) history[idx] = entry; else history.push(entry);
-                financeProfile.history = history.sort((a, b) => String(a.month).localeCompare(String(b.month))).slice(-36);
-            }
+        async function updateBudgetSalary(value, persist) {
+            ensureBudgetPlanning();
+            financeProfile.budgetPlanning.salary = Math.max(0, Number(value) || 0);
+            refreshBudgetRemainingBar();
+            if (persist) { try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); } }
+        }
+
+        async function updateBudgetAllocation(id, field, value, persist) {
+            ensureBudgetPlanning();
+            const a = financeProfile.budgetPlanning.allocations.find(x => x.id === id);
+            if (!a) return;
+            a[field] = field === 'amount' ? Math.max(0, Number(value) || 0) : value;
+            if (field === 'amount') refreshBudgetRemainingBar();
+            if (persist) { try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); } }
+        }
+
+        function addBudgetAllocation() {
+            ensureBudgetPlanning();
+            financeProfile.budgetPlanning.allocations.push({ id: 'ba_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), label: '', amount: 0, categoryId: '' });
+            const listEl = document.getElementById('budget-allocations-list');
+            if (listEl) listEl.innerHTML = renderBudgetAllocationsList();
+            refreshBudgetRemainingBar();
+        }
+
+        async function removeBudgetAllocation(id) {
+            ensureBudgetPlanning();
+            financeProfile.budgetPlanning.allocations = financeProfile.budgetPlanning.allocations.filter(a => a.id !== id);
+            const listEl = document.getElementById('budget-allocations-list');
+            if (listEl) listEl.innerHTML = renderBudgetAllocationsList();
+            refreshBudgetRemainingBar();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function inheritPreviousSalary() {
+            ensureBudgetPlanning();
+            const hist = (financeProfile.budgetHistory || []).slice().sort((a, b) => b.month.localeCompare(a.month));
+            if (!hist.length) { showToast('No hay ningún mes grabado todavía', true); return; }
+            financeProfile.budgetPlanning.salary = Number(hist[0].salary) || 0;
+            const input = document.getElementById('budget-salary-input');
+            if (input) input.value = financeProfile.budgetPlanning.salary || '';
+            refreshBudgetRemainingBar();
+            try { await saveData(); showToast('Sueldo heredado de ' + financeMonthLabel(hist[0].month)); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // "grabar datos.": calcula el gasto real de este mes por cada
+        // casilla vinculada a una categoría (sumando los movimientos de
+        // Finanzas PRO), lo archiva junto a lo previsto, y reinicia la
+        // planificación para el mes siguiente.
+        async function recordBudgetMonth() {
+            ensureBudgetPlanning();
+            const bp = financeProfile.budgetPlanning;
+            if (!bp.allocations.length && !bp.salary) { showToast('Añade el sueldo o al menos una casilla antes de grabar', true); return; }
+            if (!confirm('¿Grabar este mes y reiniciar la planificación? La previsión actual se archivará en el historial.')) return;
+            const month = financeMonthKey();
+            const actuals = {};
+            bp.allocations.forEach(a => {
+                if (a.categoryId) {
+                    const sum = (financePro.transactions || [])
+                        .filter(t => t.category === a.categoryId && t.type === 'expense' && String(t.date).slice(0, 7) === month)
+                        .reduce((s, t) => s + Number(t.amount || 0), 0);
+                    actuals[a.id] = sum;
+                } else {
+                    actuals[a.id] = null;
+                }
+            });
+            financeProfile.budgetHistory = financeProfile.budgetHistory || [];
+            financeProfile.budgetHistory.push({
+                month, salary: bp.salary,
+                allocations: bp.allocations.map(a => ({ ...a })),
+                actuals, recordedAt: new Date().toISOString()
+            });
+            financeProfile.budgetHistory = financeProfile.budgetHistory.sort((a, b) => a.month.localeCompare(b.month)).slice(-24);
+            financeProfile.budgetPlanning = { salary: 0, allocations: [] };
             closeModal();
             if (currentView === 'finances') render();
-            try { await saveData(); showToast('Inversión actualizada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            try { await saveData(); showToast('Mes grabado — planificación reiniciada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function renderBudgetHistoryTables() {
+            const hist = (financeProfile.budgetHistory || []).slice().sort((a, b) => b.month.localeCompare(a.month));
+            if (!hist.length) return '<div class="finance-empty-line">Todavía no has grabado ningún mes.</div>';
+            return hist.map(h => {
+                const totalPrevisto = h.allocations.reduce((s, a) => s + Number(a.amount || 0), 0);
+                const totalReal = h.allocations.reduce((s, a) => s + (h.actuals[a.id] != null ? Number(h.actuals[a.id]) : 0), 0);
+                return `
+                <div class="budget-history-month">
+                    <div class="budget-history-month-head">
+                        <span>${escapeHtml(financeMonthLabel(h.month))}</span>
+                        <span>Sueldo ${financeMoney(h.salary)}</span>
+                    </div>
+                    <table class="budget-history-table">
+                        <tr><th>Casilla</th><th>Previsto</th><th>Real</th><th>Diferencia</th></tr>
+                        ${h.allocations.map(a => {
+                            const real = h.actuals[a.id];
+                            const diff = real != null ? Number(a.amount || 0) - real : null;
+                            return `<tr>
+                                <td>${escapeHtml(a.label || '(sin nombre)')}</td>
+                                <td>${financeMoney(a.amount || 0)}</td>
+                                <td>${real != null ? financeMoney(real) : '—'}</td>
+                                <td class="${diff != null ? (diff >= 0 ? 'finance-positive' : 'finance-negative') : ''}">${diff != null ? (diff >= 0 ? '+' : '') + financeMoney(diff) : '—'}</td>
+                            </tr>`;
+                        }).join('')}
+                        <tr class="budget-history-total-row"><td>Total</td><td>${financeMoney(totalPrevisto)}</td><td>${financeMoney(totalReal)}</td><td>${financeMoney(totalPrevisto - totalReal)}</td></tr>
+                    </table>
+                </div>`;
+            }).join('');
+        }
+
+        // -- Cuentas de inversión --
+        function renderInvestmentAccountRow(acc) {
+            const invested = investmentAccountInvested(acc);
+            const value = investmentAccountValue(acc);
+            const gain = value - invested;
+            const monthKey = financeMonthKey();
+            const updatedThisMonth = (acc.contributions || []).some(c => c.month === monthKey);
+            return `
+            <div class="investment-account-row">
+                <div class="investment-account-main">
+                    <div class="investment-account-name">${escapeHtml(acc.name)}</div>
+                    <div class="investment-account-meta">${financeMoney(invested)} aportado${gain !== 0 ? ` · ${gain >= 0 ? '+' : ''}${financeMoney(gain)}` : ''}${updatedThisMonth ? ' · ✓ este mes' : ''}</div>
+                </div>
+                <div class="investment-account-value">${financeMoney(value)}</div>
+                <button class="finance-oneoff-btn" style="width:auto" onclick="openAccountMonthlyUpdate('${acc.id}')">+ mes</button>
+                <button class="doc-action-delete-btn" title="Eliminar cuenta" onclick="deleteInvestmentAccount('${acc.id}')">✕</button>
+            </div>`;
+        }
+
+        function openAddInvestmentAccountModal() {
+            showModal(`
+                <div class="modal-title">+ Nueva cuenta de inversión</div>
+                <div class="modal-label">Nombre</div>
+                <input id="inv-acc-name" class="modal-input" placeholder="Ej. Fondo indexado MSCI World, MyInvestor...">
+                <div class="modal-label">Notas (opcional)</div>
+                <input id="inv-acc-notes" class="modal-input" placeholder="Ej. ISIN, bróker...">
+                <button class="btn-modal-primary" onclick="saveNewInvestmentAccount()">Crear cuenta</button>
+            `);
+            setTimeout(() => document.getElementById('inv-acc-name')?.focus(), 50);
+        }
+
+        async function saveNewInvestmentAccount() {
+            const name = (document.getElementById('inv-acc-name')?.value || '').trim();
+            if (!name) { showToast('Ponle un nombre a la cuenta', true); return; }
+            const notes = (document.getElementById('inv-acc-notes')?.value || '').trim();
+            financeProfile.investmentAccounts = financeProfile.investmentAccounts || [];
+            financeProfile.investmentAccounts.push({ id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, notes, contributions: [] });
+            syncInvestedTotal();
+            openLongTermModal();
+            try { await saveData(); showToast('Cuenta creada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteInvestmentAccount(id) {
+            if (!confirm('¿Eliminar esta cuenta de inversión? Se perderá su historial de aportaciones. No se puede deshacer.')) return;
+            financeProfile.investmentAccounts = (financeProfile.investmentAccounts || []).filter(a => a.id !== id);
+            syncInvestedTotal();
+            openLongTermModal();
+            try { await saveData(); showToast('Cuenta eliminada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Mismo ritual que el antiguo "una vez al mes": aportación + valor
+        // total a fecha de hoy, con opción de corregir los 2 meses
+        // anteriores si se te olvidó registrarlo a tiempo.
+        function openAccountMonthlyUpdate(accountId, monthKey) {
+            const acc = (financeProfile.investmentAccounts || []).find(a => a.id === accountId);
+            if (!acc) return;
+            monthKey = monthKey || financeMonthKey();
+            const now = new Date();
+            const monthOptions = [0, 1, 2].map(back => financeMonthKey(new Date(now.getFullYear(), now.getMonth() - back, 1)));
+            const existing = (acc.contributions || []).find(c => c.month === monthKey);
+            showModal(`
+                <div class="modal-title">${escapeHtml(acc.name)}</div>
+                <div class="modal-label">Mes</div>
+                <select class="modal-input" onchange="openAccountMonthlyUpdate('${accountId}',this.value)">
+                    ${monthOptions.map(m => `<option value="${m}" ${m === monthKey ? 'selected' : ''}>${escapeHtml(financeMonthLabel(m))}</option>`).join('')}
+                </select>
+                <div class="modal-label">Aportación de ${escapeHtml(financeMonthLabel(monthKey))} (€)</div>
+                <input id="inv-acc-update-amount" class="modal-input" type="number" min="0" step="0.01" value="${existing ? existing.amount : ''}" placeholder="0.00">
+                <div class="modal-label">Valor total de la cuenta a fecha de hoy (€)</div>
+                <input id="inv-acc-update-value" class="modal-input" type="number" min="0" step="0.01" value="${existing && existing.value !== undefined ? existing.value : ''}" placeholder="0.00">
+                <button class="btn-modal-primary" style="margin-top:10px" onclick="saveAccountMonthlyUpdate('${accountId}','${monthKey}')">Guardar</button>
+            `);
+            setTimeout(() => document.getElementById('inv-acc-update-amount')?.focus(), 50);
+        }
+
+        async function saveAccountMonthlyUpdate(accountId, monthKey) {
+            const acc = (financeProfile.investmentAccounts || []).find(a => a.id === accountId);
+            if (!acc) return;
+            const amount = Math.max(0, Number(document.getElementById('inv-acc-update-amount')?.value) || 0);
+            const valueRaw = document.getElementById('inv-acc-update-value')?.value;
+            const value = valueRaw === '' ? undefined : Math.max(0, Number(valueRaw) || 0);
+            acc.contributions = (acc.contributions || []).filter(c => c.month !== monthKey);
+            const entry = { month: monthKey, amount };
+            if (value !== undefined) entry.value = value;
+            acc.contributions.push(entry);
+            syncInvestedTotal();
+            if (monthKey === financeMonthKey()) refreshCurrentMonthSnapshot();
+            closeModal();
+            openLongTermModal();
+            try { await saveData(); showToast('Aportación guardada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function renderFinanceDashboard() {
@@ -11453,6 +11690,7 @@
 
         function renderFinances() {
             migrateInvestmentData();
+            migrateToInvestmentAccounts();
             // Finanzas PRO (cuentas reales + movimientos) es ahora el único
             // panel: el "Resumen" clásico, que llevaba sus propias cifras
             // manuales desincronizadas de PRO, queda fusionado dentro de
