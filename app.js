@@ -11301,23 +11301,62 @@
         }
 
         // ---- Popup "largo plazo." ----
-        function ensureBudgetPlanning() {
-            if (!financeProfile.budgetPlanning || typeof financeProfile.budgetPlanning !== 'object') financeProfile.budgetPlanning = { salary: 0, allocations: [] };
-            if (!Array.isArray(financeProfile.budgetPlanning.allocations)) financeProfile.budgetPlanning.allocations = [];
+        function ensureLongTermData() {
             if (!Array.isArray(financeProfile.budgetHistory)) financeProfile.budgetHistory = [];
+            if (!financeProfile.budgetPlans || typeof financeProfile.budgetPlans !== 'object') {
+                // Migración desde el modelo antiguo (un único borrador sin
+                // mes asociado) al nuevo, indexado por mes.
+                financeProfile.budgetPlans = {};
+                const old = financeProfile.budgetPlanning;
+                if (old && typeof old === 'object' && (old.salary || (Array.isArray(old.allocations) && old.allocations.length))) {
+                    financeProfile.budgetPlans[financeMonthKey()] = { salary: Number(old.salary) || 0, allocations: Array.isArray(old.allocations) ? old.allocations : [] };
+                }
+            }
             if (!Array.isArray(financeProfile.investmentAccounts)) migrateToInvestmentAccounts();
         }
 
+        function getBudgetPlanForMonth(month) {
+            if (!financeProfile.budgetPlans[month] || typeof financeProfile.budgetPlans[month] !== 'object') {
+                financeProfile.budgetPlans[month] = { salary: 0, allocations: [] };
+            }
+            if (!Array.isArray(financeProfile.budgetPlans[month].allocations)) financeProfile.budgetPlans[month].allocations = [];
+            return financeProfile.budgetPlans[month];
+        }
+
+        // Mes que se está viendo/editando en el popup — vuelve al actual
+        // cada vez que se abre, se mueve con las flechas del navegador.
+        let longtermViewMonth = null;
+
+        function longtermMonthOffset(month, delta) {
+            const [y, m] = month.split('-').map(Number);
+            return financeMonthKey(new Date(y, m - 1 + delta, 1));
+        }
+
+        function setLongtermViewMonth(month) {
+            longtermViewMonth = month;
+            const el = document.getElementById('longterm-planning-section');
+            if (el) el.outerHTML = renderBudgetPlanningSection();
+        }
+
+        function renderLongTermMonthNav(month) {
+            const isCurrent = month === financeMonthKey();
+            return `<div class="longterm-month-nav">
+                <button class="lt-nav-btn" onclick="setLongtermViewMonth('${longtermMonthOffset(month, -1)}')" title="Mes anterior">‹</button>
+                <div class="longterm-month-nav-label">${escapeHtml(financeMonthLabel(month))}${isCurrent ? '<span class="lt-nav-current-badge">actual</span>' : ''}</div>
+                <button class="lt-nav-btn" onclick="setLongtermViewMonth('${longtermMonthOffset(month, 1)}')" title="Mes siguiente">›</button>
+            </div>`;
+        }
+
         function openLongTermModal() {
-            ensureBudgetPlanning();
+            ensureLongTermData();
+            longtermViewMonth = financeMonthKey();
             showModal(renderLongTermModalBody());
         }
 
-        // Fila de 12 puntos (uno por mes del año) — inspirada en el
-        // calendario semanal de puntos: relleno = mes con alguna
-        // aportación registrada, en color de acento = mes actual, vacío =
-        // todavía sin nada. Da una lectura del año de un vistazo, como el
-        // hero del popup.
+        // Fila de 12 puntos (uno por mes del año) — relleno = mes con
+        // alguna aportación de inversión registrada, en color de acento =
+        // mes actual, vacío = todavía sin nada. Lectura del año de un
+        // vistazo, como la tarjeta-heatmap de la referencia visual.
         function renderLongTermYearDots() {
             const year = new Date().getFullYear();
             const currentMonth = new Date().getMonth();
@@ -11335,21 +11374,40 @@
 
         function renderLongTermModalBody() {
             const stats = financeInvestmentStats();
+            const month = longtermViewMonth || financeMonthKey();
+            const { salary, assigned } = budgetPlanningRemaining();
+            const pctAssigned = salary > 0 ? Math.min(100, Math.round((assigned / salary) * 100)) : 0;
             return `
             <div class="longterm-modal">
-                <div class="modal-title">largo plazo.<button class="modal-close" onclick="closeModal()">✕</button></div>
+                <div class="longterm-modal-head">
+                    <div class="longterm-modal-title">largo plazo.</div>
+                    <div class="longterm-modal-head-actions">
+                        <button class="lt-icon-circle" title="Nueva cuenta de inversión" onclick="openAddInvestmentAccountModal()">+</button>
+                        <button class="lt-icon-circle" title="Cerrar" onclick="closeModal()">✕</button>
+                    </div>
+                </div>
 
-                <div class="longterm-hero">
-                    <div class="longterm-hero-label">tu cartera · ${new Date().getFullYear()}</div>
-                    <div class="longterm-hero-value">${financeMoney(stats.valorActual)}</div>
-                    <div class="longterm-hero-sub">${stats.cuentas} cuenta${stats.cuentas === 1 ? '' : 's'}${stats.totalAportado ? ` · ${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}${stats.gainPct !== null ? ` (${stats.gain >= 0 ? '+' : ''}${stats.gainPct.toFixed(1)}%)` : ''}` : ''}</div>
+                <div class="longterm-grid">
+                    <div class="lt-card lt-card-ring">
+                        <div class="lt-ring" style="--pct:${pctAssigned}"><div class="lt-ring-value">${pctAssigned}%</div></div>
+                        <div class="lt-card-title">Sueldo asignado</div>
+                        <div class="lt-card-sub">${escapeHtml(financeMonthLabel(month))}</div>
+                    </div>
+                    <div class="lt-card lt-card-number">
+                        <div class="lt-card-number-value">${financeMoney(stats.valorActual)}</div>
+                        <div class="lt-card-title">Cartera</div>
+                        <div class="lt-card-sub">${stats.cuentas} cuenta${stats.cuentas === 1 ? '' : 's'}</div>
+                    </div>
+                </div>
+
+                <div class="lt-card lt-card-heatmap">
+                    <div class="lt-card-title" style="margin-bottom:10px">meses con seguimiento.</div>
                     ${renderLongTermYearDots()}
                 </div>
 
-                ${renderBudgetPlanningSection()}
-                <div class="longterm-divider"></div>
+                <div id="longterm-planning-section">${renderBudgetPlanningSection()}</div>
 
-                <div class="longterm-section">
+                <div class="lt-card">
                     <div class="longterm-section-head">
                         <div class="longterm-section-title">cuentas de inversión.</div>
                     </div>
@@ -11357,38 +11415,56 @@
                         ${stats.cuentas ? (financeProfile.investmentAccounts || []).map(a => renderInvestmentAccountRow(a)).join('') : '<div class="finance-empty-line" style="margin:8px 0">Todavía no tienes ninguna cuenta.</div>'}
                     </div>
                     <button class="finance-oneoff-btn" style="margin-top:8px" onclick="openAddInvestmentAccountModal()">+ Nueva cuenta</button>
-                    ${stats.cuentas > 1 ? `<div class="finance-empty-line" style="margin-top:10px">Total conjunto: ${financeMoney(stats.valorActual)} · ${financeMoney(stats.totalAportado)} aportado</div>` : ''}
                 </div>
-                <div class="longterm-divider"></div>
 
-                <div class="longterm-section">
-                    <div class="longterm-section-title">historial mensual.</div>
-                    <div id="longterm-history-list">${renderBudgetHistoryTables()}</div>
-                </div>
+                ${stats.totalAportado ? `
+                <div class="lt-strip">
+                    <div>
+                        <div class="lt-strip-label">aportado en total.</div>
+                        <div class="lt-strip-value">${financeMoney(stats.totalAportado)}</div>
+                    </div>
+                    <span class="lt-strip-icon">${FINANCE_ICON_TREND}</span>
+                </div>` : ''}
             </div>`;
         }
 
         // -- Planificación del sueldo --
         function budgetPlanningRemaining() {
-            ensureBudgetPlanning();
-            const bp = financeProfile.budgetPlanning;
-            const salary = Number(bp.salary) || 0;
-            const assigned = bp.allocations.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+            ensureLongTermData();
+            const plan = getBudgetPlanForMonth(longtermViewMonth || financeMonthKey());
+            const salary = Number(plan.salary) || 0;
+            const assigned = plan.allocations.reduce((s, a) => s + (Number(a.amount) || 0), 0);
             return { salary, assigned, remaining: salary - assigned };
         }
 
         function renderBudgetPlanningSection() {
-            ensureBudgetPlanning();
-            const bp = financeProfile.budgetPlanning;
-            const cats = (financePro.categories || []).filter(c => c.type === 'expense');
+            ensureLongTermData();
+            const month = longtermViewMonth || financeMonthKey();
+            const recorded = (financeProfile.budgetHistory || []).find(h => h.month === month);
+
+            if (recorded) {
+                return `
+                <div class="lt-card" id="longterm-planning-section">
+                    <div class="longterm-section-head">
+                        <div class="longterm-section-title">planificación del sueldo.</div>
+                        <button class="finance-icon-btn" title="Editar este mes" onclick="editBudgetHistoryMonth('${month}')">✎</button>
+                    </div>
+                    ${renderLongTermMonthNav(month)}
+                    <div class="finance-empty-line" style="margin:10px 0">Mes ya grabado — esto es lo que previste entonces frente a lo que pasó de verdad.</div>
+                    ${renderBudgetHistoryMonthTable(recorded)}
+                </div>`;
+            }
+
+            const plan = getBudgetPlanForMonth(month);
             return `
-            <div class="longterm-section">
+            <div class="lt-card" id="longterm-planning-section">
                 <div class="longterm-section-head">
                     <div class="longterm-section-title">planificación del sueldo.</div>
-                    <button class="finance-icon-btn" title="Heredar sueldo del mes anterior" onclick="inheritPreviousSalary()">↺</button>
+                    <button class="finance-icon-btn" title="Heredar la previsión del mes anterior" onclick="inheritPreviousMonthPlan()">↺</button>
                 </div>
-                <div class="modal-label">Sueldo esperado este mes (€)</div>
-                <input id="budget-salary-input" class="modal-input" type="number" min="0" step="0.01" value="${bp.salary || ''}" placeholder="0.00" oninput="updateBudgetSalary(this.value,false)" onchange="updateBudgetSalary(this.value,true)">
+                ${renderLongTermMonthNav(month)}
+                <div class="modal-label">Sueldo esperado (€)</div>
+                <input id="budget-salary-input" class="modal-input" type="number" min="0" step="0.01" value="${plan.salary || ''}" placeholder="0.00" oninput="updateBudgetSalary(this.value,false)" onchange="updateBudgetSalary(this.value,true)">
                 <div id="budget-allocations-list">${renderBudgetAllocationsList()}</div>
                 <button class="finance-oneoff-btn" style="margin-top:8px" onclick="addBudgetAllocation()">+ Añadir casilla</button>
                 <div id="budget-remaining-bar">${renderBudgetRemainingBar()}</div>
@@ -11397,11 +11473,11 @@
         }
 
         function renderBudgetAllocationsList() {
-            ensureBudgetPlanning();
-            const bp = financeProfile.budgetPlanning;
+            ensureLongTermData();
+            const plan = getBudgetPlanForMonth(longtermViewMonth || financeMonthKey());
             const cats = (financePro.categories || []).filter(c => c.type === 'expense');
-            return bp.allocations.length
-                ? bp.allocations.map(a => renderBudgetAllocationRow(a, cats)).join('')
+            return plan.allocations.length
+                ? plan.allocations.map(a => renderBudgetAllocationRow(a, cats)).join('')
                 : '<div class="finance-empty-line" style="margin:8px 0">Sin casillas todavía — añade una por cada sitio al que quieras llevar el sueldo (alquiler, ahorro, ocio...).</div>';
         }
 
@@ -11433,15 +11509,15 @@
         }
 
         async function updateBudgetSalary(value, persist) {
-            ensureBudgetPlanning();
-            financeProfile.budgetPlanning.salary = Math.max(0, Number(value) || 0);
+            const plan = getBudgetPlanForMonth(longtermViewMonth || financeMonthKey());
+            plan.salary = Math.max(0, Number(value) || 0);
             refreshBudgetRemainingBar();
             if (persist) { try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); } }
         }
 
         async function updateBudgetAllocation(id, field, value, persist) {
-            ensureBudgetPlanning();
-            const a = financeProfile.budgetPlanning.allocations.find(x => x.id === id);
+            const plan = getBudgetPlanForMonth(longtermViewMonth || financeMonthKey());
+            const a = plan.allocations.find(x => x.id === id);
             if (!a) return;
             a[field] = field === 'amount' ? Math.max(0, Number(value) || 0) : value;
             if (field === 'amount') refreshBudgetRemainingBar();
@@ -11449,114 +11525,113 @@
         }
 
         function addBudgetAllocation() {
-            ensureBudgetPlanning();
-            financeProfile.budgetPlanning.allocations.push({ id: 'ba_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), label: '', amount: 0, categoryId: '' });
+            const plan = getBudgetPlanForMonth(longtermViewMonth || financeMonthKey());
+            plan.allocations.push({ id: 'ba_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), label: '', amount: 0, categoryId: '' });
             const listEl = document.getElementById('budget-allocations-list');
             if (listEl) listEl.innerHTML = renderBudgetAllocationsList();
             refreshBudgetRemainingBar();
         }
 
         async function removeBudgetAllocation(id) {
-            ensureBudgetPlanning();
-            financeProfile.budgetPlanning.allocations = financeProfile.budgetPlanning.allocations.filter(a => a.id !== id);
+            const plan = getBudgetPlanForMonth(longtermViewMonth || financeMonthKey());
+            plan.allocations = plan.allocations.filter(a => a.id !== id);
             const listEl = document.getElementById('budget-allocations-list');
             if (listEl) listEl.innerHTML = renderBudgetAllocationsList();
             refreshBudgetRemainingBar();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        async function inheritPreviousSalary() {
-            ensureBudgetPlanning();
-            const hist = (financeProfile.budgetHistory || []).slice().sort((a, b) => b.month.localeCompare(a.month));
-            if (!hist.length) { showToast('No hay ningún mes grabado todavía', true); return; }
-            financeProfile.budgetPlanning.salary = Number(hist[0].salary) || 0;
-            const input = document.getElementById('budget-salary-input');
-            if (input) input.value = financeProfile.budgetPlanning.salary || '';
-            refreshBudgetRemainingBar();
-            try { await saveData(); showToast('Sueldo heredado de ' + financeMonthLabel(hist[0].month)); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        // Copia la previsión (sueldo + casillas) del mes INMEDIATAMENTE
+        // anterior al que se está viendo — ya sea un mes grabado en el
+        // historial o un borrador todavía sin grabar — sobre el mes actual.
+        async function inheritPreviousMonthPlan() {
+            const month = longtermViewMonth || financeMonthKey();
+            const prevMonth = longtermMonthOffset(month, -1);
+            const fromHistory = (financeProfile.budgetHistory || []).find(h => h.month === prevMonth);
+            const fromPlan = financeProfile.budgetPlans ? financeProfile.budgetPlans[prevMonth] : null;
+            const source = fromHistory || fromPlan;
+            if (!source || (!source.salary && !(source.allocations || []).length)) { showToast('No hay previsión guardada de ' + financeMonthLabel(prevMonth), true); return; }
+            financeProfile.budgetPlans[month] = {
+                salary: Number(source.salary) || 0,
+                allocations: (source.allocations || []).map(a => ({ ...a, id: 'ba_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))
+            };
+            const el = document.getElementById('longterm-planning-section');
+            if (el) el.outerHTML = renderBudgetPlanningSection();
+            try { await saveData(); showToast('Previsión heredada de ' + financeMonthLabel(prevMonth)); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        // "grabar datos.": calcula el gasto real de este mes por cada
-        // casilla vinculada a una categoría (sumando los movimientos de
-        // Finanzas PRO), lo archiva junto a lo previsto, y reinicia la
-        // planificación para el mes siguiente.
+        // "grabar datos.": calcula el gasto real del mes que se está
+        // viendo por cada casilla vinculada a una categoría (sumando los
+        // movimientos de Finanzas PRO), y lo archiva junto a lo previsto.
+        // Funciona igual para el mes actual, uno pasado sin grabar
+        // todavía, o uno futuro que estés preparando por adelantado (en
+        // ese caso el "real" saldrá a 0 hasta que ese mes llegue de verdad).
         async function recordBudgetMonth() {
-            ensureBudgetPlanning();
-            const bp = financeProfile.budgetPlanning;
-            if (!bp.allocations.length && !bp.salary) { showToast('Añade el sueldo o al menos una casilla antes de grabar', true); return; }
-            if (!confirm('¿Grabar este mes y reiniciar la planificación? La previsión actual se archivará en el historial.')) return;
-            const month = financeMonthKey();
+            const month = longtermViewMonth || financeMonthKey();
+            const plan = getBudgetPlanForMonth(month);
+            if (!plan.allocations.length && !plan.salary) { showToast('Añade el sueldo o al menos una casilla antes de grabar', true); return; }
+            if (!confirm(`¿Grabar la planificación de ${financeMonthLabel(month)}? Pasará al historial — podrás reabrirla con ✎ si hace falta.`)) return;
             const actuals = {};
-            bp.allocations.forEach(a => {
+            plan.allocations.forEach(a => {
                 // financeProCategorySpend ya descuenta devoluciones/reembolsos
                 // (ingresos de la categoría de ingreso con el mismo nombre).
                 actuals[a.id] = a.categoryId ? financeProCategorySpend(a.categoryId, month) : null;
             });
-            financeProfile.budgetHistory = financeProfile.budgetHistory || [];
+            financeProfile.budgetHistory = (financeProfile.budgetHistory || []).filter(h => h.month !== month);
             financeProfile.budgetHistory.push({
-                month, salary: bp.salary,
-                allocations: bp.allocations.map(a => ({ ...a })),
+                month, salary: plan.salary,
+                allocations: plan.allocations.map(a => ({ ...a })),
                 actuals, recordedAt: new Date().toISOString()
             });
-            financeProfile.budgetHistory = financeProfile.budgetHistory.sort((a, b) => a.month.localeCompare(b.month)).slice(-24);
-            financeProfile.budgetPlanning = { salary: 0, allocations: [] };
-            closeModal();
+            financeProfile.budgetHistory = financeProfile.budgetHistory.sort((a, b) => a.month.localeCompare(b.month)).slice(-36);
+            delete financeProfile.budgetPlans[month];
+            const el = document.getElementById('longterm-planning-section');
+            if (el) el.outerHTML = renderBudgetPlanningSection();
             if (currentView === 'finances') render();
-            try { await saveData(); showToast('Mes grabado — planificación reiniciada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            try { await saveData(); showToast('Mes grabado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        function renderBudgetHistoryTables() {
-            const hist = (financeProfile.budgetHistory || []).slice().sort((a, b) => b.month.localeCompare(a.month));
-            if (!hist.length) return '<div class="finance-empty-line">Todavía no has grabado ningún mes.</div>';
-            return hist.map(h => {
-                const totalPrevisto = h.allocations.reduce((s, a) => s + Number(a.amount || 0), 0);
-                const totalReal = h.allocations.reduce((s, a) => s + (h.actuals[a.id] != null ? Number(h.actuals[a.id]) : 0), 0);
-                return `
-                <div class="budget-history-month">
-                    <div class="budget-history-month-head">
-                        <span>${escapeHtml(financeMonthLabel(h.month))}</span>
-                        <span class="budget-history-month-actions">
-                            Sueldo ${financeMoney(h.salary)}
-                            <button class="finance-icon-btn" title="Editar (vuelve a la planificación en curso)" onclick="editBudgetHistoryMonth('${h.month}')">✎</button>
-                            <button class="finance-icon-btn" title="Eliminar registro" onclick="deleteBudgetHistoryMonth('${h.month}')">✕</button>
-                        </span>
-                    </div>
-                    <table class="budget-history-table">
-                        <tr><th>Casilla</th><th>Previsto</th><th>Real</th><th>Diferencia</th></tr>
-                        ${h.allocations.map(a => {
-                            const real = h.actuals[a.id];
-                            const diff = real != null ? Number(a.amount || 0) - real : null;
-                            return `<tr>
-                                <td>${escapeHtml(a.label || '(sin nombre)')}</td>
-                                <td>${financeMoney(a.amount || 0)}</td>
-                                <td>${real != null ? financeMoney(real) : '—'}</td>
-                                <td class="${diff != null ? (diff >= 0 ? 'finance-positive' : 'finance-negative') : ''}">${diff != null ? (diff >= 0 ? '+' : '') + financeMoney(diff) : '—'}</td>
-                            </tr>`;
-                        }).join('')}
-                        <tr class="budget-history-total-row"><td>Total</td><td>${financeMoney(totalPrevisto)}</td><td>${financeMoney(totalReal)}</td><td>${financeMoney(totalPrevisto - totalReal)}</td></tr>
-                    </table>
-                </div>`;
-            }).join('');
+        function renderBudgetHistoryMonthTable(h) {
+            const totalPrevisto = h.allocations.reduce((s, a) => s + Number(a.amount || 0), 0);
+            const totalReal = h.allocations.reduce((s, a) => s + (h.actuals[a.id] != null ? Number(h.actuals[a.id]) : 0), 0);
+            return `
+            <table class="budget-history-table">
+                <tr><th>Casilla</th><th>Previsto</th><th>Real</th><th>Diferencia</th></tr>
+                ${h.allocations.map(a => {
+                    const real = h.actuals[a.id];
+                    const diff = real != null ? Number(a.amount || 0) - real : null;
+                    return `<tr>
+                        <td>${escapeHtml(a.label || '(sin nombre)')}</td>
+                        <td>${financeMoney(a.amount || 0)}</td>
+                        <td>${real != null ? financeMoney(real) : '—'}</td>
+                        <td class="${diff != null ? (diff >= 0 ? 'finance-positive' : 'finance-negative') : ''}">${diff != null ? (diff >= 0 ? '+' : '') + financeMoney(diff) : '—'}</td>
+                    </tr>`;
+                }).join('')}
+                <tr class="budget-history-total-row"><td>Total</td><td>${financeMoney(totalPrevisto)}</td><td>${financeMoney(totalReal)}</td><td>${financeMoney(totalPrevisto - totalReal)}</td></tr>
+            </table>
+            <button class="finance-oneoff-btn" style="margin-top:10px;color:#c2455c;border-color:#c2455c" onclick="deleteBudgetHistoryMonth('${h.month}')">Eliminar registro</button>`;
         }
 
-        // Un mes "grabado" no es definitivo: se puede sacar de vuelta a la
-        // planificación en curso para seguir tocándolo, o borrar sin más.
+        // Un mes "grabado" no es definitivo: se puede sacar de vuelta a
+        // planificación editable para seguir tocándolo, o borrar sin más.
         async function editBudgetHistoryMonth(month) {
             const hist = financeProfile.budgetHistory || [];
             const entry = hist.find(h => h.month === month);
             if (!entry) return;
-            if (!confirm('¿Editar este mes? Vuelve a la planificación en curso (sustituyendo lo que tengas ahí) y sale del historial hasta que lo grabes de nuevo.')) return;
+            if (!confirm('¿Editar este mes? Vuelve a planificación editable (sustituyendo lo que tuvieras ahí) y sale del historial hasta que lo grabes de nuevo.')) return;
             financeProfile.budgetHistory = hist.filter(h => h.month !== month);
-            financeProfile.budgetPlanning = { salary: entry.salary, allocations: entry.allocations.map(a => ({ ...a })) };
-            openLongTermModal();
+            financeProfile.budgetPlans[month] = { salary: entry.salary, allocations: entry.allocations.map(a => ({ ...a })) };
+            longtermViewMonth = month;
+            const el = document.getElementById('longterm-planning-section');
+            if (el) el.outerHTML = renderBudgetPlanningSection();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         async function deleteBudgetHistoryMonth(month) {
             if (!confirm('¿Eliminar este registro del historial? No se puede deshacer.')) return;
             financeProfile.budgetHistory = (financeProfile.budgetHistory || []).filter(h => h.month !== month);
-            const el = document.getElementById('longterm-history-list');
-            if (el) el.innerHTML = renderBudgetHistoryTables();
+            const el = document.getElementById('longterm-planning-section');
+            if (el) el.outerHTML = renderBudgetPlanningSection();
             try { await saveData(); showToast('Registro eliminado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
