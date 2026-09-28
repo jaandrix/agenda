@@ -2452,6 +2452,11 @@
                 financeProDefaultCategories().forEach(def => {
                     if (!financePro.categories.some(c => c.id === def.id)) financePro.categories.push(def);
                 });
+                // "Regalos" pasa a llamarse "Aportaciones" — renombra la
+                // categoría ya existente en la cuenta (una sola vez), no
+                // solo la etiqueta por defecto para cuentas nuevas.
+                const cat_regalo = financePro.categories.find(c => c.id === 'cat_regalo');
+                if (cat_regalo && cat_regalo.name === 'Regalos') cat_regalo.name = 'Aportaciones';
                 financePro.transactions = Array.isArray(financePro.transactions) ? financePro.transactions : [];
                 financePro.categoryBudgets = (financePro.categoryBudgets && typeof financePro.categoryBudgets === 'object') ? financePro.categoryBudgets : {};
                 financePro.rules = Array.isArray(financePro.rules) ? financePro.rules : [];
@@ -12301,7 +12306,7 @@
                 { id: 'cat_sueldo', name: 'Sueldo', icon: 'briefcase', type: 'income', color: FINANCE_PRO_PALETTE[10] },
                 { id: 'cat_extra', name: 'Trabajo extra', icon: 'coin', type: 'income', color: FINANCE_PRO_PALETTE[11] },
                 { id: 'cat_inversion_ing', name: 'Inversiones', icon: 'trend', type: 'income', color: FINANCE_PRO_PALETTE[12] },
-                { id: 'cat_regalo', name: 'Regalos', icon: 'gift', type: 'income', color: FINANCE_PRO_PALETTE[13] },
+                { id: 'cat_regalo', name: 'Aportaciones', icon: 'gift', type: 'income', color: FINANCE_PRO_PALETTE[13] },
                 { id: 'cat_reembolso', name: 'Reembolsos', icon: 'repeat', type: 'income', color: FINANCE_PRO_PALETTE[14] },
                 { id: 'cat_otros_ingreso', name: 'Otros ingresos', icon: 'other', type: 'income', color: FINANCE_PRO_PALETTE[15] },
                 { id: 'cat_viajes', name: 'Viajes y vacaciones', icon: 'plane', type: 'expense', color: FINANCE_PRO_PALETTE[8] },
