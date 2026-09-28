@@ -9030,8 +9030,6 @@
                 <input id="subject-name" class="modal-input" placeholder="Ej: Cálculo I">
                 <div class="modal-label">Color</div>
                 <input id="subject-color" class="modal-input" type="color" value="#5b8def" style="height:40px;padding:4px">
-                <div class="modal-label">Créditos ECTS (opcional)</div>
-                <input id="subject-creditos" class="modal-input" type="number" min="0" step="0.5" placeholder="Ej: 6">
                 <button class="btn-modal-primary" onclick="saveNewSubject()">Añadir asignatura</button>
             `);
             setTimeout(() => document.getElementById('subject-name')?.focus(), 50);
@@ -9041,9 +9039,7 @@
             const name = document.getElementById('subject-name')?.value.trim();
             if (!name) { showToast('Indica un nombre para la asignatura', true); return; }
             const color = document.getElementById('subject-color')?.value || '#5b8def';
-            const creditosRaw = document.getElementById('subject-creditos')?.value;
-            const creditos = creditosRaw !== '' && creditosRaw != null ? Math.max(0, parseFloat(creditosRaw) || 0) : null;
-            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, creditos, exams: [], assignments: [] });
+            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, creditos: null, exams: [], assignments: [] });
             closeModal();
             render();
             try { await saveData(); showToast('Asignatura añadida'); }
@@ -9057,13 +9053,6 @@
             studies.subjects = studies.subjects.filter(s => s.id !== id);
             closeModal();
             render();
-            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
-        }
-
-        async function updateSubjectCredits(id, value) {
-            const s = findSubject(id);
-            if (!s) return;
-            s.creditos = value !== '' && value != null ? Math.max(0, parseFloat(value) || 0) : null;
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -9092,8 +9081,6 @@
                             <div class="subject-detail-grade-label">Nota final</div>
                         </div>
                     </div>
-                    <div class="modal-label">Créditos ECTS (opcional, para el expediente)</div>
-                    <input class="modal-input" type="number" min="0" step="0.5" value="${s.creditos ?? ''}" placeholder="Ej: 6" onchange="updateSubjectCredits('${s.id}',this.value)">
                     <div class="studies-weight-note" id="subject-weight-note">${renderSubjectWeightNote(s)}</div>
                     ${renderSubjectItemsBlock(s, 'exams')}
                     ${renderSubjectItemsBlock(s, 'assignments')}
@@ -9162,16 +9149,16 @@
             return `
             <div class="studies-editorial-block" id="studies-block-${listKey}-${s.id}">
                 <div class="studies-editorial-rule"></div>
-                <div class="studies-editorial-kicker">
-                    <span>${escapeHtml(kicker)}</span>
-                    <button onclick="addSubjectItem('${s.id}','${listKey}')">+ añadir</button>
+                <div class="studies-editorial-kicker"><span>${escapeHtml(kicker)}</span></div>
+                <div class="studies-editorial-heading-row">
+                    <div class="studies-editorial-heading">${label}</div>
+                    <button class="studies-editorial-add-btn" onclick="addSubjectItem('${s.id}','${listKey}')">+ añadir</button>
                 </div>
-                <div class="studies-editorial-heading">${label}</div>
                 ${!items.length ? `<div class="studies-editorial-empty">Todavía no has añadido ningún ${singular}.</div>` : `
                     ${noDate.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
                     ${upcoming.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
                     ${past.length ? `
-                    <details class="studies-past-group">
+                    <details class="studies-past-group" open>
                         <summary class="studies-editorial-group-label">pasados (${past.length})</summary>
                         ${past.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
                     </details>` : ''}
@@ -9187,7 +9174,7 @@
         function renderSubjectItemRow(subjectId, listKey, item, index) {
             const cd = studiesItemCountdown(item.date);
             return `
-                <div class="studies-row">
+                <div class="studies-row" data-item-id="${item.id}">
                     <div class="studies-row-head">
                         <input class="studies-row-title-input" value="${escapeHtml(item.title || '')}" placeholder="${listKey === 'exams' ? 'Examen sin título' : 'Trabajo sin título'}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
                         ${cd ? `<span class="studies-row-countdown ${cd.due ? 'due-soon' : ''} ${cd.past ? 'past' : ''}">${cd.text}</span>` : ''}
@@ -9209,9 +9196,10 @@
             const s = findSubject(subjectId);
             if (!s) return;
             s[listKey] = s[listKey] || [];
-            s[listKey].push({ id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: '', date: '', grade: '', weight: '' });
+            const newItem = { id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: '', date: '', grade: '', weight: '' };
+            s[listKey].push(newItem);
             refreshSubjectItemsBlock(s, listKey);
-            setTimeout(() => document.querySelector(`#studies-block-${listKey}-${s.id} .studies-row-title-input`)?.focus(), 30);
+            setTimeout(() => document.querySelector(`[data-item-id="${newItem.id}"] .studies-row-title-input`)?.focus(), 30);
         }
 
         async function updateSubjectItem(subjectId, listKey, index, field, value) {
