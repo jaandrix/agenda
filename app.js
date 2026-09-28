@@ -11289,21 +11289,14 @@
                 </section>`;
             }
 
-            const maxBar = Math.max(stats.totalAportado, stats.valorActual, 1);
             const gainCls = stats.gain > 0 ? 'positive' : stats.gain < 0 ? 'negative' : 'neutral';
+            // Tarjeta-lanzadera: sin barras ni desglose, un vistazo y un
+            // clic directo al popup — el detalle vive ahí, no aquí.
             return `
-            <section class="finance-panel" id="finance-investment-section">
-                <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}<button class="finance-icon-btn" title="Abrir" onclick="openLongTermModal()">✎</button></div>
-                <div class="finance-invest-headline">
-                    <div><span>Valor actual</span><strong id="finance-invest-value" data-value="${stats.valorActual}">${financeMoney(stats.valorActual)}</strong></div>
-                    <span class="finance-trend-chip ${gainCls}">${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}${stats.gainPct !== null ? ` · ${stats.gain >= 0 ? '+' : ''}${stats.gainPct.toFixed(1)}%` : ''}</span>
-                </div>
-                <div class="finance-invest-bars">
-                    <div class="finance-invest-bar-row"><span>Aportado</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill" data-target-width="${(stats.totalAportado / maxBar) * 100}%" style="width:0"></div></div><strong>${financeMoney(stats.totalAportado)}</strong></div>
-                    <div class="finance-invest-bar-row"><span>Valor actual</span><div class="finance-invest-bar-track"><div class="finance-invest-bar-fill finance-invest-bar-fill-accent" data-target-width="${(stats.valorActual / maxBar) * 100}%" style="width:0"></div></div><strong>${financeMoney(stats.valorActual)}</strong></div>
-                </div>
-                <div class="finance-empty-line" style="margin-top:10px">${stats.cuentas} cuenta${stats.cuentas === 1 ? '' : 's'} · ${stats.meses} mes${stats.meses === 1 ? '' : 'es'} con registro</div>
-                <button class="finance-oneoff-btn" style="margin-top:10px" onclick="openLongTermModal()">largo plazo.</button>
+            <section class="finance-panel finance-panel-clickable" id="finance-investment-section" onclick="openLongTermModal()">
+                <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}</div>
+                <div class="finance-invest-simple-value">${financeMoney(stats.valorActual)}</div>
+                <div class="finance-empty-line" style="margin-top:4px">${stats.cuentas} cuenta${stats.cuentas === 1 ? '' : 's'} · <span class="${gainCls === 'positive' ? 'finance-positive' : gainCls === 'negative' ? 'finance-negative' : ''}">${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}</span></div>
             </section>`;
         }
 
@@ -11320,12 +11313,38 @@
             showModal(renderLongTermModalBody());
         }
 
+        // Fila de 12 puntos (uno por mes del año) — inspirada en el
+        // calendario semanal de puntos: relleno = mes con alguna
+        // aportación registrada, en color de acento = mes actual, vacío =
+        // todavía sin nada. Da una lectura del año de un vistazo, como el
+        // hero del popup.
+        function renderLongTermYearDots() {
+            const year = new Date().getFullYear();
+            const currentMonth = new Date().getMonth();
+            const monthsWithData = new Set();
+            (financeProfile.investmentAccounts || []).forEach(acc => (acc.contributions || []).forEach(c => { if (String(c.month).startsWith(String(year))) monthsWithData.add(c.month); }));
+            const dots = Array.from({ length: 12 }, (_, i) => {
+                const mk = `${year}-${String(i + 1).padStart(2, '0')}`;
+                const isCurrent = i === currentMonth;
+                const hasData = monthsWithData.has(mk);
+                const cls = isCurrent ? 'lt-dot-today' : hasData ? 'lt-dot-filled' : '';
+                return `<span class="lt-dot ${cls}" title="${escapeHtml(financeMonthLabel(mk))}"></span>`;
+            }).join('');
+            return `<div class="lt-dots-row">${dots}</div>`;
+        }
+
         function renderLongTermModalBody() {
             const stats = financeInvestmentStats();
             return `
             <div class="longterm-modal">
                 <div class="modal-title">largo plazo.<button class="modal-close" onclick="closeModal()">✕</button></div>
-                <div class="finance-modal-note" style="margin-bottom:14px">Planifica tu sueldo mes a mes y sigue tus cuentas de inversión a largo plazo, todo en un mismo sitio.</div>
+
+                <div class="longterm-hero">
+                    <div class="longterm-hero-label">tu cartera · ${new Date().getFullYear()}</div>
+                    <div class="longterm-hero-value">${financeMoney(stats.valorActual)}</div>
+                    <div class="longterm-hero-sub">${stats.cuentas} cuenta${stats.cuentas === 1 ? '' : 's'}${stats.totalAportado ? ` · ${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}${stats.gainPct !== null ? ` (${stats.gain >= 0 ? '+' : ''}${stats.gainPct.toFixed(1)}%)` : ''}` : ''}</div>
+                    ${renderLongTermYearDots()}
+                </div>
 
                 ${renderBudgetPlanningSection()}
                 <div class="longterm-divider"></div>
@@ -11373,7 +11392,7 @@
                 <div id="budget-allocations-list">${renderBudgetAllocationsList()}</div>
                 <button class="finance-oneoff-btn" style="margin-top:8px" onclick="addBudgetAllocation()">+ Añadir casilla</button>
                 <div id="budget-remaining-bar">${renderBudgetRemainingBar()}</div>
-                <button class="btn-modal-primary" style="margin-top:12px" onclick="recordBudgetMonth()">grabar datos.</button>
+                <button class="longterm-cta" onclick="recordBudgetMonth()">grabar datos.</button>
             </div>`;
         }
 
@@ -11469,14 +11488,9 @@
             const month = financeMonthKey();
             const actuals = {};
             bp.allocations.forEach(a => {
-                if (a.categoryId) {
-                    const sum = (financePro.transactions || [])
-                        .filter(t => t.category === a.categoryId && t.type === 'expense' && String(t.date).slice(0, 7) === month)
-                        .reduce((s, t) => s + Number(t.amount || 0), 0);
-                    actuals[a.id] = sum;
-                } else {
-                    actuals[a.id] = null;
-                }
+                // financeProCategorySpend ya descuenta devoluciones/reembolsos
+                // (ingresos de la categoría de ingreso con el mismo nombre).
+                actuals[a.id] = a.categoryId ? financeProCategorySpend(a.categoryId, month) : null;
             });
             financeProfile.budgetHistory = financeProfile.budgetHistory || [];
             financeProfile.budgetHistory.push({
@@ -11555,9 +11569,10 @@
             const updatedThisMonth = (acc.contributions || []).some(c => c.month === monthKey);
             return `
             <div class="investment-account-row">
+                <span class="lt-dot ${updatedThisMonth ? 'lt-dot-today' : ''}" title="${updatedThisMonth ? 'Actualizada este mes' : 'Sin actualizar este mes'}"></span>
                 <div class="investment-account-main">
                     <div class="investment-account-name">${escapeHtml(acc.name)}</div>
-                    <div class="investment-account-meta">${financeMoney(invested)} aportado${gain !== 0 ? ` · ${gain >= 0 ? '+' : ''}${financeMoney(gain)}` : ''}${updatedThisMonth ? ' · ✓ este mes' : ''}</div>
+                    <div class="investment-account-meta">${financeMoney(invested)} aportado${gain !== 0 ? ` · ${gain >= 0 ? '+' : ''}${financeMoney(gain)}` : ''}</div>
                 </div>
                 <div class="investment-account-value">${financeMoney(value)}</div>
                 <button class="finance-oneoff-btn" style="width:auto" onclick="openAccountMonthlyUpdate('${acc.id}')">+ mes</button>
@@ -11812,7 +11827,15 @@
                 // compra de coleccionables al importar movimientos.
                 { id: 'cat_inversion_gasto', name: 'Inversiones', icon: 'trend', type: 'expense', color: FINANCE_PRO_PALETTE[12] },
                 { id: 'cat_coleccionables', name: 'Coleccionables', icon: 'star', type: 'expense', color: FINANCE_PRO_PALETTE[14] },
-                { id: 'cat_gasolina', name: 'Gasolina', icon: 'fuel', type: 'expense', color: FINANCE_PRO_PALETTE[2] }
+                { id: 'cat_gasolina', name: 'Gasolina', icon: 'fuel', type: 'expense', color: FINANCE_PRO_PALETTE[2] },
+                // Contrapartida de ingreso con el mismo nombre que su gasto
+                // — para poder registrar ahí devoluciones/reembolsos (un
+                // amigo pagándote su parte de la cuenta) o dinero que
+                // vuelve (vender un coleccionable), y que Bitácora lo reste
+                // del gasto real de esa categoría en vez de sumarlo aparte
+                // como si fuera un ingreso nuevo (ver financeProCategorySpend).
+                { id: 'cat_comida_ing', name: 'Comida y bebida', icon: 'food', type: 'income', color: FINANCE_PRO_PALETTE[0] },
+                { id: 'cat_coleccionables_ing', name: 'Coleccionables', icon: 'star', type: 'income', color: FINANCE_PRO_PALETTE[14] }
             ];
         }
 
@@ -12359,10 +12382,30 @@
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+        // Gasto neto de una categoría: al gasto real se le restan los
+        // ingresos de la categoría de ingreso con el MISMO nombre — un
+        // amigo devolviéndote su parte de la cuenta (Comida y bebida),
+        // vender un coleccionable (Coleccionables), reembolsos de
+        // inversión... no es dinero ganado, es gasto que vuelve. Si no
+        // existe una categoría de ingreso con ese nombre, no hay nada que
+        // restar y se comporta como antes.
         function financeProCategorySpend(catId, monthKey) {
             monthKey = monthKey || financeMonthKey();
-            return financePro.transactions
+            const expense = financePro.transactions
                 .filter(t => t.type === 'expense' && t.category === catId && t.date.slice(0, 7) === monthKey)
+                .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+            const refunded = financeProCategoryRefunds(catId, monthKey);
+            return Math.max(0, expense - refunded);
+        }
+
+        function financeProCategoryRefunds(catId, monthKey) {
+            monthKey = monthKey || financeMonthKey();
+            const cat = financeProCategoryById(catId);
+            if (!cat) return 0;
+            const incomeCat = financePro.categories.find(c => c.type === 'income' && c.name.toLowerCase() === cat.name.toLowerCase());
+            if (!incomeCat) return 0;
+            return financePro.transactions
+                .filter(t => t.type === 'income' && t.category === incomeCat.id && t.date.slice(0, 7) === monthKey)
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
