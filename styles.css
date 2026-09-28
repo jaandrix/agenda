@@ -4669,7 +4669,6 @@ body.papel {
 .event-sq-card-past:hover { opacity:.9; }
 .event-sq-icon { width:46px; height:46px; border-radius:12px; background:var(--accent); color:var(--accent-contrast); display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:6px; box-sizing:border-box; }
 .event-sq-icon svg { width:100%; height:100%; display:block; }
-.event-sq-icon-plain { background:transparent; padding:2px; }
 .event-sq-body { flex:1 1 auto; min-width:0; }
 .event-sq-title { font-size:13px; font-weight:600; color:var(--text-primary); overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.25; }
 .event-sq-meta { display:flex; align-items:center; gap:6px; margin-top:3px; font-size:11px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
