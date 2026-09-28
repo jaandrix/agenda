@@ -4193,7 +4193,8 @@ body.papel {
 .investment-account-value { font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; flex-shrink:0; }
 
 .budget-history-month { margin-bottom:18px; }
-.budget-history-month-head { display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; color:var(--text-primary); margin-bottom:6px; }
+.budget-history-month-head { display:flex; justify-content:space-between; align-items:center; font-size:12.5px; font-weight:700; color:var(--text-primary); margin-bottom:6px; }
+.budget-history-month-actions { display:flex; align-items:center; gap:4px; }
 .budget-history-table { width:100%; border-collapse:collapse; font-size:11.5px; }
 .budget-history-table th { text-align:left; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); font-weight:600; padding:0 6px 5px; border-bottom:1px solid var(--border-strong); }
 .budget-history-table th:not(:first-child), .budget-history-table td:not(:first-child) { text-align:right; }

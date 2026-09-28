@@ -2160,6 +2160,12 @@
                     financePro.accounts[k] = financePro.accounts[k] || { name: k[0].toUpperCase() + k.slice(1), balance0: 0 };
                 });
                 financePro.categories = Array.isArray(financePro.categories) && financePro.categories.length ? financePro.categories : financeProDefaultCategories();
+                // Categorías nuevas (Inversiones/Coleccionables/Gasolina como
+                // gasto) — se añaden a cuentas que ya tenían categorías
+                // guardadas de antes, sin tocar las que el usuario ya tiene.
+                financeProDefaultCategories().forEach(def => {
+                    if (!financePro.categories.some(c => c.id === def.id)) financePro.categories.push(def);
+                });
                 financePro.transactions = Array.isArray(financePro.transactions) ? financePro.transactions : [];
                 financePro.categoryBudgets = (financePro.categoryBudgets && typeof financePro.categoryBudgets === 'object') ? financePro.categoryBudgets : {};
                 financePro.rules = Array.isArray(financePro.rules) ? financePro.rules : [];
@@ -10416,6 +10422,8 @@
             { key: 'laptop', label: 'Tecnología', svg: financeProSvgIcon('<rect x="4" y="4" width="16" height="10" rx="1.5"/><path d="M2 18h20"/><path d="M9 18l1-2h4l1 2"/>') },
             { key: 'sparkle', label: 'Bienestar y belleza', svg: financeProSvgIcon('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>') },
             { key: 'key', label: 'Alquileres', svg: financeProSvgIcon('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/>') },
+            { key: 'star', label: 'Coleccionables', svg: FINANCE_ICON_STAR },
+            { key: 'fuel', label: 'Gasolina', svg: financeProSvgIcon('<path d="M3 21V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v15"/><path d="M3 21h10"/><rect x="5" y="6" width="6" height="5" rx="0.5"/><path d="M15 8h2l3 3v7a1.5 1.5 0 0 1-3 0v-3h-2"/>') },
             { key: 'other', label: 'Otros', svg: financeProSvgIcon('<circle cx="12" cy="12" r="8"/>') }
         ];
         function financeProCategoryIconSvg(key) {
@@ -10519,7 +10527,12 @@
         // Curva suave a través de todos los puntos (Catmull-Rom -> Bézier
         // cúbica), en vez de segmentos rectos — inspirado en cómo dibuja
         // sus gráficas Stoic, sin picos angulosos entre mes y mes.
-        function financeSmoothPath(points) {
+        // Nombre distinto de financeSmoothPath (más abajo, usada por
+        // renderFinanceProLineChart) porque esa otra toma tuplas [x,y] en
+        // vez de objetos {x,y} — mismo nombre + firma distinta pisaba esta
+        // definición (la última declaración de una función gana) y rompía
+        // silenciosamente esta gráfica en cuanto había 3+ meses de histórico.
+        function financeSmoothPathObj(points) {
             if (points.length < 2) return '';
             if (points.length === 2) return `M${points[0].x},${points[0].y} L${points[1].x},${points[1].y}`;
             let d = `M${points[0].x},${points[0].y}`;
@@ -10590,12 +10603,43 @@
                 : '').join('');
 
             let linesSvg = '';
+            let lastYearSvg = '';
+            let hasLastYear = false;
             if (data.length > 1) {
-                const pathOf = id => financeSmoothPath(data.map((d, i) => ({ x: Number(x(i).toFixed(1)), y: Number(y(d[id]).toFixed(1)) })));
+                const pathOf = id => financeSmoothPathObj(data.map((d, i) => ({ x: Number(x(i).toFixed(1)), y: Number(y(d[id]).toFixed(1)) })));
                 const mainSeries = series[series.length - 1];
                 const areaPath = `${pathOf(mainSeries.id)} L${x(data.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
                 linesSvg = `<path d="${areaPath}" fill="url(#financeTotalGradient)" stroke="none"/>` +
                     series.map((s, idx) => `<path d="${pathOf(s.id)}" fill="none" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="${idx === series.length - 1 ? 2.5 : 2}" ${idx === series.length - 1 ? '' : 'stroke-dasharray="4,4"'} stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+
+                // "Mismo mes, año pasado" — línea de referencia gris tenue,
+                // superpuesta en la misma posición X que el punto actual
+                // (no desplazada en el tiempo), para comparar el ritmo de
+                // este año contra el de hace 12 meses. Se dibuja detrás de
+                // las líneas principales y solo por los tramos donde hay
+                // dato real de hace un año (huecos = sin ese mes todavía).
+                const historyByMonth = {};
+                (Array.isArray(financeProfile.history) ? financeProfile.history : []).forEach(h => { historyByMonth[h.month] = h; });
+                const lastYearPoints = data.map((d, i) => {
+                    const [yy, mm] = d.month.split('-').map(Number);
+                    const prevKey = `${yy - 1}-${String(mm).padStart(2, '0')}`;
+                    const h = historyByMonth[prevKey];
+                    if (!h) return null;
+                    const v = financeSeriesValueForHistoryPoint(h, mainSeries);
+                    return { x: Number(x(i).toFixed(1)), y: Number(y(v).toFixed(1)) };
+                });
+                hasLastYear = lastYearPoints.some(p => p !== null);
+                if (hasLastYear) {
+                    const segments = [];
+                    let current = [];
+                    lastYearPoints.forEach(p => {
+                        if (p) current.push(p);
+                        else { if (current.length > 1) segments.push(current); current = []; }
+                    });
+                    if (current.length > 1) segments.push(current);
+                    const lastYearPath = segments.map(seg => financeSmoothPathObj(seg)).join(' ');
+                    lastYearSvg = `<path d="${lastYearPath}" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-opacity="0.35" stroke-linecap="round" stroke-linejoin="round"/>`;
+                }
             }
 
             return `
@@ -10608,13 +10652,14 @@
                             </linearGradient>
                         </defs>
                         ${yAxisGuides}
+                        ${lastYearSvg}
                         ${linesSvg}
                         ${targetLine}
                         ${series.map((s, idx) => dotsOf(s, idx === series.length - 1)).join('')}
                         ${xLabels}
                     </svg>
                 </div>
-                <div class="finance-chart-legend">${series.map(s => `<span class="finance-chart-legend-item"><i style="background:${s.color || 'var(--text-secondary)'}"></i>${escapeHtml(s.name)}</span>`).join('')}</div>
+                <div class="finance-chart-legend">${series.map(s => `<span class="finance-chart-legend-item"><i style="background:${s.color || 'var(--text-secondary)'}"></i>${escapeHtml(s.name)}</span>`).join('')}${hasLastYear ? `<span class="finance-chart-legend-item"><i style="background:var(--text-secondary);opacity:.4"></i>Año pasado</span>` : ''}</div>
                 ${data.length === 1 ? `<div class="finance-empty-state" style="margin-top:6px">Un solo registro todavía. Usa <strong>Corregir registros</strong> abajo para añadir meses anteriores y ver la evolución completa.</div>` : ''}`;
         }
 
@@ -11456,7 +11501,11 @@
                 <div class="budget-history-month">
                     <div class="budget-history-month-head">
                         <span>${escapeHtml(financeMonthLabel(h.month))}</span>
-                        <span>Sueldo ${financeMoney(h.salary)}</span>
+                        <span class="budget-history-month-actions">
+                            Sueldo ${financeMoney(h.salary)}
+                            <button class="finance-icon-btn" title="Editar (vuelve a la planificación en curso)" onclick="editBudgetHistoryMonth('${h.month}')">✎</button>
+                            <button class="finance-icon-btn" title="Eliminar registro" onclick="deleteBudgetHistoryMonth('${h.month}')">✕</button>
+                        </span>
                     </div>
                     <table class="budget-history-table">
                         <tr><th>Casilla</th><th>Previsto</th><th>Real</th><th>Diferencia</th></tr>
@@ -11474,6 +11523,27 @@
                     </table>
                 </div>`;
             }).join('');
+        }
+
+        // Un mes "grabado" no es definitivo: se puede sacar de vuelta a la
+        // planificación en curso para seguir tocándolo, o borrar sin más.
+        async function editBudgetHistoryMonth(month) {
+            const hist = financeProfile.budgetHistory || [];
+            const entry = hist.find(h => h.month === month);
+            if (!entry) return;
+            if (!confirm('¿Editar este mes? Vuelve a la planificación en curso (sustituyendo lo que tengas ahí) y sale del historial hasta que lo grabes de nuevo.')) return;
+            financeProfile.budgetHistory = hist.filter(h => h.month !== month);
+            financeProfile.budgetPlanning = { salary: entry.salary, allocations: entry.allocations.map(a => ({ ...a })) };
+            openLongTermModal();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteBudgetHistoryMonth(month) {
+            if (!confirm('¿Eliminar este registro del historial? No se puede deshacer.')) return;
+            financeProfile.budgetHistory = (financeProfile.budgetHistory || []).filter(h => h.month !== month);
+            const el = document.getElementById('longterm-history-list');
+            if (el) el.innerHTML = renderBudgetHistoryTables();
+            try { await saveData(); showToast('Registro eliminado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // -- Cuentas de inversión --
@@ -11734,7 +11804,15 @@
                 { id: 'cat_deporte', name: 'Deporte', icon: 'dumbbell', type: 'expense', color: FINANCE_PRO_PALETTE[2] },
                 { id: 'cat_tecnologia', name: 'Tecnología', icon: 'laptop', type: 'expense', color: FINANCE_PRO_PALETTE[6] },
                 { id: 'cat_bienestar', name: 'Bienestar y belleza', icon: 'sparkle', type: 'expense', color: FINANCE_PRO_PALETTE[13] },
-                { id: 'cat_alquileres', name: 'Alquileres', icon: 'key', type: 'income', color: FINANCE_PRO_PALETTE[7] }
+                { id: 'cat_alquileres', name: 'Alquileres', icon: 'key', type: 'income', color: FINANCE_PRO_PALETTE[7] },
+                // No son gastos reales (son dinero que sigue siendo tuyo,
+                // solo que en otra forma) pero necesitan aparecer en la
+                // lista de "Gastos" para poder categorizar ahí el dinero
+                // que sale de la cuenta corriente hacia un bróker o una
+                // compra de coleccionables al importar movimientos.
+                { id: 'cat_inversion_gasto', name: 'Inversiones', icon: 'trend', type: 'expense', color: FINANCE_PRO_PALETTE[12] },
+                { id: 'cat_coleccionables', name: 'Coleccionables', icon: 'star', type: 'expense', color: FINANCE_PRO_PALETTE[14] },
+                { id: 'cat_gasolina', name: 'Gasolina', icon: 'fuel', type: 'expense', color: FINANCE_PRO_PALETTE[2] }
             ];
         }
 
