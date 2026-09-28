@@ -11856,7 +11856,7 @@
                     <button class="finance-icon-btn" title="Heredar la previsión del mes anterior" onclick="inheritPreviousMonthPlan()">↺</button>
                 </div>
                 ${renderLongTermMonthNav(month)}
-                <div class="modal-label">Sueldo esperado (€)</div>
+                <div class="modal-label">sueldo esperado o recibido:</div>
                 <input id="budget-salary-input" class="modal-input" type="number" min="0" step="0.01" value="${plan.salary || ''}" placeholder="0.00" oninput="updateBudgetSalary(this.value,false)" onchange="updateBudgetSalary(this.value,true)">
                 <div id="budget-allocations-list">${renderBudgetAllocationsList()}</div>
                 <button class="finance-oneoff-btn" style="margin-top:8px" onclick="addBudgetAllocation()">+ Añadir casilla</button>
@@ -13557,7 +13557,7 @@
         // ============================================================
         //  FINANZAS PRO — lista de movimientos
         // ============================================================
-        let financeProTxFilter = { account: '', month: '', year: '', search: '' };
+        let financeProTxFilter = { account: '', month: '', year: '', search: '', category: '' };
         const FINANCE_PRO_MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
         function financeProTxFilterYears() {
@@ -13618,6 +13618,11 @@
                     <option value="">Todos los años</option>
                     ${financeProTxFilterYears().map(y => `<option value="${y}" ${financeProTxFilter.year === y ? 'selected' : ''}>${y}</option>`).join('')}
                 </select>
+                <select class="modal-input" style="width:auto;margin:0" onchange="financeProApplyTxFilter('category',this.value)">
+                    <option value="">Todas las categorías</option>
+                    <option value="__none__" ${financeProTxFilter.category === '__none__' ? 'selected' : ''}>Sin categoría</option>
+                    ${(financePro.categories || []).map(c => `<option value="${c.id}" ${financeProTxFilter.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
+                </select>
                 </div>
             </div>`;
         }
@@ -13636,6 +13641,8 @@
                 if (financeProTxFilter.account) txs = txs.filter(t => t.account === financeProTxFilter.account || t.transferTo === financeProTxFilter.account);
                 if (financeProTxFilter.year) txs = txs.filter(t => t.date.slice(0, 4) === financeProTxFilter.year);
                 if (financeProTxFilter.month) txs = txs.filter(t => t.date.slice(5, 7) === financeProTxFilter.month);
+                if (financeProTxFilter.category === '__none__') txs = txs.filter(t => !t.category);
+                else if (financeProTxFilter.category) txs = txs.filter(t => t.category === financeProTxFilter.category);
                 if (financeProTxFilter.search.trim()) {
                     const q = financeProTxFilter.search.trim().toLowerCase();
                     txs = txs.filter(t => {
@@ -13701,6 +13708,11 @@
         // ============================================================
         function openFinanceProTransactionModal(id, presetAccount) {
             window._financeProTxEditId = id || null;
+            // Si se abre desde dentro del popup de "todos los movimientos"
+            // (busca/filtra), al guardar o borrar hay que volver ahí en vez
+            // de cerrar del todo — si no, cada edición obliga a reabrir el
+            // popup y volver a buscar por dónde iba.
+            window._financeProTxReturnToAll = !!document.getElementById('finance-pro-tx-modal-list');
             const existing = id ? financePro.transactions.find(t => t.id === id) : null;
             window._financeProTxDraft = existing
                 ? { ...existing, category: existing.category || '', transferTo: existing.transferTo || '', note: existing.note || '' }
@@ -13771,8 +13783,9 @@
             const idx = financePro.transactions.findIndex(t => t.id === entry.id);
             if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
             window._financeProTxEditId = null; window._financeProTxDraft = null;
-            closeModal();
             render();
+            if (window._financeProTxReturnToAll) openFinanceProAllTxModal(); else closeModal();
+            window._financeProTxReturnToAll = false;
             try { await saveData(); showToast('Movimiento guardado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -13780,8 +13793,9 @@
             if (!confirm('¿Eliminar este movimiento?')) return;
             financePro.transactions = financePro.transactions.filter(t => t.id !== id);
             window._financeProTxEditId = null; window._financeProTxDraft = null;
-            closeModal();
             render();
+            if (window._financeProTxReturnToAll) openFinanceProAllTxModal(); else closeModal();
+            window._financeProTxReturnToAll = false;
             try { await saveData(); showToast('Movimiento eliminado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
