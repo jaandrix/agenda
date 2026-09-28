@@ -13039,13 +13039,14 @@
         // a futuro" y "Otros ahorros" ya no van separados (uno inline, el
         // otro en un popup aparte) — las 7 tarjetas fijas + las cuentas
         // propias viven todas juntas en una sola fila con scroll horizontal.
-        function renderFinanceBitacoraCard(label, iconSvg, variant, onClick, value) {
+        function renderFinanceBitacoraCard(label, iconSvg, variant, onClick, value, negative) {
             const hasValue = value !== undefined;
+            const valueText = negative ? `(${financeMoney(value)})` : financeMoney(value);
             return `
                 <button class="finance-plan-btn finance-plan-btn-${variant} finance-bitacora-card ${hasValue ? 'finance-bitacora-card-with-value' : ''}" ${onClick ? `onclick="${onClick}"` : ''}>
                     <div class="finance-plan-btn-label">${escapeHtml(label)}</div>
                     <div class="finance-bitacora-card-foot">
-                        ${hasValue ? `<div class="finance-bitacora-card-value">${financeMoney(value)}</div>` : ''}
+                        ${hasValue ? `<div class="finance-bitacora-card-value">${valueText}</div>` : ''}
                         <div class="finance-plan-btn-icon">${iconSvg}</div>
                     </div>
                 </button>`;
@@ -13059,7 +13060,7 @@
                 renderFinanceBitacoraCard('metas.', FINANCE_ICON_CROSSHAIR, 'solid', 'openFinanceMetasModal()'),
                 renderFinanceBitacoraCard('fondo de emergencia.', FINANCE_ICON_ASTERISK_BOLD, 'outline', 'openMonthlyFinanceUpdate()', Number(financeProfile.emergency || 0)),
                 renderFinanceBitacoraCard('vacaciones.', FINANCE_ICON_FAN_BOLD, 'solid', 'openMonthlyFinanceUpdate()', Number(financeProfile.vacation || 0)),
-                renderFinanceBitacoraCard('recurrentes.', FINANCE_ICON_REFRESH_BOLD, 'outline', 'openRecurringExpensesModal()', recurring),
+                renderFinanceBitacoraCard('recurrentes.', FINANCE_ICON_REFRESH_BOLD, 'outline', 'openRecurringExpensesModal()', recurring, true),
                 collectibles.length ? renderFinanceBitacoraCard('coleccionables.', FINANCE_ICON_CLUSTER_BOLD, 'solid', "closeModal();switchView('collectibles')", financeCollectiblesTotal()) : ''
             ];
             const customCards = (financeProfile.customAccounts || []).map((a, i) =>
