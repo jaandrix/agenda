@@ -4414,7 +4414,7 @@ body.papel {
 /* Popup de detalle de asignatura — más ancho que el modal estándar
    para que quepan los campos de cada examen/trabajo con espacio de
    verdad, en vez de cuatro cajitas apretadas en una sola fila. */
-.modal-sheet:has(.subject-detail-modal) { max-width:680px; }
+.modal-sheet:has(.subject-detail-modal) { max-width:860px; }
 
 /* Visor: la hoja del modal ocupa casi toda la pantalla, ya que dentro
    va un iframe con la página HTML subida por el usuario. */
