@@ -4027,9 +4027,36 @@ body.papel {
    PLANIFICADOR DEL DÍA
    ============================================================ */
 .planner-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
-.planner-timeline { display:flex; flex-direction:column; }
-.planner-item { display:grid; grid-template-columns:52px 18px 1fr 28px; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); position:relative; }
-.planner-item:last-child { border-bottom:none; }
+
+/* Tarjetas de acción cuadradas arriba, a juego con la referencia
+   visual: icono grande + etiqueta, fondo claro/oscuro según tema,
+   esquinas muy redondeadas. */
+.planner-action-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
+.planner-action-card {
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; gap:22px;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:22px; padding:18px;
+    aspect-ratio:1.5; cursor:pointer; font-family:var(--font-family); text-align:left;
+}
+.planner-action-card:hover { background:var(--bg-card-hover); }
+.planner-action-card:active { transform:scale(.98); }
+.planner-action-icon { width:26px; height:26px; color:var(--text-primary); }
+.planner-action-icon svg { width:100%; height:100%; display:block; }
+.planner-action-label { font-size:14px; font-weight:700; color:var(--text-primary); }
+
+/* Franja de sellos: fondo invertido (siempre oscuro/asfalto, en los
+   dos temas) para que destaque como remate del progreso del día. */
+.planner-stamp-bar { display:flex; align-items:center; gap:12px; background:#302f2c; border-radius:18px; padding:14px 16px; margin-bottom:18px; }
+.planner-stamp-label { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#c9c7bd; flex-shrink:0; }
+.planner-stamp-dots { display:flex; flex-wrap:wrap; gap:6px; flex:1; }
+.planner-stamp-dot { width:9px; height:9px; border-radius:50%; border:1.5px solid #6b6a63; box-sizing:border-box; flex-shrink:0; }
+.planner-stamp-dot.filled { background:#efede3; border-color:#efede3; }
+.planner-stamp-count { font-size:12px; font-weight:700; color:#efede3; font-variant-numeric:tabular-nums; flex-shrink:0; }
+
+.planner-timeline { display:flex; flex-direction:column; gap:10px; }
+.planner-item {
+    display:grid; grid-template-columns:52px 18px 1fr 28px; align-items:flex-start; gap:12px;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:14px 16px; position:relative;
+}
 .planner-item-time { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; color:var(--text-primary); padding-top:2px; }
 .planner-item-check { margin-top:3px; cursor:pointer; }
 .planner-item-title { font-size:13px; font-weight:500; color:var(--text-primary); }
@@ -4062,13 +4089,13 @@ body.papel {
 .trip-map-container { width:100%; height:420px; border-radius:16px; overflow:hidden; border:1px solid var(--border); }
 .planner-item-past { opacity:0.45; }
 .planner-item-done .planner-item-title { text-decoration:line-through; color:var(--text-secondary); }
-.planner-item-arrastrado { background:rgba(127,29,29,0.07); border-radius:10px; padding-left:10px; padding-right:10px; margin:0 -10px; border-bottom-color:rgba(127,29,29,0.2); }
+.planner-item-arrastrado { background:rgba(127,29,29,0.07); border-color:rgba(127,29,29,0.25); }
 .planner-item-arrastrado .planner-item-time,
 .planner-item-arrastrado .planner-item-title { color:#dc2626; }
 .planner-item-arrastrado-tag { display:inline-block; margin-left:8px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:#7f1d1d; padding:2px 7px; border-radius:999px; vertical-align:middle; }
 .planner-item-delete { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:15px; padding:0; }
 .planner-item-delete:hover { color:var(--text-primary); }
-.planner-recurring-block { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:18px; }
+.planner-recurring-block { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:14px 16px; margin-bottom:18px; }
 .planner-recurring-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:8px; }
 .planner-recurring-row { display:flex; align-items:center; gap:10px; padding:6px 0; font-size:13px; color:var(--text-primary); cursor:pointer; }
 .planner-recurring-row input { cursor:pointer; }
@@ -4077,7 +4104,7 @@ body.papel {
 /* "Tareas pendientes." — backlog sin día, aparte de la timeline; mismo
    lenguaje visual que el resto del planificador pero en su propia
    tarjeta, para distinguirlo claramente de los eventos con hora. */
-.planner-backlog { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:18px; }
+.planner-backlog { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:14px 16px; margin-bottom:18px; }
 .planner-backlog-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
 .planner-backlog-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); }
 .planner-backlog-add { background:none; border:0; padding:0; font-size:11px; font-weight:700; color:var(--text-primary); cursor:pointer; }

@@ -3400,6 +3400,31 @@
             return dayPlanner.days[key];
         }
 
+        // Rediseño visual del planificador inspirado en una app de tarjeta
+        // de fidelización (tarjetas de acción cuadradas arriba, franja de
+        // sellos con el progreso del día) — mismo blanco/negro/gris de
+        // siempre, solo que con más aire y más peso visual que la lista
+        // plana de antes.
+        const PLANNER_ICON_ADD = '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="42" y="8" width="16" height="84" rx="7"/><rect x="8" y="42" width="84" height="16" rx="7"/></svg>';
+        const PLANNER_ICON_REPEAT = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 45a32 32 0 0 1 58-17"/><path d="M82 55a32 32 0 0 1-58 17"/><path d="M64 13l14 15-14 15"/><path d="M36 87l-14-15 14-15"/></svg>';
+
+        // Franja de "sellos" con el progreso del día — un punto por tarea
+        // (eventos + recurrentes de hoy), relleno si ya está hecha. Solo
+        // se muestra en la pestaña "Hoy": en mañana/pasado mañana no hay
+        // nada que "progresar" todavía.
+        function renderPlannerStampBar(items, dueToday, today) {
+            const total = items.length + dueToday.length;
+            if (!total) return '';
+            const done = items.filter(i => i.done).length + dueToday.filter(t => t.completadas?.[today]).length;
+            const dots = Array.from({ length: total }, (_, i) => `<span class="planner-stamp-dot ${i < done ? 'filled' : ''}"></span>`).join('');
+            return `
+            <div class="planner-stamp-bar">
+                <div class="planner-stamp-label">progreso de hoy.</div>
+                <div class="planner-stamp-dots">${dots}</div>
+                <div class="planner-stamp-count">${done}/${total}</div>
+            </div>`;
+        }
+
         function setPlannerDayOffset(offset) {
             plannerDayOffset = offset;
             if (currentView === 'planner') render();
@@ -3421,16 +3446,25 @@
                 <div class="planner-head">
                     <div>
                         <div class="finance-kicker">${activeLabel}</div>
-                        <h3 style="margin:2px 0 0 0">Planificador del día</h3>
+                        <h3 style="margin:2px 0 0 0">planificador.</h3>
                         <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">
                             Cada día empieza de cero a las 4:00 am — lo que no marques como hecho se arrastra a hoy, destacado en granate. Puedes ir dejando planificados los próximos dos días.
                         </p>
                     </div>
-                    <div style="display:flex;gap:8px">
-                        <button class="btn-secondary" onclick="openManageRecurringTasks()">Recurrentes</button>
-                        <button class="btn-modal-primary" onclick="openAddPlannerItem()">+ Evento</button>
-                    </div>
                 </div>
+
+                <div class="planner-action-row">
+                    <button class="planner-action-card" onclick="openAddPlannerItem()">
+                        <span class="planner-action-icon">${PLANNER_ICON_ADD}</span>
+                        <span class="planner-action-label">+ evento.</span>
+                    </button>
+                    <button class="planner-action-card" onclick="openManageRecurringTasks()">
+                        <span class="planner-action-icon">${PLANNER_ICON_REPEAT}</span>
+                        <span class="planner-action-label">recurrentes.</span>
+                    </button>
+                </div>
+
+                ${offset === 0 ? renderPlannerStampBar(items, dueToday, today) : ''}
 
                 ${renderPlannerBacklog()}
 
@@ -3469,7 +3503,7 @@
                             <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}', ${offset})">×</button>
                         </div>`;
                     }).join('') : `
-                        <div class="finance-empty-state">Aún no has añadido eventos ${emptyLabel}. Pulsa <strong>+ Evento</strong> para empezar tu planificación.</div>
+                        <div class="finance-empty-state">Aún no has añadido eventos ${emptyLabel}. Pulsa <strong>+ evento.</strong> para empezar tu planificación.</div>
                     `}
                 </div>
             </div>`;
