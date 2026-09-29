@@ -4696,6 +4696,15 @@ details[open] > .studies-editorial-group-label::before { content:'– '; }
    de hoy como una fila clicable propia, dentro de la misma tarjeta plana. */
 .event-hero-multi { display:block; cursor:default; }
 .event-hero-multi:hover { transform:none; box-shadow:none; }
+.event-hero-multi-columns { display:grid; grid-template-columns:1fr 1fr; gap:0 20px; align-items:start; }
+.event-hero-multi-col { min-width:0; }
+.event-hero-multi-col:last-child { border-left:1px solid var(--border); padding-left:20px; }
+.event-hero-multi-col-label { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:6px; }
+.event-hero-multi-empty { font-size:12.5px; color:var(--text-secondary); padding:6px 0; }
+@media (max-width:560px) {
+    .event-hero-multi-columns { grid-template-columns:1fr; gap:16px 0; }
+    .event-hero-multi-col:last-child { border-left:none; padding-left:0; border-top:1px solid var(--border); padding-top:12px; }
+}
 .event-hero-multi-list { display:flex; flex-direction:column; gap:2px; }
 .event-hero-multi-row {
     display:flex; align-items:center; gap:12px; padding:10px 8px; border-radius:12px;

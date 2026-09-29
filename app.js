@@ -9867,21 +9867,34 @@
                 const kicker = `próximo evento ${eventCountdownLabel(next.date).toLowerCase()}.`;
 
                 if (todayEvents.length > 1) {
+                    // Los trabajos/exámenes (entradas sincronizadas desde
+                    // Estudios) van en su propia columna a la derecha; el
+                    // resto de eventos normales, a la izquierda.
+                    const renderRow = e => {
+                        const t = EVENT_TYPE_LABELS[e.eventType] || '';
+                        const icon = EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro;
+                        return `<div class="event-hero-multi-row" data-open-entry="${e.id}">
+                            <div class="event-hero-multi-icon">${icon}</div>
+                            <div class="event-hero-multi-body">
+                                <div class="event-hero-multi-title">${escapeHtml(e.title)}</div>
+                                <div class="event-hero-multi-meta">${t ? escapeHtml(t) + ' · ' : ''}${e.time ? escapeHtml(e.time) : 'sin hora'}${e.place ? ' · ' + escapeHtml(e.place) : ''}</div>
+                            </div>
+                        </div>`;
+                    };
+                    const studyLinked = it => it.linkedKind === 'assignments' || it.linkedKind === 'exams';
+                    const leftEvents = todayEvents.filter(e => !studyLinked(e));
+                    const rightEvents = todayEvents.filter(studyLinked);
                     html += `
                         <div class="event-hero event-hero-flat event-hero-multi">
                             <div class="event-hero-kicker" style="margin-bottom:8px">${kicker} · ${todayEvents.length} eventos</div>
-                            <div class="event-hero-multi-list">
-                                ${todayEvents.map(e => {
-                                    const t = EVENT_TYPE_LABELS[e.eventType] || '';
-                                    const icon = EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro;
-                                    return `<div class="event-hero-multi-row" data-open-entry="${e.id}">
-                                        <div class="event-hero-multi-icon">${icon}</div>
-                                        <div class="event-hero-multi-body">
-                                            <div class="event-hero-multi-title">${escapeHtml(e.title)}</div>
-                                            <div class="event-hero-multi-meta">${t ? escapeHtml(t) + ' · ' : ''}${e.time ? escapeHtml(e.time) : 'sin hora'}${e.place ? ' · ' + escapeHtml(e.place) : ''}</div>
-                                        </div>
-                                    </div>`;
-                                }).join('')}
+                            <div class="event-hero-multi-columns">
+                                <div class="event-hero-multi-col">
+                                    ${leftEvents.length ? `<div class="event-hero-multi-list">${leftEvents.map(renderRow).join('')}</div>` : '<div class="event-hero-multi-empty">Sin eventos.</div>'}
+                                </div>
+                                <div class="event-hero-multi-col">
+                                    <div class="event-hero-multi-col-label">trabajos./exámenes.</div>
+                                    ${rightEvents.length ? `<div class="event-hero-multi-list">${rightEvents.map(renderRow).join('')}</div>` : '<div class="event-hero-multi-empty">Nada pendiente.</div>'}
+                                </div>
                             </div>
                         </div>`;
                 } else {
