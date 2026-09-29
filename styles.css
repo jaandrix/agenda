@@ -4028,20 +4028,20 @@ body.papel {
    ============================================================ */
 .planner-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
 
-/* Tarjetas de acción cuadradas arriba, a juego con la referencia
-   visual: icono grande + etiqueta, fondo claro/oscuro según tema,
-   esquinas muy redondeadas. */
-.planner-action-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
+/* Tarjetas de acción arriba — a media altura de como empezaron:
+   icono pequeño + cifra de hoy centrados, en vez de icono grande +
+   etiqueta en la esquina. */
+.planner-action-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
 .planner-action-card {
-    display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; gap:22px;
-    background:var(--bg-card); border:1px solid var(--border); border-radius:22px; padding:18px;
-    aspect-ratio:1.5; cursor:pointer; font-family:var(--font-family); text-align:left;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:10px;
+    aspect-ratio:3.2; cursor:pointer; font-family:var(--font-family); text-align:center;
 }
 .planner-action-card:hover { background:var(--bg-card-hover); }
 .planner-action-card:active { transform:scale(.98); }
-.planner-action-icon { width:26px; height:26px; color:var(--text-primary); }
+.planner-action-icon { width:15px; height:15px; color:var(--text-secondary); }
 .planner-action-icon svg { width:100%; height:100%; display:block; }
-.planner-action-label { font-size:14px; font-weight:700; color:var(--text-primary); }
+.planner-action-count { font-size:14px; font-weight:700; color:var(--text-primary); }
 
 /* Franja de sellos: fondo invertido (siempre oscuro/asfalto, en los
    dos temas) para que destaque como remate del progreso del día. */
@@ -4054,12 +4054,29 @@ body.papel {
 
 .planner-timeline { display:flex; flex-direction:column; gap:10px; }
 .planner-item {
-    display:grid; grid-template-columns:52px 18px 1fr 28px; align-items:flex-start; gap:12px;
-    background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:14px 16px; position:relative;
+    display:grid; grid-template-columns:56px 22px 1fr 24px; align-items:flex-start; gap:12px;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:13px 14px; position:relative;
+    transition:background .15s ease;
 }
-.planner-item-time { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; color:var(--text-primary); padding-top:2px; }
-.planner-item-check { margin-top:3px; cursor:pointer; }
-.planner-item-title { font-size:13px; font-weight:500; color:var(--text-primary); }
+.planner-item:hover { background:var(--bg-card-hover); }
+.planner-item-time {
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; color:var(--text-secondary);
+    background:var(--bg-app); border-radius:999px; padding:4px 8px; text-align:center; white-space:nowrap;
+}
+/* Checkbox propio (círculo relleno al marcar), a juego con el resto
+   de la app en vez de la casilla nativa del navegador. */
+.planner-item-check {
+    appearance:none; -webkit-appearance:none; width:19px; height:19px; margin:1px 0 0; flex-shrink:0;
+    border-radius:50%; border:2px solid var(--border-strong); background:none; cursor:pointer; position:relative;
+    transition:background .15s ease, border-color .15s ease;
+}
+.planner-item-check:hover { border-color:var(--text-primary); }
+.planner-item-check:checked { background:var(--text-primary); border-color:var(--text-primary); }
+.planner-item-check:checked::after {
+    content:''; position:absolute; left:5px; top:1px; width:5px; height:9px;
+    border:solid var(--bg-app); border-width:0 2px 2px 0; transform:rotate(45deg);
+}
+.planner-item-title { font-size:13.5px; font-weight:600; color:var(--text-primary); }
 .planner-item-notes { font-size:11px; color:var(--text-secondary); margin-top:3px; line-height:1.4; }
 .planner-item-subtasks { margin-top:6px; display:flex; flex-direction:column; gap:3px; }
 .planner-subtask-row { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-primary); cursor:pointer; }
@@ -4093,8 +4110,8 @@ body.papel {
 .planner-item-arrastrado .planner-item-time,
 .planner-item-arrastrado .planner-item-title { color:#dc2626; }
 .planner-item-arrastrado-tag { display:inline-block; margin-left:8px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:#7f1d1d; padding:2px 7px; border-radius:999px; vertical-align:middle; }
-.planner-item-delete { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:15px; padding:0; }
-.planner-item-delete:hover { color:var(--text-primary); }
+.planner-item-delete { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:15px; padding:0; opacity:.55; transition:opacity .15s ease; }
+.planner-item-delete:hover { color:var(--text-primary); opacity:1; }
 .planner-recurring-block { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:14px 16px; margin-bottom:18px; }
 .planner-recurring-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:8px; }
 .planner-recurring-row { display:flex; align-items:center; gap:10px; padding:6px 0; font-size:13px; color:var(--text-primary); cursor:pointer; }

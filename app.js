@@ -3438,6 +3438,10 @@
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
             const today = todayISO();
             const dueToday = offset === 0 ? recurringTasksDueToday() : [];
+            // Las tarjetas de acción siempre reflejan lo de HOY, aunque se
+            // esté mirando la pestaña de mañana/pasado mañana.
+            const todayItemsCount = offset === 0 ? items.length : plannerItemsForOffset(0).length;
+            const todayDueCount = offset === 0 ? dueToday.length : recurringTasksDueToday().length;
             const activeLabel = PLANNER_DAY_TABS.find(t => t.offset === offset)?.label || 'Hoy';
             const emptyLabel = offset === 0 ? 'para hoy' : (offset === 1 ? 'para mañana' : 'para pasado mañana');
 
@@ -3453,18 +3457,18 @@
                     </div>
                 </div>
 
+                ${offset === 0 ? renderPlannerStampBar(items, dueToday, today) : ''}
+
                 <div class="planner-action-row">
-                    <button class="planner-action-card" onclick="openAddPlannerItem()">
+                    <button class="planner-action-card" onclick="openAddPlannerItem()" title="+ evento.">
                         <span class="planner-action-icon">${PLANNER_ICON_ADD}</span>
-                        <span class="planner-action-label">+ evento.</span>
+                        <span class="planner-action-count">${todayItemsCount} hoy.</span>
                     </button>
-                    <button class="planner-action-card" onclick="openManageRecurringTasks()">
+                    <button class="planner-action-card" onclick="openManageRecurringTasks()" title="recurrentes.">
                         <span class="planner-action-icon">${PLANNER_ICON_REPEAT}</span>
-                        <span class="planner-action-label">recurrentes.</span>
+                        <span class="planner-action-count">${todayDueCount} hoy.</span>
                     </button>
                 </div>
-
-                ${offset === 0 ? renderPlannerStampBar(items, dueToday, today) : ''}
 
                 ${renderPlannerBacklog()}
 
