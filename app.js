@@ -9139,6 +9139,7 @@
             if (!confirm('¿Eliminar esta asignatura y todos sus exámenes/trabajos?')) return;
             const s = findSubject(id);
             if (s) [...(s.exams || []), ...(s.assignments || [])].forEach(item => removeLinkedExamEvent(item.id));
+            if (s) (s.assignments || []).forEach(item => removeLinkedPlannerItem(item.id));
             studies.subjects = studies.subjects.filter(s => s.id !== id);
             closeModal();
             render();
@@ -9296,6 +9297,7 @@
             if (!s || !s[listKey] || !s[listKey][index]) return;
             s[listKey][index][field] = value;
             if (field === 'title' || field === 'date') syncExamCalendarEvent(s, listKey, s[listKey][index]);
+            if (listKey === 'assignments' && (field === 'title' || field === 'date')) syncAssignmentPlannerItem(s, s[listKey][index]);
             // La fecha cambia el grupo (pendiente/pasado) y el "próximo en..."
             // del bloque; la nota o el peso cambian la nota final y el aviso
             // de reparto — cada uno refresca solo lo que de verdad depende de él.
@@ -9308,7 +9310,10 @@
             const s = findSubject(subjectId);
             if (!s || !s[listKey]) return;
             const item = s[listKey][index];
-            if (item) removeLinkedExamEvent(item.id);
+            if (item) {
+                removeLinkedExamEvent(item.id);
+                if (listKey === 'assignments') removeLinkedPlannerItem(item.id);
+            }
             s[listKey].splice(index, 1);
             refreshSubjectItemsBlock(s, listKey);
             refreshSubjectDetailStats(s);
@@ -9341,6 +9346,35 @@
         function removeLinkedExamEvent(itemId) {
             const idx = entries.findIndex(e => e.linkedItemId === itemId);
             if (idx !== -1) entries.splice(idx, 1);
+        }
+
+        // Los trabajos (no los exámenes) con fecha se reflejan además como
+        // una tarea normal en el Planificador, el día de entrega — "trabajo
+        // pendiente. <título>" — para no tener que apuntarlos dos veces.
+        // Vive dentro de dayPlanner.days[fecha] igual que cualquier tarea
+        // manual, así que en cuanto ese día llega se ve en la pestaña "Hoy"
+        // (y si se pasa sin marcarla hecha, se arrastra igual que las demás).
+        function syncAssignmentPlannerItem(subject, item) {
+            resetDayPlannerIfNeeded();
+            removeLinkedPlannerItem(item.id);
+            if (!item.date) return;
+            if (!Array.isArray(dayPlanner.days[item.date])) dayPlanner.days[item.date] = [];
+            dayPlanner.days[item.date].push({
+                id: 'planner_assign_' + item.id,
+                time: '23:59',
+                title: `trabajo pendiente. ${item.title || 'Sin título'}`,
+                notes: subject?.name ? `Asignatura: ${subject.name}` : '',
+                done: false,
+                linkedAssignmentId: item.id
+            });
+        }
+
+        function removeLinkedPlannerItem(itemId) {
+            if (!dayPlanner || !dayPlanner.days) return;
+            const plannerId = 'planner_assign_' + itemId;
+            Object.keys(dayPlanner.days).forEach(k => {
+                dayPlanner.days[k] = (dayPlanner.days[k] || []).filter(p => p.id !== plannerId);
+            });
         }
 
         // Resalta el bloque de "ahora mismo": el de hora de inicio más
