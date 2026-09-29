@@ -7089,13 +7089,26 @@
         const CULTURE_TYPE_TO_TAB = { book: 'books', series: 'series', movie: 'movies', game: 'games' };
         const CULTURE_TYPE_LABEL = { book: 'un libro', series: 'una serie', movie: 'una película', game: 'un videojuego' };
 
+        // La entrega de un trabajo (evento "Entrega: ...") sigue viva en el
+        // calendario aunque ya la hayas hecho — solo el aviso de la parte
+        // superior necesita saber que está completada, para dejar de
+        // avisar de algo que ya no está pendiente.
+        function isLinkedAssignmentDone(itemId) {
+            if (!dayPlanner || !dayPlanner.days) return false;
+            return Object.values(dayPlanner.days).some(list => (list || []).some(p => p.linkedAssignmentId === itemId && p.done));
+        }
+
         function computeNotifItems() {
             const items = [];
             // Eventos de hoy — mismos datos que el popup de bienvenida
             // (getTodayAlerts), pero también avisados aquí por si el
-            // usuario cerró el popup sin fijarse o entra más tarde.
+            // usuario cerró el popup sin fijarse o entra más tarde. Los
+            // trabajos ya marcados como hechos en el Planificador no
+            // aparecen aquí (sí siguen en el calendario y en el popup).
             const today = todayISO();
-            getTodayAlerts().events.forEach(e => {
+            getTodayAlerts().events
+                .filter(e => !(e.linkedKind === 'assignments' && isLinkedAssignmentDone(e.linkedItemId)))
+                .forEach(e => {
                 items.push({
                     icon: NOTIF_ICON_EVENT,
                     iconClass: 'icon-event',
