@@ -3352,21 +3352,23 @@
         // Adapta datos guardados con el formato antiguo (un único { dayKey, items })
         // al nuevo formato multi-día { days: { AAAA-MM-DD: items[] } }.
         function migratePlannerData(saved) {
+            const backlog = (saved && typeof saved === 'object' && Array.isArray(saved.backlog)) ? saved.backlog : [];
             if (saved && typeof saved === 'object' && saved.days && typeof saved.days === 'object') {
                 const days = {};
                 Object.keys(saved.days).forEach(k => { days[k] = Array.isArray(saved.days[k]) ? saved.days[k] : []; });
-                return { days };
+                return { days, backlog };
             }
             if (saved && typeof saved === 'object' && Array.isArray(saved.items) && saved.items.length) {
                 const key = saved.dayKey || currentPlannerDayKey();
-                return { days: { [key]: saved.items } };
+                return { days: { [key]: saved.items }, backlog };
             }
-            return { days: {} };
+            return { days: {}, backlog };
         }
 
         function resetDayPlannerIfNeeded() {
             if (!dayPlanner || typeof dayPlanner !== 'object') dayPlanner = { days: {} };
             if (!dayPlanner.days || typeof dayPlanner.days !== 'object') dayPlanner.days = {};
+            if (!Array.isArray(dayPlanner.backlog)) dayPlanner.backlog = [];
 
             // Lo que quedó sin marcar como hecho en un día ya pasado se
             // arrastra a hoy en vez de perderse (se detecta en cuanto
@@ -3426,6 +3428,8 @@
                     </div>
                 </div>
 
+                ${renderPlannerBacklog()}
+
                 <div class="culture-tabs" style="margin-bottom:18px">
                     ${PLANNER_DAY_TABS.map(t => `
                         <button class="culture-tab ${offset === t.offset ? 'active' : ''}" onclick="setPlannerDayOffset(${t.offset})">${t.label}</button>
@@ -3465,6 +3469,91 @@
                     `}
                 </div>
             </div>`;
+        }
+
+        // "Tareas pendientes." — un backlog sin día ni hora, aparte de la
+        // timeline (que siempre exige ambos). Vive fuera de dayPlanner.days
+        // porque no pertenece a ningún día: se ve igual sin importar la
+        // pestaña (hoy/mañana/pasado mañana) que tengas seleccionada.
+        // "→ hoy" la convierte en un evento normal de la timeline de hoy
+        // cuando por fin le toca hacerse.
+        function renderPlannerBacklog() {
+            resetDayPlannerIfNeeded();
+            const items = dayPlanner.backlog;
+            return `
+            <div class="planner-backlog">
+                <div class="planner-backlog-head">
+                    <div class="planner-backlog-title">tareas pendientes.</div>
+                    <button class="planner-backlog-add" onclick="openAddBacklogTask()">+ tarea</button>
+                </div>
+                ${items.length ? items.map(it => renderBacklogRow(it)).join('') : '<div class="finance-empty-line" style="margin:6px 0 4px">Sin tareas pendientes — apunta aquí lo que quieras hacer sin ponerle día todavía.</div>'}
+            </div>`;
+        }
+
+        function renderBacklogRow(it) {
+            return `
+                <div class="planner-backlog-row ${it.done ? 'done' : ''}">
+                    <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="toggleBacklogTaskDone('${it.id}')">
+                    <div class="planner-backlog-row-body">
+                        <div class="planner-backlog-row-title">${escapeHtml(it.title)}</div>
+                        ${it.notes ? `<div class="planner-backlog-row-notes">${escapeHtml(it.notes)}</div>` : ''}
+                    </div>
+                    <button class="planner-backlog-schedule" title="Asignar a hoy" onclick="scheduleBacklogTaskToday('${it.id}')">→ hoy</button>
+                    <button class="planner-item-delete" title="Eliminar" onclick="deleteBacklogTask('${it.id}')">×</button>
+                </div>`;
+        }
+
+        function openAddBacklogTask() {
+            showModal(`
+                <div class="modal-title">+ Tarea pendiente</div>
+                <div class="modal-label">Título</div>
+                <input id="backlog-task-title" class="modal-input" type="text" placeholder="¿Qué tienes pendiente?">
+                <div class="modal-label">Notas (opcional)</div>
+                <textarea id="backlog-task-notes" class="modal-input" rows="2" placeholder="Detalles adicionales..."></textarea>
+                <button class="btn-modal-primary" onclick="saveBacklogTask()">Añadir a pendientes</button>
+            `);
+            setTimeout(() => document.getElementById('backlog-task-title')?.focus(), 50);
+        }
+
+        async function saveBacklogTask() {
+            const title = document.getElementById('backlog-task-title')?.value.trim() || '';
+            const notes = document.getElementById('backlog-task-notes')?.value.trim() || '';
+            if (!title) { showToast('Indica un título', true); return; }
+            resetDayPlannerIfNeeded();
+            dayPlanner.backlog.unshift({ id: 'backlog_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), title, notes, done: false });
+            closeModal();
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function toggleBacklogTaskDone(id) {
+            resetDayPlannerIfNeeded();
+            const item = dayPlanner.backlog.find(it => it.id === id);
+            if (!item) return;
+            item.done = !item.done;
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteBacklogTask(id) {
+            resetDayPlannerIfNeeded();
+            dayPlanner.backlog = dayPlanner.backlog.filter(it => it.id !== id);
+            if (currentView === 'planner') render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Pasa una tarea pendiente sin día a la timeline de hoy, con la
+        // misma hora redondeada por defecto que usa "+ Evento".
+        async function scheduleBacklogTaskToday(id) {
+            resetDayPlannerIfNeeded();
+            const item = dayPlanner.backlog.find(it => it.id === id);
+            if (!item) return;
+            const now = new Date();
+            const time = `${String(now.getHours()).padStart(2, '0')}:${String(Math.ceil(now.getMinutes() / 5) * 5 % 60).padStart(2, '0')}`;
+            plannerItemsForOffset(0).push({ id: 'planner_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), time, title: item.title, notes: item.notes || '', done: false });
+            dayPlanner.backlog = dayPlanner.backlog.filter(it => it.id !== id);
+            if (currentView === 'planner') render();
+            try { await saveData(); showToast('Añadida a la timeline de hoy'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // Subtareas de un elemento del planificador: mismo patrón que las
