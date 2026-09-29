@@ -9814,7 +9814,7 @@
         }
 
         function renderEvents() {
-            const allEvents = entries.filter(e => e.type === 'event');
+            const allEvents = entries.filter(e => e.type === 'event' && !isCalendarLogEntry(e));
             if (!allEvents.length) {
                 return `<div style="max-width:980px"><button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openEventsImportModal()">Importar eventos</button></div><div class="empty-state"><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento", o importa arriba</div></div>`;
             }
