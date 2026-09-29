@@ -2543,6 +2543,10 @@
                 links = Array.isArray(saved.links) ? saved.links : [];
                 linkCategories = Array.isArray(saved.linkCategories) ? saved.linkCategories : [];
                 resetDayPlannerIfNeeded();
+                // Los trabajos con fecha que ya existían antes de que el
+                // Planificador supiera reflejarlos también aparecen ahí
+                // (idempotente: no duplica los que ya se hubieran creado).
+                studies.subjects.forEach(s => (s.assignments || []).forEach(item => { if (item.date) syncAssignmentPlannerItem(s, item); }));
             } catch (e) {
                 console.error('Error cargando datos de Supabase:', e);
                 return false;
@@ -4976,6 +4980,8 @@
             if (typeof data.blurFinances === 'boolean') blurFinances = data.blurFinances;
             if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
             filteredEntries = [...entries];
+            resetDayPlannerIfNeeded();
+            (studies.subjects || []).forEach(s => (s.assignments || []).forEach(item => { if (item.date) syncAssignmentPlannerItem(s, item); }));
         }
 
         function exportData() {
