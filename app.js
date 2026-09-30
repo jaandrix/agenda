@@ -6027,6 +6027,7 @@
         const HOME_ICON_REVIEW = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>';
         const HOME_ICON_ACTIVITY = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2-6 4 12 2-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         const HOME_ICON_STATS = '<svg viewBox="0 0 24 24" fill="none"><path d="M5 18V13M11 18V8M17 18V11M21 18V5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+        const HOME_ICON_PATTERNS = '<svg viewBox="0 0 24 24" fill="none"><path d="M6.6 15.6l4.1-6.2M13.4 9.4l3.4 4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="5.5" cy="17.5" r="2.2" fill="currentColor"/><circle cx="12" cy="7.5" r="2.2" fill="currentColor"/><circle cx="18.5" cy="15.5" r="2.2" fill="currentColor"/></svg>';
         const HOME_ICON_INBOX = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 8V5h4M20 8V5h-4M4 16v3h4M20 16v3h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
         const HOME_ICON_BACKUP = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 4v11M8 11l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 
@@ -6040,6 +6041,7 @@
         }
 
         function renderHome() {
+            const hallazgos = patronesHallazgos();
             const rows = [
                 renderHomeLauncherRow(HOME_ICON_TODAY, 'hoy.', 'openHomeTodayModal()'),
                 renderHomeLauncherRow(HOME_ICON_TASKS, 'tareas.', 'openHomeTasksModal()'),
@@ -6048,6 +6050,7 @@
                 renderHomeLauncherRow(HOME_ICON_REVIEW, 'revisión semanal.', 'openHomeReviewModal()'),
                 renderHomeLauncherRow(HOME_ICON_ACTIVITY, 'actividad.', 'openConstellationView()'),
                 renderHomeLauncherRow(HOME_ICON_STATS, 'estadísticas.', 'openHomeStatsModal()'),
+                renderHomeLauncherRow(HOME_ICON_PATTERNS, 'patrones.', 'openHomePatternsModal()', hallazgos.length || ''),
                 inbox.length ? renderHomeLauncherRow(HOME_ICON_INBOX, 'inbox.', 'openHomeInboxModal()', inbox.length) : '',
                 renderHomeLauncherRow(HOME_ICON_BACKUP, 'copia de seguridad.', 'openHomeBackupModal()')
             ].join('');
@@ -6057,6 +6060,7 @@
                 <div style="flex:1 1 360px;min-width:280px">
                     <div style="font-size:13px;color:var(--text-secondary);margin-bottom:2px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
                     <div style="font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text-primary)">Centro de resumen</div>
+                    ${renderPatronDestacado(hallazgos)}
                     <div class="home-launcher-list">${rows}</div>
                 </div>
                 <div class="bitacora-activity-card">
@@ -6184,6 +6188,244 @@
                 if (el) bitacoraAnimateNumber(el, Number(el.dataset.value || 0), v => Math.round(v).toLocaleString('es-ES'));
             });
             bitacoraAnimateChart(document.getElementById('home-stats-chart'));
+        }
+
+        // ============================================================
+        //  PATRONES
+        //  Cruza apartados que ninguna app suelta tiene juntos (gastos,
+        //  hábitos, esfuerzo, planes, estudios, viajes, tareas) comparando
+        //  días "con" y "sin" algo. Un hallazgo solo se muestra si pasa una
+        //  prueba t de Welch (|t| >= 2) y además la diferencia es grande en
+        //  la práctica — con pocos datos es muy fácil ver patrones donde
+        //  solo hay casualidad, y un falso hallazgo quita credibilidad a
+        //  todos los demás.
+        // ============================================================
+        const PATRONES_DIAS = 180;
+        const PATRONES_MIN_MUESTRA = 6;
+        // El alquiler cae siempre el mismo día del mes y las inversiones o
+        // coleccionables son dinero que sigue siendo tuyo: meterlos haría
+        // que el patrón hablara del calendario de cargos, no de ti.
+        const PATRONES_GASTO_EXCLUIDO = ['cat_vivienda', 'cat_inversion_gasto', 'cat_coleccionables', 'cat_finanzas_gasto'];
+        const PATRONES_DIAS_SEMANA = ['los domingos', 'los lunes', 'los martes', 'los miércoles', 'los jueves', 'los viernes', 'los sábados'];
+
+        function patronesIso(d) { return d.toISOString().slice(0, 10); }
+
+        function patronesComparar(dias, cond, valor) {
+            const a = [], b = [];
+            dias.forEach(iso => {
+                const v = valor(iso);
+                if (v === null || v === undefined) return;
+                const c = cond(iso);
+                if (c === null || c === undefined) return;
+                (c ? a : b).push(v);
+            });
+            if (a.length < PATRONES_MIN_MUESTRA || b.length < PATRONES_MIN_MUESTRA) return null;
+            const media = xs => xs.reduce((s, x) => s + x, 0) / xs.length;
+            const varianza = (xs, m) => xs.reduce((s, x) => s + (x - m) ** 2, 0) / (xs.length - 1);
+            const ma = media(a), mb = media(b);
+            const se = Math.sqrt(varianza(a, ma) / a.length + varianza(b, mb) / b.length);
+            const t = se > 0 ? (ma - mb) / se : (ma === mb ? 0 : Math.sign(ma - mb) * 99);
+            return { con: ma, sin: mb, n: a.length + b.length, t };
+        }
+
+        function patronesEuros(x) { return x.toLocaleString('es-ES', { maximumFractionDigits: x < 10 ? 2 : 0 }) + ' €'; }
+        function patronesPct(x) { return Math.round(x * 100) + ' %'; }
+        function patronesNum(x) { return x.toLocaleString('es-ES', { maximumFractionDigits: 1 }); }
+        function patronesVeces(con, sin) {
+            if (sin <= 0) return 'más';
+            const r = con / sin;
+            if (r >= 2) return patronesNum(r) + ' veces más';
+            if (r >= 1) return 'un ' + Math.round((r - 1) * 100) + ' % más';
+            return 'un ' + Math.round((1 - r) * 100) + ' % menos';
+        }
+
+        function patronesHallazgos() {
+            const hoy = new Date();
+            const dias = [];
+            for (let i = PATRONES_DIAS; i >= 1; i--) dias.push(patronesIso(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - i, 12)));
+            const diaSemana = iso => new Date(iso + 'T12:00:00').getDay();
+
+            const gasto = {};
+            let primerMovimiento = null;
+            if (financePro && financePro.enabled) (financePro.transactions || []).forEach(t => {
+                if (!t || !t.date) return;
+                const d = String(t.date).slice(0, 10);
+                if (!primerMovimiento || d < primerMovimiento) primerMovimiento = d;
+                if (t.type !== 'expense' || PATRONES_GASTO_EXCLUIDO.includes(t.category)) return;
+                gasto[d] = (gasto[d] || 0) + (Number(t.amount) || 0);
+            });
+            const gastoDia = iso => (primerMovimiento && iso >= primerMovimiento) ? (gasto[iso] || 0) : null;
+
+            const habitosVivos = (habits || []).filter(h => h && h.activo !== false).map(h => {
+                const hechas = Object.keys(h.completadas || {}).filter(k => h.completadas[k]).sort();
+                const creado = Number(String(h.id).split('_')[1]);
+                let inicio = creado > 0 ? patronesIso(new Date(creado)) : null;
+                if (hechas[0] && (!inicio || hechas[0] < inicio)) inicio = hechas[0];
+                return { h, inicio };
+            }).filter(x => x.inicio);
+            const tasaHabitos = iso => {
+                const vivos = habitosVivos.filter(x => iso >= x.inicio);
+                return vivos.length ? vivos.filter(x => x.h.completadas[iso]).length / vivos.length : null;
+            };
+
+            const planes = new Set(), tareas = {};
+            let primeraTarea = null;
+            const tramosViaje = [], tramosTrabajo = [];
+            entries.forEach(e => {
+                if (!e) return;
+                if (e.type === 'event' && e.date && /^(planner_done_|recurring_done_)/.test(e.id || '')) {
+                    tareas[e.date] = (tareas[e.date] || 0) + 1;
+                    if (!primeraTarea || e.date < primeraTarea) primeraTarea = e.date;
+                } else if (e.type === 'event' && e.date && !isCalendarLogEntry(e) && !e.linkedKind) {
+                    planes.add(e.date);
+                } else if (e.type === 'travel' && e.startDate && e.endDate) {
+                    tramosViaje.push([e.startDate, e.endDate]);
+                } else if (e.type === 'work' && e.startDate) {
+                    tramosTrabajo.push([e.startDate, e.endDate || '9999-12-31']);
+                }
+            });
+            const tareasDia = iso => (primeraTarea && iso >= primeraTarea) ? (tareas[iso] || 0) : null;
+            const enTramo = (tramos, iso) => tramos.some(([a, b]) => iso >= a && iso <= b);
+
+            const semanaExamen = new Set();
+            (studies?.subjects || []).forEach(s => (s.exams || []).forEach(ex => {
+                if (!ex || !ex.date) return;
+                const d = new Date(ex.date + 'T12:00:00');
+                for (let i = 0; i < 7; i++) { semanaExamen.add(patronesIso(d)); d.setDate(d.getDate() - 1); }
+            }));
+
+            const diasNota = new Set((notes || []).filter(n => n && n.date && String(n.content || '').trim()).map(n => n.date));
+            const esfuerzo = iso => dailyEffort[iso] || null;
+            const conPlanes = iso => planes.has(iso);
+
+            const okDinero = r => Math.max(r.con, r.sin) >= 3 && (r.sin === 0 || r.con / r.sin >= 1.3 || r.con / r.sin <= 0.77);
+            const okTasa = r => Math.abs(r.con - r.sin) >= 0.15;
+            const okEsfuerzo = r => Math.abs(r.con - r.sin) >= 0.5;
+            const okConteo = r => Math.abs(r.con - r.sin) >= 0.5 && (r.sin === 0 || r.con / r.sin >= 1.3 || r.con / r.sin <= 0.77);
+
+            const hallazgos = [];
+            const anadir = (r, ok, frase, etqCon, etqSin, fmt) => {
+                if (!r || Math.abs(r.t) < 2 || !ok(r)) return;
+                hallazgos.push({ fuerza: Math.abs(r.t), frase: frase(r), etqCon, etqSin, con: r.con, sin: r.sin, fmt, n: r.n });
+            };
+
+            anadir(patronesComparar(dias, conPlanes, gastoDia), okDinero,
+                r => `Los días con planes gastas <b>${patronesVeces(r.con, r.sin)}</b>: ${patronesEuros(r.con)} de media frente a ${patronesEuros(r.sin)}.`,
+                'con planes.', 'sin planes.', patronesEuros);
+
+            let mejorDia = null;
+            for (let dow = 0; dow < 7; dow++) {
+                const r = patronesComparar(dias, iso => diaSemana(iso) === dow, gastoDia);
+                if (r && r.con > r.sin && okDinero(r) && Math.abs(r.t) >= 2 && (!mejorDia || r.t > mejorDia.r.t)) mejorDia = { dow, r };
+            }
+            if (mejorDia) {
+                const nombre = PATRONES_DIAS_SEMANA[mejorDia.dow];
+                anadir(mejorDia.r, okDinero,
+                    r => `${nombre.charAt(0).toUpperCase() + nombre.slice(1)} gastas <b>${patronesVeces(r.con, r.sin)}</b> que el resto de la semana (${patronesEuros(r.con)} frente a ${patronesEuros(r.sin)}).`,
+                    nombre.replace('los ', '') + '.', 'resto.', patronesEuros);
+            }
+
+            anadir(patronesComparar(dias, iso => semanaExamen.has(iso), gastoDia), okDinero,
+                r => `La semana antes de un examen gastas <b>${patronesVeces(r.con, r.sin)}</b> al día (${patronesEuros(r.con)} frente a ${patronesEuros(r.sin)}).`,
+                'antes de examen.', 'resto.', patronesEuros);
+
+            anadir(patronesComparar(dias, iso => { const e = esfuerzo(iso); return e === null ? null : e >= 4 ? true : e <= 2 ? false : null; }, gastoDia), okDinero,
+                r => `Los días de esfuerzo alto gastas <b>${patronesVeces(r.con, r.sin)}</b> que los días flojos (${patronesEuros(r.con)} frente a ${patronesEuros(r.sin)}).`,
+                'esfuerzo 4-5.', 'esfuerzo 1-2.', patronesEuros);
+
+            anadir(patronesComparar(dias, conPlanes, tasaHabitos), okTasa,
+                r => `Los días con planes cumples el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} de un día sin planes.`,
+                'con planes.', 'sin planes.', patronesPct);
+
+            anadir(patronesComparar(dias, iso => semanaExamen.has(iso), tasaHabitos), okTasa,
+                r => `La semana antes de un examen cumples el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} habitual.`,
+                'antes de examen.', 'resto.', patronesPct);
+
+            anadir(patronesComparar(dias, iso => enTramo(tramosViaje, iso), tasaHabitos), okTasa,
+                r => `De viaje mantienes el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} en casa.`,
+                'de viaje.', 'en casa.', patronesPct);
+
+            // Solo lunes a viernes: comparar días de trabajo contra fines de
+            // semana mediría el fin de semana, no el trabajo.
+            const diaLaborable = iso => { const d = diaSemana(iso); return (d === 0 || d === 6) ? null : enTramo(tramosTrabajo, iso); };
+            anadir(patronesComparar(dias, diaLaborable, tasaHabitos), okTasa,
+                r => `Entre semana, los días que trabajas cumples el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} los que no.`,
+                'trabajando.', 'sin trabajar.', patronesPct);
+
+            anadir(patronesComparar(dias, iso => { const t = tasaHabitos(iso); return t === null ? null : t >= 0.5; }, esfuerzo), okEsfuerzo,
+                r => `Cuando cumples al menos la mitad de tus hábitos, puntúas tu esfuerzo con un <b>${patronesNum(r.con)}</b> de media, frente a ${patronesNum(r.sin)}.`,
+                'hábitos ≥ 50 %.', 'hábitos < 50 %.', patronesNum);
+
+            anadir(patronesComparar(dias, iso => diasNota.has(iso), esfuerzo), okEsfuerzo,
+                r => `Los días que escribes en tu diario puntúas tu esfuerzo con un <b>${patronesNum(r.con)}</b>, frente a ${patronesNum(r.sin)} cuando no escribes.`,
+                'con nota.', 'sin nota.', patronesNum);
+
+            anadir(patronesComparar(dias, conPlanes, tareasDia), okConteo,
+                r => `Los días con planes completas <b>${patronesNum(r.con)}</b> tareas de media, frente a ${patronesNum(r.sin)} un día sin planes.`,
+                'con planes.', 'sin planes.', patronesNum);
+
+            anadir(patronesComparar(dias, diaLaborable, tareasDia), okConteo,
+                r => `Entre semana, los días que trabajas completas <b>${patronesNum(r.con)}</b> tareas, frente a ${patronesNum(r.sin)} los que no.`,
+                'trabajando.', 'sin trabajar.', patronesNum);
+
+            // Parejas de hábitos: de cada par se queda solo el sentido más
+            // fuerte (A→B o B→A), si no el mismo patrón saldría dos veces.
+            const parejas = [];
+            habitosVivos.forEach((A, i) => habitosVivos.forEach((B, j) => {
+                if (i === j) return;
+                const desde = A.inicio > B.inicio ? A.inicio : B.inicio;
+                const r = patronesComparar(dias, iso => iso < desde ? null : !!A.h.completadas[iso], iso => iso < desde ? null : (B.h.completadas[iso] ? 1 : 0));
+                if (r && Math.abs(r.t) >= 2 && okTasa(r)) parejas.push({ clave: [A.h.id, B.h.id].sort().join('|'), A, B, r });
+            }));
+            parejas.sort((x, y) => Math.abs(y.r.t) - Math.abs(x.r.t));
+            const vistas = new Set();
+            parejas.filter(p => !vistas.has(p.clave) && vistas.add(p.clave)).slice(0, 2).forEach(({ A, B, r }) => {
+                const a = escapeHtml(A.h.texto), b = escapeHtml(B.h.texto);
+                anadir(r, okTasa,
+                    r => r.con > r.sin
+                        ? `Los días que cumples «${a}» también cumples «${b}» el <b>${patronesPct(r.con)}</b> de las veces; si no, solo el ${patronesPct(r.sin)}.`
+                        : `Los días que cumples «${a}», «${b}» baja al <b>${patronesPct(r.con)}</b> (frente al ${patronesPct(r.sin)}).`,
+                    'con ' + A.h.texto.replace(/\.+$/, '') + '.', 'sin ' + A.h.texto.replace(/\.+$/, '') + '.', patronesPct);
+            });
+
+            return hallazgos.sort((x, y) => y.fuerza - x.fuerza);
+        }
+
+        // Rota entre los tres hallazgos más fuertes una vez por semana, para
+        // que Home no repita siempre la misma frase pero tampoco cambie a
+        // cada render.
+        function renderPatronDestacado(hallazgos) {
+            if (!hallazgos.length) return '';
+            const semana = Math.floor((Date.now() / 86400000 + 3) / 7);
+            const h = hallazgos[semana % Math.min(3, hallazgos.length)];
+            return `<button class="home-pattern-line" onclick="openHomePatternsModal()"><span class="home-pattern-kicker">esta semana.</span>${h.frase}</button>`;
+        }
+
+        function renderPatronItem(h) {
+            const max = Math.max(h.con, h.sin) || 1;
+            const barra = (etq, v, on) => `
+                <div class="pattern-bar-row">
+                    <span class="pattern-bar-label">${escapeHtml(etq)}</span>
+                    <div class="pattern-bar-track"><div class="pattern-bar-fill ${on ? 'on' : ''}" style="width:${Math.max(2, v / max * 100)}%"></div></div>
+                    <span class="pattern-bar-value">${h.fmt(v)}</span>
+                </div>`;
+            return `
+                <div class="pattern-item">
+                    <div class="pattern-text">${h.frase}</div>
+                    ${barra(h.etqCon, h.con, true)}
+                    ${barra(h.etqSin, h.sin, false)}
+                    <div class="pattern-foot">${h.n} días analizados.</div>
+                </div>`;
+        }
+
+        function openHomePatternsModal() {
+            const hallazgos = patronesHallazgos();
+            showModal(`
+                <div class="modal-title">patrones.</div>
+                <div class="finance-modal-note" style="margin-bottom:14px">Cruces entre tus apartados en los últimos ${PATRONES_DIAS} días. Solo aparece lo que difícilmente es casualidad.</div>
+                ${hallazgos.length ? hallazgos.map(renderPatronItem).join('') : `
+                    <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">Todavía no hay datos suficientes para ver patrones claros. Cuantos más gastos, hábitos, planes y puntuaciones de esfuerzo registres, más cosas aparecerán aquí.</div>`}
+            `);
         }
 
         // Línea de actividad diaria de los últimos `days` — mismo dato que

@@ -3914,6 +3914,21 @@ body.papel {
 .home-launcher-icon { width:42px; height:42px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--text-primary); transition:background .15s ease, border-color .15s ease; }
 .home-launcher-icon svg { width:19px; height:19px; display:block; }
 .home-launcher-label { font-size:15px; font-weight:500; color:var(--text-primary); text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--border-strong); }
+.home-pattern-line { display:block; width:100%; text-align:left; background:none; border:none; border-left:2px solid var(--border-strong); padding:2px 0 2px 12px; margin:0 0 18px 0; cursor:pointer; font-family:var(--font-family); font-size:13px; line-height:1.5; color:var(--text-secondary); }
+.home-pattern-line b { color:var(--text-primary); font-weight:700; }
+.home-pattern-line:hover { border-left-color:var(--text-primary); }
+.home-pattern-kicker { display:block; font-size:11px; font-weight:600; color:var(--text-primary); margin-bottom:2px; }
+.pattern-item { padding:14px 0; border-bottom:1px solid var(--border); }
+.pattern-item:last-child { border-bottom:none; padding-bottom:0; }
+.pattern-text { font-size:14px; line-height:1.5; color:var(--text-secondary); margin-bottom:10px; }
+.pattern-text b { color:var(--text-primary); font-weight:700; }
+.pattern-bar-row { display:flex; align-items:center; gap:10px; margin-top:5px; }
+.pattern-bar-label { flex:0 0 112px; font-size:11px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pattern-bar-track { flex:1; height:8px; border-radius:999px; background:var(--bg-card); overflow:hidden; }
+.pattern-bar-fill { height:100%; border-radius:999px; background:var(--border-strong); }
+.pattern-bar-fill.on { background:var(--text-primary); }
+.pattern-bar-value { flex:0 0 64px; text-align:right; font-size:12px; font-weight:600; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.pattern-foot { font-size:11px; color:var(--text-secondary); margin-top:8px; }
 .home-launcher-badge { margin-left:auto; font-size:11px; font-weight:700; color:var(--text-secondary); background:var(--bg-card); border:1px solid var(--border); border-radius:999px; padding:3px 9px; flex-shrink:0; }
 
 /* Cuando un .finance-panel (pensado para vivir dentro de la rejilla del
