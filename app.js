@@ -717,6 +717,11 @@
             }, { passive: true });
         }
 
+        // Recuerda para qué apartado ya se dispararon sus efectos de carga
+        // (documentos, amigos...), para no repetirlos en cada re-render
+        // mientras se sigue viendo el mismo apartado — solo al entrar en
+        // él o al cambiar a otro.
+        let mobileLastEffectView = null;
         function renderMobileShell() {
             if (!mobileStandaloneActive || mobileExitedToDesktop) return;
             const shell = document.getElementById('mobile-shell');
@@ -724,8 +729,13 @@
             shell.innerHTML = mobileScreen === 'welcome' ? renderMobileWelcome() : renderMobileCarousel();
             if (mobileScreen === 'carousel') {
                 setTimeout(attachMobileSwipeHandlers, 0);
-                const effect = MOBILE_SECTION_EFFECTS[currentView];
-                if (effect) setTimeout(effect, 0);
+                if (mobileLastEffectView !== currentView) {
+                    mobileLastEffectView = currentView;
+                    const effect = MOBILE_SECTION_EFFECTS[currentView];
+                    if (effect) setTimeout(effect, 0);
+                }
+            } else {
+                mobileLastEffectView = null;
             }
         }
 
@@ -9281,6 +9291,11 @@
         // editorial en blanco y negro (regla gruesa + texto pequeño en
         // mayúsculas + título grande), pendientes primero y ya pasados
         // colapsados debajo para no acumular ruido con el tiempo.
+        // Recuerda si el usuario colapsó manualmente el desplegable de
+        // "pasados" de cada bloque — si no, cada vez que se refresca el
+        // bloque (al añadir/editar cualquier examen o trabajo) se volvía
+        // a abrir solo, porque el HTML siempre traía el atributo "open".
+        let studiesPastGroupOpen = {};
         function renderSubjectItemsBlock(s, listKey) {
             const items = s[listKey] || [];
             const label = listKey === 'exams' ? 'Exámenes' : 'Trabajos';
@@ -9305,7 +9320,7 @@
                     ${noDate.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
                     ${upcoming.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
                     ${past.length ? `
-                    <details class="studies-past-group" open>
+                    <details class="studies-past-group" ${studiesPastGroupOpen[`${listKey}-${s.id}`] === false ? '' : 'open'} ontoggle="studiesPastGroupOpen['${listKey}-${s.id}']=this.open">
                         <summary class="studies-editorial-group-label">pasados (${past.length})</summary>
                         ${past.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
                     </details>` : ''}
