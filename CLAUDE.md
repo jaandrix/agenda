@@ -101,7 +101,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
    cambio por bueno.
 6. Commitear y hacer **`git push origin main` sin pedir confirmación** (instrucción
    permanente del usuario) — mensajes de commit en español, descriptivos, con la
-   línea `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`. Si un mensaje de
+   línea `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Si un mensaje de
    commit lleva comillas dobles anidadas y falla por parseo en PowerShell, escribirlo
    a un archivo en el scratchpad y usar `git commit -F <archivo>`.
 7. Para PDFs: `pdftoppm` no está instalado en este entorno (no se puede usar
