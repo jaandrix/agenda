@@ -4066,15 +4066,16 @@ body.papel {
 /* Checkbox propio (círculo relleno al marcar), a juego con el resto
    de la app en vez de la casilla nativa del navegador. */
 .planner-item-check {
-    appearance:none; -webkit-appearance:none; width:19px; height:19px; margin:1px 0 0; flex-shrink:0;
+    appearance:none; -webkit-appearance:none; box-sizing:border-box;
+    width:19px; height:19px; margin:1px 0 0; flex-shrink:0;
     border-radius:50%; border:2px solid var(--border-strong); background:none; cursor:pointer; position:relative;
     transition:background .15s ease, border-color .15s ease;
 }
 .planner-item-check:hover { border-color:var(--text-primary); }
 .planner-item-check:checked { background:var(--text-primary); border-color:var(--text-primary); }
 .planner-item-check:checked::after {
-    content:''; position:absolute; left:6px; top:2px; width:5px; height:9px;
-    border:solid var(--bg-app); border-width:0 3px 3px 0; transform:rotate(45deg);
+    content:''; position:absolute; left:4.5px; top:3.5px; width:4.5px; height:8px;
+    border:solid var(--bg-app); border-width:0 3.75px 3.75px 0; transform:rotate(45deg);
 }
 .planner-item-title { font-size:13.5px; font-weight:600; color:var(--text-primary); }
 .planner-item-notes { font-size:11px; color:var(--text-secondary); margin-top:3px; line-height:1.4; }
