@@ -9413,17 +9413,34 @@
         // (y si se pasa sin marcarla hecha, se arrastra igual que las demás).
         function syncAssignmentPlannerItem(subject, item) {
             resetDayPlannerIfNeeded();
+            // Esta función se llama en cada carga de datos (retro-sincroniza
+            // todos los trabajos con fecha, no solo el que se acaba de
+            // editar) — si ya existía una tarea enlazada, hay que conservar
+            // si estaba marcada como hecha (y arrastrada), o cada apertura
+            // de la app la reponía sin marcar aunque ya la hubieras hecho.
+            const existing = findLinkedPlannerItem(item.id);
             removeLinkedPlannerItem(item.id);
             if (!item.date) return;
             if (!Array.isArray(dayPlanner.days[item.date])) dayPlanner.days[item.date] = [];
             dayPlanner.days[item.date].push({
                 id: 'planner_assign_' + item.id,
-                time: '23:59',
+                time: existing?.time || '23:59',
                 title: `trabajo pendiente. ${item.title || 'Sin título'}`,
                 notes: subject?.name ? `Asignatura: ${subject.name}` : '',
-                done: false,
+                done: existing ? !!existing.done : false,
+                arrastrado: existing ? !!existing.arrastrado : false,
                 linkedAssignmentId: item.id
             });
+        }
+
+        function findLinkedPlannerItem(itemId) {
+            if (!dayPlanner || !dayPlanner.days) return null;
+            const plannerId = 'planner_assign_' + itemId;
+            for (const k of Object.keys(dayPlanner.days)) {
+                const found = (dayPlanner.days[k] || []).find(p => p.id === plannerId);
+                if (found) return found;
+            }
+            return null;
         }
 
         function removeLinkedPlannerItem(itemId) {
