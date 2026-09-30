@@ -4063,8 +4063,9 @@ body.papel {
     font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; color:var(--text-secondary);
     background:var(--bg-app); border-radius:999px; padding:4px 8px; text-align:center; white-space:nowrap;
 }
-/* Checkbox propio (círculo relleno al marcar), a juego con el resto
-   de la app en vez de la casilla nativa del navegador. */
+/* Checkbox propio (círculo relleno al marcar, sin tick — más simple y
+   sin líos de centrado), a juego con el resto de la app en vez de la
+   casilla nativa del navegador. */
 .planner-item-check {
     appearance:none; -webkit-appearance:none; box-sizing:border-box;
     width:19px; height:19px; margin:1px 0 0; flex-shrink:0;
@@ -4073,10 +4074,6 @@ body.papel {
 }
 .planner-item-check:hover { border-color:var(--text-primary); }
 .planner-item-check:checked { background:var(--text-primary); border-color:var(--text-primary); }
-.planner-item-check:checked::after {
-    content:''; position:absolute; left:4.5px; top:3.5px; width:4.5px; height:8px;
-    border:solid var(--bg-app); border-width:0 3.75px 3.75px 0; transform:rotate(45deg);
-}
 .planner-item-title { font-size:13.5px; font-weight:600; color:var(--text-primary); }
 .planner-item-notes { font-size:11px; color:var(--text-secondary); margin-top:3px; line-height:1.4; }
 .planner-item-subtasks { margin-top:6px; display:flex; flex-direction:column; gap:3px; }
