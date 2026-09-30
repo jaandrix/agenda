@@ -497,7 +497,11 @@
             // otherAccount} — un movimiento importado cuyo concepto contenga
             // matchText se registra como traspaso con otherAccount en vez de
             // como ingreso/gasto normal (ver confirmFinanceProImport()).
-            rules: []
+            rules: [],
+            // Gastos programados para un día futuro: {id, date, account,
+            // amount, category, note}. Al llegar su día pasan a transactions
+            // (ver financeProAplicarProgramados()).
+            programados: []
         };
         let devModeActive = false;
         // Oculta las cifras del dashboard financiero. Se guarda en la nube
@@ -2470,6 +2474,7 @@
                 financePro.transactions = Array.isArray(financePro.transactions) ? financePro.transactions : [];
                 financePro.categoryBudgets = (financePro.categoryBudgets && typeof financePro.categoryBudgets === 'object') ? financePro.categoryBudgets : {};
                 financePro.rules = Array.isArray(financePro.rules) ? financePro.rules : [];
+                financePro.programados = Array.isArray(financePro.programados) ? financePro.programados : [];
                 // Migración: los antiguos "ingresos puntuales" pasan a formar parte
                 // del registro unificado de movimientos (una sola vez).
                 if (financeProfile.oneOffIncome.length && !financeProfile._oneOffMigrated) {
@@ -4679,10 +4684,12 @@
                     ${financePro.enabled ? `
                     <div class="modal-label">Cuenta PRO a la que se carga</div>
                     <select id="modal-recurring-account" class="modal-input">
-                        <option value="">No registrar como movimiento PRO</option>
-                        ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${isEdit && entry.proAccount === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                        ${type === 'subscription' ? '' : '<option value="">No registrar como movimiento PRO</option>'}
+                        ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${(isEdit ? entry.proAccount || (type === 'subscription' ? 'bancos' : '') : (type === 'subscription' ? 'bancos' : '')) === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
                     </select>
-                    <div class="finance-modal-note">Si eliges una cuenta, este cargo se registrará solo como movimiento PRO el día indicado de cada mes.</div>` : ''}
+                    <div class="finance-modal-note">${type === 'subscription'
+                        ? 'Se registra sola como gasto el día de cargo de cada mes. Si luego importas el extracto del banco, el cargo real sustituye a este en vez de duplicarse.'
+                        : 'Si eliges una cuenta, este cargo se registrará solo como movimiento PRO el día indicado de cada mes.'}</div>` : ''}
                 `;
             }
 
@@ -6060,7 +6067,7 @@
                 <div style="flex:1 1 360px;min-width:280px">
                     <div style="font-size:13px;color:var(--text-secondary);margin-bottom:2px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
                     <div style="font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text-primary)">Centro de resumen</div>
-                    ${renderPatronDestacado(hallazgos)}
+                    ${renderHomeAvisos(hallazgos)}
                     <div class="home-launcher-list">${rows}</div>
                 </div>
                 <div class="bitacora-activity-card">
@@ -6304,12 +6311,12 @@
             const okConteo = r => Math.abs(r.con - r.sin) >= 0.5 && (r.sin === 0 || r.con / r.sin >= 1.3 || r.con / r.sin <= 0.77);
 
             const hallazgos = [];
-            const anadir = (r, ok, frase, etqCon, etqSin, fmt) => {
+            const anadir = (clave, r, ok, frase, etqCon, etqSin, fmt) => {
                 if (!r || Math.abs(r.t) < 2 || !ok(r)) return;
-                hallazgos.push({ fuerza: Math.abs(r.t), frase: frase(r), etqCon, etqSin, con: r.con, sin: r.sin, fmt, n: r.n });
+                hallazgos.push({ clave, fuerza: Math.abs(r.t), frase: frase(r), etqCon, etqSin, con: r.con, sin: r.sin, fmt, n: r.n });
             };
 
-            anadir(patronesComparar(dias, conPlanes, gastoDia), okDinero,
+            anadir('gasto-planes', patronesComparar(dias, conPlanes, gastoDia), okDinero,
                 r => `Los días con planes gastas <b>${patronesVeces(r.con, r.sin)}</b>: ${patronesEuros(r.con)} de media frente a ${patronesEuros(r.sin)}.`,
                 'con planes.', 'sin planes.', patronesEuros);
 
@@ -6320,51 +6327,51 @@
             }
             if (mejorDia) {
                 const nombre = PATRONES_DIAS_SEMANA[mejorDia.dow];
-                anadir(mejorDia.r, okDinero,
+                anadir('gasto-dia', mejorDia.r, okDinero,
                     r => `${nombre.charAt(0).toUpperCase() + nombre.slice(1)} gastas <b>${patronesVeces(r.con, r.sin)}</b> que el resto de la semana (${patronesEuros(r.con)} frente a ${patronesEuros(r.sin)}).`,
                     nombre.replace('los ', '') + '.', 'resto.', patronesEuros);
             }
 
-            anadir(patronesComparar(dias, iso => semanaExamen.has(iso), gastoDia), okDinero,
+            anadir('gasto-examen', patronesComparar(dias, iso => semanaExamen.has(iso), gastoDia), okDinero,
                 r => `La semana antes de un examen gastas <b>${patronesVeces(r.con, r.sin)}</b> al día (${patronesEuros(r.con)} frente a ${patronesEuros(r.sin)}).`,
                 'antes de examen.', 'resto.', patronesEuros);
 
-            anadir(patronesComparar(dias, iso => { const e = esfuerzo(iso); return e === null ? null : e >= 4 ? true : e <= 2 ? false : null; }, gastoDia), okDinero,
+            anadir('gasto-esfuerzo', patronesComparar(dias, iso => { const e = esfuerzo(iso); return e === null ? null : e >= 4 ? true : e <= 2 ? false : null; }, gastoDia), okDinero,
                 r => `Los días de esfuerzo alto gastas <b>${patronesVeces(r.con, r.sin)}</b> que los días flojos (${patronesEuros(r.con)} frente a ${patronesEuros(r.sin)}).`,
                 'esfuerzo 4-5.', 'esfuerzo 1-2.', patronesEuros);
 
-            anadir(patronesComparar(dias, conPlanes, tasaHabitos), okTasa,
+            anadir('habitos-planes', patronesComparar(dias, conPlanes, tasaHabitos), okTasa,
                 r => `Los días con planes cumples el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} de un día sin planes.`,
                 'con planes.', 'sin planes.', patronesPct);
 
-            anadir(patronesComparar(dias, iso => semanaExamen.has(iso), tasaHabitos), okTasa,
+            anadir('habitos-examen', patronesComparar(dias, iso => semanaExamen.has(iso), tasaHabitos), okTasa,
                 r => `La semana antes de un examen cumples el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} habitual.`,
                 'antes de examen.', 'resto.', patronesPct);
 
-            anadir(patronesComparar(dias, iso => enTramo(tramosViaje, iso), tasaHabitos), okTasa,
+            anadir('habitos-viaje', patronesComparar(dias, iso => enTramo(tramosViaje, iso), tasaHabitos), okTasa,
                 r => `De viaje mantienes el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} en casa.`,
                 'de viaje.', 'en casa.', patronesPct);
 
             // Solo lunes a viernes: comparar días de trabajo contra fines de
             // semana mediría el fin de semana, no el trabajo.
             const diaLaborable = iso => { const d = diaSemana(iso); return (d === 0 || d === 6) ? null : enTramo(tramosTrabajo, iso); };
-            anadir(patronesComparar(dias, diaLaborable, tasaHabitos), okTasa,
+            anadir('habitos-trabajo', patronesComparar(dias, diaLaborable, tasaHabitos), okTasa,
                 r => `Entre semana, los días que trabajas cumples el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} los que no.`,
                 'trabajando.', 'sin trabajar.', patronesPct);
 
-            anadir(patronesComparar(dias, iso => { const t = tasaHabitos(iso); return t === null ? null : t >= 0.5; }, esfuerzo), okEsfuerzo,
+            anadir('esfuerzo-habitos', patronesComparar(dias, iso => { const t = tasaHabitos(iso); return t === null ? null : t >= 0.5; }, esfuerzo), okEsfuerzo,
                 r => `Cuando cumples al menos la mitad de tus hábitos, puntúas tu esfuerzo con un <b>${patronesNum(r.con)}</b> de media, frente a ${patronesNum(r.sin)}.`,
                 'hábitos ≥ 50 %.', 'hábitos < 50 %.', patronesNum);
 
-            anadir(patronesComparar(dias, iso => diasNota.has(iso), esfuerzo), okEsfuerzo,
+            anadir('esfuerzo-nota', patronesComparar(dias, iso => diasNota.has(iso), esfuerzo), okEsfuerzo,
                 r => `Los días que escribes en tu diario puntúas tu esfuerzo con un <b>${patronesNum(r.con)}</b>, frente a ${patronesNum(r.sin)} cuando no escribes.`,
                 'con nota.', 'sin nota.', patronesNum);
 
-            anadir(patronesComparar(dias, conPlanes, tareasDia), okConteo,
+            anadir('tareas-planes', patronesComparar(dias, conPlanes, tareasDia), okConteo,
                 r => `Los días con planes completas <b>${patronesNum(r.con)}</b> tareas de media, frente a ${patronesNum(r.sin)} un día sin planes.`,
                 'con planes.', 'sin planes.', patronesNum);
 
-            anadir(patronesComparar(dias, diaLaborable, tareasDia), okConteo,
+            anadir('tareas-trabajo', patronesComparar(dias, diaLaborable, tareasDia), okConteo,
                 r => `Entre semana, los días que trabajas completas <b>${patronesNum(r.con)}</b> tareas, frente a ${patronesNum(r.sin)} los que no.`,
                 'trabajando.', 'sin trabajar.', patronesNum);
 
@@ -6381,7 +6388,7 @@
             const vistas = new Set();
             parejas.filter(p => !vistas.has(p.clave) && vistas.add(p.clave)).slice(0, 2).forEach(({ A, B, r }) => {
                 const a = escapeHtml(A.h.texto), b = escapeHtml(B.h.texto);
-                anadir(r, okTasa,
+                anadir('habitos-pareja', r, okTasa,
                     r => r.con > r.sin
                         ? `Los días que cumples «${a}» también cumples «${b}» el <b>${patronesPct(r.con)}</b> de las veces; si no, solo el ${patronesPct(r.sin)}.`
                         : `Los días que cumples «${a}», «${b}» baja al <b>${patronesPct(r.con)}</b> (frente al ${patronesPct(r.sin)}).`,
@@ -6399,6 +6406,107 @@
             const semana = Math.floor((Date.now() / 86400000 + 3) / 7);
             const h = hallazgos[semana % Math.min(3, hallazgos.length)];
             return `<button class="home-pattern-line" onclick="openHomePatternsModal()"><span class="home-pattern-kicker">esta semana.</span>${h.frase}</button>`;
+        }
+
+        // ============================================================
+        //  AVISOS
+        //  Los patrones aplicados a lo que viene: se avisa antes, cuando
+        //  todavía se puede cambiar algo. Comparten el hueco de la frase
+        //  "esta semana." en Home (como mucho dos, y si no hay ninguno se
+        //  vuelve a ver el patrón semanal) para no añadir otro bloque más.
+        // ============================================================
+        function avisoCuando(iso) {
+            const dias = Math.round((new Date(iso + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 86400000);
+            if (dias === 0) return 'hoy';
+            if (dias === 1) return 'mañana';
+            return 'el ' + new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long' });
+        }
+
+        // Proyección de gasto a fin de mes: lo ya gastado + lo que se gastó
+        // de media en el resto de días del mes en los tres meses anteriores
+        // (así el alquiler o la nómina, que caen siempre en las mismas
+        // fechas, no deforman el ritmo) + los gastos programados que faltan.
+        function financeProProyeccionMes() {
+            if (!financePro || !financePro.enabled) return null;
+            const hoy = new Date();
+            const dia = hoy.getDate();
+            if (dia < 7) return null;
+            const noEsGasto = ['cat_inversion_gasto', 'cat_coleccionables'];
+            const gastos = (financePro.transactions || []).filter(t => t && t.type === 'expense' && t.date && !noEsGasto.includes(t.category));
+            const mesDe = offset => financeMonthKey(new Date(hoy.getFullYear(), hoy.getMonth() - offset, 1));
+            const primero = gastos.reduce((min, t) => (!min || t.date < min ? t.date : min), null);
+            if (!primero || primero > mesDe(3) + '-01') return null;
+            const suma = filtro => gastos.filter(filtro).reduce((s, t) => s + (Number(t.amount) || 0), 0);
+            const diaDe = t => Number(t.date.slice(8, 10));
+            const actual = mesDe(0);
+            const gastado = suma(t => t.date.slice(0, 7) === actual && diaDe(t) <= dia);
+            let restoMedio = 0, totalMedio = 0;
+            for (let i = 1; i <= 3; i++) {
+                const m = mesDe(i);
+                restoMedio += suma(t => t.date.slice(0, 7) === m && diaDe(t) > dia) / 3;
+                totalMedio += suma(t => t.date.slice(0, 7) === m) / 3;
+            }
+            const programado = (financePro.programados || []).filter(p => p.date.slice(0, 7) === actual).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+            const proyeccion = gastado + restoMedio + programado;
+            return { proyeccion, media: totalMedio, programado };
+        }
+
+        function avisosProximos(hallazgos) {
+            const avisos = [];
+            const hoy = todayISO();
+            const porClave = k => hallazgos.find(h => h.clave === k);
+
+            const proy = financeProProyeccionMes();
+            if (proy && proy.media > 0 && proy.proyeccion > proy.media * 1.15 && proy.proyeccion - proy.media >= 50) {
+                avisos.push({
+                    accion: "switchView('finances')",
+                    frase: `A este ritmo terminarás el mes gastando unos <b>${patronesEuros(proy.proyeccion)}</b>, un ${Math.round((proy.proyeccion / proy.media - 1) * 100)} % más que tu media de los últimos tres meses${proy.programado ? ` (incluye ${patronesEuros(proy.programado)} programados)` : ''}.`
+                });
+            }
+
+            const en7 = new Date(hoy + 'T12:00:00'); en7.setDate(en7.getDate() + 6);
+            const limite = patronesIso(en7);
+            const examenes = [];
+            (studies?.subjects || []).forEach(s => (s.exams || []).forEach(ex => {
+                if (ex && ex.date && ex.date >= hoy && ex.date <= limite) examenes.push({ date: ex.date, asignatura: s.name || ex.title || 'examen' });
+            }));
+            examenes.sort((a, b) => a.date.localeCompare(b.date));
+            if (examenes.length) {
+                const ex = examenes[0];
+                const hx = porClave('habitos-examen');
+                const planesAntes = entries.filter(e => e && e.type === 'event' && e.date && e.date >= hoy && e.date <= ex.date && !isCalendarLogEntry(e) && !e.linkedKind).length;
+                if (hx && hx.con < hx.sin) {
+                    avisos.push({
+                        accion: "switchView('studies')",
+                        frase: `Examen de ${escapeHtml(ex.asignatura)} ${avisoCuando(ex.date)}. La semana antes de un examen tus hábitos bajan al <b>${patronesPct(hx.con)}</b>: quizá convenga quedarte solo con los esenciales.`
+                    });
+                } else if (planesAntes >= 2) {
+                    avisos.push({
+                        accion: "switchView('studies')",
+                        frase: `Semana cargada: examen de ${escapeHtml(ex.asignatura)} ${avisoCuando(ex.date)} y <b>${planesAntes} planes</b> antes.`
+                    });
+                }
+            }
+
+            const planesHoy = entries.filter(e => e && e.type === 'event' && e.date === hoy && !isCalendarLogEntry(e) && !e.linkedKind);
+            const hp = porClave('gasto-planes');
+            if (planesHoy.length && hp && hp.con > hp.sin) {
+                avisos.push({
+                    accion: 'openHomePatternsModal()',
+                    frase: `Hoy tienes ${planesHoy.length === 1 ? escapeHtml(planesHoy[0].title || 'un plan') : planesHoy.length + ' planes'}. Los días con planes sueles gastar unos <b>${patronesEuros(hp.con)}</b>, frente a ${patronesEuros(hp.sin)} un día normal.`
+                });
+            }
+
+            return avisos.slice(0, 2);
+        }
+
+        function renderHomeAvisos(hallazgos) {
+            const avisos = avisosProximos(hallazgos);
+            if (!avisos.length) return renderPatronDestacado(hallazgos);
+            return `<div class="home-pattern-line home-aviso-block">
+                <span class="home-pattern-kicker">a tener en cuenta.</span>
+                ${avisos.map(a => `<button class="home-aviso-item" onclick="${a.accion}">${a.frase}</button>`).join('')}
+            </div>`;
         }
 
         function renderPatronItem(h) {
@@ -12957,34 +13065,111 @@
             </div>`;
         }
 
-        // Un gasto recurrente con cuenta PRO asignada se registra solo como
-        // movimiento el día de cargo de cada mes — una vez por mes y por
-        // gasto (_proLastCharged evita duplicarlo si se re-renderiza varias
-        // veces el mismo día). Queda sin categoría, igual que un movimiento
-        // importado, para no adivinar mal una categoría.
+        // ============================================================
+        //  FINANZAS PRO — cargos automáticos (suscripciones, gastos fijos
+        //  y gastos programados) y su conciliación con el banco.
+        //  Un cargo automático es provisional: cuando llega el movimiento
+        //  real (importado del extracto), el real lo sustituye en vez de
+        //  sumarse — si no, cada suscripción contaría dos veces.
+        // ============================================================
+        function financeProNormalizar(s) {
+            return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        }
+
+        function financeProEsAuto(t) {
+            return !!(t && (t.recurringEntryId || t.programadoId) && !t.conciliado);
+        }
+
+        // El concepto del banco rara vez coincide con el nombre que se le
+        // dio a la suscripción ("NETFLIX.COM 866-579..." frente a
+        // "Netflix"), así que si alguna palabra del nombre aparece en el
+        // concepto se admite algo de margen en fecha e importe (cambios de
+        // precio, cargos en divisa). Sin coincidencia de nombre se exige
+        // misma cuenta e importe exacto, para no emparejar un cargo con
+        // cualquier compra que casualmente cueste lo mismo.
+        function financeProMismoCargo(auto, real) {
+            if (!auto || !real || auto.type !== 'expense' || real.type !== 'expense') return false;
+            const dias = Math.abs((new Date(auto.date) - new Date(real.date)) / 86400000);
+            const diff = Math.abs(Number(auto.amount) - Number(real.amount));
+            const texto = financeProNormalizar(real.note);
+            const nombre = financeProNormalizar(auto.note).split(/[^a-z0-9]+/).some(w => w.length >= 3 && texto.includes(w));
+            if (nombre) return dias <= 6 && diff <= Math.max(1, Number(auto.amount) * 0.1);
+            return auto.account === real.account && dias <= 3 && diff < 0.005;
+        }
+
+        // Si el movimiento real ya está (se importó el extracto antes de
+        // que la app generara el cargo), se marca como conciliado y no se
+        // crea el automático.
+        function financeProRegistrarAuto(tx) {
+            const real = financePro.transactions.find(t => !financeProEsAuto(t) && !t.conciliado && financeProMismoCargo(tx, t));
+            if (real) {
+                real.conciliado = true;
+                if (tx.recurringEntryId) real.recurringEntryId = tx.recurringEntryId;
+                if (!real.category && tx.category) real.category = tx.category;
+                return;
+            }
+            financePro.transactions.push(tx);
+        }
+
+        function financeProCuentaRecurrente(e) {
+            if (e.proAccount && FINANCE_PRO_ACCOUNT_KEYS.includes(e.proAccount)) return e.proAccount;
+            return e.type === 'subscription' ? 'bancos' : null;
+        }
+
+        function financeProAplicarProgramados() {
+            const hoy = todayISO();
+            let cambios = false;
+            financePro.programados = (financePro.programados || []).filter(p => {
+                if (p.date > hoy) return true;
+                financeProRegistrarAuto({
+                    id: 'ptx_prog_' + p.id, date: p.date, account: p.account, type: 'expense',
+                    amount: Number(p.amount) || 0, category: p.category || undefined, note: p.note || undefined, programadoId: p.id
+                });
+                cambios = true;
+                return false;
+            });
+            return cambios;
+        }
+
+        // Cada suscripción (y cada gasto fijo con cuenta PRO) se registra
+        // sola como movimiento el día de cargo de cada mes, una vez por mes
+        // (_proLastCharged). Las suscripciones sin cuenta elegida van a
+        // Bancos: casi siempre se cobran con tarjeta. Queda sin categoría,
+        // igual que un movimiento importado, para no adivinar mal. También
+        // se recupera el mes anterior si la app no se abrió entre el día de
+        // cargo y fin de mes — solo para gastos que ya se cargaban solos,
+        // para no rellenar de golpe meses que nunca se registraron.
         function ensureRecurringProCharges() {
-            const monthKey = financeMonthKey();
+            if (!Array.isArray(financePro.programados)) financePro.programados = [];
             const today = new Date();
-            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-            let changed = false;
+            const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            let changed = financeProAplicarProgramados();
             entries.forEach(e => {
                 if (!(e.type === 'subscription' || e.type === 'fixed_expense')) return;
                 if (e.active === false) return;
-                if (!e.proAccount || !FINANCE_PRO_ACCOUNT_KEYS.includes(e.proAccount)) return;
-                const chargeDay = Math.min(Number(e.renewalDay) || 1, daysInMonth);
-                if (today.getDate() < chargeDay) return;
-                if (e._proLastCharged === monthKey) return;
-                financePro.transactions.push({
-                    id: 'ptx_rec_' + e.id + '_' + monthKey,
-                    date: monthKey + '-' + String(chargeDay).padStart(2, '0'),
-                    account: e.proAccount,
-                    type: 'expense',
-                    amount: Number(e.amount) || 0,
-                    note: e.title || (e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'),
-                    recurringEntryId: e.id
+                const account = financeProCuentaRecurrente(e);
+                if (!account) return;
+                const meses = [];
+                if (e._proLastCharged && e._proLastCharged < financeMonthKey(prev)) meses.push(prev);
+                meses.push(today);
+                meses.forEach(ref => {
+                    const monthKey = financeMonthKey(ref);
+                    if (e._proLastCharged && e._proLastCharged >= monthKey) return;
+                    const daysInMonth = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate();
+                    const chargeDay = Math.min(Number(e.renewalDay) || 1, daysInMonth);
+                    if (ref === today && today.getDate() < chargeDay) return;
+                    financeProRegistrarAuto({
+                        id: 'ptx_rec_' + e.id + '_' + monthKey,
+                        date: monthKey + '-' + String(chargeDay).padStart(2, '0'),
+                        account,
+                        type: 'expense',
+                        amount: Number(e.amount) || 0,
+                        note: e.title || (e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'),
+                        recurringEntryId: e.id
+                    });
+                    e._proLastCharged = monthKey;
+                    changed = true;
                 });
-                e._proLastCharged = monthKey;
-                changed = true;
             });
             if (changed) saveData().catch(err => console.error(err));
         }
@@ -14161,6 +14346,7 @@
                 <div class="finance-section-head" style="margin-top:24px">
                     <div class="finance-kicker">Movimientos</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="finance-oneoff-btn" onclick="openFinanceProProgramadosModal()">programar gastos.${financePro.programados?.length ? ` <span class="finance-programados-count">${financePro.programados.length}</span>` : ''}</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProDuplicatesModal()">Buscar duplicados</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">Registro rápido</button>
                         <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
@@ -14169,6 +14355,98 @@
                 <div id="finance-pro-tx-list">${renderFinanceProTransactionList(false)}</div>
                 <button class="finance-oneoff-btn finance-pro-tx-expand-btn" onclick="openFinanceProAllTxModal()">▾ Ver todos los movimientos</button>
             </div>`;
+        }
+
+        function openFinanceProProgramadosModal() {
+            const manana = new Date(); manana.setDate(manana.getDate() + 1);
+            window._financeProgramadoDraft = { date: manana.toISOString().slice(0, 10), amount: '', account: 'bancos', category: '', note: '' };
+            showModal(`
+                <div class="modal-title">programar gastos.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Se añaden solos a tus movimientos el día que indiques. Si después importas el extracto del banco, el cargo real sustituye al programado en vez de duplicarse.</div>
+                <div id="finance-programados-body">${renderFinanceProProgramadosBody()}</div>
+            `);
+        }
+
+        function renderFinanceProProgramadosBody() {
+            const d = window._financeProgramadoDraft;
+            const cats = financePro.categories.filter(c => c.type === 'expense');
+            const pendientes = [...(financePro.programados || [])].sort((a, b) => a.date.localeCompare(b.date));
+            const hoyDia = new Date().getDate();
+            const suscripciones = entries
+                .filter(e => e.type === 'subscription' && e.active !== false)
+                .sort((a, b) => ((Number(a.renewalDay) || 1) - hoyDia + 31) % 31 - ((Number(b.renewalDay) || 1) - hoyDia + 31) % 31);
+            return `
+                <div class="finance-correction-inputs">
+                    <div><div class="modal-label">Fecha</div><input class="modal-input" type="date" value="${d.date}" onchange="financeProProgramadoSet('date',this.value)"></div>
+                    <div><div class="modal-label">Importe (€)</div><input class="modal-input" type="number" min="0" step="0.01" inputmode="decimal" value="${d.amount}" oninput="financeProProgramadoSet('amount',this.value)" placeholder="0.00"></div>
+                </div>
+                <div class="modal-label">Concepto</div>
+                <input class="modal-input" value="${escapeHtml(d.note)}" oninput="financeProProgramadoSet('note',this.value)" placeholder="p. ej. matrícula, seguro del coche...">
+                <div class="finance-correction-inputs">
+                    <div><div class="modal-label">Cuenta</div>
+                        <select class="modal-input" onchange="financeProProgramadoSet('account',this.value)">
+                            ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${d.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
+                        </select></div>
+                    <div><div class="modal-label">Categoría</div>
+                        <select class="modal-input" onchange="financeProProgramadoSet('category',this.value)">
+                            <option value="">Sin categoría</option>
+                            ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
+                        </select></div>
+                </div>
+                <button class="btn-modal-primary" style="margin-top:12px" onclick="saveFinanceProProgramado()">Programar gasto</button>
+
+                <div class="finance-kicker" style="margin:22px 0 8px">programados.</div>
+                ${pendientes.length ? pendientes.map(p => `
+                    <div class="finance-programado-row">
+                        <div class="finance-programado-main">
+                            <div>${escapeHtml(p.note || 'Gasto programado')}</div>
+                            <div class="finance-programado-meta">${financeDateLabelShort(p.date)} · ${escapeHtml(financePro.accounts[p.account]?.name || p.account)}</div>
+                        </div>
+                        <span class="finance-negative">-${financeMoney(p.amount)}</span>
+                        <button class="doc-action-delete-btn" title="Quitar" onclick="deleteFinanceProProgramado('${p.id}')">✕</button>
+                    </div>`).join('') : `<div class="finance-empty-state">No hay gastos programados.</div>`}
+
+                ${suscripciones.length ? `
+                <div class="finance-kicker" style="margin:22px 0 8px">suscripciones.</div>
+                <div class="finance-modal-note" style="margin-bottom:6px">Se cargan solas cada mes, no hace falta programarlas.</div>
+                ${suscripciones.map(e => `
+                    <div class="finance-programado-row">
+                        <div class="finance-programado-main">
+                            <div>${escapeHtml(e.title || 'Suscripción')}</div>
+                            <div class="finance-programado-meta">Día ${Number(e.renewalDay) || 1} de cada mes · ${escapeHtml(financePro.accounts[financeProCuentaRecurrente(e)]?.name || '')}</div>
+                        </div>
+                        <span class="finance-negative">-${financeMoney(Number(e.amount) || 0)}</span>
+                    </div>`).join('')}` : ''}
+            `;
+        }
+
+        function financeProProgramadoSet(key, value) {
+            window._financeProgramadoDraft[key] = value;
+        }
+
+        async function saveFinanceProProgramado() {
+            const d = window._financeProgramadoDraft;
+            const amount = Math.abs(Number(d.amount));
+            if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
+            if (!d.date) { showToast('Elige una fecha', true); return; }
+            financePro.programados.push({
+                id: 'prog_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                date: d.date, account: d.account, amount, category: d.category || undefined, note: d.note.trim() || undefined
+            });
+            const esHoyOAntes = d.date <= todayISO();
+            if (esHoyOAntes) financeProAplicarProgramados();
+            window._financeProgramadoDraft = { ...d, amount: '', note: '' };
+            document.getElementById('finance-programados-body').innerHTML = renderFinanceProProgramadosBody();
+            render();
+            try { await saveData(); showToast(esHoyOAntes ? 'Añadido a tus movimientos' : 'Gasto programado'); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function deleteFinanceProProgramado(id) {
+            financePro.programados = financePro.programados.filter(p => p.id !== id);
+            document.getElementById('finance-programados-body').innerHTML = renderFinanceProProgramadosBody();
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function openFinanceProAllTxModal() {
@@ -14734,7 +15012,7 @@
             const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
             const existingKeys = new Set(financePro.transactions.map(t => `${t.account}|${t.date}|${t.amount}|${t.note || ''}`));
             const activeRules = financePro.rules.filter(r => r.enabled);
-            let added = 0, skipped = 0;
+            let added = 0, skipped = 0, conciliados = 0;
             rows.forEach(r => {
                 if (m.status >= 0 && m.skipPending) {
                     const statusVal = (r[m.status] || '').trim().toLowerCase();
@@ -14802,6 +15080,15 @@
                     const match = raw && financePro.categories.find(c => c.type === type && c.name.toLowerCase() === raw);
                     if (match) category = match.id;
                 }
+                // El concepto pasa a ser el del banco para que reimportar el
+                // mismo extracto lo reconozca por la clave exacta de arriba.
+                const auto = type === 'expense' && financePro.transactions.find(t => financeProEsAuto(t) && financeProMismoCargo(t, { type, date, amount, account: m.account, note: description }));
+                if (auto) {
+                    Object.assign(auto, { date, account: m.account, amount, note: description || auto.note, conciliado: true });
+                    if (category) auto.category = category;
+                    conciliados++;
+                    return;
+                }
                 financePro.transactions.push({
                     id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
                     date, account: m.account, type, amount, category, note: description || undefined
@@ -14810,7 +15097,7 @@
             });
             closeModal();
             render();
-            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
+            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} cargo${conciliados === 1 ? '' : 's'} automático${conciliados === 1 ? '' : 's'} conciliado${conciliados === 1 ? '' : 's'}` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -16957,6 +17244,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             loadTheme();
             loadFontPref();
             const loaded = await loadData();
+            if (loaded) ensureRecurringProCharges();
             await cargarCodigoAmigo();
             await cargarAmigos();
             await cargarNombrePublico();
