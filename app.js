@@ -3693,6 +3693,16 @@
             if (!item) return;
             item.done = !item.done;
 
+            // Si es un trabajo enlazado desde Estudios, el propio trabajo
+            // guarda si está hecho — es la única copia que sobrevive una
+            // vez el día pasa y esta tarea del planificador se archiva
+            // (se borra). Sin esto, la siguiente sincronización no tenía
+            // forma de saber que ya estaba hecha y la resucitaba pendiente.
+            if (item.linkedAssignmentId) {
+                const assignment = findAssignmentById(item.linkedAssignmentId);
+                if (assignment) assignment.done = item.done;
+            }
+
             // Al completarla, queda constancia como evento en el calendario
             // (con la fecha real en que se completó); al desmarcarla, se retira.
             const doneEntryId = 'planner_done_' + item.id;
@@ -9358,7 +9368,7 @@
             const s = findSubject(subjectId);
             if (!s) return;
             s[listKey] = s[listKey] || [];
-            const newItem = { id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: '', date: '', grade: '', weight: '' };
+            const newItem = { id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: '', date: '', grade: '', weight: '', done: false };
             s[listKey].push(newItem);
             refreshSubjectItemsBlock(s, listKey);
             setTimeout(() => document.querySelector(`[data-item-id="${newItem.id}"] .studies-row-title-input`)?.focus(), 30);
@@ -9428,11 +9438,12 @@
         // (y si se pasa sin marcarla hecha, se arrastra igual que las demás).
         function syncAssignmentPlannerItem(subject, item) {
             resetDayPlannerIfNeeded();
-            // Esta función se llama en cada carga de datos (retro-sincroniza
-            // todos los trabajos con fecha, no solo el que se acaba de
-            // editar) — si ya existía una tarea enlazada, hay que conservar
-            // si estaba marcada como hecha (y arrastrada), o cada apertura
-            // de la app la reponía sin marcar aunque ya la hubieras hecho.
+            // El propio trabajo (item.done) es la fuente permanente de si
+            // está hecho — NO la tarea del planificador ya existente,
+            // porque esa se archiva (se borra) en cuanto pasa su día
+            // estando hecha, así que en la siguiente sincronización no
+            // quedaba ni rastro y se recreaba pendiente. Con esto, aunque
+            // se haya archivado, se recrea ya marcada si el trabajo lo está.
             const existing = findLinkedPlannerItem(item.id);
             removeLinkedPlannerItem(item.id);
             if (!item.date) return;
@@ -9442,10 +9453,18 @@
                 time: existing?.time || '23:59',
                 title: `trabajo pendiente. ${item.title || 'Sin título'}`,
                 notes: subject?.name ? `Asignatura: ${subject.name}` : '',
-                done: existing ? !!existing.done : false,
-                arrastrado: existing ? !!existing.arrastrado : false,
+                done: !!item.done,
+                arrastrado: false,
                 linkedAssignmentId: item.id
             });
+        }
+
+        function findAssignmentById(itemId) {
+            for (const s of studies.subjects) {
+                const found = (s.assignments || []).find(a => a.id === itemId);
+                if (found) return found;
+            }
+            return null;
         }
 
         function findLinkedPlannerItem(itemId) {
