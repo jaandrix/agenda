@@ -5561,23 +5561,23 @@
                 const isSelected = dateStr === window._selectedDate;
                 const dayEntries = entriesByDate[dateStr] || [];
 
-                // Una línea por evento (no una por color distinto) para que
-                // el número de líneas refleje cuántos eventos hay ese día,
+                // Un punto por evento (no uno por color distinto) para que
+                // el número de puntos refleje cuántos eventos hay ese día,
                 // de un vistazo, sin tener que abrirlo.
                 const barsHtml = dayEntries.slice(0, 4).map(e => {
                     const cat = categories.find(c => c.id === e.categoryId);
                     const color = cat ? cat.color : 'var(--text-muted)';
-                    return `<span style="width:20px;height:3px;border-radius:4px;display:block;background:${color}"></span>`;
+                    return `<span style="width:5px;height:5px;border-radius:50%;display:block;background:${color};flex-shrink:0"></span>`;
                 }).join('');
 
                 const extra = dayEntries.length > 4 ?
-                    `<span style="width:12px;height:3px;border-radius:4px;display:block;background:var(--text-muted);font-size:7px;text-align:center;color:var(--text-secondary)">+${dayEntries.length - 4}</span>` :
+                    `<span style="font-size:8px;line-height:5px;color:var(--text-secondary);flex-shrink:0">+${dayEntries.length - 4}</span>` :
                     '';
 
                 html += `
                 <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" onclick="showDayEntries('${dateStr}')">
                     <span style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
-                    <div style="display:flex;flex-direction:column;gap:2px;align-items:center">${barsHtml}${extra}</div>
+                    <div style="display:flex;flex-direction:row;flex-wrap:wrap;gap:3px;align-items:center;justify-content:center">${barsHtml}${extra}</div>
                 </div>`;
             }
 
