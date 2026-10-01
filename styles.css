@@ -1766,33 +1766,63 @@
         .day-modal-add-btn:hover { background: #2f6fdb; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,.4); }
         .day-modal-add-btn:active { transform: translateY(0); }
 
+        /* Formularios: etiquetas en minúscula con punto ("título.") como el
+           resto de la app, campos con borde fino y un anillo suave al
+           enfocar. color-scheme hace que los selectores nativos de fecha y
+           hora usen sus iconos claros en el tema oscuro. */
         .modal-label {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: lowercase;
+            letter-spacing: 0;
             color: var(--text-secondary);
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
+        .modal-label:not(.sin-punto)::after { content: '.'; }
 
         .modal-input {
             width: 100%;
-            padding: 10px 14px;
-            border-radius: 16px;
-            border: 1px solid var(--border-strong);
+            padding: 11px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
             font-family: var(--font-family);
             font-size: 14px;
             font-weight: 400;
             background: var(--bg-input);
             color: var(--text-primary);
             outline: none;
-            transition: border-color 0.15s ease;
-            margin-bottom: 12px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+            margin-bottom: 14px;
+            color-scheme: dark;
         }
-        .modal-input:focus {
-            border-color: var(--accent);
+        body.papel .modal-input { color-scheme: light; }
+        .modal-input:hover { border-color: var(--border-strong); }
+        .modal-input:focus, .modal-input.abierto {
+            border-color: var(--text-secondary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-primary) 8%, transparent);
         }
+        textarea.modal-input { resize: vertical; line-height: 1.45; }
+
+        /* Desplegables propios (ver mejorarSelect en app.js) */
+        .selector-nativo { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; }
+        .selector-btn { display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer; box-sizing: border-box; }
+        .selector-btn:disabled { opacity: .5; cursor: default; }
+        .selector-valor { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .selector-chevron { display: flex; color: var(--text-secondary); transition: transform .3s cubic-bezier(.16,1,.3,1); }
+        .selector-chevron svg { width: 11px; height: 11px; display: block; }
+        .selector-btn.abierto .selector-chevron { transform: rotate(180deg); }
+        .selector-panel { position: fixed; z-index: 1300; display: flex; flex-direction: column; gap: 2px; padding: 6px; box-sizing: border-box; overflow-y: auto; overscroll-behavior: contain; background: var(--bg-modal); border: 1px solid var(--border-strong); border-radius: 16px; box-shadow: var(--shadow); transform-origin: 20px 0; opacity: 0; transform: scale(.96); clip-path: inset(0 0 100% 0 round 16px); transition: opacity .14s ease, transform .18s ease, clip-path .18s ease; }
+        .selector-panel.hacia-arriba { transform-origin: 20px 100%; clip-path: inset(100% 0 0 0 round 16px); }
+        .selector-panel.abierto { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 16px); transition: opacity .18s ease, transform .34s cubic-bezier(.16,1,.3,1), clip-path .36s cubic-bezier(.16,1,.3,1); }
+        .selector-opcion, .selector-grupo { opacity: 0; transform: translateY(-4px); }
+        .selector-panel.abierto .selector-opcion, .selector-panel.abierto .selector-grupo { opacity: 1; transform: none; transition: opacity .2s ease calc(var(--i) * 18ms + 50ms), transform .28s cubic-bezier(.16,1,.3,1) calc(var(--i) * 18ms + 50ms), background .12s ease, color .12s ease; }
+        .selector-opcion { display: block; width: 100%; text-align: left; background: none; border: none; border-radius: 10px; padding: 9px 12px; font-family: var(--font-family); font-size: 13.5px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; outline: none; }
+        .selector-opcion:hover, .selector-opcion:focus-visible { background: var(--bg-card-hover); color: var(--text-primary); }
+        .selector-opcion.active { background: var(--text-primary); color: var(--accent-contrast); }
+        .selector-opcion:disabled { opacity: .4; cursor: default; }
+        .selector-grupo { font-size: 11px; font-weight: 600; color: var(--text-secondary); padding: 10px 12px 4px; }
+        @media (prefers-reduced-motion: reduce) { .selector-panel, .selector-opcion, .selector-grupo, .selector-chevron { transition: none !important; } }
         .modal-input::placeholder {
             color: var(--text-secondary);
         }

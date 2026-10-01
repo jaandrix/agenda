@@ -3245,6 +3245,133 @@
             });
         }
 
+        // ============================================================
+        //  DESPLEGABLES PROPIOS
+        //  Cada <select class="modal-input"> se sustituye visualmente por un
+        //  botón y un panel con la estética de "filtro." (también arregla
+        //  que en iPhone el selector nativo no use Poppins). El <select>
+        //  real sigue en el DOM, oculto, y es la fuente de verdad: el código
+        //  que lee .value o escucha onchange no cambia. Un MutationObserver
+        //  mejora los que aparezcan (modales, vistas repintadas).
+        // ============================================================
+        const SELECTOR_CHEVRON = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M14 34l12-12 24 24 24-24 12 12-36 36z"/></svg>';
+        let selectorAbierto = null;
+
+        function mejorarSelect(sel) {
+            if (sel.dataset.mejorado || sel.multiple || sel.size > 1) return;
+            sel.dataset.mejorado = '1';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'modal-input selector-btn';
+            btn.setAttribute('aria-haspopup', 'listbox');
+            btn.style.cssText = sel.style.cssText;
+            btn.innerHTML = `<span class="selector-valor"></span><span class="selector-chevron">${SELECTOR_CHEVRON}</span>`;
+            const sync = () => {
+                const o = sel.options[sel.selectedIndex];
+                btn.querySelector('.selector-valor').textContent = o ? o.textContent.trim() : '';
+                btn.disabled = sel.disabled;
+            };
+            sel._selectorSync = sync;
+            sel.tabIndex = -1;
+            sel.classList.add('selector-nativo');
+            sel.after(btn);
+            sync();
+            sel.addEventListener('change', sync);
+            btn.addEventListener('click', () => abrirSelector(sel, btn));
+        }
+
+        // Las etiquetas llevan un punto final por CSS ("título."); las que ya
+        // acaban en signo de puntuación ("¿Qué tienes que hacer?",
+        // "aportaciones:") se marcan para no añadírselo.
+        function mejorarSelectsEn(raiz) {
+            if (!raiz || raiz.nodeType !== 1) return;
+            if (raiz.matches?.('select.modal-input')) mejorarSelect(raiz);
+            raiz.querySelectorAll?.('select.modal-input:not([data-mejorado])').forEach(mejorarSelect);
+            const etiquetas = raiz.matches?.('.modal-label') ? [raiz] : [...(raiz.querySelectorAll?.('.modal-label') || [])];
+            etiquetas.forEach(l => { if (/[?:.!…]$/.test(l.textContent.trim())) l.classList.add('sin-punto'); });
+        }
+
+        new MutationObserver(cambios => cambios.forEach(c => c.addedNodes.forEach(mejorarSelectsEn)))
+            .observe(document.body, { childList: true, subtree: true });
+
+        function cerrarSelector() {
+            if (!selectorAbierto) return;
+            const { panel, btn } = selectorAbierto;
+            selectorAbierto = null;
+            btn.classList.remove('abierto');
+            btn.setAttribute('aria-expanded', 'false');
+            panel.classList.remove('abierto');
+            setTimeout(() => panel.remove(), 180);
+            document.removeEventListener('pointerdown', cerrarSelectorFuera, true);
+            window.removeEventListener('scroll', cerrarSelectorAlDesplazar, true);
+            window.removeEventListener('resize', cerrarSelector);
+        }
+
+        function cerrarSelectorFuera(e) {
+            if (selectorAbierto && !selectorAbierto.panel.contains(e.target) && !selectorAbierto.btn.contains(e.target)) cerrarSelector();
+        }
+
+        function cerrarSelectorAlDesplazar(e) {
+            if (selectorAbierto && !selectorAbierto.panel.contains(e.target)) cerrarSelector();
+        }
+
+        function abrirSelector(sel, btn) {
+            if (selectorAbierto?.sel === sel) { cerrarSelector(); return; }
+            cerrarSelector();
+            sel._selectorSync?.();
+            const panel = document.createElement('div');
+            panel.className = 'selector-panel';
+            panel.setAttribute('role', 'listbox');
+            let i = 0;
+            const opcion = o => `<button type="button" role="option" class="selector-opcion ${o.selected ? 'active' : ''}" data-indice="${o.index}" ${o.disabled ? 'disabled' : ''} style="--i:${Math.min(i++, 14)}">${escapeHtml(o.textContent.trim())}</button>`;
+            panel.innerHTML = [...sel.children].map(el => el.tagName === 'OPTGROUP'
+                ? `<div class="selector-grupo" style="--i:${Math.min(i++, 14)}">${escapeHtml((el.label || '').toLowerCase())}.</div>${[...el.children].map(opcion).join('')}`
+                : opcion(el)).join('');
+            document.body.appendChild(panel);
+
+            const r = btn.getBoundingClientRect();
+            const abajo = window.innerHeight - r.bottom - 12, arriba = r.top - 12;
+            const haciaArriba = abajo < 220 && arriba > abajo;
+            panel.style.left = Math.max(8, Math.min(r.left, window.innerWidth - Math.max(r.width, 200) - 8)) + 'px';
+            panel.style.minWidth = Math.max(r.width, 200) + 'px';
+            panel.style.maxHeight = Math.max(140, Math.min(340, haciaArriba ? arriba : abajo)) + 'px';
+            if (haciaArriba) { panel.style.bottom = (window.innerHeight - r.top + 6) + 'px'; panel.classList.add('hacia-arriba'); }
+            else panel.style.top = (r.bottom + 6) + 'px';
+
+            panel.addEventListener('click', e => {
+                const b = e.target.closest('.selector-opcion');
+                if (!b || b.disabled) return;
+                sel.selectedIndex = Number(b.dataset.indice);
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                cerrarSelector();
+                btn.focus();
+            });
+            // Intro y Escape no deben llegar a los atajos globales (abrir el
+            // buscador, cerrar el modal) mientras el panel está abierto.
+            panel.addEventListener('keydown', e => {
+                const opciones = [...panel.querySelectorAll('.selector-opcion:not([disabled])')];
+                const actual = opciones.indexOf(document.activeElement);
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const sig = e.key === 'ArrowDown' ? Math.min(opciones.length - 1, actual + 1) : Math.max(0, actual - 1);
+                    opciones[sig]?.focus();
+                } else if (e.key === 'Escape') { e.preventDefault(); cerrarSelector(); btn.focus(); }
+                else if (e.key === 'Tab') cerrarSelector();
+                if (e.key === 'Enter' || e.key === 'Escape') e.stopPropagation();
+            });
+
+            selectorAbierto = { sel, btn, panel };
+            btn.classList.add('abierto');
+            btn.setAttribute('aria-expanded', 'true');
+            requestAnimationFrame(() => {
+                panel.classList.add('abierto');
+                (panel.querySelector('.selector-opcion.active') || panel.querySelector('.selector-opcion:not([disabled])'))?.focus({ preventScroll: false });
+            });
+            document.addEventListener('pointerdown', cerrarSelectorFuera, true);
+            window.addEventListener('scroll', cerrarSelectorAlDesplazar, true);
+            window.addEventListener('resize', cerrarSelector);
+        }
+
         function vtOrigenEnContenido() {
             const punto = vtPunteroReciente();
             const content = document.getElementById('content');
@@ -17272,7 +17399,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             setTimeout(() => {
                 const sheet = container.querySelector('.modal-sheet');
                 const field = sheet?.querySelector(
-                    'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+                    'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]):not([disabled]), textarea:not([disabled]), select:not([disabled]):not(.selector-nativo)'
                 );
                 field?.focus();
                 if (field?.tagName === 'INPUT' && (field.type === 'text' || field.type === '')) field.select?.();
