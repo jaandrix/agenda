@@ -10862,7 +10862,11 @@
                 if (!codigo || !codigo.binaryData?.length) { showToast('No he encontrado ningún QR en esa imagen', true); return; }
                 const qrB64 = btoa(String.fromCharCode(...codigo.binaryData));
                 if ((window._entradasDraft || []).some(x => x.qrB64 === qrB64)) { showToast('Esa entrada ya está añadida', true); return; }
-                window._entradasDraft.push({ id: 'ent_' + Date.now(), qr: codigo.data || '', qrB64, etiqueta: '' });
+                const nueva = { id: 'ent_' + Date.now(), qr: codigo.data || '', qrB64, etiqueta: '' };
+                // Se guarda ya generado: en la puerta de un estadio puede no
+                // haber cobertura para descargar el generador del QR.
+                nueva.svg = await qrEntradaSvg(nueva);
+                window._entradasDraft.push(nueva);
                 document.getElementById('entradas-editor').innerHTML = renderEntradasEditor();
                 showToast('Entrada añadida · se guardará con el evento');
             } catch (e) {
@@ -10896,8 +10900,8 @@
             if (!lista.length) return;
             const i = (indice + lista.length) % lista.length;
             const entrada = lista[i];
-            let svg;
-            try { svg = await qrEntradaSvg(entrada); }
+            let svg = entrada.svg;
+            try { if (!svg) svg = await qrEntradaSvg(entrada); }
             catch (e) { console.error(e); showToast('No se pudo generar el QR (¿sin conexión?)', true); return; }
             const fecha = ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
             showModal(`
