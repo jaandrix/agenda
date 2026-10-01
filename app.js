@@ -6411,9 +6411,9 @@
                 const t = Math.max(0.1, c / maxCount);
                 const r = rInner + (rOuter - rInner) * t;
                 const xBar = cx + r * cos, yBar = cy + r * sin;
-                return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xGuide.toFixed(1)}" y2="${yGuide.toFixed(1)}" stroke="var(--text-primary)" opacity="0.14" stroke-width="1"/>
-                    <circle cx="${xGuide.toFixed(1)}" cy="${yGuide.toFixed(1)}" r="${dotR}" fill="var(--text-primary)" opacity="0.28"/>
-                    <line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xBar.toFixed(1)}" y2="${yBar.toFixed(1)}" stroke="var(--text-primary)" stroke-width="2" stroke-linecap="round"/>`;
+                return `<line class="radial-guia" style="--i:${i}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xGuide.toFixed(1)}" y2="${yGuide.toFixed(1)}" stroke="var(--text-primary)" opacity="0.14" stroke-width="1"/>
+                    <circle class="radial-guia" style="--i:${i}" cx="${xGuide.toFixed(1)}" cy="${yGuide.toFixed(1)}" r="${dotR}" fill="var(--text-primary)" opacity="0.28"/>
+                    <line class="radial-barra" style="--i:${i}" pathLength="1" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${xBar.toFixed(1)}" y2="${yBar.toFixed(1)}" stroke="var(--text-primary)" stroke-width="2" stroke-linecap="round"/>`;
             }).join('');
             return `<svg viewBox="0 0 200 200" width="100%" height="100%" style="display:block">${bars}</svg>`;
         }
@@ -6458,18 +6458,50 @@
             ].join('');
 
             return `
-            <div style="display:flex;gap:36px;align-items:center;flex-wrap:wrap;max-width:1100px">
-                <div style="flex:1 1 360px;min-width:280px">
-                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:2px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
-                    <div style="font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text-primary)">Centro de resumen</div>
-                    ${renderHomeAvisos(hallazgos)}
-                    <div class="home-launcher-list">${rows}</div>
+            <div style="max-width:760px">
+                <div class="home-cabecera">
+                    <div>
+                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:2px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
+                        <div style="font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text-primary)">Centro de resumen</div>
+                    </div>
+                    <div class="home-estancia" id="home-estancia">
+                        <button class="home-estancia-btn" title="tu estancia en bitácora." aria-expanded="false" onclick="toggleHomeEstancia()">${HOME_ICON_ESTANCIA}</button>
+                        <div class="home-estancia-panel">
+                            <div class="bitacora-activity-title">tu estancia en bitácora.</div>
+                            <div class="bitacora-activity-radial" id="home-estancia-radial"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="bitacora-activity-card">
-                    <div class="bitacora-activity-title">tu estancia en bitácora.</div>
-                    <div class="bitacora-activity-radial">${renderBitacoraActivityRadial(90)}</div>
-                </div>
+                ${renderHomeAvisos(hallazgos)}
+                <div class="home-launcher-list">${rows}</div>
             </div>`;
+        }
+
+        // "tu estancia en bitácora." vive dentro de un botón: el panel se
+        // despliega desde él y el gráfico se pinta al abrirlo (no en cada
+        // pintado de Home), con los radios creciendo uno tras otro en
+        // círculo (ver .home-estancia-panel en styles.css).
+        const HOME_ICON_ESTANCIA = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+        function cerrarHomeEstanciaFuera(e) {
+            if (e.type === 'keydown' && e.key !== 'Escape') return;
+            if (e.type === 'pointerdown' && document.getElementById('home-estancia')?.contains(e.target)) return;
+            toggleHomeEstancia(false);
+        }
+
+        function toggleHomeEstancia(abrir) {
+            const cont = document.getElementById('home-estancia');
+            if (!cont) return;
+            const abierto = typeof abrir === 'boolean' ? abrir : !cont.classList.contains('abierto');
+            if (abierto) document.getElementById('home-estancia-radial').innerHTML = renderBitacoraActivityRadial(90);
+            cont.classList.toggle('abierto', abierto);
+            cont.querySelector('.home-estancia-btn')?.setAttribute('aria-expanded', String(abierto));
+            document.removeEventListener('pointerdown', cerrarHomeEstanciaFuera, true);
+            document.removeEventListener('keydown', cerrarHomeEstanciaFuera, true);
+            if (abierto) {
+                document.addEventListener('pointerdown', cerrarHomeEstanciaFuera, true);
+                document.addEventListener('keydown', cerrarHomeEstanciaFuera, true);
+            }
         }
 
         function openHomeTodayModal() {
