@@ -15068,7 +15068,13 @@
                 const rows = financeProParseCSV(String(reader.result));
                 if (rows.length < 2) { showToast('El archivo no tiene filas suficientes', true); return; }
                 const header = rows[0];
-                const date = financeProGuessColumn(header, ['completed date', 'fecha de finalización', 'date', 'fecha'], 0);
+                // La fecha que cuenta es la de la compra, no la de cuando el
+                // banco la liquida: una compra del 30 de septiembre que
+                // Revolut completa el 1 de octubre es un gasto de septiembre.
+                // Además siempre viene rellena (también en los pendientes).
+                // La de finalización sigue usándose al reimportar para
+                // reconocer movimientos ya importados con esa fecha (altDates).
+                const date = financeProGuessColumn(header, ['started date', 'fecha de inicio', 'completed date', 'fecha de finalización', 'date', 'fecha'], 0);
                 const amount = financeProGuessColumn(header, ['amount', 'importe'], 1);
                 const description = financeProGuessColumn(header, ['description', 'descripción', 'concepto'], header.length > 2 ? 2 : 0);
                 const category = financeProGuessColumn(header, ['category', 'categoría', 'categoria'], -1);
@@ -15160,6 +15166,18 @@
             const existingKeys = new Set(financePro.transactions.map(t => `${t.account}|${t.date}|${t.amount}|${t.bankNote ?? t.note ?? ''}`));
             const activeRules = financePro.rules.filter(r => r.enabled);
             let added = 0, skipped = 0, conciliados = 0, completados = 0, anulados = 0;
+            // Revolut repite a veces un cargo: el primer intento queda
+            // REVERTED y el reintento PENDING, mismo comercio, importe y día
+            // (Breasy 0,45 €). La fila anulada no debe retirar el pendiente
+            // que corresponde al reintento, que sigue en el extracto.
+            const clavePendiente = (nota, importe, fecha) => `${financeProNormalizar(nota).trim()}|${Number(importe).toFixed(2)}|${fecha}`;
+            const pendientesEnArchivo = new Set();
+            if (m.status >= 0) rows.forEach(r => {
+                if (!/pending|pendiente|processing|procesando/.test(String(r[m.status] || '').toLowerCase())) return;
+                const fecha = financeProParseDate(r[m.date]) || r.map(financeProParseDate).find(Boolean);
+                const val = financeProParseEuroAmount(m.splitAmount ? (r[m.amountIn] || r[m.amountOut]) : r[m.amount]);
+                if (fecha && Number.isFinite(val)) pendientesEnArchivo.add(clavePendiente(r[m.description], Math.abs(val), fecha));
+            });
             rows.forEach(r => {
                 const statusVal = m.status >= 0 ? String(r[m.status] || '').trim().toLowerCase() : '';
                 const esPendiente = /pending|pendiente|processing|procesando/.test(statusVal);
@@ -15215,7 +15233,8 @@
                 const candidato = financeProBuscarPendiente({ account: effectiveAccount, type: rule ? 'transfer' : type, amount, date, altDates, note: description });
                 const pendiente = candidato && esPendiente && candidato.date !== date ? null : candidato;
                 if (esAnulado) {
-                    if (pendiente) { financePro.transactions = financePro.transactions.filter(t => t !== pendiente); anulados++; }
+                    const sigueEnArchivo = pendiente && pendientesEnArchivo.has(clavePendiente(pendiente.bankNote ?? pendiente.note, pendiente.amount, pendiente.date));
+                    if (pendiente && !sigueEnArchivo) { financePro.transactions = financePro.transactions.filter(t => t !== pendiente); anulados++; }
                     else skipped++;
                     return;
                 }
