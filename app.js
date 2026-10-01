@@ -10834,7 +10834,11 @@
                         <input class="modal-input entrada-editor-etiqueta" value="${escapeHtml(x.etiqueta || '')}" placeholder="Entrada ${i + 1} · p. ej. fila 12, asiento 8" oninput="window._entradasDraft[${i}].etiqueta = this.value">
                         <button type="button" class="planner-item-delete" title="Quitar entrada" onclick="quitarEntradaDraft(${i})">×</button>
                     </div>`).join('')}
-                <button type="button" class="btn-secondary entrada-editor-add" onclick="document.getElementById('entradas-input').click()">+ añadir entrada desde una captura del QR</button>`;
+                <div class="entrada-editor-acciones">
+                    <button type="button" class="entrada-editor-add" onclick="document.getElementById('entradas-input').click()">${ENTRADA_ICONO}<span>subir captura del QR.</span></button>
+                    <button type="button" class="entrada-editor-add" onclick="pegarEntradaDelPortapapeles()"><span>pegar.</span></button>
+                </div>
+                <div class="entrada-editor-nota">También puedes pegarla con Ctrl + V mientras este formulario está abierto.</div>`;
         }
 
         function quitarEntradaDraft(i) {
@@ -10845,7 +10849,36 @@
         async function anadirEntradaDesdeImagen(ev) {
             const file = ev.target.files?.[0];
             ev.target.value = '';
-            if (!file) return;
+            if (file) await procesarImagenEntrada(file);
+        }
+
+        // Pegar una captura recortada (Win+Mayús+S, captura del correo...)
+        // sin tener que guardarla antes: Ctrl+V con el formulario del evento
+        // abierto, o el botón "pegar." (API del portapapeles, que el
+        // navegador puede pedir permiso para usar).
+        document.addEventListener('paste', e => {
+            if (!document.getElementById('entradas-editor')) return;
+            const item = [...(e.clipboardData?.items || [])].find(it => it.type.startsWith('image/'));
+            if (!item) return;
+            e.preventDefault();
+            procesarImagenEntrada(item.getAsFile());
+        });
+
+        async function pegarEntradaDelPortapapeles() {
+            try {
+                const items = await navigator.clipboard.read();
+                for (const it of items) {
+                    const tipo = it.types.find(t => t.startsWith('image/'));
+                    if (tipo) { await procesarImagenEntrada(await it.getType(tipo)); return; }
+                }
+                showToast('No hay ninguna imagen en el portapapeles', true);
+            } catch (e) {
+                console.error(e);
+                showToast('Usa Ctrl + V para pegar la captura', true);
+            }
+        }
+
+        async function procesarImagenEntrada(file) {
             try {
                 await cargarScript('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js');
                 const img = await createImageBitmap(file);

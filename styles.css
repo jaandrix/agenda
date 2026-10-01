@@ -5424,7 +5424,12 @@ body.mobile-standalone #mobile-shell {
 .entrada-editor-fila .modal-input { margin:0; }
 .entrada-editor-icono { display:flex; color:var(--text-secondary); }
 .entrada-editor-icono svg { width:20px; height:20px; }
-.entrada-editor-add { width:100%; margin-bottom:14px; }
+.entrada-editor-acciones { display:flex; gap:8px; }
+.entrada-editor-add { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border-radius:12px; border:1px dashed var(--border-strong); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:13px; cursor:pointer; transition:color .15s ease, border-color .15s ease, background .15s ease; }
+.entrada-editor-add:first-child { flex:1; }
+.entrada-editor-add:hover { color:var(--text-primary); border-color:var(--text-secondary); background:var(--bg-card-hover); }
+.entrada-editor-add svg { width:16px; height:16px; }
+.entrada-editor-nota { font-size:11px; color:var(--text-secondary); margin:6px 0 14px; }
 .entrada-abrir-btn, .event-hero-entrada { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; margin:4px 0 12px; border-radius:999px; border:none; background:var(--text-primary); color:var(--accent-contrast); font-family:var(--font-family); font-size:13px; font-weight:600; cursor:pointer; transition:transform .15s ease, opacity .15s ease; }
 .entrada-abrir-btn:hover, .event-hero-entrada:hover { transform:translateY(-1px); }
 .entrada-abrir-btn svg, .event-hero-entrada svg { width:16px; height:16px; }
