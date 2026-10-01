@@ -4217,7 +4217,13 @@ body.papel {
    queda igual que las demás). */
 .planner-item-arrastrado .planner-item-check { border-color:#a3243b; }
 .planner-item-arrastrado .planner-item-check:checked { background:#a3243b; border-color:#a3243b; }
-.planner-item-arrastrado-tag { display:inline-block; margin-left:8px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:#7f1d1d; padding:2px 7px; border-radius:999px; vertical-align:middle; }
+.planner-item .planner-item-title { display:flex; align-items:center; gap:10px; }
+/* Retraso: dos exclamaciones (el icono de "próximo evento hoy.") sobre
+   granate suave, a la derecha del título. */
+.planner-item-retraso { margin-left:auto; display:inline-flex; align-items:center; gap:0; padding:4px 7px; border-radius:999px; background:rgba(163,36,59,.16); color:#a3243b; flex-shrink:0; }
+.planner-item-retraso svg { width:13px; height:13px; display:block; }
+.planner-item-retraso svg + svg { margin-left:-5px; }
+body:not(.papel) .planner-item-retraso { color:#e0687c; background:rgba(163,36,59,.22); }
 .planner-item-delete { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:15px; padding:0; opacity:.55; transition:opacity .15s ease; }
 .planner-item-delete:hover { color:var(--text-primary); opacity:1; }
 .planner-recurring-block { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:14px 16px; margin-bottom:18px; }
@@ -4401,6 +4407,11 @@ body.papel {
 .budget-alloc-row-head { font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-secondary); font-weight:600; margin-bottom:2px; }
 .budget-alloc-spent { font-size:12.5px; font-weight:700; color:var(--text-secondary); text-align:right; padding-right:4px; font-variant-numeric:tabular-nums; }
 .budget-alloc-spent.over { color:#c2455c; }
+.budget-alloc-row-auto { padding-top:8px; border-top:1px dashed var(--border); }
+.budget-alloc-row-auto + .budget-alloc-row-auto { padding-top:0; border-top:none; }
+.budget-alloc-auto-label { display:flex; flex-direction:column; gap:1px; padding-left:4px; font-size:13px; font-weight:600; color:var(--text-primary); min-width:0; }
+.budget-alloc-auto-label small { font-size:10.5px; font-weight:400; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.budget-alloc-auto-tag { font-size:11px; color:var(--text-secondary); padding-left:4px; }
 @media (max-width:640px) {
     .budget-alloc-row { grid-template-columns:1fr 1fr; }
     .budget-alloc-row .budget-alloc-cat { grid-column:1/2; }
@@ -5511,3 +5522,8 @@ body.mobile-standalone #mobile-shell {
 @media (max-width: 768px) {
     .modal-sheet > .modal-title:first-child { top: -20px; margin: -20px -16px 14px; padding: 18px 16px 10px; }
 }
+
+/* Cercanía del evento en el número del día (ver renderEventSquareCard). */
+.event-sq-day.event-sq-day-en-3 { background:#f6c27a; color:#3d2a10; border-color:#f6c27a; }
+.event-sq-day.event-sq-day-en-2 { background:#f08c42; color:#2e1606; border-color:#f08c42; }
+.event-sq-day.event-sq-day-en-1 { background:#d9452f; color:#fff; border-color:#d9452f; }

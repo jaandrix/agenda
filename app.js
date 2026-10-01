@@ -3811,7 +3811,7 @@
                             <div class="planner-item-time">${escapeHtml(it.time)}</div>
                             <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})">
                             <div class="planner-item-body">
-                                <div class="planner-item-title">${escapeHtml(it.title)}${it.arrastrado && !it.done ? '<span class="planner-item-arrastrado-tag">Pendiente de ayer</span>' : ''}</div>
+                                <div class="planner-item-title"><span>${escapeHtml(it.title)}</span>${it.arrastrado && !it.done ? `<span class="planner-item-retraso" title="Pendiente de ayer" aria-label="Pendiente de ayer">${EVENT_HERO_ICON_ALERT}${EVENT_HERO_ICON_ALERT}</span>` : ''}</div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
                                 ${renderPlannerSubtasks(it, offset)}
                             </div>
@@ -10807,6 +10807,10 @@
             const icon = EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro;
             const day = e.date ? e.date.slice(8, 10) : '–';
             const isPast = e.date && e.date < todayISO();
+            // El número del día se tiñe de naranja a rojo a medida que se
+            // acerca el evento: solo a 3, 2 y 1 día(s) de que suceda.
+            const diasHasta = e.date ? Math.round((new Date(e.date + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 86400000) : null;
+            const cercania = diasHasta >= 1 && diasHasta <= 3 ? ` event-sq-day-en-${diasHasta}` : '';
             return `
                 <div class="event-sq-card ${isPast ? 'event-sq-card-past' : ''}" data-open-entry="${e.id}">
                     <div class="event-sq-icon">${icon}</div>
@@ -10815,7 +10819,7 @@
                         <div class="event-sq-meta"><span class="event-sq-dot" style="background:${color}"></span>${escapeHtml(typeLabel || e.place || 'Evento')}${e.time ? `,&nbsp;<em>${escapeHtml(e.time)}.</em>` : ''}</div>
                     </div>
                     ${e.entradas?.length && !isPast ? `<button class="event-sq-entrada" title="Ver entrada" onclick="event.stopPropagation();abrirEntradas('${e.id}')">${ENTRADA_ICONO}</button>` : ''}
-                    <div class="event-sq-day">${day}</div>
+                    <div class="event-sq-day${cercania}" ${cercania ? `title="${diasHasta === 1 ? 'Mañana' : 'En ' + diasHasta + ' días'}"` : ''}>${day}</div>
                 </div>`;
         }
 
@@ -12960,7 +12964,41 @@
             }
             if (!Array.isArray(financeProfile.budgetPlans[month].allocations)) financeProfile.budgetPlans[month].allocations = [];
             if (!Number.isFinite(financeProfile.budgetPlans[month].contributions)) financeProfile.budgetPlans[month].contributions = 0;
+            asegurarCasillasAutomaticas(financeProfile.budgetPlans[month]);
             return financeProfile.budgetPlans[month];
+        }
+
+        // Suscripciones y gastos fijos entran solos en el presupuesto de cada
+        // mes como dos casillas al final, con el importe ya sumado. Si el
+        // usuario quita una, ese mes no vuelve (autoQuitadas); si todavía no
+        // tenía ninguna suscripción, aparece en cuanto la tenga. Mientras
+        // el usuario no toque el importe
+        // (limiteManual) sigue la suma actual; al editarlo pasa a ser su
+        // límite. "Gastado" son los cargos de ese mes vinculados a esas
+        // suscripciones o gastos fijos (recurringEntryId), automáticos o ya
+        // conciliados con el extracto.
+        const BUDGET_CASILLAS_AUTO = { subscription: 'suscripciones', fixed_expense: 'gastos fijos' };
+
+        function budgetAutoResumen(tipo) {
+            const activos = entries.filter(e => e.type === tipo && e.active !== false);
+            return { total: Math.round(activos.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100, n: activos.length };
+        }
+
+        function budgetAutoGastado(tipo, month) {
+            const ids = new Set(entries.filter(e => e.type === tipo).map(e => e.id));
+            return (financePro.transactions || [])
+                .filter(t => t.type === 'expense' && String(t.date || '').startsWith(month) && ids.has(t.recurringEntryId))
+                .reduce((s, t) => Math.round((s + (Number(t.amount) || 0)) * 100) / 100, 0);
+        }
+
+        function asegurarCasillasAutomaticas(plan) {
+            Object.keys(BUDGET_CASILLAS_AUTO).forEach(tipo => {
+                if (plan.autoQuitadas?.[tipo] || plan.allocations.some(a => a.auto === tipo)) return;
+                const r = budgetAutoResumen(tipo);
+                if (!r.n) return;
+                plan.allocations.push({ id: 'ba_auto_' + tipo + '_' + Date.now(), label: BUDGET_CASILLAS_AUTO[tipo], amount: r.total, categoryId: '', auto: tipo });
+            });
+            plan.allocations.forEach(a => { if (a.auto && !a.limiteManual) a.amount = budgetAutoResumen(a.auto).total; });
         }
 
         // Mes que se está viendo/editando en el popup — vuelve al actual
@@ -13201,11 +13239,24 @@
                 <div class="budget-alloc-row budget-alloc-row-head">
                     <span>Casilla</span><span>Previsto</span><span>Categoría</span><span>Gastado</span><span></span>
                 </div>
-                ${plan.allocations.map(a => renderBudgetAllocationRow(a, cats)).join('')}`;
+                ${[...plan.allocations.filter(a => !a.auto), ...plan.allocations.filter(a => a.auto)].map(a => renderBudgetAllocationRow(a, cats)).join('')}`;
         }
 
         function renderBudgetAllocationRow(a, cats) {
             const month = longtermViewMonth || financeMonthKey();
+            if (a.auto) {
+                const r = budgetAutoResumen(a.auto);
+                const gastado = budgetAutoGastado(a.auto, month);
+                const nombre = a.auto === 'subscription' ? (r.n === 1 ? 'suscripción' : 'suscripciones') : (r.n === 1 ? 'gasto fijo' : 'gastos fijos');
+                return `
+            <div class="budget-alloc-row budget-alloc-row-auto">
+                <div class="budget-alloc-auto-label"><span>${escapeHtml(a.label)}.</span><small>${r.n} ${nombre} · ${financeMoney(r.total)}</small></div>
+                <input class="modal-input budget-alloc-amount" type="number" min="0" step="0.01" value="${a.amount || ''}" placeholder="0.00" title="Límite de presupuesto" oninput="updateBudgetAllocation('${a.id}','amount',this.value,false)" onchange="updateBudgetAllocation('${a.id}','amount',this.value,true)">
+                <div class="budget-alloc-auto-tag">automático.</div>
+                <div class="budget-alloc-spent${Number(a.amount) > 0 && gastado > Number(a.amount) ? ' over' : ''}">${financeMoney(gastado)}</div>
+                <button class="doc-action-delete-btn" title="Quitar de este mes" onclick="removeBudgetAllocation('${a.id}')">✕</button>
+            </div>`;
+            }
             // Gasto real hasta ahora este mes en la categoría vinculada —
             // para poder ajustar el importe previsto sobre la marcha en
             // vez de descubrir la desviación al grabar el mes.
@@ -13260,6 +13311,7 @@
             const a = plan.allocations.find(x => x.id === id);
             if (!a) return;
             a[field] = field === 'amount' ? Math.max(0, Number(value) || 0) : value;
+            if (field === 'amount' && a.auto) a.limiteManual = true;
             if (field === 'amount') refreshBudgetRemainingBar();
             if (field === 'categoryId') {
                 // La columna "Gastado" depende de la categoría vinculada —
@@ -13280,6 +13332,8 @@
 
         async function removeBudgetAllocation(id) {
             const plan = getBudgetPlanForMonth(longtermViewMonth || financeMonthKey());
+            const quitada = plan.allocations.find(a => a.id === id);
+            if (quitada?.auto) plan.autoQuitadas = { ...(plan.autoQuitadas || {}), [quitada.auto]: true };
             plan.allocations = plan.allocations.filter(a => a.id !== id);
             const listEl = document.getElementById('budget-allocations-list');
             if (listEl) listEl.innerHTML = renderBudgetAllocationsList();
@@ -13300,7 +13354,8 @@
             financeProfile.budgetPlans[month] = {
                 salary: Number(source.salary) || 0,
                 contributions: Number(source.contributions) || 0,
-                allocations: (source.allocations || []).map(a => ({ ...a, id: 'ba_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))
+                allocations: (source.allocations || []).map(a => ({ ...a, id: 'ba_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) })),
+                autoQuitadas: { ...(source.autoQuitadas || {}) }
             };
             const el = document.getElementById('longterm-planning-section');
             if (el) el.outerHTML = renderBudgetPlanningSection();
@@ -13322,7 +13377,7 @@
             plan.allocations.forEach(a => {
                 // financeProCategorySpend ya descuenta devoluciones/reembolsos
                 // (ingresos de la categoría de ingreso con el mismo nombre).
-                actuals[a.id] = a.categoryId ? financeProCategorySpend(a.categoryId, month) : null;
+                actuals[a.id] = a.auto ? budgetAutoGastado(a.auto, month) : a.categoryId ? financeProCategorySpend(a.categoryId, month) : null;
             });
             // El sueldo + aportaciones sin asignar a ninguna casilla se
             // archiva como ahorro de ese mes, en vez de perderse sin más al
