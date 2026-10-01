@@ -3158,6 +3158,51 @@
         // El orden de la barra lateral es el "mapa" de la app: bajar en
         // ella hace que el contenido nuevo entre desde abajo, y subir,
         // desde arriba.
+        // Capa 4: un elemento que existe en las dos vistas no desaparece y
+        // reaparece, viaja. La tarjeta pulsada se convierte en el modal y,
+        // al cerrarlo, el modal vuelve a su sitio. Se guarda un selector y
+        // no el elemento porque lo normal es que al cerrar se vuelva a
+        // pintar la vista (render()) y el elemento original ya no exista.
+        let vtFichaOrigen = null;
+
+        function showModalDesde(selector, htmlContent) {
+            const el = document.querySelector(selector);
+            if (!el || !VT_DISPONIBLE || vtReducido()) { showModal(htmlContent); return; }
+            el.style.viewTransitionName = 'ficha';
+            const t = conTransicion('ficha', () => {
+                el.style.viewTransitionName = '';
+                showModal(htmlContent);
+                vtFichaOrigen = selector;
+                const sheet = document.querySelector('#modal-container .modal-sheet');
+                if (sheet) {
+                    sheet.classList.remove('modal-sheet-desde-punto');
+                    sheet.classList.add('modal-sheet-ficha');
+                    sheet.style.viewTransitionName = 'ficha';
+                }
+            });
+            t?.finished.finally(() => {
+                const sheet = document.querySelector('#modal-container .modal-sheet');
+                if (sheet) sheet.style.viewTransitionName = '';
+            });
+        }
+
+        function cerrarFichaHaciaOrigen(container, sheet) {
+            const selector = vtFichaOrigen;
+            vtFichaOrigen = null;
+            if (!selector || !sheet || !VT_DISPONIBLE || vtReducido()) return false;
+            sheet.style.viewTransitionName = 'ficha';
+            const t = conTransicion('ficha', () => {
+                container.innerHTML = '';
+                const el = document.querySelector(selector);
+                if (el) el.style.viewTransitionName = 'ficha';
+            });
+            t?.finished.finally(() => {
+                const el = document.querySelector(selector);
+                if (el) el.style.viewTransitionName = '';
+            });
+            return true;
+        }
+
         function vtOrigenEnContenido() {
             const punto = vtPunteroReciente();
             const content = document.getElementById('content');
@@ -4159,7 +4204,7 @@
         // para el objeto de mayor valor de mercado dentro de su categoría.
         function renderCollectibleCard(item, isTopValue) {
             return `
-                <div class="media-card collectible-card ${isTopValue ? 'media-card-gold' : ''}" onclick="openEditCollectible('${item.id}')">
+                <div class="media-card collectible-card ${isTopValue ? 'media-card-gold' : ''}" data-coll-id="${item.id}" onclick="openEditCollectible('${item.id}')">
                     <div class="collectible-card-actions">
                         <button title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')">×</button>
                     </div>
@@ -4264,7 +4309,7 @@
         function openEditCollectible(id) {
             const item = collectibles.find(c => c.id === id);
             if (!item) return;
-            showModal(`
+            showModalDesde(`.collectible-card[data-coll-id="${id}"]`, `
                 <div class="modal-title">Editar coleccionable</div>
                 <div class="modal-label">Nombre</div>
                 <input id="collectible-name" class="modal-input" type="text" value="${escapeHtml(item.name)}">
@@ -4493,8 +4538,9 @@
             const container = document.getElementById('modal-container');
             const overlay = container.querySelector('.modal-overlay');
             if (!overlay) { container.innerHTML = ''; return; }
-            overlay.style.animation = 'modalOverlayOut 0.18s ease both';
             const sheet = overlay.querySelector('.modal-sheet');
+            if (cerrarFichaHaciaOrigen(container, sheet)) return;
+            overlay.style.animation = 'modalOverlayOut 0.18s ease both';
             if (sheet) sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.18s cubic-bezier(0.4,0,1,1) both`;
             setTimeout(() => { if (container.contains(overlay)) container.innerHTML = ''; }, 170);
         }
@@ -5725,7 +5771,7 @@
                     '';
 
                 html += `
-                <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" onclick="showDayEntries('${dateStr}')">
+                <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" data-cal-date="${dateStr}" onclick="showDayEntries('${dateStr}')">
                     <span style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
                     <div style="display:flex;flex-direction:row;flex-wrap:wrap;gap:3px;align-items:center;justify-content:center">${barsHtml}${extra}</div>
                 </div>`;
@@ -5835,7 +5881,7 @@
             const all = getDayAllEntries(date);
             const rows = all.length ? renderDayEntryRows(all) : `<div class="empty-state"><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>`;
 
-            showModal(`
+            showModalDesde(`.cal-month-cell[data-cal-date="${date}"]`, `
                 <div class="modal-title day-modal-title">
                     <span><span class="day-modal-weekday">${weekday}</span>, ${restDate}:</span>
                     <button class="modal-close" onclick="closeModal()">✕</button>
@@ -17035,6 +17081,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         function showModal(htmlContent) {
+            vtFichaOrigen = null;
             const container = document.getElementById('modal-container');
             container.innerHTML = `
                 <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
