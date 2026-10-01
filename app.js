@@ -3502,8 +3502,11 @@
         }
 
         function setPlannerDayOffset(offset) {
-            plannerDayOffset = offset;
-            if (currentView === 'planner') render();
+            const tipo = offset > plannerDayOffset ? 'adelante' : offset < plannerDayOffset ? 'atras' : 'fundido';
+            conTransicion(tipo, () => {
+                plannerDayOffset = offset;
+                if (currentView === 'planner') render();
+            });
         }
 
         function renderPlanner() {
@@ -3566,7 +3569,7 @@
                     </div>
                 ` : ''}
 
-                <div class="planner-timeline">
+                <div class="planner-timeline vt-interior">
                     ${items.length ? items.map(it => {
                         const [h, m] = String(it.time).split(':').map(Number);
                         const itemMinutes = (h || 0) * 60 + (m || 0);
@@ -5321,10 +5324,13 @@
 
         function jumpToToday() {
             const t = new Date();
-            calYear = t.getFullYear();
-            calMonth = t.getMonth();
-            calSelectedDate = t.toISOString().slice(0, 10);
-            render();
+            const hoy = t.toISOString().slice(0, 10);
+            conTransicion(hoy > calSelectedDate ? 'adelante' : hoy < calSelectedDate ? 'atras' : 'fundido', () => {
+                calYear = t.getFullYear();
+                calMonth = t.getMonth();
+                calSelectedDate = hoy;
+                render();
+            });
         }
 
         function selectCalDate(dateStr) {
@@ -5650,12 +5656,14 @@
         }
 
         function changeMonth(delta) {
-            calMonth += delta;
-            if (calMonth < 0) { calMonth = 11;
-                calYear--; }
-            if (calMonth > 11) { calMonth = 0;
-                calYear++; }
-            render();
+            conTransicion(delta > 0 ? 'adelante' : 'atras', () => {
+                calMonth += delta;
+                if (calMonth < 0) { calMonth = 11;
+                    calYear--; }
+                if (calMonth > 11) { calMonth = 0;
+                    calYear++; }
+                render();
+            });
         }
 
         function renderCalMonth() {
@@ -5683,7 +5691,7 @@
                 <span style="font-size:17px;font-weight:600;color:var(--text-primary)">${CAL_MONTH_NAMES[calMonth]} ${calYear}</span>
                 <button class="cal-nav-arrow" onclick="changeMonth(1)">›</button>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
+            <div class="vt-interior" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
 
             dayNames.forEach(d => {
                 html +=
@@ -5736,12 +5744,14 @@
         }
 
         function changeWeek(delta) {
-            const d = new Date(calSelectedDate + 'T12:00:00');
-            d.setDate(d.getDate() + delta * 7);
-            calSelectedDate = d.toISOString().slice(0, 10);
-            calYear = d.getFullYear();
-            calMonth = d.getMonth();
-            render();
+            conTransicion(delta > 0 ? 'adelante' : 'atras', () => {
+                const d = new Date(calSelectedDate + 'T12:00:00');
+                d.setDate(d.getDate() + delta * 7);
+                calSelectedDate = d.toISOString().slice(0, 10);
+                calYear = d.getFullYear();
+                calMonth = d.getMonth();
+                render();
+            });
         }
 
         function renderCalWeek() {
@@ -5758,7 +5768,7 @@
                 <span style="font-size:15px;font-weight:600;color:var(--text-primary)">Semana del ${monday.getDate()} de ${CAL_MONTH_NAMES[monday.getMonth()]}</span>
                 <button class="cal-nav-arrow" onclick="changeWeek(1)">›</button>
             </div>
-            <div class="cal-week-grid">`;
+            <div class="cal-week-grid vt-interior">`;
 
             for (let i = 0; i < 7; i++) {
                 const d = new Date(monday);
@@ -5790,12 +5800,14 @@
         }
 
         function changeDay(delta) {
-            const d = new Date(calSelectedDate + 'T12:00:00');
-            d.setDate(d.getDate() + delta);
-            calSelectedDate = d.toISOString().slice(0, 10);
-            calYear = d.getFullYear();
-            calMonth = d.getMonth();
-            render();
+            conTransicion(delta > 0 ? 'adelante' : 'atras', () => {
+                const d = new Date(calSelectedDate + 'T12:00:00');
+                d.setDate(d.getDate() + delta);
+                calSelectedDate = d.toISOString().slice(0, 10);
+                calYear = d.getFullYear();
+                calMonth = d.getMonth();
+                render();
+            });
         }
 
         function renderCalDay() {
@@ -5809,7 +5821,7 @@
                 <span class="cal-day-title" style="font-size:15px;font-weight:600;color:var(--text-primary);text-transform:capitalize">${dateLabel}</span>
                 <button class="cal-nav-arrow" onclick="changeDay(1)">›</button>
             </div>
-            ${body || '<div class="empty-state"><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}`;
+            <div class="vt-interior">${body || '<div class="empty-state"><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}</div>`;
         }
 
         function showDayEntries(date) {

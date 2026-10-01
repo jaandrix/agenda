@@ -4839,7 +4839,7 @@ details[open] > .studies-editorial-group-label::before { content:'– '; }
    Con la API disponible, las animaciones de entrada de antes se apagan:
    si no, se sumarían a las de la transición. Solo se anima el contenido;
    el resto de la pantalla (barra lateral, modales) cambia al instante. */
-html.vt-on #content.view-fade-in, html.vt-on .cal-view-anim { animation: none; }
+html.vt-on #content.view-fade-in, html.vt-on #content .cal-view-anim:has(.vt-interior), html.vt-on .vt-interior { animation: none; }
 #content { view-transition-name: contenido; }
 ::view-transition-old(root) { display: none; }
 ::view-transition-new(root) { animation: none; }
@@ -4867,6 +4867,21 @@ html[data-vt="alejar"]::view-transition-new(contenido) { animation: vtAlejarEntr
 @keyframes modalSheetDesdePunto { from { opacity: 0; transform: scale(.84); } to { opacity: 1; transform: scale(1); } }
 @keyframes modalSheetHaciaPunto { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.9); } }
 .modal-sheet.modal-sheet-desde-punto { animation: modalSheetDesdePunto .28s cubic-bezier(.16,1,.3,1) both; }
+
+/* Capa 3: lo que avanza en el tiempo (días del planificador, meses,
+   semanas y días del calendario) se desliza en horizontal; el futuro
+   entra por la derecha. Solo se mueve el bloque .vt-interior: las
+   pestañas y cabeceras de alrededor se quedan quietas. */
+html[data-vt="adelante"] .vt-interior, html[data-vt="atras"] .vt-interior { view-transition-name: interior; }
+::view-transition-group(interior) { animation-duration: .3s; animation-timing-function: cubic-bezier(.16,1,.3,1); }
+@keyframes vtSalirIzquierda { to { opacity: 0; transform: translateX(-28px); } }
+@keyframes vtSalirDerecha { to { opacity: 0; transform: translateX(28px); } }
+@keyframes vtEntrarDesdeDerecha { from { opacity: 0; transform: translateX(36px); } }
+@keyframes vtEntrarDesdeIzquierda { from { opacity: 0; transform: translateX(-36px); } }
+html[data-vt="adelante"]::view-transition-old(interior) { animation: vtSalirIzquierda .16s ease-out both; }
+html[data-vt="adelante"]::view-transition-new(interior) { animation: vtEntrarDesdeDerecha .3s cubic-bezier(.16,1,.3,1) .06s both; }
+html[data-vt="atras"]::view-transition-old(interior) { animation: vtSalirDerecha .16s ease-out both; }
+html[data-vt="atras"]::view-transition-new(interior) { animation: vtEntrarDesdeIzquierda .3s cubic-bezier(.16,1,.3,1) .06s both; }
 
 /* Modal "Corregir registros" */
 .finance-correction-row { padding:10px 0; border-bottom:1px solid var(--border); }
