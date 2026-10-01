@@ -13103,12 +13103,25 @@
         function financeProRegistrarAuto(tx) {
             const real = financePro.transactions.find(t => !financeProEsAuto(t) && !t.conciliado && financeProMismoCargo(tx, t));
             if (real) {
-                real.conciliado = true;
+                // Un gasto manual sigue siendo provisional hasta que llegue
+                // el extracto: solo evita que se cree el automático.
+                if (!real.manual) real.conciliado = true;
                 if (tx.recurringEntryId) real.recurringEntryId = tx.recurringEntryId;
                 if (!real.category && tx.category) real.category = tx.category;
                 return;
             }
             financePro.transactions.push(tx);
+        }
+
+        function financeProBuscarManual(real) {
+            let mejor = null, mejorDias = Infinity;
+            financePro.transactions.forEach(t => {
+                if (!t.manual || t.conciliado || t.type !== real.type || t.account !== real.account) return;
+                if (Math.abs(Number(t.amount) - Number(real.amount)) >= 0.005) return;
+                const dias = Math.abs((new Date(t.date) - new Date(real.date)) / 86400000);
+                if (dias <= 3 && dias < mejorDias) { mejor = t; mejorDias = dias; }
+            });
+            return mejor;
         }
 
         function financeProCuentaRecurrente(e) {
@@ -14244,7 +14257,7 @@
             financePro.transactions.push({
                 id: 'ptx_q_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
                 date: new Date().toISOString().slice(0, 10),
-                account, type: d.type, amount, needsReview: true
+                account, type: d.type, amount, needsReview: true, manual: true
             });
             window._financeProQuickDraft = null;
             closeModal();
@@ -14515,6 +14528,7 @@
             if (!txs.length) return `<div class="finance-empty-state">${financePro.transactions.length ? 'Ningún movimiento coincide con este filtro.' : 'Todavía no hay movimientos. Añade uno o importa un extracto bancario.'}</div>`;
             txs.sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
             if (!full) txs = txs.slice(0, 5);
+            const saldos = financeProSaldosTrasMovimiento();
             const groups = {};
             txs.forEach(t => { const m = t.date.slice(0, 7); groups[m] = groups[m] || []; groups[m].push(t); });
             // El detalle mes a mes (ingresos/gastos, barra) vive ahora en la
@@ -14530,12 +14544,42 @@
                         <span class="finance-pro-tx-month-title">${escapeHtml(financeMonthLabel(m))}</span>
                         <span class="finance-pro-tx-month-net ${monthTotal >= 0 ? 'positive' : 'negative'}">${monthTotal >= 0 ? '+' : ''}${financeMoney(monthTotal)}</span>
                     </div>
-                    ${groups[m].map(t => renderFinanceProTxRow(t)).join('')}
+                    ${groups[m].map(t => renderFinanceProTxRow(t, saldos)).join('')}
                 </div>`;
             }).join('');
         }
 
-        function renderFinanceProTxRow(t) {
+        // Saldo de la cuenta justo después de cada movimiento. Se recorre en
+        // el orden inverso exacto al de la lista (fecha y luego id), así el
+        // saldo de cada fila es coherente con la de debajo aunque haya
+        // varios movimientos el mismo día.
+        function financeProSaldosTrasMovimiento() {
+            const saldo = {};
+            FINANCE_PRO_ACCOUNT_KEYS.forEach(k => { saldo[k] = Number(financePro.accounts[k]?.balance0 || 0); });
+            const porId = {};
+            [...financePro.transactions]
+                .sort((a, b) => a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)))
+                .forEach(t => {
+                    const amount = Number(t.amount) || 0;
+                    if (t.type === 'transfer') {
+                        saldo[t.account] = (saldo[t.account] || 0) - amount;
+                        saldo[t.transferTo] = (saldo[t.transferTo] || 0) + amount;
+                        porId[t.id] = { [t.account]: saldo[t.account], [t.transferTo]: saldo[t.transferTo] };
+                    } else {
+                        saldo[t.account] = (saldo[t.account] || 0) + (t.type === 'income' ? amount : -amount);
+                        porId[t.id] = { [t.account]: saldo[t.account] };
+                    }
+                });
+            return porId;
+        }
+
+        function renderFinanceProTxSaldo(t, saldos) {
+            const cuenta = t.type === 'transfer' && financeProTxFilter.account === t.transferTo ? t.transferTo : t.account;
+            const valor = saldos?.[t.id]?.[cuenta];
+            return valor === undefined ? '' : ` <span class="finance-pro-tx-saldo">(${financeMoney(valor)})</span>`;
+        }
+
+        function renderFinanceProTxRow(t, saldos) {
             if (t.type === 'transfer') {
                 return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
                     <div class="finance-metric-icon fin-slate finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>
@@ -14543,7 +14587,7 @@
                         <div class="finance-pro-tx-title">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} → ${escapeHtml(financePro.accounts[t.transferTo]?.name || t.transferTo)}</div>
                         <div class="finance-pro-tx-sub">${t.note ? escapeHtml(t.note) + ' · ' : ''}${financeDateLabelShort(t.date)}</div>
                     </div>
-                    <div class="finance-pro-tx-amount">${financeMoney(t.amount)}</div>
+                    <div class="finance-pro-tx-amount">${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
                 </div>`;
             }
             const cat = financeProCategoryById(t.category);
@@ -14554,7 +14598,7 @@
                     <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}</div>
                     ${t.note ? `<div class="finance-pro-tx-note">${escapeHtml(t.note)}</div>` : ''}
                 </div>
-                <div class="finance-pro-tx-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</div>
+                <div class="finance-pro-tx-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
             </div>`;
         }
 
@@ -14635,6 +14679,12 @@
                 transferTo: d.type === 'transfer' ? d.transferTo : undefined,
                 note: (d.note || '').trim() || undefined
             };
+            // Al editar se conserva de dónde vino el movimiento (manual,
+            // cargo automático, ya conciliado con el banco...): si se
+            // perdiera, la próxima importación lo duplicaría.
+            const prev = financePro.transactions.find(t => t.id === entry.id);
+            if (prev) ['manual', 'recurringEntryId', 'programadoId', 'conciliado', 'bankNote'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
+            else entry.manual = true;
             const idx = financePro.transactions.findIndex(t => t.id === entry.id);
             if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
             window._financeProTxEditId = null; window._financeProTxDraft = null;
@@ -15010,7 +15060,7 @@
             const imp = window._financeProImport;
             const m = imp.mapping;
             const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
-            const existingKeys = new Set(financePro.transactions.map(t => `${t.account}|${t.date}|${t.amount}|${t.note || ''}`));
+            const existingKeys = new Set(financePro.transactions.map(t => `${t.account}|${t.date}|${t.amount}|${t.bankNote ?? t.note ?? ''}`));
             const activeRules = financePro.rules.filter(r => r.enabled);
             let added = 0, skipped = 0, conciliados = 0;
             rows.forEach(r => {
@@ -15089,6 +15139,23 @@
                     conciliados++;
                     return;
                 }
+                // Un gasto grabado a mano casi nunca lleva el concepto del
+                // banco, así que se empareja por misma cuenta, mismo tipo,
+                // importe exacto y ±3 días (el más cercano si hay varios).
+                // Fecha e importe pasan a ser los del banco, que son los
+                // fiables; la nota y la categoría que puso el usuario se
+                // conservan, y el concepto del banco se guarda en bankNote
+                // para que reimportar el extracto lo siga reconociendo.
+                const manual = financeProBuscarManual({ type, date, amount, account: m.account });
+                if (manual) {
+                    Object.assign(manual, { date, bankNote: description, conciliado: true });
+                    if (!manual.note && description) manual.note = description;
+                    if (!manual.category && category) manual.category = category;
+                    if (manual.category) manual.needsReview = false;
+                    existingKeys.add(dedupeKey);
+                    conciliados++;
+                    return;
+                }
                 financePro.transactions.push({
                     id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
                     date, account: m.account, type, amount, category, note: description || undefined
@@ -15097,7 +15164,7 @@
             });
             closeModal();
             render();
-            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} cargo${conciliados === 1 ? '' : 's'} automático${conciliados === 1 ? '' : 's'} conciliado${conciliados === 1 ? '' : 's'}` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
+            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
