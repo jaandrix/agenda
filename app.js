@@ -14704,7 +14704,7 @@
             // cargo automático, ya conciliado con el banco...): si se
             // perdiera, la próxima importación lo duplicaría.
             const prev = financePro.transactions.find(t => t.id === entry.id);
-            if (prev) ['manual', 'recurringEntryId', 'programadoId', 'conciliado', 'bankNote', 'pendiente'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
+            if (prev) ['manual', 'recurringEntryId', 'programadoId', 'conciliado', 'bankNote', 'pendiente', 'noDuplicadoDe'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
             else entry.manual = true;
             const idx = financePro.transactions.findIndex(t => t.id === entry.id);
             if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
@@ -14757,25 +14757,101 @@
             return pairs;
         }
 
+        // Gasto grabado a mano + el mismo cargo importado del banco con otro
+        // concepto ("mega dream ex booster box" frente a "eBay"). La
+        // importación ya los fusiona sola, pero solo si el manual se grabó
+        // después de que existiera la marca `manual`; esto cubre los de
+        // antes. Es más laxo que el detector de arriba (concepto distinto,
+        // ±3 días), así que puede proponer falsos positivos — dos cafés de
+        // 1,60 € en días seguidos —: por eso cada pareja se puede descartar
+        // y no vuelve a salir.
+        function findFinanceProPosiblesDuplicados(yaListados) {
+            const usados = new Set(yaListados.flat().map(t => t.id));
+            const txs = financePro.transactions.filter(t => t.type !== 'transfer' && !t.conciliado && !usados.has(t.id));
+            const pairs = [];
+            for (let i = 0; i < txs.length; i++) {
+                if (usados.has(txs[i].id)) continue;
+                for (let j = i + 1; j < txs.length; j++) {
+                    const a = txs[i], b = txs[j];
+                    if (usados.has(b.id) || a.account !== b.account || a.type !== b.type) continue;
+                    if (Math.abs(Number(a.amount) - Number(b.amount)) >= 0.005) continue;
+                    if (financeProNormalizar(a.note).trim() === financeProNormalizar(b.note).trim()) continue;
+                    if ((a.noDuplicadoDe || []).includes(b.id) || (b.noDuplicadoDe || []).includes(a.id)) continue;
+                    if (Math.abs((new Date(a.date) - new Date(b.date)) / 86400000) > 3) continue;
+                    pairs.push([a, b]);
+                    usados.add(a.id); usados.add(b.id);
+                    break;
+                }
+            }
+            return pairs;
+        }
+
+        function renderFinanceProDupItem(t, conBorrar) {
+            const cat = financeProCategoryById(t.category);
+            return `
+                <div class="finance-dup-item">
+                    <div class="finance-dup-item-main">
+                        <div>${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}${cat ? ' · ' + escapeHtml(cat.name) : ''}</div>
+                        ${t.note ? `<div class="finance-dup-item-note">${escapeHtml(t.note)}</div>` : ''}
+                    </div>
+                    <div class="finance-dup-item-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</div>
+                    ${conBorrar ? `<button class="doc-action-delete-btn" title="Eliminar esta copia" onclick="deleteFinanceProTransaction('${t.id}')">✕</button>` : ''}
+                </div>`;
+        }
+
         function openFinanceProDuplicatesModal() {
             const pairs = findFinanceProDuplicates();
-            if (!pairs.length) { showToast('No se han encontrado duplicados probables'); return; }
+            const posibles = findFinanceProPosiblesDuplicados(pairs);
+            if (!pairs.length && !posibles.length) { closeModal(); showToast('No se han encontrado duplicados probables'); return; }
             showModal(`
                 <div class="modal-title">Posibles duplicados</div>
+                ${pairs.length ? `
                 <div class="finance-modal-note" style="margin-bottom:12px">Mismo importe, misma cuenta y misma nota, con fechas muy cercanas — típico de importar dos extractos con periodos solapados. Revisa cada pareja y elimina la copia sobrante.</div>
-                ${pairs.map(([a, b]) => `
+                ${pairs.map(([a, b]) => `<div class="finance-dup-pair">${renderFinanceProDupItem(a, true)}${renderFinanceProDupItem(b, true)}</div>`).join('')}` : ''}
+                ${posibles.length ? `
+                <div class="finance-kicker" style="margin:${pairs.length ? '20px' : '0'} 0 6px">mismo importe, concepto distinto.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Suele ser un gasto que grabaste a mano y el mismo cargo importado del banco. «Fusionar» los deja en uno solo: conserva tu nota y tu categoría y recuerda el concepto del banco para que reimportar el extracto no lo vuelva a duplicar.</div>
+                ${posibles.map(([a, b]) => `
                     <div class="finance-dup-pair">
-                        ${[a, b].map(t => `
-                            <div class="finance-dup-item">
-                                <div class="finance-dup-item-main">
-                                    <div>${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}</div>
-                                    ${t.note ? `<div class="finance-dup-item-note">${escapeHtml(t.note)}</div>` : ''}
-                                </div>
-                                <div class="finance-dup-item-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</div>
-                                <button class="doc-action-delete-btn" title="Eliminar esta copia" onclick="deleteFinanceProTransaction('${t.id}')">✕</button>
-                            </div>`).join('')}
-                    </div>`).join('')}
+                        ${renderFinanceProDupItem(a, false)}${renderFinanceProDupItem(b, false)}
+                        <div class="finance-dup-actions">
+                            <button class="finance-oneoff-btn" onclick="fusionarFinanceProPareja('${a.id}','${b.id}')">Fusionar</button>
+                            <button class="finance-oneoff-btn" onclick="descartarFinanceProPareja('${a.id}','${b.id}')">No es duplicado</button>
+                        </div>
+                    </div>`).join('')}` : ''}
             `);
+        }
+
+        // Se queda como base el que tiene más información puesta por el
+        // usuario (marca manual, categoría) y el otro aporta su concepto
+        // como bankNote: la importación compara con bankNote y con la
+        // fecha de inicio de la fila, así que reimportar el extracto lo
+        // reconoce aunque la fecha de la base sea la de cuando se grabó.
+        async function fusionarFinanceProPareja(idA, idB) {
+            const a = financePro.transactions.find(t => t.id === idA);
+            const b = financePro.transactions.find(t => t.id === idB);
+            if (!a || !b) return;
+            const puntos = t => (t.manual ? 4 : 0) + (t.category ? 2 : 0) + (t.needsReview ? -1 : 0);
+            const [base, otra] = puntos(a) >= puntos(b) ? [a, b] : [b, a];
+            if (otra.note) base.bankNote = otra.bankNote || otra.note;
+            if (!base.note && otra.note) base.note = otra.note;
+            if (!base.category && otra.category) { base.category = otra.category; base.needsReview = false; }
+            if (otra.pendiente) base.pendiente = true;
+            base.conciliado = true;
+            financePro.transactions = financePro.transactions.filter(t => t !== otra);
+            render();
+            openFinanceProDuplicatesModal();
+            try { await saveData(); showToast('Movimientos fusionados'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function descartarFinanceProPareja(idA, idB) {
+            const a = financePro.transactions.find(t => t.id === idA);
+            const b = financePro.transactions.find(t => t.id === idB);
+            if (!a || !b) return;
+            a.noDuplicadoDe = [...(a.noDuplicadoDe || []), b.id];
+            b.noDuplicadoDe = [...(b.noDuplicadoDe || []), a.id];
+            openFinanceProDuplicatesModal();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================

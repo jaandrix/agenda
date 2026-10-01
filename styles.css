@@ -4433,6 +4433,7 @@ body.papel {
 .finance-dup-item-main { flex:1; min-width:0; font-size:12.5px; }
 .finance-dup-item-note { font-size:10.5px; color:var(--text-secondary); margin-top:1px; }
 .finance-dup-item-amount { font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; flex-shrink:0; }
+.finance-dup-actions { display:flex; gap:8px; flex-wrap:wrap; padding:8px 6px 4px; border-top:1px solid var(--border); }
 
 .finance-year-summary-list { display:flex; flex-direction:column; gap:1px; }
 .finance-year-summary-row { display:flex; justify-content:space-between; padding:8px 4px; font-size:12.5px; border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums; }
