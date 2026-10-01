@@ -3124,6 +3124,47 @@
         // Vuelve a disparar la animación de entrada del contenido al
         // cambiar de apartado (el nodo #content persiste entre renders,
         // así que hay que forzar un reflow para reiniciar la animación).
+        // ============================================================
+        //  TRANSICIONES
+        //  El movimiento explica la relación entre lo que se deja y lo
+        //  que se abre: dirección según la barra lateral, deslizamiento
+        //  lateral en lo que avanza en el tiempo, zoom desde el punto
+        //  pulsado y elementos que viajan de una vista a otra. Usa la
+        //  View Transitions API; sin ella, o con "reducir movimiento"
+        //  activado en el sistema, todo cambia como antes.
+        // ============================================================
+        const VT_DISPONIBLE = typeof document.startViewTransition === 'function';
+        if (VT_DISPONIBLE) document.documentElement.classList.add('vt-on');
+        let vtUltimoPuntero = null;
+        document.addEventListener('pointerdown', e => { vtUltimoPuntero = { x: e.clientX, y: e.clientY, t: Date.now() }; }, true);
+
+        function vtReducido() {
+            return !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        }
+
+        function vtPunteroReciente() {
+            return vtUltimoPuntero && Date.now() - vtUltimoPuntero.t < 1000 ? vtUltimoPuntero : null;
+        }
+
+        function conTransicion(tipo, cambio) {
+            if (!VT_DISPONIBLE || vtReducido()) { cambio(); return null; }
+            const html = document.documentElement;
+            html.dataset.vt = tipo;
+            const t = document.startViewTransition(cambio);
+            t.finished.finally(() => { if (html.dataset.vt === tipo) delete html.dataset.vt; });
+            return t;
+        }
+
+        // El orden de la barra lateral es el "mapa" de la app: bajar en
+        // ella hace que el contenido nuevo entre desde abajo, y subir,
+        // desde arriba.
+        function vtDireccionSidebar(desde, hasta) {
+            const orden = [...document.querySelectorAll('#sidebar-nav-top [data-view], #sidebar-nav-bottom [data-view]')].map(b => b.dataset.view);
+            const a = orden.indexOf(desde), b = orden.indexOf(hasta);
+            if (a < 0 || b < 0 || a === b) return 'fundido';
+            return b > a ? 'abajo' : 'arriba';
+        }
+
         function animateContentSwitch() {
             const el = document.getElementById('content');
             if (!el) return;
@@ -3146,8 +3187,15 @@
                 promptFinancePrivacyThenEnter(afterEnter);
                 return;
             }
-            performSwitchView(view);
-            if (typeof afterEnter === 'function') afterEnter();
+            trasCambioDeVista(performSwitchView(view), afterEnter);
+        }
+
+        // Con transición, el cambio de vista se aplica un fotograma después
+        // (startViewTransition captura antes la pantalla vieja): lo que
+        // dependa de la vista nueva tiene que esperar a que esté pintada.
+        function trasCambioDeVista(transicion, fn) {
+            if (typeof fn !== 'function') return;
+            if (transicion) transicion.updateCallbackDone.then(fn, fn); else fn();
         }
 
         function promptFinancePrivacyThenEnter(afterEnter) {
@@ -3164,14 +3212,17 @@
         function answerFinancePrivacyPrompt(wantsPrivacy) {
             blurFinances = wantsPrivacy;
             closeModal();
-            performSwitchView('finances');
             const cb = window._financePrivacyPromptCallback;
             window._financePrivacyPromptCallback = null;
-            if (typeof cb === 'function') cb();
+            trasCambioDeVista(performSwitchView('finances'), cb);
             saveData().catch(e => console.error(e));
         }
 
         function performSwitchView(view) {
+            return conTransicion(vtDireccionSidebar(currentView, view), () => aplicarSwitchView(view));
+        }
+
+        function aplicarSwitchView(view) {
             try {
                 currentView = view;
                 if (view === 'planner') plannerDayOffset = 0;
