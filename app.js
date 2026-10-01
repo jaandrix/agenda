@@ -4101,8 +4101,61 @@
                     </div>
                     
                     <div class="media-card-title">${escapeHtml(item.name)}</div>
+                    ${item.carta && esCategoriaCartas(item.category) ? `<div class="collectible-card-carta">${escapeHtml([item.carta.set, item.carta.numero ? '#' + item.carta.numero : '', item.carta.anio, item.carta.estado].filter(Boolean).join(' · '))}</div>` : ''}
                     <div class="media-card-meta">${financeMoney(item.value)}</div>
                 </div>`;
+        }
+
+        // Las cartas tienen datos propios (set, número, año, estado), todos
+        // opcionales. Se reconoce la categoría por su id por defecto o por
+        // el nombre, por si se creó a mano otra llamada "Cartas".
+        const CARTA_ESTADOS = ['Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
+
+        function esCategoriaCartas(catId) {
+            return catId === 'cat_cartas' || /^cartas?$/i.test(collectibleCategoryName(catId).trim());
+        }
+
+        function renderCartaFields(carta, visible) {
+            const c = carta || {};
+            return `
+                <div id="collectible-carta-fields" style="${visible ? '' : 'display:none'}">
+                    <div class="finance-correction-inputs">
+                        <div><div class="modal-label">Set</div><input id="carta-set" class="modal-input" type="text" value="${escapeHtml(c.set || '')}" placeholder="Ej: Base Set"></div>
+                        <div><div class="modal-label">Número</div><input id="carta-numero" class="modal-input" type="text" value="${escapeHtml(c.numero || '')}" placeholder="Ej: 4/102"></div>
+                    </div>
+                    <div class="finance-correction-inputs">
+                        <div><div class="modal-label">Año</div><input id="carta-anio" class="modal-input" type="number" min="1900" max="2100" step="1" value="${c.anio || ''}" placeholder="Ej: 1999"></div>
+                        <div><div class="modal-label">Estado</div>
+                            <select id="carta-estado" class="modal-input">
+                                <option value="">Sin indicar</option>
+                                ${CARTA_ESTADOS.map(e => `<option value="${e}" ${c.estado === e ? 'selected' : ''}>${e}</option>`).join('')}
+                            </select></div>
+                    </div>
+                </div>`;
+        }
+
+        function toggleCartaFields(catId) {
+            const el = document.getElementById('collectible-carta-fields');
+            if (el) el.style.display = esCategoriaCartas(catId) ? '' : 'none';
+        }
+
+        function leerCartaFields() {
+            const carta = {
+                set: document.getElementById('carta-set')?.value.trim() || '',
+                numero: document.getElementById('carta-numero')?.value.trim() || '',
+                anio: parseInt(document.getElementById('carta-anio')?.value, 10) || null,
+                estado: document.getElementById('carta-estado')?.value || ''
+            };
+            Object.keys(carta).forEach(k => { if (!carta[k]) delete carta[k]; });
+            return Object.keys(carta).length ? carta : null;
+        }
+
+        // Si se cambia una carta a otra categoría sus datos de carta se
+        // conservan (no se ven, pero vuelven si se devuelve a Cartas).
+        function aplicarCartaFields(item, category) {
+            if (!esCategoriaCartas(category)) return;
+            const carta = leerCartaFields();
+            if (carta) item.carta = carta; else delete item.carta;
         }
 
         function collectibleCategoryOptions(selectedId) {
@@ -4117,7 +4170,8 @@
                 <div class="modal-label">Nombre</div>
                 <input id="collectible-name" class="modal-input" type="text" placeholder="Ej: Carta Charizard 1ª edición">
                 <div class="modal-label">Categoría</div>
-                <select id="collectible-category" class="modal-input">${collectibleCategoryOptions()}</select>
+                <select id="collectible-category" class="modal-input" onchange="toggleCartaFields(this.value)">${collectibleCategoryOptions()}</select>
+                ${renderCartaFields(null, esCategoriaCartas(collectibleCategories[0]?.id))}
                 <div class="modal-label">Valor de mercado (€)</div>
                 <input id="collectible-value" class="modal-input" type="number" min="0" step="0.01" value="0">
                 <button class="btn-modal-primary" onclick="saveNewCollectible()">Añadir</button>
@@ -4131,10 +4185,12 @@
             const value = Math.max(0, Number(document.getElementById('collectible-value')?.value) || 0);
             if (!name || !category) { showToast('Indica al menos nombre y categoría', true); return; }
 
-            collectibles.push({
+            const nuevo = {
                 id: 'coll_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
                 name, category, value, createdAt: new Date().toISOString()
-            });
+            };
+            aplicarCartaFields(nuevo, category);
+            collectibles.push(nuevo);
             closeModal();
             if (currentView === 'collectibles') render();
             try { await saveData(); showToast('Coleccionable añadido'); }
@@ -4149,7 +4205,8 @@
                 <div class="modal-label">Nombre</div>
                 <input id="collectible-name" class="modal-input" type="text" value="${escapeHtml(item.name)}">
                 <div class="modal-label">Categoría</div>
-                <select id="collectible-category" class="modal-input">${collectibleCategoryOptions(item.category)}</select>
+                <select id="collectible-category" class="modal-input" onchange="toggleCartaFields(this.value)">${collectibleCategoryOptions(item.category)}</select>
+                ${renderCartaFields(item.carta, esCategoriaCartas(item.category))}
                 <div class="modal-label">Valor de mercado (€)</div>
                 <input id="collectible-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(item.value) || 0}">
                 <button class="btn-modal-primary" onclick="saveEditCollectible('${id}')">Guardar cambios</button>
@@ -4165,6 +4222,7 @@
             if (!name || !category) { showToast('Indica al menos nombre y categoría', true); return; }
 
             item.name = name; item.category = category; item.value = value;
+            aplicarCartaFields(item, category);
             closeModal();
             if (currentView === 'collectibles') render();
             try { await saveData(); showToast('Coleccionable actualizado'); }
