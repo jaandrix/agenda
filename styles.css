@@ -123,7 +123,7 @@
             width: 220px;
             min-width: 220px;
             background: var(--bg-sidebar);
-            border-right: 1px solid var(--border-strong);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             padding: 24px 16px 16px 16px;
@@ -219,52 +219,72 @@
             width: 0;
             display: none;
         }
+        /* Barra lateral editorial: sin cajas, apartados en minúscula y una
+           rayita fina a la izquierda del activo que crece al activarse.
+           Las etiquetas de sección siguen el estilo "general." de la app
+           solo por CSS, sin tocar NAV_SECTIONS (lo usa también el menú
+           móvil, que conserva su aspecto). */
         .sidebar-nav .nav-label {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text-secondary);
-            padding: 12px 8px 6px 8px;
-            display: inline-block;
-            border-bottom: 1px solid rgba(0,0,0,0.18);
-            margin-bottom: 2px;
+            text-transform: lowercase;
+            letter-spacing: 0.1px;
+            color: var(--text-primary);
+            opacity: 0.45;
+            padding: 20px 12px 6px 12px;
+            display: block;
         }
+        .sidebar-nav .nav-label::after { content: '.'; }
+        .sidebar-nav > .nav-label:first-child, #sidebar-nav-top > .nav-label:first-child { padding-top: 6px; }
 
         .sidebar-nav button {
+            position: relative;
             display: flex;
             align-items: center;
             gap: 10px;
             background: none;
             border: none;
-            padding: 8px 10px;
-            border-radius: 14px;
+            padding: 6px 12px 6px 14px;
+            border-radius: 0;
             font-family: var(--font-family);
-            font-size: 13px;
+            font-size: 13.5px;
             font-weight: 400;
+            text-transform: lowercase;
             color: var(--text-secondary);
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: color 0.15s ease, transform 0.2s cubic-bezier(.16,1,.3,1);
             width: 100%;
             text-align: left;
         }
+        .sidebar-nav button::before {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 7px;
+            bottom: 7px;
+            width: 2px;
+            border-radius: 2px;
+            background: currentColor;
+            transform: scaleY(0);
+            transition: transform 0.3s cubic-bezier(.16,1,.3,1);
+        }
         .sidebar-nav button:hover {
-            background: var(--bg-card-hover);
             color: var(--text-primary);
+            transform: translateX(2px);
         }
         .sidebar-nav button.active {
-            background: var(--border-strong);
             color: var(--text-primary);
+            font-weight: 600;
+            transform: none;
         }
+        .sidebar-nav button.active::before { transform: scaleY(1); }
         .sidebar-nav button.vault-btn {
             color: var(--vault-accent);
         }
         .sidebar-nav button.vault-btn:hover {
-            background: var(--vault-accent-soft);
             color: var(--vault-accent);
         }
         .sidebar-nav button.vault-btn.active {
-            background: var(--vault-accent-soft);
             color: var(--vault-accent);
         }
 
@@ -371,7 +391,7 @@
         }
 
         .sidebar-actions {
-            border-top: 1px solid var(--border-strong);
+            border-top: 1px solid var(--border);
             padding-top: 12px;
             margin-top: 8px;
             display: flex;
