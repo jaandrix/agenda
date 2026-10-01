@@ -13124,6 +13124,27 @@
             return mejor;
         }
 
+        // Mismo concepto del banco y misma cuenta son la señal fuerte; el
+        // importe admite margen porque el cargo final puede no coincidir con
+        // el retenido (divisa, propina, reserva de hotel). Si además coincide
+        // la fecha de inicio exacta — la que se guardó al importarlo
+        // pendiente — es casi seguro la misma operación y el margen se
+        // amplía: una fianza de hotel de 120 € puede acabar en 98 €.
+        function financeProBuscarPendiente(f) {
+            const texto = financeProNormalizar(f.note);
+            const fechas = [f.date, ...(f.altDates || [])];
+            let mejor = null, mejorDias = Infinity;
+            financePro.transactions.forEach(t => {
+                if (!t.pendiente || t.account !== f.account || t.type !== f.type) return;
+                if (financeProNormalizar(t.bankNote ?? t.note) !== texto) return;
+                const dias = Math.min(...fechas.map(d => Math.abs((new Date(t.date) - new Date(d)) / 86400000)));
+                const margen = dias === 0 ? 0.5 : 0.15;
+                if (Math.abs(Number(t.amount) - Number(f.amount)) > Math.max(1, Number(t.amount) * margen)) return;
+                if (dias <= 10 && dias < mejorDias) { mejor = t; mejorDias = dias; }
+            });
+            return mejor;
+        }
+
         function financeProCuentaRecurrente(e) {
             if (e.proAccount && FINANCE_PRO_ACCOUNT_KEYS.includes(e.proAccount)) return e.proAccount;
             return e.type === 'subscription' ? 'bancos' : null;
@@ -14585,7 +14606,7 @@
                     <div class="finance-metric-icon fin-slate finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>
                     <div class="finance-pro-tx-main">
                         <div class="finance-pro-tx-title">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} → ${escapeHtml(financePro.accounts[t.transferTo]?.name || t.transferTo)}</div>
-                        <div class="finance-pro-tx-sub">${t.note ? escapeHtml(t.note) + ' · ' : ''}${financeDateLabelShort(t.date)}</div>
+                        <div class="finance-pro-tx-sub">${t.note ? escapeHtml(t.note) + ' · ' : ''}${financeDateLabelShort(t.date)}${t.pendiente ? ' · pendiente.' : ''}</div>
                     </div>
                     <div class="finance-pro-tx-amount">${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
                 </div>`;
@@ -14595,7 +14616,7 @@
                 ${financeProCategoryBadge(cat)}
                 <div class="finance-pro-tx-main">
                     <div class="finance-pro-tx-title">${escapeHtml(cat ? cat.name : 'Sin categoría')}</div>
-                    <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}</div>
+                    <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}${t.pendiente ? ' · pendiente.' : ''}</div>
                     ${t.note ? `<div class="finance-pro-tx-note">${escapeHtml(t.note)}</div>` : ''}
                 </div>
                 <div class="finance-pro-tx-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
@@ -14683,7 +14704,7 @@
             // cargo automático, ya conciliado con el banco...): si se
             // perdiera, la próxima importación lo duplicaría.
             const prev = financePro.transactions.find(t => t.id === entry.id);
-            if (prev) ['manual', 'recurringEntryId', 'programadoId', 'conciliado', 'bankNote'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
+            if (prev) ['manual', 'recurringEntryId', 'programadoId', 'conciliado', 'bankNote', 'pendiente'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
             else entry.manual = true;
             const idx = financePro.transactions.findIndex(t => t.id === entry.id);
             if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
@@ -15062,12 +15083,15 @@
             const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
             const existingKeys = new Set(financePro.transactions.map(t => `${t.account}|${t.date}|${t.amount}|${t.bankNote ?? t.note ?? ''}`));
             const activeRules = financePro.rules.filter(r => r.enabled);
-            let added = 0, skipped = 0, conciliados = 0;
+            let added = 0, skipped = 0, conciliados = 0, completados = 0, anulados = 0;
             rows.forEach(r => {
-                if (m.status >= 0 && m.skipPending) {
-                    const statusVal = (r[m.status] || '').trim().toLowerCase();
-                    if (/pending|pendiente|processing|procesando/.test(statusVal)) { skipped++; return; }
-                }
+                const statusVal = m.status >= 0 ? String(r[m.status] || '').trim().toLowerCase() : '';
+                const esPendiente = /pending|pendiente|processing|procesando/.test(statusVal);
+                // Revolut deja en el extracto los cargos que nunca llegaron a
+                // cobrarse (REVERTED, DECLINED, FAILED): no son movimientos
+                // reales, y si se habían importado como pendientes se quitan.
+                const esAnulado = /revert|declin|fail|cancel|rechaz|anulad|fallid/.test(statusVal);
+                if (esPendiente && m.skipPending) { skipped++; return; }
                 // Otras columnas de la fila que también parezcan una fecha
                 // (normalmente "fecha de inicio") — un movimiento que se
                 // importó pendiente usó esa fecha porque la de finalización
@@ -15107,6 +15131,26 @@
                 const rule = activeRules.find(rl => description.toLowerCase().includes(rl.matchText.toLowerCase()) && rl.otherAccount !== m.account);
                 const effectiveAccount = rule ? (type === 'income' ? rule.otherAccount : m.account) : m.account;
                 const dedupeKey = `${effectiveAccount}|${date}|${amount}|${description}`;
+                // Un pendiente ya importado se actualiza al llegar completado
+                // (el importe final puede cambiar: divisa, propina, reserva
+                // de hotel) en vez de entrar otra vez como movimiento nuevo.
+                // Dos pendientes solo son el mismo si comparten fecha de
+                // inicio exacta: si no, serían dos compras en el mismo sitio.
+                const candidato = financeProBuscarPendiente({ account: effectiveAccount, type: rule ? 'transfer' : type, amount, date, altDates, note: description });
+                const pendiente = candidato && esPendiente && candidato.date !== date ? null : candidato;
+                if (esAnulado) {
+                    if (pendiente) { financePro.transactions = financePro.transactions.filter(t => t !== pendiente); anulados++; }
+                    else skipped++;
+                    return;
+                }
+                if (pendiente) {
+                    if (esPendiente) { pendiente.amount = amount; skipped++; return; }
+                    Object.assign(pendiente, { date, amount });
+                    delete pendiente.pendiente;
+                    existingKeys.add(dedupeKey);
+                    completados++;
+                    return;
+                }
                 // Se comprueba también con las fechas alternativas de la
                 // fila (ver altDates arriba) para no duplicar un movimiento
                 // que ya se importó pendiente con otra fecha.
@@ -15119,7 +15163,8 @@
                         date, type: 'transfer',
                         account: effectiveAccount,
                         transferTo: type === 'income' ? m.account : rule.otherAccount,
-                        amount, note: description || undefined
+                        amount, note: description || undefined,
+                        pendiente: esPendiente || undefined
                     });
                     added++;
                     return;
@@ -15134,7 +15179,7 @@
                 // mismo extracto lo reconozca por la clave exacta de arriba.
                 const auto = type === 'expense' && financePro.transactions.find(t => financeProEsAuto(t) && financeProMismoCargo(t, { type, date, amount, account: m.account, note: description }));
                 if (auto) {
-                    Object.assign(auto, { date, account: m.account, amount, note: description || auto.note, conciliado: true });
+                    Object.assign(auto, { date, account: m.account, amount, note: description || auto.note, conciliado: true, pendiente: esPendiente || undefined });
                     if (category) auto.category = category;
                     conciliados++;
                     return;
@@ -15148,7 +15193,7 @@
                 // para que reimportar el extracto lo siga reconociendo.
                 const manual = financeProBuscarManual({ type, date, amount, account: m.account });
                 if (manual) {
-                    Object.assign(manual, { date, bankNote: description, conciliado: true });
+                    Object.assign(manual, { date, bankNote: description, conciliado: true, pendiente: esPendiente || undefined });
                     if (!manual.note && description) manual.note = description;
                     if (!manual.category && category) manual.category = category;
                     if (manual.category) manual.needsReview = false;
@@ -15158,13 +15203,14 @@
                 }
                 financePro.transactions.push({
                     id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
-                    date, account: m.account, type, amount, category, note: description || undefined
+                    date, account: m.account, type, amount, category, note: description || undefined,
+                    pendiente: esPendiente || undefined
                 });
                 added++;
             });
             closeModal();
             render();
-            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
+            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${completados ? ` · ${completados} pendiente${completados === 1 ? '' : 's'} ya completado${completados === 1 ? '' : 's'}` : ''}${anulados ? ` · ${anulados} pendiente${anulados === 1 ? '' : 's'} anulado${anulados === 1 ? '' : 's'} y retirado${anulados === 1 ? '' : 's'}` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
