@@ -4651,6 +4651,7 @@
                 fields+=detailField('Fecha',escapeHtml(entry.date||''));
                 if(entry.time)fields+=detailField('Hora',escapeHtml(entry.time));
                 if(entry.place)fields+=detailField('Lugar',escapeHtml(entry.place));
+                if(entry.entradas?.length)fields+=`<button class="entrada-abrir-btn" onclick="abrirEntradas('${entry.id}')">${ENTRADA_ICONO}<span>${entry.entradas.length > 1 ? `ver entradas. (${entry.entradas.length})` : 'ver entrada.'}</span></button>`;
                 const evTypeLabel=EVENT_TYPE_LABELS[entry.eventType]||'';
                 if(evTypeLabel)fields+=detailField('Tipo',evTypeLabel);
                 if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
@@ -4950,6 +4951,9 @@
                     <input id="modal-place" class="modal-input" value="${isEdit ? entry.place || '' : ''}" placeholder="Ej: Wembley Stadium">
                     <div class="modal-label">Notas</div>
                     <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
+                    <div class="modal-label">Entradas</div>
+                    <div id="entradas-editor">${(window._entradasDraft = isEdit ? JSON.parse(JSON.stringify(entry.entradas || [])) : [], renderEntradasEditor())}</div>
+                    <input type="file" id="entradas-input" accept="image/*" style="display:none" onchange="anadirEntradaDesdeImagen(event)">
                 `;
             }
 
@@ -5196,6 +5200,8 @@
                 entry.time = document.getElementById('modal-time')?.value || '';
                 entry.place = document.getElementById('modal-place')?.value?.trim() || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+                const entradas = (window._entradasDraft || []).filter(x => x && (x.qrB64 || x.qr));
+                if (entradas.length) entry.entradas = entradas;
             } else if (type === 'place') {
                 entry.date = document.getElementById('modal-date')?.value || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
@@ -10700,7 +10706,7 @@
                                 <div class="event-hero-title">${escapeHtml(next.title)}</div>
                                 <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ' · ' : ''}${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
                             </div>
-                            <div class="event-hero-icon">${EVENT_HERO_ICON_ALERT}</div>
+                            ${next.entradas?.length ? `<button class="event-hero-entrada" onclick="event.stopPropagation();abrirEntradas('${next.id}')">${ENTRADA_ICONO}<span>entrada.</span></button>` : `<div class="event-hero-icon">${EVENT_HERO_ICON_ALERT}</div>`}
                         </div>`;
                 }
             }
@@ -10791,8 +10797,130 @@
                         <div class="event-sq-title">${escapeHtml(e.title)}</div>
                         <div class="event-sq-meta"><span class="event-sq-dot" style="background:${color}"></span>${escapeHtml(typeLabel || e.place || 'Evento')}${e.time ? `,&nbsp;<em>${escapeHtml(e.time)}.</em>` : ''}</div>
                     </div>
+                    ${e.entradas?.length && !isPast ? `<button class="event-sq-entrada" title="Ver entrada" onclick="event.stopPropagation();abrirEntradas('${e.id}')">${ENTRADA_ICONO}</button>` : ''}
                     <div class="event-sq-day">${day}</div>
                 </div>`;
+        }
+
+        // ============================================================
+        //  ENTRADAS (QR)
+        //  Un evento puede llevar una o varias entradas. Se sube una
+        //  captura, el QR se lee en el propio navegador (jsQR) y solo se
+        //  guarda su contenido, no la imagen. Para enseñarlo en la puerta
+        //  se regenera nítido (qrcode-generator) a partir de los MISMOS
+        //  bytes leídos (qrB64), no del texto reinterpretado: si el QR
+        //  original llevaba bytes que no son UTF-8, regenerarlo desde el
+        //  texto produciría otro código y el lector lo rechazaría.
+        // ============================================================
+        const ENTRADA_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M8 22h84v19a9 9 0 0 0 0 18v19H8V59a9 9 0 0 0 0-18zM60 30v8h7v-8zm0 16v8h7v-8zm0 16v8h7v-8z"/></svg>';
+        const SCRIPTS_CARGADOS = {};
+
+        function cargarScript(url) {
+            if (!SCRIPTS_CARGADOS[url]) SCRIPTS_CARGADOS[url] = new Promise((resolve, reject) => {
+                const sc = document.createElement('script');
+                sc.src = url; sc.onload = resolve;
+                sc.onerror = () => { delete SCRIPTS_CARGADOS[url]; reject(new Error('No se pudo cargar ' + url)); };
+                document.head.appendChild(sc);
+            });
+            return SCRIPTS_CARGADOS[url];
+        }
+
+        function renderEntradasEditor() {
+            const lista = window._entradasDraft || [];
+            return `
+                ${lista.map((x, i) => `
+                    <div class="entrada-editor-fila">
+                        <span class="entrada-editor-icono">${ENTRADA_ICONO}</span>
+                        <input class="modal-input entrada-editor-etiqueta" value="${escapeHtml(x.etiqueta || '')}" placeholder="Entrada ${i + 1} · p. ej. fila 12, asiento 8" oninput="window._entradasDraft[${i}].etiqueta = this.value">
+                        <button type="button" class="planner-item-delete" title="Quitar entrada" onclick="quitarEntradaDraft(${i})">×</button>
+                    </div>`).join('')}
+                <button type="button" class="btn-secondary entrada-editor-add" onclick="document.getElementById('entradas-input').click()">+ añadir entrada desde una captura del QR</button>`;
+        }
+
+        function quitarEntradaDraft(i) {
+            window._entradasDraft.splice(i, 1);
+            document.getElementById('entradas-editor').innerHTML = renderEntradasEditor();
+        }
+
+        async function anadirEntradaDesdeImagen(ev) {
+            const file = ev.target.files?.[0];
+            ev.target.value = '';
+            if (!file) return;
+            try {
+                await cargarScript('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js');
+                const img = await createImageBitmap(file);
+                // Las capturas de móvil son enormes; a 1600px el QR sigue
+                // siendo legible y la lectura es mucho más rápida.
+                const escala = Math.min(1, 1600 / Math.max(img.width, img.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(img.width * escala);
+                canvas.height = Math.round(img.height * escala);
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const datos = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const codigo = window.jsQR(datos.data, canvas.width, canvas.height, { inversionAttempts: 'attemptBoth' });
+                if (!codigo || !codigo.binaryData?.length) { showToast('No he encontrado ningún QR en esa imagen', true); return; }
+                const qrB64 = btoa(String.fromCharCode(...codigo.binaryData));
+                if ((window._entradasDraft || []).some(x => x.qrB64 === qrB64)) { showToast('Esa entrada ya está añadida', true); return; }
+                window._entradasDraft.push({ id: 'ent_' + Date.now(), qr: codigo.data || '', qrB64, etiqueta: '' });
+                document.getElementById('entradas-editor').innerHTML = renderEntradasEditor();
+                showToast('Entrada añadida · se guardará con el evento');
+            } catch (e) {
+                console.error(e);
+                showToast('No se pudo leer la imagen', true);
+            }
+        }
+
+        async function qrEntradaSvg(entrada) {
+            await cargarScript('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js');
+            const bytes = entrada.qrB64 ? atob(entrada.qrB64) : unescape(encodeURIComponent(entrada.qr || ''));
+            const anterior = window.qrcode.stringToBytes;
+            window.qrcode.stringToBytes = str => Array.from(str, ch => ch.charCodeAt(0) & 0xff);
+            let qr;
+            try {
+                qr = window.qrcode(0, 'M');
+                qr.addData(bytes, 'Byte');
+                qr.make();
+            } finally {
+                window.qrcode.stringToBytes = anterior;
+            }
+            const n = qr.getModuleCount(), margen = 4;
+            let d = '';
+            for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c + margen} ${r + margen}h1v1h-1z`;
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n + margen * 2} ${n + margen * 2}" shape-rendering="crispEdges" role="img" aria-label="Código QR de la entrada"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#111"/></svg>`;
+        }
+
+        async function abrirEntradas(eventId, indice = 0) {
+            const ev = entries.find(e => e.id === eventId);
+            const lista = ev?.entradas || [];
+            if (!lista.length) return;
+            const i = (indice + lista.length) % lista.length;
+            const entrada = lista[i];
+            let svg;
+            try { svg = await qrEntradaSvg(entrada); }
+            catch (e) { console.error(e); showToast('No se pudo generar el QR (¿sin conexión?)', true); return; }
+            const fecha = ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+            showModal(`
+                <div class="entrada-ticket">
+                    <div class="entrada-ticket-cabecera">
+                        <span class="entrada-ticket-kicker">${ENTRADA_ICONO}entrada.</span>
+                        <span class="entrada-ticket-fecha">${escapeHtml(fecha)}</span>
+                        <button class="modal-close" onclick="closeModal()">✕</button>
+                    </div>
+                    <div class="entrada-ticket-titulo">${escapeHtml(ev.title || '')}</div>
+                    <div class="entrada-ticket-meta">${[ev.place, ev.time].filter(Boolean).map(escapeHtml).join(' · ')}</div>
+                    <div class="entrada-ticket-corte"></div>
+                    <div class="entrada-ticket-qr">${svg}</div>
+                    ${entrada.etiqueta ? `<div class="entrada-ticket-etiqueta">${escapeHtml(entrada.etiqueta)}</div>` : ''}
+                    ${lista.length > 1 ? `
+                        <div class="entrada-ticket-nav">
+                            <button class="btn-secondary" onclick="abrirEntradas('${ev.id}', ${i - 1})">‹</button>
+                            <span>${i + 1} de ${lista.length}</span>
+                            <button class="btn-secondary" onclick="abrirEntradas('${ev.id}', ${i + 1})">›</button>
+                        </div>` : ''}
+                    <div class="entrada-ticket-nota">Sube el brillo de la pantalla para que lo lean a la primera.</div>
+                </div>
+            `);
         }
 
         function setEventsSearchQuery(value) {
