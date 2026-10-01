@@ -1014,7 +1014,21 @@
             event: ['evento', 'eventos']
         };
         const ENTRY_TYPE_LABEL_PLURAL = { book: 'Libros', movie: 'Películas', series: 'Series', event: 'Eventos' };
-        const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', futbol: 'Fútbol', baloncesto: 'Baloncesto', f1: 'F1', motogp: 'Moto GP', otro: 'Otro' };
+        const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', deportes: 'Deportes', futbol: 'Fútbol', baloncesto: 'Baloncesto', f1: 'F1', motogp: 'Moto GP', estudios: 'Estudios', hogar: 'Hogar', otro: 'Otro' };
+        // Deportes es una categoría con subcategorías. El evento guarda la
+        // subcategoría en eventType (futbol, f1...) igual que antes, así los
+        // eventos ya existentes no necesitan migrarse; 'deportes' a secas
+        // es un evento deportivo sin especificar.
+        const EVENT_DEPORTES = ['futbol', 'baloncesto', 'f1', 'motogp'];
+        const EVENT_CATEGORIAS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'estudios', 'hogar', 'otro'];
+
+        function eventCategoria(tipo) {
+            return EVENT_DEPORTES.includes(tipo) ? 'deportes' : (EVENT_TYPE_LABELS[tipo] ? tipo : 'otro');
+        }
+
+        function eventCoincideFiltro(e, filtro) {
+            return filtro === 'all' || e.eventType === filtro || (filtro === 'deportes' && eventCategoria(e.eventType) === 'deportes');
+        }
         // Iconos sólidos (misma familia TARJETA BITACORA) para el chip a la
         // izquierda de cada tarjeta de evento — uno por tipo, más un
         // genérico de reserva. "Deporte" se divide en cuatro disciplinas
@@ -1028,6 +1042,9 @@
             baloncesto: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 4a46 46 0 1 0 0 92 46 46 0 0 0 0-92zM46 6h8v88h-8zM13 30c9 6 16 15 16 20s-7 14-16 20l-5-7c7-5 12-11 12-13s-5-8-12-13z M87 30c-9 6-16 15-16 20s7 14 16 20l5-7c-7-5-12-11-12-13s5-8 12-13z"/></svg>',
             f1: '<svg viewBox="0 0 100 100" fill="currentColor"><text x="50" y="66" text-anchor="middle" font-size="54" font-weight="800" font-family="Poppins, sans-serif">F1</text></svg>',
             motogp: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="22" cy="74" r="13"/><circle cx="78" cy="74" r="13"/><circle cx="60" cy="28" r="8"/><path d="M18 74l16-20h14l10-14c3-4 9-5 12-1l-7 9 9 11h10l6 15H70l-8-13H42z"/></svg>',
+            deportes: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M28 8h44v12h18v10c0 15-11 26-25 28-3 7-8 11-11 12v12h14v10H32V82h14V70c-3-1-8-5-11-12-14-2-25-13-25-28V20h18zM20 30c0 8 6 15 13 17-3-5-5-11-5-17zm60 0h-8c0 6-2 12-5 17 7-2 13-9 13-17z"/></svg>',
+            estudios: '<svg viewBox="0 0 341 337" fill="currentColor"><circle cx="166.5" cy="77" r="39"/><path d="M49 117C91 117 131 132 166 162C201 132 241 117 283 117L283 259C240 259 201 275 188 287C179 295 172 301 166 305C160 301 153 295 144 287C131 275 92 259 49 259Z"/></svg>',
+            hogar: '<svg viewBox="0 0 368 386" fill="currentColor"><path d="M183.5 0L367 178.5H326V386H222V270H146V386H42V178.5H0Z"/></svg>',
             otro: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="23"/></svg>'
         };
         // Icono de la tarjeta "Próximo evento · hoy" — signo de exclamación
@@ -4762,9 +4779,16 @@
             else if (type === 'event') {
                 extraFields = `
                     <div class="modal-label">Tipo</div>
-                    <select id="modal-event-type" class="modal-input">
-                        ${Object.keys(EVENT_TYPE_LABELS).map(t => `<option value="${t}" ${isEdit && entry.eventType === t ? 'selected' : ''}>${EVENT_TYPE_LABELS[t]}</option>`).join('')}
+                    <select id="modal-event-type" class="modal-input" onchange="document.getElementById('modal-event-deporte-wrap').style.display = this.value === 'deportes' ? '' : 'none'">
+                        ${EVENT_CATEGORIAS.map(t => `<option value="${t}" ${isEdit && eventCategoria(entry.eventType) === t ? 'selected' : ''}>${EVENT_TYPE_LABELS[t]}</option>`).join('')}
                     </select>
+                    <div id="modal-event-deporte-wrap" style="${isEdit && eventCategoria(entry.eventType) === 'deportes' ? '' : 'display:none'}">
+                        <div class="modal-label">Deporte</div>
+                        <select id="modal-event-deporte" class="modal-input">
+                            <option value="deportes" ${isEdit && entry.eventType === 'deportes' ? 'selected' : ''}>Sin especificar</option>
+                            ${EVENT_DEPORTES.map(t => `<option value="${t}" ${isEdit && entry.eventType === t ? 'selected' : ''}>${EVENT_TYPE_LABELS[t]}</option>`).join('')}
+                        </select>
+                    </div>
                     <div class="modal-label">Fecha</div>
                     <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
                     <div class="modal-label">Hora</div>
@@ -5014,6 +5038,7 @@
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
             } else if (type === 'event') {
                 entry.eventType = document.getElementById('modal-event-type')?.value || 'otro';
+                if (entry.eventType === 'deportes') entry.eventType = document.getElementById('modal-event-deporte')?.value || 'deportes';
                 entry.date = document.getElementById('modal-date')?.value || '';
                 entry.time = document.getElementById('modal-time')?.value || '';
                 entry.place = document.getElementById('modal-place')?.value?.trim() || '';
@@ -10516,7 +10541,7 @@
         function renderEventsListContent(events) {
             const q = stripAccents(eventsSearchQuery.toLowerCase().trim());
             let filtered = events;
-            if (eventsTypeFilter !== 'all') filtered = filtered.filter(e => e.eventType === eventsTypeFilter);
+            if (eventsTypeFilter !== 'all') filtered = filtered.filter(e => eventCoincideFiltro(e, eventsTypeFilter));
             if (q) {
                 filtered = filtered.filter(e =>
                     stripAccents((e.title || '').toLowerCase()).includes(q) ||
@@ -10608,17 +10633,22 @@
             return `<span class="events-filtro-icono">${EVENTS_ICONO_FILTRO}</span><span>filtro.</span>${activo ? `<span class="events-filtro-activo">${escapeHtml(activo.toLowerCase())}</span>` : ''}`;
         }
 
+        // Las subcategorías de Deportes van justo debajo de "deportes.",
+        // ocupando el ancho del panel y algo más pequeñas, para que se lea
+        // la jerarquía; "deportes." filtra todos los deportes a la vez.
         function renderEventsFiltro() {
-            const opciones = [['all', 'todos.', ''], ...Object.keys(EVENT_TYPE_LABELS).map(t => [t, EVENT_TYPE_LABELS[t].toLowerCase() + '.', EVENT_TYPE_ICONS[t] || EVENT_TYPE_ICONS.otro])];
+            let i = 0;
+            const opcion = (t, sub) => `
+                <button class="events-filtro-opcion ${sub ? 'events-filtro-sub' : ''} ${eventsTypeFilter === t ? 'active' : ''}" data-tipo="${t}" style="--i:${i++}" onclick="setEventsTypeFilter('${t}')">
+                    <span class="events-filtro-opcion-icono">${t === 'all' ? EVENTS_ICONO_FILTRO : (EVENT_TYPE_ICONS[t] || EVENT_TYPE_ICONS.otro)}</span><span>${t === 'all' ? 'todos.' : EVENT_TYPE_LABELS[t].toLowerCase() + '.'}</span>
+                </button>`;
+            const opciones = ['all', ...EVENT_CATEGORIAS.filter(t => t !== 'deportes'), 'deportes'].map(t => t === 'deportes'
+                ? `<div class="events-filtro-grupo">${opcion(t)}<div class="events-filtro-subs">${EVENT_DEPORTES.map(d => opcion(d, true)).join('')}</div></div>`
+                : opcion(t)).join('');
             return `
                 <div class="events-filtro" id="events-filtro">
                     <button class="events-filtro-btn ${eventsTypeFilter !== 'all' ? 'con-filtro' : ''}" id="events-filtro-btn" aria-expanded="false" onclick="toggleEventsFiltro()">${renderEventsFiltroBtn()}</button>
-                    <div class="events-filtro-panel" role="listbox">
-                        ${opciones.map(([t, label, icono], i) => `
-                            <button class="events-filtro-opcion ${eventsTypeFilter === t ? 'active' : ''}" data-tipo="${t}" style="--i:${i}" onclick="setEventsTypeFilter('${t}')">
-                                <span class="events-filtro-opcion-icono">${icono || EVENTS_ICONO_FILTRO}</span><span>${label}</span>
-                            </button>`).join('')}
-                    </div>
+                    <div class="events-filtro-panel" role="listbox">${opciones}</div>
                 </div>`;
         }
 

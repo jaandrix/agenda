@@ -4785,6 +4785,10 @@ details[open] > .studies-editorial-group-label::before { content:'– '; }
 .events-filtro-opcion.active { background:var(--text-primary); color:var(--accent-contrast); }
 .events-filtro-opcion-icono { width:16px; height:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .events-filtro-opcion-icono svg { width:16px; height:16px; display:block; }
+.events-filtro-grupo { grid-column:1 / -1; display:flex; flex-direction:column; gap:2px; }
+.events-filtro-subs { display:flex; flex-wrap:wrap; gap:4px; padding-left:26px; }
+.events-filtro-opcion.events-filtro-sub { font-size:12px; padding:6px 10px; gap:7px; }
+.events-filtro-sub .events-filtro-opcion-icono, .events-filtro-sub .events-filtro-opcion-icono svg { width:13px; height:13px; }
 .events-lista-fade { animation:viewFadeIn .26s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce) { .events-filtro-panel, .events-filtro-opcion, .events-filtro-icono svg { transition:none !important; } }
 .events-section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:10px; }
@@ -4904,10 +4908,13 @@ html[data-vt="atras"]::view-transition-new(interior) { animation: vtEntrarDesdeI
    El resto de la pantalla se funde para que el oscurecido del modal
    aparezca y desaparezca suave. */
 .modal-sheet.modal-sheet-ficha { animation: none; }
+/* Con nombre propio, el contenido se pintaría por encima del modal
+   durante la transición (los grupos con nombre se apilan sobre root). */
+html[data-vt="ficha"] #content { view-transition-name: none; }
 html[data-vt="ficha"]::view-transition-old(root) { display: block; animation: vtFundirSalida .26s ease both; }
 ::view-transition-group(ficha) { animation-duration: .36s; animation-timing-function: cubic-bezier(.2,.9,.25,1); }
-::view-transition-old(ficha), ::view-transition-new(ficha) { height: 100%; object-fit: cover; object-position: top; }
-::view-transition-old(ficha) { animation: vtFundirSalida .16s ease-out both; }
+::view-transition-old(ficha), ::view-transition-new(ficha) { width: 100%; height: 100%; object-fit: cover; object-position: top; overflow: clip; }
+::view-transition-old(ficha) { animation: vtFundirSalida .1s ease-out both; }
 ::view-transition-new(ficha) { animation: vtFundirEntrada .26s ease-out .04s both; }
 @keyframes vtFundirEntrada { from { opacity: 0; } }
 
