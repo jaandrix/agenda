@@ -10502,12 +10502,7 @@
             html += `
                 <div class="events-toolbar">
                     <input type="text" id="events-search-input" class="modal-input" style="margin:0;max-width:260px" placeholder="Buscar por título o lugar..." value="${escapeHtml(eventsSearchQuery)}" oninput="setEventsSearchQuery(this.value)">
-                    <div class="events-type-chips">
-                        <button class="events-type-chip ${eventsTypeFilter === 'all' ? 'active' : ''}" onclick="setEventsTypeFilter('all')">Todos</button>
-                        ${Object.keys(EVENT_TYPE_LABELS).map(t => `
-                            <button class="events-type-chip ${eventsTypeFilter === t ? 'active' : ''}" onclick="setEventsTypeFilter('${t}')">${EVENT_TYPE_LABELS[t]}</button>
-                        `).join('')}
-                    </div>
+                    ${renderEventsFiltro()}
                     <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openEventsImportModal()">Importar eventos</button>
                 </div>
                 <div id="events-list-content">${renderEventsListContent(events)}</div>
@@ -10602,9 +10597,63 @@
             if (container) container.innerHTML = renderEventsListContent(events);
         }
 
+        // Filtro por tipo de evento recogido en un solo botón "filtro.": el
+        // panel nace del propio botón y las opciones aparecen una tras otra.
+        // Elegir una actualiza solo la lista (sin volver a pintar la vista)
+        // para que el panel pueda cerrarse con su animación.
+        const EVENTS_ICONO_FILTRO = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M8 12h84L58 52v30L42 92V52z"/></svg>';
+
+        function renderEventsFiltroBtn() {
+            const activo = eventsTypeFilter !== 'all' ? EVENT_TYPE_LABELS[eventsTypeFilter] : '';
+            return `<span class="events-filtro-icono">${EVENTS_ICONO_FILTRO}</span><span>filtro.</span>${activo ? `<span class="events-filtro-activo">${escapeHtml(activo.toLowerCase())}</span>` : ''}`;
+        }
+
+        function renderEventsFiltro() {
+            const opciones = [['all', 'todos.', ''], ...Object.keys(EVENT_TYPE_LABELS).map(t => [t, EVENT_TYPE_LABELS[t].toLowerCase() + '.', EVENT_TYPE_ICONS[t] || EVENT_TYPE_ICONS.otro])];
+            return `
+                <div class="events-filtro" id="events-filtro">
+                    <button class="events-filtro-btn ${eventsTypeFilter !== 'all' ? 'con-filtro' : ''}" id="events-filtro-btn" aria-expanded="false" onclick="toggleEventsFiltro()">${renderEventsFiltroBtn()}</button>
+                    <div class="events-filtro-panel" role="listbox">
+                        ${opciones.map(([t, label, icono], i) => `
+                            <button class="events-filtro-opcion ${eventsTypeFilter === t ? 'active' : ''}" data-tipo="${t}" style="--i:${i}" onclick="setEventsTypeFilter('${t}')">
+                                <span class="events-filtro-opcion-icono">${icono || EVENTS_ICONO_FILTRO}</span><span>${label}</span>
+                            </button>`).join('')}
+                    </div>
+                </div>`;
+        }
+
+        function cerrarEventsFiltroFuera(e) {
+            if (e.type === 'keydown' && e.key !== 'Escape') return;
+            if (e.type === 'pointerdown' && document.getElementById('events-filtro')?.contains(e.target)) return;
+            toggleEventsFiltro(false);
+        }
+
+        function toggleEventsFiltro(abrir) {
+            const filtro = document.getElementById('events-filtro');
+            if (!filtro) return;
+            const abierto = typeof abrir === 'boolean' ? abrir : !filtro.classList.contains('abierto');
+            filtro.classList.toggle('abierto', abierto);
+            document.getElementById('events-filtro-btn')?.setAttribute('aria-expanded', String(abierto));
+            document.removeEventListener('pointerdown', cerrarEventsFiltroFuera, true);
+            document.removeEventListener('keydown', cerrarEventsFiltroFuera, true);
+            if (abierto) {
+                document.addEventListener('pointerdown', cerrarEventsFiltroFuera, true);
+                document.addEventListener('keydown', cerrarEventsFiltroFuera, true);
+            }
+        }
+
         function setEventsTypeFilter(type) {
             eventsTypeFilter = type;
-            render();
+            const lista = document.getElementById('events-list-content');
+            const filtro = document.getElementById('events-filtro');
+            if (!lista || !filtro) { render(); return; }
+            const { items: events } = applyMonthFilterTo('event', entries.filter(e => e.type === 'event'));
+            lista.innerHTML = renderEventsListContent(events);
+            lista.classList.remove('events-lista-fade'); void lista.offsetWidth; lista.classList.add('events-lista-fade');
+            document.getElementById('events-filtro-btn').innerHTML = renderEventsFiltroBtn();
+            document.getElementById('events-filtro-btn').classList.toggle('con-filtro', type !== 'all');
+            filtro.querySelectorAll('.events-filtro-opcion').forEach(b => b.classList.toggle('active', b.dataset.tipo === type));
+            toggleEventsFiltro(false);
         }
 
         function toggleEventsShowPast() {
