@@ -10646,21 +10646,21 @@
             return `<span class="events-filtro-icono">${EVENTS_ICONO_FILTRO}</span><span>filtro.</span>${activo ? `<span class="events-filtro-activo">${escapeHtml(activo.toLowerCase())}</span>` : ''}`;
         }
 
-        // "deportes." no filtra: abre su propio desplegable con "todos los
-        // deportes." y cada deporte, que entran escalonados igual que el
-        // panel (--j es su posición dentro del grupo). Si el filtro activo
-        // ya es un deporte, el desplegable sale abierto.
+        // "deportes." no filtra: abre su propio desplegable con "todos." y
+        // cada deporte, que entran escalonados igual que el panel (--j es su
+        // posición dentro del grupo). Siempre arranca cerrado al abrir el
+        // filtro; si el filtro activo es un deporte, solo queda marcado.
         function renderEventsFiltro() {
             let i = 0;
             const opcion = (t, j) => `
                 <button class="events-filtro-opcion ${j !== undefined ? 'events-filtro-sub' : ''} ${eventsTypeFilter === t ? 'active' : ''}" data-tipo="${t}" style="--i:${i++};--j:${j || 0}" onclick="setEventsTypeFilter('${t}')">
-                    <span class="events-filtro-opcion-icono">${t === 'all' ? EVENTS_ICONO_FILTRO : (EVENT_TYPE_ICONS[t] || EVENT_TYPE_ICONS.otro)}</span><span>${t === 'all' ? 'todos.' : t === 'deportes' && j !== undefined ? 'todos los deportes.' : EVENT_TYPE_LABELS[t].toLowerCase() + '.'}</span>
+                    <span class="events-filtro-opcion-icono">${t === 'all' ? EVENTS_ICONO_FILTRO : (EVENT_TYPE_ICONS[t] || EVENT_TYPE_ICONS.otro)}</span><span>${t === 'all' || (t === 'deportes' && j !== undefined) ? 'todos.' : EVENT_TYPE_LABELS[t].toLowerCase() + '.'}</span>
                 </button>`;
             const enDeportes = eventsTypeFilter !== 'all' && eventCategoria(eventsTypeFilter) === 'deportes';
             const opciones = ['all', ...EVENT_CATEGORIAS.filter(t => t !== 'deportes'), 'deportes'].map(t => t === 'deportes'
-                ? `<div class="events-filtro-grupo ${enDeportes ? 'abierto con-seleccion' : ''}" id="events-filtro-deportes">
-                        <button class="events-filtro-opcion events-filtro-grupo-btn" style="--i:${i++}" aria-expanded="${enDeportes}" onclick="toggleEventsFiltroDeportes()">
-                            <span class="events-filtro-opcion-icono">${EVENT_TYPE_ICONS.deportes}</span><span>deportes.</span><span class="events-filtro-chevron">›</span>
+                ? `<div class="events-filtro-grupo ${enDeportes ? 'con-seleccion' : ''}" id="events-filtro-deportes">
+                        <button class="events-filtro-opcion events-filtro-grupo-btn" style="--i:${i++}" aria-expanded="false" onclick="toggleEventsFiltroDeportes()">
+                            <span class="events-filtro-opcion-icono">${EVENT_TYPE_ICONS.deportes}</span><span>deportes.</span><span class="events-filtro-chevron"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M34 14l12-12 48 48-48 48-12-12 36-36z"/></svg></span>
                         </button>
                         <div class="events-filtro-subs-wrap"><div class="events-filtro-subs">${['deportes', ...EVENT_DEPORTES].map((d, j) => opcion(d, j)).join('')}</div></div>
                     </div>`
@@ -10682,6 +10682,11 @@
             const filtro = document.getElementById('events-filtro');
             if (!filtro) return;
             const abierto = typeof abrir === 'boolean' ? abrir : !filtro.classList.contains('abierto');
+            if (abierto) {
+                const grupo = document.getElementById('events-filtro-deportes');
+                grupo?.classList.remove('abierto');
+                grupo?.querySelector('.events-filtro-grupo-btn')?.setAttribute('aria-expanded', 'false');
+            }
             filtro.classList.toggle('abierto', abierto);
             document.getElementById('events-filtro-btn')?.setAttribute('aria-expanded', String(abierto));
             document.removeEventListener('pointerdown', cerrarEventsFiltroFuera, true);
