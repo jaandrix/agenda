@@ -3158,6 +3158,16 @@
         // El orden de la barra lateral es el "mapa" de la app: bajar en
         // ella hace que el contenido nuevo entre desde abajo, y subir,
         // desde arriba.
+        function vtOrigenEnContenido() {
+            const punto = vtPunteroReciente();
+            const content = document.getElementById('content');
+            const html = document.documentElement;
+            if (!punto || !content) { html.style.removeProperty('--vt-ox'); html.style.removeProperty('--vt-oy'); return; }
+            const r = content.getBoundingClientRect();
+            html.style.setProperty('--vt-ox', Math.round(punto.x - r.left) + 'px');
+            html.style.setProperty('--vt-oy', Math.round(punto.y - r.top) + 'px');
+        }
+
         function vtDireccionSidebar(desde, hasta) {
             const orden = [...document.querySelectorAll('#sidebar-nav-top [data-view], #sidebar-nav-bottom [data-view]')].map(b => b.dataset.view);
             const a = orden.indexOf(desde), b = orden.indexOf(hasta);
@@ -4482,7 +4492,7 @@
             if (!overlay) { container.innerHTML = ''; return; }
             overlay.style.animation = 'modalOverlayOut 0.18s ease both';
             const sheet = overlay.querySelector('.modal-sheet');
-            if (sheet) sheet.style.animation = 'modalSheetOut 0.18s cubic-bezier(0.4,0,1,1) both';
+            if (sheet) sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.18s cubic-bezier(0.4,0,1,1) both`;
             setTimeout(() => { if (container.contains(overlay)) container.innerHTML = ''; }, 170);
         }
 
@@ -5298,9 +5308,15 @@
             return 'buenas noches.';
         }
 
+        // Mes → semana → día es acercarse: la vista nueva crece desde lo
+        // que se pulsó; volver atrás es alejarse.
+        const CAL_NIVEL_ZOOM = { month: 0, week: 1, day: 2 };
+
         function setCalView(mode) {
-            calViewMode = mode;
-            render();
+            const antes = CAL_NIVEL_ZOOM[calViewMode], despues = CAL_NIVEL_ZOOM[mode];
+            const tipo = despues > antes ? 'acercar' : despues < antes ? 'alejar' : 'fundido';
+            vtOrigenEnContenido();
+            conTransicion(tipo, () => { calViewMode = mode; render(); });
         }
 
         function jumpToToday() {
@@ -17015,6 +17031,16 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     </div>
                 </div>
             `;
+            // El modal nace del punto que se pulsó (un botón, un día del
+            // calendario...) en vez de aparecer siempre en el centro. Se
+            // usan offsetLeft/Top porque no les afecta la escala con la que
+            // arranca la animación; abierto con teclado, sale del centro.
+            const punto = vtPunteroReciente();
+            const sheet = container.querySelector('.modal-sheet');
+            if (punto && sheet && !vtReducido()) {
+                sheet.style.transformOrigin = `${Math.round(punto.x - sheet.offsetLeft)}px ${Math.round(punto.y - sheet.offsetTop)}px`;
+                sheet.classList.add('modal-sheet-desde-punto');
+            }
             // Deja el cursor listo en el primer campo de escritura del modal,
             // para no tener que coger el ratón antes de poder escribir. Un
             // setTimeout(0) en vez de requestAnimationFrame: el foco tiene

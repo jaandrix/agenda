@@ -4854,6 +4854,20 @@ html[data-vt="abajo"]::view-transition-new(contenido) { animation: vtEntrarDesde
 html[data-vt="arriba"]::view-transition-old(contenido) { animation: vtSalirAbajo .14s ease-out both; }
 html[data-vt="arriba"]::view-transition-new(contenido) { animation: vtEntrarDesdeArriba .3s cubic-bezier(.16,1,.3,1) .08s both; }
 
+/* Capa 2: zoom desde el punto pulsado (calendario mes → semana → día y
+   modales). --vt-ox/--vt-oy las fija vtOrigenEnContenido(). */
+@keyframes vtFundirSalida { to { opacity: 0; } }
+@keyframes vtAcercarEntra { from { opacity: 0; transform: scale(.92); } }
+@keyframes vtAlejarSale { to { opacity: 0; transform: scale(.94); } }
+@keyframes vtAlejarEntra { from { opacity: 0; transform: scale(1.03); } }
+html[data-vt="acercar"]::view-transition-old(contenido) { animation: vtFundirSalida .14s ease-out both; }
+html[data-vt="acercar"]::view-transition-new(contenido) { animation: vtAcercarEntra .32s cubic-bezier(.16,1,.3,1) .04s both; transform-origin: var(--vt-ox, 50%) var(--vt-oy, 30%); }
+html[data-vt="alejar"]::view-transition-old(contenido) { animation: vtAlejarSale .18s ease-in both; transform-origin: var(--vt-ox, 50%) var(--vt-oy, 30%); }
+html[data-vt="alejar"]::view-transition-new(contenido) { animation: vtAlejarEntra .3s cubic-bezier(.16,1,.3,1) .06s both; }
+@keyframes modalSheetDesdePunto { from { opacity: 0; transform: scale(.84); } to { opacity: 1; transform: scale(1); } }
+@keyframes modalSheetHaciaPunto { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.9); } }
+.modal-sheet.modal-sheet-desde-punto { animation: modalSheetDesdePunto .28s cubic-bezier(.16,1,.3,1) both; }
+
 /* Modal "Corregir registros" */
 .finance-correction-row { padding:10px 0; border-bottom:1px solid var(--border); }
 .finance-correction-row:last-of-type { border-bottom:none; }
