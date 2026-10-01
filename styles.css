@@ -4097,16 +4097,34 @@ body.papel {
 .planner-stamp-dot.filled { background:#efede3; border-color:#efede3; }
 .planner-stamp-count { font-size:12px; font-weight:700; color:#efede3; font-variant-numeric:tabular-nums; flex-shrink:0; }
 
-.planner-timeline { display:flex; flex-direction:column; gap:10px; }
+/* Planificador como línea de tiempo: hora en su columna, una línea
+   vertical que une los círculos de completar y sin caja por tarea. La
+   línea es el ::before de cada fila (de círculo a círculo); --pl-linea es
+   el centro de la columna del círculo (hora 46px + hueco 12px + mitad
+   del círculo). */
+.planner-timeline { display:flex; flex-direction:column; gap:0; --pl-linea:66.5px; }
 .planner-item {
-    display:grid; grid-template-columns:56px 22px 1fr 24px; align-items:flex-start; gap:12px;
-    background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:13px 14px; position:relative;
-    transition:background .15s ease;
+    display:grid; grid-template-columns:46px 19px 1fr 24px; align-items:flex-start; gap:12px;
+    padding:10px 0 8px; position:relative;
 }
-.planner-item:hover { background:var(--bg-card-hover); }
+.planner-item::before {
+    content:''; position:absolute; left:var(--pl-linea); top:0; bottom:0; width:2px; margin-left:-1px;
+    background:var(--border); border-radius:2px;
+}
+.planner-item:first-child::before { top:20px; }
+.planner-item:last-child::before { bottom:auto; height:20px; }
+.planner-item:only-child::before { display:none; }
+.planner-item .planner-item-check { position:relative; z-index:1; background:var(--bg-app); }
+.planner-item .planner-item-check:checked { background:var(--text-primary); }
 .planner-item-time {
-    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; color:var(--text-secondary);
-    background:var(--bg-app); border-radius:999px; padding:4px 8px; text-align:center; white-space:nowrap;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; color:var(--text-secondary);
+    text-align:right; white-space:nowrap; padding-top:2px; font-variant-numeric:tabular-nums;
+}
+.planner-item .planner-item-title { transition:color .15s ease; }
+@media (hover:hover) {
+    .planner-item .planner-item-delete, .planner-item .planner-subtask-add { opacity:0; transition:opacity .15s ease; }
+    .planner-item:hover .planner-item-delete { opacity:.55; }
+    .planner-item:hover .planner-subtask-add { opacity:1; }
 }
 /* Checkbox propio (círculo relleno al marcar, sin tick — más simple y
    sin líos de centrado), a juego con el resto de la app en vez de la
@@ -4149,7 +4167,7 @@ body.papel {
 .trip-map-container { width:100%; height:420px; border-radius:16px; overflow:hidden; border:1px solid var(--border); }
 .planner-item-past { opacity:0.45; }
 .planner-item-done .planner-item-title { text-decoration:line-through; color:var(--text-secondary); }
-.planner-item-arrastrado { background:rgba(127,29,29,0.07); border-color:rgba(127,29,29,0.25); }
+.planner-item-arrastrado .planner-item-check { border-color:#dc2626; }
 .planner-item-arrastrado .planner-item-time,
 .planner-item-arrastrado .planner-item-title { color:#dc2626; }
 .planner-item-arrastrado-tag { display:inline-block; margin-left:8px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:#7f1d1d; padding:2px 7px; border-radius:999px; vertical-align:middle; }
@@ -5329,7 +5347,7 @@ body.mobile-standalone #mobile-shell {
 .mobile-calendar-wrap .entry-item { padding:16px 10px; font-size:15px; }
 
 .mobile-planner-wrap .planner-head { flex-direction:column; align-items:flex-start; gap:10px; }
-.mobile-planner-wrap .planner-item { padding:16px 10px; }
+.mobile-planner-wrap .planner-item { padding:12px 0 18px; }
 .mobile-planner-wrap .planner-item-title { font-size:16px; }
 .mobile-planner-wrap .planner-item-time { font-size:14px; }
 
