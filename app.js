@@ -3289,6 +3289,23 @@
             raiz.querySelectorAll?.('select.modal-input:not([data-mejorado])').forEach(mejorarSelect);
             const etiquetas = raiz.matches?.('.modal-label') ? [raiz] : [...(raiz.querySelectorAll?.('.modal-label') || [])];
             etiquetas.forEach(l => { if (/[?:.!…]$/.test(l.textContent.trim())) l.classList.add('sin-punto'); });
+            const titulos = raiz.matches?.('.modal-title') ? [raiz] : [...(raiz.querySelectorAll?.('.modal-title') || [])];
+            titulos.forEach(puntoFinalTitulo);
+        }
+
+        // Los títulos de los modales van en minúscula (CSS) y con punto final
+        // como el resto de etiquetas de la app. El punto se añade al último
+        // trozo de texto, no al final del elemento, porque muchos títulos
+        // llevan dentro el botón de cerrar. Los que ya acaban en signo de
+        // puntuación, o son el nombre de una entrada, se dejan como están.
+        function puntoFinalTitulo(t) {
+            if (t.dataset.punto || t.classList.contains('modal-title-contenido')) return;
+            t.dataset.punto = '1';
+            const recorrido = document.createTreeWalker(t, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('button') ? NodeFilter.FILTER_REJECT : (n.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP) });
+            let ultimo = null;
+            while (recorrido.nextNode()) ultimo = recorrido.currentNode;
+            if (!ultimo || /[?:.!…)»"]$/.test(ultimo.textContent.trim())) return;
+            ultimo.textContent = ultimo.textContent.replace(/\s*$/, '.');
         }
 
         new MutationObserver(cambios => cambios.forEach(c => c.addedNodes.forEach(mejorarSelectsEn)))
@@ -3790,7 +3807,7 @@
                         const itemMinutes = (h || 0) * 60 + (m || 0);
                         const isPast = offset === 0 && itemMinutes < nowMinutes;
                         return `
-                        <div class="planner-item ${isPast && !it.arrastrado ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''} ${it.arrastrado && !it.done ? 'planner-item-arrastrado' : ''}">
+                        <div class="planner-item ${isPast && !it.arrastrado ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''} ${it.arrastrado ? 'planner-item-arrastrado' : ''}">
                             <div class="planner-item-time">${escapeHtml(it.time)}</div>
                             <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})">
                             <div class="planner-item-body">
@@ -4674,7 +4691,7 @@
             const recomendarBtn = recomendable
                 ? `<button class="btn-secondary" style="width:auto;margin-left:auto" onclick="abrirRecomendarModal('${entry.id}')">Recomendar</button>`
                 : '';
-            return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div>${renderBacklinksBlock(entry.id, entry.type==='goal' ? ['project'] : null)}<div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}</div></div></div>`;
+            return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title modal-title-contenido${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div>${renderBacklinksBlock(entry.id, entry.type==='goal' ? ['project'] : null)}<div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}</div></div></div>`;
         }
         function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);if(entry.type==='work')loadWorkDocuments(entry.id);if(['project','goal','event'].includes(entry.type))loadEntryDocs(entry.type==='project'?'projects':entry.type==='goal'?'goals':'events',entry.id);}
         async function toggleProjectTask(projectId,taskIndex){
@@ -17022,12 +17039,19 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         let entryDocsCache = {};
         function entryDocsKey(kind, id) { return kind + ':' + id; }
 
+        // Si los documentos de esta entrada ya se cargaron antes, se pintan al
+        // instante (y loadEntryDocs los refresca en segundo plano). Si no, una
+        // línea "buscando…" de la misma altura que "sin documentos.", para
+        // que la sección no salte de tamaño al terminar de cargar.
         function renderEntryDocsSection(kind, id, label) {
+            const cargados = entryDocsCache[entryDocsKey(kind, id)];
             return `<div class="entry-detail-field entry-docs-section" style="grid-column:1/-1">
-                <div class="entry-detail-label">${label}</div>
-                <button class="btn-secondary" style="width:auto;margin-bottom:10px" onclick="document.getElementById('entry-doc-input-${kind}-${id}').click()">+ Subir documento</button>
+                <div class="entry-docs-cabecera">
+                    <div class="entry-detail-label">${label}</div>
+                    <button class="entry-docs-subir" onclick="document.getElementById('entry-doc-input-${kind}-${id}').click()">+ subir.</button>
+                </div>
                 <input type="file" id="entry-doc-input-${kind}-${id}" accept="application/pdf,.pdf,.html,.htm,text/html" style="display:none" onchange="handleEntryDocUpload(event,'${kind}','${id}')">
-                <div id="entry-doc-list-${kind}-${id}">Cargando documentos...</div>
+                <div id="entry-doc-list-${kind}-${id}">${cargados ? renderEntryDocsList(kind, id) : '<div class="entry-docs-vacio entry-docs-cargando">buscando documentos…</div>'}</div>
             </div>`;
         }
 
@@ -17039,17 +17063,20 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 if (error) throw error;
                 entryDocsCache[entryDocsKey(kind, id)] = (data || []).filter(d => d.id !== null);
                 const el = document.getElementById(`entry-doc-list-${kind}-${id}`);
-                if (el) el.innerHTML = renderEntryDocsList(kind, id);
+                if (el) {
+                    const html = renderEntryDocsList(kind, id);
+                    if (el.innerHTML !== html) el.innerHTML = html;
+                }
             } catch (e) {
                 console.error('Error cargando documentos:', e);
                 const el = document.getElementById(`entry-doc-list-${kind}-${id}`);
-                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-title">No se pudieron cargar los documentos</div></div>';
+                if (el) el.innerHTML = '<div class="entry-docs-vacio">no se pudieron cargar los documentos.</div>';
             }
         }
 
         function renderEntryDocsList(kind, id) {
             const docs = entryDocsCache[entryDocsKey(kind, id)] || [];
-            if (!docs.length) return '<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube un PDF o una página HTML</div></div>';
+            if (!docs.length) return '<div class="entry-docs-vacio">sin documentos. puedes subir un PDF o una página HTML.</div>';
             return `<div class="docs-list">${docs.map((doc, i) => {
                 const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
