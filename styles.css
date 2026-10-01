@@ -4785,11 +4785,40 @@ details[open] > .studies-editorial-group-label::before { content:'– '; }
 .events-filtro-opcion.active { background:var(--text-primary); color:var(--accent-contrast); }
 .events-filtro-opcion-icono { width:16px; height:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .events-filtro-opcion-icono svg { width:16px; height:16px; display:block; }
-.events-filtro-grupo { grid-column:1 / -1; display:flex; flex-direction:column; gap:2px; }
-.events-filtro-subs { display:flex; flex-wrap:wrap; gap:4px; padding-left:26px; }
+.events-filtro-grupo { grid-column:1 / -1; display:flex; flex-direction:column; }
+.events-filtro-grupo-btn { width:100%; }
+.events-filtro-grupo.con-seleccion > .events-filtro-grupo-btn { color:var(--text-primary); box-shadow:inset 0 0 0 1px var(--border-strong); }
+.events-filtro-chevron { margin-left:auto; font-size:15px; line-height:1; transition:transform .3s cubic-bezier(.16,1,.3,1); }
+.events-filtro-grupo.abierto .events-filtro-chevron { transform:rotate(90deg); }
+/* Desplegable dentro del desplegable: la altura se abre con
+   grid-template-rows (0fr → 1fr) para no tener que medirla en JS. */
+.events-filtro-subs-wrap { display:grid; grid-template-rows:0fr; transition:grid-template-rows .32s cubic-bezier(.16,1,.3,1); }
+.events-filtro-grupo.abierto .events-filtro-subs-wrap { grid-template-rows:1fr; }
+.events-filtro-subs { min-height:0; overflow:hidden; display:flex; flex-wrap:wrap; gap:4px; padding:0 0 0 26px; }
+.events-filtro-grupo.abierto .events-filtro-subs { padding:4px 0 2px 26px; }
 .events-filtro-opcion.events-filtro-sub { font-size:12px; padding:6px 10px; gap:7px; }
 .events-filtro-sub .events-filtro-opcion-icono, .events-filtro-sub .events-filtro-opcion-icono svg { width:13px; height:13px; }
+.events-filtro.abierto .events-filtro-grupo:not(.abierto) .events-filtro-sub { opacity:0; transform:translateY(-6px); transition:opacity .1s ease, transform .1s ease; }
+.events-filtro.abierto .events-filtro-grupo.abierto .events-filtro-sub { transition:opacity .22s ease calc(var(--j) * 30ms + 60ms), transform .32s cubic-bezier(.16,1,.3,1) calc(var(--j) * 30ms + 60ms), background .15s ease, color .15s ease; }
 .events-lista-fade { animation:viewFadeIn .26s cubic-bezier(.16,1,.3,1) both; }
+
+/* Despliegues: la idea de "filtro." aplicada a otros paneles que nacen
+   de un botón (notificaciones, apartados ocultos, menú móvil, menú
+   contextual). El panel se abre desde el punto de anclaje y
+   su contenido entra escalonado (--i, ver escalonarDespliegue()). */
+@keyframes desplegarDesdeEsquina { from { opacity:0; transform:scale(.94); clip-path:inset(0 0 100% 100% round 18px); } to { opacity:1; transform:none; clip-path:inset(0 0 0 0 round 18px); } }
+@keyframes desplegarCrecer { from { opacity:0; transform:scale(.9); } to { opacity:1; transform:none; } }
+@keyframes despliegueItem { from { opacity:0; transform:translateY(-6px); } }
+@keyframes despliegueItemLateral { from { opacity:0; transform:translateX(-12px); } }
+.despliegue-item { animation:despliegueItem .32s cubic-bezier(.16,1,.3,1) calc(var(--i, 0) * 26ms + 80ms) both; }
+.notif-panel.open { animation:desplegarDesdeEsquina .42s cubic-bezier(.16,1,.3,1) both; transform-origin:calc(100% - 18px) 0; }
+.nav-hidden-drawer.open .nav-hidden-item { animation:despliegueItem .3s cubic-bezier(.16,1,.3,1) calc(var(--i, 0) * 30ms) both; }
+#mobile-menu-panel.open [data-view], #mobile-menu-panel.open .nav-label { animation:despliegueItemLateral .34s cubic-bezier(.16,1,.3,1) calc(var(--i, 0) * 18ms + 90ms) both; }
+.nav-context-menu { animation:desplegarCrecer .22s cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce) {
+    .despliegue-item, .notif-panel.open, .nav-hidden-drawer.open .nav-hidden-item,
+    #mobile-menu-panel.open [data-view], #mobile-menu-panel.open .nav-label, .nav-context-menu { animation:none !important; }
+}
 @media (prefers-reduced-motion: reduce) { .events-filtro-panel, .events-filtro-opcion, .events-filtro-icono svg { transition:none !important; } }
 .events-section-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); margin-bottom:10px; }
 .events-empty-note { font-size:12px; color:var(--text-secondary); padding:4px 0 6px; }

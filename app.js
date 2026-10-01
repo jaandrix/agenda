@@ -1165,6 +1165,7 @@
             const y = Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 8);
             menu.style.left = Math.max(8, x) + 'px';
             menu.style.top = Math.max(8, y) + 'px';
+            menu.style.transformOrigin = `${event.clientX - Math.max(8, x)}px ${event.clientY - Math.max(8, y)}px`;
             setTimeout(() => document.addEventListener('click', closeNavContextMenu, { once: true }), 0);
         }
 
@@ -1195,8 +1196,8 @@
                         <span class="nav-hidden-arrow">›</span>
                     </button>
                     <div class="nav-hidden-list">
-                        ${items.map(x => `
-                            <div class="nav-hidden-item">
+                        ${items.map((x, i) => `
+                            <div class="nav-hidden-item" style="--i:${i}">
                                 <button onclick="switchView('${x.view}')">${escapeHtml(x.label)}</button>
                                 <button class="nav-hidden-restore" title="Mostrar de nuevo" onclick="event.stopPropagation();showSection('${x.view}')">↺</button>
                             </div>
@@ -3220,6 +3221,16 @@
             return true;
         }
 
+        // Misma animación que el panel "filtro." de Eventos, para otros
+        // paneles que nacen de un botón: sus elementos entran uno tras otro
+        // (--i, con tope para que una lista larga no tarde en completarse).
+        function escalonarDespliegue(contenedor, selector, tope = 12) {
+            contenedor?.querySelectorAll(selector).forEach((el, i) => {
+                el.style.setProperty('--i', Math.min(i, tope));
+                el.classList.add('despliegue-item');
+            });
+        }
+
         function vtOrigenEnContenido() {
             const punto = vtPunteroReciente();
             const content = document.getElementById('content');
@@ -3325,6 +3336,7 @@
             const panel = document.getElementById('mobile-menu-panel');
             overlay.classList.toggle('open');
             panel.classList.toggle('open');
+            if (panel.classList.contains('open')) panel.querySelectorAll('[data-view], .nav-label').forEach((el, i) => el.style.setProperty('--i', Math.min(i, 24)));
         }
 
         async function deleteInboxItem(id) {
@@ -7905,6 +7917,7 @@
             panel.classList.toggle('open', willOpen);
             if (willOpen) {
                 panel.innerHTML = renderNotifPanelHtml();
+                escalonarDespliegue(panel, ':scope > *');
                 panel.style.right = '0';
                 // En pantallas estrechas el botón de la campana no queda
                 // pegado al borde derecho (el reloj va después), así que
@@ -10633,17 +10646,24 @@
             return `<span class="events-filtro-icono">${EVENTS_ICONO_FILTRO}</span><span>filtro.</span>${activo ? `<span class="events-filtro-activo">${escapeHtml(activo.toLowerCase())}</span>` : ''}`;
         }
 
-        // Las subcategorías de Deportes van justo debajo de "deportes.",
-        // ocupando el ancho del panel y algo más pequeñas, para que se lea
-        // la jerarquía; "deportes." filtra todos los deportes a la vez.
+        // "deportes." no filtra: abre su propio desplegable con "todos los
+        // deportes." y cada deporte, que entran escalonados igual que el
+        // panel (--j es su posición dentro del grupo). Si el filtro activo
+        // ya es un deporte, el desplegable sale abierto.
         function renderEventsFiltro() {
             let i = 0;
-            const opcion = (t, sub) => `
-                <button class="events-filtro-opcion ${sub ? 'events-filtro-sub' : ''} ${eventsTypeFilter === t ? 'active' : ''}" data-tipo="${t}" style="--i:${i++}" onclick="setEventsTypeFilter('${t}')">
-                    <span class="events-filtro-opcion-icono">${t === 'all' ? EVENTS_ICONO_FILTRO : (EVENT_TYPE_ICONS[t] || EVENT_TYPE_ICONS.otro)}</span><span>${t === 'all' ? 'todos.' : EVENT_TYPE_LABELS[t].toLowerCase() + '.'}</span>
+            const opcion = (t, j) => `
+                <button class="events-filtro-opcion ${j !== undefined ? 'events-filtro-sub' : ''} ${eventsTypeFilter === t ? 'active' : ''}" data-tipo="${t}" style="--i:${i++};--j:${j || 0}" onclick="setEventsTypeFilter('${t}')">
+                    <span class="events-filtro-opcion-icono">${t === 'all' ? EVENTS_ICONO_FILTRO : (EVENT_TYPE_ICONS[t] || EVENT_TYPE_ICONS.otro)}</span><span>${t === 'all' ? 'todos.' : t === 'deportes' && j !== undefined ? 'todos los deportes.' : EVENT_TYPE_LABELS[t].toLowerCase() + '.'}</span>
                 </button>`;
+            const enDeportes = eventsTypeFilter !== 'all' && eventCategoria(eventsTypeFilter) === 'deportes';
             const opciones = ['all', ...EVENT_CATEGORIAS.filter(t => t !== 'deportes'), 'deportes'].map(t => t === 'deportes'
-                ? `<div class="events-filtro-grupo">${opcion(t)}<div class="events-filtro-subs">${EVENT_DEPORTES.map(d => opcion(d, true)).join('')}</div></div>`
+                ? `<div class="events-filtro-grupo ${enDeportes ? 'abierto con-seleccion' : ''}" id="events-filtro-deportes">
+                        <button class="events-filtro-opcion events-filtro-grupo-btn" style="--i:${i++}" aria-expanded="${enDeportes}" onclick="toggleEventsFiltroDeportes()">
+                            <span class="events-filtro-opcion-icono">${EVENT_TYPE_ICONS.deportes}</span><span>deportes.</span><span class="events-filtro-chevron">›</span>
+                        </button>
+                        <div class="events-filtro-subs-wrap"><div class="events-filtro-subs">${['deportes', ...EVENT_DEPORTES].map((d, j) => opcion(d, j)).join('')}</div></div>
+                    </div>`
                 : opcion(t)).join('');
             return `
                 <div class="events-filtro" id="events-filtro">
@@ -10672,6 +10692,13 @@
             }
         }
 
+        function toggleEventsFiltroDeportes() {
+            const grupo = document.getElementById('events-filtro-deportes');
+            if (!grupo) return;
+            const abierto = grupo.classList.toggle('abierto');
+            grupo.querySelector('.events-filtro-grupo-btn')?.setAttribute('aria-expanded', String(abierto));
+        }
+
         function setEventsTypeFilter(type) {
             eventsTypeFilter = type;
             const lista = document.getElementById('events-list-content');
@@ -10683,6 +10710,7 @@
             document.getElementById('events-filtro-btn').innerHTML = renderEventsFiltroBtn();
             document.getElementById('events-filtro-btn').classList.toggle('con-filtro', type !== 'all');
             filtro.querySelectorAll('.events-filtro-opcion').forEach(b => b.classList.toggle('active', b.dataset.tipo === type));
+            document.getElementById('events-filtro-deportes')?.classList.toggle('con-seleccion', type !== 'all' && eventCategoria(type) === 'deportes');
             toggleEventsFiltro(false);
         }
 
