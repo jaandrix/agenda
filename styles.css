@@ -5532,16 +5532,24 @@ body.mobile-standalone #mobile-shell {
 .home-estancia { position:relative; flex-shrink:0; }
 .home-estancia-btn { width:42px; height:42px; box-sizing:border-box; border-radius:50%; background:var(--bg-card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-primary); cursor:pointer; padding:0; transition:background .15s ease, border-color .15s ease, transform .3s cubic-bezier(.16,1,.3,1); }
 .home-estancia-btn svg { width:24px; height:24px; display:block; transition:transform .5s cubic-bezier(.16,1,.3,1); }
-.home-estancia-btn:hover, .home-estancia.abierto .home-estancia-btn { background:var(--bg-card-hover); border-color:var(--border-strong); }
-.home-estancia.abierto .home-estancia-btn svg { transform:rotate(45deg); }
-.home-estancia-panel { position:absolute; top:calc(100% + 10px); right:0; z-index:30; width:260px; box-sizing:border-box; padding:16px 16px 12px; display:flex; flex-direction:column; align-items:center; gap:6px; background:var(--bg-modal); border:1px solid var(--border-strong); border-radius:20px; box-shadow:var(--shadow); transform-origin:calc(100% - 21px) 0; opacity:0; transform:scale(.94); clip-path:inset(0 0 100% 100% round 20px); visibility:hidden; pointer-events:none; transition:opacity .16s ease, transform .2s ease, clip-path .2s ease, visibility 0s linear .2s; }
-.home-estancia.abierto .home-estancia-panel { opacity:1; transform:none; clip-path:inset(0 0 0 0 round 20px); visibility:visible; pointer-events:auto; transition:opacity .2s ease, transform .42s cubic-bezier(.16,1,.3,1), clip-path .44s cubic-bezier(.16,1,.3,1), visibility 0s; }
-.home-estancia-panel .bitacora-activity-radial { width:228px; height:228px; flex:none; }
+.home-estancia-btn:hover, .home-estancia-btn.activo { background:var(--bg-card-hover); border-color:var(--border-strong); }
+.home-estancia-btn.activo svg { transform:rotate(45deg); }
+/* Gráfico flotando en el centro sobre toda la pantalla difuminada, sin
+   panel. Sale desde el botón (translate --dx/--dy + escala pequeña) y
+   vuelve a él al cerrar. */
+.estancia-overlay { position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(0,0,0,0); backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); transition:background .4s ease, backdrop-filter .4s ease, -webkit-backdrop-filter .4s ease; }
+.estancia-overlay.abierto { background:rgba(0,0,0,.28); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); }
+body.papel .estancia-overlay.abierto { background:rgba(255,255,255,.18); }
+.estancia-flotante { display:flex; flex-direction:column; align-items:center; gap:14px; color:var(--text-primary); transform:translate(var(--dx), var(--dy)) scale(.12); opacity:0; transition:transform .38s cubic-bezier(.5,0,.75,0), opacity .3s ease .08s; }
+.estancia-overlay.abierto .estancia-flotante { transform:none; opacity:1; transition:transform .6s cubic-bezier(.16,1,.3,1), opacity .25s ease; }
+.estancia-flotante .bitacora-activity-radial { width:min(72vmin, 440px); height:min(72vmin, 440px); flex:none; }
+.estancia-flotante-titulo { font-size:14px; font-weight:600; color:var(--text-primary); opacity:.75; }
 @keyframes radialCrecer { from { stroke-dashoffset:1; } to { stroke-dashoffset:0; } }
 @keyframes radialAparecer { from { opacity:0; } }
-.home-estancia.abierto .radial-barra { stroke-dasharray:1; stroke-dashoffset:1; animation:radialCrecer .5s cubic-bezier(.16,1,.3,1) calc(var(--i) * 7ms + 180ms) forwards; }
-.home-estancia.abierto .radial-guia { animation:radialAparecer .4s ease calc(var(--i) * 7ms + 120ms) both; }
+.estancia-overlay.abierto .radial-barra { stroke-dasharray:1; stroke-dashoffset:1; animation:radialCrecer .5s cubic-bezier(.16,1,.3,1) calc(var(--i) * 7ms + 260ms) forwards; }
+.estancia-overlay.abierto .radial-guia { animation:radialAparecer .4s ease calc(var(--i) * 7ms + 200ms) both; }
+.estancia-overlay.cerrando .radial-barra { stroke-dasharray:1; stroke-dashoffset:0; }
 @media (prefers-reduced-motion: reduce) {
-    .home-estancia-panel, .home-estancia-btn svg { transition:none !important; }
-    .home-estancia.abierto .radial-barra, .home-estancia.abierto .radial-guia { animation:none; stroke-dashoffset:0; }
+    .estancia-overlay, .estancia-flotante, .home-estancia-btn svg { transition:none !important; }
+    .estancia-overlay.abierto .radial-barra, .estancia-overlay.abierto .radial-guia { animation:none; stroke-dashoffset:0; }
 }
