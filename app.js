@@ -2588,6 +2588,7 @@
             categories.forEach(c => { if (!c.id) c.id = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2,
                     6); });
             filteredEntries = [...entries];
+            invalidarCachesDerivadas();
             updatePageTitle();
             return true;
         }
@@ -2601,9 +2602,22 @@
         let saveChain = Promise.resolve();
 
         function saveData() {
+            invalidarCachesDerivadas();
             const attempt = saveChain.then(doSaveData, doSaveData);
             saveChain = attempt.catch(() => {});
+            // doSaveData mezcla con lo último de Supabase (otra pestaña u
+            // otro dispositivo), así que al terminar los datos pueden haber
+            // cambiado otra vez.
+            attempt.finally(invalidarCachesDerivadas).catch(() => {});
             return attempt;
+        }
+
+        // Cálculos caros que dependen de todos los datos (patrones de Home,
+        // actividad por día) se guardan entre pintados; cualquier cambio de
+        // datos pasa por saveData() o por loadData(), que los invalidan.
+        function invalidarCachesDerivadas() {
+            patronesCache = null;
+            actividadPorDiaCache = null;
         }
 
         // Clave de semana ISO (año-Wsemana), usada para no disparar el
@@ -6200,12 +6214,23 @@
         // entradas (cualquier tipo), notas y movimientos de Finanzas PRO.
         // No pretende ser un recuento exhaustivo de cada rincón de la app,
         // solo una señal razonable de actividad real por día.
+        // Antes cada día recorría todas las entradas, notas y movimientos; las
+        // estadísticas lo piden para cada día desde el primer registro y el
+        // radial de Home para 90 días en cada pintado. Ahora se cuenta todo
+        // en una pasada y se guarda (ver invalidarCachesDerivadas()).
+        let actividadPorDiaCache = null;
+
         function bitacoraActivityCount(dateISO) {
-            let count = 0;
-            count += entries.filter(e => e.date === dateISO || e.startDate === dateISO).length;
-            count += (Array.isArray(notes) ? notes : []).filter(n => String(n.date || n.createdAt || '').slice(0, 10) === dateISO).length;
-            count += (financePro?.transactions || []).filter(t => t.date === dateISO).length;
-            return count;
+            const clave = todayISO() + '|' + entries.length + '|' + (notes || []).length + '|' + (financePro?.transactions?.length || 0);
+            if (!actividadPorDiaCache || actividadPorDiaCache.clave !== clave) {
+                const mapa = new Map();
+                const sumar = d => { if (d) mapa.set(d, (mapa.get(d) || 0) + 1); };
+                entries.forEach(e => { sumar(e.date); if (e.startDate !== e.date) sumar(e.startDate); });
+                (Array.isArray(notes) ? notes : []).forEach(n => sumar(String(n.date || n.createdAt || '').slice(0, 10)));
+                (financePro?.transactions || []).forEach(t => sumar(t.date));
+                actividadPorDiaCache = { clave, mapa };
+            }
+            return actividadPorDiaCache.mapa.get(dateISO) || 0;
         }
 
         // Gráfica radial circular — un radio por día de los últimos `days`,
@@ -6466,7 +6491,23 @@
             return 'un ' + Math.round((1 - r) * 100) + ' % menos';
         }
 
+        // Cruzar 180 días de todos los apartados cuesta más que pintar la
+        // vista entera, y Home se vuelve a pintar a menudo sin que cambie
+        // ningún dato: se guarda el resultado hasta el siguiente saveData()
+        // (que es por donde pasa cualquier cambio) o hasta que cambie el día.
+        let patronesCache = null;
+
         function patronesHallazgos() {
+            let marcados = 0;
+            (habits || []).forEach(h => { marcados += Object.keys(h.completadas || {}).length; });
+            const clave = [todayISO(), entries.length, financePro?.transactions?.length || 0, (notes || []).length, marcados, Object.keys(dailyEffort || {}).length].join('|');
+            if (patronesCache && patronesCache.clave === clave) return patronesCache.hallazgos;
+            const hallazgos = calcularPatrones();
+            patronesCache = { clave, hallazgos };
+            return hallazgos;
+        }
+
+        function calcularPatrones() {
             const hoy = new Date();
             const dias = [];
             for (let i = PATRONES_DIAS; i >= 1; i--) dias.push(patronesIso(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - i, 12)));
@@ -11448,8 +11489,14 @@
         // ============================================================
         //  FINANZAS: HUB
         // ============================================================
+        // toLocaleString con opciones crea un formateador nuevo en cada
+        // llamada, y Finanzas formatea decenas de importes y meses por
+        // pintado: se crean una sola vez y se reutilizan (mismo resultado).
+        const FMT_EUROS = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const FMT_MES_ANIO = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' });
+
         function financeMoney(value) {
-            return Number(value || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
+            return FMT_EUROS.format(Number(value || 0)) + '€';
         }
 
         function financeMonthKey(date = new Date()) {
@@ -11459,7 +11506,7 @@
         function financeMonthLabel(key) {
             const [y, m] = String(key).split('-').map(Number);
             if (!y || !m) return key;
-            return new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            return FMT_MES_ANIO.format(new Date(y, m - 1, 1));
         }
 
         function financeTotalAssets() {
@@ -13558,18 +13605,23 @@
             let cursor = new Date(Number(startMonth.slice(0, 4)), Number(startMonth.slice(5, 7)) - 1, 1);
             const end = new Date(Number(endMonth.slice(0, 4)), Number(endMonth.slice(5, 7)) - 1, 1);
             while (cursor <= end) { months.push(financeMonthKey(cursor)); cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1); }
+            // Una sola pasada sobre los movimientos ya ordenados, acumulando
+            // mes a mes: antes cada mes volvía a recorrer todos los movimientos
+            // desde cero, y la vista de Finanzas llama a esto varias veces por
+            // pintado (gráfica principal, una por cuenta, comparativas).
+            let bal = keys.reduce((s, k) => s + Number(financePro.accounts[k]?.balance0 || 0), 0);
+            let idx = 0;
             const results = months.map(m => {
                 const cutoff = m + '-31';
-                let bal = keys.reduce((s, k) => s + Number(financePro.accounts[k]?.balance0 || 0), 0);
-                txs.forEach(t => {
-                    if (t.date > cutoff) return;
+                for (; idx < sorted.length && sorted[idx].date <= cutoff; idx++) {
+                    const t = sorted[idx];
                     if (t.type === 'transfer') {
                         if (keys.includes(t.account) && !keys.includes(t.transferTo)) bal -= Number(t.amount) || 0;
                         if (keys.includes(t.transferTo) && !keys.includes(t.account)) bal += Number(t.amount) || 0;
                     } else if (keys.includes(t.account)) {
                         bal += (t.type === 'income' ? 1 : -1) * (Number(t.amount) || 0);
                     }
-                });
+                }
                 return { month: m, balance: bal };
             });
             // El saldo de cada mes ya se calcula desde cero hasta ese mes, así
