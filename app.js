@@ -694,32 +694,8 @@
             render();
         }
 
-        function mobileCarouselGo(delta) {
-            const list = mobileCarouselSections();
-            mobileCarouselIndex = Math.max(0, Math.min(list.length - 1, mobileCarouselIndex + delta));
-            currentView = list[mobileCarouselIndex].view;
-            render();
-        }
-
-        // Swipe táctil: se reengancha en cada render porque el propio
-        // render() reemplaza el HTML entero del carrusel.
-        function attachMobileSwipeHandlers() {
-            const el = document.getElementById('mobile-page-body');
-            if (!el) return;
-            let startX = 0, startY = 0, dragging = false;
-            el.addEventListener('touchstart', e => {
-                startX = e.touches[0].clientX; startY = e.touches[0].clientY; dragging = true;
-            }, { passive: true });
-            el.addEventListener('touchend', e => {
-                if (!dragging) return;
-                dragging = false;
-                const dx = e.changedTouches[0].clientX - startX;
-                const dy = e.changedTouches[0].clientY - startY;
-                if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-                    mobileCarouselGo(dx < 0 ? 1 : -1);
-                }
-            }, { passive: true });
-        }
+        // Ya no se pasa de sección deslizando el dedo: el usuario quiere
+        // quedarse en la que eligió y volver al menú con "volver al home.".
 
         // Recuerda para qué apartado ya se dispararon sus efectos de carga
         // (documentos, amigos...), para no repetirlos en cada re-render
@@ -732,7 +708,6 @@
             if (!shell) return;
             shell.innerHTML = mobileScreen === 'welcome' ? renderMobileWelcome() : renderMobileCarousel();
             if (mobileScreen === 'carousel') {
-                setTimeout(attachMobileSwipeHandlers, 0);
                 if (mobileLastEffectView !== currentView) {
                     mobileLastEffectView = currentView;
                     const effect = MOBILE_SECTION_EFFECTS[currentView];
@@ -767,12 +742,8 @@
             const current = sections[mobileCarouselIndex] || sections[0];
             return `
             <div class="mobile-carousel">
-                <div class="mobile-page-top">
-                    <button class="mobile-icon-btn" onclick="backToMobileMenu()" title="Menú">☰</button>
-                    <div class="mobile-page-title">${escapeHtml(current.text.toLowerCase())}.</div>
-                    <span class="mobile-icon-btn-spacer"></span>
-                </div>
-                <div class="mobile-page-dots">${sections.map((s, i) => `<span class="mobile-dot ${i === mobileCarouselIndex ? 'active' : ''}"></span>`).join('')}</div>
+                <button class="mobile-volver-btn" onclick="backToMobileMenu()"><span aria-hidden="true">←</span> volver al home.</button>
+                <div class="mobile-page-title">${escapeHtml(current.text.toLowerCase())}.</div>
                 <div class="mobile-page-body" id="mobile-page-body">${renderMobileSectionBody(current.view)}</div>
             </div>`;
         }
