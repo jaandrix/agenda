@@ -2891,8 +2891,12 @@
         // Dos tonos únicos — "asfalto" (oscuro, por defecto, sin clase en
         // <body>) y "papel" (claro, body.papel). Sustituyen a los tres
         // temas anteriores (oscuro puro / claro puro / beige).
-        const THEMES = ['asfalto', 'papel'];
-        const THEME_LABELS = { asfalto: 'asfalto', papel: 'papel' };
+        const THEMES = ['asfalto', 'papel', 'acuarela'];
+        const THEME_LABELS = { asfalto: 'asfalto', papel: 'papel', acuarela: 'acuarela' };
+        // Acuarela es un tema claro con pasteles: lleva también la clase
+        // papel para heredar todos los ajustes de tema claro, y encima los
+        // suyos (body.acuarela en styles.css).
+        const THEME_CLASSES = { asfalto: [], papel: ['papel'], acuarela: ['papel', 'acuarela'] };
         // Los temas antiguos ('dark'/'light'/'beige') que ya hubiera
         // guardados en localStorage de sesiones previas migran al tono más
         // parecido la primera vez que se cargan, para no cambiarle el tema
@@ -2905,18 +2909,38 @@
                 theme = THEME_MIGRATION[theme];
                 localStorage.setItem('bitacora_theme', theme);
             }
+            aplicarClasesTema(THEMES.includes(theme) ? theme : 'asfalto');
+        }
+
+        function aplicarClasesTema(tema) {
             THEMES.forEach(t => document.body.classList.remove(t));
-            if (theme !== 'asfalto') document.body.classList.add(theme);
+            (THEME_CLASSES[tema] || []).forEach(c => document.body.classList.add(c));
+        }
+
+        function temaActual() {
+            const guardado = localStorage.getItem('bitacora_theme');
+            return THEMES.includes(guardado) ? guardado : 'asfalto';
+        }
+
+        function setTheme(tema) {
+            aplicarClasesTema(tema);
+            localStorage.setItem('bitacora_theme', tema);
+            document.querySelectorAll('.tema-opcion').forEach(b => b.classList.toggle('active', b.dataset.tema === tema));
+            showToast('Tema cambiado a ' + THEME_LABELS[tema]);
         }
 
         function toggleTheme() {
-            const current = THEMES.find(t => document.body.classList.contains(t)) || 'asfalto';
-            const idx = (THEMES.indexOf(current) + 1) % THEMES.length;
-            const next = THEMES[idx];
-            THEMES.forEach(t => document.body.classList.remove(t));
-            if (next !== 'asfalto') document.body.classList.add(next);
-            localStorage.setItem('bitacora_theme', next);
-            showToast('Tema cambiado a ' + THEME_LABELS[next]);
+            setTheme(THEMES[(THEMES.indexOf(temaActual()) + 1) % THEMES.length]);
+        }
+
+        function renderSelectorTema() {
+            const actual = temaActual();
+            const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#D8D1B5', '#C8DAB2', '#B9CBD9', '#E7D2CA'] };
+            return `<div class="tema-selector">${THEMES.map(t => `
+                <button class="tema-opcion ${t === actual ? 'active' : ''}" data-tema="${t}" onclick="setTheme('${t}')">
+                    <span class="tema-muestra">${muestras[t].map(c => `<span style="background:${c}"></span>`).join('')}</span>
+                    <span>${THEME_LABELS[t]}.</span>
+                </button>`).join('')}</div>`;
         }
 
         // ============================================================
@@ -10847,7 +10871,7 @@
             const diasHasta = e.date ? Math.round((new Date(e.date + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 86400000) : null;
             const cercania = diasHasta >= 0 && diasHasta <= 3 ? ` event-sq-day-en-${diasHasta}` : '';
             return `
-                <div class="event-sq-card ${isPast ? 'event-sq-card-past' : ''}" data-open-entry="${e.id}">
+                <div class="event-sq-card ${isPast ? 'event-sq-card-past' : ''}" data-open-entry="${e.id}" data-categoria="${eventCategoria(e.eventType)}">
                     <div class="event-sq-icon">${icon}</div>
                     <div class="event-sq-body">
                         <div class="event-sq-title">${escapeHtml(e.title)}</div>
@@ -11527,8 +11551,11 @@
                     <div class="chart-container" style="margin-bottom:16px" id="settings-appearance-section">
                         <div class="chart-title">Apariencia</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                            <button class="btn-secondary" style="width:auto" onclick="toggleTheme()">Cambiar tema</button>
                             <button class="btn-secondary" style="width:auto" onclick="toggleMode()">Alternar modo ancho</button>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin:14px 0 8px">Tema</div>
+                        <div>
+                            ${renderSelectorTema()}
                         </div>
                         <div style="font-size:11px;color:var(--text-secondary);margin:14px 0 8px">Tipografía</div>
                         <div id="font-options-container">${renderFontOptionsList()}</div>

@@ -65,8 +65,11 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   apartados. Finanzas, Estudios, Calendario, Planificador y Home tienen vista móvil
   propia y simplificada; el resto de apartados reutilizan el `renderXxx()` de
   escritorio dentro de un contenedor con tipografía más grande.
-- **Dos temas únicos:** "asfalto" (oscuro, por defecto) y "papel" (claro, clase
-  `body.papel`) — variables CSS en `:root` y en `body.papel`, nada de temas múltiples.
+- **Tres temas:** "asfalto" (oscuro, por defecto, sin clase), "papel" (claro, clase
+  `body.papel`) y "acuarela" (claro con pasteles caqui/salvia/azul/rosa, clases
+  `body.papel.acuarela`: hereda todo lo de papel y añade su paleta). Variables CSS en
+  `:root`, `body.papel` y `body.papel.acuarela`; los colores por elemento de acuarela
+  están al final de `styles.css` ("TEMA ACUARELA"). Se elige en Ajustes (`setTheme`).
 
 ## Convenciones establecidas (seguirlas sin que haga falta repetirlas)
 

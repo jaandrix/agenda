@@ -43,6 +43,33 @@
             --landing-grid-line: rgba(239,237,227,0.14);
         }
 
+        /* Acuarela (body.papel.acuarela): papel con pasteles empolvados —
+           caqui, salvia, azul grisáceo y rosa palo — sobre blanco roto,
+           texto carbón y botones en píldora negra. Los colores por
+           elemento están al final de styles.css ("TEMA ACUARELA"). */
+        body.papel.acuarela {
+            --bg-app: #F2F0EA;
+            --bg-sidebar: #F7F5F0;
+            --bg-card: #FBFAF7;
+            --bg-card-hover: #ECE9E1;
+            --bg-input: #EEEBE4;
+            --bg-modal: #FBFAF7;
+            --bg-fab: #262624;
+            --border: #E3DFD5;
+            --border-strong: #CFC9BC;
+            --text-primary: #262624;
+            --text-secondary: #6E6B63;
+            --text-muted: #A19D93;
+            --accent: #262624;
+            --accent-contrast: #FBFAF7;
+            --shadow: 0 6px 24px rgba(38,38,36,0.08);
+            --pastel-caqui: #D8D1B5;
+            --pastel-salvia: #C8DAB2;
+            --pastel-azul: #B9CBD9;
+            --pastel-rosa: #E7D2CA;
+            --pastel-salvia-fuerte: #7E9C66;
+        }
+
         body.papel {
             --bg-app: #FAF8F5;
             --bg-sidebar: #ffffff;
@@ -5573,3 +5600,43 @@ body.papel .estancia-overlay.abierto { background:rgba(255,255,255,.18); }
 }
 .mobile-planner-wrap .culture-tabs { display:flex; flex-wrap:nowrap; gap:2px; }
 .mobile-planner-wrap .culture-tabs .culture-tab { flex:1 1 auto; padding:8px 10px; font-size:12.5px; white-space:nowrap; text-align:center; min-width:0; }
+
+/* ============================================================
+   TEMA ACUARELA — dónde entra el color (las variables están arriba,
+   en body.papel.acuarela). Se colorea lo que agrupa o lanza algo
+   (lanzadores, tarjetas de acción, iconos de categoría), no el texto
+   ni los fondos de lectura, para que siga siendo un espacio tranquilo.
+   ============================================================ */
+body.acuarela .home-launcher-row:nth-child(4n+1) .home-launcher-icon { background:var(--pastel-caqui); border-color:transparent; }
+body.acuarela .home-launcher-row:nth-child(4n+2) .home-launcher-icon { background:var(--pastel-salvia); border-color:transparent; }
+body.acuarela .home-launcher-row:nth-child(4n+3) .home-launcher-icon { background:var(--pastel-azul); border-color:transparent; }
+body.acuarela .home-launcher-row:nth-child(4n+4) .home-launcher-icon { background:var(--pastel-rosa); border-color:transparent; }
+body.acuarela .home-estancia-btn { background:var(--pastel-azul); border-color:transparent; }
+body.acuarela .planner-action-card { border-color:transparent; }
+body.acuarela .planner-action-card:nth-child(1) { background:var(--pastel-caqui); }
+body.acuarela .planner-action-card:nth-child(2) { background:var(--pastel-salvia); }
+body.acuarela .planner-action-card .planner-action-icon { color:var(--text-primary); }
+body.acuarela .planner-stamp-bar { background:var(--pastel-azul); }
+body.acuarela .planner-stamp-label, body.acuarela .planner-stamp-count { color:var(--text-primary); }
+body.acuarela .planner-stamp-dot { border-color:rgba(38,38,36,.45); }
+body.acuarela .planner-stamp-dot.filled { background:var(--text-primary); border-color:var(--text-primary); }
+body.acuarela .sidebar-nav button.active { background:var(--pastel-caqui); }
+body.acuarela .event-sq-icon { background:var(--bg-card-hover); color:var(--text-primary); }
+body.acuarela [data-categoria="social"] .event-sq-icon { background:var(--pastel-rosa); }
+body.acuarela [data-categoria="cine"] .event-sq-icon, body.acuarela [data-categoria="teatro"] .event-sq-icon, body.acuarela [data-categoria="concierto"] .event-sq-icon { background:var(--pastel-azul); }
+body.acuarela [data-categoria="deportes"] .event-sq-icon { background:var(--pastel-salvia); }
+body.acuarela [data-categoria="estudios"] .event-sq-icon, body.acuarela [data-categoria="hogar"] .event-sq-icon { background:var(--pastel-caqui); }
+body.acuarela .event-hero-flat { background:var(--pastel-rosa); }
+body.acuarela .event-hero-icon { background:rgba(255,255,255,.55); }
+body.acuarela .habit-dot.on, body.acuarela .pattern-bar-fill.on { background:var(--pastel-salvia-fuerte); }
+body.acuarela .lt-card { background:#EDF1F3; }
+body.acuarela .modal-overlay { background:rgba(38,38,36,.32); }
+
+/* Selector de tema en Ajustes */
+.tema-selector { display:flex; gap:8px; flex-wrap:wrap; }
+.tema-opcion { display:flex; align-items:center; gap:10px; padding:8px 14px 8px 8px; border-radius:999px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); font-family:var(--font-family); font-size:13px; font-weight:500; cursor:pointer; transition:border-color .15s ease, color .15s ease; }
+.tema-opcion:hover { border-color:var(--border-strong); color:var(--text-primary); }
+.tema-opcion.active { border-color:var(--text-primary); color:var(--text-primary); font-weight:600; }
+.tema-muestra { display:flex; border-radius:999px; overflow:hidden; border:1px solid var(--border); }
+.tema-muestra span { width:12px; height:22px; display:block; }
+body.acuarela .events-toolbar .btn-secondary[style*="#3b82f6"] { background:var(--accent) !important; border-color:var(--accent) !important; color:var(--accent-contrast) !important; border-radius:999px; }
