@@ -5455,6 +5455,9 @@ body.mobile-standalone #mobile-shell {
 .entrada-editor-add:hover { color:var(--text-primary); border-color:var(--text-secondary); background:var(--bg-card-hover); }
 .entrada-editor-add svg { width:16px; height:16px; }
 .entrada-editor-nota { font-size:11px; color:var(--text-secondary); margin:6px 0 14px; }
+.entrada-editor-progreso { font-size:11.5px; color:var(--text-secondary); margin:2px 0 8px; }
+.planner-item-enlace { cursor:pointer; text-decoration:underline; text-decoration-color:var(--border-strong); text-underline-offset:3px; }
+.planner-item-enlace:hover { text-decoration-color:currentColor; }
 .entrada-abrir-btn, .event-hero-entrada { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; margin:4px 0 12px; border-radius:999px; border:none; background:var(--text-primary); color:var(--accent-contrast); font-family:var(--font-family); font-size:13px; font-weight:600; cursor:pointer; transition:transform .15s ease, opacity .15s ease; }
 .entrada-abrir-btn:hover, .event-hero-entrada:hover { transform:translateY(-1px); }
 .entrada-abrir-btn svg, .event-hero-entrada svg { width:16px; height:16px; }
@@ -5524,6 +5527,7 @@ body.mobile-standalone #mobile-shell {
 .event-sq-day.event-sq-day-en-3 { background:#f6c27a; color:#3d2a10; border-color:#f6c27a; }
 .event-sq-day.event-sq-day-en-2 { background:#f08c42; color:#2e1606; border-color:#f08c42; }
 .event-sq-day.event-sq-day-en-1 { background:#d9452f; color:#fff; border-color:#d9452f; }
+.event-sq-day.event-sq-day-en-0 { background:#a3243b; color:#fff; border-color:#a3243b; }
 
 /* Centro resumen: "tu estancia en bitácora." dentro de un botón arriba a
    la derecha. El panel se despliega desde el botón (como "filtro.") y los

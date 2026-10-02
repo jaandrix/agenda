@@ -3811,7 +3811,7 @@
                             <div class="planner-item-time">${escapeHtml(it.time)}</div>
                             <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})">
                             <div class="planner-item-body">
-                                <div class="planner-item-title"><span ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''}>${escapeHtml(it.title)}</span></div>
+                                <div class="planner-item-title"><span ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''} ${it.valorarPeliculaId ? `class="planner-item-enlace" onclick="openEditEntry('${it.valorarPeliculaId}')" title="Abrir la película para valorarla"` : ''}>${escapeHtml(it.title)}</span></div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
                                 ${renderPlannerSubtasks(it, offset)}
                             </div>
@@ -4968,8 +4968,12 @@
                     <input id="modal-place" class="modal-input" value="${isEdit ? entry.place || '' : ''}" placeholder="Ej: Wembley Stadium">
                     <div class="modal-label">Notas</div>
                     <textarea id="modal-notes" class="modal-input" rows="2">${isEdit ? entry.notes || '' : ''}</textarea>
+                    <div class="modal-label">¿Cuántas personas vais?</div>
+                    <select id="modal-event-personas" class="modal-input" onchange="window._personasEvento = Number(this.value); document.getElementById('entradas-editor').innerHTML = renderEntradasEditor()">
+                        ${[1, 2, 3, 4, 5, 6].map(n => `<option value="${n}" ${(isEdit ? (entry.personas || 1) : 1) === n ? 'selected' : ''}>${n === 1 ? 'Solo yo' : n + ' personas'}</option>`).join('')}
+                    </select>
                     <div class="modal-label">Entradas</div>
-                    <div id="entradas-editor">${(window._entradasDraft = isEdit ? JSON.parse(JSON.stringify(entry.entradas || [])) : [], renderEntradasEditor())}</div>
+                    <div id="entradas-editor">${(window._entradasDraft = isEdit ? JSON.parse(JSON.stringify(entry.entradas || [])) : [], window._personasEvento = isEdit ? (entry.personas || 1) : 1, renderEntradasEditor())}</div>
                     <input type="file" id="entradas-input" accept="image/*" style="display:none" onchange="anadirEntradaDesdeImagen(event)">
                 `;
             }
@@ -5131,6 +5135,7 @@
                 if (editId) {
                     entry.rating = parseInt(document.getElementById('modal-rating')?.value) || 0;
                     entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
+                    if (entry.rating > 0) completarTareaValorarPelicula(entry.id);
                 } else {
                     entry.rating = 0;
                     entry.notes = '';
@@ -5219,6 +5224,13 @@
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 const entradas = (window._entradasDraft || []).filter(x => x && (x.qrB64 || x.qr));
                 if (entradas.length) entry.entradas = entradas;
+                const personas = Number(document.getElementById('modal-event-personas')?.value) || 1;
+                if (personas > 1) entry.personas = personas;
+                // saveEntry reconstruye la entrada desde el formulario: sin
+                // esto, editar un cine ya convertido en película lo volvería
+                // a convertir y duplicaría la película.
+                const previo = editId ? entries.find(e => e.id === editId) : null;
+                if (previo?.peliculaId) entry.peliculaId = previo.peliculaId;
             } else if (type === 'place') {
                 entry.date = document.getElementById('modal-date')?.value || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
@@ -10859,10 +10871,10 @@
             const icon = EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro;
             const day = e.date ? e.date.slice(8, 10) : '–';
             const isPast = e.date && e.date < todayISO();
-            // El número del día se tiñe de naranja a rojo a medida que se
-            // acerca el evento: solo a 3, 2 y 1 día(s) de que suceda.
+            // El número del día se tiñe de naranja a granate a medida que se
+            // acerca el evento: a 3, 2 y 1 día(s) y el propio día.
             const diasHasta = e.date ? Math.round((new Date(e.date + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 86400000) : null;
-            const cercania = diasHasta >= 1 && diasHasta <= 3 ? ` event-sq-day-en-${diasHasta}` : '';
+            const cercania = diasHasta >= 0 && diasHasta <= 3 ? ` event-sq-day-en-${diasHasta}` : '';
             return `
                 <div class="event-sq-card ${isPast ? 'event-sq-card-past' : ''}" data-open-entry="${e.id}">
                     <div class="event-sq-icon">${icon}</div>
@@ -10871,8 +10883,52 @@
                         <div class="event-sq-meta"><span class="event-sq-dot" style="background:${color}"></span>${escapeHtml(typeLabel || e.place || 'Evento')}${e.time ? `,&nbsp;<em>${escapeHtml(e.time)}.</em>` : ''}</div>
                     </div>
                     ${e.entradas?.length && !isPast ? `<button class="event-sq-entrada" title="Ver entrada" onclick="event.stopPropagation();abrirEntradas('${e.id}')">${ENTRADA_ICONO}</button>` : ''}
-                    <div class="event-sq-day${cercania}" ${cercania ? `title="${diasHasta === 1 ? 'Mañana' : 'En ' + diasHasta + ' días'}"` : ''}>${day}</div>
+                    <div class="event-sq-day${cercania}" ${cercania ? `title="${diasHasta === 0 ? 'Hoy' : diasHasta === 1 ? 'Mañana' : 'En ' + diasHasta + ' días'}"` : ''}>${day}</div>
                 </div>`;
+        }
+
+        // ============================================================
+        //  CINE → PELÍCULA VISTA
+        //  Tres horas después de empezar un evento de cine (21:00 si no
+        //  tiene hora) se crea solo la tarjeta de película vista, sin
+        //  valorar, y una tarea de hoy en el planificador para valorarla.
+        //  Solo para cines de las últimas 48 h: así los cines antiguos de
+        //  antes de existir esto no se convierten todos de golpe. El evento
+        //  guarda peliculaId para no convertirse dos veces.
+        // ============================================================
+        function convertirCinesEnPeliculas() {
+            if (!Array.isArray(entries) || !entries.length) return;
+            const ahora = Date.now();
+            const nuevas = [];
+            entries.filter(e => e && e.type === 'event' && e.eventType === 'cine' && e.date && !e.peliculaId && !isCalendarLogEntry(e)).forEach(ev => {
+                const inicio = new Date(`${ev.date}T${/^\d{2}:\d{2}/.test(ev.time || '') ? ev.time.slice(0, 5) : '21:00'}:00`).getTime();
+                if (Number.isNaN(inicio) || ahora < inicio + 3 * 3600000 || ahora - inicio > 48 * 3600000) return;
+                const titulo = String(ev.title || '').replace(/^(cine|película|peli)\s*[:·\-–—]\s*/i, '').trim() || ev.title || 'Película';
+                const peli = { id: 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), title: titulo, type: 'movie', date: ev.date, categoryId: getCategoryIdForType('movie'), tags: [], rating: 0, notes: '' };
+                entries.push(peli);
+                ev.peliculaId = peli.id;
+                const ya = new Date();
+                plannerItemsForOffset(0).push({
+                    id: 'planner_valorar_' + peli.id,
+                    time: `${String(ya.getHours()).padStart(2, '0')}:${String(ya.getMinutes()).padStart(2, '0')}`,
+                    title: 'valorar la película. ' + titulo,
+                    notes: '', done: false,
+                    valorarPeliculaId: peli.id
+                });
+                nuevas.push(titulo);
+            });
+            if (!nuevas.length) return;
+            filteredEntries = [...entries];
+            render();
+            showToast(nuevas.length === 1 ? `«${nuevas[0]}» añadida a películas vistas · valórala cuando puedas` : `${nuevas.length} películas añadidas a vistas`);
+            saveData().catch(e => console.error(e));
+        }
+
+        // Valorar la película (guardarla con nota) da por hecha su tarea.
+        function completarTareaValorarPelicula(peliculaId) {
+            Object.values(dayPlanner?.days || {}).forEach(lista => (lista || []).forEach(it => {
+                if (it.valorarPeliculaId === peliculaId) it.done = true;
+            }));
         }
 
         // ============================================================
@@ -10898,17 +10954,23 @@
             return SCRIPTS_CARGADOS[url];
         }
 
+        // Con varias personas el editor va guiando "entrada 2 de 2"; no
+        // limita: se pueden añadir más o menos entradas que personas.
         function renderEntradasEditor() {
             const lista = window._entradasDraft || [];
+            const personas = window._personasEvento || 1;
+            const siguiente = lista.length + 1;
+            const textoSubir = personas > 1 && siguiente <= personas ? `subir QR · entrada ${siguiente} de ${personas}.` : 'subir captura del QR.';
             return `
                 ${lista.map((x, i) => `
                     <div class="entrada-editor-fila">
                         <span class="entrada-editor-icono">${ENTRADA_ICONO}</span>
-                        <input class="modal-input entrada-editor-etiqueta" value="${escapeHtml(x.etiqueta || '')}" placeholder="Entrada ${i + 1} · p. ej. fila 12, asiento 8" oninput="window._entradasDraft[${i}].etiqueta = this.value">
+                        <input class="modal-input entrada-editor-etiqueta" value="${escapeHtml(x.etiqueta || '')}" placeholder="Entrada ${i + 1}${personas > 1 ? ' de ' + personas : ''} · p. ej. fila 12, asiento 8" oninput="window._entradasDraft[${i}].etiqueta = this.value">
                         <button type="button" class="planner-item-delete" title="Quitar entrada" onclick="quitarEntradaDraft(${i})">×</button>
                     </div>`).join('')}
+                ${personas > 1 ? `<div class="entrada-editor-progreso">${Math.min(lista.length, personas)} de ${personas} entradas añadidas.</div>` : ''}
                 <div class="entrada-editor-acciones">
-                    <button type="button" class="entrada-editor-add" onclick="document.getElementById('entradas-input').click()">${ENTRADA_ICONO}<span>subir captura del QR.</span></button>
+                    <button type="button" class="entrada-editor-add" onclick="document.getElementById('entradas-input').click()">${ENTRADA_ICONO}<span>${textoSubir}</span></button>
                     <button type="button" class="entrada-editor-add" onclick="pegarEntradaDelPortapapeles()"><span>pegar.</span></button>
                 </div>
                 <div class="entrada-editor-nota">También puedes pegarla con Ctrl + V mientras este formulario está abierto.</div>`;
@@ -18236,7 +18298,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             loadTheme();
             loadFontPref();
             const loaded = await loadData();
-            if (loaded) ensureRecurringProCharges();
+            if (loaded) {
+                ensureRecurringProCharges();
+                convertirCinesEnPeliculas();
+                setInterval(convertirCinesEnPeliculas, 5 * 60000);
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') convertirCinesEnPeliculas(); });
+            }
             await cargarCodigoAmigo();
             await cargarAmigos();
             await cargarNombrePublico();
