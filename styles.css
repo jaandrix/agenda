@@ -5640,3 +5640,66 @@ body.acuarela .modal-overlay { background:rgba(38,38,36,.32); }
 .tema-muestra { display:flex; border-radius:999px; overflow:hidden; border:1px solid var(--border); }
 .tema-muestra span { width:12px; height:22px; display:block; }
 body.acuarela .events-toolbar .btn-secondary[style*="#3b82f6"] { background:var(--accent) !important; border-color:var(--accent) !important; color:var(--accent-contrast) !important; border-radius:999px; }
+
+/* ============================================================
+   CALENDARIO ANUAL DE ESTRELLAS (ver "CALENDARIO ANUAL" en app.js)
+   Flota en el centro sobre la pantalla difuminada, como "tu estancia".
+   Cada estrella es una máscara coloreable; --o es su posición en
+   diagonal (mes + día) y escalona tanto la aparición como el cambio de
+   color al pasar de una vista a otra.
+   ============================================================ */
+.anual-overlay { position:fixed; inset:0; z-index:1090; display:flex; padding:24px 16px; box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain; background:rgba(0,0,0,0); backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); transition:background .4s ease, backdrop-filter .4s ease, -webkit-backdrop-filter .4s ease; }
+.anual-overlay.abierto { background:rgba(0,0,0,.3); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+body.papel .anual-overlay.abierto { background:rgba(250,248,245,.35); }
+.anual-cerrar { position:fixed; top:max(16px, env(safe-area-inset-top)); right:16px; width:40px; height:40px; box-sizing:border-box; border-radius:50%; border:1px solid var(--border-strong); background:var(--bg-card); color:var(--text-primary); font-size:15px; cursor:pointer; opacity:0; transition:opacity .3s ease; z-index:2; }
+.anual-overlay.abierto .anual-cerrar { opacity:1; }
+.anual-flotante { width:min(92vw, 760px); margin:auto; display:flex; flex-direction:column; align-items:center; gap:10px; color:var(--text-primary); transform:translate(var(--dx), var(--dy)) scale(.1); opacity:0; transition:transform .38s cubic-bezier(.5,0,.75,0), opacity .3s ease .08s; }
+.anual-overlay.abierto .anual-flotante { transform:none; opacity:1; transition:transform .6s cubic-bezier(.16,1,.3,1), opacity .25s ease; }
+.anual-cabecera { display:flex; align-items:center; gap:22px; }
+.anual-anio { font-size:clamp(44px, 10vw, 76px); font-weight:800; letter-spacing:-2px; line-height:1; font-variant-numeric:tabular-nums; }
+.anual-flecha { width:40px; height:40px; box-sizing:border-box; border-radius:50%; border:1px solid var(--border-strong); background:none; color:var(--text-primary); font-size:20px; line-height:1; cursor:pointer; transition:background .15s ease; }
+.anual-flecha:hover { background:var(--bg-card-hover); }
+.anual-resumen { font-size:13px; color:var(--text-secondary); margin-bottom:14px; min-height:18px; }
+.anual-grid { width:100%; display:flex; flex-direction:column; gap:clamp(2px, .7vw, 7px); }
+.anual-fila { display:flex; align-items:center; gap:10px; }
+.anual-mes { width:12px; flex-shrink:0; font-size:11px; font-weight:600; color:var(--text-secondary); text-align:center; }
+.anual-dias { flex:1; display:grid; grid-template-columns:repeat(31, minmax(0, 1fr)); gap:clamp(1px, .45vw, 5px); }
+.anual-estrella {
+    display:block; width:100%; aspect-ratio:1; background-color:var(--text-primary);
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 0C55 36 64 45 100 50C64 55 55 64 50 100C45 64 36 55 0 50C36 45 45 36 50 0Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 0C55 36 64 45 100 50C64 55 55 64 50 100C45 64 36 55 0 50C36 45 45 36 50 0Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition:background-color .45s ease calc(var(--o, 0) * 10ms), opacity .45s ease calc(var(--o, 0) * 10ms), transform .25s cubic-bezier(.16,1,.3,1);
+}
+.anual-estrella[data-futuro] { opacity:.13; }
+@keyframes anualAparecer { from { opacity:0; transform:scale(.2); } }
+@keyframes anualLatido { 0%, 100% { transform:scale(1.5); } 50% { transform:scale(1.2); } }
+.anual-overlay.abierto .anual-grid .anual-estrella { animation:anualAparecer .5s cubic-bezier(.16,1,.3,1) calc(var(--o, 0) * 14ms + 120ms) both; }
+.anual-overlay.abierto .anual-grid .anual-estrella[data-hoy] { transform:scale(1.5); animation:anualAparecer .5s cubic-bezier(.16,1,.3,1) calc(var(--o, 0) * 14ms + 120ms) both, anualLatido 2.6s ease-in-out 1.4s infinite; }
+/* viajes.: días de viaje en dorado, el resto atenuado */
+.anual-grid[data-vista="viajes"] .anual-estrella { opacity:.2; }
+.anual-grid[data-vista="viajes"] .anual-estrella[data-viaje] { opacity:1; background-color:#d4a017; }
+.anual-grid[data-vista="viajes"] .anual-estrella[data-viaje][data-futuro] { opacity:.55; }
+/* esfuerzo.: escala de azules 1-5; los días vividos sin puntuar, grises */
+.anual-grid[data-vista="esfuerzo"] .anual-estrella:not([data-futuro]) { background-color:var(--border-strong); cursor:pointer; }
+.anual-grid[data-vista="esfuerzo"] .anual-estrella:not([data-futuro]):hover { transform:scale(1.35); }
+.anual-grid[data-vista="esfuerzo"] .anual-estrella[data-esfuerzo="1"], .anual-leyenda-esfuerzo-1 { background-color:#bfdbfe; }
+.anual-grid[data-vista="esfuerzo"] .anual-estrella[data-esfuerzo="2"], .anual-leyenda-esfuerzo-2 { background-color:#93c5fd; }
+.anual-grid[data-vista="esfuerzo"] .anual-estrella[data-esfuerzo="3"], .anual-leyenda-esfuerzo-3 { background-color:#60a5fa; }
+.anual-grid[data-vista="esfuerzo"] .anual-estrella[data-esfuerzo="4"], .anual-leyenda-esfuerzo-4 { background-color:#3b82f6; }
+.anual-grid[data-vista="esfuerzo"] .anual-estrella[data-esfuerzo="5"], .anual-leyenda-esfuerzo-5 { background-color:#1e40af; }
+.anual-vistas { display:flex; gap:8px; margin-top:20px; flex-wrap:wrap; justify-content:center; }
+.anual-vista-btn { padding:9px 18px; border-radius:999px; border:1px solid var(--border-strong); background:var(--bg-card); color:var(--text-secondary); font-family:var(--font-family); font-size:13px; font-weight:600; cursor:pointer; transition:background .2s ease, color .2s ease, border-color .2s ease; }
+.anual-vista-btn:hover { color:var(--text-primary); }
+.anual-vista-btn.active { background:var(--text-primary); border-color:var(--text-primary); color:var(--accent-contrast); }
+.anual-leyenda { display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center; align-items:center; font-size:11.5px; color:var(--text-secondary); min-height:20px; }
+.anual-leyenda-item { display:inline-flex; align-items:center; gap:6px; }
+.anual-leyenda .anual-estrella { width:12px; height:12px; flex-shrink:0; transition:none; }
+.anual-leyenda .anual-leyenda-futuro { opacity:.2; }
+.anual-leyenda .anual-leyenda-hoy { transform:scale(1.3); }
+.anual-leyenda .anual-leyenda-viaje { background-color:#d4a017; }
+.anual-leyenda .anual-leyenda-apagada { opacity:.2; }
+.anual-leyenda-nota { width:100%; text-align:center; }
+@media (prefers-reduced-motion: reduce) {
+    .anual-overlay, .anual-flotante, .anual-estrella { transition:none !important; }
+    .anual-overlay.abierto .anual-grid .anual-estrella { animation:none !important; }
+}

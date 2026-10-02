@@ -5599,24 +5599,59 @@
         // ============================================================
         //  VISTA ANUAL (calendario de puntos, un punto por día)
         // ============================================================
-        let yearCalCompareMode = false;
         // Puntuación de esfuerzo (1-5) por día: cuánto te esforzaste ese día
-        // en cumplir tus objetivos. Es la forma de "categorizar" cada día
-        // desde este mismo calendario — se puntúa haciendo clic en su
-        // casilla mientras la vista de esfuerzo está activa.
+        // en cumplir tus objetivos. Se puntúa pulsando su estrella en la
+        // vista "esfuerzo." del calendario anual.
         let dailyEffort = {};
-        let yearCalEffortMode = false;
+
+        // ============================================================
+        //  CALENDARIO ANUAL (estrellas)
+        //  Una estrella por día del año, flotando en el centro sobre la
+        //  pantalla difuminada (mismo gesto que "tu estancia en bitácora."):
+        //  sale desde el botón que lo abre. Tres vistas que solo cambian un
+        //  atributo del contenedor (data-vista), así el color de cada
+        //  estrella cambia con una transición CSS escalonada en diagonal
+        //  (--o) en vez de volver a pintar la cuadrícula.
+        // ============================================================
+        let yearCalVista = 'dias';
 
         function abrirCalendarioAnual() {
             yearCalYear = new Date().getFullYear();
-            yearCalCompareMode = false;
-            yearCalEffortMode = false;
-            showModal(renderCalendarioAnual());
+            yearCalVista = 'dias';
+            if (document.getElementById('anual-overlay')) return;
+            const origen = document.querySelector('.year-cal-btn');
+            const r = origen?.getBoundingClientRect();
+            const overlay = document.createElement('div');
+            overlay.id = 'anual-overlay';
+            overlay.className = 'anual-overlay';
+            overlay.style.setProperty('--dx', r ? Math.round(r.left + r.width / 2 - window.innerWidth / 2) + 'px' : '0px');
+            overlay.style.setProperty('--dy', r ? Math.round(r.top + r.height / 2 - window.innerHeight / 2) + 'px' : '0px');
+            overlay.innerHTML = `<button class="anual-cerrar" onclick="cerrarCalendarioAnual()" aria-label="Cerrar">✕</button><div class="anual-flotante" id="anual-flotante">${renderCalendarioAnual()}</div>`;
+            overlay.addEventListener('click', e => { if (e.target === overlay) cerrarCalendarioAnual(); });
+            document.body.appendChild(overlay);
+            document.addEventListener('keydown', cerrarCalendarioAnualConTecla, true);
+            requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('abierto')));
+        }
+
+        function cerrarCalendarioAnualConTecla(e) {
+            // Con el selector de esfuerzo abierto encima, Escape cierra solo ese modal.
+            if (e.key !== 'Escape' || document.querySelector('#modal-container .modal-overlay')) return;
+            e.stopPropagation();
+            cerrarCalendarioAnual();
+        }
+
+        function cerrarCalendarioAnual() {
+            const overlay = document.getElementById('anual-overlay');
+            if (!overlay || overlay.classList.contains('cerrando')) return;
+            overlay.classList.add('cerrando');
+            overlay.classList.remove('abierto');
+            document.removeEventListener('keydown', cerrarCalendarioAnualConTecla, true);
+            setTimeout(() => overlay.remove(), 420);
         }
 
         function refrescarCalendarioAnual() {
-            const sheet = document.querySelector('#modal-container .modal-sheet');
-            if (sheet) sheet.innerHTML = renderCalendarioAnual();
+            const cont = document.getElementById('anual-flotante');
+            if (cont) cont.innerHTML = renderCalendarioAnual();
         }
 
         function cambiarYearCal(delta) {
@@ -5624,90 +5659,85 @@
             refrescarCalendarioAnual();
         }
 
-        // Anillo verde de "hoy" — el único que sigue siendo un reborde en vez
-        // de rellenar la bolita entera, para que siga siendo identificable
-        // pase lo que pase con el color de fondo en cada vista.
-        const ANILLO_HOY = '0 0 0 1.2px var(--bg-modal), 0 0 0 2.7px #22c55e';
-
-        // En la vista de comparación, trabajado/viaje ya no son un reborde:
-        // colorean la bolita entera (más visual). Cada combinación tiene su
-        // propia clase para poder animarlo con transición suave.
-        function claseCompareDot(trabajado, viaje) {
-            if (trabajado && viaje) return 'year-dot-worked-travel';
-            if (trabajado) return 'year-dot-worked';
-            if (viaje) return 'year-dot-travel';
-            return '';
+        function setYearCalVista(vista) {
+            yearCalVista = vista;
+            const grid = document.querySelector('#anual-flotante .anual-grid');
+            if (grid) grid.dataset.vista = vista;
+            document.querySelectorAll('#anual-flotante .anual-vista-btn').forEach(b => b.classList.toggle('active', b.dataset.vista === vista));
+            const resumen = document.getElementById('anual-resumen');
+            if (resumen) resumen.innerHTML = renderYearCalResumen();
+            const leyenda = document.getElementById('anual-leyenda');
+            if (leyenda) leyenda.innerHTML = renderYearCalLeyenda();
         }
 
-        const YEAR_CAL_MODE_CLASSES = ['year-dot-worked', 'year-dot-travel', 'year-dot-worked-travel',
-            'year-dot-square', 'year-dot-effort-none', 'year-dot-effort-1', 'year-dot-effort-2', 'year-dot-effort-3', 'year-dot-effort-4', 'year-dot-effort-5'];
-
-        // No se regenera todo el modal (eso crearía puntos nuevos de cero y
-        // el cambio se vería como un salto brusco): se cambian las clases de
-        // cada punto ya existente en su sitio, así la transición CSS de
-        // .year-dot (color de fondo/borde/forma) anima de verdad entre una
-        // vista y otra en vez de saltar de golpe — incluida la transición
-        // círculo-cuadrado del modo esfuerzo.
-        function applyYearCalDotStates() {
-            document.querySelectorAll('.year-cal-grid-wrap .year-dot[title]').forEach(dot => {
-                const dateStr = dot.getAttribute('title');
-                const esFuturo = dot.classList.contains('year-dot-future');
-                dot.classList.remove(...YEAR_CAL_MODE_CLASSES);
-                dot.onclick = null;
-                if (yearCalEffortMode) {
-                    dot.classList.add('year-dot-square');
-                    if (!esFuturo) {
-                        const score = dailyEffort[dateStr] || 0;
-                        dot.classList.add(score > 0 ? 'year-dot-effort-' + score : 'year-dot-effort-none');
-                        dot.onclick = () => openDailyEffortPicker(dateStr);
-                    }
-                } else if (yearCalCompareMode) {
-                    const cls = claseCompareDot(esDiaTrabajado(dateStr), esDiaDeViaje(dateStr));
-                    if (cls) dot.classList.add(cls);
+        function yearCalDias() {
+            const dias = [];
+            const hoy = todayISO();
+            for (let m = 0; m < 12; m++) {
+                const n = new Date(yearCalYear, m + 1, 0).getDate();
+                for (let d = 1; d <= n; d++) {
+                    const iso = `${yearCalYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    dias.push({ iso, m, d, futuro: iso > hoy, hoy: iso === hoy });
                 }
-            });
-            document.querySelector('.year-cal-compare-btn')?.classList.toggle('active', yearCalCompareMode);
-            document.querySelector('.year-cal-effort-btn')?.classList.toggle('active', yearCalEffortMode);
-            const legend = document.querySelector('.year-cal-legend');
-            if (legend) legend.innerHTML = renderYearCalLegendHtml();
+            }
+            return dias;
         }
 
-        function toggleYearCalCompare() {
-            yearCalCompareMode = !yearCalCompareMode;
-            if (yearCalCompareMode) yearCalEffortMode = false;
-            applyYearCalDotStates();
+        function renderYearCalResumen() {
+            const dias = yearCalDias();
+            const vividos = dias.filter(x => !x.futuro).length;
+            if (yearCalVista === 'viajes') {
+                const n = dias.filter(x => esDiaDeViaje(x.iso)).length;
+                return `${n} ${n === 1 ? 'día' : 'días'} de viaje en ${yearCalYear}.`;
+            }
+            if (yearCalVista === 'esfuerzo') {
+                const notas = dias.map(x => dailyEffort[x.iso]).filter(Boolean);
+                return notas.length ? `media ${(notas.reduce((a, b) => a + b, 0) / notas.length).toLocaleString('es-ES', { maximumFractionDigits: 1 })} · ${notas.length} ${notas.length === 1 ? 'día puntuado' : 'días puntuados'}.` : 'todavía sin días puntuados.';
+            }
+            return vividos >= dias.length ? `${dias.length} días vividos.` : `${vividos} días vividos · ${dias.length - vividos} por venir.`;
         }
 
-        function toggleYearCalEffort() {
-            yearCalEffortMode = !yearCalEffortMode;
-            if (yearCalEffortMode) yearCalCompareMode = false;
-            applyYearCalDotStates();
+        function renderYearCalLeyenda() {
+            const e = (cls, txt) => `<span class="anual-leyenda-item"><span class="anual-estrella ${cls}"></span>${txt}</span>`;
+            if (yearCalVista === 'viajes') return e('anual-leyenda-viaje', 'día de viaje') + e('anual-leyenda-apagada', 'resto');
+            if (yearCalVista === 'esfuerzo') return [1, 2, 3, 4, 5].map(n => e('anual-leyenda-esfuerzo-' + n, String(n))).join('') + '<span class="anual-leyenda-nota">pulsa una estrella para puntuar ese día.</span>';
+            return e('', 'vivido') + e('anual-leyenda-futuro', 'por venir') + e('anual-leyenda-hoy', 'hoy');
         }
 
-        function renderYearCalLegendHtml() {
-            if (yearCalEffortMode) {
-                return `
-                    <div class="year-cal-legend-item"><span class="year-dot year-dot-square year-dot-effort-none year-cal-legend-dot"></span> Sin puntuar</div>
-                    ${[1, 2, 3, 4, 5].map(n => `<div class="year-cal-legend-item"><span class="year-dot year-dot-square year-dot-effort-${n} year-cal-legend-dot"></span> ${n}</div>`).join('')}
-                    <div class="year-cal-legend-item"><span class="year-dot year-dot-square year-dot-future year-cal-legend-dot"></span> Día futuro</div>
-                `;
+        function renderCalendarioAnual() {
+            const dias = yearCalDias();
+            const meses = ['e', 'f', 'm', 'a', 'm', 'j', 'j', 'a', 's', 'o', 'n', 'd'];
+            let filas = '';
+            for (let m = 0; m < 12; m++) {
+                let celdas = '';
+                dias.filter(x => x.m === m).forEach(x => {
+                    const esfuerzo = dailyEffort[x.iso];
+                    celdas += `<span class="anual-estrella" style="--o:${x.m + x.d}" data-fecha="${x.iso}" title="${x.iso}"${x.futuro ? ' data-futuro' : ''}${x.hoy ? ' data-hoy' : ''}${esDiaDeViaje(x.iso) ? ' data-viaje' : ''}${esfuerzo ? ` data-esfuerzo="${esfuerzo}"` : ''}></span>`;
+                });
+                filas += `<div class="anual-fila"><span class="anual-mes">${meses[m]}</span><div class="anual-dias">${celdas}</div></div>`;
             }
             return `
-                ${yearCalCompareMode ? `
-                    <div class="year-cal-legend-item"><span class="year-dot year-dot-worked year-cal-legend-dot"></span> Día trabajado</div>
-                    <div class="year-cal-legend-item"><span class="year-dot year-dot-travel year-cal-legend-dot"></span> Día de viaje</div>
-                    <div class="year-cal-legend-item"><span class="year-dot year-dot-future year-cal-legend-dot"></span> Día futuro</div>
-                ` : `
-                    <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot"></span> Día transcurrido</div>
-                    <div class="year-cal-legend-item"><span class="year-dot year-dot-future year-cal-legend-dot"></span> Día futuro</div>
-                `}
-                <div class="year-cal-legend-item"><span class="year-dot year-cal-legend-dot" style="box-shadow:${ANILLO_HOY}"></span> Hoy</div>
-            `;
+                <div class="anual-cabecera">
+                    <button class="anual-flecha" onclick="cambiarYearCal(-1)" aria-label="Año anterior">‹</button>
+                    <div class="anual-anio">${yearCalYear}</div>
+                    <button class="anual-flecha" onclick="cambiarYearCal(1)" aria-label="Año siguiente">›</button>
+                </div>
+                <div class="anual-resumen" id="anual-resumen">${renderYearCalResumen()}</div>
+                <div class="anual-grid" data-vista="${yearCalVista}" onclick="clickEstrellaAnual(event)">${filas}</div>
+                <div class="anual-vistas">
+                    ${[['dias', 'días.'], ['viajes', 'viajes.'], ['esfuerzo', 'esfuerzo.']].map(([v, t]) => `<button class="anual-vista-btn ${yearCalVista === v ? 'active' : ''}" data-vista="${v}" onclick="setYearCalVista('${v}')">${t}</button>`).join('')}
+                </div>
+                <div class="anual-leyenda" id="anual-leyenda">${renderYearCalLeyenda()}</div>`;
         }
 
-        // Puntuar el esfuerzo de un día concreto (1-5) — la forma de
-        // "categorizar" cada día desde este calendario. Los días futuros no
-        // se pueden puntuar (el propio onclick no se añade para ellos).
+        function clickEstrellaAnual(e) {
+            const estrella = e.target.closest('.anual-estrella');
+            if (!estrella || yearCalVista !== 'esfuerzo' || estrella.hasAttribute('data-futuro')) return;
+            openDailyEffortPicker(estrella.dataset.fecha);
+        }
+
+        // Puntuar el esfuerzo de un día concreto (1-5). Se abre como modal
+        // por encima del calendario anual, que sigue abierto debajo.
         function openDailyEffortPicker(dateStr) {
             const current = dailyEffort[dateStr] || 0;
             const fecha = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -5723,7 +5753,11 @@
 
         async function setDailyEffort(dateStr, value) {
             if (value > 0) dailyEffort[dateStr] = value; else delete dailyEffort[dateStr];
-            showModal(renderCalendarioAnual());
+            closeModal();
+            const estrella = document.querySelector(`#anual-flotante .anual-estrella[data-fecha="${dateStr}"]`);
+            if (estrella) { if (value > 0) estrella.dataset.esfuerzo = value; else estrella.removeAttribute('data-esfuerzo'); }
+            const resumen = document.getElementById('anual-resumen');
+            if (resumen) resumen.innerHTML = renderYearCalResumen();
             try { await saveData(); } catch (e) { console.error('Error guardando el esfuerzo diario:', e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -5741,74 +5775,6 @@
         function esDiaDeViaje(dateStr) {
             return entries.some(e => e.type === 'travel' && e.startDate && e.endDate &&
                 dateStr >= e.startDate && dateStr <= e.endDate);
-        }
-
-        function renderCalendarioAnual() {
-            const anio = yearCalYear;
-            const hoy = todayISO();
-            const maxDias = 31;
-
-            let headerDias = '';
-            for (let d = 1; d <= maxDias; d++) {
-                headerDias += `<span>${(d === 1 || d % 5 === 0) ? d : ''}</span>`;
-            }
-
-            let filas = '';
-            for (let m = 0; m < 12; m++) {
-                const nombreMes = new Date(anio, m, 1).toLocaleDateString('es-ES', { month: 'short' }).replace('.', '');
-                const diasMes = new Date(anio, m + 1, 0).getDate();
-                let celdas = '';
-                for (let d = 1; d <= maxDias; d++) {
-                    if (d > diasMes) { celdas += `<div class="year-cal-cell"></div>`; continue; }
-                    const dateStr = `${anio}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    const esHoy = dateStr === hoy;
-                    const esFuturo = dateStr > hoy;
-                    let cls = 'year-dot' + (esFuturo ? ' year-dot-future' : '');
-                    let onclickAttr = '';
-                    if (yearCalEffortMode) {
-                        cls += ' year-dot-square';
-                        if (!esFuturo) {
-                            const score = dailyEffort[dateStr] || 0;
-                            cls += score > 0 ? ' year-dot-effort-' + score : ' year-dot-effort-none';
-                            onclickAttr = ` onclick="openDailyEffortPicker('${dateStr}')"`;
-                        }
-                    } else if (yearCalCompareMode) {
-                        const compareCls = claseCompareDot(esDiaTrabajado(dateStr), esDiaDeViaje(dateStr));
-                        if (compareCls) cls += ' ' + compareCls;
-                    }
-                    const estiloExtra = esHoy ? ` style="box-shadow:${ANILLO_HOY}"` : '';
-                    celdas += `<div class="year-cal-cell"><span class="${cls}" title="${dateStr}"${estiloExtra}${onclickAttr}></span></div>`;
-                }
-                filas += `<div class="year-cal-row"><div class="year-cal-month-label">${nombreMes}</div><div class="year-cal-days">${celdas}</div></div>`;
-            }
-
-            return `
-            <div class="year-cal-modal">
-                <div class="modal-title">
-                    <span style="display:flex;align-items:center;gap:10px">
-                        <button class="cal-nav-arrow" onclick="cambiarYearCal(-1)">‹</button>
-                        ${anio}
-                        <button class="cal-nav-arrow" onclick="cambiarYearCal(1)">›</button>
-                        <button class="year-cal-compare-btn ${yearCalCompareMode ? 'active' : ''}" onclick="toggleYearCalCompare()" title="Comparar trabajado/viaje">
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="6.5"/><circle cx="15" cy="12" r="6.5"/></svg>
-                        </button>
-                        <button class="year-cal-compare-btn year-cal-effort-btn ${yearCalEffortMode ? 'active' : ''}" onclick="toggleYearCalEffort()" title="Esfuerzo diario">
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18v-5"/><path d="M12 18V9"/><path d="M19 18V6"/></svg>
-                        </button>
-                    </span>
-                    <button class="modal-close" onclick="closeModal()">✕</button>
-                </div>
-                <div class="year-cal-body">
-                    <div class="year-cal-grid-wrap">
-                        <div class="year-cal-header">
-                            <div class="year-cal-header-spacer"></div>
-                            <div class="year-cal-header-days">${headerDias}</div>
-                        </div>
-                        ${filas}
-                    </div>
-                </div>
-                <div class="year-cal-legend">${renderYearCalLegendHtml()}</div>
-            </div>`;
         }
 
         // ============================================================
@@ -5897,7 +5863,7 @@
                     `).join('')}
                 </div>
                 <button class="year-cal-btn" onclick="abrirCalendarioAnual()" title="Vista anual">
-                    <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="3" cy="3" r="1.4" fill="currentColor"/><circle cx="8" cy="3" r="1.4" fill="currentColor"/><circle cx="13" cy="3" r="1.4" fill="currentColor"/><circle cx="3" cy="8" r="1.4" fill="currentColor"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="13" cy="8" r="1.4" fill="currentColor"/><circle cx="3" cy="13" r="1.4" fill="currentColor"/><circle cx="8" cy="13" r="1.4" fill="currentColor"/><circle cx="13" cy="13" r="1.4" fill="currentColor"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3.4 0.0c.35 2.45.95 3.05 3.4 3.4c-2.45.35-3.05.95-3.4 3.4c-.35-2.45-.95-3.05-3.4-3.4c2.45-.35 3.05-.95 3.4-3.4zM12.6 0.0c.35 2.45.95 3.05 3.4 3.4c-2.45.35-3.05.95-3.4 3.4c-.35-2.45-.95-3.05-3.4-3.4c2.45-.35 3.05-.95 3.4-3.4zM3.4 9.2c.35 2.45.95 3.05 3.4 3.4c-2.45.35-3.05.95-3.4 3.4c-.35-2.45-.95-3.05-3.4-3.4c2.45-.35 3.05-.95 3.4-3.4zM12.6 9.2c.35 2.45.95 3.05 3.4 3.4c-2.45.35-3.05.95-3.4 3.4c-.35-2.45-.95-3.05-3.4-3.4c2.45-.35 3.05-.95 3.4-3.4zM8 4.6c.35 2.45.95 3.05 3.4 3.4c-2.45.35-3.05.95-3.4 3.4c-.35-2.45-.95-3.05-3.4-3.4c2.45-.35 3.05-.95 3.4-3.4z"/></svg>
                 </button>
             </div>`;
 
