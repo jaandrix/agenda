@@ -5664,10 +5664,15 @@
             const grid = document.querySelector('#anual-flotante .anual-grid');
             if (grid) grid.dataset.vista = vista;
             document.querySelectorAll('#anual-flotante .anual-vista-btn').forEach(b => b.classList.toggle('active', b.dataset.vista === vista));
-            const resumen = document.getElementById('anual-resumen');
-            if (resumen) resumen.innerHTML = renderYearCalResumen();
-            const leyenda = document.getElementById('anual-leyenda');
-            if (leyenda) leyenda.innerHTML = renderYearCalLeyenda();
+            fundirTextoAnual('anual-resumen', renderYearCalResumen());
+            fundirTextoAnual('anual-leyenda', renderYearCalLeyenda());
+        }
+
+        function fundirTextoAnual(id, html) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('anual-texto-fuera');
+            setTimeout(() => { el.innerHTML = html; el.classList.remove('anual-texto-fuera'); }, 180);
         }
 
         function yearCalDias() {
@@ -5694,7 +5699,8 @@
                 const notas = dias.map(x => dailyEffort[x.iso]).filter(Boolean);
                 return notas.length ? `media ${(notas.reduce((a, b) => a + b, 0) / notas.length).toLocaleString('es-ES', { maximumFractionDigits: 1 })} · ${notas.length} ${notas.length === 1 ? 'día puntuado' : 'días puntuados'}.` : 'todavía sin días puntuados.';
             }
-            return vividos >= dias.length ? `${dias.length} días vividos.` : `${vividos} días vividos · ${dias.length - vividos} por venir.`;
+            const quedan = dias.length - vividos;
+            return quedan <= 0 ? `${yearCalYear} ya terminó.` : `le ${quedan === 1 ? 'queda 1 día' : `quedan ${quedan} días`} a ${yearCalYear}.`;
         }
 
         function renderYearCalLeyenda() {
