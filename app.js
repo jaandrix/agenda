@@ -13451,8 +13451,9 @@
             // Gasto real hasta ahora este mes en la categoría vinculada —
             // para poder ajustar el importe previsto sobre la marcha en
             // vez de descubrir la desviación al grabar el mes.
-            const spent = a.categoryId ? financeProCategorySpend(a.categoryId, month) : null;
-            const over = spent != null && Number(a.amount) > 0 && spent > Number(a.amount);
+            const pres = a.categoryId ? financeProPresupuestoConDevoluciones(a.categoryId, month, a.amount) : null;
+            const spent = pres ? pres.gastado : null;
+            const over = pres && Number(a.amount) > 0 && pres.gastado > pres.limite;
             return `
             <div class="budget-alloc-row">
                 <input class="modal-input budget-alloc-label" value="${escapeHtml(a.label || '')}" placeholder="Ej. Alquiler, Ahorro..." oninput="updateBudgetAllocation('${a.id}','label',this.value,false)" onchange="updateBudgetAllocation('${a.id}','label',this.value,true)">
@@ -13461,7 +13462,7 @@
                     <option value="">Sin vincular</option>
                     ${cats.map(c => `<option value="${c.id}" ${a.categoryId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
-                <div class="budget-alloc-spent${over ? ' over' : ''}">${spent != null ? financeMoney(spent) : '—'}</div>
+                <div class="budget-alloc-spent${over ? ' over' : ''}">${spent != null ? financeMoney(spent) : '—'}${pres?.devuelto > 0 ? `<small title="Lo devuelto este mes amplía lo que puedes gastar en esta casilla">+${financeMoney(pres.devuelto)} devuelto.</small>` : ''}</div>
                 <button class="doc-action-delete-btn" title="Eliminar" onclick="removeBudgetAllocation('${a.id}')">✕</button>
             </div>`;
         }
@@ -14714,12 +14715,24 @@
         // existe una categoría de ingreso con ese nombre, no hay nada que
         // restar y se comporta como antes.
         function financeProCategorySpend(catId, monthKey) {
+            return Math.max(0, financeProCategoryExpense(catId, monthKey) - financeProCategoryRefunds(catId, monthKey));
+        }
+
+        function financeProCategoryExpense(catId, monthKey) {
             monthKey = monthKey || financeMonthKey();
-            const expense = financePro.transactions
+            return financePro.transactions
                 .filter(t => t.type === 'expense' && t.category === catId && t.date.slice(0, 7) === monthKey)
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
-            const refunded = financeProCategoryRefunds(catId, monthKey);
-            return Math.max(0, expense - refunded);
+        }
+
+        // En los presupuestos, lo devuelto no resta del gasto sino que amplía
+        // el límite del mes: con 60 € para coleccionables y un reembolso de
+        // 149,85 €, ese mes se pueden gastar 209,85 €. Restándolo del gasto
+        // (y sin bajar de cero) el sobrante del reembolso se perdía.
+        function financeProPresupuestoConDevoluciones(catId, monthKey, limite) {
+            const devuelto = Math.round(financeProCategoryRefunds(catId, monthKey) * 100) / 100;
+            const gastado = Math.round(financeProCategoryExpense(catId, monthKey) * 100) / 100;
+            return { gastado, devuelto, limite: (Number(limite) || 0) + devuelto };
         }
 
         function financeProCategoryRefunds(catId, monthKey) {
@@ -14748,8 +14761,7 @@
                 </div>
                 ${ids.map(id => {
                     const cat = financeProCategoryById(id);
-                    const spent = financeProCategorySpend(id, monthKey);
-                    const budget = budgets[id];
+                    const { gastado: spent, devuelto, limite: budget } = financeProPresupuestoConDevoluciones(id, monthKey, budgets[id]);
                     const pct = Math.min(100, (spent / budget) * 100);
                     const over = spent > budget;
                     const near = !over && pct >= 80;
@@ -14760,6 +14772,7 @@
                             <span class="${over ? 'finance-negative' : ''}">${financeMoney(spent)} / ${financeMoney(budget)}</span>
                         </div>
                         <div class="finance-progress"><span style="width:${pct}%;background:${barColor}"></span></div>
+                        ${devuelto > 0 ? `<div class="finance-devuelto">+${financeMoney(devuelto)} devuelto este mes.</div>` : ''}
                         ${over ? `<div class="finance-metric-note" style="color:#dc2626;margin-top:4px">Presupuesto superado en ${financeMoney(spent - budget)}</div>` : near ? `<div class="finance-metric-note" style="color:#d97706;margin-top:4px">Cerca del límite</div>` : ''}
                     </div>`;
                 }).join('')}
@@ -14961,15 +14974,163 @@
         // "Planificación a futuro" — tres botones a modo de tarjeta (blanco
         // y negro, icono grande) que abren cada uno su popup, en vez de tres
         // paneles anchos siempre visibles ocupando toda esa franja.
+        // ============================================================
+        //  RITMO — cómo va el gasto del mes frente a lo que es normal en
+        //  el usuario a estas alturas. Gasto neto del día a día: sin
+        //  suscripciones ni gastos fijos (son fijos, no dicen nada del
+        //  ritmo), sin inversiones ni coleccionables (lo mismo que la
+        //  proyección del inicio) y sin ajustes de saldo; lo devuelto en una
+        //  categoría resta. Se compara el acumulado a día de hoy con el que
+        //  llevaban los meses anteriores el mismo día (mediana y la franja
+        //  entre el cuartil bajo y el alto), así que cada mes que pasa
+        //  afina la idea de "normal" sin que haya nada que configurar.
+        // ============================================================
+        const RITMO_FUERA = ['cat_inversion_gasto', 'cat_coleccionables'];
+        const RITMO_MAX_MESES = 6;
+
+        function ritmoCuantil(valores, q) {
+            const v = [...valores].sort((a, b) => a - b);
+            if (!v.length) return 0;
+            const pos = (v.length - 1) * q, i = Math.floor(pos);
+            return v[i] + ((v[i + 1] ?? v[i]) - v[i]) * (pos - i);
+        }
+
+        function ritmoMovimientos() {
+            const esAjuste = id => financeProNormalizar(financeProCategoryById(id)?.name).trim() === 'ajuste de saldo';
+            const gastoPorNombre = {};
+            financePro.categories.filter(c => c.type === 'expense').forEach(c => { gastoPorNombre[c.name.toLowerCase()] = c.id; });
+            const lista = [];
+            financePro.transactions.forEach(t => {
+                if (!t.date) return;
+                if (t.type === 'expense') {
+                    if (t.recurringEntryId || RITMO_FUERA.includes(t.category) || esAjuste(t.category)) return;
+                    lista.push({ date: t.date, cat: t.category || '', valor: Number(t.amount) || 0 });
+                } else if (t.type === 'income' && t.category) {
+                    const gasto = gastoPorNombre[(financeProCategoryById(t.category)?.name || '').toLowerCase()];
+                    if (!gasto || RITMO_FUERA.includes(gasto) || esAjuste(gasto)) return;
+                    lista.push({ date: t.date, cat: gasto, valor: -(Number(t.amount) || 0) });
+                }
+            });
+            return lista;
+        }
+
+        function financeRitmoDatos() {
+            const hoy = new Date();
+            const dia = hoy.getDate();
+            const actual = financeMonthKey(hoy);
+            const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+            const movs = ritmoMovimientos();
+            const porMes = {};
+            movs.forEach(mv => {
+                const m = mv.date.slice(0, 7);
+                const d = Number(mv.date.slice(8, 10));
+                (porMes[m] = porMes[m] || []).push({ d, cat: mv.cat, valor: mv.valor });
+            });
+            // El primer mes con datos solo cuenta si empieza a principios de
+            // mes: uno empezado a medias parecería un mes muy ahorrador.
+            const primero = (financePro.transactions || []).reduce((min, t) => (t.date && (!min || t.date < min) ? t.date : min), null);
+            const meses = Object.keys(porMes).filter(m => m < actual && primero && (m > primero.slice(0, 7) || Number(primero.slice(8, 10)) <= 5))
+                .sort().slice(-RITMO_MAX_MESES);
+            const acumulado = (m, hasta, cat) => (porMes[m] || []).filter(x => x.d <= hasta && (cat === undefined || x.cat === cat)).reduce((s, x) => s + x.valor, 0);
+            const llevas = acumulado(actual, dia);
+            if (meses.length < 2) return { suficiente: false, meses: meses.length, dia, llevas };
+            const serie = d => meses.map(m => acumulado(m, d));
+            const franja = [];
+            for (let d = 1; d <= diasMes; d++) {
+                const v = serie(d);
+                franja.push({ d, bajo: ritmoCuantil(v, 0.25), medio: ritmoCuantil(v, 0.5), alto: ritmoCuantil(v, 0.75) });
+            }
+            const hoyFranja = franja[dia - 1];
+            const totales = meses.map(m => acumulado(m, 31));
+            const totalNormal = ritmoCuantil(totales, 0.5);
+            const restoNormal = ritmoCuantil(meses.map(m => acumulado(m, 31) - acumulado(m, dia)), 0.5);
+            const proyeccion = llevas + restoNormal;
+            const recorrido = [];
+            for (let d = 1; d <= dia; d++) recorrido.push({ d, v: acumulado(actual, d) });
+            const cats = new Set(movs.map(mv => mv.cat));
+            const categorias = [...cats].map(cat => {
+                const ahora = acumulado(actual, dia, cat);
+                const normal = ritmoCuantil(meses.map(m => acumulado(m, dia, cat)), 0.5);
+                return { cat, ahora, normal, diff: ahora - normal };
+            }).filter(c => Math.abs(c.diff) >= Math.max(15, c.normal * 0.4));
+            const holgura = Math.max(10, hoyFranja.alto - hoyFranja.bajo, hoyFranja.medio * 0.25);
+            let nivel = 'normal';
+            if (llevas < hoyFranja.bajo - 5) nivel = 'contenido';
+            else if (llevas > hoyFranja.alto + holgura) nivel = 'muy';
+            else if (llevas > hoyFranja.alto + 10) nivel = 'alto';
+            return { suficiente: true, meses: meses.length, dia, diasMes, llevas, hoyFranja, totalNormal, proyeccion, franja, recorrido, categorias, nivel };
+        }
+
+        function renderRitmoGrafica(r) {
+            const W = 340, H = 150, padL = 4, padR = 4, padT = 10, padB = 18;
+            const maxV = Math.max(10, ...r.franja.map(f => f.alto), r.llevas, r.proyeccion) * 1.08;
+            const x = d => padL + (W - padL - padR) * (d - 1) / Math.max(1, r.diasMes - 1);
+            const y = v => padT + (H - padT - padB) * (1 - Math.max(0, v) / maxV);
+            const banda = r.franja.map(f => `${x(f.d).toFixed(1)},${y(f.alto).toFixed(1)}`).join(' L')
+                + ' L' + [...r.franja].reverse().map(f => `${x(f.d).toFixed(1)},${y(f.bajo).toFixed(1)}`).join(' L');
+            const medio = r.franja.map((f, i) => `${i ? 'L' : 'M'}${x(f.d).toFixed(1)},${y(f.medio).toFixed(1)}`).join(' ');
+            const linea = r.recorrido.map((p, i) => `${i ? 'L' : 'M'}${x(p.d).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+            const ultimo = r.recorrido[r.recorrido.length - 1];
+            return `<svg class="ritmo-grafica" viewBox="0 0 ${W} ${H}" width="100%">
+                <path d="M${banda} Z" fill="var(--text-primary)" opacity=".07"/>
+                <path d="${medio}" fill="none" stroke="var(--text-secondary)" stroke-width="1.2" stroke-dasharray="3 4"/>
+                <path d="M${x(ultimo.d).toFixed(1)},${y(ultimo.v).toFixed(1)} L${x(r.diasMes).toFixed(1)},${y(r.proyeccion).toFixed(1)}" fill="none" stroke="var(--text-primary)" stroke-width="1.2" stroke-dasharray="1 4" stroke-linecap="round" opacity=".6"/>
+                <path d="${linea}" fill="none" stroke="var(--text-primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="${x(ultimo.d).toFixed(1)}" cy="${y(ultimo.v).toFixed(1)}" r="4" fill="var(--text-primary)"/>
+                <text x="${padL}" y="${H - 3}" font-size="9" fill="var(--text-secondary)">1</text>
+                <text x="${W - padR}" y="${H - 3}" font-size="9" text-anchor="end" fill="var(--text-secondary)">${r.diasMes}</text>
+            </svg>`;
+        }
+
+        function renderRitmoBody() {
+            const r = financeRitmoDatos();
+            if (!r.suficiente) {
+                return `<div class="ritmo-veredicto">todavía te estoy conociendo.</div>
+                    <div class="ritmo-frase">Para saber qué es normal en ti necesito al menos dos meses completos de movimientos${r.meses ? ` y por ahora tengo ${r.meses}` : ''}. Mientras tanto: este mes llevas <b>${financeMoney(r.llevas)}</b> de gasto del día a día.</div>`;
+            }
+            const veredictos = {
+                contenido: 'vas más contenido que de costumbre.',
+                normal: 'vas en tu ritmo de siempre.',
+                alto: 'este mes vas por encima de lo habitual.',
+                muy: 'este mes estás gastando bastante más de lo que es normal en ti.'
+            };
+            const nombreCat = id => id ? (financeProCategoryById(id)?.name || 'otros').toLowerCase() : 'sin categoría';
+            const frases = [];
+            const restantes = r.diasMes - r.dia;
+            if (restantes > 0) {
+                const margen = r.totalNormal - r.llevas;
+                frases.push(Math.abs(r.proyeccion - r.totalNormal) < 10
+                    ? `Si sigues como siempre acabarás el mes en torno a <b>${financeMoney(r.proyeccion)}</b>, lo de un mes normal.`
+                    : `Si a partir de hoy sigues como siempre, acabarás el mes en torno a <b>${financeMoney(r.proyeccion)}</b>, frente a los ${financeMoney(r.totalNormal)} de un mes normal.`);
+                frases.push(margen > 0
+                    ? `Para quedarte en tu mes de siempre te quedan unos <b>${financeMoney(margen / restantes)}</b> al día.`
+                    : `Ya has gastado lo que sueles gastar en un mes entero, y quedan ${restantes} ${restantes === 1 ? 'día' : 'días'}.`);
+            }
+            [...r.categorias].sort((a, b) => b.diff - a.diff).slice(0, 2).forEach(c => {
+                if (c.diff > 0) frases.push(`En <b>${escapeHtml(nombreCat(c.cat))}</b> llevas ${financeMoney(c.ahora)}; a estas alturas lo normal es ${financeMoney(c.normal)}.`);
+            });
+            const ahorro = [...r.categorias].sort((a, b) => a.diff - b.diff)[0];
+            if (ahorro && ahorro.diff < 0) frases.push(`En <b>${escapeHtml(nombreCat(ahorro.cat))}</b> vas ${financeMoney(-ahorro.diff)} por debajo de lo habitual.`);
+            return `
+                <div class="ritmo-veredicto ${r.nivel}">${veredictos[r.nivel]}</div>
+                <div class="ritmo-frase">A día ${r.dia} sueles llevar <b>${financeMoney(r.hoyFranja.medio)}</b> de gasto del día a día. Este mes llevas <b>${financeMoney(r.llevas)}</b>.</div>
+                ${renderRitmoGrafica(r)}
+                <div class="ritmo-leyenda"><span><i class="ritmo-l-actual"></i>este mes.</span><span><i class="ritmo-l-medio"></i>lo normal.</span><span><i class="ritmo-l-franja"></i>tus meses habituales.</span></div>
+                <div class="ritmo-cifras">
+                    <div><span>llevas.</span><b>${financeMoney(r.llevas)}</b></div>
+                    <div><span>lo normal hoy.</span><b>${financeMoney(r.hoyFranja.medio)}</b></div>
+                    <div><span>a fin de mes.</span><b>${financeMoney(r.proyeccion)}</b></div>
+                </div>
+                ${frases.map(f => `<div class="ritmo-linea">${f}</div>`).join('')}
+                <div class="finance-modal-note" style="margin-top:14px">Aprendido de tus últimos ${r.meses} meses. Sin suscripciones, gastos fijos, inversiones, coleccionables ni ajustes de saldo; lo devuelto resta.</div>`;
+        }
+
         function openFinanceRitmoModal() {
             const trend = financeGoalTrendSignal();
             showModal(`
-                <section class="finance-panel" id="finance-forecast-section">
-                    <div class="finance-panel-head">
-                        ${financePanelHeadIcon(FINANCE_ICON_CALENDAR, 'fin-indigo', 'Previsión automática', 'Según tu ritmo real')}
-                    </div>
-                    <div class="finance-empty-line" style="margin-top:10px">${trend ? escapeHtml(trend.text) : 'Necesitas al menos 2 meses de histórico en tus cuentas PRO para calcular tu previsión.'}</div>
-                </section>
+                <div class="modal-title">ritmo.</div>
+                ${renderRitmoBody()}
+                ${trend ? `<div class="finance-kicker" style="margin:20px 0 6px">previsión.</div><div class="finance-empty-line">${escapeHtml(trend.text)}</div>` : ''}
             `);
         }
 
@@ -15595,8 +15756,12 @@
             // cabecera ligera con el neto, para no repetir lo mismo cada vez
             // que se hace scroll por el listado de movimientos.
             return Object.keys(groups).sort().reverse().map(m => {
-                const income = groups[m].filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-                const expense = groups[m].filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+                // Plegado solo se pintan los 5 últimos movimientos, pero el
+                // neto es el del mes entero (antes sumaba solo esos 5 y no
+                // coincidía con el del listado completo).
+                const delMes = full ? groups[m] : financePro.transactions.filter(t => t.date.slice(0, 7) === m);
+                const income = delMes.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+                const expense = delMes.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
                 const monthTotal = income - expense;
                 return `<div class="finance-pro-tx-month-group">
                     <div class="finance-pro-tx-month-summary finance-pro-tx-month-summary-light">

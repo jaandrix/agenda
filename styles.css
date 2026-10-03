@@ -4440,6 +4440,24 @@ body.papel {
 .recurrente-vigilar input { margin-top:3px; }
 .recurrente-vigilar small { display:block; margin-top:2px; font-size:11px; font-weight:400; color:var(--text-secondary); line-height:1.4; }
 .finance-import-pegar { display:block; margin:8px 0 4px; }
+.finance-devuelto { margin-top:4px; font-size:11px; color:var(--text-secondary); }
+.budget-alloc-spent small { display:block; margin-top:1px; font-size:10px; font-weight:500; color:var(--text-secondary); }
+.ritmo-veredicto { font-size:21px; font-weight:800; letter-spacing:-.3px; line-height:1.2; color:var(--text-primary); margin:2px 0 8px; }
+.ritmo-veredicto.alto, .ritmo-veredicto.muy { color:#c2455c; }
+.ritmo-veredicto.contenido { color:#22a06b; }
+.ritmo-frase { font-size:13px; line-height:1.5; color:var(--text-secondary); margin-bottom:12px; }
+.ritmo-frase b, .ritmo-linea b { color:var(--text-primary); font-weight:700; }
+.ritmo-grafica { display:block; margin:4px 0 6px; overflow:visible; }
+.ritmo-leyenda { display:flex; flex-wrap:wrap; gap:14px; font-size:10.5px; color:var(--text-secondary); margin-bottom:14px; }
+.ritmo-leyenda span { display:inline-flex; align-items:center; gap:6px; }
+.ritmo-leyenda i { display:inline-block; width:14px; height:0; border-top:2px solid var(--text-primary); }
+.ritmo-leyenda i.ritmo-l-medio { border-top:1.5px dashed var(--text-secondary); }
+.ritmo-leyenda i.ritmo-l-franja { height:8px; border:0; border-radius:2px; background:var(--text-primary); opacity:.12; }
+.ritmo-cifras { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin-bottom:14px; }
+.ritmo-cifras div { padding:10px 12px; border-radius:12px; background:var(--bg-card); border:1px solid var(--border); }
+.ritmo-cifras span { display:block; font-size:10.5px; color:var(--text-secondary); margin-bottom:3px; }
+.ritmo-cifras b { font-size:15px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.ritmo-linea { font-size:13px; line-height:1.5; color:var(--text-secondary); padding:8px 0; border-top:1px solid var(--border); }
 .finance-cat-auto { margin-left:6px; padding:1px 6px; border-radius:6px; border:1px dashed var(--border-strong); font-size:9.5px; font-weight:600; color:var(--text-secondary); vertical-align:1px; }
 @media (max-width:640px) {
     .budget-alloc-row { grid-template-columns:1fr 1fr; }
