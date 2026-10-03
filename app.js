@@ -4333,6 +4333,7 @@
         // ============================================================
         const COLL_LIMITE = 12;
         const CARTA_ESTADO_CORTO = { 'Mint': 'M', 'Near Mint': 'NM', 'Excellent': 'EX', 'Good': 'GD', 'Light Played': 'LP', 'Played': 'PL', 'Poor': 'PO' };
+        const CARTA_ESTADO_TONO = { 'Mint': 'alto', 'Near Mint': 'alto', 'Excellent': 'medio', 'Good': 'medio', 'Light Played': 'bajo', 'Played': 'bajo', 'Poor': 'bajo' };
         let collFiltroCat = 'all';
         let collOrden = 'valor';
         let collBusqueda = '';
@@ -4399,17 +4400,21 @@
                 if (!items.length) return '';
                 const maxVal = Math.max(...todos.map(c => Number(c.value) || 0));
                 const subtotal = items.reduce((s, c) => s + (Number(c.value) || 0), 0);
+                const totalColeccion = collectibles.reduce((s, c) => s + (Number(c.value) || 0), 0);
+                const peso = totalColeccion > 0 ? Math.round(subtotal / totalColeccion * 100) : 0;
+                const conPeso = collFiltroCat === 'all' && collectibleCategories.length > 1;
                 // Buscando se enseña todo lo que coincide: recortar ahí escondería resultados.
                 const recortar = !q && !collExpandidas.has(cat.id) && items.length > COLL_LIMITE;
                 const visibles = recortar ? items.slice(0, COLL_LIMITE) : items;
                 return `
                     <div class="coll-categoria">
                         <div class="coll-categoria-cabecera">
-                            <span>${escapeHtml(cat.name.toLowerCase())}.</span>
-                            <span class="coll-categoria-cifras">${items.length} · ${financeMoney(subtotal)}</span>
+                            <span class="coll-categoria-nombre">${escapeHtml(cat.name.toLowerCase())}. <span>${items.length}</span></span>
+                            <span class="coll-categoria-cifras">${conPeso ? `<span>${peso}% del total.</span>` : ''}${financeMoney(subtotal)}</span>
                         </div>
+                        <div class="coll-categoria-peso"><span style="width:${conPeso ? peso : 100}%"></span></div>
                         <div class="coll-filas">
-                            ${visibles.map((c, i) => renderCollFila(c, maxVal > 0 && (Number(c.value) || 0) === maxVal, collExpandidas.has(cat.id) && i >= COLL_LIMITE ? i - COLL_LIMITE : -1)).join('')}
+                            ${visibles.map((c, i) => renderCollFila(c, maxVal > 0 && (Number(c.value) || 0) === maxVal, collExpandidas.has(cat.id) && i >= COLL_LIMITE ? i - COLL_LIMITE : -1, i + 1)).join('')}
                         </div>
                         ${recortar ? `<button class="coll-ver-mas" onclick="expandirCollCategoria('${cat.id}')">ver ${items.length - COLL_LIMITE === 1 ? 'la restante' : `las ${items.length - COLL_LIMITE} restantes`}.</button>` : ''}
                         ${!q && collExpandidas.has(cat.id) && items.length > COLL_LIMITE ? `<button class="coll-ver-mas" onclick="plegarCollCategoria('${cat.id}')">ver menos.</button>` : ''}
@@ -4420,17 +4425,21 @@
 
         // escalon >= 0: fila recién desplegada con "ver las N restantes.",
         // entra escalonada como el resto de despliegues de la app.
-        function renderCollFila(item, esTop, escalon) {
+        function renderCollFila(item, esTop, escalon, puesto) {
             const carta = item.carta && esCategoriaCartas(item.category) ? item.carta : null;
             const detalle = carta ? [carta.set, carta.numero ? '#' + carta.numero : '', carta.anio].filter(Boolean).map(escapeHtml).join(' · ') : '';
-            const estado = carta?.estado ? `<span class="coll-estado" title="${escapeHtml(carta.estado)}">${CARTA_ESTADO_CORTO[carta.estado] || escapeHtml(carta.estado)}</span>` : '';
+            const estado = carta?.estado ? `<span class="coll-estado ${CARTA_ESTADO_TONO[carta.estado] || ''}" title="${escapeHtml(carta.estado)}">${CARTA_ESTADO_CORTO[carta.estado] || escapeHtml(carta.estado)}</span>` : '';
             return `
                 <div class="coll-fila ${escalon >= 0 ? 'despliegue-item' : ''}" ${escalon >= 0 ? `style="--i:${Math.min(escalon, 14)}"` : ''} data-coll-id="${item.id}" onclick="openEditCollectible('${item.id}')">
+                    <div class="coll-puesto">${String(puesto).padStart(2, '0')}</div>
                     <div class="coll-fila-main">
-                        <div class="coll-fila-nombre">${esTop ? '<span class="coll-top" title="La más valiosa de su categoría">✦</span>' : ''}${escapeHtml(item.name)}</div>
-                        ${detalle || estado ? `<div class="coll-fila-detalle">${detalle}${estado}</div>` : ''}
+                        <div class="coll-fila-linea">
+                            <div class="coll-fila-nombre">${esTop ? '<span class="coll-top" title="La más valiosa de su categoría">✦</span>' : ''}${escapeHtml(item.name)}</div>
+                            <span class="coll-guia"></span>
+                            <div class="coll-fila-valor">${financeMoney(item.value)}</div>
+                        </div>
+                        ${detalle || estado ? `<div class="coll-fila-detalle">${estado}${detalle}</div>` : ''}
                     </div>
-                    <div class="coll-fila-valor">${financeMoney(item.value)}</div>
                     <button class="coll-fila-borrar" title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')">×</button>
                 </div>`;
         }
