@@ -65,11 +65,21 @@ function aplicarOp(data: any, op: any, id: string) {
         data.financePro = data.financePro || { transactions: [] };
         (data.financePro.transactions = data.financePro.transactions || []).push({ id: ref, date: op.fecha, account: op.cuenta, type: op.type, amount: op.importe, category: op.categoria || undefined, note: op.concepto || undefined, manual: true, needsReview: !op.categoria });
     } else if (op.tipo === 'nota') {
-        (data.inbox = data.inbox || []).unshift({ id: ref, text: op.texto });
+        data.notes = data.notes || [];
+        const fecha = op.fecha || hoyISO();
+        let nota = data.notes.find((n: any) => n.date === fecha);
+        if (!nota) data.notes.push(nota = { id: ref, date: fecha, content: '' });
+        nota.content = [nota.content, textoNota(op)].filter(Boolean).join('\n\n');
     } else if (op.tipo === 'entrada') {
         const ev = (data.entries || []).find((e: any) => e?.id === op.eventoId);
         if (ev) (ev.entradas = ev.entradas || []).push({ id: ref, qr: op.qr || '', qrB64: op.qrB64 || undefined, etiqueta: op.etiqueta || '' });
     }
+}
+
+// Notas tiene una nota por día (solo la de hoy es editable en la app):
+// lo que se anota se añade al final de la de hoy, con su título si lo hay.
+function textoNota(op: any) {
+    return [op.titulo ? String(op.titulo).trim() : '', String(op.texto || '').trim()].filter(Boolean).join('\n');
 }
 
 async function cargarDatos(userId: string) {
@@ -208,7 +218,7 @@ function buscar(data: any, texto: string) {
     const mira = (...v: unknown[]) => v.some(x => norm(x).includes(q));
     (data.entries || []).forEach((e: any) => { if (e && mira(e.title, e.notes, e.place)) res.push({ apartado: e.type, titulo: e.title, fecha: e.date || undefined, notas: e.notes || undefined }); });
     (data.notes || []).forEach((n: any) => { if (mira(n.content)) res.push({ apartado: 'nota del día', fecha: n.date, texto: String(n.content).slice(0, 400) }); });
-    (data.inbox || []).forEach((n: any) => { if (mira(n.text)) res.push({ apartado: 'inbox', texto: n.text }); });
+    (data.inbox || []).forEach((n: any) => { if (mira(n.text)) res.push({ apartado: 'inbox antiguo (Centro resumen)', texto: n.text }); });
     Object.entries(data.dayPlanner?.days || {}).forEach(([f, its]: any) => (its || []).forEach((it: any) => { if (mira(it.title, it.notes)) res.push({ apartado: 'planificador', fecha: f, hora: it.time, titulo: it.title }); }));
     (data.dayPlanner?.backlog || []).forEach((it: any) => { if (mira(it.title, it.notes)) res.push({ apartado: 'tarea pendiente', titulo: it.title, hecha: !!it.done }); });
     (data.collectibles || []).forEach((c: any) => { if (mira(c.name, c.carta?.set)) res.push({ apartado: 'coleccionable', nombre: c.name, valor: euros(Number(c.value) || 0) }); });
@@ -220,7 +230,7 @@ function buscar(data: any, texto: string) {
 const APARTADOS: Record<string, (d: any) => unknown> = {
     habitos: d => d.habits,
     estudios: d => d.studies,
-    notas: d => ({ notas_del_dia: (d.notes || []).slice(-60), inbox: d.inbox }),
+    notas: d => ({ notas_del_dia: (d.notes || []).slice(-60).map((n: any) => ({ fecha: n.date, texto: n.content })), inbox_antiguo: d.inbox }),
     viajes: d => ({ viajes: (d.entries || []).filter((e: any) => e?.type === 'travel' || e?.type === 'place'), planeados: d.plannedTrips }),
     coleccionables: d => ({ categorias: d.collectibleCategories, objetos: (d.collectibles || []).map((c: any) => ({ nombre: c.name, categoria: c.category, valor: c.value, carta: c.carta })) }),
     ocio: d => ({ listas: d.cultureLists, entradas: (d.entries || []).filter((e: any) => ['book', 'movie', 'series', 'game'].includes(e?.type)) }),
@@ -310,8 +320,8 @@ const HERRAMIENTAS = [
     },
     {
         name: 'anotar',
-        description: 'Guarda una idea, un recordatorio o cualquier texto en el inbox de Bitácora para organizarlo después.',
-        inputSchema: { type: 'object', properties: { texto: { type: 'string' } }, required: ['texto'] },
+        description: 'Escribe en el apartado Notas de Bitácora. Notas funciona como un diario: hay una nota por día y esto se añade al final de la nota de hoy (con el título como primera línea, si lo hay). Para ideas, apuntes, reflexiones o datos que el usuario quiera guardar.',
+        inputSchema: { type: 'object', properties: { titulo: { type: 'string', description: 'Opcional' }, texto: { type: 'string' } }, required: ['texto'] },
     },
 ];
 
@@ -389,8 +399,8 @@ async function llamar(userId: string, nombre: string, a: any) {
         }
         case 'anotar': {
             if (!a.texto) throw new Error('Texto vacío');
-            await encolar(userId, { tipo: 'nota', texto: String(a.texto) });
-            return 'Guardado en el inbox de Bitácora.';
+            await encolar(userId, { tipo: 'nota', titulo: String(a.titulo || ''), texto: String(a.texto), fecha: hoy });
+            return `Añadido a la nota de hoy (${hoy}) en el apartado Notas.`;
         }
     }
     throw new Error('Herramienta desconocida: ' + nombre);

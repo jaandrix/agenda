@@ -19159,8 +19159,14 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 return true;
             }
             if (op.tipo === 'nota') {
-                if (inbox.some(i => i.id === ref)) return false;
-                inbox.unshift({ id: ref, text: op.texto });
+                const fecha = op.fecha || todayISO();
+                let nota = notes.find(n => n.date === fecha);
+                if (!nota) { nota = { id: 'note_' + Date.now(), date: fecha, content: '', createdAt: new Date().toISOString() }; notes.push(nota); }
+                nota.refsConector = Array.isArray(nota.refsConector) ? nota.refsConector : [];
+                if (nota.refsConector.includes(ref)) return false;
+                const texto = [op.titulo, op.texto].map(x => String(x || '').trim()).filter(Boolean).join('\n');
+                nota.content = [nota.content, texto].filter(Boolean).join('\n\n');
+                nota.refsConector.push(ref);
                 return true;
             }
             if (op.tipo === 'entrada') {
@@ -19178,6 +19184,14 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             if (aplicandoBandeja) return;
             aplicandoBandeja = true;
             try {
+                // Antes "anotar" iba al inbox antiguo (solo visible en Centro
+                // resumen); lo que quedó allí pasa a la nota de hoy.
+                const antiguas = inbox.filter(i => String(i.id).startsWith('ia_'));
+                if (antiguas.length) {
+                    antiguas.forEach(i => aplicarOpConector({ tipo: 'nota', texto: i.text }, i.id));
+                    inbox = inbox.filter(i => !String(i.id).startsWith('ia_'));
+                    await saveData();
+                }
                 const { data: filas, error } = await sb.from('conector_bandeja').select('id, op').order('creado');
                 if (error || !filas?.length) return;
                 let n = 0;
