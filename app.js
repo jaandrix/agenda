@@ -11940,8 +11940,8 @@
                 </div>
                 <div class="notes-grid">
                     ${sorted.map(n => `
-                        <div class="note-card" onclick="openReadNote('${n.id}')">
-                            <div class="note-card-title">${formatNoteTitle(n.date)}</div>
+                        <div class="note-card ${n.title ? 'con-titulo' : ''}" onclick="openReadNote('${n.id}')">
+                            ${n.title ? `<div class="note-card-title">${escapeHtml(n.title)}</div><div class="note-card-fecha">${formatNoteTitle(n.date)}</div>` : `<div class="note-card-title">${formatNoteTitle(n.date)}</div>`}
                         </div>
                     `).join('')}
                 </div>`;
@@ -11976,7 +11976,8 @@
             return `
                 <div class="note-detail note-detail-wide">
                     <button class="btn-secondary" style="width:auto;padding:6px 14px;margin-bottom:16px" onclick="closeNoteDetail()">← Volver</button>
-                    <div class="note-detail-title">${formatNoteTitle(note.date)}</div>
+                    <div class="note-detail-fecha">${formatNoteTitle(note.date)}</div>
+                    <input id="note-title-input" class="note-titulo-input" value="${escapeHtml(note.title || '')}" placeholder="título de la nota." maxlength="120" oninput="autoSaveNoteTitle('${note.id}', this.value)">
                     ${editable ? `
                         <textarea id="note-content-input" class="note-textarea" placeholder="Escribe tu nota del día..." oninput="autoSaveNote('${note.id}', this.value);autoResizeNote(this);updateNoteLivePreview(this.value)">${escapeHtml(content)}</textarea>
                         <div class="note-detail-hint">Esta nota es editable solo hoy. Se guarda automáticamente. Usa [[Título exacto]] o /palabra para enlazar con cualquier entrada, asignatura o coleccionable.</div>
@@ -12002,6 +12003,20 @@
             clearTimeout(noteSaveTimer);
             noteSaveTimer = setTimeout(async () => {
                 try { await saveData(); } catch (e) { console.error('Error guardando nota:', e); }
+            }, 800);
+        }
+
+        // El título se puede poner o cambiar en cualquier nota, también en
+        // las de días pasados: solo sirve para encontrarlas, no cambia lo
+        // que se escribió ese día.
+        let noteTitleTimer;
+        function autoSaveNoteTitle(id, value) {
+            const note = notes.find(n => n.id === id);
+            if (!note) return;
+            note.title = value.trim() || undefined;
+            clearTimeout(noteTitleTimer);
+            noteTitleTimer = setTimeout(async () => {
+                try { await saveData(); } catch (e) { console.error('Error guardando el título:', e); }
             }, 800);
         }
 
@@ -19164,7 +19179,10 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 if (!nota) { nota = { id: 'note_' + Date.now(), date: fecha, content: '', createdAt: new Date().toISOString() }; notes.push(nota); }
                 nota.refsConector = Array.isArray(nota.refsConector) ? nota.refsConector : [];
                 if (nota.refsConector.includes(ref)) return false;
-                const texto = [op.titulo, op.texto].map(x => String(x || '').trim()).filter(Boolean).join('\n');
+                const titulo = String(op.titulo || '').trim();
+                const usaTitulo = titulo && !nota.title && !String(nota.content || '').trim();
+                if (usaTitulo) nota.title = titulo;
+                const texto = [usaTitulo ? '' : titulo, op.texto].map(x => String(x || '').trim()).filter(Boolean).join('\n');
                 nota.content = [nota.content, texto].filter(Boolean).join('\n\n');
                 nota.refsConector.push(ref);
                 return true;

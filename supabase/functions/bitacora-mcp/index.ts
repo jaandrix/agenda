@@ -69,7 +69,8 @@ function aplicarOp(data: any, op: any, id: string) {
         const fecha = op.fecha || hoyISO();
         let nota = data.notes.find((n: any) => n.date === fecha);
         if (!nota) data.notes.push(nota = { id: ref, date: fecha, content: '' });
-        nota.content = [nota.content, textoNota(op)].filter(Boolean).join('\n\n');
+        if (op.titulo && !nota.title && !String(nota.content || '').trim()) { nota.title = String(op.titulo).trim(); nota.content = String(op.texto || '').trim(); }
+        else nota.content = [nota.content, textoNota(op)].filter(Boolean).join('\n\n');
     } else if (op.tipo === 'entrada') {
         const ev = (data.entries || []).find((e: any) => e?.id === op.eventoId);
         if (ev) (ev.entradas = ev.entradas || []).push({ id: ref, qr: op.qr || '', qrB64: op.qrB64 || undefined, etiqueta: op.etiqueta || '' });
@@ -217,7 +218,7 @@ function buscar(data: any, texto: string) {
     const res: any[] = [];
     const mira = (...v: unknown[]) => v.some(x => norm(x).includes(q));
     (data.entries || []).forEach((e: any) => { if (e && mira(e.title, e.notes, e.place)) res.push({ apartado: e.type, titulo: e.title, fecha: e.date || undefined, notas: e.notes || undefined }); });
-    (data.notes || []).forEach((n: any) => { if (mira(n.content)) res.push({ apartado: 'nota del día', fecha: n.date, texto: String(n.content).slice(0, 400) }); });
+    (data.notes || []).forEach((n: any) => { if (mira(n.title, n.content)) res.push({ apartado: 'nota', fecha: n.date, titulo: n.title || undefined, texto: String(n.content || '').slice(0, 400) }); });
     (data.inbox || []).forEach((n: any) => { if (mira(n.text)) res.push({ apartado: 'inbox antiguo (Centro resumen)', texto: n.text }); });
     Object.entries(data.dayPlanner?.days || {}).forEach(([f, its]: any) => (its || []).forEach((it: any) => { if (mira(it.title, it.notes)) res.push({ apartado: 'planificador', fecha: f, hora: it.time, titulo: it.title }); }));
     (data.dayPlanner?.backlog || []).forEach((it: any) => { if (mira(it.title, it.notes)) res.push({ apartado: 'tarea pendiente', titulo: it.title, hecha: !!it.done }); });
@@ -230,7 +231,7 @@ function buscar(data: any, texto: string) {
 const APARTADOS: Record<string, (d: any) => unknown> = {
     habitos: d => d.habits,
     estudios: d => d.studies,
-    notas: d => ({ notas_del_dia: (d.notes || []).slice(-60).map((n: any) => ({ fecha: n.date, texto: n.content })), inbox_antiguo: d.inbox }),
+    notas: d => ({ notas_del_dia: (d.notes || []).slice(-60).map((n: any) => ({ fecha: n.date, titulo: n.title || undefined, texto: n.content })), inbox_antiguo: d.inbox }),
     viajes: d => ({ viajes: (d.entries || []).filter((e: any) => e?.type === 'travel' || e?.type === 'place'), planeados: d.plannedTrips }),
     coleccionables: d => ({ categorias: d.collectibleCategories, objetos: (d.collectibles || []).map((c: any) => ({ nombre: c.name, categoria: c.category, valor: c.value, carta: c.carta })) }),
     ocio: d => ({ listas: d.cultureLists, entradas: (d.entries || []).filter((e: any) => ['book', 'movie', 'series', 'game'].includes(e?.type)) }),
@@ -320,7 +321,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'anotar',
-        description: 'Escribe en el apartado Notas de Bitácora. Notas funciona como un diario: hay una nota por día y esto se añade al final de la nota de hoy (con el título como primera línea, si lo hay). Para ideas, apuntes, reflexiones o datos que el usuario quiera guardar.',
+        description: 'Escribe en el apartado Notas de Bitácora. Notas funciona como un diario: hay una nota por día y esto se añade al final de la nota de hoy. Si la nota de hoy está vacía y sin título, el título pasa a ser el de la nota; si no, va como primera línea del texto añadido. Para ideas, apuntes, reflexiones o datos que el usuario quiera guardar.',
         inputSchema: { type: 'object', properties: { titulo: { type: 'string', description: 'Opcional' }, texto: { type: 'string' } }, required: ['texto'] },
     },
 ];
