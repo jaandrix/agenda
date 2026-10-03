@@ -853,7 +853,10 @@
         function renderMobileFinances() {
             const { income, expense } = financeProMonthTotals(financeMonthKey());
             return `<div class="mobile-finance-wrap">
-                <button class="mobile-cta-btn" onclick="openFinanceProQuickCaptureModal()">+ movimiento.</button>
+                <div class="mobile-finance-ctas">
+                    <button class="mobile-cta-btn" onclick="openFinanceProQuickCaptureModal()">+ movimiento.</button>
+                    <button class="mobile-cta-btn mobile-cta-secundario" onclick="pegarExtractoBancario()">pegar extracto.</button>
+                </div>
                 ${renderFinanceNetworthCard()}
                 <div class="mobile-finance-month-row">
                     <div class="mobile-finance-month-tile">
@@ -5133,6 +5136,10 @@
                     <div class="finance-modal-note">${type === 'subscription'
                         ? 'Se registra sola como gasto el día de cargo de cada mes. Si luego importas el extracto del banco, el cargo real sustituye a este en vez de duplicarse.'
                         : 'Si eliges una cuenta, este cargo se registrará solo como movimiento PRO el día indicado de cada mes.'}</div>` : ''}
+                    <label class="recurrente-vigilar">
+                        <input type="checkbox" id="modal-recurring-vigilar" ${isEdit && entry.vigilar ? 'checked' : ''}>
+                        <span>avisarme si no aparece en el banco.<small>Tres días después del día de cargo, si el extracto importado no lo confirma, te lo recuerdo en el inicio.</small></span>
+                    </label>
                 `;
             }
 
@@ -5333,6 +5340,7 @@
                 entry.renewalDay = parseInt(document.getElementById('modal-recurring-day')?.value) || 1;
                 entry.active = document.getElementById('modal-recurring-active')?.value !== 'false';
                 if (financePro.enabled) entry.proAccount = document.getElementById('modal-recurring-account')?.value || '';
+                entry.vigilar = !!document.getElementById('modal-recurring-vigilar')?.checked;
                 entry.date = entry.date || todayISO();
             } else if (type === 'birthday') {
                 entry.firstName = document.getElementById('modal-bday-name')?.value?.trim() || '';
@@ -6983,6 +6991,14 @@
                     frase: `A este ritmo terminarás el mes gastando unos <b>${patronesEuros(proy.proyeccion)}</b>, un ${Math.round((proy.proyeccion / proy.media - 1) * 100)} % más que tu media de los últimos tres meses${proy.programado ? ` (incluye ${patronesEuros(proy.programado)} programados)` : ''}.`
                 });
             }
+
+            const mesActual = financeMonthKey();
+            entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.vigilar && e.active !== false)
+                .filter(e => recurrenteEstadoMes(e, mesActual) === 'falta')
+                .forEach(e => avisos.push({
+                    accion: "switchView('finances')",
+                    frase: `<b>${escapeHtml(e.title || 'Un gasto fijo')}</b> (${financeMoney(Number(e.amount) || 0)}, día ${Number(e.renewalDay) || 1}) todavía no aparece en el banco este mes. Importa el extracto para confirmarlo.`
+                }));
 
             const en7 = new Date(hoy + 'T12:00:00'); en7.setDate(en7.getDate() + 6);
             const limite = patronesIso(en7);
@@ -13149,8 +13165,40 @@
         function budgetAutoGastado(tipo, month) {
             const ids = new Set(entries.filter(e => e.type === tipo).map(e => e.id));
             return (financePro.transactions || [])
-                .filter(t => t.type === 'expense' && String(t.date || '').startsWith(month) && ids.has(t.recurringEntryId))
+                .filter(t => t.type === 'expense' && financeProCicloMes(t) === month && ids.has(t.recurringEntryId))
                 .reduce((s, t) => Math.round((s + (Number(t.amount) || 0)) * 100) / 100, 0);
+        }
+
+        // banco: el extracto ya lo confirma · anotado: cargo automático que
+        // el extracto todavía no ha confirmado · falta: pasó el día de cargo
+        // (con 3 de margen) y no hay nada · pronto: aún no toca.
+        function recurrenteEstadoMes(e, month) {
+            const txs = (financePro.transactions || []).filter(t => t.recurringEntryId === e.id && financeProCicloMes(t) === month);
+            if (txs.some(t => !financeProEsAuto(t))) return 'banco';
+            const [y, m] = month.split('-').map(Number);
+            const dia = Math.min(Number(e.renewalDay) || 1, new Date(y, m, 0).getDate());
+            const limite = new Date(y, m - 1, dia + 3);
+            if (txs.length) return new Date() >= limite ? 'falta' : 'anotado';
+            return new Date() >= limite ? 'falta' : 'pronto';
+        }
+
+        function renderBudgetAutoDetalle(tipo, month) {
+            const textos = { banco: 'confirmado por el banco.', anotado: 'anotado, falta el extracto.', falta: 'no aparece en el banco.' };
+            return entries.filter(e => e.type === tipo && e.active !== false)
+                .sort((a, b) => (Number(a.renewalDay) || 1) - (Number(b.renewalDay) || 1))
+                .map(e => {
+                    const estado = recurrenteEstadoMes(e, month);
+                    return `<div class="budget-auto-item ${estado}">
+                        <span class="budget-auto-punto"></span>
+                        <span class="budget-auto-nombre">${escapeHtml(e.title || '')}</span>
+                        <span class="budget-auto-estado">${textos[estado] || `día ${Number(e.renewalDay) || 1}.`}</span>
+                        <span class="budget-auto-importe">${financeMoney(Number(e.amount) || 0)}</span>
+                    </div>`;
+                }).join('');
+        }
+
+        function toggleBudgetAutoDetalle(id) {
+            document.getElementById('budget-auto-detalle-' + id)?.classList.toggle('abierto');
         }
 
         function asegurarCasillasAutomaticas(plan) {
@@ -13410,14 +13458,16 @@
                 const r = budgetAutoResumen(a.auto);
                 const gastado = budgetAutoGastado(a.auto, month);
                 const nombre = a.auto === 'subscription' ? (r.n === 1 ? 'suscripción' : 'suscripciones') : (r.n === 1 ? 'gasto fijo' : 'gastos fijos');
+                const confirmados = entries.filter(e => e.type === a.auto && e.active !== false && recurrenteEstadoMes(e, month) === 'banco').length;
                 return `
             <div class="budget-alloc-row budget-alloc-row-auto">
-                <div class="budget-alloc-auto-label"><span>${escapeHtml(a.label)}.</span><small>${r.n} ${nombre} · ${financeMoney(r.total)}</small></div>
+                <button class="budget-alloc-auto-label" onclick="toggleBudgetAutoDetalle('${a.id}')" title="Ver cuáles ha confirmado el banco"><span>${escapeHtml(a.label)}. <i>▾</i></span><small>${r.n} ${nombre} · ${confirmados} en el banco.</small></button>
                 <input class="modal-input budget-alloc-amount" type="number" min="0" step="0.01" value="${a.amount || ''}" placeholder="0.00" title="Límite de presupuesto" oninput="updateBudgetAllocation('${a.id}','amount',this.value,false)" onchange="updateBudgetAllocation('${a.id}','amount',this.value,true)">
                 <div class="budget-alloc-auto-tag">automático.</div>
                 <div class="budget-alloc-spent${Number(a.amount) > 0 && gastado > Number(a.amount) ? ' over' : ''}">${financeMoney(gastado)}</div>
                 <button class="doc-action-delete-btn" title="Quitar de este mes" onclick="removeBudgetAllocation('${a.id}')">✕</button>
-            </div>`;
+            </div>
+            <div class="budget-auto-detalle" id="budget-auto-detalle-${a.id}">${renderBudgetAutoDetalle(a.auto, month)}</div>`;
             }
             // Gasto real hasta ahora este mes en la categoría vinculada —
             // para poder ajustar el importe previsto sobre la marcha en
@@ -13960,21 +14010,81 @@
             const dias = Math.abs((new Date(auto.date) - new Date(real.date)) / 86400000);
             const diff = Math.abs(Number(auto.amount) - Number(real.amount));
             const texto = financeProNormalizar(real.note);
-            const nombre = financeProNormalizar(auto.note).split(/[^a-z0-9]+/).some(w => w.length >= 3 && texto.includes(w));
-            if (nombre) return dias <= 6 && diff <= Math.max(1, Number(auto.amount) * 0.1);
+            if (financeProCoincideNombre(auto, texto)) return dias <= 6 && diff <= Math.max(1, Number(auto.amount) * 0.1);
             return auto.account === real.account && dias <= 3 && diff < 0.005;
+        }
+
+        // Además del nombre que le puso el usuario, vale el concepto con el
+        // que el banco lo cobró la última vez (conceptoBanco): una
+        // transferencia al fondo indexado llega como "To Alejandro Pascual",
+        // que no comparte ni una palabra con "Fondo indexado".
+        function financeProCoincideNombre(auto, texto) {
+            const e = auto.recurringEntryId && entries.find(x => x.id === auto.recurringEntryId);
+            if (e?.conceptoBanco && texto.includes(e.conceptoBanco)) return true;
+            return financeProNormalizar(auto.note).split(/[^a-z0-9]+/).some(w => w.length >= 3 && texto.includes(w));
+        }
+
+        // El mes de presupuesto al que pertenece un cargo recurrente no es
+        // el de la fecha de compra: Revolut fecha el cobro de octubre de una
+        // suscripción el 30 de septiembre (started date), y sin cicloMes
+        // contaba como pagada en septiembre y en octubre seguía a cero.
+        function financeProCicloMes(t) {
+            return t.cicloMes || String(t.date || '').slice(0, 7);
+        }
+
+        function financeProAprenderConcepto(entryId, concepto) {
+            const e = entries.find(x => x.id === entryId);
+            const c = financeProNormalizar(concepto).trim();
+            if (e && c.length >= 3) e.conceptoBanco = c;
+        }
+
+        // Movimiento del extracto que corresponde a una suscripción o gasto
+        // fijo aunque no exista (todavía) su cargo automático: gastos fijos
+        // sin cuenta PRO, o un banco que cobra un par de días antes del día
+        // de cargo. Por concepto aprendido o nombre, con margen; si no, solo
+        // importe exacto a ±3 días. Un ciclo que ya tiene su movimiento real
+        // no admite otro.
+        function financeProBuscarRecurrente(real) {
+            const texto = financeProNormalizar(real.note);
+            let mejor = null, mejorDias = Infinity;
+            entries.forEach(e => {
+                if (!(e.type === 'subscription' || e.type === 'fixed_expense') || e.active === false) return;
+                const importe = Number(e.amount) || 0;
+                const diff = Math.abs(importe - Number(real.amount));
+                const nombre = financeProCoincideNombre({ recurringEntryId: e.id, note: e.title }, texto);
+                const cuenta = financeProCuentaRecurrente(e);
+                if (!nombre && (diff >= 0.005 || (cuenta && cuenta !== real.account))) return;
+                if (nombre && diff > Math.max(1, importe * 0.1)) return;
+                const base = new Date(real.date + 'T12:00:00');
+                [-1, 0, 1].forEach(delta => {
+                    const ref = new Date(base.getFullYear(), base.getMonth() + delta, 1);
+                    const ciclo = financeMonthKey(ref);
+                    const dia = Math.min(Number(e.renewalDay) || 1, new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate());
+                    const dias = Math.abs((new Date(ref.getFullYear(), ref.getMonth(), dia, 12) - base) / 86400000);
+                    if (dias > (nombre ? 6 : 3) || dias >= mejorDias) return;
+                    if (financePro.transactions.some(t => t.recurringEntryId === e.id && financeProCicloMes(t) === ciclo && !financeProEsAuto(t))) return;
+                    mejor = { entry: e, ciclo }; mejorDias = dias;
+                });
+            });
+            return mejor;
         }
 
         // Si el movimiento real ya está (se importó el extracto antes de
         // que la app generara el cargo), se marca como conciliado y no se
         // crea el automático.
         function financeProRegistrarAuto(tx) {
+            const ciclo = tx.date.slice(0, 7);
+            if (tx.recurringEntryId && financePro.transactions.some(t => t.recurringEntryId === tx.recurringEntryId && financeProCicloMes(t) === ciclo)) return;
             const real = financePro.transactions.find(t => !financeProEsAuto(t) && !t.conciliado && financeProMismoCargo(tx, t));
             if (real) {
                 // Un gasto manual sigue siendo provisional hasta que llegue
                 // el extracto: solo evita que se cree el automático.
                 if (!real.manual) real.conciliado = true;
-                if (tx.recurringEntryId) real.recurringEntryId = tx.recurringEntryId;
+                if (tx.recurringEntryId) {
+                    real.recurringEntryId = tx.recurringEntryId;
+                    real.cicloMes = ciclo;
+                    if (!real.manual) financeProAprenderConcepto(tx.recurringEntryId, real.bankNote ?? real.note);
+                }
                 if (!real.category && tx.category) real.category = tx.category;
                 return;
             }
@@ -15886,8 +15996,9 @@
             window._financeProImport = null;
             showModal(`
                 <div class="modal-title">Importar movimientos</div>
-                <div class="finance-modal-note" style="margin-bottom:12px">Sube el CSV que exporta tu banco o tu app de finanzas (si tienes un Excel, guárdalo primero como CSV). En el siguiente paso indicas qué columna es cada dato.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Sube el CSV que exporta tu banco o tu app de finanzas (si tienes un Excel, guárdalo primero como CSV), o pega su contenido si lo has copiado desde el botón de compartir. En el siguiente paso indicas qué columna es cada dato.</div>
                 <input type="file" id="finance-pro-import-file" accept=".csv,text/csv" class="modal-input" onchange="handleFinanceProImportFile(event)">
+                <button class="finance-oneoff-btn finance-import-pegar" onclick="pegarExtractoBancario()">pegar extracto.</button>
                 <div id="finance-pro-import-body"></div>
             `);
         }
@@ -15937,26 +16048,47 @@
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = () => {
-                const rows = financeProParseCSV(String(reader.result));
-                if (rows.length < 2) { showToast('El archivo no tiene filas suficientes', true); return; }
-                const header = rows[0];
-                // La fecha que cuenta es la de la compra, no la de cuando el
-                // banco la liquida: una compra del 30 de septiembre que
-                // Revolut completa el 1 de octubre es un gasto de septiembre.
-                // Además siempre viene rellena (también en los pendientes).
-                // La de finalización sigue usándose al reimportar para
-                // reconocer movimientos ya importados con esa fecha (altDates).
-                const date = financeProGuessColumn(header, ['started date', 'fecha de inicio', 'completed date', 'fecha de finalización', 'date', 'fecha'], 0);
-                const amount = financeProGuessColumn(header, ['amount', 'importe'], 1);
-                const description = financeProGuessColumn(header, ['description', 'descripción', 'concepto'], header.length > 2 ? 2 : 0);
-                const category = financeProGuessColumn(header, ['category', 'categoría', 'categoria'], -1);
-                const status = financeProGuessColumn(header, ['state', 'estado'], -1);
-                window._financeProImport = { rows, mapping: { hasHeader: true, date, amount, description, category, amountOut: 0, amountIn: 1, splitAmount: false, account: FINANCE_PRO_ACCOUNT_KEYS[0], status, skipPending: false } };
-                document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
-            };
+            reader.onload = () => financeProCargarTextoImport(String(reader.result));
             reader.onerror = () => showToast('No se pudo leer el archivo', true);
             reader.readAsText(file, 'UTF-8');
+        }
+
+        // En el iPhone, "Copiar" en la hoja de compartir del CSV de Revolut
+        // deja el texto del extracto en el portapapeles: así se importa sin
+        // guardar el archivo. Si Safari no deja leer el portapapeles, queda
+        // un cuadro donde pegarlo a mano.
+        async function pegarExtractoBancario() {
+            if (!document.getElementById('finance-pro-import-body')) openFinanceProImportModal();
+            let texto = '';
+            try { texto = await navigator.clipboard.readText(); } catch (e) { texto = ''; }
+            if (financeProCargarTextoImport(texto, true)) return;
+            document.getElementById('finance-pro-import-body').innerHTML = `
+                <div class="modal-label">pega aquí el extracto:</div>
+                <textarea class="modal-input" rows="6" placeholder="Type,Product,Started Date,..." oninput="financeProCargarTextoImport(this.value, true)"></textarea>`;
+        }
+
+        function financeProCargarTextoImport(texto, silencioso) {
+            const rows = financeProParseCSV(String(texto || '').trim());
+            if (rows.length < 2 || rows[0].length < 3) {
+                if (!silencioso) showToast('El archivo no tiene filas suficientes', true);
+                return false;
+            }
+            const header = rows[0];
+            // La fecha que cuenta es la de la compra, no la de cuando el
+            // banco la liquida: una compra del 30 de septiembre que
+            // Revolut completa el 1 de octubre es un gasto de septiembre.
+            // Además siempre viene rellena (también en los pendientes).
+            // La de finalización sigue usándose al reimportar para
+            // reconocer movimientos ya importados con esa fecha (altDates).
+            const date = financeProGuessColumn(header, ['started date', 'fecha de inicio', 'completed date', 'fecha de finalización', 'date', 'fecha'], 0);
+            const amount = financeProGuessColumn(header, ['amount', 'importe'], 1);
+            const description = financeProGuessColumn(header, ['description', 'descripción', 'concepto'], header.length > 2 ? 2 : 0);
+            const category = financeProGuessColumn(header, ['category', 'categoría', 'categoria'], -1);
+            const status = financeProGuessColumn(header, ['state', 'estado'], -1);
+            const account = FINANCE_PRO_ACCOUNT_KEYS.includes(financePro.cuentaImport) ? financePro.cuentaImport : FINANCE_PRO_ACCOUNT_KEYS[0];
+            window._financeProImport = { rows, mapping: { hasHeader: true, date, amount, description, category, amountOut: 0, amountIn: 1, splitAmount: false, account, status, skipPending: false } };
+            document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
+            return true;
         }
 
         function renderFinanceProImportMapping() {
@@ -16035,6 +16167,7 @@
         async function confirmFinanceProImport() {
             const imp = window._financeProImport;
             const m = imp.mapping;
+            financePro.cuentaImport = m.account;
             const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
             const existingKeys = new Set(financePro.transactions.map(t => `${t.account}|${t.date}|${t.amount}|${t.bankNote ?? t.note ?? ''}`));
             const activeRules = financePro.rules.filter(r => r.enabled);
@@ -16145,11 +16278,26 @@
                 }
                 // El concepto pasa a ser el del banco para que reimportar el
                 // mismo extracto lo reconozca por la clave exacta de arriba.
-                const auto = type === 'expense' && financePro.transactions.find(t => financeProEsAuto(t) && financeProMismoCargo(t, { type, date, amount, account: m.account, note: description }));
+                let auto = type === 'expense' && financePro.transactions.find(t => financeProEsAuto(t) && financeProMismoCargo(t, { type, date, amount, account: m.account, note: description }));
+                const recurrente = type === 'expense' && !auto && financeProBuscarRecurrente({ date, amount, account: m.account, note: description });
+                let nuevo = false;
+                if (recurrente) {
+                    auto = financePro.transactions.find(t => financeProEsAuto(t) && t.recurringEntryId === recurrente.entry.id && financeProCicloMes(t) === recurrente.ciclo);
+                    if (!auto) {
+                        auto = { id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added, type, recurringEntryId: recurrente.entry.id, cicloMes: recurrente.ciclo };
+                        financePro.transactions.push(auto);
+                        nuevo = true;
+                    }
+                }
                 if (auto) {
+                    if (auto.recurringEntryId) {
+                        auto.cicloMes = financeProCicloMes(auto);
+                        if (!esPendiente) financeProAprenderConcepto(auto.recurringEntryId, description);
+                    }
                     Object.assign(auto, { date, account: m.account, amount, note: description || auto.note, conciliado: true, pendiente: esPendiente || undefined });
                     if (category) auto.category = category;
-                    conciliados++;
+                    existingKeys.add(dedupeKey);
+                    if (nuevo) added++; else conciliados++;
                     return;
                 }
                 // Un gasto grabado a mano casi nunca lleva el concepto del
@@ -16165,6 +16313,7 @@
                     if (!manual.note && description) manual.note = description;
                     if (!manual.category && category) manual.category = category;
                     if (manual.category) manual.needsReview = false;
+                    if (manual.recurringEntryId && !esPendiente) financeProAprenderConcepto(manual.recurringEntryId, description);
                     existingKeys.add(dedupeKey);
                     conciliados++;
                     return;
