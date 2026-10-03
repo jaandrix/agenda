@@ -13182,25 +13182,6 @@
             return new Date() >= limite ? 'falta' : 'pronto';
         }
 
-        function renderBudgetAutoDetalle(tipo, month) {
-            const textos = { banco: 'confirmado por el banco.', anotado: 'anotado, falta el extracto.', falta: 'no aparece en el banco.' };
-            return entries.filter(e => e.type === tipo && e.active !== false)
-                .sort((a, b) => (Number(a.renewalDay) || 1) - (Number(b.renewalDay) || 1))
-                .map(e => {
-                    const estado = recurrenteEstadoMes(e, month);
-                    return `<div class="budget-auto-item ${estado}">
-                        <span class="budget-auto-punto"></span>
-                        <span class="budget-auto-nombre">${escapeHtml(e.title || '')}</span>
-                        <span class="budget-auto-estado">${textos[estado] || `día ${Number(e.renewalDay) || 1}.`}</span>
-                        <span class="budget-auto-importe">${financeMoney(Number(e.amount) || 0)}</span>
-                    </div>`;
-                }).join('');
-        }
-
-        function toggleBudgetAutoDetalle(id) {
-            document.getElementById('budget-auto-detalle-' + id)?.classList.toggle('abierto');
-        }
-
         function asegurarCasillasAutomaticas(plan) {
             Object.keys(BUDGET_CASILLAS_AUTO).forEach(tipo => {
                 if (plan.autoQuitadas?.[tipo] || plan.allocations.some(a => a.auto === tipo)) return;
@@ -13458,16 +13439,14 @@
                 const r = budgetAutoResumen(a.auto);
                 const gastado = budgetAutoGastado(a.auto, month);
                 const nombre = a.auto === 'subscription' ? (r.n === 1 ? 'suscripción' : 'suscripciones') : (r.n === 1 ? 'gasto fijo' : 'gastos fijos');
-                const confirmados = entries.filter(e => e.type === a.auto && e.active !== false && recurrenteEstadoMes(e, month) === 'banco').length;
                 return `
             <div class="budget-alloc-row budget-alloc-row-auto">
-                <button class="budget-alloc-auto-label" onclick="toggleBudgetAutoDetalle('${a.id}')" title="Ver cuáles ha confirmado el banco"><span>${escapeHtml(a.label)}. <i>▾</i></span><small>${r.n} ${nombre} · ${confirmados} en el banco.</small></button>
+                <div class="budget-alloc-auto-label"><span>${escapeHtml(a.label)}.</span><small>${r.n} ${nombre} · ${financeMoney(r.total)}</small></div>
                 <input class="modal-input budget-alloc-amount" type="number" min="0" step="0.01" value="${a.amount || ''}" placeholder="0.00" title="Límite de presupuesto" oninput="updateBudgetAllocation('${a.id}','amount',this.value,false)" onchange="updateBudgetAllocation('${a.id}','amount',this.value,true)">
                 <div class="budget-alloc-auto-tag">automático.</div>
                 <div class="budget-alloc-spent${Number(a.amount) > 0 && gastado > Number(a.amount) ? ' over' : ''}">${financeMoney(gastado)}</div>
                 <button class="doc-action-delete-btn" title="Quitar de este mes" onclick="removeBudgetAllocation('${a.id}')">✕</button>
-            </div>
-            <div class="budget-auto-detalle" id="budget-auto-detalle-${a.id}">${renderBudgetAutoDetalle(a.auto, month)}</div>`;
+            </div>`;
             }
             // Gasto real hasta ahora este mes en la categoría vinculada —
             // para poder ajustar el importe previsto sobre la marcha en
