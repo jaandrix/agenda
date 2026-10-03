@@ -3981,6 +3981,15 @@
             const key = currentPlannerDayKey(new Date(), offset);
             resetDayPlannerIfNeeded();
             if (Array.isArray(dayPlanner.days[key])) {
+                // Una tarea que viene de un trabajo de Estudios se recrea en
+                // cada carga (syncAssignmentPlannerItem): borrarla aquí solo
+                // no bastaba, volvía al recargar. Se marca en el propio
+                // trabajo que el usuario no la quiere en el planificador.
+                const borrada = dayPlanner.days[key].find(it => it.id === id);
+                if (borrada?.linkedAssignmentId) {
+                    const trabajo = findAssignmentById(borrada.linkedAssignmentId);
+                    if (trabajo) trabajo.fueraDelPlanificador = true;
+                }
                 dayPlanner.days[key] = dayPlanner.days[key].filter(it => it.id !== id);
             }
             if (currentView === 'planner') render();
@@ -10481,7 +10490,7 @@
             // se haya archivado, se recrea ya marcada si el trabajo lo está.
             const existing = findLinkedPlannerItem(item.id);
             removeLinkedPlannerItem(item.id);
-            if (!item.date) return;
+            if (!item.date || item.fueraDelPlanificador) return;
             if (!Array.isArray(dayPlanner.days[item.date])) dayPlanner.days[item.date] = [];
             dayPlanner.days[item.date].push({
                 id: 'planner_assign_' + item.id,
