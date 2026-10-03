@@ -14069,6 +14069,69 @@
             return mejor;
         }
 
+        // Categorías aprendidas de las que el usuario ya puso (nunca de las
+        // puestas solas, categoriaAuto: un error se reforzaría a sí mismo).
+        // Solo se asigna si al menos el 90 % de los movimientos parecidos
+        // llevan la misma: primero mismo concepto (mín. 2), luego mismo
+        // concepto e importe (Estanco 6,20 € frente a Estanco 3 € de
+        // sellos), y por último una palabra del concepto ("cafeteria"),
+        // con más ejemplos (mín. 3) y sin que otra palabra lo contradiga.
+        // Un cargo de suscripción o gasto fijo hereda la del mes anterior.
+        const CATEGORIA_AUTO_CONFIANZA = 0.9;
+        const CATEGORIA_PALABRAS_VACIAS = new Set(['payment', 'pago', 'compra', 'card', 'tarjeta', 'transfer', 'transferencia', 'from', 'bizum', 'recibo', 'cargo', 'online', 'store', 'shop', 'tienda', 'para', 'with']);
+
+        function financeProClaveConcepto(t) {
+            return financeProNormalizar(t.bankNote ?? t.note).replace(/[^a-z]+/g, ' ').trim();
+        }
+
+        function financeProIndiceCategorias() {
+            return financePro.transactions
+                .filter(t => t.category && !t.categoriaAuto && (t.type === 'expense' || t.type === 'income') && financeProCategoryById(t.category))
+                .map(t => { const clave = financeProClaveConcepto(t); return { t, clave, palabras: new Set(clave.split(' ')) }; });
+        }
+
+        function financeProCategoriaAprendida(tx, indice) {
+            if (tx.type !== 'expense' && tx.type !== 'income') return null;
+            const base = (indice || financeProIndiceCategorias()).filter(x => x.t !== tx && x.t.type === tx.type);
+            if (tx.recurringEntryId) {
+                const previo = base.filter(x => x.t.recurringEntryId === tx.recurringEntryId).sort((a, b) => b.t.date.localeCompare(a.t.date))[0];
+                if (previo) return previo.t.category;
+            }
+            const clave = financeProClaveConcepto(tx);
+            if (!clave) return null;
+            const decidir = (grupo, minimo) => {
+                if (grupo.length < minimo) return null;
+                const cuenta = {};
+                grupo.forEach(x => { cuenta[x.t.category] = (cuenta[x.t.category] || 0) + 1; });
+                const [cat, n] = Object.entries(cuenta).sort((a, b) => b[1] - a[1])[0];
+                return n / grupo.length >= CATEGORIA_AUTO_CONFIANZA ? cat : null;
+            };
+            const mismoImporte = grupo => grupo.filter(x => Math.abs(Number(x.t.amount) - Number(tx.amount)) < 0.005);
+            const mismoConcepto = base.filter(x => x.clave === clave);
+            const directa = decidir(mismoConcepto, 2) || decidir(mismoImporte(mismoConcepto), 2);
+            if (directa) return directa;
+            const porPalabra = new Set();
+            let contradice = false;
+            clave.split(' ').filter(w => w.length >= 4 && !CATEGORIA_PALABRAS_VACIAS.has(w)).forEach(w => {
+                const grupo = base.filter(x => x.palabras.has(w));
+                if (!grupo.length) return;
+                const cat = decidir(grupo, 3) || decidir(mismoImporte(grupo), 3);
+                if (cat) porPalabra.add(cat); else if (grupo.length >= 3) contradice = true;
+            });
+            return porPalabra.size === 1 && !contradice ? [...porPalabra][0] : null;
+        }
+
+        function financeProAutoCategorizar() {
+            const indice = financeProIndiceCategorias();
+            let n = 0;
+            financePro.transactions.forEach(t => {
+                if (t.category || t.needsReview || t.type === 'transfer') return;
+                const cat = financeProCategoriaAprendida(t, indice);
+                if (cat) { t.category = cat; t.categoriaAuto = true; n++; }
+            });
+            return n;
+        }
+
         // Si el movimiento real ya está (se importó el extracto antes de
         // que la app generara el cargo), se marca como conciliado y no se
         // crea el automático.
@@ -14087,6 +14150,10 @@
                 }
                 if (!real.category && tx.category) real.category = tx.category;
                 return;
+            }
+            if (!tx.category) {
+                const cat = financeProCategoriaAprendida(tx);
+                if (cat) { tx.category = cat; tx.categoriaAuto = true; }
             }
             financePro.transactions.push(tx);
         }
@@ -15598,7 +15665,7 @@
             return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
                 ${financeProCategoryBadge(cat)}
                 <div class="finance-pro-tx-main">
-                    <div class="finance-pro-tx-title">${escapeHtml(cat ? cat.name : 'Sin categoría')}</div>
+                    <div class="finance-pro-tx-title">${escapeHtml(cat ? cat.name : 'Sin categoría')}${cat && t.categoriaAuto ? '<span class="finance-cat-auto" title="Puesta por bitácora a partir de movimientos parecidos. Ábrelo y guarda para confirmarla.">auto.</span>' : ''}</div>
                     <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}${t.pendiente ? ' · pendiente.' : ''}</div>
                     ${t.note ? `<div class="finance-pro-tx-note">${escapeHtml(t.note)}</div>` : ''}
                 </div>
@@ -15653,7 +15720,8 @@
                 <select class="modal-input" onchange="financeProDraftSet('category',this.value)">
                     <option value="">Sin categoría</option>
                     ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
-                </select>`}
+                </select>
+                ${d.categoriaAuto && d.category ? '<div class="finance-modal-note" style="margin:-4px 0 8px">Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.</div>' : ''}`}
                 <div class="modal-label">Nota (opcional)</div>
                 <input class="modal-input" value="${escapeHtml(d.note || '')}" onchange="financeProDraftSet('note',this.value)" placeholder="Ej. Cena con amigos">
                 <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction()">Guardar</button>
@@ -15687,15 +15755,16 @@
             // cargo automático, ya conciliado con el banco...): si se
             // perdiera, la próxima importación lo duplicaría.
             const prev = financePro.transactions.find(t => t.id === entry.id);
-            if (prev) ['manual', 'recurringEntryId', 'programadoId', 'conciliado', 'bankNote', 'pendiente', 'noDuplicadoDe'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
+            if (prev) ['manual', 'recurringEntryId', 'cicloMes', 'programadoId', 'conciliado', 'bankNote', 'pendiente', 'noDuplicadoDe'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
             else entry.manual = true;
             const idx = financePro.transactions.findIndex(t => t.id === entry.id);
             if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
+            const categorizados = entry.category ? financeProAutoCategorizar() : 0;
             window._financeProTxEditId = null; window._financeProTxDraft = null;
             render();
             if (window._financeProTxReturnToAll) openFinanceProAllTxModal(); else closeModal();
             window._financeProTxReturnToAll = false;
-            try { await saveData(); showToast('Movimiento guardado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            try { await saveData(); showToast(categorizados ? `Movimiento guardado · ${categorizados} parecido${categorizados === 1 ? '' : 's'} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : 'Movimiento guardado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         async function deleteFinanceProTransaction(id) {
@@ -16325,9 +16394,10 @@
                 });
                 added++;
             });
+            const categorizados = financeProAutoCategorizar();
             closeModal();
             render();
-            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${completados ? ` · ${completados} pendiente${completados === 1 ? '' : 's'} ya completado${completados === 1 ? '' : 's'}` : ''}${anulados ? ` · ${anulados} pendiente${anulados === 1 ? '' : 's'} anulado${anulados === 1 ? '' : 's'} y retirado${anulados === 1 ? '' : 's'}` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
+            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${completados ? ` · ${completados} pendiente${completados === 1 ? '' : 's'} ya completado${completados === 1 ? '' : 's'}` : ''}${anulados ? ` · ${anulados} pendiente${anulados === 1 ? '' : 's'} anulado${anulados === 1 ? '' : 's'} y retirado${anulados === 1 ? '' : 's'}` : ''}${categorizados ? ` · ${categorizados} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
