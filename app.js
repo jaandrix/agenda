@@ -4363,7 +4363,6 @@
                         <button class="btn-modal-primary" onclick="openAddCollectible()">+ coleccionable.</button>
                     </div>
                 </div>
-                ${collectibles.length ? renderCollResumen() : ''}
                 <div class="coll-controles">
                     <div class="coll-chips">
                         ${chip('all', 'todas', collectibles.length)}
@@ -4380,46 +4379,6 @@
                 </div>
                 <div id="coll-lista">${renderCollLista()}</div>
             </div>`;
-        }
-
-        // Franja de cifras arriba: valor total con las piezas más valiosas en
-        // barritas, número de objetos y media, la pieza más valiosa y, si hay
-        // estados puestos, cómo se reparte la colección entre ellos.
-        function renderCollResumen() {
-            const valor = c => Number(c.value) || 0;
-            const total = collectibles.reduce((s, c) => s + valor(c), 0);
-            const top = [...collectibles].sort((a, b) => valor(b) - valor(a));
-            const barras = top.slice(0, 14);
-            const max = Math.max(1, ...barras.map(valor));
-            const joya = top[0];
-            const tonos = { sellado: 0, alto: 0, medio: 0, bajo: 0 };
-            collectibles.forEach(c => { const t = CARTA_ESTADO_TONO[c.carta?.estado]; if (t) tonos[t]++; });
-            const conEstado = Object.values(tonos).reduce((a, b) => a + b, 0);
-            const nombresTono = { sellado: 'sellado', alto: 'mint', medio: 'bueno', bajo: 'jugado' };
-            return `
-                <div class="coll-kpis">
-                    <div class="coll-kpi">
-                        <span>valor total.</span>
-                        <b>${financeMoney(total)}</b>
-                        <div class="coll-kpi-barras">${barras.map(c => `<i style="height:${Math.max(8, valor(c) / max * 100)}%"></i>`).join('')}</div>
-                    </div>
-                    <div class="coll-kpi">
-                        <span>objetos.</span>
-                        <b>${collectibles.length}</b>
-                        <small>media de ${financeMoney(total / collectibles.length)}.</small>
-                    </div>
-                    <div class="coll-kpi coll-kpi-joya" ${joya ? `onclick="openEditCollectible('${joya.id}')"` : ''}>
-                        <span>la joya.</span>
-                        <b>${joya ? escapeHtml(joya.name) : '—'}</b>
-                        <small>${joya ? financeMoney(valor(joya)) + '.' : ''}</small>
-                    </div>
-                    ${conEstado ? `
-                    <div class="coll-kpi">
-                        <span>por estado.</span>
-                        <div class="coll-kpi-estados">${Object.entries(tonos).filter(([, n]) => n).map(([t, n]) => `<i class="${t}" style="flex:${n}"></i>`).join('')}</div>
-                        <small class="coll-kpi-leyenda">${Object.entries(tonos).filter(([, n]) => n).map(([t, n]) => `<span><em class="${t}"></em>${nombresTono[t]} ${n}</span>`).join('')}</small>
-                    </div>` : ''}
-                </div>`;
         }
 
         function collOrdenar(items) {
