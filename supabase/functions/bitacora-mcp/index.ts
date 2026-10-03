@@ -27,7 +27,7 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'hogar', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Lo que apuntas aparece en Bitácora la próxima vez que el usuario la abra o vuelva a ella.`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Todo lo que haces queda en un registro dentro de Bitácora donde el usuario lo revisa y puede deshacerlo; aparece la próxima vez que abra Bitácora o vuelva a ella.`;
 
 // ---------------------------------------------------------------- fechas
 function hoyISO(): string {
@@ -74,7 +74,53 @@ function aplicarOp(data: any, op: any, id: string) {
     } else if (op.tipo === 'entrada') {
         const ev = (data.entries || []).find((e: any) => e?.id === op.eventoId);
         if (ev) (ev.entradas = ev.entradas || []).push({ id: ref, qr: op.qr || '', qrB64: op.qrB64 || undefined, etiqueta: op.etiqueta || '' });
+    } else if (op.tipo === 'editar_evento') {
+        const ev = (data.entries || []).find((e: any) => e?.id === op.id);
+        if (ev) Object.assign(ev, op.cambios || {});
+    } else if (op.tipo === 'editar_movimiento') {
+        const t = (data.financePro?.transactions || []).find((x: any) => x?.id === op.id);
+        if (t) { Object.assign(t, op.cambios || {}); if (op.cambios?.category) t.needsReview = false; }
+    } else if (op.tipo === 'editar_tarea') {
+        moverTarea(data.dayPlanner = data.dayPlanner || { days: {}, backlog: [] }, op.id, op.cambios || {});
+    } else if (op.tipo === 'borrar') {
+        if (op.coleccion === 'evento') data.entries = (data.entries || []).filter((e: any) => e?.id !== op.id);
+        if (op.coleccion === 'movimiento' && data.financePro) data.financePro.transactions = (data.financePro.transactions || []).filter((t: any) => t?.id !== op.id);
+        if (op.coleccion === 'tarea') { const loc = buscarTarea(data.dayPlanner, op.id); if (loc) loc.lista.splice(loc.i, 1); }
+    } else if (op.tipo === 'dia') {
+        if (op.esfuerzo) (data.dailyEffort = data.dailyEffort || {})[op.fecha] = op.esfuerzo;
+        (data.habits || []).forEach((h: any) => {
+            if ((op.hechos || []).includes(h.id)) (h.completadas = h.completadas || {})[op.fecha] = true;
+            if ((op.noHechos || []).includes(h.id) && h.completadas) delete h.completadas[op.fecha];
+        });
     }
+}
+
+// Misma lógica que moverTareaConector en app.js: con día y hora va a la
+// línea de ese día; sin alguno de los dos, a "tareas pendientes".
+function buscarTarea(dp: any, id: string) {
+    if (!dp) return null;
+    let i = (dp.backlog || []).findIndex((t: any) => t?.id === id);
+    if (i >= 0) return { lista: dp.backlog, i, dia: null as string | null };
+    for (const [k, l] of Object.entries(dp.days || {})) {
+        i = ((l as any[]) || []).findIndex((t: any) => t?.id === id);
+        if (i >= 0) return { lista: l as any[], i, dia: k as string | null };
+    }
+    return null;
+}
+
+function moverTarea(dp: any, id: string, c: any) {
+    const loc = buscarTarea(dp, id);
+    if (!loc) return;
+    const it = loc.lista[loc.i];
+    if (c.titulo !== undefined) it.title = c.titulo;
+    if (c.notas !== undefined) it.notes = c.notas;
+    if (c.hecha !== undefined) it.done = !!c.hecha;
+    if (c.fecha === undefined && c.hora === undefined && !c.sinFecha) return;
+    const dia = c.sinFecha ? null : (c.fecha || loc.dia);
+    const hora = c.sinFecha ? '' : (c.hora || it.time || '');
+    loc.lista.splice(loc.i, 1);
+    if (dia && hora) { it.time = hora; dp.days = dp.days || {}; (dp.days[dia] = dp.days[dia] || []).push(it); }
+    else { delete it.time; (dp.backlog = dp.backlog || []).unshift(it); }
 }
 
 // Notas tiene una nota por día (solo la de hoy es editable en la app):
@@ -119,9 +165,9 @@ function agenda(data: any, desde: string, hasta: string) {
         const dia: any = { fecha: f, dia: diaSemana(f) };
         const eventos = entries.filter((e: any) => e?.type === 'event' && e.date === f && !e.calendarLog)
             .sort((a: any, b: any) => String(a.time || '').localeCompare(String(b.time || '')))
-            .map((e: any) => ({ titulo: e.title, hora: e.time || undefined, lugar: e.place || undefined, tipo: e.eventType, notas: e.notes || undefined, entradas: e.entradas?.length || undefined }));
+            .map((e: any) => ({ id: e.id, titulo: e.title, hora: e.time || undefined, lugar: e.place || undefined, tipo: e.eventType, notas: e.notes || undefined, entradas: e.entradas?.length || undefined }));
         if (eventos.length) dia.eventos = eventos;
-        const plan = (data.dayPlanner?.days?.[f] || []).map((it: any) => ({ hora: it.time, titulo: it.title, hecha: !!it.done }));
+        const plan = (data.dayPlanner?.days?.[f] || []).map((it: any) => ({ id: it.id, hora: it.time, titulo: it.title, hecha: !!it.done }));
         if (plan.length) dia.planificador = plan;
         const rec = (data.recurringTasks || []).filter((t: any) => recurrenteToca(t, f)).map((t: any) => t.texto);
         if (rec.length) dia.recurrentes = rec;
@@ -136,9 +182,12 @@ function agenda(data: any, desde: string, hasta: string) {
         const cargos = entries.filter((e: any) => (e?.type === 'subscription' || e?.type === 'fixed_expense') && e.active !== false && Number(e.renewalDay) === Number(f.slice(8)))
             .map((e: any) => `${e.title} (${euros(Number(e.amount) || 0)})`);
         if (cargos.length) dia.cargos = cargos;
+        if (data.dailyEffort?.[f]) dia.esfuerzo = data.dailyEffort[f];
+        const habitos = (data.habits || []).filter((h: any) => h.activo !== false).map((h: any) => ({ habito: h.texto, hecho: !!h.completadas?.[f] }));
+        if (habitos.length && f <= hoyISO()) dia.habitos = habitos;
         dias.push(dia);
     }
-    const pendientes = (data.dayPlanner?.backlog || []).filter((t: any) => !t.done).map((t: any) => t.title + (t.notes ? ` (${t.notes})` : ''));
+    const pendientes = (data.dayPlanner?.backlog || []).filter((t: any) => !t.done).map((t: any) => ({ id: t.id, titulo: t.title, notas: t.notes || undefined }));
     return { hoy: hoyISO(), dias, tareas_pendientes_sin_fecha: pendientes };
 }
 
@@ -202,6 +251,7 @@ function movimientosLista(data: any, f: any) {
         .sort((a: any, b: any) => b.date.localeCompare(a.date))
         .slice(0, Math.min(Number(f.limite) || 50, 200))
         .map((t: any) => ({
+            id: t.id,
             fecha: t.date,
             tipo: t.type === 'income' ? 'ingreso' : t.type === 'expense' ? 'gasto' : 'traspaso',
             importe: euros(Number(t.amount) || 0),
@@ -209,6 +259,7 @@ function movimientosLista(data: any, f: any) {
             categoria: t.type === 'transfer' ? undefined : nombreCategoria(data, t.category),
             cuenta: data.financePro?.accounts?.[t.account]?.name || t.account,
             pendiente: t.pendiente || undefined,
+            por_revisar: t.needsReview || undefined,
         }));
 }
 
@@ -217,15 +268,72 @@ function buscar(data: any, texto: string) {
     if (!q) return [];
     const res: any[] = [];
     const mira = (...v: unknown[]) => v.some(x => norm(x).includes(q));
-    (data.entries || []).forEach((e: any) => { if (e && mira(e.title, e.notes, e.place)) res.push({ apartado: e.type, titulo: e.title, fecha: e.date || undefined, notas: e.notes || undefined }); });
+    (data.entries || []).forEach((e: any) => { if (e && mira(e.title, e.notes, e.place)) res.push({ apartado: e.type, id: e.id, titulo: e.title, fecha: e.date || undefined, notas: e.notes || undefined }); });
     (data.notes || []).forEach((n: any) => { if (mira(n.title, n.content)) res.push({ apartado: 'nota', fecha: n.date, titulo: n.title || undefined, texto: String(n.content || '').slice(0, 400) }); });
     (data.inbox || []).forEach((n: any) => { if (mira(n.text)) res.push({ apartado: 'inbox antiguo (Centro resumen)', texto: n.text }); });
-    Object.entries(data.dayPlanner?.days || {}).forEach(([f, its]: any) => (its || []).forEach((it: any) => { if (mira(it.title, it.notes)) res.push({ apartado: 'planificador', fecha: f, hora: it.time, titulo: it.title }); }));
-    (data.dayPlanner?.backlog || []).forEach((it: any) => { if (mira(it.title, it.notes)) res.push({ apartado: 'tarea pendiente', titulo: it.title, hecha: !!it.done }); });
+    Object.entries(data.dayPlanner?.days || {}).forEach(([f, its]: any) => (its || []).forEach((it: any) => { if (mira(it.title, it.notes)) res.push({ apartado: 'planificador', id: it.id, fecha: f, hora: it.time, titulo: it.title, hecha: !!it.done }); }));
+    (data.dayPlanner?.backlog || []).forEach((it: any) => { if (mira(it.title, it.notes)) res.push({ apartado: 'tarea pendiente', id: it.id, titulo: it.title, hecha: !!it.done }); });
     (data.collectibles || []).forEach((c: any) => { if (mira(c.name, c.carta?.set)) res.push({ apartado: 'coleccionable', nombre: c.name, valor: euros(Number(c.value) || 0) }); });
     (data.studies?.subjects || []).forEach((s: any) => { if (mira(s.name)) res.push({ apartado: 'asignatura', nombre: s.name }); });
     movimientosLista(data, { texto, limite: 30 }).forEach(m => res.push({ apartado: 'movimiento', ...m }));
     return res.slice(0, 80);
+}
+
+function resumenPeriodo(data: any, desde: string, hasta: string) {
+    const fechas: string[] = [];
+    for (let f = desde; f <= hasta && fechas.length < 93; f = sumarDias(f, 1)) fechas.push(f);
+    const dentro = (f: unknown) => typeof f === 'string' && f >= desde && f <= hasta;
+    const eventos = (data.entries || []).filter((e: any) => e?.type === 'event' && !e.calendarLog && dentro(e.date))
+        .sort((a: any, b: any) => a.date.localeCompare(b.date)).map((e: any) => `${e.date} · ${e.title}`);
+    const plan = fechas.map(f => {
+        const l = data.dayPlanner?.days?.[f] || [];
+        return { fecha: f, hechas: l.filter((t: any) => t.done).map((t: any) => t.title), sin_hacer: l.filter((t: any) => !t.done).map((t: any) => t.title) };
+    }).filter(d => d.hechas.length || d.sin_hacer.length);
+    const recurrentes = (data.recurringTasks || []).filter((t: any) => t.activo).map((t: any) => {
+        const tocaban = fechas.filter(f => recurrenteToca(t, f));
+        return { tarea: t.texto, tocaban: tocaban.length, hechas: tocaban.filter(f => t.completadas?.[f]).length };
+    }).filter((x: any) => x.tocaban);
+    const habitos = (data.habits || []).filter((h: any) => h.activo !== false).map((h: any) => ({ habito: h.texto, dias_hechos: fechas.filter(f => h.completadas?.[f]).length, de: fechas.length }));
+    const esf = fechas.map(f => ({ fecha: f, valor: Number(data.dailyEffort?.[f]) || 0 })).filter(x => x.valor);
+    const txs = (data.financePro?.transactions || []).filter((t: any) => t?.type === 'expense');
+    const fuera = ['cat_inversion_gasto', 'cat_coleccionables'];
+    const gastoEntre = (a: string, b: string) => txs.filter((t: any) => t.date >= a && t.date <= b && !t.recurringEntryId && !fuera.includes(t.category)).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
+    const porCat: Record<string, number> = {};
+    txs.filter((t: any) => dentro(t.date)).forEach((t: any) => { const n = nombreCategoria(data, t.category); porCat[n] = (porCat[n] || 0) + (Number(t.amount) || 0); });
+    const n = fechas.length;
+    const anteriores = [1, 2, 3, 4].map(i => gastoEntre(sumarDias(desde, -n * i), sumarDias(hasta, -n * i)));
+    const estudios: any[] = [];
+    (data.studies?.subjects || []).forEach((s: any) => {
+        (s.exams || []).forEach((x: any) => { if (x?.date >= desde && x.date <= sumarDias(hasta, 14)) estudios.push({ fecha: x.date, examen: x.title || 'examen', asignatura: s.name }); });
+        (s.assignments || []).forEach((x: any) => { if (x?.date >= desde && x.date <= sumarDias(hasta, 14)) estudios.push({ fecha: x.date, entrega: x.title || 'trabajo', asignatura: s.name, hecho: !!x.done }); });
+    });
+    const notas = (data.notes || []).filter((x: any) => dentro(x.date)).map((x: any) => ({ fecha: x.date, titulo: x.title || undefined, extracto: String(x.content || '').slice(0, 300) }));
+    const ocio = (data.entries || []).filter((e: any) => ['book', 'movie', 'series', 'game'].includes(e?.type) && (dentro(e.endDate) || dentro(e.date))).map((e: any) => ({ tipo: e.type, titulo: e.title, valoracion: e.rating || undefined }));
+    return {
+        periodo: { desde, hasta, dias: n },
+        eventos,
+        planificador: plan,
+        tareas_recurrentes: recurrentes,
+        habitos,
+        esfuerzo: { media: esf.length ? Math.round(esf.reduce((s, x) => s + x.valor, 0) / esf.length * 10) / 10 : null, dias_puntuados: esf.length, por_dia: esf },
+        gasto_dia_a_dia: { este_periodo: euros(gastoEntre(desde, hasta)), media_de_los_4_periodos_anteriores: euros(anteriores.reduce((a, b) => a + b, 0) / 4), nota: 'sin suscripciones, gastos fijos, inversiones ni coleccionables' },
+        gasto_por_categoria: Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => ({ categoria: c, total: euros(v) })),
+        estudios_en_el_periodo_y_las_2_semanas_siguientes: estudios.sort((a, b) => a.fecha.localeCompare(b.fecha)),
+        notas,
+        ocio_terminado: ocio,
+    };
+}
+
+function habitosPorNombre(data: any, nombres: unknown) {
+    const lista = Array.isArray(nombres) ? nombres : [];
+    const activos = (data.habits || []).filter((h: any) => h.activo !== false);
+    const ids: string[] = [], noEncontrados: string[] = [];
+    lista.forEach((n: unknown) => {
+        const q = norm(n).trim();
+        const h = activos.find((x: any) => norm(x.texto).trim() === q) || activos.find((x: any) => norm(x.texto).includes(q) || q.includes(norm(x.texto)));
+        if (h) ids.push(h.id); else noEncontrados.push(String(n));
+    });
+    return { ids, noEncontrados };
 }
 
 const APARTADOS: Record<string, (d: any) => unknown> = {
@@ -320,6 +428,50 @@ const HERRAMIENTAS = [
         },
     },
     {
+        name: 'editar_evento',
+        description: 'Cambia un evento del calendario (título, fecha, hora, lugar, notas o tipo). Busca antes su id con agenda o buscar.',
+        inputSchema: { type: 'object', properties: { id: { type: 'string' }, titulo: { type: 'string' }, fecha: { type: 'string' }, hora: { type: 'string' }, lugar: { type: 'string' }, notas: { type: 'string' }, tipo: { type: 'string', enum: EVENTO_TIPOS } }, required: ['id'] },
+    },
+    {
+        name: 'editar_tarea',
+        description: 'Cambia, completa o mueve una tarea (del planificador o de "tareas pendientes"). hecha=true la marca hecha. Con fecha y/o hora se mueve a la línea de ese día; sin_fecha=true la devuelve a "tareas pendientes". Busca antes su id con agenda o buscar.',
+        inputSchema: { type: 'object', properties: { id: { type: 'string' }, titulo: { type: 'string' }, notas: { type: 'string' }, fecha: { type: 'string' }, hora: { type: 'string', description: 'HH:MM' }, hecha: { type: 'boolean' }, sin_fecha: { type: 'boolean' } }, required: ['id'] },
+    },
+    {
+        name: 'editar_movimiento',
+        description: 'Corrige un movimiento: categoría, concepto, importe, fecha o cuenta. Sirve para categorizar los que están por revisar. Busca antes su id con movimientos.',
+        inputSchema: { type: 'object', properties: { id: { type: 'string' }, categoria: { type: 'string' }, concepto: { type: 'string' }, importe: { type: 'number' }, fecha: { type: 'string' }, cuenta: { type: 'string', enum: CUENTAS } }, required: ['id'] },
+    },
+    {
+        name: 'borrar',
+        description: 'Borra un evento, una tarea o un movimiento por su id. CONFIRMA SIEMPRE CON EL USUARIO ANTES de llamar a esta herramienta, diciéndole qué vas a borrar.',
+        inputSchema: { type: 'object', properties: { tipo: { type: 'string', enum: ['evento', 'tarea', 'movimiento'] }, id: { type: 'string' } }, required: ['tipo', 'id'] },
+        annotations: { destructiveHint: true },
+    },
+    {
+        name: 'registrar_dia',
+        description: 'Check-in de un día: puntúa el esfuerzo (1 a 5: cuánto se esforzó en cumplir sus objetivos), marca hábitos hechos o no hechos por su nombre y, si hay algo que contar, lo añade a la nota del día. Por defecto, hoy.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                fecha: { type: 'string' }, esfuerzo: { type: 'number', minimum: 1, maximum: 5 },
+                habitos_hechos: { type: 'array', items: { type: 'string' } }, habitos_no_hechos: { type: 'array', items: { type: 'string' } },
+                nota: { type: 'string' }, titulo_nota: { type: 'string' },
+            },
+        },
+    },
+    {
+        name: 'importar_extracto',
+        description: 'Importa un extracto bancario en CSV (Revolut, Ibercaja...) que el usuario comparta: pasa aquí el contenido completo del archivo, sin tocarlo. Bitácora lo procesa con su propio importador al abrirse: no duplica lo ya registrado, fusiona los gastos apuntados a mano y las suscripciones, actualiza los pendientes y categoriza solo lo que tiene claro.',
+        inputSchema: { type: 'object', properties: { csv: { type: 'string' }, cuenta: { type: 'string', enum: CUENTAS, description: 'Cuenta de Bitácora a la que pertenece; por defecto la última usada al importar' } }, required: ['csv'] },
+    },
+    {
+        name: 'resumen_periodo',
+        description: 'Todo lo que pasó entre dos fechas, para revisiones semanales o mensuales: eventos, tareas hechas y sin hacer, recurrentes, hábitos, esfuerzo, gasto del día a día frente a los periodos anteriores, gasto por categoría, exámenes y entregas, notas y ocio terminado. Por defecto, los últimos 7 días.',
+        inputSchema: { type: 'object', properties: { desde: { type: 'string' }, hasta: { type: 'string' } } },
+        annotations: { readOnlyHint: true },
+    },
+    {
         name: 'anotar',
         description: 'Escribe en el apartado Notas de Bitácora. Notas funciona como un diario: hay una nota por día y esto se añade al final de la nota de hoy. Si la nota de hoy está vacía y sin título, el título pasa a ser el de la nota; si no, va como primera línea del texto añadido. Para ideas, apuntes, reflexiones o datos que el usuario quiera guardar.',
         inputSchema: { type: 'object', properties: { titulo: { type: 'string', description: 'Opcional' }, texto: { type: 'string' } }, required: ['texto'] },
@@ -398,6 +550,94 @@ async function llamar(userId: string, nombre: string, a: any) {
             await encolar(userId, { tipo: 'movimiento', type, importe, concepto: String(a.concepto || ''), fecha, cuenta, categoria: cat?.id || '' });
             return `Registrado: ${a.tipo === 'ingreso' ? 'ingreso' : 'gasto'} de ${euros(importe)} (${a.concepto}) el ${fecha} en ${data.financePro?.accounts?.[cuenta]?.name || cuenta}${cat ? ', categoría ' + cat.name : ', sin categoría (queda para revisar)'}. Si se importa luego el extracto del banco, se fusiona con el cargo real.`;
         }
+        case 'editar_evento': {
+            const ev = (data.entries || []).find((e: any) => e?.id === a.id && e.type === 'event');
+            if (!ev) throw new Error('No encuentro ese evento; busca su id con agenda o buscar');
+            const cambios: any = {};
+            if (a.titulo) cambios.title = String(a.titulo);
+            if (esFecha(a.fecha)) cambios.date = a.fecha;
+            if (a.hora !== undefined) cambios.time = /^\d{2}:\d{2}$/.test(a.hora || '') ? a.hora : '';
+            if (a.lugar !== undefined) cambios.place = String(a.lugar || '');
+            if (a.notas !== undefined) cambios.notes = String(a.notas || '');
+            if (EVENTO_TIPOS.includes(a.tipo)) cambios.eventType = a.tipo;
+            if (!Object.keys(cambios).length) throw new Error('No hay nada que cambiar');
+            await encolar(userId, { tipo: 'editar_evento', id: ev.id, cambios, resumen: ev.title });
+            return `Cambiado «${ev.title}».`;
+        }
+        case 'editar_tarea': {
+            const loc = buscarTarea(data.dayPlanner, a.id);
+            if (!loc) throw new Error('No encuentro esa tarea; busca su id con agenda o buscar');
+            const it = loc.lista[loc.i];
+            const cambios: any = {};
+            if (a.titulo) cambios.titulo = String(a.titulo);
+            if (a.notas !== undefined) cambios.notas = String(a.notas || '');
+            if (typeof a.hecha === 'boolean') cambios.hecha = a.hecha;
+            if (esFecha(a.fecha)) cambios.fecha = a.fecha;
+            if (/^\d{2}:\d{2}$/.test(a.hora || '')) cambios.hora = a.hora;
+            if (a.sin_fecha) cambios.sinFecha = true;
+            if (!Object.keys(cambios).length) throw new Error('No hay nada que cambiar');
+            await encolar(userId, { tipo: 'editar_tarea', id: it.id, cambios, resumen: it.title });
+            return `Hecho: «${it.title}»${cambios.hecha === true ? ' marcada como hecha' : cambios.hecha === false ? ' marcada como pendiente' : ''}${cambios.sinFecha ? ', pasa a tareas pendientes' : cambios.fecha || cambios.hora ? `, movida a ${cambios.fecha || loc.dia || 'su día'}${cambios.hora || it.time ? ' a las ' + (cambios.hora || it.time) : ''}` : ''}.`;
+        }
+        case 'editar_movimiento': {
+            const t = (data.financePro?.transactions || []).find((x: any) => x?.id === a.id);
+            if (!t) throw new Error('No encuentro ese movimiento; busca su id con movimientos');
+            const cambios: any = {};
+            if (a.categoria) {
+                const cat = categoriaPorNombre(data, a.categoria, t.type === 'income' ? 'income' : 'expense');
+                if (!cat) throw new Error(`No hay ninguna categoría «${a.categoria}». Las del usuario: ${(data.financePro?.categories || []).filter((c: any) => c.type === (t.type === 'income' ? 'income' : 'expense')).map((c: any) => c.name).join(', ')}`);
+                cambios.category = cat.id;
+            }
+            if (a.concepto) cambios.note = String(a.concepto);
+            if (Number(a.importe) > 0) cambios.amount = Math.abs(Number(a.importe));
+            if (esFecha(a.fecha)) cambios.date = a.fecha;
+            if (CUENTAS.includes(a.cuenta)) cambios.account = a.cuenta;
+            if (!Object.keys(cambios).length) throw new Error('No hay nada que cambiar');
+            await encolar(userId, { tipo: 'editar_movimiento', id: t.id, cambios, resumen: `${t.note || t.bankNote || 'movimiento'} (${euros(Number(t.amount) || 0)})` });
+            return `Corregido el movimiento «${t.note || t.bankNote || ''}» del ${t.date}${cambios.category ? ', categoría ' + nombreCategoria(data, cambios.category) : ''}.`;
+        }
+        case 'borrar': {
+            let resumen = '';
+            if (a.tipo === 'evento') resumen = (data.entries || []).find((e: any) => e?.id === a.id && e.type === 'event')?.title || '';
+            if (a.tipo === 'tarea') { const loc = buscarTarea(data.dayPlanner, a.id); resumen = loc ? loc.lista[loc.i].title : ''; }
+            if (a.tipo === 'movimiento') { const t = (data.financePro?.transactions || []).find((x: any) => x?.id === a.id); resumen = t ? `${t.note || t.bankNote || 'movimiento'} (${euros(Number(t.amount) || 0)}, ${t.date})` : ''; }
+            if (!resumen) throw new Error('No encuentro eso; comprueba el tipo y el id');
+            await encolar(userId, { tipo: 'borrar', coleccion: a.tipo, id: a.id, resumen });
+            return `Borrado: ${resumen}. Se puede deshacer desde el registro de Bitácora.`;
+        }
+        case 'registrar_dia': {
+            const fecha = esFecha(a.fecha) ? a.fecha : hoy;
+            const esfuerzo = Math.round(Number(a.esfuerzo));
+            const si = habitosPorNombre(data, a.habitos_hechos);
+            const no = habitosPorNombre(data, a.habitos_no_hechos);
+            const partes: string[] = [];
+            if (esfuerzo >= 1 && esfuerzo <= 5 || si.ids.length || no.ids.length) {
+                await encolar(userId, { tipo: 'dia', fecha, esfuerzo: esfuerzo >= 1 && esfuerzo <= 5 ? esfuerzo : 0, hechos: si.ids, noHechos: no.ids });
+                if (esfuerzo >= 1 && esfuerzo <= 5) partes.push(`esfuerzo ${esfuerzo}`);
+                if (si.ids.length) partes.push(`${si.ids.length} hábito${si.ids.length === 1 ? '' : 's'} hecho${si.ids.length === 1 ? '' : 's'}`);
+                if (no.ids.length) partes.push(`${no.ids.length} sin hacer`);
+            }
+            if (a.nota) { await encolar(userId, { tipo: 'nota', titulo: String(a.titulo_nota || ''), texto: String(a.nota), fecha }); partes.push('nota del día'); }
+            const perdidos = [...si.noEncontrados, ...no.noEncontrados];
+            const habitos = (data.habits || []).filter((h: any) => h.activo !== false).map((h: any) => h.texto);
+            if (!partes.length) throw new Error(`Nada que registrar.${perdidos.length ? ` No encuentro los hábitos: ${perdidos.join(', ')}. Los del usuario: ${habitos.join(', ')}` : ''}`);
+            return `Registrado el ${fecha}: ${partes.join(', ')}.${perdidos.length ? ` No encuentro estos hábitos: ${perdidos.join(', ')} (los del usuario son: ${habitos.join(', ')}).` : ''}`;
+        }
+        case 'importar_extracto': {
+            const csv = String(a.csv || '').trim();
+            const lineas = csv.split(/\r?\n/).filter(l => l.trim());
+            if (lineas.length < 2 || !/[,;]/.test(lineas[0])) throw new Error('Eso no parece un CSV con cabecera y filas');
+            if (csv.length > 400000) throw new Error('El extracto es demasiado grande; impórtalo por partes (por meses)');
+            const cuenta = CUENTAS.includes(a.cuenta) ? a.cuenta : (data.financePro?.cuentaImport || '');
+            await encolar(userId, { tipo: 'importar', csv, cuenta, resumen: `${lineas.length - 1} filas` });
+            return `Extracto recibido (${lineas.length - 1} filas)${cuenta ? ' para ' + (data.financePro?.accounts?.[cuenta]?.name || cuenta) : ''}. Se importará al abrir Bitácora, con su importador: sin duplicados y fusionando lo ya apuntado. El usuario verá el resultado en el registro.`;
+        }
+        case 'resumen_periodo': {
+            const hasta = esFecha(a.hasta) ? a.hasta : hoy;
+            const desde = esFecha(a.desde) ? a.desde : sumarDias(hasta, -6);
+            if (desde > hasta) throw new Error('desde es posterior a hasta');
+            return resumenPeriodo(data, desde, hasta);
+        }
         case 'anotar': {
             if (!a.texto) throw new Error('Texto vacío');
             await encolar(userId, { tipo: 'nota', titulo: String(a.titulo || ''), texto: String(a.texto), fecha: hoy });
@@ -405,6 +645,49 @@ async function llamar(userId: string, nombre: string, a: any) {
         }
     }
     throw new Error('Herramienta desconocida: ' + nombre);
+}
+
+// ---------------------------------------------------------------- atajos
+// Aparecen en Claude/ChatGPT como acciones del conector: guían una
+// conversación que acaba usando las herramientas de arriba.
+const ATAJOS = [
+    { name: 'check-in', title: 'Check-in del día', description: 'Repasa el día conmigo (vale por voz): esfuerzo, hábitos, qué contar y qué queda para mañana.' },
+    { name: 'revision-semanal', title: 'Revisión semanal', description: 'Revisión de la última semana con lo que dicen mis datos, y la guarda como nota.' },
+    { name: 'planificar-semana', title: 'Planificar la semana', description: 'Organiza conmigo los próximos 7 días y lo vuelca en el planificador.' },
+];
+
+async function textoAtajo(userId: string, nombre: string) {
+    const data = await cargarDatos(userId);
+    const hoy = hoyISO();
+    const habitos = (data.habits || []).filter((h: any) => h.activo !== false);
+    if (nombre === 'check-in') {
+        const plan = (data.dayPlanner?.days?.[hoy] || []).map((t: any) => `- [${t.done ? 'x' : ' '}] ${t.time || ''} ${t.title} (id ${t.id})`).join('\n') || '(nada en el planificador)';
+        return `Vamos a hacer el check-in de hoy (${diaSemana(hoy)} ${hoy}) en Bitácora. Puede que te hable por voz: sé breve, natural y haz las preguntas de una en una.
+
+1. Pregúntame qué tal el día y escucha.
+2. Repasa conmigo los hábitos de hoy: ${habitos.length ? habitos.map((h: any) => `«${h.texto}»${h.completadas?.[hoy] ? ' (ya marcado)' : ''}`).join(', ') : 'no tengo hábitos activos'}.
+3. Pregúntame del 1 al 5 cuánto me he esforzado hoy en cumplir mis objetivos${data.dailyEffort?.[hoy] ? ` (ya puse un ${data.dailyEffort[hoy]})` : ''}.
+4. Mira mis tareas de hoy y pregúntame cuáles he hecho:
+${plan}
+5. Pregúntame si quiero apuntar algo en la nota del día y si queda algo para mañana.
+
+Al final, sin pedirme confirmación de cada cosa: usa registrar_dia (esfuerzo, hábitos y la nota con lo importante de lo que te he contado, en mis palabras), editar_tarea para marcar hechas o mover a mañana lo que no hice, y crear_tarea para lo nuevo. Termina con un resumen de dos líneas de lo que has apuntado.`;
+    }
+    if (nombre === 'revision-semanal') {
+        return `Hazme la revisión de la semana con Bitácora.
+
+1. Llama a resumen_periodo (los últimos 7 días) y a agenda (los próximos 7).
+2. Escribe una revisión corta y honesta, sin adornos: qué ha ido bien, qué no, cómo han ido mis hábitos y mi esfuerzo, cómo voy de gasto frente a lo normal y qué viene la semana que viene (exámenes, entregas, planes). Si ves un patrón (por ejemplo, días de poco esfuerzo que coinciden con más gasto), dilo.
+3. Hazme dos preguntas para pensar la semana que viene y espera mis respuestas.
+4. Guarda la revisión y mis respuestas con anotar, con el título «revisión semana del ${sumarDias(hoy, -6)} al ${hoy}».`;
+    }
+    return `Ayúdame a planificar los próximos 7 días en Bitácora.
+
+1. Llama a agenda (hoy y los 7 días siguientes): mira eventos, lo que ya tengo en el planificador, exámenes y entregas, y las tareas pendientes sin fecha.
+2. Pregúntame qué quiero conseguir esta semana y si hay algo que no esté en Bitácora.
+3. Propón un reparto realista por días y horas, dejando huecos libres y sin llenar los días con muchos planes. Prioriza lo que tenga fecha límite cerca.
+4. Cuando te dé el visto bueno (y no antes), vuélcalo: crear_tarea para lo nuevo y editar_tarea para dar día y hora a las tareas pendientes que ya existían.
+5. Termina con la semana resumida en una lista por días.`;
 }
 
 // ---------------------------------------------------------------- JSON-RPC
@@ -434,7 +717,7 @@ async function responder(userId: string, msg: any) {
     if (id === undefined || id === null) return null;
     try {
         if (method === 'initialize') {
-            return { jsonrpc: '2.0', id, result: { protocolVersion: params?.protocolVersion || PROTOCOLO, capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'bitacora', title: 'Bitácora', version: '1.0.0' }, instructions: INSTRUCCIONES } };
+            return { jsonrpc: '2.0', id, result: { protocolVersion: params?.protocolVersion || PROTOCOLO, capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } }, serverInfo: { name: 'bitacora', title: 'Bitácora', version: '2.0.0' }, instructions: INSTRUCCIONES } };
         }
         if (method === 'ping') return { jsonrpc: '2.0', id, result: {} };
         if (method === 'tools/list') return { jsonrpc: '2.0', id, result: { tools: HERRAMIENTAS } };
@@ -448,7 +731,13 @@ async function responder(userId: string, msg: any) {
             }
         }
         if (method === 'resources/list') return { jsonrpc: '2.0', id, result: { resources: [] } };
-        if (method === 'prompts/list') return { jsonrpc: '2.0', id, result: { prompts: [] } };
+        if (method === 'prompts/list') return { jsonrpc: '2.0', id, result: { prompts: ATAJOS } };
+        if (method === 'prompts/get') {
+            const atajo = ATAJOS.find(x => x.name === params?.name);
+            if (!atajo) return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Atajo desconocido' } };
+            const text = await textoAtajo(userId, atajo.name);
+            return { jsonrpc: '2.0', id, result: { description: atajo.description, messages: [{ role: 'user', content: { type: 'text', text } }] } };
+        }
         return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Método no soportado: ' + method } };
     } catch (e) {
         console.error(e);

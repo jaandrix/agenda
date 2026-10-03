@@ -5826,3 +5826,16 @@ body.papel .anual-overlay.abierto { background:rgba(250,248,245,.35); }
 .conector-url code { font-size:11.5px; color:var(--text-primary); }
 .conector-pasos { margin:0; padding-left:20px; font-size:12.5px; line-height:1.6; color:var(--text-secondary); }
 .conector-pasos b { color:var(--text-primary); }
+
+/* Registro del conector ("claude." en Centro resumen) */
+.registro-dia { margin:14px 0 4px; font-size:12px; font-weight:700; color:var(--text-secondary); }
+.registro-fila { display:grid; grid-template-columns:auto minmax(0, 1fr) auto auto; align-items:center; gap:10px; padding:9px 10px; margin:0 -10px; border-radius:10px; background:var(--bg-card-hover); }
+.registro-fila + .registro-fila { margin-top:4px; }
+.registro-fila.revisado { background:none; }
+.registro-fila.deshecho .registro-texto { text-decoration:line-through; color:var(--text-muted); }
+.registro-tipo { font-size:10px; font-weight:700; letter-spacing:.3px; padding:2px 7px; border-radius:999px; border:1px solid var(--border-strong); color:var(--text-secondary); white-space:nowrap; }
+.registro-texto { font-size:12.5px; line-height:1.4; color:var(--text-primary); }
+.registro-hora { font-size:11px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.registro-deshacer { padding:0; border:0; background:none; font-family:var(--font-family); font-size:11.5px; font-weight:600; color:var(--text-primary); text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.registro-estado { font-size:11px; color:var(--text-muted); }
+

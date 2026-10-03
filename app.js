@@ -400,6 +400,10 @@
         let userName = '';
         let investmentData = { rate: 7, funds: [] };
         let inbox = [];
+        // Lo que Claude o ChatGPT han hecho a través del conector, con lo
+        // necesario para deshacerlo (ver aplicarOpConector). Lo más nuevo
+        // primero; se guardan las últimas REGISTRO_CONECTOR_MAX.
+        let registroConector = [];
         let plannedTrips = [];
         let apuntes = [];
         // Tareas semanales: recordatorios activos de la semana actual.
@@ -2427,6 +2431,7 @@
                 investmentData = saved.investmentData || { initial: 0, rate: 7, monthly: 0 };
                 migrateInvestmentData();
                 inbox = saved.inbox || [];
+                registroConector = Array.isArray(saved.registroConector) ? saved.registroConector : [];
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
                     cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
@@ -2635,6 +2640,7 @@
                 notes,
                 prompts,
                 inbox,
+                registroConector,
                 financeIncome,
                 financeProfile,
                 financePro,
@@ -5628,7 +5634,7 @@
         // según se añadían secciones nuevas.
         function buildFullBackupPayload() {
             return {
-                entries, categories, userName, investmentData, notes, prompts, inbox,
+                entries, categories, userName, investmentData, notes, prompts, inbox, registroConector,
                 financeIncome, financeProfile, financePro, plannedTrips, weeklyTasks, cultureLists, habits,
                 collectibleCategories, collectibles, dayPlanner, recurringTasks, dailyEffort, studies, links,
                 linkCategories, blurFinances, apuntes,
@@ -5645,6 +5651,7 @@
             if (data.prompts) prompts = data.prompts;
             if (data.investmentData) { investmentData = data.investmentData; migrateInvestmentData(); }
             if (data.inbox) inbox = data.inbox;
+            if (data.registroConector) registroConector = data.registroConector;
             if (data.financeIncome) financeIncome = data.financeIncome;
             if (data.financeProfile) financeProfile = data.financeProfile;
             if (data.financePro) financePro = data.financePro;
@@ -6676,6 +6683,7 @@
                 renderHomeLauncherRow(HOME_ICON_STATS, 'estadísticas.', 'openHomeStatsModal()'),
                 renderHomeLauncherRow(HOME_ICON_PATTERNS, 'patrones.', 'openHomePatternsModal()', hallazgos.length || ''),
                 inbox.length ? renderHomeLauncherRow(HOME_ICON_INBOX, 'inbox.', 'openHomeInboxModal()', inbox.length) : '',
+                registroConector.length ? renderHomeLauncherRow(REGISTRO_ICONO, 'claude.', 'openRegistroConector()', registroConectorPendientes() || '') : '',
                 renderHomeLauncherRow(HOME_ICON_BACKUP, 'copia de seguridad.', 'openHomeBackupModal()')
             ].join('');
 
@@ -16710,11 +16718,21 @@
         }
 
         function financeProCargarTextoImport(texto, silencioso) {
-            const rows = financeProParseCSV(String(texto || '').trim());
-            if (rows.length < 2 || rows[0].length < 3) {
+            const imp = financeProPrepararImport(texto);
+            if (!imp) {
                 if (!silencioso) showToast('El archivo no tiene filas suficientes', true);
                 return false;
             }
+            window._financeProImport = imp;
+            document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
+            return true;
+        }
+
+        // Columnas adivinadas por cabecera y cuenta (la pedida, o la última
+        // usada al importar). También la usa el conector, sin ventana.
+        function financeProPrepararImport(texto, cuentaPedida) {
+            const rows = financeProParseCSV(String(texto || '').trim());
+            if (rows.length < 2 || rows[0].length < 3) return null;
             const header = rows[0];
             // La fecha que cuenta es la de la compra, no la de cuando el
             // banco la liquida: una compra del 30 de septiembre que
@@ -16727,10 +16745,8 @@
             const description = financeProGuessColumn(header, ['description', 'descripción', 'concepto'], header.length > 2 ? 2 : 0);
             const category = financeProGuessColumn(header, ['category', 'categoría', 'categoria'], -1);
             const status = financeProGuessColumn(header, ['state', 'estado'], -1);
-            const account = FINANCE_PRO_ACCOUNT_KEYS.includes(financePro.cuentaImport) ? financePro.cuentaImport : FINANCE_PRO_ACCOUNT_KEYS[0];
-            window._financeProImport = { rows, mapping: { hasHeader: true, date, amount, description, category, amountOut: 0, amountIn: 1, splitAmount: false, account, status, skipPending: false } };
-            document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
-            return true;
+            const account = FINANCE_PRO_ACCOUNT_KEYS.includes(cuentaPedida) ? cuentaPedida : FINANCE_PRO_ACCOUNT_KEYS.includes(financePro.cuentaImport) ? financePro.cuentaImport : FINANCE_PRO_ACCOUNT_KEYS[0];
+            return { rows, mapping: { hasHeader: true, date, amount, description, category, amountOut: 0, amountIn: 1, splitAmount: false, account, status, skipPending: false } };
         }
 
         function renderFinanceProImportMapping() {
@@ -16807,7 +16823,19 @@
         }
 
         async function confirmFinanceProImport() {
-            const imp = window._financeProImport;
+            const r = financeProEjecutarImport(window._financeProImport);
+            closeModal();
+            render();
+            try { await saveData(); showToast(financeProResumenImport(r)); }
+            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function financeProResumenImport(r) {
+            const { added, skipped, conciliados, completados, anulados, categorizados } = r;
+            return `${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${completados ? ` · ${completados} pendiente${completados === 1 ? '' : 's'} ya completado${completados === 1 ? '' : 's'}` : ''}${anulados ? ` · ${anulados} pendiente${anulados === 1 ? '' : 's'} anulado${anulados === 1 ? '' : 's'} y retirado${anulados === 1 ? '' : 's'}` : ''}${categorizados ? ` · ${categorizados} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`;
+        }
+
+        function financeProEjecutarImport(imp) {
             const m = imp.mapping;
             financePro.cuentaImport = m.account;
             const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
@@ -16976,10 +17004,7 @@
                 added++;
             });
             const categorizados = financeProAutoCategorizar();
-            closeModal();
-            render();
-            try { await saveData(); showToast(`${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${completados ? ` · ${completados} pendiente${completados === 1 ? '' : 's'} ya completado${completados === 1 ? '' : 's'}` : ''}${anulados ? ` · ${anulados} pendiente${anulados === 1 ? '' : 's'} anulado${anulados === 1 ? '' : 's'} y retirado${anulados === 1 ? '' : 's'}` : ''}${categorizados ? ` · ${categorizados} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`); }
-            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            return { added, skipped, conciliados, completados, anulados, categorizados };
         }
 
         // ============================================================
@@ -19149,89 +19174,309 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         const CONECTOR_URL = SUPABASE_URL + '/functions/v1/bitacora-mcp/';
         let aplicandoBandeja = false;
 
+        const REGISTRO_CONECTOR_MAX = 300;
+
+        function localizarTareaConector(id) {
+            resetDayPlannerIfNeeded();
+            let i = dayPlanner.backlog.findIndex(t => t.id === id);
+            if (i >= 0) return { lista: dayPlanner.backlog, i, dia: null };
+            for (const k of Object.keys(dayPlanner.days)) {
+                i = (dayPlanner.days[k] || []).findIndex(t => t.id === id);
+                if (i >= 0) return { lista: dayPlanner.days[k], i, dia: k };
+            }
+            return null;
+        }
+
+        function localizarConector(coleccion, id) {
+            if (coleccion === 'tarea') return localizarTareaConector(id);
+            const lista = coleccion === 'evento' ? entries : coleccion === 'movimiento' ? financePro.transactions : null;
+            const i = lista ? lista.findIndex(x => x.id === id) : -1;
+            return i >= 0 ? { lista, i, dia: null } : null;
+        }
+
+        function insertarConector(coleccion, item, dia, i) {
+            let lista;
+            if (coleccion === 'evento') lista = entries;
+            else if (coleccion === 'movimiento') lista = financePro.transactions;
+            else if (dia) lista = dayPlanner.days[dia] = Array.isArray(dayPlanner.days[dia]) ? dayPlanner.days[dia] : [];
+            else lista = dayPlanner.backlog;
+            lista.splice(Math.min(Math.max(0, i ?? lista.length), lista.length), 0, item);
+        }
+
+        // Igual que al marcarla a mano (togglePlannerItemDone): una tarea
+        // del día hecha deja constancia en el calendario y, si viene de un
+        // trabajo de Estudios, lo marca también.
+        function marcarTareaConector(item, enDia, hecha) {
+            item.done = hecha;
+            if (!enDia) return;
+            if (item.linkedAssignmentId) { const a = findAssignmentById(item.linkedAssignmentId); if (a) a.done = hecha; }
+            const logId = 'planner_done_' + item.id;
+            entries = entries.filter(e => e.id !== logId);
+            if (hecha) entries.push({ id: logId, type: 'event', eventType: 'otro', title: 'Completado: ' + item.title, date: todayISO(), time: item.time || '', place: '', notes: item.notes || '', category: 'Planificador', calendarLog: true });
+        }
+
+        // Misma lógica que moverTarea en la función del conector: con día y
+        // hora va a la línea de ese día; sin alguno de los dos, a "tareas
+        // pendientes".
+        function moverTareaConector(id, c) {
+            const loc = localizarTareaConector(id);
+            if (!loc) return false;
+            const it = loc.lista[loc.i];
+            if (c.titulo !== undefined) it.title = c.titulo;
+            if (c.notas !== undefined) it.notes = c.notas;
+            if (c.fecha !== undefined || c.hora !== undefined || c.sinFecha) {
+                const dia = c.sinFecha ? null : (c.fecha || loc.dia);
+                const hora = c.sinFecha ? '' : (c.hora || it.time || '');
+                loc.lista.splice(loc.i, 1);
+                if (dia && hora) { it.time = hora; insertarConector('tarea', it, dia); }
+                else { delete it.time; dayPlanner.backlog.unshift(it); }
+            }
+            if (c.hecha !== undefined) marcarTareaConector(it, !!localizarTareaConector(id)?.dia, !!c.hecha);
+            return true;
+        }
+
+        // Aplica una operación de la bandeja y devuelve su línea del registro
+        // (o null si ya estaba aplicada o ya no hay a qué aplicarla).
         function aplicarOpConector(op, ref) {
+            const linea = (tipo, resumen, deshacer) => ({ id: ref, cuando: new Date().toISOString(), tipo, resumen, deshacer });
+            const corto = t => { const x = String(t || '').trim(); return x.length > 70 ? x.slice(0, 70) + '…' : x; };
             if (op.tipo === 'evento') {
-                if (entries.some(e => e.id === ref)) return false;
+                if (entries.some(e => e.id === ref)) return null;
                 entries.push({ id: ref, title: op.titulo, type: 'event', categoryId: getCategoryIdForType('event'), tags: [], eventType: op.eventType || 'otro', date: op.fecha, time: op.hora || '', place: op.lugar || '', notes: op.notas || '' });
                 filteredEntries = [...entries];
-                return true;
+                return linea('evento', `evento «${corto(op.titulo)}» el ${op.fecha}${op.hora ? ' a las ' + op.hora : ''}.`, { accion: 'quitar', coleccion: 'evento', id: ref });
             }
             if (op.tipo === 'tarea') {
-                resetDayPlannerIfNeeded();
-                if (op.fecha && op.hora) {
-                    const dia = dayPlanner.days[op.fecha] = Array.isArray(dayPlanner.days[op.fecha]) ? dayPlanner.days[op.fecha] : [];
-                    if (dia.some(it => it.id === ref)) return false;
-                    dia.push({ id: ref, time: op.hora, title: op.titulo, notes: op.notas || '', done: false });
-                } else {
-                    if (dayPlanner.backlog.some(it => it.id === ref)) return false;
-                    dayPlanner.backlog.unshift({ id: ref, title: op.titulo, notes: [op.fecha ? 'para el ' + op.fecha : '', op.notas || ''].filter(Boolean).join(' · '), done: false });
-                }
-                return true;
+                if (localizarTareaConector(ref)) return null;
+                if (op.fecha && op.hora) insertarConector('tarea', { id: ref, time: op.hora, title: op.titulo, notes: op.notas || '', done: false }, op.fecha);
+                else dayPlanner.backlog.unshift({ id: ref, title: op.titulo, notes: [op.fecha ? 'para el ' + op.fecha : '', op.notas || ''].filter(Boolean).join(' · '), done: false });
+                return linea('tarea', `tarea «${corto(op.titulo)}»${op.fecha && op.hora ? ` el ${op.fecha} a las ${op.hora}` : ' en tareas pendientes'}.`, { accion: 'quitar', coleccion: 'tarea', id: ref });
             }
             if (op.tipo === 'movimiento') {
-                if (financePro.transactions.some(t => t.id === ref)) return false;
+                if (financePro.transactions.some(t => t.id === ref)) return null;
                 financePro.transactions.push({ id: ref, date: op.fecha, account: op.cuenta, type: op.type, amount: op.importe, category: op.categoria || undefined, note: op.concepto || undefined, manual: true, needsReview: !op.categoria });
-                return true;
+                return linea('movimiento', `${op.type === 'income' ? 'ingreso' : 'gasto'} de ${financeMoney(op.importe)} · ${corto(op.concepto)} (${op.fecha}).`, { accion: 'quitar', coleccion: 'movimiento', id: ref });
             }
             if (op.tipo === 'nota') {
                 const fecha = op.fecha || todayISO();
                 let nota = notes.find(n => n.date === fecha);
                 if (!nota) { nota = { id: 'note_' + Date.now(), date: fecha, content: '', createdAt: new Date().toISOString() }; notes.push(nota); }
                 nota.refsConector = Array.isArray(nota.refsConector) ? nota.refsConector : [];
-                if (nota.refsConector.includes(ref)) return false;
+                if (nota.refsConector.includes(ref)) return null;
+                const antes = { content: nota.content || '', title: nota.title };
                 const titulo = String(op.titulo || '').trim();
                 const usaTitulo = titulo && !nota.title && !String(nota.content || '').trim();
                 if (usaTitulo) nota.title = titulo;
                 const texto = [usaTitulo ? '' : titulo, op.texto].map(x => String(x || '').trim()).filter(Boolean).join('\n');
                 nota.content = [nota.content, texto].filter(Boolean).join('\n\n');
                 nota.refsConector.push(ref);
-                return true;
+                return linea('nota', `en la nota del ${fecha}: «${corto(titulo || op.texto)}».`, { accion: 'nota', notaId: nota.id, antes, despues: nota.content, titulo: usaTitulo ? titulo : '' });
             }
             if (op.tipo === 'entrada') {
                 const ev = entries.find(e => e.id === op.eventoId);
-                if (!ev) return false;
+                if (!ev) return null;
                 ev.entradas = Array.isArray(ev.entradas) ? ev.entradas : [];
-                if (ev.entradas.some(x => x.id === ref || (op.qrB64 && x.qrB64 === op.qrB64) || (!op.qrB64 && op.qr && x.qr === op.qr))) return false;
+                if (ev.entradas.some(x => x.id === ref || (op.qrB64 && x.qrB64 === op.qrB64) || (!op.qrB64 && op.qr && x.qr === op.qr))) return null;
                 ev.entradas.push({ id: ref, qr: op.qr || '', qrB64: op.qrB64 || undefined, etiqueta: op.etiqueta || '' });
-                return true;
+                return linea('entrada', `entrada con QR para «${corto(ev.title)}».`, { accion: 'entrada', eventoId: ev.id, id: ref });
             }
-            return false;
+            if (op.tipo === 'editar_evento') {
+                const ev = entries.find(e => e.id === op.id);
+                if (!ev) return null;
+                const antes = {};
+                Object.keys(op.cambios || {}).forEach(k => { antes[k] = ev[k]; });
+                Object.assign(ev, op.cambios || {});
+                filteredEntries = [...entries];
+                return linea('cambio', `cambiado el evento «${corto(ev.title)}»${op.cambios?.date ? ' al ' + op.cambios.date : ''}${op.cambios?.time ? ' a las ' + op.cambios.time : ''}.`, { accion: 'restaurar', id: ev.id, antes });
+            }
+            if (op.tipo === 'editar_movimiento') {
+                const t = financePro.transactions.find(x => x.id === op.id);
+                if (!t) return null;
+                const antes = JSON.parse(JSON.stringify(t));
+                Object.assign(t, op.cambios || {});
+                if (op.cambios?.category) { t.needsReview = false; delete t.categoriaAuto; }
+                const cat = op.cambios?.category ? financeProCategoryById(op.cambios.category)?.name : '';
+                return linea('cambio', `corregido «${corto(op.resumen)}»${cat ? ' → ' + cat.toLowerCase() : ''}.`, { accion: 'reemplazar', id: t.id, antes });
+            }
+            if (op.tipo === 'editar_tarea') {
+                const loc = localizarTareaConector(op.id);
+                if (!loc) return null;
+                const antes = { item: JSON.parse(JSON.stringify(loc.lista[loc.i])), dia: loc.dia, i: loc.i };
+                moverTareaConector(op.id, op.cambios || {});
+                const c = op.cambios || {};
+                const que = [c.hecha === true ? 'hecha' : c.hecha === false ? 'pendiente otra vez' : '', c.sinFecha ? 'a tareas pendientes' : (c.fecha || c.hora) ? `al ${c.fecha || antes.dia || 'mismo día'}${c.hora ? ' a las ' + c.hora : ''}` : '', c.titulo ? 'nuevo título' : ''].filter(Boolean).join(', ');
+                return linea('cambio', `tarea «${corto(op.resumen)}»: ${que || 'cambiada'}.`, { accion: 'tarea', id: op.id, antes });
+            }
+            if (op.tipo === 'borrar') {
+                const loc = localizarConector(op.coleccion, op.id);
+                if (!loc) return null;
+                const item = loc.lista.splice(loc.i, 1)[0];
+                if (op.coleccion === 'tarea' && item.done && loc.dia) marcarTareaConector({ ...item }, true, false);
+                if (op.coleccion === 'evento') filteredEntries = [...entries];
+                return linea('borrado', `borrado: ${corto(op.resumen)}.`, { accion: 'reinsertar', coleccion: op.coleccion, item, dia: loc.dia, i: loc.i });
+            }
+            if (op.tipo === 'dia') {
+                const antes = { esfuerzo: dailyEffort[op.fecha] || 0, habitos: {} };
+                const partes = [];
+                if (op.esfuerzo) { dailyEffort[op.fecha] = op.esfuerzo; partes.push('esfuerzo ' + op.esfuerzo); }
+                habits.forEach(h => {
+                    const si = (op.hechos || []).includes(h.id), no = (op.noHechos || []).includes(h.id);
+                    if (!si && !no) return;
+                    h.completadas = h.completadas || {};
+                    antes.habitos[h.id] = !!h.completadas[op.fecha];
+                    if (si) h.completadas[op.fecha] = true; else delete h.completadas[op.fecha];
+                    partes.push(`${h.texto.toLowerCase()} ${si ? '✓' : '✗'}`);
+                });
+                if (!partes.length) return null;
+                return linea('dia', `día ${op.fecha}: ${partes.join(', ')}.`, { accion: 'dia', fecha: op.fecha, antes });
+            }
+            if (op.tipo === 'importar') {
+                const antes = new Map(financePro.transactions.map(t => [t.id, JSON.stringify(t)]));
+                const imp = financeProPrepararImport(op.csv, op.cuenta);
+                if (!imp) return linea('importar', 'extracto recibido pero no se ha podido leer.', null);
+                const r = financeProEjecutarImport(imp);
+                const despues = new Map(financePro.transactions.map(t => [t.id, JSON.stringify(t)]));
+                const anadidos = [...despues.keys()].filter(id => !antes.has(id));
+                const modificados = [...antes].filter(([id, j]) => despues.has(id) && despues.get(id) !== j).map(([, j]) => JSON.parse(j));
+                const quitados = [...antes].filter(([id]) => !despues.has(id)).map(([, j]) => JSON.parse(j));
+                return linea('importar', `extracto en ${financePro.accounts[imp.mapping.account]?.name || imp.mapping.account}: ${financeProResumenImport(r)}.`, { accion: 'importar', anadidos, modificados, quitados });
+            }
+            return null;
+        }
+
+        async function deshacerConector(id) {
+            const l = registroConector.find(x => x.id === id);
+            if (!l || l.deshecho || !l.deshacer) return;
+            if (!confirm(`¿Deshacer esto?\n\n${l.resumen}`)) return;
+            const d = l.deshacer;
+            if (d.accion === 'quitar') {
+                const loc = localizarConector(d.coleccion, d.id);
+                if (loc) { const it = loc.lista.splice(loc.i, 1)[0]; if (d.coleccion === 'tarea' && it?.done && loc.dia) marcarTareaConector({ ...it }, true, false); }
+            } else if (d.accion === 'nota') {
+                const n = notes.find(x => x.id === d.notaId);
+                const anadido = String(d.despues || '').slice(String(d.antes?.content || '').length);
+                if (n && anadido && String(n.content || '').includes(anadido)) n.content = String(n.content).replace(anadido, '').trim();
+                if (n && d.titulo && n.title === d.titulo) delete n.title;
+            } else if (d.accion === 'entrada') {
+                const ev = entries.find(e => e.id === d.eventoId);
+                if (ev?.entradas) ev.entradas = ev.entradas.filter(x => x.id !== d.id);
+            } else if (d.accion === 'restaurar') {
+                const ev = entries.find(e => e.id === d.id);
+                if (ev) Object.assign(ev, d.antes);
+            } else if (d.accion === 'reemplazar') {
+                const i = financePro.transactions.findIndex(t => t.id === d.id);
+                if (i >= 0) financePro.transactions[i] = d.antes;
+            } else if (d.accion === 'tarea') {
+                const loc = localizarTareaConector(d.id);
+                if (loc) {
+                    const actual = loc.lista.splice(loc.i, 1)[0];
+                    if (actual.done !== d.antes.item.done && (loc.dia || d.antes.dia)) marcarTareaConector({ ...d.antes.item }, true, !!d.antes.item.done);
+                }
+                insertarConector('tarea', d.antes.item, d.antes.dia, d.antes.i);
+            } else if (d.accion === 'reinsertar') {
+                insertarConector(d.coleccion, d.item, d.dia, d.i);
+                if (d.coleccion === 'tarea' && d.item.done && d.dia) marcarTareaConector({ ...d.item }, true, true);
+            } else if (d.accion === 'dia') {
+                if (d.antes.esfuerzo) dailyEffort[d.fecha] = d.antes.esfuerzo; else delete dailyEffort[d.fecha];
+                Object.entries(d.antes.habitos || {}).forEach(([hid, hecho]) => {
+                    const h = habits.find(x => x.id === hid);
+                    if (!h) return;
+                    h.completadas = h.completadas || {};
+                    if (hecho) h.completadas[d.fecha] = true; else delete h.completadas[d.fecha];
+                });
+            } else if (d.accion === 'importar') {
+                const quitar = new Set(d.anadidos || []);
+                financePro.transactions = financePro.transactions.filter(t => !quitar.has(t.id));
+                (d.modificados || []).forEach(t => { const i = financePro.transactions.findIndex(x => x.id === t.id); if (i >= 0) financePro.transactions[i] = t; });
+                (d.quitados || []).forEach(t => { if (!financePro.transactions.some(x => x.id === t.id)) financePro.transactions.push(t); });
+            }
+            l.deshecho = true;
+            l.revisado = true;
+            filteredEntries = [...entries];
+            invalidarCachesDerivadas();
+            render();
+            if (document.getElementById('registro-conector-lista')) document.getElementById('registro-conector-lista').innerHTML = renderRegistroConectorLista();
+            try { await saveData(); showToast('Deshecho'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         async function aplicarBandejaConector() {
             if (aplicandoBandeja) return;
             aplicandoBandeja = true;
             try {
+                const nuevas = [];
                 // Antes "anotar" iba al inbox antiguo (solo visible en Centro
                 // resumen); lo que quedó allí pasa a la nota de hoy.
                 const antiguas = inbox.filter(i => String(i.id).startsWith('ia_'));
                 if (antiguas.length) {
-                    antiguas.forEach(i => aplicarOpConector({ tipo: 'nota', texto: i.text }, i.id));
+                    antiguas.forEach(i => { const l = aplicarOpConector({ tipo: 'nota', texto: i.text }, i.id); if (l) nuevas.push(l); });
                     inbox = inbox.filter(i => !String(i.id).startsWith('ia_'));
-                    await saveData();
                 }
                 const { data: filas, error } = await sb.from('conector_bandeja').select('id, op').order('creado');
-                if (error || !filas?.length) return;
-                let n = 0;
-                filas.forEach(f => { if (aplicarOpConector(f.op || {}, 'ia_' + f.id)) n++; });
-                // El QR se deja ya dibujado, igual que al subirlo desde el
-                // formulario: en la puerta puede no haber cobertura.
-                for (const f of filas.filter(x => x.op?.tipo === 'entrada')) {
-                    const entrada = entries.find(e => e.id === f.op.eventoId)?.entradas?.find(x => x.id === 'ia_' + f.id);
-                    if (entrada && !entrada.svg) entrada.svg = await qrEntradaSvg(entrada).catch(() => undefined);
+                if (!error && filas?.length) {
+                    filas.forEach(f => { const l = aplicarOpConector(f.op || {}, 'ia_' + f.id); if (l) nuevas.push(l); });
+                    // El QR se deja ya dibujado, igual que al subirlo desde el
+                    // formulario: en la puerta puede no haber cobertura.
+                    for (const f of filas.filter(x => x.op?.tipo === 'entrada')) {
+                        const entrada = entries.find(e => e.id === f.op.eventoId)?.entradas?.find(x => x.id === 'ia_' + f.id);
+                        if (entrada && !entrada.svg) entrada.svg = await qrEntradaSvg(entrada).catch(() => undefined);
+                    }
                 }
+                if (!nuevas.length && !filas?.length && !antiguas.length) return;
+                registroConector = [...nuevas.reverse(), ...registroConector].slice(0, REGISTRO_CONECTOR_MAX);
                 await saveData();
-                await sb.from('conector_bandeja').delete().in('id', filas.map(f => f.id));
-                if (n) {
+                if (filas?.length) await sb.from('conector_bandeja').delete().in('id', filas.map(f => f.id));
+                if (nuevas.length) {
                     invalidarCachesDerivadas();
                     render();
-                    showToast(`${n} ${n === 1 ? 'cosa añadida' : 'cosas añadidas'} desde Claude o ChatGPT`);
+                    showToast(`${nuevas.length} ${nuevas.length === 1 ? 'cambio' : 'cambios'} desde Claude o ChatGPT · revísalos en «claude.»`);
                 }
             } catch (e) {
                 console.error('Bandeja del conector:', e);
             } finally {
                 aplicandoBandeja = false;
             }
+        }
+
+        const REGISTRO_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M12 14h76v54H42L22 86V68H12z"/></svg>';
+        const REGISTRO_TIPOS = { evento: 'evento', tarea: 'tarea', movimiento: 'gasto', nota: 'nota', entrada: 'entrada', cambio: 'cambio', borrado: 'borrado', dia: 'día', importar: 'extracto' };
+
+        function registroConectorPendientes() {
+            return registroConector.filter(l => !l.revisado && !l.deshecho).length;
+        }
+
+        function renderRegistroConectorLista() {
+            if (!registroConector.length) return '<div class="finance-empty-state">Todavía no ha hecho nada desde Claude o ChatGPT.</div>';
+            const clave = f => `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`;
+            const hoy = clave(new Date());
+            const ayer = clave(new Date(Date.now() - 86400000));
+            const grupos = {};
+            registroConector.forEach(l => { const k = clave(new Date(l.cuando)); (grupos[k] = grupos[k] || []).push(l); });
+            return Object.keys(grupos).sort().reverse().map(k => `
+                <div class="registro-dia">${k === hoy ? 'hoy.' : k === ayer ? 'ayer.' : escapeHtml(financeDateLabelShort(k)) + '.'}</div>
+                ${grupos[k].map(l => `
+                    <div class="registro-fila ${l.revisado ? 'revisado' : ''} ${l.deshecho ? 'deshecho' : ''}">
+                        <span class="registro-tipo">${REGISTRO_TIPOS[l.tipo] || l.tipo}</span>
+                        <span class="registro-texto">${escapeHtml(l.resumen)}</span>
+                        <span class="registro-hora">${new Date(l.cuando).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                        ${l.deshecho ? '<span class="registro-estado">deshecho.</span>' : l.deshacer ? `<button class="registro-deshacer" onclick="deshacerConector('${l.id}')">deshacer.</button>` : '<span></span>'}
+                    </div>`).join('')}`).join('');
+        }
+
+        function openRegistroConector() {
+            const n = registroConectorPendientes();
+            showModal(`
+                <div class="modal-title">lo que ha hecho claude.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Todo lo que Claude o ChatGPT han apuntado, cambiado o borrado en tu Bitácora. Lo pendiente de revisar va resaltado; cualquier cosa se puede deshacer.</div>
+                ${n ? `<button class="finance-oneoff-btn" style="margin-bottom:12px" onclick="marcarRegistroConectorRevisado()">marcar ${n === 1 ? 'el pendiente' : `los ${n} pendientes`} como revisado${n === 1 ? '' : 's'}.</button>` : ''}
+                <div id="registro-conector-lista">${renderRegistroConectorLista()}</div>
+            `);
+        }
+
+        async function marcarRegistroConectorRevisado() {
+            registroConector.forEach(l => { l.revisado = true; });
+            openRegistroConector();
+            if (currentView === 'home') render();
+            try { await saveData(); } catch (e) { console.error(e); }
         }
 
         async function cargarConectoresAjustes() {
