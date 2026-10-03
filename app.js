@@ -4327,16 +4327,16 @@
         // ============================================================
         //  COLECCIONABLES — inventario en lista
         //  Pensado para colecciones grandes: cabecera con el total, filtro
-        //  por categoría, buscador y orden; cada categoría en dos columnas
-        //  de filas compactas (nombre y valor alineado, y en gris los datos
-        //  de carta). Sin scroll infinito: cada categoría enseña sus 12
+        //  por categoría, buscador y orden; cada categoría en un panel con
+        //  sus objetos como tarjetitas a dos columnas (nombre, estado y
+        //  valor; el set y el número quedan para la ficha). Sin scroll infinito: cada categoría enseña sus 12
         //  primeras según el orden y "ver las N restantes." despliega el
         //  resto. Buscar, ordenar y filtrar solo vuelven a pintar la lista
         //  (#coll-lista), para no perder el foco del buscador.
         // ============================================================
         const COLL_LIMITE = 12;
-        const CARTA_ESTADO_CORTO = { 'Mint': 'M', 'Near Mint': 'NM', 'Excellent': 'EX', 'Good': 'GD', 'Light Played': 'LP', 'Played': 'PL', 'Poor': 'PO' };
-        const CARTA_ESTADO_TONO = { 'Mint': 'alto', 'Near Mint': 'alto', 'Excellent': 'medio', 'Good': 'medio', 'Light Played': 'bajo', 'Played': 'bajo', 'Poor': 'bajo' };
+        const CARTA_ESTADO_CORTO = { 'Sellado': 'sellado', 'Mint': 'M', 'Near Mint': 'NM', 'Excellent': 'EX', 'Good': 'GD', 'Light Played': 'LP', 'Played': 'PL', 'Poor': 'PO' };
+        const CARTA_ESTADO_TONO = { 'Sellado': 'sellado', 'Mint': 'alto', 'Near Mint': 'alto', 'Excellent': 'medio', 'Good': 'medio', 'Light Played': 'bajo', 'Played': 'bajo', 'Poor': 'bajo' };
         let collFiltroCat = 'all';
         let collOrden = 'valor';
         let collBusqueda = '';
@@ -4348,21 +4348,22 @@
             }
             if (!Array.isArray(collectibles)) collectibles = [];
             if (collFiltroCat !== 'all' && !collectibleCategories.some(c => c.id === collFiltroCat)) collFiltroCat = 'all';
-            const total = collectibles.reduce((s, c) => s + (Number(c.value) || 0), 0);
             const chip = (id, nombre, n) => `<button class="coll-chip ${collFiltroCat === id ? 'active' : ''}" data-cat="${id}" onclick="setCollFiltro('${id}')">${escapeHtml(nombre)}. <span>${n}</span></button>`;
+            const conCategoria = collectibleCategories.filter(cat => collectibles.some(c => c.category === cat.id)).length;
 
             return `
             <div class="coll-vista">
                 <div class="coll-cabecera">
                     <div>
-                        <div class="coll-total">${financeMoney(total)}</div>
-                        <div class="coll-total-sub">${collectibles.length} ${collectibles.length === 1 ? 'objeto' : 'objetos'} en tu colección.</div>
+                        <div class="coll-titulo">tu colección.</div>
+                        <div class="coll-total-sub">${collectibles.length} ${collectibles.length === 1 ? 'objeto' : 'objetos'} en ${conCategoria} ${conCategoria === 1 ? 'categoría' : 'categorías'}.</div>
                     </div>
                     <div class="coll-acciones">
                         <button class="finance-oneoff-btn" onclick="openAddCollectibleCategory()">+ categoría.</button>
                         <button class="btn-modal-primary" onclick="openAddCollectible()">+ coleccionable.</button>
                     </div>
                 </div>
+                ${collectibles.length ? renderCollResumen() : ''}
                 <div class="coll-controles">
                     <div class="coll-chips">
                         ${chip('all', 'todas', collectibles.length)}
@@ -4379,6 +4380,46 @@
                 </div>
                 <div id="coll-lista">${renderCollLista()}</div>
             </div>`;
+        }
+
+        // Franja de cifras arriba: valor total con las piezas más valiosas en
+        // barritas, número de objetos y media, la pieza más valiosa y, si hay
+        // estados puestos, cómo se reparte la colección entre ellos.
+        function renderCollResumen() {
+            const valor = c => Number(c.value) || 0;
+            const total = collectibles.reduce((s, c) => s + valor(c), 0);
+            const top = [...collectibles].sort((a, b) => valor(b) - valor(a));
+            const barras = top.slice(0, 14);
+            const max = Math.max(1, ...barras.map(valor));
+            const joya = top[0];
+            const tonos = { sellado: 0, alto: 0, medio: 0, bajo: 0 };
+            collectibles.forEach(c => { const t = CARTA_ESTADO_TONO[c.carta?.estado]; if (t) tonos[t]++; });
+            const conEstado = Object.values(tonos).reduce((a, b) => a + b, 0);
+            const nombresTono = { sellado: 'sellado', alto: 'mint', medio: 'bueno', bajo: 'jugado' };
+            return `
+                <div class="coll-kpis">
+                    <div class="coll-kpi">
+                        <span>valor total.</span>
+                        <b>${financeMoney(total)}</b>
+                        <div class="coll-kpi-barras">${barras.map(c => `<i style="height:${Math.max(8, valor(c) / max * 100)}%"></i>`).join('')}</div>
+                    </div>
+                    <div class="coll-kpi">
+                        <span>objetos.</span>
+                        <b>${collectibles.length}</b>
+                        <small>media de ${financeMoney(total / collectibles.length)}.</small>
+                    </div>
+                    <div class="coll-kpi coll-kpi-joya" ${joya ? `onclick="openEditCollectible('${joya.id}')"` : ''}>
+                        <span>la joya.</span>
+                        <b>${joya ? escapeHtml(joya.name) : '—'}</b>
+                        <small>${joya ? financeMoney(valor(joya)) + '.' : ''}</small>
+                    </div>
+                    ${conEstado ? `
+                    <div class="coll-kpi">
+                        <span>por estado.</span>
+                        <div class="coll-kpi-estados">${Object.entries(tonos).filter(([, n]) => n).map(([t, n]) => `<i class="${t}" style="flex:${n}"></i>`).join('')}</div>
+                        <small class="coll-kpi-leyenda">${Object.entries(tonos).filter(([, n]) => n).map(([t, n]) => `<span><em class="${t}"></em>${nombresTono[t]} ${n}</span>`).join('')}</small>
+                    </div>` : ''}
+                </div>`;
         }
 
         function collOrdenar(items) {
@@ -4410,7 +4451,7 @@
                 const recortar = !q && !collExpandidas.has(cat.id) && items.length > COLL_LIMITE;
                 const visibles = recortar ? items.slice(0, COLL_LIMITE) : items;
                 return `
-                    <div class="coll-categoria">
+                    <section class="coll-categoria">
                         <div class="coll-categoria-cabecera">
                             <span class="coll-categoria-nombre">${escapeHtml(cat.name.toLowerCase())}. <span>${items.length}</span></span>
                             <span class="coll-categoria-cifras">${conPeso ? `<span>${peso}% del total.</span>` : ''}${financeMoney(subtotal)}</span>
@@ -4421,7 +4462,7 @@
                         </div>
                         ${recortar ? `<button class="coll-ver-mas" onclick="expandirCollCategoria('${cat.id}')">ver ${items.length - COLL_LIMITE === 1 ? 'la restante' : `las ${items.length - COLL_LIMITE} restantes`}.</button>` : ''}
                         ${!q && collExpandidas.has(cat.id) && items.length > COLL_LIMITE ? `<button class="coll-ver-mas" onclick="plegarCollCategoria('${cat.id}')">ver menos.</button>` : ''}
-                    </div>`;
+                    </section>`;
             }).join('');
             return bloques || `<div class="finance-empty-state">Ningún coleccionable coincide con «${escapeHtml(collBusqueda.trim())}».</div>`;
         }
@@ -4430,19 +4471,13 @@
         // entra escalonada como el resto de despliegues de la app.
         function renderCollFila(item, esTop, escalon, puesto) {
             const carta = item.carta && esCategoriaCartas(item.category) ? item.carta : null;
-            const detalle = carta ? [carta.set, carta.numero ? '#' + carta.numero : '', carta.anio].filter(Boolean).map(escapeHtml).join(' · ') : '';
             const estado = carta?.estado ? `<span class="coll-estado ${CARTA_ESTADO_TONO[carta.estado] || ''}" title="${escapeHtml(carta.estado)}">${CARTA_ESTADO_CORTO[carta.estado] || escapeHtml(carta.estado)}</span>` : '';
             return `
                 <div class="coll-fila ${escalon >= 0 ? 'despliegue-item' : ''}" ${escalon >= 0 ? `style="--i:${Math.min(escalon, 14)}"` : ''} data-coll-id="${item.id}" onclick="openEditCollectible('${item.id}')">
                     <div class="coll-puesto">${String(puesto).padStart(2, '0')}</div>
-                    <div class="coll-fila-main">
-                        <div class="coll-fila-linea">
-                            <div class="coll-fila-nombre">${esTop ? '<span class="coll-top" title="La más valiosa de su categoría">✦</span>' : ''}${escapeHtml(item.name)}</div>
-                            <span class="coll-guia"></span>
-                            <div class="coll-fila-valor">${financeMoney(item.value)}</div>
-                        </div>
-                        ${detalle || estado ? `<div class="coll-fila-detalle">${estado}${detalle}</div>` : ''}
-                    </div>
+                    <div class="coll-fila-nombre">${esTop ? '<span class="coll-top" title="La más valiosa de su categoría">✦</span>' : ''}${escapeHtml(item.name)}</div>
+                    ${estado}
+                    <div class="coll-fila-valor">${financeMoney(item.value)}</div>
                     <button class="coll-fila-borrar" title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')">×</button>
                 </div>`;
         }
@@ -4481,7 +4516,7 @@
         // Las cartas tienen datos propios (set, número, año, estado), todos
         // opcionales. Se reconoce la categoría por su id por defecto o por
         // el nombre, por si se creó a mano otra llamada "Cartas".
-        const CARTA_ESTADOS = ['Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
+        const CARTA_ESTADOS = ['Sellado', 'Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
 
         function esCategoriaCartas(catId) {
             return catId === 'cat_cartas' || /^cartas?$/i.test(collectibleCategoryName(catId).trim());
