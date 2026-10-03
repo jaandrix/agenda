@@ -5680,13 +5680,13 @@
         //  VISTA ANUAL (calendario de puntos, un punto por día)
         // ============================================================
         // Puntuación de esfuerzo (1-5) por día: cuánto te esforzaste ese día
-        // en cumplir tus objetivos. Se puntúa pulsando su estrella en la
+        // en cumplir tus objetivos. Se puntúa pulsando su bolita en la
         // vista "esfuerzo." del calendario anual.
         let dailyEffort = {};
 
         // ============================================================
-        //  CALENDARIO ANUAL (estrellas)
-        //  Una estrella por día del año, flotando en el centro sobre la
+        //  CALENDARIO ANUAL (bolitas)
+        //  Una bolita por día del año, flotando en el centro sobre la
         //  pantalla difuminada (mismo gesto que "tu estancia en bitácora."):
         //  sale desde el botón que lo abre. Tres vistas que solo cambian un
         //  atributo del contenedor (data-vista), así el color de cada
@@ -5786,7 +5786,7 @@
         function renderYearCalLeyenda() {
             const e = (cls, txt) => `<span class="anual-leyenda-item"><span class="anual-estrella ${cls}"></span>${txt}</span>`;
             if (yearCalVista === 'viajes') return e('anual-leyenda-viaje', 'día de viaje') + e('anual-leyenda-apagada', 'resto');
-            if (yearCalVista === 'esfuerzo') return [1, 2, 3, 4, 5].map(n => e('anual-leyenda-esfuerzo-' + n, String(n))).join('') + '<span class="anual-leyenda-nota">pulsa una estrella para puntuar ese día.</span>';
+            if (yearCalVista === 'esfuerzo') return [1, 2, 3, 4, 5].map(n => e('anual-leyenda-esfuerzo-' + n, String(n))).join('') + '<span class="anual-leyenda-nota">pulsa una bolita para puntuar ese día.</span>';
             return e('', 'vivido') + e('anual-leyenda-futuro', 'por venir') + e('anual-leyenda-hoy', 'hoy');
         }
 
