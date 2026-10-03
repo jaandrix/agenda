@@ -14232,9 +14232,17 @@
             if (changed) saveData().catch(err => console.error(err));
         }
 
+        // Un ingreso pendiente (un reembolso que Revolut todavía no ha
+        // abonado) no está en el saldo del banco; un cargo pendiente sí, el
+        // banco ya lo retiene.
+        function financeProCuentaEnSaldo(t) {
+            return !(t.pendiente && t.type === 'income');
+        }
+
         function financeProAccountBalance(key) {
             let bal = Number(financePro.accounts[key]?.balance0 || 0);
             financePro.transactions.forEach(t => {
+                if (!financeProCuentaEnSaldo(t)) return;
                 if (t.type === 'transfer') {
                     if (t.account === key) bal -= Number(t.amount) || 0;
                     if (t.transferTo === key) bal += Number(t.amount) || 0;
@@ -14297,6 +14305,7 @@
                 const cutoff = m + '-31';
                 for (; idx < sorted.length && sorted[idx].date <= cutoff; idx++) {
                     const t = sorted[idx];
+                    if (!financeProCuentaEnSaldo(t)) continue;
                     if (t.type === 'transfer') {
                         if (keys.includes(t.account) && !keys.includes(t.transferTo)) bal -= Number(t.amount) || 0;
                         if (keys.includes(t.transferTo) && !keys.includes(t.account)) bal += Number(t.amount) || 0;
@@ -15610,7 +15619,7 @@
             [...financePro.transactions]
                 .sort((a, b) => a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)))
                 .forEach(t => {
-                    const amount = Number(t.amount) || 0;
+                    const amount = financeProCuentaEnSaldo(t) ? Number(t.amount) || 0 : 0;
                     if (t.type === 'transfer') {
                         saldo[t.account] = (saldo[t.account] || 0) - amount;
                         saldo[t.transferTo] = (saldo[t.transferTo] || 0) + amount;
@@ -15798,13 +15807,18 @@
         // y no vuelve a salir.
         function findFinanceProPosiblesDuplicados(yaListados) {
             const usados = new Set(yaListados.flat().map(t => t.id));
-            const txs = financePro.transactions.filter(t => t.type !== 'transfer' && !t.conciliado && !usados.has(t.id));
+            const txs = financePro.transactions.filter(t => t.type !== 'transfer' && !usados.has(t.id));
             const pairs = [];
             for (let i = 0; i < txs.length; i++) {
                 if (usados.has(txs[i].id)) continue;
                 for (let j = i + 1; j < txs.length; j++) {
                     const a = txs[i], b = txs[j];
                     if (usados.has(b.id) || a.account !== b.account || a.type !== b.type) continue;
+                    // Dos movimientos ya conciliados vienen los dos del banco:
+                    // son dos cargos reales. Uno conciliado y otro no es el
+                    // caso típico de gasto grabado a mano que el extracto no
+                    // llegó a emparejar.
+                    if (a.conciliado && b.conciliado) continue;
                     if (Math.abs(Number(a.amount) - Number(b.amount)) >= 0.005) continue;
                     if (financeProNormalizar(a.note).trim() === financeProNormalizar(b.note).trim()) continue;
                     if ((a.noDuplicadoDe || []).includes(b.id) || (b.noDuplicadoDe || []).includes(a.id)) continue;
@@ -15867,6 +15881,7 @@
             if (otra.note) base.bankNote = otra.bankNote || otra.note;
             if (!base.note && otra.note) base.note = otra.note;
             if (!base.category && otra.category) { base.category = otra.category; base.needsReview = false; }
+            if (!base.recurringEntryId && otra.recurringEntryId) { base.recurringEntryId = otra.recurringEntryId; base.cicloMes = financeProCicloMes(otra); }
             if (otra.pendiente) base.pendiente = true;
             base.conciliado = true;
             financePro.transactions = financePro.transactions.filter(t => t !== otra);
@@ -16326,10 +16341,18 @@
                 }
                 // El concepto pasa a ser el del banco para que reimportar el
                 // mismo extracto lo reconozca por la clave exacta de arriba.
-                let auto = type === 'expense' && financePro.transactions.find(t => financeProEsAuto(t) && financeProMismoCargo(t, { type, date, amount, account: m.account, note: description }));
+                let auto = type === 'expense' && financePro.transactions.find(t => financeProEsAuto(t) && !t.manual && financeProMismoCargo(t, { type, date, amount, account: m.account, note: description }));
+                // Un gasto grabado a mano manda sobre crear un movimiento
+                // nuevo para la suscripción: si no, la cuota de TV Football
+                // Club grabada a mano y la del extracto quedaban las dos.
+                const manualPrevio = !auto && financeProBuscarManual({ type, date, amount, account: m.account });
                 const recurrente = type === 'expense' && !auto && financeProBuscarRecurrente({ date, amount, account: m.account, note: description });
+                if (manualPrevio && recurrente && !manualPrevio.recurringEntryId) {
+                    manualPrevio.recurringEntryId = recurrente.entry.id;
+                    manualPrevio.cicloMes = recurrente.ciclo;
+                }
                 let nuevo = false;
-                if (recurrente) {
+                if (recurrente && !manualPrevio) {
                     auto = financePro.transactions.find(t => financeProEsAuto(t) && t.recurringEntryId === recurrente.entry.id && financeProCicloMes(t) === recurrente.ciclo);
                     if (!auto) {
                         auto = { id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added, type, recurringEntryId: recurrente.entry.id, cicloMes: recurrente.ciclo };
@@ -16355,7 +16378,7 @@
                 // fiables; la nota y la categoría que puso el usuario se
                 // conservan, y el concepto del banco se guarda en bankNote
                 // para que reimportar el extracto lo siga reconociendo.
-                const manual = financeProBuscarManual({ type, date, amount, account: m.account });
+                const manual = manualPrevio;
                 if (manual) {
                     Object.assign(manual, { date, bankNote: description, conciliado: true, pendiente: esPendiente || undefined });
                     if (!manual.note && description) manual.note = description;
