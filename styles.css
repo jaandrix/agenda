@@ -5705,3 +5705,45 @@ body.papel .anual-overlay.abierto { background:rgba(250,248,245,.35); }
     .anual-overlay, .anual-flotante, .anual-estrella { transition:none !important; }
     .anual-overlay.abierto .anual-grid .anual-estrella { animation:none !important; }
 }
+
+/* ============================================================
+   COLECCIONABLES — inventario en lista (ver renderCollectibles)
+   ============================================================ */
+.coll-vista { max-width:1100px; }
+.coll-cabecera { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+.coll-total { font-size:30px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); font-variant-numeric:tabular-nums; line-height:1.1; }
+.coll-total-sub { font-size:13px; color:var(--text-secondary); margin-top:4px; }
+.coll-acciones { display:flex; gap:8px; align-items:center; }
+.coll-acciones .btn-modal-primary { width:auto; margin:0; padding:11px 20px; white-space:nowrap; }
+.coll-controles { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+.coll-chips { display:flex; gap:6px; flex-wrap:wrap; }
+.coll-chip { padding:8px 14px; border-radius:999px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); font-family:var(--font-family); font-size:13px; font-weight:600; cursor:pointer; transition:background .15s ease, color .15s ease, border-color .15s ease; }
+.coll-chip span { font-weight:500; opacity:.7; margin-left:2px; }
+.coll-chip:hover { color:var(--text-primary); border-color:var(--border-strong); }
+.coll-chip.active { background:var(--text-primary); border-color:var(--text-primary); color:var(--accent-contrast); }
+.coll-busqueda { display:flex; gap:8px; align-items:center; flex:0 1 460px; min-width:0; }
+.coll-busqueda .modal-input { margin:0; }
+.coll-busqueda input { flex:1 1 auto; min-width:0; }
+.coll-busqueda select + .selector-btn, .coll-busqueda .selector-btn { flex:0 0 150px; }
+.coll-categoria { margin-bottom:26px; }
+.coll-categoria-cabecera { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:0 2px 8px; border-bottom:1px solid var(--border-strong); font-size:15px; font-weight:700; color:var(--text-primary); }
+.coll-categoria-cifras { font-size:12.5px; font-weight:600; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.coll-filas { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); column-gap:32px; }
+.coll-fila { position:relative; display:flex; align-items:center; gap:12px; padding:10px 28px 10px 4px; border-bottom:1px solid var(--border); cursor:pointer; border-radius:8px; transition:background .12s ease; }
+.coll-fila:hover { background:var(--bg-card-hover); }
+.coll-fila-main { flex:1; min-width:0; }
+.coll-fila-nombre { font-size:14px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.coll-top { color:#d4a017; margin-right:6px; }
+.coll-fila-detalle { display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--text-secondary); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.coll-estado { flex-shrink:0; font-size:10px; font-weight:700; letter-spacing:.3px; padding:1px 6px; border-radius:6px; border:1px solid var(--border-strong); color:var(--text-primary); }
+.coll-fila-valor { flex-shrink:0; font-size:14px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.coll-fila-borrar { position:absolute; right:2px; top:50%; transform:translateY(-50%); width:22px; height:22px; padding:0; border:none; border-radius:50%; background:none; color:var(--text-secondary); font-size:15px; cursor:pointer; opacity:0; transition:opacity .15s ease, background .15s ease; }
+.coll-fila:hover .coll-fila-borrar { opacity:.7; }
+.coll-fila-borrar:hover { opacity:1; background:var(--bg-card); color:#dc2626; }
+@media (hover:none) { .coll-fila-borrar { opacity:.5; } }
+.coll-ver-mas { display:block; margin:12px auto 0; padding:8px 18px; border-radius:999px; border:1px dashed var(--border-strong); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; transition:color .15s ease, border-color .15s ease; }
+.coll-ver-mas:hover { color:var(--text-primary); border-color:var(--text-secondary); }
+@media (max-width:760px) {
+    .coll-filas { grid-template-columns:1fr; }
+    .coll-busqueda { flex-basis:100%; }
+}

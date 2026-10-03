@@ -4321,80 +4321,149 @@
             return cat ? cat.name : 'Sin categoría';
         }
 
+        // ============================================================
+        //  COLECCIONABLES — inventario en lista
+        //  Pensado para colecciones grandes: cabecera con el total, filtro
+        //  por categoría, buscador y orden; cada categoría en dos columnas
+        //  de filas compactas (nombre y valor alineado, y en gris los datos
+        //  de carta). Sin scroll infinito: cada categoría enseña sus 12
+        //  primeras según el orden y "ver las N restantes." despliega el
+        //  resto. Buscar, ordenar y filtrar solo vuelven a pintar la lista
+        //  (#coll-lista), para no perder el foco del buscador.
+        // ============================================================
+        const COLL_LIMITE = 12;
+        const CARTA_ESTADO_CORTO = { 'Mint': 'M', 'Near Mint': 'NM', 'Excellent': 'EX', 'Good': 'GD', 'Light Played': 'LP', 'Played': 'PL', 'Poor': 'PO' };
+        let collFiltroCat = 'all';
+        let collOrden = 'valor';
+        let collBusqueda = '';
+        const collExpandidas = new Set();
+
         function renderCollectibles() {
             if (!Array.isArray(collectibleCategories) || !collectibleCategories.length) {
                 collectibleCategories = [{ id: 'cat_cartas', name: 'Cartas' }, { id: 'cat_videojuegos', name: 'Videojuegos' }];
             }
             if (!Array.isArray(collectibles)) collectibles = [];
-
-            const totalsByCategory = collectibleCategories.map(cat => {
-                const items = collectibles.filter(c => c.category === cat.id);
-                const total = items.reduce((s, c) => s + (Number(c.value) || 0), 0);
-                return { cat, count: items.length, total };
-            });
-            const grandTotal = totalsByCategory.reduce((s, t) => s + t.total, 0);
-
-            const sorted = [...collectibles].sort((a, b) =>
-                collectibleCategoryName(a.category).localeCompare(collectibleCategoryName(b.category)) ||
-                String(a.name).localeCompare(String(b.name))
-            );
+            if (collFiltroCat !== 'all' && !collectibleCategories.some(c => c.id === collFiltroCat)) collFiltroCat = 'all';
+            const total = collectibles.reduce((s, c) => s + (Number(c.value) || 0), 0);
+            const chip = (id, nombre, n) => `<button class="coll-chip ${collFiltroCat === id ? 'active' : ''}" data-cat="${id}" onclick="setCollFiltro('${id}')">${escapeHtml(nombre)}. <span>${n}</span></button>`;
 
             return `
-            <div class="collectibles-view">
-                <div class="collectibles-dashboard-row">
-                    <div class="collectibles-dashboard">
-                        ${totalsByCategory.map(t => `
-                            <div class="finance-metric-card">
-                                
-                                <div class="finance-metric-value">${financeMoney(t.total)}</div>
-                                <div class="finance-metric-label">${escapeHtml(t.cat.name)}</div>
-                                <div class="finance-metric-note">${t.count} objeto${t.count === 1 ? '' : 's'}</div>
-                            </div>
-                        `).join('')}
-                        <div class="finance-metric-card collectibles-total-card">
-                            
-                            <div class="finance-metric-value">${financeMoney(grandTotal)}</div>
-                            <div class="finance-metric-label">Valor total</div>
-                            <div class="finance-metric-note">${collectibles.length} objetos en total</div>
-                        </div>
+            <div class="coll-vista">
+                <div class="coll-cabecera">
+                    <div>
+                        <div class="coll-total">${financeMoney(total)}</div>
+                        <div class="coll-total-sub">${collectibles.length} ${collectibles.length === 1 ? 'objeto' : 'objetos'} en tu colección.</div>
                     </div>
-                    <div class="collectibles-actions-col">
-                        <button class="btn-modal-primary" onclick="openAddCollectibleCategory()">+ Categoría</button>
-                        <button class="btn-modal-primary" onclick="openAddCollectible()">+ Coleccionable</button>
+                    <div class="coll-acciones">
+                        <button class="finance-oneoff-btn" onclick="openAddCollectibleCategory()">+ categoría.</button>
+                        <button class="btn-modal-primary" onclick="openAddCollectible()">+ coleccionable.</button>
                     </div>
                 </div>
-
-                <div class="collectibles-table-wrap">
-                    ${collectibles.length ? collectibleCategories.map(cat => {
-                        const items = collectibles.filter(c => c.category === cat.id)
-                            .sort((a, b) => String(a.name).localeCompare(String(b.name)));
-                        if (!items.length) return '';
-                        const maxVal = Math.max(...items.map(c => Number(c.value) || 0));
-                        return `
-                            <div class="media-card-section-title">${escapeHtml(cat.name)}</div>
-                            <div class="media-card-grid">
-                                ${items.map(c => renderCollectibleCard(c, maxVal > 0 && (Number(c.value) || 0) === maxVal)).join('')}
-                            </div>`;
-                    }).join('') : `
-                        <div class="finance-empty-state">Aún no has añadido coleccionables. Pulsa <strong>+ Coleccionable</strong> para empezar tu catálogo.</div>
-                    `}
+                <div class="coll-controles">
+                    <div class="coll-chips">
+                        ${chip('all', 'todas', collectibles.length)}
+                        ${collectibleCategories.map(cat => chip(cat.id, cat.name.toLowerCase(), collectibles.filter(c => c.category === cat.id).length)).join('')}
+                    </div>
+                    <div class="coll-busqueda">
+                        <input class="modal-input" type="search" placeholder="Buscar por nombre, set o número…" value="${escapeHtml(collBusqueda)}" oninput="setCollBusqueda(this.value)">
+                        <select class="modal-input" onchange="setCollOrden(this.value)">
+                            <option value="valor" ${collOrden === 'valor' ? 'selected' : ''}>Valor ↓</option>
+                            <option value="nombre" ${collOrden === 'nombre' ? 'selected' : ''}>Nombre</option>
+                            <option value="recientes" ${collOrden === 'recientes' ? 'selected' : ''}>Recientes</option>
+                        </select>
+                    </div>
                 </div>
+                <div id="coll-lista">${renderCollLista()}</div>
             </div>`;
         }
 
-        // Tarjeta de coleccionable: fondo negro común; reborde dorado minimalista
-        // para el objeto de mayor valor de mercado dentro de su categoría.
-        function renderCollectibleCard(item, isTopValue) {
+        function collOrdenar(items) {
+            const valor = c => Number(c.value) || 0;
+            if (collOrden === 'nombre') return items.sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'));
+            if (collOrden === 'recientes') return items.sort((a, b) => String(b.createdAt || b.id).localeCompare(String(a.createdAt || a.id)));
+            return items.sort((a, b) => valor(b) - valor(a) || String(a.name).localeCompare(String(b.name), 'es'));
+        }
+
+        function collCoincide(c, q) {
+            if (!q) return true;
+            const texto = stripAccents([c.name, c.carta?.set, c.carta?.numero, c.carta?.anio].filter(Boolean).join(' ').toLowerCase());
+            return texto.includes(q);
+        }
+
+        function renderCollLista() {
+            if (!collectibles.length) return `<div class="finance-empty-state">Aún no has añadido coleccionables. Pulsa <strong>+ coleccionable.</strong> para empezar tu catálogo.</div>`;
+            const q = stripAccents(collBusqueda.trim().toLowerCase());
+            const bloques = collectibleCategories.filter(cat => collFiltroCat === 'all' || cat.id === collFiltroCat).map(cat => {
+                const todos = collectibles.filter(c => c.category === cat.id);
+                const items = collOrdenar(todos.filter(c => collCoincide(c, q)));
+                if (!items.length) return '';
+                const maxVal = Math.max(...todos.map(c => Number(c.value) || 0));
+                const subtotal = items.reduce((s, c) => s + (Number(c.value) || 0), 0);
+                // Buscando se enseña todo lo que coincide: recortar ahí escondería resultados.
+                const recortar = !q && !collExpandidas.has(cat.id) && items.length > COLL_LIMITE;
+                const visibles = recortar ? items.slice(0, COLL_LIMITE) : items;
+                return `
+                    <div class="coll-categoria">
+                        <div class="coll-categoria-cabecera">
+                            <span>${escapeHtml(cat.name.toLowerCase())}.</span>
+                            <span class="coll-categoria-cifras">${items.length} · ${financeMoney(subtotal)}</span>
+                        </div>
+                        <div class="coll-filas">
+                            ${visibles.map((c, i) => renderCollFila(c, maxVal > 0 && (Number(c.value) || 0) === maxVal, collExpandidas.has(cat.id) && i >= COLL_LIMITE ? i - COLL_LIMITE : -1)).join('')}
+                        </div>
+                        ${recortar ? `<button class="coll-ver-mas" onclick="expandirCollCategoria('${cat.id}')">ver ${items.length - COLL_LIMITE === 1 ? 'la restante' : `las ${items.length - COLL_LIMITE} restantes`}.</button>` : ''}
+                        ${!q && collExpandidas.has(cat.id) && items.length > COLL_LIMITE ? `<button class="coll-ver-mas" onclick="plegarCollCategoria('${cat.id}')">ver menos.</button>` : ''}
+                    </div>`;
+            }).join('');
+            return bloques || `<div class="finance-empty-state">Ningún coleccionable coincide con «${escapeHtml(collBusqueda.trim())}».</div>`;
+        }
+
+        // escalon >= 0: fila recién desplegada con "ver las N restantes.",
+        // entra escalonada como el resto de despliegues de la app.
+        function renderCollFila(item, esTop, escalon) {
+            const carta = item.carta && esCategoriaCartas(item.category) ? item.carta : null;
+            const detalle = carta ? [carta.set, carta.numero ? '#' + carta.numero : '', carta.anio].filter(Boolean).map(escapeHtml).join(' · ') : '';
+            const estado = carta?.estado ? `<span class="coll-estado" title="${escapeHtml(carta.estado)}">${CARTA_ESTADO_CORTO[carta.estado] || escapeHtml(carta.estado)}</span>` : '';
             return `
-                <div class="media-card collectible-card ${isTopValue ? 'media-card-gold' : ''}" data-coll-id="${item.id}" onclick="openEditCollectible('${item.id}')">
-                    <div class="collectible-card-actions">
-                        <button title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')">×</button>
+                <div class="coll-fila ${escalon >= 0 ? 'despliegue-item' : ''}" ${escalon >= 0 ? `style="--i:${Math.min(escalon, 14)}"` : ''} data-coll-id="${item.id}" onclick="openEditCollectible('${item.id}')">
+                    <div class="coll-fila-main">
+                        <div class="coll-fila-nombre">${esTop ? '<span class="coll-top" title="La más valiosa de su categoría">✦</span>' : ''}${escapeHtml(item.name)}</div>
+                        ${detalle || estado ? `<div class="coll-fila-detalle">${detalle}${estado}</div>` : ''}
                     </div>
-                    
-                    <div class="media-card-title">${escapeHtml(item.name)}</div>
-                    ${item.carta && esCategoriaCartas(item.category) ? `<div class="collectible-card-carta">${escapeHtml([item.carta.set, item.carta.numero ? '#' + item.carta.numero : '', item.carta.anio, item.carta.estado].filter(Boolean).join(' · '))}</div>` : ''}
-                    <div class="media-card-meta">${financeMoney(item.value)}</div>
+                    <div class="coll-fila-valor">${financeMoney(item.value)}</div>
+                    <button class="coll-fila-borrar" title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')">×</button>
                 </div>`;
+        }
+
+        function refrescarCollLista() {
+            const el = document.getElementById('coll-lista');
+            if (el) el.innerHTML = renderCollLista();
+        }
+
+        function setCollFiltro(id) {
+            collFiltroCat = id;
+            document.querySelectorAll('.coll-chip').forEach(b => b.classList.toggle('active', b.dataset.cat === id));
+            refrescarCollLista();
+        }
+
+        function setCollBusqueda(valor) {
+            collBusqueda = valor;
+            refrescarCollLista();
+        }
+
+        function setCollOrden(valor) {
+            collOrden = valor;
+            refrescarCollLista();
+        }
+
+        function expandirCollCategoria(id) {
+            collExpandidas.add(id);
+            refrescarCollLista();
+        }
+
+        function plegarCollCategoria(id) {
+            collExpandidas.delete(id);
+            refrescarCollLista();
         }
 
         // Las cartas tienen datos propios (set, número, año, estado), todos
@@ -4491,7 +4560,7 @@
         function openEditCollectible(id) {
             const item = collectibles.find(c => c.id === id);
             if (!item) return;
-            showModalDesde(`.collectible-card[data-coll-id="${id}"]`, `
+            showModalDesde(`[data-coll-id="${id}"]`, `
                 <div class="modal-title">Editar coleccionable</div>
                 <div class="modal-label">Nombre</div>
                 <input id="collectible-name" class="modal-input" type="text" value="${escapeHtml(item.name)}">
