@@ -5781,6 +5781,29 @@ body.papel .anual-overlay.abierto { background:rgba(250,248,245,.35); }
 .coll-fila:hover .coll-fila-borrar { opacity:.7; }
 .coll-fila-borrar:hover { opacity:1; background:var(--bg-card); color:#dc2626; }
 @media (hover:none) { .coll-fila-borrar { opacity:.5; } .coll-fila { padding-right:38px; } }
+.coll-mercado { margin:4px 0 14px; padding:14px; border-radius:14px; border:1px solid var(--border); background:var(--bg-card); }
+.coll-mercado:empty { display:none; }
+.coll-mercado-titulo { font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:10px; }
+.coll-mercado-nota { font-size:12px; line-height:1.5; color:var(--text-secondary); }
+.coll-mercado-nota.aviso { margin-top:8px; color:#b45309; }
+.coll-mercado-carta { display:flex; gap:14px; align-items:flex-start; }
+.coll-mercado-carta > img { width:92px; flex-shrink:0; border-radius:6px; box-shadow:0 4px 14px rgba(0,0,0,.18); }
+.coll-mercado-info { flex:1; min-width:0; }
+.coll-mercado-nombre { font-size:15px; font-weight:700; color:var(--text-primary); }
+.coll-mercado-set { font-size:11.5px; color:var(--text-secondary); margin:2px 0 10px; }
+.coll-mercado-precios { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; }
+.coll-mercado-precios > div { padding:8px 10px; border-radius:10px; background:var(--bg-app); }
+.coll-mercado-precios span { display:block; font-size:10.5px; color:var(--text-secondary); }
+.coll-mercado-precios b { display:block; font-size:17px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; margin:1px 0; }
+.coll-mercado-precios small { display:block; font-size:10.5px; color:var(--text-secondary); }
+.coll-mercado-pie { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; margin-top:10px; font-size:11px; color:var(--text-secondary); }
+.coll-mercado-link { padding:0; border:0; background:none; font-family:var(--font-family); font-size:11px; font-weight:600; color:var(--text-primary); text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.coll-mercado-opciones { display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:8px; margin-top:10px; }
+.coll-mercado-opcion { display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px; border-radius:10px; border:1px solid var(--border); background:var(--bg-app); font-family:var(--font-family); font-size:11px; font-weight:600; color:var(--text-primary); cursor:pointer; text-align:center; transition:border-color .15s ease; }
+.coll-mercado-opcion:hover { border-color:var(--text-secondary); }
+.coll-mercado-opcion img { width:100%; border-radius:5px; }
+.coll-mercado-opcion small { display:block; font-weight:500; color:var(--text-secondary); }
+.coll-mercado-sinimg { width:100%; aspect-ratio:.72; border-radius:5px; background:var(--border); }
 .coll-ver-mas { display:block; margin:12px auto 0; padding:8px 18px; border-radius:999px; border:1px dashed var(--border-strong); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; transition:color .15s ease, border-color .15s ease; }
 .coll-ver-mas:hover { color:var(--text-primary); border-color:var(--text-secondary); }
 @media (max-width:760px) {

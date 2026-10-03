@@ -4575,8 +4575,161 @@
                 ${renderCartaFields(item.carta, esCategoriaCartas(item.category))}
                 <div class="modal-label">Valor de mercado (€)</div>
                 <input id="collectible-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(item.value) || 0}">
+                ${esCategoriaCartas(item.category) ? '<div id="coll-mercado" class="coll-mercado"></div>' : ''}
                 <button class="btn-modal-primary" onclick="saveEditCollectible('${id}')">Guardar cambios</button>
             `);
+            if (esCategoriaCartas(item.category)) cargarMercadoCarta(id);
+        }
+
+        // ============================================================
+        //  COLECCIONABLES — precio de mercado de una carta (TCGdex)
+        //  Solo informativo, en la ficha: no toca el valor que pone el
+        //  usuario. TCGdex en vez de pokemontcg.io porque tiene los nombres
+        //  en español ("Giratina V-ASTRO", "Origen Perdido") y sus precios
+        //  de Cardmarket se actualizan a diario; los de pokemontcg.io se
+        //  quedaron parados en noviembre de 2025 y las colecciones nuevas no
+        //  los traen. La carta se busca por nombre y número; si hay varias
+        //  posibles, el usuario elige la suya una vez (mercadoId) y desde
+        //  entonces se consulta directa.
+        // ============================================================
+        const MERCADO_API = 'https://api.tcgdex.net/v2';
+        const mercadoCache = new Map();
+
+        async function mercadoGet(ruta) {
+            if (mercadoCache.has(ruta)) return mercadoCache.get(ruta);
+            const res = await fetch(MERCADO_API + ruta);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const datos = await res.json();
+            mercadoCache.set(ruta, datos);
+            return datos;
+        }
+
+        // Las cartas antiguas o no publicadas en español solo existen en la
+        // base inglesa: se pide primero la española y, si no está, la otra.
+        async function mercadoCarta(cartaId) {
+            const ruta = `/cards/${encodeURIComponent(cartaId)}`;
+            return mercadoGet('/es' + ruta).catch(() => mercadoGet('/en' + ruta));
+        }
+
+        // El set se puede haber apuntado en español ("Origen Perdido") o en
+        // inglés ("Base Set"); vale cualquiera de los dos. Primero nombre
+        // exacto y, si no hay, que lo contenga ("Base Set" no debe traer
+        // también "Base Set 2").
+        async function mercadoSetsDe(texto) {
+            const buscado = financeProNormalizar(texto).trim();
+            if (!buscado) return [];
+            const sets = [...await mercadoGet('/es/sets').catch(() => []), ...await mercadoGet('/en/sets').catch(() => [])];
+            const exactos = sets.filter(x => financeProNormalizar(x.name).trim() === buscado || x.id.toLowerCase() === buscado);
+            const ids = (exactos.length ? exactos : sets.filter(x => financeProNormalizar(x.name).includes(buscado))).map(x => x.id);
+            return [...new Set(ids)];
+        }
+
+        function mercadoPintar(html) {
+            const el = document.getElementById('coll-mercado');
+            if (el) el.innerHTML = `<div class="coll-mercado-titulo">en el mercado.</div>${html}`;
+        }
+
+        async function cargarMercadoCarta(id, elegir) {
+            const item = collectibles.find(c => c.id === id);
+            if (!item) return;
+            if (item.carta?.estado === 'Sellado') {
+                mercadoPintar('<div class="coll-mercado-nota">Los productos sellados no están en la base de datos de cartas.</div>');
+                return;
+            }
+            mercadoPintar('<div class="coll-mercado-nota">consultando…</div>');
+            try {
+                if (item.mercadoId) { mercadoPintarCarta(id, await mercadoCarta(item.mercadoId)); return; }
+                const nombre = encodeURIComponent(item.name.trim());
+                const setIds = await mercadoSetsDe(item.carta?.set);
+                const delSet = c => setIds.some(sid => c.id.startsWith(sid + '-'));
+                let lista = await mercadoGet(`/es/cards?name=${nombre}`).catch(() => []);
+                if (!lista.length || (setIds.length && !lista.some(delSet))) {
+                    const en = await mercadoGet(`/en/cards?name=${nombre}`).catch(() => []);
+                    lista = [...lista, ...en.filter(c => !lista.some(x => x.id === c.id))];
+                }
+                if (!lista.length) { mercadoPintar('<div class="coll-mercado-nota">No encuentro esta carta por su nombre. Prueba a escribirlo como en la carta impresa.</div>'); return; }
+                const candidatas = setIds.length && lista.some(delSet) ? lista.filter(delSet) : lista;
+                const numero = String(item.carta?.numero || '').split('/')[0].trim().replace(/^0+(?=.)/, '').toLowerCase();
+                const porNumero = numero ? candidatas.filter(c => String(c.localId).replace(/^0+(?=.)/, '').toLowerCase() === numero) : [];
+                const unica = porNumero.length === 1 ? porNumero[0] : (!numero && setIds.length && candidatas.length === 1 ? candidatas[0] : null);
+                if (unica && !elegir) {
+                    const carta = await mercadoCarta(unica.id);
+                    item.mercadoId = carta.id;
+                    saveData().catch(e => console.error(e));
+                    mercadoPintarCarta(id, carta);
+                    return;
+                }
+                await mercadoPintarOpciones(id, porNumero.length && !elegir ? porNumero : candidatas);
+            } catch (e) {
+                console.error(e);
+                mercadoPintar(`<div class="coll-mercado-nota">No se ha podido consultar ahora. <button class="coll-mercado-link" onclick="cargarMercadoCarta('${id}')">reintentar.</button></div>`);
+            }
+        }
+
+        async function mercadoPintarOpciones(id, lista) {
+            const item = collectibles.find(c => c.id === id);
+            const detalles = await Promise.all(lista.slice(0, 8).map(c => mercadoCarta(c.id).catch(() => null)));
+            const opciones = detalles.filter(Boolean);
+            const rareza = c => c.rarity && !/^(ninguno|none)$/i.test(c.rarity) ? ' · ' + escapeHtml(c.rarity.toLowerCase()) : '';
+            mercadoPintar(`
+                <div class="coll-mercado-nota">Hay ${lista.length} ${lista.length === 1 ? 'carta posible' : 'cartas posibles'}. ¿Cuál es la tuya?${lista.length > 8 ? ' Añade el set o el número de la carta para afinar.' : ''}</div>
+                <div class="coll-mercado-opciones">
+                    ${opciones.map(c => `
+                        <button class="coll-mercado-opcion" onclick="elegirMercadoCarta('${id}','${escapeHtml(c.id)}')">
+                            ${c.image ? `<img src="${escapeHtml(c.image)}/low.webp" alt="" loading="lazy">` : '<span class="coll-mercado-sinimg"></span>'}
+                            <span>${escapeHtml(c.set?.name || '')}<small>#${escapeHtml(c.localId)}${rareza(c)}</small></span>
+                        </button>`).join('')}
+                </div>`);
+        }
+
+        async function elegirMercadoCarta(id, cartaId) {
+            const item = collectibles.find(c => c.id === id);
+            if (!item) return;
+            item.mercadoId = cartaId;
+            cargarMercadoCarta(id);
+            try { await saveData(); } catch (e) { console.error(e); }
+        }
+
+        function cambiarMercadoCarta(id) {
+            const item = collectibles.find(c => c.id === id);
+            if (!item) return;
+            delete item.mercadoId;
+            cargarMercadoCarta(id, true);
+        }
+
+        function mercadoPintarCarta(id, c) {
+            const cm = c.pricing?.cardmarket;
+            const tp = c.pricing?.tcgplayer;
+            const tpVariante = tp && ['holofoil', 'reverse-holofoil', 'normal', '1st-edition-holofoil', '1st-edition'].map(k => tp[k]).find(v => v && v.marketPrice);
+            const eur = v => (Number.isFinite(v) && v > 0 ? financeMoney(v) : '—');
+            const usd = v => (Number.isFinite(v) && v > 0 ? v.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $' : '—');
+            // Cardmarket a veces enlaza la versión normal de una carta que
+            // solo existe en holo (precio de céntimos frente a decenas de
+            // dólares en TCGplayer): si las dos fuentes no se parecen nada,
+            // se avisa en vez de dar por buena una de ellas.
+            const tendencia = cm?.trend || cm?.avg30 || cm?.avg;
+            const noCuadran = tendencia > 0 && tpVariante?.marketPrice > 0 && (tpVariante.marketPrice / tendencia > 4 || tendencia / tpVariante.marketPrice > 4);
+            const actualizado = (cm?.updated || tp?.updated || '').slice(0, 10);
+            const busqueda = encodeURIComponent(`${c.name} ${c.localId}`);
+            mercadoPintar(`
+                <div class="coll-mercado-carta">
+                    ${c.image ? `<img src="${escapeHtml(c.image)}/low.webp" alt="" loading="lazy">` : ''}
+                    <div class="coll-mercado-info">
+                        <div class="coll-mercado-nombre">${escapeHtml(c.name)}</div>
+                        <div class="coll-mercado-set">${escapeHtml(c.set?.name || '')} · #${escapeHtml(c.localId)}${c.rarity && !/^(ninguno|none)$/i.test(c.rarity) ? ' · ' + escapeHtml(c.rarity.toLowerCase()) : ''}</div>
+                        ${cm || tpVariante ? `
+                        <div class="coll-mercado-precios">
+                            ${cm ? `<div><span>cardmarket.</span><b>${eur(tendencia)}</b><small>media 30 días ${eur(cm.avg30)} · desde ${eur(cm.low)}</small></div>` : ''}
+                            ${tpVariante ? `<div><span>tcgplayer.</span><b>${usd(tpVariante.marketPrice)}</b><small>de ${usd(tpVariante.lowPrice)} a ${usd(tpVariante.highPrice)}</small></div>` : ''}
+                        </div>
+                        ${noCuadran ? '<div class="coll-mercado-nota aviso">Las dos fuentes no cuadran: puede que una esté mirando otra versión de la carta. Compruébalo en Cardmarket.</div>' : ''}` : '<div class="coll-mercado-nota">Esta carta todavía no tiene precios publicados.</div>'}
+                        <div class="coll-mercado-pie">
+                            ${actualizado ? `<span>actualizado el ${escapeHtml(financeDateLabelShort(actualizado))}.</span>` : ''}
+                            <a class="coll-mercado-link" href="https://www.cardmarket.com/es/Pokemon/Products/Search?searchString=${busqueda}" target="_blank" rel="noopener">ver en cardmarket.</a>
+                            <button class="coll-mercado-link" onclick="cambiarMercadoCarta('${id}')">no es esta.</button>
+                        </div>
+                    </div>
+                </div>`);
         }
 
         async function saveEditCollectible(id) {
