@@ -11268,16 +11268,25 @@
             window.qrcode.stringToBytes = str => Array.from(str, ch => ch.charCodeAt(0) & 0xff);
             let qr;
             try {
-                qr = window.qrcode(0, 'M');
+                // Corrección de errores alta (H, hasta un 30 % del código
+                // ilegible) para poder tapar el centro con la «B.»: el lector
+                // de la puerta reconstruye lo que queda debajo. El contenido
+                // es el mismo, solo cambia el dibujo.
+                qr = window.qrcode(0, 'H');
                 qr.addData(bytes, 'Byte');
                 qr.make();
             } finally {
                 window.qrcode.stringToBytes = anterior;
             }
-            const n = qr.getModuleCount(), margen = 4;
+            const n = qr.getModuleCount(), margen = 4, lado = n + margen * 2, centro = lado / 2;
+            const radio = Math.max(2.6, n * 0.13);
             let d = '';
-            for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c + margen} ${r + margen}h1v1h-1z`;
-            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n + margen * 2} ${n + margen * 2}" shape-rendering="crispEdges" role="img" aria-label="Código QR de la entrada"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#111"/></svg>`;
+            for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+                if (!qr.isDark(r, c)) continue;
+                if (Math.hypot(c + margen + 0.5 - centro, r + margen + 0.5 - centro) < radio + 0.9) continue;
+                d += `M${c + margen} ${r + margen}h1v1h-1z`;
+            }
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${lado} ${lado}" data-logo="b" role="img" aria-label="Código QR de la entrada"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#111" shape-rendering="crispEdges"/><circle cx="${centro}" cy="${centro}" r="${radio.toFixed(2)}" fill="#111"/><text x="${centro}" y="${centro}" dy=".36em" text-anchor="middle" font-family="Poppins, system-ui, sans-serif" font-weight="800" font-size="${(radio * 1.1).toFixed(2)}" fill="#3b82f6">B.</text></svg>`;
         }
 
         async function abrirEntradas(eventId, indice = 0) {
@@ -11287,6 +11296,12 @@
             const i = (indice + lista.length) % lista.length;
             const entrada = lista[i];
             let svg = entrada.svg;
+            // Las entradas guardadas antes de llevar la «B.» se redibujan al
+            // abrirlas y se guardan ya así; sin conexión se enseña la de antes.
+            if (svg && !svg.includes('data-logo="b"')) {
+                const nuevo = await qrEntradaSvg(entrada).catch(() => null);
+                if (nuevo) { svg = entrada.svg = nuevo; saveData().catch(e => console.error(e)); }
+            }
             try { if (!svg) svg = await qrEntradaSvg(entrada); }
             catch (e) { console.error(e); showToast('No se pudo generar el QR (¿sin conexión?)', true); return; }
             const fecha = ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
@@ -19148,6 +19163,14 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 inbox.unshift({ id: ref, text: op.texto });
                 return true;
             }
+            if (op.tipo === 'entrada') {
+                const ev = entries.find(e => e.id === op.eventoId);
+                if (!ev) return false;
+                ev.entradas = Array.isArray(ev.entradas) ? ev.entradas : [];
+                if (ev.entradas.some(x => x.id === ref || (op.qrB64 && x.qrB64 === op.qrB64) || (!op.qrB64 && op.qr && x.qr === op.qr))) return false;
+                ev.entradas.push({ id: ref, qr: op.qr || '', qrB64: op.qrB64 || undefined, etiqueta: op.etiqueta || '' });
+                return true;
+            }
             return false;
         }
 
@@ -19159,6 +19182,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 if (error || !filas?.length) return;
                 let n = 0;
                 filas.forEach(f => { if (aplicarOpConector(f.op || {}, 'ia_' + f.id)) n++; });
+                // El QR se deja ya dibujado, igual que al subirlo desde el
+                // formulario: en la puerta puede no haber cobertura.
+                for (const f of filas.filter(x => x.op?.tipo === 'entrada')) {
+                    const entrada = entries.find(e => e.id === f.op.eventoId)?.entradas?.find(x => x.id === 'ia_' + f.id);
+                    if (entrada && !entrada.svg) entrada.svg = await qrEntradaSvg(entrada).catch(() => undefined);
+                }
                 await saveData();
                 await sb.from('conector_bandeja').delete().in('id', filas.map(f => f.id));
                 if (n) {

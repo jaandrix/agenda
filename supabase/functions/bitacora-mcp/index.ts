@@ -66,6 +66,9 @@ function aplicarOp(data: any, op: any, id: string) {
         (data.financePro.transactions = data.financePro.transactions || []).push({ id: ref, date: op.fecha, account: op.cuenta, type: op.type, amount: op.importe, category: op.categoria || undefined, note: op.concepto || undefined, manual: true, needsReview: !op.categoria });
     } else if (op.tipo === 'nota') {
         (data.inbox = data.inbox || []).unshift({ id: ref, text: op.texto });
+    } else if (op.tipo === 'entrada') {
+        const ev = (data.entries || []).find((e: any) => e?.id === op.eventoId);
+        if (ev) (ev.entradas = ev.entradas || []).push({ id: ref, qr: op.qr || '', qrB64: op.qrB64 || undefined, etiqueta: op.etiqueta || '' });
     }
 }
 
@@ -105,7 +108,7 @@ function agenda(data: any, desde: string, hasta: string) {
         const dia: any = { fecha: f, dia: diaSemana(f) };
         const eventos = entries.filter((e: any) => e?.type === 'event' && e.date === f && !e.calendarLog)
             .sort((a: any, b: any) => String(a.time || '').localeCompare(String(b.time || '')))
-            .map((e: any) => ({ titulo: e.title, hora: e.time || undefined, lugar: e.place || undefined, tipo: e.eventType, notas: e.notes || undefined }));
+            .map((e: any) => ({ titulo: e.title, hora: e.time || undefined, lugar: e.place || undefined, tipo: e.eventType, notas: e.notes || undefined, entradas: e.entradas?.length || undefined }));
         if (eventos.length) dia.eventos = eventos;
         const plan = (data.dayPlanner?.days?.[f] || []).map((it: any) => ({ hora: it.time, titulo: it.title, hecha: !!it.done }));
         if (plan.length) dia.planificador = plan;
@@ -274,6 +277,21 @@ const HERRAMIENTAS = [
         },
     },
     {
+        name: 'anadir_entrada',
+        description: 'Añade una entrada con QR (concierto, partido, cine, tren...) a un evento del calendario, para enseñarla luego en la puerta desde Bitácora. Si el usuario manda la imagen de un QR, DECODIFÍCALO CON TU HERRAMIENTA DE CÓDIGO (Python: cv2.QRCodeDetector().detectAndDecode o pyzbar.pyzbar.decode) y pasa aquí su contenido exacto; si el contenido son bytes que no son texto, pásalo en qr_base64. Nunca transcribas un QR a ojo ni inventes su contenido: si no puedes ejecutar código, dile al usuario que active la ejecución de código o que la añada desde Bitácora con el botón "pegar.". Si el evento no existe, créalo antes con crear_evento.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                evento: { type: 'string', description: 'Título (o parte) del evento' },
+                fecha: { type: 'string', description: 'AAAA-MM-DD del evento, para distinguir entre varios con el mismo nombre' },
+                qr: { type: 'string', description: 'Contenido de texto del QR, exacto' },
+                qr_base64: { type: 'string', description: 'Bytes del QR en base64, si no son texto' },
+                etiqueta: { type: 'string', description: 'Opcional: fila, asiento, puerta, nombre...' },
+            },
+            required: ['evento'],
+        },
+    },
+    {
         name: 'crear_tarea',
         description: 'Apunta una tarea. Con fecha y hora va a la línea del planificador de ese día; sin hora, a "tareas pendientes".',
         inputSchema: { type: 'object', properties: { titulo: { type: 'string' }, fecha: { type: 'string' }, hora: { type: 'string', description: 'HH:MM' }, notas: { type: 'string' } }, required: ['titulo'] },
@@ -329,6 +347,28 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (!a.titulo || !esFecha(a.fecha)) throw new Error('Hacen falta título y fecha (AAAA-MM-DD)');
             await encolar(userId, { tipo: 'evento', titulo: String(a.titulo), fecha: a.fecha, hora: /^\d{2}:\d{2}$/.test(a.hora || '') ? a.hora : '', lugar: a.lugar || '', notas: a.notas || '', eventType: EVENTO_TIPOS.includes(a.tipo) ? a.tipo : 'otro' });
             return `Apuntado: «${a.titulo}» el ${diaSemana(a.fecha)} ${a.fecha}${a.hora ? ' a las ' + a.hora : ''}.`;
+        }
+        case 'anadir_entrada': {
+            const qr = typeof a.qr === 'string' ? a.qr : '';
+            let qrB64 = '';
+            if (a.qr_base64) {
+                try { qrB64 = btoa(atob(String(a.qr_base64).replace(/\s+/g, ''))); } catch { throw new Error('qr_base64 no es base64 válido'); }
+            }
+            if (!qr && !qrB64) throw new Error('Falta el contenido del QR (qr o qr_base64), decodificado con código');
+            const q = norm(a.evento).trim();
+            const hoy2 = hoyISO();
+            const candidatos = (data.entries || []).filter((e: any) => e?.type === 'event' && !e.calendarLog && (norm(e.title).includes(q) || (q.includes(norm(e.title)) && norm(e.title).length >= 3)))
+                .filter((e: any) => !esFecha(a.fecha) || e.date === a.fecha)
+                .sort((x: any, y: any) => {
+                    const fx = String(x.date || ''), fy = String(y.date || '');
+                    const px = fx >= hoy2 ? 0 : 1, py = fy >= hoy2 ? 0 : 1;
+                    return px - py || (px === 0 ? fx.localeCompare(fy) : fy.localeCompare(fx));
+                });
+            const ev = candidatos[0];
+            if (!ev) throw new Error(`No encuentro ningún evento que se llame «${a.evento}»${esFecha(a.fecha) ? ' el ' + a.fecha : ''}. Créalo primero con crear_evento.`);
+            if ((ev.entradas || []).some((x: any) => (qrB64 && x.qrB64 === qrB64) || (!qrB64 && qr && x.qr === qr))) return `Esa entrada ya estaba en «${ev.title}».`;
+            await encolar(userId, { tipo: 'entrada', eventoId: ev.id, qr, qrB64, etiqueta: String(a.etiqueta || '') });
+            return `Entrada añadida a «${ev.title}» (${ev.date})${candidatos.length > 1 ? `; había ${candidatos.length} eventos parecidos y he elegido el más próximo` : ''}. Ya la tiene: ${(ev.entradas?.length || 0) + 1} en total.`;
         }
         case 'crear_tarea': {
             if (!a.titulo) throw new Error('Hace falta un título');
