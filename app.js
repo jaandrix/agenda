@@ -14986,7 +14986,7 @@
         //  afina la idea de "normal" sin que haya nada que configurar.
         // ============================================================
         const RITMO_FUERA = ['cat_inversion_gasto', 'cat_coleccionables'];
-        const RITMO_MAX_MESES = 6;
+        const RITMO_MAX_MESES = 12;
 
         function ritmoCuantil(valores, q) {
             const v = [...valores].sort((a, b) => a - b);
@@ -15029,8 +15029,17 @@
             // El primer mes con datos solo cuenta si empieza a principios de
             // mes: uno empezado a medias parecería un mes muy ahorrador.
             const primero = (financePro.transactions || []).reduce((min, t) => (t.date && (!min || t.date < min) ? t.date : min), null);
-            const meses = Object.keys(porMes).filter(m => m < actual && primero && (m > primero.slice(0, 7) || Number(primero.slice(8, 10)) <= 5))
-                .sort().slice(-RITMO_MAX_MESES);
+            const validos = new Set(Object.keys(porMes).filter(m => m < actual && primero && (m > primero.slice(0, 7) || Number(primero.slice(8, 10)) <= 5)));
+            // Un mes de los históricos sustituye al de Bitácora si es más
+            // completo (más movimientos): los primeros meses de la app se
+            // grabaron a mano y a medias, el extracto del banco los tiene todos.
+            Object.entries(historicoMeses()).forEach(([m, h]) => {
+                if (m >= actual || h.n < (porMes[m]?.length || 0)) return;
+                porMes[m] = h.lista;
+                validos.add(m);
+            });
+            const todos = [...validos].sort();
+            const meses = todos.slice(-RITMO_MAX_MESES);
             const acumulado = (m, hasta, cat) => (porMes[m] || []).filter(x => x.d <= hasta && (cat === undefined || x.cat === cat)).reduce((s, x) => s + x.valor, 0);
             const llevas = acumulado(actual, dia);
             if (meses.length < 2) return { suficiente: false, meses: meses.length, dia, llevas };
@@ -15058,7 +15067,9 @@
             if (llevas < hoyFranja.bajo - 5) nivel = 'contenido';
             else if (llevas > hoyFranja.alto + holgura) nivel = 'muy';
             else if (llevas > hoyFranja.alto + 10) nivel = 'alto';
-            return { suficiente: true, meses: meses.length, dia, diasMes, llevas, hoyFranja, totalNormal, proyeccion, franja, recorrido, categorias, nivel };
+            const mismoMes = todos.filter(m => m.slice(5) === actual.slice(5));
+            const otrosAnios = mismoMes.length ? { n: mismoMes.length, valor: ritmoCuantil(mismoMes.map(m => acumulado(m, dia)), 0.5) } : null;
+            return { suficiente: true, meses: meses.length, dia, diasMes, llevas, hoyFranja, totalNormal, proyeccion, franja, recorrido, categorias, nivel, otrosAnios, mesNombre: FINANCE_PRO_MONTH_NAMES[hoy.getMonth()].toLowerCase() };
         }
 
         function renderRitmoGrafica(r) {
@@ -15111,6 +15122,7 @@
             });
             const ahorro = [...r.categorias].sort((a, b) => a.diff - b.diff)[0];
             if (ahorro && ahorro.diff < 0) frases.push(`En <b>${escapeHtml(nombreCat(ahorro.cat))}</b> vas ${financeMoney(-ahorro.diff)} por debajo de lo habitual.`);
+            if (r.otrosAnios) frases.push(`En ${r.mesNombre} de ${r.otrosAnios.n === 1 ? 'otro año' : 'otros años'}, a día ${r.dia} solías llevar <b>${financeMoney(r.otrosAnios.valor)}</b>.`);
             return `
                 <div class="ritmo-veredicto ${r.nivel}">${veredictos[r.nivel]}</div>
                 <div class="ritmo-frase">A día ${r.dia} sueles llevar <b>${financeMoney(r.hoyFranja.medio)}</b> de gasto del día a día. Este mes llevas <b>${financeMoney(r.llevas)}</b>.</div>
@@ -15125,12 +15137,222 @@
                 <div class="finance-modal-note" style="margin-top:14px">Aprendido de tus últimos ${r.meses} meses. Sin suscripciones, gastos fijos, inversiones, coleccionables ni ajustes de saldo; lo devuelto resta.</div>`;
         }
 
+        // ============================================================
+        //  RITMO — históricos. Extractos antiguos del banco que solo sirven
+        //  para que el ritmo conozca al usuario: no entran en movimientos ni
+        //  tocan ningún saldo. Se guardan ya resumidos (céntimos por
+        //  categoría y día de cada mes) y no las filas: años de extractos
+        //  pesarían en cada guardado. Por eso un mes se sustituye entero al
+        //  volver a subir un extracto que lo cubre, en vez de mezclarse, y
+        //  solo se guardan meses que el extracto cubre completos. Cada banco
+        //  (fuente) va aparte: Ibercaja y Revolut del mismo mes se suman.
+        // ============================================================
+        function historicoMeses() {
+            const fuentes = financePro.historico?.fuentes || {};
+            const meses = {};
+            Object.values(fuentes).forEach(f => Object.entries(f.meses || {}).forEach(([m, datos]) => {
+                const mes = meses[m] = meses[m] || { n: 0, lista: [] };
+                mes.n += datos.n || 0;
+                Object.entries(datos.c || {}).forEach(([cat, dias]) => Object.entries(dias).forEach(([d, cent]) => {
+                    mes.lista.push({ d: Number(d), cat, valor: cent / 100 });
+                }));
+            }));
+            return meses;
+        }
+
+        function historicoAdivinarColumnas(cabecera) {
+            const h = cabecera.map(x => financeProNormalizar(x).trim());
+            const buscar = (...claves) => {
+                for (const c of claves) { const i = h.findIndex(x => x.includes(c)); if (i >= 0) return i; }
+                return -1;
+            };
+            return {
+                date: buscar('started', 'fecha operacion', 'fecha de operacion', 'fecha', 'date'),
+                amount: buscar('amount', 'importe', 'cantidad'),
+                description: buscar('description', 'descripcion', 'concepto', 'detalle', 'movimiento'),
+                status: buscar('state', 'estado')
+            };
+        }
+
+        function renderRitmoHistoricos() {
+            const fuentes = Object.entries(financePro.historico?.fuentes || {});
+            const etiqueta = m => FINANCE_PRO_MONTH_NAMES[Number(m.slice(5, 7)) - 1].slice(0, 3).toLowerCase() + ' ' + m.slice(0, 4);
+            return `
+                <div class="finance-kicker" style="margin:22px 0 6px">históricos.</div>
+                ${fuentes.map(([id, f]) => {
+                    const meses = Object.keys(f.meses || {}).sort();
+                    return `<div class="ritmo-historico-fila">
+                        <span><b>${escapeHtml(f.nombre.toLowerCase())}.</b> ${meses.length} ${meses.length === 1 ? 'mes' : 'meses'}${meses.length ? ` · ${etiqueta(meses[0])} – ${etiqueta(meses[meses.length - 1])}` : ''}</span>
+                        <button class="doc-action-delete-btn" title="Olvidar estos históricos" onclick="borrarHistoricoFuente('${id}')">✕</button>
+                    </div>`;
+                }).join('')}
+                <button class="finance-oneoff-btn" onclick="openHistoricosModal()">añadir históricos.</button>
+                <div class="finance-modal-note" style="margin-top:8px">Extractos antiguos de tu banco para que bitácora aprenda tu ritmo. No se añaden a tus movimientos ni cambian ningún saldo.</div>`;
+        }
+
+        function openHistoricosModal() {
+            const nombres = FINANCE_PRO_ACCOUNT_KEYS.map(k => financePro.accounts[k]?.name).filter(Boolean);
+            window._historico = { archivos: [], fuente: financePro.historico?.ultimaFuente || nombres[0] || 'banco' };
+            showModal(`
+                <div class="modal-title">añadir históricos.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Sube los CSV de extractos antiguos (puedes elegir varios a la vez) o pega uno. Solo se usan para conocer tu ritmo de gasto: tus movimientos y saldos no cambian.</div>
+                <div class="modal-label">banco:</div>
+                <input class="modal-input" list="historico-bancos" value="${escapeHtml(window._historico.fuente)}" oninput="window._historico.fuente=this.value">
+                <datalist id="historico-bancos">${nombres.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>
+                <input type="file" class="modal-input" accept=".csv,text/csv" multiple onchange="historicoLeerArchivos(event)">
+                <button class="finance-oneoff-btn finance-import-pegar" onclick="historicoPegar()">pegar extracto.</button>
+                <div id="historico-body"></div>
+            `);
+        }
+
+        function historicoLeerArchivos(event) {
+            const files = [...(event.target.files || [])];
+            if (!files.length) return;
+            Promise.all(files.map(f => f.text())).then(textos => historicoCargar(textos));
+        }
+
+        async function historicoPegar() {
+            let texto = '';
+            try { texto = await navigator.clipboard.readText(); } catch (e) { texto = ''; }
+            if (historicoCargar([texto], true)) return;
+            document.getElementById('historico-body').innerHTML = `
+                <div class="modal-label">pega aquí el extracto:</div>
+                <textarea class="modal-input" rows="6" oninput="historicoCargar([this.value], true)"></textarea>`;
+        }
+
+        function historicoCargar(textos, silencioso) {
+            const archivos = textos.map(t => financeProParseCSV(String(t || '').trim())).filter(rows => rows.length >= 2 && rows[0].length >= 3);
+            if (!archivos.length) { if (!silencioso) showToast('No se ha podido leer ningún extracto', true); return false; }
+            window._historico.archivos = archivos;
+            window._historico.map = historicoAdivinarColumnas(archivos[0][0]);
+            historicoPintarColumnas();
+            return true;
+        }
+
+        function historicoPintarColumnas() {
+            const h = window._historico;
+            const cab = h.archivos[0][0];
+            const opciones = (sel, opcional) => `${opcional ? `<option value="-1" ${sel === -1 ? 'selected' : ''}>No tengo esta columna</option>` : ''}${cab.map((c, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${escapeHtml(String(c).slice(0, 24))}</option>`).join('')}`;
+            const filas = h.archivos.reduce((s, a) => s + a.length - 1, 0);
+            document.getElementById('historico-body').innerHTML = `
+                <div class="finance-modal-note" style="margin:12px 0 8px">${h.archivos.length} ${h.archivos.length === 1 ? 'extracto' : 'extractos'} · ${filas} filas. Comprueba las columnas (se usan las mismas para todos).</div>
+                <div class="finance-correction-inputs">
+                    <div><div class="modal-label">fecha</div><select class="modal-input" onchange="window._historico.map.date=Number(this.value)">${opciones(h.map.date)}</select></div>
+                    <div><div class="modal-label">importe</div><select class="modal-input" onchange="window._historico.map.amount=Number(this.value)">${opciones(h.map.amount)}</select></div>
+                </div>
+                <div class="finance-correction-inputs">
+                    <div><div class="modal-label">concepto</div><select class="modal-input" onchange="window._historico.map.description=Number(this.value)">${opciones(h.map.description)}</select></div>
+                    <div><div class="modal-label">estado</div><select class="modal-input" onchange="window._historico.map.status=Number(this.value)">${opciones(h.map.status, true)}</select></div>
+                </div>
+                <button class="btn-modal-primary" style="margin-top:12px" onclick="historicoAprender()">aprender de ${h.archivos.length === 1 ? 'este extracto' : 'estos extractos'}.</button>`;
+        }
+
+        // Qué cuenta como gasto del día a día, con el mismo criterio que los
+        // movimientos de Bitácora: la categoría se adivina con lo aprendido
+        // (financeProCategoriaAprendida) y se descartan inversiones,
+        // coleccionables y ajustes; suscripciones y gastos fijos por su
+        // concepto del banco o su nombre; traspasos entre cuentas propias
+        // por las reglas de importación y los conceptos típicos (recargas,
+        // traspasos, cajero: el efectivo retirado se gasta después, y
+        // contarlo al sacarlo lo contaría dos veces si luego se anota).
+        function historicoClasificar(fecha, valor, concepto, indice, gastoPorNombre) {
+            const texto = financeProNormalizar(concepto);
+            if ((financePro.rules || []).some(rl => rl.enabled && rl.matchText && texto.includes(financeProNormalizar(rl.matchText)))) return null;
+            if (/top.?up|recarga|traspaso|transferencia (a|entre) (mis|cuentas)|cajero|atm |retirada|reintegro/.test(texto)) return null;
+            const recurrente = entries.some(e => (e.type === 'subscription' || e.type === 'fixed_expense')
+                && financeProCoincideNombre({ recurringEntryId: e.id, note: e.title }, texto)
+                && Math.abs((Number(e.amount) || 0) - Math.abs(valor)) <= Math.max(1, (Number(e.amount) || 0) * 0.15));
+            if (recurrente) return null;
+            const esAjuste = id => financeProNormalizar(financeProCategoryById(id)?.name).trim() === 'ajuste de saldo';
+            if (valor < 0) {
+                const cat = financeProCategoriaAprendida({ type: 'expense', note: concepto, amount: -valor, date: fecha }, indice) || '';
+                if (RITMO_FUERA.includes(cat) || (cat && esAjuste(cat))) return null;
+                return { cat, valor: -valor };
+            }
+            const ingreso = financeProCategoriaAprendida({ type: 'income', note: concepto, amount: valor, date: fecha }, indice);
+            const gasto = ingreso && gastoPorNombre[(financeProCategoryById(ingreso)?.name || '').toLowerCase()];
+            if (!gasto || RITMO_FUERA.includes(gasto) || esAjuste(gasto)) return null;
+            return { cat: gasto, valor: -valor };
+        }
+
+        async function historicoAprender() {
+            const h = window._historico;
+            const m = h.map;
+            const fuenteNombre = (h.fuente || '').trim() || 'banco';
+            if (m.date < 0 || m.amount < 0) { showToast('Elige las columnas de fecha e importe', true); return; }
+            const indice = financeProIndiceCategorias();
+            const gastoPorNombre = {};
+            financePro.categories.filter(c => c.type === 'expense').forEach(c => { gastoPorNombre[c.name.toLowerCase()] = c.id; });
+            const nuevos = {};
+            let contados = 0, fuera = 0, mesesIncompletos = 0;
+            h.archivos.forEach(rows => {
+                const filas = [];
+                rows.slice(1).forEach(r => {
+                    const estado = m.status >= 0 ? String(r[m.status] || '').toLowerCase() : '';
+                    if (/pending|pendiente|revert|declin|fail|cancel|rechaz|anulad/.test(estado)) return;
+                    const fecha = financeProParseDate(r[m.date]);
+                    const valor = financeProParseEuroAmount(r[m.amount]);
+                    if (!fecha || !Number.isFinite(valor) || valor === 0) return;
+                    filas.push({ fecha, valor, concepto: String(r[m.description] ?? '').trim() });
+                });
+                if (!filas.length) return;
+                const fechas = filas.map(f => f.fecha).sort();
+                const desde = fechas[0], hasta = fechas[fechas.length - 1];
+                const porMes = {};
+                filas.forEach(f => {
+                    const mes = f.fecha.slice(0, 7);
+                    const datos = porMes[mes] = porMes[mes] || { n: 0, c: {} };
+                    const cl = historicoClasificar(f.fecha, f.valor, f.concepto, indice, gastoPorNombre);
+                    if (!cl) { fuera++; return; }
+                    const d = Number(f.fecha.slice(8, 10));
+                    const dias = datos.c[cl.cat] = datos.c[cl.cat] || {};
+                    dias[d] = (dias[d] || 0) + Math.round(cl.valor * 100);
+                    datos.n++;
+                    contados++;
+                });
+                // Solo meses que el extracto cubre enteros (con 3 días de
+                // margen en los bordes, por si el primero o el último no
+                // tuvieron movimientos).
+                Object.entries(porMes).forEach(([mes, datos]) => {
+                    const [y, mm] = mes.split('-').map(Number);
+                    const ultimo = new Date(y, mm, 0).getDate();
+                    const empieza = desde <= `${mes}-04`;
+                    const acaba = hasta >= `${mes}-${String(ultimo - 3).padStart(2, '0')}`;
+                    if (empieza && acaba && mes < financeMonthKey()) nuevos[mes] = datos;
+                    else mesesIncompletos++;
+                });
+            });
+            const meses = Object.keys(nuevos).sort();
+            if (!meses.length) { showToast('Ningún mes completo en estos extractos', true); return; }
+            financePro.historico = financePro.historico || { fuentes: {} };
+            financePro.historico.fuentes = financePro.historico.fuentes || {};
+            const id = 'h_' + financeProNormalizar(fuenteNombre).replace(/[^a-z0-9]+/g, '_');
+            const fuente = financePro.historico.fuentes[id] = financePro.historico.fuentes[id] || { nombre: fuenteNombre, meses: {} };
+            Object.assign(fuente.meses, nuevos);
+            financePro.historico.ultimaFuente = fuenteNombre;
+            const etiqueta = mk => financeMonthLabel(mk).toLowerCase();
+            document.getElementById('historico-body').innerHTML = `
+                <div class="ritmo-veredicto" style="font-size:17px;margin-top:14px">aprendido.</div>
+                <div class="ritmo-frase">${meses.length} ${meses.length === 1 ? 'mes' : 'meses'} de ${escapeHtml(fuenteNombre)}, de ${etiqueta(meses[0])} a ${etiqueta(meses[meses.length - 1])}: ${contados} gastos del día a día. ${fuera} movimientos quedan fuera (traspasos, inversiones, suscripciones, ingresos)${mesesIncompletos ? ` y ${mesesIncompletos} ${mesesIncompletos === 1 ? 'mes incompleto' : 'meses incompletos'} en los bordes del extracto` : ''}.</div>
+                <button class="btn-modal-primary" onclick="openFinanceRitmoModal()">ver mi ritmo.</button>`;
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function borrarHistoricoFuente(id) {
+            const f = financePro.historico?.fuentes?.[id];
+            if (!f || !confirm(`¿Olvidar los históricos de ${f.nombre}? Tus movimientos no cambian.`)) return;
+            delete financePro.historico.fuentes[id];
+            openFinanceRitmoModal();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
         function openFinanceRitmoModal() {
             const trend = financeGoalTrendSignal();
             showModal(`
                 <div class="modal-title">ritmo.</div>
                 ${renderRitmoBody()}
                 ${trend ? `<div class="finance-kicker" style="margin:20px 0 6px">previsión.</div><div class="finance-empty-line">${escapeHtml(trend.text)}</div>` : ''}
+                ${renderRitmoHistoricos()}
             `);
         }
 
