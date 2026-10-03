@@ -6119,7 +6119,7 @@
                     `).join('')}
                 </div>
                 <button class="year-cal-btn" onclick="abrirCalendarioAnual()" title="Vista anual">
-                    <svg width="18" height="18" viewBox="0 0 100 100" fill="currentColor"><path d="M50 0C55 36 64 45 100 50C64 55 55 64 50 100C45 64 36 55 0 50C36 45 45 36 50 0Z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="30"/></svg>
                 </button>
             </div>`;
 
