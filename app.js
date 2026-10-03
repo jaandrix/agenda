@@ -5730,6 +5730,7 @@
             else if (currentView === 'settings') { content.innerHTML = renderSettings();
                 if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
                 loadSettingsSubscriptionInfo();
+                cargarConectoresAjustes();
                 loadSettingsPushInfo(); }
             updateAddButton();
             updateFabIcon();
@@ -11746,6 +11747,11 @@
                             <button class="btn-secondary" style="width:auto" onclick="document.getElementById('import-input').click()">📥 Importar datos</button>
                         </div>
                         <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Exporta o importa todos tus datos (entradas, categorías, notas, etc.) en formato JSON.</div>
+                    </div>
+
+                    <div class="chart-container" style="margin-bottom:16px" id="settings-conector-section">
+                        <div class="chart-title">Claude y ChatGPT</div>
+                        <div id="settings-conector-body" style="margin-top:10px;font-size:12.5px;color:var(--text-secondary)">Cargando...</div>
                     </div>
 
                     <div class="chart-container" style="margin-bottom:16px" id="settings-push-section">
@@ -19093,6 +19099,122 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         // ============================================================
+        //  CONECTOR CLAUDE / CHATGPT (ver supabase/functions/bitacora-mcp)
+        //  Lo que el usuario pide apuntar desde Claude o ChatGPT llega a
+        //  conector_bandeja en vez de a sus datos: la app abierta guarda su
+        //  estado en memoria y habría pisado el cambio. Aquí se incorpora
+        //  con la misma lógica que el resto de la app (ids "ia_<fila>", así
+        //  dos dispositivos abiertos a la vez no lo duplican), se guarda y se
+        //  vacía la bandeja.
+        // ============================================================
+        const CONECTOR_URL = SUPABASE_URL + '/functions/v1/bitacora-mcp/';
+        let aplicandoBandeja = false;
+
+        function aplicarOpConector(op, ref) {
+            if (op.tipo === 'evento') {
+                if (entries.some(e => e.id === ref)) return false;
+                entries.push({ id: ref, title: op.titulo, type: 'event', categoryId: getCategoryIdForType('event'), tags: [], eventType: op.eventType || 'otro', date: op.fecha, time: op.hora || '', place: op.lugar || '', notes: op.notas || '' });
+                filteredEntries = [...entries];
+                return true;
+            }
+            if (op.tipo === 'tarea') {
+                resetDayPlannerIfNeeded();
+                if (op.fecha && op.hora) {
+                    const dia = dayPlanner.days[op.fecha] = Array.isArray(dayPlanner.days[op.fecha]) ? dayPlanner.days[op.fecha] : [];
+                    if (dia.some(it => it.id === ref)) return false;
+                    dia.push({ id: ref, time: op.hora, title: op.titulo, notes: op.notas || '', done: false });
+                } else {
+                    if (dayPlanner.backlog.some(it => it.id === ref)) return false;
+                    dayPlanner.backlog.unshift({ id: ref, title: op.titulo, notes: [op.fecha ? 'para el ' + op.fecha : '', op.notas || ''].filter(Boolean).join(' · '), done: false });
+                }
+                return true;
+            }
+            if (op.tipo === 'movimiento') {
+                if (financePro.transactions.some(t => t.id === ref)) return false;
+                financePro.transactions.push({ id: ref, date: op.fecha, account: op.cuenta, type: op.type, amount: op.importe, category: op.categoria || undefined, note: op.concepto || undefined, manual: true, needsReview: !op.categoria });
+                return true;
+            }
+            if (op.tipo === 'nota') {
+                if (inbox.some(i => i.id === ref)) return false;
+                inbox.unshift({ id: ref, text: op.texto });
+                return true;
+            }
+            return false;
+        }
+
+        async function aplicarBandejaConector() {
+            if (aplicandoBandeja) return;
+            aplicandoBandeja = true;
+            try {
+                const { data: filas, error } = await sb.from('conector_bandeja').select('id, op').order('creado');
+                if (error || !filas?.length) return;
+                let n = 0;
+                filas.forEach(f => { if (aplicarOpConector(f.op || {}, 'ia_' + f.id)) n++; });
+                await saveData();
+                await sb.from('conector_bandeja').delete().in('id', filas.map(f => f.id));
+                if (n) {
+                    invalidarCachesDerivadas();
+                    render();
+                    showToast(`${n} ${n === 1 ? 'cosa añadida' : 'cosas añadidas'} desde Claude o ChatGPT`);
+                }
+            } catch (e) {
+                console.error('Bandeja del conector:', e);
+            } finally {
+                aplicandoBandeja = false;
+            }
+        }
+
+        async function cargarConectoresAjustes() {
+            const body = document.getElementById('settings-conector-body');
+            if (!body) return;
+            const { data, error } = await sb.from('conector_tokens').select('token_hash, nombre, creado, ultimo_uso').order('creado');
+            if (error) { body.innerHTML = 'No se ha podido cargar.'; return; }
+            const fecha = iso => iso ? new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+            body.innerHTML = `
+                <div style="line-height:1.5;margin-bottom:12px">Conecta Bitácora a Claude o a ChatGPT para preguntarle por tu agenda, tus gastos o cualquier apartado, y pedirle que apunte cosas (un evento a partir de una entrada, un gasto a partir de un ticket...). Usa tu propia suscripción de Claude o ChatGPT.</div>
+                ${(data || []).map(t => `
+                    <div class="conector-fila">
+                        <div><b>${escapeHtml(t.nombre)}.</b><small>creado el ${fecha(t.creado)}${t.ultimo_uso ? ` · usado por última vez el ${fecha(t.ultimo_uso)}` : ' · sin usar todavía'}</small></div>
+                        <button class="finance-oneoff-btn" onclick="revocarConector('${t.token_hash}')">revocar.</button>
+                    </div>`).join('')}
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+                    <button class="btn-secondary" style="width:auto" onclick="crearConector('claude')">+ enlace para Claude</button>
+                    <button class="btn-secondary" style="width:auto" onclick="crearConector('chatgpt')">+ enlace para ChatGPT</button>
+                </div>`;
+        }
+
+        async function crearConector(nombre) {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) return;
+            const bytes = crypto.getRandomValues(new Uint8Array(32));
+            const token = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+            const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+            const token_hash = [...new Uint8Array(hashBuf)].map(b => b.toString(16).padStart(2, '0')).join('');
+            const { error } = await sb.from('conector_tokens').insert({ token_hash, user_id: user.id, nombre });
+            if (error) { console.error(error); showToast('No se pudo crear el enlace', true); return; }
+            const url = CONECTOR_URL + token;
+            const pasos = nombre === 'claude'
+                ? `<li>En claude.ai (o la app de escritorio): <b>Ajustes → Conectores → Añadir conector personalizado</b>.</li><li>Ponle de nombre <b>Bitácora</b> y pega el enlace como URL del servidor. Sin OAuth.</li><li>En un chat, activa Bitácora en el menú de herramientas y pregunta: «¿qué tengo esta semana?».</li><li>Una vez añadido en la web, también funciona en la app del móvil.</li>`
+                : `<li>En chatgpt.com: <b>Ajustes → Aplicaciones y conectores → Avanzado</b> y activa el <b>modo desarrollador</b>.</li><li>Vuelve a <b>Aplicaciones y conectores → Crear</b>, ponle de nombre <b>Bitácora</b>, pega el enlace como URL y elige «Sin autenticación».</li><li>En un chat, elige Bitácora en el menú «+» y pregunta: «¿cómo van mis gastos?».</li>`;
+            showModal(`
+                <div class="modal-title">enlace para ${nombre === 'claude' ? 'Claude' : 'ChatGPT'}.</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">Es tu llave personal: quien lo tenga puede leer y escribir en tu Bitácora. Solo se enseña ahora; si lo pierdes, crea otro y revoca este.</div>
+                <div class="conector-url"><code>${escapeHtml(url)}</code></div>
+                <button class="btn-modal-primary" style="margin:10px 0 16px" onclick="navigator.clipboard.writeText('${url}').then(() => showToast('Enlace copiado'))">copiar enlace.</button>
+                <ol class="conector-pasos">${pasos}</ol>
+            `);
+            cargarConectoresAjustes();
+        }
+
+        async function revocarConector(hash) {
+            if (!confirm('¿Revocar este enlace? Claude o ChatGPT dejarán de poder acceder con él.')) return;
+            const { error } = await sb.from('conector_tokens').delete().eq('token_hash', hash);
+            if (error) { showToast('No se pudo revocar', true); return; }
+            showToast('Enlace revocado');
+            cargarConectoresAjustes();
+        }
+
+        // ============================================================
         //  INIT
         // ============================================================
         let appInitialized = false;
@@ -19105,7 +19227,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 ensureRecurringProCharges();
                 convertirCinesEnPeliculas();
                 setInterval(convertirCinesEnPeliculas, 5 * 60000);
-                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') convertirCinesEnPeliculas(); });
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { convertirCinesEnPeliculas(); aplicarBandejaConector(); } });
+                aplicarBandejaConector();
             }
             await cargarCodigoAmigo();
             await cargarAmigos();

@@ -5811,3 +5811,12 @@ body.papel .anual-overlay.abierto { background:rgba(250,248,245,.35); }
     .coll-busqueda { flex-basis:100%; }
     }
 }
+
+/* Ajustes → Claude y ChatGPT */
+.conector-fila { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.conector-fila b { color:var(--text-primary); }
+.conector-fila small { display:block; margin-top:2px; font-size:11px; color:var(--text-secondary); }
+.conector-url { padding:12px; border-radius:12px; background:var(--bg-input); border:1px solid var(--border); word-break:break-all; }
+.conector-url code { font-size:11.5px; color:var(--text-primary); }
+.conector-pasos { margin:0; padding-left:20px; font-size:12.5px; line-height:1.6; color:var(--text-secondary); }
+.conector-pasos b { color:var(--text-primary); }

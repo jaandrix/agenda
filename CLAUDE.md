@@ -21,7 +21,8 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
 - **Sitio en producción:** appbitacora.es (GitHub Pages, hosting estático — ver `CNAME`).
   Backend: Supabase (auth + una tabla `bitacora` con los datos de cada usuario en una
   columna `jsonb`). Hay Edge Functions desplegadas (`supabase/functions/`: Stripe
-  webhook de suscripción, envío de notificaciones push, cancelación de suscripción) y
+  webhook de suscripción, envío de notificaciones push, cancelación de suscripción y
+  `bitacora-mcp`, el conector para Claude/ChatGPT — ver `supabase/sql/conector_ia.sql`) y
   SQL de referencia en `supabase/sql/` (amistades, listas de ocio compartidas, viajes
   compartidos, sugerencias, snapshots...).
 - **Carpeta espejo para pruebas locales:** `C:\Users\jandr\Downloads\bitacora-mirror\`
