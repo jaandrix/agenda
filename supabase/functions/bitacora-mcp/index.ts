@@ -1000,7 +1000,9 @@ async function llamar(userId: string, nombre: string, a: any) {
             });
             const r = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error('No se pudo enviar el aviso: ' + (r.error || res.status));
-            return r.sent ? `Aviso enviado a ${r.sent} dispositivo${r.sent === 1 ? '' : 's'}.` : 'El usuario no tiene las notificaciones activadas en ningún dispositivo (Ajustes de Bitácora → Notificaciones).';
+            if (r.sent) return `Aviso enviado a ${r.sent} dispositivo${r.sent === 1 ? '' : 's'}.${r.errores?.length ? ` Falló en ${r.errores.length}: ${r.errores.map((e: any) => `${e.servicio} (${e.estado || 'error'}: ${e.mensaje})`).join('; ')}` : ''}`;
+            if (r.errores?.length) throw new Error('No se pudo entregar el aviso: ' + r.errores.map((e: any) => `${e.servicio} (${e.estado || 'error'}: ${e.mensaje})`).join('; '));
+            return 'El usuario no tiene las notificaciones activadas en ningún dispositivo (Ajustes de Bitácora → Notificaciones).';
         }
         case 'objetivo': {
             const plazos: Record<string, string> = { corto: 'short', medio: 'medium', largo: 'long' };

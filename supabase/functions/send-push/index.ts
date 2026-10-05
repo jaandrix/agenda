@@ -22,7 +22,10 @@
 // entorno Deno/Supabase disponible aquí) — antes de dar esto por bueno,
 // pruébalo a mano con curl contra la función ya desplegada.
 
-import webpush from 'https://esm.sh/web-push@3.6.7?target=deno';
+// Por npm: y no por esm.sh: la versión de esm.sh cargaba un sustituto de
+// node:crypto sin crypto.ECDH ("Not implemented") y ningún aviso llegaba a
+// enviarse; con npm: usa la compatibilidad con Node del propio Deno.
+import webpush from 'npm:web-push@3.6.7';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -85,6 +88,7 @@ Deno.serve(async (req) => {
 
     let sent = 0;
     const staleEndpoints: string[] = [];
+    const errores: { servicio: string; estado?: number; mensaje: string }[] = [];
     for (const row of subs) {
         try {
             await webpush.sendNotification(row.subscription, notificationPayload);
@@ -98,6 +102,8 @@ Deno.serve(async (req) => {
                 staleEndpoints.push(row.endpoint as string);
             } else {
                 console.error('Error enviando push a', row.endpoint, err);
+                const e = err as { statusCode?: number; body?: string; message?: string };
+                errores.push({ servicio: new URL(row.endpoint as string).host, estado: e?.statusCode, mensaje: String(e?.body || e?.message || err).slice(0, 300) });
             }
         }
     }
@@ -105,5 +111,5 @@ Deno.serve(async (req) => {
         await sbAdmin.from('push_subscriptions').delete().in('endpoint', staleEndpoints);
     }
 
-    return json({ ok: true, sent, cleaned: staleEndpoints.length });
+    return json({ ok: true, sent, cleaned: staleEndpoints.length, errores });
 });
