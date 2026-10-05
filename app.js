@@ -414,6 +414,9 @@
         // Qué avisos automáticos quiere recibir (los lee la función
         // avisos-diarios); un tipo ausente cuenta como activado.
         let preferenciasAvisos = {};
+        // Ciudad de la previsión del Home ({ nombre, lat, lon }); sin elegir,
+        // Zaragoza (CIUDAD_TIEMPO_DEFECTO).
+        let ciudadTiempo = null;
         let plannedTrips = [];
         let apuntes = [];
         // Tareas semanales: recordatorios activos de la semana actual.
@@ -850,7 +853,7 @@
         //    con un botón grande de añadir entrada ese mismo día --
         function renderMobileCalendar() {
             calViewMode = 'day';
-            return `<div class="mobile-calendar-wrap">${renderCalDay()}
+            return `<div class="mobile-calendar-wrap"><div class="mobile-tiempo-fila">${renderTiempoWidget()}</div>${renderCalDay()}
                 <button class="mobile-cta-btn" style="margin-top:16px" onclick="openNewEntryForDay('${calSelectedDate}')">+ añadir este día.</button>
             </div>`;
         }
@@ -2461,6 +2464,7 @@
                 registroConector = Array.isArray(saved.registroConector) ? saved.registroConector : [];
                 analisisIA = saved.analisisIA || null;
                 preferenciasAvisos = (saved.preferenciasAvisos && typeof saved.preferenciasAvisos === 'object') ? saved.preferenciasAvisos : {};
+                ciudadTiempo = saved.ciudadTiempo || null;
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
                     cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
@@ -2672,6 +2676,7 @@
                 registroConector,
                 analisisIA,
                 preferenciasAvisos,
+                ciudadTiempo,
                 financeIncome,
                 financeProfile,
                 financePro,
@@ -6146,6 +6151,157 @@
             </div>`;
         }
 
+        // ============================================================
+        //  TIEMPO (Home): icono y temperatura de la ciudad elegida, sin
+        //  fondo. Open-Meteo: gratis, sin clave ni registro. Se guarda en el
+        //  navegador para pintarlo al instante y se renueva cada 30 min; al
+        //  pulsarlo, máximas y mínimas y cambio de ciudad.
+        // ============================================================
+        const CIUDAD_TIEMPO_DEFECTO = { nombre: 'Zaragoza', lat: 41.6488, lon: -0.8891 };
+        const TIEMPO_CACHE = 'bitacora-tiempo';
+        let tiempoActual = null;
+        let tiempoCargando = false;
+
+        // Iconos sólidos y geométricos, como el resto de la app; heredan el
+        // color del texto (sin fondo).
+        const TIEMPO_NUBE = 'M24 78h50a18 18 0 0 0 3-35.7A25 25 0 0 0 29 39a19.5 19.5 0 0 0-5 39z';
+        const TIEMPO_ICONOS = {
+            sol: '<circle cx="50" cy="50" r="20"/><g>' + [0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="46.5" y="8" width="7" height="15" rx="3.5" transform="rotate(${a} 50 50)"/>`).join('') + '</g>',
+            luna: '<path d="M60 12a38 38 0 1 0 28 64A32 32 0 0 1 60 12z"/>',
+            claros: '<circle cx="36" cy="34" r="15"/>' + [0, 60, 120, 180, 240, 300].map(a => `<rect x="33.5" y="6" width="5" height="9" rx="2.5" transform="rotate(${a} 36 34)"/>`).join('') + `<path d="M34 84h44a15 15 0 0 0 2.5-29.8A21 21 0 0 0 40 55.5a14.3 14.3 0 0 0-6 28.5z"/>`,
+            nube: `<path d="${TIEMPO_NUBE}"/>`,
+            niebla: '<rect x="14" y="30" width="72" height="9" rx="4.5"/><rect x="22" y="46" width="64" height="9" rx="4.5"/><rect x="14" y="62" width="60" height="9" rx="4.5"/>',
+            lluvia: '<path d="M24 62h50a16 16 0 0 0 3-31.7A22 22 0 0 0 30 31a15.5 15.5 0 0 0-6 31z"/><rect x="32" y="70" width="6" height="16" rx="3" transform="rotate(15 35 78)"/><rect x="48" y="70" width="6" height="16" rx="3" transform="rotate(15 51 78)"/><rect x="64" y="70" width="6" height="16" rx="3" transform="rotate(15 67 78)"/>',
+            nieve: '<path d="M24 62h50a16 16 0 0 0 3-31.7A22 22 0 0 0 30 31a15.5 15.5 0 0 0-6 31z"/><circle cx="34" cy="76" r="4.5"/><circle cx="50" cy="84" r="4.5"/><circle cx="66" cy="76" r="4.5"/>',
+            tormenta: '<path d="M24 58h50a16 16 0 0 0 3-31.7A22 22 0 0 0 30 27a15.5 15.5 0 0 0-6 31z"/><path d="M52 60 38 80h10l-4 16 16-22H50l6-14z"/>',
+        };
+
+        function tiempoTipo(code, esDia) {
+            if (code === 0) return esDia ? 'sol' : 'luna';
+            if (code === 1 || code === 2) return esDia ? 'claros' : 'nube';
+            if (code === 3) return 'nube';
+            if (code === 45 || code === 48) return 'niebla';
+            if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'lluvia';
+            if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'nieve';
+            if (code >= 95) return 'tormenta';
+            return 'nube';
+        }
+
+        const TIEMPO_TEXTO = { sol: 'despejado', luna: 'despejado', claros: 'intervalos de nubes', nube: 'nuboso', niebla: 'niebla', lluvia: 'lluvia', nieve: 'nieve', tormenta: 'tormenta' };
+
+        function tiempoIcono(tipo, tam = 20) {
+            return `<svg width="${tam}" height="${tam}" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true">${TIEMPO_ICONOS[tipo] || TIEMPO_ICONOS.nube}</svg>`;
+        }
+
+        function tiempoClave() {
+            const c = ciudadTiempo || CIUDAD_TIEMPO_DEFECTO;
+            return `${c.lat.toFixed(3)},${c.lon.toFixed(3)}`;
+        }
+
+        function contenidoTiempoWidget() {
+            if (!tiempoActual) return '';
+            const tipo = tiempoTipo(tiempoActual.code, tiempoActual.esDia);
+            return `${tiempoIcono(tipo)}<span>${Math.round(tiempoActual.temp)}°</span>`;
+        }
+
+        function renderTiempoWidget() {
+            if (!tiempoActual) {
+                try { const g = JSON.parse(localStorage.getItem(TIEMPO_CACHE) || 'null'); if (g && g.clave === tiempoClave()) tiempoActual = g; } catch (e) { /* sin almacenamiento: se pide a la red */ }
+            }
+            if (!tiempoActual || Date.now() - tiempoActual.hora > 30 * 60000) setTimeout(cargarTiempo, 0);
+            const c = ciudadTiempo || CIUDAD_TIEMPO_DEFECTO;
+            const desc = tiempoActual ? `${c.nombre}: ${TIEMPO_TEXTO[tiempoTipo(tiempoActual.code, tiempoActual.esDia)]}, ${Math.round(tiempoActual.temp)}°` : c.nombre;
+            return `<button class="tiempo-widget" onclick="openTiempo()" title="${escapeHtml(desc)}" aria-label="${escapeHtml(desc)}">${contenidoTiempoWidget()}</button>`;
+        }
+
+        async function cargarTiempo(forzar) {
+            if (tiempoCargando) return;
+            const clave = tiempoClave();
+            if (!forzar && tiempoActual && tiempoActual.clave === clave && Date.now() - tiempoActual.hora < 30 * 60000) return;
+            tiempoCargando = true;
+            try {
+                const c = ciudadTiempo || CIUDAD_TIEMPO_DEFECTO;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=4&timezone=auto`;
+                const r = await fetch(url).then(x => x.json());
+                if (!r?.current) return;
+                tiempoActual = {
+                    clave, hora: Date.now(), temp: r.current.temperature_2m, code: r.current.weather_code, esDia: r.current.is_day === 1,
+                    dias: (r.daily?.time || []).map((f, i) => ({ fecha: f, code: r.daily.weather_code[i], max: r.daily.temperature_2m_max[i], min: r.daily.temperature_2m_min[i], lluvia: r.daily.precipitation_probability_max?.[i] }))
+                };
+                try { localStorage.setItem(TIEMPO_CACHE, JSON.stringify(tiempoActual)); } catch (e) { /* sin almacenamiento */ }
+                document.querySelectorAll('.tiempo-widget').forEach(b => { b.innerHTML = contenidoTiempoWidget(); });
+                if (document.getElementById('tiempo-modal')) document.getElementById('tiempo-modal').innerHTML = renderTiempoModal();
+            } catch (e) {
+                console.error('Tiempo:', e);
+            } finally {
+                tiempoCargando = false;
+            }
+        }
+
+        function renderTiempoModal() {
+            const c = ciudadTiempo || CIUDAD_TIEMPO_DEFECTO;
+            if (!tiempoActual) return '<div class="finance-modal-note">Cargando la previsión…</div>';
+            const tipo = tiempoTipo(tiempoActual.code, tiempoActual.esDia);
+            const hoy = tiempoActual.dias?.[0];
+            const nombreDia = f => new Date(f + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '');
+            return `
+                <div class="tiempo-ahora">
+                    ${tiempoIcono(tipo, 56)}
+                    <div>
+                        <div class="tiempo-ahora-temp">${Math.round(tiempoActual.temp)}°</div>
+                        <div class="tiempo-ahora-desc">${TIEMPO_TEXTO[tipo]}.${hoy ? ` máx ${Math.round(hoy.max)}° · mín ${Math.round(hoy.min)}°` : ''}</div>
+                    </div>
+                </div>
+                ${(tiempoActual.dias || []).length > 1 ? `
+                <div class="tiempo-dias">
+                    ${tiempoActual.dias.slice(1).map(d => `
+                        <div class="tiempo-dia">
+                            <span>${nombreDia(d.fecha)}.</span>
+                            ${tiempoIcono(tiempoTipo(d.code, true), 22)}
+                            <b>${Math.round(d.max)}°</b><small>${Math.round(d.min)}°</small>
+                        </div>`).join('')}
+                </div>` : ''}
+                <div class="tiempo-ciudad">
+                    <div class="modal-label">ciudad.</div>
+                    <input class="modal-input" id="tiempo-ciudad-input" value="${escapeHtml(c.nombre)}" placeholder="Busca tu ciudad…" oninput="buscarCiudadTiempo(this.value)">
+                    <div id="tiempo-ciudad-resultados"></div>
+                </div>`;
+        }
+
+        function openTiempo() {
+            showModal(`<div class="modal-title">tiempo.</div><div id="tiempo-modal">${renderTiempoModal()}</div>`);
+            cargarTiempo();
+        }
+
+        let tiempoBusquedaTimer;
+        function buscarCiudadTiempo(texto) {
+            clearTimeout(tiempoBusquedaTimer);
+            const el = document.getElementById('tiempo-ciudad-resultados');
+            if (!el) return;
+            if (texto.trim().length < 2) { el.innerHTML = ''; return; }
+            tiempoBusquedaTimer = setTimeout(async () => {
+                try {
+                    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(texto.trim())}&count=5&language=es&format=json`).then(x => x.json());
+                    window._tiempoCiudades = r.results || [];
+                    el.innerHTML = window._tiempoCiudades.length ? window._tiempoCiudades.map((c, i) => `
+                        <button class="tiempo-ciudad-opcion" onclick="elegirCiudadTiempo(${i})">${escapeHtml(c.name)}<small>${escapeHtml([c.admin1, c.country].filter(Boolean).join(', '))}</small></button>`).join('')
+                        : '<div class="finance-modal-note">No encuentro esa ciudad.</div>';
+                } catch (e) { el.innerHTML = '<div class="finance-modal-note">No se ha podido buscar ahora.</div>'; }
+            }, 300);
+        }
+
+        async function elegirCiudadTiempo(i) {
+            const c = (window._tiempoCiudades || [])[i];
+            if (!c) return;
+            ciudadTiempo = { nombre: c.name, lat: c.latitude, lon: c.longitude };
+            tiempoActual = null;
+            const el = document.getElementById('tiempo-modal');
+            if (el) el.innerHTML = renderTiempoModal();
+            await cargarTiempo(true);
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
         function renderCalendar() {
             let html = `<div class="cal-home">`;
             html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
@@ -6157,6 +6313,7 @@
                 <button class="year-cal-btn" onclick="abrirCalendarioAnual()" title="Vista anual">
                     <svg width="18" height="18" viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="30"/></svg>
                 </button>
+                ${renderTiempoWidget()}
             </div>`;
 
             const body = calViewMode === 'month' ? renderCalMonth() : calViewMode === 'week' ? renderCalWeek() : renderCalDay();
