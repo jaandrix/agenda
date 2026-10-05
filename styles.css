@@ -5938,3 +5938,12 @@ body.papel .doc-ficha.caducada .doc-ficha-estado { color: #a3243b; }
 .doc-fichas-vacio { padding: 12px 2px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
 @media (max-width: 640px) { .doc-ficha { grid-template-columns: minmax(0, 1fr) auto; } .doc-ficha-tipo { display: none; } .doc-ficha-estado { grid-column: 1; } }
 
+/* Ajustes → Notificaciones → avisos automáticos */
+.avisos-ajustes-fila { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.avisos-ajustes-titulo { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.avisos-ajustes-sub { margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.avisos-tipo { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-top: 1px solid var(--border); }
+.avisos-tipo-titulo { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+.avisos-tipo-desc { margin-top: 2px; font-size: 11.5px; line-height: 1.45; color: var(--text-secondary); }
+.avisos-tipo .finance-pro-switch { flex-shrink: 0; }
+

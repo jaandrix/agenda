@@ -411,6 +411,9 @@
         // que el conector lo lea tal cual, sin rehacer los cálculos en el
         // servidor con otra lógica (ver actualizarAnalisisIA).
         let analisisIA = null;
+        // Qué avisos automáticos quiere recibir (los lee la función
+        // avisos-diarios); un tipo ausente cuenta como activado.
+        let preferenciasAvisos = {};
         let plannedTrips = [];
         let apuntes = [];
         // Tareas semanales: recordatorios activos de la semana actual.
@@ -2457,6 +2460,7 @@
                 inbox = saved.inbox || [];
                 registroConector = Array.isArray(saved.registroConector) ? saved.registroConector : [];
                 analisisIA = saved.analisisIA || null;
+                preferenciasAvisos = (saved.preferenciasAvisos && typeof saved.preferenciasAvisos === 'object') ? saved.preferenciasAvisos : {};
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
                     cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
@@ -2667,6 +2671,7 @@
                 inbox,
                 registroConector,
                 analisisIA,
+                preferenciasAvisos,
                 financeIncome,
                 financeProfile,
                 financePro,
@@ -11801,6 +11806,51 @@
             enablePushNotifications(permiso).then(loadSettingsPushInfo);
         }
 
+        // Tipos de la función avisos-diarios, en el mismo orden de
+        // importancia con el que se envían (como mucho 3 al día).
+        const AVISOS_AUTOMATICOS = [
+            { tipo: 'aportaciones', titulo: 'cargos vigilados.', texto: 'Una suscripción o gasto fijo con "avisarme si no aparece en el banco" que no ha llegado 3 días después de su día de cargo.' },
+            { tipo: 'estudios', titulo: 'exámenes y entregas.', texto: 'Los exámenes y entregas de hoy, y los exámenes de mañana.' },
+            { tipo: 'documentos', titulo: 'documentos que caducan.', texto: 'Fichas de Documentos a 30 días, 7 días, un día y el mismo día de su caducidad.' },
+            { tipo: 'reembolsos', titulo: 'reembolsos atascados.', texto: 'Un ingreso que lleva más de 7 días pendiente en el banco.' },
+            { tipo: 'cumpleanos', titulo: 'cumpleaños.', texto: 'Los cumpleaños de hoy y de mañana.' },
+            { tipo: 'ritmo', titulo: 'ritmo de gasto.', texto: 'Cuando el gasto del día a día va bastante por encima de lo normal en ti. Como mucho dos veces al mes.' },
+            { tipo: 'bandeja', titulo: 'bandeja.', texto: 'Cambios de Claude que llevan más de un día esperando tu validación.' },
+        ];
+
+        function renderAvisosAutomaticosLista() {
+            return AVISOS_AUTOMATICOS.map(a => {
+                const on = preferenciasAvisos[a.tipo] !== false;
+                return `
+                <div class="avisos-tipo">
+                    <div class="avisos-tipo-texto">
+                        <div class="avisos-tipo-titulo">${a.titulo}</div>
+                        <div class="avisos-tipo-desc">${a.texto}</div>
+                    </div>
+                    <button class="finance-pro-switch ${on ? 'on' : ''}" onclick="toggleAvisoAutomatico('${a.tipo}')" aria-label="${a.titulo}" title="${on ? 'Desactivar' : 'Activar'}">
+                        <span class="finance-pro-switch-knob"></span>
+                    </button>
+                </div>`;
+            }).join('');
+        }
+
+        function openAvisosAutomaticos() {
+            showModal(`
+                <div class="modal-title">avisos automáticos.</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">Bitácora lo revisa cada mañana a las 9:00 y te avisa solo de lo que toca ese día, como mucho 3 notificaciones y nunca dos veces lo mismo. Elige qué quieres recibir.</div>
+                <div id="avisos-automaticos-lista">${renderAvisosAutomaticosLista()}</div>
+            `);
+        }
+
+        async function toggleAvisoAutomatico(tipo) {
+            if (preferenciasAvisos[tipo] === false) delete preferenciasAvisos[tipo];
+            else preferenciasAvisos[tipo] = false;
+            const lista = document.getElementById('avisos-automaticos-lista');
+            if (lista) lista.innerHTML = renderAvisosAutomaticosLista();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            loadSettingsPushInfo();
+        }
+
         function renderPushSettingsBody(status) {
             if (status === 'unsupported') {
                 const iosSinInstalar = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone;
@@ -11817,13 +11867,22 @@
                 return `<div style="font-size:12.5px;color:var(--text-secondary)">Cargando...</div>`;
             }
             const enabled = status === 'enabled';
+            const apagados = AVISOS_AUTOMATICOS.filter(a => preferenciasAvisos[a.tipo] === false).length;
             return `
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
                     <div style="font-size:12.5px;color:var(--text-secondary)">${enabled ? 'Activadas en este dispositivo.' : 'Recibe avisos de Bitácora en este dispositivo.'}</div>
                     <button class="finance-pro-switch ${enabled ? 'on' : ''}" onclick="togglePushNotifications()" title="${enabled ? 'Desactivar' : 'Activar'} notificaciones" aria-label="Notificaciones">
                         <span class="finance-pro-switch-knob"></span>
                     </button>
-                </div>`;
+                </div>
+                ${enabled ? `
+                <div class="avisos-ajustes-fila">
+                    <div>
+                        <div class="avisos-ajustes-titulo">avisos automáticos.</div>
+                        <div class="avisos-ajustes-sub">Cada día a las 9:00. ${apagados ? `${AVISOS_AUTOMATICOS.length - apagados} de ${AVISOS_AUTOMATICOS.length} tipos activados.` : 'Todos los tipos activados.'}</div>
+                    </div>
+                    <button class="finance-oneoff-btn" onclick="openAvisosAutomaticos()">elegir.</button>
+                </div>` : ''}`;
         }
 
         // En la PWA, Ajustes se pinta dos veces: en #content (escritorio,
@@ -19869,7 +19928,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const hallazgos = patronesHallazgos();
             return {
                 ritmo: r.suficiente
-                    ? { veredicto: veredictos[r.nivel], dia_del_mes: r.dia, llevas: financeMoney(r.llevas), normalHoy: financeMoney(r.hoyFranja.medio), proyeccion: financeMoney(r.proyeccion), mesNormal: financeMoney(r.totalNormal), meses_analizados: r.meses, categorias_que_se_desvian: r.categorias.map(c => ({ categoria: nombreCat(c.cat), llevas: financeMoney(c.ahora), normal_a_estas_alturas: financeMoney(c.normal) })), que_cuenta: 'gasto del día a día: sin suscripciones, gastos fijos, inversiones, coleccionables ni ajustes; lo devuelto resta' }
+                    ? { nivel: r.nivel, veredicto: veredictos[r.nivel], dia_del_mes: r.dia, llevas: financeMoney(r.llevas), normalHoy: financeMoney(r.hoyFranja.medio), proyeccion: financeMoney(r.proyeccion), mesNormal: financeMoney(r.totalNormal), meses_analizados: r.meses, categorias_que_se_desvian: r.categorias.map(c => ({ categoria: nombreCat(c.cat), llevas: financeMoney(c.ahora), normal_a_estas_alturas: financeMoney(c.normal) })), que_cuenta: 'gasto del día a día: sin suscripciones, gastos fijos, inversiones, coleccionables ni ajustes; lo devuelto resta' }
                     : { veredicto: 'todavía no hay meses suficientes para saber qué es normal en él', llevas: financeMoney(r.llevas) },
                 patrones: hallazgos.map(h => limpio(h.frase)),
                 avisos: avisosProximos(hallazgos).map(a => limpio(a.frase)),
