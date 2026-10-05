@@ -2580,13 +2580,13 @@
            fecha como si fuera el título. */
         .note-card { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 6px; min-height: 118px; padding: 18px 20px; box-sizing: border-box; }
         .note-card-fecha { font-size: 11px; font-weight: 600; letter-spacing: .2px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-        .note-card .note-card-title { font-size: 16px; font-weight: 700; letter-spacing: -.3px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+        .note-card .note-card-title { font-size: 14.5px; font-weight: 700; letter-spacing: -.2px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
         .note-card.sin-titulo .note-card-title { color: var(--text-muted); font-weight: 600; }
         .note-card-extracto { font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
         /* Dentro: fecha larga como antetítulo y el título grande, que crece
            en varias líneas en vez de cortarse; Intro solo lo confirma. */
         .note-detail-fecha { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
-        .note-titulo-input { display: block; width: 100%; box-sizing: border-box; margin: 0 0 18px; padding: 0 0 12px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: none; resize: none; overflow: hidden; font-family: var(--font-family); font-size: clamp(26px, 4vw, 34px); font-weight: 800; letter-spacing: -.8px; line-height: 1.15; color: var(--text-primary); outline: none; transition: border-color .15s ease; }
+        .note-titulo-input { display: block; width: 100%; box-sizing: border-box; margin: 0 0 18px; padding: 0 0 12px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: none; resize: none; overflow: hidden; font-family: var(--font-family); font-size: clamp(21px, 3vw, 27px); font-weight: 800; letter-spacing: -.5px; line-height: 1.15; color: var(--text-primary); outline: none; transition: border-color .15s ease; }
         .note-titulo-input::placeholder { color: var(--text-muted); font-weight: 700; }
         .note-titulo-input:focus { border-bottom-color: var(--text-primary); }
         .note-detail-hint {
