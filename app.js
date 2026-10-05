@@ -10490,9 +10490,10 @@
             if (existingIdx !== -1) {
                 entries[existingIdx].title = title;
                 entries[existingIdx].date = item.date;
+                entries[existingIdx].time = item.time || '';
             } else {
                 entries.push({
-                    id: 'evt_' + item.id, type: 'event', eventType: 'otro', title, date: item.date, notes: '',
+                    id: 'evt_' + item.id, type: 'event', eventType: 'otro', title, date: item.date, time: item.time || '', notes: '',
                     linkedItemId: item.id, linkedSubjectId: subject.id, linkedKind: listKey
                 });
             }
@@ -19307,6 +19308,32 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 ev.entradas.push({ id: ref, qr: op.qr || '', qrB64: op.qrB64 || undefined, etiqueta: op.etiqueta || '' });
                 return linea('entrada', `entrada con QR para «${corto(ev.title)}».`, { accion: 'entrada', eventoId: ev.id, id: ref });
             }
+            if (op.tipo === 'estudio_crear') {
+                const asig = findSubject(op.subjectId);
+                if (!asig) return null;
+                asig[op.lista] = asig[op.lista] || [];
+                if (asig[op.lista].some(x => x.id === ref)) return null;
+                const item = { id: ref, title: '', date: '', grade: '', weight: '', done: false, ...(op.item || {}) };
+                asig[op.lista].push(item);
+                syncExamCalendarEvent(asig, op.lista, item);
+                if (op.lista === 'assignments') syncAssignmentPlannerItem(asig, item);
+                filteredEntries = [...entries];
+                return linea('estudios', `${op.lista === 'exams' ? 'examen' : 'trabajo'} «${corto(item.title)}» en ${asig.name.toLowerCase()}${item.date ? ' el ' + item.date : ''}${item.time ? ' a las ' + item.time : ''}.`, { accion: 'estudio_quitar', subjectId: asig.id, lista: op.lista, id: ref });
+            }
+            if (op.tipo === 'estudio_editar') {
+                const asig = findSubject(op.subjectId);
+                const item = asig?.[op.lista]?.find(x => x.id === op.id);
+                if (!item) return null;
+                const antes = {};
+                Object.keys(op.cambios || {}).forEach(k => { antes[k] = item[k]; });
+                Object.assign(item, op.cambios || {});
+                syncExamCalendarEvent(asig, op.lista, item);
+                if (op.lista === 'assignments') syncAssignmentPlannerItem(asig, item);
+                filteredEntries = [...entries];
+                const c = op.cambios || {};
+                const que = [c.grade !== undefined ? `nota ${c.grade}` : '', c.done === true ? 'entregado' : c.done === false ? 'pendiente' : '', c.date ? 'fecha ' + c.date : '', c.time ? 'hora ' + c.time : '', c.weight ? `peso ${c.weight} %` : '', c.title ? 'nuevo título' : ''].filter(Boolean).join(', ');
+                return linea('estudios', `«${corto(op.resumen)}»: ${que || 'cambiado'}.`, { accion: 'estudio_restaurar', subjectId: asig.id, lista: op.lista, id: item.id, antes });
+            }
             if (op.tipo === 'ocio') {
                 const nombre = { book: 'libro', movie: 'película', series: 'serie', game: 'videojuego' }[op.entryType] || 'ocio';
                 if (op.id) {
@@ -19429,6 +19456,21 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     h.completadas = h.completadas || {};
                     if (hecho) h.completadas[d.fecha] = true; else delete h.completadas[d.fecha];
                 });
+            } else if (d.accion === 'estudio_quitar') {
+                const asig = findSubject(d.subjectId);
+                if (asig?.[d.lista]) {
+                    asig[d.lista] = asig[d.lista].filter(x => x.id !== d.id);
+                    removeLinkedExamEvent(d.id);
+                    if (d.lista === 'assignments') removeLinkedPlannerItem(d.id);
+                }
+            } else if (d.accion === 'estudio_restaurar') {
+                const asig = findSubject(d.subjectId);
+                const item = asig?.[d.lista]?.find(x => x.id === d.id);
+                if (item) {
+                    Object.assign(item, d.antes);
+                    syncExamCalendarEvent(asig, d.lista, item);
+                    if (d.lista === 'assignments') syncAssignmentPlannerItem(asig, item);
+                }
             } else if (d.accion === 'importar') {
                 const quitar = new Set(d.anadidos || []);
                 financePro.transactions = financePro.transactions.filter(t => !quitar.has(t.id));
@@ -19447,7 +19489,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // Se aplican solos (el usuario no quiere validarlos): crear y editar
         // eventos, las entradas con QR de un evento y Ocio. El resto espera
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
-        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio'];
+        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'estudio_crear'];
         // Filas ya validadas o descartadas aquí que el servidor quizá aún no
         // ha borrado (se borran después de guardar): sin esto, una lectura
         // de la bandeja en ese intervalo las devolvía como pendientes y
@@ -19509,7 +19551,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
         function apartadoDeOp(op) {
             if (op.tipo === 'borrar') return { evento: 'eventos', tarea: 'planificador', movimiento: 'finanzas' }[op.coleccion] || 'otros';
-            return { tarea: 'planificador', editar_tarea: 'planificador', movimiento: 'finanzas', editar_movimiento: 'finanzas', importar: 'finanzas', nota: 'notas', dia: 'hábitos y esfuerzo' }[op.tipo] || 'otros';
+            return { tarea: 'planificador', editar_tarea: 'planificador', movimiento: 'finanzas', editar_movimiento: 'finanzas', importar: 'finanzas', nota: 'notas', dia: 'hábitos y esfuerzo', estudio_editar: 'estudios' }[op.tipo] || 'otros';
         }
 
         // Qué se propone, contado como lo leería el usuario. detalle va en un
@@ -19533,6 +19575,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     return { tipo: 'día', texto: [op.esfuerzo ? `esfuerzo ${op.esfuerzo}/5` : '', ...nombres(op.hechos).map(n => n + ' ✓'), ...nombres(op.noHechos).map(n => n + ' ✗')].filter(Boolean).join(' · ') || 'sin cambios', meta: fecha(op.fecha) };
                 }
                 case 'borrar': return { tipo: `borrar ${op.coleccion}`, texto: op.resumen, meta: 'se puede deshacer después' };
+                case 'estudio_editar': return { tipo: op.lista === 'exams' ? 'cambio de examen' : 'cambio de trabajo', texto: `«${op.resumen}»`, meta: [c.grade !== undefined ? `nota ${c.grade}` : '', c.done === true ? 'marcar entregado' : c.done === false ? 'volver a pendiente' : '', c.date ? fecha(c.date) : '', c.time ? c.time : '', c.weight ? `peso ${c.weight} %` : '', c.title ? `título: «${c.title}»` : ''].filter(Boolean).join(' · ') };
             }
             return { tipo: op.tipo, texto: '', meta: '' };
         }
@@ -19580,7 +19623,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         const descartarGrupoBandeja = grupo => descartarBandeja(bandejaPendiente.filter(f => apartadoDeOp(f.op || {}) === grupo).map(f => f.id));
 
         const REGISTRO_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M12 14h76v54H42L22 86V68H12z"/></svg>';
-        const BANDEJA_ORDEN = ['planificador', 'finanzas', 'notas', 'hábitos y esfuerzo', 'eventos', 'otros'];
+        const BANDEJA_ORDEN = ['planificador', 'estudios', 'finanzas', 'notas', 'hábitos y esfuerzo', 'eventos', 'otros'];
         let bandejaHistorialAbierto = false;
         let bandejaBusqueda = '';
 

@@ -27,7 +27,7 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'hogar', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Todo lo demás (tareas, movimientos, extractos, notas, hábitos y esfuerzo, y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR, crear exámenes y trabajos en Estudios y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, movimientos, extractos, notas, hábitos y esfuerzo, y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
 const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
 const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
@@ -66,6 +66,13 @@ function aplicarOp(data: any, op: any, id: string) {
     } else if (op.tipo === 'movimiento') {
         data.financePro = data.financePro || { transactions: [] };
         (data.financePro.transactions = data.financePro.transactions || []).push({ id: ref, date: op.fecha, account: op.cuenta, type: op.type, amount: op.importe, category: op.categoria || undefined, note: op.concepto || undefined, manual: true, needsReview: !op.categoria, sinValidar: true });
+    } else if (op.tipo === 'estudio_crear') {
+        const asig = (data.studies?.subjects || []).find((x: any) => x.id === op.subjectId);
+        if (asig) (asig[op.lista] = asig[op.lista] || []).push({ id: ref, grade: '', done: false, ...op.item });
+    } else if (op.tipo === 'estudio_editar') {
+        const asig = (data.studies?.subjects || []).find((x: any) => x.id === op.subjectId);
+        const it = (asig?.[op.lista] || []).find((x: any) => x.id === op.id);
+        if (it) Object.assign(it, op.cambios || {});
     } else if (op.tipo === 'ocio') {
         data.entries = data.entries || [];
         const e = op.id ? data.entries.find((x: any) => x?.id === op.id) : null;
@@ -180,8 +187,8 @@ function agenda(data: any, desde: string, hasta: string) {
         if (rec.length) dia.recurrentes = rec;
         const estudios: any[] = [];
         (data.studies?.subjects || []).forEach((s: any) => {
-            (s.exams || []).forEach((x: any) => { if (x?.date === f) estudios.push({ examen: x.title || 'examen', asignatura: s.name }); });
-            (s.assignments || []).forEach((x: any) => { if (x?.date === f) estudios.push({ entrega: x.title || 'trabajo', asignatura: s.name, hecho: !!x.done }); });
+            (s.exams || []).forEach((x: any) => { if (x?.date === f) estudios.push({ id: x.id, examen: x.title || 'examen', asignatura: s.name, hora: x.time || undefined }); });
+            (s.assignments || []).forEach((x: any) => { if (x?.date === f) estudios.push({ id: x.id, entrega: x.title || 'trabajo', asignatura: s.name, hecho: !!x.done }); });
         });
         if (estudios.length) dia.estudios = estudios;
         const cumple = entries.filter((e: any) => e?.type === 'birthday' && String(e.birthDate || '').slice(5) === f.slice(5)).map((e: any) => e.title);
@@ -332,6 +339,24 @@ function resumenPeriodo(data: any, desde: string, hasta: string) {
     };
 }
 
+// Asignatura por nombre, con o sin tildes y sin exigir el nombre completo
+// ("soste" vale para "Sostenibilidad").
+function asignaturaPorNombre(data: any, nombre: unknown) {
+    const q = norm(nombre).trim();
+    const lista = data.studies?.subjects || [];
+    return lista.find((x: any) => norm(x.name).trim() === q) || lista.find((x: any) => norm(x.name).includes(q) || (q.length >= 4 && q.includes(norm(x.name)))) || null;
+}
+
+function buscarItemEstudios(data: any, id: string) {
+    for (const asig of data.studies?.subjects || []) {
+        for (const lista of ['exams', 'assignments']) {
+            const it = (asig[lista] || []).find((x: any) => x?.id === id);
+            if (it) return { asig, lista, it };
+        }
+    }
+    return null;
+}
+
 function habitosPorNombre(data: any, nombres: unknown) {
     const lista = Array.isArray(nombres) ? nombres : [];
     const activos = (data.habits || []).filter((h: any) => h.activo !== false);
@@ -478,6 +503,29 @@ const HERRAMIENTAS = [
         description: 'Todo lo que pasó entre dos fechas, para revisiones semanales o mensuales: eventos, tareas hechas y sin hacer, recurrentes, hábitos, esfuerzo, gasto del día a día frente a los periodos anteriores, gasto por categoría, exámenes y entregas, notas y ocio terminado. Por defecto, los últimos 7 días.',
         inputSchema: { type: 'object', properties: { desde: { type: 'string' }, hasta: { type: 'string' } } },
         annotations: { readOnlyHint: true },
+    },
+    {
+        name: 'estudios_crear',
+        description: 'Añade un examen o un trabajo (entrega) a una asignatura de Estudios. Bitácora crea solo su evento en el calendario y, si es un trabajo, su tarea en el planificador el día de entrega. Se aplica solo, sin validar. Usa esto y no crear_evento para exámenes y entregas.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                asignatura: { type: 'string', description: 'Nombre de la asignatura (vale parte del nombre)' },
+                tipo: { type: 'string', enum: ['examen', 'trabajo'] }, titulo: { type: 'string' },
+                fecha: { type: 'string', description: 'AAAA-MM-DD' }, hora: { type: 'string', description: 'HH:MM, opcional' },
+                peso: { type: 'number', description: 'Porcentaje de la nota final, opcional' },
+            },
+            required: ['asignatura', 'tipo', 'titulo'],
+        },
+    },
+    {
+        name: 'estudios_editar',
+        description: 'Cambia un examen o trabajo de Estudios por su id (búscalo con agenda o apartado estudios): poner la nota obtenida, el peso, la fecha, la hora o el título, o marcar un trabajo como entregado (hecho=true). Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: {
+            type: 'object',
+            properties: { id: { type: 'string' }, titulo: { type: 'string' }, fecha: { type: 'string' }, hora: { type: 'string' }, nota: { type: 'number', minimum: 0, maximum: 10 }, peso: { type: 'number' }, hecho: { type: 'boolean' } },
+            required: ['id'],
+        },
     },
     {
         name: 'ocio',
@@ -658,6 +706,34 @@ async function llamar(userId: string, nombre: string, a: any) {
             const desde = esFecha(a.desde) ? a.desde : sumarDias(hasta, -6);
             if (desde > hasta) throw new Error('desde es posterior a hasta');
             return resumenPeriodo(data, desde, hasta);
+        }
+        case 'estudios_crear': {
+            const asig = asignaturaPorNombre(data, a.asignatura);
+            const nombres = (data.studies?.subjects || []).map((x: any) => x.name).join(', ');
+            if (!asig) throw new Error(`No encuentro la asignatura «${a.asignatura}». Las del usuario: ${nombres || 'ninguna'}`);
+            if (!a.titulo) throw new Error('Falta el título');
+            const lista = a.tipo === 'trabajo' ? 'assignments' : 'exams';
+            const item: any = { title: String(a.titulo), date: esFecha(a.fecha) ? a.fecha : '', weight: Number(a.peso) > 0 ? String(a.peso) : '' };
+            if (/^\d{2}:\d{2}$/.test(a.hora || '')) item.time = a.hora;
+            const repetido = (asig[lista] || []).find((x: any) => norm(x.title).trim() === norm(a.titulo).trim() && (x.date || '') === item.date);
+            if (repetido) return `Ya estaba en ${asig.name}: «${repetido.title}» (${repetido.date || 'sin fecha'}).`;
+            await encolar(userId, { tipo: 'estudio_crear', subjectId: asig.id, lista, item, asignatura: asig.name });
+            return `${lista === 'exams' ? 'Examen' : 'Trabajo'} añadido a ${asig.name}: «${a.titulo}»${item.date ? ` el ${diaSemana(item.date)} ${item.date}` : ''}${item.time ? ' a las ' + item.time : ''}. Bitácora crea su evento en el calendario${lista === 'assignments' && item.date ? ' y la tarea en el planificador' : ''}.`;
+        }
+        case 'estudios_editar': {
+            const encontrado = buscarItemEstudios(data, a.id);
+            if (!encontrado) throw new Error('No encuentro ese examen o trabajo; busca su id con agenda o apartado estudios');
+            const { asig, lista, it } = encontrado;
+            const cambios: any = {};
+            if (a.titulo) cambios.title = String(a.titulo);
+            if (esFecha(a.fecha)) cambios.date = a.fecha;
+            if (a.hora !== undefined) cambios.time = /^\d{2}:\d{2}$/.test(a.hora || '') ? a.hora : '';
+            if (a.nota !== undefined && Number(a.nota) >= 0 && Number(a.nota) <= 10) cambios.grade = String(a.nota);
+            if (Number(a.peso) > 0) cambios.weight = String(a.peso);
+            if (typeof a.hecho === 'boolean') cambios.done = a.hecho;
+            if (!Object.keys(cambios).length) throw new Error('No hay nada que cambiar');
+            await encolar(userId, { tipo: 'estudio_editar', subjectId: asig.id, lista, id: it.id, cambios, resumen: `${it.title || (lista === 'exams' ? 'examen' : 'trabajo')} (${asig.name})` });
+            return `Cambio propuesto para «${it.title}» de ${asig.name}.${PENDIENTE}`;
         }
         case 'ocio': {
             const t = OCIO_TIPOS[a.tipo];
