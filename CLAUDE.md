@@ -89,6 +89,21 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   un checkbox a medida), hay que declararlo explícitamente en ese elemento o los
   cálculos de posición salen mal.
 
+## Skills de diseño instaladas (en `~/.claude/skills`, no en el repo)
+
+- **Emil Kowalski** (`emil-design-eng`, `animate`, `review-animations`,
+  `improve-animations`, `find-animation-opportunities`, `animation-vocabulary`):
+  criterio para animaciones (ease-out fuertes, UI < 300 ms, solo transform/opacity,
+  nada en acciones de teclado, reduced-motion).
+- **Impeccable** (`impeccable`): auditar y pulir tipografía, contraste, espaciado y
+  estructura. Solo están su SKILL.md y sus guías: el lanzador `scripts/impeccable`
+  (que descarga y ejecuta un binario) y sus hooks NO se instalaron a propósito; usar su
+  modo de reserva ("Launcher unavailable": leer el contexto del proyecto directamente).
+- **La identidad de Bitácora manda** sobre las opiniones de cualquier skill: Poppins,
+  minúsculas con punto, los tres temas, iconos sólidos geométricos, el brutalismo de la
+  bandeja. Se usan para detectar fallos y pulir, no para rediseñar a su gusto, y los
+  cambios que propongan se enseñan al usuario antes de aplicarlos.
+
 ## Cómo se prueba un cambio (no hay suite de tests)
 
 1. Editar `app.js` / `styles.css` en el repo real.
