@@ -1247,6 +1247,19 @@
         // ============================================================
         function todayISO() { return new Date().toISOString().slice(0, 10); }
 
+        // Fechas de Notas a la manera del resto de la app: "sáb 3 oct 2026"
+        // en las tarjetas y "sábado 3 de octubre de 2026." dentro, en vez
+        // del "#03/10/2026" de antes.
+        function formatNoteFecha(dateISO, larga) {
+            const d = new Date(dateISO + 'T12:00:00');
+            if (larga) return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(',', '').toLowerCase() + '.';
+            return d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/[.,]/g, '').toLowerCase();
+        }
+
+        function extractoNota(content) {
+            return String(content || '').replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/\s+/g, ' ').trim().slice(0, 140);
+        }
+
         function formatNoteTitle(dateISO) {
             const [y, m, d] = dateISO.split('-');
             return '#' + d + '/' + m + '/' + y;
@@ -11955,11 +11968,15 @@
                     <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir nota de hoy</button>
                 </div>
                 <div class="notes-grid">
-                    ${sorted.map(n => `
-                        <div class="note-card ${n.title ? 'con-titulo' : ''}" onclick="openReadNote('${n.id}')">
-                            ${n.title ? `<div class="note-card-title">${escapeHtml(n.title)}</div><div class="note-card-fecha">${formatNoteTitle(n.date)}</div>` : `<div class="note-card-title">${formatNoteTitle(n.date)}</div>`}
-                        </div>
-                    `).join('')}
+                    ${sorted.map(n => {
+                        const extracto = extractoNota(n.content);
+                        return `
+                        <div class="note-card ${n.title ? '' : 'sin-titulo'}" onclick="openReadNote('${n.id}')">
+                            <div class="note-card-fecha">${formatNoteFecha(n.date)}${n.date === todayISO() ? ' · hoy' : ''}</div>
+                            <div class="note-card-title">${n.title ? escapeHtml(n.title) : 'sin título.'}</div>
+                            ${extracto ? `<div class="note-card-extracto">${escapeHtml(extracto)}</div>` : ''}
+                        </div>`;
+                    }).join('')}
                 </div>`;
         }
 
@@ -11982,6 +11999,8 @@
             requestAnimationFrame(() => {
                 const editor = document.getElementById('note-content-input');
                 if (editor) autoResizeNote(editor);
+                const titulo = document.getElementById('note-title-input');
+                if (titulo) autoResizeNote(titulo);
             });
         }
 
@@ -11992,15 +12011,15 @@
             return `
                 <div class="note-detail note-detail-wide">
                     <button class="btn-secondary" style="width:auto;padding:6px 14px;margin-bottom:16px" onclick="closeNoteDetail()">← Volver</button>
-                    <div class="note-detail-fecha">${formatNoteTitle(note.date)}</div>
-                    <input id="note-title-input" class="note-titulo-input" value="${escapeHtml(note.title || '')}" placeholder="título de la nota." maxlength="120" oninput="autoSaveNoteTitle('${note.id}', this.value)">
+                    <div class="note-detail-fecha">${note.date === todayISO() ? 'hoy, ' : ''}${formatNoteFecha(note.date, true)}</div>
+                    <textarea id="note-title-input" class="note-titulo-input" rows="1" placeholder="título de la nota." maxlength="120" oninput="autoSaveNoteTitle('${note.id}', this.value);autoResizeNote(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${escapeHtml(note.title || '')}</textarea>
                     ${editable ? `
                         <textarea id="note-content-input" class="note-textarea" placeholder="Escribe tu nota del día..." oninput="autoSaveNote('${note.id}', this.value);autoResizeNote(this);updateNoteLivePreview(this.value)">${escapeHtml(content)}</textarea>
                         <div class="note-detail-hint">Esta nota es editable solo hoy. Se guarda automáticamente. Usa [[Título exacto]] o /palabra para enlazar con cualquier entrada, asignatura o coleccionable.</div>
                         <div id="note-live-preview" class="note-readonly note-live-preview">${content ? linkifyText(content) : ''}</div>
                     ` : `
                         <div class="note-readonly">${content ? linkifyText(content) : '<span style="color:var(--text-muted)">(Nota vacía)</span>'}</div>
-                        <div class="note-detail-hint">Esta nota ya no es editable (se escribió ${note.date}).</div>
+                        <div class="note-detail-hint">Esta nota ya no es editable: se escribió el ${formatNoteFecha(note.date)}. El título sí puedes cambiarlo.</div>
                     `}
                 </div>`;
         }
