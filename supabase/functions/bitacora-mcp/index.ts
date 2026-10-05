@@ -368,6 +368,26 @@ function resumenPeriodo(data: any, desde: string, hasta: string) {
 const DIAS_CLASE: Record<string, string> = { lunes: 'lun', martes: 'mar', miercoles: 'mie', jueves: 'jue', viernes: 'vie', sabado: 'sab', domingo: 'dom' };
 const DIAS_SEMANA_NUM: Record<string, number> = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 };
 
+// Une los elementos nuevos de una lista del viaje con los que ya tiene:
+// con id se corrige ese; si coincide la clave (mismo vuelo, mismo hotel el
+// mismo día...) se completa el existente en vez de duplicarlo.
+function unirListaViaje(actual: any[], nuevos: any[], prefijo: string, clave: (x: any) => string) {
+    const lista = (actual || []).map((x: any) => ({ ...x }));
+    nuevos.forEach((n: any, i: number) => {
+        const k = clave(n);
+        const ya = lista.find((x: any) => (n.id && x.id === n.id) || (k && clave(x) === k));
+        const limpio = Object.fromEntries(Object.entries(n).filter(([c, v]) => c !== 'id' && v !== undefined && v !== ''));
+        if (ya) Object.assign(ya, limpio);
+        else lista.push({ id: `${prefijo}_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 6)}`, ...limpio });
+    });
+    return lista;
+}
+const fechaHora = (v: unknown) => {
+    const m = String(v ?? '').trim().match(/^(\d{4}-\d{2}-\d{2})(?:[T ](\d{1,2}):(\d{2}))?/);
+    return m ? m[1] + (m[2] ? `T${m[2].padStart(2, '0')}:${m[3]}` : '') : '';
+};
+const txt = (v: unknown) => (v === undefined || v === null ? undefined : String(v).trim());
+
 function entradaPorTitulo(data: any, tipos: string[], titulo: unknown, id?: unknown) {
     const lista = (data.entries || []).filter((e: any) => e && tipos.includes(e.type));
     if (id) return lista.find((e: any) => e.id === id) || null;
@@ -595,13 +615,47 @@ const HERRAMIENTAS = [
     },
     {
         name: 'viaje',
-        description: 'Crea o cambia un viaje en el apartado Viajes (destino, fechas, acompañantes, notas y gastos previstos o hechos). Ideal a partir de reservas de Booking, vuelos o correos. Los vuelos o planes con hora concreta, además, como eventos con crear_evento. Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Crea o completa un viaje del apartado Viajes: destino, fechas, acompañantes, notas, gastos, transportes (vuelos, trenes, buses... con compañía, número, horarios, localizador y asiento), alojamientos (con dirección, entrada/salida y nº de reserva) y puntos del itinerario. Ideal a partir de correos de reservas: mete todos los datos que tengas. Si ya existe un viaje con ese título o destino (y fechas compatibles) se completa ese en vez de crear otro; con id se cambia exactamente ese. Los transportes, alojamientos, itinerario y gastos se añaden a los que ya tenga; para corregir uno, pásalo con su id (lo ves en apartado viajes), y para quitarlo, su id en quitar. Queda en la bandeja hasta que el usuario lo valide.',
         inputSchema: {
             type: 'object',
             properties: {
-                id: { type: 'string', description: 'Solo para cambiar uno existente' }, destino: { type: 'string' }, titulo: { type: 'string' },
-                fecha_inicio: { type: 'string' }, fecha_fin: { type: 'string' }, acompanantes: { type: 'string' }, notas: { type: 'string' },
+                id: { type: 'string', description: 'Id de un viaje existente, para cambiar exactamente ese' }, destino: { type: 'string' }, titulo: { type: 'string' },
+                fecha_inicio: { type: 'string' }, fecha_fin: { type: 'string' }, acompanantes: { type: 'string' }, notas: { type: 'string', description: 'Sustituye las notas generales del viaje' },
                 gastos: { type: 'array', items: { type: 'object', properties: { concepto: { type: 'string' }, importe: { type: 'number' } } } },
+                transportes: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', description: 'Solo para corregir uno existente' }, tipo: { type: 'string', enum: ['avion', 'tren', 'bus', 'coche', 'barco', 'otro'] },
+                            compania: { type: 'string' }, numero: { type: 'string', description: 'Nº de vuelo, tren o línea' }, origen: { type: 'string' }, destino: { type: 'string' },
+                            salida: { type: 'string', description: 'AAAA-MM-DDTHH:MM (hora local del sitio)' }, llegada: { type: 'string', description: 'AAAA-MM-DDTHH:MM' },
+                            reserva: { type: 'string', description: 'Localizador' }, asiento: { type: 'string' }, notas: { type: 'string', description: 'Terminal, puerta, equipaje, escalas...' },
+                        },
+                    },
+                },
+                alojamientos: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', description: 'Solo para corregir uno existente' }, nombre: { type: 'string' }, direccion: { type: 'string' },
+                            entrada: { type: 'string', description: 'AAAA-MM-DD o AAAA-MM-DDTHH:MM (check-in)' }, salida: { type: 'string', description: 'AAAA-MM-DD o AAAA-MM-DDTHH:MM (check-out)' },
+                            reserva: { type: 'string', description: 'Nº de confirmación' }, notas: { type: 'string', description: 'Desayuno, contacto, cómo llegar, pagado o no...' },
+                        },
+                    },
+                },
+                itinerario: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string', description: 'Solo para corregir uno existente' }, dia: { type: 'string', description: 'AAAA-MM-DD' }, hora: { type: 'string', description: 'HH:MM' },
+                            titulo: { type: 'string' }, lugar: { type: 'string', description: 'Para situarlo en el mapa' }, notas: { type: 'string' },
+                        },
+                    },
+                },
+                quitar: { type: 'array', items: { type: 'string' }, description: 'Ids de transportes, alojamientos o puntos del itinerario que hay que quitar' },
             },
         },
     },
@@ -887,8 +941,14 @@ async function llamar(userId: string, nombre: string, a: any) {
             return resumenPeriodo(data, desde, hasta);
         }
         case 'viaje': {
-            const existente = a.id ? entradaPorTitulo(data, ['travel'], '', a.id) : null;
+            let existente = a.id ? entradaPorTitulo(data, ['travel'], '', a.id) : null;
             if (a.id && !existente) throw new Error('No encuentro ese viaje; busca su id con apartado viajes');
+            if (!existente) {
+                const viajes = (data.entries || []).filter((e: any) => e?.type === 'travel');
+                const casa = (e: any) => [a.titulo, a.destino].some(q => norm(q).trim() && (norm(e.title).includes(norm(q).trim()) || norm(e.destination).includes(norm(q).trim())));
+                const fechasCompatibles = (e: any) => !esFecha(a.fecha_inicio) || !e.startDate || (a.fecha_inicio <= (e.endDate || e.startDate) && (a.fecha_fin || a.fecha_inicio) >= e.startDate);
+                existente = viajes.find((e: any) => casa(e) && fechasCompatibles(e)) || null;
+            }
             const datos: any = {};
             if (a.destino) datos.destination = String(a.destino);
             if (a.titulo || (!existente && a.destino)) datos.title = String(a.titulo || a.destino);
@@ -898,13 +958,35 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (a.acompanantes !== undefined) datos.companions = String(a.acompanantes || '');
             if (a.notas !== undefined) datos.notes = String(a.notas || '');
             if (Array.isArray(a.gastos)) datos.expenses = [...(existente?.expenses || []), ...a.gastos.filter((g: any) => g && g.concepto).map((g: any) => ({ description: String(g.concepto), amount: Math.abs(Number(g.importe) || 0) }))];
+            const quitar = new Set((Array.isArray(a.quitar) ? a.quitar : []).map(String));
+            const lista = (k: string, nuevos: unknown, prefijo: string, normal: (x: any) => any, clave: (x: any) => string) => {
+                const actual = existente?.[k] || [];
+                const items = Array.isArray(nuevos) ? nuevos.filter((x: any) => x && typeof x === 'object').map((x: any) => ({ id: txt(x.id), ...normal(x) })) : [];
+                if (!items.length && !actual.some((x: any) => quitar.has(x.id))) return;
+                datos[k] = unirListaViaje(actual, items, prefijo, clave).filter((x: any) => !quitar.has(x.id));
+            };
+            lista('transportes', a.transportes, 'tr', x => ({
+                tipo: ['avion', 'tren', 'bus', 'coche', 'barco', 'otro'].includes(x.tipo) ? x.tipo : (x.tipo ? 'otro' : undefined),
+                compania: txt(x.compania), numero: txt(x.numero), origen: txt(x.origen), destino: txt(x.destino),
+                salida: fechaHora(x.salida) || undefined, llegada: fechaHora(x.llegada) || undefined, reserva: txt(x.reserva), asiento: txt(x.asiento), notas: txt(x.notas),
+            }), x => x.numero && x.salida ? norm(x.numero).replace(/\s/g, '') + '|' + String(x.salida).slice(0, 10) : '');
+            lista('alojamientos', a.alojamientos, 'al', x => ({
+                nombre: txt(x.nombre), direccion: txt(x.direccion), entrada: fechaHora(x.entrada) || undefined, salida: fechaHora(x.salida) || undefined, reserva: txt(x.reserva), notas: txt(x.notas),
+            }), x => x.nombre ? norm(x.nombre).trim() + '|' + String(x.entrada || '').slice(0, 10) : '');
+            lista('itinerario', a.itinerario, 'it', x => ({
+                dia: esFecha(x.dia) ? x.dia : undefined, hora: /^\d{1,2}:\d{2}$/.test(String(x.hora || '')) ? String(x.hora).padStart(5, '0') : undefined,
+                titulo: txt(x.titulo), lugar: txt(x.lugar), notas: txt(x.notas),
+            }), x => x.titulo ? norm(x.titulo).trim() + '|' + (x.dia || '') : '');
+            if (datos.transportes?.some((x: any) => !x.origen && !x.destino)) throw new Error('Cada transporte nuevo necesita al menos origen o destino');
+            if (datos.alojamientos?.some((x: any) => !x.nombre)) throw new Error('Cada alojamiento nuevo necesita nombre');
+            if (datos.itinerario?.some((x: any) => !x.titulo)) throw new Error('Cada punto del itinerario necesita título');
             if (existente) {
                 if (!Object.keys(datos).length) throw new Error('No hay nada que cambiar');
                 await encolar(userId, { tipo: 'entrada_editar', entryType: 'travel', id: existente.id, datos, resumen: existente.title });
-                return `Cambio propuesto para el viaje «${existente.title}».${PENDIENTE}`;
+                return `Cambio propuesto para el viaje «${existente.title}» (${existente.id})${a.id ? '' : ', que ya existía'}.${PENDIENTE}`;
             }
             if (!datos.title) throw new Error('Falta el destino');
-            await encolar(userId, { tipo: 'entrada_crear', entryType: 'travel', datos: { destination: '', startDate: '', endDate: '', date: '', companions: '', notes: '', expenses: [], ...datos } });
+            await encolar(userId, { tipo: 'entrada_crear', entryType: 'travel', datos: { destination: '', startDate: '', endDate: '', date: '', companions: '', notes: '', expenses: [], transportes: [], alojamientos: [], itinerario: [], ...datos } });
             return `Viaje propuesto: «${datos.title}»${datos.startDate ? ` del ${datos.startDate}` : ''}${datos.endDate ? ` al ${datos.endDate}` : ''}.${PENDIENTE}`;
         }
         case 'suscripcion': {

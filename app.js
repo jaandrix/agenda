@@ -9030,10 +9030,13 @@
             if (!Array.isArray(t.places)) t.places = [];
             if (!Array.isArray(t.itinerario)) t.itinerario = [];
             if (!Array.isArray(t.listas)) t.listas = [];
+            if (!Array.isArray(t.transportes)) t.transportes = [];
+            if (!Array.isArray(t.alojamientos)) t.alojamientos = [];
 
             const status = tripStatus(t);
             const tabs = [
                 { id: 'resumen', label: 'Resumen' },
+                { id: 'reservas', label: 'Reservas', count: t.transportes.length + t.alojamientos.length },
                 { id: 'lugares', label: 'Lugares', count: t.places.length },
                 { id: 'itinerario', label: 'Itinerario', count: t.itinerario.length },
                 { id: 'mapa', label: 'Mapa', count: t.itinerario.filter(i => i.lat && i.lon).length },
@@ -9043,6 +9046,7 @@
 
             let body = '';
             if (tripManagerTab === 'resumen') body = renderTripResumenTab(t);
+            else if (tripManagerTab === 'reservas') body = renderTripReservasTab(t);
             else if (tripManagerTab === 'lugares') body = renderTripPlacesTab(t);
             else if (tripManagerTab === 'itinerario') body = renderTripItineraryTab(t);
             else if (tripManagerTab === 'mapa') body = renderTripMapTab(t);
@@ -9078,6 +9082,7 @@
             const itemsHechos = t.listas.reduce((s, l) => s + (l.items || []).filter(i => i.hecho).length, 0);
             return `
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px">
+                    <div class="card"><div class="card-title">Reservas</div><div class="card-value">${t.transportes.length + t.alojamientos.length}</div></div>
                     <div class="card"><div class="card-title">Lugares</div><div class="card-value">${t.places.filter(p => p.visitado).length}/${t.places.length}</div></div>
                     <div class="card"><div class="card-title">Itinerario</div><div class="card-value">${t.itinerario.length}</div></div>
                     <div class="card"><div class="card-title">Preparativos</div><div class="card-value">${itemsHechos}/${itemsTotal}</div></div>
@@ -9086,6 +9091,137 @@
                 ${t.companions ? `<div class="entry-detail-field" style="margin-bottom:12px"><div class="entry-detail-label">Viajé con</div><div class="entry-detail-value">${escapeHtml(t.companions)}</div></div>` : ''}
                 ${t.notes ? `<div class="entry-detail-field"><div class="entry-detail-label">Notas</div><div class="entry-detail-value">${linkifyText(t.notes)}</div></div>` : '<div class="empty-state"><div class="empty-title">Sin notas todavía</div><div class="empty-sub">Pulsa "Editar" arriba para añadir notas generales del viaje.</div></div>'}
             `;
+        }
+
+        // ---- Reservas: transportes y alojamientos ----
+        const TRANSPORTE_TIPOS = { avion: 'avión', tren: 'tren', bus: 'autobús', coche: 'coche', barco: 'barco', otro: 'otro' };
+        function fechaHoraViaje(v) {
+            if (!v) return '';
+            const [d, h] = String(v).split('T');
+            const f = /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) : d;
+            return f + (h ? ' · ' + h.slice(0, 5) : '');
+        }
+        function renderTripReservasTab(t) {
+            const transportes = [...t.transportes].sort((a, b) => (a.salida || '').localeCompare(b.salida || ''));
+            const alojamientos = [...t.alojamientos].sort((a, b) => (a.entrada || '').localeCompare(b.entrada || ''));
+            const dato = (k, v) => v ? `<div class="viaje-reserva-dato"><span>${k}</span>${escapeHtml(v)}</div>` : '';
+            return `
+                <div class="viaje-reservas-cabecera">
+                    <div class="viaje-reservas-titulo">transportes.</div>
+                    <button class="btn-secondary" style="width:auto" onclick="openAddTransporte('${t.id}')">+ Añadir</button>
+                </div>
+                ${transportes.length ? transportes.map(x => `
+                    <div class="card viaje-reserva">
+                        <div class="viaje-reserva-top">
+                            <div style="min-width:0">
+                                <div class="viaje-reserva-meta">${escapeHtml(TRANSPORTE_TIPOS[x.tipo] || x.tipo || 'transporte')}${x.compania ? ' · ' + escapeHtml(x.compania) : ''}${x.numero ? ' · ' + escapeHtml(x.numero) : ''}</div>
+                                <div class="viaje-reserva-ruta">${escapeHtml(x.origen || '?')} → ${escapeHtml(x.destino || '?')}</div>
+                            </div>
+                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteTripReserva('${t.id}','transportes','${x.id}')">✕</button>
+                        </div>
+                        <div class="viaje-reserva-datos">
+                            ${dato('salida', fechaHoraViaje(x.salida))}
+                            ${dato('llegada', fechaHoraViaje(x.llegada))}
+                            ${dato('reserva', x.reserva)}
+                            ${dato('asiento', x.asiento)}
+                        </div>
+                        ${x.notas ? `<div class="viaje-reserva-notas">${linkifyText(x.notas)}</div>` : ''}
+                    </div>
+                `).join('') : '<div class="viaje-reservas-vacio">Sin transportes todavía.</div>'}
+                <div class="viaje-reservas-cabecera" style="margin-top:22px">
+                    <div class="viaje-reservas-titulo">alojamiento.</div>
+                    <button class="btn-secondary" style="width:auto" onclick="openAddAlojamiento('${t.id}')">+ Añadir</button>
+                </div>
+                ${alojamientos.length ? alojamientos.map(x => `
+                    <div class="card viaje-reserva">
+                        <div class="viaje-reserva-top">
+                            <div style="min-width:0">
+                                <div class="viaje-reserva-ruta">${escapeHtml(x.nombre || 'alojamiento')}</div>
+                                ${x.direccion ? `<div class="viaje-reserva-meta" style="margin-top:2px">${escapeHtml(x.direccion)}</div>` : ''}
+                            </div>
+                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteTripReserva('${t.id}','alojamientos','${x.id}')">✕</button>
+                        </div>
+                        <div class="viaje-reserva-datos">
+                            ${dato('entrada', fechaHoraViaje(x.entrada))}
+                            ${dato('salida', fechaHoraViaje(x.salida))}
+                            ${dato('reserva', x.reserva)}
+                        </div>
+                        ${x.notas ? `<div class="viaje-reserva-notas">${linkifyText(x.notas)}</div>` : ''}
+                    </div>
+                `).join('') : '<div class="viaje-reservas-vacio">Sin alojamiento todavía.</div>'}
+            `;
+        }
+        function openAddTransporte(tripId) {
+            showModal(`
+                <div class="modal-title">transporte.</div>
+                <div class="modal-row">
+                    <div><div class="modal-label">Tipo</div><select id="tr-tipo" class="modal-input">${Object.entries(TRANSPORTE_TIPOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
+                    <div><div class="modal-label">Compañía</div><input id="tr-compania" class="modal-input" placeholder="Iberia, Renfe..."></div>
+                </div>
+                <div class="modal-row">
+                    <div><div class="modal-label">Origen</div><input id="tr-origen" class="modal-input" placeholder="Madrid"></div>
+                    <div><div class="modal-label">Destino</div><input id="tr-destino" class="modal-input" placeholder="Roma"></div>
+                </div>
+                <div class="modal-row">
+                    <div><div class="modal-label">Salida</div><input type="datetime-local" id="tr-salida" class="modal-input"></div>
+                    <div><div class="modal-label">Llegada</div><input type="datetime-local" id="tr-llegada" class="modal-input"></div>
+                </div>
+                <div class="modal-row">
+                    <div><div class="modal-label">Nº de vuelo / tren</div><input id="tr-numero" class="modal-input"></div>
+                    <div><div class="modal-label">Reserva</div><input id="tr-reserva" class="modal-input" placeholder="Localizador"></div>
+                </div>
+                <div class="modal-label">Asiento (opcional)</div><input id="tr-asiento" class="modal-input">
+                <div class="modal-label">Notas (opcional)</div><textarea id="tr-notas" class="modal-input" rows="2" placeholder="Terminal, equipaje, puerta..."></textarea>
+                <button class="btn-modal-primary" onclick="saveTripReserva('${tripId}','transportes')">Guardar</button>
+            `);
+        }
+        function openAddAlojamiento(tripId) {
+            showModal(`
+                <div class="modal-title">alojamiento.</div>
+                <div class="modal-label">Nombre</div><input id="al-nombre" class="modal-input" placeholder="Hotel, apartamento...">
+                <div class="modal-label">Dirección (opcional)</div><input id="al-direccion" class="modal-input">
+                <div class="modal-row">
+                    <div><div class="modal-label">Entrada</div><input type="datetime-local" id="al-entrada" class="modal-input"></div>
+                    <div><div class="modal-label">Salida</div><input type="datetime-local" id="al-salida" class="modal-input"></div>
+                </div>
+                <div class="modal-label">Reserva (opcional)</div><input id="al-reserva" class="modal-input" placeholder="Nº de confirmación">
+                <div class="modal-label">Notas (opcional)</div><textarea id="al-notas" class="modal-input" rows="2" placeholder="Check-in, desayuno, contacto..."></textarea>
+                <button class="btn-modal-primary" onclick="saveTripReserva('${tripId}','alojamientos')">Guardar</button>
+            `);
+        }
+        async function saveTripReserva(tripId, lista) {
+            const t = getTrip(tripId); if (!t) return;
+            const v = id => document.getElementById(id)?.value.trim() || '';
+            const item = lista === 'transportes'
+                ? { tipo: v('tr-tipo'), compania: v('tr-compania'), numero: v('tr-numero'), origen: v('tr-origen'), destino: v('tr-destino'), salida: v('tr-salida'), llegada: v('tr-llegada'), reserva: v('tr-reserva'), asiento: v('tr-asiento'), notas: v('tr-notas') }
+                : { nombre: v('al-nombre'), direccion: v('al-direccion'), entrada: v('al-entrada'), salida: v('al-salida'), reserva: v('al-reserva'), notas: v('al-notas') };
+            if (lista === 'transportes' ? !(item.origen || item.destino) : !item.nombre) { showToast(lista === 'transportes' ? 'Indica origen o destino' : 'Escribe el nombre', true); return; }
+            if (!Array.isArray(t[lista])) t[lista] = [];
+            t[lista].push({ id: (lista === 'transportes' ? 'tr_' : 'al_') + Date.now() + '_' + Math.random().toString(36).slice(2, 6), ...item });
+            closeModal();
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
+        async function deleteTripReserva(tripId, lista, itemId) {
+            const t = getTrip(tripId); if (!t) return;
+            t[lista] = (t[lista] || []).filter(x => x.id !== itemId);
+            try { await saveData(); } catch (e) { console.error(e); }
+            render();
+        }
+
+        // Los puntos del itinerario que llegan por el conector traen el
+        // lugar sin coordenadas: se localizan al aplicarse, uno a uno
+        // (Nominatim pide no más de una consulta por segundo).
+        async function geocodificarItinerarioViaje(t) {
+            const pendientes = (t?.itinerario || []).filter(i => i.lugar && !i.lat);
+            if (!pendientes.length) return;
+            for (const it of pendientes) {
+                const c = await geocodePlace(it.lugar);
+                if (c) { it.lat = c.lat; it.lon = c.lon; }
+                await new Promise(r => setTimeout(r, 1100));
+            }
+            try { await saveData(); } catch (e) { console.error(e); }
+            if (window._openTripId === t.id) render();
         }
 
         // ---- Lugares ----
@@ -19632,6 +19768,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 delete datos.sinValidar;
                 entries.push({ id: ref, type: op.entryType, categoryId: getCategoryIdForType(op.entryType), tags: [], ...datos });
                 filteredEntries = [...entries];
+                if (op.entryType === 'travel') geocodificarItinerarioViaje(entries[entries.length - 1]);
                 return linea(ENTRADA_TIPO_REGISTRO[op.entryType] || 'entrada', `${ENTRADA_NOMBRE[op.entryType] || 'entrada'} «${corto(datos.title)}»${op.entryType === 'travel' && datos.date ? ' · ' + datos.date : ''}${op.entryType === 'document' && datos.date ? ' · caduca ' + datos.date : ''}${op.entryType === 'birthday' && datos.date ? ' · ' + datos.date.slice(8) + '/' + datos.date.slice(5, 7) : ''}${op.entryType === 'subscription' || op.entryType === 'fixed_expense' ? ` · ${financeMoney(datos.amount)} el día ${datos.renewalDay}` : ''}.`, { accion: 'quitar', coleccion: 'evento', id: ref });
             }
             if (op.tipo === 'entrada_editar') {
@@ -19641,8 +19778,9 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 Object.keys(op.datos || {}).forEach(k => { antes[k] = e[k]; });
                 Object.assign(e, op.datos || {});
                 filteredEntries = [...entries];
+                if (op.entryType === 'travel') geocodificarItinerarioViaje(e);
                 const d = op.datos || {};
-                const que = [d.active === false ? 'baja' : d.active === true ? 'reactivada' : '', d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `${d.currentValue}${e.targetValue ? ' de ' + e.targetValue : ''} ${e.unit || ''}`.trim() : '', d.status || '', d.startDate || d.endDate ? [d.startDate, d.endDate].filter(Boolean).join(' → ') : '', d.expenses ? 'gastos actualizados' : ''].filter(Boolean).join(', ');
+                const que = [d.active === false ? 'baja' : d.active === true ? 'reactivada' : '', d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `${d.currentValue}${e.targetValue ? ' de ' + e.targetValue : ''} ${e.unit || ''}`.trim() : '', d.status || '', d.startDate || d.endDate ? [d.startDate, d.endDate].filter(Boolean).join(' → ') : '', d.expenses ? 'gastos actualizados' : '', ...reservasTexto(d, antes)].filter(Boolean).join(', ');
                 return linea(ENTRADA_TIPO_REGISTRO[op.entryType] || 'cambio', `${ENTRADA_NOMBRE[op.entryType] || 'entrada'} «${corto(e.title)}»: ${que || 'cambiado'}.`, { accion: 'restaurar', id: e.id, antes });
             }
             if (op.tipo === 'deseo') {
@@ -19965,6 +20103,18 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             }
         }
 
+        function detalleReservas(d, antes = {}) {
+            const nuevos = k => (d[k] || []).filter(x => !(antes[k] || []).some(y => y.id === x.id && JSON.stringify(y) === JSON.stringify(x)));
+            return [
+                ...nuevos('transportes').map(x => `${TRANSPORTE_TIPOS[x.tipo] || x.tipo || 'transporte'} ${x.origen || '?'} → ${x.destino || '?'}${x.salida ? ' · ' + fechaHoraViaje(x.salida) : ''}${x.numero ? ' · ' + x.numero : ''}`),
+                ...nuevos('alojamientos').map(x => `${x.nombre}${x.entrada ? ' · ' + fechaHoraViaje(x.entrada) : ''}${x.salida ? ' → ' + fechaHoraViaje(x.salida) : ''}`),
+                ...nuevos('itinerario').map(x => `${x.dia || ''}${x.hora ? ' ' + x.hora : ''} ${x.titulo}`.trim()),
+            ].join('\n');
+        }
+        function reservasTexto(d, antes = {}) {
+            const n = (k, uno, varios) => { const x = (d[k]?.length || 0) - (antes[k]?.length || 0); return x > 0 ? `${x} ${x === 1 ? uno : varios}` : d[k] ? `${varios} actualizados` : ''; };
+            return [n('transportes', 'transporte', 'transportes'), n('alojamientos', 'alojamiento', 'alojamientos'), n('itinerario', 'punto de itinerario', 'puntos de itinerario')];
+        }
         const ENTRADA_NOMBRE = { travel: 'viaje', subscription: 'suscripción', fixed_expense: 'gasto fijo', goal: 'objetivo', birthday: 'cumpleaños', document: 'documento' };
         const ENTRADA_TIPO_REGISTRO = { travel: 'viaje', subscription: 'suscripción', fixed_expense: 'gasto fijo', goal: 'objetivo', birthday: 'cumpleaños', document: 'documento' };
         const ENTRADA_APARTADO = { travel: 'viajes', subscription: 'finanzas', fixed_expense: 'finanzas', goal: 'objetivos', birthday: 'cumpleaños', document: 'documentos' };
@@ -20004,17 +20154,17 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 case 'entrada_crear': {
                     const d = op.datos || {};
                     const nombre = ENTRADA_NOMBRE[op.entryType] || 'entrada';
-                    const meta = op.entryType === 'travel' ? [d.startDate && fecha(d.startDate), d.endDate && '→ ' + fecha(d.endDate), d.companions && 'con ' + d.companions, d.expenses?.length ? `${d.expenses.length} gasto${d.expenses.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')
+                    const meta = op.entryType === 'travel' ? [d.startDate && fecha(d.startDate), d.endDate && '→ ' + fecha(d.endDate), d.companions && 'con ' + d.companions, d.expenses?.length ? `${d.expenses.length} gasto${d.expenses.length === 1 ? '' : 's'}` : '', ...reservasTexto(d)].filter(Boolean).join(' · ')
                         : op.entryType === 'subscription' || op.entryType === 'fixed_expense' ? `${financeMoney(d.amount)} · día ${d.renewalDay} de cada mes${d.proAccount ? ' · ' + (financePro.accounts[d.proAccount]?.name || d.proAccount) : ''}${d.vigilar ? ' · avisar si no llega' : ''}`
                         : op.entryType === 'goal' ? [d.goalType === 'numeric' ? `${d.currentValue ?? 0} de ${d.targetValue ?? '?'} ${d.unit || ''}`.trim() : '', { short: 'corto plazo', medium: 'medio plazo', long: 'largo plazo' }[d.term] || '', d.milestones?.length ? `${d.milestones.length} hitos` : ''].filter(Boolean).join(' · ')
                         : op.entryType === 'birthday' ? fecha(d.birthDate)
                         : op.entryType === 'document' ? [d.docTipo, d.date ? 'caduca ' + fecha(d.date) : 'sin fecha', d.url ? 'con enlace' : ''].filter(Boolean).join(' · ') : '';
-                    return { tipo: `nuevo ${nombre}`.replace('nuevo suscripción', 'nueva suscripción'), texto: `«${d.title || ''}»`, meta, detalle: d.notes || (d.expenses?.length ? d.expenses.map(g => `${g.description}: ${financeMoney(g.amount)}`).join('\n') : '') };
+                    return { tipo: `nuevo ${nombre}`.replace('nuevo suscripción', 'nueva suscripción'), texto: `«${d.title || ''}»`, meta, detalle: (op.entryType === 'travel' && detalleReservas(d)) || d.notes || (d.expenses?.length ? d.expenses.map(g => `${g.description}: ${financeMoney(g.amount)}`).join('\n') : '') };
                 }
                 case 'entrada_editar': {
                     const d = op.datos || {};
                     const nombre = ENTRADA_NOMBRE[op.entryType] || 'entrada';
-                    return { tipo: d.active === false ? `baja de ${nombre}` : d.active === true ? `reactivar ${nombre}` : `cambio de ${nombre}`, texto: `«${op.resumen}»`, meta: [d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `progreso ${d.currentValue}${d.targetValue !== undefined ? ' de ' + d.targetValue : ''}` : '', d.status || '', d.startDate ? fecha(d.startDate) : '', d.endDate ? '→ ' + fecha(d.endDate) : '', d.expenses ? 'gastos' : '', d.notes !== undefined ? 'notas' : ''].filter(Boolean).join(' · ') };
+                    return { tipo: d.active === false ? `baja de ${nombre}` : d.active === true ? `reactivar ${nombre}` : `cambio de ${nombre}`, texto: `«${op.resumen}»`, meta: [d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `progreso ${d.currentValue}${d.targetValue !== undefined ? ' de ' + d.targetValue : ''}` : '', d.status || '', d.startDate ? fecha(d.startDate) : '', d.endDate ? '→ ' + fecha(d.endDate) : '', d.expenses ? 'gastos' : '', d.notes !== undefined ? 'notas' : '', ...(op.entryType === 'travel' ? reservasTexto(d, entries.find(x => x.id === op.id) || {}) : [])].filter(Boolean).join(' · '), detalle: op.entryType === 'travel' ? detalleReservas(d, entries.find(x => x.id === op.id) || {}) : '' };
                 }
                 case 'deseo': return { tipo: op.accion === 'quitar' ? 'quitar deseo' : 'nuevo deseo', texto: `«${op.titulo}»`, meta: op.precio ? financeMoney(op.precio) : '' };
                 case 'habito': return { tipo: op.accion === 'crear' ? 'nuevo hábito' : op.activo ? 'reactivar hábito' : 'pausar hábito', texto: `«${op.texto}»`, meta: '' };

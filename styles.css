@@ -5949,7 +5949,7 @@ body.papel .doc-ficha.caducada .doc-ficha-estado { color: #a3243b; }
 
 /* Tiempo en el Home: icono sólido sin fondo y la temperatura, a la derecha
    de la fila de vistas del calendario. */
-.tiempo-widget { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 2px; border: 0; background: none; color: var(--text-primary); font-family: var(--font-family); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; }
+.tiempo-widget { position: relative; top: -6px; margin-left: auto; display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 2px; border: 0; background: none; color: var(--text-primary); font-family: var(--font-family); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; }
 .tiempo-widget svg { display: block; }
 .tiempo-widget:empty { width: 1px; }
 .mobile-tiempo-fila { display: flex; justify-content: flex-end; margin: -4px 0 6px; }
@@ -5964,4 +5964,17 @@ body.papel .doc-ficha.caducada .doc-ficha-estado { color: #a3243b; }
 .tiempo-dia small { font-size: 11.5px; color: var(--text-secondary); margin-top: -4px; }
 .tiempo-ciudad-opcion { display: flex; flex-direction: column; align-items: flex-start; width: 100%; padding: 9px 4px; border: 0; border-top: 1px solid var(--border); background: none; font-family: var(--font-family); font-size: 13px; font-weight: 600; color: var(--text-primary); cursor: pointer; text-align: left; }
 .tiempo-ciudad-opcion small { font-size: 11px; font-weight: 400; color: var(--text-secondary); }
+
+/* Viajes → Reservas */
+.viaje-reservas-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.viaje-reservas-titulo { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.viaje-reservas-vacio { font-size: 12.5px; color: var(--text-secondary); padding: 6px 0 4px; }
+.viaje-reserva { margin-bottom: 10px; }
+.viaje-reserva-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.viaje-reserva-meta { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+.viaje-reserva-ruta { margin-top: 2px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.viaje-reserva-datos { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; }
+.viaje-reserva-dato { font-size: 12.5px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.viaje-reserva-dato span { display: block; font-size: 10.5px; color: var(--text-secondary); }
+.viaje-reserva-notas { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
 
