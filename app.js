@@ -1160,8 +1160,8 @@
         function renderNavButtons(sections, mobile) {
             return sections.map(sec => `<span class="nav-label">${escapeHtml(sec.label)}</span>` +
                 sec.items.filter(i => !isSectionHidden(i.view)).map(i => mobile
-                    ? `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}">${escapeHtml(i.text)}</button>`
-                    : `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span>${i.view === 'bandeja' && bandejaPendiente.length ? `<span class="nav-bandeja-badge">${bandejaPendiente.length}</span>` : ''}</button>`
+                    ? `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}">${escapeHtml(i.text)}${i.view === 'bandeja' && bandejaPendiente.length ? ` <span class="nav-bandeja-badge">(${bandejaPendiente.length})</span>` : ''}</button>`
+                    : `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span>${i.view === 'bandeja' && bandejaPendiente.length ? `<span class="nav-bandeja-badge">(${bandejaPendiente.length})</span>` : ''}</button>`
                 ).join('')
             ).join('');
         }

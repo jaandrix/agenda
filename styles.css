@@ -5890,7 +5890,12 @@ body.papel .anual-overlay.abierto { background:rgba(250,248,245,.35); }
 .bandeja-hist-fila.deshecho .bandeja-hist-texto, .bandeja-hist-fila.descartado .bandeja-hist-texto { text-decoration: line-through; color: var(--text-muted); }
 .bandeja-hist-deshacer { padding: 0; border: 0; background: none; font-family: var(--font-family); font-size: 11.5px; font-weight: 700; color: var(--text-primary); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .bandeja-vacia-linea { padding: 14px; font-size: 12.5px; color: var(--text-secondary); }
-.nav-bandeja-badge { margin-left: 8px; padding: 0 6px; border: 1.5px solid currentColor; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px; font-weight: 700; line-height: 16px; }
+/* Pendientes de la bandeja en el menú: el número entre paréntesis en el
+   granate de lo que "se arrastra" en el planificador (algo que espera por
+   ti); en el tema oscuro, más claro para que se lea sobre la barra. */
+.nav-bandeja-badge { margin-left: 5px; margin-right: auto; font-weight: 700; font-variant-numeric: tabular-nums; color: #d4536b; }
+body.papel .nav-bandeja-badge { color: #a3243b; }
+.sidebar-nav button .nav-text:has(+ .nav-bandeja-badge) { flex: 0 1 auto; }
 @media (max-width: 640px) {
     .bandeja-cabecera { flex-direction: column; align-items: flex-start; }
     .bandeja-contador { flex-direction: row; align-items: baseline; gap: 8px; }
