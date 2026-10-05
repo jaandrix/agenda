@@ -656,8 +656,8 @@ const HERRAMIENTAS = [
     },
     {
         name: 'avisar',
-        description: 'Manda ahora mismo una notificación push al móvil o al ordenador del usuario a través de Bitácora. Para avisos de verdad útiles (algo que no ha llegado, un plazo que vence, lo que pidió que le recordaras), sobre todo desde tareas programadas. Úsalo con mesura: nunca para resúmenes rutinarios.',
-        inputSchema: { type: 'object', properties: { titulo: { type: 'string' }, texto: { type: 'string' } }, required: ['titulo'] },
+        description: 'Manda ahora mismo una notificación push al móvil o al ordenador del usuario a través de Bitácora. Para avisos de verdad útiles (algo que no ha llegado, un plazo que vence, lo que pidió que le recordaras), sobre todo desde tareas programadas. Úsalo con mesura: nunca para resúmenes rutinarios. El sistema ya muestra que viene de Bitácora: el título dice de qué va (corto, en minúscula y con punto, como "fondo indexado." o "examen de sostenibilidad."), nunca "bitácora"; el texto, el detalle en una o dos frases.',
+        inputSchema: { type: 'object', properties: { titulo: { type: 'string', description: 'De qué va, sin repetir "bitácora"' }, texto: { type: 'string' } }, required: ['texto'] },
     },
     {
         name: 'objetivo',
@@ -991,12 +991,17 @@ async function llamar(userId: string, nombre: string, a: any) {
             return `Propuesto ${a.accion === 'reactivar' ? 'reactivar' : 'pausar'} «${t.texto}».${PENDIENTE}`;
         }
         case 'avisar': {
-            if (!a.titulo) throw new Error('Falta el título del aviso');
+            // El iPhone ya pone "from Bitácora" debajo del título: si el
+            // título es "bitácora" o no hay, el texto pasa a ser el título.
+            let titulo = String(a.titulo || '').trim();
+            let texto = String(a.texto || '').trim();
+            if (!titulo || /^bit[aá]cora\.?$/i.test(titulo)) { titulo = texto; texto = ''; }
+            if (!titulo) throw new Error('Falta el texto del aviso');
             const secreto = Deno.env.get('INTERNAL_PUSH_SECRET') || '';
             const res = await fetch(Deno.env.get('SUPABASE_URL') + '/functions/v1/send-push', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-internal-secret': secreto, Authorization: 'Bearer ' + Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') },
-                body: JSON.stringify({ user_id: userId, title: String(a.titulo).slice(0, 80), body: String(a.texto || '').slice(0, 240), url: '/', tag: 'claude' }),
+                body: JSON.stringify({ user_id: userId, title: titulo.slice(0, 80), body: texto.slice(0, 240), url: '/', tag: 'claude' }),
             });
             const r = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error('No se pudo enviar el aviso: ' + (r.error || res.status));
