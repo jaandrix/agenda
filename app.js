@@ -11731,14 +11731,17 @@
             } catch (e) { return 'unsupported'; }
         }
 
-        async function enablePushNotifications() {
+        async function enablePushNotifications(permisoPedido) {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 showToast('Este navegador no soporta notificaciones push', true);
                 return false;
             }
             try {
-                const permission = await Notification.requestPermission();
-                if (permission !== 'granted') { showToast('No se han activado las notificaciones', true); return false; }
+                const permission = await (permisoPedido || Notification.requestPermission());
+                if (permission !== 'granted') {
+                    showToast(permission === 'denied' ? 'Permiso denegado: actívalo en Ajustes del iPhone → Notificaciones → Bitácora' : 'No se han activado las notificaciones', true);
+                    return false;
+                }
                 const reg = await serviceWorkerListo();
                 if (!reg) { showToast('No se pudo preparar el servicio de notificaciones', true); return false; }
                 let sub = await reg.pushManager.getSubscription();
@@ -11782,11 +11785,20 @@
             }
         }
 
-        async function togglePushNotifications() {
-            const status = await pushNotificationsStatus();
-            if (status === 'enabled') await disablePushNotifications();
-            else await enablePushNotifications();
-            loadSettingsPushInfo();
+        // iOS solo enseña el aviso de permiso si se pide dentro del propio
+        // toque: antes se consultaba primero el estado (asíncrono, espera al
+        // service worker) y cuando llegaba la petición iOS ya no la daba por
+        // parte del gesto y la rechazaba sin preguntar ("No se han activado
+        // las notificaciones"). Se decide con el estado ya pintado y el
+        // permiso se pide lo primero, sin nada que esperar delante.
+        let pushEstadoActual = null;
+        function togglePushNotifications() {
+            if (pushEstadoActual === 'enabled') {
+                disablePushNotifications().then(loadSettingsPushInfo);
+                return;
+            }
+            const permiso = typeof Notification !== 'undefined' ? Notification.requestPermission() : Promise.resolve('denied');
+            enablePushNotifications(permiso).then(loadSettingsPushInfo);
         }
 
         function renderPushSettingsBody(status) {
@@ -11795,7 +11807,8 @@
                 return `<div style="font-size:12.5px;color:var(--text-secondary)">${iosSinInstalar ? 'En el iPhone, las notificaciones solo funcionan con Bitácora añadida a la pantalla de inicio: Compartir → «Añadir a pantalla de inicio», y ábrela desde ese icono.' : 'Este navegador no soporta notificaciones push.'}</div>`;
             }
             if (status === 'denied') {
-                return `<div style="font-size:12.5px;color:var(--text-secondary)">Bloqueadas desde los ajustes del navegador/sistema — actívalas ahí para poder usarlas aquí.</div>`;
+                const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+                return `<div style="font-size:12.5px;color:var(--text-secondary)">${ios ? 'Bloqueadas en el iPhone: ve a Ajustes del iPhone → Notificaciones → Bitácora y activa «Permitir notificaciones». Después vuelve aquí.' : 'Bloqueadas desde los ajustes del navegador/sistema — actívalas ahí para poder usarlas aquí.'}</div>`;
             }
             if (status === 'sin-sw') {
                 return `<div style="font-size:12.5px;color:var(--text-secondary)">No se ha podido preparar el servicio de notificaciones. Cierra Bitácora del todo y vuelve a abrirla desde el icono de inicio.</div>`;
@@ -11830,6 +11843,7 @@
             const body = cuerpoAjustes('settings-push-body');
             if (!body) return;
             const status = await pushNotificationsStatus();
+            pushEstadoActual = status;
             body.innerHTML = renderPushSettingsBody(status);
         }
 
