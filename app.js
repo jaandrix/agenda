@@ -3149,7 +3149,7 @@
                 const now = new Date();
                 const secondsElapsed = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
                 const pct = Math.min(100, Math.max(0, (secondsElapsed / 86400) * 100));
-                fill.style.width = pct.toFixed(1) + '%';
+                fill.style.transform = `scaleX(${(pct / 100).toFixed(4)})`;
                 pctEl.textContent = Math.round(pct) + '%';
             }
 
@@ -4973,7 +4973,7 @@
             const sheet = overlay.querySelector('.modal-sheet');
             if (cerrarFichaHaciaOrigen(container, sheet)) return;
             overlay.style.animation = 'modalOverlayOut 0.18s ease both';
-            if (sheet) sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.18s cubic-bezier(0.4,0,1,1) both`;
+            if (sheet) sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.18s var(--ease-out) both`;
             setTimeout(() => { if (container.contains(overlay)) container.innerHTML = ''; }, 170);
         }
 
