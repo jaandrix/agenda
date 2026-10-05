@@ -143,6 +143,10 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   partir de imágenes reales del usuario), tarjeta "próximo evento hoy." a dos
   columnas cuando hay varios (eventos normales / trabajos-exámenes).
 - **Versión móvil PWA:** ver arquitectura arriba.
+- **Conector Claude/ChatGPT y Bandeja:** `supabase/functions/bitacora-mcp` (servidor MCP)
+  escribe en `conector_bandeja`; la app aplica sola eventos, entradas con QR y Ocio
+  (`OPS_AUTOMATICAS`) y deja el resto en el apartado "bandeja." para validarlo a mano
+  (`aplicarOpConector` / `validarBandeja`). Historial con deshacer en `registroConector`.
 - **Amigos/social:** solicitudes de amistad, código de amigo, listas de ocio y viajes
   compartidos, recomendaciones entre amigos (tablas SQL en `supabase/sql/`).
 - **Resto de apartados** con su propio `renderXxx()`: Hábitos, Notas, Documentos,

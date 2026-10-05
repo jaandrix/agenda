@@ -5827,15 +5827,66 @@ body.papel .anual-overlay.abierto { background:rgba(250,248,245,.35); }
 .conector-pasos { margin:0; padding-left:20px; font-size:12.5px; line-height:1.6; color:var(--text-secondary); }
 .conector-pasos b { color:var(--text-primary); }
 
-/* Registro del conector ("claude." en Centro resumen) */
-.registro-dia { margin:14px 0 4px; font-size:12px; font-weight:700; color:var(--text-secondary); }
-.registro-fila { display:grid; grid-template-columns:auto minmax(0, 1fr) auto auto; align-items:center; gap:10px; padding:9px 10px; margin:0 -10px; border-radius:10px; background:var(--bg-card-hover); }
-.registro-fila + .registro-fila { margin-top:4px; }
-.registro-fila.revisado { background:none; }
-.registro-fila.deshecho .registro-texto { text-decoration:line-through; color:var(--text-muted); }
-.registro-tipo { font-size:10px; font-weight:700; letter-spacing:.3px; padding:2px 7px; border-radius:999px; border:1px solid var(--border-strong); color:var(--text-secondary); white-space:nowrap; }
-.registro-texto { font-size:12.5px; line-height:1.4; color:var(--text-primary); }
-.registro-hora { font-size:11px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
-.registro-deshacer { padding:0; border:0; background:none; font-family:var(--font-family); font-size:11.5px; font-weight:600; color:var(--text-primary); text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
-.registro-estado { font-size:11px; color:var(--text-muted); }
+/* BANDEJA — cambios de la IA pendientes de validar. Brutalista dentro
+   del lenguaje de la app: minúsculas con punto, sin color salvo el estado,
+   bordes de 2px con el color del texto y sombras duras desplazadas en vez
+   de difuminadas; los datos (horas, recuentos) en monoespaciada. Todo con
+   las variables del tema para que valga en asfalto, papel y acuarela. */
+.bandeja { max-width: 980px; --b: var(--text-primary); --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; }
+.bandeja-cabecera { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding-bottom: 18px; margin-bottom: 22px; border-bottom: 2px solid var(--b); }
+.bandeja-titulo { font-size: clamp(40px, 7vw, 64px); font-weight: 800; letter-spacing: -2.5px; line-height: .9; color: var(--text-primary); }
+.bandeja-sub { margin-top: 10px; max-width: 460px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.bandeja-contador { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; padding: 10px 14px 8px; border: 2px solid var(--b); font-family: var(--mono); color: var(--text-primary); }
+.bandeja-contador b { font-size: 34px; line-height: 1; font-weight: 700; }
+.bandeja-contador span { font-family: var(--font-family); font-size: 11px; font-weight: 700; margin-top: 4px; }
+.bandeja-contador.activo { background: var(--b); color: var(--bg-app); box-shadow: 5px 5px 0 #3b82f6; }
+.bandeja-globales { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+.bandeja-btn { padding: 9px 14px; border: 2px solid var(--b); border-radius: 0; font-family: var(--font-family); font-size: 12.5px; font-weight: 800; cursor: pointer; transition: transform .08s ease, box-shadow .08s ease; white-space: nowrap; }
+.bandeja-btn-validar { background: var(--b); color: var(--bg-app); box-shadow: 3px 3px 0 #3b82f6; }
+.bandeja-btn-descartar { background: transparent; color: var(--text-primary); box-shadow: 3px 3px 0 var(--b); }
+.bandeja-btn:hover { transform: translate(-1px, -1px); }
+.bandeja-btn-validar:hover { box-shadow: 4px 4px 0 #3b82f6; }
+.bandeja-btn-descartar:hover { box-shadow: 4px 4px 0 var(--b); }
+.bandeja-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 transparent; }
+.bandeja-grupo { margin-bottom: 26px; border: 2px solid var(--b); box-shadow: 6px 6px 0 var(--b); background: var(--bg-card); }
+.bandeja-grupo-cab, .bandeja-hist-cab { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--b); color: var(--bg-app); }
+.bandeja-grupo-nombre { font-size: 15px; font-weight: 800; letter-spacing: -.2px; }
+.bandeja-grupo-n { font-family: var(--mono); font-size: 12px; font-weight: 700; padding: 1px 7px; border: 1.5px solid currentColor; }
+.bandeja-grupo-btn { margin-left: auto; padding: 4px 9px; border: 1.5px solid currentColor; border-radius: 0; background: none; color: inherit; font-family: var(--font-family); font-size: 11.5px; font-weight: 700; cursor: pointer; }
+.bandeja-grupo-btn + .bandeja-grupo-btn { margin-left: 0; }
+.bandeja-grupo-btn:hover { background: var(--bg-app); color: var(--text-primary); }
+.bandeja-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 16px; padding: 14px; }
+.bandeja-item + .bandeja-item { border-top: 2px solid var(--b); }
+.bandeja-item-tipo { display: inline-block; margin-bottom: 6px; font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: .4px; color: var(--text-secondary); }
+.bandeja-item-texto { font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--text-primary); overflow-wrap: anywhere; }
+.bandeja-item-meta { margin-top: 4px; font-family: var(--mono); font-size: 11px; color: var(--text-secondary); }
+.bandeja-item-detalle { margin-top: 8px; }
+.bandeja-item-detalle summary { cursor: pointer; font-size: 11.5px; font-weight: 700; color: var(--text-primary); text-decoration: underline; text-underline-offset: 2px; list-style: none; }
+.bandeja-item-detalle summary::-webkit-details-marker { display: none; }
+.bandeja-item-detalle pre { margin: 8px 0 0; padding: 10px; border: 1.5px dashed var(--border-strong); font-family: var(--mono); font-size: 11px; line-height: 1.5; color: var(--text-primary); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow: auto; }
+.bandeja-item-acciones { display: flex; flex-direction: column; gap: 8px; }
+.bandeja-vacia { margin-bottom: 26px; padding: 26px 20px; border: 2px dashed var(--b); }
+.bandeja-vacia-titulo { font-size: 24px; font-weight: 800; letter-spacing: -.6px; color: var(--text-primary); }
+.bandeja-vacia-sub { margin-top: 6px; max-width: 520px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.bandeja-historial { border: 2px solid var(--b); }
+.bandeja-buscar { display: block; width: calc(100% - 28px); box-sizing: border-box; margin: 12px 14px 4px; border-radius: 0 !important; border: 2px solid var(--b) !important; }
+.bandeja-hist-fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px 14px; }
+.bandeja-hist-fila + .bandeja-hist-fila { border-top: 1px solid var(--border); }
+.bandeja-hist-cuando { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+.bandeja-hist-texto { font-size: 12.5px; line-height: 1.4; color: var(--text-primary); overflow-wrap: anywhere; }
+.bandeja-hist-origen { font-family: var(--mono); font-size: 10.5px; color: var(--text-secondary); white-space: nowrap; }
+.bandeja-hist-fila.deshecho .bandeja-hist-texto, .bandeja-hist-fila.descartado .bandeja-hist-texto { text-decoration: line-through; color: var(--text-muted); }
+.bandeja-hist-deshacer { padding: 0; border: 0; background: none; font-family: var(--font-family); font-size: 11.5px; font-weight: 700; color: var(--text-primary); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.bandeja-vacia-linea { padding: 14px; font-size: 12.5px; color: var(--text-secondary); }
+.nav-bandeja-badge { margin-left: 8px; padding: 0 6px; border: 1.5px solid currentColor; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px; font-weight: 700; line-height: 16px; }
+@media (max-width: 640px) {
+    .bandeja-cabecera { flex-direction: column; align-items: flex-start; }
+    .bandeja-contador { flex-direction: row; align-items: baseline; gap: 8px; }
+    .bandeja-item { grid-template-columns: 1fr; }
+    .bandeja-item-acciones { flex-direction: row; }
+    .bandeja-item-acciones .bandeja-btn { flex: 1; }
+    .bandeja-grupo { box-shadow: 4px 4px 0 var(--b); }
+    .bandeja-hist-fila { grid-template-columns: minmax(0, 1fr) auto; }
+    .bandeja-hist-cuando, .bandeja-hist-origen { grid-column: 1; }
+}
 

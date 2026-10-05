@@ -404,6 +404,9 @@
         // necesario para deshacerlo (ver aplicarOpConector). Lo más nuevo
         // primero; se guardan las últimas REGISTRO_CONECTOR_MAX.
         let registroConector = [];
+        // Cambios de la IA que esperan validación en "bandeja." (filas de
+        // conector_bandeja que no se aplican solas, ver OPS_AUTOMATICAS).
+        let bandejaPendiente = [];
         let plannedTrips = [];
         let apuntes = [];
         // Tareas semanales: recordatorios activos de la semana actual.
@@ -604,6 +607,7 @@
             friends: 'Amigos',
             studies: 'Estudios',
             links: 'Enlaces',
+            bandeja: 'Bandeja',
             suggestions: 'Sugerencias',
             settings: 'Ajustes'
         };
@@ -640,6 +644,7 @@
                 { view: 'graph', icon: '◇', text: 'Grafo' },
             ] },
             { label: 'Sistema', items: [
+                { view: 'bandeja', icon: '▣', text: 'Bandeja' },
                 { view: 'suggestions', icon: '✎', text: 'Sugerencias' },
                 { view: 'settings', icon: '⚙', text: 'Ajustes' },
             ] },
@@ -779,7 +784,7 @@
             goals: renderGoals, projects: renderProjects, links: renderLinks, culture: renderCulture,
             travels: renderTravels, collectibles: renderCollectibles, documents: renderDocuments,
             friends: renderFriendsView, tags: renderTagsView, graph: renderGraph,
-            suggestions: renderSuggestions, settings: renderSettings,
+            bandeja: renderBandeja, suggestions: renderSuggestions, settings: renderSettings,
         };
 
         // Efectos que en la versión de escritorio se disparan tras pintar
@@ -790,6 +795,7 @@
             documents: () => { loadDocuments(); loadViewerFiles(); },
             friends: () => loadFriendsViewData(),
             suggestions: () => loadMySuggestions(),
+            bandeja: () => aplicarBandejaConector(),
             settings: () => {
                 if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
                 loadSettingsSubscriptionInfo();
@@ -1155,7 +1161,7 @@
             return sections.map(sec => `<span class="nav-label">${escapeHtml(sec.label)}</span>` +
                 sec.items.filter(i => !isSectionHidden(i.view)).map(i => mobile
                     ? `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}">${escapeHtml(i.text)}</button>`
-                    : `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span></button>`
+                    : `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span>${i.view === 'bandeja' && bandejaPendiente.length ? `<span class="nav-bandeja-badge">${bandejaPendiente.length}</span>` : ''}</button>`
                 ).join('')
             ).join('');
         }
@@ -5743,6 +5749,7 @@
             else if (currentView === 'studies') content.innerHTML = renderStudies();
             else if (currentView === 'links') content.innerHTML = renderLinks();
             else if (currentView === 'suggestions') { content.innerHTML = renderSuggestions(); loadMySuggestions(); }
+            else if (currentView === 'bandeja') { content.innerHTML = renderBandeja(); if (!aplicandoBandeja) setTimeout(aplicarBandejaConector, 0); }
             else if (currentView === 'settings') { content.innerHTML = renderSettings();
                 if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
                 loadSettingsSubscriptionInfo();
@@ -6683,7 +6690,7 @@
                 renderHomeLauncherRow(HOME_ICON_STATS, 'estadísticas.', 'openHomeStatsModal()'),
                 renderHomeLauncherRow(HOME_ICON_PATTERNS, 'patrones.', 'openHomePatternsModal()', hallazgos.length || ''),
                 inbox.length ? renderHomeLauncherRow(HOME_ICON_INBOX, 'inbox.', 'openHomeInboxModal()', inbox.length) : '',
-                registroConector.length ? renderHomeLauncherRow(REGISTRO_ICONO, 'claude.', 'openRegistroConector()', registroConectorPendientes() || '') : '',
+                bandejaPendiente.length || registroConector.length ? renderHomeLauncherRow(REGISTRO_ICONO, 'bandeja.', "switchView('bandeja')", bandejaPendiente.length || '') : '',
                 renderHomeLauncherRow(HOME_ICON_BACKUP, 'copia de seguridad.', 'openHomeBackupModal()')
             ].join('');
 
@@ -8336,6 +8343,7 @@
             calendar: 'Tu calendario de toda la vida: cambia entre vista de día, semana, mes o año, y toca cualquier día para ver o añadir lo que tengas planeado ese día.',
             home: 'Un resumen de un vistazo: lo próximo que tienes encima, cumpleaños cercanos y accesos directos a lo que más usas — para no tener que ir apartado por apartado.',
             planner: 'La franja horaria de tu día, hora a hora. Tiene pestañas para dejar ya planificados hoy, mañana y pasado mañana, y se vacía sola cada madrugada.',
+            bandeja: 'Lo que Claude o ChatGPT proponen cambiar en tu Bitácora y espera tu visto bueno: nada se aplica hasta que lo validas. Los eventos y Ocio se aplican solos. Debajo, el historial de todo lo hecho, con opción de deshacer.',
             notes: 'Una nota de texto libre por día, como un diario — sin campos ni estructura, escribe lo que quieras.',
             events: 'Planes con fecha, hora y lugar: conciertos, citas, quedadas... Puedes añadirlos a mano o importar varios de golpe pegando texto o subiendo un archivo .ics de Google/Apple Calendar.',
             finances: 'Registra cada ingreso y gasto, y sigue tus inversiones — verás tu balance y cómo evoluciona con gráficas.',
@@ -19280,6 +19288,24 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 ev.entradas.push({ id: ref, qr: op.qr || '', qrB64: op.qrB64 || undefined, etiqueta: op.etiqueta || '' });
                 return linea('entrada', `entrada con QR para «${corto(ev.title)}».`, { accion: 'entrada', eventoId: ev.id, id: ref });
             }
+            if (op.tipo === 'ocio') {
+                const nombre = { book: 'libro', movie: 'película', series: 'serie', game: 'videojuego' }[op.entryType] || 'ocio';
+                if (op.id) {
+                    const e = entries.find(x => x.id === op.id);
+                    if (!e) return null;
+                    const antes = {};
+                    Object.keys(op.datos || {}).forEach(k => { antes[k] = e[k]; });
+                    Object.assign(e, op.datos || {});
+                    if (e.type === 'movie' && op.datos?.rating > 0) completarTareaValorarPelicula(e.id);
+                    filteredEntries = [...entries];
+                    const que = [op.datos?.endDate ? 'terminado' : '', op.datos?.rating ? `${op.datos.rating}/5` : '', op.datos?.status && !op.datos?.endDate ? op.datos.status.toLowerCase() : ''].filter(Boolean).join(', ');
+                    return linea('ocio', `${nombre} «${corto(e.title)}»${que ? ': ' + que : ' actualizado'}.`, { accion: 'restaurar', id: e.id, antes });
+                }
+                if (entries.some(e => e.id === ref)) return null;
+                entries.push({ id: ref, type: op.entryType, categoryId: getCategoryIdForType(op.entryType), tags: [], date: '', ...(op.datos || {}), title: op.titulo });
+                filteredEntries = [...entries];
+                return linea('ocio', `${nombre} «${corto(op.titulo)}» añadido a ocio.`, { accion: 'quitar', coleccion: 'evento', id: ref });
+            }
             if (op.tipo === 'editar_evento') {
                 const ev = entries.find(e => e.id === op.id);
                 if (!ev) return null;
@@ -19395,41 +19421,56 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             filteredEntries = [...entries];
             invalidarCachesDerivadas();
             render();
-            if (document.getElementById('registro-conector-lista')) document.getElementById('registro-conector-lista').innerHTML = renderRegistroConectorLista();
+            refrescarBandeja();
             try { await saveData(); showToast('Deshecho'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Se aplican solos (el usuario no quiere validarlos): crear y editar
+        // eventos, las entradas con QR de un evento y Ocio. El resto espera
+        // en la bandeja sin tocar sus datos hasta que pulse "validar".
+        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio'];
+
+        function registrarLineaConector(l, origen) {
+            l.origen = origen;
+            registroConector = [l, ...registroConector].slice(0, REGISTRO_CONECTOR_MAX);
         }
 
         async function aplicarBandejaConector() {
             if (aplicandoBandeja) return;
             aplicandoBandeja = true;
             try {
-                const nuevas = [];
+                const firmaAntes = bandejaPendiente.map(f => f.id).join();
+                let cambios = 0;
                 // Antes "anotar" iba al inbox antiguo (solo visible en Centro
                 // resumen); lo que quedó allí pasa a la nota de hoy.
                 const antiguas = inbox.filter(i => String(i.id).startsWith('ia_'));
                 if (antiguas.length) {
-                    antiguas.forEach(i => { const l = aplicarOpConector({ tipo: 'nota', texto: i.text }, i.id); if (l) nuevas.push(l); });
+                    antiguas.forEach(i => { const l = aplicarOpConector({ tipo: 'nota', texto: i.text }, i.id); if (l) { registrarLineaConector(l, 'auto'); cambios++; } });
                     inbox = inbox.filter(i => !String(i.id).startsWith('ia_'));
                 }
-                const { data: filas, error } = await sb.from('conector_bandeja').select('id, op').order('creado');
-                if (!error && filas?.length) {
-                    filas.forEach(f => { const l = aplicarOpConector(f.op || {}, 'ia_' + f.id); if (l) nuevas.push(l); });
-                    // El QR se deja ya dibujado, igual que al subirlo desde el
-                    // formulario: en la puerta puede no haber cobertura.
-                    for (const f of filas.filter(x => x.op?.tipo === 'entrada')) {
-                        const entrada = entries.find(e => e.id === f.op.eventoId)?.entradas?.find(x => x.id === 'ia_' + f.id);
-                        if (entrada && !entrada.svg) entrada.svg = await qrEntradaSvg(entrada).catch(() => undefined);
-                    }
+                const { data: filas, error } = await sb.from('conector_bandeja').select('id, op, creado').order('creado');
+                if (error) return;
+                const automaticas = (filas || []).filter(f => OPS_AUTOMATICAS.includes(f.op?.tipo));
+                bandejaPendiente = (filas || []).filter(f => !OPS_AUTOMATICAS.includes(f.op?.tipo));
+                automaticas.forEach(f => { const l = aplicarOpConector(f.op || {}, 'ia_' + f.id); if (l) { registrarLineaConector(l, 'auto'); cambios++; } });
+                // El QR se deja ya dibujado, igual que al subirlo desde el
+                // formulario: en la puerta puede no haber cobertura.
+                for (const f of automaticas.filter(x => x.op?.tipo === 'entrada')) {
+                    const entrada = entries.find(e => e.id === f.op.eventoId)?.entradas?.find(x => x.id === 'ia_' + f.id);
+                    if (entrada && !entrada.svg) entrada.svg = await qrEntradaSvg(entrada).catch(() => undefined);
                 }
-                if (!nuevas.length && !filas?.length && !antiguas.length) return;
-                registroConector = [...nuevas.reverse(), ...registroConector].slice(0, REGISTRO_CONECTOR_MAX);
-                await saveData();
-                if (filas?.length) await sb.from('conector_bandeja').delete().in('id', filas.map(f => f.id));
-                if (nuevas.length) {
+                if (automaticas.length || antiguas.length) {
+                    await saveData();
+                    if (automaticas.length) await sb.from('conector_bandeja').delete().in('id', automaticas.map(f => f.id));
+                }
+                const nuevasPendientes = bandejaPendiente.filter(f => !firmaAntes.split(',').includes(f.id)).length;
+                if (cambios || firmaAntes !== bandejaPendiente.map(f => f.id).join()) {
                     invalidarCachesDerivadas();
+                    renderAllNavs();
                     render();
-                    showToast(`${nuevas.length} ${nuevas.length === 1 ? 'cambio' : 'cambios'} desde Claude o ChatGPT · revísalos en «claude.»`);
                 }
+                const avisos = [cambios ? `${cambios} ${cambios === 1 ? 'cambio aplicado' : 'cambios aplicados'} desde Claude o ChatGPT` : '', nuevasPendientes ? `${nuevasPendientes} ${nuevasPendientes === 1 ? 'espera' : 'esperan'} tu validación en «bandeja.»` : ''].filter(Boolean);
+                if (avisos.length && currentView !== 'bandeja') showToast(avisos.join(' · '));
             } catch (e) {
                 console.error('Bandeja del conector:', e);
             } finally {
@@ -19437,46 +19478,180 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             }
         }
 
+        function apartadoDeOp(op) {
+            if (op.tipo === 'borrar') return { evento: 'eventos', tarea: 'planificador', movimiento: 'finanzas' }[op.coleccion] || 'otros';
+            return { tarea: 'planificador', editar_tarea: 'planificador', movimiento: 'finanzas', editar_movimiento: 'finanzas', importar: 'finanzas', nota: 'notas', dia: 'hábitos y esfuerzo' }[op.tipo] || 'otros';
+        }
+
+        // Qué se propone, contado como lo leería el usuario. detalle va en un
+        // desplegable (el texto entero de una nota, las primeras filas de un
+        // extracto).
+        function describirOpConector(op) {
+            const fecha = f => f ? financeDateLabelShort(f) : '';
+            const c = op.cambios || {};
+            switch (op.tipo) {
+                case 'tarea': return { tipo: 'nueva tarea', texto: `«${op.titulo}»`, meta: op.fecha && op.hora ? `${fecha(op.fecha)} · ${op.hora}` : 'a tareas pendientes', detalle: op.notas };
+                case 'editar_tarea': return { tipo: 'cambio de tarea', texto: `«${op.resumen}»`, meta: [c.hecha === true ? 'marcar hecha' : c.hecha === false ? 'volver a pendiente' : '', c.sinFecha ? 'pasar a tareas pendientes' : (c.fecha || c.hora) ? `mover a ${fecha(c.fecha) || 'su día'}${c.hora ? ' · ' + c.hora : ''}` : '', c.titulo ? `título: «${c.titulo}»` : '', c.notas !== undefined ? 'cambiar notas' : ''].filter(Boolean).join(' · ') };
+                case 'movimiento': return { tipo: op.type === 'income' ? 'nuevo ingreso' : 'nuevo gasto', texto: `${financeMoney(op.importe)} · ${op.concepto || 'sin concepto'}`, meta: `${fecha(op.fecha)} · ${financePro.accounts[op.cuenta]?.name || op.cuenta}${op.categoria ? ' · ' + (financeProCategoryById(op.categoria)?.name || '').toLowerCase() : ' · sin categoría'}` };
+                case 'editar_movimiento': return { tipo: 'corregir movimiento', texto: `«${op.resumen}»`, meta: [c.category ? 'categoría ' + (financeProCategoryById(c.category)?.name || '').toLowerCase() : '', c.note ? `concepto «${c.note}»` : '', c.amount ? financeMoney(c.amount) : '', c.date ? fecha(c.date) : '', c.account ? financePro.accounts[c.account]?.name : ''].filter(Boolean).join(' · ') };
+                case 'importar': {
+                    const lineas = String(op.csv || '').split(/\r?\n/).filter(l => l.trim());
+                    return { tipo: 'importar extracto', texto: `${lineas.length - 1} filas`, meta: op.cuenta ? financePro.accounts[op.cuenta]?.name || op.cuenta : 'última cuenta usada', detalle: lineas.slice(0, 6).join('\n') + (lineas.length > 6 ? '\n…' : '') };
+                }
+                case 'nota': return { tipo: 'nota', texto: `«${String(op.titulo || op.texto || '').slice(0, 80)}»`, meta: `nota del ${fecha(op.fecha) || 'día'}`, detalle: [op.titulo, op.texto].filter(Boolean).join('\n') };
+                case 'dia': {
+                    const nombres = ids => (ids || []).map(id => habits.find(h => h.id === id)?.texto).filter(Boolean).map(x => x.toLowerCase());
+                    return { tipo: 'día', texto: [op.esfuerzo ? `esfuerzo ${op.esfuerzo}/5` : '', ...nombres(op.hechos).map(n => n + ' ✓'), ...nombres(op.noHechos).map(n => n + ' ✗')].filter(Boolean).join(' · ') || 'sin cambios', meta: fecha(op.fecha) };
+                }
+                case 'borrar': return { tipo: `borrar ${op.coleccion}`, texto: op.resumen, meta: 'se puede deshacer después' };
+            }
+            return { tipo: op.tipo, texto: '', meta: '' };
+        }
+
+        async function validarBandeja(ids) {
+            const filas = bandejaPendiente.filter(f => ids.includes(f.id));
+            if (!filas.length) return;
+            let aplicadas = 0;
+            filas.forEach(f => {
+                const l = aplicarOpConector(f.op || {}, 'ia_' + f.id);
+                if (l) { registrarLineaConector(l, 'validado'); aplicadas++; }
+            });
+            bandejaPendiente = bandejaPendiente.filter(f => !ids.includes(f.id));
+            invalidarCachesDerivadas();
+            renderAllNavs();
+            render();
+            try {
+                await saveData();
+                await sb.from('conector_bandeja').delete().in('id', filas.map(f => f.id));
+                showToast(aplicadas === filas.length ? `${aplicadas} ${aplicadas === 1 ? 'cambio validado' : 'cambios validados'}` : `${aplicadas} de ${filas.length} aplicados · el resto ya no tenía a qué aplicarse`);
+            } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function descartarBandeja(ids) {
+            const filas = bandejaPendiente.filter(f => ids.includes(f.id));
+            if (!filas.length) return;
+            if (filas.length > 1 && !confirm(`¿Descartar ${filas.length} cambios? No se aplicará ninguno.`)) return;
+            filas.forEach(f => {
+                const d = describirOpConector(f.op || {});
+                registrarLineaConector({ id: 'ia_' + f.id, cuando: new Date().toISOString(), tipo: f.op?.tipo, resumen: `${d.tipo}: ${d.texto}`.replace(/: $/, '.'), deshacer: null }, 'descartado');
+            });
+            bandejaPendiente = bandejaPendiente.filter(f => !ids.includes(f.id));
+            renderAllNavs();
+            render();
+            try {
+                await saveData();
+                await sb.from('conector_bandeja').delete().in('id', filas.map(f => f.id));
+                showToast(filas.length === 1 ? 'Cambio descartado' : `${filas.length} cambios descartados`);
+            } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        const validarGrupoBandeja = grupo => validarBandeja(bandejaPendiente.filter(f => apartadoDeOp(f.op || {}) === grupo).map(f => f.id));
+        const descartarGrupoBandeja = grupo => descartarBandeja(bandejaPendiente.filter(f => apartadoDeOp(f.op || {}) === grupo).map(f => f.id));
+
         const REGISTRO_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M12 14h76v54H42L22 86V68H12z"/></svg>';
-        const REGISTRO_TIPOS = { evento: 'evento', tarea: 'tarea', movimiento: 'gasto', nota: 'nota', entrada: 'entrada', cambio: 'cambio', borrado: 'borrado', dia: 'día', importar: 'extracto' };
+        const BANDEJA_ORDEN = ['planificador', 'finanzas', 'notas', 'hábitos y esfuerzo', 'eventos', 'otros'];
+        let bandejaHistorialAbierto = false;
+        let bandejaBusqueda = '';
 
-        function registroConectorPendientes() {
-            return registroConector.filter(l => !l.revisado && !l.deshecho).length;
+        function haceCuanto(iso) {
+            const min = Math.round((Date.now() - new Date(iso)) / 60000);
+            if (min < 1) return 'ahora';
+            if (min < 60) return `hace ${min} min`;
+            if (min < 1440) return `hace ${Math.round(min / 60)} h`;
+            return financeDateLabelShort(new Date(iso).toISOString().slice(0, 10));
         }
 
-        function renderRegistroConectorLista() {
-            if (!registroConector.length) return '<div class="finance-empty-state">Todavía no ha hecho nada desde Claude o ChatGPT.</div>';
-            const clave = f => `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`;
-            const hoy = clave(new Date());
-            const ayer = clave(new Date(Date.now() - 86400000));
+        function renderBandejaItem(f) {
+            const d = describirOpConector(f.op || {});
+            return `
+                <article class="bandeja-item">
+                    <div class="bandeja-item-cuerpo">
+                        <div class="bandeja-item-tipo">${escapeHtml(d.tipo)}.</div>
+                        <div class="bandeja-item-texto">${escapeHtml(d.texto)}</div>
+                        <div class="bandeja-item-meta">${escapeHtml([d.meta, 'pedido ' + haceCuanto(f.creado)].filter(Boolean).join(' · '))}</div>
+                        ${d.detalle ? `<details class="bandeja-item-detalle"><summary>ver contenido.</summary><pre>${escapeHtml(d.detalle)}</pre></details>` : ''}
+                    </div>
+                    <div class="bandeja-item-acciones">
+                        <button class="bandeja-btn bandeja-btn-validar" onclick="validarBandeja(['${f.id}'])">validar cambio.</button>
+                        <button class="bandeja-btn bandeja-btn-descartar" onclick="descartarBandeja(['${f.id}'])">descartar.</button>
+                    </div>
+                </article>`;
+        }
+
+        function renderBandejaHistorial() {
+            const q = stripAccents(bandejaBusqueda.trim().toLowerCase());
+            const lista = bandejaHistorialAbierto
+                ? registroConector.filter(l => !q || stripAccents(`${l.resumen} ${l.tipo} ${l.origen || ''}`.toLowerCase()).includes(q))
+                : registroConector.slice(0, 5);
+            const origen = { auto: 'automático', validado: 'validado', descartado: 'descartado' };
+            if (!lista.length) return `<div class="bandeja-vacia-linea">${q ? 'Nada coincide con esa búsqueda.' : 'Todavía no hay historial.'}</div>`;
+            return lista.map(l => `
+                <div class="bandeja-hist-fila ${l.deshecho ? 'deshecho' : ''} ${l.origen === 'descartado' ? 'descartado' : ''}">
+                    <span class="bandeja-hist-cuando">${new Date(l.cuando).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })} ${new Date(l.cuando).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span class="bandeja-hist-texto">${escapeHtml(l.resumen)}</span>
+                    <span class="bandeja-hist-origen">${l.deshecho ? 'deshecho' : origen[l.origen] || 'aplicado'}.</span>
+                    ${!l.deshecho && l.deshacer ? `<button class="bandeja-hist-deshacer" onclick="deshacerConector('${l.id}')">deshacer.</button>` : '<span></span>'}
+                </div>`).join('');
+        }
+
+        function renderBandeja() {
+            const n = bandejaPendiente.length;
             const grupos = {};
-            registroConector.forEach(l => { const k = clave(new Date(l.cuando)); (grupos[k] = grupos[k] || []).push(l); });
-            return Object.keys(grupos).sort().reverse().map(k => `
-                <div class="registro-dia">${k === hoy ? 'hoy.' : k === ayer ? 'ayer.' : escapeHtml(financeDateLabelShort(k)) + '.'}</div>
-                ${grupos[k].map(l => `
-                    <div class="registro-fila ${l.revisado ? 'revisado' : ''} ${l.deshecho ? 'deshecho' : ''}">
-                        <span class="registro-tipo">${REGISTRO_TIPOS[l.tipo] || l.tipo}</span>
-                        <span class="registro-texto">${escapeHtml(l.resumen)}</span>
-                        <span class="registro-hora">${new Date(l.cuando).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
-                        ${l.deshecho ? '<span class="registro-estado">deshecho.</span>' : l.deshacer ? `<button class="registro-deshacer" onclick="deshacerConector('${l.id}')">deshacer.</button>` : '<span></span>'}
-                    </div>`).join('')}`).join('');
+            bandejaPendiente.forEach(f => { const g = apartadoDeOp(f.op || {}); (grupos[g] = grupos[g] || []).push(f); });
+            const orden = Object.keys(grupos).sort((a, b) => BANDEJA_ORDEN.indexOf(a) - BANDEJA_ORDEN.indexOf(b));
+            return `
+            <div class="bandeja">
+                <header class="bandeja-cabecera">
+                    <div>
+                        <div class="bandeja-titulo">bandeja.</div>
+                        <div class="bandeja-sub">Lo que Claude o ChatGPT proponen cambiar en tu Bitácora. Hasta que lo validas, no toca nada.</div>
+                    </div>
+                    <div class="bandeja-contador ${n ? 'activo' : ''}"><b>${n}</b><span>${n === 1 ? 'pendiente.' : 'pendientes.'}</span></div>
+                </header>
+                ${n > 1 ? `
+                <div class="bandeja-globales">
+                    <button class="bandeja-btn bandeja-btn-validar" onclick="validarBandeja(bandejaPendiente.map(f => f.id))">validar todo (${n}).</button>
+                    <button class="bandeja-btn bandeja-btn-descartar" onclick="descartarBandeja(bandejaPendiente.map(f => f.id))">descartar todo.</button>
+                </div>` : ''}
+                ${n ? orden.map(g => `
+                    <section class="bandeja-grupo">
+                        <div class="bandeja-grupo-cab">
+                            <span class="bandeja-grupo-nombre">${escapeHtml(g)}.</span>
+                            <span class="bandeja-grupo-n">${grupos[g].length}</span>
+                            ${grupos[g].length > 1 ? `<button class="bandeja-grupo-btn" onclick="validarGrupoBandeja('${g}')">validar los ${grupos[g].length}.</button><button class="bandeja-grupo-btn" onclick="descartarGrupoBandeja('${g}')">descartar.</button>` : ''}
+                        </div>
+                        ${grupos[g].map(renderBandejaItem).join('')}
+                    </section>`).join('') : `
+                    <div class="bandeja-vacia">
+                        <div class="bandeja-vacia-titulo">nada pendiente.</div>
+                        <div class="bandeja-vacia-sub">Cuando Claude proponga una tarea, un gasto, una nota o un borrado, aparecerá aquí para que lo valides. Los eventos y Ocio se aplican solos y quedan en el historial.</div>
+                    </div>`}
+                <section class="bandeja-historial">
+                    <div class="bandeja-hist-cab">
+                        <span class="bandeja-grupo-nombre">historial.</span>
+                        <button class="bandeja-grupo-btn" onclick="toggleHistorialBandeja()">${bandejaHistorialAbierto ? 'ver solo los últimos 5.' : `ver todo el historial${registroConector.length > 5 ? ` (${registroConector.length})` : ''}.`}</button>
+                    </div>
+                    ${bandejaHistorialAbierto ? `<input class="modal-input bandeja-buscar" type="search" placeholder="Buscar en el historial…" value="${escapeHtml(bandejaBusqueda)}" oninput="setBusquedaBandeja(this.value)">` : ''}
+                    <div id="bandeja-historial-lista">${renderBandejaHistorial()}</div>
+                </section>
+            </div>`;
         }
 
-        function openRegistroConector() {
-            const n = registroConectorPendientes();
-            showModal(`
-                <div class="modal-title">lo que ha hecho claude.</div>
-                <div class="finance-modal-note" style="margin-bottom:12px">Todo lo que Claude o ChatGPT han apuntado, cambiado o borrado en tu Bitácora. Lo pendiente de revisar va resaltado; cualquier cosa se puede deshacer.</div>
-                ${n ? `<button class="finance-oneoff-btn" style="margin-bottom:12px" onclick="marcarRegistroConectorRevisado()">marcar ${n === 1 ? 'el pendiente' : `los ${n} pendientes`} como revisado${n === 1 ? '' : 's'}.</button>` : ''}
-                <div id="registro-conector-lista">${renderRegistroConectorLista()}</div>
-            `);
+        function refrescarBandeja() {
+            if (currentView === 'bandeja') render();
         }
 
-        async function marcarRegistroConectorRevisado() {
-            registroConector.forEach(l => { l.revisado = true; });
-            openRegistroConector();
-            if (currentView === 'home') render();
-            try { await saveData(); } catch (e) { console.error(e); }
+        function toggleHistorialBandeja() {
+            bandejaHistorialAbierto = !bandejaHistorialAbierto;
+            if (!bandejaHistorialAbierto) bandejaBusqueda = '';
+            render();
+            if (bandejaHistorialAbierto) setTimeout(() => document.querySelector('.bandeja-buscar')?.focus(), 0);
+        }
+
+        function setBusquedaBandeja(valor) {
+            bandejaBusqueda = valor;
+            const el = document.getElementById('bandeja-historial-lista');
+            if (el) el.innerHTML = renderBandejaHistorial();
         }
 
         async function cargarConectoresAjustes() {

@@ -27,7 +27,9 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'hogar', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Todo lo que haces queda en un registro dentro de Bitácora donde el usuario lo revisa y puede deshacerlo; aparece la próxima vez que abra Bitácora o vuelva a ella.`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Todo lo demás (tareas, movimientos, extractos, notas, hábitos y esfuerzo, y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
+const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
+const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
 // ---------------------------------------------------------------- fechas
 function hoyISO(): string {
@@ -57,13 +59,18 @@ function aplicarOp(data: any, op: any, id: string) {
         data.dayPlanner = data.dayPlanner || { days: {}, backlog: [] };
         if (op.fecha && op.hora) {
             data.dayPlanner.days = data.dayPlanner.days || {};
-            (data.dayPlanner.days[op.fecha] = data.dayPlanner.days[op.fecha] || []).push({ id: ref, time: op.hora, title: op.titulo, notes: op.notas || '', done: false });
+            (data.dayPlanner.days[op.fecha] = data.dayPlanner.days[op.fecha] || []).push({ id: ref, time: op.hora, title: op.titulo, notes: op.notas || '', done: false, sinValidar: true });
         } else {
-            (data.dayPlanner.backlog = data.dayPlanner.backlog || []).unshift({ id: ref, title: op.titulo, notes: [op.fecha ? 'para el ' + op.fecha : '', op.notas || ''].filter(Boolean).join(' · '), done: false });
+            (data.dayPlanner.backlog = data.dayPlanner.backlog || []).unshift({ id: ref, title: op.titulo, notes: [op.fecha ? 'para el ' + op.fecha : '', op.notas || ''].filter(Boolean).join(' · '), done: false, sinValidar: true });
         }
     } else if (op.tipo === 'movimiento') {
         data.financePro = data.financePro || { transactions: [] };
-        (data.financePro.transactions = data.financePro.transactions || []).push({ id: ref, date: op.fecha, account: op.cuenta, type: op.type, amount: op.importe, category: op.categoria || undefined, note: op.concepto || undefined, manual: true, needsReview: !op.categoria });
+        (data.financePro.transactions = data.financePro.transactions || []).push({ id: ref, date: op.fecha, account: op.cuenta, type: op.type, amount: op.importe, category: op.categoria || undefined, note: op.concepto || undefined, manual: true, needsReview: !op.categoria, sinValidar: true });
+    } else if (op.tipo === 'ocio') {
+        data.entries = data.entries || [];
+        const e = op.id ? data.entries.find((x: any) => x?.id === op.id) : null;
+        if (e) Object.assign(e, op.datos || {});
+        else data.entries.push({ id: ref, type: op.entryType, title: op.titulo, ...(op.datos || {}) });
     } else if (op.tipo === 'nota') {
         data.notes = data.notes || [];
         const fecha = op.fecha || hoyISO();
@@ -167,7 +174,7 @@ function agenda(data: any, desde: string, hasta: string) {
             .sort((a: any, b: any) => String(a.time || '').localeCompare(String(b.time || '')))
             .map((e: any) => ({ id: e.id, titulo: e.title, hora: e.time || undefined, lugar: e.place || undefined, tipo: e.eventType, notas: e.notes || undefined, entradas: e.entradas?.length || undefined }));
         if (eventos.length) dia.eventos = eventos;
-        const plan = (data.dayPlanner?.days?.[f] || []).map((it: any) => ({ id: it.id, hora: it.time, titulo: it.title, hecha: !!it.done }));
+        const plan = (data.dayPlanner?.days?.[f] || []).map((it: any) => ({ id: it.id, hora: it.time, titulo: it.title, hecha: !!it.done, sin_validar: it.sinValidar || undefined }));
         if (plan.length) dia.planificador = plan;
         const rec = (data.recurringTasks || []).filter((t: any) => recurrenteToca(t, f)).map((t: any) => t.texto);
         if (rec.length) dia.recurrentes = rec;
@@ -187,7 +194,7 @@ function agenda(data: any, desde: string, hasta: string) {
         if (habitos.length && f <= hoyISO()) dia.habitos = habitos;
         dias.push(dia);
     }
-    const pendientes = (data.dayPlanner?.backlog || []).filter((t: any) => !t.done).map((t: any) => ({ id: t.id, titulo: t.title, notas: t.notes || undefined }));
+    const pendientes = (data.dayPlanner?.backlog || []).filter((t: any) => !t.done).map((t: any) => ({ id: t.id, titulo: t.title, notas: t.notes || undefined, sin_validar: t.sinValidar || undefined }));
     return { hoy: hoyISO(), dias, tareas_pendientes_sin_fecha: pendientes };
 }
 
@@ -260,6 +267,7 @@ function movimientosLista(data: any, f: any) {
             cuenta: data.financePro?.accounts?.[t.account]?.name || t.account,
             pendiente: t.pendiente || undefined,
             por_revisar: t.needsReview || undefined,
+            sin_validar: t.sinValidar || undefined,
         }));
 }
 
@@ -472,6 +480,19 @@ const HERRAMIENTAS = [
         annotations: { readOnlyHint: true },
     },
     {
+        name: 'ocio',
+        description: 'Añade o actualiza un libro, una película, una serie o un videojuego en Ocio (se aplica solo, sin validar). Si ya existe uno con ese título, lo actualiza: por ejemplo, terminarlo (fecha_fin), valorarlo (1 a 5) o cambiar su estado.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                tipo: { type: 'string', enum: Object.keys(OCIO_TIPOS) }, titulo: { type: 'string' }, autor: { type: 'string', description: 'Solo libros' },
+                fecha_inicio: { type: 'string' }, fecha_fin: { type: 'string' }, valoracion: { type: 'number', minimum: 1, maximum: 5 },
+                estado: { type: 'string', description: 'Libros: Leyendo/Completado. Series: Viendo/Completada/Abandonada. Videojuegos: Jugando/Completado/Abandonado.' },
+            },
+            required: ['tipo', 'titulo'],
+        },
+    },
+    {
         name: 'anotar',
         description: 'Escribe en el apartado Notas de Bitácora. Notas funciona como un diario: hay una nota por día y esto se añade al final de la nota de hoy. Si la nota de hoy está vacía y sin título, el título pasa a ser el de la nota; si no, va como primera línea del texto añadido. Para ideas, apuntes, reflexiones o datos que el usuario quiera guardar.',
         inputSchema: { type: 'object', properties: { titulo: { type: 'string', description: 'Opcional' }, texto: { type: 'string' } }, required: ['texto'] },
@@ -538,7 +559,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             const fecha = esFecha(a.fecha) ? a.fecha : '';
             const hora = /^\d{2}:\d{2}$/.test(a.hora || '') ? a.hora : '';
             await encolar(userId, { tipo: 'tarea', titulo: String(a.titulo), fecha, hora, notas: a.notas || '' });
-            return fecha && hora ? `Tarea en el planificador el ${fecha} a las ${hora}.` : 'Tarea añadida a "tareas pendientes".';
+            return (fecha && hora ? `Tarea propuesta para el planificador el ${fecha} a las ${hora}.` : 'Tarea propuesta para "tareas pendientes".') + PENDIENTE;
         }
         case 'registrar_movimiento': {
             const importe = Math.abs(Number(a.importe));
@@ -548,7 +569,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             const cuenta = CUENTAS.includes(a.cuenta) ? a.cuenta : 'bancos';
             const fecha = esFecha(a.fecha) ? a.fecha : hoy;
             await encolar(userId, { tipo: 'movimiento', type, importe, concepto: String(a.concepto || ''), fecha, cuenta, categoria: cat?.id || '' });
-            return `Registrado: ${a.tipo === 'ingreso' ? 'ingreso' : 'gasto'} de ${euros(importe)} (${a.concepto}) el ${fecha} en ${data.financePro?.accounts?.[cuenta]?.name || cuenta}${cat ? ', categoría ' + cat.name : ', sin categoría (queda para revisar)'}. Si se importa luego el extracto del banco, se fusiona con el cargo real.`;
+            return `Registrado: ${a.tipo === 'ingreso' ? 'ingreso' : 'gasto'} de ${euros(importe)} (${a.concepto}) el ${fecha} en ${data.financePro?.accounts?.[cuenta]?.name || cuenta}${cat ? ', categoría ' + cat.name : ', sin categoría (queda para revisar)'}. Si se importa luego el extracto del banco, se fusiona con el cargo real.${PENDIENTE}`;
         }
         case 'editar_evento': {
             const ev = (data.entries || []).find((e: any) => e?.id === a.id && e.type === 'event');
@@ -577,7 +598,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (a.sin_fecha) cambios.sinFecha = true;
             if (!Object.keys(cambios).length) throw new Error('No hay nada que cambiar');
             await encolar(userId, { tipo: 'editar_tarea', id: it.id, cambios, resumen: it.title });
-            return `Hecho: «${it.title}»${cambios.hecha === true ? ' marcada como hecha' : cambios.hecha === false ? ' marcada como pendiente' : ''}${cambios.sinFecha ? ', pasa a tareas pendientes' : cambios.fecha || cambios.hora ? `, movida a ${cambios.fecha || loc.dia || 'su día'}${cambios.hora || it.time ? ' a las ' + (cambios.hora || it.time) : ''}` : ''}.`;
+            return `Propuesto: «${it.title}»${cambios.hecha === true ? ' marcada como hecha' : cambios.hecha === false ? ' marcada como pendiente' : ''}${cambios.sinFecha ? ', pasa a tareas pendientes' : cambios.fecha || cambios.hora ? `, movida a ${cambios.fecha || loc.dia || 'su día'}${cambios.hora || it.time ? ' a las ' + (cambios.hora || it.time) : ''}` : ''}.${PENDIENTE}`;
         }
         case 'editar_movimiento': {
             const t = (data.financePro?.transactions || []).find((x: any) => x?.id === a.id);
@@ -594,7 +615,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (CUENTAS.includes(a.cuenta)) cambios.account = a.cuenta;
             if (!Object.keys(cambios).length) throw new Error('No hay nada que cambiar');
             await encolar(userId, { tipo: 'editar_movimiento', id: t.id, cambios, resumen: `${t.note || t.bankNote || 'movimiento'} (${euros(Number(t.amount) || 0)})` });
-            return `Corregido el movimiento «${t.note || t.bankNote || ''}» del ${t.date}${cambios.category ? ', categoría ' + nombreCategoria(data, cambios.category) : ''}.`;
+            return `Corrección propuesta para «${t.note || t.bankNote || ''}» del ${t.date}${cambios.category ? ', categoría ' + nombreCategoria(data, cambios.category) : ''}.${PENDIENTE}`;
         }
         case 'borrar': {
             let resumen = '';
@@ -603,7 +624,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (a.tipo === 'movimiento') { const t = (data.financePro?.transactions || []).find((x: any) => x?.id === a.id); resumen = t ? `${t.note || t.bankNote || 'movimiento'} (${euros(Number(t.amount) || 0)}, ${t.date})` : ''; }
             if (!resumen) throw new Error('No encuentro eso; comprueba el tipo y el id');
             await encolar(userId, { tipo: 'borrar', coleccion: a.tipo, id: a.id, resumen });
-            return `Borrado: ${resumen}. Se puede deshacer desde el registro de Bitácora.`;
+            return `Borrado propuesto: ${resumen}.${PENDIENTE}`;
         }
         case 'registrar_dia': {
             const fecha = esFecha(a.fecha) ? a.fecha : hoy;
@@ -621,7 +642,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             const perdidos = [...si.noEncontrados, ...no.noEncontrados];
             const habitos = (data.habits || []).filter((h: any) => h.activo !== false).map((h: any) => h.texto);
             if (!partes.length) throw new Error(`Nada que registrar.${perdidos.length ? ` No encuentro los hábitos: ${perdidos.join(', ')}. Los del usuario: ${habitos.join(', ')}` : ''}`);
-            return `Registrado el ${fecha}: ${partes.join(', ')}.${perdidos.length ? ` No encuentro estos hábitos: ${perdidos.join(', ')} (los del usuario son: ${habitos.join(', ')}).` : ''}`;
+            return `Propuesto para el ${fecha}: ${partes.join(', ')}.${PENDIENTE}${perdidos.length ? ` No encuentro estos hábitos: ${perdidos.join(', ')} (los del usuario son: ${habitos.join(', ')}).` : ''}`;
         }
         case 'importar_extracto': {
             const csv = String(a.csv || '').trim();
@@ -630,7 +651,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (csv.length > 400000) throw new Error('El extracto es demasiado grande; impórtalo por partes (por meses)');
             const cuenta = CUENTAS.includes(a.cuenta) ? a.cuenta : (data.financePro?.cuentaImport || '');
             await encolar(userId, { tipo: 'importar', csv, cuenta, resumen: `${lineas.length - 1} filas` });
-            return `Extracto recibido (${lineas.length - 1} filas)${cuenta ? ' para ' + (data.financePro?.accounts?.[cuenta]?.name || cuenta) : ''}. Se importará al abrir Bitácora, con su importador: sin duplicados y fusionando lo ya apuntado. El usuario verá el resultado en el registro.`;
+            return `Extracto recibido (${lineas.length - 1} filas)${cuenta ? ' para ' + (data.financePro?.accounts?.[cuenta]?.name || cuenta) : ''}. Cuando el usuario lo valide en la bandeja, Bitácora lo importará con su importador: sin duplicados y fusionando lo ya apuntado.`;
         }
         case 'resumen_periodo': {
             const hasta = esFecha(a.hasta) ? a.hasta : hoy;
@@ -638,10 +659,34 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (desde > hasta) throw new Error('desde es posterior a hasta');
             return resumenPeriodo(data, desde, hasta);
         }
+        case 'ocio': {
+            const t = OCIO_TIPOS[a.tipo];
+            if (!t || !a.titulo) throw new Error('Hacen falta tipo (libro, pelicula, serie o videojuego) y título');
+            const existente = (data.entries || []).find((e: any) => e?.type === t && norm(e.title).trim() === norm(a.titulo).trim());
+            const datos: any = {};
+            if (a.autor && t === 'book') datos.author = String(a.autor);
+            if (esFecha(a.fecha_inicio)) { datos.startDate = a.fecha_inicio; datos.date = a.fecha_inicio; }
+            if (esFecha(a.fecha_fin)) datos.endDate = a.fecha_fin;
+            if (t === 'movie' && (esFecha(a.fecha_fin) || esFecha(a.fecha_inicio))) datos.date = esFecha(a.fecha_fin) ? a.fecha_fin : a.fecha_inicio;
+            const v = Math.round(Number(a.valoracion));
+            if (v >= 1 && v <= 5) datos.rating = v;
+            const terminado: Record<string, string> = { book: 'Completado', series: 'Completada', game: 'Completado' };
+            const empezado: Record<string, string> = { book: 'Leyendo', series: 'Viendo', game: 'Jugando' };
+            if (a.estado && t !== 'movie') datos.status = String(a.estado);
+            else if (datos.endDate && terminado[t]) datos.status = terminado[t];
+            else if (!existente && empezado[t]) datos.status = empezado[t];
+            if (existente) {
+                if (!Object.keys(datos).length) throw new Error('Ya está en Ocio y no hay nada que cambiar');
+                await encolar(userId, { tipo: 'ocio', id: existente.id, entryType: t, titulo: existente.title, datos });
+                return `Actualizado en Ocio: «${existente.title}».`;
+            }
+            await encolar(userId, { tipo: 'ocio', entryType: t, titulo: String(a.titulo), datos: { title: String(a.titulo), rating: 0, endDate: '', ...datos } });
+            return `Añadido a Ocio: «${a.titulo}».`;
+        }
         case 'anotar': {
             if (!a.texto) throw new Error('Texto vacío');
             await encolar(userId, { tipo: 'nota', titulo: String(a.titulo || ''), texto: String(a.texto), fecha: hoy });
-            return `Añadido a la nota de hoy (${hoy}) en el apartado Notas.`;
+            return `Propuesto para la nota de hoy (${hoy}) en el apartado Notas.${PENDIENTE}`;
         }
     }
     throw new Error('Herramienta desconocida: ' + nombre);
