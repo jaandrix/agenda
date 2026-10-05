@@ -19489,7 +19489,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // Se aplican solos (el usuario no quiere validarlos): crear y editar
         // eventos, las entradas con QR de un evento y Ocio. El resto espera
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
-        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'estudio_crear'];
+        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio'];
         // Filas ya validadas o descartadas aquí que el servidor quizá aún no
         // ha borrado (se borran después de guardar): sin esto, una lectura
         // de la bandeja en ese intervalo las devolvía como pendientes y
@@ -19551,7 +19551,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
         function apartadoDeOp(op) {
             if (op.tipo === 'borrar') return { evento: 'eventos', tarea: 'planificador', movimiento: 'finanzas' }[op.coleccion] || 'otros';
-            return { tarea: 'planificador', editar_tarea: 'planificador', movimiento: 'finanzas', editar_movimiento: 'finanzas', importar: 'finanzas', nota: 'notas', dia: 'hábitos y esfuerzo', estudio_editar: 'estudios' }[op.tipo] || 'otros';
+            return { tarea: 'planificador', editar_tarea: 'planificador', movimiento: 'finanzas', editar_movimiento: 'finanzas', importar: 'finanzas', nota: 'notas', dia: 'hábitos y esfuerzo', estudio_crear: 'estudios', estudio_editar: 'estudios' }[op.tipo] || 'otros';
         }
 
         // Qué se propone, contado como lo leería el usuario. detalle va en un
@@ -19575,6 +19575,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     return { tipo: 'día', texto: [op.esfuerzo ? `esfuerzo ${op.esfuerzo}/5` : '', ...nombres(op.hechos).map(n => n + ' ✓'), ...nombres(op.noHechos).map(n => n + ' ✗')].filter(Boolean).join(' · ') || 'sin cambios', meta: fecha(op.fecha) };
                 }
                 case 'borrar': return { tipo: `borrar ${op.coleccion}`, texto: op.resumen, meta: 'se puede deshacer después' };
+                case 'estudio_crear': return { tipo: op.lista === 'exams' ? 'nuevo examen' : 'nuevo trabajo', texto: `«${op.item?.title || ''}» · ${op.asignatura || findSubject(op.subjectId)?.name || ''}`, meta: [op.item?.date ? fecha(op.item.date) : 'sin fecha', op.item?.time || '', op.item?.weight ? `peso ${op.item.weight} %` : ''].filter(Boolean).join(' · ') };
                 case 'estudio_editar': return { tipo: op.lista === 'exams' ? 'cambio de examen' : 'cambio de trabajo', texto: `«${op.resumen}»`, meta: [c.grade !== undefined ? `nota ${c.grade}` : '', c.done === true ? 'marcar entregado' : c.done === false ? 'volver a pendiente' : '', c.date ? fecha(c.date) : '', c.time ? c.time : '', c.weight ? `peso ${c.weight} %` : '', c.title ? `título: «${c.title}»` : ''].filter(Boolean).join(' · ') };
             }
             return { tipo: op.tipo, texto: '', meta: '' };

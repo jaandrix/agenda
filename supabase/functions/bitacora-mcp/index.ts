@@ -27,7 +27,7 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'hogar', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR, crear exámenes y trabajos en Estudios y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, movimientos, extractos, notas, hábitos y esfuerzo, y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, exámenes y trabajos de Estudios, movimientos, extractos, notas, hábitos y esfuerzo, y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
 const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
 const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
@@ -506,7 +506,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'estudios_crear',
-        description: 'Añade un examen o un trabajo (entrega) a una asignatura de Estudios. Bitácora crea solo su evento en el calendario y, si es un trabajo, su tarea en el planificador el día de entrega. Se aplica solo, sin validar. Usa esto y no crear_evento para exámenes y entregas.',
+        description: 'Añade un examen o un trabajo (entrega) a una asignatura de Estudios. Al validarlo, Bitácora crea su evento en el calendario y, si es un trabajo, su tarea en el planificador el día de entrega. Queda en la bandeja hasta que el usuario lo valide. Usa esto y no crear_evento para exámenes y entregas.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -718,7 +718,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             const repetido = (asig[lista] || []).find((x: any) => norm(x.title).trim() === norm(a.titulo).trim() && (x.date || '') === item.date);
             if (repetido) return `Ya estaba en ${asig.name}: «${repetido.title}» (${repetido.date || 'sin fecha'}).`;
             await encolar(userId, { tipo: 'estudio_crear', subjectId: asig.id, lista, item, asignatura: asig.name });
-            return `${lista === 'exams' ? 'Examen' : 'Trabajo'} añadido a ${asig.name}: «${a.titulo}»${item.date ? ` el ${diaSemana(item.date)} ${item.date}` : ''}${item.time ? ' a las ' + item.time : ''}. Bitácora crea su evento en el calendario${lista === 'assignments' && item.date ? ' y la tarea en el planificador' : ''}.`;
+            return `${lista === 'exams' ? 'Examen' : 'Trabajo'} propuesto para ${asig.name}: «${a.titulo}»${item.date ? ` el ${diaSemana(item.date)} ${item.date}` : ''}${item.time ? ' a las ' + item.time : ''}. Al validarlo, Bitácora creará su evento en el calendario${lista === 'assignments' && item.date ? ' y la tarea en el planificador' : ''}.${PENDIENTE}`;
         }
         case 'estudios_editar': {
             const encontrado = buscarItemEstudios(data, a.id);
