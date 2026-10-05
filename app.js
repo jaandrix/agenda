@@ -5762,7 +5762,7 @@
             else if (currentView === 'studies') content.innerHTML = renderStudies();
             else if (currentView === 'links') content.innerHTML = renderLinks();
             else if (currentView === 'suggestions') { content.innerHTML = renderSuggestions(); loadMySuggestions(); }
-            else if (currentView === 'bandeja') { content.innerHTML = renderBandeja(); if (!aplicandoBandeja) setTimeout(aplicarBandejaConector, 0); }
+            else if (currentView === 'bandeja') { content.innerHTML = renderBandeja(); if (!aplicandoBandeja && Date.now() - bandejaUltimaLectura > 15000) setTimeout(aplicarBandejaConector, 0); }
             else if (currentView === 'settings') { content.innerHTML = renderSettings();
                 if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
                 loadSettingsSubscriptionInfo();
@@ -19448,6 +19448,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // eventos, las entradas con QR de un evento y Ocio. El resto espera
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
         const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio'];
+        // Filas ya validadas o descartadas aquí que el servidor quizá aún no
+        // ha borrado (se borran después de guardar): sin esto, una lectura
+        // de la bandeja en ese intervalo las devolvía como pendientes y
+        // reaparecían en la lista hasta la siguiente.
+        const bandejaResueltas = new Set();
+        let bandejaUltimaLectura = 0;
 
         function registrarLineaConector(l, origen) {
             l.origen = origen;
@@ -19467,8 +19473,12 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     antiguas.forEach(i => { const l = aplicarOpConector({ tipo: 'nota', texto: i.text }, i.id); if (l) { registrarLineaConector(l, 'auto'); cambios++; } });
                     inbox = inbox.filter(i => !String(i.id).startsWith('ia_'));
                 }
-                const { data: filas, error } = await sb.from('conector_bandeja').select('id, op, creado').order('creado');
+                const { data: leidas, error } = await sb.from('conector_bandeja').select('id, op, creado').order('creado');
                 if (error) return;
+                bandejaUltimaLectura = Date.now();
+                const enServidor = new Set((leidas || []).map(f => f.id));
+                [...bandejaResueltas].forEach(id => { if (!enServidor.has(id)) bandejaResueltas.delete(id); });
+                const filas = (leidas || []).filter(f => !bandejaResueltas.has(f.id));
                 const automaticas = (filas || []).filter(f => OPS_AUTOMATICAS.includes(f.op?.tipo));
                 bandejaPendiente = (filas || []).filter(f => !OPS_AUTOMATICAS.includes(f.op?.tipo));
                 automaticas.forEach(f => { const l = aplicarOpConector(f.op || {}, 'ia_' + f.id); if (l) { registrarLineaConector(l, 'auto'); cambios++; } });
@@ -19530,6 +19540,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         async function validarBandeja(ids) {
             const filas = bandejaPendiente.filter(f => ids.includes(f.id));
             if (!filas.length) return;
+            filas.forEach(f => bandejaResueltas.add(f.id));
             let aplicadas = 0;
             filas.forEach(f => {
                 const l = aplicarOpConector(f.op || {}, 'ia_' + f.id);
@@ -19550,6 +19561,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const filas = bandejaPendiente.filter(f => ids.includes(f.id));
             if (!filas.length) return;
             if (filas.length > 1 && !confirm(`¿Descartar ${filas.length} cambios? No se aplicará ninguno.`)) return;
+            filas.forEach(f => bandejaResueltas.add(f.id));
             filas.forEach(f => {
                 const d = describirOpConector(f.op || {});
                 registrarLineaConector({ id: 'ia_' + f.id, cuando: new Date().toISOString(), tipo: f.op?.tipo, resumen: `${d.tipo}: ${d.texto}`.replace(/: $/, '.'), deshacer: null }, 'descartado');
