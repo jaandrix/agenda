@@ -804,6 +804,7 @@
                 if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
                 loadSettingsSubscriptionInfo();
                 loadSettingsPushInfo();
+                cargarConectoresAjustes();
             },
         };
 
@@ -11706,12 +11707,25 @@
             return output;
         }
 
+        // serviceWorker.ready no termina nunca si el service worker no llegó
+        // a registrarse (Ajustes se quedaba en "Cargando..." para siempre):
+        // se espera un poco, se intenta registrar aquí mismo y, si tampoco,
+        // se da por no disponible en vez de esperar indefinidamente.
+        async function serviceWorkerListo() {
+            const esperar = ms => Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), ms))]);
+            let reg = await esperar(4000);
+            if (reg) return reg;
+            try { await navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' }); } catch (e) { console.error(e); return null; }
+            return esperar(6000);
+        }
+
         async function pushNotificationsStatus() {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
             if (typeof Notification === 'undefined') return 'unsupported';
             if (Notification.permission === 'denied') return 'denied';
             try {
-                const reg = await navigator.serviceWorker.ready;
+                const reg = await serviceWorkerListo();
+                if (!reg) return 'sin-sw';
                 const sub = await reg.pushManager.getSubscription();
                 return sub ? 'enabled' : 'disabled';
             } catch (e) { return 'unsupported'; }
@@ -11725,7 +11739,8 @@
             try {
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') { showToast('No se han activado las notificaciones', true); return false; }
-                const reg = await navigator.serviceWorker.ready;
+                const reg = await serviceWorkerListo();
+                if (!reg) { showToast('No se pudo preparar el servicio de notificaciones', true); return false; }
                 let sub = await reg.pushManager.getSubscription();
                 if (!sub) {
                     sub = await reg.pushManager.subscribe({
@@ -11753,7 +11768,8 @@
 
         async function disablePushNotifications() {
             try {
-                const reg = await navigator.serviceWorker.ready;
+                const reg = await serviceWorkerListo();
+                if (!reg) return false;
                 const sub = await reg.pushManager.getSubscription();
                 if (sub) {
                     try { await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); } catch (e) { console.error(e); }
@@ -11775,10 +11791,14 @@
 
         function renderPushSettingsBody(status) {
             if (status === 'unsupported') {
-                return `<div style="font-size:12.5px;color:var(--text-secondary)">Este navegador no soporta notificaciones push.</div>`;
+                const iosSinInstalar = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone;
+                return `<div style="font-size:12.5px;color:var(--text-secondary)">${iosSinInstalar ? 'En el iPhone, las notificaciones solo funcionan con Bitácora añadida a la pantalla de inicio: Compartir → «Añadir a pantalla de inicio», y ábrela desde ese icono.' : 'Este navegador no soporta notificaciones push.'}</div>`;
             }
             if (status === 'denied') {
                 return `<div style="font-size:12.5px;color:var(--text-secondary)">Bloqueadas desde los ajustes del navegador/sistema — actívalas ahí para poder usarlas aquí.</div>`;
+            }
+            if (status === 'sin-sw') {
+                return `<div style="font-size:12.5px;color:var(--text-secondary)">No se ha podido preparar el servicio de notificaciones. Cierra Bitácora del todo y vuelve a abrirla desde el icono de inicio.</div>`;
             }
             if (status === 'cargando') {
                 return `<div style="font-size:12.5px;color:var(--text-secondary)">Cargando...</div>`;
@@ -11793,8 +11813,21 @@
                 </div>`;
         }
 
+        // En la PWA, Ajustes se pinta dos veces: en #content (escritorio,
+        // oculto) y en el carrusel móvil, con los mismos ids. getElementById
+        // devolvía el oculto y en el móvil "Notificaciones", "Suscripción" y
+        // "Claude y ChatGPT" se quedaban en "Cargando..." sin interruptor.
+        function cuerpoAjustes(id) {
+            const todos = [...document.querySelectorAll(`[id="${id}"]`)];
+            if (mobileStandaloneActive && !mobileExitedToDesktop) {
+                const movil = todos.find(el => el.closest('#mobile-shell'));
+                if (movil) return movil;
+            }
+            return todos.find(el => el.offsetParent !== null) || todos[0] || null;
+        }
+
         async function loadSettingsPushInfo() {
-            const body = document.getElementById('settings-push-body');
+            const body = cuerpoAjustes('settings-push-body');
             if (!body) return;
             const status = await pushNotificationsStatus();
             body.innerHTML = renderPushSettingsBody(status);
@@ -11889,7 +11922,7 @@
         // igual que ya hacen loadDocuments()/loadFriendsViewData() con
         // sus propias secciones).
         async function loadSettingsSubscriptionInfo() {
-            const body = document.getElementById('settings-subscription-body');
+            const body = cuerpoAjustes('settings-subscription-body');
             if (!body) return;
             const { data: { user } } = await sb.auth.getUser();
             if (!user) return;
@@ -19949,7 +19982,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         }
 
         async function cargarConectoresAjustes() {
-            const body = document.getElementById('settings-conector-body');
+            const body = cuerpoAjustes('settings-conector-body');
             if (!body) return;
             const { data, error } = await sb.from('conector_tokens').select('token_hash, nombre, creado, ultimo_uso').order('creado');
             if (error) { body.innerHTML = 'No se ha podido cargar.'; return; }
