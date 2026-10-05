@@ -407,6 +407,10 @@
         // Cambios de la IA que esperan validación en "bandeja." (filas de
         // conector_bandeja que no se aplican solas, ver OPS_AUTOMATICAS).
         let bandejaPendiente = [];
+        // Resumen de lo que Bitácora calcula (ritmo, patrones, avisos) para
+        // que el conector lo lea tal cual, sin rehacer los cálculos en el
+        // servidor con otra lógica (ver actualizarAnalisisIA).
+        let analisisIA = null;
         let plannedTrips = [];
         let apuntes = [];
         // Tareas semanales: recordatorios activos de la semana actual.
@@ -2451,6 +2455,7 @@
                 migrateInvestmentData();
                 inbox = saved.inbox || [];
                 registroConector = Array.isArray(saved.registroConector) ? saved.registroConector : [];
+                analisisIA = saved.analisisIA || null;
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
                     cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
@@ -2660,6 +2665,7 @@
                 prompts,
                 inbox,
                 registroConector,
+                analisisIA,
                 financeIncome,
                 financeProfile,
                 financePro,
@@ -5484,9 +5490,9 @@
                 entry.place = document.getElementById('modal-place')?.value?.trim() || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 const entradas = (window._entradasDraft || []).filter(x => x && (x.qrB64 || x.qr));
-                if (entradas.length) entry.entradas = entradas;
+                entry.entradas = entradas.length ? entradas : undefined;
                 const personas = Number(document.getElementById('modal-event-personas')?.value) || 1;
-                if (personas > 1) entry.personas = personas;
+                entry.personas = personas > 1 ? personas : undefined;
                 // saveEntry reconstruye la entrada desde el formulario: sin
                 // esto, editar un cine ya convertido en película lo volvería
                 // a convertir y duplicaría la película.
@@ -5535,7 +5541,11 @@
 
             if (editId) {
                 const idx = entries.findIndex(e => e.id === editId);
-                if (idx >= 0) entries[idx] = entry;
+                // Se mezcla con la entrada anterior: el formulario no tiene
+                // todos los campos (concepto del banco aprendido de una
+                // suscripción, enlace y tipo de una ficha de documento,
+                // marcas internas...) y reemplazarla entera los borraba.
+                if (idx >= 0) entries[idx] = { ...entries[idx], ...entry };
             } else {
                 entries.push(entry);
             }
@@ -7183,6 +7193,13 @@
                 .forEach(e => avisos.push({
                     accion: "switchView('finances')",
                     frase: `<b>${escapeHtml(e.title || 'Un gasto fijo')}</b> (${financeMoney(Number(e.amount) || 0)}, día ${Number(e.renewalDay) || 1}) todavía no aparece en el banco este mes. Importa el extracto para confirmarlo.`
+                }));
+
+            entries.filter(e => e.type === 'document' && e.date).map(e => ({ e, d: diasHasta(e.date) }))
+                .filter(x => x.d >= -3 && x.d <= 30).sort((a, b) => a.d - b.d).slice(0, 1)
+                .forEach(({ e, d }) => avisos.push({
+                    accion: "switchView('documents')",
+                    frase: `<b>${escapeHtml(e.title || 'Un documento')}</b> ${d < 0 ? `caducó hace ${-d} ${d === -1 ? 'día' : 'días'}` : d === 0 ? 'caduca hoy' : `caduca en ${d} ${d === 1 ? 'día' : 'días'}`}.`
                 }));
 
             const en7 = new Date(hoy + 'T12:00:00'); en7.setDate(en7.getDate() + 6);
@@ -17926,11 +17943,49 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                         <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube un documento</div>
                         <div style="font-size:12px;color:var(--text-secondary)">PDF o página HTML (guías, checklists con animaciones...) — pulsa aquí para elegir un archivo</div>
                     </div>
+                    ${renderFichasDocumentos()}
                     <div class="doc-list-toolbar">
                         <input type="text" id="doc-search-input" class="modal-input doc-search-input" placeholder="Buscar documentos por nombre..." value="${escapeHtml(docSearchQuery)}" oninput="setDocSearchQuery(this.value)">
                         <button class="btn-secondary" style="width:auto" onclick="openBackupsModal()">backups.</button>
                     </div>
                     <div id="doc-list">Cargando documentos...</div>
+                </div>`;
+        }
+
+        // Fichas de documentos sin archivo (garantías, contratos, seguros...)
+        // con fecha de caducidad: las crea el conector o el usuario desde
+        // "+ ficha."; las que caducan pronto salen primero y avisan en el
+        // inicio (avisosProximos).
+        function diasHasta(iso) {
+            return Math.round((new Date(iso + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 86400000);
+        }
+
+        function renderFichasDocumentos() {
+            const fichas = entries.filter(e => e.type === 'document')
+                .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
+            const estado = f => {
+                if (!f.date) return { texto: 'sin fecha', clase: '' };
+                const d = diasHasta(f.date);
+                if (d < 0) return { texto: `caducó hace ${-d} ${d === -1 ? 'día' : 'días'}`, clase: 'caducada' };
+                if (d === 0) return { texto: 'caduca hoy', clase: 'pronto' };
+                return { texto: `caduca en ${d} ${d === 1 ? 'día' : 'días'} · ${financeDateLabelShort(f.date)}`, clase: d <= 30 ? 'pronto' : '' };
+            };
+            return `
+                <div class="doc-fichas">
+                    <div class="doc-fichas-cab">
+                        <span>fichas.</span>
+                        <button class="finance-oneoff-btn" onclick="openNewEntry('document')">+ ficha.</button>
+                    </div>
+                    ${fichas.length ? fichas.map(f => {
+                        const st = estado(f);
+                        return `
+                        <div class="doc-ficha ${st.clase}">
+                            <span class="doc-ficha-tipo">${escapeHtml(f.docTipo || 'documento')}</span>
+                            <span class="doc-ficha-titulo">${f.url ? `<a href="${escapeHtml(f.url)}" target="_blank" rel="noopener">${escapeHtml(f.title || '')}</a>` : escapeHtml(f.title || '')}</span>
+                            <span class="doc-ficha-estado">${escapeHtml(st.texto)}</span>
+                            <button class="doc-ficha-editar" title="Editar" onclick="openEditEntry('${f.id}')">editar.</button>
+                        </div>`;
+                    }).join('') : '<div class="doc-fichas-vacio">Garantías, contratos, seguros, DNI... con su fecha de caducidad. Bitácora te avisa cuando se acerca. Claude también puede apuntarlas por ti.</div>'}
                 </div>`;
         }
 
@@ -19308,6 +19363,81 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 ev.entradas.push({ id: ref, qr: op.qr || '', qrB64: op.qrB64 || undefined, etiqueta: op.etiqueta || '' });
                 return linea('entrada', `entrada con QR para «${corto(ev.title)}».`, { accion: 'entrada', eventoId: ev.id, id: ref });
             }
+            if (op.tipo === 'entrada_crear') {
+                if (entries.some(e => e.id === ref)) return null;
+                const datos = { ...(op.datos || {}) };
+                delete datos.sinValidar;
+                entries.push({ id: ref, type: op.entryType, categoryId: getCategoryIdForType(op.entryType), tags: [], ...datos });
+                filteredEntries = [...entries];
+                return linea(ENTRADA_TIPO_REGISTRO[op.entryType] || 'entrada', `${ENTRADA_NOMBRE[op.entryType] || 'entrada'} «${corto(datos.title)}»${op.entryType === 'travel' && datos.date ? ' · ' + datos.date : ''}${op.entryType === 'document' && datos.date ? ' · caduca ' + datos.date : ''}${op.entryType === 'birthday' && datos.date ? ' · ' + datos.date.slice(8) + '/' + datos.date.slice(5, 7) : ''}${op.entryType === 'subscription' || op.entryType === 'fixed_expense' ? ` · ${financeMoney(datos.amount)} el día ${datos.renewalDay}` : ''}.`, { accion: 'quitar', coleccion: 'evento', id: ref });
+            }
+            if (op.tipo === 'entrada_editar') {
+                const e = entries.find(x => x.id === op.id);
+                if (!e) return null;
+                const antes = {};
+                Object.keys(op.datos || {}).forEach(k => { antes[k] = e[k]; });
+                Object.assign(e, op.datos || {});
+                filteredEntries = [...entries];
+                const d = op.datos || {};
+                const que = [d.active === false ? 'baja' : d.active === true ? 'reactivada' : '', d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `${d.currentValue}${e.targetValue ? ' de ' + e.targetValue : ''} ${e.unit || ''}`.trim() : '', d.status || '', d.startDate || d.endDate ? [d.startDate, d.endDate].filter(Boolean).join(' → ') : '', d.expenses ? 'gastos actualizados' : ''].filter(Boolean).join(', ');
+                return linea(ENTRADA_TIPO_REGISTRO[op.entryType] || 'cambio', `${ENTRADA_NOMBRE[op.entryType] || 'entrada'} «${corto(e.title)}»: ${que || 'cambiado'}.`, { accion: 'restaurar', id: e.id, antes });
+            }
+            if (op.tipo === 'deseo') {
+                ensureLongTermData();
+                const lista = financeProfile.wishlist;
+                if (op.accion === 'quitar') {
+                    const i = lista.findIndex(x => x.id === op.id);
+                    if (i < 0) return null;
+                    const item = lista.splice(i, 1)[0];
+                    return linea('deseo', `quitado de deseos: «${corto(item.title)}».`, { accion: 'deseo_reponer', item, i });
+                }
+                if (lista.some(x => x.id === ref)) return null;
+                lista.push({ id: ref, title: op.titulo, price: Number(op.precio) || 0 });
+                return linea('deseo', `deseo «${corto(op.titulo)}»${op.precio ? ' · ' + financeMoney(op.precio) : ''}.`, { accion: 'deseo_quitar', id: ref });
+            }
+            if (op.tipo === 'habito') {
+                if (op.accion === 'crear') {
+                    if (habits.some(h => h.id === ref)) return null;
+                    habits.push({ id: ref, texto: op.texto, activo: true, completadas: {} });
+                    return linea('hábito', `hábito nuevo «${corto(op.texto)}».`, { accion: 'habito_quitar', id: ref });
+                }
+                const h = habits.find(x => x.id === op.id);
+                if (!h) return null;
+                const antes = h.activo;
+                h.activo = !!op.activo;
+                return linea('hábito', `hábito «${corto(h.texto)}» ${op.activo ? 'reactivado' : 'en pausa'}.`, { accion: 'habito_activo', id: h.id, antes });
+            }
+            if (op.tipo === 'tarea_recurrente') {
+                if (op.accion === 'crear') {
+                    if (recurringTasks.some(t => t.id === ref)) return null;
+                    recurringTasks.push({ id: ref, activo: true, completadas: {}, ...(op.datos || {}) });
+                    return linea('recurrente', `tarea recurrente «${corto(op.datos?.texto)}» (${op.datos?.frecuencia}).`, { accion: 'recurrente_quitar', id: ref });
+                }
+                const t = recurringTasks.find(x => x.id === op.id);
+                if (!t) return null;
+                const antes = t.activo;
+                t.activo = !!op.activo;
+                return linea('recurrente', `tarea recurrente «${corto(t.texto)}» ${op.activo ? 'reactivada' : 'en pausa'}.`, { accion: 'recurrente_activo', id: t.id, antes });
+            }
+            if (op.tipo === 'enlace') {
+                if (links.some(l => l.id === ref || l.url === op.url)) return null;
+                links.unshift({ id: ref, title: op.titulo, url: op.url, categoryId: op.categoryId || '', createdAt: new Date().toISOString() });
+                return linea('enlace', `enlace «${corto(op.titulo)}».`, { accion: 'enlace_quitar', id: ref });
+            }
+            if (op.tipo === 'clase') {
+                const lista = studies.schedule[op.dia] = Array.isArray(studies.schedule[op.dia]) ? studies.schedule[op.dia] : [];
+                const dia = (STUDIES_DAYS.find(d => d.key === op.dia)?.label || op.dia).toLowerCase();
+                if (op.accion === 'quitar') {
+                    const i = lista.findIndex(b => b.time === op.hora && stripAccents(String(b.subject).toLowerCase()) === stripAccents(String(op.texto).toLowerCase()));
+                    if (i < 0) return null;
+                    const bloque = lista.splice(i, 1)[0];
+                    return linea('horario', `quitada del horario: «${corto(bloque.subject)}» el ${dia} a las ${bloque.time}.`, { accion: 'clase_reponer', dia: op.dia, bloque });
+                }
+                if (lista.some(b => b.time === op.hora && b.subject === op.texto)) return null;
+                lista.push({ time: op.hora, subject: op.texto });
+                lista.sort((a, b) => String(a.time).localeCompare(String(b.time)));
+                return linea('horario', `clase «${corto(op.texto)}» el ${dia} a las ${op.hora}.`, { accion: 'clase_quitar', dia: op.dia, bloque: { time: op.hora, subject: op.texto } });
+            }
             if (op.tipo === 'estudio_crear') {
                 const asig = findSubject(op.subjectId);
                 if (!asig) return null;
@@ -19456,6 +19586,29 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     h.completadas = h.completadas || {};
                     if (hecho) h.completadas[d.fecha] = true; else delete h.completadas[d.fecha];
                 });
+            } else if (d.accion === 'deseo_quitar') {
+                financeProfile.wishlist = (financeProfile.wishlist || []).filter(x => x.id !== d.id);
+            } else if (d.accion === 'deseo_reponer') {
+                ensureLongTermData();
+                if (!financeProfile.wishlist.some(x => x.id === d.item.id)) financeProfile.wishlist.splice(Math.min(d.i, financeProfile.wishlist.length), 0, d.item);
+            } else if (d.accion === 'habito_quitar') {
+                habits = habits.filter(h => h.id !== d.id);
+            } else if (d.accion === 'habito_activo') {
+                const h = habits.find(x => x.id === d.id); if (h) h.activo = d.antes;
+            } else if (d.accion === 'recurrente_quitar') {
+                recurringTasks = recurringTasks.filter(t => t.id !== d.id);
+            } else if (d.accion === 'recurrente_activo') {
+                const t = recurringTasks.find(x => x.id === d.id); if (t) t.activo = d.antes;
+            } else if (d.accion === 'enlace_quitar') {
+                links = links.filter(l => l.id !== d.id);
+            } else if (d.accion === 'clase_quitar') {
+                const lista = studies.schedule[d.dia] || [];
+                const i = lista.findIndex(b => b.time === d.bloque.time && b.subject === d.bloque.subject);
+                if (i >= 0) lista.splice(i, 1);
+            } else if (d.accion === 'clase_reponer') {
+                const lista = studies.schedule[d.dia] = studies.schedule[d.dia] || [];
+                lista.push(d.bloque);
+                lista.sort((a, b) => String(a.time).localeCompare(String(b.time)));
             } else if (d.accion === 'estudio_quitar') {
                 const asig = findSubject(d.subjectId);
                 if (asig?.[d.lista]) {
@@ -19549,7 +19702,17 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             }
         }
 
+        const ENTRADA_NOMBRE = { travel: 'viaje', subscription: 'suscripción', fixed_expense: 'gasto fijo', goal: 'objetivo', birthday: 'cumpleaños', document: 'documento' };
+        const ENTRADA_TIPO_REGISTRO = { travel: 'viaje', subscription: 'suscripción', fixed_expense: 'gasto fijo', goal: 'objetivo', birthday: 'cumpleaños', document: 'documento' };
+        const ENTRADA_APARTADO = { travel: 'viajes', subscription: 'finanzas', fixed_expense: 'finanzas', goal: 'objetivos', birthday: 'cumpleaños', document: 'documentos' };
+
         function apartadoDeOp(op) {
+            if (op.tipo === 'entrada_crear' || op.tipo === 'entrada_editar') return ENTRADA_APARTADO[op.entryType] || 'otros';
+            if (op.tipo === 'deseo') return 'finanzas';
+            if (op.tipo === 'habito') return 'hábitos y esfuerzo';
+            if (op.tipo === 'tarea_recurrente') return 'planificador';
+            if (op.tipo === 'enlace') return 'enlaces';
+            if (op.tipo === 'clase') return 'estudios';
             if (op.tipo === 'borrar') return { evento: 'eventos', tarea: 'planificador', movimiento: 'finanzas' }[op.coleccion] || 'otros';
             return { tarea: 'planificador', editar_tarea: 'planificador', movimiento: 'finanzas', editar_movimiento: 'finanzas', importar: 'finanzas', nota: 'notas', dia: 'hábitos y esfuerzo', estudio_crear: 'estudios', estudio_editar: 'estudios' }[op.tipo] || 'otros';
         }
@@ -19575,6 +19738,31 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                     return { tipo: 'día', texto: [op.esfuerzo ? `esfuerzo ${op.esfuerzo}/5` : '', ...nombres(op.hechos).map(n => n + ' ✓'), ...nombres(op.noHechos).map(n => n + ' ✗')].filter(Boolean).join(' · ') || 'sin cambios', meta: fecha(op.fecha) };
                 }
                 case 'borrar': return { tipo: `borrar ${op.coleccion}`, texto: op.resumen, meta: 'se puede deshacer después' };
+                case 'entrada_crear': {
+                    const d = op.datos || {};
+                    const nombre = ENTRADA_NOMBRE[op.entryType] || 'entrada';
+                    const meta = op.entryType === 'travel' ? [d.startDate && fecha(d.startDate), d.endDate && '→ ' + fecha(d.endDate), d.companions && 'con ' + d.companions, d.expenses?.length ? `${d.expenses.length} gasto${d.expenses.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')
+                        : op.entryType === 'subscription' || op.entryType === 'fixed_expense' ? `${financeMoney(d.amount)} · día ${d.renewalDay} de cada mes${d.proAccount ? ' · ' + (financePro.accounts[d.proAccount]?.name || d.proAccount) : ''}${d.vigilar ? ' · avisar si no llega' : ''}`
+                        : op.entryType === 'goal' ? [d.goalType === 'numeric' ? `${d.currentValue ?? 0} de ${d.targetValue ?? '?'} ${d.unit || ''}`.trim() : '', { short: 'corto plazo', medium: 'medio plazo', long: 'largo plazo' }[d.term] || '', d.milestones?.length ? `${d.milestones.length} hitos` : ''].filter(Boolean).join(' · ')
+                        : op.entryType === 'birthday' ? fecha(d.birthDate)
+                        : op.entryType === 'document' ? [d.docTipo, d.date ? 'caduca ' + fecha(d.date) : 'sin fecha', d.url ? 'con enlace' : ''].filter(Boolean).join(' · ') : '';
+                    return { tipo: `nuevo ${nombre}`.replace('nuevo suscripción', 'nueva suscripción'), texto: `«${d.title || ''}»`, meta, detalle: d.notes || (d.expenses?.length ? d.expenses.map(g => `${g.description}: ${financeMoney(g.amount)}`).join('\n') : '') };
+                }
+                case 'entrada_editar': {
+                    const d = op.datos || {};
+                    const nombre = ENTRADA_NOMBRE[op.entryType] || 'entrada';
+                    return { tipo: d.active === false ? `baja de ${nombre}` : d.active === true ? `reactivar ${nombre}` : `cambio de ${nombre}`, texto: `«${op.resumen}»`, meta: [d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `progreso ${d.currentValue}${d.targetValue !== undefined ? ' de ' + d.targetValue : ''}` : '', d.status || '', d.startDate ? fecha(d.startDate) : '', d.endDate ? '→ ' + fecha(d.endDate) : '', d.expenses ? 'gastos' : '', d.notes !== undefined ? 'notas' : ''].filter(Boolean).join(' · ') };
+                }
+                case 'deseo': return { tipo: op.accion === 'quitar' ? 'quitar deseo' : 'nuevo deseo', texto: `«${op.titulo}»`, meta: op.precio ? financeMoney(op.precio) : '' };
+                case 'habito': return { tipo: op.accion === 'crear' ? 'nuevo hábito' : op.activo ? 'reactivar hábito' : 'pausar hábito', texto: `«${op.texto}»`, meta: '' };
+                case 'tarea_recurrente': {
+                    const d = op.datos || {};
+                    const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+                    const cuando = d.frecuencia === 'semanal' ? 'cada ' + (d.diasSemana || []).map(n => dias[n]).join(', ') : d.frecuencia === 'mensual' ? `el día ${d.diaMes} de cada mes` : d.frecuencia === 'intervalo' ? `cada ${d.intervaloDias} días desde ${fecha(d.intervaloInicio)}` : 'todos los días';
+                    return { tipo: op.accion === 'crear' ? 'nueva tarea recurrente' : op.activo ? 'reactivar recurrente' : 'pausar recurrente', texto: `«${d.texto || op.texto}»`, meta: op.accion === 'crear' ? cuando : '' };
+                }
+                case 'enlace': return { tipo: 'nuevo enlace', texto: `«${op.titulo}»`, meta: [op.url.replace(/^https?:\/\//, '').slice(0, 60), op.categoryId ? (linkCategories.find(c => c.id === op.categoryId)?.name || '') : ''].filter(Boolean).join(' · ') };
+                case 'clase': return { tipo: op.accion === 'quitar' ? 'quitar clase' : 'nueva clase', texto: `«${op.texto}»`, meta: `${(STUDIES_DAYS.find(d => d.key === op.dia)?.label || op.dia).toLowerCase()} · ${op.hora}` };
                 case 'estudio_crear': return { tipo: op.lista === 'exams' ? 'nuevo examen' : 'nuevo trabajo', texto: `«${op.item?.title || ''}» · ${op.asignatura || findSubject(op.subjectId)?.name || ''}`, meta: [op.item?.date ? fecha(op.item.date) : 'sin fecha', op.item?.time || '', op.item?.weight ? `peso ${op.item.weight} %` : ''].filter(Boolean).join(' · ') };
                 case 'estudio_editar': return { tipo: op.lista === 'exams' ? 'cambio de examen' : 'cambio de trabajo', texto: `«${op.resumen}»`, meta: [c.grade !== undefined ? `nota ${c.grade}` : '', c.done === true ? 'marcar entregado' : c.done === false ? 'volver a pendiente' : '', c.date ? fecha(c.date) : '', c.time ? c.time : '', c.weight ? `peso ${c.weight} %` : '', c.title ? `título: «${c.title}»` : ''].filter(Boolean).join(' · ') };
             }
@@ -19623,8 +19811,39 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         const validarGrupoBandeja = grupo => validarBandeja(bandejaPendiente.filter(f => apartadoDeOp(f.op || {}) === grupo).map(f => f.id));
         const descartarGrupoBandeja = grupo => descartarBandeja(bandejaPendiente.filter(f => apartadoDeOp(f.op || {}) === grupo).map(f => f.id));
 
+        // Lo calcula la app (ritmo y patrones viven aquí) y lo deja guardado
+        // para que el conector lo lea. Como mucho cada 3 h, y solo se guarda
+        // si ha cambiado algo.
+        function construirAnalisisIA() {
+            const r = financeRitmoDatos();
+            const veredictos = { contenido: 'va más contenido que de costumbre', normal: 'va en su ritmo de siempre', alto: 'este mes va por encima de lo habitual', muy: 'este mes está gastando bastante más de lo que es normal en él' };
+            const nombreCat = id => id ? (financeProCategoryById(id)?.name || 'otros') : 'sin categoría';
+            const limpio = t => String(t || '').replace(/<[^>]+>/g, '');
+            const hallazgos = patronesHallazgos();
+            return {
+                ritmo: r.suficiente
+                    ? { veredicto: veredictos[r.nivel], dia_del_mes: r.dia, llevas: financeMoney(r.llevas), normalHoy: financeMoney(r.hoyFranja.medio), proyeccion: financeMoney(r.proyeccion), mesNormal: financeMoney(r.totalNormal), meses_analizados: r.meses, categorias_que_se_desvian: r.categorias.map(c => ({ categoria: nombreCat(c.cat), llevas: financeMoney(c.ahora), normal_a_estas_alturas: financeMoney(c.normal) })), que_cuenta: 'gasto del día a día: sin suscripciones, gastos fijos, inversiones, coleccionables ni ajustes; lo devuelto resta' }
+                    : { veredicto: 'todavía no hay meses suficientes para saber qué es normal en él', llevas: financeMoney(r.llevas) },
+                patrones: hallazgos.map(h => limpio(h.frase)),
+                avisos: avisosProximos(hallazgos).map(a => limpio(a.frase)),
+            };
+        }
+
+        let analisisIAUltimo = 0;
+        async function actualizarAnalisisIA() {
+            if (Date.now() - analisisIAUltimo < 3 * 3600e3) return;
+            analisisIAUltimo = Date.now();
+            try {
+                const nuevo = construirAnalisisIA();
+                const { actualizado, ...anterior } = analisisIA || {};
+                if (JSON.stringify(anterior) === JSON.stringify(nuevo)) return;
+                analisisIA = { actualizado: new Date().toISOString(), ...nuevo };
+                await saveData();
+            } catch (e) { console.error('Análisis para la IA:', e); }
+        }
+
         const REGISTRO_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M12 14h76v54H42L22 86V68H12z"/></svg>';
-        const BANDEJA_ORDEN = ['planificador', 'estudios', 'finanzas', 'notas', 'hábitos y esfuerzo', 'eventos', 'otros'];
+        const BANDEJA_ORDEN = ['planificador', 'estudios', 'finanzas', 'viajes', 'objetivos', 'notas', 'hábitos y esfuerzo', 'documentos', 'enlaces', 'cumpleaños', 'eventos', 'otros'];
         let bandejaHistorialAbierto = false;
         let bandejaBusqueda = '';
 
@@ -19792,8 +20011,9 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 ensureRecurringProCharges();
                 convertirCinesEnPeliculas();
                 setInterval(convertirCinesEnPeliculas, 5 * 60000);
-                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { convertirCinesEnPeliculas(); aplicarBandejaConector(); } });
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { convertirCinesEnPeliculas(); aplicarBandejaConector(); actualizarAnalisisIA(); } });
                 aplicarBandejaConector();
+                setTimeout(actualizarAnalisisIA, 1500);
             }
             await cargarCodigoAmigo();
             await cargarAmigos();

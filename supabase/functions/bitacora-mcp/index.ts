@@ -27,7 +27,7 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'hogar', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, exámenes y trabajos de Estudios, movimientos, extractos, notas, hábitos y esfuerzo, y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
 const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
 const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
@@ -66,6 +66,32 @@ function aplicarOp(data: any, op: any, id: string) {
     } else if (op.tipo === 'movimiento') {
         data.financePro = data.financePro || { transactions: [] };
         (data.financePro.transactions = data.financePro.transactions || []).push({ id: ref, date: op.fecha, account: op.cuenta, type: op.type, amount: op.importe, category: op.categoria || undefined, note: op.concepto || undefined, manual: true, needsReview: !op.categoria, sinValidar: true });
+    } else if (op.tipo === 'entrada_crear') {
+        (data.entries = data.entries || []).push({ id: ref, type: op.entryType, sinValidar: true, ...(op.datos || {}) });
+    } else if (op.tipo === 'entrada_editar') {
+        const e = (data.entries || []).find((x: any) => x?.id === op.id);
+        if (e) Object.assign(e, op.datos || {});
+    } else if (op.tipo === 'deseo') {
+        data.financeProfile = data.financeProfile || {};
+        const l = data.financeProfile.wishlist = data.financeProfile.wishlist || [];
+        if (op.accion === 'quitar') data.financeProfile.wishlist = l.filter((x: any) => x.id !== op.id);
+        else l.push({ id: ref, title: op.titulo, price: op.precio, sinValidar: true });
+    } else if (op.tipo === 'habito') {
+        const l = data.habits = data.habits || [];
+        if (op.accion === 'crear') l.push({ id: ref, texto: op.texto, activo: true, completadas: {}, sinValidar: true });
+        else { const h = l.find((x: any) => x.id === op.id); if (h) h.activo = op.activo; }
+    } else if (op.tipo === 'tarea_recurrente') {
+        const l = data.recurringTasks = data.recurringTasks || [];
+        if (op.accion === 'crear') l.push({ id: ref, completadas: {}, activo: true, ...(op.datos || {}), sinValidar: true });
+        else { const t = l.find((x: any) => x.id === op.id); if (t) t.activo = op.activo; }
+    } else if (op.tipo === 'enlace') {
+        (data.links = data.links || []).unshift({ id: ref, url: op.url, title: op.titulo, categoryId: op.categoryId || '', sinValidar: true });
+    } else if (op.tipo === 'clase') {
+        data.studies = data.studies || { subjects: [], schedule: {} };
+        const sch = data.studies.schedule = data.studies.schedule || {};
+        const l = sch[op.dia] = sch[op.dia] || [];
+        if (op.accion === 'quitar') sch[op.dia] = l.filter((b: any) => !(b.time === op.hora && norm(b.subject) === norm(op.texto)));
+        else l.push({ time: op.hora, subject: op.texto });
     } else if (op.tipo === 'estudio_crear') {
         const asig = (data.studies?.subjects || []).find((x: any) => x.id === op.subjectId);
         if (asig) (asig[op.lista] = asig[op.lista] || []).push({ id: ref, grade: '', done: false, ...op.item });
@@ -339,6 +365,46 @@ function resumenPeriodo(data: any, desde: string, hasta: string) {
     };
 }
 
+const DIAS_CLASE: Record<string, string> = { lunes: 'lun', martes: 'mar', miercoles: 'mie', jueves: 'jue', viernes: 'vie', sabado: 'sab', domingo: 'dom' };
+const DIAS_SEMANA_NUM: Record<string, number> = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 };
+
+function entradaPorTitulo(data: any, tipos: string[], titulo: unknown, id?: unknown) {
+    const lista = (data.entries || []).filter((e: any) => e && tipos.includes(e.type));
+    if (id) return lista.find((e: any) => e.id === id) || null;
+    const q = norm(titulo).trim();
+    if (!q) return null;
+    return lista.find((e: any) => norm(e.title).trim() === q) || lista.find((e: any) => norm(e.title).includes(q)) || null;
+}
+
+// Cargos que se repiten cada mes (mismo concepto, importe parecido, al
+// menos 3 meses distintos en los últimos 8) y que no están dados de alta
+// como suscripción o gasto fijo.
+function detectarSuscripciones(data: any) {
+    const hoy = hoyISO();
+    const desde = sumarDias(hoy, -245);
+    const clave = (t: any) => norm(t.bankNote ?? t.note).replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, 3).join(' ');
+    const recurrentes = (data.entries || []).filter((e: any) => e?.type === 'subscription' || e?.type === 'fixed_expense');
+    const yaDadas = (k: string) => recurrentes.some((e: any) => (e.conceptoBanco && k.includes(e.conceptoBanco.split(' ')[0])) || norm(e.title).split(/[^a-z0-9]+/).some((w: string) => w.length >= 4 && k.includes(w)));
+    const grupos: Record<string, any[]> = {};
+    (data.financePro?.transactions || []).forEach((t: any) => {
+        if (t?.type !== 'expense' || !t.date || t.date < desde || t.recurringEntryId) return;
+        const k = clave(t);
+        if (k.length >= 3) (grupos[k] = grupos[k] || []).push(t);
+    });
+    const res: any[] = [];
+    Object.entries(grupos).forEach(([k, l]) => {
+        const meses = new Set(l.map(t => t.date.slice(0, 7)));
+        if (meses.size < 3 || yaDadas(k)) return;
+        const importes = l.map(t => Number(t.amount) || 0).sort((a, b) => a - b);
+        const mediana = importes[Math.floor(importes.length / 2)];
+        const parecidos = importes.filter(v => Math.abs(v - mediana) <= Math.max(1, mediana * 0.1)).length;
+        if (parecidos / importes.length < 0.8 || l.length > meses.size * 2) return;
+        const dias = l.map(t => Number(t.date.slice(8, 10))).sort((a, b) => a - b);
+        res.push({ concepto: l[l.length - 1].bankNote || l[l.length - 1].note, importe_habitual: euros(mediana), dia_habitual: dias[Math.floor(dias.length / 2)], meses_seguidos: meses.size, ultimo_cargo: l.map(t => t.date).sort().pop() });
+    });
+    return res.sort((a, b) => b.meses_seguidos - a.meses_seguidos);
+}
+
 // Asignatura por nombre, con o sin tildes y sin exigir el nombre completo
 // ("soste" vale para "Sostenibilidad").
 function asignaturaPorNombre(data: any, nombre: unknown) {
@@ -528,6 +594,119 @@ const HERRAMIENTAS = [
         },
     },
     {
+        name: 'viaje',
+        description: 'Crea o cambia un viaje en el apartado Viajes (destino, fechas, acompañantes, notas y gastos previstos o hechos). Ideal a partir de reservas de Booking, vuelos o correos. Los vuelos o planes con hora concreta, además, como eventos con crear_evento. Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: { type: 'string', description: 'Solo para cambiar uno existente' }, destino: { type: 'string' }, titulo: { type: 'string' },
+                fecha_inicio: { type: 'string' }, fecha_fin: { type: 'string' }, acompanantes: { type: 'string' }, notas: { type: 'string' },
+                gastos: { type: 'array', items: { type: 'object', properties: { concepto: { type: 'string' }, importe: { type: 'number' } } } },
+            },
+        },
+    },
+    {
+        name: 'suscripcion',
+        description: 'Da de alta, cambia o da de baja una suscripción o un gasto fijo mensual (Netflix, alquiler, la aportación al fondo...). Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                accion: { type: 'string', enum: ['alta', 'cambiar', 'baja', 'reactivar'] }, tipo: { type: 'string', enum: ['suscripcion', 'gasto_fijo'] },
+                nombre: { type: 'string', description: 'Nombre, o el actual si es cambiar/baja' }, importe: { type: 'number' }, dia: { type: 'number', description: 'Día del mes en que se cobra' },
+                cuenta: { type: 'string', enum: CUENTAS }, avisar_si_no_llega: { type: 'boolean', description: 'Avisar si no aparece en el banco' },
+            },
+            required: ['accion', 'nombre'],
+        },
+    },
+    {
+        name: 'detectar_suscripciones',
+        description: 'Busca en los movimientos de los últimos meses cargos que se repiten cada mes y que no están dados de alta como suscripción o gasto fijo. Úsalo para proponer altas (con la herramienta suscripcion).',
+        inputSchema: { type: 'object', properties: {} },
+        annotations: { readOnlyHint: true },
+    },
+    {
+        name: 'deseo',
+        description: 'Añade algo a la lista de deseos (wishlist de Largo plazo) con su precio, o lo quita. Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: { type: 'object', properties: { accion: { type: 'string', enum: ['anadir', 'quitar'] }, titulo: { type: 'string' }, precio: { type: 'number' } }, required: ['accion', 'titulo'] },
+    },
+    {
+        name: 'puedo_permitirmelo',
+        description: 'Para preguntas tipo "¿me puedo comprar X de N €?": devuelve el colchón disponible según su planificación (sueldo sin asignar acumulado en los meses cerrados, el mismo criterio del semáforo de su wishlist), cómo va de ritmo de gasto este mes y su lista de deseos. Responde con criterio y sin sermones.',
+        inputSchema: { type: 'object', properties: { precio: { type: 'number' }, concepto: { type: 'string' } }, required: ['precio'] },
+        annotations: { readOnlyHint: true },
+    },
+    {
+        name: 'habito',
+        description: 'Crea un hábito nuevo, o pausa o reactiva uno existente por su nombre. Para marcar un hábito como hecho un día, usa registrar_dia. Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: { type: 'object', properties: { accion: { type: 'string', enum: ['crear', 'pausar', 'reactivar'] }, nombre: { type: 'string' } }, required: ['accion', 'nombre'] },
+    },
+    {
+        name: 'tarea_recurrente',
+        description: 'Crea una tarea que se repite (cada día, ciertos días de la semana, un día de cada mes o cada N días), o pausa/reactiva una existente. Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                accion: { type: 'string', enum: ['crear', 'pausar', 'reactivar'] }, texto: { type: 'string' },
+                frecuencia: { type: 'string', enum: ['diaria', 'semanal', 'mensual', 'intervalo'] },
+                dias_semana: { type: 'array', items: { type: 'string', enum: Object.keys(DIAS_SEMANA_NUM) } },
+                dia_mes: { type: 'number' }, cada_dias: { type: 'number' }, desde: { type: 'string', description: 'AAAA-MM-DD, para "intervalo"' },
+            },
+            required: ['accion', 'texto'],
+        },
+    },
+    {
+        name: 'avisar',
+        description: 'Manda ahora mismo una notificación push al móvil o al ordenador del usuario a través de Bitácora. Para avisos de verdad útiles (algo que no ha llegado, un plazo que vence, lo que pidió que le recordaras), sobre todo desde tareas programadas. Úsalo con mesura: nunca para resúmenes rutinarios.',
+        inputSchema: { type: 'object', properties: { titulo: { type: 'string' }, texto: { type: 'string' } }, required: ['titulo'] },
+    },
+    {
+        name: 'objetivo',
+        description: 'Crea un objetivo o actualiza uno existente: progreso numérico (actual/meta y unidad: "7 de 20 libros", "1200 de 3000 €"), estado o hitos. Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                accion: { type: 'string', enum: ['crear', 'actualizar'] }, titulo: { type: 'string' }, id: { type: 'string' },
+                plazo: { type: 'string', enum: ['corto', 'medio', 'largo'] }, actual: { type: 'number' }, meta: { type: 'number' }, unidad: { type: 'string' },
+                estado: { type: 'string', enum: ['Pendiente', 'En progreso', 'Completado'] }, hitos: { type: 'array', items: { type: 'string' } }, notas: { type: 'string' },
+            },
+            required: ['accion', 'titulo'],
+        },
+    },
+    {
+        name: 'analisis',
+        description: 'Lo que la propia Bitácora calcula sobre el usuario: ritmo de gasto del mes frente a lo normal en él (veredicto, proyección a fin de mes, categorías que se desvían), patrones entre apartados (gasto, hábitos, esfuerzo, planes, exámenes) y los avisos que le está mostrando. Úsalo para preguntas de cómo va y por qué.',
+        inputSchema: { type: 'object', properties: {} },
+        annotations: { readOnlyHint: true },
+    },
+    {
+        name: 'guardar_enlace',
+        description: 'Guarda un enlace (artículo, vídeo, receta, web...) en el apartado Enlaces, opcionalmente en una de sus categorías. Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: { type: 'object', properties: { url: { type: 'string' }, titulo: { type: 'string' }, categoria: { type: 'string' } }, required: ['url'] },
+    },
+    {
+        name: 'cumpleanos',
+        description: 'Apunta el cumpleaños de alguien (aparece en el calendario cada año). Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: { type: 'object', properties: { nombre: { type: 'string' }, apellido: { type: 'string' }, fecha: { type: 'string', description: 'AAAA-MM-DD; si no se sabe el año, usa 2000' } }, required: ['nombre', 'fecha'] },
+    },
+    {
+        name: 'horario_clase',
+        description: 'Añade o quita una clase del horario semanal de Estudios (por ejemplo, desde la foto o el PDF del horario: una llamada por clase). Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: {
+            type: 'object',
+            properties: { accion: { type: 'string', enum: ['anadir', 'quitar'] }, dia: { type: 'string', enum: Object.keys(DIAS_CLASE) }, hora: { type: 'string', description: 'HH:MM de inicio' }, texto: { type: 'string', description: 'Asignatura y, si hay, aula: "Sostenibilidad · Aula 3"' } },
+            required: ['accion', 'dia', 'hora', 'texto'],
+        },
+    },
+    {
+        name: 'documento',
+        description: 'Registra una ficha en Documentos: garantía, contrato, seguro, DNI/pasaporte, matrícula... con su fecha de caducidad o fin de garantía y, si está en Drive, el enlace. Bitácora avisa en el inicio cuando se acerca la fecha. No sube archivos. Queda en la bandeja hasta que el usuario lo valide.',
+        inputSchema: {
+            type: 'object',
+            properties: { titulo: { type: 'string' }, tipo: { type: 'string', enum: ['garantía', 'contrato', 'seguro', 'identidad', 'factura', 'otro'] }, caduca: { type: 'string', description: 'AAAA-MM-DD' }, enlace: { type: 'string' }, notas: { type: 'string' } },
+            required: ['titulo'],
+        },
+    },
+    {
         name: 'ocio',
         description: 'Añade o actualiza un libro, una película, una serie o un videojuego en Ocio (se aplica solo, sin validar). Si ya existe uno con ese título, lo actualiza: por ejemplo, terminarlo (fecha_fin), valorarlo (1 a 5) o cambiar su estado.',
         inputSchema: {
@@ -706,6 +885,173 @@ async function llamar(userId: string, nombre: string, a: any) {
             const desde = esFecha(a.desde) ? a.desde : sumarDias(hasta, -6);
             if (desde > hasta) throw new Error('desde es posterior a hasta');
             return resumenPeriodo(data, desde, hasta);
+        }
+        case 'viaje': {
+            const existente = a.id ? entradaPorTitulo(data, ['travel'], '', a.id) : null;
+            if (a.id && !existente) throw new Error('No encuentro ese viaje; busca su id con apartado viajes');
+            const datos: any = {};
+            if (a.destino) datos.destination = String(a.destino);
+            if (a.titulo || (!existente && a.destino)) datos.title = String(a.titulo || a.destino);
+            if (esFecha(a.fecha_inicio)) datos.startDate = a.fecha_inicio;
+            if (esFecha(a.fecha_fin)) datos.endDate = a.fecha_fin;
+            if (datos.startDate || datos.endDate) datos.date = datos.startDate || datos.endDate;
+            if (a.acompanantes !== undefined) datos.companions = String(a.acompanantes || '');
+            if (a.notas !== undefined) datos.notes = String(a.notas || '');
+            if (Array.isArray(a.gastos)) datos.expenses = [...(existente?.expenses || []), ...a.gastos.filter((g: any) => g && g.concepto).map((g: any) => ({ description: String(g.concepto), amount: Math.abs(Number(g.importe) || 0) }))];
+            if (existente) {
+                if (!Object.keys(datos).length) throw new Error('No hay nada que cambiar');
+                await encolar(userId, { tipo: 'entrada_editar', entryType: 'travel', id: existente.id, datos, resumen: existente.title });
+                return `Cambio propuesto para el viaje «${existente.title}».${PENDIENTE}`;
+            }
+            if (!datos.title) throw new Error('Falta el destino');
+            await encolar(userId, { tipo: 'entrada_crear', entryType: 'travel', datos: { destination: '', startDate: '', endDate: '', date: '', companions: '', notes: '', expenses: [], ...datos } });
+            return `Viaje propuesto: «${datos.title}»${datos.startDate ? ` del ${datos.startDate}` : ''}${datos.endDate ? ` al ${datos.endDate}` : ''}.${PENDIENTE}`;
+        }
+        case 'suscripcion': {
+            const t = a.tipo === 'gasto_fijo' ? 'fixed_expense' : 'subscription';
+            if (a.accion === 'alta') {
+                const importe = Math.abs(Number(a.importe));
+                if (!(importe > 0)) throw new Error('Falta el importe mensual');
+                const dia = Math.min(31, Math.max(1, Math.round(Number(a.dia)) || 1));
+                const ya = entradaPorTitulo(data, ['subscription', 'fixed_expense'], a.nombre);
+                if (ya && ya.active !== false) return `Ya existe «${ya.title}» (${euros(Number(ya.amount) || 0)}, día ${ya.renewalDay}). Si quieres cambiarla, usa accion "cambiar".`;
+                const datos: any = { title: String(a.nombre), amount: importe, renewalDay: dia, active: true, proAccount: CUENTAS.includes(a.cuenta) ? a.cuenta : (t === 'subscription' ? 'bancos' : ''), vigilar: !!a.avisar_si_no_llega, date: hoy };
+                await encolar(userId, { tipo: 'entrada_crear', entryType: t, datos });
+                return `Alta propuesta: ${t === 'subscription' ? 'suscripción' : 'gasto fijo'} «${a.nombre}», ${euros(importe)} el día ${dia} de cada mes.${PENDIENTE}`;
+            }
+            const e = entradaPorTitulo(data, ['subscription', 'fixed_expense'], a.nombre);
+            if (!e) throw new Error(`No encuentro «${a.nombre}» entre sus suscripciones y gastos fijos`);
+            const datos: any = {};
+            if (a.accion === 'baja') datos.active = false;
+            if (a.accion === 'reactivar') datos.active = true;
+            if (a.accion === 'cambiar') {
+                if (Number(a.importe) > 0) datos.amount = Math.abs(Number(a.importe));
+                if (Number(a.dia) >= 1) datos.renewalDay = Math.min(31, Math.round(Number(a.dia)));
+                if (CUENTAS.includes(a.cuenta)) datos.proAccount = a.cuenta;
+                if (typeof a.avisar_si_no_llega === 'boolean') datos.vigilar = a.avisar_si_no_llega;
+            }
+            if (!Object.keys(datos).length) throw new Error('No hay nada que cambiar');
+            await encolar(userId, { tipo: 'entrada_editar', entryType: e.type, id: e.id, datos, resumen: e.title });
+            return `${a.accion === 'baja' ? 'Baja' : a.accion === 'reactivar' ? 'Reactivación' : 'Cambio'} propuesto para «${e.title}».${PENDIENTE}`;
+        }
+        case 'detectar_suscripciones': {
+            const r = detectarSuscripciones(data);
+            return r.length ? r : 'No veo cargos mensuales repetidos sin dar de alta.';
+        }
+        case 'deseo': {
+            if (a.accion === 'quitar') {
+                const d = (data.financeProfile?.wishlist || []).find((x: any) => norm(x.title).includes(norm(a.titulo).trim()));
+                if (!d) throw new Error(`No encuentro «${a.titulo}» en la lista de deseos`);
+                await encolar(userId, { tipo: 'deseo', accion: 'quitar', id: d.id, titulo: d.title, precio: d.price });
+                return `Propuesto quitar «${d.title}» de la lista de deseos.${PENDIENTE}`;
+            }
+            const precio = Math.abs(Number(a.precio)) || 0;
+            await encolar(userId, { tipo: 'deseo', accion: 'anadir', titulo: String(a.titulo), precio });
+            return `Propuesto añadir «${a.titulo}»${precio ? ` (${euros(precio)})` : ''} a la lista de deseos.${PENDIENTE}`;
+        }
+        case 'puedo_permitirmelo': {
+            const disponible = (data.financeProfile?.budgetHistory || []).reduce((s2: number, h: any) => s2 + (Number(h.saved) || 0), 0);
+            const precio = Math.abs(Number(a.precio)) || 0;
+            const ritmo = data.analisisIA?.ritmo || null;
+            return {
+                precio: euros(precio),
+                colchon_disponible: euros(Math.max(0, disponible)),
+                cabe_en_el_colchon: precio <= disponible,
+                criterio: 'colchón = sueldo sin asignar acumulado en los meses ya grabados de su planificación (el mismo semáforo de su wishlist)',
+                ritmo_del_mes: ritmo ? { veredicto: ritmo.veredicto, llevas: ritmo.llevas, lo_normal_hoy: ritmo.normalHoy, a_fin_de_mes: ritmo.proyeccion } : 'sin calcular (abre Bitácora para actualizarlo)',
+                saldos: saldos(data),
+                lista_de_deseos: (data.financeProfile?.wishlist || []).map((w: any) => ({ deseo: w.title, precio: euros(Number(w.price) || 0), ya_cabe: (Number(w.price) || 0) > 0 && (Number(w.price) || 0) <= disponible })),
+            };
+        }
+        case 'habito': {
+            if (a.accion === 'crear') {
+                const ya = (data.habits || []).find((h: any) => norm(h.texto).trim() === norm(a.nombre).trim());
+                if (ya) return `Ya existe el hábito «${ya.texto}»${ya.activo === false ? ' (pausado; usa reactivar)' : ''}.`;
+                await encolar(userId, { tipo: 'habito', accion: 'crear', texto: String(a.nombre) });
+                return `Hábito propuesto: «${a.nombre}».${PENDIENTE}`;
+            }
+            const h = (data.habits || []).find((x: any) => norm(x.texto).includes(norm(a.nombre).trim()));
+            if (!h) throw new Error(`No encuentro el hábito «${a.nombre}». Los del usuario: ${(data.habits || []).map((x: any) => x.texto).join(', ')}`);
+            await encolar(userId, { tipo: 'habito', accion: 'activo', id: h.id, texto: h.texto, activo: a.accion === 'reactivar' });
+            return `Propuesto ${a.accion === 'reactivar' ? 'reactivar' : 'pausar'} «${h.texto}».${PENDIENTE}`;
+        }
+        case 'tarea_recurrente': {
+            if (a.accion === 'crear') {
+                const f = ['diaria', 'semanal', 'mensual', 'intervalo'].includes(a.frecuencia) ? a.frecuencia : 'diaria';
+                const datos: any = { texto: String(a.texto), frecuencia: f };
+                if (f === 'semanal') { const d = (a.dias_semana || []).map((x: string) => DIAS_SEMANA_NUM[norm(x)]).filter((x: any) => x !== undefined); datos.diasSemana = d.length ? d : [1]; }
+                if (f === 'mensual') datos.diaMes = Math.min(31, Math.max(1, Math.round(Number(a.dia_mes)) || 1));
+                if (f === 'intervalo') { datos.intervaloDias = Math.max(2, Math.round(Number(a.cada_dias)) || 2); datos.intervaloInicio = esFecha(a.desde) ? a.desde : hoy; }
+                await encolar(userId, { tipo: 'tarea_recurrente', accion: 'crear', datos });
+                return `Tarea recurrente propuesta: «${a.texto}» (${f}).${PENDIENTE}`;
+            }
+            const t = (data.recurringTasks || []).find((x: any) => norm(x.texto).includes(norm(a.texto).trim()));
+            if (!t) throw new Error(`No encuentro la tarea recurrente «${a.texto}»`);
+            await encolar(userId, { tipo: 'tarea_recurrente', accion: 'activo', id: t.id, texto: t.texto, activo: a.accion === 'reactivar' });
+            return `Propuesto ${a.accion === 'reactivar' ? 'reactivar' : 'pausar'} «${t.texto}».${PENDIENTE}`;
+        }
+        case 'avisar': {
+            if (!a.titulo) throw new Error('Falta el título del aviso');
+            const secreto = Deno.env.get('INTERNAL_PUSH_SECRET') || '';
+            const res = await fetch(Deno.env.get('SUPABASE_URL') + '/functions/v1/send-push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-internal-secret': secreto, Authorization: 'Bearer ' + Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') },
+                body: JSON.stringify({ user_id: userId, title: String(a.titulo).slice(0, 80), body: String(a.texto || '').slice(0, 240), url: '/', tag: 'claude' }),
+            });
+            const r = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error('No se pudo enviar el aviso: ' + (r.error || res.status));
+            return r.sent ? `Aviso enviado a ${r.sent} dispositivo${r.sent === 1 ? '' : 's'}.` : 'El usuario no tiene las notificaciones activadas en ningún dispositivo (Ajustes de Bitácora → Notificaciones).';
+        }
+        case 'objetivo': {
+            const plazos: Record<string, string> = { corto: 'short', medio: 'medium', largo: 'long' };
+            const datos: any = {};
+            if (a.plazo && plazos[a.plazo]) datos.term = plazos[a.plazo];
+            if (a.meta !== undefined || a.actual !== undefined) { datos.goalType = 'numeric'; if (a.actual !== undefined) datos.currentValue = Number(a.actual) || 0; if (a.meta !== undefined) datos.targetValue = Number(a.meta) || 0; }
+            if (a.unidad) datos.unit = String(a.unidad);
+            if (a.estado) datos.status = a.estado;
+            if (Array.isArray(a.hitos)) datos.milestones = a.hitos.map((x: string) => ({ text: String(x), done: false }));
+            if (a.notas !== undefined) datos.notes = String(a.notas || '');
+            if (a.accion === 'actualizar') {
+                const g = entradaPorTitulo(data, ['goal'], a.titulo, a.id);
+                if (!g) throw new Error(`No encuentro el objetivo «${a.titulo}»`);
+                if (!Object.keys(datos).length) throw new Error('No hay nada que cambiar');
+                await encolar(userId, { tipo: 'entrada_editar', entryType: 'goal', id: g.id, datos, resumen: g.title });
+                return `Cambio propuesto para el objetivo «${g.title}»${datos.currentValue !== undefined ? `: ${datos.currentValue}${datos.targetValue ?? g.targetValue ? ' de ' + (datos.targetValue ?? g.targetValue) : ''} ${datos.unit || g.unit || ''}` : ''}.${PENDIENTE}`;
+            }
+            await encolar(userId, { tipo: 'entrada_crear', entryType: 'goal', datos: { title: String(a.titulo), term: 'short', goalType: 'simple', status: 'Pendiente', milestones: [], tags: [], notes: '', date: hoy, ...datos } });
+            return `Objetivo propuesto: «${a.titulo}».${PENDIENTE}`;
+        }
+        case 'analisis': {
+            return data.analisisIA || 'Todavía no hay análisis guardado: se calcula al abrir Bitácora.';
+        }
+        case 'guardar_enlace': {
+            const url = String(a.url || '').trim();
+            if (!/^https?:\/\/\S+$/i.test(url)) throw new Error('URL no válida');
+            if ((data.links || []).some((l: any) => l.url === url)) return 'Ese enlace ya estaba guardado.';
+            const cat = a.categoria ? (data.linkCategories || []).find((c: any) => norm(c.name).includes(norm(a.categoria).trim())) : null;
+            await encolar(userId, { tipo: 'enlace', url, titulo: String(a.titulo || url), categoryId: cat?.id || '' });
+            return `Enlace propuesto${cat ? ' en ' + cat.name : ''}: «${a.titulo || url}».${PENDIENTE}`;
+        }
+        case 'cumpleanos': {
+            if (!esFecha(a.fecha)) throw new Error('Fecha en formato AAAA-MM-DD (si no sabes el año, usa 2000)');
+            const titulo = [a.nombre, a.apellido].filter(Boolean).join(' ').trim();
+            const ya = (data.entries || []).find((e: any) => e?.type === 'birthday' && norm(e.title).trim() === norm(titulo));
+            if (ya) return `Ya estaba el cumpleaños de ${ya.title} (${ya.birthDate}).`;
+            await encolar(userId, { tipo: 'entrada_crear', entryType: 'birthday', datos: { title: titulo, firstName: String(a.nombre || ''), lastName: String(a.apellido || ''), birthDate: a.fecha, date: a.fecha, tags: [] } });
+            return `Cumpleaños propuesto: ${titulo}, el ${a.fecha.slice(8)}/${a.fecha.slice(5, 7)}.${PENDIENTE}`;
+        }
+        case 'horario_clase': {
+            const dia = DIAS_CLASE[norm(a.dia)];
+            if (!dia) throw new Error('Día no válido');
+            if (!/^\d{2}:\d{2}$/.test(a.hora || '')) throw new Error('Hora en formato HH:MM');
+            await encolar(userId, { tipo: 'clase', accion: a.accion === 'quitar' ? 'quitar' : 'anadir', dia, hora: a.hora, texto: String(a.texto || '') });
+            return `Propuesto ${a.accion === 'quitar' ? 'quitar' : 'añadir'} «${a.texto}» el ${a.dia} a las ${a.hora}.${PENDIENTE}`;
+        }
+        case 'documento': {
+            const datos: any = { title: String(a.titulo), docTipo: a.tipo || 'otro', date: esFecha(a.caduca) ? a.caduca : '', notes: String(a.notas || ''), tags: [] };
+            if (/^https?:\/\//i.test(a.enlace || '')) datos.url = a.enlace;
+            await encolar(userId, { tipo: 'entrada_crear', entryType: 'document', datos });
+            return `Ficha propuesta en Documentos: «${a.titulo}»${datos.date ? `, caduca el ${datos.date}` : ''}.${PENDIENTE}`;
         }
         case 'estudios_crear': {
             const asig = asignaturaPorNombre(data, a.asignatura);
