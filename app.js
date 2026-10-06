@@ -407,6 +407,8 @@
         // necesario para deshacerlo (ver aplicarOpConector). Lo más nuevo
         // primero; se guardan las últimas REGISTRO_CONECTOR_MAX.
         let registroConector = [];
+        // Pedidos de "actualizaciones." (lógica en actualizaciones.js).
+        let pedidos = [];
         // Cambios de la IA que esperan validación en "bandeja." (filas de
         // conector_bandeja que no se aplican solas, ver OPS_AUTOMATICAS).
         let bandejaPendiente = [];
@@ -620,6 +622,7 @@
             friends: 'Amigos',
             studies: 'Estudios',
             links: 'Enlaces',
+            actualizaciones: 'Actualizaciones',
             bandeja: 'Bandeja',
             suggestions: 'Sugerencias',
             settings: 'Ajustes'
@@ -651,6 +654,7 @@
             { label: 'Otros', items: [
                 { view: 'culture', icon: '◊', text: 'Ocio' },
                 { view: 'travels', icon: '⌂', text: 'Viajes' },
+                { view: 'actualizaciones', icon: '▣', text: 'Actualizaciones' },
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
                 { view: 'friends', icon: '◕', text: 'Amigos' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
@@ -752,6 +756,7 @@
 
         function mobileCuentaMenu(view) {
             if (view === 'bandeja') return bandejaPendiente.length;
+            if (view === 'actualizaciones') return pedidos.filter(p => p.estado !== 'entregado').length;
             if (view === 'planner') {
                 const hoy = todayISO();
                 return plannerItemsForOffset(0).filter(i => !i.done).length + recurringTasksDueToday().filter(t => !t.completadas?.[hoy]).length;
@@ -988,6 +993,8 @@
                 examen ? tesela('studies', diasExamen === 0 ? 'hoy' : diasExamen, `${diasExamen === 0 ? '' : diasExamen === 1 ? 'día para ' : 'días para '}${escapeHtml(examen.title || 'el examen').toLowerCase()}.`) : tesela('studies', '—', 'sin exámenes a la vista.'),
             ];
             if (bandejaPendiente.length) teselas.push(tesela('bandeja', bandejaPendiente.length, `${bandejaPendiente.length === 1 ? 'cambio' : 'cambios'} de claude por validar.`, '', 'm-tesela-acento'));
+            const enCamino = pedidos.filter(p => p.estado !== 'entregado');
+            if (enCamino.length) teselas.push(tesela('actualizaciones', enCamino.length, `${enCamino.length === 1 ? 'pedido' : 'pedidos'} en camino.`));
             if (viaje) teselas.push(tesela('travels', diasViaje === 0 ? 'hoy' : diasViaje, `${diasViaje === 0 ? 'empieza ' : diasViaje === 1 ? 'día para ' : 'días para '}${escapeHtml((viaje.destination || viaje.title || '').split(',')[0])}.`));
             if (teselas.length % 2) teselas.push(tesela('notes', notes.length, 'notas escritas.'));
             return `<section class="m-teselas">${teselas.join('')}</section>`;
@@ -1012,6 +1019,7 @@
             culture: renderCulture, collectibles: renderCollectibles, documents: renderDocuments,
             friends: renderFriendsView, tags: renderTagsView, graph: renderGraph,
             bandeja: renderBandeja, suggestions: renderSuggestions, settings: renderSettings,
+            actualizaciones: () => renderActualizaciones(),
         };
 
         // Efectos que en escritorio se disparan tras pintar ciertas vistas
@@ -2793,6 +2801,7 @@
                 analisisIA = saved.analisisIA || null;
                 preferenciasAvisos = (saved.preferenciasAvisos && typeof saved.preferenciasAvisos === 'object') ? saved.preferenciasAvisos : {};
                 ciudadTiempo = saved.ciudadTiempo || null;
+                pedidos = Array.isArray(saved.pedidos) ? saved.pedidos : [];
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
                     cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
@@ -2978,7 +2987,8 @@
             studies: [() => studies, v => { studies = v; }],
             links: [() => links, v => { links = v; }],
             linkCategories: [() => linkCategories, v => { linkCategories = v; }],
-            blurFinances: [() => blurFinances, v => { blurFinances = v; }]
+            blurFinances: [() => blurFinances, v => { blurFinances = v; }],
+            pedidos: [() => pedidos, v => { pedidos = v; }]
         };
         let datosBase = null;
         const clonarDatos = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));
@@ -6223,6 +6233,7 @@
                 loadFriendsViewData(); }
             else if (currentView === 'studies') content.innerHTML = renderStudies();
             else if (currentView === 'links') content.innerHTML = renderLinks();
+            else if (currentView === 'actualizaciones') content.innerHTML = renderActualizaciones();
             else if (currentView === 'suggestions') { content.innerHTML = renderSuggestions(); loadMySuggestions(); }
             else if (currentView === 'bandeja') { content.innerHTML = renderBandeja(); if (!aplicandoBandeja && Date.now() - bandejaUltimaLectura > 15000) setTimeout(aplicarBandejaConector, 0); }
             else if (currentView === 'settings') { content.innerHTML = renderSettings();

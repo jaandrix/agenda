@@ -6109,3 +6109,53 @@ body.papel .doc-ficha.caducada .doc-ficha-estado { color: #a3243b; }
 .evento-aviso-btn { padding:3px 10px; border:1px solid var(--border-strong); border-radius:999px; background:none; color:var(--text-primary); font-family:var(--font-family); font-size:11.5px; font-weight:600; cursor:pointer; }
 .evento-aviso-btn:hover { background:var(--bg-card-hover); }
 
+
+/* ============================================================
+   ACTUALIZACIONES — seguimiento de pedidos (actualizaciones.js)
+   ============================================================ */
+.pedidos-vista { max-width:1000px; }
+.pedidos-cabecera { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+.pedidos-titulo { font-size:26px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); line-height:1.1; }
+.pedidos-sub { margin-top:4px; font-size:13px; color:var(--text-secondary); }
+.pedidos-nuevo { width:auto; margin:0; padding:11px 20px; }
+.pedidos-lista { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:12px; }
+.pedidos-lista-entregados .pedido { opacity:.7; }
+.pedido { display:flex; flex-direction:column; gap:10px; padding:18px; border-radius:18px; background:var(--bg-card); border:1px solid var(--border); box-sizing:border-box; }
+.pedido.retraso { border-color:#a3243b; }
+.pedido-top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.pedido-tienda { font-size:11.5px; font-weight:700; color:var(--text-secondary); }
+.pedido-precio { font-size:13px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.pedido-titulo { font-size:17px; font-weight:700; letter-spacing:-.2px; color:var(--text-primary); line-height:1.25; overflow-wrap:anywhere; }
+.pedido-llegada { margin-top:-6px; font-size:12.5px; color:var(--text-secondary); }
+.pedido.retraso .pedido-llegada { color:#a3243b; font-weight:600; }
+.pedido-pasos { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); margin:4px 0 2px; }
+.pedido-paso { position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; }
+.pedido-paso::before { content:''; position:absolute; top:5px; right:50%; width:100%; height:2px; background:var(--border-strong); }
+.pedido-paso:first-child::before { display:none; }
+.pedido-paso.hecho::before { background:var(--text-primary); }
+.pedido-paso span { position:relative; z-index:1; width:12px; height:12px; box-sizing:border-box; border-radius:50%; border:2px solid var(--border-strong); background:var(--bg-card); }
+.pedido-paso.hecho span { border-color:var(--text-primary); background:var(--text-primary); }
+.pedido-paso.actual span { box-shadow:0 0 0 4px var(--bg-card-hover); }
+.pedido-paso small { font-size:10px; font-weight:600; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.pedido-paso.actual small { color:var(--text-primary); }
+.pedido-nota { font-size:12px; color:var(--text-secondary); padding:8px 10px; border-radius:10px; background:var(--bg-app); }
+.pedido-codigo { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 6px 6px 10px; border-radius:10px; border:1px dashed var(--border-strong); }
+.pedido-codigo code { font-size:12.5px; color:var(--text-primary); letter-spacing:.3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pedido-codigo button { flex-shrink:0; padding:4px 10px; border:0; border-radius:999px; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:11.5px; font-weight:600; cursor:pointer; }
+.pedido-codigo button:hover { color:var(--text-primary); background:var(--bg-card-hover); }
+.pedido-acciones { display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+.pedido-btn { display:inline-flex; align-items:center; padding:7px 13px; border-radius:999px; border:1px solid var(--border-strong); background:none; color:var(--text-primary); font-family:var(--font-family); font-size:12px; font-weight:600; text-decoration:none; cursor:pointer; transition:background-color .15s ease, transform .15s var(--ease-out); }
+.pedido-btn:hover { background:var(--bg-card-hover); }
+.pedido-btn:active { transform:scale(.97); }
+.pedido-btn-principal { background:var(--text-primary); border-color:var(--text-primary); color:var(--accent-contrast); }
+.pedido-btn-principal:hover { background:var(--text-primary); opacity:.9; }
+.pedidos-vacio { display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px; padding:48px 16px; border-radius:18px; border:1px dashed var(--border-strong); }
+.pedidos-vacio-icono { width:44px; height:44px; color:var(--text-muted); }
+.pedidos-vacio-icono svg { width:100%; height:100%; }
+.pedidos-vacio-titulo { font-size:17px; font-weight:700; color:var(--text-primary); }
+.pedidos-vacio-sub { max-width:380px; font-size:13px; line-height:1.5; color:var(--text-secondary); }
+.pedidos-entregados-btn { margin:22px 0 12px; padding:8px 14px; border-radius:999px; border:1px solid var(--border); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; }
+.pedidos-entregados-btn span { margin-left:4px; opacity:.7; }
+.m-generico .pedidos-titulo { display:none; }
+.m-generico .pedidos-lista { grid-template-columns:1fr; }
+body.acuarela .pedido-paso.hecho span, body.acuarela .pedido-paso.hecho::before { background:var(--teja); border-color:var(--teja); }
