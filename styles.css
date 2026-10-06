@@ -6432,3 +6432,31 @@ body.acuarela .metodo-kaizen-check.on, body.acuarela .metodo-kaizen-dias span.on
     .metodo-cuerpo, .hansei-preguntas { grid-template-columns:1fr; }
 }
 
+/* ============================================================
+   VERSIÓN MÓVIL — ajustes de los apartados que reutilizan el render
+   de escritorio (.m-generico), tras la revisión del 2026-10-06
+   ============================================================ */
+.solo-movil { display:none; }
+.m-generico .solo-movil { display:inline; }
+.m-generico .solo-escritorio { display:none; }
+/* Pestañas en una sola fila que se desliza, en vez de amontonarse. */
+.m-generico .culture-tabs { display:flex; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; border-radius:999px; }
+.m-generico .culture-tabs::-webkit-scrollbar { display:none; }
+.m-generico .culture-tab { flex:0 0 auto; white-space:nowrap; }
+/* Los botones azules de la versión antigua toman el estilo de la app. */
+.m-generico [style*="#3b82f6"], .m-generico [style*="3b82f6"] { background:var(--text-primary) !important; border-color:var(--text-primary) !important; color:var(--bg-app) !important; }
+.m-generico .bitacora-username-link { color:var(--text-primary); }
+.m-generico .resumen-titulo { display:none; }
+.m-generico .btn-accent-blue { background:var(--m-acento); border-color:var(--m-acento); color:var(--m-sobre-acento); }
+.m-generico .btn-secondary, .m-generico .finance-oneoff-btn { white-space:nowrap; flex-shrink:0; }
+.m-generico .coll-busqueda { flex:1 1 100%; flex-wrap:wrap; }
+.m-generico .coll-busqueda input { flex:1 1 100%; }
+.m-generico .coll-busqueda .selector-btn, .m-generico .coll-busqueda select { flex:1 1 100%; }
+.m-generico .empty-state { padding:36px 10px; }
+.m-generico .empty-title { font-size:18px; }
+/* Documentos: subir primero y a lo ancho. */
+.m-generico .docs2-acciones { width:100%; }
+.m-generico .docs2-subir { order:-1; flex:1 1 100%; }
+.m-generico .docs2-acciones .btn-secondary { flex:1; }
+.m-generico .conexiones-mapa { padding:12px 6px 4px; }
+

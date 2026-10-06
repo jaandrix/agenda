@@ -151,16 +151,20 @@ function iconoDeEntrada(e) {
 // una elipse (en dos anillos si son muchos, para que no se pisen los
 // nombres). Cada punto abre su entrada.
 function renderConstelacion(c) {
-    const W = 640, H = 400, cx = W / 2, cy = H / 2;
-    const items = c.items.slice(0, 24);
+    // En la versión móvil se dibuja a su escala (más alta que ancha) para
+    // que los nombres se lean sin encoger el dibujo entero.
+    const movil = typeof mobileStandaloneActive !== 'undefined' && mobileStandaloneActive && !mobileExitedToDesktop;
+    const W = movil ? 360 : 640, H = movil ? 440 : 400, cx = W / 2, cy = H / 2;
+    const rx = movil ? 128 : 255, ry = movil ? 170 : 150, rCentro = movil ? 44 : 56;
+    const items = c.items.slice(0, movil ? 16 : 24);
     const n = items.length;
     const dosAnillos = n > 12;
     const puntos = items.map((e, i) => {
         const ang = -Math.PI / 2 + (i / n) * Math.PI * 2;
         const k = dosAnillos && i % 2 ? 0.62 : 1;
-        return { e, x: cx + Math.cos(ang) * 255 * k, y: cy + Math.sin(ang) * 150 * k, i };
+        return { e, x: cx + Math.cos(ang) * rx * k, y: cy + Math.sin(ang) * ry * k, i };
     });
-    const corta = t => { const s = String(t || ''); return s.length > 18 ? s.slice(0, 17) + '…' : s; };
+    const corta = t => { const s = String(t || ''); const max = movil ? 14 : 18; return s.length > max ? s.slice(0, max - 1) + '…' : s; };
     const nombre = String(c.nombre);
     const lineasNombre = nombre.length > 14 ? [nombre.slice(0, nombre.lastIndexOf(' ', 14) > 4 ? nombre.lastIndexOf(' ', 14) : 14), nombre.slice(nombre.lastIndexOf(' ', 14) > 4 ? nombre.lastIndexOf(' ', 14) + 1 : 14)] : [nombre];
     return `
@@ -172,7 +176,7 @@ function renderConstelacion(c) {
         </div>
         <svg viewBox="0 0 ${W} ${H}" class="conexiones-svg" role="img" aria-label="${escapeHtml(nombre)} y lo relacionado">
             ${puntos.map(p => `<line class="conexiones-linea" style="--i:${p.i}" x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}"/>`).join('')}
-            <circle class="conexiones-centro" cx="${cx}" cy="${cy}" r="56"/>
+            <circle class="conexiones-centro" cx="${cx}" cy="${cy}" r="${rCentro}"/>
             <text class="conexiones-centro-texto" x="${cx}" y="${cy + 5 - (lineasNombre.length - 1) * 8}" text-anchor="middle">${lineasNombre.map((l, i) => `<tspan x="${cx}" dy="${i ? 17 : 0}">${escapeHtml(l.slice(0, 16))}</tspan>`).join('')}</text>
             ${puntos.map(p => `
                 <g class="conexiones-nodo" style="--i:${p.i}" data-open-entry="${p.e.id}">
@@ -180,6 +184,6 @@ function renderConstelacion(c) {
                     <text x="${p.x.toFixed(1)}" y="${(p.y + (p.y >= cy ? 24 : -15)).toFixed(1)}" text-anchor="middle">${escapeHtml(corta(p.e.title))}</text>
                 </g>`).join('')}
         </svg>
-        ${c.items.length > 24 ? `<div class="conexiones-mas">y ${c.items.length - 24} más en la lista.</div>` : ''}
+        ${c.items.length > items.length ? `<div class="conexiones-mas">y ${c.items.length - items.length} más en la lista.</div>` : ''}
     </div>`;
 }

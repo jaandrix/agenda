@@ -1008,8 +1008,6 @@
             work: { label: '+ nuevo trabajo.', action: "openNewEntry('work')" },
             goals: { label: '+ nuevo objetivo.', action: "openNewEntry('goal')" },
             projects: { label: '+ nuevo proyecto.', action: "openNewEntry('project')" },
-            links: { label: '+ nuevo enlace.', action: 'openAddLink()' },
-            collectibles: { label: '+ nuevo coleccionable.', action: 'openAddCollectible()' },
             culture: { label: '+ añadir.', action: "openNewEntry(({books:'book',series:'series',movies:'movie',games:'game'})[cultureTab] || 'book')" },
         };
 
@@ -7230,7 +7228,7 @@
                 <div class="home-cabecera">
                     <div>
                         <div style="font-size:13px;color:var(--text-secondary);margin-bottom:2px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
-                        <div style="font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text-primary)">Centro de resumen</div>
+                        <div class="resumen-titulo" style="font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text-primary)">Centro de resumen</div>
                     </div>
                     <div class="home-estancia" id="home-estancia">
                         <button class="home-estancia-btn" title="tu estancia en bitácora." aria-expanded="false" onclick="toggleHomeEstancia()">${HOME_ICON_ESTANCIA}</button>
@@ -8376,7 +8374,7 @@
         function renderBooks() {
             const allBooks = entries.filter(e => e.type === 'book');
             if (!allBooks.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin libros</div><div class="empty-sub">Pulsa el botón + y selecciona "Libro"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin libros</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Libro"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: books, banner } = applyMonthFilterTo('book', allBooks);
             if (!books.length) return banner + `<div class="empty-state"><div class="empty-title">Sin libros ese mes</div></div>`;
@@ -8421,7 +8419,7 @@
         function renderMovies() {
             const allMovies = entries.filter(e => e.type === 'movie');
             if (!allMovies.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin películas</div><div class="empty-sub">Pulsa el botón + y selecciona "Película", o "Importar Letterboxd" arriba</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin películas</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Película", o "Importar Letterboxd" arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: movies, banner } = applyMonthFilterTo('movie', allMovies);
             if (!movies.length) return banner + `<div class="empty-state"><div class="empty-title">Sin películas ese mes</div></div>`;
@@ -8672,7 +8670,7 @@
         function renderSeries() {
             const allSeries = entries.filter(e => e.type === 'series');
             if (!allSeries.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin series</div><div class="empty-sub">Pulsa el botón + y selecciona "Serie"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin series</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Serie"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: series, banner } = applyMonthFilterTo('series', allSeries);
             if (!series.length) return banner + `<div class="empty-state"><div class="empty-title">Sin series ese mes</div></div>`;
@@ -8697,7 +8695,7 @@
         function renderGames() {
             const games = entries.filter(e => e.type === 'game');
             if (!games.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin videojuegos</div><div class="empty-sub">Pulsa el botón + y selecciona "Videojuego"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin videojuegos</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Videojuego"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
 
             const statusOrder = { 'Jugando': 0, 'Completado': 1, 'Abandonado': 2 };
@@ -9295,7 +9293,7 @@
 
             if (travelPlacesTab === 'travels') {
                 if (!travels.length) {
-                    html += `<div class="empty-state"><div class="empty-title">Sin viajes</div><div class="empty-sub">Pulsa el botón + y selecciona "Viaje"</div></div>`;
+                    html += `<div class="empty-state"><div class="empty-title">Sin viajes</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Viaje"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
                 } else {
                     const orden = { 'En curso': 0, 'Próximo': 1, 'Sin fecha': 2, 'Completado': 3 };
                     const ordenados = [...travels].sort((a, b) => {
@@ -10014,7 +10012,7 @@
             if (!work.length) {
                 return `<div class="empty-state">
                     <div class="empty-title">Sin experiencia laboral</div>
-                    <div class="empty-sub">Pulsa el botón + y selecciona "Trabajo", o importa tu Informe de Vida Laboral</div>
+                    <div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Trabajo", o importa tu Informe de Vida Laboral</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div>
                     <button class="btn-secondary" style="width:auto;margin-top:12px;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openWorkImportModal()">Importar Vida Laboral</button>
                 </div>`;
             }
@@ -11390,7 +11388,7 @@
         function renderProjects() {
             const projects = entries.filter(e => e.type === 'project');
             if (!projects.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin proyectos</div><div class="empty-sub">Pulsa el botón + y selecciona "Proyecto"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin proyectos</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Proyecto"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
 
             const toggle = `
@@ -11641,7 +11639,7 @@
         function renderEvents() {
             const allEvents = entries.filter(e => e.type === 'event' && !isCalendarLogEntry(e));
             if (!allEvents.length) {
-                return `<div style="max-width:980px"><button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openEventsImportModal()">Importar eventos</button></div><div class="empty-state"><div class="empty-title">Sin eventos</div><div class="empty-sub">Pulsa el botón + y selecciona "Evento", o importa arriba</div></div>`;
+                return `<div style="max-width:980px"><button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openEventsImportModal()">Importar eventos</button></div><div class="empty-state"><div class="empty-title">Sin eventos</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Evento", o importa arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: events, banner } = applyMonthFilterTo('event', allEvents);
             if (!events.length) return banner + `<div class="empty-state"><div class="empty-title">Sin eventos ese mes</div></div>`;
@@ -12123,7 +12121,7 @@
         function renderPlaces() {
             const places = entries.filter(e => e.type === 'place');
             if (!places.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin lugares</div><div class="empty-sub">Pulsa el botón + y selecciona "Lugar"</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">Sin lugares</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Lugar"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
 
             const sorted = [...places].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -12912,7 +12910,7 @@
                     <div class="empty-state">
 
                         <div class="empty-title">Sin objetivos</div>
-                        <div class="empty-sub">Pulsa el botón + y selecciona "Objetivo"</div>
+                        <div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Objetivo"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div>
                     </div>`;
             }
 
