@@ -76,7 +76,7 @@ const GUIA = [
             'El botón redondo de arriba a la derecha abre el <b>menú</b> a pantalla completa. Los números en círculo son lo pendiente; el punto naranja en el botón avisa de que hay cambios en la bandeja.',
         ],
         botones: [
-            [guiaBoton('bitácora.'), 'Arriba a la izquierda: vuelve siempre a la portada.'],
+            [guiaBoton('‹ inicio.'), 'Arriba a la izquierda en cualquier apartado: vuelve a la portada sin abrir el menú.'],
             [guiaBoton('versión completa.'), 'Al final del menú: cambia a la versión de escritorio hasta que cierres la app.'],
             [guiaBoton('temas'), 'Al final del menú, los tres círculos cambian el tema.'],
         ],

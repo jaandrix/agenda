@@ -735,7 +735,7 @@
             requestAnimationFrame(() => document.body.classList.remove('pwa'));
             shell.innerHTML = `
                 <div class="m-app">
-                    ${renderMobileTopbar()}
+                    ${renderMobileTopbar(view)}
                     <main class="m-pagina">${view === 'calendar' ? renderMobileInicio(entra) : renderMobileSeccion(view)}</main>
                 </div>
                 ${renderMobileMenu(view)}`;
@@ -747,11 +747,15 @@
             }
         }
 
-        function renderMobileTopbar() {
+        // En la portada, la marca; en cualquier apartado, el mismo hueco es
+        // un "‹ inicio." bien visible para volver sin abrir el menú.
+        function renderMobileTopbar(view) {
             const avisos = bandejaPendiente.length;
             return `
             <div class="m-topbar">
-                <button class="m-marca" onclick="mobileIr('calendar')">bitácora.</button>
+                ${view === 'calendar'
+                    ? '<span class="m-marca">bitácora.</span>'
+                    : `<button class="m-inicio" onclick="mobileIr('calendar')"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M70 10L58 0 8 50l50 50 12-10-40-40z"/></svg>inicio.</button>`}
                 <button class="m-menu-btn" onclick="toggleMenuMovil()" aria-label="Abrir el menú">
                     <span></span><span></span>
                     ${avisos ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}
@@ -2235,6 +2239,7 @@
             if (document.querySelector('.centered-message-overlay')) return false;
             if (document.getElementById('modal-container')?.innerHTML.trim()) return false;
             if (document.getElementById('login-screen')?.style.display !== 'none') return false;
+            if (!document.getElementById('app')?.classList.contains('ready')) return false;
             return true;
         }
 
