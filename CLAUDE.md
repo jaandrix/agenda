@@ -43,13 +43,27 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
 ## Cómo está construida (arquitectura)
 
 - **Nada de build/bundler/framework.** JavaScript vanilla, scripts clásicos (no
-  módulos ES), todo en unos pocos archivos grandes:
-  - `app.js` — **~16.800 líneas**, el núcleo entero de la app (estado, render, lógica
-    de cada apartado). Las funciones declaradas en top-level se vuelven globales.
-  - `styles.css` — **~5.200 líneas**.
-  - `index.html` — el shell HTML (contenedores vacíos: `#content`, `#modal-container`,
-    `#mobile-shell`, etc., que `app.js` rellena).
-  - `v23.js`, `pwa-install.js`, `service-worker.js` — utilidades/PWA.
+  módulos ES), repartidos por apartado en la carpeta `js/` (hasta el 2026-10-06 era un
+  único `app.js` de ~21.000 líneas; se dividió en trozos contiguos sin cambiar el
+  código). `index.html` los carga en este orden, que importa:
+  `nucleo` (config, auth, constantes, navegación, versión móvil, buscador) → `datos`
+  (carga, guardado y fusión con la nube, tema, tipografía) → `interfaz` →
+  `planificador` (y hábitos) → `coleccionables` → `entradas` (modal de crear/editar,
+  guardar, borrar, exportar) → `calendario` (dispatcher `render()`, Home, tiempo) →
+  `resumen` (centro resumen, patrones, avisos) → `ocio` → `viajes` →
+  `trabajo-estudios` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
+  push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
+  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo`.
+  - Todas las funciones y variables de primer nivel son globales y compartidas entre
+    archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
+    duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
+  - **Nada que se ejecute al cargar un archivo puede usar funciones de un archivo
+    posterior** (el hoisting no cruza archivos): en objetos que mapean vistas a funciones
+    se usan flechas (`home: () => renderHome()`), y el arranque espera a
+    `DOMContentLoaded`. Al añadir un archivo nuevo: en `js/` y su `<script>` en `index.html`.
+  - `styles.css` — **~6.500 líneas**. `index.html` — el shell HTML (contenedores vacíos:
+    `#content`, `#modal-container`, `#mobile-shell`...). `v23.js`, `pwa-install.js`,
+    `service-worker.js` — utilidades/PWA.
 - **Un único dispatcher de render:** la función `render()` mira `currentView` y llama
   a la función `renderXxx()` correspondiente, volcando HTML a `#content`. Cada
   apartado (`finances`, `studies`, `planner`, `events`...) tiene su propio
@@ -116,7 +130,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
 `.claude/agents/explorador.md`: subagente con Haiku y solo lectura (Read, Grep,
 Glob), que se lanza con el Agent tool (`subagent_type: "explorador"`). **Solo para
 exploraciones grandes o abiertas**: entender un apartado que no se conoce, seguir un
-dato a través de varias funciones o revisar cientos de líneas de `app.js`/`styles.css`.
+dato a través de varias funciones o revisar cientos de líneas de `js/` o `styles.css`.
 Ahí ahorra cupo del plan Pro porque a la conversación principal solo llega su resumen.
 
 No usarlo para localizar algo concreto (un nombre de función, una clase, una
@@ -131,14 +145,14 @@ a menor resolución.
 
 ## Cómo se prueba un cambio (no hay suite de tests)
 
-1. Editar `app.js` / `styles.css` en el repo real.
+1. Editar los archivos de `js/` y `styles.css` en el repo real.
 2. Copiar los archivos tocados a `C:\Users\jandr\Downloads\bitacora-mirror\`.
 3. Servir esa carpeta en local: `py -m http.server <puerto>` (usar un puerto libre
    cada vez, matar el proceso al terminar).
 4. Abrir en el Browser pane integrado (`preview_start`/`navigate`), y para lo que
    necesite datos de sesión/Supabase, montar una página de prueba mínima en el
    scratchpad que defina un `window.supabase` de mentira (`createClient` devolviendo
-   stubs) antes de cargar `app.js`, rellene las variables globales necesarias a mano
+   stubs) antes de cargar los archivos de `js/`, rellene las variables globales necesarias a mano
    (`entries`, `studies`, `financePro`, etc.) y llame directamente a la función
    `renderXxx()` o a la lógica a probar.
 5. Verificar visualmente (screenshot) y/o por JS (`javascript_tool`) antes de dar el
@@ -189,8 +203,17 @@ a menor resolución.
   (`aplicarOpConector` / `validarBandeja`). Historial con deshacer en `registroConector`.
 - **Amigos/social:** solicitudes de amistad, código de amigo, listas de ocio y viajes
   compartidos, recomendaciones entre amigos (tablas SQL en `supabase/sql/`).
+- **Actualizaciones (`js/actualizaciones.js`):** seguimiento manual de pedidos por
+  internet (estado en cinco pasos, historial, "seguir envío." en 17TRACK); lista global
+  `pedidos`.
+- **Conexiones (`js/conexiones.js`, vista `graph`, antes "grafo"):** relaciones sacadas
+  de los datos (lo que pasa durante cada viaje, partidos por equipo, personas, etiquetas,
+  asignaturas, lugares, [[enlaces]]) con una constelación por centro.
+- **Objetivos → método (`js/metodo.js`):** mandala del método Harada (8 pilares × 8
+  acciones, cada acción puede pasar a Hábitos), paso kaizen (hábito ligado al
+  objetivo), "para qué" y hansei semanal (lista global `hansei`).
 - **Resto de apartados** con su propio `renderXxx()`: Hábitos, Notas, Documentos,
-  Viajes, Coleccionables, Ocio, Trabajo, Proyectos, Enlaces, Etiquetas, Grafo, Ajustes.
+  Viajes, Coleccionables, Ocio, Trabajo, Proyectos, Enlaces, Etiquetas, Ajustes.
 
 Este mapa no es exhaustivo — antes de dar por hecho que algo no existe, conviene
-`Grep` en `app.js` por el nombre del apartado o la palabra clave.
+`Grep` en `js/` por el nombre del apartado o la palabra clave.

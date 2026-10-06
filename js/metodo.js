@@ -9,7 +9,7 @@
 //    los demás. No abandonar.
 //  - Hansei: reflexión honesta de la semana. Corregir el rumbo.
 //  Los datos viven en el propio objetivo (proposito, mandala,
-//  kaizenHabitId) y en la lista global `hansei` (app.js).
+//  kaizenHabitId) y en la lista global `hansei` (js/nucleo.js).
 // ============================================================
 let metodoObjetivoId = null;
 

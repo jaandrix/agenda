@@ -3,7 +3,7 @@
 //  (AliExpress, Vinted, Amazon...). Cada pedido lleva su estado en
 //  una escala fija y su historial; el seguimiento detallado se abre
 //  en 17TRACK, que reconoce solo el transportista por el número.
-//  El estado vive en la variable global `pedidos` (declarada en app.js
+//  El estado vive en la variable global `pedidos` (declarada en js/nucleo.js
 //  para que la carga y la fusión con la nube no dependan de este
 //  archivo).
 // ============================================================
