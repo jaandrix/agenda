@@ -409,6 +409,8 @@
         let registroConector = [];
         // Pedidos de "actualizaciones." (lógica en actualizaciones.js).
         let pedidos = [];
+        // Reflexiones semanales del método (metodo.js): {semana, bien, mal, cambio, fecha}.
+        let hansei = [];
         // Cambios de la IA que esperan validación en "bandeja." (filas de
         // conector_bandeja que no se aplican solas, ver OPS_AUTOMATICAS).
         let bandejaPendiente = [];
@@ -2690,6 +2692,7 @@
                 preferenciasAvisos = (saved.preferenciasAvisos && typeof saved.preferenciasAvisos === 'object') ? saved.preferenciasAvisos : {};
                 ciudadTiempo = saved.ciudadTiempo || null;
                 pedidos = Array.isArray(saved.pedidos) ? saved.pedidos : [];
+                hansei = Array.isArray(saved.hansei) ? saved.hansei : [];
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
                     cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
@@ -2876,7 +2879,8 @@
             links: [() => links, v => { links = v; }],
             linkCategories: [() => linkCategories, v => { linkCategories = v; }],
             blurFinances: [() => blurFinances, v => { blurFinances = v; }],
-            pedidos: [() => pedidos, v => { pedidos = v; }]
+            pedidos: [() => pedidos, v => { pedidos = v; }],
+            hansei: [() => hansei, v => { hansei = v; }]
         };
         let datosBase = null;
         const clonarDatos = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));
@@ -4627,6 +4631,7 @@
                             <span class="habit-menu" onclick="openHabitMenu('${h.id}')">⋯</span>
                         </div>
                         ${renderHabitDots(h)}
+                        ${h.objetivoId && entries.find(g => g.id === h.objetivoId) ? `<div class="habit-objetivo">${h.kaizen ? 'paso kaizen' : 'rutina'} para «${escapeHtml(entries.find(g => g.id === h.objetivoId).title)}».</div>` : ''}
                         <div class="habit-streak-text">${streak > 0 ? `Racha: ${streak} día${streak === 1 ? '' : 's'}` : 'Sin racha activa'}</div>
                     </div>`;
                 }).join('') : `<div class="empty-state"><div class="empty-title">Sin hábitos todavía</div><div class="empty-sub">Pulsa + Hábito para empezar a seguir alguno, sin más presión que la cuadrícula.</div></div>`}
@@ -12919,12 +12924,19 @@
                 <div class="culture-tabs" style="margin-bottom:18px">
                     <button class="culture-tab ${goalViewMode === 'list' ? 'active' : ''}" onclick="setGoalViewMode('list')">Lista</button>
                     <button class="culture-tab ${goalViewMode === 'kanban' ? 'active' : ''}" onclick="setGoalViewMode('kanban')">Tablero</button>
+                    <button class="culture-tab ${goalViewMode === 'metodo' ? 'active' : ''}" onclick="setGoalViewMode('metodo')">Método</button>
                 </div>
                 <div class="goals-summary">
                     <div><strong>${activeCount}</strong><span>activos</span></div>
                     <div><strong>${completedThisYear}</strong><span>completados en ${thisYear}</span></div>
                     <div><strong>${goals.length}</strong><span>en total</span></div>
                 </div>`;
+
+            if (goalViewMode === 'metodo') {
+                html += renderMetodo();
+                html += `</div>`;
+                return html;
+            }
 
             if (goalViewMode === 'kanban') {
                 html += renderGoalsKanban(goals);
@@ -12962,6 +12974,7 @@
                                     <div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${goalNumber(e.currentValue)} / ${goalNumber(e.targetValue)} ${escapeHtml(e.unit || '')} · ${pct}%</div>
                                 ` : ''}
                                 ${milestones.length ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${msDone}/${milestones.length} hitos</div>` : ''}
+                                ${e.mandala?.pilares?.some(p => p.texto) || e.kaizenHabitId ? `<div class="objetivo-metodo-marcas">${e.mandala?.pilares?.some(p => p.texto) ? '<span>mandala.</span>' : ''}${e.kaizenHabitId ? '<span>kaizen.</span>' : ''}</div>` : ''}
                             </div>
                             <span class="badge ${statusClass}">${e.status}</span>
                             <div class="entry-actions">

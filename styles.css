@@ -6366,3 +6366,69 @@ body.acuarela .ajustes-guia .ajuste-icono { background:var(--teja); color:var(--
 .m-generico .ajustes-titulo { display:none; }
 .m-generico .ajustes-rejilla { grid-template-columns:1fr; }
 
+/* ============================================================
+   MÉTODO (metodo.js) — mandala, kaizen, para qué y hansei
+   ============================================================ */
+.metodo-intro { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; margin-bottom:18px; }
+.metodo-intro > div { display:flex; flex-direction:column; gap:4px; padding:12px 14px; border-radius:16px; background:var(--bg-card); border:1px solid var(--border); }
+.metodo-intro b { font-size:13px; font-weight:800; color:var(--text-primary); }
+.metodo-intro span { font-size:12px; line-height:1.45; color:var(--text-secondary); }
+.metodo-vacio { padding:22px; border-radius:18px; border:1px dashed var(--border-strong); font-size:13px; color:var(--text-secondary); margin-bottom:16px; }
+.metodo-elegir { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.metodo-elegir button { padding:8px 14px; border-radius:999px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); font-family:var(--font-family); font-size:13px; font-weight:600; cursor:pointer; }
+.metodo-elegir button.activo { background:var(--text-primary); border-color:var(--text-primary); color:var(--accent-contrast); }
+.metodo-cuerpo { display:grid; grid-template-columns:minmax(0, 1.25fr) minmax(0, 1fr); gap:14px; align-items:start; }
+.metodo-lateral { display:flex; flex-direction:column; gap:14px; min-width:0; }
+.metodo-bloque { padding:18px; border-radius:20px; background:var(--bg-card); border:1px solid var(--border); box-sizing:border-box; min-width:0; }
+.metodo-bloque-cab { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.metodo-bloque-titulo { font-size:16px; font-weight:800; color:var(--text-primary); }
+.metodo-bloque-titulo span { margin-left:6px; font-size:12px; font-weight:600; color:var(--text-muted); }
+.metodo-bloque-sub { font-size:12px; line-height:1.45; color:var(--text-secondary); }
+.metodo-texto { margin-bottom:6px; resize:vertical; }
+.metodo-mini { padding:4px 10px; border-radius:999px; border:1px solid var(--border-strong); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:11.5px; font-weight:600; cursor:pointer; }
+.mandala { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; }
+.mandala-centro, .mandala-pilar { aspect-ratio:1; box-sizing:border-box; border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:10px; text-align:center; min-width:0; }
+.mandala-centro { background:var(--text-primary); color:var(--accent-contrast); font-size:15px; font-weight:800; line-height:1.2; overflow-wrap:anywhere; }
+.mandala-pilar { border:1px solid var(--border-strong); background:var(--bg-app); color:var(--text-primary); font-family:var(--font-family); cursor:pointer; transition:border-color .15s ease, transform .15s var(--ease-out); }
+.mandala-pilar:hover { border-color:var(--text-primary); }
+.mandala-pilar:active { transform:scale(.97); }
+.mandala-pilar.vacio { border-style:dashed; color:var(--text-muted); }
+.mandala-pilar-texto { font-size:13px; font-weight:700; line-height:1.25; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.mandala-pilar-n { font-size:11px; font-weight:600; color:var(--text-secondary); }
+.pilar-rejilla { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; margin-bottom:14px; }
+.pilar-centro { display:flex; align-items:center; justify-content:center; padding:8px; border-radius:12px; background:var(--text-primary); color:var(--accent-contrast); font-size:13px; font-weight:800; text-align:center; overflow-wrap:anywhere; }
+.pilar-accion { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.pilar-accion .modal-input { margin:0; font-size:12.5px; resize:none; }
+.pilar-habito, .pilar-habito-ya { align-self:flex-start; padding:3px 8px; border-radius:999px; font-family:var(--font-family); font-size:11px; font-weight:600; }
+.pilar-habito { border:1px solid var(--border-strong); background:none; color:var(--text-primary); cursor:pointer; }
+.pilar-habito-ya { color:var(--text-muted); }
+.metodo-kaizen-nuevo { display:flex; gap:8px; }
+.metodo-kaizen-nuevo .modal-input { margin:0; }
+.metodo-kaizen-nuevo .btn-modal-primary { width:auto; margin:0; padding:10px 16px; }
+.metodo-kaizen { display:flex; align-items:center; gap:14px; }
+.metodo-kaizen-check { width:44px; height:44px; box-sizing:border-box; flex-shrink:0; padding:0; border-radius:50%; border:2.5px solid var(--border-strong); background:none; cursor:pointer; transition:background-color .15s ease, border-color .15s ease, transform .15s var(--ease-out); }
+.metodo-kaizen-check:active { transform:scale(.9); }
+.metodo-kaizen-check.on { background:var(--text-primary); border-color:var(--text-primary); }
+.metodo-kaizen-texto { font-size:15px; font-weight:700; color:var(--text-primary); }
+.metodo-kaizen-dias { display:flex; gap:4px; margin-top:14px; }
+.metodo-kaizen-dias span { width:11px; height:11px; border-radius:50%; background:var(--border); }
+.metodo-kaizen-dias span.on { background:var(--text-primary); }
+.hansei { margin-top:14px; }
+.hansei-preguntas { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; }
+.hansei-guardar { width:auto; margin:4px 0 0; padding:10px 18px; }
+.hansei-historial { margin-top:14px; }
+.hansei-historial summary { font-size:12.5px; font-weight:700; color:var(--text-secondary); cursor:pointer; }
+.hansei-historial summary span { margin-left:4px; color:var(--text-muted); }
+.hansei-pasada { margin-top:10px; padding:12px 14px; border-radius:14px; background:var(--bg-app); font-size:12.5px; line-height:1.5; color:var(--text-secondary); }
+.hansei-pasada b { color:var(--text-primary); }
+.hansei-pasada-semana { margin-bottom:4px; font-size:11.5px; font-weight:700; color:var(--text-muted); }
+.objetivo-metodo-marcas { display:flex; gap:5px; margin-top:6px; }
+.objetivo-metodo-marcas span { padding:2px 8px; border-radius:999px; border:1px solid var(--border); font-size:10.5px; font-weight:700; color:var(--text-secondary); }
+.habit-objetivo { margin-top:6px; font-size:11.5px; color:var(--text-secondary); }
+body.acuarela .mandala-centro, body.acuarela .pilar-centro { background:var(--teja); color:var(--text-primary); }
+body.acuarela .metodo-kaizen-check.on, body.acuarela .metodo-kaizen-dias span.on { background:var(--teja); border-color:var(--teja); }
+@media (max-width:900px) {
+    .metodo-intro { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .metodo-cuerpo, .hansei-preguntas { grid-template-columns:1fr; }
+}
+
