@@ -114,12 +114,20 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
 ## Subagente explorador (Haiku)
 
 `.claude/agents/explorador.md`: subagente con Haiku y solo lectura (Read, Grep,
-Glob). Para buscar dónde está algo, entender un apartado o resumir partes grandes de
-`app.js`/`styles.css`, lanzarlo con el Agent tool (`subagent_type: "explorador"`) en
-vez de leerlo directamente: gasta mucho menos cupo del plan Pro y a la conversación
-principal solo llega su resumen. Las ediciones, las pruebas y las decisiones las hace
-siempre el agente principal; si el resumen del explorador no cuadra con lo que se ve
-al editar, comprobarlo antes de fiarse.
+Glob), que se lanza con el Agent tool (`subagent_type: "explorador"`). **Solo para
+exploraciones grandes o abiertas**: entender un apartado que no se conoce, seguir un
+dato a través de varias funciones o revisar cientos de líneas de `app.js`/`styles.css`.
+Ahí ahorra cupo del plan Pro porque a la conversación principal solo llega su resumen.
+
+No usarlo para localizar algo concreto (un nombre de función, una clase, una
+variable): cada lanzamiento cuesta unos 10.000 tokens fijos (medido el 2026-10-06),
+mucho más que un `Grep` directo. Además se inventa detalles periféricos de vez en
+cuando, así que antes de editar hay que comprobar en el sitio exacto lo que dice. Las
+ediciones, las pruebas y las decisiones las hace siempre el agente principal.
+
+Lo que más cupo ahorra no es el explorador sino las conversaciones cortas: una sesión
+nueva por tema (CLAUDE.md y la memoria ya llevan el contexto) y capturas de pantalla
+a menor resolución.
 
 ## Cómo se prueba un cambio (no hay suite de tests)
 
