@@ -909,8 +909,14 @@
 
         function renderMobileDiaPanel(sel, hoy) {
             const filas = [];
-            getDayAllEntries(sel).filter(e => e.type !== 'work').forEach(e => {
+            getDayAllEntries(sel).forEach(e => {
                 const hora = e.time || e.startTime || '';
+                if (e.type === 'work') {
+                    const horario = (e.startTime || e.endTime) ? `de ${e.startTime || '--'} a ${e.endTime || '--'}` : '';
+                    const meta = [horario, e.position].filter(Boolean).map(escapeHtml).join(' · ');
+                    filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(e.startTime || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">trabajando en ${escapeHtml(e.company || 'tu empresa')}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div></div>` });
+                    return;
+                }
                 if (e._recurringPayment) {
                     filas.push({ hora: '', html: `<div class="m-fila m-fila-suave"><span class="m-fila-hora">—</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">pago: ${escapeHtml(e.title)}</div><div class="m-fila-meta">${financeMoney(e.amount)}</div></div></div>` });
                     return;
