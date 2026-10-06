@@ -64,15 +64,19 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `#modal-container` — no hay pila de modales, abrir uno sustituye el anterior.
 - **PWA / versión móvil:** cuando la app se abre en modo standalone (añadida a
   pantalla de inicio en iOS/Android), se oculta la interfaz de escritorio y se
-  muestra un `#mobile-shell` aparte: pantalla de bienvenida + carrusel deslizable de
-  apartados. Finanzas, Estudios, Calendario, Planificador y Home tienen vista móvil
-  propia y simplificada; el resto de apartados reutilizan el `renderXxx()` de
-  escritorio dentro de un contenedor con tipografía más grande.
+  muestra un `#mobile-shell` aparte que sigue siempre a `currentView`: inicio con el
+  mes en bolitas (días con cosas en `--m-acento`, se pulsan para ver ese día) y
+  teselas con cifras, menú a pantalla completa con filas numeradas (botón de arriba a
+  la derecha, `toggleMenuMovil`) y una página por apartado con título enorme en dos
+  tonos (`renderMobileCabecera`). Planificador, Finanzas, Estudios, Hábitos, Eventos,
+  Notas y Viajes tienen vista propia (`MOBILE_SECCIONES`); el resto reutiliza su
+  `renderXxx()` de escritorio dentro de `.m-generico`. Navegar con `mobileIr(view)`.
 - **Tres temas:** "asfalto" (oscuro, por defecto, sin clase), "papel" (claro, clase
-  `body.papel`) y "acuarela" (claro con pasteles caqui/salvia/azul/rosa, clases
-  `body.papel.acuarela`: hereda todo lo de papel y añade su paleta). Variables CSS en
-  `:root`, `body.papel` y `body.papel.acuarela`; los colores por elemento de acuarela
-  están al final de `styles.css` ("TEMA ACUARELA"). Se elige en Ajustes (`setTheme`).
+  `body.papel`) y "teja" (piedra cálida, negro y naranja teja a lo cartel suizo; por
+  compatibilidad conserva la clave `acuarela` y las clases `body.papel.acuarela`:
+  hereda todo lo de papel y añade su paleta). Variables CSS en `:root`, `body.papel` y
+  `body.papel.acuarela`; los colores por elemento de teja están al final de
+  `styles.css` ("TEMA TEJA"). Se elige en Ajustes (`setTheme`).
 
 ## Convenciones establecidas (seguirlas sin que haga falta repetirlas)
 

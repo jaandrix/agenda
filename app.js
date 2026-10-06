@@ -664,14 +664,12 @@
         //  VERSIÓN MÓVIL (PWA añadida a "pantalla de inicio")
         //  Cuando Bitácora se abre en modo standalone (icono de inicio,
         //  no pestaña de Safari/Chrome) se sustituye TODA la interfaz de
-        //  escritorio por una versión hiperreducida: pantalla de
-        //  bienvenida con menú numerado + un carrusel deslizable de
-        //  apartados, pensada para consulta rápida y añadir cosas sobre
-        //  la marcha — no para trabajar a fondo (para eso, "ver versión
-        //  completa" lleva a la app de siempre, intacta debajo).
-        //  Los apartados que todavía no tienen vista propia muestran un
-        //  aviso con acceso directo a su versión completa; se van
-        //  añadiendo sesión a sesión (ver renderMobileSectionBody).
+        //  escritorio por #mobile-shell: inicio con el mes en bolitas,
+        //  menú a pantalla completa (botón de arriba a la derecha) y una
+        //  página propia por apartado. Estética suiza: cifras enormes,
+        //  títulos grandes en dos tonos, círculos y filas con filete.
+        //  La vista móvil sigue siempre a currentView, así que switchView,
+        //  openEntryDetail y compañía funcionan igual que en escritorio.
         // ============================================================
         function isMobileStandaloneMode() {
             try {
@@ -680,14 +678,9 @@
         }
         let mobileStandaloneActive = false;
         let mobileExitedToDesktop = false;
-        let mobileScreen = 'welcome'; // 'welcome' | 'carousel'
-        let mobileCarouselIndex = 0;
-        // Mismo orden que NAV_SECTIONS, aplanado — calendario/centro
-        // resumen/planificador quedan primeros porque ya son los tres
-        // primeros de esa lista.
-        function mobileCarouselSections() {
-            return NAV_SECTIONS.flatMap(s => s.items);
-        }
+        let mobileMenuAbierto = false;
+        let mobileDiaSel = null;
+        let mobileMes = null;
 
         function initMobileShell() {
             mobileStandaloneActive = isMobileStandaloneMode();
@@ -696,111 +689,330 @@
 
         function exitMobileToDesktop() {
             mobileExitedToDesktop = true;
+            mobileMenuAbierto = false;
             document.body.classList.remove('mobile-standalone');
             render();
         }
 
-        function backToMobileMenu() {
-            mobileScreen = 'welcome';
-            render();
+        // Sin el aviso de privacidad de Finanzas que pone switchView: en el
+        // móvil se entra a consultar o apuntar algo rápido.
+        function mobileIr(view) {
+            mobileMenuAbierto = false;
+            if (view !== 'travels') window._openTripId = null;
+            if (view === 'calendar') { mobileDiaSel = null; mobileMes = null; }
+            const shell = document.getElementById('mobile-shell');
+            conTransicion(vtDireccionSidebar(currentView, view), () => {
+                aplicarSwitchView(view);
+                if (shell) shell.scrollTop = 0;
+            });
         }
 
-        function openMobileSection(view) {
-            const idx = mobileCarouselSections().findIndex(s => s.view === view);
-            mobileCarouselIndex = idx >= 0 ? idx : 0;
-            currentView = view;
-            mobileScreen = 'carousel';
-            render();
+        function toggleMenuMovil() {
+            mobileMenuAbierto = !mobileMenuAbierto;
+            document.getElementById('m-menu')?.classList.toggle('abierto', mobileMenuAbierto);
+            document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
         }
 
-        // Ya no se pasa de sección deslizando el dedo: el usuario quiere
-        // quedarse en la que eligió y volver al menú con "volver al home.".
-
-        // Recuerda para qué apartado ya se dispararon sus efectos de carga
-        // (documentos, amigos...), para no repetirlos en cada re-render
-        // mientras se sigue viendo el mismo apartado — solo al entrar en
-        // él o al cambiar a otro.
         let mobileLastEffectView = null;
         function renderMobileShell() {
             if (!mobileStandaloneActive || mobileExitedToDesktop) return;
             const shell = document.getElementById('mobile-shell');
             if (!shell) return;
-            shell.innerHTML = mobileScreen === 'welcome' ? renderMobileWelcome() : renderMobileCarousel();
-            if (mobileScreen === 'carousel') {
-                if (mobileLastEffectView !== currentView) {
-                    mobileLastEffectView = currentView;
-                    const effect = MOBILE_SECTION_EFFECTS[currentView];
-                    if (effect) setTimeout(effect, 0);
-                }
-            } else {
-                mobileLastEffectView = null;
+            const view = NAV_VIEW_LABELS[currentView] ? currentView : 'calendar';
+            const entra = mobileLastEffectView !== view;
+            shell.innerHTML = `
+                <div class="m-app">
+                    ${renderMobileTopbar()}
+                    <main class="m-pagina">${view === 'calendar' ? renderMobileInicio(entra) : renderMobileSeccion(view)}</main>
+                </div>
+                ${renderMobileMenu(view)}`;
+            document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
+            if (mobileLastEffectView !== view) {
+                mobileLastEffectView = view;
+                const effect = MOBILE_SECTION_EFFECTS[view];
+                if (effect) setTimeout(effect, 0);
             }
         }
 
-        function renderMobileWelcome() {
-            const name = (nombrePublico || '').trim();
-            const sections = mobileCarouselSections();
+        function renderMobileTopbar() {
+            const avisos = bandejaPendiente.length;
             return `
-            <div class="mobile-welcome">
-                <div class="mobile-welcome-top">
-                    <div class="mobile-welcome-line">bienvenido a bitácora${name ? `, ${escapeHtml(name.toLowerCase())}` : ''}.</div>
+            <div class="m-topbar">
+                <button class="m-marca" onclick="mobileIr('calendar')">bitácora.</button>
+                <button class="m-menu-btn" onclick="toggleMenuMovil()" aria-label="Abrir el menú">
+                    <span></span><span></span>
+                    ${avisos ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}
+                </button>
+            </div>`;
+        }
+
+        function mobileCuentaMenu(view) {
+            if (view === 'bandeja') return bandejaPendiente.length;
+            if (view === 'planner') {
+                const hoy = todayISO();
+                return plannerItemsForOffset(0).filter(i => !i.done).length + recurringTasksDueToday().filter(t => !t.completadas?.[hoy]).length;
+            }
+            if (view === 'habits') {
+                const hoy = todayISO();
+                return habits.filter(h => h.activo !== false && !h.completadas?.[hoy]).length;
+            }
+            return 0;
+        }
+
+        function renderMobileMenu(view) {
+            let n = 0;
+            const muestras = { asfalto: ['#302f2c', '#efede3'], papel: ['#FAF8F5', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F'] };
+            const tema = temaActual();
+            return `
+            <div class="m-menu ${mobileMenuAbierto ? 'abierto' : ''}" id="m-menu">
+                <div class="m-menu-top">
+                    <span class="m-marca">bitácora.</span>
+                    <button class="m-cerrar" onclick="toggleMenuMovil()">cerrar <span aria-hidden="true">×</span></button>
                 </div>
-                <div class="mobile-menu-label">menú.</div>
-                <div class="mobile-menu-rows">
-                    ${sections.map((s, i) => `
-                        <div class="mobile-menu-row" onclick="openMobileSection('${s.view}')">
-                            <span class="mobile-menu-idx">${String(i).padStart(2, '0')}</span>
-                            <span class="mobile-menu-label-text">${escapeHtml(s.text.toLowerCase())}.</span>
-                        </div>`).join('')}
+                <div class="m-menu-cuerpo">
+                    ${NAV_SECTIONS.map(sec => `
+                        <div class="m-menu-grupo">${escapeHtml(sec.label.toLowerCase())}.</div>
+                        ${sec.items.map(it => {
+                            const i = n++;
+                            const cuenta = mobileCuentaMenu(it.view);
+                            return `<button class="m-menu-fila ${it.view === view ? 'activa' : ''}" style="--i:${Math.min(i, 20)}" onclick="mobileIr('${it.view}')">
+                                <sup>${String(i).padStart(2, '0')}</sup><span class="m-menu-texto">${escapeHtml((it.view === 'calendar' ? 'inicio' : it.text).toLowerCase())}</span>${cuenta ? `<span class="m-menu-cuenta">${cuenta}</span>` : ''}
+                            </button>`;
+                        }).join('')}`).join('')}
+                    <div class="m-menu-pie">
+                        <div class="m-menu-temas">
+                            ${THEMES.map(t => `<button class="m-tema ${t === tema ? 'activo' : ''}" onclick="setTheme('${t}');render()" aria-label="Tema ${THEME_LABELS[t]}"><span style="background:${muestras[t][0]}"></span><span style="background:${muestras[t][1]}"></span></button>`).join('')}
+                        </div>
+                        <button class="m-enlace" onclick="exitMobileToDesktop()">versión completa.</button>
+                    </div>
                 </div>
             </div>`;
         }
 
-        function renderMobileCarousel() {
-            const sections = mobileCarouselSections();
-            const current = sections[mobileCarouselIndex] || sections[0];
+        // Título en dos tonos, a lo cartel: el nombre del apartado en grande
+        // y debajo, en gris, el dato que más importa ahora mismo. El tamaño
+        // se ajusta al largo del título para que "coleccionables." quepa.
+        function renderMobileCabecera(titulo, sub) {
+            const t = titulo.toLowerCase() + '.';
+            return `<header class="m-cab">
+                <h1 class="m-titulo" style="--largo:${Math.max(t.length, 7)}">${escapeHtml(t)}</h1>
+                ${sub ? `<div class="m-sub">${sub}</div>` : ''}
+            </header>`;
+        }
+
+        const MOBILE_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const MOBILE_DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+        const MOBILE_DIAS_LARGOS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        function mobileAnillo(frac, tam = 92) {
+            const r = 40, c = 2 * Math.PI * r, f = Math.max(0, Math.min(1, frac || 0));
+            return `<svg class="m-anillo" width="${tam}" height="${tam}" viewBox="0 0 100 100" aria-hidden="true">
+                <circle cx="50" cy="50" r="${r}" class="m-anillo-pista"/>
+                <circle cx="50" cy="50" r="${r}" class="m-anillo-arco" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - f)}" transform="rotate(-90 50 50)"/>
+            </svg>`;
+        }
+
+        // ---- Inicio: el mes en bolitas ----
+        function mobileDiaPlanner(date) {
+            resetDayPlannerIfNeeded();
+            return Array.isArray(dayPlanner.days[date]) ? dayPlanner.days[date] : [];
+        }
+
+        // Lo que "ocupa" un día: eventos, cumpleaños, viajes, exámenes y
+        // tareas del planificador. El trabajo diario y los cargos fijos se
+        // quedan fuera del color: pintarían casi todos los días.
+        function mobileOcupacionDia(date) {
+            const entradas = getDayAllEntries(date).filter(e => e.type !== 'work' && !e._recurringPayment);
+            return entradas.length + mobileDiaPlanner(date).length;
+        }
+
+        function mobileElegirDia(date) {
+            mobileDiaSel = date;
+            const d = new Date(date + 'T12:00:00');
+            mobileMes = { y: d.getFullYear(), m: d.getMonth() };
+            const pagina = document.querySelector('#mobile-shell .m-pagina');
+            if (pagina && currentView === 'calendar') pagina.innerHTML = renderMobileInicio();
+            else render();
+        }
+
+        function mobileCambiarMes(delta) {
+            const base = mobileMes || { y: new Date().getFullYear(), m: new Date().getMonth() };
+            const d = new Date(base.y, base.m + delta, 1);
+            mobileMes = { y: d.getFullYear(), m: d.getMonth() };
+            const pagina = document.querySelector('#mobile-shell .m-pagina');
+            if (pagina) pagina.innerHTML = renderMobileInicio();
+        }
+
+        function renderMobileInicio(entra) {
+            const hoy = isoLocal(new Date());
+            const sel = mobileDiaSel || hoy;
+            const d = new Date(sel + 'T12:00:00');
+            const { y, m } = mobileMes || { y: d.getFullYear(), m: d.getMonth() };
+            const primero = new Date(y, m, 1);
+            const huecos = (primero.getDay() + 6) % 7;
+            const diasMes = new Date(y, m + 1, 0).getDate();
+            const celdas = [];
+            for (let i = 0; i < huecos; i++) celdas.push('<span class="m-punto m-punto-fuera"></span>');
+            for (let dia = 1; dia <= diasMes; dia++) {
+                const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                const ocupado = mobileOcupacionDia(iso) > 0;
+                const clases = ['m-punto', iso < hoy ? 'pasado' : 'futuro', ocupado ? 'ocupado' : '', iso === hoy ? 'hoy' : '', iso === sel ? 'sel' : ''].filter(Boolean).join(' ');
+                celdas.push(`<button class="${clases}" style="--o:${huecos + dia}" onclick="mobileElegirDia('${iso}')" aria-label="${dia} de ${MOBILE_MESES[m]}${ocupado ? ', con cosas' : ''}"><span>${dia}</span></button>`);
+            }
+            const resto = (7 - (celdas.length % 7)) % 7;
+            for (let i = 0; i < resto; i++) celdas.push('<span class="m-punto m-punto-fuera"></span>');
+            const letraHoy = (new Date().getDay() + 6) % 7;
+
             return `
-            <div class="mobile-carousel">
-                <button class="mobile-volver-btn" onclick="backToMobileMenu()"><span aria-hidden="true">←</span> volver al home.</button>
-                <div class="mobile-page-title">${escapeHtml(current.text.toLowerCase())}.</div>
-                <div class="mobile-page-body" id="mobile-page-body">${renderMobileSectionBody(current.view)}</div>
+            <section class="m-hero">
+                <div class="m-hero-fila">
+                    <div class="m-hero-num">${d.getDate()}</div>
+                    <div class="m-hero-tiempo">${renderTiempoWidget()}</div>
+                </div>
+                <div class="m-hero-mes"><span>${MOBILE_MESES[d.getMonth()]}.</span><span class="m-hero-dia">${MOBILE_DIAS[d.getDay()]}.</span></div>
+                <div class="m-hero-anio">${d.getFullYear()}${sel !== hoy ? `<button class="m-hoy-link" onclick="mobileElegirDia('${hoy}')">volver a hoy.</button>` : ''}</div>
+            </section>
+            <section class="m-mes">
+                <div class="m-mes-cab">
+                    <span class="m-etiqueta">${MOBILE_MESES[m]} ${y !== new Date().getFullYear() ? y : ''}</span>
+                    <div class="m-mes-flechas">
+                        <button onclick="mobileCambiarMes(-1)" aria-label="Mes anterior">‹</button>
+                        <button onclick="mobileCambiarMes(1)" aria-label="Mes siguiente">›</button>
+                    </div>
+                </div>
+                <div class="m-mes-letras">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => `<span class="${i === letraHoy && y === new Date().getFullYear() && m === new Date().getMonth() ? 'hoy' : ''}">${l}</span>`).join('')}</div>
+                <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>
+            </section>
+            ${renderMobileDiaPanel(sel, hoy)}
+            ${renderMobileTeselas()}`;
+        }
+
+        function renderMobileDiaPanel(sel, hoy) {
+            const filas = [];
+            getDayAllEntries(sel).filter(e => e.type !== 'work').forEach(e => {
+                const hora = e.time || e.startTime || '';
+                if (e._recurringPayment) {
+                    filas.push({ hora: '', html: `<div class="m-fila m-fila-suave"><span class="m-fila-hora">—</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">pago: ${escapeHtml(e.title)}</div><div class="m-fila-meta">${financeMoney(e.amount)}</div></div></div>` });
+                    return;
+                }
+                const titulo = e.type === 'birthday' ? `cumpleaños de ${escapeHtml(e.title)}` : escapeHtml(e.title || '');
+                const cat = categories.find(c => c.id === e.categoryId);
+                const meta = [e.place, cat?.name].filter(Boolean).map(escapeHtml).join(' · ');
+                filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(hora) || '—'}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${titulo}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div><span class="m-fila-bola" aria-hidden="true"></span></div>` });
+            });
+            const offset = Math.round((new Date(sel + 'T12:00:00') - new Date(currentPlannerDayKey() + 'T12:00:00')) / 86400000);
+            mobileDiaPlanner(sel).forEach(it => {
+                filas.push({ hora: it.time || '', html: renderMobileFilaTarea(it, offset) });
+            });
+            if (sel === hoy) {
+                recurringTasksDueToday().forEach(t => {
+                    const hecha = !!t.completadas?.[hoy];
+                    filas.push({ hora: '', html: `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora">↻</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="mobileMarcarRecurrente('${t.id}')" aria-label="Marcar hecha"></button></div>` });
+                });
+            }
+            filas.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+            const d = new Date(sel + 'T12:00:00');
+            const titulo = sel === hoy ? 'hoy.' : `${MOBILE_DIAS_LARGOS[d.getDay()]} ${d.getDate()}.`;
+            return `
+            <section class="m-dia">
+                <div class="m-dia-cab">
+                    <div class="m-dia-titulo">${titulo}</div>
+                    <button class="m-mas" onclick="openNewEntryForDay('${sel}')" aria-label="Añadir algo este día">+</button>
+                </div>
+                ${filas.length ? `<div class="m-lista">${filas.map(f => f.html).join('')}</div>` : '<div class="m-vacio">nada este día.</div>'}
+            </section>`;
+        }
+
+        function renderMobileFilaTarea(it, offset) {
+            const subs = Array.isArray(it.subtasks) ? it.subtasks : [];
+            const meta = [it.arrastrado && !it.done ? 'de ayer' : '', subs.length ? `${subs.filter(s => s.done).length}/${subs.length} subtareas` : '', it.notes || ''].filter(Boolean).map(escapeHtml).join(' · ');
+            return `<div class="m-fila ${it.done ? 'hecha' : ''} ${it.arrastrado && !it.done ? 'arrastrada' : ''}">
+                <span class="m-fila-hora">${escapeHtml(it.time || '—')}</span>
+                <div class="m-fila-cuerpo" onclick="mobileTareaAcciones('${it.id}', ${offset})"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div>
+                <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarTarea('${it.id}', ${offset})" aria-label="Marcar hecha"></button>
             </div>`;
         }
 
-        // Botón de acción rápida por apartado — arriba de cada vista,
-        // mismo patrón que ya usaban calendario/planificador. Cada
-        // apartado apunta a la misma función de "añadir" que usa la
-        // versión de escritorio, así el dato se guarda exactamente igual.
+        // Las funciones de escritorio solo repintan si se está en el
+        // Planificador; desde el inicio hay que repintar a mano.
+        function mobileMarcarTarea(id, offset) {
+            togglePlannerItemDone(id, offset);
+            if (currentView !== 'planner') renderMobileShell();
+        }
+        function mobileMarcarRecurrente(id) {
+            toggleRecurringTaskDoneToday(id);
+            if (currentView !== 'planner') renderMobileShell();
+        }
+
+        function mobileTareaAcciones(id, offset) {
+            const it = plannerItemsForOffset(offset).find(x => x.id === id);
+            if (!it) return;
+            const subs = Array.isArray(it.subtasks) ? it.subtasks : [];
+            showModal(`
+                <div class="modal-title">${escapeHtml(it.title)}</div>
+                ${it.notes ? `<div class="finance-modal-note" style="margin-bottom:12px">${escapeHtml(it.notes)}</div>` : ''}
+                ${subs.length ? `<div class="m-modal-subtareas">${subs.map(st => `
+                    <label class="planner-subtask-row"><input type="checkbox" ${st.done ? 'checked' : ''} onchange="togglePlannerSubtaskDone('${it.id}','${st.id}',${offset});renderMobileShell()"><span class="${st.done ? 'done' : ''}">${escapeHtml(st.text)}</span></label>`).join('')}</div>` : ''}
+                <button class="btn-modal-primary" onclick="closeModal();addPlannerSubtask('${it.id}',${offset}).then(renderMobileShell)">+ subtarea.</button>
+                <button class="btn-secondary btn-danger-pill" style="width:100%;margin-top:10px" onclick="closeModal();deletePlannerItem('${it.id}',${offset}).then(renderMobileShell)">borrar tarea.</button>
+            `);
+        }
+
+        function renderMobileTeselas() {
+            const hoy = todayISO();
+            const tareas = plannerItemsForOffset(0), rec = recurringTasksDueToday();
+            const total = tareas.length + rec.length;
+            const hechas = tareas.filter(i => i.done).length + rec.filter(t => t.completadas?.[hoy]).length;
+            const activos = habits.filter(h => h.activo !== false);
+            const habHechos = activos.filter(h => h.completadas?.[hoy]).length;
+            const { expense } = financeProMonthTotals(financeMonthKey());
+            const examen = nextUpcomingExam();
+            const diasExamen = examen ? Math.round((new Date(examen.date + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000) : null;
+            const viaje = entries.filter(e => e.type === 'travel' && e.startDate && e.startDate >= hoy).sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
+            const diasViaje = viaje ? Math.round((new Date(viaje.startDate + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000) : null;
+            const tesela = (view, cifra, texto, extra = '', clase = '') => `
+                <button class="m-tesela ${clase}" onclick="mobileIr('${view}')">
+                    <span class="m-tesela-cifra">${cifra}</span>
+                    <span class="m-tesela-texto">${texto}</span>
+                    ${extra}
+                </button>`;
+            const teselas = [
+                tesela('planner', total ? `${hechas}<small>/${total}</small>` : '0', total ? 'tareas de hoy hechas.' : 'tareas para hoy.', total ? `<span class="m-tesela-anillo">${mobileAnillo(hechas / total, 44)}</span>` : ''),
+                tesela('habits', activos.length ? `${habHechos}<small>/${activos.length}</small>` : '—', 'hábitos hoy.'),
+                tesela('finances', `${Math.round(expense).toLocaleString('es-ES')}<small>€</small>`, `gastado en ${MOBILE_MESES[new Date().getMonth()]}.`),
+                examen ? tesela('studies', diasExamen === 0 ? 'hoy' : diasExamen, `${diasExamen === 0 ? '' : diasExamen === 1 ? 'día para ' : 'días para '}${escapeHtml(examen.title || 'el examen').toLowerCase()}.`) : tesela('studies', '—', 'sin exámenes a la vista.'),
+            ];
+            if (bandejaPendiente.length) teselas.push(tesela('bandeja', bandejaPendiente.length, `${bandejaPendiente.length === 1 ? 'cambio' : 'cambios'} de claude por validar.`, '', 'm-tesela-acento'));
+            if (viaje) teselas.push(tesela('travels', diasViaje === 0 ? 'hoy' : diasViaje, `${diasViaje === 0 ? 'empieza ' : diasViaje === 1 ? 'día para ' : 'días para '}${escapeHtml((viaje.destination || viaje.title || '').split(',')[0])}.`));
+            if (teselas.length % 2) teselas.push(tesela('notes', notes.length, 'notas escritas.'));
+            return `<section class="m-teselas">${teselas.join('')}</section>`;
+        }
+
+        // ---- Apartados ----
         const MOBILE_QUICK_ADD = {
-            habits: { label: '+ nuevo hábito.', action: 'openAddHabit()' },
             notes: { label: '+ nota de hoy.', action: 'openWriteNote()' },
-            events: { label: '+ nuevo evento.', action: "openNewEntry('event')" },
             work: { label: '+ nuevo trabajo.', action: "openNewEntry('work')" },
             documents: { label: '+ subir documento.', action: "document.getElementById('doc-upload-input')?.click()" },
             goals: { label: '+ nuevo objetivo.', action: "openNewEntry('goal')" },
             projects: { label: '+ nuevo proyecto.', action: "openNewEntry('project')" },
             links: { label: '+ nuevo enlace.', action: 'openAddLink()' },
-            travels: { label: '+ nuevo viaje.', action: "openNewEntry('travel')" },
             collectibles: { label: '+ nuevo coleccionable.', action: 'openAddCollectible()' },
             culture: { label: '+ añadir.', action: "openNewEntry(({books:'book',series:'series',movies:'movie',games:'game'})[cultureTab] || 'book')" },
         };
 
-        // Apartados que reutilizan directamente el render de escritorio
-        // (dentro de un contenedor con tipografía/espaciado a tamaño
-        // móvil) en vez de una vista propia rediseñada — finanzas y
-        // estudios sí tienen vista propia por lo específico de su uso.
+        // Apartados que reutilizan el render de escritorio, dentro de un
+        // contenedor que lo adapta (ver .m-generico en styles.css).
         const MOBILE_GENERIC_RENDERERS = {
-            habits: renderHabits, notes: renderNotes, events: renderEvents, work: renderWork,
-            goals: renderGoals, projects: renderProjects, links: renderLinks, culture: renderCulture,
-            travels: renderTravels, collectibles: renderCollectibles, documents: renderDocuments,
+            home: renderHome, work: renderWork, goals: renderGoals, projects: renderProjects, links: renderLinks,
+            culture: renderCulture, collectibles: renderCollectibles, documents: renderDocuments,
             friends: renderFriendsView, tags: renderTagsView, graph: renderGraph,
             bandeja: renderBandeja, suggestions: renderSuggestions, settings: renderSettings,
         };
 
-        // Efectos que en la versión de escritorio se disparan tras pintar
-        // ciertas vistas (cargar datos remotos, enganchar botones...) — el
-        // carrusel móvil pinta esas mismas vistas por su cuenta, así que
-        // hay que repetirlos aquí para que no se queden a medio cargar.
+        // Efectos que en escritorio se disparan tras pintar ciertas vistas
+        // (cargar datos remotos, enganchar botones...): la vista móvil las
+        // pinta por su cuenta, así que hay que repetirlos aquí.
         const MOBILE_SECTION_EFFECTS = {
             documents: () => { loadDocuments(); loadViewerFiles(); },
             friends: () => loadFriendsViewData(),
@@ -814,122 +1026,229 @@
             },
         };
 
-        // Cada apartado adaptado vive aquí. Finanzas y estudios tienen
-        // vista propia; el resto reutiliza su render de escritorio
-        // (MOBILE_GENERIC_RENDERERS) dentro de un contenedor adaptado.
-        function renderMobileSectionBody(view) {
-            if (view === 'home') return renderMobileHome();
-            if (view === 'calendar') return renderMobileCalendar();
-            if (view === 'planner') return renderMobilePlanner();
-            if (view === 'finances') return renderMobileFinances();
-            if (view === 'studies') return renderMobileStudies();
-            if (MOBILE_GENERIC_RENDERERS[view]) return renderMobileGeneric(view);
-            return renderMobileComingSoon(view);
-        }
+        const MOBILE_SECCIONES = {
+            planner: renderMobilePlanner, finances: renderMobileFinances, studies: renderMobileStudies,
+            habits: renderMobileHabits, events: renderMobileEvents, notes: renderMobileNotes, travels: renderMobileTravels,
+        };
 
-        function renderMobileGeneric(view) {
+        function renderMobileSeccion(view) {
+            if (MOBILE_SECCIONES[view]) return MOBILE_SECCIONES[view]();
             const quick = MOBILE_QUICK_ADD[view];
-            return `<div class="mobile-generic-wrap">
-                ${quick ? `<button class="mobile-cta-btn" onclick="${quick.action}">${quick.label}</button>` : ''}
-                ${MOBILE_GENERIC_RENDERERS[view]()}
-            </div>`;
+            const titulo = view === 'home' ? 'resumen' : (NAV_VIEW_LABELS[view] || view);
+            return `${renderMobileCabecera(titulo, view === 'bandeja' && bandejaPendiente.length ? `${bandejaPendiente.length} por validar.` : '')}
+                ${quick ? `<button class="m-boton m-boton-acento m-boton-ancho" onclick="${quick.action}">${quick.label}</button>` : ''}
+                <div class="m-generico">${MOBILE_GENERIC_RENDERERS[view] ? MOBILE_GENERIC_RENDERERS[view]() : ''}</div>`;
         }
 
-        function renderMobileComingSoon(view) {
-            const label = VIEW_LABELS[view] || view;
-            return `
-            <div class="mobile-empty">
-                <div class="mobile-empty-title">${escapeHtml(label.toLowerCase())}.</div>
-                <div class="mobile-empty-sub">Todavía sin versión reducida para móvil.</div>
-            </div>`;
-        }
-
-        // -- Centro resumen: mismos launcher rows de siempre, a tamaño móvil --
-        function renderMobileHome() {
-            return `<div class="mobile-home-wrap">${renderHome()}</div>`;
-        }
-
-        // -- Calendario: agenda del día (reutiliza renderCalDay/changeDay),
-        //    con un botón grande de añadir entrada ese mismo día --
-        function renderMobileCalendar() {
-            calViewMode = 'day';
-            return `<div class="mobile-calendar-wrap"><div class="mobile-tiempo-fila">${renderTiempoWidget()}</div>${renderCalDay()}
-                <button class="mobile-cta-btn" style="margin-top:16px" onclick="openNewEntryForDay('${calSelectedDate}')">+ añadir este día.</button>
-            </div>`;
-        }
-
-        // -- Planificador: mismo timeline del día, con "+ evento." grande
-        //    siempre visible arriba para añadir rápido --
         function renderMobilePlanner() {
-            return `<div class="mobile-planner-wrap">
-                <button class="mobile-cta-btn" onclick="openAddPlannerItem()">+ nueva tarea.</button>
-                ${renderPlanner()}
-            </div>`;
+            resetDayPlannerIfNeeded();
+            const off = plannerDayOffset;
+            const items = [...plannerItemsForOffset(off)].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+            const hoy = todayISO();
+            const rec = off === 0 ? recurringTasksDueToday() : [];
+            const total = items.length + rec.length;
+            const hechas = items.filter(i => i.done).length + rec.filter(t => t.completadas?.[hoy]).length;
+            const backlog = dayPlanner.backlog;
+            return `${renderMobileCabecera('planificador', total ? `${hechas} de ${total} hechas.` : 'nada planeado.')}
+                <div class="m-pestanas">${['hoy', 'mañana', 'pasado'].map((l, i) => `<button class="${off === i ? 'activa' : ''}" onclick="setPlannerDayOffset(${i})">${l}.</button>`).join('')}</div>
+                ${total ? `<div class="m-progreso">${mobileAnillo(hechas / total)}<div><div class="m-progreso-num">${Math.round(hechas / total * 100)}<small>%</small></div><div class="m-progreso-txt">del día, hecho.</div></div></div>` : ''}
+                <div class="m-acciones">
+                    <button class="m-boton m-boton-acento" onclick="openAddPlannerItem()">+ tarea.</button>
+                    <button class="m-boton" onclick="openManageRecurringTasks()">recurrentes.</button>
+                </div>
+                <div class="m-lista">
+                    ${rec.map(t => {
+                        const hecha = !!t.completadas?.[hoy];
+                        return `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora">↻</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div><div class="m-fila-meta">recurrente</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="toggleRecurringTaskDoneToday('${t.id}')" aria-label="Marcar hecha"></button></div>`;
+                    }).join('')}
+                    ${items.map(it => renderMobileFilaTarea(it, off)).join('')}
+                </div>
+                ${!total ? '<div class="m-vacio">nada todavía. pulsa + tarea.</div>' : ''}
+                <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir</button></div>
+                ${backlog.length ? `<div class="m-lista">${backlog.map(it => `
+                    <div class="m-fila ${it.done ? 'hecha' : ''}">
+                        <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
+                        <button class="m-mini" onclick="scheduleBacklogTaskToday('${it.id}')">→ hoy</button>
+                        <button class="m-check ${it.done ? 'on' : ''}" onclick="toggleBacklogTaskDone('${it.id}')" aria-label="Marcar hecha"></button>
+                    </div>`).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin pendientes.</div>'}`;
         }
 
-        // -- Finanzas: patrimonio + ingresos/gastos del mes + últimos
-        //    movimientos, con "+ movimiento." arriba para registrar un
-        //    ingreso o gasto en dos toques (mismo registro rápido que
-        //    usa el escritorio, sin categoría, se ajusta luego) --
+        function renderMobileHabits() {
+            const hoy = todayISO();
+            const activos = habits.filter(h => h.activo !== false);
+            const hechos = activos.filter(h => h.completadas?.[hoy]).length;
+            return `${renderMobileCabecera('hábitos', activos.length ? `${hechos} de ${activos.length} hoy.` : 'sin presión.')}
+                <button class="m-boton m-boton-acento m-boton-ancho" onclick="openAddHabit()">+ hábito.</button>
+                ${activos.length ? activos.map(h => {
+                    const on = !!h.completadas?.[hoy];
+                    const racha = habitStreak(h);
+                    const puntos = Array.from({ length: 14 }, (_, i) => {
+                        const d = new Date(); d.setDate(d.getDate() - 13 + i);
+                        return `<span class="${h.completadas?.[d.toISOString().slice(0, 10)] ? 'on' : ''}"></span>`;
+                    }).join('');
+                    return `<div class="m-habito ${on ? 'hecho' : ''}">
+                        <button class="m-check m-check-grande ${on ? 'on' : ''}" onclick="toggleHabitToday('${h.id}')" aria-label="Hecho hoy"></button>
+                        <div class="m-habito-cuerpo" onclick="openHabitMenu('${h.id}')">
+                            <div class="m-habito-nombre">${escapeHtml(h.texto)}</div>
+                            <div class="m-habito-racha">${racha > 0 ? `racha de ${racha} día${racha === 1 ? '' : 's'}.` : 'sin racha.'}</div>
+                            <div class="m-habito-puntos">${puntos}</div>
+                        </div>
+                    </div>`;
+                }).join('') : '<div class="m-vacio">ningún hábito todavía.</div>'}`;
+        }
+
         function renderMobileFinances() {
+            const ahora = new Date();
             const { income, expense } = financeProMonthTotals(financeMonthKey());
-            return `<div class="mobile-finance-wrap">
-                <div class="mobile-finance-ctas">
-                    <button class="mobile-cta-btn" onclick="openFinanceProQuickCaptureModal()">+ movimiento.</button>
-                    <button class="mobile-cta-btn mobile-cta-secundario" onclick="pegarExtractoBancario()">pegar extracto.</button>
+            const total = financeProTotalBalance();
+            const ratio = income > 0 ? expense / income : (expense > 0 ? 1 : 0);
+            const rPeq = Math.max(6, 46 * Math.sqrt(Math.min(ratio, 1)));
+            const ultimos = [...financePro.transactions].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 12);
+            return `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}
+                <div class="m-cifra-bloque">
+                    <div class="m-etiqueta">patrimonio.</div>
+                    <div class="m-cifra">${financeMoney(total)}</div>
                 </div>
-                ${renderFinanceNetworthCard()}
-                <div class="mobile-finance-month-row">
-                    <div class="mobile-finance-month-tile">
-                        <div class="mobile-finance-month-label">ingresos este mes.</div>
-                        <div class="mobile-finance-month-value mobile-finance-pos">${financeMoney(income)}</div>
-                    </div>
-                    <div class="mobile-finance-month-tile">
-                        <div class="mobile-finance-month-label">gastos este mes.</div>
-                        <div class="mobile-finance-month-value mobile-finance-neg">(${financeMoney(expense)})</div>
-                    </div>
-                </div>
-                <div class="mobile-section-label">últimos movimientos.</div>
-                <div class="mobile-finance-tx-list">${renderFinanceProTransactionList(false)}</div>
-            </div>`;
-        }
-
-        // -- Estudios: horario semanal como agenda vertical día a día
-        //    (la rejilla de escritorio no cabe/no se lee en móvil) +
-        //    lista de asignaturas, con "+ asignatura." arriba --
-        function renderMobileStudies() {
-            const nextExam = nextUpcomingExam();
-            return `<div class="mobile-studies-wrap">
-                <button class="mobile-cta-btn" onclick="openAddSubject()">+ asignatura.</button>
-                ${nextExam ? `
-                <div class="event-hero event-hero-flat" style="margin-bottom:16px">
-                    <div class="event-hero-body">
-                        <div class="event-hero-kicker">próximo examen ${eventCountdownLabel(nextExam.date).toLowerCase()}.</div>
-                        <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')}</div>
-                        <div class="event-hero-meta">${escapeHtml(nextExam.subjectName)} · ${escapeHtml(nextExam.date)}</div>
+                ${income || expense ? `
+                <div class="m-composicion">
+                    <svg viewBox="0 0 100 100" class="m-composicion-svg" aria-hidden="true">
+                        <circle cx="50" cy="50" r="48" class="m-circulo-lleno"/>
+                        <circle cx="${4 + rPeq + 4}" cy="${96 - rPeq - 4}" r="${rPeq}" class="m-circulo-acento"/>
+                    </svg>
+                    <div class="m-composicion-texto">
+                        <div class="m-cifra-media">${Math.round(ratio * 100)}<small>%</small></div>
+                        <div class="m-fila-meta">de lo que ha entrado este mes, ya gastado.</div>
                     </div>
                 </div>` : ''}
-                <div class="mobile-section-label">horario de la semana.</div>
-                <div class="mobile-studies-schedule">
-                    ${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => renderMobileStudiesDay(d)).join('')}
+                <div class="m-dos">
+                    <div><div class="m-etiqueta">entra.</div><div class="m-cifra-media">${financeMoney(income)}</div></div>
+                    <div><div class="m-etiqueta">sale.</div><div class="m-cifra-media">${financeMoney(expense)}</div></div>
                 </div>
-                <div class="mobile-section-label" style="margin-top:20px">asignaturas.</div>
-                <div class="studies-subjects-list">
-                    ${studies.subjects.length ? studies.subjects.map((s, i) => renderSubjectRow(s, i, studies.subjects.length)).join('') : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
+                <div class="m-acciones">
+                    <button class="m-boton m-boton-acento" onclick="openFinanceProQuickCaptureModal()">+ movimiento.</button>
+                    <button class="m-boton" onclick="pegarExtractoBancario()">pegar extracto.</button>
                 </div>
-            </div>`;
+                <div class="m-bloque-cab"><div class="m-etiqueta">cuentas.</div></div>
+                <div class="m-lista">${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
+                    <div class="m-fila"><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml((financePro.accounts[k]?.name || k).toLowerCase())}.</div></div><span class="m-fila-cifra">${financeMoney(financeProAccountBalance(k))}</span></div>`).join('')}
+                </div>
+                <div class="m-bloque-cab"><div class="m-etiqueta">últimos movimientos.</div></div>
+                ${ultimos.length ? `<div class="m-lista">${ultimos.map(t => {
+                    const cat = financeProCategoryById(t.category);
+                    const d = new Date((t.date || todayISO()) + 'T12:00:00');
+                    const signo = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '⇄';
+                    return `<div class="m-fila ${t.type === 'income' ? 'positiva' : ''}">
+                        <span class="m-fila-hora">${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}</span>
+                        <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.note || t.bankNote || cat?.name || 'movimiento')}</div><div class="m-fila-meta">${escapeHtml([cat?.name, financePro.accounts[t.account]?.name].filter(Boolean).join(' · ').toLowerCase())}</div></div>
+                        <span class="m-fila-cifra">${signo}${financeMoney(t.amount)}</span>
+                    </div>`;
+                }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin movimientos.</div>'}
+                <button class="m-enlace m-enlace-bloque" onclick="exitMobileToDesktop()">ver el panel completo.</button>`;
         }
 
-        function renderMobileStudiesDay(d) {
-            const blocks = (studies.schedule[d.key] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-            return `<div class="mobile-studies-day">
-                <div class="mobile-studies-day-label">${escapeHtml(d.label)}</div>
-                ${blocks.length ? blocks.map(b => `
-                    <div class="mobile-studies-block">
-                        <span class="mobile-studies-block-time">${escapeHtml(b.time || '')}</span>
-                        <span class="mobile-studies-block-subject">${escapeHtml(b.subject || '')}</span>
-                    </div>`).join('') : '<div class="mobile-studies-day-empty">sin clases.</div>'}
-            </div>`;
+        function renderMobileStudies() {
+            const hoy = todayISO();
+            const ex = nextUpcomingExam();
+            const dias = ex ? Math.round((new Date(ex.date + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000) : null;
+            const claveHoy = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'][new Date().getDay()];
+            const clasesHoy = (studies.schedule[claveHoy] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            const entregas = [];
+            studies.subjects.forEach(s => (s.assignments || []).forEach(a => { if (!a.done && a.date && a.date >= hoy) entregas.push({ ...a, asignatura: s.name }); }));
+            entregas.sort((a, b) => a.date.localeCompare(b.date));
+            const fechaCorta = iso => { const d = new Date(iso + 'T12:00:00'); return `${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}`; };
+            return `${renderMobileCabecera('estudios', ex ? `examen ${eventCountdownLabel(ex.date).toLowerCase()}.` : 'sin exámenes a la vista.')}
+                ${ex ? `
+                <div class="m-destacado">
+                    <div class="m-destacado-cifra">${dias === 0 ? 'hoy' : dias}</div>
+                    <div class="m-destacado-texto">
+                        <div class="m-etiqueta">${dias === 0 ? 'examen.' : dias === 1 ? 'día para el examen.' : 'días para el examen.'}</div>
+                        <div class="m-destacado-titulo">${escapeHtml(ex.title || 'examen')}</div>
+                        <div class="m-fila-meta">${escapeHtml(ex.subjectName)} · ${fechaCorta(ex.date)}</div>
+                    </div>
+                </div>` : ''}
+                <div class="m-bloque-cab"><div class="m-etiqueta">clases de hoy.</div></div>
+                ${clasesHoy.length ? `<div class="m-lista">${clasesHoy.map(b => `<div class="m-fila"><span class="m-fila-hora">${escapeHtml(b.time || '')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(b.subject || '')}</div></div></div>`).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin clases hoy.</div>'}
+                ${entregas.length ? `<div class="m-bloque-cab"><div class="m-etiqueta">entregas.</div></div>
+                <div class="m-lista">${entregas.slice(0, 6).map(a => `<div class="m-fila"><span class="m-fila-hora">${fechaCorta(a.date)}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(a.title || 'trabajo')}</div><div class="m-fila-meta">${escapeHtml(a.asignatura)}</div></div></div>`).join('')}</div>` : ''}
+                <div class="m-bloque-cab"><div class="m-etiqueta">semana.</div></div>
+                <div class="m-semana">${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => {
+                    const bloques = (studies.schedule[d.key] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+                    return `<div class="m-semana-dia ${d.key === claveHoy ? 'hoy' : ''}"><div class="m-semana-letra">${escapeHtml(d.label.slice(0, 3).toLowerCase())}.</div><div class="m-semana-clases">${bloques.length ? bloques.map(b => `<span><b>${escapeHtml(b.time || '')}</b> ${escapeHtml(b.subject || '')}</span>`).join('') : '<span class="m-fila-meta">—</span>'}</div></div>`;
+                }).join('')}</div>
+                <div class="m-bloque-cab"><div class="m-etiqueta">asignaturas.</div><button class="m-mini" onclick="openAddSubject()">+ añadir</button></div>
+                <div class="m-generico m-generico-sin-zoom studies-subjects-list">
+                    ${studies.subjects.length ? studies.subjects.map((s, i) => renderSubjectRow(s, i, studies.subjects.length)).join('') : '<div class="m-vacio m-vacio-peque">ninguna asignatura todavía.</div>'}
+                </div>`;
+        }
+
+        function renderMobileEvents() {
+            const hoy = todayISO();
+            const eventos = entries.filter(e => e.type === 'event' && !isCalendarLogEntry(e) && e.date);
+            const prox = eventos.filter(e => e.date >= hoy).sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+            const pasados = eventos.filter(e => e.date < hoy).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+            const fila = e => {
+                const d = new Date(e.date + 'T12:00:00');
+                const icono = EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro || '';
+                return `<div class="m-evento" data-open-entry="${e.id}">
+                    <div class="m-evento-fecha"><span>${d.getDate()}</span><small>${MOBILE_DIAS[d.getDay()]}.</small></div>
+                    <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(e.title || '')}</div><div class="m-fila-meta">${escapeHtml([e.time, e.place].filter(Boolean).join(' · '))}</div></div>
+                    <span class="m-evento-icono">${icono}</span>
+                </div>`;
+            };
+            let mesActual = '';
+            const lista = prox.map(e => {
+                const d = new Date(e.date + 'T12:00:00');
+                const clave = `${MOBILE_MESES[d.getMonth()]}${d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''}.`;
+                const cab = clave !== mesActual ? `<div class="m-bloque-cab"><div class="m-etiqueta">${clave}</div></div>` : '';
+                mesActual = clave;
+                return cab + fila(e);
+            }).join('');
+            return `${renderMobileCabecera('eventos', prox.length ? `próximo ${eventCountdownLabel(prox[0].date).toLowerCase()}.` : 'nada a la vista.')}
+                <button class="m-boton m-boton-acento m-boton-ancho" onclick="openNewEntry('event')">+ evento.</button>
+                ${lista || '<div class="m-vacio">ningún evento por venir.</div>'}
+                ${pasados.length ? `<div class="m-bloque-cab"><div class="m-etiqueta">pasados.</div></div><div class="m-pasados">${pasados.map(fila).join('')}</div>` : ''}`;
+        }
+
+        function renderMobileNotes() {
+            const lista = [...notes].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+            return `${renderMobileCabecera('notas', lista.length ? `${lista.length} escrita${lista.length === 1 ? '' : 's'}.` : 'ninguna todavía.')}
+                <button class="m-boton m-boton-acento m-boton-ancho" onclick="openWriteNote()">+ nota de hoy.</button>
+                ${lista.map(n => {
+                    const extracto = extractoNota(n.content);
+                    return `<div class="m-nota" onclick="openReadNote('${n.id}')">
+                        <div class="m-fila-meta">${formatNoteFecha(n.date)}${n.date === todayISO() ? ' · hoy' : ''}</div>
+                        <div class="m-nota-titulo">${n.title ? escapeHtml(n.title) : 'sin título.'}</div>
+                        ${extracto ? `<div class="m-nota-texto">${escapeHtml(extracto)}</div>` : ''}
+                    </div>`;
+                }).join('')}`;
+        }
+
+        function renderMobileTravels() {
+            if (window._openTripId && getTrip(window._openTripId)) {
+                return `<div class="m-generico">${renderTravels()}</div>`;
+            }
+            const hoy = todayISO();
+            const viajes = entries.filter(e => e.type === 'travel');
+            const futuros = viajes.filter(t => !t.startDate || (t.endDate || t.startDate) >= hoy).sort((a, b) => (a.startDate || '9').localeCompare(b.startDate || '9'));
+            const pasados = viajes.filter(t => t.startDate && (t.endDate || t.startDate) < hoy).sort((a, b) => b.startDate.localeCompare(a.startDate));
+            const sig = futuros.find(t => t.startDate);
+            const tarjeta = (t, grande) => {
+                const st = tripStatus(t);
+                const reservas = (t.transportes || []).length + (t.alojamientos || []).length;
+                return `<div class="m-viaje ${grande ? 'm-viaje-grande' : ''}" onclick="openTripManager('${t.id}')">
+                    <div class="m-etiqueta">${escapeHtml(st.label.toLowerCase())}.</div>
+                    <div class="m-viaje-titulo">${escapeHtml(t.title || t.destination || 'viaje')}</div>
+                    <div class="m-viaje-pie">
+                        <div class="m-fila-meta">${t.startDate ? escapeHtml(formatTravelRange(t.startDate, t.endDate)) : 'sin fecha'}${reservas ? ` · ${reservas} reserva${reservas === 1 ? '' : 's'}` : ''}</div>
+                        ${grande && t.startDate > hoy ? `<div class="m-viaje-cuenta">${Math.round((new Date(t.startDate + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000)}<small>días</small></div>` : ''}
+                    </div>
+                </div>`;
+            };
+            return `${renderMobileCabecera('viajes', sig ? `${escapeHtml((sig.destination || sig.title || '').split(',')[0].toLowerCase())}, ${eventCountdownLabel(sig.startDate).toLowerCase()}.` : `${viajes.length} viaje${viajes.length === 1 ? '' : 's'}.`)}
+                <button class="m-boton m-boton-acento m-boton-ancho" onclick="openNewEntry('travel')">+ nuevo viaje.</button>
+                ${futuros.map((t, i) => tarjeta(t, i === 0)).join('')}
+                ${pasados.length ? `<div class="m-bloque-cab"><div class="m-etiqueta">hechos.</div></div>${pasados.map(t => tarjeta(t, false)).join('')}` : ''}
+                ${!viajes.length ? '<div class="m-vacio">ningún viaje todavía.</div>' : ''}`;
         }
 
         const NAV_VIEW_LABELS = Object.fromEntries(NAV_SECTIONS.flatMap(s => s.items).map(i => [i.view, i.text]));
@@ -2937,10 +3256,10 @@
         // <body>) y "papel" (claro, body.papel). Sustituyen a los tres
         // temas anteriores (oscuro puro / claro puro / beige).
         const THEMES = ['asfalto', 'papel', 'acuarela'];
-        const THEME_LABELS = { asfalto: 'asfalto', papel: 'papel', acuarela: 'acuarela' };
-        // Acuarela es un tema claro con pasteles: lleva también la clase
-        // papel para heredar todos los ajustes de tema claro, y encima los
-        // suyos (body.acuarela en styles.css).
+        const THEME_LABELS = { asfalto: 'asfalto', papel: 'papel', acuarela: 'teja' };
+        // Teja (antes acuarela, de ahí la clave y la clase) es un tema
+        // claro: lleva también la clase papel para heredar todos los
+        // ajustes de tema claro, y encima los suyos (body.acuarela).
         const THEME_CLASSES = { asfalto: [], papel: ['papel'], acuarela: ['papel', 'acuarela'] };
         // Los temas antiguos ('dark'/'light'/'beige') que ya hubiera
         // guardados en localStorage de sesiones previas migran al tono más
@@ -2980,7 +3299,7 @@
 
         function renderSelectorTema() {
             const actual = temaActual();
-            const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#D8D1B5', '#C8DAB2', '#B9CBD9', '#E7D2CA'] };
+            const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F', '#161514'] };
             return `<div class="tema-selector">${THEMES.map(t => `
                 <button class="tema-opcion ${t === actual ? 'active' : ''}" data-tema="${t}" onclick="setTheme('${t}')">
                     <span class="tema-muestra">${muestras[t].map(c => `<span style="background:${c}"></span>`).join('')}</span>
