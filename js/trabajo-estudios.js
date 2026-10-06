@@ -38,7 +38,7 @@
             if (!work.length) {
                 return `<div class="empty-state">
                     <div class="empty-title">Sin experiencia laboral</div>
-                    <div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Trabajo", o importa tu Informe de Vida Laboral</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div>
+                    <div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Empleo", o importa tu Informe de Vida Laboral</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div>
                     <button class="btn-secondary" style="width:auto;margin-top:12px;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openWorkImportModal()">Importar Vida Laboral</button>
                 </div>`;
             }
@@ -72,7 +72,7 @@
 
             let html = `
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;max-width:980px;flex-wrap:wrap">
-                    <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Trabajo</div>
+                    <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Empleo</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openWorkImportModal()">Importar Vida Laboral</button>
                         <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()">⭳ Descargar resumen (PDF)</button>
@@ -135,7 +135,7 @@
                 const calculatedDays = daysBetween(w.startDate, effectiveEnd);
                 const manual = Number(w.cotizedDays);
                 const days = Number.isFinite(manual) && manual >= 0 ? manual : calculatedDays;
-                return { label: w.company || w.title || 'Trabajo', days: Math.max(0, days) };
+                return { label: w.company || w.title || 'Empleo', days: Math.max(0, days) };
             });
             const n = items.length;
             if (!n) return '';
@@ -217,7 +217,7 @@
                 <div class="work-current-card" data-open-entry="${w.id}">
                     <div class="work-current-card-icon">${WORK_ICON_LAPTOP}</div>
                     <div class="work-current-card-body">
-                        <div class="work-current-card-eyebrow">Trabajo actual</div>
+                        <div class="work-current-card-eyebrow">Empleo actual</div>
                         <div class="work-current-card-title">${escapeHtml(heading)}</div>
                         ${subheading ? `<div class="work-current-card-sub">${escapeHtml(subheading)}</div>` : ''}
                         <div class="work-current-card-meta">

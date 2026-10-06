@@ -1014,7 +1014,7 @@
                 ['ESC', 'Cierra lo que esté abierto (un buscador, un modal...). Si no hay nada abierto, pregunta si quieres cerrar sesión.'],
                 ['CTRL + ↑ / ↓', 'Salta al apartado anterior o siguiente del menú, sin usar el ratón.'],
             ];
-            const secciones = NAV_SECTIONS.map(s => `
+            const secciones = navSeccionesVisibles().map(s => `
                 <div class="help-section-label">${escapeHtml(s.label)}</div>
                 <div class="help-item-list">
                     ${s.items.map(it => `

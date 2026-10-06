@@ -803,7 +803,7 @@
                     <div class="card"><div class="card-title">Series</div><div class="card-value">${byType.series || 0}</div></div>
                     <div class="card"><div class="card-title">Videojuegos</div><div class="card-value">${byType.game || 0}</div></div>
                     <div class="card"><div class="card-title">Viajes</div><div class="card-value">${byType.travel || 0}</div></div>
-                    <div class="card"><div class="card-title">Trabajo</div><div class="card-value">${byType.work || 0}</div></div>
+                    <div class="card"><div class="card-title">Empleo</div><div class="card-value">${byType.work || 0}</div></div>
                     <div class="card"><div class="card-title">Proyectos</div><div class="card-value">${byType.project || 0}</div></div>
                     <div class="card"><div class="card-title">Eventos</div><div class="card-value">${byType.event || 0}</div></div>
                     <div class="card"><div class="card-title">Lugares</div><div class="card-value">${byType.place || 0}</div></div>

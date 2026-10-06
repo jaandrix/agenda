@@ -57,7 +57,7 @@ const GUIA = [
             'Pulsa <b>Guardar</b>. Aparecerá en su apartado y, si tiene fecha, en el calendario.',
         ],
         botones: [
-            [guiaBoton('rayo'), 'Captura rápida. En Trabajo late suavemente para recordarte que también sirve allí.'],
+            [guiaBoton('rayo'), 'Captura rápida. En Empleo late suavemente para recordarte que también sirve allí.'],
             [guiaBoton('+ Añadir'), 'Lo mismo que el rayo, desde la cabecera.'],
             [guiaBoton('campana'), 'Tus notificaciones dentro de la app: solicitudes de amistad, recomendaciones y avisos.'],
         ],
@@ -208,12 +208,12 @@ const GUIA = [
         trucos: ['Claude puede importar un extracto o registrar un gasto por ti; queda en la bandeja hasta que lo valides.'],
     },
     {
-        id: 'trabajo', grupo: 'desarrollo', titulo: 'trabajo.',
+        id: 'trabajo', grupo: 'desarrollo', titulo: 'empleo.',
         lema: 'Tu vida laboral, ordenada.',
         intro: 'Tus empleos con empresa, puesto, fechas, sueldo, modalidad y motivo de salida, y los documentos de cada uno.',
         botones: [
             [guiaBoton('Importar Vida Laboral'), 'Sube el PDF de tu Informe de Vida Laboral de la Seguridad Social y Bitácora crea los empleos solos.'],
-            [guiaBoton('rayo'), 'En Trabajo, la captura rápida late para recordarte que puedes añadir un empleo.'],
+            [guiaBoton('rayo'), 'En Empleo, la captura rápida late para recordarte que puedes añadir un empleo.'],
         ],
         trucos: ['El trabajo actual aparece destacado arriba, y los días que trabajas salen en el calendario.'],
     },
@@ -306,7 +306,7 @@ const GUIA = [
     {
         id: 'coleccionables', grupo: 'otros', titulo: 'coleccionables.',
         lema: 'Tu colección y lo que vale.',
-        intro: 'Un inventario por categorías con el valor de cada objeto. Para cartas, Bitácora busca su precio de mercado.',
+        intro: 'Un inventario por categorías con el valor de cada objeto. Para cartas, Bitácora busca su precio de mercado. Es un apartado opcional: actívalo en Ajustes → apartados.',
         botones: [
             [guiaBoton('+ coleccionable. · + categoría.'), 'Añade un objeto o una categoría.'],
             [guiaBoton('todas. · cartas. · ...'), 'Filtra por categoría.'],
@@ -359,9 +359,11 @@ const GUIA = [
     {
         id: 'ajustes', grupo: 'sistema', titulo: 'ajustes.',
         lema: 'Cómo es y cómo se comporta tu Bitácora.',
-        intro: 'Agrupados en cuenta, conexiones, apariencia, más y zona de riesgo.',
+        intro: 'Agrupados en cuenta, apartados, conexiones, apariencia, más y zona de riesgo.',
         botones: [
             [guiaBoton('suscripción.'), 'Tu plan y su renovación.'],
+            [guiaBoton('apartados. → perfil.'), '<b>estudiante.</b> (sin Empleo), <b>trabajador.</b> (sin Estudios ni exámenes) o <b>ambas.</b> Lo que no corresponde desaparece de menús, buscador e inicio móvil; sus datos se conservan.'],
+            [guiaBoton('apartados opcionales.'), 'Apartados que no todo el mundo usa, como Coleccionables: actívalos solo si los quieres.'],
             [guiaBoton('tus datos. → exportar. · importar.'), 'Todo en un archivo JSON para guardarlo aparte o recuperarlo.'],
             [guiaBoton('claude y chatgpt. · notificaciones.'), 'Conectar la IA y los avisos (ver sus secciones).'],
             [guiaBoton('tema y letra.'), 'Tema, tipografía y modo ancho; se guardan en cada dispositivo.'],

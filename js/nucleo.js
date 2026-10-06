@@ -414,6 +414,9 @@
         let pedidos = [];
         // Reflexiones semanales del método (metodo.js): {semana, bien, mal, cambio, fecha}.
         let hansei = [];
+        // Perfil y apartados opcionales (Ajustes → apartados.):
+        // { perfil: 'estudiante' | 'trabajador' | 'ambos', opcionales: { collectibles: bool } }.
+        let apartadosConfig = null;
         // Cambios de la IA que esperan validación en "bandeja." (filas de
         // conector_bandeja que no se aplican solas, ver OPS_AUTOMATICAS).
         let bandejaPendiente = [];
@@ -595,7 +598,7 @@
             series: 'Serie',
             game: 'Videojuego',
             travel: 'Viaje',
-            work: 'Trabajo',
+            work: 'Empleo',
             project: 'Proyecto',
             event: 'Evento',
             place: 'Lugar',
@@ -649,7 +652,7 @@
             { label: 'Desarrollo', items: [
                 { view: 'events', icon: '◈', text: 'Eventos' },
                 { view: 'finances', icon: '◫', text: 'Finanzas' },
-                { view: 'work', icon: '◫', text: 'Trabajo' },
+                { view: 'work', icon: '◫', text: 'Empleo' },
                 { view: 'studies', icon: '◎', text: 'Estudios' },
                 { view: 'documents', icon: '▤', text: 'Documentos' },
                 { view: 'goals', icon: '◉', text: 'Objetivos' },
@@ -804,7 +807,7 @@
                     <button class="m-cerrar" onclick="toggleMenuMovil()">cerrar <span aria-hidden="true">×</span></button>
                 </div>
                 <div class="m-menu-cuerpo">
-                    ${NAV_SECTIONS.map(sec => `
+                    ${navSeccionesVisibles().map(sec => `
                         <div class="m-menu-grupo">${escapeHtml(sec.label.toLowerCase())}.</div>
                         ${sec.items.map(it => {
                             const i = n++;
@@ -1022,8 +1025,8 @@
                 tesela('planner', total ? `${hechas}<small>/${total}</small>` : '0', total ? 'tareas de hoy hechas.' : 'tareas para hoy.', total ? `<span class="m-tesela-anillo">${mobileAnillo(hechas / total, 44)}</span>` : ''),
                 tesela('habits', activos.length ? `${habHechos}<small>/${activos.length}</small>` : '—', 'hábitos hoy.'),
                 tesela('finances', `${Math.round(expense).toLocaleString('es-ES')}<small>€</small>`, `gastado en ${MOBILE_MESES[new Date().getMonth()]}.`),
-                examen ? tesela('studies', diasExamen === 0 ? 'hoy' : diasExamen, `${diasExamen === 0 ? '' : diasExamen === 1 ? 'día para ' : 'días para '}${escapeHtml(examen.title || 'el examen').toLowerCase()}.`) : tesela('studies', '—', 'sin exámenes a la vista.'),
-            ];
+                !apartadoVisible('studies') ? '' : examen ? tesela('studies', diasExamen === 0 ? 'hoy' : diasExamen, `${diasExamen === 0 ? '' : diasExamen === 1 ? 'día para ' : 'días para '}${escapeHtml(examen.title || 'el examen').toLowerCase()}.`) : tesela('studies', '—', 'sin exámenes a la vista.'),
+            ].filter(Boolean);
             if (bandejaPendiente.length) teselas.push(tesela('bandeja', bandejaPendiente.length, `${bandejaPendiente.length === 1 ? 'cambio' : 'cambios'} de claude por validar.`, '', 'm-tesela-acento'));
             const enCamino = pedidos.filter(p => p.estado !== 'entregado');
             if (enCamino.length) teselas.push(tesela('actualizaciones', enCamino.length, `${enCamino.length === 1 ? 'pedido' : 'pedidos'} en camino.`));
@@ -1035,7 +1038,7 @@
         // ---- Apartados ----
         const MOBILE_QUICK_ADD = {
             notes: { label: '+ nota de hoy.', action: 'openWriteNote()' },
-            work: { label: '+ nuevo trabajo.', action: "openNewEntry('work')" },
+            work: { label: '+ nuevo empleo.', action: "openNewEntry('work')" },
             goals: { label: '+ nuevo objetivo.', action: "openNewEntry('goal')" },
             projects: { label: '+ nuevo proyecto.', action: "openNewEntry('project')" },
             culture: { label: '+ añadir.', action: "openNewEntry(({books:'book',series:'series',movies:'movie',games:'game'})[cultureTab] || 'book')" },
@@ -1295,6 +1298,58 @@
 
         const NAV_VIEW_LABELS = Object.fromEntries(NAV_SECTIONS.flatMap(s => s.items).map(i => [i.view, i.text]));
 
+        // ============================================================
+        //  PERFIL Y APARTADOS OPCIONALES (Ajustes → apartados.)
+        //  Un apartado que no corresponde al perfil (Estudios para quien
+        //  solo trabaja, Empleo para quien solo estudia) o un opcional sin
+        //  activar desaparece del todo: menús, buscador, captura rápida,
+        //  ayuda e inicio móvil. Sin elección guardada, el perfil es
+        //  "ambos" y un opcional cuenta como activado solo si ya tiene datos.
+        // ============================================================
+        const PERFILES = [
+            { id: 'estudiante', titulo: 'estudiante.', texto: 'Estudios a la vista; sin Empleo.' },
+            { id: 'trabajador', titulo: 'trabajador.', texto: 'Empleo a la vista; sin Estudios ni exámenes.' },
+            { id: 'ambos', titulo: 'ambas.', texto: 'Estudios y Empleo.' },
+        ];
+        const APARTADOS_OPCIONALES = [
+            { view: 'collectibles', titulo: 'coleccionables.', texto: 'Tu colección (cartas, videojuegos...) con su valor de mercado.' },
+        ];
+
+        function configApartados() {
+            const c = apartadosConfig || {};
+            const perfil = PERFILES.some(p => p.id === c.perfil) ? c.perfil : 'ambos';
+            const opcionales = { ...(c.opcionales || {}) };
+            if (opcionales.collectibles === undefined) opcionales.collectibles = collectibles.length > 0;
+            return { perfil, opcionales };
+        }
+
+        function apartadoVisible(view) {
+            const { perfil, opcionales } = configApartados();
+            if (view === 'studies' && perfil === 'trabajador') return false;
+            if (view === 'work' && perfil === 'estudiante') return false;
+            if (APARTADOS_OPCIONALES.some(o => o.view === view) && !opcionales[view]) return false;
+            return true;
+        }
+
+        function navSeccionesVisibles() {
+            return NAV_SECTIONS.map(s => ({ ...s, items: s.items.filter(i => apartadoVisible(i.view)) })).filter(s => s.items.length);
+        }
+
+        async function guardarConfigApartados(cambio) {
+            apartadosConfig = { ...configApartados(), ...cambio };
+            if (!apartadoVisible(currentView)) currentView = 'calendar';
+            renderAllNavs();
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function elegirPerfil(id) { guardarConfigApartados({ perfil: id }); }
+
+        function alternarOpcional(view) {
+            const { opcionales } = configApartados();
+            guardarConfigApartados({ opcionales: { ...opcionales, [view]: !opcionales[view] } });
+        }
+
         // Apartados "de segundo nivel" dentro de cada sección — para poder
         // escribir p.ej. "asignaturas" en el buscador y llegar directo a
         // Estudios > Asignaturas, aunque el nombre no coincida con ninguna
@@ -1342,7 +1397,7 @@
             { type: 'series', text: 'Serie' },
             { type: 'game', text: 'Videojuego' },
             { type: 'travel', text: 'Viaje' },
-            { type: 'work', text: 'Trabajo' },
+            { type: 'work', text: 'Empleo' },
             { type: 'project', text: 'Proyecto' },
             { type: 'event', text: 'Evento' },
             { type: 'place', text: 'Lugar' },
@@ -1536,7 +1591,7 @@
 
         function renderNavButtons(sections, mobile) {
             return sections.map(sec => `<span class="nav-label">${escapeHtml(sec.label)}</span>` +
-                sec.items.filter(i => !isSectionHidden(i.view)).map(i => mobile
+                sec.items.filter(i => !isSectionHidden(i.view) && apartadoVisible(i.view)).map(i => mobile
                     ? `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}">${escapeHtml(i.text)}${i.view === 'bandeja' && bandejaPendiente.length ? ` <span class="nav-bandeja-badge">(${bandejaPendiente.length})</span>` : ''}</button>`
                     : `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span>${i.view === 'bandeja' && bandejaPendiente.length ? `<span class="nav-bandeja-badge">(${bandejaPendiente.length})</span>` : ''}</button>`
                 ).join('')
@@ -1548,7 +1603,7 @@
         function renderHiddenSectionsDrawer(mobile) {
             const items = bitacoraHiddenSections
                 .map(view => ({ view, label: NAV_VIEW_LABELS[view] }))
-                .filter(x => x.label);
+                .filter(x => x.label && apartadoVisible(x.view));
             if (!items.length) return '';
             return `
                 <div class="nav-hidden-drawer">
@@ -1910,8 +1965,8 @@
 
         function paletteItemsFor(mode) {
             return mode === 'create'
-                ? CREATE_PALETTE_ITEMS.map(i => ({ ...i, kind: 'create' }))
-                : NAV_SECTIONS.flatMap(s => s.items).map(i => ({ ...i, kind: 'nav' }));
+                ? CREATE_PALETTE_ITEMS.filter(i => i.type !== 'work' || apartadoVisible('work')).map(i => ({ ...i, kind: 'create' }))
+                : navSeccionesVisibles().flatMap(s => s.items).map(i => ({ ...i, kind: 'nav' }));
         }
 
         // Cuando se escribe algo que no coincide con ningún apartado (solo
@@ -2045,7 +2100,7 @@
                 // muestran como "Asignaturas - Estudios" y solo entran en
                 // juego cuando se escribe algo, para no duplicar la lista
                 // inicial de secciones.
-                const subMatches = q ? NAV_SUBSECTIONS.filter(s => s.text.toLowerCase().includes(q)).map(s => ({
+                const subMatches = q ? NAV_SUBSECTIONS.filter(s => apartadoVisible(s.view) && s.text.toLowerCase().includes(q)).map(s => ({
                     ...s, kind: 'nav-sub', text: `${s.text} - ${s.viewLabel || NAV_VIEW_LABELS[s.view] || s.view}`
                 })) : [];
                 // Vault no depende del Modo Desarrollador (su botón ya
@@ -2304,7 +2359,7 @@
         document.addEventListener('keydown', function(e) {
             if (!e.ctrlKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
             if (!canUseGlobalShortcut()) return;
-            const flat = NAV_SECTIONS.flatMap(s => s.items);
+            const flat = navSeccionesVisibles().flatMap(s => s.items);
             const idx = flat.findIndex(i => i.view === currentView);
             if (idx === -1) return;
             e.preventDefault();

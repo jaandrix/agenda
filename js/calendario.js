@@ -3,6 +3,7 @@
         // ============================================================
         function render() {
             invalidateLinkableIndex();
+            if (!apartadoVisible(currentView)) currentView = 'calendar';
             const content = document.getElementById('content');
             if (currentView === 'calendar') content.innerHTML = renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();

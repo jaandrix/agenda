@@ -38,6 +38,7 @@
                 ciudadTiempo = saved.ciudadTiempo || null;
                 pedidos = Array.isArray(saved.pedidos) ? saved.pedidos : [];
                 hansei = Array.isArray(saved.hansei) ? saved.hansei : [];
+                apartadosConfig = (saved.apartadosConfig && typeof saved.apartadosConfig === 'object') ? saved.apartadosConfig : null;
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
                     cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
@@ -225,7 +226,8 @@
             linkCategories: [() => linkCategories, v => { linkCategories = v; }],
             blurFinances: [() => blurFinances, v => { blurFinances = v; }],
             pedidos: [() => pedidos, v => { pedidos = v; }],
-            hansei: [() => hansei, v => { hansei = v; }]
+            hansei: [() => hansei, v => { hansei = v; }],
+            apartadosConfig: [() => apartadosConfig, v => { apartadosConfig = v; }]
         };
         let datosBase = null;
         const clonarDatos = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));
@@ -594,7 +596,7 @@
             if (currentView === 'work') {
                 fab.innerHTML = FAB_ICON_DEFAULT;
                 fab.classList.add('fab-pulse');
-                fab.title = 'Captura rápida · Trabajo (tecla ESPACIO)';
+                fab.title = 'Captura rápida · Empleo (tecla ESPACIO)';
             } else {
                 fab.innerHTML = FAB_ICON_DEFAULT;
                 fab.classList.remove('fab-pulse');

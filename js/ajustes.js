@@ -86,7 +86,7 @@
             return entries.filter(e => (e.tags || []).some(t => t === prefix || String(t).startsWith(prefix + '/')));
         }
 
-        const TIPO_PLURAL = { book: 'libros', movie: 'películas', series: 'series', game: 'videojuegos', travel: 'viajes', work: 'trabajos', project: 'proyectos', event: 'eventos', place: 'lugares', document: 'documentos', goal: 'objetivos', birthday: 'cumpleaños', subscription: 'suscripciones', fixed_expense: 'gastos fijos' };
+        const TIPO_PLURAL = { book: 'libros', movie: 'películas', series: 'series', game: 'videojuegos', travel: 'viajes', work: 'empleos', project: 'proyectos', event: 'eventos', place: 'lugares', document: 'documentos', goal: 'objetivos', birthday: 'cumpleaños', subscription: 'suscripciones', fixed_expense: 'gastos fijos' };
 
         function desgloseTipos(lista) {
             const n = {};
@@ -440,8 +440,27 @@
             prompts: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M10 22l34 28-34 28V62l15-12-15-12zM50 70h40v12H50z"/></svg>',
             avanzado: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M34 14L6 50l28 36 10-8-22-28 22-28zm32 0l-10 8 22 28-22 28 10 8 28-36z"/></svg>',
             riesgo: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 6l46 84H4zM44 36v28h12V36zm6 34a7 7 0 1 0 0 14 7 7 0 0 0 0-14z"/></svg>',
+            apartados: '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="8" y="8" width="38" height="38" rx="10"/><rect x="54" y="8" width="38" height="38" rx="19"/><rect x="8" y="54" width="38" height="38" rx="19"/><rect x="54" y="54" width="38" height="38" rx="10"/></svg>',
             guia: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M8 18c14-6 28-6 38 2v66c-10-8-24-8-38-2zm84 0c-14-6-28-6-38 2v66c10-8 24-8 38-2z"/></svg>',
         };
+
+        function renderAjustesApartados() {
+            const { perfil, opcionales } = configApartados();
+            return `
+                <div class="ajuste-subtitulo">perfil.</div>
+                <div class="ajustes-perfiles">
+                    ${PERFILES.map(p => `
+                        <button class="ajustes-perfil ${p.id === perfil ? 'activo' : ''}" onclick="elegirPerfil('${p.id}')">
+                            <b>${p.titulo}</b><span>${p.texto}</span>
+                        </button>`).join('')}
+                </div>
+                <div class="ajuste-subtitulo">apartados opcionales.</div>
+                ${APARTADOS_OPCIONALES.map(o => `
+                    <div class="ajustes-opcional">
+                        <div><b>${o.titulo}</b><span>${o.texto}</span></div>
+                        <button class="finance-pro-switch ${opcionales[o.view] ? 'on' : ''}" onclick="alternarOpcional('${o.view}')" aria-label="${o.titulo}"><span class="finance-pro-switch-knob"></span></button>
+                    </div>`).join('')}`;
+        }
 
         function bloqueAjuste(id, icono, titulo, texto, cuerpo, clase = '') {
             return `
@@ -479,6 +498,9 @@
                                 <button class="btn-secondary" style="width:auto" onclick="document.getElementById('import-input').click()">importar.</button>
                             </div>`)}
                     </div>
+
+                    <div class="ajustes-grupo">apartados.</div>
+                    ${bloqueAjuste('settings-apartados-section', 'apartados', 'qué quieres ver.', 'Bitácora se adapta a ti: elige tu perfil y activa solo los apartados que vayas a usar. Lo que desactives desaparece de los menús, pero sus datos se quedan guardados.', renderAjustesApartados(), 'ajuste-ancho')}
 
                     <div class="ajustes-grupo">conexiones.</div>
                     <div class="ajustes-rejilla">

@@ -215,6 +215,13 @@ a menor resolución.
 - **Guía (`js/guia.js`):** modal completo con una sección por apartado (para qué sirve,
   pasos, cada botón, trucos), abierto desde Ajustes, el botón "?", el buscador y el
   menú móvil. **Al cambiar un apartado, actualizar su sección en `GUIA`.**
+- **Perfil y apartados opcionales (Ajustes → apartados.):** `apartadosConfig` (sincronizado)
+  con `perfil` (`estudiante` sin Empleo, `trabajador` sin Estudios ni avisos de exámenes,
+  `ambos`) y `opcionales` (de momento Coleccionables; sin elección guardada, activo solo si
+  ya tiene datos). Todo lo que liste apartados pasa por `apartadoVisible(view)` /
+  `navSeccionesVisibles()` (menús, buscador, captura rápida, ayuda, Ctrl+flechas,
+  teselas del inicio móvil); `render()` saca de un apartado oculto. "Trabajo" se llama
+  **Empleo** en la interfaz (la vista sigue siendo `work`).
 - **Resto de apartados** con su propio `renderXxx()`: Hábitos, Notas, Documentos,
   Viajes, Coleccionables, Ocio, Trabajo, Proyectos, Enlaces, Etiquetas, Ajustes.
 

@@ -172,7 +172,10 @@ Deno.serve(async (req) => {
         if (tocaResumen) {
             const haceUnDia = new Date(Date.now() - 20 * 3600e3).toISOString();
             const { count } = await sb.from('conector_bandeja').select('id', { count: 'exact', head: true }).eq('user_id', userId).lt('creado', haceUnDia);
-            diarios = calcularAvisos(data, hoy, count || 0).filter(a => prefs[a.tipo] !== false);
+            // Quien en Ajustes eligió el perfil "trabajador" no ve Estudios:
+            // tampoco recibe sus avisos de exámenes y entregas.
+            const sinEstudios = data.apartadosConfig?.perfil === 'trabajador';
+            diarios = calcularAvisos(data, hoy, count || 0).filter(a => prefs[a.tipo] !== false && !(sinEstudios && a.tipo === 'estudios'));
         }
         const claves = [...eventos, ...diarios].map(a => a.clave);
         if (tocaResumen) claves.push(claveResumen);
