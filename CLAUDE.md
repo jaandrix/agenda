@@ -111,6 +111,16 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   bandeja. Se usan para detectar fallos y pulir, no para rediseñar a su gusto, y los
   cambios que propongan se enseñan al usuario antes de aplicarlos.
 
+## Subagente explorador (Haiku)
+
+`.claude/agents/explorador.md`: subagente con Haiku y solo lectura (Read, Grep,
+Glob). Para buscar dónde está algo, entender un apartado o resumir partes grandes de
+`app.js`/`styles.css`, lanzarlo con el Agent tool (`subagent_type: "explorador"`) en
+vez de leerlo directamente: gasta mucho menos cupo del plan Pro y a la conversación
+principal solo llega su resumen. Las ediciones, las pruebas y las decisiones las hace
+siempre el agente principal; si el resumen del explorador no cuadra con lo que se ve
+al editar, comprobarlo antes de fiarse.
+
 ## Cómo se prueba un cambio (no hay suite de tests)
 
 1. Editar `app.js` / `styles.css` en el repo real.
