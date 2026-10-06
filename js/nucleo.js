@@ -797,6 +797,7 @@
                         <div class="m-menu-temas">
                             ${THEMES.map(t => `<button class="m-tema ${t === tema ? 'activo' : ''}" onclick="setTheme('${t}');render()" aria-label="Tema ${THEME_LABELS[t]}"><span style="background:${muestras[t][0]}"></span><span style="background:${muestras[t][1]}"></span></button>`).join('')}
                         </div>
+                        <button class="m-enlace" onclick="toggleMenuMovil();openGuia()">guía.</button>
                         <button class="m-enlace" onclick="exitMobileToDesktop()">versión completa.</button>
                     </div>
                 </div>
@@ -1294,6 +1295,7 @@
             { view: 'calendar', text: 'Vista Mes', setter: 'setCalView', value: 'month' },
             { view: 'settings', text: 'Datos de la cuenta (exportar/importar)', anchor: 'settings-account-section' },
             { view: 'settings', text: 'Apariencia', anchor: 'settings-appearance-section' },
+            { view: 'settings', text: 'Guía de Bitácora', action: 'openGuia' },
             { view: 'settings', text: 'Modo desarrollador', anchor: 'settings-advanced-section' },
             { view: 'settings', text: 'Prompts guardados', anchor: 'settings-prompts-section' },
             { view: 'settings', text: 'Cerrar sesión en todos los dispositivos', anchor: 'settings-danger-section' },

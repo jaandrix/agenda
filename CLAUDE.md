@@ -53,7 +53,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (centro resumen, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo`.
+  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `guia`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -212,6 +212,9 @@ a menor resolución.
 - **Objetivos → método (`js/metodo.js`):** mandala del método Harada (8 pilares × 8
   acciones, cada acción puede pasar a Hábitos), paso kaizen (hábito ligado al
   objetivo), "para qué" y hansei semanal (lista global `hansei`).
+- **Guía (`js/guia.js`):** modal completo con una sección por apartado (para qué sirve,
+  pasos, cada botón, trucos), abierto desde Ajustes, el botón "?", el buscador y el
+  menú móvil. **Al cambiar un apartado, actualizar su sección en `GUIA`.**
 - **Resto de apartados** con su propio `renderXxx()`: Hábitos, Notas, Documentos,
   Viajes, Coleccionables, Ocio, Trabajo, Proyectos, Enlaces, Etiquetas, Ajustes.
 

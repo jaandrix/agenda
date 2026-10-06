@@ -1027,6 +1027,7 @@
 
             showModal(`
                 <div class="modal-title">Cómo usar Bitácora<button class="modal-close" onclick="closeModal()">✕</button></div>
+                <button class="guia-ayuda-btn" onclick="openGuia()">guía completa de bitácora. <span>→</span></button>
                 <div class="help-section-label" style="color:#3b82f6">Movimiento por Bitácora</div>
                 <div class="help-kbd-list">
                     ${movimiento.map(([tecla, texto]) => `

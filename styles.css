@@ -6460,3 +6460,60 @@ body.acuarela .metodo-kaizen-check.on, body.acuarela .metodo-kaizen-dias span.on
 .m-generico .docs2-acciones .btn-secondary { flex:1; }
 .m-generico .conexiones-mapa { padding:12px 6px 4px; }
 
+/* ============================================================
+   GUÍA DE BITÁCORA (js/guia.js) — modal grande con índice
+   ============================================================ */
+.modal-sheet.guia-sheet { width:min(1080px, 96vw); max-width:none; height:min(88dvh, 920px); padding:0; display:flex; flex-direction:column; overflow:hidden; }
+.guia { display:flex; flex-direction:column; height:100%; min-height:0; }
+.guia-cab { display:flex; align-items:center; gap:14px; padding:20px 22px 16px; border-bottom:1px solid var(--border); }
+.guia-titulo { font-size:22px; font-weight:800; letter-spacing:-.4px; color:var(--text-primary); }
+.guia-sub { margin-top:2px; font-size:12.5px; color:var(--text-secondary); }
+.guia-buscar { margin:0 0 0 auto; max-width:260px; }
+.guia-cerrar { width:38px; height:38px; flex-shrink:0; padding:0; border:1px solid var(--border-strong); border-radius:50%; background:none; color:var(--text-primary); font-size:20px; line-height:1; cursor:pointer; }
+.guia-cuerpo { flex:1; min-height:0; display:grid; grid-template-columns:230px 1fr; }
+.guia-indice { overflow-y:auto; padding:14px 10px 24px 16px; border-right:1px solid var(--border); }
+.guia-indice-grupo { margin:14px 0 4px 8px; font-size:11.5px; font-weight:800; color:var(--text-muted); }
+.guia-indice-grupo:first-child { margin-top:2px; }
+.guia-indice button { display:block; width:100%; padding:7px 10px; border:0; border-radius:10px; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:13.5px; font-weight:600; text-align:left; cursor:pointer; transition:background-color .12s ease, color .12s ease; }
+.guia-indice button:hover { background:var(--bg-card-hover); color:var(--text-primary); }
+.guia-indice button.activo { background:var(--text-primary); color:var(--accent-contrast); }
+.guia-sin { padding:10px; font-size:12.5px; color:var(--text-muted); }
+.guia-contenido { overflow-y:auto; padding:26px 34px 34px; }
+.guia-seccion-grupo { font-size:12px; font-weight:700; color:var(--text-muted); }
+.guia-seccion-titulo { margin:2px 0 0; font-size:38px; font-weight:800; letter-spacing:-1.2px; line-height:1.05; color:var(--text-primary); }
+.guia-lema { margin-top:6px; font-size:19px; font-weight:700; letter-spacing:-.3px; color:var(--text-muted); }
+.guia-intro { margin:16px 0 0; max-width:680px; font-size:14.5px; line-height:1.65; color:var(--text-primary); }
+.guia-bloque-titulo { margin:26px 0 10px; font-size:14px; font-weight:800; color:var(--text-primary); padding-bottom:8px; border-bottom:2px solid var(--text-primary); max-width:720px; }
+.guia-pasos { margin:0; padding:0; list-style:none; counter-reset:paso; max-width:720px; }
+.guia-pasos li { counter-increment:paso; position:relative; padding:10px 0 10px 40px; border-bottom:1px solid var(--border); font-size:14px; line-height:1.6; color:var(--text-primary); }
+.guia-pasos li::before { content:counter(paso); position:absolute; left:0; top:10px; width:26px; height:26px; border-radius:50%; background:var(--text-primary); color:var(--accent-contrast); font-size:12px; font-weight:800; display:grid; place-items:center; }
+.guia-botones { max-width:720px; }
+.guia-boton-fila { display:grid; grid-template-columns:minmax(150px, 230px) 1fr; gap:16px; padding:11px 0; border-bottom:1px solid var(--border); align-items:start; }
+.guia-boton-que { font-size:13.5px; line-height:1.6; color:var(--text-secondary); }
+.guia-boton { display:inline-block; padding:4px 11px; border-radius:999px; border:1px solid var(--border-strong); background:var(--bg-card); color:var(--text-primary); font-size:12.5px; font-weight:700; line-height:1.4; }
+.guia-trucos { margin:0; padding:0; list-style:none; max-width:720px; }
+.guia-trucos li { position:relative; padding:9px 0 9px 22px; font-size:13.5px; line-height:1.6; color:var(--text-secondary); }
+.guia-trucos li::before { content:''; position:absolute; left:4px; top:17px; width:7px; height:7px; border-radius:50%; background:var(--text-primary); }
+.guia-contenido b { color:var(--text-primary); }
+.guia-nav { display:flex; justify-content:space-between; gap:12px; margin-top:34px; max-width:720px; }
+.guia-nav button { padding:10px 16px; border-radius:999px; border:1px solid var(--border-strong); background:none; color:var(--text-primary); font-family:var(--font-family); font-size:13px; font-weight:700; cursor:pointer; }
+.guia-nav button.sig { background:var(--text-primary); border-color:var(--text-primary); color:var(--accent-contrast); }
+.guia-ayuda-btn { display:block; width:100%; margin:4px 0 16px; padding:13px 16px; border:0; border-radius:16px; background:var(--text-primary); color:var(--accent-contrast); font-family:var(--font-family); font-size:14px; font-weight:800; text-align:left; cursor:pointer; }
+.guia-ayuda-btn span { float:right; }
+body.acuarela .guia-pasos li::before, body.acuarela .guia-trucos li::before { background:var(--teja); color:var(--text-primary); }
+body.acuarela .guia-indice button.activo, body.acuarela .guia-nav button.sig { background:var(--teja); border-color:var(--teja); color:var(--text-primary); }
+@media (max-width:760px) {
+    .modal-sheet.guia-sheet { width:100vw; height:92dvh; border-radius:22px 22px 0 0; }
+    .guia-cab { flex-wrap:wrap; padding:16px 16px 12px; }
+    .guia-buscar { order:3; max-width:none; flex:1 1 100%; margin:0; }
+    .guia-cerrar { margin-left:auto; }
+    .guia-cuerpo { grid-template-columns:1fr; grid-template-rows:auto 1fr; }
+    .guia-indice { display:flex; gap:6px; overflow-x:auto; overflow-y:hidden; padding:10px 16px; border-right:0; border-bottom:1px solid var(--border); scrollbar-width:none; }
+    .guia-indice::-webkit-scrollbar { display:none; }
+    .guia-indice-grupo { display:none; }
+    .guia-indice button { width:auto; flex:0 0 auto; white-space:nowrap; border:1px solid var(--border); border-radius:999px; }
+    .guia-contenido { padding:20px 18px 30px; }
+    .guia-seccion-titulo { font-size:32px; }
+    .guia-boton-fila { grid-template-columns:1fr; gap:6px; }
+}
+
