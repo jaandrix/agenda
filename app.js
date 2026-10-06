@@ -617,7 +617,7 @@
             goals: 'Objetivos',
             planner: 'Planificador del día',
             habits: 'Hábitos',
-            graph: 'Grafo',
+            graph: 'Conexiones',
             collectibles: 'Coleccionables',
             friends: 'Amigos',
             studies: 'Estudios',
@@ -658,7 +658,7 @@
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
                 { view: 'friends', icon: '◕', text: 'Amigos' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
-                { view: 'graph', icon: '◇', text: 'Grafo' },
+                { view: 'graph', icon: '◇', text: 'Conexiones' },
             ] },
             { label: 'Sistema', items: [
                 { view: 'bandeja', icon: '▣', text: 'Bandeja' },
@@ -1017,7 +1017,7 @@
         const MOBILE_GENERIC_RENDERERS = {
             home: renderHome, work: renderWork, goals: renderGoals, projects: renderProjects, links: renderLinks,
             culture: renderCulture, collectibles: renderCollectibles, documents: renderDocuments,
-            friends: renderFriendsView, tags: renderTagsView, graph: renderGraph,
+            friends: renderFriendsView, tags: renderTagsView, graph: () => renderGraph(),
             bandeja: renderBandeja, suggestions: renderSuggestions, settings: renderSettings,
             actualizaciones: () => renderActualizaciones(),
         };
@@ -1743,119 +1743,8 @@
             return entries.filter(e => e.id !== entryId && parseWikiLinks(e.notes || '').includes(entryId));
         }
 
-        // ============================================================
-        //  VISTA DE GRAFO
-        //  Grafo de entradas conectadas por [[wikilinks]] en sus notas,
-        //  con un layout de fuerzas calculado una vez (sin física en vivo,
-        //  para no gastar ciclos de más en una app que no lo necesita).
-        // ============================================================
-        const GRAPH_TYPE_COLORS = {
-            book: '#3498db', movie: '#f39c12', series: '#9b59b6', game: '#e74c3c',
-            travel: '#e84393', project: '#00b894', work: '#e67e22', event: '#f9a8d4',
-            goal: '#2ecc71', place: '#14b8a6', birthday: '#ec4899'
-        };
+        // La vista de conexiones (antes grafo) vive en conexiones.js.
 
-        function buildGraphData() {
-            const edgesRaw = [];
-            entries.forEach(e => {
-                parseWikiLinks(e.notes || '').forEach(targetId => {
-                    if (targetId === e.id) return;
-                    edgesRaw.push({ source: e.id, target: targetId });
-                });
-            });
-            const linkedIds = new Set();
-            edgesRaw.forEach(ed => { linkedIds.add(ed.source); linkedIds.add(ed.target); });
-            const nodes = [...linkedIds].map(id => entries.find(e => e.id === id)).filter(Boolean);
-            const nodeIds = new Set(nodes.map(n => n.id));
-            const edges = edgesRaw.filter(ed => nodeIds.has(ed.source) && nodeIds.has(ed.target));
-            return { nodes, edges };
-        }
-
-        function computeGraphLayout(nodes, edges) {
-            const n = nodes.length;
-            const W = 900, H = 620;
-            const positions = {};
-            nodes.forEach((node, i) => {
-                const angle = (i / n) * Math.PI * 2;
-                positions[node.id] = { x: W / 2 + Math.cos(angle) * 220, y: H / 2 + Math.sin(angle) * 220, vx: 0, vy: 0 };
-            });
-            const edgeList = edges.map(e => [e.source, e.target]);
-            const REPULSION = 2600, SPRING = 0.02, SPRING_LEN = 110, DAMPING = 0.85, CENTER_PULL = 0.01;
-            const iterations = n > 150 ? 60 : 160;
-            for (let iter = 0; iter < iterations; iter++) {
-                for (let i = 0; i < n; i++) {
-                    for (let j = i + 1; j < n; j++) {
-                        const a = positions[nodes[i].id], b = positions[nodes[j].id];
-                        const dx = a.x - b.x, dy = a.y - b.y;
-                        const distSq = Math.max(dx * dx + dy * dy, 0.01);
-                        const dist = Math.sqrt(distSq);
-                        const force = REPULSION / distSq;
-                        const fx = (dx / dist) * force, fy = (dy / dist) * force;
-                        a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
-                    }
-                }
-                edgeList.forEach(([sId, tId]) => {
-                    const a = positions[sId], b = positions[tId];
-                    const dx = b.x - a.x, dy = b.y - a.y;
-                    const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 0.01);
-                    const force = (dist - SPRING_LEN) * SPRING;
-                    const fx = (dx / dist) * force, fy = (dy / dist) * force;
-                    a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
-                });
-                nodes.forEach(node => {
-                    const p = positions[node.id];
-                    p.vx += (W / 2 - p.x) * CENTER_PULL;
-                    p.vy += (H / 2 - p.y) * CENTER_PULL;
-                    p.vx *= DAMPING; p.vy *= DAMPING;
-                    p.x += p.vx; p.y += p.vy;
-                });
-            }
-            return positions;
-        }
-
-        function renderGraph() {
-            const { nodes, edges } = buildGraphData();
-            if (!nodes.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin conexiones todavía</div><div class="empty-sub">Escribe [[Título de otra entrada]] en las notas de cualquier entrada para enlazarla a otra, y aparecerán aquí conectadas.</div></div>`;
-            }
-            const positions = computeGraphLayout(nodes, edges);
-            const xs = Object.values(positions).map(p => p.x), ys = Object.values(positions).map(p => p.y);
-            const minX = Math.min(...xs) - 50, maxX = Math.max(...xs) + 50;
-            const minY = Math.min(...ys) - 50, maxY = Math.max(...ys) + 50;
-
-            const degree = {};
-            edges.forEach(e => { degree[e.source] = (degree[e.source] || 0) + 1; degree[e.target] = (degree[e.target] || 0) + 1; });
-
-            const edgesSvg = edges.map(e => {
-                const a = positions[e.source], b = positions[e.target];
-                return `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="var(--border-strong)" stroke-width="1.2"/>`;
-            }).join('');
-
-            const nodesSvg = nodes.map(node => {
-                const p = positions[node.id];
-                const cat = categories.find(c => c.id === node.categoryId);
-                const color = cat?.color || GRAPH_TYPE_COLORS[node.type] || 'var(--accent)';
-                const r = 5 + Math.min(11, (degree[node.id] || 0) * 1.6);
-                const label = (node.title || '').length > 22 ? node.title.slice(0, 20) + '…' : (node.title || '');
-                return `
-                    <g class="graph-node" data-open-entry="${node.id}">
-                        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${color}" stroke="var(--bg-app)" stroke-width="1.5"/>
-                        <text x="${p.x.toFixed(1)}" y="${(p.y - r - 5).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--text-secondary)">${escapeHtml(label)}</text>
-                    </g>`;
-            }).join('');
-
-            return `
-            <div>
-                <div style="font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text-primary)">Grafo</div>
-                <div style="color:var(--text-secondary);margin-bottom:16px;font-size:12.5px">${nodes.length} entradas conectadas · escribe [[Título]] en las notas de cualquier entrada para enlazarla a otra.</div>
-                <div class="graph-svg-wrap">
-                    <svg viewBox="${minX.toFixed(1)} ${minY.toFixed(1)} ${(maxX - minX).toFixed(1)} ${(maxY - minY).toFixed(1)}" width="100%" style="min-height:440px">
-                        ${edgesSvg}
-                        ${nodesSvg}
-                    </svg>
-                </div>
-            </div>`;
-        }
 
         // La cadena Objetivo → Proyecto se apoya en el mismo mecanismo de
         // enlaces [[...]]: un proyecto que sirve a un objetivo escribe
@@ -12272,8 +12161,19 @@
             tagList.forEach(t => { if (!q || t.toLowerCase().includes(q)) filteredMap[t] = tagMap[t]; });
             if (!Object.keys(filteredMap).length) return `<div class="finance-empty-line">Sin etiquetas que coincidan con "${escapeHtml(window._tagFilter || '')}"</div>`;
             const tree = buildTagTree(filteredMap);
-            const roots = Object.values(tree).sort((a, b) => a.name.localeCompare(b.name));
-            return `<div class="tags-tree">${roots.map(n => renderTagsTreeNode(n, 0)).join('')}</div>`;
+            const roots = Object.values(tree).map(n => ({ n, items: entriesForTagPrefix(n.path) })).sort((a, b) => b.items.length - a.items.length || a.n.name.localeCompare(b.n.name));
+            const max = Math.max(...roots.map(r => r.items.length));
+            return `<div class="etiquetas-rejilla">${roots.map(({ n, items }) => {
+                const pathEsc = escapeHtml(n.path).replace(/'/g, "\\'");
+                const hijos = Object.values(n.children).sort((a, b) => a.name.localeCompare(b.name));
+                return `
+                <div class="etiqueta-tarjeta" onclick="window._selectedTag='${pathEsc}';render()">
+                    <div class="etiqueta-tarjeta-top"><span class="etiqueta-tarjeta-nombre">#${escapeHtml(n.name)}</span><span class="etiqueta-tarjeta-n">${items.length}</span></div>
+                    <div class="etiqueta-tarjeta-barra"><span style="width:${Math.max(6, items.length / max * 100)}%"></span></div>
+                    <div class="etiqueta-tarjeta-tipos">${desgloseTipos(items)}</div>
+                    ${hijos.length ? `<div class="etiqueta-tarjeta-hijos">${hijos.map(h => `<button onclick="event.stopPropagation();window._selectedTag='${escapeHtml(h.path).replace(/'/g, "\\'")}';render()">/${escapeHtml(h.name)}</button>`).join('')}</div>` : ''}
+                </div>`;
+            }).join('')}</div>`;
         }
 
         function filterTagsView(value) {
@@ -12329,18 +12229,12 @@
             return entries.filter(e => (e.tags || []).some(t => t === prefix || String(t).startsWith(prefix + '/')));
         }
 
-        function renderTagsTreeNode(node, depth) {
-            const pathEsc = escapeHtml(node.path).replace(/'/g, "\\'");
-            const label = `#${escapeHtml(node.path)}${node.count ? ' · ' + node.count : ''}`;
-            const children = Object.values(node.children).sort((a, b) => a.name.localeCompare(b.name));
-            if (!children.length) {
-                return `<div class="tags-tree-row" style="padding-left:${depth * 16}px" onclick="window._selectedTag='${pathEsc}';render()">${label}</div>`;
-            }
-            return `
-                <details class="tags-tree-group" style="margin-left:${depth * 16}px" open>
-                    <summary class="tags-tree-row"><span onclick="event.preventDefault();event.stopPropagation();window._selectedTag='${pathEsc}';render()">${label}</span></summary>
-                    ${children.map(c => renderTagsTreeNode(c, depth + 1)).join('')}
-                </details>`;
+        const TIPO_PLURAL = { book: 'libros', movie: 'películas', series: 'series', game: 'videojuegos', travel: 'viajes', work: 'trabajos', project: 'proyectos', event: 'eventos', place: 'lugares', document: 'documentos', goal: 'objetivos', birthday: 'cumpleaños', subscription: 'suscripciones', fixed_expense: 'gastos fijos' };
+
+        function desgloseTipos(lista) {
+            const n = {};
+            lista.forEach(e => { n[e.type] = (n[e.type] || 0) + 1; });
+            return Object.entries(n).sort((a, b) => b[1] - a[1]).map(([t, c]) => `${c} ${c === 1 ? (TYPE_LABELS[t] || t).toLowerCase() : (TIPO_PLURAL[t] || t)}`).join(' · ');
         }
 
         function renderTagsView() {
@@ -12348,43 +12242,68 @@
             const tagList = Object.keys(tagMap);
 
             if (!tagList.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin etiquetas todavía</div><div class="empty-sub">Añade etiquetas a tus entradas para verlas aquí</div></div>`;
-            }
-
-            if (window._selectedTag) {
-                const items = entriesForTagPrefix(window._selectedTag);
-                const tagEsc = escapeHtml(window._selectedTag).replace(/'/g, "\\'");
-                return `
-                <div style="max-width:700px">
-                    <button class="btn-secondary" style="width:auto;margin-bottom:12px" onclick="window._selectedTag=null;render()">← Volver a Etiquetas</button>
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-                        <div style="font-size:18px;font-weight:700">#${escapeHtml(window._selectedTag)} · ${items.length}</div>
-                        <div style="display:flex;gap:8px">
-                            <button class="finance-oneoff-btn" onclick="renameTag('${tagEsc}')">✎ Renombrar</button>
-                            <button class="finance-oneoff-btn" style="color:#dc2626" onclick="deleteTagEverywhere('${tagEsc}')">Eliminar etiqueta</button>
-                        </div>
-                    </div>
-                    ${items.map(e => {
-                        const cat = categories.find(c => c.id === e.categoryId);
-                        const color = cat?.color || 'var(--text-secondary)';
-                        return `
-                        <div class="entry-item ${e.status === 'Completado' ? 'bone-surface goal-completed-bone' : ''}" data-open-entry="${e.id}">
-                            <div class="entry-color-dot" style="background:${color}"></div>
-                            <div class="entry-info">
-                                <div class="entry-title">${escapeHtml(e.title)}</div>
-                                <div class="entry-meta">${TYPE_LABELS[e.type]||''}</div>
-                            </div>
-                        </div>`;
-                    }).join('')}
+                return `<div class="etiquetas-vista">
+                    <div class="etiquetas-titulo">etiquetas.</div>
+                    <div class="etiquetas-vacio">Todavía no has etiquetado nada. Al crear o editar cualquier entrada (un libro, un viaje, un evento...) escribe etiquetas en su campo "Etiquetas" y aquí podrás ver juntas todas las que comparten una.</div>
                 </div>`;
             }
 
+            if (window._selectedTag) {
+                const tag = window._selectedTag;
+                const items = entriesForTagPrefix(tag);
+                const tagEsc = escapeHtml(tag).replace(/'/g, "\\'");
+                const porTipo = {};
+                items.forEach(e => { (porTipo[e.type] = porTipo[e.type] || []).push(e); });
+                const hayConexion = typeof construirConexiones === 'function' && items.length > 0;
+                return `
+                <div class="etiquetas-vista">
+                    <button class="etiquetas-volver" onclick="window._selectedTag=null;render()">← etiquetas.</button>
+                    <div class="etiqueta-cabecera">
+                        <div>
+                            <div class="etiqueta-nombre">#${escapeHtml(tag)}</div>
+                            <div class="etiquetas-sub">${items.length} ${items.length === 1 ? 'entrada' : 'entradas'} · ${desgloseTipos(items)}</div>
+                        </div>
+                        <div class="etiqueta-acciones">
+                            ${hayConexion ? `<button class="finance-oneoff-btn" onclick="conexionSeleccionada='etiqueta:${tagEsc}';conexionAnimar=true;switchView('graph')">ver conexiones.</button>` : ''}
+                            <button class="finance-oneoff-btn" onclick="renameTag('${tagEsc}')">renombrar.</button>
+                            <button class="finance-oneoff-btn etiqueta-borrar" onclick="deleteTagEverywhere('${tagEsc}')">eliminar.</button>
+                        </div>
+                    </div>
+                    ${Object.entries(porTipo).map(([tipo, lista]) => `
+                        <div class="etiqueta-grupo-titulo">${TIPO_PLURAL[tipo] || tipo}. <span>${lista.length}</span></div>
+                        <div class="etiqueta-lista">${lista.map(e => `
+                            <div class="etiqueta-fila" data-open-entry="${e.id}">
+                                <span class="etiqueta-fila-titulo">${escapeHtml(e.title || '')}</span>
+                                ${(e.tags || []).filter(t => t !== tag).length ? `<span class="etiqueta-fila-otras">${(e.tags || []).filter(t => t !== tag).slice(0, 3).map(t => '#' + escapeHtml(t)).join(' ')}</span>` : ''}
+                                <button class="etiqueta-quitar" title="Quitar #${escapeHtml(tag)} de esta entrada" onclick="event.stopPropagation();quitarEtiquetaDeEntrada('${e.id}','${tagEsc}')">×</button>
+                            </div>`).join('')}
+                        </div>`).join('')}
+                </div>`;
+            }
+
+            const etiquetadas = new Set(Object.values(tagMap).flat().map(e => e.id)).size;
             return `
-            <div style="max-width:700px">
-                <input class="modal-input" placeholder="Buscar etiqueta..." value="${escapeHtml(window._tagFilter || '')}" oninput="filterTagsView(this.value)">
-                <div style="font-size:11px;color:var(--text-secondary);margin:8px 0 16px">Consejo: escribe etiquetas como <strong>padre/hijo</strong> (p. ej. "trabajo/urgente") para agruparlas en jerarquías.</div>
+            <div class="etiquetas-vista">
+                <div class="etiquetas-cabecera">
+                    <div>
+                        <div class="etiquetas-titulo">etiquetas.</div>
+                        <div class="etiquetas-sub">${tagList.length} ${tagList.length === 1 ? 'etiqueta' : 'etiquetas'} en ${etiquetadas} ${etiquetadas === 1 ? 'entrada' : 'entradas'}. Usa padre/hijo (p. ej. "viaje/japón") para agruparlas.</div>
+                    </div>
+                    <input class="modal-input etiquetas-buscar" placeholder="buscar etiqueta..." value="${escapeHtml(window._tagFilter || '')}" oninput="filterTagsView(this.value)">
+                </div>
                 <div id="tags-cloud-list">${renderTagsCloudList()}</div>
             </div>`;
+        }
+
+        async function quitarEtiquetaDeEntrada(id, tag) {
+            const e = entries.find(x => x.id === id);
+            if (!e) return;
+            e.tags = (e.tags || []).filter(t => t !== tag);
+            filteredEntries = [...entries];
+            if (!entriesForTagPrefix(tag).length) window._selectedTag = null;
+            render();
+            showToast(`#${tag} quitada`);
+            try { await saveData(); } catch (err) { console.error(err); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================
