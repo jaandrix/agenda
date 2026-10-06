@@ -1328,13 +1328,13 @@
             event: ['evento', 'eventos']
         };
         const ENTRY_TYPE_LABEL_PLURAL = { book: 'Libros', movie: 'Películas', series: 'Series', event: 'Eventos' };
-        const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', deportes: 'Deportes', futbol: 'Fútbol', baloncesto: 'Baloncesto', f1: 'F1', motogp: 'Moto GP', estudios: 'Estudios', hogar: 'Hogar', otro: 'Otro' };
+        const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', deportes: 'Deportes', futbol: 'Fútbol', baloncesto: 'Baloncesto', f1: 'F1', motogp: 'Moto GP', estudios: 'Estudios', hogar: 'Hogar', viajes: 'Viajes', otro: 'Otro' };
         // Deportes es una categoría con subcategorías. El evento guarda la
         // subcategoría en eventType (futbol, f1...) igual que antes, así los
         // eventos ya existentes no necesitan migrarse; 'deportes' a secas
         // es un evento deportivo sin especificar.
         const EVENT_DEPORTES = ['futbol', 'baloncesto', 'f1', 'motogp'];
-        const EVENT_CATEGORIAS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'estudios', 'hogar', 'otro'];
+        const EVENT_CATEGORIAS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'estudios', 'hogar', 'viajes', 'otro'];
 
         function eventCategoria(tipo) {
             return EVENT_DEPORTES.includes(tipo) ? 'deportes' : (EVENT_TYPE_LABELS[tipo] ? tipo : 'otro');
@@ -1359,6 +1359,7 @@
             deportes: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M28 8h44v12h18v10c0 15-11 26-25 28-3 7-8 11-11 12v12h14v10H32V82h14V70c-3-1-8-5-11-12-14-2-25-13-25-28V20h18zM20 30c0 8 6 15 13 17-3-5-5-11-5-17zm60 0h-8c0 6-2 12-5 17 7-2 13-9 13-17z"/></svg>',
             estudios: '<svg viewBox="0 0 341 337" fill="currentColor"><circle cx="166.5" cy="77" r="39"/><path d="M49 117C91 117 131 132 166 162C201 132 241 117 283 117L283 259C240 259 201 275 188 287C179 295 172 301 166 305C160 301 153 295 144 287C131 275 92 259 49 259Z"/></svg>',
             hogar: '<svg viewBox="0 0 368 386" fill="currentColor"><path d="M183.5 0L367 178.5H326V386H222V270H146V386H42V178.5H0Z"/></svg>',
+            viajes: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M10 54L36 12l15 22 14-22 25 42z"/><path d="M12 80c6-12 12-14 19-14 11 0 12 16 19 16s9-16 19-16c7 0 13 3 19 14" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>',
             otro: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="23"/></svg>'
         };
         // Icono de la tarjeta "Próximo evento · hoy" — signo de exclamación
@@ -5184,6 +5185,15 @@
         }
         function getTravelTotal(entry){return(entry.expenses||[]).reduce((sum,x)=>sum+(Number(x.amount)||0),0);}
         function detailField(label,value){if(value===undefined||value===null||value==='')return '';return `<div class="entry-detail-field"><div class="entry-detail-label">${label}</div><div class="entry-detail-value">${value}</div></div>`;}
+        async function toggleAvisoEvento(id) {
+            const e = entries.find(x => x.id === id);
+            if (!e) return;
+            e.sinAviso = e.sinAviso ? undefined : true;
+            openEntryDetail(id);
+            showToast(e.sinAviso ? 'Este evento no avisará' : 'Avisará una hora antes');
+            try { await saveData(); } catch (err) { console.error(err); showToast('No se pudo guardar en la nube', true); }
+        }
+
         function renderEntryDetailModal(entry){
             const label=TYPE_LABELS[entry.type]||'Entrada'; let fields='';
             if(entry.type==='travel'){
@@ -5260,6 +5270,7 @@
             }else if(entry.type==='event'){
                 fields+=detailField('Fecha',escapeHtml(entry.date||''));
                 if(entry.time)fields+=detailField('Hora',escapeHtml(entry.time));
+                if(entry.time)fields+=detailField('Aviso',`<span class="evento-aviso-fila">${entry.sinAviso?'sin aviso.':(preferenciasAvisos.eventos===false?'apagado en ajustes.':'una hora antes.')}<button class="evento-aviso-btn" onclick="toggleAvisoEvento('${entry.id}')">${entry.sinAviso?'avisarme.':'silenciar.'}</button></span>`);
                 if(entry.place)fields+=detailField('Lugar',escapeHtml(entry.place));
                 if(entry.entradas?.length)fields+=`<button class="entrada-abrir-btn" onclick="abrirEntradas('${entry.id}')">${ENTRADA_ICONO}<span>${entry.entradas.length > 1 ? `ver entradas. (${entry.entradas.length})` : 'ver entrada.'}</span></button>`;
                 const evTypeLabel=EVENT_TYPE_LABELS[entry.eventType]||'';
@@ -5557,6 +5568,11 @@
                     <input type="date" id="modal-date" class="modal-input" value="${isEdit ? entry.date || '' : today}">
                     <div class="modal-label">Hora</div>
                     <input type="time" id="modal-time" class="modal-input" value="${isEdit ? entry.time || '' : ''}">
+                    <div class="modal-label">Aviso</div>
+                    <select id="modal-event-aviso" class="modal-input">
+                        <option value="si" ${isEdit && entry.sinAviso ? '' : 'selected'}>Una hora antes</option>
+                        <option value="no" ${isEdit && entry.sinAviso ? 'selected' : ''}>Sin aviso</option>
+                    </select>
                     <div class="modal-label">Lugar</div>
                     <input id="modal-place" class="modal-input" value="${isEdit ? entry.place || '' : ''}" placeholder="Ej: Wembley Stadium">
                     <div class="modal-label">Notas</div>
@@ -5817,6 +5833,7 @@
                 if (entry.eventType === 'deportes') entry.eventType = document.getElementById('modal-event-deporte')?.value || 'deportes';
                 entry.date = document.getElementById('modal-date')?.value || '';
                 entry.time = document.getElementById('modal-time')?.value || '';
+                entry.sinAviso = document.getElementById('modal-event-aviso')?.value === 'no' ? true : undefined;
                 entry.place = document.getElementById('modal-place')?.value?.trim() || '';
                 entry.notes = document.getElementById('modal-notes')?.value?.trim() || '';
                 const entradas = (window._entradasDraft || []).filter(x => x && (x.qrB64 || x.qr));
@@ -12019,7 +12036,7 @@
         function renderEventsFiltro() {
             let i = 0;
             const opcion = (t, j) => `
-                <button class="events-filtro-opcion ${j !== undefined ? 'events-filtro-sub' : ''} ${eventsTypeFilter === t ? 'active' : ''}" data-tipo="${t}" style="--i:${i++};--j:${j || 0}" onclick="setEventsTypeFilter('${t}')">
+                <button class="events-filtro-opcion ${j !== undefined ? 'events-filtro-sub' : ''} ${t === 'all' ? 'events-filtro-ancha' : ''} ${eventsTypeFilter === t ? 'active' : ''}" data-tipo="${t}" style="--i:${i++};--j:${j || 0}" onclick="setEventsTypeFilter('${t}')">
                     <span class="events-filtro-opcion-icono">${t === 'all' ? EVENTS_ICONO_FILTRO : (EVENT_TYPE_ICONS[t] || EVENT_TYPE_ICONS.otro)}</span><span>${t === 'all' || (t === 'deportes' && j !== undefined) ? 'todos.' : EVENT_TYPE_LABELS[t].toLowerCase() + '.'}</span>
                 </button>`;
             const enDeportes = eventsTypeFilter !== 'all' && eventCategoria(eventsTypeFilter) === 'deportes';
@@ -12421,6 +12438,7 @@
         // Tipos de la función avisos-diarios, en el mismo orden de
         // importancia con el que se envían (como mucho 3 al día).
         const AVISOS_AUTOMATICOS = [
+            { tipo: 'eventos', titulo: 'eventos.', texto: 'Una hora antes de cada evento con hora. Para silenciar uno concreto, ábrelo y pulsa "silenciar.".' },
             { tipo: 'aportaciones', titulo: 'cargos vigilados.', texto: 'Una suscripción o gasto fijo con "avisarme si no aparece en el banco" que no ha llegado 3 días después de su día de cargo.' },
             { tipo: 'estudios', titulo: 'exámenes y entregas.', texto: 'Los exámenes y entregas de hoy, y los exámenes de mañana.' },
             { tipo: 'documentos', titulo: 'documentos que caducan.', texto: 'Fichas de Documentos a 30 días, 7 días, un día y el mismo día de su caducidad.' },
@@ -12449,7 +12467,7 @@
         function openAvisosAutomaticos() {
             showModal(`
                 <div class="modal-title">avisos automáticos.</div>
-                <div class="finance-modal-note" style="margin-bottom:10px">Bitácora lo revisa cada mañana a las 9:00 y te avisa solo de lo que toca ese día, como mucho 3 notificaciones y nunca dos veces lo mismo. Elige qué quieres recibir.</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">Una hora antes de cada evento con hora y, cada mañana a las 9:00, lo que toca ese día: como mucho 3 avisos del día y nunca dos veces lo mismo. Elige qué quieres recibir.</div>
                 <div id="avisos-automaticos-lista">${renderAvisosAutomaticosLista()}</div>
             `);
         }
@@ -12491,7 +12509,7 @@
                 <div class="avisos-ajustes-fila">
                     <div>
                         <div class="avisos-ajustes-titulo">avisos automáticos.</div>
-                        <div class="avisos-ajustes-sub">Cada día a las 9:00. ${apagados ? `${AVISOS_AUTOMATICOS.length - apagados} de ${AVISOS_AUTOMATICOS.length} tipos activados.` : 'Todos los tipos activados.'}</div>
+                        <div class="avisos-ajustes-sub">Antes de tus eventos y cada día a las 9:00. ${apagados ? `${AVISOS_AUTOMATICOS.length - apagados} de ${AVISOS_AUTOMATICOS.length} tipos activados.` : 'Todos los tipos activados.'}</div>
                     </div>
                     <button class="finance-oneoff-btn" onclick="openAvisosAutomaticos()">elegir.</button>
                 </div>` : ''}`;

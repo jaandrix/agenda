@@ -1,9 +1,11 @@
 // Edge Function: avisos-diarios
 //
-// Revisión diaria de lo que merece una notificación push, sin depender de
-// que el usuario abra Bitácora ni de Claude: la lanza cada hora pg_cron
-// (ver supabase/sql/avisos_diarios.sql) y solo actúa a las 9:00 de Madrid,
-// así sigue el cambio de horario sola.
+// Avisos push que no dependen de que el usuario abra Bitácora ni de Claude.
+// La lanza pg_cron cada 5 minutos (ver supabase/sql/avisos_diarios.sql):
+// - El resumen del día, a las 9:00 de Madrid (así sigue el cambio de
+//   horario sola), una sola vez al día aunque haya varias pasadas en esa hora.
+// - Los eventos con hora, una hora antes de que empiecen (salvo que el
+//   evento tenga sinAviso o el usuario haya apagado el tipo "eventos").
 //
 // Por usuario con notificaciones activadas: calcula los avisos del día
 // con sus datos (bitacora.data), quita los tipos que haya apagado en
@@ -13,7 +15,8 @@
 // Se despliega sin verificación de JWT (la llama la base de datos):
 //   supabase functions deploy avisos-diarios --no-verify-jwt
 // Secreto: AVISOS_SECRET (el mismo que lleva la tarea de pg_cron).
-// Para probar sin enviar: POST {"forzar": true, "simular": true}.
+// Para probar sin enviar: POST {"forzar": true, "simular": true}
+// ("forzar" lanza el resumen del día aunque no sean las 9:00).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -32,6 +35,16 @@ function hoyMadrid() {
 function horaMadrid() {
     return Number(new Intl.DateTimeFormat('en-GB', { timeZone: ZONA, hour: '2-digit', hour12: false }).format(new Date()));
 }
+// Minutos desde ahora hasta una fecha y hora de Madrid. Las dos se tratan
+// como horas "de pared" de Madrid, así no hace falta conocer su desfase.
+function minutosHasta(fecha: string, hora: string) {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date()).map(x => [x.type, x.value]));
+    const ahora = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute);
+    const [h, m] = hora.split(':').map(Number);
+    const [y, mo, d] = fecha.split('-').map(Number);
+    return Math.round((Date.UTC(y, mo - 1, d, h, m) - ahora) / 60000);
+}
+const ANTELACION = 60;
 function sumarDias(iso: string, n: number) {
     const d = new Date(iso + 'T12:00:00Z');
     d.setUTCDate(d.getUTCDate() + n);
@@ -115,6 +128,18 @@ function calcularAvisos(data: any, hoy: string, pendientesBandeja: number): Avis
     return avisos.sort((a, b) => a.prioridad - b.prioridad);
 }
 
+// Eventos que empiezan dentro de la próxima hora. Con pasadas cada 5
+// minutos, el aviso llega entre 55 y 60 minutos antes; la clave lleva la
+// fecha y la hora, así si el evento se mueve se vuelve a avisar.
+function avisosEventos(data: any): Aviso[] {
+    return (data.entries || []).filter((e: any) => e?.type === 'event' && !e.calendarLog && !/^(weekly_task_done_|planner_done_|recurring_done_)/.test(e.id || '') && !e.sinAviso && /^\d{4}-\d{2}-\d{2}$/.test(e.date || '') && /^\d{1,2}:\d{2}$/.test(e.time || ''))
+        .filter((e: any) => { const m = minutosHasta(e.date, e.time); return m > 0 && m <= ANTELACION; })
+        .map((e: any) => ({
+            clave: `evento:${e.id}:${e.date}T${e.time}`, tipo: 'eventos', prioridad: 0, titulo: titulo(e.title),
+            texto: `Empieza en una hora, a las ${e.time}${e.place ? ` · ${e.place}` : ''}.`, url: '/',
+        }));
+}
+
 async function enviar(userId: string, a: Aviso) {
     const res = await fetch(SUPABASE_URL + '/functions/v1/send-push', {
         method: 'POST',
@@ -129,8 +154,7 @@ Deno.serve(async (req) => {
     const secreto = Deno.env.get('AVISOS_SECRET');
     if (!secreto || req.headers.get('x-internal-secret') !== secreto) return json({ error: 'No autorizado' }, 401);
     const opciones = await req.json().catch(() => ({}));
-    if (!opciones.forzar && horaMadrid() !== HORA) return json({ omitido: 'fuera de hora' });
-
+    const tocaResumen = opciones.forzar || horaMadrid() === HORA;
     const hoy = hoyMadrid();
     const { data: subs } = await sb.from('push_subscriptions').select('user_id');
     const usuarios = [...new Set((subs || []).map((s: any) => s.user_id))].filter(u => !opciones.user_id || u === opciones.user_id);
@@ -140,14 +164,24 @@ Deno.serve(async (req) => {
         const { data: fila } = await sb.from('bitacora').select('data').eq('user_id', userId).maybeSingle();
         const data = fila?.data || {};
         const prefs = data.preferenciasAvisos || {};
-        const haceUnDia = new Date(Date.now() - 20 * 3600e3).toISOString();
-        const { count } = await sb.from('conector_bandeja').select('id', { count: 'exact', head: true }).eq('user_id', userId).lt('creado', haceUnDia);
-        const candidatos = calcularAvisos(data, hoy, count || 0).filter(a => prefs[a.tipo] !== false);
-        const { data: enviados } = candidatos.length
-            ? await sb.from('avisos_enviados').select('clave').eq('user_id', userId).in('clave', candidatos.map(a => a.clave))
-            : { data: [] };
+        const eventos = prefs.eventos === false ? [] : avisosEventos(data);
+        // El resumen del día va una sola vez: su propia clave marca que ya
+        // se hizo, aunque la hora de las 9 tenga varias pasadas.
+        const claveResumen = `resumen:${hoy}`;
+        let diarios: Aviso[] = [];
+        if (tocaResumen) {
+            const haceUnDia = new Date(Date.now() - 20 * 3600e3).toISOString();
+            const { count } = await sb.from('conector_bandeja').select('id', { count: 'exact', head: true }).eq('user_id', userId).lt('creado', haceUnDia);
+            diarios = calcularAvisos(data, hoy, count || 0).filter(a => prefs[a.tipo] !== false);
+        }
+        const claves = [...eventos, ...diarios].map(a => a.clave);
+        if (tocaResumen) claves.push(claveResumen);
+        if (!claves.length) continue;
+        const { data: enviados } = await sb.from('avisos_enviados').select('clave').eq('user_id', userId).in('clave', claves);
         const ya = new Set((enviados || []).map((e: any) => e.clave));
-        const nuevos = candidatos.filter(a => !ya.has(a.clave)).slice(0, MAX_DIA);
+        const resumenHecho = ya.has(claveResumen) && !opciones.forzar;
+        const nuevos = [...eventos.filter(a => !ya.has(a.clave)), ...(resumenHecho ? [] : diarios.filter(a => !ya.has(a.clave)).slice(0, MAX_DIA))];
+        if (tocaResumen && !resumenHecho && !opciones.simular) await sb.from('avisos_enviados').upsert({ user_id: userId, clave: claveResumen });
         const hechos: string[] = [];
         for (const a of nuevos) {
             if (opciones.simular) { hechos.push(`${a.titulo} ${a.texto}`); continue; }
@@ -156,7 +190,7 @@ Deno.serve(async (req) => {
                 hechos.push(a.clave);
             }
         }
-        resumen.push({ usuario: userId.slice(0, 8), candidatos: candidatos.length, ya_enviados: ya.size, [opciones.simular ? 'se_enviarian' : 'enviados']: hechos });
+        resumen.push({ usuario: userId.slice(0, 8), eventos: eventos.length, diarios: diarios.length, ya_enviados: ya.size, [opciones.simular ? 'se_enviarian' : 'enviados']: hechos });
     }
     return json({ hoy, resumen });
 });

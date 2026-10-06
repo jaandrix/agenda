@@ -23,8 +23,9 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   columna `jsonb`). Hay Edge Functions desplegadas (`supabase/functions/`: Stripe
   webhook de suscripción, envío de notificaciones push, cancelación de suscripción y
   `bitacora-mcp`, el conector para Claude/ChatGPT — ver `supabase/sql/conector_ia.sql` —, y
-  `avisos-diarios`, avisos push automáticos a las 9:00 vía pg_cron — ver
-  `supabase/sql/avisos_diarios.sql`) y
+  `avisos-diarios`, avisos push automáticos vía pg_cron cada 5 minutos: resumen del
+  día a las 9:00 y cada evento con hora una hora antes, salvo `sinAviso` en el
+  evento o `preferenciasAvisos.eventos === false` — ver `supabase/sql/avisos_diarios.sql`) y
   SQL de referencia en `supabase/sql/` (amistades, listas de ocio compartidas, viajes
   compartidos, sugerencias, snapshots...).
 - **Carpeta espejo para pruebas locales:** `C:\Users\jandr\Downloads\bitacora-mirror\`

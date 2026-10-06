@@ -4,9 +4,9 @@
 -- (la clave lleva el día, el mes o el umbral según el tipo). Solo la usa
 -- la función con la service role: RLS activado y sin políticas.
 --
--- La tarea de pg_cron llama a la función cada hora en punto; la función
--- solo actúa a las 9:00 de Madrid, así no hay que tocar nada con el cambio
--- de horario. Sustituye <AVISOS_SECRET> por el valor del secreto
+-- La tarea de pg_cron llama a la función cada 5 minutos: así los eventos
+-- avisan una hora antes con poco margen, y el resumen del día sale una vez
+-- a las 9:00 de Madrid (sin tocar nada con el cambio de horario). Sustituye <AVISOS_SECRET> por el valor del secreto
 -- AVISOS_SECRET de las Edge Functions antes de ejecutar este archivo (no se
 -- guarda en el repositorio).
 
@@ -25,7 +25,7 @@ alter table avisos_enviados enable row level security;
 select cron.unschedule('avisos-diarios') where exists (select 1 from cron.job where jobname = 'avisos-diarios');
 select cron.schedule(
     'avisos-diarios',
-    '0 * * * *',
+    '*/5 * * * *',
     $$
     select net.http_post(
         url := 'https://avdqtnukgbejorieuunj.supabase.co/functions/v1/avisos-diarios',

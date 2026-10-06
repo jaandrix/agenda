@@ -4967,6 +4967,7 @@ details[open] > .studies-editorial-group-label::before { content:'– '; }
 .events-filtro-opcion-icono { width:16px; height:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .events-filtro-opcion-icono svg { width:16px; height:16px; display:block; }
 .events-filtro-grupo { grid-column:1 / -1; display:flex; flex-direction:column; }
+.events-filtro-ancha { grid-column:1 / -1; }
 .events-filtro-grupo-btn { width:100%; }
 .events-filtro-grupo.con-seleccion > .events-filtro-grupo-btn { color:var(--text-primary); box-shadow:inset 0 0 0 1px var(--border-strong); }
 .events-filtro-chevron { margin-left:auto; display:flex; opacity:.6; transition:transform .3s var(--ease-out); }
@@ -6095,4 +6096,9 @@ body.papel .doc-ficha.caducada .doc-ficha-estado { color: #a3243b; }
 .viaje-reserva-dato { font-size: 12.5px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .viaje-reserva-dato span { display: block; font-size: 10.5px; color: var(--text-secondary); }
 .viaje-reserva-notas { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+
+/* Aviso de un evento en su ficha: silenciarlo o volver a activarlo. */
+.evento-aviso-fila { display:inline-flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.evento-aviso-btn { padding:3px 10px; border:1px solid var(--border-strong); border-radius:999px; background:none; color:var(--text-primary); font-family:var(--font-family); font-size:11.5px; font-weight:600; cursor:pointer; }
+.evento-aviso-btn:hover { background:var(--bg-card-hover); }
 
