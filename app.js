@@ -2774,6 +2774,7 @@
                 const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
                 if (error) throw error;
                 const saved = (data && data.data) ? data.data : {};
+                datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(saved[k])]));
                 entries = saved.entries || [];
                 normalizeWorkCotizationData();
                 categories = saved.categories || getDefaultCategories();
@@ -2938,6 +2939,125 @@
         // de una importación explícita. En el resto de guardados conservamos
         // siempre la versión más reciente que haya en Supabase.
         let apuntesDirty = false;
+        // ============================================================
+        //  FUSIÓN CON LA NUBE
+        //  Cada dispositivo guarda en datosBase cómo estaban sus datos en
+        //  la nube la última vez que los leyó o escribió. Al guardar (o al
+        //  volver a la app) se fusiona a tres bandas, apartado por apartado:
+        //  lo que solo cambió aquí gana, lo que solo cambió en la nube se
+        //  respeta, y en las listas con id (eventos, movimientos, tareas...)
+        //  se combinan los elementos uno a uno. Antes cada apartado se
+        //  escribía entero con lo que hubiera en memoria, y un dispositivo
+        //  que llevaba rato abierto borraba lo que otro (o Claude) acababa
+        //  de añadir: así se perdieron dos eventos el 2026-10-06.
+        // ============================================================
+        const DATOS_SINCRONIZADOS = {
+            entries: [() => entries, v => { entries = v; filteredEntries = [...v]; }],
+            categories: [() => categories, v => { categories = v; }],
+            userName: [() => userName, v => { userName = v; }],
+            investmentData: [() => investmentData, v => { investmentData = v; }],
+            notes: [() => notes, v => { notes = v; }],
+            prompts: [() => prompts, v => { prompts = v; }],
+            inbox: [() => inbox, v => { inbox = v; }],
+            registroConector: [() => registroConector, v => { registroConector = v; }],
+            analisisIA: [() => analisisIA, v => { analisisIA = v; }],
+            preferenciasAvisos: [() => preferenciasAvisos, v => { preferenciasAvisos = v; }],
+            ciudadTiempo: [() => ciudadTiempo, v => { ciudadTiempo = v; }],
+            financeIncome: [() => financeIncome, v => { financeIncome = v; }],
+            financeProfile: [() => financeProfile, v => { financeProfile = v; }],
+            financePro: [() => financePro, v => { financePro = v; }],
+            plannedTrips: [() => plannedTrips, v => { plannedTrips = v; }],
+            weeklyTasks: [() => weeklyTasks, v => { weeklyTasks = v; }],
+            cultureLists: [() => cultureLists, v => { cultureLists = v; }],
+            habits: [() => habits, v => { habits = v; }],
+            collectibleCategories: [() => collectibleCategories, v => { collectibleCategories = v; }],
+            collectibles: [() => collectibles, v => { collectibles = v; }],
+            dayPlanner: [() => dayPlanner, v => { dayPlanner = v; }],
+            recurringTasks: [() => recurringTasks, v => { recurringTasks = v; }],
+            dailyEffort: [() => dailyEffort, v => { dailyEffort = v; }],
+            studies: [() => studies, v => { studies = v; }],
+            links: [() => links, v => { links = v; }],
+            linkCategories: [() => linkCategories, v => { linkCategories = v; }],
+            blurFinances: [() => blurFinances, v => { blurFinances = v; }]
+        };
+        let datosBase = null;
+        const clonarDatos = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));
+        // Comparación sin depender del orden de las claves: la nube (jsonb)
+        // devuelve los objetos con las claves en otro orden que la memoria.
+        const canonico = v => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !Array.isArray(x) ? Object.keys(x).sort().reduce((o, c) => (o[c] = x[c], o), {}) : x);
+        const mismoValor = (a, b) => canonico(a) === canonico(b);
+        const esObjetoPlano = v => !!v && typeof v === 'object' && !Array.isArray(v);
+        const idsUnicos = a => a.every(x => esObjetoPlano(x) && x.id != null) && new Set(a.map(x => String(x.id))).size === a.length;
+
+        function fusionarTresBandas(base, local, nube) {
+            if (mismoValor(local, base)) return nube;
+            if (mismoValor(nube, base) || mismoValor(local, nube)) return local;
+            if (esObjetoPlano(local) && esObjetoPlano(nube)) {
+                const b = esObjetoPlano(base) ? base : {};
+                const r = {};
+                new Set([...Object.keys(local), ...Object.keys(nube)]).forEach(k => {
+                    const v = fusionarTresBandas(b[k], local[k], nube[k]);
+                    if (v !== undefined) r[k] = v;
+                });
+                return r;
+            }
+            if (Array.isArray(local) && Array.isArray(nube) && (local.length || nube.length) && idsUnicos(local) && idsUnicos(nube)) {
+                const mapa = a => new Map((Array.isArray(a) ? a : []).filter(esObjetoPlano).map(x => [String(x.id), x]));
+                const B = mapa(base), L = mapa(local), N = mapa(nube);
+                const decidir = id => {
+                    const b = B.get(id), l = L.get(id), n = N.get(id);
+                    if (l && n) return fusionarTresBandas(b, l, n);
+                    // Solo está en un lado: o es nuevo, o el otro lado lo
+                    // borró; un borrado gana salvo que este lado lo cambiara.
+                    const unico = l || n;
+                    return b && mismoValor(unico, b) ? undefined : unico;
+                };
+                const r = [], vistos = new Set();
+                [...local, ...nube].forEach(x => {
+                    const id = String(x.id);
+                    if (vistos.has(id)) return;
+                    vistos.add(id);
+                    const v = decidir(id);
+                    if (v !== undefined) r.push(v);
+                });
+                return r;
+            }
+            return local;
+        }
+
+        // Fusiona la nube con la memoria y deja la memoria con el resultado.
+        function aplicarFusionConNube(nube) {
+            const fusion = {};
+            let cambiado = false;
+            Object.entries(DATOS_SINCRONIZADOS).forEach(([k, [leer, escribir]]) => {
+                const local = leer();
+                let v = datosBase ? fusionarTresBandas(datosBase[k], local, nube[k]) : local;
+                if (v === undefined) v = local;
+                fusion[k] = v;
+                if (v !== local && !mismoValor(v, local)) { escribir(v); cambiado = true; }
+            });
+            return { fusion, cambiado };
+        }
+
+        // Al volver a la app: trae lo último de la nube sin escribir nada,
+        // para que un dispositivo abierto desde hace rato no enseñe datos
+        // viejos. Va en la misma cola que los guardados.
+        let ultimaSincronizacion = 0;
+        function sincronizarDesdeNube() {
+            if (!datosBase || Date.now() - ultimaSincronizacion < 15000) return;
+            ultimaSincronizacion = Date.now();
+            saveChain = saveChain.then(async () => {
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+                const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
+                if (error || !data) return;
+                const nube = data.data || {};
+                const { cambiado } = aplicarFusionConNube(nube);
+                datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(nube[k])]));
+                if (cambiado) { invalidarCachesDerivadas(); render(); }
+            }).catch(e => console.error('No se pudo sincronizar con la nube:', e));
+        }
+
         let saveChain = Promise.resolve();
 
         function saveData() {
@@ -2991,35 +3111,10 @@
             const lastSnapshotWeek = latestData._meta?.lastSnapshotWeek || '';
             const needsSnapshot = lastSnapshotWeek !== currentWeek;
 
+            const { fusion, cambiado } = aplicarFusionConNube(latestData);
             const mergedData = {
                 ...latestData,
-                entries,
-                categories,
-                userName,
-                investmentData,
-                notes,
-                prompts,
-                inbox,
-                registroConector,
-                analisisIA,
-                preferenciasAvisos,
-                ciudadTiempo,
-                financeIncome,
-                financeProfile,
-                financePro,
-                plannedTrips,
-                weeklyTasks,
-                cultureLists,
-                habits,
-                collectibleCategories,
-                collectibles,
-                dayPlanner,
-                recurringTasks,
-                dailyEffort,
-                studies,
-                links,
-                linkCategories,
-                blurFinances,
+                ...fusion,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
                 apuntes: apuntesDirty ? apuntes : latestApuntes,
@@ -3051,6 +3146,9 @@
                     if (fallbackError) throw fallbackError;
                 }
             }
+
+            datosBase = clonarDatos(fusion);
+            if (cambiado) setTimeout(() => { invalidarCachesDerivadas(); render(); }, 0);
 
             // Mantener la memoria local sincronizada con lo que realmente
             // quedó almacenado.
@@ -20769,7 +20867,8 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 ensureRecurringProCharges();
                 convertirCinesEnPeliculas();
                 setInterval(convertirCinesEnPeliculas, 5 * 60000);
-                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { convertirCinesEnPeliculas(); aplicarBandejaConector(); actualizarAnalisisIA(); } });
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { sincronizarDesdeNube(); convertirCinesEnPeliculas(); aplicarBandejaConector(); actualizarAnalisisIA(); } });
+                window.addEventListener('focus', sincronizarDesdeNube);
                 aplicarBandejaConector();
                 setTimeout(actualizarAnalisisIA, 1500);
             }
