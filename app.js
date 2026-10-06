@@ -3345,7 +3345,7 @@
             const fab = document.getElementById('fab');
             if (!fab) return;
             if (currentView === 'work') {
-                fab.innerHTML = typeof FAB_ICON_LAPTOP !== 'undefined' ? FAB_ICON_LAPTOP : FAB_ICON_DEFAULT;
+                fab.innerHTML = FAB_ICON_DEFAULT;
                 fab.classList.add('fab-pulse');
                 fab.title = 'Captura rápida · Trabajo (tecla ESPACIO)';
             } else {
@@ -10102,7 +10102,6 @@
         // Misma silueta, pero el "hueco" de la pantalla toma el color de
         // fondo del FAB (var(--bg-fab)) en vez de negro fijo, porque el FAB
         // sí cambia de blanco a negro según el tema.
-        const FAB_ICON_LAPTOP = '<svg viewBox="0 0 100 80" fill="none"><rect x="6" y="6" width="88" height="56" rx="8" fill="currentColor"/><rect x="18" y="16" width="64" height="36" rx="3" fill="var(--bg-fab)"/><rect x="0" y="66" width="100" height="10" rx="5" fill="currentColor"/></svg>';
 
         function renderWork() {
             const work = entries.filter(e => e.type === 'work');
