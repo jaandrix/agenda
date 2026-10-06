@@ -388,6 +388,25 @@ const fechaHora = (v: unknown) => {
 };
 const txt = (v: unknown) => (v === undefined || v === null ? undefined : String(v).trim());
 
+// Lo que se devuelve a Claude: sin campos vacíos ni datos internos de la
+// app (categorías por id, colores de interfaz, fechas de creación), que
+// gastan tokens en cada respuesta sin aportar nada.
+const CAMPOS_INTERNOS = new Set(['categoryId', 'createdAt', 'color', 'sinValidar']);
+function compactar(v: any): any {
+    if (Array.isArray(v)) return v.map(compactar).filter(x => x !== undefined);
+    if (v && typeof v === 'object') {
+        const o: any = {};
+        for (const [k, x] of Object.entries(v)) {
+            if (CAMPOS_INTERNOS.has(k)) continue;
+            const c = compactar(x);
+            if (c === undefined || c === null || c === '' || (Array.isArray(c) && !c.length) || (typeof c === 'object' && !Array.isArray(c) && !Object.keys(c).length)) continue;
+            o[k] = c;
+        }
+        return o;
+    }
+    return v;
+}
+
 function entradaPorTitulo(data: any, tipos: string[], titulo: unknown, id?: unknown) {
     const lista = (data.entries || []).filter((e: any) => e && tipos.includes(e.type));
     if (id) return lista.find((e: any) => e.id === id) || null;
@@ -461,7 +480,22 @@ const APARTADOS: Record<string, (d: any) => unknown> = {
     notas: d => ({ notas_del_dia: (d.notes || []).slice(-60).map((n: any) => ({ fecha: n.date, titulo: n.title || undefined, texto: n.content })), inbox_antiguo: d.inbox }),
     viajes: d => ({ viajes: (d.entries || []).filter((e: any) => e?.type === 'travel' || e?.type === 'place'), planeados: d.plannedTrips }),
     coleccionables: d => ({ categorias: d.collectibleCategories, objetos: (d.collectibles || []).map((c: any) => ({ nombre: c.name, categoria: c.category, valor: c.value, carta: c.carta })) }),
-    ocio: d => ({ listas: d.cultureLists, entradas: (d.entries || []).filter((e: any) => ['book', 'movie', 'series', 'game'].includes(e?.type)) }),
+    // Agrupado por tipo y con los nombres de la herramienta ocio, que busca
+    // por título: los ids, el tipo repetido en cada registro y la categoría
+    // interna de la app eran un tercio de la respuesta.
+    ocio: d => {
+        const grupos: Record<string, any[]> = { libros: [], peliculas: [], series: [], videojuegos: [] };
+        const destino: Record<string, string> = { book: 'libros', movie: 'peliculas', series: 'series', game: 'videojuegos' };
+        (d.entries || []).forEach((e: any) => {
+            if (!destino[e?.type]) return;
+            grupos[destino[e.type]].push({
+                titulo: e.title, autor: e.author, estado: e.status, fecha: e.type === 'movie' ? e.date : undefined,
+                fecha_inicio: e.startDate, fecha_fin: e.endDate, valoracion: Number(e.rating) > 0 ? Number(e.rating) : undefined,
+                notas: e.notes, etiquetas: e.tags,
+            });
+        });
+        return { ...grupos, listas: d.cultureLists };
+    },
     objetivos: d => (d.entries || []).filter((e: any) => e?.type === 'goal'),
     trabajo: d => (d.entries || []).filter((e: any) => e?.type === 'work'),
     proyectos: d => (d.entries || []).filter((e: any) => e?.type === 'project'),
@@ -805,7 +839,7 @@ async function llamar(userId: string, nombre: string, a: any) {
         case 'apartado': {
             const f = APARTADOS[a.nombre];
             if (!f) throw new Error('Apartado desconocido');
-            const txt = JSON.stringify(f(data) ?? null);
+            const txt = JSON.stringify(compactar(f(data)) ?? null);
             return txt.length > 60000 ? txt.slice(0, 60000) + '… (recortado)' : JSON.parse(txt);
         }
         case 'crear_evento': {
@@ -1280,7 +1314,7 @@ async function responder(userId: string, msg: any) {
         if (method === 'tools/call') {
             try {
                 const res = await llamar(userId, params?.name, params?.arguments || {});
-                const text = typeof res === 'string' ? res : JSON.stringify(res, null, 1);
+                const text = typeof res === 'string' ? res : JSON.stringify(compactar(res));
                 return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text }] } };
             } catch (e) {
                 return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: String((e as Error).message || e) }], isError: true } };
