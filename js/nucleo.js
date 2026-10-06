@@ -694,6 +694,22 @@
         let mobileDiaSel = null;
         let mobileMes = null;
 
+        // En la versión móvil, los apartados que reutilizan el render de
+        // escritorio existen dos veces (el de #content, oculto, y el de
+        // #mobile-shell) con los mismos id, y getElementById devolvía el
+        // oculto: Sugerencias no enviaba nada y en Amigos no se guardaba el
+        // nombre ni se añadían códigos. Con la versión móvil activa, se
+        // busca primero dentro de #mobile-shell.
+        const getElementByIdOriginal = Document.prototype.getElementById;
+        document.getElementById = function (id) {
+            if (mobileStandaloneActive && !mobileExitedToDesktop) {
+                const shell = getElementByIdOriginal.call(document, 'mobile-shell');
+                const enMovil = shell && id !== 'mobile-shell' ? shell.querySelector(`[id="${CSS.escape(id)}"]`) : null;
+                if (enMovil) return enMovil;
+            }
+            return getElementByIdOriginal.call(document, id);
+        };
+
         function initMobileShell() {
             mobileStandaloneActive = isMobileStandaloneMode();
             document.body.classList.toggle('mobile-standalone', mobileStandaloneActive && !mobileExitedToDesktop);
