@@ -67,7 +67,7 @@
             --bg-card-hover: #DDD8CE;
             --bg-input: #E2DDD3;
             --bg-modal: #F2EFE9;
-            --bg-fab: #EE4B1F;
+            --bg-fab: #DF7356;
             --border: #D5CFC3;
             --border-strong: #B9B2A4;
             --text-primary: #161514;
@@ -80,9 +80,11 @@
             --badge-done-bg: #161514;
             --badge-done-text: #F2EFE9;
             --shadow: 0 6px 24px rgba(22,21,20,0.08);
-            --teja: #EE4B1F;
-            --teja-honda: #B8330F;
-            --teja-suave: #F4C2AE;
+            /* En escritorio, un teja más apagado que el de la versión
+               móvil (--m-acento): en pantallas grandes, el vivo cansaba. */
+            --teja: #DF7356;
+            --teja-honda: #B4502F;
+            --teja-suave: #EFCDBE;
             --m-acento: #EE4B1F;
             --m-punto: #D2CCC1;
         }
