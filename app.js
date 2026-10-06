@@ -1004,7 +1004,6 @@
         const MOBILE_QUICK_ADD = {
             notes: { label: '+ nota de hoy.', action: 'openWriteNote()' },
             work: { label: '+ nuevo trabajo.', action: "openNewEntry('work')" },
-            documents: { label: '+ subir documento.', action: "document.getElementById('doc-upload-input')?.click()" },
             goals: { label: '+ nuevo objetivo.', action: "openNewEntry('goal')" },
             projects: { label: '+ nuevo proyecto.', action: "openNewEntry('project')" },
             links: { label: '+ nuevo enlace.', action: 'openAddLink()' },
@@ -18707,21 +18706,43 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         // ============================================================
         //  DOCUMENTS
         // ============================================================
+        const DOC_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M22 6h38l22 22v60a6 6 0 0 1-6 6H22a6 6 0 0 1-6-6V12a6 6 0 0 1 6-6zm36 4v20h20z"/></svg>';
+        const DOC_ICONO_FICHA = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M14 18a8 8 0 0 1 8-8h56a8 8 0 0 1 8 8v64a8 8 0 0 1-8 8H22a8 8 0 0 1-8-8zM26 30h48v8H26zm0 16h48v8H26zm0 16h30v8H26z"/></svg>';
+
         function renderDocuments() {
+            const fichas = entries.filter(e => e.type === 'document');
+            const pronto = fichas.filter(f => f.date && diasHasta(f.date) <= 30).length;
+            const archivos = documents.length + viewerFiles.length;
             return `
-                <div style="max-width:980px">
-                    <div class="doc-upload-box" onclick="document.getElementById('doc-upload-input').click()">
-                        <div style="font-size:28px;margin-bottom:6px">📄</div>
-                        <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Sube un documento</div>
-                        <div style="font-size:12px;color:var(--text-secondary)">PDF o página HTML (guías, checklists con animaciones...) — pulsa aquí para elegir un archivo</div>
+                <div class="docs2-vista" ondragover="event.preventDefault();this.classList.add('soltando')" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('soltando')" ondrop="soltarDocumento(event)">
+                    <div class="docs2-cabecera">
+                        <div>
+                            <div class="docs2-titulo">documentos.</div>
+                            <div class="docs2-sub"><span id="docs2-n-archivos">${archivos} ${archivos === 1 ? 'archivo' : 'archivos'}</span> · ${fichas.length} ${fichas.length === 1 ? 'ficha' : 'fichas'}${pronto ? ` · <b>${pronto} ${pronto === 1 ? 'caduca' : 'caducan'} en menos de un mes</b>` : ''}.</div>
+                        </div>
+                        <div class="docs2-acciones">
+                            <button class="btn-secondary" style="width:auto" onclick="openBackupsModal()">copias.</button>
+                            <button class="btn-secondary" style="width:auto" onclick="openNewEntry('document')">+ ficha.</button>
+                            <button class="btn-modal-primary docs2-subir" onclick="document.getElementById('doc-upload-input').click()">subir archivo.</button>
+                        </div>
                     </div>
                     ${renderFichasDocumentos()}
-                    <div class="doc-list-toolbar">
-                        <input type="text" id="doc-search-input" class="modal-input doc-search-input" placeholder="Buscar documentos por nombre..." value="${escapeHtml(docSearchQuery)}" oninput="setDocSearchQuery(this.value)">
-                        <button class="btn-secondary" style="width:auto" onclick="openBackupsModal()">backups.</button>
+                    <div class="docs2-seccion-cab">
+                        <div class="docs2-seccion-titulo">archivos.</div>
+                        <input type="text" id="doc-search-input" class="modal-input docs2-buscar" placeholder="buscar por nombre..." value="${escapeHtml(docSearchQuery)}" oninput="setDocSearchQuery(this.value)">
                     </div>
                     <div id="doc-list">Cargando documentos...</div>
+                    <div class="docs2-soltar">${DOC_ICONO}<span>suelta aquí tu PDF o HTML para subirlo.</span></div>
                 </div>`;
+        }
+
+        // Arrastrar y soltar sobre la vista: reutiliza la misma subida que
+        // el botón, con el primer archivo que se suelte.
+        function soltarDocumento(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('soltando');
+            const file = event.dataTransfer?.files?.[0];
+            if (file) handleDocUpload({ target: { files: [file], value: '' } });
         }
 
         // Fichas de documentos sin archivo (garantías, contratos, seguros...)
@@ -18736,28 +18757,30 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             const fichas = entries.filter(e => e.type === 'document')
                 .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
             const estado = f => {
-                if (!f.date) return { texto: 'sin fecha', clase: '' };
+                if (!f.date) return { cifra: '—', texto: 'sin caducidad.', clase: '' };
                 const d = diasHasta(f.date);
-                if (d < 0) return { texto: `caducó hace ${-d} ${d === -1 ? 'día' : 'días'}`, clase: 'caducada' };
-                if (d === 0) return { texto: 'caduca hoy', clase: 'pronto' };
-                return { texto: `caduca en ${d} ${d === 1 ? 'día' : 'días'} · ${financeDateLabelShort(f.date)}`, clase: d <= 30 ? 'pronto' : '' };
+                if (d < 0) return { cifra: -d, texto: `${d === -1 ? 'día caducada' : 'días caducada'} · ${financeDateLabelShort(f.date)}`, clase: 'caducada' };
+                if (d === 0) return { cifra: 'hoy', texto: 'caduca hoy.', clase: 'pronto' };
+                return { cifra: d, texto: `${d === 1 ? 'día' : 'días'} · ${financeDateLabelShort(f.date)}`, clase: d <= 30 ? 'pronto' : '' };
             };
+            if (!fichas.length) {
+                return `<div class="docs2-fichas-vacio" onclick="openNewEntry('document')">${DOC_ICONO_FICHA}<div><b>fichas.</b> Garantías, contratos, seguros, el DNI... con su fecha de caducidad: Bitácora te avisa cuando se acerca. Claude también puede apuntarlas por ti.</div></div>`;
+            }
             return `
-                <div class="doc-fichas">
-                    <div class="doc-fichas-cab">
-                        <span>fichas.</span>
-                        <button class="finance-oneoff-btn" onclick="openNewEntry('document')">+ ficha.</button>
-                    </div>
-                    ${fichas.length ? fichas.map(f => {
+                <div class="docs2-seccion-cab"><div class="docs2-seccion-titulo">fichas.</div></div>
+                <div class="docs2-fichas">
+                    ${fichas.map(f => {
                         const st = estado(f);
                         return `
-                        <div class="doc-ficha ${st.clase}">
-                            <span class="doc-ficha-tipo">${escapeHtml(f.docTipo || 'documento')}</span>
-                            <span class="doc-ficha-titulo">${f.url ? `<a href="${escapeHtml(f.url)}" target="_blank" rel="noopener">${escapeHtml(f.title || '')}</a>` : escapeHtml(f.title || '')}</span>
-                            <span class="doc-ficha-estado">${escapeHtml(st.texto)}</span>
-                            <button class="doc-ficha-editar" title="Editar" onclick="openEditEntry('${f.id}')">editar.</button>
+                        <div class="docs2-ficha ${st.clase}" onclick="openEditEntry('${f.id}')">
+                            <div class="docs2-ficha-top">
+                                <span class="docs2-ficha-tipo">${escapeHtml((f.docTipo || 'documento').toLowerCase())}.</span>
+                                ${f.url ? `<a class="docs2-ficha-enlace" href="${escapeHtml(f.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Abrir el enlace">abrir ↗</a>` : ''}
+                            </div>
+                            <div class="docs2-ficha-titulo">${escapeHtml(f.title || '')}</div>
+                            <div class="docs2-ficha-pie"><span class="docs2-ficha-cifra">${st.cifra}</span><span class="docs2-ficha-estado">${escapeHtml(st.texto)}</span></div>
                         </div>`;
-                    }).join('') : '<div class="doc-fichas-vacio">Garantías, contratos, seguros, DNI... con su fecha de caducidad. Bitácora te avisa cuando se acerca. Claude también puede apuntarlas por ti.</div>'}
+                    }).join('')}
                 </div>`;
         }
 
@@ -18807,36 +18830,36 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
 
             const q = stripAccents(docSearchQuery.toLowerCase().trim());
             const filtered = q ? all.filter(d => stripAccents(d.name.toLowerCase()).includes(q)) : all;
+            const contador = document.getElementById('docs2-n-archivos');
+            if (contador) contador.textContent = `${all.length} ${all.length === 1 ? 'archivo' : 'archivos'}`;
 
             if (!all.length) {
-                listEl.innerHTML =
-                    `<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube tu primer PDF o página HTML con el botón de arriba</div></div>`;
+                listEl.innerHTML = `<div class="docs2-vacio" onclick="document.getElementById('doc-upload-input').click()">${DOC_ICONO}<div><b>sin archivos todavía.</b> Sube un PDF o una página HTML (guías, checklists...) con el botón de arriba o arrastrándolo aquí.</div></div>`;
                 return;
             }
             if (!filtered.length) {
-                listEl.innerHTML = `<div class="empty-state"><div class="empty-title">Sin resultados</div><div class="empty-sub">Nada coincide con "${escapeHtml(docSearchQuery)}"</div></div>`;
+                listEl.innerHTML = `<div class="docs2-vacio">${DOC_ICONO}<div>Nada coincide con "${escapeHtml(docSearchQuery)}".</div></div>`;
                 return;
             }
-            listEl.innerHTML = `<div class="docs-list docs-2col">${filtered.map((doc, i) => {
-                const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
-                const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
+            listEl.innerHTML = `<div class="docs2-archivos">${filtered.map(doc => {
+                const sizeKb = doc.metadata?.size ? (doc.metadata.size > 1048576 ? (doc.metadata.size / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.round(doc.metadata.size / 1024) + ' KB') : '';
+                const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
                 const n = escapeHtml(doc.name);
-                const openBtn = doc.kind === 'pdf'
-                    ? `<button class="doc-action-download" onclick="downloadDocument('${n}')">Descargar</button>`
-                    : `<button class="doc-action-download" onclick="openViewerFile('${n}')">Ver</button>`;
+                const nombreVisible = n.replace(/^\d{10,}_/, '');
+                const abrir = doc.kind === 'pdf' ? `downloadDocument('${n}')` : `openViewerFile('${n}')`;
                 const renameFn = doc.kind === 'pdf' ? 'renameDocument' : 'renameViewerFile';
                 const deleteFn = doc.kind === 'pdf' ? 'deleteDocument' : 'deleteViewerFile';
                 return `
-                    <div class="docs-row">
-                        <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
-                        <div class="docs-row-body">
-                            <div class="docs-row-name">${n}<span class="docs-row-kind">${doc.kind === 'pdf' ? 'PDF' : 'HTML'}</span></div>
-                            <div class="docs-row-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
+                    <div class="docs2-archivo" onclick="${abrir}">
+                        <div class="docs2-archivo-icono ${doc.kind}">${DOC_ICONO}<span>${doc.kind === 'pdf' ? 'PDF' : 'HTML'}</span></div>
+                        <div class="docs2-archivo-cuerpo">
+                            <div class="docs2-archivo-nombre" title="${nombreVisible}">${nombreVisible}</div>
+                            <div class="docs2-archivo-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
                         </div>
-                        <div class="doc-actions">
-                            ${openBtn}
-                            <button class="doc-action-delete-btn" title="Renombrar" style="color:var(--text-secondary)" onclick="${renameFn}('${n}')">✎</button>
-                            <button class="doc-action-delete-btn" title="Eliminar" onclick="${deleteFn}('${n}')">✕</button>
+                        <div class="docs2-archivo-acciones">
+                            <button title="${doc.kind === 'pdf' ? 'Descargar' : 'Ver'}" onclick="event.stopPropagation();${abrir}">${doc.kind === 'pdf' ? '↓' : '→'}</button>
+                            <button title="Renombrar" onclick="event.stopPropagation();${renameFn}('${n}')">✎</button>
+                            <button title="Eliminar" class="borrar" onclick="event.stopPropagation();${deleteFn}('${n}')">✕</button>
                         </div>
                     </div>`;
             }).join('')}</div>`;

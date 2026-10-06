@@ -27,14 +27,14 @@ function pedidosActivos() {
     return pedidos.filter(p => p.estado !== 'entregado');
 }
 
-function diasHasta(iso) {
+function diasHastaPedido(iso) {
     if (!iso) return null;
     return Math.round((new Date(iso + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 86400000);
 }
 
 function textoLlegada(p) {
     if (p.estado === 'entregado') return p.fechaEntrega ? `entregado el ${fechaCortaPedido(p.fechaEntrega)}.` : 'entregado.';
-    const d = diasHasta(p.fechaEstimada);
+    const d = diasHastaPedido(p.fechaEstimada);
     if (d === null) return 'sin fecha estimada.';
     if (d < 0) return `debía llegar el ${fechaCortaPedido(p.fechaEstimada)}.`;
     if (d === 0) return 'llega hoy.';
@@ -53,8 +53,8 @@ function urlSeguimiento(numero) {
 function renderActualizaciones() {
     const activos = pedidosActivos().sort((a, b) => (a.fechaEstimada || '9999').localeCompare(b.fechaEstimada || '9999'));
     const entregados = pedidos.filter(p => p.estado === 'entregado').sort((a, b) => (b.fechaEntrega || '').localeCompare(a.fechaEntrega || ''));
-    const estaSemana = activos.filter(p => { const d = diasHasta(p.fechaEstimada); return d !== null && d >= 0 && d <= 7; }).length;
-    const retrasados = activos.filter(p => { const d = diasHasta(p.fechaEstimada); return d !== null && d < 0; }).length;
+    const estaSemana = activos.filter(p => { const d = diasHastaPedido(p.fechaEstimada); return d !== null && d >= 0 && d <= 7; }).length;
+    const retrasados = activos.filter(p => { const d = diasHastaPedido(p.fechaEstimada); return d !== null && d < 0; }).length;
     return `
     <div class="pedidos-vista">
         <div class="pedidos-cabecera">
@@ -78,7 +78,7 @@ function renderActualizaciones() {
 
 function renderPedidoTarjeta(p) {
     const paso = pedidoIndiceEstado(p);
-    const d = diasHasta(p.fechaEstimada);
+    const d = diasHastaPedido(p.fechaEstimada);
     const retraso = p.estado !== 'entregado' && d !== null && d < 0;
     const historial = p.historial || [];
     const ultimo = historial[historial.length - 1];

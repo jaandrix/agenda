@@ -6246,3 +6246,57 @@ body.acuarela .etiqueta-tarjeta-barra span { background:var(--teja); }
 .m-generico .etiquetas-titulo { display:none; }
 .m-generico .etiquetas-buscar { max-width:none; width:100%; }
 
+/* ============================================================
+   DOCUMENTOS — fichas con caducidad y archivos (PDF / HTML)
+   ============================================================ */
+.docs2-vista { position:relative; max-width:1000px; }
+.docs2-cabecera { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+.docs2-titulo { font-size:26px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); line-height:1.1; }
+.docs2-sub { margin-top:4px; font-size:13px; color:var(--text-secondary); }
+.docs2-sub b { color:#c2410c; font-weight:600; }
+.docs2-acciones { display:flex; gap:8px; flex-wrap:wrap; }
+.docs2-subir { width:auto; margin:0; padding:11px 20px; }
+.docs2-seccion-cab { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 0 10px; }
+.docs2-seccion-titulo { font-size:15px; font-weight:800; color:var(--text-primary); }
+.docs2-buscar { margin:0; max-width:240px; }
+.docs2-fichas { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; }
+.docs2-ficha { display:flex; flex-direction:column; gap:6px; padding:14px 16px; border-radius:18px; background:var(--bg-card); border:1px solid var(--border); cursor:pointer; transition:border-color .15s ease, transform .15s var(--ease-out); }
+@media (hover:hover) and (pointer:fine) { .docs2-ficha:hover { border-color:var(--border-strong); transform:translateY(-1px); } }
+.docs2-ficha-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.docs2-ficha-tipo { font-size:11.5px; font-weight:700; color:var(--text-secondary); }
+.docs2-ficha-enlace { font-size:11.5px; font-weight:600; color:var(--text-secondary); text-decoration:none; }
+.docs2-ficha-enlace:hover { color:var(--text-primary); }
+.docs2-ficha-titulo { font-size:15px; font-weight:700; color:var(--text-primary); line-height:1.25; overflow-wrap:anywhere; }
+.docs2-ficha-pie { display:flex; align-items:baseline; gap:6px; margin-top:auto; padding-top:6px; }
+.docs2-ficha-cifra { font-size:24px; font-weight:800; letter-spacing:-.6px; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.docs2-ficha-estado { font-size:12px; color:var(--text-secondary); }
+.docs2-ficha.pronto { border-color:#d97706; }
+.docs2-ficha.pronto .docs2-ficha-cifra { color:#c2410c; }
+.docs2-ficha.caducada { border-color:#a3243b; }
+.docs2-ficha.caducada .docs2-ficha-cifra, .docs2-ficha.caducada .docs2-ficha-estado { color:#a3243b; }
+.docs2-fichas-vacio, .docs2-vacio { display:flex; align-items:center; gap:14px; padding:18px 20px; border-radius:18px; border:1px dashed var(--border-strong); font-size:13px; line-height:1.5; color:var(--text-secondary); cursor:pointer; }
+.docs2-fichas-vacio b, .docs2-vacio b { color:var(--text-primary); }
+.docs2-fichas-vacio svg, .docs2-vacio svg { width:30px; height:30px; flex-shrink:0; color:var(--text-muted); }
+.docs2-archivos { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:8px; }
+.docs2-archivo { display:flex; align-items:center; gap:12px; padding:10px 10px 10px 12px; border-radius:16px; background:var(--bg-card); border:1px solid var(--border); cursor:pointer; transition:border-color .15s ease; }
+.docs2-archivo:hover { border-color:var(--border-strong); }
+.docs2-archivo-icono { position:relative; width:36px; height:44px; flex-shrink:0; color:var(--text-primary); }
+.docs2-archivo-icono svg { width:100%; height:100%; }
+.docs2-archivo-icono span { position:absolute; left:0; right:0; bottom:7px; text-align:center; font-size:8.5px; font-weight:800; letter-spacing:.3px; color:var(--bg-card); }
+.docs2-archivo-cuerpo { flex:1; min-width:0; }
+.docs2-archivo-nombre { font-size:13.5px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.docs2-archivo-meta { margin-top:2px; font-size:11.5px; color:var(--text-secondary); }
+.docs2-archivo-acciones { display:flex; gap:2px; flex-shrink:0; }
+.docs2-archivo-acciones button { width:30px; height:30px; padding:0; border:0; border-radius:50%; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:14px; cursor:pointer; }
+.docs2-archivo-acciones button:hover { background:var(--bg-card-hover); color:var(--text-primary); }
+.docs2-archivo-acciones button.borrar:hover { color:#dc2626; }
+@media (hover:hover) and (pointer:fine) { .docs2-archivo-acciones { opacity:0; transition:opacity .15s ease; } .docs2-archivo:hover .docs2-archivo-acciones { opacity:1; } }
+.docs2-soltar { position:absolute; inset:-8px; z-index:5; display:none; flex-direction:column; align-items:center; justify-content:center; gap:10px; border-radius:22px; border:2px dashed var(--text-primary); background:var(--bg-app); color:var(--text-primary); font-size:15px; font-weight:700; pointer-events:none; }
+.docs2-soltar svg { width:40px; height:40px; }
+.docs2-vista.soltando .docs2-soltar { display:flex; }
+body.acuarela .docs2-ficha.pronto { border-color:var(--teja); }
+body.acuarela .docs2-ficha.pronto .docs2-ficha-cifra { color:var(--teja-honda); }
+.m-generico .docs2-titulo { display:none; }
+.m-generico .docs2-buscar { max-width:none; flex:1; }
+.m-generico .docs2-archivos { grid-template-columns:1fr; }
+
