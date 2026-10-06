@@ -46,8 +46,14 @@ function fechaCortaPedido(iso) {
     return new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-function urlSeguimiento(numero) {
-    return 'https://t.17track.net/es#nums=' + encodeURIComponent(numero);
+// Si el enlace del pedido (o el propio número) es una página de seguimiento
+// de un transportista, se abre esa: 17TRACK no reconoce números cortos como
+// los de InPost/Vinted.
+const ES_PAGINA_SEGUIMIENTO = /^https?:\/\/[^/]*(inpost|correos|seur|gls|mrw|ups|dhl|dpd|nacex|ctt|17track|cainiao)\./i;
+function urlSeguimiento(p) {
+    if (ES_PAGINA_SEGUIMIENTO.test(p.seguimiento || '')) return p.seguimiento;
+    if (ES_PAGINA_SEGUIMIENTO.test(p.url || '')) return p.url;
+    return 'https://t.17track.net/es#nums=' + encodeURIComponent(p.seguimiento);
 }
 
 function renderActualizaciones() {
@@ -97,8 +103,8 @@ function renderPedidoTarjeta(p) {
         ${p.seguimiento ? `<div class="pedido-codigo"><code>${escapeHtml(p.seguimiento)}</code><button onclick="navigator.clipboard.writeText('${escapeHtml(p.seguimiento).replace(/'/g, '')}').then(() => showToast('Número copiado'))">copiar.</button></div>` : ''}
         <div class="pedido-acciones">
             ${p.estado !== 'entregado' ? `<button class="pedido-btn pedido-btn-principal" onclick="avanzarPedido('${p.id}')">→ ${PEDIDO_ESTADOS[Math.min(paso + 1, PEDIDO_ESTADOS.length - 1)].texto}</button>` : ''}
-            ${p.seguimiento ? `<a class="pedido-btn" href="${urlSeguimiento(p.seguimiento)}" target="_blank" rel="noopener">seguir envío.</a>` : ''}
-            ${p.url ? `<a class="pedido-btn" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">ver pedido.</a>` : ''}
+            ${p.seguimiento ? `<a class="pedido-btn" href="${escapeHtml(urlSeguimiento(p))}" target="_blank" rel="noopener">seguir envío.</a>` : ''}
+            ${p.url && !ES_PAGINA_SEGUIMIENTO.test(p.url) ? `<a class="pedido-btn" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">ver pedido.</a>` : ''}
             <button class="pedido-btn" onclick="openPedido('${p.id}')">editar.</button>
         </div>
     </div>`;
