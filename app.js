@@ -1328,13 +1328,13 @@
             event: ['evento', 'eventos']
         };
         const ENTRY_TYPE_LABEL_PLURAL = { book: 'Libros', movie: 'Películas', series: 'Series', event: 'Eventos' };
-        const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', deportes: 'Deportes', futbol: 'Fútbol', baloncesto: 'Baloncesto', f1: 'F1', motogp: 'Moto GP', estudios: 'Estudios', hogar: 'Hogar', viajes: 'Viajes', otro: 'Otro' };
+        const EVENT_TYPE_LABELS = { social: 'Social', teatro: 'Teatro', cine: 'Cine', concierto: 'Concierto', deportes: 'Deportes', futbol: 'Fútbol', baloncesto: 'Baloncesto', f1: 'F1', motogp: 'Moto GP', estudios: 'Estudios', trabajo: 'Trabajo', salud: 'Salud', hogar: 'Hogar', viajes: 'Viajes', otro: 'Otro' };
         // Deportes es una categoría con subcategorías. El evento guarda la
         // subcategoría en eventType (futbol, f1...) igual que antes, así los
         // eventos ya existentes no necesitan migrarse; 'deportes' a secas
         // es un evento deportivo sin especificar.
         const EVENT_DEPORTES = ['futbol', 'baloncesto', 'f1', 'motogp'];
-        const EVENT_CATEGORIAS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'estudios', 'hogar', 'viajes', 'otro'];
+        const EVENT_CATEGORIAS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'estudios', 'trabajo', 'salud', 'hogar', 'viajes', 'otro'];
 
         function eventCategoria(tipo) {
             return EVENT_DEPORTES.includes(tipo) ? 'deportes' : (EVENT_TYPE_LABELS[tipo] ? tipo : 'otro');
@@ -1359,6 +1359,9 @@
             deportes: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M28 8h44v12h18v10c0 15-11 26-25 28-3 7-8 11-11 12v12h14v10H32V82h14V70c-3-1-8-5-11-12-14-2-25-13-25-28V20h18zM20 30c0 8 6 15 13 17-3-5-5-11-5-17zm60 0h-8c0 6-2 12-5 17 7-2 13-9 13-17z"/></svg>',
             estudios: '<svg viewBox="0 0 341 337" fill="currentColor"><circle cx="166.5" cy="77" r="39"/><path d="M49 117C91 117 131 132 166 162C201 132 241 117 283 117L283 259C240 259 201 275 188 287C179 295 172 301 166 305C160 301 153 295 144 287C131 275 92 259 49 259Z"/></svg>',
             hogar: '<svg viewBox="0 0 368 386" fill="currentColor"><path d="M183.5 0L367 178.5H326V386H222V270H146V386H42V178.5H0Z"/></svg>',
+            // Trabajo (sobre) y salud (pastilla): trazados de los dibujos del usuario.
+            trabajo: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M9.3 22.9Q9.0 23.2 7.7 25.7Q6.4 28.3 5.4 31.8Q4.4 35.3 4.2 37.3Q4.0 39.4 4.1 51.1Q4.1 62.8 4.7 65.7Q5.2 68.5 6.4 71.6Q7.7 74.7 9.8 77.6Q11.9 80.6 14.5 82.9Q17.0 85.2 20.7 87.1Q24.4 89.0 26.1 89.5Q27.8 90.1 31.2 90.5Q34.5 90.9 50.0 90.9Q65.5 90.9 68.8 90.5Q72.2 90.1 74.2 89.4Q76.2 88.8 78.8 87.5Q81.3 86.3 83.3 84.9Q85.2 83.4 86.7 82.0Q88.2 80.5 89.6 78.7Q91.0 76.8 91.8 75.5Q92.6 74.2 93.6 71.7Q94.6 69.2 95.2 66.0Q95.9 62.7 95.9 51.1Q96.0 39.4 95.8 37.4Q95.6 35.4 95.2 33.3Q94.7 31.2 93.7 28.7Q92.7 26.3 91.7 24.6Q90.8 22.9 90.1 22.9Q89.5 22.8 78.8 33.5Q68.2 44.3 66.3 45.8Q64.5 47.3 61.0 49.1Q57.4 50.8 54.6 51.3Q51.8 51.8 50.0 51.8Q48.2 51.8 45.7 51.4Q43.3 51.0 41.8 50.5Q40.2 49.9 37.8 48.6Q35.4 47.2 33.6 45.7Q31.8 44.3 21.2 33.6Q10.6 22.9 10.2 22.8Q9.7 22.7 9.3 22.9ZM18.2 14.2Q17.5 14.9 17.7 15.4Q17.9 15.8 28.5 26.4Q39.2 37.0 41.2 38.5Q43.2 39.9 45.4 40.6Q47.6 41.4 50.2 41.4Q52.9 41.3 54.5 40.8Q56.1 40.2 57.3 39.5Q58.6 38.8 61.1 36.6Q63.7 34.3 73.1 24.8Q82.5 15.2 82.4 15.0Q82.4 14.7 81.7 14.1Q81.1 13.6 78.4 12.3Q75.6 11.0 73.8 10.5Q72.0 9.9 68.5 9.5Q65.0 9.1 50.0 9.1Q35.0 9.1 33.2 9.3Q31.4 9.4 27.9 10.2Q24.4 11.0 21.6 12.3Q18.9 13.6 18.2 14.2Z"/></svg>',
+            salud: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M88.0 12.7Q84.2 8.6 81.8 7.3Q79.3 5.9 75.7 4.9Q72.2 4.0 68.6 4.1Q65.0 4.2 61.4 5.4Q57.8 6.5 54.5 8.7Q51.3 11.0 31.7 30.4Q12.2 49.8 10.3 52.1Q8.4 54.4 7.2 56.9Q5.9 59.3 4.9 63.0Q4.0 66.7 4.0 68.9Q4.0 71.1 4.9 75.2Q5.9 79.3 7.0 81.4Q8.0 83.6 9.9 85.9Q11.8 88.2 14.3 90.1Q16.9 92.0 19.2 93.2Q21.5 94.3 24.4 95.1Q27.2 95.8 30.9 95.8Q34.6 95.8 38.3 94.6Q42.0 93.5 45.9 90.7Q49.8 88.0 69.1 68.7Q88.4 49.4 89.9 47.6Q91.4 45.8 92.6 43.5Q93.9 41.1 94.8 38.0Q95.8 34.8 95.9 31.7Q96.0 28.7 95.1 24.9Q94.1 21.1 92.9 18.9Q91.8 16.7 88.0 12.7ZM81.7 18.2Q84.8 21.3 86.1 25.0Q87.3 28.7 87.2 31.1Q87.1 33.5 86.4 35.9Q85.7 38.2 83.7 40.9Q81.7 43.7 74.7 50.5Q67.7 57.4 66.6 57.6Q65.4 57.8 56.4 48.8Q47.5 39.9 46.6 39.6Q45.8 39.2 45.0 39.6Q44.3 39.9 29.5 54.7Q14.8 69.6 13.9 69.3Q13.1 69.0 13.6 65.6Q14.1 62.2 15.9 59.6Q17.7 57.0 36.9 37.9Q56.1 18.8 58.4 17.0Q60.8 15.2 63.8 14.0Q66.9 12.9 69.8 13.0Q72.8 13.1 75.6 14.1Q78.5 15.2 81.7 18.2Z"/></svg>',
             viajes: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M10 54L36 12l15 22 14-22 25 42z"/><path d="M12 80c6-12 12-14 19-14 11 0 12 16 19 16s9-16 19-16c7 0 13 3 19 14" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>',
             otro: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="23"/></svg>'
         };
