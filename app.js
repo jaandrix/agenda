@@ -12571,86 +12571,92 @@
             body.innerHTML = renderPushSettingsBody(status);
         }
 
-        function renderSettings() {
-            const devStatus = devModeActive ? 'Activado' : 'Desactivado';
-            const devColor = devModeActive ? 'var(--accent-purple)' : 'var(--text-secondary)';
+        // Iconos sólidos de cada bloque de Ajustes (familia TARJETA BITACORA).
+        const AJUSTES_ICONOS = {
+            suscripcion: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 8a42 42 0 1 1 0 84 42 42 0 0 1 0-84zm0 20a22 22 0 1 0 0 44 22 22 0 0 0 0-44z"/></svg>',
+            datos: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M30 8l24 26H38v28H22V34H6zM70 92L46 66h16V38h16v28h16z"/></svg>',
+            conector: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="24" cy="50" r="18"/><circle cx="76" cy="50" r="18"/><rect x="30" y="44" width="40" height="12" rx="6"/></svg>',
+            avisos: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 6a8 8 0 0 1 8 8v3a28 28 0 0 1 20 27v20l10 12v6H12v-6l10-12V44a28 28 0 0 1 20-27v-3a8 8 0 0 1 8-8zM38 86h24a12 12 0 0 1-24 0z"/></svg>',
+            apariencia: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 6a44 44 0 1 1 0 88 44 44 0 0 1 0-88zm0 12v64a32 32 0 0 0 0-64z"/></svg>',
+            bitacora: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 6a44 44 0 1 1 0 88 44 44 0 0 1 0-88zM44 42v32h12V42zm6-20a8 8 0 1 0 0 16 8 8 0 0 0 0-16z"/></svg>',
+            prompts: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M10 22l34 28-34 28V62l15-12-15-12zM50 70h40v12H50z"/></svg>',
+            avanzado: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M34 14L6 50l28 36 10-8-22-28 22-28zm32 0l-10 8 22 28-22 28 10 8 28-36z"/></svg>',
+            riesgo: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 6l46 84H4zM44 36v28h12V36zm6 34a7 7 0 1 0 0 14 7 7 0 0 0 0-14z"/></svg>',
+            guia: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M8 18c14-6 28-6 38 2v66c-10-8-24-8-38-2zm84 0c-14-6-28-6-38 2v66c10-8 24-8 38-2z"/></svg>',
+        };
 
+        function bloqueAjuste(id, icono, titulo, texto, cuerpo, clase = '') {
             return `
-                <div style="max-width:600px">
-                    <div class="chart-container" style="margin-bottom:16px" id="settings-subscription-section">
-                        <div class="chart-title">Suscripción</div>
-                        <div id="settings-subscription-body" style="margin-top:10px;font-size:12.5px;color:var(--text-secondary)">Cargando...</div>
+                <section class="ajuste ${clase}" ${id ? `id="${id}"` : ''}>
+                    <div class="ajuste-cab">
+                        <span class="ajuste-icono">${AJUSTES_ICONOS[icono]}</span>
+                        <div><div class="ajuste-titulo">${titulo}</div>${texto ? `<div class="ajuste-texto">${texto}</div>` : ''}</div>
+                    </div>
+                    <div class="ajuste-cuerpo">${cuerpo}</div>
+                </section>`;
+        }
+
+        function renderSettings() {
+            const nombre = (nombrePublico || userName || '').trim();
+            return `
+                <div class="ajustes-vista">
+                    <div class="ajustes-cabecera">
+                        <div class="ajustes-titulo">ajustes.</div>
+                        <div class="ajustes-sub">${nombre ? `${escapeHtml(nombre)}, aquí` : 'Aquí'} decides cómo es y cómo se comporta tu Bitácora.</div>
                     </div>
 
-                    <div class="chart-container" style="margin-bottom:16px" id="settings-account-section">
-                        <div class="chart-title">Datos de la cuenta</div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                            <button class="btn-secondary" style="width:auto" onclick="exportData()">📤 Exportar datos</button>
-                            <button class="btn-secondary" style="width:auto" onclick="document.getElementById('import-input').click()">📥 Importar datos</button>
-                        </div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Exporta o importa todos tus datos (entradas, categorías, notas, etc.) en formato JSON.</div>
+                    ${typeof openGuia === 'function' ? `
+                    <button class="ajustes-guia" onclick="openGuia()">
+                        <span class="ajuste-icono">${AJUSTES_ICONOS.guia}</span>
+                        <span><b>guía de bitácora.</b><small>Cada apartado y cada botón, explicado.</small></span>
+                        <span class="ajustes-guia-flecha" aria-hidden="true">→</span>
+                    </button>` : ''}
+
+                    <div class="ajustes-grupo">cuenta.</div>
+                    <div class="ajustes-rejilla">
+                        ${bloqueAjuste('settings-subscription-section', 'suscripcion', 'suscripción.', 'Tu plan y su renovación.', `<div id="settings-subscription-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${bloqueAjuste('settings-account-section', 'datos', 'tus datos.', 'Todo lo que hay en Bitácora (entradas, notas, finanzas...) en un archivo JSON: para guardarlo aparte o traerlo de vuelta.', `
+                            <div class="ajuste-botones">
+                                <button class="btn-secondary" style="width:auto" onclick="exportData()">exportar.</button>
+                                <button class="btn-secondary" style="width:auto" onclick="document.getElementById('import-input').click()">importar.</button>
+                            </div>`)}
                     </div>
 
-                    <div class="chart-container" style="margin-bottom:16px" id="settings-conector-section">
-                        <div class="chart-title">Claude y ChatGPT</div>
-                        <div id="settings-conector-body" style="margin-top:10px;font-size:12.5px;color:var(--text-secondary)">Cargando...</div>
+                    <div class="ajustes-grupo">conexiones.</div>
+                    <div class="ajustes-rejilla">
+                        ${bloqueAjuste('settings-conector-section', 'conector', 'claude y chatgpt.', '', `<div id="settings-conector-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${bloqueAjuste('settings-push-section', 'avisos', 'notificaciones.', 'Avisos en este dispositivo: el resumen de la mañana y una hora antes de cada evento.', `<div id="settings-push-body">${renderPushSettingsBody('cargando')}</div>`)}
                     </div>
 
-                    <div class="chart-container" style="margin-bottom:16px" id="settings-push-section">
-                        <div class="chart-title">Notificaciones</div>
-                        <div id="settings-push-body" style="margin-top:10px">${renderPushSettingsBody('cargando')}</div>
-                    </div>
-
-                    <div class="chart-container" style="margin-bottom:16px">
-                        <div class="chart-title">Qué es Bitácora</div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                            <button class="btn-secondary" style="width:auto" onclick="openAboutBitacora()">ⓘ Qué es Bitácora, a fondo</button>
-                            <button class="btn-secondary" id="pwa-install-btn" style="width:auto;display:none" onclick="handlePwaInstallClick()">⭳ Descargar Bitácora</button>
-                        </div>
-                    </div>
-
-                    <div class="chart-container" style="margin-bottom:16px" id="settings-appearance-section">
-                        <div class="chart-title">Apariencia</div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                            <button class="btn-secondary" style="width:auto" onclick="toggleMode()">Alternar modo ancho</button>
-                        </div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin:14px 0 8px">Tema</div>
-                        <div>
-                            ${renderSelectorTema()}
-                        </div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin:14px 0 8px">Tipografía</div>
+                    <div class="ajustes-grupo">apariencia.</div>
+                    ${bloqueAjuste('settings-appearance-section', 'apariencia', 'tema y letra.', 'Se guarda en este dispositivo.', `
+                        <div class="ajuste-subtitulo">tema.</div>
+                        ${renderSelectorTema()}
+                        <div class="ajuste-subtitulo">tipografía.</div>
                         <div id="font-options-container">${renderFontOptionsList()}</div>
-                    </div>
+                        <div class="ajuste-subtitulo">ancho.</div>
+                        <button class="btn-secondary" style="width:auto" onclick="toggleMode()">alternar modo ancho.</button>`, 'ajuste-ancho')}
 
-                    <div class="chart-container" style="margin-bottom:16px" id="settings-advanced-section">
-                        <div class="chart-title">Avanzado</div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                            <button class="btn-secondary" style="width:auto;color:${devColor}" onclick="toggleDeveloperMode()">⚙ Modo desarrollador: ${devStatus}</button>
-                        </div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Activa el modo desarrollador para acceder a funciones ocultas (ej. Vault).</div>
-                    </div>
-
-                    <div class="chart-container" style="margin-bottom:16px" id="settings-prompts-section">
-                        <div class="chart-title">Prompts guardados</div>
-                        <div style="display:flex;gap:8px;margin:12px 0">
-                            <button class="btn-secondary" style="width:auto" onclick="openNewPrompt()">✎ Nuevo prompt</button>
-                        </div>
-                        <div class="prompts-list">
-                            ${prompts.length ? prompts.map(p => `
-                                <div class="prompt-card" onclick="openPromptDetail('${p.id}')">
-                                    <span class="prompt-icon">&gt;</span>
-                                    <span class="prompt-title">${escapeHtml(p.title)}</span>
-                                </div>
-                            `).join('') : '<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">Sin prompts guardados</div>'}
-                        </div>
-                    </div>
-
-                    <div class="chart-container" id="settings-danger-section">
-                        <div class="chart-title" style="color:#dc2626">Zona de riesgo</div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-                            <button class="btn-secondary" style="width:auto;color:#dc2626" onclick="handleLogoutAllDevices()">⏻ Cerrar sesión en todos los dispositivos</button>
-                        </div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">Esto cerrará tu sesión en todos los navegadores y dispositivos donde hayas iniciado sesión.</div>
+                    <div class="ajustes-grupo">más.</div>
+                    <div class="ajustes-rejilla">
+                        ${bloqueAjuste('', 'bitacora', 'qué es bitácora.', 'La idea detrás de la app y, si lo abres desde el navegador, instalarla como app.', `
+                            <div class="ajuste-botones">
+                                <button class="btn-secondary" style="width:auto" onclick="openAboutBitacora()">qué es, a fondo.</button>
+                                <button class="btn-secondary" id="pwa-install-btn" style="width:auto;display:none" onclick="handlePwaInstallClick()">instalar bitácora.</button>
+                            </div>`)}
+                        ${bloqueAjuste('settings-prompts-section', 'prompts', 'prompts guardados.', 'Textos que usas a menudo con una IA, a mano para copiarlos.', `
+                            <button class="btn-secondary" style="width:auto;margin-bottom:10px" onclick="openNewPrompt()">+ prompt.</button>
+                            <div class="prompts-list">
+                                ${prompts.length ? prompts.map(p => `
+                                    <div class="prompt-card" onclick="openPromptDetail('${p.id}')">
+                                        <span class="prompt-icon">&gt;</span>
+                                        <span class="prompt-title">${escapeHtml(p.title)}</span>
+                                    </div>`).join('') : '<div class="ajuste-texto">Sin prompts guardados.</div>'}
+                            </div>`)}
+                        ${bloqueAjuste('settings-advanced-section', 'avanzado', 'modo desarrollador.', 'Enseña funciones ocultas, como Vault.', `
+                            <button class="finance-pro-switch ${devModeActive ? 'on' : ''}" onclick="toggleDeveloperMode()" aria-label="Modo desarrollador"><span class="finance-pro-switch-knob"></span></button>`)}
+                        ${bloqueAjuste('settings-danger-section', 'riesgo', 'zona de riesgo.', 'Cierra tu sesión en todos los navegadores y dispositivos donde la hayas iniciado.', `
+                            <button class="btn-secondary ajuste-peligro" style="width:auto" onclick="handleLogoutAllDevices()">cerrar sesión en todas partes.</button>`, 'ajuste-riesgo')}
                     </div>
                 </div>`;
         }
