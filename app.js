@@ -12737,36 +12737,52 @@
         // ============================================================
         //  RENDER: NOTES
         // ============================================================
+        let notasFiltro = '';
+
         function renderNotes() {
-            const sorted = [...notes].sort((a, b) => b.date.localeCompare(a.date));
-
-            if (!sorted.length) {
-                return `
-                    <div style="display:flex;justify-content:flex-start;margin-bottom:16px">
-                        <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir nota de hoy</button>
-                    </div>
-                    <div class="empty-state">
-                        
-                        <div class="empty-title">Todavía no hay notas</div>
-                        <div class="empty-sub">Pulsa "Escribir nota de hoy" para crear la nota del día.</div>
+            const hoy = todayISO();
+            const escritas = notes.filter(n => String(n.content || '').trim() || n.title);
+            const notaHoy = notes.find(n => n.date === hoy && (String(n.content || '').trim() || n.title));
+            const ahora = new Date();
+            const mesClave = hoy.slice(0, 7);
+            const diasMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0).getDate();
+            const escritosMes = new Set(escritas.filter(n => (n.date || '').startsWith(mesClave)).map(n => n.date));
+            const tira = Array.from({ length: diasMes }, (_, k) => {
+                const iso = `${mesClave}-${String(k + 1).padStart(2, '0')}`;
+                return `<span class="${escritosMes.has(iso) ? 'on' : ''} ${iso === hoy ? 'hoy' : ''} ${iso > hoy ? 'futuro' : ''}" title="${k + 1}"></span>`;
+            }).join('');
+            const q = stripAccents(notasFiltro.toLowerCase().trim());
+            const lista = escritas
+                .filter(n => !q || stripAccents(`${n.title || ''} ${n.content || ''}`.toLowerCase()).includes(q))
+                .sort((a, b) => b.date.localeCompare(a.date));
+            let mesActual = '';
+            const tarjetas = lista.map(n => {
+                const d = new Date(n.date + 'T12:00:00');
+                const mes = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(' de ', ' ');
+                const cab = mes !== mesActual ? `<div class="notas-mes">${mes}.</div>` : '';
+                mesActual = mes;
+                const extracto = extractoNota(n.content);
+                return `${cab}
+                    <div class="note-card ${n.title ? '' : 'sin-titulo'} ${n.date === hoy ? 'note-card-hoy' : ''}" onclick="openReadNote('${n.id}')">
+                        <div class="note-card-fecha">${formatNoteFecha(n.date)}${n.date === hoy ? ' · hoy' : ''}</div>
+                        <div class="note-card-title">${n.title ? escapeHtml(n.title) : 'sin título.'}</div>
+                        ${extracto ? `<div class="note-card-extracto">${escapeHtml(extracto)}</div>` : ''}
                     </div>`;
-            }
-
+            }).join('');
             return `
-                <div style="display:flex;justify-content:flex-start;margin-bottom:16px">
-                    <button class="btn-modal-primary" style="width:auto;padding:8px 20px" onclick="openWriteNote()">✎ Escribir nota de hoy</button>
+            <div class="notas-vista">
+                <div class="notas-cabecera">
+                    <div>
+                        <div class="notas-titulo">notas.</div>
+                        <div class="notas-sub">${escritas.length} ${escritas.length === 1 ? 'nota escrita' : 'notas escritas'} · ${escritosMes.size} ${escritosMes.size === 1 ? 'día' : 'días'} este mes.</div>
+                    </div>
+                    <button class="btn-modal-primary notas-escribir" onclick="openWriteNote()">${notaHoy ? 'seguir con la de hoy.' : 'escribir la de hoy.'}</button>
                 </div>
-                <div class="notes-grid">
-                    ${sorted.map(n => {
-                        const extracto = extractoNota(n.content);
-                        return `
-                        <div class="note-card ${n.title ? '' : 'sin-titulo'}" onclick="openReadNote('${n.id}')">
-                            <div class="note-card-fecha">${formatNoteFecha(n.date)}${n.date === todayISO() ? ' · hoy' : ''}</div>
-                            <div class="note-card-title">${n.title ? escapeHtml(n.title) : 'sin título.'}</div>
-                            ${extracto ? `<div class="note-card-extracto">${escapeHtml(extracto)}</div>` : ''}
-                        </div>`;
-                    }).join('')}
-                </div>`;
+                <div class="notas-tira" aria-label="Días con nota este mes">${tira}</div>
+                ${!notaHoy ? `<button class="notas-hoy-vacia" onclick="openWriteNote()"><b>hoy todavía no has escrito.</b> Una frase basta: qué ha pasado, qué piensas, qué no quieres olvidar.</button>` : ''}
+                ${escritas.length > 6 ? `<input class="modal-input notas-buscar" placeholder="buscar en tus notas..." value="${escapeHtml(notasFiltro)}" oninput="notasFiltro=this.value;const c=this.selectionStart;render();const i=document.querySelector('.notas-buscar');if(i){i.focus();i.setSelectionRange(c,c)}">` : ''}
+                ${lista.length ? `<div class="notes-grid notas-rejilla">${tarjetas}</div>` : (escritas.length ? `<div class="finance-empty-line">Ninguna nota contiene "${escapeHtml(notasFiltro)}".</div>` : '')}
+            </div>`;
         }
 
         function openWriteNote() {

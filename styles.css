@@ -6300,3 +6300,29 @@ body.acuarela .docs2-ficha.pronto .docs2-ficha-cifra { color:var(--teja-honda); 
 .m-generico .docs2-buscar { max-width:none; flex:1; }
 .m-generico .docs2-archivos { grid-template-columns:1fr; }
 
+/* ============================================================
+   NOTAS — cabecera, tira de días escritos y notas por mes
+   ============================================================ */
+.notas-vista { max-width:1000px; }
+.notas-cabecera { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+.notas-titulo { font-size:26px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); line-height:1.1; }
+.notas-sub { margin-top:4px; font-size:13px; color:var(--text-secondary); }
+.notas-escribir { width:auto; margin:0; padding:11px 20px; }
+.notas-tira { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:18px; }
+.notas-tira span { width:12px; height:12px; border-radius:50%; background:var(--border); }
+.notas-tira span.on { background:var(--text-primary); }
+.notas-tira span.futuro { background:none; box-shadow:inset 0 0 0 1.5px var(--border); }
+.notas-tira span.hoy { box-shadow:0 0 0 2px var(--bg-app), 0 0 0 3.5px var(--text-primary); }
+.notas-hoy-vacia { display:block; width:100%; margin-bottom:18px; padding:18px 20px; border-radius:18px; border:1px dashed var(--border-strong); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:13.5px; line-height:1.5; text-align:left; cursor:pointer; transition:border-color .15s ease; }
+.notas-hoy-vacia b { color:var(--text-primary); }
+.notas-hoy-vacia:hover { border-color:var(--text-primary); }
+.notas-buscar { margin:0 0 6px; max-width:320px; }
+.notas-rejilla { grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); }
+.notas-mes { grid-column:1 / -1; margin:16px 0 0; font-size:13px; font-weight:800; color:var(--text-primary); }
+.notas-mes:first-child { margin-top:4px; }
+.note-card.note-card-hoy { border-color:var(--text-primary); }
+body.acuarela .notas-tira span.on { background:var(--teja); }
+body.acuarela .note-card.note-card-hoy { border-color:var(--teja); }
+.m-generico .notas-titulo { display:none; }
+.m-generico .notas-buscar { max-width:none; }
+
