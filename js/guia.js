@@ -390,7 +390,7 @@ function openGuia(id) {
     guiaFiltro = '';
     showModal(`<div class="guia" id="guia">${renderGuiaInterior()}</div>`);
     document.querySelector('#modal-container .modal-sheet')?.classList.add('guia-sheet');
-    document.querySelector('.guia-indice button.activo')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    centrarIndiceGuia();
 }
 
 function textoPlanoGuia(s) {
@@ -401,8 +401,6 @@ function renderGuiaInterior() {
     const q = stripAccents(guiaFiltro.toLowerCase().trim());
     const visibles = GUIA.filter(s => !q || textoPlanoGuia(s).includes(q));
     const actual = GUIA.find(s => s.id === guiaSeccion) || GUIA[0];
-    const i = GUIA.indexOf(actual);
-    const ant = GUIA[i - 1], sig = GUIA[i + 1];
     return `
         <div class="guia-cab">
             <div><div class="guia-titulo">guía de bitácora.</div><div class="guia-sub">Cada apartado y cada botón, explicado.</div></div>
@@ -414,30 +412,52 @@ function renderGuiaInterior() {
                 ${GUIA_GRUPOS.map(g => {
                     const items = visibles.filter(s => s.grupo === g.id);
                     if (!items.length) return '';
-                    return `<div class="guia-indice-grupo">${g.titulo}</div>${items.map(s => `<button class="${s.id === actual.id ? 'activo' : ''}" onclick="guiaIr('${s.id}')">${s.titulo}</button>`).join('')}`;
+                    return `<div class="guia-indice-grupo">${g.titulo}</div>${items.map(s => `<button data-seccion="${s.id}" class="${s.id === actual.id ? 'activo' : ''}" onclick="guiaIr('${s.id}')">${s.titulo}</button>`).join('')}`;
                 }).join('') || '<div class="guia-sin">Nada coincide.</div>'}
             </nav>
-            <article class="guia-contenido" id="guia-contenido">
-                <div class="guia-seccion-grupo">${GUIA_GRUPOS.find(g => g.id === actual.grupo)?.titulo || ''}</div>
-                <h2 class="guia-seccion-titulo">${actual.titulo}</h2>
-                <div class="guia-lema">${actual.lema}</div>
-                <p class="guia-intro">${actual.intro}</p>
-                ${actual.pasos?.length ? `<div class="guia-bloque-titulo">cómo se usa.</div><ol class="guia-pasos">${actual.pasos.map(p => `<li>${p}</li>`).join('')}</ol>` : ''}
-                ${actual.botones?.length ? `<div class="guia-bloque-titulo">cada botón.</div><div class="guia-botones">${actual.botones.map(([nombre, que]) => `<div class="guia-boton-fila"><div class="guia-boton-nombre">${nombre}</div><div class="guia-boton-que">${que}</div></div>`).join('')}</div>` : ''}
-                ${actual.trucos?.length ? `<div class="guia-bloque-titulo">trucos.</div><ul class="guia-trucos">${actual.trucos.map(t => `<li>${t}</li>`).join('')}</ul>` : ''}
-                <div class="guia-nav">
-                    ${ant ? `<button onclick="guiaIr('${ant.id}')">← ${ant.titulo}</button>` : '<span></span>'}
-                    ${sig ? `<button class="sig" onclick="guiaIr('${sig.id}')">${sig.titulo} →</button>` : ''}
-                </div>
-            </article>
+            <article class="guia-contenido" id="guia-contenido">${renderGuiaSeccion(actual)}</article>
         </div>`;
 }
 
+function renderGuiaSeccion(actual) {
+    const i = GUIA.indexOf(actual);
+    const ant = GUIA[i - 1], sig = GUIA[i + 1];
+    return `
+        <div class="guia-seccion-grupo">${GUIA_GRUPOS.find(g => g.id === actual.grupo)?.titulo || ''}</div>
+        <h2 class="guia-seccion-titulo">${actual.titulo}</h2>
+        <div class="guia-lema">${actual.lema}</div>
+        <p class="guia-intro">${actual.intro}</p>
+        ${actual.pasos?.length ? `<div class="guia-bloque-titulo">cómo se usa.</div><ol class="guia-pasos">${actual.pasos.map(p => `<li>${p}</li>`).join('')}</ol>` : ''}
+        ${actual.botones?.length ? `<div class="guia-bloque-titulo">cada botón.</div><div class="guia-botones">${actual.botones.map(([nombre, que]) => `<div class="guia-boton-fila"><div class="guia-boton-nombre">${nombre}</div><div class="guia-boton-que">${que}</div></div>`).join('')}</div>` : ''}
+        ${actual.trucos?.length ? `<div class="guia-bloque-titulo">trucos.</div><ul class="guia-trucos">${actual.trucos.map(t => `<li>${t}</li>`).join('')}</ul>` : ''}
+        <div class="guia-nav">
+            ${ant ? `<button onclick="guiaIr('${ant.id}')">← ${ant.titulo}</button>` : '<span></span>'}
+            ${sig ? `<button class="sig" onclick="guiaIr('${sig.id}')">${sig.titulo} →</button>` : ''}
+        </div>`;
+}
+
+// Solo cambia el contenido y la marca del índice: repintar la guía
+// entera devolvía el índice a su principio en cada clic.
 function guiaIr(id) {
+    const actual = GUIA.find(s => s.id === id);
+    const contenido = document.getElementById('guia-contenido');
+    if (!actual || !contenido) return;
     guiaSeccion = id;
-    const g = document.getElementById('guia');
-    if (!g) return;
-    g.innerHTML = renderGuiaInterior();
-    document.getElementById('guia-contenido')?.scrollTo({ top: 0 });
-    document.querySelector('.guia-indice button.activo')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    contenido.innerHTML = renderGuiaSeccion(actual);
+    contenido.scrollTop = 0;
+    document.querySelectorAll('.guia-indice button').forEach(btn => btn.classList.toggle('activo', btn.dataset.seccion === id));
+    centrarIndiceGuia();
+}
+
+// Con el índice en fila (móvil), deja la sección activa a la vista
+// desplazando solo el índice, nunca el modal ni la página.
+function centrarIndiceGuia() {
+    const btn = document.querySelector('.guia-indice button.activo');
+    const indice = btn?.parentElement;
+    if (!btn || !indice) return;
+    if (indice.scrollWidth > indice.clientWidth) {
+        indice.scrollTo({ left: btn.offsetLeft - (indice.clientWidth - btn.offsetWidth) / 2, behavior: 'smooth' });
+    } else if (btn.offsetTop < indice.scrollTop || btn.offsetTop + btn.offsetHeight > indice.scrollTop + indice.clientHeight) {
+        indice.scrollTo({ top: btn.offsetTop - indice.clientHeight / 2, behavior: 'smooth' });
+    }
 }

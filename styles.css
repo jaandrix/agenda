@@ -6474,7 +6474,7 @@ body.acuarela .metodo-kaizen-check.on, body.acuarela .metodo-kaizen-dias span.on
 .guia-buscar { margin:0 0 0 auto; max-width:260px; }
 .guia-cerrar { width:38px; height:38px; flex-shrink:0; padding:0; border:1px solid var(--border-strong); border-radius:50%; background:none; color:var(--text-primary); font-size:20px; line-height:1; cursor:pointer; }
 .guia-cuerpo { flex:1; min-height:0; display:grid; grid-template-columns:230px 1fr; }
-.guia-indice { overflow-y:auto; padding:14px 10px 24px 16px; border-right:1px solid var(--border); }
+.guia-indice { position:relative; overflow-y:auto; padding:14px 10px 24px 16px; border-right:1px solid var(--border); }
 .guia-indice-grupo { margin:14px 0 4px 8px; font-size:11.5px; font-weight:800; color:var(--text-muted); }
 .guia-indice-grupo:first-child { margin-top:2px; }
 .guia-indice button { display:block; width:100%; padding:7px 10px; border:0; border-radius:10px; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:13.5px; font-weight:600; text-align:left; cursor:pointer; transition:background-color .12s ease, color .12s ease; }
