@@ -129,9 +129,11 @@
             const sub = await getSubscriptionStatus(user, { allowRetry: veniaDeCheckout });
 
             if (!hasAccess(sub)) {
+                document.body.classList.remove('pwa');
                 showPaywallScreen(user, { confirmando: veniaDeCheckout });
                 return;
             }
+            if (isMobileStandaloneMode() && !mobileExitedToDesktop) document.body.classList.add('pwa');
 
             // Limpia el ?checkout=success de la URL para que recargar la
             // página no repita el reintento cada vez.
@@ -383,6 +385,7 @@
             if (session) {
                 await startApp();
             } else {
+                document.body.classList.remove('pwa');
                 showLandingScreen();
             }
         })();
@@ -690,7 +693,7 @@
         function exitMobileToDesktop() {
             mobileExitedToDesktop = true;
             mobileMenuAbierto = false;
-            document.body.classList.remove('mobile-standalone');
+            document.body.classList.remove('mobile-standalone', 'pwa');
             render();
         }
 
@@ -720,6 +723,7 @@
             if (!shell) return;
             const view = NAV_VIEW_LABELS[currentView] ? currentView : 'calendar';
             const entra = mobileLastEffectView !== view;
+            requestAnimationFrame(() => document.body.classList.remove('pwa'));
             shell.innerHTML = `
                 <div class="m-app">
                     ${renderMobileTopbar()}
@@ -20759,6 +20763,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
         async function init() {
             loadTheme();
             loadFontPref();
+            initMobileShell();
             const loaded = await loadData();
             if (loaded) {
                 ensureRecurringProCharges();
@@ -20768,14 +20773,13 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 aplicarBandejaConector();
                 setTimeout(actualizarAnalisisIA, 1500);
             }
-            await cargarCodigoAmigo();
-            await cargarAmigos();
-            await cargarNombrePublico();
-            initMobileShell();
-            await cargarRecomendaciones();
-            await cargarSolicitudesAmistad();
-            await cargarViajesCompartidos();
-            await cargarListasOcioCompartidas();
+            // Lo social no bloquea el primer pintado: va en paralelo y, al
+            // llegar, repinta solo las vistas que lo enseñan. Recomendaciones,
+            // viajes y listas compartidas usan los amigos para los nombres.
+            const sociales = (async () => {
+                await Promise.all([cargarCodigoAmigo(), cargarAmigos(), cargarNombrePublico()]);
+                await Promise.all([cargarRecomendaciones(), cargarSolicitudesAmistad(), cargarViajesCompartidos(), cargarListasOcioCompartidas()]);
+            })();
 
             if (!loadVaultData()) {
                 vaultTasks = [];
@@ -20808,6 +20812,7 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
             }
 
             if (!loaded) {
+                document.body.classList.remove('pwa', 'mobile-standalone');
                 document.getElementById('content').innerHTML =
                     `<div class="empty-state">
                         
@@ -20825,7 +20830,6 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 if (!window._headerClockTimer) window._headerClockTimer = setInterval(() => { updateHeaderClock(); updateSidebarProgress(); }, 1000);
                 updatePageTitle();
                 updateAddButton();
-                updateSidebarPrivacy();
                 maybeShowDailyAlert();
                 if (!window._dailyAlertTimer) window._dailyAlertTimer = setInterval(maybeShowDailyAlert, 60000);
                 runDailyBackupCheck();
@@ -20833,6 +20837,10 @@ if (portfolioAllocationChart) portfolioAllocationChart.destroy();
                 if (!window._notifTimer) window._notifTimer = setInterval(refreshNotifData, 90000);
                 bitacoraNativeSyncSnapshot();
                 handleWidgetDeepLink();
+            });
+            sociales.then(() => {
+                updateNotifBadge();
+                if (['friends', 'culture', 'travels', 'home'].includes(currentView)) render();
             });
         }
 

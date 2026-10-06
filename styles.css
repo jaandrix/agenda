@@ -5435,6 +5435,11 @@ html[data-vt="ficha"]::view-transition-old(root) { display: block; animation: vt
    solo marca lo que tiene algo o lo que se puede pulsar.
    ============================================================ */
 #mobile-shell { display:none; }
+/* Arranque de la app instalada (clase puesta en index.html antes de
+   pintar): la pantalla de carga tapa todo hasta el primer pintado de la
+   versión móvil. */
+body.pwa #boot-loading { display:flex !important; }
+body.pwa #app { display:none !important; }
 body.mobile-standalone #app { display:none; }
 body.mobile-standalone #mobile-shell {
     display:block; position:fixed; inset:0; z-index:50; background:var(--bg-app);

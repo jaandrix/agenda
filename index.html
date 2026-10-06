@@ -38,6 +38,19 @@
         async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
+    <script>
+        // Antes de pintar nada: el tema guardado y, si se abre como app
+        // instalada, la marca "pwa", que deja la pantalla de carga encima
+        // hasta que la versión móvil está pintada (sin ver antes la de
+        // escritorio ni el tema por defecto).
+        try {
+            document.body.style.transition = 'none';
+            window.addEventListener('load', function () { document.body.style.transition = ''; });
+            var tema = { papel: ['papel'], light: ['papel'], beige: ['papel'], acuarela: ['papel', 'acuarela'] }[localStorage.getItem('bitacora_theme')] || [];
+            tema.forEach(function (c) { document.body.classList.add(c); });
+            if (navigator.standalone === true || matchMedia('(display-mode: standalone)').matches) document.body.classList.add('pwa');
+        } catch (e) {}
+    </script>
     <!-- ============================================================
     LANDING PÚBLICA — lo primero que ve quien no ha iniciado sesión
     ============================================================ -->
