@@ -9,7 +9,6 @@
 //  céntimos para que la suma cuadre siempre.
 // ============================================================
 const GASTO_CATEGORIAS = ['comida', 'súper', 'transporte', 'alojamiento', 'ocio', 'compras', 'otros'];
-let socialTab = 'gastos';
 let socialYo = null;
 let gruposGastos = [];
 let grupoAbierto = null;
@@ -59,21 +58,6 @@ async function cargarEventosCompartidos() {
 function pintarSocial() {
     const el = document.getElementById('social');
     if (el) el.outerHTML = renderFriendsView();
-}
-
-function setSocialTab(t) { socialTab = t; grupoAbierto = null; pintarSocial(); }
-
-function renderFriendsView() {
-    const pendientes = (solicitudesRecibidas || []).length;
-    const tabs = [['gastos', 'gastos.'], ['eventos', 'eventos.' + (eventosCompartidosRecibidos.length ? ` <span>${eventosCompartidosRecibidos.length}</span>` : '')], ['amigos', 'amigos.' + (pendientes ? ` <span>${pendientes}</span>` : '')]];
-    return `
-    <div class="social" id="social">
-        <div class="social-cabecera">
-            <div class="uni-titulo">social.</div>
-            <div class="social-tabs">${tabs.map(([id, t]) => `<button class="${socialTab === id ? 'activo' : ''}" onclick="setSocialTab('${id}')">${t}</button>`).join('')}</div>
-        </div>
-        ${socialTab === 'gastos' ? (grupoAbierto ? renderGrupoGastos() : renderListaGrupos()) : socialTab === 'eventos' ? renderEventosSocial() : renderAmigosLista()}
-    </div>`;
 }
 
 // ---------- nombres y dinero ----------
@@ -146,52 +130,182 @@ function textoSaldo(c) {
     return c > 0 ? `te deben ${dinero(c / 100)}.` : `debes ${dinero(-c / 100)}.`;
 }
 
-// ---------- lista de grupos ----------
-function renderListaGrupos() {
-    if (!socialCargado) return '<div class="finance-empty-line">Cargando...</div>';
-    return `
-        <div class="social-intro">
-            <p>Viajes, cenas, el piso... Apuntad quién paga qué y Bitácora calcula cuánto debe cada uno y cómo saldarlo con los mínimos pagos.</p>
-            <button class="btn-modal-primary" onclick="openGrupoGastos()">+ grupo.</button>
-        </div>
-        ${gruposGastos.length ? `<div class="social-grupos">${gruposGastos.map(g => {
-            const t = totalesGrupo(g);
-            return `
-            <button class="social-grupo" onclick="abrirGrupoGastos('${g.id}')">
-                <span class="social-grupo-nombre">${escapeHtml(g.nombre)}</span>
-                <span class="social-grupo-meta">${g.miembros.length} personas · ${g.gastos.filter(x => x.tipo !== 'transferencia').length} gastos · ${dinero(t.total / 100)}</span>
-                <span class="social-grupo-saldo ${t.saldo > 0 ? 'positivo' : t.saldo < 0 ? 'negativo' : ''}">${textoSaldo(t.saldo)}</span>
-            </button>`;
-        }).join('')}</div>` : `<div class="social-vacio">Aún no tienes grupos de gastos.<br>Crea uno para un viaje, una cena o tu piso.</div>`}`;
+function setSocialTab(t) {
+    grupoAbierto = null;
+    pintarSocial();
+    setTimeout(() => document.getElementById('social-' + t)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
 }
 
-function abrirGrupoGastos(id) { grupoAbierto = id; grupoPestana = 'gastos'; pintarSocial(); }
+const SOCIAL_ICONOS = {
+    gastos: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M18 6h64v88l-11-8-10 8-11-8-10 8-11-8-11 8zM30 26v9h40v-9zm0 18v9h40v-9zm0 18v9h24v-9z"/></svg>',
+    grupo: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="32" cy="30" r="15"/><circle cx="68" cy="30" r="15"/><path d="M4 86c0-18 12-32 28-32 9 0 16 4 21 10-4 6-6 14-6 22zm92 0H53c0-18 7-32 15-32 16 0 28 14 28 32z"/></svg>',
+    evento: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M10 18h80v74H10zm10 24v40h60V42z"/><rect x="26" y="6" width="12" height="22" rx="4"/><rect x="62" y="6" width="12" height="22" rx="4"/><path d="M32 52h14v14H32z"/></svg>',
+    recibido: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M8 52h22l8 14h24l8-14h22v40H8z"/><path d="M42 8h16v28h14L50 60 28 36h14z"/></svg>',
+    amigos: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="30" r="20"/><path d="M12 92c0-22 17-38 38-38s38 16 38 38z"/></svg>',
+    codigo: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M8 8h36v36H8zm12 12v12h12V20zM56 8h36v36H56zm12 12v12h12V20zM8 56h36v36H8zm12 12v12h12V68zM56 56h14v14H56zm22 0h14v14H78zM56 78h14v14H56zm22 0h14v14H78z"/></svg>',
+    nombre: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M8 20h56l28 30-28 30H8zm16 22v16h28V42z"/></svg>',
+    solicitud: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="40" cy="30" r="18"/><path d="M6 90c0-20 15-34 34-34 8 0 15 2 21 7-3 6-5 13-5 21v6z"/><path d="M74 58h10v14h14v10H84v14H74V82H60V72h14z"/></svg>',
+    mas: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M42 12h16v30h30v16H58v30H42V58H12V42h30z"/></svg>',
+};
+
+function bloqueSocial(id, icono, titulo, texto, cuerpo, clase = '') {
+    return `
+        <section class="ajuste ${clase}" ${id ? `id="${id}"` : ''}>
+            <div class="ajuste-cab">
+                <span class="ajuste-icono">${SOCIAL_ICONOS[icono]}</span>
+                <div><div class="ajuste-titulo">${titulo}</div>${texto ? `<div class="ajuste-texto">${texto}</div>` : ''}</div>
+            </div>
+            ${cuerpo ? `<div class="ajuste-cuerpo">${cuerpo}</div>` : ''}
+        </section>`;
+}
+
+function renderFriendsView() {
+    if (grupoAbierto && gruposGastos.some(g => g.id === grupoAbierto)) return `<div class="ajustes-vista social" id="social">${renderGrupoGastos()}</div>`;
+    grupoAbierto = null;
+    const nombre = (nombrePublico || userName || '').trim();
+    const saldoTotal = gruposGastos.reduce((t, g) => t + totalesGrupo(g).saldo, 0);
+    const conSaldo = gruposGastos.find(g => Math.abs(totalesGrupo(g).saldo) >= 1);
+    const pendientes = [
+        gruposGastos.length ? `${gruposGastos.length} ${gruposGastos.length === 1 ? 'grupo' : 'grupos'}` : '',
+        solicitudesRecibidas.length ? `${solicitudesRecibidas.length} ${solicitudesRecibidas.length === 1 ? 'solicitud' : 'solicitudes'}` : '',
+        eventosCompartidosRecibidos.length ? `${eventosCompartidosRecibidos.length} ${eventosCompartidosRecibidos.length === 1 ? 'evento por ver' : 'eventos por ver'}` : '',
+    ].filter(Boolean).join(' · ');
+    return `
+    <div class="ajustes-vista social" id="social">
+        <div class="ajustes-cabecera">
+            <div class="ajustes-titulo">social.</div>
+            <div class="ajustes-sub">${nombre ? `${escapeHtml(nombre)}, tu` : 'Tu'} gente y lo que compartís: gastos, planes y amigos.</div>
+        </div>
+
+        ${socialCargado && gruposGastos.length ? `
+        <button class="ajustes-guia social-resumen" onclick="${conSaldo ? `abrirGrupoGastos('${conSaldo.id}')` : `setSocialTab('gastos')`}">
+            <span class="ajuste-icono">${SOCIAL_ICONOS.gastos}</span>
+            <span><b>${Math.abs(saldoTotal) < 1 ? 'estás en paz con todos.' : saldoTotal > 0 ? `te deben ${dinero(saldoTotal / 100)} en total.` : `debes ${dinero(-saldoTotal / 100)} en total.`}</b><small>${pendientes}</small></span>
+            <span class="ajustes-guia-flecha" aria-hidden="true">→</span>
+        </button>` : ''}
+
+        <div class="ajustes-grupo" id="social-gastos">gastos compartidos.</div>
+        ${renderListaGrupos()}
+
+        <div class="ajustes-grupo" id="social-eventos">eventos.</div>
+        ${renderEventosSocial()}
+
+        <div class="ajustes-grupo" id="social-amigos">amigos.</div>
+        ${renderAmigosSocial()}
+    </div>`;
+}
+
+function renderListaGrupos() {
+    if (!socialCargado) return '<div class="ajuste-cargando">Cargando...</div>';
+    return `
+        <div class="ajustes-rejilla">
+            ${gruposGastos.map(g => {
+                const t = totalesGrupo(g);
+                return `
+                <button class="ajuste social-grupo" onclick="abrirGrupoGastos('${g.id}')">
+                    <span class="ajuste-cab">
+                        <span class="ajuste-icono">${SOCIAL_ICONOS.grupo}</span>
+                        <span><span class="ajuste-titulo">${escapeHtml(g.nombre)}</span><span class="ajuste-texto">${g.miembros.map(m => escapeHtml(nombreMiembro(g, m.id))).join(', ')}</span></span>
+                    </span>
+                    <span class="social-grupo-pie">
+                        <span class="social-grupo-saldo ${t.saldo > 0 ? 'positivo' : t.saldo < 0 ? 'negativo' : ''}">${textoSaldo(t.saldo)}</span>
+                        <span class="social-grupo-meta">${dinero(t.total / 100)} · ${((n) => `${n} ${n === 1 ? 'gasto' : 'gastos'}`)(g.gastos.filter(x => x.tipo !== 'transferencia').length)}</span>
+                    </span>
+                </button>`;
+            }).join('')}
+            <button class="ajuste social-grupo social-grupo-nuevo" onclick="openGrupoGastos()">
+                <span class="ajuste-cab">
+                    <span class="ajuste-icono">${SOCIAL_ICONOS.mas}</span>
+                    <span><span class="ajuste-titulo">nuevo grupo.</span><span class="ajuste-texto">Un viaje, una cena, el piso... Apuntad quién paga qué y Bitácora calcula cuánto debe cada uno y cómo saldarlo con los mínimos pagos.</span></span>
+                </span>
+            </button>
+        </div>`;
+}
+
+function renderEventosSocial() {
+    return `
+        <div class="ajustes-rejilla">
+            ${bloqueSocial('', 'evento', 'compartir un evento.', 'Manda una cena, un partido o un concierto a tus amigos; les llega para añadirlo a su calendario.', `<div class="ajuste-botones"><button class="btn-secondary" style="width:auto" onclick="openCompartirEvento()">elegir evento.</button></div>`)}
+            ${bloqueSocial('', 'recibido', 'te han compartido.', eventosCompartidosRecibidos.length ? '' : 'Nada pendiente. Lo que te compartan tus amigos aparecerá aquí.', eventosCompartidosRecibidos.length ? `<div class="social-recibidos">${eventosCompartidosRecibidos.map(e => {
+                const ev = e.evento || {};
+                return `
+                <div class="social-recibido">
+                    <div class="social-recibido-de">${escapeHtml(e.nombre || 'Un amigo')}</div>
+                    <div class="social-recibido-titulo">${escapeHtml(ev.title || 'Evento')}</div>
+                    <div class="social-recibido-meta">${ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}${ev.time ? ` · ${escapeHtml(ev.time)}` : ''}${ev.place ? ` · ${escapeHtml(ev.place)}` : ''}</div>
+                    ${e.nota ? `<div class="social-recibido-nota">«${escapeHtml(e.nota)}»</div>` : ''}
+                    <div class="ajuste-botones"><button class="btn-modal-primary social-btn" onclick="aceptarEventoCompartido('${e.id}')">añadir.</button><button class="btn-secondary" style="width:auto" onclick="descartarEventoCompartido('${e.id}')">descartar.</button></div>
+                </div>`;
+            }).join('')}</div>` : '')}
+        </div>`;
+}
+
+function renderAmigosSocial() {
+    const nombreAmigo = a => a.nombre_visible || a.friend_nombre || 'Amigo sin nombre';
+    return `
+        ${solicitudesRecibidas.length ? bloqueSocial('', 'solicitud', 'quieren ser tus amigos.', '', `<div class="social-lista">${solicitudesRecibidas.map(s => `
+            <div class="social-fila"><b>${escapeHtml(s.nombre)}</b><span class="ajuste-botones"><button class="btn-modal-primary social-btn" onclick="responderSolicitudAmistad('${s.id}', true)">aceptar.</button><button class="btn-secondary" style="width:auto" onclick="responderSolicitudAmistad('${s.id}', false)">rechazar.</button></span></div>`).join('')}</div>`, 'social-destacado') : ''}
+        <div class="ajustes-rejilla">
+            ${bloqueSocial('friends-list-section', 'amigos', `mis amigos.${amigos.length ? ` <span class="social-cuenta">${amigos.length}</span>` : ''}`, 'Escribe el código que te ha pasado tu amigo; le llegará una solicitud.', `
+                <div class="friend-add-row">
+                    <input type="text" id="friend-add-input" class="friend-add-input" placeholder="Código de amigo" maxlength="8" onkeydown="friendAddInputKeydown(event)">
+                    <button class="btn-secondary" id="friend-add-btn" style="width:auto" onclick="anadirAmigoPorCodigo()">+ Añadir</button>
+                </div>
+                <div class="social-lista">
+                    ${solicitudesEnviadas.map(s => `<div class="social-fila social-fila-pendiente"><b>${escapeHtml(s.nombre)}</b><small>pendiente.</small></div>`).join('')}
+                    ${amigos.map(a => `<div class="social-fila"><b>${escapeHtml(nombreAmigo(a))}</b><button class="friend-remove-btn" title="Eliminar amigo" onclick="eliminarAmigo('${a.friend_id}', '${escapeHtml(nombreAmigo(a)).replace(/'/g, '')}')">✕</button></div>`).join('')}
+                    ${!amigos.length && !solicitudesEnviadas.length ? '<div class="ajuste-cargando social-vacio-linea">Aún no tienes amigos añadidos.</div>' : ''}
+                </div>`)}
+            <div class="social-columna">
+                ${bloqueSocial('friends-code-section', 'codigo', 'tu código de amigo.', 'Compártelo para que te añadan.', userFriendCode ? `
+                    <div class="friend-code-box">
+                        <span class="friend-code-value">${userFriendCode}</span>
+                        <button class="friend-code-copy-btn" onclick="copiarCodigoAmigo()" title="Copiar código">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2.5"/><path d="M5 15H3.5A1.5 1.5 0 0 1 2 13.5v-10A1.5 1.5 0 0 1 3.5 2h10A1.5 1.5 0 0 1 15 3.5V5"/></svg>
+                        </button>
+                    </div>` : `<button class="btn-secondary" id="friend-code-generate-btn" style="width:auto" onclick="generarCodigoAmigo()">generar código.</button>`)}
+                ${bloqueSocial('friends-name-section', 'nombre', 'tu nombre visible.', 'Cómo te ven tus amigos. No tiene por qué coincidir con el de tu cuenta.', `
+                    <div class="friend-add-row">
+                        <input type="text" id="nombre-publico-input" class="modal-input" style="margin:0;text-transform:none;letter-spacing:normal;font-family:var(--font-family)" placeholder="Tu nombre visible" value="${escapeHtml(nombrePublico || '')}">
+                        <button class="btn-secondary" id="nombre-publico-btn" style="width:auto" onclick="guardarNombrePublico()">Guardar</button>
+                    </div>`)}
+            </div>
+        </div>`;
+}
+
+function abrirGrupoGastos(id) { grupoAbierto = id; grupoPestana = 'gastos'; pintarSocial(); document.getElementById('social')?.scrollIntoView({ block: 'start' }); }
 function setGrupoPestana(p) { grupoPestana = p; pintarSocial(); }
 
-// ---------- un grupo ----------
 function renderGrupoGastos() {
     const g = gruposGastos.find(x => x.id === grupoAbierto);
-    if (!g) { grupoAbierto = null; return renderListaGrupos(); }
     const t = totalesGrupo(g);
     return `
         <div class="social-grupo-cab">
-            <button class="pedido-btn" onclick="setSocialTab('gastos')">← grupos.</button>
+            <button class="pedido-btn" onclick="setSocialTab('gastos')">← social.</button>
             <button class="pedido-btn" onclick="openGrupoGastos('${g.id}')">editar.</button>
         </div>
-        <div class="social-grupo-titulo">${escapeHtml(g.nombre)}</div>
-        ${g.descripcion ? `<div class="uni-sub">${escapeHtml(g.descripcion)}</div>` : ''}
+        <div class="ajustes-cabecera">
+            <div class="ajustes-titulo">${escapeHtml(g.nombre)}</div>
+            <div class="ajustes-sub">${g.descripcion ? `${escapeHtml(g.descripcion)} · ` : ''}${g.miembros.length} personas</div>
+        </div>
         <div class="social-miembros">${g.miembros.map(m => `<span class="${m.user_id ? '' : 'invitado'}">${escapeHtml(nombreMiembro(g, m.id))}</span>`).join('')}</div>
         <div class="social-cifras">
             <div><small>mis gastos.</small><b>${dinero(t.mio / 100)}</b></div>
             <div><small>total del grupo.</small><b>${dinero(t.total / 100)}</b></div>
             <div class="${t.saldo > 0 ? 'positivo' : t.saldo < 0 ? 'negativo' : ''}"><small>mi saldo.</small><b>${t.saldo > 0 ? '+' : ''}${dinero(t.saldo / 100)}</b></div>
         </div>
-        <div class="social-subtabs">
-            <button class="${grupoPestana === 'gastos' ? 'activo' : ''}" onclick="setGrupoPestana('gastos')">gastos.</button>
-            <button class="${grupoPestana === 'saldos' ? 'activo' : ''}" onclick="setGrupoPestana('saldos')">saldos.</button>
-            <button class="btn-modal-primary social-nuevo-gasto" onclick="openGastoCompartido('${g.id}')">+ gasto.</button>
-        </div>
-        ${grupoPestana === 'gastos' ? renderGastosGrupo(g) : renderSaldosGrupo(g)}`;
+        <button class="ajustes-guia social-anadir" onclick="openGastoCompartido('${g.id}')">
+            <span class="ajuste-icono">${SOCIAL_ICONOS.mas}</span>
+            <span><b>apuntar un gasto.</b><small>Quién pagó, cuánto y para quién.</small></span>
+            <span class="ajustes-guia-flecha" aria-hidden="true">→</span>
+        </button>
+        <section class="ajuste">
+            <div class="social-subtabs">
+                <button class="${grupoPestana === 'gastos' ? 'activo' : ''}" onclick="setGrupoPestana('gastos')">gastos.</button>
+                <button class="${grupoPestana === 'saldos' ? 'activo' : ''}" onclick="setGrupoPestana('saldos')">saldos.</button>
+            </div>
+            ${grupoPestana === 'gastos' ? renderGastosGrupo(g) : renderSaldosGrupo(g)}
+        </section>`;
 }
 
 function renderGastosGrupo(g) {
@@ -480,26 +594,6 @@ async function borrarGastoCompartido(grupoId, id) {
 
 // ---------- eventos compartidos ----------
 const EVENTO_CAMPOS_COMPARTIDOS = ['title', 'date', 'time', 'endDate', 'endTime', 'place', 'notes', 'eventType'];
-
-function renderEventosSocial() {
-    return `
-        <div class="social-intro">
-            <p>Comparte un evento tuyo (una cena, un partido, un concierto) y a tus amigos les llega para añadirlo a su calendario.</p>
-            <button class="btn-modal-primary" onclick="openCompartirEvento()">compartir un evento.</button>
-        </div>
-        ${eventosCompartidosRecibidos.length ? `<div class="uni-bloque-cab"><div class="uni-etiqueta">te han compartido.</div></div>
-        <div class="social-grupos">${eventosCompartidosRecibidos.map(e => {
-            const ev = e.evento || {};
-            return `
-            <div class="social-grupo social-evento">
-                <span class="social-grupo-meta">${escapeHtml(e.nombre || 'Un amigo')} te comparte</span>
-                <span class="social-grupo-nombre">${escapeHtml(ev.title || 'Evento')}</span>
-                <span class="social-grupo-meta">${ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}${ev.time ? ` · ${escapeHtml(ev.time)}` : ''}${ev.place ? ` · ${escapeHtml(ev.place)}` : ''}</span>
-                ${e.nota ? `<span class="pedido-nota">${escapeHtml(e.nota)}</span>` : ''}
-                <span class="pedido-acciones"><button class="pedido-btn pedido-btn-principal" onclick="aceptarEventoCompartido('${e.id}')">añadir a mi calendario.</button><button class="pedido-btn" onclick="descartarEventoCompartido('${e.id}')">descartar.</button></span>
-            </div>`;
-        }).join('')}</div>` : '<div class="social-vacio">Nadie te ha compartido ningún evento todavía.</div>'}`;
-}
 
 function openCompartirEvento(entryId) {
     const hoy = todayISO();

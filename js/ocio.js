@@ -893,7 +893,7 @@
                     title: `${e.nombre || 'Un amigo'} te comparte «${e.evento?.title || 'un evento'}»`,
                     sub: 'Evento compartido',
                     date: e.creado_en || '',
-                    onClick: () => { closeNotifPanel(); socialTab = 'eventos'; switchView('friends'); }
+                    onClick: () => { closeNotifPanel(); switchView('friends'); setSocialTab('eventos'); }
                 });
             });
             (typeof recomendaciones !== 'undefined' ? recomendaciones : []).forEach(r => {

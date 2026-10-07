@@ -6159,59 +6159,77 @@ body.papel .doc-ficha.caducada .doc-ficha-estado { color: #a3243b; }
 
 
 
-/* ===== SOCIAL (gastos compartidos, eventos, amigos) ===== */
-.social { max-width:1000px; display:flex; flex-direction:column; gap:16px; }
-.social-cabecera { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-.social-tabs, .social-subtabs { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
-.social-tabs button, .social-subtabs button:not(.btn-modal-primary) { padding:7px 14px; border-radius:999px; border:1px solid var(--border-strong); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; }
-.social-tabs button.activo, .social-subtabs button.activo { background:var(--text-primary); border-color:var(--text-primary); color:var(--accent-contrast); }
-.social-tabs button span { margin-left:2px; opacity:.7; }
-.social-intro { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:16px 18px; border-radius:18px; border:1px dashed var(--border-strong); }
-.social-intro p { margin:0; flex:1; min-width:220px; font-size:13px; line-height:1.5; color:var(--text-secondary); }
-.social-intro .btn-modal-primary, .social-nuevo-gasto { width:auto; margin:0; padding-left:18px; padding-right:18px; }
-.social-nuevo-gasto { margin-left:auto; }
-.social-grupos { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px; }
-.social-grupo { display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:16px; border-radius:18px; border:1px solid var(--border); background:var(--bg-card); text-align:left; font-family:var(--font-family); cursor:pointer; box-sizing:border-box; transition:transform .15s var(--ease-out), background-color .15s ease; }
-button.social-grupo:hover { background:var(--bg-card-hover); }
-button.social-grupo:active { transform:scale(.98); }
-.social-evento { cursor:default; }
-.social-grupo-nombre { font-size:16px; font-weight:700; color:var(--text-primary); }
+/* ===== SOCIAL (gastos compartidos, eventos, amigos) — mismo lenguaje que Ajustes ===== */
+.social .ajustes-guia { margin:4px 0 0; }
+.social .ajustes-rejilla { align-items:stretch; }
+.social-anadir { margin:14px 0 12px !important; }
+.social-grupo { display:flex; flex-direction:column; align-items:stretch; gap:14px; width:100%; color:inherit; font-family:var(--font-family); text-align:left; cursor:pointer; transition:transform .15s var(--ease-out), border-color .15s ease; }
+.social-grupo:hover { border-color:var(--border-strong); }
+.social-grupo:active { transform:scale(.99); }
+.social-grupo .ajuste-cab { margin-bottom:0; }
+.social-grupo .ajuste-titulo, .social-grupo .ajuste-texto { display:block; }
+.social-grupo-pie { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; padding-top:12px; border-top:1px solid var(--border); }
+.social-grupo-saldo { font-size:14px; font-weight:800; color:var(--text-primary); }
 .social-grupo-meta { font-size:12px; color:var(--text-secondary); }
-.social-grupo-saldo { font-size:13px; font-weight:600; color:var(--text-primary); }
+.social-grupo-nuevo { border-style:dashed; border-color:var(--border-strong); background:none; }
+.social-grupo-nuevo .ajuste-icono { background:none; color:var(--text-primary); box-shadow:inset 0 0 0 1.5px var(--text-primary); }
 .positivo, .social-grupo-saldo.positivo { color:#16a34a; }
 .negativo, .social-grupo-saldo.negativo { color:#dc2626; }
+.social-columna { display:flex; flex-direction:column; gap:12px; min-width:0; }
+.social-destacado { margin-bottom:12px; border-color:var(--text-primary); box-shadow:inset 0 0 0 1px var(--text-primary); }
+.social-cuenta { margin-left:4px; font-weight:600; color:var(--text-muted); }
+.social-lista { display:flex; flex-direction:column; margin-top:10px; }
+.social-fila { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:40px; border-top:1px solid var(--border); }
+.social-fila:first-child { border-top:0; }
+.social-fila b { font-size:14px; font-weight:700; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.social-fila-pendiente b { color:var(--text-secondary); font-weight:600; }
+.social-fila small { font-size:11.5px; color:var(--text-muted); }
+.social-vacio-linea { padding-top:10px; }
+.social-btn { width:auto !important; margin:0 !important; padding:8px 16px !important; }
+.social-recibidos { display:flex; flex-direction:column; gap:10px; }
+.social-recibido { display:flex; flex-direction:column; gap:3px; padding:14px; border-radius:14px; background:var(--bg-app); }
+.social-recibido-de { font-size:11.5px; font-weight:700; color:var(--text-secondary); }
+.social-recibido-titulo { font-size:15px; font-weight:800; color:var(--text-primary); }
+.social-recibido-meta { font-size:12px; color:var(--text-secondary); }
+.social-recibido-nota { font-size:12.5px; color:var(--text-primary); }
+.social-recibido .ajuste-botones { margin-top:8px; }
 .social-vacio { padding:28px 16px; text-align:center; font-size:13px; line-height:1.6; color:var(--text-secondary); }
-.social-grupo-cab { display:flex; justify-content:space-between; gap:8px; }
-.social-grupo-titulo { font-size:26px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); line-height:1.1; }
-.social-miembros { display:flex; flex-wrap:wrap; gap:6px; }
+.social-grupo-cab { display:flex; justify-content:space-between; gap:8px; margin-bottom:14px; }
+.social-miembros { display:flex; flex-wrap:wrap; gap:6px; margin:-6px 0 14px; }
 .social-miembros span { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:999px; background:var(--bg-card-hover); font-size:12px; font-weight:600; color:var(--text-primary); }
 .social-miembros span.invitado { background:none; border:1px dashed var(--border-strong); }
 .social-miembros span button { border:0; background:none; color:var(--text-secondary); cursor:pointer; font-size:13px; padding:0 0 0 2px; }
-.social-cifras { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
-.social-cifras div { display:flex; flex-direction:column; gap:4px; padding:14px; border-radius:16px; background:var(--bg-card); border:1px solid var(--border); }
-.social-cifras small { font-size:11.5px; font-weight:600; color:var(--text-secondary); }
-.social-cifras b { font-size:20px; font-weight:800; letter-spacing:-.4px; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+#gg-invitados.social-miembros { margin:8px 0 12px; }
+.social-cifras { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; }
+.social-cifras div { display:flex; flex-direction:column; gap:4px; padding:16px 18px; border-radius:20px; background:var(--bg-card); border:1px solid var(--border); }
+.social-cifras small { font-size:12px; font-weight:700; color:var(--text-secondary); }
+.social-cifras b { font-size:24px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); font-variant-numeric:tabular-nums; }
 .social-cifras .positivo b { color:#16a34a; }
 .social-cifras .negativo b { color:#dc2626; }
-.social-dia { margin-top:6px; font-size:12px; font-weight:700; color:var(--text-secondary); }
+.social-subtabs { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:6px; }
+.social-subtabs button { padding:7px 14px; border-radius:999px; border:1px solid var(--border-strong); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; }
+.social-subtabs button.activo { background:var(--text-primary); border-color:var(--text-primary); color:var(--accent-contrast); }
+.social-dia { margin-top:14px; font-size:12px; font-weight:700; color:var(--text-secondary); }
 .social-gasto { display:flex; align-items:center; gap:12px; width:100%; padding:12px 0; border:0; border-bottom:1px solid var(--border); background:none; text-align:left; font-family:var(--font-family); cursor:pointer; }
+.social-gasto:last-child { border-bottom:0; }
 .social-gasto-cuerpo { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
 .social-gasto-cuerpo b { font-size:14px; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .social-gasto small { font-size:12px; color:var(--text-secondary); }
 .social-gasto-importe { display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
 .social-gasto-importe b { font-size:14.5px; color:var(--text-primary); font-variant-numeric:tabular-nums; }
 .social-gasto.transferencia .social-gasto-cuerpo b, .social-gasto.transferencia .social-gasto-importe b { color:var(--text-secondary); font-weight:600; }
-.social-saldos { display:flex; flex-direction:column; gap:10px; }
+.social-saldos { display:flex; flex-direction:column; gap:12px; margin-top:12px; }
 .social-saldo { display:grid; grid-template-columns:minmax(80px, 1fr) 2fr minmax(80px, auto); align-items:center; gap:12px; }
-.social-saldo-nombre { font-size:13.5px; font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.social-saldo-nombre { font-size:13.5px; font-weight:700; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .social-saldo-barra { position:relative; height:10px; border-radius:999px; background:var(--bg-card-hover); }
 .social-saldo-barra::after { content:''; position:absolute; left:50%; top:-3px; bottom:-3px; width:1px; background:var(--border-strong); }
 .social-saldo-barra i { position:absolute; top:0; bottom:0; border-radius:999px; }
 .social-saldo-barra i.positivo { left:50%; background:#16a34a; }
 .social-saldo-barra i.negativo { right:50%; background:#dc2626; }
-.social-saldo-cifra { text-align:right; font-size:13.5px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.social-saldo-cifra { text-align:right; font-size:13.5px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--text-primary); }
 .social-pagos { display:flex; flex-direction:column; }
 .social-pago { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13.5px; color:var(--text-primary); }
+.social-pago:last-child { border-bottom:0; }
 .social-pago > span:first-child { flex:1; }
 .social-pago-importe { font-weight:800; font-variant-numeric:tabular-nums; }
 .social-elegir { display:flex; flex-direction:column; gap:2px; margin-bottom:6px; }
@@ -6229,8 +6247,10 @@ button.social-grupo:active { transform:scale(.98); }
 @media (max-width:640px) {
     .social-cifras { grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); }
     .social-cifras div:last-child { grid-column:1 / -1; }
+    .social-cifras b { font-size:20px; }
     .social-saldo { grid-template-columns:minmax(70px, 1fr) 1.4fr auto; gap:8px; }
 }
+
 /* ===== CV ===== */
 .cv-progreso { display:flex; gap:4px; margin-bottom:14px; }
 .cv-progreso span { flex:1; height:3px; border-radius:999px; background:var(--border-strong); }
