@@ -330,7 +330,7 @@
                 document.querySelectorAll('[data-plazas-fundador]').forEach(el => {
                     if (data <= 0) { el.remove(); return; }
                     const t = el.querySelector('.paywall-fundador-plazas');
-                    if (t) t.textContent = `Quedan ${data} de 100 plazas.`;
+                    if (t) t.textContent = data < 20 ? "Quedan pocas plazas." : "Aún quedan plazas.";
                 });
             } catch (e) { console.error(e); }
         }
