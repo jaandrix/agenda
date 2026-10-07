@@ -184,8 +184,13 @@ a menor resolución.
   plazo": planificación mensual de sueldo + aportaciones repartidos en casillas,
   historial mes a mes, wishlist con semáforo según el sueldo sin asignar acumulado,
   múltiples cuentas de inversión. Export a Markdown pensado para pegar en una IA.
-  Suscripción de pago (Stripe) ya implementada con cuentas anteriores a una fecha de
-  corte con acceso gratis para siempre.
+  Suscripción de pago (Stripe): cuentas anteriores a `CUTOFF_LANZAMIENTO_PAGO` gratis para
+  siempre ("legado"); las nuevas tienen `DIAS_PRUEBA` (14) días sin tarjeta desde que se crean
+  (estado "prueba", calculado en el cliente) y luego la pantalla "tu prueba gratuita ha terminado."
+  con "descargar mis datos.". El pago lo crea la Edge Function `crear-pago` (mensual/anual con los
+  precios de los Payment Links, sin prueba de Stripe; y socio fundador: 29,99 € único, 100 plazas,
+  `socio_numero` en `suscripciones`, ver `supabase/sql/socios_fundadores.sql`). Los socios ven
+  "socio fundador nº xx" en Home (`#socio-badge`) y tienen el tema `fundador` (dorado).
 - **Estudios:** asignaturas con exámenes/trabajos (bloques con estética editorial en
   blanco y negro, agrupados en pendientes/pasados), horario semanal, notas rápidas.
   Los trabajos con fecha se sincronizan automáticamente como tarea del Planificador

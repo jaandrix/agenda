@@ -612,12 +612,13 @@
         // Dos tonos únicos — "asfalto" (oscuro, por defecto, sin clase en
         // <body>) y "papel" (claro, body.papel). Sustituyen a los tres
         // temas anteriores (oscuro puro / claro puro / beige).
-        const THEMES = ['asfalto', 'papel', 'acuarela'];
-        const THEME_LABELS = { asfalto: 'asfalto', papel: 'papel', acuarela: 'teja' };
+        const THEMES = ['asfalto', 'papel', 'acuarela', 'fundador'];
+        const THEME_LABELS = { asfalto: 'asfalto', papel: 'papel', acuarela: 'teja', fundador: 'fundador' };
         // Teja (antes acuarela, de ahí la clave y la clase) es un tema
         // claro: lleva también la clase papel para heredar todos los
         // ajustes de tema claro, y encima los suyos (body.acuarela).
-        const THEME_CLASSES = { asfalto: [], papel: ['papel'], acuarela: ['papel', 'acuarela'] };
+        // Fundador: oscuro con dorado, solo para socios fundadores.
+        const THEME_CLASSES = { asfalto: [], papel: ['papel'], acuarela: ['papel', 'acuarela'], fundador: ['fundador'] };
         // Los temas antiguos ('dark'/'light'/'beige') que ya hubiera
         // guardados en localStorage de sesiones previas migran al tono más
         // parecido la primera vez que se cargan, para no cambiarle el tema
@@ -634,7 +635,7 @@
         }
 
         function aplicarClasesTema(tema) {
-            THEMES.forEach(t => document.body.classList.remove(t));
+            ['papel', 'acuarela', 'fundador'].forEach(c => document.body.classList.remove(c));
             (THEME_CLASSES[tema] || []).forEach(c => document.body.classList.add(c));
         }
 
@@ -650,14 +651,19 @@
             showToast('Tema cambiado a ' + THEME_LABELS[tema]);
         }
 
+        function temasDisponibles() {
+            return THEMES.filter(t => t !== 'fundador' || suscripcionActual?.estado === 'fundador');
+        }
+
         function toggleTheme() {
-            setTheme(THEMES[(THEMES.indexOf(temaActual()) + 1) % THEMES.length]);
+            const temas = temasDisponibles();
+            setTheme(temas[(temas.indexOf(temaActual()) + 1) % temas.length]);
         }
 
         function renderSelectorTema() {
             const actual = temaActual();
-            const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F', '#161514'] };
-            return `<div class="tema-selector">${THEMES.map(t => `
+            const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F', '#161514'], fundador: ['#1a1916', '#d4b06a', '#f1ead8'] };
+            return `<div class="tema-selector">${temasDisponibles().map(t => `
                 <button class="tema-opcion ${t === actual ? 'active' : ''}" data-tema="${t}" onclick="setTheme('${t}')">
                     <span class="tema-muestra">${muestras[t].map(c => `<span style="background:${c}"></span>`).join('')}</span>
                     <span>${THEME_LABELS[t]}.</span>

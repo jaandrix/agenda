@@ -6732,3 +6732,64 @@ body.acuarela .guia-indice button.activo, body.acuarela .guia-nav button.sig { b
 body.acuarela .ajustes-perfil.activo { border-color:var(--teja); box-shadow:inset 0 0 0 1px var(--teja); }
 @media (max-width:700px) { .ajustes-perfiles { grid-template-columns:1fr; } }
 
+/* ============================================================
+   SOCIO FUNDADOR — tarjeta de pago, insignia de Home y tema propio.
+   El dorado (--oro) solo aparece aquí: es lo que distingue al socio.
+   ============================================================ */
+:root { --oro: #d4b06a; --oro-suave: rgba(212,176,106,.12); --oro-borde: rgba(212,176,106,.5); }
+body.papel { --oro: #8a6a2a; --oro-suave: rgba(138,106,42,.08); --oro-borde: rgba(138,106,42,.45); }
+.paywall-fundador, #paywall-box button.paywall-fundador { display:flex; align-items:center; gap:14px; width:100%; margin:2px 0 6px; padding:14px 16px; border-radius:16px; border:1.5px solid var(--oro-borde); background:var(--oro-suave); color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; box-sizing:border-box; transition:transform .15s var(--ease-out), border-color .15s ease; }
+.paywall-fundador:hover { border-color:var(--oro); }
+.paywall-fundador:active { transform:scale(.99); }
+.paywall-fundador-texto { flex:1; min-width:0; }
+.paywall-fundador-texto b { display:block; font-size:14px; font-weight:800; color:var(--oro); }
+.paywall-fundador-texto small { display:block; margin-top:3px; font-size:11.5px; line-height:1.45; color:var(--text-secondary); }
+.paywall-fundador-plazas { color:var(--text-primary); font-weight:600; }
+.paywall-fundador-precio { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; font-size:19px; font-weight:800; color:var(--oro); line-height:1.1; }
+.paywall-fundador-precio small { font-size:10.5px; font-weight:600; color:var(--text-secondary); }
+#landing-screen .paywall-fundador { max-width:420px; margin:12px auto 0; }
+.settings-subscription-card .paywall-plans { width:100%; margin:14px 0 10px; }
+.settings-subscription-card button.paywall-plan { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:14px 10px; border-radius:14px; border:1.5px solid var(--border-strong); background:var(--bg-input); color:inherit; font-family:var(--font-family); cursor:pointer; position:relative; }
+.settings-subscription-card button.paywall-plan-highlight { border-color:var(--text-primary); }
+.settings-subscription-card .paywall-plan-badge { background:var(--text-primary); color:var(--accent-contrast); }
+.settings-subscription-card + .paywall-fundador { margin-top:10px; }
+.paywall-datos { display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border); text-align:center; }
+#paywall-box .paywall-datos button { width:auto; padding:9px 16px; border:1px solid var(--border-strong); border-radius:999px; background:none; color:var(--text-primary); font-size:13px; font-weight:600; }
+.paywall-datos span { font-size:11px; line-height:1.45; color:var(--text-secondary); }
+.socio-badge { display:inline-flex; align-items:center; height:34px; padding:0 14px; border-radius:999px; border:1px solid var(--oro-borde); background:var(--oro-suave); color:var(--oro); font-size:12px; font-weight:700; letter-spacing:.2px; white-space:nowrap; box-sizing:border-box; }
+.socio-badge[hidden] { display:none; }
+.socio-texto { color:var(--oro); }
+@media (max-width:640px) { .socio-badge { height:30px; padding:0 10px; font-size:11px; } }
+
+/* Tema "fundador": tinta cálida casi negra con detalles en dorado. */
+body.fundador {
+    --bg-app: #1a1916;
+    --bg-sidebar: #151411;
+    --bg-card: #23211d;
+    --bg-card-hover: #2d2a25;
+    --bg-input: #211f1b;
+    --bg-modal: #211f1b;
+    --bg-fab: #d4b06a;
+    --border: #35322b;
+    --border-strong: #4a453a;
+    --text-primary: #f1ead8;
+    --text-secondary: #b0a68f;
+    --text-muted: #7b7360;
+    --accent: #d4b06a;
+    --accent-contrast: #1a1916;
+    --badge-pending-bg: #322e26;
+    --badge-pending-text: #efe6cf;
+    --badge-progress-bg: #4a4130;
+    --badge-progress-text: #f1ead8;
+    --badge-done-bg: #d4b06a;
+    --badge-done-text: #1a1916;
+    --badge-default-bg: #2b2823;
+    --badge-default-text: #ddd3bb;
+    --m-acento: #d4b06a;
+    --m-sobre-acento: #1a1916;
+    --m-punto: #3a362d;
+    --landing-grid-line: rgba(241,234,216,0.12);
+}
+body.fundador ::selection { background:rgba(212,176,106,.35); }
+body.fundador .ajustes-titulo, body.fundador .uni-titulo, body.fundador .pedidos-titulo { color:var(--oro); }
+body.fundador .ajustes-guia, body.fundador .pedido-btn-principal, body.fundador .social-subtabs button.activo { background:var(--oro); border-color:var(--oro); color:#1a1916; }

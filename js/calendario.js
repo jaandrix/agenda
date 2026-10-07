@@ -4,6 +4,12 @@
         function render() {
             invalidateLinkableIndex();
             if (!apartadoVisible(currentView)) currentView = 'calendar';
+            const socio = document.getElementById('socio-badge');
+            if (socio) {
+                const numero = suscripcionActual?.socio_numero;
+                socio.hidden = !(numero && currentView === 'calendar');
+                if (numero) socio.textContent = `socio fundador nº ${String(numero).padStart(2, '0')}`;
+            }
             const content = document.getElementById('content');
             if (currentView === 'calendar') content.innerHTML = renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();

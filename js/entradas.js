@@ -846,6 +846,7 @@
         // según se añadían secciones nuevas.
         function buildFullBackupPayload() {
             return {
+                ...Object.fromEntries(Object.entries(DATOS_SINCRONIZADOS).map(([k, [leer]]) => [k, leer()])),
                 entries, categories, userName, investmentData, notes, prompts, inbox, registroConector,
                 financeIncome, financeProfile, financePro, plannedTrips, weeklyTasks, cultureLists, habits,
                 collectibleCategories, collectibles, dayPlanner, recurringTasks, dailyEffort, studies, links,
@@ -853,6 +854,8 @@
                 exportedAt: new Date().toISOString()
             };
         }
+
+        const APLICADAS_A_MANO = Object.fromEntries(['entries', 'categories', 'userName', 'notes', 'prompts', 'investmentData', 'inbox', 'registroConector', 'financeIncome', 'financeProfile', 'financePro', 'plannedTrips', 'weeklyTasks', 'cultureLists', 'habits', 'collectibleCategories', 'collectibles', 'dayPlanner', 'recurringTasks', 'dailyEffort', 'studies', 'links', 'linkCategories', 'blurFinances', 'apuntes'].map(k => [k, true]));
 
         function applyBackupPayload(data) {
             if (!data || typeof data !== 'object') return;
@@ -881,6 +884,11 @@
             if (data.linkCategories) linkCategories = data.linkCategories;
             if (typeof data.blurFinances === 'boolean') blurFinances = data.blurFinances;
             if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
+            // El resto de claves sincronizadas (pedidos, hansei, perfilLaboral...)
+            // que no tienen tratamiento propio arriba.
+            Object.entries(DATOS_SINCRONIZADOS).forEach(([k, [leer, escribir]]) => {
+                if (data[k] !== undefined && !(k in APLICADAS_A_MANO)) escribir(data[k]);
+            });
             filteredEntries = [...entries];
             resetDayPlannerIfNeeded();
             (studies.subjects || []).forEach(s => (s.assignments || []).forEach(item => { if (item.date) syncAssignmentPlannerItem(s, item); }));

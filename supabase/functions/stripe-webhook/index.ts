@@ -94,8 +94,34 @@ async function updatePorSubscriptionId(stripeSubscriptionId: string, fields: Rec
     const { error } = await sbAdmin
         .from('suscripciones')
         .update({ actualizado_en: new Date().toISOString(), ...fields })
-        .eq('stripe_subscription_id', stripeSubscriptionId);
+        .eq('stripe_subscription_id', stripeSubscriptionId)
+        .or('plan.is.null,plan.neq.fundador');
     if (error) console.error('Error actualizando suscripcion (por subscription_id):', error);
+}
+
+// Socio fundador (pago único, ver crear-pago): número correlativo y acceso
+// de por vida. Si tenía una suscripción en marcha se cancela ya en Stripe
+// para no volver a cobrarle; sus eventos posteriores no tocan esta fila
+// (updatePorSubscriptionId ignora las filas de fundador).
+async function hacerSocioFundador(userId: string, session: any) {
+    const { data: previa } = await sbAdmin.from('suscripciones').select('stripe_subscription_id, socio_numero').eq('user_id', userId).maybeSingle();
+    if (previa?.socio_numero) return;
+    if (previa?.stripe_subscription_id) {
+        try { await stripe.subscriptions.cancel(previa.stripe_subscription_id); }
+        catch (err) { console.error('No se pudo cancelar la suscripción previa del socio:', err); }
+    }
+    for (let intento = 0; intento < 5; intento++) {
+        const { data: ultimo } = await sbAdmin.from('suscripciones').select('socio_numero').not('socio_numero', 'is', null).order('socio_numero', { ascending: false }).limit(1).maybeSingle();
+        const numero = (ultimo?.socio_numero || 0) + 1;
+        const { error } = await sbAdmin.from('suscripciones').upsert({
+            user_id: userId, estado: 'fundador', plan: 'fundador', socio_numero: numero,
+            stripe_customer_id: session.customer, stripe_subscription_id: null,
+            periodo_fin: null, trial_fin: null, cancela_al_final_periodo: false, modulos: ['base'],
+            actualizado_en: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+        if (!error) return;
+        if (error.code !== '23505') { console.error('Error guardando socio fundador:', error); return; }
+    }
 }
 
 Deno.serve(async (req) => {
@@ -124,6 +150,10 @@ Deno.serve(async (req) => {
                 const userId = session.client_reference_id;
                 if (!userId) {
                     console.error('checkout.session.completed sin client_reference_id, se ignora');
+                    break;
+                }
+                if (session.mode === 'payment' && session.metadata?.plan === 'fundador') {
+                    await hacerSocioFundador(userId, session);
                     break;
                 }
                 let subscription = await stripe.subscriptions.retrieve(session.subscription as string, {

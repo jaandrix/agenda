@@ -886,6 +886,17 @@
                     onClick: () => { closeNotifPanel(); switchView('friends'); }
                 });
             });
+            if (suscripcionActual?.estado === 'prueba') {
+                const dias = Math.max(0, Math.ceil((new Date(suscripcionActual.trial_fin) - new Date()) / 86400000));
+                if (dias <= 3) items.push({
+                    icon: NOTIF_ICON_EVENT,
+                    iconClass: 'icon-event',
+                    title: dias <= 1 ? 'Tu prueba gratuita termina hoy' : `Te quedan ${dias} días de prueba gratuita`,
+                    sub: 'Suscríbete desde Ajustes si quieres seguir; tus datos no se pierden',
+                    date: today + 'T00:00',
+                    onClick: () => { closeNotifPanel(); switchView('settings'); }
+                });
+            }
             (typeof eventosCompartidosRecibidos !== 'undefined' ? eventosCompartidosRecibidos : []).forEach(e => {
                 items.push({
                     icon: NOTIF_ICON_EVENT,

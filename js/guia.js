@@ -385,7 +385,8 @@ const GUIA = [
         lema: 'Cómo es y cómo se comporta tu Bitácora.',
         intro: 'Agrupados en cuenta, apartados, conexiones, apariencia, más y zona de riesgo.',
         botones: [
-            [guiaBoton('suscripción.'), 'Tu plan y su renovación.'],
+            [guiaBoton('suscripción.'), 'Tu plan y su renovación. Las cuentas nuevas tienen 14 días de prueba gratis sin tarjeta; desde aquí te suscribes (1,99 € al mes o 18,99 € al año) o te haces socio fundador.'],
+            [guiaBoton('socio fundador.'), 'Un único pago de 29,99 € y Bitácora de por vida, solo para 100 personas: tu número de socio en dorado en Home y un tema exclusivo, «fundador.». Si ya tenías suscripción, se cancela sola.'],
             [guiaBoton('apartados. → perfil.'), '<b>estudiante.</b> (sin Empleo), <b>trabajador.</b> (sin Estudios ni exámenes) o <b>ambas.</b> Lo que no corresponde desaparece de menús, buscador e inicio móvil; sus datos se conservan.'],
             [guiaBoton('apartados opcionales.'), 'Apartados que no todo el mundo usa (envíos, proyectos, enlaces, etiquetas, conexiones y coleccionables): actívalos solo si los quieres.'],
             [guiaBoton('tus datos. → exportar. · importar.'), 'Todo en un archivo JSON para guardarlo aparte o recuperarlo.'],

@@ -12,11 +12,13 @@
         // Toda cuenta creada antes de esta fecha queda con acceso gratis
         // para siempre ("legado"), sin necesidad de mantener una lista.
         const CUTOFF_LANZAMIENTO_PAGO = '2026-09-15T00:00:00Z';
-        // Payment Links de Stripe en modo real (live).
-        const STRIPE_PAYMENT_LINKS = {
-            mensual: 'https://buy.stripe.com/7sYdR8bk5aTI3DZ7E28Zq00',
-            anual: 'https://buy.stripe.com/6oUcN4bk58LAdez5vU8Zq01'
-        };
+        // Prueba gratuita sin tarjeta, contada desde que se crea la cuenta.
+        // El pago (mensual, anual o socio fundador) lo crea la Edge Function
+        // crear-pago, ya sin periodo de prueba de Stripe.
+        const DIAS_PRUEBA = 14;
+        // Estado de la suscripción de esta sesión (startApp): lo usan el
+        // número de socio de Home, el tema de fundador y el aviso de prueba.
+        let suscripcionActual = null;
         // Margen de gracia si un cobro falla (past_due), antes de cortar
         // el acceso, contado desde que se guardó ese estado.
         const DIAS_GRACIA_PAST_DUE = 3;
@@ -71,6 +73,7 @@
             const paywall = document.getElementById('paywall-screen');
             if (paywall) paywall.style.display = 'none';
             document.getElementById('landing-screen').classList.add('visible');
+            cargarPlazasFundador();
         }
 
         function goToLogin() {
@@ -130,9 +133,16 @@
 
             if (!hasAccess(sub)) {
                 document.body.classList.remove('pwa');
-                showPaywallScreen(user, { confirmando: veniaDeCheckout });
+                showPaywallScreen(user, { confirmando: veniaDeCheckout, sub });
                 return;
             }
+            suscripcionActual = sub;
+            if (sub.estado !== 'fundador' && temaActual() === 'fundador') aplicarClasesTema('asfalto');
+            if (sessionStorage.getItem('bitacoraPlanIntencion') === 'fundador' && sub.estado !== 'fundador') {
+                sessionStorage.removeItem('bitacoraPlanIntencion');
+                setTimeout(() => startStripeCheckout('fundador'), 1500);
+            }
+            if (veniaDeCheckout && sub.estado === 'fundador') setTimeout(() => showToast(`Bienvenido, socio fundador nº ${sub.socio_numero}`), 1500);
             if (isMobileStandaloneMode() && !mobileExitedToDesktop) document.body.classList.add('pwa');
 
             // Limpia el ?checkout=success de la URL para que recargar la
@@ -161,11 +171,14 @@
                 if (i < intentos - 1) await new Promise(r => setTimeout(r, 1500));
             }
             const esLegado = new Date(user.created_at) < new Date(CUTOFF_LANZAMIENTO_PAGO);
-            return { estado: esLegado ? 'legado' : 'sin_suscripcion', modulos: ['base'] };
+            if (esLegado) return { estado: 'legado', modulos: ['base'] };
+            const finPrueba = new Date(new Date(user.created_at).getTime() + DIAS_PRUEBA * 86400000);
+            if (new Date() < finPrueba) return { estado: 'prueba', trial_fin: finPrueba.toISOString(), modulos: ['base'] };
+            return { estado: 'sin_suscripcion', modulos: ['base'] };
         }
 
         function hasAccess(sub) {
-            if (['legado', 'active', 'trialing'].includes(sub.estado)) return true;
+            if (['legado', 'fundador', 'prueba', 'active', 'trialing'].includes(sub.estado)) return true;
             if (sub.estado === 'past_due') {
                 const limite = new Date(sub.actualizado_en || 0);
                 limite.setDate(limite.getDate() + DIAS_GRACIA_PAST_DUE);
@@ -177,7 +190,6 @@
         function showPaywallScreen(user, opts = {}) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app').classList.remove('ready');
-            window._paywallUser = user;
 
             const screen = document.getElementById('paywall-screen');
             screen.style.display = 'flex';
@@ -191,42 +203,101 @@
             ` : (() => {
                 // Solo se aplica una vez, justo tras venir de elegir un plan
                 // en la landing — no debe quedar "pegado" en visitas futuras.
-                // Sin elección previa, el anual sigue destacado por defecto
-                // (es el de mejor precio).
                 const elegido = sessionStorage.getItem('bitacoraPlanIntencion');
                 sessionStorage.removeItem('bitacoraPlanIntencion');
-                const mensualElegido = elegido === 'mensual';
-                const anualElegido = elegido === 'anual' || !elegido;
+                const terminada = opts.sub?.estado === 'canceled';
+                setTimeout(cargarPlazasFundador, 0);
                 return `
                 <div id="paywall-box">
-                    <h1>Bienvenido a <span class="login-brand-accent">Bitácora</span></h1>
-                    <p class="sub">Un cuaderno digital para tu vida entera: ocio, trabajo, estudios, finanzas y planes, todos en un solo sitio. Sin scroll infinito, sin ruido, sin depender de decenas de apps.</p>
-                    <div class="paywall-plans">
-                        <button class="paywall-plan ${mensualElegido ? 'paywall-plan-highlight' : ''}" onclick="startStripeCheckout('mensual')">
-                            ${mensualElegido ? '<span class="paywall-plan-badge">Tu elección</span>' : ''}
-                            <span class="paywall-plan-name">Mensual</span>
-                            <span class="paywall-plan-price">1,99€<span class="paywall-plan-period">/mes</span></span>
-                        </button>
-                        <button class="paywall-plan ${anualElegido ? 'paywall-plan-highlight' : ''}" onclick="startStripeCheckout('anual')">
-                            <span class="paywall-plan-badge">${elegido === 'anual' ? 'Tu elección' : 'Ahorra ~20%'}</span>
-                            <span class="paywall-plan-name">Anual</span>
-                            <span class="paywall-plan-price">18,99€<span class="paywall-plan-period">/año</span></span>
-                        </button>
+                    <h1>${terminada ? 'Tu suscripción ha terminado' : 'Tu prueba gratuita ha terminado'}</h1>
+                    <p class="sub">${terminada ? 'Si quieres volver, puedes suscribirte de nuevo cuando quieras.' : 'Si Bitácora te ha gustado, puedes seguir usándola por 1,99 € al mes.'} Tus datos siguen guardados tal y como los dejaste: no se pierde nada.</p>
+                    ${renderPlanesPago(elegido)}
+                    <div class="paywall-trial-note">Cancela cuando quieras, sin permanencia.</div>
+                    <div class="paywall-datos">
+                        <button onclick="descargarDatosCuenta(this)">descargar mis datos.</button>
+                        <span>Por si cambias de idea o quieres llevarlos a otra cuenta (Ajustes → tus datos → importar).</span>
                     </div>
-                    <div class="paywall-trial-note">14 días de prueba gratuita en ambos planes. Cancela cuando quieras.</div>
                     <a class="login-back" onclick="handleLogout()">Cerrar sesión</a>
                 </div>
             `; })();
         }
 
-        function startStripeCheckout(plan) {
-            const user = window._paywallUser;
-            const link = STRIPE_PAYMENT_LINKS[plan];
-            if (!user || !link) return;
-            const url = new URL(link);
-            url.searchParams.set('client_reference_id', user.id);
-            if (user.email) url.searchParams.set('prefilled_email', user.email);
-            window.location.href = url.toString();
+        // Planes de la pantalla de pago y de la landing. "socio fundador"
+        // enseña las plazas que quedan (plazas_fundador) y desaparece al
+        // llegar a 100.
+        function renderPlanesPago(elegido, enLanding) {
+            const accion = plan => enLanding ? `goToSignup('${plan}')` : `startStripeCheckout('${plan}')`;
+            return `
+                <div class="paywall-plans">
+                    <button class="paywall-plan ${elegido === 'mensual' ? 'paywall-plan-highlight' : ''}" onclick="${accion('mensual')}">
+                        ${elegido === 'mensual' ? '<span class="paywall-plan-badge">Tu elección</span>' : ''}
+                        <span class="paywall-plan-name">Mensual</span>
+                        <span class="paywall-plan-price">1,99€<span class="paywall-plan-period">/mes</span></span>
+                    </button>
+                    <button class="paywall-plan ${elegido === 'anual' || !elegido ? 'paywall-plan-highlight' : ''}" onclick="${accion('anual')}">
+                        <span class="paywall-plan-badge">${elegido === 'anual' ? 'Tu elección' : 'Ahorra ~20%'}</span>
+                        <span class="paywall-plan-name">Anual</span>
+                        <span class="paywall-plan-price">18,99€<span class="paywall-plan-period">/año</span></span>
+                    </button>
+                </div>
+                <button class="paywall-fundador" data-plazas-fundador onclick="${accion('fundador')}">
+                    <span class="paywall-fundador-texto"><b>socio fundador.</b><small>Bitácora de por vida con un único pago, tu número de socio y un tema exclusivo. <span class="paywall-fundador-plazas">Solo 100 plazas.</span></small></span>
+                    <span class="paywall-fundador-precio">29,99€<small>una vez</small></span>
+                </button>`;
+        }
+
+        async function cargarPlazasFundador() {
+            try {
+                const { data, error } = await sb.rpc('plazas_fundador');
+                if (error || typeof data !== 'number') return;
+                document.querySelectorAll('[data-plazas-fundador]').forEach(el => {
+                    if (data <= 0) { el.remove(); return; }
+                    const t = el.querySelector('.paywall-fundador-plazas');
+                    if (t) t.textContent = `Quedan ${data} de 100 plazas.`;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        // Los datos tal cual están en la nube (todas las claves), en el mismo
+        // formato que exportar: se pueden importar en esta u otra cuenta.
+        async function descargarDatosCuenta(boton) {
+            if (boton) { boton.disabled = true; boton.textContent = 'preparando...'; }
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
+                if (error) throw error;
+                const blob = new Blob([JSON.stringify({ ...(data?.data || {}), exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bitacora_${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error(e);
+                showToast('No se pudieron descargar tus datos', true);
+            } finally {
+                if (boton) { boton.disabled = false; boton.textContent = 'descargar mis datos.'; }
+            }
+        }
+
+        async function startStripeCheckout(plan) {
+            if (plan === 'fundador' && !confirm('Socio fundador: un único pago de 29,99 € y Bitácora de por vida. Si ya tienes una suscripción, se cancela sola y no se te vuelve a cobrar. ¿Continuar?')) return;
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                if (!session) return;
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/crear-pago`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plan }),
+                });
+                const r = await res.json();
+                if (!res.ok || !r.url) throw new Error(r.error || 'No se pudo iniciar el pago');
+                window.location.href = r.url;
+            } catch (e) {
+                console.error(e);
+                showToast(e.message || 'No se pudo iniciar el pago', true);
+            }
         }
 
         // Pop-up informativo de la pantalla de login: qué es Bitácora, su
