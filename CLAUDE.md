@@ -190,7 +190,9 @@ a menor resolución.
   con "descargar mis datos.". El pago lo crea la Edge Function `crear-pago` (mensual/anual con los
   precios de los Payment Links, sin prueba de Stripe; y socio fundador: 29,99 € único, 100 plazas,
   `socio_numero` en `suscripciones`, ver `supabase/sql/socios_fundadores.sql`). Los socios ven
-  "socio fundador nº xx" en Home (`#socio-badge`) y tienen el tema `fundador` (dorado).
+  "socio fundador nº xx" en Home (`#socio-badge`, abre sus 3 códigos de regalo de 6 meses:
+  `mis_codigos_regalo` / `canjear_codigo_regalo`, estado "regalo" — ver `supabase/sql/codigos_regalo.sql`),
+  tienen el tema `fundador` (dorado) y sus condiciones en `openCondicionesFundador()`.
 - **Estudios:** asignaturas con exámenes/trabajos (bloques con estética editorial en
   blanco y negro, agrupados en pendientes/pasados), horario semanal, notas rápidas.
   Los trabajos con fecha se sincronizan automáticamente como tarea del Planificador

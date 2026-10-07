@@ -95,14 +95,14 @@ async function updatePorSubscriptionId(stripeSubscriptionId: string, fields: Rec
         .from('suscripciones')
         .update({ actualizado_en: new Date().toISOString(), ...fields })
         .eq('stripe_subscription_id', stripeSubscriptionId)
-        .or('plan.is.null,plan.neq.fundador');
+        .or('plan.is.null,plan.not.in.(fundador,regalo)');
     if (error) console.error('Error actualizando suscripcion (por subscription_id):', error);
 }
 
 // Socio fundador (pago único, ver crear-pago): número correlativo y acceso
 // de por vida. Si tenía una suscripción en marcha se cancela ya en Stripe
 // para no volver a cobrarle; sus eventos posteriores no tocan esta fila
-// (updatePorSubscriptionId ignora las filas de fundador).
+// (updatePorSubscriptionId ignora las filas de fundador y de regalo).
 async function hacerSocioFundador(userId: string, session: any) {
     const { data: previa } = await sbAdmin.from('suscripciones').select('stripe_subscription_id, socio_numero').eq('user_id', userId).maybeSingle();
     if (previa?.socio_numero) return;

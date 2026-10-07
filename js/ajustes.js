@@ -558,6 +558,10 @@
                     <div class="settings-subscription-card settings-subscription-card-legado">
                         <div class="settings-subscription-status socio-texto">Socio fundador nº ${String(sub.socio_numero).padStart(2, '0')}</div>
                         <div class="settings-subscription-note">Bitácora de por vida. Gracias por creer en esto desde el principio. Tu tema exclusivo, «fundador.», está en Apariencia.</div>
+                        <div class="ajuste-botones" style="margin-top:10px">
+                            <button class="btn-secondary" style="width:auto" onclick="openRegalosSocio()">tus 3 regalos.</button>
+                            <button class="btn-secondary" style="width:auto" onclick="openCondicionesFundador()">condiciones.</button>
+                        </div>
                     </div>`;
                 return;
             }
@@ -567,6 +571,17 @@
                     <div class="settings-subscription-card settings-subscription-card-neutral">
                         <div class="settings-subscription-status">Prueba gratuita · ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`}</div>
                         <div class="settings-subscription-note">Sin tarjeta. Si te convence, suscríbete cuando quieras; si no, tus datos se quedan guardados.</div>
+                        ${renderPlanesPago()}
+                        ${renderCanjeRegalo()}
+                    </div>`;
+                cargarPlazasFundador();
+                return;
+            }
+            if (sub.estado === 'regalo') {
+                body.innerHTML = `
+                    <div class="settings-subscription-card settings-subscription-card-neutral">
+                        <div class="settings-subscription-status">Regalo de un socio fundador · hasta el ${new Date(sub.periodo_fin).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                        <div class="settings-subscription-note">Seis meses de Bitácora sin pagar nada. Si quieres seguir después, suscríbete cuando quieras.</div>
                         ${renderPlanesPago()}
                     </div>`;
                 cargarPlazasFundador();
@@ -611,7 +626,8 @@
                 <button class="paywall-fundador" data-plazas-fundador onclick="startStripeCheckout('fundador')">
                     <span class="paywall-fundador-texto"><b>hazte socio fundador.</b><small>Un único pago y Bitácora de por vida; tu suscripción se cancela sola. <span class="paywall-fundador-plazas">Solo 100 plazas.</span></small></span>
                     <span class="paywall-fundador-precio">29,99€<small>una vez</small></span>
-                </button>`;
+                </button>
+                <button class="paywall-condiciones" onclick="openCondicionesFundador()">qué significa «de por vida».</button>`;
             cargarPlazasFundador();
         }
 

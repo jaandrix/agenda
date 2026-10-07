@@ -179,6 +179,7 @@
 
         function hasAccess(sub) {
             if (['legado', 'fundador', 'prueba', 'active', 'trialing'].includes(sub.estado)) return true;
+            if (sub.estado === 'regalo') return new Date(sub.periodo_fin) > new Date();
             if (sub.estado === 'past_due') {
                 const limite = new Date(sub.actualizado_en || 0);
                 limite.setDate(limite.getDate() + DIAS_GRACIA_PAST_DUE);
@@ -206,13 +207,15 @@
                 const elegido = sessionStorage.getItem('bitacoraPlanIntencion');
                 sessionStorage.removeItem('bitacoraPlanIntencion');
                 const terminada = opts.sub?.estado === 'canceled';
+                const regalo = opts.sub?.estado === 'regalo';
                 setTimeout(cargarPlazasFundador, 0);
                 return `
                 <div id="paywall-box">
-                    <h1>${terminada ? 'Tu suscripción ha terminado' : 'Tu prueba gratuita ha terminado'}</h1>
+                    <h1>${terminada ? 'Tu suscripción ha terminado' : regalo ? 'Tus 6 meses de regalo han terminado' : 'Tu prueba gratuita ha terminado'}</h1>
                     <p class="sub">${terminada ? 'Si quieres volver, puedes suscribirte de nuevo cuando quieras.' : 'Si Bitácora te ha gustado, puedes seguir usándola por 1,99 € al mes.'} Tus datos siguen guardados tal y como los dejaste: no se pierde nada.</p>
                     ${renderPlanesPago(elegido)}
                     <div class="paywall-trial-note">Cancela cuando quieras, sin permanencia.</div>
+                    ${regalo ? '' : renderCanjeRegalo()}
                     <div class="paywall-datos">
                         <button onclick="descargarDatosCuenta(this)">descargar mis datos.</button>
                         <span>Por si cambias de idea o quieres llevarlos a otra cuenta (Ajustes → tus datos → importar).</span>
@@ -243,7 +246,81 @@
                 <button class="paywall-fundador" data-plazas-fundador onclick="${accion('fundador')}">
                     <span class="paywall-fundador-texto"><b>socio fundador.</b><small>Bitácora de por vida con un único pago, tu número de socio y un tema exclusivo. <span class="paywall-fundador-plazas">Solo 100 plazas.</span></small></span>
                     <span class="paywall-fundador-precio">29,99€<small>una vez</small></span>
-                </button>`;
+                </button>
+                <button class="paywall-condiciones" onclick="openCondicionesFundador()">qué significa «de por vida».</button>`;
+        }
+
+        // Lo que promete "socio fundador", por escrito y sin letra pequeña.
+        // Se enlaza bajo cada tarjeta de socio (landing, pago y Ajustes).
+        function openCondicionesFundador() {
+            showModal(`
+                <div class="modal-title">socio fundador: condiciones.</div>
+                <div class="condiciones">
+                    <p>Lo que significa, sin letra pequeña:</p>
+                    <ol>
+                        <li><b>Un único pago de 29,99 €, IVA incluido.</b> No hay cuotas, renovaciones ni pagos dentro de la app, ni ahora ni después.</li>
+                        <li><b>«De por vida» quiere decir mientras Bitácora exista.</b> Tienes acceso completo durante toda la vida de Bitácora, con todo lo que incluye hoy y todo lo que se añada en el futuro, sin pagar nada más.</li>
+                        <li><b>Si algún día Bitácora cerrara</b>, te avisaríamos con al menos 6 meses de antelación y podrías descargar todos tus datos en un archivo, como puedes hacer siempre desde Ajustes → tus datos.</li>
+                        <li><b>Solo hay 100 plazas.</b> Tu número de socio se asigna por orden de pago y es personal: va unido a tu cuenta y no se puede transferir.</li>
+                        <li><b>Si ya pagabas una suscripción</b>, se cancela en ese momento y no se te vuelve a cobrar. Lo que ya habías pagado de esa suscripción no se devuelve.</li>
+                        <li><b>Tus tres regalos</b>: cada código da 6 meses de Bitácora a una persona con cuenta nueva (no a cuentas que ya tienen Bitácora activa) y solo se puede usar una vez.</li>
+                        <li><b>Mismas normas que cualquier cuenta.</b> Ser socio no cambia cómo se tratan tus datos: no se venden, no hay anuncios y puedes exportarlos o borrar tu cuenta cuando quieras.</li>
+                    </ol>
+                    <p class="condiciones-pie">El pago lo gestiona Stripe; Bitácora nunca ve los datos de tu tarjeta.</p>
+                </div>
+                <button class="btn-modal-primary" onclick="closeModal()">entendido.</button>
+            `);
+        }
+
+        // Códigos de regalo de los socios fundadores (6 meses), ver
+        // supabase/sql/codigos_regalo.sql.
+        function renderCanjeRegalo() {
+            return `
+                <div class="regalo-canje">
+                    <div class="regalo-canje-titulo">¿tienes un código de regalo?</div>
+                    <div class="regalo-canje-fila">
+                        <input id="regalo-codigo" placeholder="BITA-XXXX-XXXX" autocapitalize="characters" autocomplete="off" onkeydown="if(event.key==='Enter')canjearCodigoRegalo(this.nextElementSibling)">
+                        <button onclick="canjearCodigoRegalo(this)">canjear.</button>
+                    </div>
+                </div>`;
+        }
+
+        async function canjearCodigoRegalo(boton) {
+            const codigo = document.getElementById('regalo-codigo')?.value.trim();
+            if (!codigo) { showToast('Escribe el código', true); return; }
+            if (boton) boton.disabled = true;
+            try {
+                const { data, error } = await sb.rpc('canjear_codigo_regalo', { p_codigo: codigo });
+                if (error) throw error;
+                showToast(`6 meses de regalo: Bitácora hasta el ${new Date(data).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`);
+                if (document.getElementById('paywall-screen')?.style.display === 'flex') { startApp(); return; }
+                const { data: { user } } = await sb.auth.getUser();
+                suscripcionActual = await getSubscriptionStatus(user);
+                loadSettingsSubscriptionInfo();
+            } catch (e) {
+                console.error(e);
+                showToast(e.message || 'No se pudo canjear el código', true);
+            } finally {
+                if (boton) boton.disabled = false;
+            }
+        }
+
+        async function openRegalosSocio() {
+            const { data, error } = await sb.rpc('mis_codigos_regalo');
+            if (error) { console.error(error); showToast('No se pudieron cargar tus códigos', true); return; }
+            const libres = (data || []).filter(c => !c.canjeado_por).length;
+            showModal(`
+                <div class="modal-title">tus regalos.</div>
+                <p class="regalo-intro">Como socio fundador, tienes tres códigos que regalan <b>6 meses de Bitácora</b> a quien tú quieras. Lo canjea en Ajustes → suscripción o al terminar su prueba gratuita.</p>
+                <div class="regalo-lista">${(data || []).map(c => `
+                    <div class="regalo-codigo ${c.canjeado_por ? 'usado' : ''}">
+                        <code>${escapeHtml(c.codigo)}</code>
+                        ${c.canjeado_por
+                            ? `<span>regalado el ${new Date(c.canjeado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}.</span>`
+                            : `<button onclick="navigator.clipboard.writeText('${escapeHtml(c.codigo)}').then(() => showToast('Código copiado'))">copiar.</button>`}
+                    </div>`).join('')}</div>
+                <div class="regalo-pie">${libres === 1 ? 'Te queda 1 regalo.' : `Te quedan ${libres} regalos.`}</div>
+            `);
         }
 
         async function cargarPlazasFundador() {
@@ -282,7 +359,7 @@
         }
 
         async function startStripeCheckout(plan) {
-            if (plan === 'fundador' && !confirm('Socio fundador: un único pago de 29,99 € y Bitácora de por vida. Si ya tienes una suscripción, se cancela sola y no se te vuelve a cobrar. ¿Continuar?')) return;
+            if (plan === 'fundador' && !confirm('Socio fundador: un único pago de 29,99 € (IVA incluido) y Bitácora mientras exista, sin pagar nada más. Si ya tienes una suscripción, se cancela sola y no se te vuelve a cobrar. ¿Continuar?')) return;
             try {
                 const { data: { session } } = await sb.auth.getSession();
                 if (!session) return;
