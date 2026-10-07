@@ -196,7 +196,7 @@ a menor resolución.
 - **Universidad (`js/universidad.js`, vista `universidad`, opcional):** la carrera por cuatrimestres
   dentro de `studies.carrera` (grado, créditos, `cuatrimestres` con fechas de clases/exámenes/
   extraordinaria y su `horario`, `actual`); cada asignatura lleva `cuatrimestre`, `creditos`,
-  `notaActa`, `convalidada`. Con ella activa, Estudios lista solo `asignaturasEnCurso()`, y al
+  `notaActa`, `convalidada`, `anual`; un periodo 0 es un curso completo). Con ella activa, Estudios lista solo `asignaturasEnCurso()`, y al
   cambiar de cuatrimestre (`hacerCuatriActual`) se guarda/recupera `studies.schedule`.
 - **CV (`js/cv.js`, Empleo → "crear mi cv."):** asistente por pasos (contacto, cada empleo con
   `cvFunciones`/`cvAprendido`/`cvHabilidades`, formación, idiomas, habilidades, perfil propuesto)

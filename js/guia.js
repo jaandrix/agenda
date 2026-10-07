@@ -242,7 +242,7 @@ const GUIA = [
             [guiaBoton('+ cuatrimestre.'), 'Añade el siguiente cuatrimestre (o uno ya pasado, para completar tu expediente).'],
             [guiaBoton('hacer actual. · pasar a él.'), 'Cambia al cuatrimestre nuevo. Cada cuatrimestre guarda su propio horario semanal.'],
         ],
-        trucos: ['«necesitas un 5,7 en el 60% que queda» sale de los pesos y notas de los exámenes y trabajos de la asignatura.', 'La media del expediente se pondera por créditos y solo cuenta las asignaturas aprobadas, como la oficial.'],
+        trucos: ['«necesitas un 5,7 en el 60% que queda» sale de los pesos y notas de los exámenes y trabajos de la asignatura.', 'La media del expediente se pondera por créditos y solo cuenta las asignaturas aprobadas, como la oficial.', 'Si tu carrera va por cursos completos y no por cuatrimestres, elige «curso completo» al configurarla. Si solo algunas asignaturas son anuales, márcalas como «anual» en ···: saldrán en los dos cuatrimestres del curso.', 'Sin Universidad activa, Estudios funciona igual que siempre (bachillerato, FP, oposiciones...): todas tus asignaturas juntas, sin cuatrimestres.'],
     },
     {
         id: 'documentos', grupo: 'desarrollo', titulo: 'documentos.',

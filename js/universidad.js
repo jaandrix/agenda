@@ -25,6 +25,7 @@ function cuatrisOrdenados() {
 
 function nombreCuatri(q, corto = false) {
     if (!q) return '';
+    if (q.periodo === 0) return corto ? `${q.curso}º curso.` : `${q.curso}º curso${q.anio ? ` · ${q.anio}` : ''}.`;
     const periodo = q.periodo === 1 ? '1er' : '2º';
     return corto ? `${q.curso}º · ${periodo} cuatri.` : `${q.curso}º curso · ${periodo} cuatrimestre${q.anio ? ` · ${q.anio}` : ''}.`;
 }
@@ -33,7 +34,24 @@ function nombreCuatri(q, corto = false) {
 // solo las del cuatrimestre actual (y las que no tienen cuatrimestre).
 function asignaturasEnCurso() {
     const q = apartadoVisible('universidad') ? cuatriActual() : null;
-    return q ? studies.subjects.filter(s => !s.cuatrimestre || s.cuatrimestre === q.id) : studies.subjects;
+    return q ? studies.subjects.filter(s => !s.cuatrimestre || asignaturaEnCuatri(s, q)) : studies.subjects;
+}
+
+// Una asignatura anual de una carrera por cuatrimestres pertenece al
+// cuatrimestre donde se creó, pero cuenta en los dos de ese mismo curso.
+function asignaturaEnCuatri(s, q) {
+    if (s.cuatrimestre === q.id) return true;
+    if (!s.anual) return false;
+    const propio = carreraActiva()?.cuatrimestres.find(x => x.id === s.cuatrimestre);
+    return !!propio && propio.curso === q.curso && propio.anio === q.anio;
+}
+
+function finAsignatura(s) {
+    const c = carreraActiva();
+    const propio = c?.cuatrimestres.find(x => x.id === s.cuatrimestre);
+    if (!propio) return '';
+    const cuatris = s.anual ? c.cuatrimestres.filter(q => asignaturaEnCuatri(s, q)) : [propio];
+    return cuatris.map(q => q.fin || '').sort().pop();
 }
 
 let uniCuatriDestino = null;
@@ -54,7 +72,8 @@ function estadoAsignatura(s) {
     const nota = notaAsignatura(s);
     const q = carreraActiva()?.cuatrimestres.find(x => x.id === s.cuatrimestre);
     const cerrada = s.notaActa !== undefined && s.notaActa !== null && s.notaActa !== '';
-    if (nota !== null && nota >= 5 && (cerrada || (q && q.fin && q.fin < todayISO()))) return 'aprobada';
+    const fin = finAsignatura(s);
+    if (nota !== null && nota >= 5 && (cerrada || (fin && fin < todayISO()))) return 'aprobada';
     if (nota !== null && nota < 5 && cerrada) return 'suspensa';
     if (q && q.inicio && q.inicio > todayISO()) return 'pendiente';
     return 'en curso';
@@ -199,7 +218,7 @@ function renderUniversidad() {
 
 function renderCuatriActual(q) {
     const m = momentoCuatri(q);
-    const asignaturas = studies.subjects.filter(s => s.cuatrimestre === q.id);
+    const asignaturas = studies.subjects.filter(s => asignaturaEnCuatri(s, q));
     const creditos = asignaturas.reduce((t, s) => t + (Number(s.creditos) || 0), 0);
     return `
         <section class="uni-actual">
@@ -239,7 +258,7 @@ function renderAsignaturaUni(s) {
             <span class="uni-asig-color" style="background:${escapeHtml(s.color || '#5b8def')}"></span>
             <button class="uni-asig-cuerpo" onclick="openSubjectDetail('${s.id}')">
                 <span class="uni-asig-nombre">${escapeHtml(s.name)}</span>
-                <span class="uni-asig-meta">${s.creditos ? `${s.creditos} créditos · ` : ''}${estado}.${necesita ? ` ${necesita}` : ''}</span>
+                <span class="uni-asig-meta">${s.creditos ? `${s.creditos} créditos · ` : ''}${s.anual ? 'anual · ' : ''}${estado}.${necesita ? ` ${necesita}` : ''}</span>
             </button>
             <span class="uni-asig-nota">${nota !== null ? nota.toFixed(1) : '—'}</span>
             <button class="uni-asig-editar" onclick="openAsignaturaCarrera('${s.id}')" aria-label="Créditos y nota">···</button>
@@ -247,14 +266,14 @@ function renderAsignaturaUni(s) {
 }
 
 function renderCuatriMini(q) {
-    const asignaturas = studies.subjects.filter(s => s.cuatrimestre === q.id);
+    const asignaturas = studies.subjects.filter(s => asignaturaEnCuatri(s, q));
     const actual = q.id === carreraActiva().actual;
     const pasado = !actual && (q.extraordinaria?.fin || q.examenes?.fin || q.fin || '9999') < todayISO();
     const notas = asignaturas.map(notaAsignatura).filter(n => n !== null);
     const media = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : null;
     return `
         <button class="uni-cuatri ${actual ? 'actual' : ''} ${pasado ? 'pasado' : ''}" onclick="openCuatriDetalle('${q.id}')">
-            <span class="uni-cuatri-nombre">${q.periodo === 1 ? '1er' : '2º'} cuatri.${q.anio ? ` <small>${escapeHtml(q.anio)}</small>` : ''}</span>
+            <span class="uni-cuatri-nombre">${q.periodo === 0 ? 'curso completo.' : q.periodo === 1 ? '1er cuatri.' : '2º cuatri.'}${q.anio ? ` <small>${escapeHtml(q.anio)}</small>` : ''}</span>
             <span class="uni-cuatri-puntos">${asignaturas.map(s => `<i class="uni-${estadoAsignatura(s).replace(' ', '-')}" title="${escapeHtml(s.name)}"></i>`).join('') || '<small>sin asignaturas.</small>'}</span>
             <span class="uni-cuatri-meta">${actual ? 'ahora.' : media !== null ? `media ${media.toFixed(1)}.` : `${asignaturas.length} asignaturas.`}</span>
         </button>`;
@@ -263,7 +282,7 @@ function renderCuatriMini(q) {
 function openCuatriDetalle(id) {
     const q = carreraActiva()?.cuatrimestres.find(x => x.id === id);
     if (!q) return;
-    const asignaturas = studies.subjects.filter(s => s.cuatrimestre === q.id);
+    const asignaturas = studies.subjects.filter(s => asignaturaEnCuatri(s, q));
     showModal(`
         <div class="modal-title">${nombreCuatri(q)}</div>
         <div class="uni-asignaturas">${asignaturas.map(renderAsignaturaUni).join('') || '<div class="finance-empty-line">Sin asignaturas.</div>'}</div>
@@ -288,6 +307,7 @@ function anioAcademicoActual() {
 // Fechas típicas de un curso en España; luego se ajustan a mano.
 function fechasTipicas(periodo, anio) {
     const y = Number(String(anio || anioAcademicoActual()).slice(0, 4));
+    if (periodo === 0) return { inicio: `${y}-09-15`, fin: `${y + 1}-05-29`, examenes: { inicio: `${y + 1}-06-01`, fin: `${y + 1}-06-19` }, extraordinaria: { inicio: `${y + 1}-07-01`, fin: `${y + 1}-07-15` } };
     if (periodo === 1) return { inicio: `${y}-09-15`, fin: `${y}-12-22`, examenes: { inicio: `${y + 1}-01-08`, fin: `${y + 1}-01-31` }, extraordinaria: { inicio: `${y + 1}-06-15`, fin: `${y + 1}-07-10` } };
     return { inicio: `${y + 1}-02-09`, fin: `${y + 1}-05-22`, examenes: { inicio: `${y + 1}-05-25`, fin: `${y + 1}-06-12` }, extraordinaria: { inicio: `${y + 1}-06-22`, fin: `${y + 1}-07-10` } };
 }
@@ -306,7 +326,7 @@ function openConfigCarrera() {
         ${c ? '' : `
         <div class="modal-row">
             <div><div class="modal-label">Curso actual</div><select id="uni-curso" class="modal-input">${[1, 2, 3, 4, 5, 6].map(n => `<option value="${n}">${n}º</option>`).join('')}</select></div>
-            <div><div class="modal-label">Cuatrimestre</div><select id="uni-periodo" class="modal-input"><option value="1" ${mes >= 7 || mes === 0 ? 'selected' : ''}>1º (sep – ene)</option><option value="2" ${mes >= 1 && mes < 7 ? 'selected' : ''}>2º (feb – jun)</option></select></div>
+            <div><div class="modal-label">Ahora estoy en</div><select id="uni-periodo" class="modal-input"><option value="1" ${mes >= 7 || mes === 0 ? 'selected' : ''}>1er cuatrimestre (sep – ene)</option><option value="2" ${mes >= 1 && mes < 7 ? 'selected' : ''}>2º cuatrimestre (feb – jun)</option><option value="0">curso completo (sep – jun)</option></select></div>
         </div>
         ${studies.subjects.length ? `<label class="uni-check"><input type="checkbox" id="uni-mover" checked> Las ${studies.subjects.length} asignaturas que ya tengo son de este cuatrimestre.</label>` : ''}
         <div class="uni-hint">Pondremos las fechas típicas (clases, exámenes y extraordinaria); luego las ajustas con las de tu universidad.</div>`}
@@ -322,7 +342,7 @@ async function guardarCarrera() {
     const c = carreraActiva();
     if (c) Object.assign(c, { grado, universidad: val('uni-universidad'), creditosTotales: Number(val('uni-creditos')) || 240 });
     else {
-        const curso = Number(val('uni-curso')) || 1, periodo = Number(val('uni-periodo')) || 1, anio = anioAcademicoActual();
+        const curso = Number(val('uni-curso')) || 1, periodo = val('uni-periodo') === '' ? 1 : Number(val('uni-periodo')), anio = anioAcademicoActual();
         const q = { id: 'cuat_' + Date.now(), curso, periodo, anio, ...fechasTipicas(periodo, anio) };
         studies.carrera = { grado, universidad: val('uni-universidad'), creditosTotales: Number(val('uni-creditos')) || 240, cuatrimestres: [q], actual: q.id };
         if (document.getElementById('uni-mover')?.checked) studies.subjects.forEach(s => { if (!s.cuatrimestre) s.cuatrimestre = q.id; });
@@ -344,16 +364,16 @@ async function borrarCarrera() {
 function openCuatri(id) {
     const q = id ? carreraActiva()?.cuatrimestres.find(x => x.id === id) : null;
     const ultimo = cuatrisOrdenados().pop();
-    const curso = q?.curso || (ultimo ? (ultimo.periodo === 2 ? ultimo.curso + 1 : ultimo.curso) : 1);
-    const periodo = q?.periodo || (ultimo && ultimo.periodo === 1 ? 2 : 1);
-    const anio = q?.anio || (ultimo ? (ultimo.periodo === 2 ? `${Number(ultimo.anio.slice(0, 4)) + 1}/${String(Number(ultimo.anio.slice(0, 4)) + 2).slice(2)}` : ultimo.anio) : anioAcademicoActual());
+    const curso = q?.curso || (ultimo ? (ultimo.periodo === 1 ? ultimo.curso : ultimo.curso + 1) : 1);
+    const periodo = q ? q.periodo : ultimo ? (ultimo.periodo === 0 ? 0 : ultimo.periodo === 1 ? 2 : 1) : 1;
+    const anio = q?.anio || (ultimo ? (ultimo.periodo !== 1 ? `${Number(ultimo.anio.slice(0, 4)) + 1}/${String(Number(ultimo.anio.slice(0, 4)) + 2).slice(2)}` : ultimo.anio) : anioAcademicoActual());
     const f = q || fechasTipicas(periodo, anio);
     const fecha = (idCampo, v) => `<input id="${idCampo}" class="modal-input" type="date" value="${v || ''}">`;
     showModal(`
         <div class="modal-title">${q ? 'cuatrimestre.' : 'nuevo cuatrimestre.'}</div>
         <div class="modal-row">
             <div><div class="modal-label">Curso</div><select id="cu-curso" class="modal-input">${[1, 2, 3, 4, 5, 6].map(n => `<option value="${n}" ${n === curso ? 'selected' : ''}>${n}º</option>`).join('')}</select></div>
-            <div><div class="modal-label">Cuatrimestre</div><select id="cu-periodo" class="modal-input"><option value="1" ${periodo === 1 ? 'selected' : ''}>1º</option><option value="2" ${periodo === 2 ? 'selected' : ''}>2º</option></select></div>
+            <div><div class="modal-label">Periodo</div><select id="cu-periodo" class="modal-input"><option value="1" ${periodo === 1 ? 'selected' : ''}>1er cuatri.</option><option value="2" ${periodo === 2 ? 'selected' : ''}>2º cuatri.</option><option value="0" ${periodo === 0 ? 'selected' : ''}>curso completo</option></select></div>
             <div><div class="modal-label">Año</div><input id="cu-anio" class="modal-input" value="${escapeHtml(anio)}" placeholder="2026/27"></div>
         </div>
         <div class="modal-label">Clases</div>
@@ -370,7 +390,7 @@ function openCuatri(id) {
 async function guardarCuatri(id) {
     const val = k => document.getElementById(k)?.value.trim() || '';
     const datos = {
-        curso: Number(val('cu-curso')) || 1, periodo: Number(val('cu-periodo')) || 1, anio: val('cu-anio'),
+        curso: Number(val('cu-curso')) || 1, periodo: val('cu-periodo') === '' ? 1 : Number(val('cu-periodo')), anio: val('cu-anio'),
         inicio: val('cu-inicio'), fin: val('cu-fin'),
         examenes: { inicio: val('cu-ex-inicio'), fin: val('cu-ex-fin') },
         extraordinaria: { inicio: val('cu-extra-inicio'), fin: val('cu-extra-fin') },
@@ -423,6 +443,7 @@ function openAsignaturaCarrera(id) {
         </div>
         <div class="modal-label">Cuatrimestre</div>
         <select id="ua-cuatri" class="modal-input">${cuatrisOrdenados().map(q => `<option value="${q.id}" ${q.id === s.cuatrimestre ? 'selected' : ''}>${nombreCuatri(q, true)}${q.anio ? ` ${q.anio}` : ''}</option>`).join('')}<option value="" ${!s.cuatrimestre ? 'selected' : ''}>sin cuatrimestre</option></select>
+        <label class="uni-check"><input type="checkbox" id="ua-anual" ${s.anual ? 'checked' : ''}> Anual: dura los dos cuatrimestres del curso.</label>
         <label class="uni-check"><input type="checkbox" id="ua-convalidada" ${s.convalidada ? 'checked' : ''}> Convalidada o reconocida.</label>
         <div class="uni-hint">Sin nota oficial, la nota sale de tus exámenes y trabajos.</div>
         <button class="btn-modal-primary" onclick="guardarAsignaturaCarrera('${s.id}')">guardar.</button>
@@ -439,6 +460,7 @@ async function guardarAsignaturaCarrera(id) {
     if (acta === '') delete s.notaActa; else s.notaActa = Number(acta);
     if (val('ua-cuatri')) s.cuatrimestre = val('ua-cuatri'); else delete s.cuatrimestre;
     if (document.getElementById('ua-convalidada')?.checked) s.convalidada = true; else delete s.convalidada;
+    if (document.getElementById('ua-anual')?.checked) s.anual = true; else delete s.anual;
     closeModal();
     render();
     try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
