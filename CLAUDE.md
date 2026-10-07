@@ -91,7 +91,10 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   compatibilidad conserva la clave `acuarela` y las clases `body.papel.acuarela`:
   hereda todo lo de papel y añade su paleta). Variables CSS en `:root`, `body.papel` y
   `body.papel.acuarela`; los colores por elemento de teja están al final de
-  `styles.css` ("TEMA TEJA"). Se elige en Ajustes (`setTheme`).
+  `styles.css` ("TEMA TEJA"). Se elige en Ajustes (`setTheme`). Hay un cuarto tema, "fundador" (dorado), solo
+  para socios fundadores (`temasDisponibles()`). **Al añadir un tema** hay que tocar `THEMES` /
+  `THEME_CLASSES` (datos.js), las muestras de `renderSelectorTema` y de `renderMobileMenu` (nucleo.js)
+  y el script en línea de `index.html`: si falta una muestra, la PWA se queda en negro.
 
 ## Convenciones establecidas (seguirlas sin que haga falta repetirlas)
 
