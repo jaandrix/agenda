@@ -257,12 +257,12 @@ const GUIA = [
     {
         id: 'proyectos', grupo: 'desarrollo', titulo: 'proyectos.',
         lema: 'Cosas grandes, en tareas.',
-        intro: 'Cada proyecto con su lista de tareas; al marcarlas ves el progreso. Se pueden vincular a un objetivo.',
+        intro: 'Cada proyecto con su lista de tareas; al marcarlas ves el progreso. Se pueden vincular a un objetivo. Es un apartado opcional: actívalo o quítalo en Ajustes → apartados.',
     },
     {
         id: 'enlaces', grupo: 'desarrollo', titulo: 'enlaces.',
         lema: 'Tus webs, sin veinte pestañas abiertas.',
-        intro: 'Enlaces guardados por categoría, como accesos directos.',
+        intro: 'Enlaces guardados por categoría, como accesos directos. Es un apartado opcional: actívalo o quítalo en Ajustes → apartados.',
         botones: [[guiaBoton('+ enlace · + categoría'), 'Guarda un enlace o crea una categoría para agruparlos. Pulsa tu nombre para cambiarlo.']],
         trucos: ['Claude puede guardar un enlace por ti.'],
     },
@@ -291,17 +291,19 @@ const GUIA = [
         trucos: ['Pide a Claude que lea los correos de reserva y complete el viaje: transportes, alojamientos e itinerario (pasa por la bandeja).'],
     },
     {
-        id: 'actualizaciones', grupo: 'otros', titulo: 'actualizaciones.',
+        id: 'actualizaciones', grupo: 'otros', titulo: 'envíos.',
         lema: 'Tus pedidos por internet, bajo control.',
-        intro: 'Lo que compras en AliExpress, Vinted, Amazon... con su estado en cinco pasos: pedido, enviado, en camino, en reparto y entregado.',
+        intro: 'Lo que compras en AliExpress, Vinted, Amazon, Zara... con su estado en cinco pasos: pedido, enviado, en camino, en reparto y entregado. Con número de seguimiento, Bitácora consulta el transportista cada 2 horas y lo avanza sola (y te avisa). Es un apartado opcional: actívalo en Ajustes → apartados.',
         botones: [
             [guiaBoton('+ pedido.'), 'Qué es, tienda, número de seguimiento, enlace, precio, fecha y llegada estimada.'],
-            [guiaBoton('→ siguiente paso'), 'Avanza el estado; queda en su historial.'],
-            [guiaBoton('seguir envío.'), 'Abre el seguimiento en 17TRACK, que reconoce el transportista por el número.'],
+            [guiaBoton('→ siguiente paso'), 'Avanza el estado a mano; queda en su historial.'],
+            [guiaBoton('actualizar.'), 'Consulta el transportista ahora mismo en vez de esperar a la siguiente revisión.'],
+            [guiaBoton('movimientos.'), 'Cada escaneo del paquete, del más reciente al más antiguo.'],
+            [guiaBoton('seguir envío.'), 'Abre la página de seguimiento del transportista (o 17TRACK si no se conoce).'],
             [guiaBoton('copiar. · ver pedido. · editar.'), 'Copiar el número, abrir el pedido en la tienda y cambiar sus datos o añadir una novedad.'],
             [guiaBoton('ver entregados.'), 'Los que ya llegaron.'],
         ],
-        trucos: ['Si pasa la fecha estimada sin llegar, el pedido se marca en granate.'],
+        trucos: ['Para Vinted (InPost), pega el enlace de seguimiento del correo de envío en "enlace del pedido".', 'Amazon solo se puede seguir si te da el número del transportista (Correos, SEUR, GLS...); los envíos de Amazon Logistics no.', 'Si pasa la fecha estimada sin llegar, el pedido se marca en granate.'],
     },
     {
         id: 'coleccionables', grupo: 'otros', titulo: 'coleccionables.',
@@ -326,7 +328,7 @@ const GUIA = [
     {
         id: 'etiquetas', grupo: 'otros', titulo: 'etiquetas.',
         lema: 'Todo lo que comparte una etiqueta, junto.',
-        intro: 'Cualquier entrada puede llevar etiquetas. Aquí ves cada una con cuántas entradas tiene y de qué tipos.',
+        intro: 'Cualquier entrada puede llevar etiquetas. Aquí ves cada una con cuántas entradas tiene y de qué tipos. Es un apartado opcional: actívalo o quítalo en Ajustes → apartados.',
         botones: [
             [guiaBoton('tarjeta'), 'Abre la etiqueta: sus entradas agrupadas por tipo.'],
             [guiaBoton('ver conexiones. · renombrar. · eliminar.'), 'Su constelación en Conexiones, cambiarle el nombre en todas partes o quitarla de todo.'],
@@ -337,7 +339,7 @@ const GUIA = [
     {
         id: 'conexiones', grupo: 'otros', titulo: 'conexiones.',
         lema: 'Cómo se relaciona todo, sin hacer nada.',
-        intro: 'Bitácora encuentra sola lo que tiene que ver entre sí: lo que pasó durante cada viaje, los partidos de cada equipo, lo que comparte una persona, una etiqueta, una asignatura o un lugar, y los [[enlaces]] de tus notas.',
+        intro: 'Bitácora encuentra sola lo que tiene que ver entre sí: lo que pasó durante cada viaje, los partidos de cada equipo, lo que comparte una persona, una etiqueta, una asignatura o un lugar, y los [[enlaces]] de tus notas. Es un apartado opcional: actívalo o quítalo en Ajustes → apartados.',
         pasos: ['Elige un centro en la columna izquierda (un viaje, un equipo, una persona...).', 'Verás su constelación y, debajo, la lista. Toca cualquier punto para abrir esa entrada.'],
     },
     {
@@ -363,7 +365,7 @@ const GUIA = [
         botones: [
             [guiaBoton('suscripción.'), 'Tu plan y su renovación.'],
             [guiaBoton('apartados. → perfil.'), '<b>estudiante.</b> (sin Empleo), <b>trabajador.</b> (sin Estudios ni exámenes) o <b>ambas.</b> Lo que no corresponde desaparece de menús, buscador e inicio móvil; sus datos se conservan.'],
-            [guiaBoton('apartados opcionales.'), 'Apartados que no todo el mundo usa, como Coleccionables: actívalos solo si los quieres.'],
+            [guiaBoton('apartados opcionales.'), 'Apartados que no todo el mundo usa (envíos, proyectos, enlaces, etiquetas, conexiones y coleccionables): actívalos solo si los quieres.'],
             [guiaBoton('tus datos. → exportar. · importar.'), 'Todo en un archivo JSON para guardarlo aparte o recuperarlo.'],
             [guiaBoton('claude y chatgpt. · notificaciones.'), 'Conectar la IA y los avisos (ver sus secciones).'],
             [guiaBoton('tema y letra.'), 'Tema, tipografía y modo ancho; se guardan en cada dispositivo.'],

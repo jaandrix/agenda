@@ -1,5 +1,5 @@
 // ============================================================
-//  ACTUALIZACIONES — seguimiento manual de pedidos por internet
+//  ENVÍOS (vista 'actualizaciones') — seguimiento de pedidos por internet
 //  (AliExpress, Vinted, Amazon...). Cada pedido lleva su estado en
 //  una escala fija y su historial; el seguimiento detallado se abre
 //  en 17TRACK, que reconoce solo el transportista por el número.
@@ -65,7 +65,7 @@ function renderActualizaciones() {
     <div class="pedidos-vista">
         <div class="pedidos-cabecera">
             <div>
-                <div class="pedidos-titulo">actualizaciones.</div>
+                <div class="pedidos-titulo">envíos.</div>
                 <div class="pedidos-sub">${activos.length ? `${activos.length} ${activos.length === 1 ? 'pedido en camino' : 'pedidos en camino'}${estaSemana ? ` · ${estaSemana} llega${estaSemana === 1 ? '' : 'n'} esta semana` : ''}${retrasados ? ` · ${retrasados} con retraso` : ''}.` : 'Nada en camino ahora mismo.'}</div>
             </div>
             <button class="btn-modal-primary pedidos-nuevo" onclick="openPedido()">+ pedido.</button>
@@ -88,6 +88,7 @@ function renderPedidoTarjeta(p) {
     const retraso = p.estado !== 'entregado' && d !== null && d < 0;
     const historial = p.historial || [];
     const ultimo = historial[historial.length - 1];
+    const movimientos = [...(p.seguimientoAuto?.eventos || [])].reverse();
     return `
     <div class="pedido ${p.estado === 'entregado' ? 'entregado' : ''} ${retraso ? 'retraso' : ''}">
         <div class="pedido-top">
@@ -100,14 +101,50 @@ function renderPedidoTarjeta(p) {
             ${PEDIDO_ESTADOS.map((e, i) => `<div class="pedido-paso ${i <= paso ? 'hecho' : ''} ${i === paso ? 'actual' : ''}" role="listitem"><span></span><small>${e.corto}</small></div>`).join('')}
         </div>
         ${ultimo?.nota ? `<div class="pedido-nota">${escapeHtml(ultimo.nota)}</div>` : ''}
+        ${movimientos.length ? `<details class="pedido-movimientos"><summary>movimientos. <span>${movimientos.length}</span></summary><ol>${movimientos.map(m => `<li><time>${escapeHtml(fechaMovimiento(m.fecha))}</time>${escapeHtml(m.texto)}</li>`).join('')}</ol></details>` : ''}
         ${p.seguimiento ? `<div class="pedido-codigo"><code>${escapeHtml(p.seguimiento)}</code><button onclick="navigator.clipboard.writeText('${escapeHtml(p.seguimiento).replace(/'/g, '')}').then(() => showToast('Número copiado'))">copiar.</button></div>` : ''}
         <div class="pedido-acciones">
             ${p.estado !== 'entregado' ? `<button class="pedido-btn pedido-btn-principal" onclick="avanzarPedido('${p.id}')">→ ${PEDIDO_ESTADOS[Math.min(paso + 1, PEDIDO_ESTADOS.length - 1)].texto}</button>` : ''}
+            ${p.seguimiento && p.estado !== 'entregado' ? `<button class="pedido-btn" onclick="actualizarPedido('${p.id}', this)">actualizar.</button>` : ''}
             ${p.seguimiento ? `<a class="pedido-btn" href="${escapeHtml(urlSeguimiento(p))}" target="_blank" rel="noopener">seguir envío.</a>` : ''}
             ${p.url && !ES_PAGINA_SEGUIMIENTO.test(p.url) ? `<a class="pedido-btn" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">ver pedido.</a>` : ''}
             <button class="pedido-btn" onclick="openPedido('${p.id}')">editar.</button>
         </div>
     </div>`;
+}
+
+function fechaMovimiento(f) {
+    const d = new Date(f.length > 10 ? f : f + 'T12:00:00');
+    if (isNaN(d)) return f;
+    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + (f.length > 10 ? ' · ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '');
+}
+
+// Consulta ya el transportista (la Edge Function seguimiento-pedidos lo hace
+// sola cada 2 horas) y trae el resultado, que la función guarda en la nube.
+async function actualizarPedido(id, boton) {
+    if (boton) { boton.disabled = true; boton.textContent = 'consultando...'; }
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/seguimiento-pedidos`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pedido: id }),
+        });
+        const r = await res.json();
+        if (!res.ok) throw new Error(r.error || 'Error desconocido');
+        const informe = (r.resumen || [])[0]?.informe || [];
+        if (!informe.length) showToast('Este número aún no se puede seguir automáticamente');
+        else if (informe[0].error) showToast('No se pudo consultar: ' + informe[0].error, true);
+        else showToast(informe[0].a && informe[0].a !== informe[0].de ? 'Pedido actualizado' : 'Sin novedades');
+        ultimaSincronizacion = 0;
+        sincronizarDesdeNube();
+        await saveChain;
+        render();
+    } catch (e) {
+        console.error(e);
+        showToast('No se pudo actualizar el pedido', true);
+        render();
+    }
 }
 
 function openPedido(id) {

@@ -203,9 +203,10 @@ a menor resolución.
   (`aplicarOpConector` / `validarBandeja`). Historial con deshacer en `registroConector`.
 - **Amigos/social:** solicitudes de amistad, código de amigo, listas de ocio y viajes
   compartidos, recomendaciones entre amigos (tablas SQL en `supabase/sql/`).
-- **Actualizaciones (`js/actualizaciones.js`):** seguimiento manual de pedidos por
-  internet (estado en cinco pasos, historial, "seguir envío." en 17TRACK); lista global
-  `pedidos`.
+- **Envíos (`js/actualizaciones.js`, vista `actualizaciones`, antes "Actualizaciones"):** pedidos
+  por internet (estado en cinco pasos, historial, movimientos); lista global `pedidos`. La Edge
+  Function `seguimiento-pedidos` (pg_cron cada 2 h + botón "actualizar.") los avanza sola:
+  InPost por su web y el resto por la API de 17TRACK si existe el secreto `TRACK17_KEY`.
 - **Conexiones (`js/conexiones.js`, vista `graph`, antes "grafo"):** relaciones sacadas
   de los datos (lo que pasa durante cada viaje, partidos por equipo, personas, etiquetas,
   asignaturas, lugares, [[enlaces]]) con una constelación por centro.
@@ -217,8 +218,8 @@ a menor resolución.
   menú móvil. **Al cambiar un apartado, actualizar su sección en `GUIA`.**
 - **Perfil y apartados opcionales (Ajustes → apartados.):** `apartadosConfig` (sincronizado)
   con `perfil` (`estudiante` sin Empleo, `trabajador` sin Estudios ni avisos de exámenes,
-  `ambos`) y `opcionales` (de momento Coleccionables; sin elección guardada, activo solo si
-  ya tiene datos). Todo lo que liste apartados pasa por `apartadoVisible(view)` /
+  `ambos`) y `opcionales` (`APARTADOS_OPCIONALES`: envíos, proyectos, enlaces, etiquetas, conexiones y
+  coleccionables; sin elección guardada, `porDefecto()` los activa solo si ya tienen datos). Todo lo que liste apartados pasa por `apartadoVisible(view)` /
   `navSeccionesVisibles()` (menús, buscador, captura rápida, ayuda, Ctrl+flechas,
   teselas del inicio móvil); `render()` saca de un apartado oculto. "Trabajo" se llama
   **Empleo** en la interfaz (la vista sigue siendo `work`).

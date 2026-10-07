@@ -335,6 +335,7 @@
             { tipo: 'aportaciones', titulo: 'cargos vigilados.', texto: 'Una suscripción o gasto fijo con "avisarme si no aparece en el banco" que no ha llegado 3 días después de su día de cargo.' },
             { tipo: 'estudios', titulo: 'exámenes y entregas.', texto: 'Los exámenes y entregas de hoy, y los exámenes de mañana.' },
             { tipo: 'documentos', titulo: 'documentos que caducan.', texto: 'Fichas de Documentos a 30 días, 7 días, un día y el mismo día de su caducidad.' },
+            { tipo: 'pedidos', titulo: 'envíos.', texto: 'Cuando un pedido con seguimiento automático cambia de estado (enviado, en reparto, listo para recoger, entregado).' },
             { tipo: 'reembolsos', titulo: 'reembolsos atascados.', texto: 'Un ingreso que lleva más de 7 días pendiente en el banco.' },
             { tipo: 'cumpleanos', titulo: 'cumpleaños.', texto: 'Los cumpleaños de hoy y de mañana.' },
             { tipo: 'ritmo', titulo: 'ritmo de gasto.', texto: 'Cuando el gasto del día a día va bastante por encima de lo normal en ti. Como mucho dos veces al mes.' },

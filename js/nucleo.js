@@ -410,7 +410,7 @@
         // necesario para deshacerlo (ver aplicarOpConector). Lo más nuevo
         // primero; se guardan las últimas REGISTRO_CONECTOR_MAX.
         let registroConector = [];
-        // Pedidos de "actualizaciones." (lógica en actualizaciones.js).
+        // Pedidos de "envíos." (lógica en actualizaciones.js).
         let pedidos = [];
         // Reflexiones semanales del método (metodo.js): {semana, bien, mal, cambio, fecha}.
         let hansei = [];
@@ -630,7 +630,7 @@
             friends: 'Amigos',
             studies: 'Estudios',
             links: 'Enlaces',
-            actualizaciones: 'Actualizaciones',
+            actualizaciones: 'Envíos',
             bandeja: 'Bandeja',
             suggestions: 'Sugerencias',
             settings: 'Ajustes'
@@ -662,7 +662,7 @@
             { label: 'Otros', items: [
                 { view: 'culture', icon: '◊', text: 'Ocio' },
                 { view: 'travels', icon: '⌂', text: 'Viajes' },
-                { view: 'actualizaciones', icon: '▣', text: 'Actualizaciones' },
+                { view: 'actualizaciones', icon: '▣', text: 'Envíos' },
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
                 { view: 'friends', icon: '◕', text: 'Amigos' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
@@ -1311,15 +1311,23 @@
             { id: 'trabajador', titulo: 'trabajador.', texto: 'Empleo a la vista; sin Estudios ni exámenes.' },
             { id: 'ambos', titulo: 'ambas.', texto: 'Estudios y Empleo.' },
         ];
+        // `porDefecto` decide si un opcional está activo mientras el usuario no
+        // haya elegido: así las cuentas que ya lo usaban no lo pierden y las
+        // nuevas empiezan con lo básico.
         const APARTADOS_OPCIONALES = [
-            { view: 'collectibles', titulo: 'coleccionables.', texto: 'Tu colección (cartas, videojuegos...) con su valor de mercado.' },
+            { view: 'actualizaciones', titulo: 'envíos.', texto: 'Tus pedidos por internet y por dónde van.', porDefecto: () => pedidos.length > 0 },
+            { view: 'projects', titulo: 'proyectos.', texto: 'Proyectos con fases, lista o tablero.', porDefecto: () => entries.some(e => e.type === 'project') },
+            { view: 'links', titulo: 'enlaces.', texto: 'Webs y recursos guardados por carpetas.', porDefecto: () => links.length > 0 },
+            { view: 'tags', titulo: 'etiquetas.', texto: 'Todo lo que lleva la misma etiqueta, junto.', porDefecto: () => entries.some(e => (e.tags || []).length) },
+            { view: 'graph', titulo: 'conexiones.', texto: 'Cómo se relacionan tus viajes, personas, lugares y etiquetas.', porDefecto: () => entries.length >= 30 },
+            { view: 'collectibles', titulo: 'coleccionables.', texto: 'Tu colección (cartas, videojuegos...) con su valor de mercado.', porDefecto: () => collectibles.length > 0 },
         ];
 
         function configApartados() {
             const c = apartadosConfig || {};
             const perfil = PERFILES.some(p => p.id === c.perfil) ? c.perfil : 'ambos';
             const opcionales = { ...(c.opcionales || {}) };
-            if (opcionales.collectibles === undefined) opcionales.collectibles = collectibles.length > 0;
+            APARTADOS_OPCIONALES.forEach(o => { if (opcionales[o.view] === undefined) opcionales[o.view] = o.porDefecto(); });
             return { perfil, opcionales };
         }
 
@@ -1965,7 +1973,7 @@
 
         function paletteItemsFor(mode) {
             return mode === 'create'
-                ? CREATE_PALETTE_ITEMS.filter(i => i.type !== 'work' || apartadoVisible('work')).map(i => ({ ...i, kind: 'create' }))
+                ? CREATE_PALETTE_ITEMS.filter(i => apartadoVisible({ work: 'work', project: 'projects' }[i.type] || 'calendar')).map(i => ({ ...i, kind: 'create' }))
                 : navSeccionesVisibles().flatMap(s => s.items).map(i => ({ ...i, kind: 'nav' }));
         }
 
