@@ -193,6 +193,11 @@ a menor resolución.
   estado "hecho" sobreviva a que esa tarea se archive al pasar su día (la fuente de
   verdad permanente vive en el propio trabajo de Estudios, no en la tarea efímera del
   Planificador).
+- **Universidad (`js/universidad.js`, vista `universidad`, opcional):** la carrera por cuatrimestres
+  dentro de `studies.carrera` (grado, créditos, `cuatrimestres` con fechas de clases/exámenes/
+  extraordinaria y su `horario`, `actual`); cada asignatura lleva `cuatrimestre`, `creditos`,
+  `notaActa`, `convalidada`. Con ella activa, Estudios lista solo `asignaturasEnCurso()`, y al
+  cambiar de cuatrimestre (`hacerCuatriActual`) se guarda/recupera `studies.schedule`.
 - **Eventos:** iconos propios por tipo (fútbol, social, etc., algunos vectorizados a
   partir de imágenes reales del usuario), tarjeta "próximo evento hoy." a dos
   columnas cuando hay varios (eventos normales / trabajos-exámenes).

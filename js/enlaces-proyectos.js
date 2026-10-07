@@ -234,7 +234,7 @@
             const name = document.getElementById('subject-name')?.value.trim();
             if (!name) { showToast('Indica un nombre para la asignatura', true); return; }
             const color = document.getElementById('subject-color')?.value || '#5b8def';
-            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, creditos: null, exams: [], assignments: [] });
+            studies.subjects.push({ id: 'subj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name, color, creditos: null, exams: [], assignments: [], cuatrimestre: cuatriParaAsignaturaNueva() });
             closeModal();
             render();
             try { await saveData(); showToast('Asignatura añadida'); }

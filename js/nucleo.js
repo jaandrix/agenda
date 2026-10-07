@@ -629,6 +629,7 @@
             collectibles: 'Coleccionables',
             friends: 'Amigos',
             studies: 'Estudios',
+            universidad: 'Universidad',
             links: 'Enlaces',
             actualizaciones: 'Envíos',
             bandeja: 'Bandeja',
@@ -654,6 +655,7 @@
                 { view: 'finances', icon: '◫', text: 'Finanzas' },
                 { view: 'work', icon: '◫', text: 'Empleo' },
                 { view: 'studies', icon: '◎', text: 'Estudios' },
+                { view: 'universidad', icon: '◎', text: 'Universidad' },
                 { view: 'documents', icon: '▤', text: 'Documentos' },
                 { view: 'goals', icon: '◉', text: 'Objetivos' },
                 { view: 'projects', icon: '⊞', text: 'Proyectos' },
@@ -1052,7 +1054,7 @@
             culture: () => renderCulture(), collectibles: () => renderCollectibles(), documents: () => renderDocuments(),
             friends: () => renderFriendsView(), tags: () => renderTagsView(), graph: () => renderGraph(),
             bandeja: () => renderBandeja(), suggestions: () => renderSuggestions(), settings: () => renderSettings(),
-            actualizaciones: () => renderActualizaciones(),
+            actualizaciones: () => renderActualizaciones(), universidad: () => renderUniversidad(),
         };
 
         // Efectos que en escritorio se disparan tras pintar ciertas vistas
@@ -1222,7 +1224,7 @@
                 }).join('')}</div>
                 <div class="m-bloque-cab"><div class="m-etiqueta">asignaturas.</div><button class="m-mini" onclick="openAddSubject()">+ añadir</button></div>
                 <div class="m-generico m-generico-sin-zoom studies-subjects-list">
-                    ${studies.subjects.length ? studies.subjects.map((s, i) => renderSubjectRow(s, i, studies.subjects.length)).join('') : '<div class="m-vacio m-vacio-peque">ninguna asignatura todavía.</div>'}
+                    ${asignaturasEnCurso().length ? asignaturasEnCurso().map((s, i, l) => renderSubjectRow(s, i, l.length)).join('') : '<div class="m-vacio m-vacio-peque">ninguna asignatura todavía.</div>'}
                 </div>`;
         }
 
@@ -1315,6 +1317,7 @@
         // haya elegido: así las cuentas que ya lo usaban no lo pierden y las
         // nuevas empiezan con lo básico.
         const APARTADOS_OPCIONALES = [
+            { view: 'universidad', titulo: 'universidad.', texto: 'Tu carrera por cuatrimestres: créditos, media, fechas de exámenes y qué necesitas para aprobar.', porDefecto: () => false },
             { view: 'actualizaciones', titulo: 'envíos.', texto: 'Tus pedidos por internet y por dónde van.', porDefecto: () => pedidos.length > 0 },
             { view: 'projects', titulo: 'proyectos.', texto: 'Proyectos con fases, lista o tablero.', porDefecto: () => entries.some(e => e.type === 'project') },
             { view: 'links', titulo: 'enlaces.', texto: 'Webs y recursos guardados por carpetas.', porDefecto: () => links.length > 0 },
@@ -1333,7 +1336,7 @@
 
         function apartadoVisible(view) {
             const { perfil, opcionales } = configApartados();
-            if (view === 'studies' && perfil === 'trabajador') return false;
+            if ((view === 'studies' || view === 'universidad') && perfil === 'trabajador') return false;
             if (view === 'work' && perfil === 'estudiante') return false;
             if (APARTADOS_OPCIONALES.some(o => o.view === view) && !opcionales[view]) return false;
             return true;

@@ -677,8 +677,8 @@
                 </div>
 
                 <section class="studies-section" id="studies-subjects-section">
-                    <h3>Asignaturas</h3>
-                    ${studies.subjects.length ? `<div class="studies-subjects-list">${studies.subjects.map((s, i) => renderSubjectRow(s, i, studies.subjects.length)).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
+                    <h3>Asignaturas${apartadoVisible('universidad') && cuatriActual() ? ` <button class="studies-uni-link" onclick="switchView('universidad')">${nombreCuatri(cuatriActual(), true)} ver la carrera →</button>` : ''}</h3>
+                    ${asignaturasEnCurso().length ? `<div class="studies-subjects-list">${asignaturasEnCurso().map((s, i, l) => renderSubjectRow(s, i, l.length)).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
                 </section>
             </div>`;
         }

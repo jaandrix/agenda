@@ -230,6 +230,19 @@ const GUIA = [
         trucos: ['Los exámenes salen en el calendario y los trabajos en el planificador el día de entrega.', 'Pide a Claude «añade el examen de X el día Y» y lo pondrá en su asignatura.'],
     },
     {
+        id: 'universidad', grupo: 'desarrollo', titulo: 'universidad.',
+        lema: 'Tu carrera entera, por cuatrimestres.',
+        intro: 'Para quien estudia en la universidad: los créditos que llevas, la media del expediente, en qué semana del cuatrimestre estás, cuánto falta para los exámenes y qué necesitas sacar en cada asignatura para aprobar. Es un apartado opcional: actívalo en Ajustes → apartados. Con él activo, Estudios enseña solo las asignaturas del cuatrimestre actual.',
+        pasos: ['Pulsa <b>configurar mi carrera.</b>: nombre del grado, créditos totales (240 normalmente), curso y cuatrimestre actual.', 'Ajusta en <b>fechas.</b> el inicio y fin de las clases, los exámenes y la extraordinaria de tu universidad.', 'En <b>···</b> de cada asignatura pon sus créditos y, cuando salga, la nota oficial del acta.'],
+        botones: [
+            [guiaBoton('+ asignatura.'), 'Añade una asignatura a ese cuatrimestre (también aparece en Estudios).'],
+            [guiaBoton('···'), 'Créditos, nota oficial, cuatrimestre y si está convalidada.'],
+            [guiaBoton('+ cuatrimestre.'), 'Añade el siguiente cuatrimestre (o uno ya pasado, para completar tu expediente).'],
+            [guiaBoton('hacer actual. · pasar a él.'), 'Cambia al cuatrimestre nuevo. Cada cuatrimestre guarda su propio horario semanal.'],
+        ],
+        trucos: ['«necesitas un 5,7 en el 60% que queda» sale de los pesos y notas de los exámenes y trabajos de la asignatura.', 'La media del expediente se pondera por créditos y solo cuenta las asignaturas aprobadas, como la oficial.'],
+    },
+    {
         id: 'documentos', grupo: 'desarrollo', titulo: 'documentos.',
         lema: 'Lo importante, a mano cuando lo necesitas.',
         intro: 'Dos cosas en un sitio: <b>fichas</b> (DNI, garantías, seguros, contratos... con su fecha de caducidad) y <b>archivos</b> (PDF o páginas HTML que subes).',

@@ -6156,6 +6156,77 @@ body.papel .doc-ficha.caducada .doc-ficha-estado { color: #a3243b; }
 .pedidos-vacio-sub { max-width:380px; font-size:13px; line-height:1.5; color:var(--text-secondary); }
 .pedidos-entregados-btn { margin:22px 0 12px; padding:8px 14px; border-radius:999px; border:1px solid var(--border); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; }
 .pedidos-entregados-btn span { margin-left:4px; opacity:.7; }
+
+/* ===== UNIVERSIDAD ===== */
+.uni-vista { max-width:1000px; display:flex; flex-direction:column; gap:18px; }
+.uni-cabecera { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.uni-titulo { font-size:26px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); line-height:1.1; }
+.uni-sub { margin-top:4px; font-size:13px; color:var(--text-secondary); }
+.uni-vacio { display:flex; flex-direction:column; align-items:flex-start; gap:12px; padding:32px; border-radius:18px; border:1px dashed var(--border-strong); }
+.uni-vacio p { margin:0; max-width:520px; font-size:13.5px; line-height:1.55; color:var(--text-secondary); }
+.uni-vacio .btn-modal-primary { width:auto; padding-left:20px; padding-right:20px; }
+.uni-aviso { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:12px 14px; border-radius:14px; background:var(--bg-card-hover); font-size:13px; color:var(--text-primary); }
+.uni-cifras { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+.uni-cifra { display:flex; flex-direction:column; gap:6px; padding:18px; border-radius:18px; background:var(--bg-card); border:1px solid var(--border); }
+.uni-cifra-num { font-size:44px; font-weight:800; letter-spacing:-1.5px; line-height:1; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.uni-cifra-num small { font-size:22px; letter-spacing:0; }
+.uni-cifra-txt { font-size:13px; font-weight:600; color:var(--text-primary); }
+.uni-cifra-txt span { display:block; font-weight:500; font-size:12px; color:var(--text-secondary); }
+.uni-barra { height:8px; border-radius:999px; background:var(--bg-card-hover); overflow:hidden; margin-top:4px; }
+.uni-barra span { display:block; height:100%; border-radius:inherit; background:var(--text-primary); }
+.uni-barra-fina { height:4px; }
+.uni-actual { display:flex; flex-direction:column; gap:14px; padding:20px; border-radius:18px; background:var(--bg-card); border:1px solid var(--border); }
+.uni-actual-cab, .uni-bloque-cab { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.uni-etiqueta { font-size:12px; font-weight:700; color:var(--text-secondary); }
+.uni-etiqueta span { font-weight:500; opacity:.75; }
+.uni-actual-nombre { font-size:18px; font-weight:700; color:var(--text-primary); letter-spacing:-.2px; }
+.uni-momento { display:flex; align-items:flex-end; gap:12px; }
+.uni-momento-cifra { font-size:56px; font-weight:800; letter-spacing:-2px; line-height:.9; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.uni-momento-texto { padding-bottom:4px; font-size:14px; font-weight:600; color:var(--text-primary); }
+.uni-momento-texto span { display:block; font-size:12.5px; font-weight:500; color:var(--text-secondary); }
+.uni-calendario { display:flex; flex-direction:column; gap:10px; }
+.uni-calendario-fechas { display:flex; flex-wrap:wrap; gap:6px 18px; font-size:12px; color:var(--text-secondary); }
+.uni-calendario-fechas b { margin-right:5px; color:var(--text-primary); font-weight:600; }
+.uni-asignaturas { display:flex; flex-direction:column; }
+.uni-asig { display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--border); }
+.uni-asig:first-child { border-top:0; }
+.uni-asig-color { flex-shrink:0; width:10px; height:10px; border-radius:50%; }
+.uni-asig-cuerpo { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; padding:0; border:0; background:none; text-align:left; font-family:var(--font-family); cursor:pointer; }
+.uni-asig-nombre { font-size:14px; font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.uni-asig-meta { font-size:12px; color:var(--text-secondary); }
+.uni-asig-nota { font-size:18px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.uni-aprobada .uni-asig-nota, .uni-convalidada .uni-asig-nota { color:#16a34a; }
+.uni-suspensa .uni-asig-nota { color:#dc2626; }
+.uni-asig-editar { flex-shrink:0; width:32px; height:32px; border-radius:50%; border:0; background:none; color:var(--text-secondary); font-family:var(--font-family); font-weight:800; cursor:pointer; }
+.uni-asig-editar:hover { background:var(--bg-card-hover); color:var(--text-primary); }
+.uni-cursos { display:flex; flex-direction:column; gap:10px; }
+.uni-curso { display:flex; gap:14px; align-items:stretch; }
+.uni-curso-num { flex-shrink:0; width:44px; padding-top:12px; font-size:22px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); }
+.uni-curso-cuatris { flex:1; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+.uni-cuatri { display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:14px; border-radius:16px; border:1px solid var(--border); background:var(--bg-card); text-align:left; font-family:var(--font-family); cursor:pointer; transition:transform .15s var(--ease-out), background-color .15s ease; }
+.uni-cuatri:hover { background:var(--bg-card-hover); }
+.uni-cuatri:active { transform:scale(.98); }
+.uni-cuatri.actual { border-color:var(--text-primary); box-shadow:inset 0 0 0 1px var(--text-primary); }
+.uni-cuatri.pasado { opacity:.8; }
+.uni-cuatri-nombre { font-size:13.5px; font-weight:700; color:var(--text-primary); }
+.uni-cuatri-nombre small { margin-left:4px; font-weight:500; color:var(--text-muted); }
+.uni-cuatri-puntos { display:flex; flex-wrap:wrap; gap:5px; min-height:10px; }
+.uni-cuatri-puntos i { width:10px; height:10px; border-radius:50%; box-sizing:border-box; border:2px solid var(--border-strong); }
+.uni-cuatri-puntos i.uni-aprobada, .uni-cuatri-puntos i.uni-convalidada { background:#16a34a; border-color:#16a34a; }
+.uni-cuatri-puntos i.uni-suspensa { background:#dc2626; border-color:#dc2626; }
+.uni-cuatri-puntos i.uni-en-curso { border-color:var(--text-primary); }
+.uni-cuatri-puntos small, .uni-cuatri-meta { font-size:11.5px; color:var(--text-secondary); }
+.uni-modal-acciones { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+.uni-check { display:flex; align-items:center; gap:8px; margin:12px 0 4px; font-size:13px; color:var(--text-primary); cursor:pointer; }
+.uni-hint { margin:10px 0 14px; font-size:12px; line-height:1.5; color:var(--text-secondary); }
+.studies-uni-link { margin-left:8px; padding:3px 10px; border-radius:999px; border:1px solid var(--border-strong); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:11.5px; font-weight:600; vertical-align:middle; cursor:pointer; }
+.studies-uni-link:hover { color:var(--text-primary); }
+@media (max-width:640px) {
+    .uni-cifras, .uni-curso-cuatris { grid-template-columns:minmax(0, 1fr); }
+    .uni-cifra-num { font-size:36px; }
+    .uni-curso { flex-direction:column; gap:6px; }
+    .uni-curso-num { padding-top:0; }
+}
 .m-generico .pedidos-titulo { display:none; }
 .m-generico .pedidos-lista { grid-template-columns:1fr; }
 body.acuarela .pedido-paso.hecho span, body.acuarela .pedido-paso.hecho::before { background:var(--teja); border-color:var(--teja); }
