@@ -950,7 +950,7 @@
 
         function renderMobileMenu(view) {
             let n = 0;
-            const muestras = { asfalto: ['#302f2c', '#efede3'], papel: ['#FAF8F5', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F'] };
+            const muestras = { asfalto: ['#302f2c', '#efede3'], papel: ['#FAF8F5', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F'], fundador: ['#1a1916', '#d4b06a'] };
             const tema = temaActual();
             return `
             <div class="m-menu ${mobileMenuAbierto ? 'abierto' : ''}" id="m-menu">
@@ -970,7 +970,7 @@
                         }).join('')}`).join('')}
                     <div class="m-menu-pie">
                         <div class="m-menu-temas">
-                            ${THEMES.map(t => `<button class="m-tema ${t === tema ? 'activo' : ''}" onclick="setTheme('${t}');render()" aria-label="Tema ${THEME_LABELS[t]}"><span style="background:${muestras[t][0]}"></span><span style="background:${muestras[t][1]}"></span></button>`).join('')}
+                            ${temasDisponibles().map(t => `<button class="m-tema ${t === tema ? 'activo' : ''}" onclick="setTheme('${t}');render()" aria-label="Tema ${THEME_LABELS[t]}"><span style="background:${muestras[t][0]}"></span><span style="background:${muestras[t][1]}"></span></button>`).join('')}
                         </div>
                         <button class="m-enlace" onclick="toggleMenuMovil();openGuia()">guía.</button>
                         <button class="m-enlace" onclick="exitMobileToDesktop()">versión completa.</button>
