@@ -213,9 +213,11 @@ const GUIA = [
         intro: 'Tus empleos con empresa, puesto, fechas, sueldo, modalidad y motivo de salida, y los documentos de cada uno.',
         botones: [
             [guiaBoton('Importar Vida Laboral'), 'Sube el PDF de tu Informe de Vida Laboral de la Seguridad Social y Bitácora crea los empleos solos.'],
+            [guiaBoton('crear mi cv.'), 'Un asistente por pasos: tus datos de contacto, qué hacías y qué aprendiste en cada empleo, tu formación, idiomas y habilidades, y un perfil que Bitácora te propone escrito. Al final descarga un CV en PDF, limpio y de una página.'],
+            [guiaBoton('Descargar resumen (PDF)'), 'Un resumen de tu vida laboral: días trabajados, cotizados y cada empleo.'],
             [guiaBoton('rayo'), 'En Empleo, la captura rápida late para recordarte que puedes añadir un empleo.'],
         ],
-        trucos: ['El trabajo actual aparece destacado arriba, y los días que trabajas salen en el calendario.'],
+        trucos: ['El trabajo actual aparece destacado arriba, y los días que trabajas salen en el calendario.', 'Lo que respondes en el CV se guarda: la próxima vez solo tienes que cambiar lo nuevo.', 'Si tienes activa Universidad, tu grado ya aparece en la formación del CV.'],
     },
     {
         id: 'estudios', grupo: 'desarrollo', titulo: 'estudios.',

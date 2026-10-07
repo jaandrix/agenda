@@ -40,6 +40,7 @@
                     <div class="empty-title">Sin experiencia laboral</div>
                     <div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Empleo", o importa tu Informe de Vida Laboral</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div>
                     <button class="btn-secondary" style="width:auto;margin-top:12px;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openWorkImportModal()">Importar Vida Laboral</button>
+                    <button class="btn-secondary" style="width:auto;margin-top:8px" onclick="openCv()">crear mi cv.</button>
                 </div>`;
             }
 
@@ -76,6 +77,7 @@
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openWorkImportModal()">Importar Vida Laboral</button>
                         <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()">⭳ Descargar resumen (PDF)</button>
+                        <button class="btn-modal-primary" style="width:auto;margin:0" onclick="openCv()">crear mi cv.</button>
                     </div>
                 </div>
                 <div class="card work-bubble-flow-card" style="max-width:980px;margin-bottom:22px">

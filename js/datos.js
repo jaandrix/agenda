@@ -39,6 +39,7 @@
                 pedidos = Array.isArray(saved.pedidos) ? saved.pedidos : [];
                 hansei = Array.isArray(saved.hansei) ? saved.hansei : [];
                 apartadosConfig = (saved.apartadosConfig && typeof saved.apartadosConfig === 'object') ? saved.apartadosConfig : null;
+                perfilLaboral = (saved.perfilLaboral && typeof saved.perfilLaboral === 'object') ? saved.perfilLaboral : null;
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
                     cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
@@ -227,7 +228,8 @@
             blurFinances: [() => blurFinances, v => { blurFinances = v; }],
             pedidos: [() => pedidos, v => { pedidos = v; }],
             hansei: [() => hansei, v => { hansei = v; }],
-            apartadosConfig: [() => apartadosConfig, v => { apartadosConfig = v; }]
+            apartadosConfig: [() => apartadosConfig, v => { apartadosConfig = v; }],
+            perfilLaboral: [() => perfilLaboral, v => { perfilLaboral = v; }]
         };
         let datosBase = null;
         const clonarDatos = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));

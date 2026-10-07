@@ -53,7 +53,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (centro resumen, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `guia`.
+  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `cv` → `guia`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -198,6 +198,9 @@ a menor resolución.
   extraordinaria y su `horario`, `actual`); cada asignatura lleva `cuatrimestre`, `creditos`,
   `notaActa`, `convalidada`. Con ella activa, Estudios lista solo `asignaturasEnCurso()`, y al
   cambiar de cuatrimestre (`hacerCuatriActual`) se guarda/recupera `studies.schedule`.
+- **CV (`js/cv.js`, Empleo → "crear mi cv."):** asistente por pasos (contacto, cada empleo con
+  `cvFunciones`/`cvAprendido`/`cvHabilidades`, formación, idiomas, habilidades, perfil propuesto)
+  que guarda `perfilLaboral` (sincronizado) y genera un PDF de una columna con jsPDF.
 - **Eventos:** iconos propios por tipo (fútbol, social, etc., algunos vectorizados a
   partir de imágenes reales del usuario), tarjeta "próximo evento hoy." a dos
   columnas cuando hay varios (eventos normales / trabajos-exámenes).

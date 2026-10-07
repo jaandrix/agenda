@@ -417,6 +417,8 @@
         // Perfil y apartados opcionales (Ajustes → apartados.):
         // { perfil: 'estudiante' | 'trabajador' | 'ambos', opcionales: { collectibles: bool } }.
         let apartadosConfig = null;
+        // Datos del CV (cv.js): contacto, formación, idiomas, habilidades y perfil.
+        let perfilLaboral = null;
         // Cambios de la IA que esperan validación en "bandeja." (filas de
         // conector_bandeja que no se aplican solas, ver OPS_AUTOMATICAS).
         let bandejaPendiente = [];
