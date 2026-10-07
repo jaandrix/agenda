@@ -629,7 +629,7 @@
             habits: 'Hábitos',
             graph: 'Conexiones',
             collectibles: 'Coleccionables',
-            friends: 'Amigos',
+            friends: 'Social',
             studies: 'Estudios',
             universidad: 'Universidad',
             links: 'Enlaces',
@@ -665,10 +665,10 @@
             ] },
             { label: 'Otros', items: [
                 { view: 'culture', icon: '◊', text: 'Ocio' },
+                { view: 'friends', icon: '◕', text: 'Social' },
                 { view: 'travels', icon: '⌂', text: 'Viajes' },
                 { view: 'actualizaciones', icon: '▣', text: 'Envíos' },
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
-                { view: 'friends', icon: '◕', text: 'Amigos' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
                 { view: 'graph', icon: '◇', text: 'Conexiones' },
             ] },
@@ -1371,6 +1371,9 @@
         // window[setter](value) tras cambiar de vista), `action` llama a una
         // función tras cambiar de vista (p.ej. abrir un modal).
         const NAV_SUBSECTIONS = [
+            { view: 'friends', text: 'Gastos compartidos', setter: 'setSocialTab', value: 'gastos' },
+            { view: 'friends', text: 'Amigos', setter: 'setSocialTab', value: 'amigos' },
+            { view: 'friends', text: 'Eventos compartidos', setter: 'setSocialTab', value: 'eventos' },
             { view: 'studies', text: 'Asignaturas', anchor: 'studies-subjects-section' },
             { view: 'studies', text: 'Horario semanal', anchor: 'studies-schedule-section' },
             { view: 'studies', text: 'Notas rápidas', action: 'openQuickNotesList' },
@@ -2471,7 +2474,7 @@
                     if (error.code !== '23505') break; // solo reintenta si fue una colisión de código único
                 }
                 if (ultimoError) throw ultimoError;
-                if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
+                if (currentView === 'friends') pintarSocial();
                 showToast('Código de amigo generado');
             } catch (e) {
                 console.error('Error generando el código de amigo:', e);
@@ -2553,7 +2556,7 @@
                 } else {
                     showToast('Solicitud enviada, a la espera de que la acepte');
                 }
-                if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
+                if (currentView === 'friends') pintarSocial();
             } catch (e) {
                 console.error('Error enviando la solicitud de amistad:', e);
                 const msg = e?.message || '';
@@ -2575,7 +2578,7 @@
                 const { error } = await sb.rpc('eliminar_amigo', { p_friend_id: friendId });
                 if (error) throw error;
                 amigos = amigos.filter(a => a.friend_id !== friendId);
-                if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
+                if (currentView === 'friends') pintarSocial();
                 showToast('Amigo eliminado');
             } catch (e) {
                 console.error('Error eliminando amigo:', e);
@@ -2615,7 +2618,7 @@
                     throw error;
                 }
                 nombrePublico = nuevo;
-                document.getElementById('content').innerHTML = renderFriendsView();
+                pintarSocial();
                 showToast('Nombre visible actualizado');
             } catch (e) {
                 console.error('Error guardando el nombre visible:', e);
@@ -2629,8 +2632,8 @@
         //  VISTA "AMIGOS"
         // ------------------------------------------------------------
         async function loadFriendsViewData() {
-            await Promise.all([cargarCodigoAmigo(), cargarAmigos(), cargarNombrePublico(), cargarSolicitudesAmistad()]);
-            if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
+            await Promise.all([cargarCodigoAmigo(), cargarAmigos(), cargarNombrePublico(), cargarSolicitudesAmistad(), cargarGruposGastos(), cargarEventosCompartidos()]);
+            if (currentView === 'friends') pintarSocial();
         }
 
         async function cargarSolicitudesAmistad() {
@@ -2667,7 +2670,7 @@
                 const { error } = await sb.rpc('responder_solicitud_amistad', { p_solicitud_id: id, p_aceptar: aceptar });
                 if (error) throw error;
                 await Promise.all([cargarSolicitudesAmistad(), cargarAmigos()]);
-                if (currentView === 'friends') document.getElementById('content').innerHTML = renderFriendsView();
+                if (currentView === 'friends') pintarSocial();
                 if (typeof updateNotifBadge === 'function') updateNotifBadge();
                 showToast(aceptar ? 'Amigo añadido' : 'Solicitud rechazada');
             } catch (e) {
@@ -2676,7 +2679,7 @@
             }
         }
 
-        function renderFriendsView() {
+        function renderAmigosLista() {
             return `
                 <div class="settings-layout">
                 <div class="settings-col-main">

@@ -886,6 +886,16 @@
                     onClick: () => { closeNotifPanel(); switchView('friends'); }
                 });
             });
+            (typeof eventosCompartidosRecibidos !== 'undefined' ? eventosCompartidosRecibidos : []).forEach(e => {
+                items.push({
+                    icon: NOTIF_ICON_EVENT,
+                    iconClass: 'icon-event',
+                    title: `${e.nombre || 'Un amigo'} te comparte «${e.evento?.title || 'un evento'}»`,
+                    sub: 'Evento compartido',
+                    date: e.creado_en || '',
+                    onClick: () => { closeNotifPanel(); socialTab = 'eventos'; switchView('friends'); }
+                });
+            });
             (typeof recomendaciones !== 'undefined' ? recomendaciones : []).forEach(r => {
                 items.push({
                     icon: NOTIF_ICON_REC,
@@ -964,7 +974,7 @@
 
         async function refreshNotifData() {
             try {
-                await Promise.all([cargarSolicitudesAmistad(), cargarRecomendaciones(), cargarViajesCompartidos(), cargarListasOcioCompartidas()]);
+                await Promise.all([cargarSolicitudesAmistad(), cargarRecomendaciones(), cargarViajesCompartidos(), cargarListasOcioCompartidas(), cargarEventosCompartidos()]);
                 updateNotifBadge();
             } catch (e) {
                 console.error('Error actualizando notificaciones:', e);

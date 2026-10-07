@@ -53,7 +53,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (centro resumen, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `cv` → `guia`.
+  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `cv` → `social` → `guia`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -209,8 +209,12 @@ a menor resolución.
   escribe en `conector_bandeja`; la app aplica sola eventos, entradas con QR y Ocio
   (`OPS_AUTOMATICAS`) y deja el resto en el apartado "bandeja." para validarlo a mano
   (`aplicarOpConector` / `validarBandeja`). Historial con deshacer en `registroConector`.
-- **Amigos/social:** solicitudes de amistad, código de amigo, listas de ocio y viajes
-  compartidos, recomendaciones entre amigos (tablas SQL en `supabase/sql/`).
+- **Social (`js/social.js`, vista `friends`, antes "Amigos"):** pestañas gastos (grupos al estilo
+  Tricount en `grupos_gastos` / `grupos_gastos_miembros` / `gastos_compartidos`, datos vivos y
+  comunes con RLS por miembro — ver `supabase/sql/gastos_compartidos.sql`), eventos (`eventos_compartidos`,
+  foto del evento que el amigo añade o descarta) y amigos (`renderAmigosLista`: solicitudes,
+  código de amigo). Se repinta con `pintarSocial()`. Listas de ocio, viajes compartidos y
+  recomendaciones siguen en sus apartados.
 - **Envíos (`js/actualizaciones.js`, vista `actualizaciones`, antes "Actualizaciones"):** pedidos
   por internet (estado en cinco pasos, historial, movimientos); lista global `pedidos`. La Edge
   Function `seguimiento-pedidos` (pg_cron cada 2 h + botón "actualizar.") los avanza sola:
