@@ -5,6 +5,11 @@
 //  abierta una. #landing-screen es el contenedor con scroll, no la ventana.
 //  Con "reducir movimiento" activado en el sistema, todo aparece quieto.
 // ============================================================
+function landingArriba() {
+    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById('landing-screen')?.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' });
+}
+
 function landingIr(id) {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     return false;

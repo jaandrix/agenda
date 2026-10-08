@@ -6936,3 +6936,7 @@ body.fundador .ajustes-guia, body.fundador .pedido-btn-principal, body.fundador 
 @media (max-width:640px) { .aviso-prueba { flex-wrap:wrap; } .aviso-prueba-btn { width:100%; } .aviso-prueba.movil .aviso-prueba-btn { width:auto; } }
 /* Vault es una función del modo desarrollador: fuera del menú si no está activo. */
 body:not(.dev-mode) .nav-label-privado, body:not(.dev-mode) .vault-btn { display:none !important; }
+.lp-arriba { display:grid; place-items:center; width:48px; height:48px; margin:6px auto 0; padding:0; border-radius:50%; border:1.5px solid var(--text-muted); background:var(--bg-card); color:var(--text-primary); cursor:pointer; transition:transform .2s var(--ease-out), border-color .15s ease, background-color .15s ease; }
+.lp-arriba svg { width:18px; height:18px; }
+.lp-arriba:hover { border-color:var(--text-primary); transform:translateY(-3px); }
+.lp-arriba:active { transform:scale(.95); }
