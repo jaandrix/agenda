@@ -22,7 +22,7 @@
             // llegar, repinta solo las vistas que lo enseñan. Recomendaciones,
             // viajes y listas compartidas usan los amigos para los nombres.
             const sociales = (async () => {
-                await Promise.all([cargarCodigoAmigo(), cargarAmigos(), cargarNombrePublico()]);
+                await Promise.all([cargarCodigoAmigo(), cargarAmigos(), cargarNombrePublico(), cargarMiPerfil()]);
                 await Promise.all([cargarRecomendaciones(), cargarSolicitudesAmistad(), cargarViajesCompartidos(), cargarListasOcioCompartidas()]);
             })();
 

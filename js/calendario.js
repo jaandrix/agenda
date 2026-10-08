@@ -10,6 +10,7 @@
                 socio.hidden = !(numero && currentView === 'calendar');
                 if (numero) socio.textContent = `socio fundador nº ${String(numero).padStart(2, '0')}`;
             }
+            pintarAvatarCabecera();
             const content = document.getElementById('content');
             if (currentView === 'calendar') content.innerHTML = renderAvisoPrueba() + renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();
@@ -38,6 +39,7 @@
             else if (currentView === 'links') content.innerHTML = renderLinks();
             else if (currentView === 'actualizaciones') content.innerHTML = renderActualizaciones();
             else if (currentView === 'universidad') content.innerHTML = renderUniversidad();
+            else if (currentView === 'profesorado') content.innerHTML = renderProfesorado();
             else if (currentView === 'suggestions') { content.innerHTML = renderSuggestions(); loadMySuggestions(); }
             else if (currentView === 'bandeja') { content.innerHTML = renderBandeja(); if (!aplicandoBandeja && Date.now() - bandejaUltimaLectura > 15000) setTimeout(aplicarBandejaConector, 0); }
             else if (currentView === 'settings') { content.innerHTML = renderSettings();
@@ -75,7 +77,7 @@
                 const renewalDay = Number(e.renewalDay);
                 if (!renewalDay) return false;
                 return Math.min(renewalDay, daysInMonth) === day;
-            }).map(e => ({ ...e, date: dateStr, _recurringPayment: true }));
+            }).map(e => ({ ...e, date: dateStr, _recurringPayment: true })).concat(citasLaboralesCalendario(dateStr));
         }
 
         function buildEntriesByDate(year) {
@@ -789,11 +791,15 @@
             });
             const workDate=new Date(date+'T12:00:00');
             const weekend=workDate.getDay()===0||workDate.getDay()===6;
-            const activeJobs=weekend?[]:entries.filter(e =>
+            // Con horario laboral (Empleo → agenda laboral), se trabaja los
+            // días que marca y a sus horas; sin él, de lunes a viernes.
+            const horario = horarioLaboralDefinido() ? horarioLaboralDia(date) : null;
+            const trabaja = laboralEnPrincipal() && (horarioLaboralDefinido() ? !!horario : !weekend);
+            const activeJobs=!trabaja?[]:entries.filter(e =>
                 e.type === 'work' &&
                 e.startDate && e.startDate <= date &&
                 (!e.endDate || e.endDate >= date)
-            );
+            ).map(e => horario ? { ...e, startTime: horario.ini, endTime: horario.fin } : e);
             const recurringEntries = getRecurringCalendarEntries(date);
             return [...dayEntries, ...activeJobs, ...recurringEntries];
         }

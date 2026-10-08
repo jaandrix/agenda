@@ -133,7 +133,7 @@
                 : '';
             return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title modal-title-contenido${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div>${renderBacklinksBlock(entry.id, entry.type==='goal' ? ['project'] : null)}<div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button><button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}${entry.type==='event' && entry.date >= todayISO() && amigos.length ? `<button class="btn-secondary" style="width:auto" onclick="openCompartirEvento('${entry.id}')">compartir.</button>` : ''}</div></div></div>`;
         }
-        function openEntryDetail(id){const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);if(entry.type==='work')loadWorkDocuments(entry.id);if(['project','goal','event'].includes(entry.type))loadEntryDocs(entry.type==='project'?'projects':entry.type==='goal'?'goals':'events',entry.id);}
+        function openEntryDetail(id){if(String(id).startsWith('lab_')){openCitaLaboral(id);return;}const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);if(entry.type==='work')loadWorkDocuments(entry.id);if(['project','goal','event'].includes(entry.type))loadEntryDocs(entry.type==='project'?'projects':entry.type==='goal'?'goals':'events',entry.id);}
         async function toggleProjectTask(projectId,taskIndex){
             const project=entries.find(e=>e.id===projectId); if(!project||!Array.isArray(project.tasks)||!project.tasks[taskIndex])return;
             project.tasks[taskIndex].done=!project.tasks[taskIndex].done;
@@ -772,6 +772,7 @@
         //  DELETE ENTRY
         // ============================================================
         async function deleteEntry(id) {
+            if (String(id).startsWith('lab_')) { borrarCitaLaboral(id); return; }
             if (!confirm('¿Eliminar esta entrada?')) return;
             entries = entries.filter(e => e.id !== id);
             filteredEntries = [...entries];

@@ -51,9 +51,9 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `planificador` (y hábitos) → `coleccionables` → `entradas` (modal de crear/editar,
   guardar, borrar, exportar) → `calendario` (dispatcher `render()`, Home, tiempo) →
   `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
-  `trabajo-estudios` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
+  `trabajo-estudios` → `agenda-laboral` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `cv` → `social` → `bienvenida` → `guia` → `landing`.
+  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `profesorado` → `cv` → `social` → `perfil` → `bienvenida` → `guia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -216,6 +216,18 @@ a menor resolución.
   extraordinaria y su `horario`, `actual`); cada asignatura lleva `cuatrimestre`, `creditos`,
   `notaActa`, `convalidada`, `anual` (un periodo 0 es un curso completo). Con ella activa, Estudios lista solo `asignaturasEnCurso()`, y al
   cambiar de cuatrimestre (`hacerCuatriActual`) se guarda/recupera `studies.schedule`.
+- **Profesorado (`js/profesorado.js`, vista `profesorado`, opcional):** cuadrante tipo hoja de cálculo
+  (columna por clase, fila por día) en `profesorado` (sincronizado: `clases` con `dias`, `sesiones` con
+  `claseId`/`fecha`/`titulo`/`hecha`). Lo no dado en su día pasa a pendientes (al siguiente hueco o
+  "correr el temario."), "repartir temario." e "importar con ia." (prompt → JSON).
+- **Agenda laboral (`js/agenda-laboral.js`, dentro de Empleo con un empleo actual):** `agendaLaboral`
+  (sincronizado: `enPrincipal`, `horario` por día de la semana, `citas` con id `lab_...`). Estilo propio
+  más sobrio (`.lab-*`). Si `enPrincipal`, las citas entran al calendario por `getRecurringCalendarEntries`
+  y el horario manda sobre los días de trabajo en `getDayAllEntries`; `openEntryDetail`/`deleteEntry`
+  desvían los `lab_`.
+- **Perfil (`js/perfil.js`):** foto y frase en la tabla `perfiles_fotos` (solo la ven uno mismo y sus
+  amigos, ver `supabase/sql/perfiles_fotos.sql`). Toda foto se procesa en el cliente a 256 px, blanco y
+  negro con grano (`procesarFotoPerfil`). Sale en Home (`#mi-avatar`, inicio móvil) y en la lista de amigos.
 - **CV (`js/cv.js`, Empleo → "crear mi cv."):** asistente por pasos (contacto, cada empleo con
   `cvFunciones`/`cvAprendido`/`cvHabilidades`, formación, idiomas, habilidades, perfil propuesto)
   que guarda `perfilLaboral` (sincronizado) y genera un PDF de una columna con jsPDF.

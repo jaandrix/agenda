@@ -253,7 +253,7 @@ function renderAmigosSocial() {
                 </div>
                 <div class="social-lista">
                     ${solicitudesEnviadas.map(s => `<div class="social-fila social-fila-pendiente"><b>${escapeHtml(s.nombre)}</b><small>pendiente.</small></div>`).join('')}
-                    ${amigos.map(a => `<div class="social-fila"><b>${escapeHtml(nombreAmigo(a))}</b><button class="friend-remove-btn" title="Eliminar amigo" onclick="eliminarAmigo('${a.friend_id}', '${escapeHtml(nombreAmigo(a)).replace(/'/g, '')}')">✕</button></div>`).join('')}
+                    ${amigos.map(a => `<div class="social-fila social-fila-amigo">${avatarHtml(a.foto, nombreAmigo(a))}<span class="social-amigo-txt"><b>${escapeHtml(nombreAmigo(a))}</b>${a.descripcion ? `<small>${escapeHtml(a.descripcion)}</small>` : ''}</span><button class="friend-remove-btn" title="Eliminar amigo" onclick="eliminarAmigo('${a.friend_id}', '${escapeHtml(nombreAmigo(a)).replace(/'/g, '')}')">✕</button></div>`).join('')}
                     ${!amigos.length && !solicitudesEnviadas.length ? '<div class="ajuste-cargando social-vacio-linea">Aún no tienes amigos añadidos.</div>' : ''}
                 </div>`)}
             <div class="social-columna">
@@ -264,11 +264,12 @@ function renderAmigosSocial() {
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2.5"/><path d="M5 15H3.5A1.5 1.5 0 0 1 2 13.5v-10A1.5 1.5 0 0 1 3.5 2h10A1.5 1.5 0 0 1 15 3.5V5"/></svg>
                         </button>
                     </div>` : `<button class="btn-secondary" id="friend-code-generate-btn" style="width:auto" onclick="generarCodigoAmigo()">generar código.</button>`)}
-                ${bloqueSocial('friends-name-section', 'nombre', 'tu nombre visible.', 'Cómo te ven tus amigos. No tiene por qué coincidir con el de tu cuenta.', `
-                    <div class="friend-add-row">
-                        <input type="text" id="nombre-publico-input" class="modal-input" style="margin:0;text-transform:none;letter-spacing:normal;font-family:var(--font-family)" placeholder="Tu nombre visible" value="${escapeHtml(nombrePublico || '')}">
-                        <button class="btn-secondary" id="nombre-publico-btn" style="width:auto" onclick="guardarNombrePublico()">Guardar</button>
-                    </div>`)}
+                ${bloqueSocial('friends-name-section', 'nombre', 'tu perfil.', 'Cómo te ven tus amigos: nombre, foto y una frase sobre ti.', `
+                    <button class="social-mi-perfil" onclick="openMiPerfil()">
+                        ${avatarHtml(miPerfil.foto, miNombreVisible())}
+                        <span class="social-amigo-txt"><b>${escapeHtml(miNombreVisible() || 'sin nombre visible')}</b><small>${escapeHtml(miPerfil.descripcion || 'Añade una foto y unas palabras sobre ti.')}</small></span>
+                        <span class="social-mi-perfil-editar">editar.</span>
+                    </button>`)}
             </div>
         </div>`;
 }

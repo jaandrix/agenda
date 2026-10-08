@@ -569,6 +569,10 @@
         let apartadosConfig = null;
         // Datos del CV (cv.js): contacto, formación, idiomas, habilidades y perfil.
         let perfilLaboral = null;
+        // Cuadrante del curso del apartado profesorado (profesorado.js).
+        let profesorado = null;
+        // Horario y citas de trabajo (agenda-laboral.js).
+        let agendaLaboral = null;
         // Cuándo vio la bienvenida (bienvenida.js); null = todavía no.
         let bienvenida = null;
         // Cambios de la IA que esperan validación en "bandeja." (filas de
@@ -784,6 +788,7 @@
             friends: 'Social',
             studies: 'Estudios',
             universidad: 'Universidad',
+            profesorado: 'Profesorado',
             links: 'Enlaces',
             actualizaciones: 'Envíos',
             bandeja: 'Bandeja',
@@ -810,6 +815,7 @@
                 { view: 'work', icon: '◫', text: 'Empleo' },
                 { view: 'studies', icon: '◎', text: 'Estudios' },
                 { view: 'universidad', icon: '◎', text: 'Universidad' },
+                { view: 'profesorado', icon: '▦', text: 'Profesorado' },
                 { view: 'documents', icon: '▤', text: 'Documentos' },
                 { view: 'goals', icon: '◉', text: 'Objetivos' },
                 { view: 'projects', icon: '⊞', text: 'Proyectos' },
@@ -921,7 +927,7 @@
             return `
             <div class="m-topbar">
                 ${view === 'calendar'
-                    ? '<span class="m-marca">bitácora.</span>'
+                    ? `<span class="m-marca-fila"><button class="mi-avatar" onclick="openMiPerfil()" aria-label="Mi perfil">${avatarHtml(miPerfil.foto, miNombreVisible(), 'avatar-cabecera')}</button><span class="m-marca">bitácora.</span></span>`
                     : `<button class="m-inicio" onclick="mobileIr('calendar')"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M70 10L58 0 8 50l50 50 12-10-40-40z"/></svg>inicio.</button>`}
                 <button class="m-menu-btn" onclick="toggleMenuMovil()" aria-label="Abrir el menú">
                     <span></span><span></span>
@@ -1196,6 +1202,7 @@
             goals: { label: '+ nuevo objetivo.', action: "openNewEntry('goal')" },
             projects: { label: '+ nuevo proyecto.', action: "openNewEntry('project')" },
             culture: { label: '+ añadir.', action: "openNewEntry(({books:'book',series:'series',movies:'movie',games:'game'})[cultureTab] || 'book')" },
+            profesorado: { label: '+ clase.', action: 'openClaseProfe()' },
         };
 
         // Apartados que reutilizan el render de escritorio, dentro de un
@@ -1206,7 +1213,7 @@
             culture: () => renderCulture(), collectibles: () => renderCollectibles(), documents: () => renderDocuments(),
             friends: () => renderFriendsView(), tags: () => renderTagsView(), graph: () => renderGraph(),
             bandeja: () => renderBandeja(), suggestions: () => renderSuggestions(), settings: () => renderSettings(),
-            actualizaciones: () => renderActualizaciones(), universidad: () => renderUniversidad(),
+            actualizaciones: () => renderActualizaciones(), universidad: () => renderUniversidad(), profesorado: () => renderProfesorado(),
         };
 
         // Efectos que en escritorio se disparan tras pintar ciertas vistas
@@ -1469,6 +1476,7 @@
         // nuevas empiezan con lo básico.
         const APARTADOS_OPCIONALES = [
             { view: 'universidad', titulo: 'universidad.', texto: 'Tu carrera por cuatrimestres: créditos, media, fechas de exámenes y qué necesitas para aprobar.', porDefecto: () => false },
+            { view: 'profesorado', titulo: 'profesorado.', texto: 'Si das clase: el cuadrante del curso con todas tus clases, y lo que no das en su día pasa a pendientes.', porDefecto: () => (profesorado?.clases || []).length > 0 },
             { view: 'actualizaciones', titulo: 'envíos.', texto: 'Tus pedidos por internet y por dónde van.', porDefecto: () => pedidos.length > 0 },
             { view: 'projects', titulo: 'proyectos.', texto: 'Proyectos con fases, lista o tablero.', porDefecto: () => entries.some(e => e.type === 'project') },
             { view: 'links', titulo: 'enlaces.', texto: 'Webs y recursos guardados por carpetas.', porDefecto: () => links.length > 0 },
@@ -1545,7 +1553,7 @@
             { view: 'settings', text: 'Modo desarrollador', anchor: 'settings-advanced-section' },
             { view: 'settings', text: 'Prompts guardados', anchor: 'settings-prompts-section' },
             { view: 'settings', text: 'Cerrar sesión en todos los dispositivos', anchor: 'settings-danger-section' },
-            { view: 'friends', text: 'Tu nombre visible', anchor: 'friends-name-section' },
+            { view: 'friends', text: 'Tu perfil y foto', anchor: 'friends-name-section' },
             { view: 'friends', text: 'Mis amigos', anchor: 'friends-list-section' },
             { view: 'friends', text: 'Tu código de amigo', anchor: 'friends-code-section' },
             { view: 'home', text: 'Mis tareas', anchor: 'summary-mytasks-section' },
@@ -2679,6 +2687,9 @@
                         .in('user_id', ids);
                     const porId = Object.fromEntries((publicos || []).map(p => [p.user_id, p.nombre_publico]));
                     amigos.forEach(a => { a.nombre_visible = porId[a.friend_id] || a.friend_nombre || 'Amigo sin nombre'; });
+                    const { data: fotos } = await sb.from('perfiles_fotos').select('user_id, foto, descripcion').in('user_id', ids);
+                    const fotoPorId = Object.fromEntries((fotos || []).map(f => [f.user_id, f]));
+                    amigos.forEach(a => { a.foto = fotoPorId[a.friend_id]?.foto || null; a.descripcion = fotoPorId[a.friend_id]?.descripcion || ''; });
                 }
             } catch (e) {
                 console.error('Error cargando amigos:', e);
@@ -2748,32 +2759,6 @@
                 nombrePublico = data?.nombre_publico || null;
             } catch (e) {
                 console.error('Error cargando el nombre visible:', e);
-            }
-        }
-
-        async function guardarNombrePublico() {
-            const input = document.getElementById('nombre-publico-input');
-            const nuevo = input?.value?.trim();
-            if (!nuevo) { showToast('Escribe un nombre', true); return; }
-            const { data: { user } } = await sb.auth.getUser();
-            if (!user) return;
-            const btn = document.getElementById('nombre-publico-btn');
-            if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-            try {
-                const { error } = await sb.from('perfiles_publicos')
-                    .upsert({ user_id: user.id, nombre_publico: nuevo, actualizado_en: new Date().toISOString() }, { onConflict: 'user_id' });
-                if (error) {
-                    if (error.code === '23505') { showToast('Ese nombre ya lo tiene otra persona, prueba otro', true); return; }
-                    throw error;
-                }
-                nombrePublico = nuevo;
-                pintarSocial();
-                showToast('Nombre visible actualizado');
-            } catch (e) {
-                console.error('Error guardando el nombre visible:', e);
-                showToast('No se pudo guardar el nombre', true);
-            } finally {
-                if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
             }
         }
 

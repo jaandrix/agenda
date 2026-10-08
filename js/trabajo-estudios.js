@@ -80,6 +80,7 @@
                         <button class="btn-modal-primary" style="width:auto;margin:0" onclick="openCv()">crear mi cv.</button>
                     </div>
                 </div>
+                ${actuales.length ? renderAgendaLaboral() : ''}
                 <div class="card work-bubble-flow-card" style="max-width:980px;margin-bottom:22px">
                     <div class="work-bubble-flow-title">evolución de tus empleos. ${totalDays} días trabajados en total.</div>
                     ${renderWorkBubbleFlow(sorted)}

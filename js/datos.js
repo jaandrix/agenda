@@ -40,6 +40,8 @@
                 hansei = Array.isArray(saved.hansei) ? saved.hansei : [];
                 apartadosConfig = (saved.apartadosConfig && typeof saved.apartadosConfig === 'object') ? saved.apartadosConfig : null;
                 perfilLaboral = (saved.perfilLaboral && typeof saved.perfilLaboral === 'object') ? saved.perfilLaboral : null;
+                profesorado = (saved.profesorado && typeof saved.profesorado === 'object') ? saved.profesorado : null;
+                agendaLaboral = (saved.agendaLaboral && typeof saved.agendaLaboral === 'object') ? saved.agendaLaboral : null;
                 bienvenida = saved.bienvenida || null;
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
@@ -232,6 +234,8 @@
             hansei: [() => hansei, v => { hansei = v; }],
             apartadosConfig: [() => apartadosConfig, v => { apartadosConfig = v; }],
             perfilLaboral: [() => perfilLaboral, v => { perfilLaboral = v; }],
+            profesorado: [() => profesorado, v => { profesorado = v; }],
+            agendaLaboral: [() => agendaLaboral, v => { agendaLaboral = v; }],
             bienvenida: [() => bienvenida, v => { bienvenida = v; }]
         };
         let datosBase = null;
