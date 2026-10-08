@@ -53,7 +53,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (centro resumen, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `cv` → `social` → `guia`.
+  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `cv` → `social` → `bienvenida` → `guia`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -196,6 +196,11 @@ a menor resolución.
   "socio fundador nº xx" en Home (`#socio-badge`, abre sus 3 códigos de regalo de 6 meses:
   `mis_codigos_regalo` / `canjear_codigo_regalo`, estado "regalo" — ver `supabase/sql/codigos_regalo.sql`),
   tienen el tema `fundador` (dorado) y sus condiciones en `openCondicionesFundador()`.
+  Bienvenida de 6 pasos para cuentas nuevas, aviso de días de prueba en Home y vuelta a la
+  pantalla de pago si la prueba caduca con la app abierta: `js/bienvenida.js` (marca `bienvenida`,
+  sincronizado). En el servidor, `tiene_acceso(uid)` (`supabase/sql/tiene_acceso.sql`) corta avisos
+  push, conector y seguimiento de envíos a cuentas sin acceso. Textos legales en `legal.html`;
+  eliminar cuenta y portal de Stripe: Edge Functions `eliminar-cuenta` y `portal-pago`.
 - **Estudios:** asignaturas con exámenes/trabajos (bloques con estética editorial en
   blanco y negro, agrupados en pendientes/pasados), horario semanal, notas rápidas.
   Los trabajos con fecha se sincronizan automáticamente como tarea del Planificador

@@ -135,6 +135,8 @@ async function avisar(userId: string, p: any, nota: string) {
 }
 
 async function procesarUsuario(userId: string, opciones: any) {
+    const { data: acceso } = await sb.rpc('tiene_acceso', { p_user: userId });
+    if (!acceso) return [];
     const { data: fila } = await sb.from('bitacora').select('data').eq('user_id', userId).maybeSingle();
     const datos = fila?.data || {};
     const pedidos = Array.isArray(datos.pedidos) ? datos.pedidos : [];

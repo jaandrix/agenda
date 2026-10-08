@@ -11,7 +11,7 @@
                 if (numero) socio.textContent = `socio fundador nº ${String(numero).padStart(2, '0')}`;
             }
             const content = document.getElementById('content');
-            if (currentView === 'calendar') content.innerHTML = renderCalendar();
+            if (currentView === 'calendar') content.innerHTML = renderAvisoPrueba() + renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();
             else if (currentView === 'culture') content.innerHTML = renderCulture();
             else if (currentView === 'travels') { content.innerHTML = renderTravels();

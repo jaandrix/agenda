@@ -9,6 +9,7 @@
             initMobileShell();
             const loaded = await loadData();
             if (loaded) {
+                setTimeout(comprobarBienvenida, 700);
                 ensureRecurringProCharges();
                 convertirCinesEnPeliculas();
                 setInterval(convertirCinesEnPeliculas, 5 * 60000);

@@ -569,6 +569,8 @@
         let apartadosConfig = null;
         // Datos del CV (cv.js): contacto, formación, idiomas, habilidades y perfil.
         let perfilLaboral = null;
+        // Cuándo vio la bienvenida (bienvenida.js); null = todavía no.
+        let bienvenida = null;
         // Cambios de la IA que esperan validación en "bandeja." (filas de
         // conector_bandeja que no se aplican solas, ver OPS_AUTOMATICAS).
         let bandejaPendiente = [];
@@ -909,7 +911,7 @@
             shell.innerHTML = `
                 <div class="m-app">
                     ${renderMobileTopbar(view)}
-                    <main class="m-pagina">${view === 'calendar' ? renderMobileInicio(entra) : renderMobileSeccion(view)}</main>
+                    <main class="m-pagina">${view === 'calendar' ? renderAvisoPrueba(true) + renderMobileInicio(entra) : renderMobileSeccion(view)}</main>
                 </div>
                 ${renderMobileMenu(view)}`;
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);

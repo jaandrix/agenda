@@ -161,6 +161,9 @@ Deno.serve(async (req) => {
     const resumen: any[] = [];
 
     for (const userId of usuarios) {
+        // Sin acceso (prueba terminada, suscripción cancelada...) no hay avisos.
+        const { data: acceso } = await sb.rpc('tiene_acceso', { p_user: userId });
+        if (!acceso) continue;
         const { data: fila } = await sb.from('bitacora').select('data').eq('user_id', userId).maybeSingle();
         const data = fila?.data || {};
         const prefs = data.preferenciasAvisos || {};

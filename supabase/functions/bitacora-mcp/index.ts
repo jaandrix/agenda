@@ -1312,6 +1312,8 @@ async function responder(userId: string, msg: any) {
         if (method === 'ping') return { jsonrpc: '2.0', id, result: {} };
         if (method === 'tools/list') return { jsonrpc: '2.0', id, result: { tools: HERRAMIENTAS } };
         if (method === 'tools/call') {
+            const { data: acceso } = await sbAdmin.rpc('tiene_acceso', { p_user: userId });
+            if (!acceso) return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: 'La prueba gratuita o la suscripción de Bitácora de esta cuenta ha terminado. Para seguir usando el conector, suscríbete en appbitacora.es (tus datos siguen guardados).' }], isError: true } };
             try {
                 const res = await llamar(userId, params?.name, params?.arguments || {});
                 const text = typeof res === 'string' ? res : JSON.stringify(compactar(res));
