@@ -220,6 +220,7 @@
                         <button onclick="descargarDatosCuenta(this)">descargar mis datos.</button>
                         <span>Por si cambias de idea o quieres llevarlos a otra cuenta (Ajustes → tus datos → importar).</span>
                     </div>
+                    <div class="paywall-legal"><a href="legal.html#condiciones" target="_blank" rel="noopener">condiciones.</a> · <a href="legal.html#privacidad" target="_blank" rel="noopener">privacidad.</a></div>
                     <a class="login-back" onclick="handleLogout()">Cerrar sesión</a>
                 </div>
             `; })();
@@ -263,10 +264,11 @@
                         <li><b>Si algún día Bitácora cerrara</b>, te avisaríamos con al menos 6 meses de antelación y podrías descargar todos tus datos en un archivo, como puedes hacer siempre desde Ajustes → tus datos.</li>
                         <li><b>Solo hay 100 plazas.</b> Tu número de socio se asigna por orden de pago y es personal: va unido a tu cuenta y no se puede transferir.</li>
                         <li><b>Si ya pagabas una suscripción</b>, se cancela en ese momento y no se te vuelve a cobrar. Lo que ya habías pagado de esa suscripción no se devuelve.</li>
+                        <li><b>Garantía de 7 días:</b> si no te convence, te devolvemos los 29,99 € íntegros si lo pides en los 7 días siguientes al pago, sin preguntas.</li>
                         <li><b>Tus tres regalos</b>: cada código da 6 meses de Bitácora a una persona con cuenta nueva (no a cuentas que ya tienen Bitácora activa) y solo se puede usar una vez.</li>
                         <li><b>Mismas normas que cualquier cuenta.</b> Ser socio no cambia cómo se tratan tus datos: no se venden, no hay anuncios y puedes exportarlos o borrar tu cuenta cuando quieras.</li>
                     </ol>
-                    <p class="condiciones-pie">El pago lo gestiona Stripe; Bitácora nunca ve los datos de tu tarjeta.</p>
+                    <p class="condiciones-pie">El pago lo gestiona Stripe; Bitácora nunca ve los datos de tu tarjeta. Todas las condiciones, en <a href="legal.html#condiciones" target="_blank" rel="noopener">condiciones de uso y contratación</a>.</p>
                 </div>
                 <button class="btn-modal-primary" onclick="closeModal()">entendido.</button>
             `);

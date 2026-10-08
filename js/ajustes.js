@@ -524,6 +524,12 @@
                             <div class="ajuste-botones">
                                 <button class="btn-secondary" style="width:auto" onclick="openAboutBitacora()">qué es, a fondo.</button>
                                 <button class="btn-secondary" id="pwa-install-btn" style="width:auto;display:none" onclick="handlePwaInstallClick()">instalar bitácora.</button>
+                            </div>
+                            <div class="ajustes-legal">
+                                <a href="legal.html#privacidad" target="_blank" rel="noopener">privacidad.</a>
+                                <a href="legal.html#condiciones" target="_blank" rel="noopener">condiciones.</a>
+                                <a href="legal.html#aviso-legal" target="_blank" rel="noopener">aviso legal.</a>
+                                <a href="legal.html#cookies" target="_blank" rel="noopener">cookies.</a>
                             </div>`)}
                         ${bloqueAjuste('settings-prompts-section', 'prompts', 'prompts guardados.', 'Textos que usas a menudo con una IA, a mano para copiarlos.', `
                             <button class="btn-secondary" style="width:auto;margin-bottom:10px" onclick="openNewPrompt()">+ prompt.</button>

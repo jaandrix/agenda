@@ -6828,3 +6828,7 @@ body.fundador .ajustes-guia, body.fundador .pedido-btn-principal, body.fundador 
 .condiciones ul { margin:0 0 12px; padding-left:20px; display:flex; flex-direction:column; gap:6px; }
 .btn-modal-primary.boton-peligro { background:#a3243b; color:#fff; }
 .btn-modal-primary.boton-peligro:disabled { opacity:.4; cursor:not-allowed; }
+.ajustes-legal { display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+.ajustes-legal a, .paywall-legal a { font-size:12px; font-weight:600; color:var(--text-secondary); text-decoration:underline; text-underline-offset:3px; }
+.ajustes-legal a:hover, .paywall-legal a:hover { color:var(--text-primary); }
+.paywall-legal { margin-top:14px; text-align:center; font-size:12px; color:var(--text-muted); }
