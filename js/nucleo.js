@@ -1075,8 +1075,16 @@
 
         function renderMobileDiaPanel(sel, hoy) {
             const filas = [];
+            const offset = Math.round((new Date(sel + 'T12:00:00') - new Date(currentPlannerDayKey() + 'T12:00:00')) / 86400000);
+            const tareasDia = mobileDiaPlanner(sel);
+            // Lo mismo apuntado como evento y como tarea del Planificador
+            // (a mano o desde el conector) se queda solo como tarea, que es
+            // la fila que se puede marcar.
+            const claveFila = (titulo, hora) => `${String(titulo || '').trim().toLowerCase()}|${hora || ''}`;
+            const enPlanificador = new Set(tareasDia.map(it => claveFila(it.title, it.time)));
             getDayAllEntries(sel).forEach(e => {
                 const hora = e.time || e.startTime || '';
+                if (e.type !== 'birthday' && enPlanificador.has(claveFila(e.title, hora))) return;
                 if (e.type === 'work') {
                     const horario = (e.startTime || e.endTime) ? `de ${e.startTime || '--'} a ${e.endTime || '--'}` : '';
                     const meta = [horario, e.position].filter(Boolean).map(escapeHtml).join(' · ');
@@ -1092,8 +1100,7 @@
                 const meta = [e.place, cat?.name].filter(Boolean).map(escapeHtml).join(' · ');
                 filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(hora) || '—'}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${titulo}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div><span class="m-fila-bola" aria-hidden="true"></span></div>` });
             });
-            const offset = Math.round((new Date(sel + 'T12:00:00') - new Date(currentPlannerDayKey() + 'T12:00:00')) / 86400000);
-            mobileDiaPlanner(sel).forEach(it => {
+            tareasDia.forEach(it => {
                 filas.push({ hora: it.time || '', html: renderMobileFilaTarea(it, offset) });
             });
             if (sel === hoy) {
@@ -2687,7 +2694,7 @@
             const codigo = input?.value?.trim().toUpperCase();
             if (!codigo) { showToast('Escribe el código de tu amigo', true); return; }
             const btn = document.getElementById('friend-add-btn');
-            if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+            if (btn) { btn.disabled = true; btn.textContent = 'enviando...'; }
             try {
                 const { data, error } = await sb.rpc('enviar_solicitud_amistad_por_codigo', { p_codigo: codigo });
                 if (error) throw error;
@@ -2710,7 +2717,7 @@
                 else texto = 'No se pudo enviar la solicitud' + (msg ? ': ' + msg : '');
                 showToast(texto, true);
             } finally {
-                if (btn) { btn.disabled = false; btn.textContent = '+ Añadir'; }
+                if (btn) { btn.disabled = false; btn.textContent = 'añadir.'; }
             }
         }
 

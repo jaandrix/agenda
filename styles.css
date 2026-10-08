@@ -2001,7 +2001,7 @@
             text-transform: uppercase;
         }
         .friend-add-input:focus { outline: none; border-color: var(--m-acento); }
-        .friend-add-input::placeholder { letter-spacing: normal; font-family: var(--font-family); }
+        .friend-add-input::placeholder { letter-spacing: normal; font-family: var(--font-family); text-transform: none; }
         .friend-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
         .friend-list-item {
             display: flex;
@@ -6944,3 +6944,31 @@ body:not(.dev-mode) .nav-label-privado, body:not(.dev-mode) .vault-btn { display
 .m-generico .uni-cabecera .uni-sub { margin-top:0; font-size:14px; color:var(--text-primary); font-weight:600; }
 .uni-actual-cab .pedido-btn, .uni-bloque-cab .pedido-btn { flex-shrink:0; white-space:nowrap; }
 .m-generico .empty-state .empty-sub, .m-generico .finance-empty-line, .m-generico .finance-empty-state { font-size:13px; line-height:1.5; }
+/* Ocio en el móvil: pestañas a todo el ancho, botones a pares y las
+   tarjetas negras de escritorio pasan a filas de lista, como el resto
+   de la versión móvil y con los colores del tema. */
+.m-generico .culture-barra { display:grid !important; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:8px !important; }
+.m-generico .culture-barra .culture-tabs { grid-column:1 / -1; width:100%; box-sizing:border-box; }
+.m-generico .culture-barra > button { width:100% !important; margin:0; min-height:44px; box-sizing:border-box; overflow:hidden; text-overflow:ellipsis; padding-left:6px; padding-right:6px; font-size:13px; }
+.m-generico .culture-barra > button:only-of-type { grid-column:1 / -1; }
+.m-generico .culture-tab { padding:10px 14px; font-size:14px; }
+.m-generico .culture-cifras { max-width:none !important; }
+.m-generico .culture-tab-content .card-title { text-transform:none; letter-spacing:0; font-size:12px !important; }
+.m-generico .media-card-section-title { text-transform:none; letter-spacing:0; font-size:15px; margin:26px 0 4px; }
+.m-generico .culture-tab-content .media-card-grid { display:flex; flex-direction:column; gap:0; }
+.m-generico .culture-tab-content .media-card { display:grid; grid-template-columns:40px minmax(0, 1fr) auto; grid-template-areas:"icono titulo estado" "icono meta estado"; column-gap:12px; row-gap:1px; align-items:center; text-align:left; height:auto; min-height:64px; padding:12px 2px; background:none; border:none; border-bottom:1px solid var(--border); border-radius:0; box-shadow:none; color:var(--text-primary); }
+.m-generico .culture-tab-content .media-card-icon { grid-area:icono; background:var(--bg-card); color:var(--text-primary); }
+.m-generico .culture-tab-content .media-card-title { grid-area:titulo; display:block; min-height:0; font-size:15px; white-space:nowrap; text-overflow:ellipsis; }
+.m-generico .culture-tab-content .media-card-meta { grid-area:meta; min-height:0; font-size:12.5px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.m-generico .culture-tab-content .media-card-status-slot { grid-area:estado; min-height:0; }
+.m-generico .culture-tab-content .media-card-stars { font-size:13px; letter-spacing:1px; }
+.m-generico .culture-tab-content .media-card-badge { background:var(--bg-card); color:var(--text-secondary); text-transform:none; letter-spacing:0; font-size:11.5px; }
+.m-generico .culture-tab-content .media-card-gold { border:none; border-bottom:1px solid var(--border); box-shadow:none; }
+.m-generico .culture-tab-content .media-card-gold .media-card-icon { background:rgba(217,178,60,0.18); color:#d9b23c; }
+.m-generico .culture-tab-content .media-card-ghost { border-style:none; border-bottom:1px dashed var(--border-strong); opacity:.75; }
+
+/* Social en el móvil: botones que se aciertan con el dedo. */
+.m-generico .friend-remove-btn { width:40px; height:40px; margin-right:-8px; font-size:14px; }
+.m-generico .friend-add-row .friend-add-input { min-height:44px; box-sizing:border-box; font-size:15px; }
+.m-generico .friend-add-row .btn-secondary { min-height:44px; }
+.m-generico .social-grupo-nombre .ajustes-titulo { display:block; font-size:24px; margin-bottom:4px; }

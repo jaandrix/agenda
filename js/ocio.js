@@ -29,7 +29,7 @@
             const pendientes = recomendaciones.filter(r => r.tipo === tipoActivo).length;
 
             let html = `<div style="max-width:980px">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+                <div class="culture-barra" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
                 <div class="culture-tabs" style="margin-bottom:0">
                     ${tabs.map(t => `
                         <button class="culture-tab ${cultureTab === t.id ? 'active' : ''}" onclick="setCultureTab('${t.id}')">
@@ -487,18 +487,18 @@
             const completed = books.filter(b => b.status === 'Completado');
 
             let html = banner + `<div>
-                <div style="display:flex;gap:10px;margin-bottom:16px;max-width:280px">
-                    <div class="card" style="flex:1;padding:10px 12px"><div class="card-title" style="font-size:10px">Leyendo</div><div class="card-value" style="font-size:17px">${reading.length}</div></div>
-                    <div class="card" style="flex:1;padding:10px 12px"><div class="card-title" style="font-size:10px">Completados</div><div class="card-value" style="font-size:17px">${completed.length}</div></div>
+                <div class="culture-cifras" style="display:flex;gap:10px;margin-bottom:16px;max-width:280px">
+                    <div class="card" style="flex:1;padding:10px 12px"><div class="card-title" style="font-size:10px">leyendo.</div><div class="card-value" style="font-size:17px">${reading.length}</div></div>
+                    <div class="card" style="flex:1;padding:10px 12px"><div class="card-title" style="font-size:10px">completados.</div><div class="card-value" style="font-size:17px">${completed.length}</div></div>
                 </div>`;
 
             if (reading.length) {
-                html += `<div class="media-card-section-title">Leyendo</div>`;
+                html += `<div class="media-card-section-title">leyendo.</div>`;
                 html += renderMediaCardGrid(reading, b => b.author || 'Sin autor');
             }
 
             if (completed.length) {
-                html += `<div class="media-card-section-title">Completados</div>`;
+                html += `<div class="media-card-section-title">completados.</div>`;
                 html += renderMediaCardGrid(completed, b => b.author || 'Sin autor');
             }
 
@@ -545,7 +545,7 @@
             let html = banner + `<div>`;
             groups.forEach(g => {
                 html += `<div class="media-month-label">${escapeHtml(monthLabel(g.key))}.</div>`;
-                html += renderMediaCardGrid(g.items, m => m.date || 'Sin fecha');
+                html += renderMediaCardGrid(g.items, m => m.date ? new Date(m.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : 'sin fecha.');
             });
             html += `</div>`;
             return html;
@@ -807,7 +807,7 @@
 
             // Sin badge de estado: muchos juegos no tienen fecha de finalización.
             let html = `<div>`;
-            html += renderMediaCardGrid(sorted, g => g.endDate ? `Fin: ${g.endDate}` : '');
+            html += renderMediaCardGrid(sorted, g => g.endDate ? `terminado el ${new Date(g.endDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}` : '');
             html += `</div>`;
             return html;
         }

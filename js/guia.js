@@ -192,7 +192,7 @@ const GUIA = [
         intro: 'Tres cuentas (Efectivo, Bancos y Online), todos tus movimientos con categoría, y herramientas para saber cómo vas y planificar. Al entrar te pregunta si quieres ocultar las cifras.',
         botones: [
             [guiaBoton('+ Movimiento · Registro rápido'), 'Apunta un ingreso, gasto o traspaso. El rápido solo pide importe y concepto; la categoría se ajusta luego.'],
-            [guiaBoton('Importar'), 'Sube o pega el extracto del banco (CSV o Excel). Bitácora reconoce los movimientos, evita duplicados y aplica tus reglas de traspaso.'],
+            [guiaBoton('Importar'), 'Sube o pega el extracto del banco (CSV o Excel). Bitácora reconoce los movimientos, evita duplicados y aplica tus reglas de traspaso. Puedes volver a importar el mismo extracto cuando quieras: lo que ya está no entra otra vez, aunque lo hayas editado o pasado a transferencia.'],
             [guiaBoton('Categorías · Reglas'), 'Tus categorías de gasto e ingreso, y las reglas de traspaso: un movimiento importado cuyo concepto contenga cierto texto (por ejemplo, lo que mandas a tu cuenta de inversión) se registra como traspaso entre cuentas en vez de como gasto.'],
             [guiaBoton('⭳ Exportar'), 'Un resumen en texto pensado para pegarlo en una IA y pedirle consejo.'],
             [guiaBoton('3M · 6M · 1A · Todo'), 'Rango de la gráfica de saldo.'],

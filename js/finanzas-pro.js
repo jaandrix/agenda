@@ -2165,8 +2165,12 @@
             // cargo automático, ya conciliado con el banco...): si se
             // perdiera, la próxima importación lo duplicaría.
             const prev = financePro.transactions.find(t => t.id === entry.id);
-            if (prev) ['manual', 'recurringEntryId', 'cicloMes', 'programadoId', 'conciliado', 'bankNote', 'pendiente', 'noDuplicadoDe'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
+            if (prev) ['manual', 'recurringEntryId', 'cicloMes', 'programadoId', 'conciliado', 'bankNote', 'pendiente', 'noDuplicadoDe', 'claveImport'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
             else entry.manual = true;
+            if (prev && !prev.manual && !prev.claveImport) {
+                const clave = `${prev.account}|${prev.date}|${prev.amount}|${prev.bankNote ?? prev.note ?? ''}`;
+                if (clave !== `${entry.account}|${entry.date}|${entry.amount}|${entry.bankNote ?? entry.note ?? ''}`) entry.claveImport = clave;
+            }
             const idx = financePro.transactions.findIndex(t => t.id === entry.id);
             if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
             const categorizados = entry.category ? financeProAutoCategorizar() : 0;
@@ -2674,7 +2678,14 @@
             const m = imp.mapping;
             financePro.cuentaImport = m.account;
             const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
-            const existingKeys = new Set(financePro.transactions.map(t => `${t.account}|${t.date}|${t.amount}|${t.bankNote ?? t.note ?? ''}`));
+            // Una transferencia sale en el extracto de las dos cuentas (gasto en
+            // una, ingreso en la otra), y un movimiento importado que luego se
+            // editó guarda en claveImport cómo venía del banco: si no, al
+            // volver a importar el extracto entraría otra vez.
+            const existingKeys = new Set(financePro.transactions.flatMap(t => {
+                const nota = t.bankNote ?? t.note ?? '';
+                return [`${t.account}|${t.date}|${t.amount}|${nota}`, t.transferTo && `${t.transferTo}|${t.date}|${t.amount}|${nota}`, t.claveImport].filter(Boolean);
+            }));
             const activeRules = financePro.rules.filter(r => r.enabled);
             let added = 0, skipped = 0, conciliados = 0, completados = 0, anulados = 0;
             // Revolut repite a veces un cargo: el primer intento queda

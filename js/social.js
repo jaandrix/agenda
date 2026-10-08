@@ -248,8 +248,8 @@ function renderAmigosSocial() {
         <div class="ajustes-rejilla">
             ${bloqueSocial('friends-list-section', 'amigos', `mis amigos.${amigos.length ? ` <span class="social-cuenta">${amigos.length}</span>` : ''}`, 'Escribe el código que te ha pasado tu amigo; le llegará una solicitud.', `
                 <div class="friend-add-row">
-                    <input type="text" id="friend-add-input" class="friend-add-input" placeholder="Código de amigo" maxlength="8" onkeydown="friendAddInputKeydown(event)">
-                    <button class="btn-secondary" id="friend-add-btn" style="width:auto" onclick="anadirAmigoPorCodigo()">+ Añadir</button>
+                    <input type="text" id="friend-add-input" class="friend-add-input" placeholder="código de amigo." maxlength="8" onkeydown="friendAddInputKeydown(event)">
+                    <button class="btn-secondary" id="friend-add-btn" style="width:auto" onclick="anadirAmigoPorCodigo()">añadir.</button>
                 </div>
                 <div class="social-lista">
                     ${solicitudesEnviadas.map(s => `<div class="social-fila social-fila-pendiente"><b>${escapeHtml(s.nombre)}</b><small>pendiente.</small></div>`).join('')}
@@ -284,7 +284,7 @@ function renderGrupoGastos() {
             <button class="pedido-btn" onclick="setSocialTab('gastos')">← social.</button>
             <button class="pedido-btn" onclick="openGrupoGastos('${g.id}')">editar.</button>
         </div>
-        <div class="ajustes-cabecera">
+        <div class="ajustes-cabecera social-grupo-nombre">
             <div class="ajustes-titulo">${escapeHtml(g.nombre)}</div>
             <div class="ajustes-sub">${g.descripcion ? `${escapeHtml(g.descripcion)} · ` : ''}${g.miembros.length} personas</div>
         </div>
