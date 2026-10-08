@@ -160,12 +160,15 @@ a menor resolución.
    `renderXxx()` o a la lógica a probar.
 5. Verificar visualmente (screenshot) y/o por JS (`javascript_tool`) antes de dar el
    cambio por bueno.
-6. Commitear y hacer **`git push origin main` sin pedir confirmación** (instrucción
+6. **Si cambian `styles.css` o algún `.js`, subir la versión `?v=` de index.html** (todas a la vez:
+   GitHub Pages deja que el navegador guarde CSS/JS 10 minutos, y sin cambiar la versión se mezcla
+   el HTML nuevo con el CSS viejo).
+7. Commitear y hacer **`git push origin main` sin pedir confirmación** (instrucción
    permanente del usuario) — mensajes de commit en español, descriptivos, con la
    línea `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Si un mensaje de
    commit lleva comillas dobles anidadas y falla por parseo en PowerShell, escribirlo
    a un archivo en el scratchpad y usar `git commit -F <archivo>`.
-7. Para PDFs: `pdftoppm` no está instalado en este entorno (no se puede usar
+8. Para PDFs: `pdftoppm` no está instalado en este entorno (no se puede usar
    `Read` con `pages` para renderizar páginas como imagen) — usar `pdftotext -layout`
    o `pypdf`/`reportlab` (instalables con `py -m pip install`) en su lugar.
 
@@ -221,7 +224,8 @@ a menor resolución.
   columnas cuando hay varios (eventos normales / trabajos-exámenes).
 - **Versión móvil PWA:** ver arquitectura arriba.
 - **Landing (`#landing-screen` en index.html, movimiento en `js/landing.js`):** portada, cinta, cinco
-  bloques con capturas reales (`img/landing/*.webp`, hechas con datos inventados y Chrome headless),
+  bloques con recortes pequeños de componentes reales (`img/landing/*.webp`, hechos con datos inventados y
+  Chrome headless aislando un elemento) sobre tarjetas `.lp-captura`,
   promesa, cómo la usa su creador, precios, preguntas y pie con los textos legales. Los bloques con
   `.revela` aparecen al hacer scroll (IntersectionObserver sobre `#landing-screen`, que es el
   contenedor con scroll). Vault y su etiqueta "Privado" solo se ven con `body.dev-mode`.
