@@ -57,26 +57,134 @@
     <div id="boot-loading">Cargando...</div>
 
     <div id="landing-screen">
-        <div class="landing-topbar">
-            <div class="landing-brand"><span class="d"></span>Bitácora</div>
-            <div class="landing-topbar-actions">
-                <button class="landing-about-link" onclick="openAboutBitacora()">Qué es Bitácora</button>
-                <button class="landing-login-link" onclick="goToLogin()">Iniciar sesión</button>
+        <header class="landing-topbar">
+            <div class="landing-brand">bitácora<span>.</span></div>
+            <nav class="landing-topbar-actions">
+                <a class="landing-about-link" href="#lp-funciones" onclick="return landingIr('lp-funciones')">qué hace.</a>
+                <a class="landing-about-link" href="#lp-precios" onclick="return landingIr('lp-precios')">precios.</a>
+                <a class="landing-about-link" href="#lp-preguntas" onclick="return landingIr('lp-preguntas')">preguntas.</a>
+                <button class="landing-login-link" onclick="goToLogin()">iniciar sesión.</button>
+            </nav>
+        </header>
+
+        <section class="lp-hero">
+            <div class="lp-hero-texto">
+                <div class="lp-kicker revela">tu agenda, pero que también te habla.</div>
+                <h1 class="landing-title revela" style="--d:1">Tu vida, <span class="login-brand-accent">en un solo sitio.</span></h1>
+                <p class="landing-sub revela" style="--d:2">Calendario, tareas, estudios, dinero, planes y amigos, juntos y conectados entre sí. Sin scroll infinito, sin anuncios, sin ruido.</p>
+                <div class="landing-cta-row revela" style="--d:3">
+                    <button class="landing-cta-primary" onclick="goToSignup()">empieza gratis.</button>
+                    <button class="landing-cta-secondary" onclick="openPromoVideo()">▶ ver el vídeo.</button>
+                </div>
+                <div class="lp-hero-nota revela" style="--d:4">14 días gratis, sin tarjeta. Después, 1,99 € al mes.</div>
+            </div>
+            <div class="lp-hero-visual revela" style="--d:2">
+                <img class="lp-pantalla" src="img/landing/escritorio-inicio.webp" alt="Bitácora en el ordenador: el calendario del mes con los eventos marcados" width="1600" height="800" fetchpriority="high">
+                <img class="lp-movil lp-paralaje" src="img/landing/movil-inicio.webp" alt="Bitácora en el móvil: el día de hoy y el mes en círculos" width="520" height="1125">
+            </div>
+        </section>
+
+        <div class="lp-cinta" aria-hidden="true">
+            <div class="lp-cinta-pista">
+                <span>calendario.</span><span>planificador.</span><span>hábitos.</span><span>notas.</span><span>estudios.</span><span>universidad.</span><span>empleo y cv.</span><span>finanzas.</span><span>gastos con amigos.</span><span>ocio.</span><span>viajes.</span><span>eventos.</span><span>documentos.</span><span>objetivos.</span><span>envíos.</span>
+                <span>calendario.</span><span>planificador.</span><span>hábitos.</span><span>notas.</span><span>estudios.</span><span>universidad.</span><span>empleo y cv.</span><span>finanzas.</span><span>gastos con amigos.</span><span>ocio.</span><span>viajes.</span><span>eventos.</span><span>documentos.</span><span>objetivos.</span><span>envíos.</span>
             </div>
         </div>
 
-        <div class="landing-hero">
-            <h1 class="landing-title">Tu vida, <span class="login-brand-accent">en un solo sitio.</span></h1>
-            <p class="landing-sub">Ocio, trabajo, estudios, finanzas y planes — Sin ruido, sin depender de decenas de apps. Organízate solo con Bitácora.</p>
-            <div class="landing-cta-row">
-                <button class="landing-cta-primary" onclick="goToSignup()">Crear cuenta gratis</button>
-                <button class="landing-cta-secondary" onclick="openPromoVideo()">▶ Ver el vídeo</button>
+        <section class="lp-seccion" id="lp-funciones">
+            <div class="lp-seccion-cab revela">
+                <div class="lp-kicker">qué puedes hacer.</div>
+                <h2>Todo lo que hoy llevas en diez apps, en una.</h2>
+                <p>Y no por separado: un examen sale en tu calendario, una entrega en tu planificador y un viaje junto a lo que gastaste en él. Bitácora conecta lo que apuntas.</p>
             </div>
-        </div>
 
-        <div class="landing-pricing">
-            <div class="landing-pricing-title">14 días gratis, sin tarjeta. Después, elige tu plan</div>
-            <div class="paywall-plans landing-plans">
+            <article class="lp-bloque">
+                <div class="lp-bloque-texto revela">
+                    <div class="lp-num">01.</div>
+                    <h3>la universidad, por cuatrimestres.</h3>
+                    <p>Tu carrera entera de un vistazo: créditos superados, media del expediente, en qué semana del cuatrimestre estás y cuánto falta para los exámenes.</p>
+                    <ul><li>Te dice qué nota necesitas en lo que queda para aprobar cada asignatura.</li><li>Horario, exámenes y entregas, en tu calendario y tu planificador.</li><li>¿No estudias en la universidad? Estudios funciona igual para bachillerato, FP u oposiciones.</li></ul>
+                </div>
+                <div class="lp-bloque-img revela" style="--d:1"><img src="img/landing/universidad.webp" alt="El apartado Universidad: porcentaje de la carrera, media del expediente y asignaturas del cuatrimestre" loading="lazy" width="1600" height="1000"></div>
+            </article>
+
+            <article class="lp-bloque lp-bloque-inverso">
+                <div class="lp-bloque-texto revela">
+                    <div class="lp-num">02.</div>
+                    <h3>cuentas claras con tus amigos.</h3>
+                    <p>Viajes, cenas, el piso compartido. Apuntad quién paga qué y Bitácora calcula cuánto debe cada uno y cómo dejarlo a cero con los mínimos pagos.</p>
+                    <ul><li>Repartos a partes iguales, por partes o por importes exactos.</li><li>Tus amigos lo ven y lo editan en su propia Bitácora, al momento.</li><li>Comparte también tus planes: tu amigo añade el evento a su calendario con un toque.</li></ul>
+                </div>
+                <div class="lp-bloque-img revela" style="--d:1"><img src="img/landing/gastos.webp" alt="Un grupo de gastos compartidos: saldos de cada persona y cómo saldar" loading="lazy" width="1600" height="1000"></div>
+            </article>
+
+            <article class="lp-bloque">
+                <div class="lp-bloque-texto revela">
+                    <div class="lp-num">03.</div>
+                    <h3>tu día, en una pantalla.</h3>
+                    <p>Un planificador por horas en el que lo que no terminas pasa solo al día siguiente, tus hábitos con su racha y un aviso antes de cada evento.</p>
+                    <ul><li>Captura rápida: apunta cualquier cosa desde cualquier sitio, en segundos.</li><li>Un resumen cada mañana en el móvil.</li><li>Clases, trabajo y planes en el mismo sitio, sin duplicar nada.</li></ul>
+                </div>
+                <div class="lp-bloque-img revela" style="--d:1"><img src="img/landing/planificador.webp" alt="El planificador del día con las tareas por horas" loading="lazy" width="1600" height="1000"></div>
+            </article>
+
+            <article class="lp-bloque lp-bloque-inverso">
+                <div class="lp-bloque-texto revela">
+                    <div class="lp-num">04.</div>
+                    <h3>tu dinero, sin hojas de cálculo.</h3>
+                    <p>Tus cuentas, tus gastos por categorías y a qué ritmo gastas este mes comparado con lo normal en ti. Pega el extracto del banco y Bitácora lo ordena.</p>
+                    <ul><li>Presupuestos, metas de ahorro y planificación a largo plazo.</li><li>Aviso si un cargo fijo no llega o si vas gastando de más.</li><li>Puedes ocultar las cifras con un toque cuando hay gente delante.</li></ul>
+                </div>
+                <div class="lp-bloque-img revela" style="--d:1"><img src="img/landing/finanzas.webp" alt="El panel de finanzas: patrimonio y saldo de cada cuenta" loading="lazy" width="1600" height="655"></div>
+            </article>
+
+            <article class="lp-bloque lp-bloque-habla">
+                <div class="lp-bloque-texto revela">
+                    <div class="lp-num">05.</div>
+                    <h3>te habla de vuelta.</h3>
+                    <p>Una agenda normal solo guarda lo que le dices. Bitácora te lo devuelve de otras formas: patrones de tu semana, lo que pasó durante cada viaje, cuánto llevas de carrera, qué te toca mañana.</p>
+                    <p>Y si usas Claude o ChatGPT, conéctalos con tu cuenta y pídeles cosas hablando:</p>
+                    <div class="lp-frases"><span>«¿qué tengo esta semana?»</span><span>«apunta el examen de estadística el jueves 12»</span><span>«lee este ticket y añade el gasto»</span><span>«¿cuánto llevo gastado en comida?»</span></div>
+                </div>
+                <div class="lp-bloque-img lp-bloque-movil revela" style="--d:1"><img src="img/landing/movil-estudios.webp" alt="Estudios en el móvil: días para el próximo examen, clases de hoy y entregas" loading="lazy" width="520" height="1125"></div>
+            </article>
+        </section>
+
+        <section class="lp-seccion lp-promesa">
+            <div class="lp-seccion-cab revela">
+                <div class="lp-kicker">la promesa.</div>
+                <h2>Un sitio tranquilo, y tuyo.</h2>
+            </div>
+            <div class="lp-tarjetas">
+                <div class="lp-tarjeta revela"><b>sin anuncios ni scroll infinito.</b><span>Bitácora no compite por tu atención. Entras, apuntas, consultas y te vas.</span></div>
+                <div class="lp-tarjeta revela" style="--d:1"><b>tus datos son tuyos.</b><span>No se venden ni se usan para entrenar IA. Los descargas o borras tu cuenta cuando quieras, desde Ajustes.</span></div>
+                <div class="lp-tarjeta revela" style="--d:2"><b>14 días gratis, sin tarjeta.</b><span>La pruebas entera. Si no te convence, no pagas nada y tus datos se quedan guardados.</span></div>
+                <div class="lp-tarjeta revela" style="--d:3"><b>un precio, sin micropagos.</b><span>1,99 € al mes con todo incluido. Nada de funciones sueltas de pago ni sorpresas.</span></div>
+            </div>
+        </section>
+
+        <section class="lp-seccion lp-creador">
+            <div class="lp-seccion-cab revela">
+                <div class="lp-kicker">cómo la uso yo.</div>
+                <h2>El ordenador es el centro. El móvil, para apuntar al vuelo.</h2>
+            </div>
+            <div class="lp-tarjetas lp-tarjetas-3">
+                <div class="lp-tarjeta revela"><i class="lp-icono"><svg viewBox="0 0 100 100" fill="currentColor"><path fill-rule="evenodd" d="M8 16h84v56H58v8h12v8H30v-8h12v-8H8zm10 10v36h64V26z"/></svg></i><b>en el ordenador.</b><span>Es donde la uso de verdad: planifico la semana, llevo la carrera y las finanzas. La tengo instalada desde el navegador, con su icono en la barra de tareas, y se abre como un programa más.</span></div>
+                <div class="lp-tarjeta revela" style="--d:1"><i class="lp-icono"><svg viewBox="0 0 100 100" fill="currentColor"><path fill-rule="evenodd" d="M28 4h44a8 8 0 0 1 8 8v76a8 8 0 0 1-8 8H28a8 8 0 0 1-8-8V12a8 8 0 0 1 8-8zm2 12v64h40V16zm14 70v4h12v-4z"/></svg></i><b>en el iPhone.</b><span>Añadida a la pantalla de inicio desde Safari: icono propio, pantalla completa y avisos push. La uso para apuntar algo rápido o consultar qué tengo hoy.</span></div>
+                <div class="lp-tarjeta revela" style="--d:2"><i class="lp-icono"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 8l40 22v40L50 92 10 70V30zm0 14L24 36v28l26 14 26-14V36z"/></svg></i><b>en Android.</b><span>Ya funciona desde Chrome, instalada como app. Y estamos trabajando en sacarla en Google Play para que la descargues como cualquier otra.</span></div>
+            </div>
+            <figure class="lp-quien revela">
+                <blockquote>Soy estudiante, y las agendas de siempre se me quedaban cortas. Me di cuenta de que podía hacer una a la que no solo le cuento cosas yo, sino que ella también me las cuenta a mí: qué me toca, cómo voy, en qué se me va el dinero. Pero en realidad no importa quién soy yo, sino qué es Bitácora.</blockquote>
+                <figcaption>— quien hace Bitácora.</figcaption>
+            </figure>
+        </section>
+
+        <section class="landing-pricing lp-seccion" id="lp-precios">
+            <div class="lp-seccion-cab revela">
+                <div class="lp-kicker">precios.</div>
+                <h2>14 días gratis, sin tarjeta. Después, elige.</h2>
+            </div>
+            <div class="paywall-plans landing-plans revela">
                 <button class="paywall-plan" onclick="goToSignup('mensual')">
                     <span class="paywall-plan-name">Mensual</span>
                     <span class="paywall-plan-price">1,99€<span class="paywall-plan-period">/mes</span></span>
@@ -87,13 +195,56 @@
                     <span class="paywall-plan-price">18,99€<span class="paywall-plan-period">/año</span></span>
                 </button>
             </div>
-            <button class="paywall-fundador" data-plazas-fundador onclick="goToSignup('fundador')">
+            <button class="paywall-fundador revela" data-plazas-fundador onclick="goToSignup('fundador')">
                 <span class="paywall-fundador-texto"><b>socio fundador.</b><small>Bitácora de por vida con un único pago, tu número de socio y un tema exclusivo. <span class="paywall-fundador-plazas">Solo 100 plazas.</span></small></span>
                 <span class="paywall-fundador-precio">29,99€<small>una vez</small></span>
             </button>
             <button class="paywall-condiciones" onclick="openCondicionesFundador()">qué significa «de por vida».</button>
-            <div class="landing-pricing-note">Crea tu cuenta y úsala 14 días sin poner ninguna tarjeta. Precios con IVA incluido. Cancela cuando quieras.</div>
-        </div>
+            <div class="landing-pricing-note">Precios con IVA incluido. Cancela cuando quieras. Garantía de devolución de 7 días.</div>
+        </section>
+
+        <section class="lp-seccion lp-faq" id="lp-preguntas">
+            <div class="lp-seccion-cab revela">
+                <div class="lp-kicker">preguntas.</div>
+                <h2>Lo que la gente suele preguntar.</h2>
+            </div>
+            <div class="lp-faq-lista revela">
+                <details><summary>¿Qué es Bitácora exactamente?</summary><div><p>Una agenda para tu vida entera: calendario, planificador del día, hábitos, notas, estudios y universidad, empleo y CV, finanzas, ocio, viajes y gastos compartidos con amigos. Todo en un mismo sitio y conectado entre sí, para que no tengas que ir saltando entre diez apps.</p></div></details>
+                <details><summary>¿Cuánto cuesta?</summary><div><p>1,99 € al mes o 18,99 € al año, con todo incluido y el IVA ya sumado. No hay funciones sueltas de pago ni compras dentro de la app. También puedes hacerte socio fundador: 29,99 € una sola vez y Bitácora para siempre (solo para 100 personas).</p></div></details>
+                <details><summary>¿Tengo que poner la tarjeta para probarla?</summary><div><p>No. Creas tu cuenta y la usas entera durante 14 días sin dar ningún dato de pago. Solo si decides quedarte eliges un plan.</p></div></details>
+                <details><summary>¿Qué pasa cuando termina la prueba?</summary><div><p>Bitácora se queda en pausa hasta que te suscribas, pero no se borra nada: todo lo que apuntaste sigue ahí. Mientras tanto puedes descargar tus datos en un archivo cuando quieras.</p></div></details>
+                <details><summary>¿Puedo cancelar cuando quiera?</summary><div><p>Sí, desde Ajustes, en un momento y sin permanencia. Sigues teniendo acceso hasta el final del periodo que ya pagaste y no se te vuelve a cobrar.</p></div></details>
+                <details><summary>¿Y si pago y no me convence?</summary><div><p>Te devolvemos el dinero íntegro si nos lo pides en los 7 días siguientes al pago, sin preguntas. Además conservas tu derecho legal de desistimiento de 14 días.</p></div></details>
+                <details><summary>¿Qué es ser socio fundador?</summary><div><p>Un único pago de 29,99 € que te da Bitácora mientras exista, sin pagar nada más. Solo hay 100 plazas. Los socios tienen su número visible, un tema exclusivo y tres códigos para regalar 6 meses de Bitácora a quien quieran.</p></div></details>
+                <details><summary>¿Mis datos están seguros? ¿Quién puede verlos?</summary><div><p>Solo tú. Tus datos se guardan cifrados en servidores de la Unión Europea, cada cuenta únicamente puede leer los suyos y nadie los vende ni los usa para anuncios o para entrenar inteligencias artificiales. Lo que compartes con un amigo, lo ve ese amigo.</p></div></details>
+                <details><summary>¿Puedo llevarme mis datos o borrar mi cuenta?</summary><div><p>Sí, siempre. En Ajustes puedes descargar todo en un archivo (y volver a importarlo en otra cuenta) o eliminar tu cuenta y todo lo que hay en ella para siempre.</p></div></details>
+                <details><summary>¿Funciona en el móvil? ¿Hay app?</summary><div><p>Sí. En iPhone, añádela a la pantalla de inicio desde Safari y tendrás su icono, pantalla completa y avisos. En Android, instálala desde Chrome. En el ordenador, se instala desde el navegador y se abre en su propia ventana. Estamos trabajando en la app de Google Play.</p></div></details>
+                <details><summary>¿Se sincroniza entre mis dispositivos?</summary><div><p>Al momento. Lo que apuntas en el móvil aparece en el ordenador y al revés. Necesitas conexión a internet para usarla.</p></div></details>
+                <details><summary>¿Qué es eso de conectar Claude o ChatGPT? ¿Cuesta más?</summary><div><p>Si ya usas Claude o ChatGPT, puedes conectarlos a tu Bitácora para pedirles cosas hablando: «¿qué tengo esta semana?» o «apunta este gasto». Funciona con tu propia cuenta de esos servicios y en Bitácora no cuesta nada más. Es opcional.</p></div></details>
+                <details><summary>¿Me sirve si no estudio en la universidad?</summary><div><p>Sí. Al empezar eliges si estudias, trabajas o las dos cosas, y Bitácora enseña solo lo que vas a usar. Estudios funciona para bachillerato, FP u oposiciones, y Universidad es un apartado opcional.</p></div></details>
+                <details><summary>¿Puedo compartir cosas con mis amigos?</summary><div><p>Sí: dividir gastos de viajes, cenas o el piso, compartir eventos, recomendaros libros, series o pelis y compartir listas y viajes. Os añadís con un código de amigo.</p></div></details>
+                <details><summary>¿Tiene anuncios?</summary><div><p>No, y no los tendrá. Bitácora se mantiene con las suscripciones, precisamente para no tener que vender tu atención ni tus datos.</p></div></details>
+                <details><summary>¿Quién está detrás?</summary><div><p>Un estudiante al que las agendas de siempre se le quedaban cortas y que decidió hacer la suya. Bitácora es un proyecto pequeño e independiente, y se construye escuchando a quien la usa: dentro de la app hay un apartado para enviar sugerencias.</p></div></details>
+            </div>
+        </section>
+
+        <section class="lp-final revela">
+            <h2>Empieza hoy. Sin tarjeta.</h2>
+            <p>En dos minutos tienes tu Bitácora lista.</p>
+            <button class="landing-cta-primary" onclick="goToSignup()">crear mi cuenta gratis.</button>
+        </section>
+
+        <footer class="lp-pie">
+            <div class="landing-brand">bitácora<span>.</span></div>
+            <nav>
+                <a href="legal.html#privacidad">privacidad.</a>
+                <a href="legal.html#condiciones">condiciones.</a>
+                <a href="legal.html#aviso-legal">aviso legal.</a>
+                <a href="legal.html#cookies">cookies.</a>
+                <button onclick="openAboutBitacora()">qué es bitácora.</button>
+            </nav>
+            <div class="lp-pie-nota">Hecho con calma. Sin anuncios.</div>
+        </footer>
     </div>
 
     <!-- ============================================================
@@ -177,7 +328,7 @@
                 <div id="sidebar-nav-top"></div>
 
                 <!-- Privado -->
-               <span class="nav-label">Privado</span>
+               <span class="nav-label nav-label-privado">Privado</span>
                 <button class="vault-btn" onclick="openVault()" data-view="vault">
                     <span class="nav-text">Vault</span>
                 </button>
@@ -237,7 +388,7 @@
         <div class="menu-nav">
             <div id="mobile-nav-top"></div>
 
-            <span class="nav-label">Privado</span>
+            <span class="nav-label nav-label-privado">Privado</span>
             <button class="vault-btn" onclick="openVault();toggleMobileMenu()" data-view="vault">
                 Vault
             </button>
@@ -308,6 +459,7 @@
     <script src="js/social.js"></script>
     <script src="js/bienvenida.js"></script>
     <script src="js/guia.js"></script>
+    <script src="js/landing.js"></script>
 
     <script src="apuntes-window.js"></script>
 

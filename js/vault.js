@@ -267,6 +267,7 @@
                 await setGlobalDevPasswordHash(hash);
                 closeModal();
                 devModeActive = true;
+                document.body.classList.add('dev-mode');
                 document.getElementById('content').innerHTML = renderSettings();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
@@ -282,6 +283,7 @@
             if (devModeActive) {
                 // Desactivar
                 devModeActive = false;
+                document.body.classList.remove('dev-mode');
                 document.getElementById('content').innerHTML = renderSettings();
                 showToast('Modo desarrollador desactivado');
                 return;
@@ -344,6 +346,7 @@
 
                 closeModal();
                 devModeActive = true;
+                document.body.classList.add('dev-mode');
                 document.getElementById('content').innerHTML = renderSettings();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {

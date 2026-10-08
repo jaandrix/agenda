@@ -53,7 +53,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (centro resumen, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `cv` → `social` → `bienvenida` → `guia`.
+  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `cv` → `social` → `bienvenida` → `guia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -220,6 +220,11 @@ a menor resolución.
   partir de imágenes reales del usuario), tarjeta "próximo evento hoy." a dos
   columnas cuando hay varios (eventos normales / trabajos-exámenes).
 - **Versión móvil PWA:** ver arquitectura arriba.
+- **Landing (`#landing-screen` en index.html, movimiento en `js/landing.js`):** portada, cinta, cinco
+  bloques con capturas reales (`img/landing/*.webp`, hechas con datos inventados y Chrome headless),
+  promesa, cómo la usa su creador, precios, preguntas y pie con los textos legales. Los bloques con
+  `.revela` aparecen al hacer scroll (IntersectionObserver sobre `#landing-screen`, que es el
+  contenedor con scroll). Vault y su etiqueta "Privado" solo se ven con `body.dev-mode`.
 - **Conector Claude/ChatGPT y Bandeja:** `supabase/functions/bitacora-mcp` (servidor MCP)
   escribe en `conector_bandeja`; la app aplica sola eventos, entradas con QR y Ocio
   (`OPS_AUTOMATICAS`) y deja el resto en el apartado "bandeja." para validarlo a mano
