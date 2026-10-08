@@ -655,7 +655,42 @@
                 </div>`).join('');
         }
 
+        // Cuántos enlaces de conector tiene el usuario: null sin consultar,
+        // 'cargando' mientras se pide. Con 0, Bandeja explica cómo conectar.
+        let conectoresActivos = null;
+        async function cargarEstadoConector() {
+            conectoresActivos = 'cargando';
+            const { count, error } = await sb.from('conector_tokens').select('token_hash', { count: 'exact', head: true });
+            conectoresActivos = error ? null : (count || 0);
+            if (!error) refrescarBandeja();
+        }
+
+        function renderBandejaComoConectar() {
+            return `
+                <section class="bandeja-conectar">
+                    <div class="bandeja-conectar-titulo">conecta claude o chatgpt.</div>
+                    <p>Todavía no has conectado ninguna IA. Con el conector, le hablas a Claude o a ChatGPT como siempre y ellos leen y apuntan en tu Bitácora. Usa tu propia cuenta de Claude o ChatGPT; no tienes que pagar nada más.</p>
+                    <div class="bandeja-conectar-ejemplos">
+                        <span>«¿qué tengo esta semana?»</span>
+                        <span>«apunta el examen de estadística el jueves 12»</span>
+                        <span>«lee este ticket y añade el gasto»</span>
+                        <span>«¿cuánto llevo gastado en comida este mes?»</span>
+                        <span>«añade la peli que vi ayer a ocio»</span>
+                    </div>
+                    <ol class="bandeja-conectar-pasos">
+                        <li>Crea tu enlace personal con uno de los botones de abajo.</li>
+                        <li>Pégalo en Claude (Ajustes → Conectores) o en ChatGPT (Aplicaciones y conectores). Te lo explicamos paso a paso al crearlo.</li>
+                        <li>Pide lo que quieras. Los eventos y Ocio se apuntan solos; el resto espera aquí, en bandeja, a que lo valides.</li>
+                    </ol>
+                    <div class="bandeja-globales">
+                        <button class="bandeja-btn bandeja-btn-validar" onclick="crearConector('claude').then(() => cargarEstadoConector())">+ conectar Claude.</button>
+                        <button class="bandeja-btn bandeja-btn-descartar" onclick="crearConector('chatgpt').then(() => cargarEstadoConector())">+ conectar ChatGPT.</button>
+                    </div>
+                </section>`;
+        }
+
         function renderBandeja() {
+            if (conectoresActivos === null) setTimeout(cargarEstadoConector, 0);
             const n = bandejaPendiente.length;
             const grupos = {};
             bandejaPendiente.forEach(f => { const g = apartadoDeOp(f.op || {}); (grupos[g] = grupos[g] || []).push(f); });
@@ -669,12 +704,13 @@
                     </div>
                     <div class="bandeja-contador ${n ? 'activo' : ''}"><b>${n}</b><span>${n === 1 ? 'pendiente.' : 'pendientes.'}</span></div>
                 </header>
+                ${conectoresActivos === 0 && !n ? renderBandejaComoConectar() : ''}
                 ${n > 1 ? `
                 <div class="bandeja-globales">
                     <button class="bandeja-btn bandeja-btn-validar" onclick="validarBandeja(bandejaPendiente.map(f => f.id))">validar todo (${n}).</button>
                     <button class="bandeja-btn bandeja-btn-descartar" onclick="descartarBandeja(bandejaPendiente.map(f => f.id))">descartar todo.</button>
                 </div>` : ''}
-                ${n ? orden.map(g => `
+                ${conectoresActivos === 0 && !n ? '' : n ? orden.map(g => `
                     <section class="bandeja-grupo">
                         <div class="bandeja-grupo-cab">
                             <span class="bandeja-grupo-nombre">${escapeHtml(g)}.</span>

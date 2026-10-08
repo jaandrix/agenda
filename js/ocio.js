@@ -38,13 +38,13 @@
                         </button>`).join('')}
                 </div>
                 ${(!cultureSharedMode && cultureTab === 'movies') ? `
-                <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openLetterboxdImportModal()">Importar Letterboxd</button>
+                <button class="btn-secondary btn-acento" style="width:auto" onclick="openLetterboxdImportModal()">Importar Letterboxd</button>
                 ` : ''}
                 ${(!cultureSharedMode && cultureTab === 'books') ? `
-                <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openGoodreadsImportModal()">Importar Goodreads</button>
+                <button class="btn-secondary btn-acento" style="width:auto" onclick="openGoodreadsImportModal()">Importar Goodreads</button>
                 ` : ''}
                 ${(!cultureSharedMode && cultureTab === 'series') ? `
-                <button class="btn-secondary" style="width:auto;background:#3b82f6;color:#fff;border-color:#3b82f6" onclick="openImdbSeriesImportModal()">Importar IMDb</button>
+                <button class="btn-secondary btn-acento" style="width:auto" onclick="openImdbSeriesImportModal()">Importar IMDb</button>
                 ` : ''}
                 <button class="btn-secondary culture-shared-toggle" style="width:auto" onclick="toggleCultureSharedMode()">
                     ${cultureSharedMode ? '← Mi biblioteca' : `Recomendaciones${pendientes ? ` (${pendientes})` : ''}`}
@@ -1049,7 +1049,7 @@
             showModal(`
                 <div class="modal-title">Cómo usar Bitácora<button class="modal-close" onclick="closeModal()">✕</button></div>
                 <button class="guia-ayuda-btn" onclick="openGuia()">guía completa de bitácora. <span>→</span></button>
-                <div class="help-section-label" style="color:#3b82f6">Movimiento por Bitácora</div>
+                <div class="help-section-label" style="color:var(--m-acento)">Movimiento por Bitácora</div>
                 <div class="help-kbd-list">
                     ${movimiento.map(([tecla, texto]) => `
                         <div class="help-kbd-row">
@@ -1058,7 +1058,7 @@
                         </div>
                     `).join('')}
                 </div>
-                <div class="help-section-label" style="color:#3b82f6;margin-top:22px">Apartados</div>
+                <div class="help-section-label" style="color:var(--m-acento);margin-top:22px">Apartados</div>
                 ${secciones}
             `);
         }

@@ -383,7 +383,7 @@
         function openAboutBitacora() {
             showModal(`
                 <div class="modal-title">
-                    <span>¿Qué es <span style="color:#3b82f6">Bitácora</span>?</span>
+                    <span>¿Qué es <span style="color:var(--m-acento)">Bitácora</span>?</span>
                     <button class="modal-close" onclick="closeModal()">✕</button>
                 </div>
                 <div class="about-modal">

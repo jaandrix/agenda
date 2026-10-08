@@ -536,8 +536,11 @@
                             </div>`)}
                         ${bloqueAjuste('settings-advanced-section', 'avanzado', 'modo desarrollador.', 'Enseña funciones ocultas, como Vault.', `
                             <button class="finance-pro-switch ${devModeActive ? 'on' : ''}" onclick="toggleDeveloperMode()" aria-label="Modo desarrollador"><span class="finance-pro-switch-knob"></span></button>`)}
-                        ${bloqueAjuste('settings-danger-section', 'riesgo', 'zona de riesgo.', 'Cierra tu sesión en todos los navegadores y dispositivos donde la hayas iniciado.', `
-                            <button class="btn-secondary ajuste-peligro" style="width:auto" onclick="handleLogoutAllDevices()">cerrar sesión en todas partes.</button>`, 'ajuste-riesgo')}
+                        ${bloqueAjuste('settings-danger-section', 'riesgo', 'zona de riesgo.', 'Cerrar tu sesión en todos los dispositivos, o borrar tu cuenta y todo lo que hay en ella para siempre.', `
+                            <div class="ajuste-botones">
+                                <button class="btn-secondary ajuste-peligro" style="width:auto" onclick="handleLogoutAllDevices()">cerrar sesión en todas partes.</button>
+                                <button class="btn-secondary ajuste-peligro" style="width:auto" onclick="openEliminarCuenta()">eliminar mi cuenta.</button>
+                            </div>`, 'ajuste-riesgo')}
                     </div>
                 </div>`;
         }
@@ -609,11 +612,23 @@
                 ? new Date(sub.periodo_fin).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
                 : null;
 
+            const botonPortal = `<button class="btn-secondary" style="width:auto;margin-top:10px" onclick="abrirPortalPago(this)">pagos y facturas.</button>`;
+            if (sub.estado === 'past_due') {
+                body.innerHTML = `
+                    <div class="settings-subscription-card">
+                        <div class="settings-subscription-status">No se ha podido cobrar tu suscripción</div>
+                        <div class="settings-subscription-note">Actualiza tu tarjeta en los próximos días para no perder el acceso. Tus datos siguen intactos.</div>
+                        ${botonPortal}
+                    </div>`;
+                return;
+            }
+
             if (sub.cancela_al_final_periodo) {
                 body.innerHTML = `
                     <div class="settings-subscription-card">
                         <div class="settings-subscription-status">Suscripción ${planLabel} · se cancela${fecha ? ' el ' + fecha : ''}</div>
                         <div class="settings-subscription-note">Mantienes el acceso hasta esa fecha. No se te volverá a cobrar.</div>
+                        ${botonPortal}
                     </div>`;
                 return;
             }
@@ -621,7 +636,10 @@
             body.innerHTML = `
                 <div class="settings-subscription-card">
                     <div class="settings-subscription-status">Suscripción ${planLabel}${sub.estado === 'trialing' ? ' (en prueba)' : ''} · se renueva${fecha ? ' el ' + fecha : ''}</div>
-                    <button class="btn-secondary" style="width:auto;margin-top:10px;color:#7f1d1d" onclick="confirmCancelSubscription()">Cancelar suscripción</button>
+                    <div class="ajuste-botones">
+                        ${botonPortal}
+                        <button class="btn-secondary" style="width:auto;margin-top:10px;color:#7f1d1d" onclick="confirmCancelSubscription()">Cancelar suscripción</button>
+                    </div>
                 </div>
                 <button class="paywall-fundador" data-plazas-fundador onclick="startStripeCheckout('fundador')">
                     <span class="paywall-fundador-texto"><b>hazte socio fundador.</b><small>Un único pago y Bitácora de por vida; tu suscripción se cancela sola. <span class="paywall-fundador-plazas">Solo 100 plazas.</span></small></span>
@@ -629,6 +647,73 @@
                 </button>
                 <button class="paywall-condiciones" onclick="openCondicionesFundador()">qué significa «de por vida».</button>`;
             cargarPlazasFundador();
+        }
+
+        // Portal de cliente de Stripe (Edge Function portal-pago): tarjeta,
+        // facturas, cambio de plan y cancelación.
+        async function abrirPortalPago(boton) {
+            if (boton) boton.disabled = true;
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/portal-pago`, { method: 'POST', headers: { 'Authorization': `Bearer ${session.access_token}` } });
+                const r = await res.json();
+                if (!res.ok || !r.url) throw new Error(r.error || 'No se pudo abrir');
+                window.location.href = r.url;
+            } catch (e) {
+                console.error(e);
+                showToast(e.message || 'No se pudo abrir el portal de pagos', true);
+            } finally {
+                if (boton) boton.disabled = false;
+            }
+        }
+
+        function openEliminarCuenta() {
+            const socio = suscripcionActual?.estado === 'fundador';
+            const pagando = ['active', 'trialing', 'past_due'].includes(suscripcionActual?.estado);
+            showModal(`
+                <div class="modal-title">eliminar mi cuenta.</div>
+                <div class="condiciones">
+                    <p>Se borra <b>para siempre</b>, sin forma de recuperarlo:</p>
+                    <ul>
+                        <li>todo lo que hay en tu Bitácora: entradas, notas, finanzas, estudios, hábitos, documentos y archivos subidos;</li>
+                        <li>tus copias de seguridad, tus amistades, tu código de amigo y tus conectores con Claude o ChatGPT;</li>
+                        <li>en los grupos de gastos compartidos sigues apareciendo con tu nombre, sin cuenta, para que a tus amigos les cuadren las cuentas.</li>
+                    </ul>
+                    ${pagando ? '<p><b>Tu suscripción se cancela ahora mismo</b> y no se te volverá a cobrar.</p>' : ''}
+                    ${socio ? '<p><b>Eres socio fundador:</b> pierdes tu número de socio y tu acceso de por vida, y no se puede recuperar.</p>' : ''}
+                    <p>Antes de nada, puedes llevarte una copia de todo:</p>
+                    <button class="btn-secondary" style="width:auto;margin-bottom:14px" onclick="exportData()">descargar mis datos.</button>
+                    <p>Para confirmar, escribe <b>eliminar</b>:</p>
+                </div>
+                <input id="eliminar-confirmacion" class="modal-input" autocomplete="off" autocapitalize="none" placeholder="eliminar" oninput="document.getElementById('eliminar-boton').disabled = this.value.trim().toLowerCase() !== 'eliminar'">
+                <button id="eliminar-boton" class="btn-modal-primary boton-peligro" disabled onclick="eliminarCuenta(this)">eliminar mi cuenta para siempre.</button>
+                <button class="btn-secondary" style="width:100%;margin-top:10px" onclick="closeModal()">cancelar.</button>
+            `);
+        }
+
+        async function eliminarCuenta(boton) {
+            boton.disabled = true;
+            boton.textContent = 'eliminando...';
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/eliminar-cuenta`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ confirmar: 'eliminar' }),
+                });
+                const r = await res.json();
+                if (!res.ok) throw new Error(r.error || 'No se pudo eliminar la cuenta');
+                closeModal();
+                await sb.auth.signOut().catch(() => {});
+                try { localStorage.clear(); } catch (e) {}
+                resetToLoginScreen();
+                showToast('Tu cuenta se ha eliminado. Gracias por haber probado Bitácora.');
+            } catch (e) {
+                console.error(e);
+                showToast(e.message, true);
+                boton.disabled = false;
+                boton.textContent = 'eliminar mi cuenta para siempre.';
+            }
         }
 
         function confirmCancelSubscription() {
