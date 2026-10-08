@@ -11,7 +11,7 @@ import cv2, qrcode, qrcode.image.svg
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 CHROME = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
-MODELOS = ['no-cambia', 'donde', 'examen', 'pizza', 'manana', 'sin-anuncios', 'estudiante', 'anuncio']
+MODELOS = ['no-cambia', 'donde', 'examen', 'pizza', 'manana', 'sin-anuncios', 'anuncio', 'semana', 'cuatri-1', 'cuatri-2', 'examenes', 'habitos', 'cuentas']
 
 
 def url_de(m):

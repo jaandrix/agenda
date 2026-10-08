@@ -4,6 +4,9 @@
   el centro y salen 4 de tamaño A6). carteles-bn.html?m=<modelo>. generar.py
   mete el QR de cada modelo (corrección de errores máxima, con la "b." en el
   centro), lo pasa a PDF y comprueba que el QR se lee.
+  Hay dos familias: carteles con un gancho y flyers útiles (semana, calendario
+  del cuatrimestre, exámenes, hábitos, cuentas), pensados para que quien los
+  coja se los quede.
 -->
 <html lang="es">
 <head>
@@ -16,6 +19,7 @@
     body { display: grid; grid-template-columns: 105mm 105mm; grid-template-rows: 148.5mm 148.5mm; position: relative; background: #fff; }
     .pieza { position: relative; overflow: hidden; container-type: size; font-family: 'Poppins', sans-serif; color: #111; background: #fff; display: flex; flex-direction: column; padding: 9cqw 9cqw 8cqw; }
     .pieza.negra { background: #111; color: #f2f2f2; }
+    .pieza.util { padding: 8cqw 8cqw 6.5cqw; }
     .grano { position: absolute; inset: 0; pointer-events: none; background: url(grano.png); background-size: 38mm; opacity: .75; mix-blend-mode: multiply; z-index: 3; }
     .negra .grano { background-image: url(grano-claro.png); mix-blend-mode: screen; opacity: .28; }
     .contenido { position: relative; display: flex; flex-direction: column; height: 100%; }
@@ -34,6 +38,35 @@
     .raya { display: block; border-bottom: .45cqw solid currentColor; height: 9cqw; }
     .gris { opacity: .45; }
 
+    /* Flyers útiles: título, una línea de por qué Bitácora y el pie compacto */
+    .util h1 { font-size: 9cqw; letter-spacing: -.35cqw; }
+    .util .sub { margin: 1.6cqw 0 4cqw; font-size: 3.4cqw; line-height: 1.35; font-weight: 500; opacity: .75; }
+    .util .pie { gap: 3cqw; padding-top: 2.5cqw; border-top-width: .35cqw; align-items: center; }
+    .util .pie-texto { gap: 1cqw; padding-top: 0; }
+    .util .pie .marca { font-size: 4.6cqw; }
+    .util .pie .web { font-size: 3.6cqw; }
+    .util .pie .nota { font-size: 2.8cqw; }
+    .util .qr { width: 21cqw; height: 21cqw; padding: 1.8cqw; margin-top: 0; box-shadow: 0 0 0 .35cqw #111; }
+    .util .qr-logo { font-size: 2.6cqw; border-width: .5cqw; border-radius: 1.1cqw; }
+    .tabla { width: 100%; border-collapse: collapse; font-size: 3cqw; }
+    .tabla th { text-align: left; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 2.7cqw; padding: 0 0 1.4cqw; border-bottom: .45cqw solid currentColor; }
+    .tabla td { height: 8.6cqw; border-bottom: .3cqw solid #555; }
+    .tabla td.check { width: 7cqw; }
+    .tabla td.check i { display: block; width: 4cqw; height: 4cqw; border: .4cqw solid #111; border-radius: 50%; margin-left: auto; }
+    .dias { display: flex; flex-direction: column; }
+    .dia { display: flex; align-items: flex-end; gap: 3cqw; height: 14cqw; border-bottom: .3cqw solid #555; }
+    .dia b { width: 9cqw; font-size: 3.4cqw; font-weight: 800; padding-bottom: 1.2cqw; }
+    .meses { display: grid; grid-template-columns: 1fr 1fr; gap: 4.2cqw 6cqw; }
+    .mes h3 { font-size: 3.9cqw; font-weight: 800; margin-bottom: 1.2cqw; letter-spacing: -.1cqw; }
+    .mes .grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: .75cqw; font-family: 'IBM Plex Mono', monospace; font-size: 2.9cqw; text-align: center; }
+    .mes .grid .cab { font-weight: 600; opacity: .55; }
+    .mes .grid .fin { opacity: .45; }
+    .habito { margin-bottom: 3.2cqw; }
+    .habito .nombre { display: block; border-bottom: .3cqw solid #555; height: 6cqw; margin-bottom: 1.6cqw; }
+    .habito .circulos { display: grid; grid-template-columns: repeat(16, 1fr); gap: .9cqw; }
+    .habito .circulos i { aspect-ratio: 1; border: .3cqw solid #111; border-radius: 50%; position: relative; }
+    .habito .circulos i::after { content: attr(data-n); position: absolute; inset: 0; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-style: normal; font-size: 1.6cqw; opacity: .6; }
+
     /* Líneas de corte: solo en el folio, entre las cuatro piezas */
     .corte-v, .corte-h { position: absolute; z-index: 10; pointer-events: none; }
     .corte-v { left: 105mm; top: 0; bottom: 0; border-left: .2mm dashed #9a9a9a; }
@@ -50,19 +83,38 @@
             <div class="pie-texto">
                 <div class="marca">bitácora.</div>
                 <div class="web">appbitacora.es</div>
-                <div class="nota">${nota || '14 días gratis · sin tarjeta'}</div>
+                <div class="nota">${nota || '14 días gratis, sin tarjeta'}</div>
             </div>
             <div class="qr">${qr}<div class="qr-logo">b.</div></div>
         </div>`;
+
+    const NOMBRES_MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const mes = (anio, m0) => {
+        const huecos = (new Date(anio, m0, 1).getDay() + 6) % 7;
+        const total = new Date(anio, m0 + 1, 0).getDate();
+        let celdas = ['l', 'm', 'x', 'j', 'v', 's', 'd'].map(d => `<span class="cab">${d}</span>`).join('');
+        celdas += '<span></span>'.repeat(huecos);
+        for (let d = 1; d <= total; d++) {
+            const finde = (huecos + d - 1) % 7 >= 5;
+            celdas += `<span class="${finde ? 'fin' : ''}">${d}</span>`;
+        }
+        return `<div class="mes"><h3>${NOMBRES_MES[m0]} ${anio}.</h3><div class="grid">${celdas}</div></div>`;
+    };
+    const cuatri = (titulo, sub, meses) => `
+        <h1>${titulo}</h1>
+        <div class="sub">${sub}</div>
+        <div class="meses">${meses.map(([a, m0]) => mes(a, m0)).join('')}</div>
+        ${pie()}`;
+
     const M = {
-        'no-cambia': { negra: false, html: `
-            <div class="nota">un cartel honesto.</div>
-            <h1 style="font-size:12.6cqw;margin:7cqw 0 6cqw">Este cartel no te va a cambiar la vida.</h1>
+        // Carteles con gancho
+        'no-cambia': { html: `
+            <h1 style="font-size:12.6cqw;margin:4cqw 0 6cqw">Este cartel no te va a cambiar la vida.</h1>
             <p class="txt">Pero puede que te ahorre abrir seis apps cada mañana para saber qué tienes hoy.</p>
             ${pie()}` },
-        'donde': { negra: false, html: `
+        'donde': { html: `
             <h1 style="font-size:13cqw;margin-bottom:6cqw">Lo apuntaste. ¿Pero dónde?</h1>
-            <div style="display:flex;flex-direction:column;gap:2.8cqw;margin-bottom:6cqw;font-size:1.25em">
+            <div style="display:flex;flex-direction:column;gap:2.8cqw;margin-bottom:6cqw">
                 <div class="nota tachado gris" style="font-size:4.2cqw">en las notas del móvil</div>
                 <div class="nota tachado gris" style="font-size:4.2cqw">en un audio a ti mismo</div>
                 <div class="nota tachado gris" style="font-size:4.2cqw">en una captura de pantalla</div>
@@ -72,38 +124,55 @@
             <p class="txt"><b>En un solo sitio:</b> calendario, exámenes, dinero y planes.</p>
             ${pie()}` },
         'examen': { negra: true, html: `
-            <div class="nota">pregunta rápida.</div>
-            <h1 style="font-size:13cqw;margin:6cqw 0 6cqw">¿Cuándo es tu próximo examen?</h1>
+            <h1 style="font-size:13cqw;margin:4cqw 0 6cqw">¿Cuándo es tu próximo examen?</h1>
             <p class="txt">Si has tenido que pensarlo, esto es para ti. Bitácora te dice cuántos días quedan y qué nota necesitas para aprobar.</p>
             ${pie()}` },
-        'pizza': { negra: false, html: `
-            <div class="nota">jueves, 21:40 · pizzería.</div>
-            <h1 style="font-size:12cqw;margin:6cqw 0 5cqw">Pablo te debe 7,80 € de la pizza.</h1>
+        'pizza': { html: `
+            <h1 style="font-size:12cqw;margin:4cqw 0 5cqw">Pablo te debe 7,80 € de la pizza.</h1>
             <p class="txt">Él no se acuerda. Bitácora sí. Gastos con amigos, viajes y el piso, con las cuentas claras.</p>
             ${pie()}` },
-        'manana': { negra: false, html: `
+        'manana': { html: `
             <div class="marca" style="font-size:4.6cqw">bitácora.</div>
             <h1 style="font-size:11cqw;margin:6cqw 0 3cqw">Mañana tengo que:</h1>
             <span class="raya"></span><span class="raya"></span><span class="raya"></span>
             <p class="txt" style="margin-top:5cqw">¿Y si lo escribes en un sitio donde no se pierda?</p>
             ${pie('escríbelo aquí. o allí.')}` },
-        'sin-anuncios': { negra: false, html: `
+        'sin-anuncios': { html: `
             <h1 style="font-size:12.4cqw;margin-bottom:6cqw">No tiene anuncios. No quiere tu tiempo.</h1>
             <p class="txt">Una agenda que no compite por tu atención. Entras, apuntas, te vas. Tu día, tus estudios y tu dinero, en calma.</p>
-            ${pie('sin scroll infinito · sin ruido')}` },
-        'estudiante': { negra: false, html: `
-            <div class="nota">quién la hace.</div>
-            <h1 style="font-size:11.2cqw;margin:6cqw 0 5cqw">La hizo un estudiante al que las agendas se le quedaban cortas.</h1>
-            <p class="txt">Ahora junta su calendario, sus exámenes, su dinero y sus planes. Puede que a ti también te sirva.</p>
-            ${pie()}` },
+            ${pie('sin scroll infinito, sin ruido')}` },
         'anuncio': { negra: true, html: `
             <h1 style="font-size:15cqw;margin-bottom:4cqw">Esto es un anuncio.</h1>
             <p class="txt" style="margin-bottom:5cqw">Sí. De una agenda.</p>
             <p class="txt">Pero sin anuncios dentro, sin vender tus datos y con 14 días gratis sin poner la tarjeta. Eso es todo.</p>
             ${pie()}` },
+
+        // Flyers útiles: para quedárselos
+        'semana': { util: true, html: `
+            <h1>Mi semana.</h1>
+            <div class="sub">En papel está bien. En Bitácora, además, te avisa a tiempo.</div>
+            <div class="dias">${['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].map(d => `<div class="dia"><b>${d}</b></div>`).join('')}</div>
+            ${pie()}` },
+        'cuatri-1': { util: true, html: cuatri('1er cuatrimestre.', 'Septiembre de 2026 a enero de 2027. Rodea tus exámenes; Bitácora te los cuenta hacia atrás.', [[2026, 8], [2026, 9], [2026, 10], [2026, 11], [2027, 0]]) },
+        'cuatri-2': { util: true, html: cuatri('2º cuatrimestre.', 'Febrero a junio de 2027. Rodea tus exámenes; Bitácora te los cuenta hacia atrás.', [[2027, 1], [2027, 2], [2027, 3], [2027, 4], [2027, 5]]) },
+        'examenes': { util: true, html: `
+            <h1>Mis exámenes.</h1>
+            <div class="sub">Bitácora te dice cuántos días quedan y qué nota necesitas en cada uno.</div>
+            <table class="tabla"><tr><th style="width:52%">asignatura</th><th>fecha</th><th>nota</th></tr>${'<tr><td></td><td></td><td></td></tr>'.repeat(11)}</table>
+            ${pie()}` },
+        'habitos': { util: true, html: `
+            <h1>Mis hábitos.</h1>
+            <div class="sub">Un círculo por día del mes. Si lo haces, lo rellenas.</div>
+            ${Array.from({ length: 5 }, () => `<div class="habito"><span class="nombre"></span><div class="circulos">${Array.from({ length: 31 }, (_, i) => `<i data-n="${i + 1}"></i>`).join('')}</div></div>`).join('')}
+            ${pie()}` },
+        'cuentas': { util: true, html: `
+            <h1>¿Quién debe a quién?</h1>
+            <div class="sub">Para el viaje, la cena o el piso. Bitácora hace las cuentas y os dice cómo saldarlo.</div>
+            <table class="tabla"><tr><th style="width:30%">quién</th><th style="width:38%">qué</th><th>€</th><th style="text-align:right">ok</th></tr>${'<tr><td></td><td></td><td></td><td class="check"><i></i></td></tr>'.repeat(11)}</table>
+            ${pie()}` },
     };
     const d = M[m];
-    document.write(Array.from({ length: 4 }, () => `<section class="pieza ${d.negra ? 'negra' : ''}"><div class="grano"></div><div class="contenido">${d.html}</div></section>`).join(''));
+    document.write(Array.from({ length: 4 }, () => `<section class="pieza ${d.negra ? 'negra' : ''} ${d.util ? 'util' : ''}"><div class="grano"></div><div class="contenido">${d.html}</div></section>`).join(''));
     document.write('<div class="corte-v"></div><div class="corte-h"></div><span class="tijera" style="left:103.4mm;top:2mm">✂</span><span class="tijera" style="left:2mm;top:146.6mm">✂</span>');
 </script>
 </body>
