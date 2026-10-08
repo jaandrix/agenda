@@ -459,18 +459,6 @@
         }
     };
 
-    window.reorderInvestmentCharts = function () {
-        const projectionCanvas = document.getElementById('portfolioProjectionChart');
-        const historyCanvas = document.getElementById('portfolioHistoryChart');
-        if (!projectionCanvas || !historyCanvas) return;
-
-        const projectionCard = projectionCanvas.closest('.investment-chart-card');
-        const historyCard = historyCanvas.closest('.investment-chart-card');
-        if (!projectionCard || !historyCard || projectionCard === historyCard) return;
-
-        historyCard.parentNode.insertBefore(projectionCard, historyCard);
-    };
-
     function collectSearchResults() {
         const out = [];
         const push = (kind, title, detail, action) => {

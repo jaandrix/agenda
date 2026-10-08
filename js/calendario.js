@@ -48,12 +48,6 @@
             updateAddButton();
             updateFabIcon();
 
-            if(currentView==='finances' && financeSubView==='indexado') {
-                setTimeout(() => {
-                    reorderInvestmentCharts();
-                    renderInvestmentCharts();
-                }, 0);
-            }
 
             renderMobileShell();
         }

@@ -24,10 +24,6 @@
             return FMT_MES_ANIO.format(new Date(y, m - 1, 1));
         }
 
-        function financeTotalAssets() {
-            return Number(financeProfile.cash || 0) + Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0) + Number(financeProfile.vacation || 0);
-        }
-
         function financeCorePatrimony() {
             return Number(financeProfile.cash || 0) + Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0);
         }
@@ -39,50 +35,6 @@
         function financeRecurringTotal() {
             return entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false)
                 .reduce((s, e) => s + (Number(e.amount) || 0), 0);
-        }
-
-        // ============================================================
-        //  PROVISIÓN A FIN DE AÑO
-        //  Combina la tendencia histórica mensual (financeProfile.history)
-        //  con el plan manual de la tarjeta de Previsión. El peso de la
-        //  tendencia histórica crece con el número de meses registrados
-        //  (0 con poco historial, 1 a partir de 12 meses), así que la
-        //  estimación se vuelve más precisa sola conforme el usuario
-        //  actualiza sus cifras mes a mes.
-        // ============================================================
-        function financeHistoricalDelta(key) {
-            const hist = [...(financeProfile.history || [])].sort((a, b) => String(a.month).localeCompare(String(b.month))).slice(-12);
-            const values = hist.map(h => Number(h[key] || 0));
-            if (values.length < 2) return null;
-            const deltas = values.slice(1).map((v, i) => v - values[i]);
-            return { avg: deltas.reduce((s, d) => s + d, 0) / deltas.length, weight: Math.min(1, deltas.length / 11) };
-        }
-
-        function financeYearEndProvision(key) {
-            const now = new Date();
-            const monthsLeft = 12 - now.getMonth();
-            if (monthsLeft <= 0) return null;
-            const current = Number(financeProfile[key] || 0);
-            const fc = financeProfile.forecastProfile || {};
-            const hist = financeHistoricalDelta(key);
-
-            const blend = (planned) => hist ? (hist.weight * hist.avg + (1 - hist.weight) * planned) : planned;
-
-            if (key === 'cash') {
-                const salary = Number(fc.salary || 0);
-                const recurring = financeRecurringTotal();
-                const plannedDuring = salary - recurring - Number(fc.emergencyMonthlyPlan || 0) - Number(fc.vacationMonthlyPlan || 0) - Number(fc.investMonthlyPlan || 0);
-                const plannedAfter = -recurring;
-                const contractMonths = Number(fc.contractMonths || 0);
-                const monthsInContract = Math.min(monthsLeft, contractMonths > 0 ? contractMonths : monthsLeft);
-                const monthsAfter = monthsLeft - monthsInContract;
-                if (!hist && !(salary > 0) && recurring === 0) return null;
-                return current + blend(plannedDuring) * monthsInContract + blend(plannedAfter) * monthsAfter;
-            }
-
-            const planned = key === 'emergency' ? Number(fc.emergencyMonthlyPlan || 0) : Number(fc.vacationMonthlyPlan || 0);
-            if (!hist && !planned) return null;
-            return current + blend(planned) * monthsLeft;
         }
 
         // Todas las cuentas con saldo: las 4 fijas de siempre + las que el
@@ -128,67 +80,9 @@
             saveData().catch(e => console.error(e));
         }
 
-        function financePreviousSnapshot() {
-            const current = financeMonthKey();
-            return [...(financeProfile.history || [])]
-                .filter(h => h.month !== current)
-                .sort((a, b) => String(b.month).localeCompare(String(a.month)))[0] || null;
-        }
-
         function financePctChange(current, previous) {
             if (previous === null || previous === undefined || Number(previous) === 0) return null;
             return ((Number(current) - Number(previous)) / Math.abs(Number(previous))) * 100;
-        }
-
-        function financePctToTarget(current, target) {
-            if (Number(target) <= 0) return null;
-            return (Number(current) / Number(target)) * 100;
-        }
-
-        function financeMonthDiff(fromKey, toKey) {
-            const [fy, fm] = String(fromKey).split('-').map(Number);
-            const [ty, tm] = String(toKey).split('-').map(Number);
-            return (ty - fy) * 12 + (tm - fm);
-        }
-
-        function financeProjectedCashAtYearEnd() {
-            const now = new Date();
-            let balance = Number(financeProfile.cash || 0);
-            const recurring = financeRecurringTotal();
-            const currentKey = financeMonthKey(now);
-            const year = now.getFullYear();
-            for (let month = now.getMonth(); month < 12; month++) {
-                const key = `${year}-${String(month + 1).padStart(2, '0')}`;
-                const salary = Number(financeProfile.salaryForecast?.[key] || 0);
-                if (key === currentKey) balance += Math.max(0, salary);
-                else balance += salary;
-                const today = todayISO();
-                const oneOffs = (financeProfile.oneOffIncome || []).filter(x => {
-                    const d = String(x.date || '');
-                    return d.slice(0,7) === key && (d > today || (d === today && !x.addedToCash));
-                });
-                balance += oneOffs.reduce((s, x) => s + (Number(x.amount) || 0), 0);
-                balance -= recurring;
-            }
-            return Math.max(0, balance);
-        }
-
-        function financeYearEndInvestedProjection() {
-            const now = new Date();
-            const monthsLeft = 12 - now.getMonth();
-            const current = Number(financeProfile.invested || 0);
-            const monthly = Number(investmentData.projectionMonthly || 0);
-            return current + monthly * monthsLeft;
-        }
-
-        function financeYearEndPatrimonyProjection() {
-            return financeProjectedCashAtYearEnd() + financeYearEndInvestedProjection() + Number(financeProfile.emergency || 0);
-        }
-
-        function financeGoalStatus(value, target) {
-            if (Number(target) <= 0) return { pct: null, label: 'Sin objetivo', cls: '' };
-            const pct = Math.max(0, Math.min(100, Number(value) / Number(target) * 100));
-            return { pct, label: `${pct.toFixed(0)}% del objetivo`, cls: pct >= 100 ? 'finance-goal-complete' : '' };
         }
 
         const FINANCE_EYE_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.1 12S4.8 5 12 5s10.9 7 10.9 7-3.7 7-10.9 7-10.9-7-10.9-7z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -198,19 +92,15 @@
         // iconos de ojo de arriba, para que todo el dashboard comparta un
         // único lenguaje visual (stroke, sin relleno).
         const FINANCE_ICON_CASH = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.4"/><path d="M6 9h.01M18 15h.01"/></svg>';
-        const FINANCE_ICON_SHIELD = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3.2v5.3c0 4.6-3 7.7-7 9-4-1.3-7-4.4-7-9V6.2L12 3z"/><path d="M9 12l2 2 4-4"/></svg>';
-        const FINANCE_ICON_SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M4.3 4.3l1.8 1.8M17.9 17.9l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.3 19.7l1.8-1.8M17.9 6.1l1.8-1.8"/></svg>';
         const FINANCE_ICON_TREND = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5l6.2-6.2 4 4L21 6.5"/><path d="M15 6.5h6v6"/></svg>';
         const FINANCE_ICON_CARD = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/></svg>';
         const FINANCE_ICON_REPEAT = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.5l3.5 3.5L17 9.5"/><path d="M3.5 10.5V9a4 4 0 0 1 4-4h13"/><path d="M7 21.5L3.5 18 7 14.5"/><path d="M20.5 13.5V15a4 4 0 0 1-4 4h-13"/></svg>';
         const FINANCE_ICON_STAR = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l2.95 6.1 6.55.7-4.9 4.5 1.3 6.5L12 16.9l-5.9 3.4 1.3-6.5-4.9-4.5 6.55-.7z"/></svg>';
         const FINANCE_ICON_TARGET = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.7"/><circle cx="12" cy="12" r="0.9" fill="currentColor"/></svg>';
         const FINANCE_ICON_CHART = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10M11 21V4M18 21v-7"/><path d="M2.5 21h19"/></svg>';
-        const FINANCE_ICON_CALENDAR = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/></svg>';
         const FINANCE_ICON_GLOBE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.8 2.5 4.3 5.7 4.3 9s-1.5 6.5-4.3 9c-2.8-2.5-4.3-5.7-4.3-9s1.5-6.5 4.3-9z"/></svg>';
         const FINANCE_ICON_UPLOAD = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>';
         const FINANCE_ICON_SWAP = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14M7 17l-3.5-3.5M7 17l3.5-3.5"/><path d="M17 21V7M17 7l3.5 3.5M17 7l-3.5 3.5"/></svg>';
-        const FINANCE_ICON_ALERT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v6"/><circle cx="12" cy="16.5" r="0.75" fill="currentColor" stroke="none"/></svg>';
         const FINANCE_ICON_SCALE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M7 7h10"/><path d="M4 7l-2.5 5.5A2.7 2.7 0 0 0 4 16a2.7 2.7 0 0 0 2.5-3.5z"/><path d="M20 7l-2.5 5.5A2.7 2.7 0 0 0 20 16a2.7 2.7 0 0 0 2.5-3.5z"/></svg>';
         const FINANCE_ICON_STATS = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>';
 
@@ -314,223 +204,6 @@
             refreshCurrentMonthSnapshot();
             try { await saveData(); showToast('Finanzas actualizadas'); render(); }
             catch (e) { console.error(e); showToast('No se pudieron guardar las finanzas', true); }
-        }
-
-        // ============================================================
-        //  GRÁFICA FLOTANTE: seguimiento mensual del patrimonio
-        //  Línea "segura" = Efectivo + Fondo de emergencia
-        //  Línea "total"  = línea segura + Inversión
-        //  Usa financeProfile.history: el mes en curso se auto-actualiza
-        //  con las cifras en vivo (ensureCurrentMonthHistory), y los 3
-        //  meses anteriores se pueden corregir a mano ("Corregir
-        //  registros"). Sin caja, sin fondo: flota sobre la app. Los
-        //  colores usan variables CSS por lo que se invierten solos
-        //  con el tema. Incluye una línea de puntos fija en el objetivo.
-        // ============================================================
-        // Ventana temporal (nº de meses) que se muestra en la gráfica
-        // flotante; null = todo el histórico disponible. Se ajusta con la
-        // rueda del ratón, como en un gráfico de cotización.
-        let financeChartMonths = null;
-
-        function financeChartWheelZoom(event) {
-            const totalMonths = Array.isArray(financeProfile.history) ? financeProfile.history.length : 0;
-            if (totalMonths <= 2) return;
-            event.preventDefault();
-            const current = financeChartMonths || totalMonths;
-            const next = Math.max(2, Math.min(totalMonths, current + (event.deltaY < 0 ? -1 : 1)));
-            financeChartMonths = next;
-            const wrap = document.getElementById('finance-floating-chart-wrap');
-            if (wrap) wrap.innerHTML = renderFinanceFloatingChart();
-        }
-
-        // Líneas configurables de la gráfica: por defecto, las dos de
-        // siempre (Efectivo+Emergencia y Patrimonio total); si el usuario
-        // ha definido las suyas en "Configurar gráfica", se usan esas.
-        function getFinanceChartSeries() {
-            if (Array.isArray(financeProfile.chartSeries) && financeProfile.chartSeries.length) return financeProfile.chartSeries;
-            return [
-                { id: 'safe', name: 'Efectivo + Emergencia', accountKeys: ['cash', 'emergency'], color: 'var(--text-secondary)' },
-                { id: 'total', name: 'Patrimonio total', accountKeys: ['cash', 'emergency', 'invested'], color: 'var(--text-primary)' }
-            ];
-        }
-
-        // Los puntos guardados antes de tener desglose por cuenta ("accounts")
-        // solo pueden aproximarse con safe/total; cualquier serie nueva del
-        // usuario queda a 0 en esos meses antiguos.
-        function financeSeriesValueForHistoryPoint(h, series) {
-            if (h.accounts && typeof h.accounts === 'object') {
-                return series.accountKeys.reduce((s, k) => s + Number(h.accounts[k] || 0), 0);
-            }
-            if (series.id === 'safe') return h.safe !== undefined ? Number(h.safe) : Number(h.cash || 0) + Number(h.emergency || 0);
-            if (series.id === 'total') return h.total !== undefined ? Number(h.total) : Number(h.cash || 0) + Number(h.emergency || 0) + Number(h.invested || 0);
-            return 0;
-        }
-
-        // Curva suave a través de todos los puntos (Catmull-Rom -> Bézier
-        // cúbica), en vez de segmentos rectos — inspirado en cómo dibuja
-        // sus gráficas Stoic, sin picos angulosos entre mes y mes.
-        // Nombre distinto de financeSmoothPath (más abajo, usada por
-        // renderFinanceProLineChart) porque esa otra toma tuplas [x,y] en
-        // vez de objetos {x,y} — mismo nombre + firma distinta pisaba esta
-        // definición (la última declaración de una función gana) y rompía
-        // silenciosamente esta gráfica en cuanto había 3+ meses de histórico.
-        function financeSmoothPathObj(points) {
-            if (points.length < 2) return '';
-            if (points.length === 2) return `M${points[0].x},${points[0].y} L${points[1].x},${points[1].y}`;
-            let d = `M${points[0].x},${points[0].y}`;
-            for (let i = 0; i < points.length - 1; i++) {
-                const p0 = points[i === 0 ? 0 : i - 1];
-                const p1 = points[i];
-                const p2 = points[i + 1];
-                const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
-                const cp1x = p1.x + (p2.x - p0.x) / 6;
-                const cp1y = p1.y + (p2.y - p0.y) / 6;
-                const cp2x = p2.x - (p3.x - p1.x) / 6;
-                const cp2y = p2.y - (p3.y - p1.y) / 6;
-                d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-            }
-            return d;
-        }
-
-        function renderFinanceFloatingChart() {
-            const raw = Array.isArray(financeProfile.history) ? [...financeProfile.history] : [];
-            const series = getFinanceChartSeries();
-            const fullData = raw
-                .sort((a, b) => String(a.month).localeCompare(String(b.month)))
-                .map(h => {
-                    const point = { month: h.month };
-                    series.forEach(s => { point[s.id] = financeSeriesValueForHistoryPoint(h, s); });
-                    return point;
-                });
-            const visibleCount = financeChartMonths ? Math.min(financeChartMonths, fullData.length) : fullData.length;
-            const data = fullData.slice(-visibleCount);
-            const target = financeTargetTotal();
-
-            if (!data.length) {
-                return `<div class="finance-empty-state">Aún no hay histórico. Edita tus cifras o usa <strong>Corregir registros</strong> abajo para registrar meses anteriores y empezar a ver la evolución.</div>`;
-            }
-
-            const W = 950, H = 220, padX = 48, padT = 30, padB = 26;
-            const innerW = W - padX * 2, innerH = H - padT - padB;
-            const allValues = data.flatMap(d => series.map(s => d[s.id]));
-            const maxVal = Math.max(1, target, ...allValues) * 1.08;
-
-            const x = i => data.length === 1 ? padX + innerW / 2 : padX + (innerW * i) / (data.length - 1);
-            const y = v => padT + innerH - (v / maxVal) * innerH;
-
-            const targetLine = target > 0 ? `
-                <line x1="${padX}" y1="${y(target).toFixed(1)}" x2="${W - padX}" y2="${y(target).toFixed(1)}" stroke="var(--text-muted)" stroke-width="1.3" stroke-dasharray="1.5,4" stroke-linecap="round"/>
-                <text x="${padX}" y="${(y(target) - 6).toFixed(1)}" font-size="9" fill="var(--text-muted)">Objetivo · ${financeMoney(target)}</text>` : '';
-
-            // Valores de guía en el eje Y (0 / mitad / máximo), para poder
-            // situar cada punto sin tener que pasar el ratón por encima.
-            const yAxisGuides = [0, maxVal / 2, maxVal].map(v => `
-                <line x1="${padX}" y1="${y(v).toFixed(1)}" x2="${W - padX}" y2="${y(v).toFixed(1)}" stroke="var(--border)" stroke-width="0.6"/>
-                <text x="${padX - 6}" y="${(y(v) - 3).toFixed(1)}" text-anchor="end" font-size="8" fill="var(--text-muted)">${financeMoney(v).replace(',00€', '€')}</text>`).join('');
-
-            // El último punto de la serie principal se marca más grande y
-            // relleno, como el punto de "hoy" en las gráficas de Stoic —
-            // el resto quedan como aros finos, discretos.
-            const dotsOf = (s, isMain) => data.map((d, i) => {
-                const isLast = isMain && i === data.length - 1;
-                return `
-                <circle class="finance-chart-point" cx="${x(i).toFixed(1)}" cy="${y(d[s.id]).toFixed(1)}" r="${isLast ? 5 : 3.5}" fill="${isLast ? (s.color || 'var(--text-secondary)') : 'var(--bg-app)'}" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="2"
-                    onmousemove="showFinanceChartTooltip(event,'${escapeHtml(s.name).replace(/'/g, "\\'")}','${escapeHtml(financeMonthLabel(d.month))}',${d[s.id]})"
-                    onmouseleave="hideFinanceChartTooltip()"></circle>`;
-            }).join('');
-
-            const step = Math.max(1, Math.ceil(data.length / 6));
-            const xLabels = data.map((d, i) => (data.length === 1 || i % step === 0 || i === data.length - 1)
-                ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${escapeHtml(financeMonthLabel(d.month).split(' de ')[0])}</text>`
-                : '').join('');
-
-            let linesSvg = '';
-            let lastYearSvg = '';
-            let hasLastYear = false;
-            if (data.length > 1) {
-                const pathOf = id => financeSmoothPathObj(data.map((d, i) => ({ x: Number(x(i).toFixed(1)), y: Number(y(d[id]).toFixed(1)) })));
-                const mainSeries = series[series.length - 1];
-                linesSvg = series.map((s, idx) => `<path d="${pathOf(s.id)}" fill="none" stroke="${s.color || 'var(--text-secondary)'}" stroke-width="${idx === series.length - 1 ? 2.5 : 2}" ${idx === series.length - 1 ? '' : 'stroke-dasharray="4,4"'} stroke-linecap="round" stroke-linejoin="round"/>`).join('');
-
-                // "Mismo mes, año pasado" — línea de referencia gris tenue,
-                // superpuesta en la misma posición X que el punto actual
-                // (no desplazada en el tiempo), para comparar el ritmo de
-                // este año contra el de hace 12 meses. Se dibuja detrás de
-                // las líneas principales y solo por los tramos donde hay
-                // dato real de hace un año (huecos = sin ese mes todavía).
-                const historyByMonth = {};
-                (Array.isArray(financeProfile.history) ? financeProfile.history : []).forEach(h => { historyByMonth[h.month] = h; });
-                const lastYearPoints = data.map((d, i) => {
-                    const [yy, mm] = d.month.split('-').map(Number);
-                    const prevKey = `${yy - 1}-${String(mm).padStart(2, '0')}`;
-                    const h = historyByMonth[prevKey];
-                    if (!h) return null;
-                    const v = financeSeriesValueForHistoryPoint(h, mainSeries);
-                    return { x: Number(x(i).toFixed(1)), y: Number(y(v).toFixed(1)) };
-                });
-                hasLastYear = lastYearPoints.some(p => p !== null);
-                if (hasLastYear) {
-                    const segments = [];
-                    let current = [];
-                    lastYearPoints.forEach(p => {
-                        if (p) current.push(p);
-                        else { if (current.length > 1) segments.push(current); current = []; }
-                    });
-                    if (current.length > 1) segments.push(current);
-                    const lastYearPath = segments.map(seg => financeSmoothPathObj(seg)).join(' ');
-                    lastYearSvg = `<path d="${lastYearPath}" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-opacity="0.35" stroke-linecap="round" stroke-linejoin="round"/>`;
-                }
-            }
-
-            return `
-                <div class="finance-chart-svg-wrap finance-floating-svg-wrap">
-                    <svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:280px">
-                        ${yAxisGuides}
-                        ${lastYearSvg}
-                        ${linesSvg}
-                        ${targetLine}
-                        ${series.map((s, idx) => dotsOf(s, idx === series.length - 1)).join('')}
-                        ${xLabels}
-                    </svg>
-                </div>
-                <div class="finance-chart-legend">${series.map(s => `<span class="finance-chart-legend-item"><i style="background:${s.color || 'var(--text-secondary)'}"></i>${escapeHtml(s.name)}</span>`).join('')}${hasLastYear ? `<span class="finance-chart-legend-item"><i style="background:var(--text-secondary);opacity:.4"></i>Año pasado</span>` : ''}</div>
-                ${data.length === 1 ? `<div class="finance-empty-state" style="margin-top:6px">Un solo registro todavía. Usa <strong>Corregir registros</strong> abajo para añadir meses anteriores y ver la evolución completa.</div>` : ''}`;
-        }
-
-        function showFinanceChartTooltip(evt, seriesLabel, monthLabel, value) {
-            let tip = document.getElementById('finance-chart-tooltip');
-            if (!tip) {
-                tip = document.createElement('div');
-                tip.id = 'finance-chart-tooltip';
-                document.body.appendChild(tip);
-            }
-            tip.innerHTML = `<strong>${financeMoney(value)}</strong><br>${escapeHtml(seriesLabel)} · ${escapeHtml(monthLabel)}`;
-            tip.style.display = 'block';
-            tip.style.left = (evt.clientX + 14) + 'px';
-            tip.style.top = (evt.clientY + 14) + 'px';
-        }
-
-        function hideFinanceChartTooltip() {
-            const tip = document.getElementById('finance-chart-tooltip');
-            if (tip) tip.style.display = 'none';
-        }
-
-        function openFinanceMetricEditor(key, label, targetKey) {
-            showModal(`
-                <div class="modal-title">Editar ${escapeHtml(label)}</div>
-                <div class="modal-label">Valor actual (€)</div>
-                <input id="finance-edit-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile[key] || 0)}">
-                <div class="modal-label">Objetivo para final de año (€)</div>
-                <input id="finance-edit-target" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile[targetKey] || 0)}">
-                <button class="btn-modal-primary" onclick="saveFinanceMetricEditor('${key}','${targetKey}')">Guardar</button>
-            `);
-        }
-
-        async function saveFinanceMetricEditor(key, targetKey) {
-            financeProfile[key] = Math.max(0, Number(document.getElementById('finance-edit-value')?.value) || 0);
-            financeProfile[targetKey] = Math.max(0, Number(document.getElementById('finance-edit-target')?.value) || 0);
-            closeModal();
-            await saveFinanceDashboard();
         }
 
         // ============================================================
@@ -660,66 +333,6 @@
         //  Sustituye a "+ Ingreso puntual". Cada movimiento ajusta el
         //  Efectivo automáticamente y queda registrado en el historial.
         // ============================================================
-
-        function openForecastProfileEditor() {
-            const fc = financeProfile.forecastProfile || {};
-            showModal(`
-                <div class="modal-title">Previsión</div>
-                <div class="finance-modal-note">Estos datos alimentan la provisión a fin de año que se muestra en Efectivo, Emergencia y Vacaciones.</div>
-                <div class="modal-label">Sueldo actual (€/mes)</div>
-                <input id="forecast-salary" class="modal-input" type="number" min="0" step="0.01" value="${Number(fc.salary || 0) || ''}" placeholder="0.00">
-                <div class="modal-label">Meses de contrato con ese sueldo</div>
-                <input id="forecast-contract" class="modal-input" type="number" min="0" step="1" value="${Number(fc.contractMonths || 0) || ''}" placeholder="Ej: 12">
-                <div class="modal-label">Ampliación mensual del fondo de emergencia (€)</div>
-                <input id="forecast-emergency" class="modal-input" type="number" min="0" step="0.01" value="${Number(fc.emergencyMonthlyPlan || 0) || ''}" placeholder="0.00">
-                <div class="modal-label">Ampliación mensual de la reserva de vacaciones (€)</div>
-                <input id="forecast-vacation" class="modal-input" type="number" min="0" step="0.01" value="${Number(fc.vacationMonthlyPlan || 0) || ''}" placeholder="0.00">
-                <div class="modal-label">Aportación mensual a inversiones a largo plazo (€)</div>
-                <input id="forecast-invest" class="modal-input" type="number" min="0" step="0.01" value="${Number(fc.investMonthlyPlan || 0) || ''}" placeholder="0.00">
-                <div class="finance-modal-note">Gasto actual en suscripciones/gastos fijos: ${financeMoney(financeRecurringTotal())}/mes (se descuenta solo, no hace falta indicarlo).</div>
-                <button class="btn-modal-primary" onclick="saveForecastProfileEditor()">Guardar previsión</button>
-            `);
-        }
-
-        async function saveForecastProfileEditor() {
-            financeProfile.forecastProfile = {
-                salary: Math.max(0, Number(document.getElementById('forecast-salary')?.value) || 0),
-                contractMonths: Math.max(0, Number(document.getElementById('forecast-contract')?.value) || 0),
-                emergencyMonthlyPlan: Math.max(0, Number(document.getElementById('forecast-emergency')?.value) || 0),
-                vacationMonthlyPlan: Math.max(0, Number(document.getElementById('forecast-vacation')?.value) || 0),
-                investMonthlyPlan: Math.max(0, Number(document.getElementById('forecast-invest')?.value) || 0)
-            };
-            closeModal();
-            await saveFinanceDashboard();
-        }
-
-        function renderFinanceMetric(key, targetKey, label, iconSvg, iconClass, note) {
-            const value = Number(financeProfile[key] || 0);
-            const target = Number(financeProfile[targetKey] || 0);
-            const prev = financePreviousSnapshot()?.[key];
-            const change = financePctChange(value, prev);
-            const goal = financeGoalStatus(value, target);
-            const provision = financeYearEndProvision(key);
-            const trendCls = change === null ? 'neutral' : change >= 0 ? 'positive' : 'negative';
-            const trendText = change === null ? 'Sin mes anterior' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
-            return `
-                <div class="finance-metric-card finance-metric-card-compact ${goal.cls}" onclick="openFinanceMetricEditor('${key}','${label}','${targetKey}')">
-                    <button class="finance-edit-btn" title="Editar" onclick="event.stopPropagation();openFinanceMetricEditor('${key}','${label}','${targetKey}')">✎</button>
-                    <div class="finance-metric-compact-head">
-                        <div class="finance-metric-icon ${iconClass}" style="width:28px;height:28px;margin:0;flex-shrink:0">${iconSvg}</div>
-                        <div class="finance-metric-compact-info">
-                            <div class="finance-metric-label">${label}</div>
-                            <div class="finance-metric-value">${financeMoney(value)}</div>
-                        </div>
-                    </div>
-                    <div class="finance-progress"><span style="width:${goal.pct === null ? 0 : Math.min(100, goal.pct)}%"></span></div>
-                    <div class="finance-metric-compact-foot">
-                        <span class="finance-trend-chip ${trendCls}">${trendText}</span>
-                        <span>${goal.pct === null ? 'Sin objetivo' : `${goal.pct.toFixed(0)}% obj.`}</span>
-                    </div>
-                    <div class="finance-metric-note">${provision === null ? 'Provisión: sin datos suficientes' : `Provisión: ${financeMoney(provision)}`}${note ? ` · ${note}` : ''}</div>
-                </div>`;
-        }
 
         // ============================================================
         //  METAS DE AHORRO
@@ -870,101 +483,6 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        // ============================================================
-        //  CONFIGURAR LÍNEAS DE LA GRÁFICA
-        // ============================================================
-        const FINANCE_SERIES_COLORS = ['#111827', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-        // Atajos para las combinaciones de cuentas más habituales, para que
-        // no haga falta montar una línea a mano marcando casillas una a una.
-        const FINANCE_SERIES_PRESETS = [
-            { key: 'ahorro', name: 'Efectivo + Emergencia', accountKeys: ['cash', 'emergency'] },
-            { key: 'inversion', name: 'Inversiones', accountKeys: ['invested'] },
-            { key: 'patrimonio', name: 'Patrimonio operativo', accountKeys: ['cash', 'emergency', 'invested'] }
-        ];
-
-        function openFinanceChartSeriesConfig() {
-            window._chartSeriesDraft = JSON.parse(JSON.stringify(getFinanceChartSeries()));
-            showModal(`
-                <div class="modal-title">Elegir qué se muestra en la gráfica</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Cada línea suma las cuentas que marques — incluidas las que tú mismo has creado.</div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">Atajos:</div>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
-                    ${FINANCE_SERIES_PRESETS.map(p => `<button class="finance-oneoff-btn" style="padding:7px 12px" onclick="addFinanceSeriesPreset('${p.key}')">+ ${escapeHtml(p.name)}</button>`).join('')}
-                </div>
-                <div id="finance-series-draft-list">${renderFinanceSeriesDraftList()}</div>
-                <button class="btn-secondary" style="margin-top:10px" onclick="addFinanceSeriesDraft()">+ Nueva línea</button>
-                <button class="btn-modal-primary" style="margin-top:14px" onclick="saveFinanceChartSeries()">Guardar</button>
-            `);
-        }
-
-        function addFinanceSeriesPreset(key) {
-            const preset = FINANCE_SERIES_PRESETS.find(p => p.key === key);
-            if (!preset) return;
-            window._chartSeriesDraft = window._chartSeriesDraft || [];
-            if (window._chartSeriesDraft.some(s => s.name === preset.name)) return;
-            const color = FINANCE_SERIES_COLORS[window._chartSeriesDraft.length % FINANCE_SERIES_COLORS.length];
-            window._chartSeriesDraft.push({ id: 'serie_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5), name: preset.name, accountKeys: [...preset.accountKeys], color });
-            const list = document.getElementById('finance-series-draft-list');
-            if (list) list.innerHTML = renderFinanceSeriesDraftList();
-        }
-
-        function renderFinanceSeriesDraftList() {
-            const accounts = getAllAccounts();
-            const draft = window._chartSeriesDraft || [];
-            if (!draft.length) return `<div class="finance-empty-line">Sin líneas propias — se usarán las dos de siempre.</div>`;
-            return draft.map((s, i) => `
-                <div class="finance-budget-row" style="cursor:default">
-                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-                        <input class="modal-input" style="margin:0" value="${escapeHtml(s.name)}" oninput="window._chartSeriesDraft[${i}].name=this.value">
-                        <button class="btn-secondary" style="width:auto;padding:2px 8px" onclick="removeFinanceSeriesDraft(${i})">✕</button>
-                    </div>
-                    <div style="display:flex;flex-wrap:wrap;gap:6px">
-                        ${accounts.map(a => `
-                            <label class="recurring-weekday-chip">
-                                <input type="checkbox" ${s.accountKeys.includes(a.key) ? 'checked' : ''} onchange="toggleFinanceSeriesDraftAccount(${i},'${a.key}',this.checked)">
-                                ${escapeHtml(a.label)}
-                            </label>`).join('')}
-                    </div>
-                </div>`).join('');
-        }
-
-        function addFinanceSeriesDraft() {
-            window._chartSeriesDraft = window._chartSeriesDraft || [];
-            const color = FINANCE_SERIES_COLORS[window._chartSeriesDraft.length % FINANCE_SERIES_COLORS.length];
-            window._chartSeriesDraft.push({ id: 'serie_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5), name: 'Nueva línea', accountKeys: [], color });
-            const list = document.getElementById('finance-series-draft-list');
-            if (list) list.innerHTML = renderFinanceSeriesDraftList();
-        }
-
-        function removeFinanceSeriesDraft(i) {
-            window._chartSeriesDraft.splice(i, 1);
-            const list = document.getElementById('finance-series-draft-list');
-            if (list) list.innerHTML = renderFinanceSeriesDraftList();
-        }
-
-        function toggleFinanceSeriesDraftAccount(i, key, checked) {
-            const s = window._chartSeriesDraft[i];
-            if (checked) { if (!s.accountKeys.includes(key)) s.accountKeys.push(key); }
-            else s.accountKeys = s.accountKeys.filter(k => k !== key);
-        }
-
-        async function saveFinanceChartSeries() {
-            financeProfile.chartSeries = (window._chartSeriesDraft || []).filter(s => s.accountKeys.length && s.name.trim());
-            window._chartSeriesDraft = null;
-            closeModal();
-            if (currentView === 'finances') render();
-            try { await saveData(); showToast('Gráfica actualizada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
-        }
-
-        // ============================================================
-        //  ACTUALIZACIÓN MENSUAL GUIADA
-        // ============================================================
-        function financeMonthUpdatePending() {
-            return financeProfile.ultimoCierreMensual !== financeMonthKey();
-        }
-
-
         function openMonthlyFinanceUpdate() {
             const monthKey = financeMonthKey();
             const fc = financeProfile.forecastProfile || {};
@@ -1037,23 +555,6 @@
             `);
         }
 
-        // Tarjeta simple para cuentas sin objetivo/previsión propios (cuentas
-        // propias, gastos recurrentes, coleccionables) — mismo estilo visual
-        // que renderFinanceMetric para que toda la fila de Cuentas sea coherente.
-        function renderFinanceSimpleTile(value, label, onClick, note, muted, iconSvg, iconClass) {
-            return `
-                <div class="finance-metric-card finance-metric-card-compact finance-metric-card-simple ${muted ? 'finance-metric-card-muted' : ''}" ${onClick ? `onclick="${onClick}"` : ''}>
-                    <div class="finance-metric-compact-head">
-                        ${iconSvg ? `<div class="finance-metric-icon ${iconClass || ''}" style="width:14px;height:14px;margin:0;flex-shrink:0;padding:4px">${iconSvg}</div>` : ''}
-                        <div class="finance-metric-compact-info">
-                            <div class="finance-metric-label">${escapeHtml(label)}</div>
-                            <div class="finance-metric-value">${financeMoney(value)}</div>
-                        </div>
-                    </div>
-                    ${note ? `<div class="finance-metric-note">${escapeHtml(note)}</div>` : ''}
-                </div>`;
-        }
-
         // ============================================================
         //  INVERSIÓN A LARGO PLAZO: aportaciones vs. valor actual
         // ============================================================
@@ -1109,29 +610,6 @@
             const months = new Set();
             accounts.forEach(a => (a.contributions || []).forEach(c => months.add(c.month)));
             return { meses: months.size, totalAportado, valorActual, gain, gainPct, cuentas: accounts.length };
-        }
-
-        function renderInvestmentPanel() {
-            const stats = financeInvestmentStats();
-
-            if (!stats.cuentas) {
-                return `
-                <section class="finance-panel" id="finance-investment-section">
-                    <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}</div>
-                    <div class="finance-empty-line" style="text-align:center;margin-top:4px">Planifica tu sueldo mensual y lleva el seguimiento de tus cuentas de inversión — fondos, ETFs, cuentas remuneradas...</div>
-                    <button class="finance-oneoff-btn" style="margin-top:12px" onclick="openLongTermModal()">largo plazo.</button>
-                </section>`;
-            }
-
-            const gainCls = stats.gain > 0 ? 'positive' : stats.gain < 0 ? 'negative' : 'neutral';
-            // Tarjeta-lanzadera: sin barras ni desglose, un vistazo y un
-            // clic directo al popup — el detalle vive ahí, no aquí.
-            return `
-            <section class="finance-panel finance-panel-clickable" id="finance-investment-section" onclick="openLongTermModal()">
-                <div class="finance-panel-head">${financePanelHeadIcon(FINANCE_ICON_TREND, 'fin-purple', 'Largo plazo', 'Inversión')}</div>
-                <div class="finance-invest-simple-value">${financeMoney(stats.valorActual)}</div>
-                <div class="finance-empty-line" style="margin-top:4px">${stats.cuentas} cuenta${stats.cuentas === 1 ? '' : 's'} · <span class="${gainCls === 'positive' ? 'finance-positive' : gainCls === 'negative' ? 'finance-negative' : ''}">${stats.gain >= 0 ? '+' : ''}${financeMoney(stats.gain)}</span></div>
-            </section>`;
         }
 
         // ---- Popup "largo plazo." ----
@@ -1753,126 +1231,6 @@
             try { await saveData(); showToast('Aportación guardada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        function renderFinanceDashboard() {
-            ensureCurrentMonthHistory();
-            const total = financeCorePatrimony();
-            const totalWithVacation = financeTotalAssets();
-            const target = financeTargetTotal();
-            const totalPct = target > 0 ? Math.min(100, total / target * 100) : null;
-            const prevTotal = financePreviousSnapshot()?.total;
-            const totalChange = financePctChange(total, prevTotal);
-            const recurring = financeRecurringTotal();
-            const now = new Date();
-            const monthsLeft = 12 - now.getMonth();
-            const remainingToTarget = Math.max(0, target - total);
-            const fc = financeProfile.forecastProfile || {};
-
-            const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
-            const updatePending = financeMonthUpdatePending();
-            return `
-            <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
-                <div class="finance-toolbar-row">
-                    ${renderFinanceProInlineToggle()}
-                    <div style="display:flex;align-items:center;gap:8px">
-                        <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceChartSeriesConfig()">⚙ Elegir qué mostrar</button>
-                        ${blurToggleBtn}
-                    </div>
-                </div>
-                ${renderFinanceProSyncWarning()}
-
-                ${(financeProfile.recordatorioDia && updatePending && new Date().getDate() >= financeProfile.recordatorioDia) ? `
-                <div class="finance-reminder-banner">
-                    <span>Cuando tengas la información disponible, puedes actualizar tus finanzas de ${escapeHtml(financeMonthLabel(financeMonthKey()))}.</span>
-                    <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">Actualizar ahora</button>
-                </div>` : ''}
-
-                <section class="finance-panel finance-chart-panel">
-                    <div class="finance-panel-head">
-                        ${financePanelHeadIcon(FINANCE_ICON_CHART, 'fin-slate', 'Evolución', 'Tu patrimonio en el tiempo')}
-                    </div>
-                    <div id="finance-floating-chart-wrap" onwheel="financeChartWheelZoom(event)" title="Rueda del ratón: acercar/alejar el periodo mostrado">
-                        ${renderFinanceFloatingChart()}
-                    </div>
-                </section>
-
-                <section class="finance-networth-card finance-networth-card-wide" id="finance-networth-section">
-                    <div class="finance-networth-main">
-                        <div>
-                            <div class="finance-kicker">Patrimonio operativo</div>
-                            <div class="finance-networth-value finance-networth-value-compact">${financeMoney(total)}</div>
-                            <div class="finance-networth-meta">
-                                ${totalChange === null ? 'Primer registro' : `${totalChange >= 0 ? '+' : ''}${totalChange.toFixed(1)}% frente al mes anterior`}
-                                · Objetivo ${target > 0 ? financeMoney(target) : 'sin definir'}
-                            </div>
-                        </div>
-                        <div class="finance-networth-side">
-                            <span>Progreso</span>
-                            <strong>${totalPct === null ? '—' : totalPct.toFixed(0) + '%'}</strong>
-                            <div class="finance-progress finance-progress-large"><span style="width:${totalPct === null ? 0 : totalPct}%"></span></div>
-                            <small>${remainingToTarget <= 0 && target > 0 ? 'Objetivo alcanzado' : target > 0 ? `Faltan ${financeMoney(remainingToTarget)} · ${monthsLeft} meses` : 'Define un objetivo para ver el camino'}</small>
-                        </div>
-                    </div>
-                    <div class="finance-networth-actions">
-                        <button class="finance-networth-action-btn" onclick="openFinanceTargetEditor()">✎ Objetivo</button>
-                        <button class="btn-modal-primary" style="width:auto" onclick="openMonthlyFinanceUpdate()">${updatePending ? 'Actualizar este mes' : '✓ Mes actualizado'}</button>
-                    </div>
-                </section>
-
-                <div id="finance-accounts-section" class="finance-section-head">
-                    <div class="finance-kicker">Cuentas</div>
-                    <button class="finance-oneoff-btn" onclick="openFinanceAccountsConfig()">+ Cuenta propia</button>
-                </div>
-                <div class="finance-metrics-grid">
-                    ${renderFinanceMetric('cash','cashTarget','Efectivo / bancos',FINANCE_ICON_CASH,'fin-blue','Liquidez disponible')}
-                    ${renderFinanceMetric('emergency','emergencyTarget','Fondo de emergencia',FINANCE_ICON_SHIELD,'fin-amber','Reserva no destinada al gasto corriente')}
-                    ${renderFinanceMetric('vacation','vacationTarget','Reserva de vacaciones',FINANCE_ICON_SUN,'fin-teal','Se mantiene aparte del patrimonio operativo')}
-                    ${(financeProfile.customAccounts || []).map(a => renderFinanceSimpleTile(a.balance, a.name, `openCustomAccountEditor('${a.id}')`, null, false, FINANCE_ICON_CARD, 'fin-slate')).join('')}
-                    ${renderFinanceSimpleTile(recurring, 'Gastos recurrentes / mes', 'openRecurringExpensesModal()', null, true, FINANCE_ICON_REPEAT, 'fin-red')}
-                    ${collectibles.length ? renderFinanceSimpleTile(financeCollectiblesTotal(), 'Coleccionables', "switchView('collectibles')", 'No cuenta para el patrimonio operativo', true, FINANCE_ICON_STAR, 'fin-gold') : ''}
-                </div>
-
-                <div class="finance-section-head" style="margin-top:24px">
-                    <div class="finance-kicker">Planificación a futuro</div>
-                </div>
-                <div class="finance-grid-3">
-                    <section class="finance-panel" id="finance-forecast-section">
-                        <div class="finance-panel-head">
-                            ${financePanelHeadIcon(FINANCE_ICON_CALENDAR, 'fin-indigo', 'Previsión', 'Sueldo y aportaciones')}
-                            <button class="finance-icon-btn" title="Editar previsión" onclick="openForecastProfileEditor()">✎</button>
-                        </div>
-                        <div class="finance-stat-grid">
-                            <div class="finance-stat-box"><span>Sueldo actual</span><strong>${financeMoney(fc.salary || 0)}</strong></div>
-                            <div class="finance-stat-box"><span>Meses de contrato</span><strong>${fc.contractMonths || '—'}</strong></div>
-                            <div class="finance-stat-box"><span>+Emergencia/mes</span><strong>${financeMoney(fc.emergencyMonthlyPlan || 0)}</strong></div>
-                            <div class="finance-stat-box"><span>+Vacaciones/mes</span><strong>${financeMoney(fc.vacationMonthlyPlan || 0)}</strong></div>
-                        </div>
-                        <div class="finance-empty-line" style="margin-top:10px">Suscripciones y gastos fijos: ${financeMoney(recurring)}/mes (se descuentan solos de la provisión).</div>
-                    </section>
-
-                    ${renderInvestmentPanel()}
-
-                    ${renderFinanceSavingsGoals()}
-                </div>
-
-                <div class="finance-section-head" style="margin-top:6px">
-                    <div class="finance-kicker">Ajustes</div>
-                </div>
-                <div class="finance-dashboard-foot-actions">
-                    <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()">✎ Corregir registros</button>
-                    <label class="finance-foot-reminder">
-                        Recordarme el día
-                        <select class="modal-input" style="width:auto;margin:0;padding:4px 8px" onchange="setFinanceReminderDay(this.value)">
-                            <option value="">Sin recordatorio</option>
-                            ${Array.from({ length: 28 }, (_, i) => i + 1).map(d => `<option value="${d}" ${financeProfile.recordatorioDia === d ? 'selected' : ''}>${d}</option>`).join('')}
-                        </select>
-                        de cada mes
-                    </label>
-                </div>
-
-                <div class="finance-dashboard-foot">${monthsLeft > 0 ? `Quedan ${monthsLeft} meses del año. ` : ''}La reserva de vacaciones (${financeMoney(financeProfile.vacation || 0)}) queda fuera del patrimonio operativo para evitar contar dos veces el dinero disponible.</div>
-            </div>`;
-        }
-
         function renderFinances() {
             migrateInvestmentData();
             migrateToInvestmentAccounts();
@@ -1940,50 +1298,4 @@
         }
 
         const FINANCE_PRO_ACCOUNT_KEYS = ['efectivo', 'bancos', 'online'];
-
-        async function toggleFinancePro() {
-            financePro.enabled = !financePro.enabled;
-            if (financePro.enabled && !financePro.categories.length) {
-                financePro.categories = financeProDefaultCategories();
-            }
-            render();
-            try { await saveData(); showToast(financePro.enabled ? 'Modo PRO activado' : 'Modo PRO desactivado'); }
-            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
-        }
-
-        // Interruptor compacto — comparte fila con el de ocultar cifras
-        // para no ocupar una línea entera solo para esto.
-        function renderFinanceProInlineToggle() {
-            return `<div class="finance-pro-inline-toggle">
-                <span>Modo PRO</span>
-                <button class="finance-pro-switch ${financePro.enabled ? 'on' : ''}" onclick="toggleFinancePro()" title="${financePro.enabled ? 'Desactivar' : 'Activar'} modo PRO" aria-label="Modo PRO">
-                    <span class="finance-pro-switch-knob"></span>
-                </button>
-            </div>`;
-        }
-
-        // Compara la cuenta "Efectivo / bancos" del Resumen con la suma de
-        // Efectivo + Bancos del modo PRO — son dos caminos independientes
-        // para llevar las mismas cuentas, así que pueden desincronizarse
-        // si se actualiza uno y no el otro. "Online" no tiene equivalente
-        // en el Resumen, así que no entra en la comparación.
-        function financeProSyncStatus() {
-            const proCashLike = financeProAccountBalance('efectivo') + financeProAccountBalance('bancos');
-            const resumenCash = Number(financeProfile.cash || 0);
-            const diff = proCashLike - resumenCash;
-            return { proCashLike, resumenCash, diff, inSync: Math.abs(diff) < 1 };
-        }
-
-        function renderFinanceProSyncWarning() {
-            if (!financePro.enabled) return '';
-            const status = financeProSyncStatus();
-            if (status.inSync) return '';
-            return `<div class="finance-sync-warning">
-                <div class="finance-metric-icon fin-amber finance-pro-tx-icon">${FINANCE_ICON_ALERT}</div>
-                <div>
-                    <strong>Efectivo + Bancos no coincide entre el Resumen y el modo PRO</strong>
-                    <span>Resumen: ${financeMoney(status.resumenCash)} · PRO: ${financeMoney(status.proCashLike)} — diferencia de ${financeMoney(Math.abs(status.diff))}</span>
-                </div>
-            </div>`;
-        }
 

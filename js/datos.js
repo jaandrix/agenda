@@ -59,7 +59,8 @@
                 financeProfile.recordatorioDia = Number.isFinite(financeProfile.recordatorioDia) ? financeProfile.recordatorioDia : null;
                 financeProfile.ultimoCierreMensual = financeProfile.ultimoCierreMensual || null;
                 financePro = saved.financePro || financePro;
-                financePro.enabled = !!financePro.enabled;
+                // Solo existe un sistema de finanzas; enabled se conserva por los datos ya guardados.
+                financePro.enabled = true;
                 financePro.accounts = (financePro.accounts && typeof financePro.accounts === 'object') ? financePro.accounts : {};
                 ['efectivo', 'bancos', 'online'].forEach(k => {
                     financePro.accounts[k] = financePro.accounts[k] || { name: k[0].toUpperCase() + k.slice(1), balance0: 0 };
