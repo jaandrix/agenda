@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<!--
+  Carteles en blanco y negro con grano, 4 iguales por folio A4 (dos cortes por
+  el centro y salen 4 de tamaño A6). carteles-bn.html?m=<modelo>. generar.py
+  mete el QR de cada modelo (corrección de errores máxima, con la "b." en el
+  centro), lo pasa a PDF y comprueba que el QR se lee.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=block" rel="stylesheet">
+<style>
+    @page { size: 210mm 297mm; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 210mm; height: 297mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { display: grid; grid-template-columns: 105mm 105mm; grid-template-rows: 148.5mm 148.5mm; position: relative; background: #fff; }
+    .pieza { position: relative; overflow: hidden; container-type: size; font-family: 'Poppins', sans-serif; color: #111; background: #fff; display: flex; flex-direction: column; padding: 9cqw 9cqw 8cqw; }
+    .pieza.negra { background: #111; color: #f2f2f2; }
+    .grano { position: absolute; inset: 0; pointer-events: none; background: url(grano.png); background-size: 38mm; opacity: .75; mix-blend-mode: multiply; z-index: 3; }
+    .negra .grano { background-image: url(grano-claro.png); mix-blend-mode: screen; opacity: .28; }
+    .contenido { position: relative; display: flex; flex-direction: column; height: 100%; }
+    .marca { font-weight: 800; font-size: 5.6cqw; letter-spacing: -.2cqw; line-height: 1; }
+    .nota { font-family: 'IBM Plex Mono', monospace; font-size: 3.3cqw; font-weight: 500; letter-spacing: .05cqw; }
+    h1 { font-weight: 800; line-height: .98; letter-spacing: -.5cqw; }
+    p.txt { font-size: 4.9cqw; line-height: 1.38; font-weight: 500; }
+    .pie { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 4cqw; padding-top: 4cqw; border-top: .5cqw solid currentColor; }
+    .pie-texto { display: flex; flex-direction: column; gap: 1.6cqw; padding-top: 3cqw; }
+    .pie-texto .web { font-size: 4.4cqw; font-weight: 800; letter-spacing: -.1cqw; }
+    .pie-texto .nota { opacity: .8; }
+    .qr { position: relative; z-index: 4; flex-shrink: 0; width: 30cqw; height: 30cqw; margin-top: 3cqw; padding: 2.6cqw; background: #fff; border-radius: 2cqw; box-shadow: 0 0 0 .45cqw #111; }
+    .qr svg { display: block; width: 100%; height: 100%; }
+    .qr-logo { position: absolute; left: 50%; top: 50%; width: 22%; height: 22%; transform: translate(-50%, -50%); background: #111; border: .7cqw solid #fff; border-radius: 1.6cqw; display: grid; place-items: center; font-weight: 800; font-size: 3.7cqw; color: #fff; letter-spacing: -.15cqw; line-height: 1; padding-bottom: .5cqw; }
+    .tachado { text-decoration: line-through; text-decoration-thickness: .55cqw; }
+    .raya { display: block; border-bottom: .45cqw solid currentColor; height: 9cqw; }
+    .gris { opacity: .45; }
+
+    /* Líneas de corte: solo en el folio, entre las cuatro piezas */
+    .corte-v, .corte-h { position: absolute; z-index: 10; pointer-events: none; }
+    .corte-v { left: 105mm; top: 0; bottom: 0; border-left: .2mm dashed #9a9a9a; }
+    .corte-h { top: 148.5mm; left: 0; right: 0; border-top: .2mm dashed #9a9a9a; }
+    .tijera { position: absolute; z-index: 11; font-size: 3.2mm; color: #9a9a9a; background: #fff; line-height: 1; padding: .4mm; }
+</style>
+</head>
+<body>
+<script>
+    const m = new URLSearchParams(location.search).get('m') || 'no-cambia';
+    const qr = window.QR || '';
+    const pie = nota => `
+        <div class="pie">
+            <div class="pie-texto">
+                <div class="marca">bitácora.</div>
+                <div class="web">appbitacora.es</div>
+                <div class="nota">${nota || '14 días gratis · sin tarjeta'}</div>
+            </div>
+            <div class="qr">${qr}<div class="qr-logo">b.</div></div>
+        </div>`;
+    const M = {
+        'no-cambia': { negra: false, html: `
+            <div class="nota">un cartel honesto.</div>
+            <h1 style="font-size:12.6cqw;margin:7cqw 0 6cqw">Este cartel no te va a cambiar la vida.</h1>
+            <p class="txt">Pero puede que te ahorre abrir seis apps cada mañana para saber qué tienes hoy.</p>
+            ${pie()}` },
+        'donde': { negra: false, html: `
+            <h1 style="font-size:13cqw;margin-bottom:6cqw">Lo apuntaste. ¿Pero dónde?</h1>
+            <div style="display:flex;flex-direction:column;gap:2.8cqw;margin-bottom:6cqw;font-size:1.25em">
+                <div class="nota tachado gris" style="font-size:4.2cqw">en las notas del móvil</div>
+                <div class="nota tachado gris" style="font-size:4.2cqw">en un audio a ti mismo</div>
+                <div class="nota tachado gris" style="font-size:4.2cqw">en una captura de pantalla</div>
+                <div class="nota tachado gris" style="font-size:4.2cqw">en el grupo de clase</div>
+                <div class="nota tachado gris" style="font-size:4.2cqw">en un pósit que ya no está</div>
+            </div>
+            <p class="txt"><b>En un solo sitio:</b> calendario, exámenes, dinero y planes.</p>
+            ${pie()}` },
+        'examen': { negra: true, html: `
+            <div class="nota">pregunta rápida.</div>
+            <h1 style="font-size:13cqw;margin:6cqw 0 6cqw">¿Cuándo es tu próximo examen?</h1>
+            <p class="txt">Si has tenido que pensarlo, esto es para ti. Bitácora te dice cuántos días quedan y qué nota necesitas para aprobar.</p>
+            ${pie()}` },
+        'pizza': { negra: false, html: `
+            <div class="nota">jueves, 21:40 · pizzería.</div>
+            <h1 style="font-size:12cqw;margin:6cqw 0 5cqw">Pablo te debe 7,80 € de la pizza.</h1>
+            <p class="txt">Él no se acuerda. Bitácora sí. Gastos con amigos, viajes y el piso, con las cuentas claras.</p>
+            ${pie()}` },
+        'manana': { negra: false, html: `
+            <div class="marca" style="font-size:4.6cqw">bitácora.</div>
+            <h1 style="font-size:11cqw;margin:6cqw 0 3cqw">Mañana tengo que:</h1>
+            <span class="raya"></span><span class="raya"></span><span class="raya"></span>
+            <p class="txt" style="margin-top:5cqw">¿Y si lo escribes en un sitio donde no se pierda?</p>
+            ${pie('escríbelo aquí. o allí.')}` },
+        'sin-anuncios': { negra: false, html: `
+            <h1 style="font-size:12.4cqw;margin-bottom:6cqw">No tiene anuncios. No quiere tu tiempo.</h1>
+            <p class="txt">Una agenda que no compite por tu atención. Entras, apuntas, te vas. Tu día, tus estudios y tu dinero, en calma.</p>
+            ${pie('sin scroll infinito · sin ruido')}` },
+        'estudiante': { negra: false, html: `
+            <div class="nota">quién la hace.</div>
+            <h1 style="font-size:11.2cqw;margin:6cqw 0 5cqw">La hizo un estudiante al que las agendas se le quedaban cortas.</h1>
+            <p class="txt">Ahora junta su calendario, sus exámenes, su dinero y sus planes. Puede que a ti también te sirva.</p>
+            ${pie()}` },
+        'anuncio': { negra: true, html: `
+            <h1 style="font-size:15cqw;margin-bottom:4cqw">Esto es un anuncio.</h1>
+            <p class="txt" style="margin-bottom:5cqw">Sí. De una agenda.</p>
+            <p class="txt">Pero sin anuncios dentro, sin vender tus datos y con 14 días gratis sin poner la tarjeta. Eso es todo.</p>
+            ${pie()}` },
+    };
+    const d = M[m];
+    document.write(Array.from({ length: 4 }, () => `<section class="pieza ${d.negra ? 'negra' : ''}"><div class="grano"></div><div class="contenido">${d.html}</div></section>`).join(''));
+    document.write('<div class="corte-v"></div><div class="corte-h"></div><span class="tijera" style="left:103.4mm;top:2mm">✂</span><span class="tijera" style="left:2mm;top:146.6mm">✂</span>');
+</script>
+</body>
+</html>
