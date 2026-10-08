@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<!--
+  Carteles de Bitácora para imprimir. Un solo archivo con todos los diseños:
+  carteles.html?c=<diseño>&tam=<tamaño>. generar.py los pasa a PDF y PNG con
+  Chrome headless. Los textos crecen con el ancho de la hoja (unidades cqw),
+  así que cada diseño sirve en A3, A4 y A5 sin tocar nada.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=block" rel="stylesheet">
+<style>
+    :root { --oscuro:#302F2C; --crema:#EFEDE3; --papel:#FAF8F5; --naranja:#E5532B; --gris:#8c8a80; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html, body { width:100%; height:100%; font-family:'Poppins', sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .hoja { position:relative; width:100%; height:100%; container-type:size; overflow:hidden; display:flex; flex-direction:column; padding:8cqw; }
+    .oscuro { background:var(--oscuro); color:var(--crema); }
+    .claro { background:var(--papel); color:var(--oscuro); }
+    .marca { font-weight:800; font-size:5cqw; letter-spacing:-.2cqw; line-height:1; }
+    .marca b { color:var(--naranja); }
+    .kicker { font-size:2.6cqw; font-weight:700; color:var(--naranja); margin-bottom:3cqw; }
+    h1 { font-weight:800; line-height:1; letter-spacing:-.45cqw; }
+    .pie { margin-top:auto; display:flex; align-items:flex-end; justify-content:space-between; gap:5cqw; }
+    .pie-texto { display:flex; flex-direction:column; gap:1.6cqw; }
+    .pie-texto p { font-size:2.9cqw; line-height:1.35; font-weight:500; opacity:.85; max-width:48cqw; }
+    .web { font-size:3.6cqw; font-weight:800; letter-spacing:-.1cqw; }
+    .qr { flex-shrink:0; width:24cqw; height:24cqw; padding:1.6cqw; background:#fff; border-radius:2.4cqw; }
+    .qr svg { width:100%; height:100%; display:block; }
+    .qr-pista { font-size:2.1cqw; font-weight:600; text-align:center; margin-top:1.4cqw; opacity:.8; }
+    .rejilla { position:absolute; inset:0; pointer-events:none; opacity:.09; background-image:linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px); background-size:10cqw 10cqw; }
+
+    /* 1. la pregunta */
+    .pregunta h1 { font-size:12.5cqw; margin-top:auto; }
+    .pregunta h1 em { font-style:normal; color:var(--naranja); }
+
+    /* 2. la lista */
+    .lista h1 { font-size:8cqw; margin:7cqw 0 6cqw; }
+    .lista ul { list-style:none; display:flex; flex-direction:column; gap:3.4cqw; }
+    .lista li { display:flex; align-items:center; gap:3cqw; font-size:5.4cqw; font-weight:700; letter-spacing:-.15cqw; line-height:1.1; }
+    .lista li i { flex-shrink:0; width:5cqw; height:5cqw; border-radius:50%; border:.7cqw solid currentColor; }
+    .lista li.hecha { opacity:.4; text-decoration:line-through; text-decoration-thickness:.5cqw; }
+    .lista li.hecha i { background:currentColor; }
+    .lista li.ultima { color:var(--naranja); }
+    .lista li.ultima i { border-color:var(--naranja); background:var(--naranja); }
+
+    /* 3. catorce apps */
+    .catorce h1 { font-size:10.5cqw; margin-top:5cqw; }
+    .catorce h1 span { color:var(--naranja); }
+    .puntos { display:grid; grid-template-columns:repeat(7, 1fr); gap:3cqw; margin:8cqw 0 4cqw; }
+    .puntos i { aspect-ratio:1; border-radius:50%; border:.6cqw solid currentColor; opacity:.35; position:relative; }
+    .puntos i::after { content:''; position:absolute; left:-12%; right:-12%; top:50%; height:.6cqw; background:currentColor; transform:rotate(-35deg); }
+    .puntos-flecha { font-size:6cqw; font-weight:800; text-align:center; margin:1cqw 0; }
+    .punto-uno { width:16cqw; aspect-ratio:1; border-radius:50%; background:var(--naranja); margin:0 auto; }
+
+    /* 4. universidad y 5. amigos: titular + recorte real de la app */
+    .captura h1 { font-size:9.5cqw; margin:5cqw 0 3cqw; }
+    .captura h1 span { color:var(--naranja); }
+    .captura .bajada { font-size:3.4cqw; line-height:1.4; font-weight:500; opacity:.85; max-width:70cqw; }
+    .captura .recorte { margin:6cqw 0 0; display:flex; justify-content:center; }
+    .captura .recorte img { width:72cqw; border-radius:3cqw; box-shadow:0 3cqw 7cqw -2cqw rgba(0,0,0,.6); }
+    .captura.universidad h1 { font-size:8.4cqw; }
+    .captura.universidad .bajada { font-size:3.1cqw; }
+    .captura.universidad .recorte { margin-top:4.5cqw; }
+    .captura.universidad .recorte img { width:60cqw; }
+
+    /* 6. tiras para arrancar (solo A4) */
+    .tiras { padding:0; }
+    .tiras .arriba { padding:7cqw 7cqw 0; flex:1; display:flex; flex-direction:column; }
+    .tiras h1 { font-size:10cqw; margin-top:auto; margin-bottom:4cqw; }
+    .tiras h1 span { color:var(--naranja); }
+    .tiras .medio { display:flex; align-items:center; gap:5cqw; padding:0 7cqw 5cqw; }
+    .tiras .medio .qr { width:20cqw; height:20cqw; }
+    .tiras .medio p { font-size:3cqw; line-height:1.4; font-weight:500; }
+    .tiras .tiras-fila { display:grid; grid-template-columns:repeat(8, 1fr); height:34cqw; border-top:.35cqw dashed currentColor; }
+    .tiras .tira { border-right:.35cqw dashed currentColor; display:flex; align-items:center; justify-content:center; }
+    .tiras .tira:last-child { border-right:0; }
+    .tiras .tira span { writing-mode:vertical-rl; transform:rotate(180deg); font-size:3.1cqw; font-weight:800; line-height:1.25; white-space:nowrap; text-align:center; }
+    .tiras .tira small { font-size:2.3cqw; font-weight:600; opacity:.75; }
+    .tiras .tira b { color:var(--naranja); }
+
+    /* tarjeta de visita y pósit */
+    .tarjeta { padding:6cqw 7cqw; flex-direction:row; align-items:center; gap:6cqw; }
+    .tarjeta .izq { flex:1; display:flex; flex-direction:column; height:100%; }
+    .tarjeta .marca { font-size:9cqw; }
+    .tarjeta h1 { font-size:6.6cqw; margin:auto 0 2.5cqw; letter-spacing:-.25cqw; }
+    .tarjeta p { font-size:3.6cqw; font-weight:600; opacity:.8; }
+    .tarjeta .qr { width:34cqw; height:34cqw; border-radius:3cqw; padding:2.4cqw; }
+    .posit { padding:9cqw; }
+    .posit ul { list-style:none; display:flex; flex-direction:column; gap:4.5cqw; margin-top:4cqw; }
+    .posit li { font-size:7cqw; font-weight:700; line-height:1.1; letter-spacing:-.2cqw; }
+    .posit li.ultima { color:var(--naranja); }
+    .posit .web { font-size:6cqw; margin-top:auto; }
+</style>
+<script>
+    const q = new URLSearchParams(location.search);
+    const TAM = { A3: '297mm 420mm', A4: '210mm 297mm', A5: '148mm 210mm', tarjeta: '85mm 55mm', posit: '76mm 76mm' };
+    document.write(`<style>@page { size:${TAM[q.get('tam') || 'A4']}; margin:0 }</style>`);
+</script>
+</head>
+<body>
+<script>
+    const c = q.get('c') || 'pregunta';
+    const qr = window.QR || '';
+    const pie = (texto, pista) => `
+        <div class="pie">
+            <div class="pie-texto">
+                <div class="marca">bitácora<b>.</b></div>
+                <p>${texto}</p>
+                <div class="web">appbitacora.es</div>
+            </div>
+            <div><div class="qr">${qr}</div><div class="qr-pista">${pista || 'escanéame.'}</div></div>
+        </div>`;
+    const D = {
+        pregunta: `<div class="hoja oscuro pregunta"><div class="rejilla"></div>
+            <div class="kicker">una pregunta.</div>
+            <h1>¿Cuántas apps has abierto hoy para saber <em>qué tienes que hacer mañana?</em></h1>
+            <div style="height:9cqw"></div>
+            ${pie('Calendario, tareas, estudios, dinero y amigos, en un solo sitio. 14 días gratis, sin tarjeta.')}
+        </div>`,
+        lista: `<div class="hoja claro lista">
+            <div class="marca">bitácora<b>.</b></div>
+            <h1>Lo que tienes en la cabeza ahora mismo:</h1>
+            <ul>
+                <li class="hecha"><i></i>examen de estadística, martes.</li>
+                <li><i></i>pagar el piso.</li>
+                <li><i></i>cumple de marta.</li>
+                <li><i></i>devolverle 20 € a pablo.</li>
+                <li class="ultima"><i></i>¿y si lo apuntas todo en un solo sitio?</li>
+            </ul>
+            <div style="height:7cqw"></div>
+            ${pie('Tu agenda, tus estudios, tu dinero y tus planes, juntos. 14 días gratis, sin tarjeta.')}
+        </div>`,
+        catorce: `<div class="hoja claro catorce">
+            <div class="marca">bitácora<b>.</b></div>
+            <h1>Tu vida no cabe en 14 apps. <span>Cabe en una.</span></h1>
+            <div class="puntos">${'<i></i>'.repeat(14)}</div>
+            <div class="punto-uno"></div>
+            <div style="height:6cqw"></div>
+            ${pie('Calendario, planificador, estudios, finanzas, viajes y gastos con amigos. Sin anuncios, sin ruido.')}
+        </div>`,
+        universidad: `<div class="hoja oscuro captura universidad"><div class="rejilla"></div>
+            <div class="marca">bitácora<b>.</b></div>
+            <h1>¿Cuánto necesitas sacar en el final? <span>Bitácora ya lo sabe.</span></h1>
+            <p class="bajada">Tu carrera por cuatrimestres: créditos, media del expediente, cuenta atrás de exámenes y la nota que te hace falta en cada asignatura.</p>
+            <div class="recorte"><img src="../../img/landing/cuatrimestre.webp" alt=""></div>
+            <div style="height:6cqw"></div>
+            ${pie('Para universitarios y estudiantes. 14 días gratis, sin tarjeta.')}
+        </div>`,
+        amigos: `<div class="hoja oscuro captura amigos"><div class="rejilla"></div>
+            <div class="marca">bitácora<b>.</b></div>
+            <h1>¿Quién debe a quién del viaje? <span>Ni una discusión más.</span></h1>
+            <p class="bajada">Apuntad quién paga qué y Bitácora calcula los saldos y cómo dejarlo a cero con los mínimos pagos.</p>
+            <div class="recorte"><img src="../../img/landing/saldos.webp" alt=""></div>
+            <div style="height:6cqw"></div>
+            ${pie('Gastos compartidos, planes y tu agenda, en un solo sitio. 14 días gratis.')}
+        </div>`,
+        tiras: `<div class="hoja claro tiras">
+            <div class="arriba">
+                <div class="marca">bitácora<b>.</b></div>
+                <h1>Tu vida no cabe en 14 apps. <span>Cabe en una.</span></h1>
+            </div>
+            <div class="medio"><div class="qr">${qr}</div><p>Calendario, estudios, dinero y amigos en un solo sitio. Sin anuncios. 14 días gratis, sin tarjeta.<br><b>Llévate una tira.</b></p></div>
+            <div class="tiras-fila">${'<div class="tira"><span>appbitacora<b>.</b>es<br><small>14 días gratis</small></span></div>'.repeat(8)}</div>
+        </div>`,
+        tarjeta: `<div class="hoja oscuro tarjeta">
+            <div class="izq"><div class="marca">bitácora<b>.</b></div><h1>Tu vida, en un solo sitio.</h1><p>appbitacora.es · 14 días gratis</p></div>
+            <div class="qr">${qr}</div>
+        </div>`,
+        posit: `<div class="hoja posit" style="background:#F6E27A;color:#2b2a26">
+            <div class="marca" style="font-size:8cqw">bitácora<b>.</b></div>
+            <ul><li>1. examen el martes.</li><li>2. pagar el piso.</li><li>3. cumple de marta.</li><li class="ultima">4. ¿y si lo apuntas todo en un solo sitio?</li></ul>
+            <div class="web">appbitacora.es</div>
+        </div>`,
+    };
+    document.write(D[c]);
+</script>
+</body>
+</html>
