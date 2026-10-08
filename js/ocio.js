@@ -19,11 +19,11 @@
 
         function renderCulture() {
             const tabs = [
-                { id: 'books', label: 'Libros', icon: '◊', count: entries.filter(e => e.type === 'book').length },
-                { id: 'series', label: 'Series', icon: '◈', count: entries.filter(e => e.type === 'series').length },
-                { id: 'movies', label: 'Películas', icon: '▸', count: entries.filter(e => e.type === 'movie').length },
-                { id: 'games', label: 'Videojuegos', icon: '◉', count: entries.filter(e => e.type === 'game').length },
-                { id: 'lists', label: 'Listas', icon: '☰', count: cultureLists.length },
+                { id: 'books', label: 'libros.', icon: '◊', count: entries.filter(e => e.type === 'book').length },
+                { id: 'series', label: 'series.', icon: '◈', count: entries.filter(e => e.type === 'series').length },
+                { id: 'movies', label: 'películas.', icon: '▸', count: entries.filter(e => e.type === 'movie').length },
+                { id: 'games', label: 'videojuegos.', icon: '◉', count: entries.filter(e => e.type === 'game').length },
+                { id: 'lists', label: 'listas.', icon: '☰', count: cultureLists.length },
             ];
             const tipoActivo = CULTURE_TAB_TO_TYPE[cultureTab];
             const pendientes = recomendaciones.filter(r => r.tipo === tipoActivo).length;
@@ -38,16 +38,16 @@
                         </button>`).join('')}
                 </div>
                 ${(!cultureSharedMode && cultureTab === 'movies') ? `
-                <button class="btn-secondary btn-acento" style="width:auto" onclick="openLetterboxdImportModal()">Importar Letterboxd</button>
+                <button class="btn-secondary btn-acento" style="width:auto" onclick="openLetterboxdImportModal()">importar letterboxd.</button>
                 ` : ''}
                 ${(!cultureSharedMode && cultureTab === 'books') ? `
-                <button class="btn-secondary btn-acento" style="width:auto" onclick="openGoodreadsImportModal()">Importar Goodreads</button>
+                <button class="btn-secondary btn-acento" style="width:auto" onclick="openGoodreadsImportModal()">importar goodreads.</button>
                 ` : ''}
                 ${(!cultureSharedMode && cultureTab === 'series') ? `
-                <button class="btn-secondary btn-acento" style="width:auto" onclick="openImdbSeriesImportModal()">Importar IMDb</button>
+                <button class="btn-secondary btn-acento" style="width:auto" onclick="openImdbSeriesImportModal()">importar imdb.</button>
                 ` : ''}
                 <button class="btn-secondary culture-shared-toggle" style="width:auto" onclick="toggleCultureSharedMode()">
-                    ${cultureSharedMode ? '← Mi biblioteca' : `Recomendaciones${pendientes ? ` (${pendientes})` : ''}`}
+                    ${cultureSharedMode ? '← mi biblioteca.' : `recomendaciones.${pendientes ? ` (${pendientes})` : ''}`}
                 </button>
                 </div>
                 <div class="culture-tab-content">
@@ -478,10 +478,10 @@
         function renderBooks() {
             const allBooks = entries.filter(e => e.type === 'book');
             if (!allBooks.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin libros</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Libro"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                return `<div class="empty-state"><div class="empty-title">ningún libro todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Libro"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: books, banner } = applyMonthFilterTo('book', allBooks);
-            if (!books.length) return banner + `<div class="empty-state"><div class="empty-title">Sin libros ese mes</div></div>`;
+            if (!books.length) return banner + `<div class="empty-state"><div class="empty-title">ningún libro ese mes.</div></div>`;
 
             const reading = books.filter(b => b.status === 'Leyendo');
             const completed = books.filter(b => b.status === 'Completado');
@@ -523,10 +523,10 @@
         function renderMovies() {
             const allMovies = entries.filter(e => e.type === 'movie');
             if (!allMovies.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin películas</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Película", o "Importar Letterboxd" arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                return `<div class="empty-state"><div class="empty-title">ninguna película todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Película", o "Importar Letterboxd" arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: movies, banner } = applyMonthFilterTo('movie', allMovies);
-            if (!movies.length) return banner + `<div class="empty-state"><div class="empty-title">Sin películas ese mes</div></div>`;
+            if (!movies.length) return banner + `<div class="empty-state"><div class="empty-title">ninguna película ese mes.</div></div>`;
 
             const sorted = [...movies].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             const groups = [];
@@ -774,10 +774,10 @@
         function renderSeries() {
             const allSeries = entries.filter(e => e.type === 'series');
             if (!allSeries.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin series</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Serie"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                return `<div class="empty-state"><div class="empty-title">ninguna serie todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Serie"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: series, banner } = applyMonthFilterTo('series', allSeries);
-            if (!series.length) return banner + `<div class="empty-state"><div class="empty-title">Sin series ese mes</div></div>`;
+            if (!series.length) return banner + `<div class="empty-state"><div class="empty-title">ninguna serie ese mes.</div></div>`;
 
             const statusOrder = { 'Viendo': 0, 'Completada': 1, 'Abandonada': 2 };
             // Estado efectivo: si hay fecha de fin y el estado guardado sigue en
@@ -799,7 +799,7 @@
         function renderGames() {
             const games = entries.filter(e => e.type === 'game');
             if (!games.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin videojuegos</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Videojuego"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                return `<div class="empty-state"><div class="empty-title">ningún videojuego todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Videojuego"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
 
             const statusOrder = { 'Jugando': 0, 'Completado': 1, 'Abandonado': 2 };
@@ -1152,7 +1152,7 @@
         function renderGhostGrid(tipo) {
             const items = recomendaciones.filter(r => r.tipo === tipo);
             if (!items.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin recomendaciones</div><div class="empty-sub">Aquí aparecerá lo que tus amigos te recomienden.</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">ninguna recomendación todavía.</div><div class="empty-sub">Aquí aparecerá lo que tus amigos te recomienden.</div></div>`;
             }
             return `<div class="media-card-grid">${items.map(renderGhostCard).join('')}</div>`;
         }

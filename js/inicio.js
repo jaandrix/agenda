@@ -61,7 +61,7 @@
                 document.getElementById('content').innerHTML =
                     `<div class="empty-state">
                         
-                        <div class="empty-title">No se pudieron cargar tus datos</div>
+                        <div class="empty-title">no se pudieron cargar tus datos.</div>
                         <div class="empty-sub">Revisa tu conexión a internet y vuelve a intentarlo. No se ha modificado nada en la nube.</div>
                         <button class="btn-secondary" style="margin-top:12px" onclick="init()">Reintentar</button>
                     </div>`;

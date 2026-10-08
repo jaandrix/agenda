@@ -52,7 +52,7 @@
 
             if (travelPlacesTab === 'travels') {
                 if (!travels.length) {
-                    html += `<div class="empty-state"><div class="empty-title">Sin viajes</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Viaje"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                    html += `<div class="empty-state"><div class="empty-title">ningún viaje todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Viaje"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
                 } else {
                     const orden = { 'En curso': 0, 'Próximo': 1, 'Sin fecha': 2, 'Completado': 3 };
                     const ordenados = [...travels].sort((a, b) => {
@@ -193,7 +193,7 @@
                     ${total > 0 ? `<div class="card"><div class="card-title">Gasto total</div><div class="card-value">${total.toLocaleString('es-ES')}€</div></div>` : ''}
                 </div>
                 ${t.companions ? `<div class="entry-detail-field" style="margin-bottom:12px"><div class="entry-detail-label">Viajé con</div><div class="entry-detail-value">${escapeHtml(t.companions)}</div></div>` : ''}
-                ${t.notes ? `<div class="entry-detail-field"><div class="entry-detail-label">Notas</div><div class="entry-detail-value">${linkifyText(t.notes)}</div></div>` : '<div class="empty-state"><div class="empty-title">Sin notas todavía</div><div class="empty-sub">Pulsa "Editar" arriba para añadir notas generales del viaje.</div></div>'}
+                ${t.notes ? `<div class="entry-detail-field"><div class="entry-detail-label">Notas</div><div class="entry-detail-value">${linkifyText(t.notes)}</div></div>` : '<div class="empty-state"><div class="empty-title">sin notas todavía.</div><div class="empty-sub">Pulsa "Editar" arriba para añadir notas generales del viaje.</div></div>'}
             `;
         }
 
@@ -341,7 +341,7 @@
                         <span style="flex:1;cursor:pointer;${p.visitado ? 'text-decoration:line-through;opacity:.5' : ''}" onclick="toggleTripPlace('${t.id}','${p.id}')">${escapeHtml(p.nombre)}</span>
                         <button class="friend-remove-btn" title="Quitar" onclick="deleteTripPlace('${t.id}','${p.id}')">✕</button>
                     </div>
-                `).join('') : '<div class="empty-state"><div class="empty-title">Sin lugares todavía</div><div class="empty-sub">Añade los sitios que quieres visitar.</div></div>'}
+                `).join('') : '<div class="empty-state"><div class="empty-title">ningún lugar todavía.</div><div class="empty-sub">Añade los sitios que quieres visitar.</div></div>'}
             `;
         }
         async function addTripPlace(tripId) {
@@ -385,7 +385,7 @@
                             <button class="friend-remove-btn" title="Eliminar" onclick="deleteItineraryItem('${t.id}','${it.id}')">✕</button>
                         </div>
                     </div>
-                `).join('') : '<div class="empty-state"><div class="empty-title">Sin itinerario todavía</div><div class="empty-sub">Añade horarios y planes para cada día del viaje.</div></div>'}
+                `).join('') : '<div class="empty-state"><div class="empty-title">sin itinerario todavía.</div><div class="empty-sub">Añade horarios y planes para cada día del viaje.</div></div>'}
             `;
         }
         // ---- Mapa del itinerario ----
@@ -393,7 +393,7 @@
             const withCoords = [...t.itinerario].filter(i => i.lat && i.lon)
                 .sort((a, b) => (a.dia || '').localeCompare(b.dia || '') || (a.hora || '').localeCompare(b.hora || ''));
             if (!withCoords.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin lugares en el mapa todavía</div><div class="empty-sub">Añade un "Lugar" al crear un punto del itinerario y aparecerá aquí en cuanto se localice.</div></div>`;
+                return `<div class="empty-state"><div class="empty-title">ningún lugar en el mapa todavía.</div><div class="empty-sub">Añade un "Lugar" al crear un punto del itinerario y aparecerá aquí en cuanto se localice.</div></div>`;
             }
             return `<div id="trip-map" class="trip-map-container"></div>`;
         }
@@ -499,7 +499,7 @@
             `;
         }
         function renderTripDocList(tripId, docs) {
-            if (!docs.length) return '<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube el primero con el botón de arriba</div></div>';
+            if (!docs.length) return '<div class="empty-state"><div class="empty-title">ningún documento todavía.</div><div class="empty-sub">Sube el primero con el botón de arriba</div></div>';
             return docs.map(doc => {
                 const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
@@ -528,7 +528,7 @@
             } catch (e) {
                 console.error('Error cargando documentos del viaje:', e);
                 const el = document.getElementById('trip-doc-list-' + tripId);
-                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-title">No se pudieron cargar los documentos</div></div>';
+                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-title">no se pudieron cargar los documentos.</div></div>';
             }
         }
         async function handleTripDocUpload(event, tripId) {
@@ -583,7 +583,7 @@
         // ---- Documentos de trabajo (contratos, nóminas...), mismo patrón que los de viaje ----
         let workDocumentsCache = {};
         function renderWorkDocList(workId, docs) {
-            if (!docs.length) return '<div class="empty-state"><div class="empty-title">Sin documentos</div><div class="empty-sub">Sube el primero con el botón de arriba</div></div>';
+            if (!docs.length) return '<div class="empty-state"><div class="empty-title">ningún documento todavía.</div><div class="empty-sub">Sube el primero con el botón de arriba</div></div>';
             return docs.map(doc => {
                 const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
@@ -608,7 +608,7 @@
             } catch (e) {
                 console.error('Error cargando documentos del trabajo:', e);
                 const el = document.getElementById('work-doc-list-' + workId);
-                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-title">No se pudieron cargar los documentos</div></div>';
+                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-title">no se pudieron cargar los documentos.</div></div>';
             }
         }
         async function handleWorkDocUpload(event, workId) {
@@ -680,7 +680,7 @@
                             <button class="btn-secondary" style="width:auto" onclick="addTripListItem('${t.id}','${l.id}')">+ Añadir</button>
                         </div>
                     </div>
-                `).join('') : '<div class="empty-state"><div class="empty-title">Sin listas todavía</div><div class="empty-sub">Crea una lista de qué llevar, qué hacer o lo que necesites.</div></div>'}
+                `).join('') : '<div class="empty-state"><div class="empty-title">ninguna lista todavía.</div><div class="empty-sub">Crea una lista de qué llevar, qué hacer o lo que necesites.</div></div>'}
             `;
         }
         function openAddTripList(tripId) {

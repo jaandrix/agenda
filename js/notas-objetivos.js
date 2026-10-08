@@ -164,7 +164,7 @@
                 return `
                     <div class="empty-state">
 
-                        <div class="empty-title">Sin objetivos</div>
+                        <div class="empty-title">ningún objetivo todavía.</div>
                         <div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Objetivo"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div>
                     </div>`;
             }

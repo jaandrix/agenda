@@ -6940,3 +6940,7 @@ body:not(.dev-mode) .nav-label-privado, body:not(.dev-mode) .vault-btn { display
 .lp-arriba svg { width:24px; height:24px; }
 .lp-arriba:hover { transform:translateY(-4px); box-shadow:0 22px 44px -12px rgba(0,0,0,.6), 0 0 0 10px color-mix(in srgb, var(--text-primary) 10%, transparent); }
 .lp-arriba:active { transform:scale(.95); }
+.m-generico .uni-cabecera .uni-titulo { display:none; }
+.m-generico .uni-cabecera .uni-sub { margin-top:0; font-size:14px; color:var(--text-primary); font-weight:600; }
+.uni-actual-cab .pedido-btn, .uni-bloque-cab .pedido-btn { flex-shrink:0; white-space:nowrap; }
+.m-generico .empty-state .empty-sub, .m-generico .finance-empty-line, .m-generico .finance-empty-state { font-size:13px; line-height:1.5; }

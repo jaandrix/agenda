@@ -37,9 +37,9 @@
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) {
                 return `<div class="empty-state">
-                    <div class="empty-title">Sin experiencia laboral</div>
+                    <div class="empty-title">ningún empleo todavía.</div>
                     <div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Empleo", o importa tu Informe de Vida Laboral</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div>
-                    <button class="btn-secondary btn-acento" style="width:auto;margin-top:12px" onclick="openWorkImportModal()">Importar Vida Laboral</button>
+                    <button class="btn-secondary btn-acento" style="width:auto;margin-top:12px" onclick="openWorkImportModal()">importar vida laboral.</button>
                     <button class="btn-secondary" style="width:auto;margin-top:8px" onclick="openCv()">crear mi cv.</button>
                 </div>`;
             }
@@ -75,7 +75,7 @@
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;max-width:980px;flex-wrap:wrap">
                     <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Empleo</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
-                        <button class="btn-secondary btn-acento" style="width:auto" onclick="openWorkImportModal()">Importar Vida Laboral</button>
+                        <button class="btn-secondary btn-acento" style="width:auto" onclick="openWorkImportModal()">importar vida laboral.</button>
                         <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()">⭳ Descargar resumen (PDF)</button>
                         <button class="btn-modal-primary" style="width:auto;margin:0" onclick="openCv()">crear mi cv.</button>
                     </div>
@@ -410,7 +410,7 @@
         // ============================================================
         function openWorkImportModal() {
             showModal(`
-                <div class="modal-title">Importar Vida Laboral</div>
+                <div class="modal-title">importar vida laboral.</div>
                 <div class="doc-upload-box" onclick="document.getElementById('work-import-input').click()">
                     <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir el PDF del Informe de Vida Laboral</div>
                     <div style="font-size:12px;color:var(--text-secondary)">Sede Electrónica de la Seguridad Social → Tu Seguridad Social → Informes y certificados → Informe de vida laboral</div>

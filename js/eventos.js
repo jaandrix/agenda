@@ -156,10 +156,10 @@
         function renderEvents() {
             const allEvents = entries.filter(e => e.type === 'event' && !isCalendarLogEntry(e));
             if (!allEvents.length) {
-                return `<div style="max-width:980px"><button class="btn-secondary btn-acento" style="width:auto" onclick="openEventsImportModal()">Importar eventos</button></div><div class="empty-state"><div class="empty-title">Sin eventos</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Evento", o importa arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                return `<div style="max-width:980px"><button class="btn-secondary btn-acento" style="width:auto" onclick="openEventsImportModal()">Importar eventos</button></div><div class="empty-state"><div class="empty-title">ningún evento todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Evento", o importa arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: events, banner } = applyMonthFilterTo('event', allEvents);
-            if (!events.length) return banner + `<div class="empty-state"><div class="empty-title">Sin eventos ese mes</div></div>`;
+            if (!events.length) return banner + `<div class="empty-state"><div class="empty-title">ningún evento ese mes.</div></div>`;
 
             const next = entryMonthFilter && entryMonthFilter.type === 'event' ? null : nextUpcomingEvent(events);
 
@@ -638,7 +638,7 @@
         function renderPlaces() {
             const places = entries.filter(e => e.type === 'place');
             if (!places.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin lugares</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Lugar"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                return `<div class="empty-state"><div class="empty-title">ningún lugar todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Lugar"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
 
             const sorted = [...places].sort((a, b) => (b.date || '').localeCompare(a.date || ''));

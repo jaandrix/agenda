@@ -143,7 +143,7 @@
                 setTimeout(() => startStripeCheckout('fundador'), 1500);
             }
             if (veniaDeCheckout && sub.estado === 'fundador') setTimeout(() => showToast(`Bienvenido, socio fundador nº ${sub.socio_numero}`), 1500);
-            if (isMobileStandaloneMode() && !mobileExitedToDesktop) document.body.classList.add('pwa');
+            if (isMobileStandaloneMode()) document.body.classList.add('pwa');
 
             // Limpia el ?checkout=success de la URL para que recargar la
             // página no repita el reintento cada vez.
@@ -848,7 +848,6 @@
             } catch (e) { return false; }
         }
         let mobileStandaloneActive = false;
-        let mobileExitedToDesktop = false;
         let mobileMenuAbierto = false;
         let mobileDiaSel = null;
         let mobileMes = null;
@@ -861,7 +860,7 @@
         // busca primero dentro de #mobile-shell.
         const getElementByIdOriginal = Document.prototype.getElementById;
         document.getElementById = function (id) {
-            if (mobileStandaloneActive && !mobileExitedToDesktop) {
+            if (mobileStandaloneActive) {
                 const shell = getElementByIdOriginal.call(document, 'mobile-shell');
                 const enMovil = shell && id !== 'mobile-shell' ? shell.querySelector(`[id="${CSS.escape(id)}"]`) : null;
                 if (enMovil) return enMovil;
@@ -871,14 +870,7 @@
 
         function initMobileShell() {
             mobileStandaloneActive = isMobileStandaloneMode();
-            document.body.classList.toggle('mobile-standalone', mobileStandaloneActive && !mobileExitedToDesktop);
-        }
-
-        function exitMobileToDesktop() {
-            mobileExitedToDesktop = true;
-            mobileMenuAbierto = false;
-            document.body.classList.remove('mobile-standalone', 'pwa');
-            render();
+            document.body.classList.toggle('mobile-standalone', mobileStandaloneActive);
         }
 
         // Sin el aviso de privacidad de Finanzas que pone switchView: en el
@@ -902,7 +894,7 @@
 
         let mobileLastEffectView = null;
         function renderMobileShell() {
-            if (!mobileStandaloneActive || mobileExitedToDesktop) return;
+            if (!mobileStandaloneActive) return;
             const shell = document.getElementById('mobile-shell');
             if (!shell) return;
             const view = NAV_VIEW_LABELS[currentView] ? currentView : 'calendar';
@@ -977,7 +969,6 @@
                             ${temasDisponibles().map(t => `<button class="m-tema ${t === tema ? 'activo' : ''}" onclick="setTheme('${t}');render()" aria-label="Tema ${THEME_LABELS[t]}"><span style="background:${muestras[t][0]}"></span><span style="background:${muestras[t][1]}"></span></button>`).join('')}
                         </div>
                         <button class="m-enlace" onclick="toggleMenuMovil();openGuia()">guía.</button>
-                        <button class="m-enlace" onclick="exitMobileToDesktop()">versión completa.</button>
                     </div>
                 </div>
             </div>`;
@@ -1235,7 +1226,7 @@
         function renderMobileSeccion(view) {
             if (MOBILE_SECCIONES[view]) return MOBILE_SECCIONES[view]();
             const quick = MOBILE_QUICK_ADD[view];
-            const titulo = view === 'home' ? 'resumen' : (NAV_VIEW_LABELS[view] || view);
+            const titulo = NAV_VIEW_LABELS[view] || view;
             return `${renderMobileCabecera(titulo, view === 'bandeja' && bandejaPendiente.length ? `${bandejaPendiente.length} por validar.` : '')}
                 ${quick ? `<button class="m-boton m-boton-acento m-boton-ancho" onclick="${quick.action}">${quick.label}</button>` : ''}
                 <div class="m-generico">${MOBILE_GENERIC_RENDERERS[view] ? MOBILE_GENERIC_RENDERERS[view]() : ''}</div>`;
@@ -1343,8 +1334,7 @@
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.note || t.bankNote || cat?.name || 'movimiento')}</div><div class="m-fila-meta">${escapeHtml([cat?.name, financePro.accounts[t.account]?.name].filter(Boolean).join(' · ').toLowerCase())}</div></div>
                         <span class="m-fila-cifra">${signo}${financeMoney(t.amount)}</span>
                     </div>`;
-                }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin movimientos.</div>'}
-                <button class="m-enlace m-enlace-bloque" onclick="exitMobileToDesktop()">ver el panel completo.</button>`;
+                }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin movimientos.</div>'}`;
         }
 
         function renderMobileStudies() {
@@ -1404,7 +1394,7 @@
                 mesActual = clave;
                 return cab + fila(e);
             }).join('');
-            return `${renderMobileCabecera('eventos', prox.length ? `próximo ${eventCountdownLabel(prox[0].date).toLowerCase()}.` : 'nada a la vista.')}
+            return `${renderMobileCabecera('eventos', prox.length ? `el próximo, ${eventCountdownLabel(prox[0].date).toLowerCase()}.` : 'nada a la vista.')}
                 <button class="m-boton m-boton-acento m-boton-ancho" onclick="openNewEntry('event')">+ evento.</button>
                 ${lista || '<div class="m-vacio">ningún evento por venir.</div>'}
                 ${pasados.length ? `<div class="m-bloque-cab"><div class="m-etiqueta">pasados.</div></div><div class="m-pasados">${pasados.map(fila).join('')}</div>` : ''}`;

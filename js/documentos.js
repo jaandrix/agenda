@@ -101,7 +101,7 @@
                 console.error('Error cargando documentos:', e);
                 const listEl = document.getElementById('doc-list');
                 if (listEl) listEl.innerHTML =
-                    `<div class="empty-state"><div class="empty-title">No se pudieron cargar los documentos</div><div class="empty-sub">${(e?.message || 'Comprueba que el bucket "documents" existe en Supabase Storage')}</div></div>`;
+                    `<div class="empty-state"><div class="empty-title">no se pudieron cargar los documentos.</div><div class="empty-sub">${(e?.message || 'Comprueba que el bucket "documents" existe en Supabase Storage')}</div></div>`;
             }
         }
 
@@ -677,7 +677,7 @@
                 if (el) renderBackupsListContent();
             } catch (e) {
                 console.error('Error cargando backups:', e);
-                if (el) el.innerHTML = `<div class="empty-state"><div class="empty-title">No se pudieron cargar los backups</div></div>`;
+                if (el) el.innerHTML = `<div class="empty-state"><div class="empty-title">no se pudieron cargar las copias.</div></div>`;
             }
         }
 
@@ -685,7 +685,7 @@
             const el = document.getElementById('backups-list');
             if (!el) return;
             if (!backupFiles.length) {
-                el.innerHTML = `<div class="empty-state"><div class="empty-title">Aún no hay backups automáticos</div><div class="empty-sub">Se generará el primero la próxima vez que abras Bitácora.</div></div>`;
+                el.innerHTML = `<div class="empty-state"><div class="empty-title">aún no hay copias automáticas.</div><div class="empty-sub">Se generará el primero la próxima vez que abras Bitácora.</div></div>`;
                 return;
             }
             el.innerHTML = `<div class="docs-list">${backupFiles.map((f, i) => {

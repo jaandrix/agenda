@@ -740,7 +740,7 @@
                 <span class="cal-day-title" style="font-size:15px;font-weight:600;color:var(--text-primary);text-transform:capitalize">${dateLabel}</span>
                 <button class="cal-nav-arrow" onclick="changeDay(1)">›</button>
             </div>
-            <div class="vt-interior">${body || '<div class="empty-state"><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}</div>`;
+            <div class="vt-interior">${body || '<div class="empty-state"><div class="empty-title">nada por aquí todavía.</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}</div>`;
         }
 
         function showDayEntries(date) {
@@ -752,7 +752,7 @@
             const weekday = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
             const restDate = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
             const all = getDayAllEntries(date);
-            const rows = all.length ? renderDayEntryRows(all) : `<div class="empty-state"><div class="empty-title">Sin entradas</div><div class="empty-sub">No hay nada registrado este día.</div></div>`;
+            const rows = all.length ? renderDayEntryRows(all) : `<div class="empty-state"><div class="empty-title">nada por aquí todavía.</div><div class="empty-sub">No hay nada registrado este día.</div></div>`;
 
             showModalDesde(`.cal-month-cell[data-cal-date="${date}"]`, `
                 <div class="modal-title day-modal-title">

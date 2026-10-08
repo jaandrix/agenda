@@ -101,7 +101,7 @@ function renderGraph() {
     if (!centros.length) {
         return `<div class="conexiones-vista">
             <div class="conexiones-titulo">conexiones.</div>
-            <div class="empty-state"><div class="empty-title">Todavía no hay nada que conectar</div><div class="empty-sub">En cuanto tengas viajes con fechas, partidos, etiquetas o asignaturas, aquí aparecerá todo lo que se relaciona entre sí.</div></div>
+            <div class="empty-state"><div class="empty-title">todavía no hay nada que conectar.</div><div class="empty-sub">En cuanto tengas viajes con fechas, partidos, etiquetas o asignaturas, aquí aparecerá todo lo que se relaciona entre sí.</div></div>
         </div>`;
     }
     const total = new Set(centros.flatMap(c => c.items.map(i => i.id))).size;
@@ -153,7 +153,7 @@ function iconoDeEntrada(e) {
 function renderConstelacion(c) {
     // En la versión móvil se dibuja a su escala (más alta que ancha) para
     // que los nombres se lean sin encoger el dibujo entero.
-    const movil = typeof mobileStandaloneActive !== 'undefined' && mobileStandaloneActive && !mobileExitedToDesktop;
+    const movil = typeof mobileStandaloneActive !== 'undefined' && mobileStandaloneActive;
     const W = movil ? 360 : 640, H = movil ? 440 : 400, cx = W / 2, cy = H / 2;
     const rx = movil ? 128 : 255, ry = movil ? 170 : 150, rCentro = movil ? 44 : 56;
     const items = c.items.slice(0, movil ? 16 : 24);

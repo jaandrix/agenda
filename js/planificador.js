@@ -582,6 +582,9 @@
         function habitStreak(habit, dateStr = todayISO()) {
             let streak = 0;
             let d = new Date(dateStr + 'T12:00:00');
+            // Lo que aún no se ha marcado hoy no rompe la racha: el día no ha
+            // terminado, así que se cuenta desde ayer.
+            if (!habit.completadas?.[dateStr]) d.setDate(d.getDate() - 1);
             while (true) {
                 const iso = d.toISOString().slice(0, 10);
                 if (habit.completadas?.[iso]) { streak++; d.setDate(d.getDate() - 1); }
@@ -626,7 +629,7 @@
                         ${h.objetivoId && entries.find(g => g.id === h.objetivoId) ? `<div class="habit-objetivo">${h.kaizen ? 'paso kaizen' : 'rutina'} para «${escapeHtml(entries.find(g => g.id === h.objetivoId).title)}».</div>` : ''}
                         <div class="habit-streak-text">${streak > 0 ? `Racha: ${streak} día${streak === 1 ? '' : 's'}` : 'Sin racha activa'}</div>
                     </div>`;
-                }).join('') : `<div class="empty-state"><div class="empty-title">Sin hábitos todavía</div><div class="empty-sub">Pulsa + Hábito para empezar a seguir alguno, sin más presión que la cuadrícula.</div></div>`}
+                }).join('') : `<div class="empty-state"><div class="empty-title">ningún hábito todavía.</div><div class="empty-sub">Pulsa + Hábito para empezar a seguir alguno, sin más presión que la cuadrícula.</div></div>`}
             </div>`;
         }
 

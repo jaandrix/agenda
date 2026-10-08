@@ -170,10 +170,10 @@
             return `
                 <div style="max-width:600px">
                     <div class="chart-container" style="margin-bottom:16px">
-                        <div class="chart-title">Sugerencias</div>
-                        <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 14px">¿Hay algo que eches en falta, o que cambiarías? Cuéntamelo — lo leo yo directamente.</div>
-                        <textarea id="suggestion-text" class="modal-input" rows="4" placeholder="Escribe tu sugerencia..."></textarea>
-                        <button class="btn-modal-primary" style="width:auto" onclick="submitSuggestion()">Enviar sugerencia</button>
+                        <div class="chart-title">¿qué le falta a bitácora?</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 14px">Algo que eches en falta, algo que cambiarías o algo que no funciona. Lo leemos todo, una a una.</div>
+                        <textarea id="suggestion-text" class="modal-input" rows="4" placeholder="Escribe aquí..."></textarea>
+                        <button class="btn-modal-primary" style="width:auto" onclick="submitSuggestion()">enviar.</button>
                     </div>
                     <div class="chart-container" id="my-suggestions-section" style="display:none">
                         <div class="chart-title">Tus sugerencias anteriores</div>
@@ -415,7 +415,7 @@
         // "Claude y ChatGPT" se quedaban en "Cargando..." sin interruptor.
         function cuerpoAjustes(id) {
             const todos = [...document.querySelectorAll(`[id="${id}"]`)];
-            if (mobileStandaloneActive && !mobileExitedToDesktop) {
+            if (mobileStandaloneActive) {
                 const movil = todos.find(el => el.closest('#mobile-shell'));
                 if (movil) return movil;
             }

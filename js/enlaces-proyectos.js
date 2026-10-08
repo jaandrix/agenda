@@ -29,7 +29,7 @@
                         <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddLinkCategory()">+ categoría</button>
                     </div>
                 </div>
-                <h3>Accesos directos de <a href="javascript:void(0)" class="bitacora-username-link" onclick="editUserName()">${nameDisplay}</a></h3>
+                <h3>accesos directos de <a href="javascript:void(0)" class="bitacora-username-link" onclick="editUserName()">${nameDisplay}</a>.</h3>
                 ${body}
             </div>`;
         }
@@ -684,7 +684,7 @@
         function renderProjects() {
             const projects = entries.filter(e => e.type === 'project');
             if (!projects.length) {
-                return `<div class="empty-state"><div class="empty-title">Sin proyectos</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Proyecto"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                return `<div class="empty-state"><div class="empty-title">ningún proyecto todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Proyecto"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
 
             const toggle = `

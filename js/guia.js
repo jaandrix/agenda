@@ -77,7 +77,6 @@ const GUIA = [
         ],
         botones: [
             [guiaBoton('‹ inicio.'), 'Arriba a la izquierda en cualquier apartado: vuelve a la portada sin abrir el menú.'],
-            [guiaBoton('versión completa.'), 'Al final del menú: cambia a la versión de escritorio hasta que cierres la app.'],
             [guiaBoton('temas'), 'Al final del menú, los tres círculos cambian el tema.'],
         ],
         trucos: ['Planificador, Finanzas, Estudios, Hábitos, Eventos, Notas y Viajes tienen página propia en el móvil; el resto usa la de escritorio adaptada.'],
@@ -212,7 +211,7 @@ const GUIA = [
         lema: 'Tu vida laboral, ordenada.',
         intro: 'Tus empleos con empresa, puesto, fechas, sueldo, modalidad y motivo de salida, y los documentos de cada uno.',
         botones: [
-            [guiaBoton('Importar Vida Laboral'), 'Sube el PDF de tu Informe de Vida Laboral de la Seguridad Social y Bitácora crea los empleos solos.'],
+            [guiaBoton('importar vida laboral.'), 'Sube el PDF de tu Informe de Vida Laboral de la Seguridad Social y Bitácora crea los empleos solos.'],
             [guiaBoton('crear mi cv.'), 'Un asistente por pasos: tus datos de contacto, qué hacías y qué aprendiste en cada empleo, tu formación, idiomas y habilidades, y un perfil que Bitácora te propone escrito. Al final descarga un CV en PDF, limpio y de una página.'],
             [guiaBoton('Descargar resumen (PDF)'), 'Un resumen de tu vida laboral: días trabajados, cotizados y cada empleo.'],
             [guiaBoton('rayo'), 'En Empleo, la captura rápida late para recordarte que puedes añadir un empleo.'],
@@ -287,7 +286,7 @@ const GUIA = [
         intro: 'Libros, películas, series y videojuegos, con estado, fechas, valoración y notas, y listas propias.',
         botones: [
             [guiaBoton('Libros · Series · Películas · Videojuegos · Listas'), 'Cada tipo en su pestaña.'],
-            [guiaBoton('Importar Goodreads · Letterboxd'), 'Trae tu historial de esas webs.'],
+            [guiaBoton('importar goodreads. · importar letterboxd.'), 'Trae tu historial de esas webs.'],
             [guiaBoton('Recomendaciones'), 'Lo que te han recomendado tus amigos de Bitácora.'],
         ],
         trucos: ['Desde la ficha de una película o un libro puedes recomendarlo a un amigo.', 'Claude puede marcar algo como terminado y valorarlo, y se aplica solo.'],
