@@ -765,7 +765,7 @@
 
         const VIEW_LABELS = {
             calendar: 'Home',
-            home: 'Centro resumen',
+            home: 'Panorama',
             culture: 'Ocio',
             travels: 'Viajes',
             work: 'Trabajo',
@@ -799,7 +799,7 @@
         const NAV_SECTIONS = [
             { label: 'General', items: [
                 { view: 'calendar', icon: '◷', text: 'Home' },
-                { view: 'home', icon: '⌂', text: 'Centro resumen' },
+                { view: 'home', icon: '⌂', text: 'Panorama' },
                 { view: 'planner', icon: '▤', text: 'Planificador' },
                 { view: 'habits', icon: '○', text: 'Hábitos' },
                 { view: 'notes', icon: '✎', text: 'Notas' },

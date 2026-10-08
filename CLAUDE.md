@@ -50,7 +50,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   (carga, guardado y fusión con la nube, tema, tipografía) → `interfaz` →
   `planificador` (y hábitos) → `coleccionables` → `entradas` (modal de crear/editar,
   guardar, borrar, exportar) → `calendario` (dispatcher `render()`, Home, tiempo) →
-  `resumen` (centro resumen, patrones, avisos) → `ocio` → `viajes` →
+  `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
   `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `cv` → `social` → `bienvenida` → `guia` → `landing`.
@@ -176,7 +176,7 @@ a menor resolución.
 
 - **Calendario:** vistas día/semana/mes; en la vista mensual, los eventos se marcan
   como puntos de color (no líneas) bajo el número de cada día.
-- **Centro resumen (Home):** dashboard de lanzadores a cada apartado + estadísticas.
+- **Panorama (vista `home`, antes "Centro resumen"):** dashboard de lanzadores a cada apartado + estadísticas.
 - **Planificador:** timeline diaria (pestañas Hoy/Mañana/Pasado mañana, cada día
   empieza a las 4:00 am, lo no marcado se arrastra al día siguiente destacado en
   granate), tareas recurrentes, bloque "tareas pendientes." (backlog sin fecha/hora

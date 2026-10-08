@@ -124,7 +124,7 @@
         }
 
         // Iconos lineales (trazo fino, sin relleno) para las categorías de
-        // Centro resumen — familia deliberadamente distinta de los iconos
+        // Panorama (antes Centro resumen) — familia deliberadamente distinta de los iconos
         // sólidos TARJETA BITACORA del resto de la app, inspirada en un
         // lenguaje más geométrico y abstracto.
         const HOME_ICON_TODAY = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3v6M12 15v6M3 12h6M15 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>';

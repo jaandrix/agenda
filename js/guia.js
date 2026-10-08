@@ -125,7 +125,7 @@ const GUIA = [
         pasos: ['Pulsa un día para ver lo que hay y añadir algo con esa fecha.', 'Pulsa una entrada para abrir su ficha (ver, editar o borrar).'],
     },
     {
-        id: 'resumen', grupo: 'general', titulo: 'centro resumen.',
+        id: 'resumen', grupo: 'general', titulo: 'panorama.',
         lema: 'Todo lo importante, de un vistazo.',
         intro: 'Un panel con lo que tienes encima y accesos a las vistas de resumen, para no ir apartado por apartado.',
         botones: [
@@ -404,7 +404,7 @@ const GUIA = [
         intro: 'Bitácora guarda cada cambio en la nube al momento, combina los de todos tus dispositivos y hace copias de seguridad solas.',
         pasos: [
             'Cada día se hace una copia automática, y cada semana una instantánea completa (se guardan las 12 últimas).',
-            'Puedes ver y restaurar copias en Documentos → <b>copias.</b> o en Centro resumen → copia de seguridad.',
+            'Puedes ver y restaurar copias en Documentos → <b>copias.</b> o en Panorama → copia de seguridad.',
             'Exporta todo cuando quieras desde Ajustes → tus datos.',
         ],
     },
