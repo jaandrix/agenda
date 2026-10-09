@@ -6977,63 +6977,6 @@ body:not(.dev-mode) .nav-label-privado, body:not(.dev-mode) .vault-btn { display
 body:has(#landing-screen.visible) .modal-overlay { background:rgba(18, 17, 15, .86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
 
 /* ============================================================
-   PROFESORADO (profesorado.js): cuadrante tipo hoja de cálculo
-   ============================================================ */
-.profe { max-width:none; }
-.profe-botones { display:flex; gap:8px; flex-wrap:wrap; }
-.profe .uni-vacio .btn-modal-primary { margin:0; }
-.profe-chip { padding:6px 12px; border-radius:999px; border:1px solid var(--border); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12px; font-weight:600; cursor:pointer; }
-.profe-chip.activa { background:var(--text-primary); border-color:var(--text-primary); color:var(--accent-contrast); }
-.profe-dias-elegir { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
-.profe-dias-elegir .profe-chip { min-width:52px; padding:9px 12px; font-size:13px; }
-.profe-pendientes { display:flex; flex-direction:column; gap:2px; padding:16px 18px; border-radius:18px; background:var(--bg-card); border:1px solid var(--border); border-left:3px solid #a3243b; }
-.profe-pendientes .uni-etiqueta { margin-bottom:6px; }
-.profe-pend-fila { display:grid; grid-template-columns:auto minmax(0, 1fr) auto; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--border); }
-.profe-pend-clase { padding:3px 9px; border-radius:999px; background:var(--bg-card-hover); font-size:11.5px; font-weight:700; color:var(--text-primary); white-space:nowrap; }
-.profe-pend-txt b { display:block; font-size:14px; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.profe-pend-txt small { font-size:12px; color:var(--text-secondary); }
-.profe-pend-botones { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
-.profe-cuadrante { display:flex; flex-direction:column; gap:12px; }
-.profe-nav { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.profe-rango { font-size:15px; font-weight:700; color:var(--text-primary); min-width:150px; text-align:center; }
-.profe-nav-der { margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; }
-.profe-tabla-wrap { overflow:auto; max-height:72vh; border:1px solid var(--border-strong); border-radius:14px; background:var(--bg-card); }
-.profe-tabla { border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:13px; }
-.profe-tabla th, .profe-tabla td { border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:0; }
-.profe-tabla thead th { position:sticky; top:0; z-index:2; background:var(--bg-card); border-bottom:1px solid var(--border-strong); width:190px; min-width:190px; text-align:left; }
-.profe-tabla .profe-col-dia { position:sticky; left:0; z-index:1; min-width:64px; width:64px; padding:0 10px; background:var(--bg-card); text-align:left; font-size:15px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; white-space:nowrap; border-right:1px solid var(--border-strong); }
-.profe-tabla thead .profe-col-dia { z-index:3; }
-.profe-col-dia span { display:block; font-size:10.5px; font-weight:600; color:var(--text-secondary); line-height:1; margin-top:2px; }
-.profe-clase { display:flex; flex-direction:column; gap:2px; width:100%; padding:12px; border:0; background:none; text-align:left; font-family:var(--font-family); color:var(--text-primary); cursor:pointer; }
-.profe-clase b { font-size:13.5px; }
-.profe-clase small { font-size:11px; color:var(--text-secondary); font-weight:500; }
-.profe-clase:hover { background:var(--bg-card-hover); }
-.profe-tabla tr.profe-semana-nueva > * { border-top:2px solid var(--border-strong); }
-.profe-tabla tr.hoy .profe-col-dia { color:var(--m-acento); }
-.profe-tabla tr.hoy .profe-col-dia span { color:var(--m-acento); }
-.profe-celda-in { display:flex; align-items:center; gap:4px; padding-right:6px; }
-.profe-celda input { flex:1; min-width:0; height:40px; padding:0 10px; border:0; background:none; color:var(--text-primary); font-family:var(--font-family); font-size:13px; outline:none; }
-.profe-celda input:focus { box-shadow:inset 0 0 0 2px var(--m-acento); border-radius:4px; }
-.profe-celda.libre { background:repeating-linear-gradient(135deg, transparent 0 6px, var(--border) 6px 7px); }
-.profe-celda.libre input { color:var(--text-secondary); }
-.profe-celda.hecha input { color:var(--text-secondary); text-decoration:line-through; text-decoration-thickness:1px; }
-.profe-celda.pendiente input { text-decoration:underline; text-decoration-color:#a3243b; text-decoration-thickness:2px; text-underline-offset:4px; }
-.profe-check { width:18px; height:18px; min-width:0; min-height:0; box-sizing:border-box; flex-shrink:0; padding:0; border:2px solid var(--border-strong); border-radius:50%; background:none; cursor:pointer; }
-.profe-check.on { background:var(--text-primary); border-color:var(--text-primary); }
-.profe-celda.pendiente .profe-check { border-color:#a3243b; }
-.profe-pista { font-size:12px; color:var(--text-secondary); }
-.profe-pasos { margin:0 0 12px; padding-left:18px; font-size:13px; line-height:1.55; color:var(--text-secondary); }
-.profe-prompt { max-height:180px; overflow:auto; margin:0 0 8px; padding:12px 14px; border-radius:12px; background:var(--bg-card); border:1px solid var(--border); font-family:var(--font-family); font-size:11.5px; line-height:1.5; white-space:pre-wrap; color:var(--text-primary); }
-@media (max-width:700px) {
-    .profe-pend-fila { grid-template-columns:minmax(0, 1fr); gap:6px; }
-    .profe-pend-clase { justify-self:start; }
-    .profe-pend-botones { justify-content:flex-start; }
-    .profe-tabla thead th { width:150px; min-width:150px; }
-    .profe-tabla-wrap { max-height:none; }
-    .profe-nav-der { margin-left:0; width:100%; }
-}
-
-/* ============================================================
    AGENDA LABORAL (agenda-laboral.js): a propósito más seria que el
    resto de la app. Esquinas casi rectas, líneas finas, sin color de
    categoría y cifras tabulares; el único contraste es el día de hoy.
@@ -7134,8 +7077,147 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 @media (max-width:600px) {
     .perfil-cabeza { flex-direction:column; text-align:center; }
 }
+
+/* ============================================================
+   PROFESORADO (profesorado.js): cuadrante tipo hoja de cálculo. Cada
+   clase lleva su color (--c) y lo heredan sus tareas.
+   ============================================================ */
+.profe { max-width:none; }
+.profe-botones { display:flex; gap:8px; flex-wrap:wrap; }
+.profe .uni-vacio .btn-modal-primary { margin:0; }
+.profe-chip { padding:6px 12px; border-radius:999px; border:1px solid var(--border); background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12px; font-weight:600; cursor:pointer; }
+.profe-chip.activa { background:var(--text-primary); border-color:var(--text-primary); color:var(--accent-contrast); }
+.profe-dias-elegir { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.profe-dias-elegir .profe-chip { min-width:52px; padding:9px 12px; font-size:13px; }
+.profe-colores { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.profe-color { width:34px; height:34px; box-sizing:border-box; padding:0; border-radius:50%; border:3px solid transparent; background:var(--c); cursor:pointer; box-shadow:inset 0 0 0 2px var(--bg-modal); }
+.profe-color.activa { border-color:var(--text-primary); }
+
+.profe-pendientes { display:flex; flex-direction:column; gap:12px; padding:16px 18px; border-radius:18px; background:var(--bg-card); border:1px solid var(--border); border-left:3px solid #a3243b; }
+.profe-aviso { font-size:13.5px; line-height:1.5; color:var(--text-secondary); }
+.profe-aviso b { color:var(--text-primary); }
+.profe-pend-grupo { display:flex; flex-direction:column; padding-left:12px; border-left:3px solid var(--c); }
+.profe-pend-clase { font-size:12px; font-weight:800; color:var(--text-primary); margin-bottom:2px; }
+.profe-pend-fila { display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap:12px; padding:8px 0; border-top:1px solid var(--border); }
+.profe-pend-grupo .profe-pend-fila:first-of-type { border-top:0; }
+.profe-pend-txt b { display:block; font-size:14px; color:var(--text-primary); }
+.profe-pend-txt small { font-size:12px; color:var(--text-secondary); }
+.profe-pend-botones { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+
+.profe-clases { display:flex; flex-direction:column; gap:8px; }
+.profe-clases-rejilla { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; }
+.profe-tarjeta { display:flex; flex-direction:column; align-items:stretch; gap:6px; padding:14px 14px 12px; border-radius:16px; border:1px solid var(--border); border-top:4px solid var(--c); background:var(--bg-card); font-family:var(--font-family); color:var(--text-primary); text-align:left; cursor:pointer; transition:background-color .15s ease, transform .15s var(--ease-out); }
+.profe-tarjeta:hover { background:var(--bg-card-hover); }
+.profe-tarjeta:active { transform:scale(.98); }
+.profe-tarjeta-cab { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.profe-tarjeta-cab b { font-size:15px; }
+.profe-tarjeta-cab em { font-style:normal; padding:2px 8px; border-radius:999px; background:rgba(163,36,59,.16); color:#d0596f; font-size:11px; font-weight:700; white-space:nowrap; }
+.profe-tarjeta small { font-size:12px; color:var(--text-secondary); }
+.profe-tarjeta-nueva { border-style:dashed; border-top-width:1px; justify-content:center; }
+.profe-barra { display:block; height:5px; border-radius:999px; background:var(--bg-card-hover); overflow:hidden; }
+.profe-barra span { display:block; height:100%; border-radius:inherit; background:var(--c, var(--text-primary)); }
+
+.profe-cuadrante { display:flex; flex-direction:column; gap:12px; }
+.profe-nav { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.profe-rango { font-size:15px; font-weight:700; color:var(--text-primary); min-width:150px; text-align:center; }
+.profe-nav-der { margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; }
+.profe-tabla-wrap { overflow:auto; max-height:72vh; border:1px solid var(--border-strong); border-radius:14px; background:var(--bg-card); overscroll-behavior:contain; }
+.profe-tabla { border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:13px; }
+.profe-tabla th, .profe-tabla td { border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:0; vertical-align:top; }
+.profe-tabla thead th { position:sticky; top:0; z-index:2; background:var(--bg-card); border-bottom:1px solid var(--border-strong); width:200px; min-width:200px; text-align:left; box-shadow:inset 0 3px 0 var(--c); }
+.profe-tabla .profe-col-dia { position:sticky; left:0; z-index:1; width:68px; min-width:68px; background:var(--bg-card); border-right:1px solid var(--border-strong); box-shadow:none; }
+.profe-tabla thead .profe-col-dia { z-index:3; }
+.profe-col-dia button { display:flex; flex-direction:column; align-items:flex-start; width:100%; min-height:44px; padding:6px 10px; border:0; background:none; font-family:var(--font-family); font-size:15px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; text-align:left; cursor:pointer; }
+.profe-col-dia span { font-size:10.5px; font-weight:600; color:var(--text-secondary); line-height:1; margin-bottom:2px; }
+.profe-col-dia em, .profe-col-dia i { font-style:normal; font-size:10px; font-weight:600; color:var(--text-secondary); }
+.profe-col-dia i { color:#d0596f; }
+.profe-clase { display:flex; flex-direction:column; gap:2px; width:100%; padding:12px; border:0; background:none; text-align:left; font-family:var(--font-family); color:var(--text-primary); cursor:pointer; }
+.profe-clase b { font-size:13.5px; }
+.profe-clase small { font-size:11px; color:var(--text-secondary); font-weight:500; }
+.profe-clase:hover { background:var(--bg-card-hover); }
+.profe-tabla tr.profe-semana-nueva > * { border-top:2px solid var(--border-strong); }
+.profe-tabla tr.hoy .profe-col-dia button, .profe-tabla tr.hoy .profe-col-dia span { color:var(--m-acento); }
+.profe-tabla tr.hoy > td { background:color-mix(in srgb, var(--m-acento) 6%, transparent); }
+.profe-tabla tr.festivo > td { background:repeating-linear-gradient(135deg, transparent 0 6px, rgba(163,36,59,.18) 6px 7px); }
+.profe-tabla tr.pasado .profe-col-dia button { opacity:.6; }
+.profe-celda { padding:3px !important; }
+.profe-celda.libre { background:repeating-linear-gradient(135deg, transparent 0 6px, var(--border) 6px 7px); }
+.profe-celda.destino { box-shadow:inset 0 0 0 2px var(--c); background:color-mix(in srgb, var(--c) 14%, transparent); }
+.profe-nueva { display:block; width:100%; height:30px; box-sizing:border-box; padding:0 8px; border:0; border-radius:6px; background:none; color:var(--text-primary); font-family:var(--font-family); font-size:12.5px; outline:none; }
+.profe-nueva:focus { background:var(--bg-input); box-shadow:inset 0 0 0 2px var(--c); }
+.profe-item { display:flex; align-items:flex-start; gap:2px; margin-bottom:3px; padding:3px 4px 3px 0; border-radius:6px; border-left:3px solid var(--c); background:color-mix(in srgb, var(--c) 17%, transparent); }
+.profe-asa { flex-shrink:0; display:flex; align-items:center; justify-content:center; width:16px; height:22px; color:var(--text-secondary); opacity:.55; cursor:grab; touch-action:none; }
+.profe-asa svg { width:11px; height:11px; }
+.profe-item:hover .profe-asa { opacity:1; }
+.profe-item-txt { flex:1; min-width:0; padding:3px 2px; border:0; background:none; font-family:var(--font-family); font-size:12.5px; line-height:1.35; color:var(--text-primary); text-align:left; cursor:pointer; overflow-wrap:anywhere; }
+.profe-check { width:18px; height:18px; min-width:0; min-height:0; margin:2px 0 0 2px; box-sizing:border-box; flex-shrink:0; padding:0; border:2px solid var(--c); border-radius:50%; background:none; cursor:pointer; }
+.profe-check.on { background:var(--c); }
+.profe-item.hecha { background:color-mix(in srgb, var(--c) 8%, transparent); }
+.profe-item.hecha .profe-item-txt { color:var(--text-secondary); text-decoration:line-through; text-decoration-thickness:1px; }
+.profe-item.pendiente { box-shadow:inset 0 0 0 1.5px #a3243b; }
+.profe-item.pendiente .profe-check { border-color:#a3243b; }
+.profe-item.sin-casilla .profe-item-txt { font-style:italic; color:var(--text-secondary); }
+.profe-item.descartada { opacity:.45; background:none; border-left-style:dashed; }
+.profe-item.descartada .profe-item-txt { text-decoration:line-through; }
+.profe-item.arrastrando { opacity:.3; }
+.profe-fantasma { position:fixed; left:0; top:0; z-index:2000; pointer-events:none; background:var(--bg-modal); box-shadow:0 10px 26px rgba(0,0,0,.35); }
+.profe-fantasma > * { background:color-mix(in srgb, var(--c) 17%, transparent); }
+.profe-pista { font-size:12px; line-height:1.5; color:var(--text-secondary); }
+
+.profe-importar-ayuda { padding:14px 16px; margin-bottom:12px; border-radius:14px; background:var(--bg-card); border:1px solid var(--border); font-size:13.5px; color:var(--text-primary); }
+.profe-pasos { margin:8px 0 0; padding-left:18px; font-size:13px; line-height:1.55; color:var(--text-secondary); }
+.profe-prompt-caja { margin:10px 0; }
+.profe-prompt-caja summary { cursor:pointer; font-size:13px; font-weight:600; color:var(--text-primary); margin-bottom:8px; }
+.profe-prompt { max-height:260px; overflow:auto; margin:0 0 8px; padding:12px 14px; border-radius:12px; background:var(--bg-card); border:1px solid var(--border); font-family:var(--font-family); font-size:11.5px; line-height:1.5; white-space:pre-wrap; color:var(--text-primary); }
+
+.profe-ficha-titulo { display:inline-flex; align-items:center; gap:10px; text-transform:none; }
+.profe-ficha-titulo::before { content:''; width:14px; height:14px; border-radius:4px; background:var(--c); }
+.profe-ficha-sub { margin:-8px 0 14px; font-size:13px; color:var(--text-secondary); }
+.profe-ficha-cifras { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; margin-bottom:10px; }
+.profe-ficha-cifras div { padding:10px; border-radius:12px; background:var(--bg-card); border:1px solid var(--border); }
+.profe-ficha-cifras b { display:block; font-size:22px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.profe-ficha-cifras small { font-size:11px; line-height:1.3; color:var(--text-secondary); }
+.profe-ficha-bloque { margin-top:16px; }
+.profe-ficha-bloque .uni-etiqueta { margin-bottom:4px; }
+.profe-ficha-fila { display:grid; grid-template-columns:96px minmax(0, 1fr) auto; align-items:baseline; gap:10px; width:100%; padding:8px 2px; border:0; border-top:1px solid var(--border); background:none; font-family:var(--font-family); color:var(--text-primary); text-align:left; cursor:pointer; }
+.profe-ficha-fila span { font-size:12px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.profe-ficha-fila b { font-size:13.5px; font-weight:600; }
+.profe-ficha-fila i { font-style:normal; font-size:11.5px; color:var(--text-secondary); }
+.profe-ficha-fila.hecha b { color:var(--text-secondary); text-decoration:line-through; }
+.profe-ficha-fila.pendiente i { color:#d0596f; font-weight:700; }
+.profe-ficha-fila.descartada { opacity:.5; }
+.profe-ficha-vacio { padding:8px 2px; font-size:13px; color:var(--text-secondary); }
+
+@media (max-width:700px) {
+    .profe-pend-fila { grid-template-columns:minmax(0, 1fr); gap:6px; }
+    .profe-pend-botones { justify-content:flex-start; }
+    .profe-tabla thead th { width:160px; min-width:160px; }
+    .profe-tabla-wrap { max-height:70vh; }
+    .profe-nav-der { margin-left:0; width:100%; }
+    .profe-ficha-cifras { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .profe-ficha-fila { grid-template-columns:72px minmax(0, 1fr); }
+    .profe-ficha-fila i { display:none; }
+    .profe-asa { width:22px; height:26px; opacity:.8; }
+}
 /* El cuadrante se desliza dentro de su marco: sin el ajuste genérico de
-   tablas del móvil, que lo estrechaba a la pantalla. */
+   tablas y botones del móvil, que lo estrechaba a la pantalla. */
 .m-generico .profe-tabla { display:table; max-width:none; overflow:visible; }
-.m-generico .profe-check { min-height:0; }
-.m-generico .profe-clase { min-height:0; }
+.m-generico .profe-check, .m-generico .profe-clase, .m-generico .profe-item-txt, .m-generico .profe-col-dia button, .m-generico .profe-color { min-height:0; }
+.profe-pendientes > summary { list-style:none; cursor:pointer; }
+.profe-pendientes > summary::-webkit-details-marker { display:none; }
+.profe-aviso-ver { margin-left:4px; font-weight:700; color:var(--text-primary); text-decoration:underline; text-underline-offset:3px; }
+.profe-pendientes[open] > summary { margin-bottom:4px; }
+.profe-aviso-ver::after { content:'ver.'; }
+.profe-pendientes[open] .profe-aviso-ver::after { content:'ocultar.'; }
+.profe-col-dia i { display:block; max-width:62px; margin-top:2px; font-size:9.5px; line-height:1.2; white-space:normal; }
+.profe-cal-preset { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; padding:14px 16px; border-radius:14px; background:var(--bg-card); border:1px solid var(--border); }
+.profe-cal-preset b { font-size:14px; color:var(--text-primary); }
+.profe-cal-preset small { font-size:12px; line-height:1.45; color:var(--text-secondary); }
+.profe-cal-preset .btn-modal-primary { margin:0; }
+.profe-check-linea { display:flex; align-items:flex-start; gap:8px; font-size:12.5px; line-height:1.4; color:var(--text-primary); cursor:pointer; }
+.profe-check-linea input { margin-top:2px; accent-color:var(--text-primary); }
+.profe-cal-mes { margin:10px 0 2px; font-size:11.5px; font-weight:700; color:var(--text-secondary); }
+.profe-cal-fila { display:grid; grid-template-columns:110px minmax(0, 1fr) auto; align-items:baseline; gap:10px; width:100%; padding:7px 2px; border:0; border-top:1px solid var(--border); background:none; font-family:var(--font-family); color:var(--text-primary); text-align:left; cursor:pointer; }
+.profe-cal-fila span { font-size:12px; color:var(--text-secondary); }
+.profe-cal-fila b { font-size:13px; font-weight:600; }
+.profe-cal-fila i { font-style:normal; font-size:11.5px; color:var(--text-secondary); }

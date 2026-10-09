@@ -1,0 +1,1751 @@
+{
+ "formato": "bitacora-cuadrante",
+ "version": 1,
+ "clases": [
+  {
+   "nombre": "1º ESO A",
+   "materia": "Lengua castellana",
+   "dias": [
+    1,
+    3,
+    5
+   ],
+   "color": "#e07a3f"
+  },
+  {
+   "nombre": "2º ESO B",
+   "materia": "Lengua castellana",
+   "dias": [
+    1,
+    2,
+    4
+   ],
+   "color": "#3f7be0"
+  },
+  {
+   "nombre": "3º ESO C",
+   "materia": "Lengua y Literatura",
+   "dias": [
+    2,
+    3,
+    5
+   ],
+   "color": "#3a9e64"
+  },
+  {
+   "nombre": "4º ESO A",
+   "materia": "Lengua y Literatura",
+   "dias": [
+    1,
+    3,
+    4
+   ],
+   "color": "#c94f7c"
+  },
+  {
+   "nombre": "1º Bach A",
+   "materia": "Lengua y Literatura I",
+   "dias": [
+    1,
+    2,
+    4,
+    5
+   ],
+   "color": "#8a63d2"
+  },
+  {
+   "nombre": "2º Bach B",
+   "materia": "Lengua y Literatura II",
+   "dias": [
+    2,
+    3,
+    5
+   ],
+   "color": "#2aa5a0"
+  }
+ ],
+ "festivos": [
+  "2026-10-12",
+  "2026-11-02",
+  "2026-12-07",
+  "2026-12-08",
+  "2026-12-22",
+  "2026-12-23",
+  "2026-12-24",
+  "2026-12-25",
+  "2026-12-28",
+  "2026-12-29",
+  "2026-12-30",
+  "2026-12-31"
+ ],
+ "tareas": [
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-14",
+   "titulo": "Tema 1. La comunicación",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-14",
+   "titulo": "Tema 1. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-16",
+   "titulo": "Tema 1. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-18",
+   "titulo": "Tema 2. El sustantivo",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-18",
+   "titulo": "Tema 2. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-21",
+   "titulo": "Tema 2. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-23",
+   "titulo": "Examen temas 1 y 2",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-25",
+   "titulo": "Tema 3. El adjetivo",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-28",
+   "titulo": "Tema 3. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-28",
+   "titulo": "Tema 3. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-30",
+   "titulo": "Lectura en voz alta: «El principito»",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-09-30",
+   "titulo": "Tema 4. Los determinantes",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-02",
+   "titulo": "Tema 4. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-05",
+   "titulo": "Tema 4. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-07",
+   "titulo": "Excursión al teatro",
+   "hecha": null
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-09",
+   "titulo": "Examen temas 3 y 4",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-14",
+   "titulo": "Tema 5. El verbo",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-16",
+   "titulo": "Tema 5. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-19",
+   "titulo": "Tema 5. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-19",
+   "titulo": "Tema 6. Textos narrativos",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-21",
+   "titulo": "Tema 6. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-21",
+   "titulo": "Tema 6. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-23",
+   "titulo": "Examen temas 5 y 6",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-26",
+   "titulo": "Lectura en voz alta: «El principito»",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-28",
+   "titulo": "Tema 7. La descripción",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-28",
+   "titulo": "Tema 7. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-30",
+   "titulo": "Tema 7. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-10-30",
+   "titulo": "Tema 8. Ortografía: b y v",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-04",
+   "titulo": "Tema 8. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-06",
+   "titulo": "Tema 8. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-09",
+   "titulo": "Examen temas 7 y 8",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-11",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-13",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-16",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-18",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-20",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-23",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-25",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-27",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-11-30",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-12-02",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-12-04",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-12-09",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-12-11",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-12-14",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-12-16",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-12-18",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º ESO A",
+   "fecha": "2026-12-21",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-09-14",
+   "titulo": "Tema 1. Las palabras y su estructura",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-09-15",
+   "titulo": "Tema 1. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-09-17",
+   "titulo": "Tema 1. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-09-21",
+   "titulo": "Tema 2. El sintagma nominal",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-09-22",
+   "titulo": "Tema 2. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-09-24",
+   "titulo": "Tema 2. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-09-28",
+   "titulo": "Examen temas 1 y 2",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-09-29",
+   "titulo": "Tema 3. El sintagma verbal",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-01",
+   "titulo": "Tema 3. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-05",
+   "titulo": "Tema 3. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-06",
+   "titulo": "Plan lector: «Manolito Gafotas»",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-08",
+   "titulo": "Tema 4. La oración simple",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-08",
+   "titulo": "Tema 4. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-13",
+   "titulo": "Tema 4. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-15",
+   "titulo": "Examen temas 3 y 4",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-19",
+   "titulo": "Tema 5. Los textos expositivos",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-20",
+   "titulo": "Tema 5. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-22",
+   "titulo": "Tema 5. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-26",
+   "titulo": "Tema 6. La lírica",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-27",
+   "titulo": "Tema 6. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-10-29",
+   "titulo": "Tema 6. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-03",
+   "titulo": "Examen temas 5 y 6",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-05",
+   "titulo": "Plan lector: «Manolito Gafotas»",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-09",
+   "titulo": "Tema 7. Ortografía: acentuación",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-09",
+   "titulo": "Tema 7. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-10",
+   "titulo": "Tema 7. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-12",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-16",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-17",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-19",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-23",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-24",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-26",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-11-30",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-12-01",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-12-03",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-12-10",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-12-14",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-12-15",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-12-17",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º ESO B",
+   "fecha": "2026-12-21",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-09-15",
+   "titulo": "Tema 1. Literatura medieval",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-09-16",
+   "titulo": "Tema 1. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-09-18",
+   "titulo": "Tema 1. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-09-22",
+   "titulo": "Tema 2. El Cantar de mio Cid",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-09-23",
+   "titulo": "Tema 2. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-09-25",
+   "titulo": "Tema 2. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-09-29",
+   "titulo": "Examen temas 1 y 2",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-09-30",
+   "titulo": "Tema 3. El mester de clerecía",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-02",
+   "titulo": "Tema 3. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-06",
+   "titulo": "Tema 3. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-07",
+   "titulo": "Comentario de texto guiado",
+   "hecha": true
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-09",
+   "titulo": "Tema 4. La Celestina",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-13",
+   "titulo": "Tema 4. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-14",
+   "titulo": "Tema 4. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-14",
+   "titulo": "Examen temas 3 y 4",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-16",
+   "titulo": "Tema 5. Complementos del verbo",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-20",
+   "titulo": "Tema 5. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-21",
+   "titulo": "Tema 5. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-21",
+   "titulo": "Tema 6. Textos argumentativos",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-23",
+   "titulo": "Tema 6. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-27",
+   "titulo": "Tema 6. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-28",
+   "titulo": "Examen temas 5 y 6",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-10-30",
+   "titulo": "Comentario de texto guiado",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-03",
+   "titulo": "Tema 7. El Renacimiento",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-04",
+   "titulo": "Tema 7. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-04",
+   "titulo": "Tema 7. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-06",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-10",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-11",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-13",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-17",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-18",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-20",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-24",
+   "titulo": "Pruebas de diagnóstico",
+   "hecha": null
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-25",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-11-27",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-12-01",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-12-02",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-12-04",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-12-09",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-12-11",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-12-15",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-12-16",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "3º ESO C",
+   "fecha": "2026-12-18",
+   "titulo": "Evaluación inicial",
+   "hecha": null
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-09-14",
+   "titulo": "Tema 1. El siglo XVIII",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-09-16",
+   "titulo": "Tema 1. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-09-17",
+   "titulo": "Tema 1. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-09-21",
+   "titulo": "Tema 2. El Romanticismo",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-09-23",
+   "titulo": "Tema 2. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-09-24",
+   "titulo": "Tema 2. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-09-28",
+   "titulo": "Examen temas 1 y 2",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-09-30",
+   "titulo": "Tema 3. Bécquer y Larra",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-01",
+   "titulo": "Tema 3. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-05",
+   "titulo": "Tema 3. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-05",
+   "titulo": "Debate en clase",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-07",
+   "titulo": "Tema 4. La oración compuesta",
+   "hecha": true
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-08",
+   "titulo": "Tema 4. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-14",
+   "titulo": "Tema 4. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-15",
+   "titulo": "Examen temas 3 y 4",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-19",
+   "titulo": "Tema 5. Coordinadas y yuxtapuestas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-21",
+   "titulo": "Tema 5. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-22",
+   "titulo": "Tema 5. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-26",
+   "titulo": "Tema 6. El Realismo",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-28",
+   "titulo": "Tema 6. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-10-29",
+   "titulo": "Tema 6. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-04",
+   "titulo": "Examen temas 5 y 6",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-05",
+   "titulo": "Debate en clase",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-09",
+   "titulo": "Tema 7. Galdós",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-11",
+   "titulo": "Tema 7. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-12",
+   "titulo": "Tema 7. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-16",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-18",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-19",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-23",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-25",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-26",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-11-30",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-12-02",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-12-03",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-12-09",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-12-10",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-12-14",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-12-16",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-12-17",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "4º ESO A",
+   "fecha": "2026-12-21",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-14",
+   "titulo": "Tema 1. La comunicación y sus funciones",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-15",
+   "titulo": "Tema 1. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-15",
+   "titulo": "Tema 1. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-17",
+   "titulo": "Tema 2. Las propiedades del texto",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-18",
+   "titulo": "Tema 2. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-18",
+   "titulo": "Tema 2. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-21",
+   "titulo": "Charla de orientación",
+   "hecha": null
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-22",
+   "titulo": "Examen temas 1 y 2",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-24",
+   "titulo": "Tema 3. La lírica medieval",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-25",
+   "titulo": "Tema 3. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-25",
+   "titulo": "Tema 3. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-28",
+   "titulo": "Comentario crítico",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-09-29",
+   "titulo": "Tema 4. El Arcipreste de Hita",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-01",
+   "titulo": "Tema 4. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-02",
+   "titulo": "Tema 4. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-05",
+   "titulo": "Examen temas 3 y 4",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-06",
+   "titulo": "Tema 5. Jorge Manrique",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-06",
+   "titulo": "Tema 5. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-08",
+   "titulo": "Tema 5. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-09",
+   "titulo": "Tema 6. Garcilaso",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-09",
+   "titulo": "Tema 6. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-13",
+   "titulo": "Tema 6. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-15",
+   "titulo": "Examen temas 5 y 6",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-16",
+   "titulo": "Excursión al teatro",
+   "hecha": null
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-19",
+   "titulo": "Comentario crítico",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-20",
+   "titulo": "Tema 7. Fray Luis y San Juan",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-22",
+   "titulo": "Tema 7. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-23",
+   "titulo": "Tema 7. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-26",
+   "titulo": "Tema 8. El Lazarillo",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-27",
+   "titulo": "Tema 8. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-29",
+   "titulo": "Tema 8. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-29",
+   "titulo": "Examen temas 7 y 8",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-10-30",
+   "titulo": "Pruebas de diagnóstico",
+   "hecha": null
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-03",
+   "titulo": "Tema 9. Cervantes",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-05",
+   "titulo": "Tema 9. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-06",
+   "titulo": "Tema 9. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-09",
+   "titulo": "Comentario crítico",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-10",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-12",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-13",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-16",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-17",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-19",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-20",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-23",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-24",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-26",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-27",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-11-30",
+   "titulo": "Excursión al teatro",
+   "hecha": null
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-01",
+   "titulo": "Charla de orientación",
+   "hecha": null
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-03",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-04",
+   "titulo": "Sesión de tutoría",
+   "hecha": null
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-10",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-11",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-14",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-15",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-17",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-18",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "1º Bach A",
+   "fecha": "2026-12-21",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-09-15",
+   "titulo": "Tema 1. El comentario de texto PAU",
+   "hecha": true
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-09-16",
+   "titulo": "Tema 1. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-09-18",
+   "titulo": "Tema 1. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-09-22",
+   "titulo": "Sesión de tutoría",
+   "hecha": null
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-09-23",
+   "titulo": "Tema 2. Modernismo y 98",
+   "hecha": true
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-09-25",
+   "titulo": "Tema 2. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-09-29",
+   "titulo": "Tema 2. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-09-29",
+   "titulo": "Examen temas 1 y 2",
+   "hecha": true
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-09-30",
+   "titulo": "Tema 3. Machado",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-02",
+   "titulo": "Tema 3. Actividades",
+   "hecha": true
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-06",
+   "titulo": "Tema 3. Corrección de ejercicios",
+   "hecha": true
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-07",
+   "titulo": "Simulacro de PAU",
+   "hecha": true
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-09",
+   "titulo": "Tema 4. Novecentismo y vanguardias",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-13",
+   "titulo": "Tema 4. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-14",
+   "titulo": "Tema 4. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-16",
+   "titulo": "Examen temas 3 y 4",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-20",
+   "titulo": "Tema 5. La generación del 27",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-21",
+   "titulo": "Tema 5. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-23",
+   "titulo": "Tema 5. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-23",
+   "titulo": "Tema 6. Lorca: el teatro",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-27",
+   "titulo": "Tema 6. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-28",
+   "titulo": "Tema 6. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-30",
+   "titulo": "Examen temas 5 y 6",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-10-30",
+   "titulo": "Simulacro de PAU",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-03",
+   "titulo": "Charla de orientación",
+   "hecha": null
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-04",
+   "titulo": "Tema 7. Sintaxis: subordinadas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-06",
+   "titulo": "Tema 7. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-06",
+   "titulo": "Tema 7. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-10",
+   "titulo": "Pruebas de diagnóstico",
+   "hecha": null
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-11",
+   "titulo": "Tema 8. Novela de posguerra",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-13",
+   "titulo": "Evaluación inicial",
+   "hecha": null
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-17",
+   "titulo": "Tema 8. Actividades",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-18",
+   "titulo": "Tema 8. Corrección de ejercicios",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-20",
+   "titulo": "Examen temas 7 y 8",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-24",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-25",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-11-27",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-12-01",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-12-02",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-12-04",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-12-09",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-12-11",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-12-15",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-12-16",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  },
+  {
+   "clase": "2º Bach B",
+   "fecha": "2026-12-18",
+   "titulo": "Repaso y dudas",
+   "hecha": false
+  }
+ ]
+}

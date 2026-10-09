@@ -886,6 +886,15 @@
                     onClick: () => { closeNotifPanel(); switchView('friends'); }
                 });
             });
+            const sinDar = apartadoVisible('profesorado') ? profePendientes().length : 0;
+            if (sinDar) items.push({
+                icon: NOTIF_ICON_EVENT,
+                iconClass: 'icon-event',
+                title: sinDar === 1 ? 'Una tarea de clase sin dar' : `${sinDar} tareas de clase sin dar`,
+                sub: 'Profesorado: ponlas en otro día o descártalas',
+                date: today + 'T00:00',
+                onClick: () => { closeNotifPanel(); switchView('profesorado'); }
+            });
             if (suscripcionActual?.estado === 'prueba') {
                 const dias = Math.max(0, Math.ceil((new Date(suscripcionActual.trial_fin) - new Date()) / 86400000));
                 if (dias <= 3) items.push({

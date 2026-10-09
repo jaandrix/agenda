@@ -217,9 +217,12 @@ a menor resolución.
   `notaActa`, `convalidada`, `anual` (un periodo 0 es un curso completo). Con ella activa, Estudios lista solo `asignaturasEnCurso()`, y al
   cambiar de cuatrimestre (`hacerCuatriActual`) se guarda/recupera `studies.schedule`.
 - **Profesorado (`js/profesorado.js`, vista `profesorado`, opcional):** cuadrante tipo hoja de cálculo
-  (columna por clase, fila por día) en `profesorado` (sincronizado: `clases` con `dias`, `sesiones` con
-  `claseId`/`fecha`/`titulo`/`hecha`). Lo no dado en su día pasa a pendientes (al siguiente hueco o
-  "correr el temario."), "repartir temario." e "importar con ia." (prompt → JSON).
+  (columna por clase con su `color`, fila por día) en `profesorado` (sincronizado: `clases`, `sesiones`
+  —varias por casilla, `hecha` true/false/null = sin casilla, `descartada`—, `festivos`, `nombresFestivos`,
+  `curso`). Las tareas se arrastran con puntero (`profeArrastrar`, vale en iPhone) y se corren "como
+  vagones" (`profeEmpujarClase` / `profeAdelantarClase`) al correr una pendiente o al marcar/quitar un día
+  no lectivo. Calendario escolar de Zaragoza 2026-27 en `PROFE_CALENDARIOS`. Importa el JSON que genera una
+  IA con `PROFE_PROMPT_IA`; ejemplo en `ejemplos/cuadrante-ejemplo.json`.
 - **Agenda laboral (`js/agenda-laboral.js`, dentro de Empleo con un empleo actual):** `agendaLaboral`
   (sincronizado: `enPrincipal`, `horario` por día de la semana, `citas` con id `lab_...`). Estilo propio
   más sobrio (`.lab-*`). Si `enPrincipal`, las citas entran al calendario por `getRecurringCalendarEntries`
