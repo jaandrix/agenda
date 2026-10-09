@@ -2167,6 +2167,11 @@
             const prev = financePro.transactions.find(t => t.id === entry.id);
             if (prev) ['manual', 'recurringEntryId', 'cicloMes', 'programadoId', 'conciliado', 'bankNote', 'pendiente', 'noDuplicadoDe', 'claveImport'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
             else entry.manual = true;
+            // Si a un movimiento importado se le cambia la nota, el concepto
+            // del banco se guarda aparte: con él se reconoce al reimportar y
+            // al completarse si estaba pendiente (Cinesa → "Cinesa, cine"
+            // entraba otra vez al importar el extracto siguiente).
+            if (prev && !prev.manual && !prev.bankNote && prev.note && entry.note !== prev.note) entry.bankNote = prev.note;
             if (prev && !prev.manual && !prev.claveImport) {
                 const clave = `${prev.account}|${prev.date}|${prev.amount}|${prev.bankNote ?? prev.note ?? ''}`;
                 if (clave !== `${entry.account}|${entry.date}|${entry.amount}|${entry.bankNote ?? entry.note ?? ''}`) entry.claveImport = clave;
