@@ -26,7 +26,17 @@
             const diff = Math.abs(Number(auto.amount) - Number(real.amount));
             const texto = financeProNormalizar(real.note);
             if (financeProCoincideNombre(auto, texto)) return dias <= 6 && diff <= Math.max(1, Number(auto.amount) * 0.1);
-            return auto.account === real.account && dias <= 3 && diff < 0.005;
+            if (dias > 3 || diff >= 0.005) return false;
+            return auto.account === real.account || !financeProImporteRedondo(real.amount);
+        }
+
+        // Un importe con céntimos (21,78 €) casi nunca coincide por casualidad
+        // con el de una suscripción: basta para emparejar un cargo cobrado en
+        // otra cuenta que la que tenía la suscripción (Claude, apuntada en
+        // Ibercaja y cobrada como "Anthropic" en Revolut, quedaba duplicada).
+        // Con uno redondo (5,00 €) se sigue exigiendo la misma cuenta.
+        function financeProImporteRedondo(importe) {
+            return Math.round(Number(importe) * 100) % 100 === 0;
         }
 
         // Además del nombre que le puso el usuario, vale el concepto con el
@@ -68,7 +78,7 @@
                 const diff = Math.abs(importe - Number(real.amount));
                 const nombre = financeProCoincideNombre({ recurringEntryId: e.id, note: e.title }, texto);
                 const cuenta = financeProCuentaRecurrente(e);
-                if (!nombre && (diff >= 0.005 || (cuenta && cuenta !== real.account))) return;
+                if (!nombre && (diff >= 0.005 || (cuenta && cuenta !== real.account && financeProImporteRedondo(importe)))) return;
                 if (nombre && diff > Math.max(1, importe * 0.1)) return;
                 const base = new Date(real.date + 'T12:00:00');
                 [-1, 0, 1].forEach(delta => {
@@ -2855,6 +2865,10 @@
                     if (auto.recurringEntryId) {
                         auto.cicloMes = financeProCicloMes(auto);
                         if (!esPendiente) financeProAprenderConcepto(auto.recurringEntryId, description);
+                        // Si el banco la cobra en otra cuenta, esa pasa a ser la
+                        // de la suscripción y los próximos cargos se crean ahí.
+                        const e = entries.find(x => x.id === auto.recurringEntryId);
+                        if (e && !esPendiente && (e.proAccount || e.type === 'subscription') && financeProCuentaRecurrente(e) !== m.account) e.proAccount = m.account;
                     }
                     Object.assign(auto, { date, account: m.account, amount, note: description || auto.note, conciliado: true, pendiente: esPendiente || undefined });
                     if (category) auto.category = category;
