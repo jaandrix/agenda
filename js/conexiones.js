@@ -112,7 +112,7 @@ function renderGraph() {
     <div class="conexiones-vista">
         <div class="conexiones-cabecera">
             <div class="conexiones-titulo">conexiones.</div>
-            <div class="conexiones-sub">${total} entradas relacionadas en ${centros.length} grupos. Elige un centro para ver todo lo que tiene que ver con él.</div>
+            <div class="conexiones-sub">${total} ${total === 1 ? 'entrada relacionada' : 'entradas relacionadas'} en ${centros.length} ${centros.length === 1 ? 'grupo' : 'grupos'}. Elige un centro para ver todo lo que tiene que ver con él.</div>
         </div>
         <div class="conexiones-cuerpo">
             <aside class="conexiones-centros">

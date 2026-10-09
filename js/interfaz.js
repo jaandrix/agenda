@@ -247,6 +247,19 @@
             etiquetas.forEach(l => { if (/[?:.!…]$/.test(l.textContent.trim())) l.classList.add('sin-punto'); });
             const titulos = raiz.matches?.('.modal-title') ? [raiz] : [...(raiz.querySelectorAll?.('.modal-title') || [])];
             titulos.forEach(puntoFinalTitulo);
+            raiz.querySelectorAll?.('.modal-sheet :is(.btn-modal-primary, .btn-secondary)').forEach(vozDeBoton);
+        }
+
+        // Muchos modales antiguos dicen "Guardar" o "Añadir a la timeline"
+        // con mayúscula y sin punto; se pasan a "guardar." al pintarse en vez
+        // de reescribir decenas de textos. Solo botones de puro texto, y solo
+        // si la segunda letra es minúscula (para no tocar siglas como "CSV").
+        function vozDeBoton(b) {
+            if (b.dataset.voz || b.children.length) return;
+            b.dataset.voz = '1';
+            const t = b.textContent.trim();
+            if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(t)) return;
+            b.textContent = t.charAt(0).toLowerCase() + t.slice(1) + (/[?:.!…)»"]$/.test(t) ? '' : '.');
         }
 
         // Los títulos de los modales van en minúscula (CSS) y con punto final

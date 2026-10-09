@@ -170,7 +170,6 @@ function renderProfesorado() {
             </div>
         </div>
         <div id="profe-pendientes">${renderPendientesProfe()}</div>
-        ${renderMisClasesProfe()}
         <div class="profe-pestanas">${[['cuadrante', 'cuadrante.'], ['horario', 'horario semanal.']].map(([k, t]) => `<button class="profe-chip ${profeVista === k ? 'activa' : ''}" onclick="profeVista='${k}';profeIrAHoy=${k === 'cuadrante'};render()">${t}</button>`).join('')}</div>
         ${profeVista === 'horario' ? renderHorarioSemanalProfe() : `<div class="profe-cuadrante">
             <div class="profe-nav">
@@ -197,6 +196,7 @@ function renderProfesorado() {
             </div>
             <div class="profe-pista">Escribe en una casilla y pulsa Intro para añadir la tarea. Arrastra una tarea por su asa para llevarla a otro día, toca su texto para editarla y su círculo para marcarla hecha. El lápiz de cada casilla guarda una nota de cómo fue esa clase. Pulsa un día si al final no hay clase (o si sí la hay): las tareas se corren solas.</div>
         </div>`}
+        ${renderMisClasesProfe()}
     </div>`;
 }
 

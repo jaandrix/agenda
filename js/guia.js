@@ -419,7 +419,7 @@ const GUIA = [
             [guiaBoton('socio fundador.'), 'Un único pago de 29,99 € y Bitácora de por vida, solo para 100 personas: tu número de socio en dorado en Home y un tema exclusivo, «fundador.». Si ya tenías suscripción, se cancela sola. Además tiene tres códigos que regalan 6 meses de Bitácora (se ven pulsando su número de socio en Home o en Ajustes).'],
             [guiaBoton('¿tienes un código de regalo?'), 'Si un socio fundador te ha pasado un código, escríbelo en Ajustes → suscripción o al terminar la prueba: tienes 6 meses de Bitácora gratis.'],
             [guiaBoton('apartados. → perfil.'), '<b>estudiante.</b> (sin Empleo), <b>trabajador.</b> (sin Estudios ni exámenes) o <b>ambas.</b> Lo que no corresponde desaparece de menús, buscador e inicio móvil; sus datos se conservan.'],
-            [guiaBoton('apartados opcionales.'), 'Apartados que no todo el mundo usa (envíos, proyectos, enlaces, etiquetas, conexiones y coleccionables): actívalos solo si los quieres.'],
+            [guiaBoton('elegir apartados.'), 'Apartados que no todo el mundo usa (universidad, profesorado, envíos, proyectos, enlaces, etiquetas, conexiones y coleccionables): ábrelo y activa solo los que quieras.'],
             [guiaBoton('tus datos. → exportar. · importar.'), 'Todo en un archivo JSON para guardarlo aparte o recuperarlo.'],
             [guiaBoton('claude y chatgpt. · notificaciones.'), 'Conectar la IA y los avisos (ver sus secciones).'],
             [guiaBoton('tema y letra.'), 'Tema, tipografía y modo ancho; se guardan en cada dispositivo.'],

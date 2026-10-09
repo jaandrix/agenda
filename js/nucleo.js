@@ -1270,7 +1270,7 @@
                     ${items.map(it => renderMobileFilaTarea(it, off)).join('')}
                 </div>
                 ${!total ? '<div class="m-vacio">nada todavía. pulsa + tarea.</div>' : ''}
-                <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir</button></div>
+                <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir.</button></div>
                 ${backlog.length ? `<div class="m-lista">${backlog.map(it => `
                     <div class="m-fila ${it.done ? 'hecha' : ''}">
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
@@ -1361,7 +1361,8 @@
             studies.subjects.forEach(s => (s.assignments || []).forEach(a => { if (!a.done && a.date && a.date >= hoy) entregas.push({ ...a, asignatura: s.name }); }));
             entregas.sort((a, b) => a.date.localeCompare(b.date));
             const fechaCorta = iso => { const d = new Date(iso + 'T12:00:00'); return `${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}`; };
-            return `${renderMobileCabecera('estudios', ex ? `examen ${eventCountdownLabel(ex.date).toLowerCase()}.` : 'sin exámenes a la vista.')}
+            const subEstudios = clasesHoy.length ? `${clasesHoy.length === 1 ? 'una clase' : `${clasesHoy.length} clases`} hoy.` : entregas.length ? `${entregas.length === 1 ? 'una entrega' : `${entregas.length} entregas`} por delante.` : ex ? `examen ${eventCountdownLabel(ex.date).toLowerCase()}.` : 'sin exámenes a la vista.';
+            return `${renderMobileCabecera('estudios', subEstudios)}
                 ${ex ? `
                 <div class="m-destacado">
                     <div class="m-destacado-cifra">${dias === 0 ? 'hoy' : dias}</div>
@@ -1380,7 +1381,7 @@
                     const bloques = (studies.schedule[d.key] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
                     return `<div class="m-semana-dia ${d.key === claveHoy ? 'hoy' : ''}"><div class="m-semana-letra">${escapeHtml(d.label.slice(0, 3).toLowerCase())}.</div><div class="m-semana-clases">${bloques.length ? bloques.map(b => `<span><b>${escapeHtml(b.time || '')}</b> ${escapeHtml(b.subject || '')}</span>`).join('') : '<span class="m-fila-meta">—</span>'}</div></div>`;
                 }).join('')}</div>
-                <div class="m-bloque-cab"><div class="m-etiqueta">asignaturas.</div><button class="m-mini" onclick="openAddSubject()">+ añadir</button></div>
+                <div class="m-bloque-cab"><div class="m-etiqueta">asignaturas.</div><button class="m-mini" onclick="openAddSubject()">+ añadir.</button></div>
                 <div class="m-generico m-generico-sin-zoom studies-subjects-list">
                     ${asignaturasEnCurso().length ? asignaturasEnCurso().map((s, i, l) => renderSubjectRow(s, i, l.length)).join('') : '<div class="m-vacio m-vacio-peque">ninguna asignatura todavía.</div>'}
                 </div>`;
@@ -1418,6 +1419,7 @@
             const lista = [...notes].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             return `${renderMobileCabecera('notas', lista.length ? `${lista.length} escrita${lista.length === 1 ? '' : 's'}.` : 'ninguna todavía.')}
                 <button class="m-boton m-boton-acento m-boton-ancho" onclick="openWriteNote()">+ nota de hoy.</button>
+                ${lista.length ? '' : '<div class="m-vacio-grande"><b>un sitio para ti.</b>Cómo fue el día, una idea suelta, algo que no quieres olvidar. Una nota por día, sin formato y sin prisa.</div>'}
                 ${lista.map(n => {
                     const extracto = extractoNota(n.content);
                     return `<div class="m-nota" onclick="openReadNote('${n.id}')">

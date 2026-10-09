@@ -78,7 +78,7 @@ function renderFichaProfe() {
         resumen: renderFichaResumenProfe, cuaderno: renderCuadernoProfe, deberes: renderDeberesProfe, horario: renderHorarioClaseProfe, notas: renderNotasClaseProfe,
     }[profeFicha.pestana](c);
     return `
-        <div class="modal-title"><span class="profe-ficha-titulo" style="--c:${c.color}">${escapeHtml(c.nombre)}</span><button class="modal-close" onclick="closeModal()" aria-label="Cerrar">✕</button></div>
+        <div class="modal-title modal-title-contenido"><span class="profe-ficha-titulo" style="--c:${c.color}">${escapeHtml(c.nombre)}</span><button class="modal-close" onclick="closeModal()" aria-label="Cerrar">✕</button></div>
         <div class="profe-ficha-sub">${escapeHtml(c.materia || 'sin materia')} · ${c.alumnos.length} ${c.alumnos.length === 1 ? 'alumno' : 'alumnos'} · ${(c.dias || []).length ? c.dias.map(d => PROFE_DIAS[d]).join(', ') : 'de lunes a viernes'}</div>
         <div class="profe-pestanas">${pestanas.map(([k, t]) => `<button class="profe-chip ${profeFicha.pestana === k ? 'activa' : ''}" onclick="profeIrPestana('${k}')">${t}</button>`).join('')}</div>
         ${cuerpo}`;
@@ -752,11 +752,10 @@ function profeDatosExport(claseId, mes) {
 async function exportarProfe(formato) {
     const claseId = document.getElementById('profe-exp-clase')?.value || '';
     const mes = document.getElementById('profe-exp-mes')?.value;
-    const datos = profeDatosExport(claseId, mes);
     const nombre = `${(claseId ? profeClase(claseId).nombre : 'cuadrante')} ${mes}`.replace(/[^\wáéíóúñÁÉÍÓÚÑº ª-]/g, '').trim().replace(/\s+/g, '-');
     try {
-        if (formato === 'pdf') await exportarPdfProfe(datos, nombre, !claseId);
-        else await exportarExcelProfe(datos, nombre);
+        if (formato === 'pdf') await exportarPdfProfe(claseId, mes, nombre);
+        else await exportarExcelProfe(profeDatosExport(claseId, mes), nombre);
         closeModal();
     } catch (e) {
         console.error(e);
@@ -764,53 +763,188 @@ async function exportarProfe(formato) {
     }
 }
 
-async function exportarPdfProfe(datos, nombre, apaisado) {
+// El PDF se compone a mano, sin cajas ni rellenos: líneas finas entre
+// días, un punto del color de cada clase y un círculo dibujado por tarea
+// (relleno si está hecha). La primera versión, con cabeceras negras y
+// celdas coloreadas, parecía una plantilla genérica.
+const PDF_TINTA = [38, 36, 33], PDF_GRIS = [138, 134, 126], PDF_RAYA = [222, 218, 210], PDF_ROJO = [163, 36, 59];
+
+function profePdfEstado(s) {
+    if (s.descartada) return 'descartada';
+    if (s.hecha === true) return 'hecha';
+    if (s.hecha === null) return 'sin';
+    return profeEsPendiente(s) ? 'atrasada' : 'pendiente';
+}
+
+function profePdfCirculo(doc, x, y, estado, r = 0.85) {
+    doc.setLineWidth(0.25);
+    if (estado === 'hecha') { doc.setFillColor(...PDF_GRIS); doc.circle(x, y, r, 'F'); }
+    else if (estado === 'pendiente') { doc.setDrawColor(...PDF_TINTA); doc.circle(x, y, r, 'S'); }
+    else if (estado === 'atrasada') { doc.setDrawColor(...PDF_ROJO); doc.circle(x, y, r, 'S'); }
+    else if (estado === 'descartada') { doc.setDrawColor(...PDF_GRIS); doc.line(x - r, y, x + r, y); }
+}
+
+function profePdfLineas(doc, items, ancho) {
+    const lineas = [];
+    items.forEach(it => doc.splitTextToSize(it.texto, ancho).forEach((t, i) => lineas.push({ t, estado: it.estado, primera: i === 0 })));
+    return lineas;
+}
+
+async function exportarPdfProfe(claseId, mes, nombre) {
     await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: apaisado ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
-    const ancho = doc.internal.pageSize.getWidth();
-    const margen = 12;
-    const tinta = [33, 32, 30];
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(...tinta);
-    doc.text(datos.titulo, margen, 18);
-    if (datos.color) { doc.setFillColor(...profeRgb(datos.color)); doc.rect(margen, 21.5, 24, 1.6, 'F'); }
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(110, 108, 102);
-    doc.text(doc.splitTextToSize(datos.sub, ancho - margen * 2), margen, 28);
-    let y = 34;
-    datos.tablas.forEach(t => {
-        if (t.titulo) {
-            if (y > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); y = 18; }
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...tinta);
-            doc.text(t.titulo, margen, y + 4); y += 7;
-        }
+    const p = datosProfe();
+    const c = claseId ? aulaProfe(profeClase(claseId)) : null;
+    const doc = new jsPDF({ orientation: c ? 'portrait' : 'landscape', unit: 'mm', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 16;
+    const fs = c ? 8.6 : 7.4;
+    const alto = fs * doc.getLineHeightFactor() / doc.internal.scaleFactor;
+    const pad = { top: 2.2, bottom: 2.2, left: 1.2, right: 2 };
+    const sangria = 3.2;
+    const dias = profeDiasMes(mes);
+    const nombreDia = d => new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }).replace('.', '');
+    const conColor = (texto, color) => ({ texto, color });
+
+    // Cabecera de la página: una línea pequeña de contexto y el mes en grande.
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...PDF_GRIS);
+    let x = M;
+    if (c) { doc.setFillColor(...profeRgb(c.color)); doc.circle(M + 1.2, 15.2, 1.2, 'F'); x = M + 4; }
+    doc.text(c ? `${c.nombre}${c.materia ? `, ${c.materia.toLowerCase()}` : ''}` : `cuadrante de ${p.clases.length} clases`, x, 16.2);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(...PDF_TINTA);
+    doc.text(`${profeNombreMes(mes)}.`, M, 26);
+    let y = 31;
+    if (c) {
+        const av = profeAvance(c);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...PDF_GRIS);
+        const frase = av.total ? `Llevas ${av.dadas} de ${av.total} tareas del temario (${av.pct} %). ${av.estado.charAt(0).toUpperCase() + av.estado.slice(1)}` : 'Todavía no hay tareas en el temario.';
+        doc.text(doc.splitTextToSize(frase, W - M * 2), M, 32);
+        y = 44;
+    }
+
+    const tabla = (cabecera, filas, opciones) => {
         doc.autoTable({
             startY: y,
-            margin: { left: margen, right: margen, bottom: 16 },
-            head: [t.cabecera],
-            body: t.filas.map(f => f.celdas),
-            theme: 'grid',
-            styles: { font: 'helvetica', fontSize: apaisado ? 7.2 : 8.4, cellPadding: 1.8, lineColor: [220, 217, 210], lineWidth: 0.15, textColor: tinta, valign: 'top', overflow: 'linebreak' },
-            headStyles: { fillColor: tinta, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: apaisado ? 7.6 : 8.6 },
-            columnStyles: { 0: { cellWidth: apaisado ? 20 : 24, fontStyle: 'bold' } },
+            margin: { left: M, right: M, bottom: 18, top: 16 },
+            head: [cabecera.map(h => h.texto ?? h)],
+            body: filas.map(f => f.celdas),
+            theme: 'plain',
+            styles: { font: 'helvetica', fontSize: fs, cellPadding: pad, textColor: PDF_TINTA, valign: 'top', overflow: 'linebreak', lineWidth: 0 },
+            headStyles: { fontStyle: 'normal', textColor: PDF_GRIS, fontSize: fs - 0.6, cellPadding: { top: 1, bottom: 2.4, left: pad.left, right: pad.right } },
+            columnStyles: opciones.columnas,
             didParseCell: data => {
-                const fila = t.filas[data.row.index];
-                if (data.section === 'head' && t.colores[data.column.index]) {
-                    data.cell.styles.fillColor = profeRgb(t.colores[data.column.index], 0.08);
-                }
+                const fila = filas[data.row.index];
+                if (data.section === 'head' && cabecera[data.column.index]?.color) data.cell.text = data.cell.text.map(t => `    ${t}`);
                 if (data.section !== 'body' || !fila) return;
-                if (fila.festivo) { data.cell.styles.fillColor = [238, 235, 229]; data.cell.styles.textColor = [130, 127, 120]; data.cell.styles.fontStyle = 'italic'; return; }
-                if (fila.suspensos?.[data.column.index]) { data.cell.styles.fillColor = [248, 226, 229]; data.cell.styles.textColor = [150, 30, 50]; data.cell.styles.fontStyle = 'bold'; }
-                else if (t.colores[data.column.index] && data.cell.raw) data.cell.styles.fillColor = profeRgb(t.colores[data.column.index], 0.86);
+                if (fila.lineas?.[data.column.index]) data.cell.styles.textColor = [255, 255, 255];
+                opciones.estilo?.(data, fila);
+            },
+            didDrawCell: data => {
+                const { cell } = data;
+                if (data.section === 'head') {
+                    doc.setDrawColor(...PDF_TINTA); doc.setLineWidth(0.3);
+                    doc.line(cell.x, cell.y + cell.height, cell.x + cell.width, cell.y + cell.height);
+                    const col = cabecera[data.column.index]?.color;
+                    if (col) { doc.setFillColor(...profeRgb(col)); doc.circle(cell.x + pad.left + 1.1, cell.y + 1 + alto / 2, 1.1, 'F'); }
+                    return;
+                }
+                const fila = filas[data.row.index];
+                if (!fila) return;
+                if (fila.separador && data.row.index > 0) { doc.setDrawColor(...PDF_RAYA); doc.setLineWidth(0.2); doc.line(cell.x, cell.y, cell.x + cell.width, cell.y); }
+                const lineas = fila.lineas?.[data.column.index];
+                if (lineas) lineas.forEach((l, i) => {
+                    const ly = cell.y + pad.top + i * alto;
+                    const tachar = l.estado === 'hecha' || l.estado === 'descartada';
+                    doc.setFont('helvetica', ['sin', 'nota', 'festivo'].includes(l.estado) ? 'italic' : l.estado === 'entrega' ? 'bold' : 'normal');
+                    doc.setFontSize(fs);
+                    doc.setTextColor(...(tachar || ['sin', 'nota', 'festivo'].includes(l.estado) ? PDF_GRIS : PDF_TINTA));
+                    doc.text(l.t, cell.x + pad.left + sangria, ly, { baseline: 'top' });
+                    if (l.primera) profePdfCirculo(doc, cell.x + pad.left + 1, ly + alto / 2 - 0.15, l.estado);
+                });
+                opciones.dibujar?.(data, fila);
             },
         });
-        y = doc.lastAutoTable.finalY + 10;
-    });
+        y = doc.lastAutoTable.finalY + 12;
+    };
+    const titulo = texto => {
+        if (y > H - 40) { doc.addPage(); y = 18; }
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(...PDF_TINTA);
+        doc.text(texto, M, y); y += 3;
+    };
+
+    if (!c) {
+        const anchoDia = 20;
+        const anchoClase = (W - M * 2 - anchoDia) / Math.max(1, p.clases.length);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(fs);
+        const filas = dias.map(d => {
+            const festivo = profeEsFestivo(d);
+            const lineas = [null];
+            p.clases.forEach((cl, i) => {
+                let items = [];
+                if (festivo) items = i === 0 ? [{ texto: profeNombreFestivo(d) || 'No lectivo', estado: 'festivo' }] : [];
+                else {
+                    items = profeSesiones(cl.id, d).map(s => ({ texto: s.titulo, estado: profePdfEstado(s) }));
+                    profeEntregasDia(cl.id, d).forEach(x => items.push({ texto: `Entrega: ${x.titulo}`, estado: 'entrega' }));
+                    const nota = profeNotasDia()[`${cl.id}|${d}`];
+                    if (nota) items.push({ texto: `Nota: ${nota}`, estado: 'nota' });
+                }
+                lineas.push(profePdfLineas(doc, items, anchoClase - pad.left - pad.right - sangria));
+            });
+            return { separador: true, festivo, lineas, celdas: [nombreDia(d), ...lineas.slice(1).map(ls => ls.map(l => l.t).join('\n'))] };
+        });
+        tabla([{ texto: 'día' }, ...p.clases.map(cl => conColor(cl.nombre, cl.color))], filas, {
+            columnas: { 0: { cellWidth: anchoDia, fontStyle: 'bold' }, ...Object.fromEntries(p.clases.map((_, i) => [i + 1, { cellWidth: anchoClase }])) },
+            estilo: (data, fila) => { if (fila.festivo && data.column.index === 0) data.cell.styles.textColor = PDF_GRIS; },
+        });
+    } else {
+        const anchoDia = 24, anchoNota = 52;
+        const anchoTarea = W - M * 2 - anchoDia - anchoNota;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(fs);
+        const filas = [];
+        dias.filter(d => profeEsLectivo(c, d) || profeSesiones(c.id, d).length || profeEsFestivo(d)).forEach(d => {
+            const franjas = profeEsFestivo(d) ? '' : profeFranjasDia(c, d).map(h => `${h.inicio}${h.aula ? `, ${h.aula}` : ''}`).join('\n');
+            const items = profeEsFestivo(d) ? [{ texto: profeNombreFestivo(d) || 'No lectivo', estado: 'festivo' }] : [
+                ...profeSesiones(c.id, d).map(s => ({ texto: s.titulo, estado: profePdfEstado(s) })),
+                ...profeEntregasDia(c.id, d).map(x => ({ texto: `Entrega: ${x.titulo}`, estado: 'entrega' })),
+            ];
+            const lineas = profePdfLineas(doc, items.length ? items : [{ texto: 'Nada previsto.', estado: 'sin' }], anchoTarea - pad.left - pad.right - sangria);
+            filas.push({ separador: true, festivo: profeEsFestivo(d), lineas: [null, lineas, null], celdas: [`${nombreDia(d)}${franjas ? `\n${franjas}` : ''}`, lineas.map(l => l.t).join('\n'), profeNotasDia()[`${c.id}|${d}`] || ''] });
+        });
+        titulo('día a día.');
+        tabla([{ texto: 'día' }, { texto: 'tareas' }, { texto: 'cómo fue' }], filas, {
+            columnas: { 0: { cellWidth: anchoDia, fontStyle: 'bold' }, 1: { cellWidth: anchoTarea }, 2: { cellWidth: anchoNota, fontStyle: 'italic', textColor: PDF_GRIS } },
+            estilo: (data, fila) => { if (data.column.index === 0 && data.cell.raw.includes('\n')) data.cell.styles.fontStyle = 'bold'; if (fila.festivo && data.column.index === 0) data.cell.styles.textColor = PDF_GRIS; },
+        });
+        const alumnos = [...c.alumnos].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+        const deberes = c.deberes.filter(d => d.entrega.startsWith(mes)).sort((a, b) => a.entrega.localeCompare(b.entrega));
+        if (deberes.length) {
+            titulo('deberes y entregas.');
+            tabla([{ texto: 'para el' }, { texto: 'deber' }, { texto: 'entregados' }], deberes.map(d => ({ separador: true, celdas: [nombreDia(d.entrega), d.titulo, alumnos.length ? `${alumnos.filter(a => d.entregados?.[a.id]).length} de ${alumnos.length}` : ''] })), {
+                columnas: { 0: { cellWidth: anchoDia, fontStyle: 'bold' }, 2: { cellWidth: 26, halign: 'right' } },
+            });
+        }
+        const cols = [...c.evaluaciones].sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+        if (alumnos.length && cols.length) {
+            titulo('cuaderno de notas.');
+            const filasNotas = alumnos.map(a => {
+                const media = profeMediaAlumno(c, a.id, cols);
+                const notas = cols.map(e => profeNotaDe(c, e.id, a.id));
+                return { separador: true, bajas: [false, ...notas.map((n, i) => n !== null && n / (Number(cols[i].max) || 10) * 10 < 5), media !== null && media < 5],
+                    celdas: [a.nombre, ...notas.map(n => n === null ? '' : profeNotaTexto(n)), profeNotaTexto(media)] };
+            });
+            const anchoAlumno = 52;
+            const anchoNotaCol = Math.min(24, (W - M * 2 - anchoAlumno - 18) / cols.length);
+            tabla([{ texto: 'alumno' }, ...cols.map(e => ({ texto: e.nombre })), { texto: 'media' }], filasNotas, {
+                columnas: { 0: { cellWidth: anchoAlumno }, ...Object.fromEntries(cols.map((_, i) => [i + 1, { cellWidth: anchoNotaCol, halign: 'center' }])), [cols.length + 1]: { cellWidth: 18, halign: 'center', fontStyle: 'bold' } },
+                estilo: (data, fila) => { if (fila.bajas[data.column.index]) data.cell.styles.textColor = PDF_ROJO; },
+            });
+        }
+    }
     const paginas = doc.internal.getNumberOfPages();
     for (let i = 1; i <= paginas; i++) {
         doc.setPage(i);
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(150, 147, 140);
-        doc.text('bitácora.  appbitacora.es', margen, doc.internal.pageSize.getHeight() - 7);
-        doc.text(`${i} / ${paginas}`, ancho - margen, doc.internal.pageSize.getHeight() - 7, { align: 'right' });
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...PDF_GRIS);
+        doc.text('appbitacora.es', M, H - 9);
+        if (paginas > 1) doc.text(`${i} de ${paginas}`, W - M, H - 9, { align: 'right' });
     }
     doc.save(`${nombre}.pdf`);
 }

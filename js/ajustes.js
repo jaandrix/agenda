@@ -456,10 +456,24 @@
                         </button>`).join('')}
                 </div>
                 <div class="ajuste-subtitulo">apartados opcionales.</div>
+                <div class="ajustes-opcionales-resumen">
+                    <span>${(() => { const activos = APARTADOS_OPCIONALES.filter(o => opcionales[o.view]); return activos.length ? `${activos.length} de ${APARTADOS_OPCIONALES.length} activos: ${activos.map(o => o.titulo.replace(/\.$/, '')).join(', ')}.` : 'Ninguno activo.'; })()}</span>
+                    <button class="btn-secondary" style="width:auto" onclick="openApartadosOpcionales()">elegir apartados.</button>
+                </div>`;
+        }
+
+        // Son muchos y la lista alargaba Ajustes: se eligen en su modal.
+        function openApartadosOpcionales() {
+            showModal(`<div class="modal-title">apartados opcionales.</div><div id="apartados-opcionales">${renderApartadosOpcionales()}</div>`);
+        }
+
+        function renderApartadosOpcionales() {
+            const { opcionales } = configApartados();
+            return `<p class="finance-modal-note" style="margin-top:0">Lo que desactives desaparece de los menús, pero sus datos se quedan guardados.</p>
                 ${APARTADOS_OPCIONALES.map(o => `
                     <div class="ajustes-opcional">
                         <div><b>${o.titulo}</b><span>${o.texto}</span></div>
-                        <button class="finance-pro-switch ${opcionales[o.view] ? 'on' : ''}" onclick="alternarOpcional('${o.view}')" aria-label="${o.titulo}"><span class="finance-pro-switch-knob"></span></button>
+                        <button class="finance-pro-switch ${opcionales[o.view] ? 'on' : ''}" onclick="alternarOpcional('${o.view}');document.getElementById('apartados-opcionales').innerHTML=renderApartadosOpcionales()" aria-label="${o.titulo}"><span class="finance-pro-switch-knob"></span></button>
                     </div>`).join('')}`;
         }
 

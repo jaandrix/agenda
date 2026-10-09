@@ -206,11 +206,12 @@
             padding-left: 4px;
         }
         .sidebar-brand .brand-icon {
+            display: block;
             width: 32px;
             height: 32px;
-            background: var(--accent);
-            border-radius: 14px;
+            border-radius: 9px;
             flex-shrink: 0;
+            box-shadow: 0 0 0 1px var(--border);
         }
         .sidebar-brand .brand-name {
             font-size: 18px;
@@ -7320,3 +7321,36 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
     .profe-deber summary { grid-template-columns:72px minmax(0, 1fr); }
     .profe-deber summary i { grid-column:2; }
 }
+.ajustes-opcionales-resumen { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:13px; line-height:1.5; color:var(--text-secondary); }
+.ajustes-opcionales-resumen span { flex:1 1 220px; }
+
+/* ============================================================
+   VERSIÓN MÓVIL — segunda revisión (2026-10-10): los apartados que
+   reutilizan el render de escritorio traían cada uno sus botones (unos
+   de 16 px de radio, otros cuadrados, otros minúsculos): aquí todos
+   hablan como la versión móvil, en píldora y con tamaño de dedo.
+   ============================================================ */
+.m-generico :is(.btn-secondary, .btn-modal-primary, .pedido-btn, .finance-oneoff-btn, .btn-acento) { border-radius:999px !important; min-height:42px; padding-left:18px; padding-right:18px; font-size:14px; font-weight:700; box-sizing:border-box; }
+.m-generico .pedido-btn { min-height:38px; font-size:13px; }
+.m-generico .studies-inline-add-btn { border-radius:999px !important; }
+/* Estados vacíos: todos como una tarjeta de borde punteado, a la izquierda. */
+.m-generico .empty-state { border:1px dashed var(--border-strong); border-radius:18px; padding:24px 20px !important; text-align:left; }
+.m-generico .empty-state .empty-title { font-size:17px; }
+.m-generico .empty-state .btn-secondary { margin-right:6px; }
+.m-vacio-grande { margin-top:18px; padding:22px 20px; border:1px dashed var(--border-strong); border-radius:18px; font-size:14px; line-height:1.55; color:var(--text-secondary); }
+.m-vacio-grande b { display:block; margin-bottom:4px; font-size:17px; color:var(--text-primary); }
+/* Sugerencias: el envío ocupa el ancho, como el resto de acciones principales. */
+.m-generico .btn-modal-primary[onclick^="submitSuggestion"] { width:100% !important; }
+.social-mi-perfil-editar { white-space:nowrap; flex-shrink:0; }
+/* Profesorado en el móvil: las clases en una fila que se desliza. */
+@media (max-width:700px) {
+    .profe-clases-rejilla { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; margin:0 -20px; padding:2px 20px 6px; }
+    .profe-clases-rejilla::-webkit-scrollbar { display:none; }
+    .profe-tarjeta { flex:0 0 74%; scroll-snap-align:start; }
+    .profe > .uni-cabecera .profe-botones { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin:0 -20px; padding:0 20px; }
+    .profe > .uni-cabecera .profe-botones::-webkit-scrollbar { display:none; }
+    .profe > .uni-cabecera .profe-botones .pedido-btn { flex-shrink:0; }
+}
+.m-generico .links-view .studies-actions-row { width:100%; }
+.m-generico .links-view .studies-actions-stack { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:8px; width:100%; }
+.m-generico .links-view .studies-actions-stack button { width:100%; margin:0; }
