@@ -272,22 +272,39 @@ function profeResumenClase(c) {
     };
 }
 
+// "1º ESO A" se parte en el número del curso, enorme y del color de la
+// clase, y el grupo en minúscula al lado, como los títulos de la app.
+function profeNombrePartido(nombre) {
+    const m = String(nombre).trim().match(/^(\d+\s*[ºª°]?)\s+(.+)$/);
+    return m ? [m[1].replace(/\s+/g, ''), m[2]] : [String(nombre).trim().split(/\s+/)[0], String(nombre).trim().split(/\s+/).slice(1).join(' ')];
+}
+
 function renderMisClasesProfe() {
     const p = datosProfe();
+    const hoy = isoLocal(new Date());
+    const lunes = profeLunes(hoy), domingo = profeSumar(lunes, 6);
     return `<div class="profe-clases">
         <div class="uni-etiqueta">mis clases.</div>
         <div class="profe-clases-rejilla">${p.clases.map(c => {
+            const av = profeAvance(c);
+            const [curso, grupo] = profeNombrePartido(c.nombre);
             const r = profeResumenClase(c);
-            const pct = r.total ? Math.round(r.dadas / r.total * 100) : 0;
+            const semana = r.ses.filter(s => s.fecha >= lunes && s.fecha <= domingo && profeConCasilla(s) && !s.descartada)
+                .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.orden || 0) - (b.orden || 0));
+            const hechasSemana = semana.filter(s => s.hecha).length;
             return `<button class="profe-tarjeta" style="--c:${c.color}" onclick="openFichaClaseProfe('${c.id}')">
-                <span class="profe-tarjeta-cab"><b>${escapeHtml(c.nombre)}</b>${r.pendientes ? `<em>${r.pendientes} sin dar</em>` : ''}</span>
-                <small>${escapeHtml(c.materia || 'sin materia')}${(c.dias || []).length ? ` · ${c.dias.map(d => PROFE_LETRAS[d]).join(' ')}` : ''}</small>
-                <span class="profe-barra"><span style="width:${pct}%"></span></span>
-                <small>${r.dadas} de ${r.total} hechas · ${profeAvance(c).estado}</small>
-                ${r.proxima ? `<small>próxima: ${profeFechaCorta(r.proxima.fecha)}, ${escapeHtml(r.proxima.titulo)}</small>` : ''}
+                <span class="profe-tarjeta-curso"><b>${escapeHtml(curso)}</b>${grupo ? `<span>${escapeHtml(grupo.toLowerCase())}.</span>` : ''}</span>
+                <span class="profe-anillo" style="--p:${av.pct}" aria-label="${av.pct} % del temario hecho"><span>${av.pct}<small>%</small></span></span>
+                <span class="profe-tarjeta-materia">${escapeHtml((c.materia || 'sin materia').toLowerCase())}${(c.dias || []).length ? `<i>${c.dias.map(d => PROFE_LETRAS[d]).join(' ')}</i>` : ''}</span>
+                <span class="profe-tarjeta-semana">
+                    <span class="profe-puntos">${semana.length ? semana.map(s => `<i class="${s.hecha ? 'hecha' : profeEsPendiente(s, hoy) ? 'atrasada' : ''}"></i>`).join('') : '<em>nada esta semana.</em>'}</span>
+                    ${semana.length ? `<small>${hechasSemana} de ${semana.length} esta semana.</small>` : ''}
+                </span>
+                <span class="profe-tarjeta-estado ${av.atrasadas ? 'mal' : ''}">${av.estado}</span>
+                <span class="profe-tarjeta-proxima">${r.proxima ? `<i>próxima, ${profeFechaCorta(r.proxima.fecha)}.</i><b>${escapeHtml(r.proxima.titulo)}</b>` : '<i>sin nada por delante.</i>'}</span>
             </button>`;
         }).join('')}
-            <button class="profe-tarjeta profe-tarjeta-nueva" onclick="openClaseProfe()"><b>+ clase.</b><small>Un grupo nuevo, con su color y sus días.</small></button>
+            <button class="profe-tarjeta profe-tarjeta-nueva" onclick="openClaseProfe()"><span class="profe-tarjeta-mas">+</span><b>nueva clase.</b><small>Un grupo con su color, sus días y su horario.</small></button>
         </div>
     </div>`;
 }

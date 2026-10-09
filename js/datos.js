@@ -292,7 +292,7 @@
                 let v = datosBase ? fusionarTresBandas(datosBase[k], local, nube[k]) : local;
                 if (v === undefined) v = local;
                 fusion[k] = v;
-                if (v !== local && !mismoValor(v, local)) { escribir(v); cambiado = true; }
+                if (v !== local && !mismoValor(v, local)) { escribir(v); cambiado = true; if (k === 'apartadosConfig') renderAllNavs(); }
             });
             return { fusion, cambiado };
         }

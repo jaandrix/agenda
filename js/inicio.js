@@ -8,6 +8,10 @@
             loadFontPref();
             initMobileShell();
             const loaded = await loadData();
+            // El menú se pintó al cargar nucleo.js, antes de tener los datos:
+            // sin repintarlo, los apartados opcionales activados (universidad,
+            // profesorado...) no aparecían hasta tocar su interruptor.
+            renderAllNavs();
             if (loaded) {
                 setTimeout(comprobarBienvenida, 700);
                 ensureRecurringProCharges();

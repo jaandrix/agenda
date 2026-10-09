@@ -71,7 +71,8 @@ const GUIA = [
             'iPhone: abre appbitacora.es en Safari → botón Compartir → <b>Añadir a pantalla de inicio</b>. En Android o en el ordenador: Ajustes → <b>instalar bitácora.</b>',
             'Ábrela desde el icono. Arriba verás la fecha en grande y el tiempo de tu ciudad.',
             'El mes en <b>bolitas</b>: negras las pasadas, grises las que faltan y en color las que tienen algo (eventos, tareas, cumpleaños...). Toca una para ver ese día debajo; <b>volver a hoy.</b> te devuelve.',
-            'En la lista del día puedes marcar las tareas sin salir de la portada; el <b>+</b> añade algo a ese día.',
+            'En la lista del día puedes marcar las tareas sin salir de la portada; el <b>+</b> añade algo a ese día. Si algo está a la vez como evento y como tarea a la misma hora, sale una sola vez, como tarea.',
+            'Arriba a la izquierda, tu foto: tócala para editar tu perfil.',
             'Más abajo, las teselas: tareas y hábitos de hoy, gasto del mes, próximo examen, bandeja, pedidos y próximo viaje. Tócalas para ir a cada apartado.',
             'El botón redondo de arriba a la derecha abre el <b>menú</b> a pantalla completa. Los números en círculo son lo pendiente; el punto naranja en el botón avisa de que hay cambios en la bandeja.',
         ],
@@ -79,7 +80,7 @@ const GUIA = [
             [guiaBoton('‹ inicio.'), 'Arriba a la izquierda en cualquier apartado: vuelve a la portada sin abrir el menú.'],
             [guiaBoton('temas'), 'Al final del menú, los tres círculos cambian el tema.'],
         ],
-        trucos: ['Planificador, Finanzas, Estudios, Hábitos, Eventos, Notas y Viajes tienen página propia en el móvil; el resto usa la de escritorio adaptada.'],
+        trucos: ['Planificador, Finanzas, Estudios, Hábitos, Eventos, Notas y Viajes tienen página propia en el móvil; el resto usa la de escritorio adaptada, con los mismos botones en píldora.', 'En Ocio, libros y películas salen en lista; en Profesorado, el cuadrante se desliza de lado y las tarjetas de las clases también.'],
     },
     {
         id: 'claude', grupo: 'empezar', titulo: 'claude y chatgpt.',
@@ -109,6 +110,7 @@ const GUIA = [
         botones: [
             [guiaBoton('avisos automáticos. → elegir.'), 'Enciende o apaga cada tipo de aviso: eventos, estudios, documentos, cumpleaños, cargos vigilados, reembolsos, ritmo de gasto y bandeja.'],
             [guiaBoton('silenciar.'), 'En la ficha de un evento: quita el aviso solo de ese evento. También en su formulario, campo «Aviso».'],
+            [guiaBoton('campana'), 'Dentro de la app, la campana reúne lo de hoy: eventos, solicitudes de amistad, lo que te comparten, envíos que avanzan, los días que te quedan de prueba y, si das clase, las tareas que no pudiste dar.'],
         ],
     },
     {
@@ -120,7 +122,9 @@ const GUIA = [
             [guiaBoton('‹ ›'), 'Mes, semana o día anterior y siguiente.'],
             [guiaBoton('●'), 'El círculo negro abre el <b>calendario anual</b>: el año entero en bolitas, con vistas de días de viaje y de esfuerzo.'],
             [guiaBoton('tiempo'), 'La temperatura de tu ciudad. Tócala para ver la previsión de los próximos días y cambiar de ciudad.'],
+            [guiaBoton('tu foto'), 'Junto al título (y junto a «bitácora.» en el móvil). Ábrela para cambiar tu foto, tu nombre visible y una frase sobre ti, que ven tus amigos. Toda foto pasa sola a blanco y negro con grano.'],
         ],
+        trucos: ['Tu horario y tus citas de trabajo salen aquí si en Empleo tienes encendido «en el calendario principal.».'],
         pasos: ['Pulsa un día para ver lo que hay y añadir algo con esa fecha.', 'Pulsa una entrada para abrir su ficha (ver, editar o borrar).'],
     },
     {
@@ -192,7 +196,7 @@ const GUIA = [
         intro: 'Tres cuentas (Efectivo, Bancos y Online), todos tus movimientos con categoría, y herramientas para saber cómo vas y planificar. Al entrar te pregunta si quieres ocultar las cifras.',
         botones: [
             [guiaBoton('+ Movimiento · Registro rápido'), 'Apunta un ingreso, gasto o traspaso. El rápido solo pide importe y concepto; la categoría se ajusta luego.'],
-            [guiaBoton('Importar'), 'Sube o pega el extracto del banco (CSV o Excel). Bitácora reconoce los movimientos, evita duplicados y aplica tus reglas de traspaso. Puedes volver a importar el mismo extracto cuando quieras: lo que ya está no entra otra vez, aunque lo hayas editado o pasado a transferencia.'],
+            [guiaBoton('Importar'), 'Sube o pega el extracto del banco (CSV o Excel). Bitácora reconoce los movimientos, evita duplicados y aplica tus reglas de traspaso. Puedes importar mes a mes aunque los extractos se solapen: cada fila busca su pareja, lo que ya está no entra otra vez (aunque le hayas cambiado la nota, la categoría o lo hayas pasado a transferencia) y dos cargos iguales el mismo día cuentan como dos.'],
             [guiaBoton('Categorías · Reglas'), 'Tus categorías de gasto e ingreso, y las reglas de traspaso: un movimiento importado cuyo concepto contenga cierto texto (por ejemplo, lo que mandas a tu cuenta de inversión) se registra como traspaso entre cuentas en vez de como gasto.'],
             [guiaBoton('⭳ Exportar'), 'Un resumen en texto pensado para pegarlo en una IA y pedirle consejo.'],
             [guiaBoton('3M · 6M · 1A · Todo'), 'Rango de la gráfica de saldo.'],
@@ -204,7 +208,7 @@ const GUIA = [
             [guiaBoton('programar gastos. · Buscar duplicados · Corregir registros'), 'Gastos futuros, limpieza de duplicados y ajuste a mano del histórico.'],
             [guiaBoton('✎ Renombrar / saldo inicial'), 'Cambia el nombre de una cuenta o su saldo de partida.'],
         ],
-        trucos: ['Claude puede importar un extracto o registrar un gasto por ti; queda en la bandeja hasta que lo valides.'],
+        trucos: ['Claude puede importar un extracto o registrar un gasto por ti; queda en la bandeja hasta que lo valides.', 'Si el banco cobra una suscripción en otra cuenta o con otro nombre (Claude cobrado como «Anthropic» en Revolut), Bitácora la reconoce por el importe exacto y la fecha, la pasa a la cuenta real y la recuerda para los meses siguientes.', 'Al importar, los pendientes se actualizan solos cuando se completan, y los cargos anulados por el banco se retiran.'],
     },
     {
         id: 'trabajo', grupo: 'desarrollo', titulo: 'empleo.',
@@ -245,7 +249,7 @@ const GUIA = [
             [guiaBoton('círculo'), 'Hecha o por hacer. Las tareas sin círculo son avisos o notas (una excursión, un festivo): se crean así eligiendo «sin casilla.» al tocar su texto.'],
             [guiaBoton('pulsar un día'), 'Si al final no hay clase (huelga, jornada del centro), márcalo y las tareas de ese día y las siguientes se corren una clase, saltando fines de semana y festivos, hasta el primer hueco. Si un día sin clase al final la tiene, puedes adelantar las tareas para aprovecharlo.'],
             [guiaBoton('sin dar.'), 'Lo que tenía círculo y se quedó sin marcar antes de hoy. Desde ahí: asignar al día que elijas, correr el temario (va a la próxima clase y empuja lo de detrás), marcarla hecha o descartarla (se queda tachada en su día).'],
-            [guiaBoton('mis clases.'), 'Una tarjeta por grupo con lo hecho, el avance del temario (al día, por detrás o ajustado) y la próxima tarea. Al pulsarla se abre su ficha.'],
+            [guiaBoton('mis clases.'), 'Debajo del cuadrante, una tarjeta por grupo: el curso en grande y en su color, un anillo con el porcentaje del temario hecho, una bolita por cada tarea de esta semana (rellena si está hecha, roja si se quedó sin dar), cómo vas (al día, por detrás o ajustado) y la próxima tarea. Al pulsarla se abre su ficha.'],
             [guiaBoton('ficha · resumen.'), 'Cuánto temario llevas, lo que se quedó sin dar, lo de esta semana y la siguiente, lo que ya has dado y cuántas clases te quedan hasta fin de curso. Desde aquí: copiar a otro grupo, guardar como plantilla y exportar.'],
             [guiaBoton('ficha · cuaderno.'), 'El cuaderno de notas: tus alumnos en filas (pega la lista entera con «+ alumnos.») y una columna por cada cosa que califiques, con su peso y su evaluación. La media se calcula sola y lo que queda por debajo de 5 se tiñe. Pulsa un alumno para ver su seguimiento y escribir observaciones.'],
             [guiaBoton('ficha · deberes.'), 'Qué mandaste y para cuándo. Marca quién lo ha entregado y, si quieres, pásalo al cuaderno para ponerle nota. Cada entrega sale en su día en el cuadrante.'],
@@ -316,9 +320,9 @@ const GUIA = [
         lema: 'Lo que lees, ves y juegas.',
         intro: 'Libros, películas, series y videojuegos, con estado, fechas, valoración y notas, y listas propias.',
         botones: [
-            [guiaBoton('Libros · Series · Películas · Videojuegos · Listas'), 'Cada tipo en su pestaña.'],
-            [guiaBoton('importar goodreads. · importar letterboxd.'), 'Trae tu historial de esas webs.'],
-            [guiaBoton('Recomendaciones'), 'Lo que te han recomendado tus amigos de Bitácora.'],
+            [guiaBoton('libros. · series. · películas. · videojuegos. · listas.'), 'Cada tipo en su pestaña.'],
+            [guiaBoton('importar goodreads. · importar letterboxd. · importar imdb.'), 'Trae tu historial de esas webs.'],
+            [guiaBoton('recomendaciones.'), 'Lo que te han recomendado tus amigos de Bitácora.'],
         ],
         trucos: ['Desde la ficha de una película o un libro puedes recomendarlo a un amigo.', 'Claude puede marcar algo como terminado y valorarlo, y se aplica solo.'],
     },

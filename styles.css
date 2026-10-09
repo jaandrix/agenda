@@ -7110,10 +7110,6 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 .profe-tarjeta { display:flex; flex-direction:column; align-items:stretch; gap:6px; padding:14px 14px 12px; border-radius:16px; border:1px solid var(--border); border-top:4px solid var(--c); background:var(--bg-card); font-family:var(--font-family); color:var(--text-primary); text-align:left; cursor:pointer; transition:background-color .15s ease, transform .15s var(--ease-out); }
 .profe-tarjeta:hover { background:var(--bg-card-hover); }
 .profe-tarjeta:active { transform:scale(.98); }
-.profe-tarjeta-cab { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.profe-tarjeta-cab b { font-size:15px; }
-.profe-tarjeta-cab em { font-style:normal; padding:2px 8px; border-radius:999px; background:rgba(163,36,59,.16); color:#d0596f; font-size:11px; font-weight:700; white-space:nowrap; }
-.profe-tarjeta small { font-size:12px; color:var(--text-secondary); }
 .profe-tarjeta-nueva { border-style:dashed; border-top-width:1px; justify-content:center; }
 .profe-barra { display:block; height:5px; border-radius:999px; background:var(--bg-card-hover); overflow:hidden; }
 .profe-barra span { display:block; height:100%; border-radius:inherit; background:var(--c, var(--text-primary)); }
@@ -7344,13 +7340,49 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 .social-mi-perfil-editar { white-space:nowrap; flex-shrink:0; }
 /* Profesorado en el móvil: las clases en una fila que se desliza. */
 @media (max-width:700px) {
-    .profe-clases-rejilla { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; margin:0 -20px; padding:2px 20px 6px; }
+    .profe-clases-rejilla { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; margin:0; padding:2px 0 6px; }
     .profe-clases-rejilla::-webkit-scrollbar { display:none; }
     .profe-tarjeta { flex:0 0 74%; scroll-snap-align:start; }
-    .profe > .uni-cabecera .profe-botones { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin:0 -20px; padding:0 20px; }
+    .profe > .uni-cabecera .profe-botones { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin:0; padding:0; }
     .profe > .uni-cabecera .profe-botones::-webkit-scrollbar { display:none; }
     .profe > .uni-cabecera .profe-botones .pedido-btn { flex-shrink:0; }
 }
 .m-generico .links-view .studies-actions-row { width:100%; }
 .m-generico .links-view .studies-actions-stack { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:8px; width:100%; }
 .m-generico .links-view .studies-actions-stack button { width:100%; margin:0; }
+
+/* ============================================================
+   PROFESORADO: tarjetas de las clases. El curso en grande y del color
+   de la clase, como los números de las teselas del inicio; un anillo de
+   avance como el del planificador y una bolita por cada tarea de la
+   semana, el mismo lenguaje que los hábitos.
+   ============================================================ */
+.profe-tarjeta { position:relative; display:grid; grid-template-columns:minmax(0, 1fr) auto; grid-template-areas:"curso anillo" "materia materia" "semana semana" "estado estado" "proxima proxima"; align-items:start; gap:0 12px; padding:18px 18px 16px; border:1px solid var(--border); border-top:1px solid var(--border); border-radius:22px; background:var(--bg-card); overflow:hidden; }
+.profe-tarjeta::before { content:''; position:absolute; top:0; left:18px; width:34px; height:5px; border-radius:0 0 5px 5px; background:var(--c); }
+.profe-tarjeta:hover { background:var(--bg-card-hover); transform:translateY(-1px); }
+.profe-tarjeta-curso { grid-area:curso; display:flex; align-items:flex-end; gap:7px; min-width:0; margin-top:4px; }
+.profe-tarjeta-curso b { font-size:46px; font-weight:800; letter-spacing:-2px; line-height:.82; color:var(--c); }
+.profe-tarjeta-curso span { padding-bottom:1px; font-size:17px; font-weight:800; letter-spacing:-.3px; line-height:1; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.profe-anillo { grid-area:anillo; display:grid; place-items:center; width:54px; height:54px; border-radius:50%; background:radial-gradient(closest-side, var(--bg-card) 76%, transparent 78% 100%), conic-gradient(var(--c) calc(var(--p) * 1%), var(--bg-card-hover) 0); font-size:14px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.profe-tarjeta:hover .profe-anillo { background:radial-gradient(closest-side, var(--bg-card-hover) 76%, transparent 78% 100%), conic-gradient(var(--c) calc(var(--p) * 1%), var(--border) 0); }
+.profe-anillo small { font-size:9px; font-weight:700; color:var(--text-secondary); margin-left:1px; }
+.profe-tarjeta-materia { grid-area:materia; display:flex; align-items:baseline; gap:8px; margin:10px 0 14px; font-size:12.5px; font-weight:500; color:var(--text-secondary); }
+.profe-tarjeta-materia i { font-style:normal; font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--text-primary); opacity:.55; }
+.profe-tarjeta-semana { grid-area:semana; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.profe-puntos { display:flex; flex-wrap:wrap; gap:5px; }
+.profe-puntos i { width:11px; height:11px; box-sizing:border-box; border-radius:50%; border:2px solid var(--c); }
+.profe-puntos i.hecha { background:var(--c); }
+.profe-puntos i.atrasada { border-color:#d0596f; }
+.profe-puntos em { font-style:normal; font-size:12px; color:var(--text-secondary); }
+.profe-tarjeta-semana small { font-size:11.5px; color:var(--text-secondary); white-space:nowrap; }
+.profe-tarjeta-estado { grid-area:estado; margin-top:8px; font-size:12.5px; font-weight:700; color:var(--text-primary); }
+.profe-tarjeta-estado.mal { color:#d0596f; }
+.profe-tarjeta-proxima { grid-area:proxima; display:flex; flex-direction:column; gap:2px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-strong); min-width:0; }
+.profe-tarjeta-proxima i { font-style:normal; font-size:11.5px; font-weight:600; color:var(--text-secondary); }
+.profe-tarjeta-proxima b { font-size:13.5px; font-weight:700; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.profe-tarjeta-nueva { display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:4px; min-height:200px; border-style:dashed; border-color:var(--border-strong); background:none; }
+.profe-tarjeta-nueva::before { display:none; }
+.profe-tarjeta-nueva b { font-size:17px; font-weight:800; color:var(--text-primary); }
+.profe-tarjeta-nueva small { font-size:12.5px; line-height:1.45; color:var(--text-secondary); }
+.profe-tarjeta-mas { display:grid; place-items:center; width:44px; height:44px; margin-bottom:auto; border-radius:50%; background:var(--m-acento); color:var(--m-sobre-acento, #fff); font-size:24px; font-weight:500; line-height:1; }
+.profe-clases-rejilla { grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
