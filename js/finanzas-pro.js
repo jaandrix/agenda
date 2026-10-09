@@ -2687,10 +2687,36 @@
             // una, ingreso en la otra), y un movimiento importado que luego se
             // editó guarda en claveImport cómo venía del banco: si no, al
             // volver a importar el extracto entraría otra vez.
-            const existingKeys = new Set(financePro.transactions.flatMap(t => {
+            // Se cuentan las veces, no solo si la clave existe: dos cafés
+            // iguales el mismo día son dos movimientos, y al reimportar un
+            // extracto que se solapa con el anterior (Revolut solo exporta
+            // meses enteros) cada fila tiene que encontrar su pareja.
+            const existentes = new Map();
+            const sumarClave = k => existentes.set(k, (existentes.get(k) || 0) + 1);
+            financePro.transactions.forEach(t => {
                 const nota = t.bankNote ?? t.note ?? '';
-                return [`${t.account}|${t.date}|${t.amount}|${nota}`, t.transferTo && `${t.transferTo}|${t.date}|${t.amount}|${nota}`, t.claveImport].filter(Boolean);
-            }));
+                [`${t.account}|${t.date}|${t.amount}|${nota}`, t.transferTo && `${t.transferTo}|${t.date}|${t.amount}|${nota}`, t.claveImport].filter(Boolean).forEach(sumarClave);
+            });
+            const vistas = new Map();
+            const yaEsta = k => (vistas.get(k) || 0) < (existentes.get(k) || 0);
+            const consumir = k => vistas.set(k, (vistas.get(k) || 0) + 1);
+            const registrar = k => { sumarClave(k); consumir(k); };
+            // Movimientos importados a los que se les cambió la nota antes de
+            // que se guardara aparte el concepto del banco: ninguna fila del
+            // archivo los nombra igual, así que la fila con la misma cuenta,
+            // día e importe que no tenga su pareja exacta es ese movimiento.
+            const clavesArchivo = new Set();
+            rows.forEach(r => {
+                const fechas = r.map(financeProParseDate).filter(Boolean);
+                const val = financeProParseEuroAmount(m.splitAmount ? (r[m.amountIn] || r[m.amountOut]) : r[m.amount]);
+                if (Number.isFinite(val)) fechas.forEach(f => clavesArchivo.add(`${f}|${Math.abs(val)}|${(r[m.description] || '').trim()}`));
+            });
+            const reclamados = new Set();
+            const buscarEditado = (cuenta, fechas, importe) => financePro.transactions.find(t =>
+                !t.manual && !t.pendiente && !reclamados.has(t) && (!financeProEsAuto(t) || t.conciliado)
+                && (t.account === cuenta || t.transferTo === cuenta) && fechas.includes(t.date)
+                && Math.abs(Number(t.amount) - importe) < 0.005
+                && !clavesArchivo.has(`${t.date}|${Number(t.amount)}|${t.bankNote ?? t.note ?? ''}`));
             const activeRules = financePro.rules.filter(r => r.enabled);
             let added = 0, skipped = 0, conciliados = 0, completados = 0, anulados = 0;
             // Revolut repite a veces un cargo: el primer intento queda
@@ -2769,16 +2795,23 @@
                     if (esPendiente) { pendiente.amount = amount; skipped++; return; }
                     Object.assign(pendiente, { date, amount });
                     delete pendiente.pendiente;
-                    existingKeys.add(dedupeKey);
+                    registrar(dedupeKey);
                     completados++;
                     return;
                 }
                 // Se comprueba también con las fechas alternativas de la
                 // fila (ver altDates arriba) para no duplicar un movimiento
                 // que ya se importó pendiente con otra fecha.
-                const isDuplicate = existingKeys.has(dedupeKey) || altDates.some(d => existingKeys.has(`${effectiveAccount}|${d}|${amount}|${description}`));
-                if (isDuplicate) { skipped++; return; }
-                existingKeys.add(dedupeKey);
+                const repetida = [dedupeKey, ...altDates.map(d => `${effectiveAccount}|${d}|${amount}|${description}`)].find(yaEsta);
+                if (repetida) { consumir(repetida); skipped++; return; }
+                const editado = !esPendiente && buscarEditado(effectiveAccount, [date, ...altDates], amount);
+                if (editado) {
+                    reclamados.add(editado);
+                    if (!editado.bankNote && description) editado.bankNote = description;
+                    skipped++;
+                    return;
+                }
+                registrar(dedupeKey);
                 if (rule) {
                     financePro.transactions.push({
                         id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
@@ -2825,7 +2858,6 @@
                     }
                     Object.assign(auto, { date, account: m.account, amount, note: description || auto.note, conciliado: true, pendiente: esPendiente || undefined });
                     if (category) auto.category = category;
-                    existingKeys.add(dedupeKey);
                     if (nuevo) added++; else conciliados++;
                     return;
                 }
@@ -2843,7 +2875,6 @@
                     if (!manual.category && category) manual.category = category;
                     if (manual.category) manual.needsReview = false;
                     if (manual.recurringEntryId && !esPendiente) financeProAprenderConcepto(manual.recurringEntryId, description);
-                    existingKeys.add(dedupeKey);
                     conciliados++;
                     return;
                 }
