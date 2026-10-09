@@ -6787,7 +6787,7 @@ body.acuarela .ajustes-perfil.activo { border-color:var(--teja); box-shadow:inse
    ============================================================ */
 :root { --oro: #d4b06a; --oro-suave: rgba(212,176,106,.12); --oro-borde: rgba(212,176,106,.5); }
 body.papel { --oro: #8a6a2a; --oro-suave: rgba(138,106,42,.08); --oro-borde: rgba(138,106,42,.45); }
-.paywall-fundador, #paywall-box button.paywall-fundador { display:flex; align-items:center; gap:14px; width:100%; margin:2px 0 6px; padding:14px 16px; border-radius:16px; border:1.5px solid var(--oro-borde); background:var(--oro-suave); color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; box-sizing:border-box; transition:transform .15s var(--ease-out), border-color .15s ease; }
+.paywall-fundador, #paywall-box button.paywall-fundador { display:flex; align-items:center; gap:14px; width:100%; margin:2px 0 6px; padding:14px 16px; border-radius:16px; border:1.5px solid var(--oro-borde); background:linear-gradient(var(--oro-suave), var(--oro-suave)), var(--bg-input); color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; box-sizing:border-box; transition:transform .15s var(--ease-out), border-color .15s ease; }
 .paywall-fundador:hover { border-color:var(--oro); }
 .paywall-fundador:active { transform:scale(.99); }
 .paywall-fundador-texto { flex:1; min-width:0; }
