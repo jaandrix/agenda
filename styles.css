@@ -7221,3 +7221,102 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 .profe-cal-fila span { font-size:12px; color:var(--text-secondary); }
 .profe-cal-fila b { font-size:13px; font-weight:600; }
 .profe-cal-fila i { font-style:normal; font-size:11.5px; color:var(--text-secondary); }
+
+/* ============================================================
+   PROFESORADO: EL AULA (profesorado-aula.js)
+   ============================================================ */
+/* Hoy, inconfundible: franja de acento en toda la fila y el día en bloque. */
+.profe-tabla tr.hoy > td { background:color-mix(in srgb, var(--m-acento) 11%, transparent); box-shadow:inset 0 2px 0 var(--m-acento), inset 0 -2px 0 var(--m-acento); }
+.profe-tabla tr.hoy .profe-col-dia { background:var(--m-acento); box-shadow:inset 0 2px 0 var(--m-acento), inset 0 -2px 0 var(--m-acento); }
+.profe-tabla tr.hoy .profe-col-dia button, .profe-tabla tr.hoy .profe-col-dia span, .profe-tabla tr.hoy .profe-col-dia em { color:var(--m-sobre-acento, #fff) !important; opacity:1; }
+.profe-tabla tr.hoy .profe-col-dia span { font-weight:800; }
+.profe-celda-cab { display:flex; align-items:center; justify-content:space-between; gap:4px; min-height:16px; padding:0 2px 2px 4px; }
+.profe-celda-cab span { font-size:10px; font-weight:600; color:var(--text-secondary); font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.profe-nota-btn { flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; width:20px; height:18px; min-height:0 !important; padding:0; border:0; border-radius:4px; background:none; color:var(--text-secondary); opacity:.25; cursor:pointer; transition:opacity .15s ease; }
+.profe-nota-btn svg { width:10px; height:10px; }
+.profe-celda:hover .profe-nota-btn { opacity:.7; }
+.profe-nota-btn.con { opacity:1; color:var(--c); }
+.profe-entrega { display:block; width:100%; margin-bottom:3px; padding:3px 6px; border:1px dashed var(--c); border-radius:6px; background:none; font-family:var(--font-family); font-size:11px; font-weight:700; color:var(--text-primary); text-align:left; cursor:pointer; min-height:0 !important; }
+.profe-pestanas { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
+.profe-avance-texto { margin:10px 0 2px; font-size:13px; color:var(--text-secondary); }
+.profe-avance-texto b { color:var(--text-primary); }
+.profe-ficha-cifras .mal b { color:#d0596f; }
+.profe-ficha-cifras b small { font-size:13px; }
+.modal-sheet.profe-ficha-sheet { max-width:none; width:min(1000px, 96vw); }
+.profe-ficha-sheet .profe-ficha-sub { margin:-8px 0 12px; }
+
+.profe-cuaderno-barra { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.profe-cuaderno-resumen { margin-bottom:8px; font-size:13px; color:var(--text-secondary); }
+.profe-cuaderno-resumen b { color:var(--text-primary); }
+.profe-cuaderno-wrap { overflow:auto; max-height:56vh; border:1px solid var(--border-strong); border-radius:12px; margin-bottom:8px; }
+.profe-cuaderno { border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:13px; }
+.profe-cuaderno th, .profe-cuaderno td { border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:0; background:var(--bg-modal); }
+.profe-cuaderno thead th { position:sticky; top:0; z-index:2; border-bottom:1px solid var(--border-strong); min-width:96px; }
+.profe-cuaderno thead th button { display:flex; flex-direction:column; gap:1px; width:100%; padding:8px; border:0; background:none; font-family:var(--font-family); color:var(--text-primary); text-align:left; cursor:pointer; min-height:0 !important; }
+.profe-cuaderno thead th b { font-size:12px; }
+.profe-cuaderno thead th small { font-size:10px; color:var(--text-secondary); font-weight:500; }
+.profe-cuaderno .profe-cuaderno-alumno { position:sticky; left:0; z-index:1; min-width:180px; text-align:left; border-right:1px solid var(--border-strong); }
+.profe-cuaderno thead .profe-cuaderno-alumno { z-index:3; padding:8px; font-size:12px; color:var(--text-secondary); }
+.profe-cuaderno tbody .profe-cuaderno-alumno button { width:100%; padding:8px 10px; border:0; background:none; font-family:var(--font-family); font-size:13px; font-weight:600; color:var(--text-primary); text-align:left; cursor:pointer; min-height:0 !important; }
+.profe-cuaderno tbody .profe-cuaderno-alumno button:hover { text-decoration:underline; text-underline-offset:3px; }
+.profe-cuaderno td input { width:100%; min-width:0; height:34px; box-sizing:border-box; padding:0 8px; border:0; background:none; color:var(--text-primary); font-family:var(--font-family); font-size:14px; font-weight:600; text-align:center; font-variant-numeric:tabular-nums; outline:none; }
+.profe-cuaderno td input:focus { box-shadow:inset 0 0 0 2px var(--m-acento); }
+.profe-cuaderno .profe-cuaderno-media { min-width:70px; padding:0 10px; text-align:center; font-weight:800; font-variant-numeric:tabular-nums; }
+.profe-cuaderno tfoot th, .profe-cuaderno tfoot td { position:sticky; bottom:0; padding:7px 8px; font-size:12px; font-weight:700; color:var(--text-secondary); text-align:center; border-top:1px solid var(--border-strong); }
+.profe-cuaderno tfoot .profe-cuaderno-alumno { text-align:left; }
+/* Por debajo de 5: un tinte suave, no una alarma. */
+.profe-cuaderno td.suspenso { background:color-mix(in srgb, #c0384f 14%, var(--bg-modal)); }
+.profe-cuaderno td.suspenso, .profe-cuaderno td.suspenso input { color:#d0596f; }
+.suspenso { color:#d0596f; }
+.profe-alumno-cab { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.profe-alumno-cab b { font-size:20px; color:var(--text-primary); }
+.profe-alumno-media { font-size:30px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.profe-alumno-media.suspenso { color:#d0596f; }
+.profe-ficha-fila i.suspenso { color:#d0596f; font-weight:700; }
+
+.profe-deber-nuevo { display:flex; flex-direction:column; gap:2px; padding:12px 14px; margin-bottom:6px; border-radius:14px; background:var(--bg-card); border:1px solid var(--border); }
+.profe-deber-nuevo .btn-modal-primary { margin:6px 0 0; }
+.profe-deber { border-top:1px solid var(--border); }
+.profe-deber summary { display:grid; grid-template-columns:96px minmax(0, 1fr) auto; align-items:baseline; gap:10px; padding:9px 2px; list-style:none; cursor:pointer; }
+.profe-deber summary::-webkit-details-marker { display:none; }
+.profe-deber summary span { font-size:12px; color:var(--text-secondary); }
+.profe-deber summary b { font-size:13.5px; color:var(--text-primary); }
+.profe-deber summary i { font-style:normal; font-size:11.5px; color:var(--text-secondary); }
+.profe-deber.pasado summary b { color:var(--text-secondary); }
+.profe-deber-cuerpo { display:flex; flex-direction:column; gap:8px; padding:0 2px 12px; }
+.profe-deber-cuerpo > small { font-size:12px; color:var(--text-secondary); }
+.profe-deber-alumnos { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:4px 12px; }
+
+.profe-franja { display:grid; grid-template-columns:90px 1fr 1fr 1fr 34px; gap:6px; align-items:center; margin-bottom:6px; }
+.profe-franja .modal-input { margin:0; }
+.profe-nota-dia { display:block; width:100%; padding:10px 2px; border:0; border-top:1px solid var(--border); background:none; font-family:var(--font-family); text-align:left; cursor:pointer; color:var(--text-primary); }
+.profe-nota-dia span { font-size:12px; font-weight:700; color:var(--text-secondary); }
+.profe-nota-dia p { margin:3px 0 0; font-size:13.5px; line-height:1.5; white-space:pre-wrap; }
+.profe-plantillas { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+.profe-plantilla { display:inline-flex; align-items:center; }
+.profe-plantilla .profe-chip small { opacity:.6; margin-left:3px; }
+.profe-plantilla-x { width:24px; height:24px; min-height:0 !important; padding:0; border:0; background:none; color:var(--text-secondary); cursor:pointer; font-size:11px; }
+
+.profe-semana { border:1px solid var(--border-strong); border-radius:14px; background:var(--bg-card); overflow:hidden; }
+.profe-semana-cab { display:grid; grid-template-columns:52px repeat(var(--dias), minmax(0, 1fr)); border-bottom:1px solid var(--border-strong); }
+.profe-semana-cab span { padding:10px 8px; font-size:12px; font-weight:700; color:var(--text-secondary); }
+.profe-semana-cab span.hoy { color:var(--m-acento); }
+.profe-semana-cuerpo { position:relative; display:grid; grid-template-columns:52px repeat(var(--dias), minmax(0, 1fr)); }
+.profe-semana-horas { position:relative; }
+.profe-semana-horas span { position:absolute; left:8px; transform:translateY(-50%); font-size:10.5px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.profe-semana-horas span:first-child { transform:none; }
+.profe-semana-dia { position:relative; border-left:1px solid var(--border); }
+.profe-semana-dia.hoy { background:color-mix(in srgb, var(--m-acento) 6%, transparent); }
+.profe-semana-dia > i { position:absolute; left:0; right:0; border-top:1px dashed var(--border); }
+.profe-bloque { position:absolute; left:3px; right:3px; display:flex; flex-direction:column; gap:1px; padding:5px 7px; border:0; border-left:3px solid var(--c); border-radius:6px; background:color-mix(in srgb, var(--c) 22%, var(--bg-card)); font-family:var(--font-family); color:var(--text-primary); text-align:left; overflow:hidden; cursor:pointer; min-height:0 !important; }
+.profe-bloque b { font-size:12px; line-height:1.2; }
+.profe-bloque small { font-size:10.5px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+@media (max-width:700px) {
+    .profe-franja { grid-template-columns:1fr 1fr; }
+    .profe-semana-cab, .profe-semana-cuerpo { grid-template-columns:40px repeat(var(--dias), minmax(0, 1fr)); }
+    .profe-bloque { padding:3px 4px; }
+    .profe-bloque b { font-size:10.5px; }
+    .profe-bloque small { display:none; }
+    .profe-deber summary { grid-template-columns:72px minmax(0, 1fr); }
+    .profe-deber summary i { grid-column:2; }
+}

@@ -18,8 +18,9 @@ const PROFE_DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const PROFE_LETRAS = ['', 'L', 'M', 'X', 'J', 'V', 'S'];
 const PROFE_COLORES = ['#e07a3f', '#3f7be0', '#3a9e64', '#c94f7c', '#8a63d2', '#cf9f22', '#2aa5a0', '#8b6f55'];
 let profeDesde = null;
-let profeSemanas = 2;
+let profeSemanas = 0;
 let profeIrAHoy = false;
+let profeVista = 'cuadrante';
 let profePendAbierto = null;
 
 function datosProfe() {
@@ -138,11 +139,20 @@ function renderProfesorado() {
     const dias = profeRangoDias();
     const conCasilla = p.sesiones.filter(s => profeConCasilla(s) && !s.descartada && p.clases.some(c => c.id === s.claseId));
     const dadas = conCasilla.filter(s => s.hecha).length;
-    if (profeIrAHoy) setTimeout(() => {
+    // Al entrar en el apartado el cuadrante se abre con hoy en el centro;
+    // al repintarlo después de un cambio, se queda donde estaba.
+    const anterior = [...document.querySelectorAll('.profe-tabla-wrap')].find(m => m.offsetParent);
+    const sitio = anterior ? [anterior.scrollTop, anterior.scrollLeft] : null;
+    if (!sitio) profeIrAHoy = true;
+    setTimeout(() => {
+        const centrar = profeIrAHoy;
         profeIrAHoy = false;
-        const fila = document.querySelector('.profe-tabla tr.hoy') || document.querySelector('.profe-tabla tbody tr');
-        const marco = fila?.closest('.profe-tabla-wrap');
-        if (fila && marco) marco.scrollTop = fila.offsetTop - 60;
+        document.querySelectorAll('.profe-tabla-wrap').forEach(marco => {
+            if (centrar) {
+                const fila = marco.querySelector('tr.hoy') || marco.querySelector('tbody tr');
+                if (fila) marco.scrollTop = Math.max(0, fila.offsetTop - marco.clientHeight / 2 + fila.offsetHeight / 2);
+            } else if (sitio) [marco.scrollTop, marco.scrollLeft] = sitio;
+        });
     }, 0);
     return `
     <div class="uni-vista profe">
@@ -156,11 +166,13 @@ function renderProfesorado() {
                 <button class="pedido-btn" onclick="openCalendarioProfe()">calendario escolar.</button>
                 <button class="pedido-btn" onclick="openRepartirProfe()">repartir temario.</button>
                 <button class="pedido-btn" onclick="openImportarProfe()">importar cuadrante.</button>
+                <button class="pedido-btn" onclick="openExportarProfe()">exportar.</button>
             </div>
         </div>
         <div id="profe-pendientes">${renderPendientesProfe()}</div>
         ${renderMisClasesProfe()}
-        <div class="profe-cuadrante">
+        <div class="profe-pestanas">${[['cuadrante', 'cuadrante.'], ['horario', 'horario semanal.']].map(([k, t]) => `<button class="profe-chip ${profeVista === k ? 'activa' : ''}" onclick="profeVista='${k}';profeIrAHoy=${k === 'cuadrante'};render()">${t}</button>`).join('')}</div>
+        ${profeVista === 'horario' ? renderHorarioSemanalProfe() : `<div class="profe-cuadrante">
             <div class="profe-nav">
                 ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(-1)" aria-label="Antes">‹</button>` : ''}
                 <span class="profe-rango">${profeFecha(dias[0])} — ${profeFecha(dias[dias.length - 1])}</span>
@@ -177,14 +189,14 @@ function renderProfesorado() {
                         const w = new Date(d + 'T12:00:00').getDay();
                         const festivo = profeEsFestivo(d);
                         return `<tr class="${d === hoy ? 'hoy' : ''} ${d < hoy ? 'pasado' : ''} ${festivo ? 'festivo' : ''} ${w === 1 && f > 0 ? 'profe-semana-nueva' : ''}">
-                            <th class="profe-col-dia"><button onclick="openDiaProfe('${d}')" title="${festivo ? 'Día sin clase' : '¿No hay clase este día?'}"><span>${PROFE_DIAS[w]}</span>${Number(d.slice(8))}${d.slice(8) === '01' || f === 0 ? `<em>${new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short' })}</em>` : ''}${festivo ? `<i>${escapeHtml((profeNombreFestivo(d) || 'no lectivo').toLowerCase())}.</i>` : ''}</button></th>
+                            <th class="profe-col-dia"><button onclick="openDiaProfe('${d}')" title="${festivo ? 'Día sin clase' : '¿No hay clase este día?'}"><span>${d === hoy ? 'hoy.' : PROFE_DIAS[w]}</span>${Number(d.slice(8))}${d.slice(8) === '01' || f === 0 ? `<em>${new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short' })}</em>` : ''}${festivo ? `<i>${escapeHtml((profeNombreFestivo(d) || 'no lectivo').toLowerCase())}.</i>` : ''}</button></th>
                             ${p.clases.map((c, ci) => renderCeldaProfe(c, d, f, ci, hoy)).join('')}
                         </tr>`;
                     }).join('')}</tbody>
                 </table>
             </div>
-            <div class="profe-pista">Escribe en una casilla y pulsa Intro para añadir la tarea. Arrastra una tarea por su asa para llevarla a otro día, toca su texto para editarla y su círculo para marcarla hecha. Pulsa un día si al final no hay clase (o si sí la hay): las tareas se corren solas.</div>
-        </div>
+            <div class="profe-pista">Escribe en una casilla y pulsa Intro para añadir la tarea. Arrastra una tarea por su asa para llevarla a otro día, toca su texto para editarla y su círculo para marcarla hecha. El lápiz de cada casilla guarda una nota de cómo fue esa clase. Pulsa un día si al final no hay clase (o si sí la hay): las tareas se corren solas.</div>
+        </div>`}
     </div>`;
 }
 
@@ -200,7 +212,15 @@ function renderItemProfe(s, c, hoy) {
 function renderCeldaProfe(c, d, f, ci, hoy) {
     const items = profeSesiones(c.id, d);
     const lectiva = profeEsLectivo(c, d);
+    const franjas = (c.horario || []).length && lectiva ? profeFranjasDia(c, d) : [];
+    const nota = profeNotasDia()[`${c.id}|${d}`];
+    const entregas = profeEntregasDia(c.id, d);
     return `<td class="profe-celda ${lectiva ? 'lectiva' : 'libre'}" data-clase="${c.id}" data-fecha="${d}" style="--c:${c.color}">
+        <div class="profe-celda-cab">
+            <span>${franjas.map(h => `${h.inicio}${h.aula ? ` · ${escapeHtml(h.aula)}` : ''}`).join(', ')}</span>
+            <button class="profe-nota-btn ${nota ? 'con' : ''}" onclick="openNotaDiaProfe('${c.id}','${d}')" title="${nota ? escapeHtml(nota) : 'Nota de esta clase'}" aria-label="Nota de esta clase"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M70 8l22 22-52 52H18V60z"/><path d="M8 88h84v8H8z"/></svg></button>
+        </div>
+        ${entregas.map(x => `<button class="profe-entrega" onclick="openFichaClaseProfe('${c.id}','deberes')">entrega: ${escapeHtml(x.titulo)}</button>`).join('')}
         ${items.map(s => renderItemProfe(s, c, hoy)).join('')}
         <input class="profe-nueva" data-f="${f}" data-c="${ci}" onkeydown="profeTecla(event,this)" onchange="profeAnadir(this)" aria-label="Añadir tarea a ${escapeHtml(c.nombre)}, ${profeFecha(d, true)}">
     </td>`;
@@ -263,7 +283,8 @@ function renderMisClasesProfe() {
                 <span class="profe-tarjeta-cab"><b>${escapeHtml(c.nombre)}</b>${r.pendientes ? `<em>${r.pendientes} sin dar</em>` : ''}</span>
                 <small>${escapeHtml(c.materia || 'sin materia')}${(c.dias || []).length ? ` · ${c.dias.map(d => PROFE_LETRAS[d]).join(' ')}` : ''}</small>
                 <span class="profe-barra"><span style="width:${pct}%"></span></span>
-                <small>${r.dadas} de ${r.total} hechas${r.proxima ? ` · próxima: ${profeFechaCorta(r.proxima.fecha)}` : ''}</small>
+                <small>${r.dadas} de ${r.total} hechas · ${profeAvance(c).estado}</small>
+                ${r.proxima ? `<small>próxima: ${profeFechaCorta(r.proxima.fecha)}, ${escapeHtml(r.proxima.titulo)}</small>` : ''}
             </button>`;
         }).join('')}
             <button class="profe-tarjeta profe-tarjeta-nueva" onclick="openClaseProfe()"><b>+ clase.</b><small>Un grupo nuevo, con su color y sus días.</small></button>
@@ -736,7 +757,7 @@ function openClaseProfe(id) {
         <div class="profe-colores">${PROFE_COLORES.map(col => `<button type="button" class="profe-color ${window._profeColor === col ? 'activa' : ''}" style="--c:${col}" onclick="window._profeColor='${col}';this.parentNode.querySelectorAll('.profe-color').forEach(b=>b.classList.toggle('activa',b===this))" aria-label="Color ${col}"></button>`).join('')}</div>
         <div class="modal-label">días que tienes esta clase</div>
         <div class="profe-dias-elegir">${[1, 2, 3, 4, 5, 6].map(d => `<button type="button" class="profe-chip ${window._profeDias.includes(d) ? 'activa' : ''}" onclick="profeDiaElegir(${d},this)">${PROFE_DIAS[d]}</button>`).join('')}</div>
-        <div class="finance-modal-note">Si no marcas ninguno, cuenta de lunes a viernes. Con los días, el cuadrante apaga los demás y "asignar al día…", "repartir temario." y "correr el temario." saben dónde van las tareas.</div>
+        <div class="finance-modal-note">Si no marcas ninguno, cuenta de lunes a viernes. Con los días, el cuadrante apaga los demás y "asignar al día…", "repartir temario." y "correr el temario." saben dónde van las tareas. Si pones su horario (ficha de la clase → horario.), los días se toman de ahí.</div>
         <button class="btn-modal-primary" onclick="guardarClaseProfe('${c?.id || ''}')">guardar.</button>
         ${c ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarClaseProfe('${c.id}')">eliminar clase.</button>` : ''}
     `);
@@ -777,45 +798,6 @@ function borrarClaseProfe(id) {
     guardarProfe('Clase eliminada');
 }
 
-// La ficha de cada clase: lo que ya se ha dado, lo de esta semana, lo que
-// se quedó sin dar y cuánto queda por delante.
-function openFichaClaseProfe(id) {
-    const c = profeClase(id);
-    if (!c) return;
-    const hoy = isoLocal(new Date());
-    const r = profeResumenClase(c);
-    const lunes = profeLunes(hoy), domingo = profeSumar(lunes, 6);
-    const ordenar = (a, b) => a.fecha.localeCompare(b.fecha) || (a.orden || 0) - (b.orden || 0);
-    const semana = r.ses.filter(s => s.fecha >= lunes && s.fecha <= domingo).sort(ordenar);
-    const siguiente = r.ses.filter(s => s.fecha > domingo && s.fecha <= profeSumar(domingo, 7)).sort(ordenar);
-    const dadas = r.ses.filter(s => s.hecha === true).sort((a, b) => ordenar(b, a));
-    const pendientes = r.ses.filter(s => profeEsPendiente(s, hoy)).sort(ordenar);
-    const futuras = r.ses.filter(s => s.fecha >= hoy && s.hecha === false && !s.descartada);
-    const ultima = r.ses.map(s => s.fecha).sort().pop();
-    const libres = ultima && ultima >= hoy ? profeProximosDias(c, hoy, 400).filter(d => d <= ultima && !profeSesiones(c.id, d).some(s => s.hecha !== null)).length : 0;
-    const fila = s => `<button class="profe-ficha-fila ${s.hecha === true ? 'hecha' : profeEsPendiente(s, hoy) ? 'pendiente' : ''} ${s.descartada ? 'descartada' : ''}" onclick="openSesionProfe('${s.id}')"><span>${profeFechaCorta(s.fecha)}</span><b>${escapeHtml(s.titulo)}</b><i>${s.descartada ? 'descartada' : s.hecha === true ? 'hecha' : s.hecha === null ? '' : profeEsPendiente(s, hoy) ? 'sin dar' : 'por hacer'}</i></button>`;
-    const lista = (titulo, items, vacio) => `<div class="profe-ficha-bloque"><div class="uni-etiqueta">${titulo}</div>${items.length ? items.map(fila).join('') : `<div class="profe-ficha-vacio">${vacio}</div>`}</div>`;
-    showModal(`
-        <div class="modal-title"><span class="profe-ficha-titulo" style="--c:${c.color}">${escapeHtml(c.nombre)}</span></div>
-        <div class="profe-ficha-sub">${escapeHtml(c.materia || 'sin materia')} · ${(c.dias || []).length ? c.dias.map(d => PROFE_DIAS[d]).join(', ') : 'de lunes a viernes'}</div>
-        <div class="profe-ficha-cifras">
-            <div><b>${r.dadas}</b><small>hechas</small></div>
-            <div><b>${r.pendientes}</b><small>sin dar</small></div>
-            <div><b>${futuras.length}</b><small>por delante</small></div>
-            <div><b>${libres}</b><small>clases libres${ultima ? ` hasta el ${profeFecha(ultima)}` : ''}</small></div>
-        </div>
-        <span class="profe-barra"><span style="width:${r.total ? Math.round(r.dadas / r.total * 100) : 0}%;--c:${c.color}"></span></span>
-        ${pendientes.length ? lista('sin dar.', pendientes, '') : ''}
-        ${lista('esta semana.', semana, 'Nada planificado esta semana.')}
-        ${siguiente.length ? lista('la semana que viene.', siguiente, '') : ''}
-        ${lista('lo que ya has dado.', dadas, 'Todavía nada marcado como hecho.')}
-        <div class="profe-botones" style="margin-top:14px">
-            <button class="pedido-btn" onclick="openClaseProfe('${c.id}')">editar clase.</button>
-            <button class="pedido-btn" onclick="openRepartirProfe('${c.id}')">repartir temario.</button>
-        </div>
-    `);
-}
-
 // ------------------------------------------------------------
 //  REPARTIR E IMPORTAR
 // ------------------------------------------------------------
@@ -831,6 +813,7 @@ function openRepartirProfe(claseId) {
         <input id="profe-rep-desde" class="modal-input" type="date" value="${isoLocal(new Date())}">
         <div class="modal-label">tareas</div>
         <textarea id="profe-rep-lineas" class="modal-input" rows="8" placeholder="Tema 1. La comunicación&#10;Tema 1. Ejercicios&#10;Tema 2. El sustantivo&#10;Examen tema 1 y 2"></textarea>
+        ${renderPlantillasRepartirProfe()}
         <button class="btn-modal-primary" onclick="repartirProfe()">repartir.</button>
     `);
 }

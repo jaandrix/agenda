@@ -53,7 +53,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `agenda-laboral` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `profesorado` → `cv` → `social` → `perfil` → `bienvenida` → `guia` → `landing`.
+  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `guia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -222,7 +222,11 @@ a menor resolución.
   `curso`). Las tareas se arrastran con puntero (`profeArrastrar`, vale en iPhone) y se corren "como
   vagones" (`profeEmpujarClase` / `profeAdelantarClase`) al correr una pendiente o al marcar/quitar un día
   no lectivo. Calendario escolar de Zaragoza 2026-27 en `PROFE_CALENDARIOS`. Importa el JSON que genera una
-  IA con `PROFE_PROMPT_IA`; ejemplo en `ejemplos/cuadrante-ejemplo.json`.
+  IA con `PROFE_PROMPT_IA`; ejemplo en `ejemplos/cuadrante-ejemplo.json`. `js/profesorado-aula.js`: ficha de
+  clase con pestañas (resumen con avance del temario, cuaderno de notas con `alumnos`/`evaluaciones`/
+  `calificaciones` y media ponderada, `deberes`, `horario` por franjas, notas del día en `notasDia`),
+  horario semanal, copiar a otro grupo, `plantillas` y exportación PDF (jsPDF + autotable) y Excel
+  (ExcelJS), ambas cargadas con `cargarScript` solo al exportar.
 - **Agenda laboral (`js/agenda-laboral.js`, dentro de Empleo con un empleo actual):** `agendaLaboral`
   (sincronizado: `enPrincipal`, `horario` por día de la semana, `citas` con id `lab_...`). Estilo propio
   más sobrio (`.lab-*`). Si `enPrincipal`, las citas entran al calendario por `getRecurringCalendarEntries`
