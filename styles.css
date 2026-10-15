@@ -7421,3 +7421,10 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 .viaje-gastos-fila i { font-style:normal; font-size:11.5px; color:var(--text-secondary); }
 .viaje-gastos-fila b { font-size:13.5px; font-variant-numeric:tabular-nums; }
 @media (max-width:600px) { .viaje-gastos-cat { grid-template-columns:96px minmax(0, 1fr) 70px; } }
+
+/* Finanzas: cuadre con el saldo del extracto. */
+.finance-cuadre-cifras { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin-bottom:10px; }
+.finance-cuadre-cifras div { padding:10px 12px; border-radius:14px; background:var(--bg-card); border:1px solid var(--border); }
+.finance-cuadre-cifras small { display:block; font-size:11.5px; color:var(--text-secondary); }
+.finance-cuadre-cifras b { font-size:17px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.finance-cuadre-cifras .mal b { color:#d0596f; }

@@ -2689,11 +2689,118 @@
         }
 
         async function confirmFinanceProImport() {
-            const r = financeProEjecutarImport(window._financeProImport);
+            const imp = window._financeProImport;
+            const r = financeProEjecutarImport(imp);
             closeModal();
             render();
             try { await saveData(); showToast(financeProResumenImport(r)); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            const cuadre = financeProCuadreExtracto(imp);
+            if (cuadre && !cuadre.cuadra) openFinanceProCuadre(cuadre);
+            else if (cuadre) showToast(`${financeProResumenImport(r)} · saldo cuadrado con el extracto: ${financeMoney(cuadre.esperado)}`);
+        }
+
+        // ============================================================
+        //  CUADRE CON EL SALDO DEL EXTRACTO
+        //  Si el extracto trae el saldo tras cada movimiento (Revolut, la
+        //  columna Balance), ese saldo es el real y manda. Tras importar se
+        //  compara con el de Bitácora a la misma fecha; si no coincide, se
+        //  cruzan uno a uno los movimientos de esas fechas y se enseña qué
+        //  sobra (un duplicado) o qué falta, para arreglarlo con un botón.
+        // ============================================================
+        function financeProCuadreExtracto(imp) {
+            const m = imp?.mapping;
+            if (!m?.hasHeader) return null;
+            const cab = imp.rows[0].map(h => String(h || '').trim().toLowerCase());
+            const iSaldo = cab.findIndex(h => /^(balance|saldo)\b/.test(h));
+            if (iSaldo < 0) return null;
+            const filas = [];
+            imp.rows.slice(1).forEach((r, orden) => {
+                const st = m.status >= 0 ? String(r[m.status] || '').toLowerCase() : '';
+                if (/revert|declin|fail|cancel|rechaz|anulad|fallid/.test(st)) return;
+                const fechas = r.map(financeProParseDate).filter(Boolean);
+                let val;
+                if (m.splitAmount) {
+                    const ent = financeProParseEuroAmount(r[m.amountIn]), sal = financeProParseEuroAmount(r[m.amountOut]);
+                    val = (Number.isFinite(ent) ? Math.abs(ent) : 0) - (Number.isFinite(sal) ? Math.abs(sal) : 0);
+                } else val = financeProParseEuroAmount(r[m.amount]);
+                if (!Number.isFinite(val) || !val || !fechas.length) return;
+                filas.push({ orden, fechas, val: Math.round(val * 100) / 100, desc: (r[m.description] || '').trim(), pend: /pending|pendiente|processing|procesando/.test(st), saldo: financeProParseEuroAmount(r[iSaldo]) });
+            });
+            const completas = filas.filter(f => !f.pend && Number.isFinite(f.saldo));
+            if (!completas.length) return null;
+            // El extracto puede venir de más antiguo a más nuevo o al revés.
+            const asc = completas[0].fechas[completas[0].fechas.length - 1] <= completas[completas.length - 1].fechas[completas[completas.length - 1].fechas.length - 1];
+            const ultima = asc ? completas[completas.length - 1] : completas[0];
+            const esperado = Math.round((ultima.saldo + filas.filter(f => f.pend && f.val < 0).reduce((x, f) => x + f.val, 0)) * 100) / 100;
+            const todas = filas.flatMap(f => f.fechas);
+            const desde = todas.reduce((a, b) => a < b ? a : b), hasta = todas.reduce((a, b) => a > b ? a : b);
+            const cuenta = m.account;
+            const signo = t => t.type === 'transfer' ? (t.account === cuenta ? -1 : 1) : t.type === 'income' ? 1 : -1;
+            const deCuenta = t => t.account === cuenta || t.transferTo === cuenta;
+            let actual = Number(financePro.accounts[cuenta]?.balance0 || 0);
+            financePro.transactions.forEach(t => { if (deCuenta(t) && financeProCuentaEnSaldo(t) && t.date <= hasta) actual += signo(t) * (Number(t.amount) || 0); });
+            actual = Math.round(actual * 100) / 100;
+            if (Math.abs(esperado - actual) < 0.005) return { cuadra: true, esperado, actual, cuenta };
+            const movs = financePro.transactions.filter(t => deCuenta(t) && t.date >= desde && t.date <= hasta && financeProCuentaEnSaldo(t))
+                .map(t => ({ t, val: Math.round(signo(t) * (Number(t.amount) || 0) * 100) / 100 }));
+            const libres = new Set(movs);
+            const libresFilas = new Set(filas.filter(f => !(f.pend && f.val > 0)));
+            const cerca = (f, t) => f.fechas.some(d => Math.abs((new Date(d) - new Date(t.date)) / 86400000) <= 3);
+            const emparejar = exigeNombre => [...libresFilas].forEach(f => {
+                const mov = [...libres].find(x => Math.abs(x.val - f.val) < 0.005 && (exigeNombre
+                    ? f.fechas.includes(x.t.date) && financeProNormalizar(x.t.bankNote ?? x.t.note) === financeProNormalizar(f.desc)
+                    : cerca(f, x.t)));
+                if (mov) { libres.delete(mov); libresFilas.delete(f); }
+            });
+            emparejar(true);
+            emparejar(false);
+            return { cuadra: false, esperado, actual, diff: Math.round((esperado - actual) * 100) / 100, cuenta, desde, hasta,
+                sobran: [...libres].map(x => x.t), faltan: [...libresFilas] };
+        }
+
+        function openFinanceProCuadre(c) {
+            window._financeProCuadre = c;
+            const sobranSuma = c.sobran.reduce((x, t) => x + Math.abs(Number(t.amount) || 0), 0);
+            const nombre = financePro.accounts[c.cuenta]?.name || c.cuenta;
+            showModal(`
+                <div class="modal-title">el saldo no cuadra.</div>
+                <div class="finance-cuadre-cifras">
+                    <div><small>el extracto dice</small><b>${financeMoney(c.esperado)}</b></div>
+                    <div><small>bitácora dice</small><b>${financeMoney(c.actual)}</b></div>
+                    <div class="${c.diff ? 'mal' : ''}"><small>diferencia</small><b>${c.diff > 0 ? '+' : ''}${financeMoney(c.diff)}</b></div>
+                </div>
+                <p class="finance-modal-note">Saldo de ${escapeHtml(nombre)} a ${financeDateLabelShort(c.hasta)}, ya descontados los cargos pendientes. He cruzado uno a uno los movimientos del ${financeDateLabelShort(c.desde)} al ${financeDateLabelShort(c.hasta)} con el extracto.</p>
+                ${c.sobran.length ? `<div class="modal-label">sobran en bitácora (no están en el extracto)</div>
+                <div class="finance-viaje-lista">${c.sobran.map(t => `<label class="finance-viaje-fila"><input type="checkbox" checked data-cuadre="${t.id}"><span>${financeDateLabelShort(t.date)}</span><b>${escapeHtml(t.note || t.bankNote || financeProCategoryById(t.category)?.name || 'movimiento')}</b><i>${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</i></label>`).join('')}</div>` : ''}
+                ${c.faltan.length ? `<div class="modal-label">faltan en bitácora (están en el extracto)</div>
+                <div class="finance-viaje-lista">${c.faltan.map(f => `<div class="finance-viaje-fila"><span></span><span>${financeDateLabelShort(f.fechas[0])}</span><b>${escapeHtml(f.desc)}</b><i>${f.val > 0 ? '+' : ''}${financeMoney(f.val)}</i></div>`).join('')}</div>` : ''}
+                ${c.sobran.length ? `<button class="btn-modal-primary" onclick="financeProQuitarSobrantes()">quitar los marcados.</button>` : ''}
+                <button class="btn-secondary" style="margin-top:8px" onclick="financeProAjustarAlExtracto()">ajustar el saldo a ${financeMoney(c.esperado)}.</button>
+                <div class="finance-modal-note">${c.sobran.length && Math.abs(sobranSuma - Math.abs(c.diff)) < 0.005 ? 'Lo que sobra explica justo la diferencia: quitándolo, cuadra.' : c.sobran.length || c.faltan.length ? 'Revisa la lista: si la diferencia viene de antes de estas fechas, el ajuste la deja a cero sin tocar nada más.' : 'Los movimientos de estas fechas coinciden: la diferencia viene de antes. El ajuste la deja a cero sin tocar tu histórico.'}</div>
+            `);
+        }
+
+        async function financeProQuitarSobrantes() {
+            const ids = new Set([...document.querySelectorAll('[data-cuadre]:checked')].map(i => i.dataset.cuadre));
+            if (!ids.size) return;
+            financePro.transactions = financePro.transactions.filter(t => !ids.has(t.id));
+            const c = window._financeProCuadre;
+            closeModal();
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); return; }
+            const saldo = Math.round(financeProAccountBalance(c.cuenta) * 100) / 100;
+            showToast(`${ids.size} ${ids.size === 1 ? 'movimiento quitado' : 'movimientos quitados'}. ${Math.abs(saldo - c.esperado) < 0.005 ? 'Cuadra con el extracto.' : `Saldo: ${financeMoney(saldo)}.`}`);
+        }
+
+        async function financeProAjustarAlExtracto() {
+            const c = window._financeProCuadre;
+            const diff = Math.round((c.esperado - c.actual) * 100) / 100;
+            closeModal();
+            if (Math.abs(diff) < 0.005) return;
+            financePro.transactions.push({ id: 'ptx_adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), date: c.hasta, account: c.cuenta, type: diff > 0 ? 'income' : 'expense', amount: Math.abs(diff), note: 'Ajuste de saldo' });
+            render();
+            try { await saveData(); showToast(`Saldo ajustado al del extracto: ${financeMoney(c.esperado)}`); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function financeProResumenImport(r) {
