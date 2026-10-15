@@ -34,10 +34,10 @@
             errorEl.textContent = '';
             if (!email || !password) { errorEl.textContent = 'Introduce email y contraseña.'; return; }
             btn.disabled = true;
-            btn.textContent = 'Entrando...';
+            btn.textContent = 'entrando...';
             const { error } = await sb.auth.signInWithPassword({ email, password });
             btn.disabled = false;
-            btn.textContent = 'Entrar';
+            btn.textContent = 'entrar.';
             if (error) {
                 console.error('Error de inicio de sesión:', error);
                 const msg = (error.message || '').toLowerCase();
@@ -76,9 +76,19 @@
             cargarPlazasFundador();
         }
 
+        // La tarjeta entra desde abajo y la "b." de la derecha se monta
+        // pieza a pieza; se reinicia cada vez que se llega desde la landing.
+        function entrarLogin() {
+            const el = document.getElementById('login-screen');
+            el.style.display = 'flex';
+            el.classList.remove('entra');
+            void el.offsetWidth;
+            el.classList.add('entra');
+        }
+
         function goToLogin() {
             document.getElementById('landing-screen').classList.remove('visible');
-            document.getElementById('login-screen').style.display = 'flex';
+            entrarLogin();
             showAuthMode('login');
         }
 
@@ -93,7 +103,7 @@
             if (plan) sessionStorage.setItem('bitacoraPlanIntencion', plan);
             else sessionStorage.removeItem('bitacoraPlanIntencion');
             document.getElementById('landing-screen').classList.remove('visible');
-            document.getElementById('login-screen').style.display = 'flex';
+            entrarLogin();
             showAuthMode('signup');
         }
 
@@ -454,10 +464,10 @@
             if (password !== password2) { errorEl.textContent = 'Las contraseñas no coinciden.'; return; }
 
             btn.disabled = true;
-            btn.textContent = 'Creando...';
+            btn.textContent = 'creando...';
             const { data, error } = await sb.auth.signUp({ email, password });
             btn.disabled = false;
-            btn.textContent = 'Crear cuenta';
+            btn.textContent = 'crear cuenta.';
 
             if (error) { errorEl.textContent = 'No se pudo crear la cuenta: ' + error.message; return; }
             if (data.session) { await startApp(); } else {
@@ -480,12 +490,12 @@
             if (!email) { errorEl.textContent = 'Introduce tu email.'; return; }
 
             btn.disabled = true;
-            btn.textContent = 'Enviando...';
+            btn.textContent = 'enviando...';
             const { error } = await sb.auth.resetPasswordForEmail(email, {
                 redirectTo: window.location.origin + window.location.pathname
             });
             btn.disabled = false;
-            btn.textContent = 'Enviar enlace';
+            btn.textContent = 'enviar enlace.';
 
             if (error) { errorEl.textContent = 'No se pudo enviar el enlace: ' + error.message; return; }
             successEl.textContent =
@@ -506,10 +516,10 @@
             if (password !== password2) { errorEl.textContent = 'Las contraseñas no coinciden.'; return; }
 
             btn.disabled = true;
-            btn.textContent = 'Guardando...';
+            btn.textContent = 'guardando...';
             const { error } = await sb.auth.updateUser({ password });
             btn.disabled = false;
-            btn.textContent = 'Guardar contraseña';
+            btn.textContent = 'guardar contraseña.';
 
             if (error) { errorEl.textContent = 'No se pudo actualizar la contraseña: ' + error.message; return; }
             successEl.textContent = 'Contraseña actualizada. Ya puedes usar la app.';

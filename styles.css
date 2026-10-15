@@ -7832,3 +7832,67 @@ button.landing-about-link { border:0; background:none; font-family:inherit; curs
 .novedad h3 { margin:6px 0 4px; font-size:18px; font-weight:800; letter-spacing:.2px; color:var(--text-primary); }
 .novedad p { margin:0 0 6px; font-size:13.5px; line-height:1.5; color:var(--text-secondary); }
 .novedad-para { display:inline-block; padding:3px 9px; border-radius:999px; border:1px solid var(--border-strong); font-size:11px; font-weight:600; color:var(--text-primary); }
+
+/* ============================================================
+   LOGIN: oscuro como la landing, con su cuadrícula, y a la derecha la
+   "b." de la marca montada con formas que entran una tras otra.
+   ============================================================ */
+#login-screen {
+    --text-primary:#efede3; --text-secondary:rgba(239,237,227,.58); --bg-input:rgba(239,237,227,.05);
+    --border-strong:rgba(239,237,227,.2); --border:rgba(239,237,227,.1); --accent-contrast:#302f2c; --bg-card:#302f2c;
+    background:#262522; color:#efede3; overflow:auto;
+}
+#login-screen::before {
+    content:''; position:fixed; inset:0; pointer-events:none;
+    background:
+        radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--m-acento) 6%, transparent), transparent 55%),
+        linear-gradient(rgba(239,237,227,.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(239,237,227,.07) 1px, transparent 1px);
+    background-size:auto, 54px 54px, 54px 54px;
+}
+.login-tarjeta { position:relative; display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); width:min(780px, calc(100% - 32px)); min-height:460px; margin:auto; border-radius:28px; overflow:hidden; background:#302f2c; border:1px solid rgba(239,237,227,.12); box-shadow:0 50px 90px -40px rgba(0,0,0,.8); }
+#login-screen #login-box { max-width:none; display:flex; flex-direction:column; justify-content:center; padding:44px 42px; border:0; border-radius:0; background:none; }
+#login-screen #login-box h1 { margin-bottom:6px; font-size:28px; font-weight:800; letter-spacing:-.6px; text-align:left; }
+#login-screen #login-box p.sub { margin-bottom:26px; text-align:left; }
+.login-punto { color:var(--m-acento); }
+#login-screen #login-box input { margin-bottom:14px; padding:12px 2px; border:0; border-bottom:1.5px solid var(--border-strong); border-radius:0; background:none; font-size:15px; transition:border-color .2s ease; }
+#login-screen #login-box input:focus { outline:none; border-bottom-color:var(--m-acento); }
+#login-screen #login-box button { margin-top:10px; padding:13px 14px; border-radius:999px; background:#efede3; color:#302f2c; font-weight:700; transition:transform .12s var(--ease-out), opacity .15s ease; }
+#login-screen #login-box button:active { transform:scale(.98); }
+#login-screen .login-links { margin-top:18px; gap:10px; flex-wrap:wrap; }
+#login-screen .login-links a { color:var(--text-secondary); font-weight:600; }
+#login-screen .login-links a:first-child { color:var(--m-acento); }
+#login-screen button.about-bitacora-btn { border-color:rgba(239,237,227,.2); color:rgba(239,237,227,.75); }
+#login-screen button.about-bitacora-btn:hover { background:rgba(239,237,227,.06); border-color:rgba(239,237,227,.35); }
+.login-marca { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:40px; background:#efede3; color:#302f2c; }
+.login-formas { position:relative; width:150px; height:190px; margin-bottom:14px; }
+.lf { position:absolute; display:block; }
+.lf-palo { left:0; bottom:0; width:40px; height:190px; border-radius:6px; background:#302f2c; }
+.lf-bola { left:0; bottom:0; width:120px; height:120px; box-sizing:border-box; border-radius:50%; border:40px solid #302f2c; }
+.lf-punto { right:-8px; bottom:0; width:40px; height:40px; border-radius:50%; background:var(--m-acento); }
+.login-marca-texto { font-size:24px; font-weight:800; letter-spacing:-.4px; }
+.login-marca-texto span, .login-marca-lema b { color:var(--m-acento); }
+.login-marca-lema { font-size:13px; color:rgba(48,47,44,.62); }
+#login-screen.entra .login-tarjeta { animation:login-entra .5s var(--ease-out) both; }
+#login-screen.entra .lf-palo { animation:lf-sube .55s var(--ease-out) .18s both; }
+#login-screen.entra .lf-bola { animation:lf-sube .55s var(--ease-out) .3s both; }
+#login-screen.entra .lf-punto { animation:lf-punto .6s cubic-bezier(.3, 1.6, .5, 1) .5s both; }
+#login-screen.entra .login-marca-texto, #login-screen.entra .login-marca-lema { animation:login-texto .5s var(--ease-out) .6s both; }
+@keyframes login-entra { from { opacity:0; transform:translateY(18px) scale(.97); } to { opacity:1; transform:none; } }
+@keyframes lf-sube { from { opacity:0; transform:translateY(26px); } to { opacity:1; transform:none; } }
+@keyframes lf-punto { from { opacity:0; transform:scale(0); } to { opacity:1; transform:none; } }
+@keyframes login-texto { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce) { #login-screen.entra .login-tarjeta, #login-screen.entra .lf, #login-screen.entra .login-marca-texto, #login-screen.entra .login-marca-lema { animation:none; } }
+@media (max-width:720px) {
+    #login-screen { flex-direction:column; align-items:center; justify-content:flex-start; padding:76px 0 24px; box-sizing:border-box; }
+    #login-screen .login-back-corner { position:absolute; top:22px; left:18px; margin:0; display:block; }
+    #login-screen .login-top-actions { position:absolute; top:14px; right:16px; margin:0; flex-direction:row; }
+    .login-tarjeta { grid-template-columns:minmax(0, 1fr); min-height:0; }
+    .login-marca { order:-1; flex-direction:row; justify-content:flex-start; gap:14px; padding:20px 26px; }
+    .login-formas { width:44px; height:56px; margin:0; }
+    .lf-palo { width:12px; height:56px; border-radius:3px; }
+    .lf-bola { width:36px; height:36px; border-width:12px; }
+    .lf-punto { right:-4px; width:12px; height:12px; }
+    .login-marca-lema { display:none; }
+    #login-screen #login-box { padding:30px 26px 32px; }
+}

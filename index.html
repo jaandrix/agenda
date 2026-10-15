@@ -32,7 +32,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20261016-7">
+    <link rel="stylesheet" href="styles.css?v=20261016-8">
     <!-- Analítica de visitas, privada (GoatCounter) — sin cookies, sin
          contador visible de cara al visitante; el panel es solo tuyo. -->
     <script data-goatcounter="https://appbitacora.goatcounter.com/count"
@@ -248,55 +248,63 @@
     LOGIN SCREEN
     ============================================================ -->
     <div id="login-screen">
-        <button class="login-back-corner" onclick="goToLanding()">← Volver</button>
+        <button class="login-back-corner" onclick="goToLanding()">← volver.</button>
         <div class="login-top-actions">
-            <button class="pwa-install-btn about-bitacora-btn" onclick="openAboutBitacora()">ⓘ qué es Bitácora</button>
+            <button class="pwa-install-btn about-bitacora-btn" onclick="openAboutBitacora()">qué es bitácora.</button>
         </div>
-        <script src="pwa-install.js?v=20261016-7"></script>
+        <script src="pwa-install.js?v=20261016-8"></script>
+        <div class="login-tarjeta">
         <div id="login-box">
             <div id="mode-login">
-                <h1>bienvenido a <span class="login-brand-accent">Bitácora</span></h1>
+                <h1>hola de nuevo<span class="login-punto">.</span></h1>
+                <p class="sub">Entra en tu bitácora.</p>
                 <input type="email" id="login-email" placeholder="Email" autocomplete="username">
                 <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
-                <button id="login-btn" onclick="handleLogin()">Entrar</button>
+                <button id="login-btn" onclick="handleLogin()">entrar.</button>
                 <div id="login-error"></div>
                 <div class="login-links">
-                    <a onclick="showAuthMode('signup')">Crear cuenta</a>
-                    <a onclick="showAuthMode('forgot')">¿Olvidaste tu contraseña?</a>
+                    <a onclick="showAuthMode('signup')">crear cuenta.</a>
+                    <a onclick="showAuthMode('forgot')">¿olvidaste la contraseña?</a>
                 </div>
             </div>
 
             <div id="mode-signup" style="display:none">
-                <h1>Crear cuenta</h1>
-                <p class="sub">Regístrate para empezar a usar Bitácora</p>
+                <h1>crea tu cuenta<span class="login-punto">.</span></h1>
+                <p class="sub">14 días gratis, sin tarjeta.</p>
                 <input type="email" id="signup-email" placeholder="Email" autocomplete="username">
                 <input type="password" id="signup-password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password">
                 <input type="password" id="signup-password2" placeholder="Repite la contraseña" autocomplete="new-password">
-                <button id="signup-btn" onclick="handleSignup()">Crear cuenta</button>
+                <button id="signup-btn" onclick="handleSignup()">crear cuenta.</button>
                 <div id="signup-error"></div>
                 <div id="signup-success"></div>
-                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesión</a>
+                <a class="login-back" onclick="showAuthMode('login')">← volver a entrar.</a>
             </div>
 
             <div id="mode-forgot" style="display:none">
-                <h1>Recuperar contraseña</h1>
-                <p class="sub">Te enviaremos un enlace a tu email</p>
+                <h1>recuperar contraseña<span class="login-punto">.</span></h1>
+                <p class="sub">Te enviamos un enlace a tu email.</p>
                 <input type="email" id="forgot-email" placeholder="Email" autocomplete="username">
-                <button id="forgot-btn" onclick="handleForgotPassword()">Enviar enlace</button>
+                <button id="forgot-btn" onclick="handleForgotPassword()">enviar enlace.</button>
                 <div id="forgot-error"></div>
                 <div id="forgot-success"></div>
-                <a class="login-back" onclick="showAuthMode('login')">← Volver a iniciar sesión</a>
+                <a class="login-back" onclick="showAuthMode('login')">← volver a entrar.</a>
             </div>
 
             <div id="mode-reset" style="display:none">
-                <h1>Nueva contraseña</h1>
-                <p class="sub">Elige tu nueva contraseña</p>
+                <h1>nueva contraseña<span class="login-punto">.</span></h1>
+                <p class="sub">Elige tu nueva contraseña.</p>
                 <input type="password" id="reset-password" placeholder="Nueva contraseña (mín. 6 caracteres)" autocomplete="new-password">
                 <input type="password" id="reset-password2" placeholder="Repite la contraseña" autocomplete="new-password">
-                <button id="reset-btn" onclick="handleResetPassword()">Guardar contraseña</button>
+                <button id="reset-btn" onclick="handleResetPassword()">guardar contraseña.</button>
                 <div id="reset-error"></div>
                 <div id="reset-success"></div>
             </div>
+        </div>
+        <aside class="login-marca" aria-hidden="true">
+            <div class="login-formas"><span class="lf lf-palo"></span><span class="lf lf-bola"></span><span class="lf lf-punto"></span></div>
+            <div class="login-marca-texto">bitácora<span>.</span></div>
+            <div class="login-marca-lema">tu vida, en un solo sitio.</div>
+        </aside>
         </div>
     </div>
 
@@ -428,46 +436,46 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="js/nucleo.js?v=20261016-7"></script>
-    <script src="js/datos.js?v=20261016-7"></script>
-    <script src="js/interfaz.js?v=20261016-7"></script>
-    <script src="js/planificador.js?v=20261016-7"></script>
-    <script src="js/coleccionables.js?v=20261016-7"></script>
-    <script src="js/entradas.js?v=20261016-7"></script>
-    <script src="js/calendario.js?v=20261016-7"></script>
-    <script src="js/resumen.js?v=20261016-7"></script>
-    <script src="js/ocio.js?v=20261016-7"></script>
-    <script src="js/viajes.js?v=20261016-7"></script>
-    <script src="js/trabajo-estudios.js?v=20261016-7"></script>
-    <script src="js/agenda-laboral.js?v=20261016-7"></script>
-    <script src="js/enlaces-proyectos.js?v=20261016-7"></script>
-    <script src="js/eventos.js?v=20261016-7"></script>
-    <script src="js/ajustes.js?v=20261016-7"></script>
-    <script src="js/notas-objetivos.js?v=20261016-7"></script>
-    <script src="js/finanzas.js?v=20261016-7"></script>
-    <script src="js/finanzas-pro.js?v=20261016-7"></script>
-    <script src="js/documentos.js?v=20261016-7"></script>
-    <script src="js/vault.js?v=20261016-7"></script>
-    <script src="js/conector.js?v=20261016-7"></script>
-    <script src="js/inicio.js?v=20261016-7"></script>
-    <script src="js/actualizaciones.js?v=20261016-7"></script>
-    <script src="js/compra.js?v=20261016-7"></script>
-    <script src="js/estudiar.js?v=20261016-7"></script>
-    <script src="js/conexiones.js?v=20261016-7"></script>
-    <script src="js/metodo.js?v=20261016-7"></script>
-    <script src="js/universidad.js?v=20261016-7"></script>
-    <script src="js/profesorado.js?v=20261016-7"></script>
-    <script src="js/profesorado-aula.js?v=20261016-7"></script>
-    <script src="js/cv.js?v=20261016-7"></script>
-    <script src="js/social.js?v=20261016-7"></script>
-    <script src="js/perfil.js?v=20261016-7"></script>
-    <script src="js/bienvenida.js?v=20261016-7"></script>
-    <script src="js/guia.js?v=20261016-7"></script>
-    <script src="js/landing.js?v=20261016-7"></script>
+    <script src="js/nucleo.js?v=20261016-8"></script>
+    <script src="js/datos.js?v=20261016-8"></script>
+    <script src="js/interfaz.js?v=20261016-8"></script>
+    <script src="js/planificador.js?v=20261016-8"></script>
+    <script src="js/coleccionables.js?v=20261016-8"></script>
+    <script src="js/entradas.js?v=20261016-8"></script>
+    <script src="js/calendario.js?v=20261016-8"></script>
+    <script src="js/resumen.js?v=20261016-8"></script>
+    <script src="js/ocio.js?v=20261016-8"></script>
+    <script src="js/viajes.js?v=20261016-8"></script>
+    <script src="js/trabajo-estudios.js?v=20261016-8"></script>
+    <script src="js/agenda-laboral.js?v=20261016-8"></script>
+    <script src="js/enlaces-proyectos.js?v=20261016-8"></script>
+    <script src="js/eventos.js?v=20261016-8"></script>
+    <script src="js/ajustes.js?v=20261016-8"></script>
+    <script src="js/notas-objetivos.js?v=20261016-8"></script>
+    <script src="js/finanzas.js?v=20261016-8"></script>
+    <script src="js/finanzas-pro.js?v=20261016-8"></script>
+    <script src="js/documentos.js?v=20261016-8"></script>
+    <script src="js/vault.js?v=20261016-8"></script>
+    <script src="js/conector.js?v=20261016-8"></script>
+    <script src="js/inicio.js?v=20261016-8"></script>
+    <script src="js/actualizaciones.js?v=20261016-8"></script>
+    <script src="js/compra.js?v=20261016-8"></script>
+    <script src="js/estudiar.js?v=20261016-8"></script>
+    <script src="js/conexiones.js?v=20261016-8"></script>
+    <script src="js/metodo.js?v=20261016-8"></script>
+    <script src="js/universidad.js?v=20261016-8"></script>
+    <script src="js/profesorado.js?v=20261016-8"></script>
+    <script src="js/profesorado-aula.js?v=20261016-8"></script>
+    <script src="js/cv.js?v=20261016-8"></script>
+    <script src="js/social.js?v=20261016-8"></script>
+    <script src="js/perfil.js?v=20261016-8"></script>
+    <script src="js/bienvenida.js?v=20261016-8"></script>
+    <script src="js/guia.js?v=20261016-8"></script>
+    <script src="js/landing.js?v=20261016-8"></script>
 
-    <script src="apuntes-window.js?v=20261016-7"></script>
+    <script src="apuntes-window.js?v=20261016-8"></script>
 
-    <script src="v23.js?v=20261016-7"></script>
+    <script src="v23.js?v=20261016-8"></script>
 
 </body>
 </html>
