@@ -62,14 +62,14 @@ function landingIr(id) {
 //  transformaciones, opacidad y trazos; fuera de pantalla se detiene.
 // ============================================================
 const CEREBRO_ZONAS = [
-    { id: 'planificador', zona: 'corteza prefrontal.', x: 44, y: 74, nx: 70, ny: 86, titulo: 'planificador.', texto: 'Tu día por horas. Lo que no terminas pasa solo a mañana.', con: 'rutinas', porque: 'las rutinas de hoy, en tu día.' },
-    { id: 'notas', zona: 'memoria de trabajo.', x: 92, y: 34, nx: 176, ny: 34, titulo: 'notas.', texto: 'Una nota al día, sin formato, para lo que no quieres olvidar.', con: 'calendario', porque: 'cada nota, en su día del calendario.' },
-    { id: 'finanzas', zona: 'lóbulo parietal.', x: 152, y: 32, nx: 430, ny: 34, titulo: 'finanzas.', texto: 'Importa el extracto del banco y cuadra solo con el saldo real.', con: 'viajes', porque: 'los gastos del viaje, dentro del viaje.' },
-    { id: 'viajes', zona: 'células de lugar.', x: 200, y: 86, nx: 548, ny: 150, titulo: 'viajes.', texto: 'Reservas, itinerario, mapa y lo que gastaste en cada viaje.', con: 'finanzas', porque: 'lo que gastas fuera no rompe tus presupuestos.' },
-    { id: 'rutinas', zona: 'ganglios basales.', x: 150, y: 150, nx: 520, ny: 372, titulo: 'rutinas.', texto: 'Lo que haces para estar bien, a tu ritmo y sin presión.', con: 'planificador', porque: 'aparecen en tu día cuando tocan.' },
-    { id: 'calendario', zona: 'hipocampo.', x: 120, y: 110, nx: 312, ny: 436, titulo: 'calendario.', texto: 'Todo lo que tiene fecha en Bitácora, en un solo sitio.', con: 'estudios', porque: 'tus exámenes salen solos en su día.' },
-    { id: 'estudios', zona: 'lóbulo temporal.', x: 80, y: 120, nx: 92, ny: 380, titulo: 'estudios.', texto: 'Exámenes, entregas y la nota que necesitas para aprobar.', con: 'calendario', porque: 'cada entrega, en el planificador del día.' },
-    { id: 'social', zona: 'sistema límbico.', x: 104, y: 98, nx: 30, ny: 232, titulo: 'social.', texto: 'Gastos compartidos y planes con tus amigos.', con: 'finanzas', porque: 'lo que te deben, claro y sin cuentas a mano.' },
+    { id: 'planificador', zona: 'corteza prefrontal.', x: 44, y: 74, nx: 70, ny: 86, titulo: 'planificador.', texto: 'Tu día por horas.', con: 'rutinas' },
+    { id: 'notas', zona: 'memoria de trabajo.', x: 92, y: 34, nx: 176, ny: 34, titulo: 'notas.', texto: 'Lo que no quieres olvidar.', con: 'calendario' },
+    { id: 'finanzas', zona: 'lóbulo parietal.', x: 152, y: 32, nx: 430, ny: 34, titulo: 'finanzas.', texto: 'Tu dinero, cuadrado con el banco.', con: 'viajes' },
+    { id: 'viajes', zona: 'células de lugar.', x: 200, y: 86, nx: 548, ny: 150, titulo: 'viajes.', texto: 'Cada viaje, con lo que gastaste.', con: 'finanzas' },
+    { id: 'rutinas', zona: 'ganglios basales.', x: 150, y: 150, nx: 520, ny: 372, titulo: 'rutinas.', texto: 'Lo que haces cada día, sin presión.', con: 'planificador' },
+    { id: 'calendario', zona: 'hipocampo.', x: 120, y: 110, nx: 312, ny: 436, titulo: 'calendario.', texto: 'Todo lo que tiene fecha.', con: 'estudios' },
+    { id: 'estudios', zona: 'lóbulo temporal.', x: 80, y: 120, nx: 92, ny: 380, titulo: 'estudios.', texto: 'Exámenes, entregas y notas.', con: 'calendario' },
+    { id: 'social', zona: 'sistema límbico.', x: 104, y: 98, nx: 30, ny: 232, titulo: 'social.', texto: 'Gastos y planes con amigos.', con: 'finanzas' },
 ];
 // El cerebro se dibuja en 240 × 200 y se coloca centrado en el lienzo,
 // ampliado CEREBRO_ESCALA veces.
@@ -130,7 +130,7 @@ function montarCerebro() {
         // portada no salte al cambiar de apartado.
         ficha.classList.remove('visible');
         void ficha.offsetWidth;
-        ficha.innerHTML = `<span class="lp-ficha-zona">${z.zona}</span><b>${z.titulo}</b><span>${z.texto}</span><em>y se conecta con ${CEREBRO_ZONAS.find(x => x.id === z.con).titulo.replace('.', '')}: ${z.porque}</em>`;
+        ficha.innerHTML = `<span class="lp-ficha-zona">${z.zona}</span><b>${z.titulo}</b><span>${z.texto}</span>`;
         ficha.classList.add('visible');
     };
     caja.querySelectorAll('.lp-nodo').forEach(n => {
