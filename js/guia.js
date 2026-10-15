@@ -91,7 +91,8 @@ const GUIA = [
             'En un chat, activa Bitácora en el menú de herramientas y pregunta, por ejemplo: «¿qué tengo esta semana?».',
         ],
         botones: [
-            [guiaBoton('se aplica solo'), 'Crear o editar eventos, añadir entradas con QR y los cambios en Ocio.'],
+            [guiaBoton('se aplica solo'), 'Crear o editar eventos, añadir entradas con QR, los cambios en Ocio, las tarjetas de estudio, la lista de la compra y las tareas, el siguiente paso y el diario de un proyecto.'],
+            [guiaBoton('ideas para pedirle'), '«Hazme tarjetas de estos apuntes» (con un PDF o una foto), «pasa los ingredientes de esta receta a la compra», «añade estas tareas al proyecto de la web», «¿qué hora es y qué me queda hoy?». Sabe la fecha y la hora de Madrid.'],
             [guiaBoton('pasa por la bandeja'), 'Todo lo demás (tareas, movimientos, extractos, estudios, viajes, suscripciones, borrados...) espera a que lo valides en <b>bandeja.</b>'],
             [guiaBoton('revocar'), 'En Ajustes puedes revocar un enlace si lo pierdes o ya no lo usas.'],
         ],
@@ -450,7 +451,7 @@ const GUIA = [
     {
         id: 'bandeja', grupo: 'sistema', titulo: 'bandeja.',
         lema: 'Lo que Claude propone, esperando tu visto bueno.',
-        intro: 'Los cambios que piden Claude o ChatGPT (salvo eventos, entradas con QR y Ocio) no se aplican hasta que los validas. El número en granate del menú es lo que tienes pendiente.',
+        intro: 'Los cambios que piden Claude o ChatGPT (salvo eventos, entradas con QR, Ocio, tarjetas de estudio, compra y proyectos) no se aplican hasta que los validas. El número en granate del menú es lo que tienes pendiente.',
         botones: [
             [guiaBoton('validar cambio. · descartar.'), 'Aplica o rechaza un cambio.'],
             [guiaBoton('validar los N. · validar todo.'), 'Por grupo o todos de golpe.'],

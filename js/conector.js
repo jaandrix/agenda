@@ -108,6 +108,74 @@
                 nota.refsConector.push(ref);
                 return linea('nota', `en la nota del ${fecha}: «${corto(titulo || op.texto)}».`, { accion: 'nota', notaId: nota.id, antes, despues: nota.content, titulo: usaTitulo ? titulo : '' });
             }
+            if (op.tipo === 'tarjetas') {
+                const e = datosEstudiar();
+                const norm = t => stripAccents(String(t || '').toLowerCase()).trim();
+                let mazo = e.mazos.find(m => norm(m.nombre) === norm(op.mazo));
+                const nuevo = !mazo;
+                if (!mazo) { mazo = { id: estId('em'), nombre: op.mazo }; e.mazos.push(mazo); }
+                const ya = new Set(e.tarjetas.filter(t => t.mazoId === mazo.id).map(t => estNorm(t.frente)));
+                const ids = [];
+                (op.tarjetas || []).forEach((t, i) => {
+                    if (ya.has(estNorm(t.frente))) return;
+                    ya.add(estNorm(t.frente));
+                    const id = `${ref}_${i}`;
+                    e.tarjetas.push({ id, mazoId: mazo.id, tipo: t.tipo || 'basica', frente: t.frente, reverso: t.reverso || '', creada: Date.now() + i });
+                    ids.push(id);
+                });
+                if (!ids.length && !nuevo) return null;
+                return linea('tarjetas', `${ids.length} ${ids.length === 1 ? 'tarjeta' : 'tarjetas'} en el mazo «${corto(mazo.nombre)}».`, { accion: 'tarjetas', ids, mazoId: nuevo ? mazo.id : null });
+            }
+            if (op.tipo === 'compra') {
+                const d = datosCompra();
+                const lista = (op.lista && d.listas.find(l => l.nombre.toLowerCase() === String(op.lista).toLowerCase())) || compraListaActual();
+                const ids = [];
+                (op.cosas || []).forEach((c, i) => {
+                    const it = compraInterpretar(c);
+                    if (!it.texto || lista.items.some(x => !x.hecho && x.texto.toLowerCase() === it.texto.toLowerCase())) return;
+                    const id = `${ref}_${i}`;
+                    lista.items.push({ id, ...it, hecho: false });
+                    ids.push(id);
+                });
+                if (!ids.length) return null;
+                return linea('compra', `${ids.length} ${ids.length === 1 ? 'cosa' : 'cosas'} a la lista «${corto(lista.nombre)}».`, { accion: 'compra', listaId: lista.id, ids });
+            }
+            if (op.tipo === 'proyecto') {
+                const p = entries.find(x => x.id === op.proyectoId && x.type === 'project');
+                if (!p) return null;
+                proyectoDatos(p);
+                const norm = t => stripAccents(String(t || '').toLowerCase()).trim();
+                const buscar = t => p.tareas.find(x => norm(x.texto) === norm(t)) || p.tareas.find(x => norm(x.texto).includes(norm(t)));
+                let resumen = '', deshacer = null;
+                if (op.accion === 'tareas') {
+                    let faseId = null;
+                    if (op.fase) {
+                        let f = p.fases.find(x => norm(x.nombre) === norm(op.fase));
+                        if (!f) { f = { id: proyId('pf'), nombre: op.fase, fecha: '', hecha: false }; p.fases.push(f); }
+                        faseId = f.id;
+                    }
+                    const ids = [];
+                    op.tareas.forEach((t, i) => { if (buscar(t) && norm(buscar(t).texto) === norm(t)) return; const id = `${ref}_${i}`; p.tareas.push({ id, texto: t, estado: 'pendiente', faseId }); ids.push(id); });
+                    if (!ids.length) return null;
+                    resumen = `${ids.length} ${ids.length === 1 ? 'tarea' : 'tareas'} en «${corto(p.title)}».`;
+                    deshacer = { accion: 'proyecto_tareas', proyectoId: p.id, ids };
+                } else if (op.accion === 'siguiente' || op.accion === 'completar') {
+                    const t = buscar(op.tarea);
+                    if (!t) return null;
+                    const antes = { siguienteId: p.siguienteId || null, estado: t.estado };
+                    if (op.accion === 'siguiente') p.siguienteId = t.id; else t.estado = 'hecha';
+                    resumen = `${op.accion === 'siguiente' ? 'siguiente paso' : 'hecha'}: «${corto(t.texto)}» (${corto(p.title)}).`;
+                    deshacer = { accion: 'proyecto_tarea', proyectoId: p.id, tareaId: t.id, antes };
+                } else if (op.accion === 'apunte') {
+                    const id = ref;
+                    if (p.diario.some(x => x.id === id)) return null;
+                    p.diario.unshift({ id, fecha: todayISO(), texto: op.texto });
+                    resumen = `apunte en el diario de «${corto(p.title)}».`;
+                    deshacer = { accion: 'proyecto_apunte', proyectoId: p.id, id };
+                } else return null;
+                p.tasks = p.tareas.map(x => ({ text: x.texto, done: x.estado === 'hecha' }));
+                return linea('proyecto', resumen, deshacer);
+            }
             if (op.tipo === 'entrada') {
                 const ev = entries.find(e => e.id === op.eventoId);
                 if (!ev) return null;
@@ -356,6 +424,24 @@
                 const t = recurringTasks.find(x => x.id === d.id); if (t) t.activo = d.antes;
             } else if (d.accion === 'enlace_quitar') {
                 links = links.filter(l => l.id !== d.id);
+            } else if (d.accion === 'tarjetas') {
+                const e = datosEstudiar();
+                const fuera = new Set(d.ids || []);
+                e.tarjetas = e.tarjetas.filter(t => !fuera.has(t.id));
+                Object.keys(e.repasos).forEach(k => { if (fuera.has(k.split(':')[0])) delete e.repasos[k]; });
+                if (d.mazoId && !e.tarjetas.some(t => t.mazoId === d.mazoId)) e.mazos = e.mazos.filter(m => m.id !== d.mazoId);
+            } else if (d.accion === 'compra') {
+                const l = datosCompra().listas.find(x => x.id === d.listaId);
+                if (l) l.items = l.items.filter(x => !(d.ids || []).includes(x.id));
+            } else if (d.accion === 'proyecto_tareas' || d.accion === 'proyecto_tarea' || d.accion === 'proyecto_apunte') {
+                const p = entries.find(x => x.id === d.proyectoId);
+                if (p) {
+                    proyectoDatos(p);
+                    if (d.accion === 'proyecto_tareas') p.tareas = p.tareas.filter(t => !(d.ids || []).includes(t.id));
+                    else if (d.accion === 'proyecto_apunte') p.diario = p.diario.filter(x => x.id !== d.id);
+                    else { const t = p.tareas.find(x => x.id === d.tareaId); if (t) t.estado = d.antes.estado; p.siguienteId = d.antes.siguienteId || undefined; }
+                    p.tasks = p.tareas.map(x => ({ text: x.texto, done: x.estado === 'hecha' }));
+                }
             } else if (d.accion === 'clase_quitar') {
                 const lista = studies.schedule[d.dia] || [];
                 const i = lista.findIndex(b => b.time === d.bloque.time && b.subject === d.bloque.subject);
@@ -397,7 +483,7 @@
         // Se aplican solos (el usuario no quiere validarlos): crear y editar
         // eventos, las entradas con QR de un evento y Ocio. El resto espera
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
-        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio'];
+        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'proyecto'];
         // Filas ya validadas o descartadas aquí que el servidor quizá aún no
         // ha borrado (se borran después de guardar): sin esto, una lectura
         // de la bandeja en ese intervalo las devolvía como pendientes y
@@ -521,13 +607,16 @@
                     return { tipo: d.active === false ? `baja de ${nombre}` : d.active === true ? `reactivar ${nombre}` : `cambio de ${nombre}`, texto: `«${op.resumen}»`, meta: [d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `progreso ${d.currentValue}${d.targetValue !== undefined ? ' de ' + d.targetValue : ''}` : '', d.status || '', d.startDate ? fecha(d.startDate) : '', d.endDate ? '→ ' + fecha(d.endDate) : '', d.expenses ? 'gastos' : '', d.notes !== undefined ? 'notas' : '', ...(op.entryType === 'travel' ? reservasTexto(d, entries.find(x => x.id === op.id) || {}) : [])].filter(Boolean).join(' · '), detalle: op.entryType === 'travel' ? detalleReservas(d, entries.find(x => x.id === op.id) || {}) : '' };
                 }
                 case 'deseo': return { tipo: op.accion === 'quitar' ? 'quitar deseo' : 'nuevo deseo', texto: `«${op.titulo}»`, meta: op.precio ? financeMoney(op.precio) : '' };
-                case 'habito': return { tipo: op.accion === 'crear' ? 'nueva rutina' : op.activo ? 'reactivar rutina' : 'pausar rábito', texto: `«${op.texto}»`, meta: '' };
+                case 'habito': return { tipo: op.accion === 'crear' ? 'nueva rutina' : op.activo ? 'reactivar rutina' : 'pausar rutina', texto: `«${op.texto}»`, meta: '' };
                 case 'tarea_recurrente': {
                     const d = op.datos || {};
                     const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
                     const cuando = d.frecuencia === 'semanal' ? 'cada ' + (d.diasSemana || []).map(n => dias[n]).join(', ') : d.frecuencia === 'mensual' ? `el día ${d.diaMes} de cada mes` : d.frecuencia === 'intervalo' ? `cada ${d.intervaloDias} días desde ${fecha(d.intervaloInicio)}` : 'todos los días';
                     return { tipo: op.accion === 'crear' ? 'nueva tarea recurrente' : op.activo ? 'reactivar recurrente' : 'pausar recurrente', texto: `«${d.texto || op.texto}»`, meta: op.accion === 'crear' ? cuando : '' };
                 }
+                case 'tarjetas': return { tipo: 'tarjetas de estudio', texto: `${(op.tarjetas || []).length} en «${op.mazo}»`, meta: '', detalle: (op.tarjetas || []).slice(0, 6).map(t => t.frente).join('\n') };
+                case 'compra': return { tipo: 'lista de la compra', texto: (op.cosas || []).join(', '), meta: op.lista || '' };
+                case 'proyecto': return { tipo: 'proyecto', texto: op.accion === 'tareas' ? (op.tareas || []).join(', ') : op.tarea || op.texto || '', meta: op.accion };
                 case 'enlace': return { tipo: 'nuevo enlace', texto: `«${op.titulo}»`, meta: [op.url.replace(/^https?:\/\//, '').slice(0, 60), op.categoryId ? (linkCategories.find(c => c.id === op.categoryId)?.name || '') : ''].filter(Boolean).join(' · ') };
                 case 'clase': return { tipo: op.accion === 'quitar' ? 'quitar clase' : 'nueva clase', texto: `«${op.texto}»`, meta: `${(STUDIES_DAYS.find(d => d.key === op.dia)?.label || op.dia).toLowerCase()} · ${op.hora}` };
                 case 'estudio_crear': return { tipo: op.lista === 'exams' ? 'nuevo examen' : 'nuevo trabajo', texto: `«${op.item?.title || ''}» · ${op.asignatura || findSubject(op.subjectId)?.name || ''}`, meta: [op.item?.date ? fecha(op.item.date) : 'sin fecha', op.item?.time || '', op.item?.weight ? `peso ${op.item.weight} %` : ''].filter(Boolean).join(' · ') };

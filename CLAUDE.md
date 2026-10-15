@@ -281,8 +281,8 @@ a menor resolución.
   `.revela` aparecen al hacer scroll (IntersectionObserver sobre `#landing-screen`, que es el
   contenedor con scroll). Vault y su etiqueta "Privado" solo se ven con `body.dev-mode`.
 - **Conector Claude/ChatGPT y Bandeja:** `supabase/functions/bitacora-mcp` (servidor MCP)
-  escribe en `conector_bandeja`; la app aplica sola eventos, entradas con QR y Ocio
-  (`OPS_AUTOMATICAS`) y deja el resto en el apartado "bandeja." para validarlo a mano
+  escribe en `conector_bandeja`; la app aplica sola eventos, entradas con QR, Ocio, tarjetas de Estudiar,
+  compra y proyecto (`OPS_AUTOMATICAS`); la herramienta `agenda` devuelve también `ahora` (hora de Madrid) y deja el resto en el apartado "bandeja." para validarlo a mano
   (`aplicarOpConector` / `validarBandeja`). Historial con deshacer en `registroConector`.
 - **Social (`js/social.js`, vista `friends`, antes "Amigos"):** pestañas gastos (grupos al estilo
   Tricount en `grupos_gastos` / `grupos_gastos_miembros` / `gastos_compartidos`, datos vivos y

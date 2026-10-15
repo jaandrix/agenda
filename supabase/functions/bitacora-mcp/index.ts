@@ -507,6 +507,17 @@ const APARTADOS: Record<string, (d: any) => unknown> = {
     enlaces: d => ({ enlaces: d.links, categorias: d.linkCategories }),
     recurrentes: d => d.recurringTasks,
     esfuerzo: d => d.dailyEffort,
+    // Mazos con cuántas tarjetas tienen (sin el estado de repaso de cada
+    // una, que no le sirve a la IA), temario y plan de estudio de hoy.
+    estudiar: d => {
+        const e = d.estudiar || {};
+        return {
+            mazos: (e.mazos || []).map((m: any) => ({ nombre: m.nombre, tarjetas: (e.tarjetas || []).filter((t: any) => t.mazoId === m.id).length, ejemplos: (e.tarjetas || []).filter((t: any) => t.mazoId === m.id).slice(0, 5).map((t: any) => t.frente) })),
+            temario: (e.temas || []).map((t: any) => ({ tema: t.nombre, estudiado: !!t.hecho, asignatura: (d.studies?.subjects || []).find((s: any) => s.id === t.asignaturaId)?.name })),
+            plan_de_hoy: e.plan?.[hoyISO()]?.items?.map((i: any) => ({ tema: i.texto, pomodoros: i.pomodoros, hechos: i.hechos, hecho: !!i.hecho })) || [],
+        };
+    },
+    compra: d => ({ listas: (d.listaCompra?.listas || []).map((l: any) => ({ nombre: l.nombre, por_coger: (l.items || []).filter((i: any) => !i.hecho).map((i: any) => [i.cantidad, i.texto].filter(Boolean).join(' ')) })) }),
 };
 
 // ---------------------------------------------------------------- herramientas
@@ -810,6 +821,39 @@ const HERRAMIENTAS = [
                 estado: { type: 'string', description: 'Libros: Leyendo/Completado. Series: Viendo/Completada/Abandonada. Videojuegos: Jugando/Completado/Abandonado.' },
             },
             required: ['tipo', 'titulo'],
+        },
+    },
+    {
+        name: 'tarjetas',
+        description: 'Crea tarjetas de estudio (repaso espaciado al estilo Anki) en el apartado Estudiar, dentro de un mazo (se crea si no existe). Ideal para convertir apuntes, un tema o un PDF en tarjetas: una idea por tarjeta, preguntas concretas y respuestas cortas. Para huecos, escribe la frase en «frente» con lo que hay que recordar entre {{c1::...}} y deja «reverso» vacío o con una nota. Se aplica solo, sin validar; no repite tarjetas que ya estén.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                mazo: { type: 'string', description: 'Nombre del mazo, por ejemplo la asignatura o el tema' },
+                tarjetas: { type: 'array', maxItems: 200, items: { type: 'object', properties: { frente: { type: 'string' }, reverso: { type: 'string' }, tipo: { type: 'string', enum: ['basica', 'inversa', 'escribir', 'huecos'], description: 'basica por defecto; inversa = se pregunta en los dos sentidos (vocabulario); escribir = hay que teclear la respuesta' } }, required: ['frente'] } },
+            },
+            required: ['mazo', 'tarjetas'],
+        },
+    },
+    {
+        name: 'compra',
+        description: 'Añade cosas a la lista de la compra del apartado Compra (se ordenan solas por secciones del súper). Cada cosa puede llevar cantidad y precio: "2 leche", "tomates 1,20 €". Útil para pasar los ingredientes de una receta. Se aplica solo, sin validar.',
+        inputSchema: { type: 'object', properties: { cosas: { type: 'array', items: { type: 'string' }, maxItems: 80 }, lista: { type: 'string', description: 'Opcional: nombre de otra lista (si no, la actual)' } }, required: ['cosas'] },
+    },
+    {
+        name: 'proyecto',
+        description: 'Trabaja dentro de un proyecto de Bitácora (búscalo por su título): añadir tareas (opcionalmente en una fase), marcar el siguiente paso, completar una tarea o apuntar en el diario del proyecto. Se aplica solo, sin validar.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                proyecto: { type: 'string', description: 'Título (o parte) del proyecto' },
+                accion: { type: 'string', enum: ['tareas', 'siguiente', 'completar', 'apunte'] },
+                tareas: { type: 'array', items: { type: 'string' }, description: 'Para accion=tareas' },
+                fase: { type: 'string', description: 'Opcional, para accion=tareas: nombre de la fase (se crea si no existe)' },
+                tarea: { type: 'string', description: 'Para siguiente o completar: texto (o parte) de la tarea' },
+                texto: { type: 'string', description: 'Para accion=apunte' },
+            },
+            required: ['proyecto', 'accion'],
         },
     },
     {
@@ -1151,6 +1195,38 @@ async function llamar(userId: string, nombre: string, a: any) {
         }
         case 'analisis': {
             return data.analisisIA || 'Todavía no hay análisis guardado: se calcula al abrir Bitácora.';
+        }
+        case 'tarjetas': {
+            const lista = (Array.isArray(a.tarjetas) ? a.tarjetas : []).filter((t: any) => t && String(t.frente || '').trim()).slice(0, 200)
+                .map((t: any) => {
+                    const frente = String(t.frente).trim(), reverso = String(t.reverso || '').trim();
+                    const tipo = /\{\{c\d+::/.test(frente) ? 'huecos' : ['basica', 'inversa', 'escribir'].includes(t.tipo) ? t.tipo : 'basica';
+                    return { frente, reverso, tipo };
+                }).filter((t: any) => t.tipo === 'huecos' || t.reverso);
+            if (!a.mazo || !lista.length) throw new Error('Hacen falta el nombre del mazo y al menos una tarjeta con frente y reverso (o con {{c1::...}})');
+            await encolar(userId, { tipo: 'tarjetas', mazo: String(a.mazo).trim(), tarjetas: lista });
+            return `${lista.length} ${lista.length === 1 ? 'tarjeta añadida' : 'tarjetas añadidas'} al mazo «${a.mazo}» de Estudiar. Aparecerán como nuevas en su próximo repaso.`;
+        }
+        case 'compra': {
+            const cosas = (Array.isArray(a.cosas) ? a.cosas : []).map((x: any) => String(x || '').trim()).filter(Boolean).slice(0, 80);
+            if (!cosas.length) throw new Error('Falta qué comprar');
+            await encolar(userId, { tipo: 'compra', cosas, lista: a.lista ? String(a.lista) : '' });
+            return `Añadido a la lista de la compra${a.lista ? ' «' + a.lista + '»' : ''}: ${cosas.join(', ')}.`;
+        }
+        case 'proyecto': {
+            const q = norm(a.proyecto).trim();
+            const proyectos = (data.entries || []).filter((e: any) => e?.type === 'project');
+            const p = proyectos.find((e: any) => norm(e.title) === q) || proyectos.find((e: any) => norm(e.title).includes(q) || (q.includes(norm(e.title)) && norm(e.title).length >= 3));
+            if (!p) throw new Error(`No encuentro ningún proyecto que se llame «${a.proyecto}». Proyectos: ${proyectos.map((x: any) => x.title).join(', ') || 'ninguno'}.`);
+            const acc = a.accion;
+            if (acc === 'tareas' && !(Array.isArray(a.tareas) && a.tareas.length)) throw new Error('Faltan las tareas');
+            if ((acc === 'siguiente' || acc === 'completar') && !a.tarea) throw new Error('Falta la tarea');
+            if (acc === 'apunte' && !String(a.texto || '').trim()) throw new Error('Falta el texto del apunte');
+            await encolar(userId, { tipo: 'proyecto', proyectoId: p.id, accion: acc, tareas: (a.tareas || []).map((x: any) => String(x).trim()).filter(Boolean).slice(0, 60), fase: a.fase ? String(a.fase) : '', tarea: a.tarea ? String(a.tarea) : '', texto: a.texto ? String(a.texto) : '' });
+            return acc === 'tareas' ? `${a.tareas.length} ${a.tareas.length === 1 ? 'tarea añadida' : 'tareas añadidas'} a «${p.title}»${a.fase ? ' en la fase «' + a.fase + '»' : ''}.`
+                : acc === 'siguiente' ? `Siguiente paso de «${p.title}»: «${a.tarea}».`
+                : acc === 'completar' ? `Marcada como hecha en «${p.title}»: «${a.tarea}».`
+                : `Apuntado en el diario de «${p.title}».`;
         }
         case 'guardar_enlace': {
             const url = String(a.url || '').trim();
