@@ -722,6 +722,34 @@
                 </div>`).join('')}</div>`;
         }
 
+        // Tamaño de letra de la versión móvil, por dispositivo. Se aplica con
+        // zoom a la app y a los modales: como toda la app está en px, así
+        // crecen a la vez textos, botones y huecos sin descuadrar nada.
+        const TAMANOS_LETRA = [['pequena', 'pequeña.', 0.92], ['normal', 'normal.', 1], ['grande', 'grande.', 1.1], ['muy-grande', 'muy grande.', 1.22]];
+
+        function tamanoLetraActual() {
+            let t = 'normal';
+            try { t = localStorage.getItem('bitacora_tamano_letra') || 'normal'; } catch (_) { /* sin almacenamiento */ }
+            return TAMANOS_LETRA.some(x => x[0] === t) ? t : 'normal';
+        }
+
+        function aplicarTamanoLetra() {
+            const z = (TAMANOS_LETRA.find(x => x[0] === tamanoLetraActual()) || [])[2] || 1;
+            document.documentElement.style.setProperty('--m-zoom', z);
+        }
+        aplicarTamanoLetra();
+
+        function setTamanoLetra(id) {
+            try { localStorage.setItem('bitacora_tamano_letra', id); } catch (_) { /* sin almacenamiento */ }
+            aplicarTamanoLetra();
+            render();
+        }
+
+        function renderSelectorTamanoLetra() {
+            const actual = tamanoLetraActual();
+            return `<div class="tamano-letra">${TAMANOS_LETRA.map(([id, texto, z]) => `<button class="profe-chip ${id === actual ? 'activa' : ''}" style="font-size:${Math.round(12 * z)}px" onclick="setTamanoLetra('${id}')">${texto}</button>`).join('')}</div>`;
+        }
+
         let modeWide = false;
 
         function toggleMode() {

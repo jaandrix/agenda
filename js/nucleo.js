@@ -987,6 +987,10 @@
                         </div>
                         <button class="m-enlace" onclick="toggleMenuMovil();openGuia()">guía.</button>
                     </div>
+                    <div class="m-menu-letra">
+                        <span class="m-etiqueta">letra.</span>
+                        ${renderSelectorTamanoLetra()}
+                    </div>
                 </div>
             </div>`;
         }

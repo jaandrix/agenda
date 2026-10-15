@@ -7812,3 +7812,8 @@ body.mobile-standalone .pomo-pastilla { bottom:calc(18px + env(safe-area-inset-b
 .m-generico .trip-manager-header { flex-direction:column; align-items:stretch; gap:12px; }
 .m-generico .trip-manager-botones { flex-wrap:wrap; }
 .m-generico .trip-manager-botones .btn-secondary { flex:1; margin:0; }
+
+/* Tamaño de letra del móvil (Ajustes → apariencia, o el menú). */
+.m-app, .m-menu-cuerpo, body.mobile-standalone #modal-container .modal-sheet, body.pwa #modal-container .modal-sheet { zoom:var(--m-zoom, 1); }
+.tamano-letra { display:flex; flex-wrap:wrap; gap:6px; }
+.m-menu-letra { display:flex; flex-direction:column; gap:8px; margin-top:18px; }

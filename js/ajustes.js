@@ -565,6 +565,8 @@
                         ${renderSelectorTema()}
                         <div class="ajuste-subtitulo">tipografía.</div>
                         <div id="font-options-container">${renderFontOptionsList()}</div>
+                        <div class="ajuste-subtitulo">tamaño de letra en el móvil.</div>
+                        ${renderSelectorTamanoLetra()}
                         <div class="ajuste-subtitulo">ancho.</div>
                         <button class="btn-secondary" style="width:auto" onclick="toggleMode()">alternar modo ancho.</button>`, 'ajuste-ancho')}
 
