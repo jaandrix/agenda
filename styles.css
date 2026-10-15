@@ -8074,3 +8074,5 @@ body.m-menu-abierto .m-tabbar { z-index:61; }
     .proy-tarea { grid-template-columns:28px minmax(0, 1fr) auto; }
     .proy-tarea .proy-hoy { grid-column:2 / -1; justify-self:start; }
 }
+
+.feed-url { padding:10px 12px; border-radius:12px; background:var(--bg-input); border:1px solid var(--border); font-family:ui-monospace, Menlo, monospace; font-size:11.5px; line-height:1.4; color:var(--text-primary); word-break:break-all; user-select:all; }

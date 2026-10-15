@@ -23,6 +23,9 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   columna `jsonb`). Hay Edge Functions desplegadas (`supabase/functions/`: Stripe
   webhook de suscripción, envío de notificaciones push, cancelación de suscripción y
   `bitacora-mcp`, el conector para Claude/ChatGPT — ver `supabase/sql/conector_ia.sql` —, y
+  `calendario-feed`, el calendario suscribible .ics para Google/iPhone/Outlook con enlace firmado por HMAC
+  (secreto `CALENDARIO_SECRET`, `calendarioFeedVersion` sincronizado para anularlo), `calendario-ics`, que
+  descarga un .ics de otra web para importarlo, `portadas` (Ocio; secreto `TMDB_KEY`) y
   `avisos-diarios`, avisos push automáticos vía pg_cron cada 5 minutos: resumen del
   día a las 9:00 y cada evento con hora una hora antes, salvo `sinAviso` en el
   evento o `preferenciasAvisos.eventos === false` — ver `supabase/sql/avisos_diarios.sql`) y

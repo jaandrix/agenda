@@ -159,6 +159,7 @@ montarCerebro();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-16', rama: 'todos', nombre: 'tu calendario en otras apps', para: 'quien usa Google o el Calendario del iPhone.', texto: 'Suscríbete a Bitácora desde tu calendario de siempre: eventos, cumpleaños y viajes, al día solos.' },
     { fecha: '2026-10-16', rama: 'work', nombre: 'proyectos', para: 'quien tiene algo entre manos.', texto: 'Cada proyecto con su siguiente paso a la vista, la colina para saber dónde está, tareas por fases que van al planificador y un diario.' },
     { fecha: '2026-10-16', rama: 'todos', nombre: 'nueva versión móvil', para: 'todos.', texto: 'Barra de pestañas, tu semana y tu día como un horario, y el tamaño de letra a tu gusto.' },
     { fecha: '2026-10-16', rama: 'todos', nombre: 'calendarios', para: 'todos.', texto: 'Trae tu calendario de Google, Apple u Outlook, o el de tu equipo o tu universidad, con un archivo o un enlace.' },

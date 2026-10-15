@@ -590,6 +590,9 @@
         // Día en que ya se enseñó "tienes esto para hoy.", sincronizado para que
         // salga una sola vez entre todos los dispositivos.
         let avisoDiarioVisto = null;
+        // Versión del enlace del calendario suscribible (calendario-feed):
+        // subirla invalida el enlace anterior.
+        let calendarioFeedVersion = 0;
         // Cuándo vio la bienvenida (bienvenida.js); null = todavía no.
         let bienvenida = null;
         // Cambios de la IA que esperan validación en "bandeja." (filas de

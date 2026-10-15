@@ -432,6 +432,7 @@
 
         // Iconos sólidos de cada bloque de Ajustes (familia TARJETA BITACORA).
         const AJUSTES_ICONOS = {
+            calendario: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M24 8h12v10h28V8h12v10h6a10 10 0 0 1 10 10v54a10 10 0 0 1-10 10H18A10 10 0 0 1 8 82V28a10 10 0 0 1 10-10h6zM20 40v40h60V40z"/><path d="M50 46l14 14H56v14H44V60h-8z"/></svg>',
             suscripcion: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 8a42 42 0 1 1 0 84 42 42 0 0 1 0-84zm0 20a22 22 0 1 0 0 44 22 22 0 0 0 0-44z"/></svg>',
             datos: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M30 8l24 26H38v28H22V34H6zM70 92L46 66h16V38h16v28h16z"/></svg>',
             conector: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="24" cy="50" r="18"/><circle cx="76" cy="50" r="18"/><rect x="30" y="44" width="40" height="12" rx="6"/></svg>',
@@ -556,6 +557,7 @@
                     <div class="ajustes-grupo">conexiones.</div>
                     <div class="ajustes-rejilla">
                         ${bloqueAjuste('settings-conector-section', 'conector', 'claude y chatgpt.', '', `<div id="settings-conector-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${bloqueAjuste('', 'calendario', 'tu calendario en otras apps.', 'Suscríbete a Bitácora desde Google Calendar, el Calendario del iPhone u Outlook: tus eventos, cumpleaños, viajes y fechas límite, siempre al día.', `<button class="btn-secondary" style="width:auto" onclick="openCalendarioFeed()">obtener enlace.</button>`)}
                         ${bloqueAjuste('settings-push-section', 'avisos', 'notificaciones.', 'Avisos en este dispositivo: el resumen de la mañana y una hora antes de cada evento.', `<div id="settings-push-body">${renderPushSettingsBody('cargando')}</div>`)}
                     </div>
 
@@ -804,3 +806,45 @@
             }
         }
 
+
+        // ============================================================
+        //  CALENDARIO SUSCRIBIBLE (Edge Function calendario-feed)
+        // ============================================================
+        async function pedirEnlaceCalendario() {
+            const { data: { session } } = await sb.auth.getSession();
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/calendario-feed`, { method: 'POST', headers: { Authorization: `Bearer ${session?.access_token || ''}` } });
+            const r = await res.json().catch(() => ({}));
+            if (!r.url) throw new Error(r.error || 'sin enlace');
+            return r.url;
+        }
+
+        async function openCalendarioFeed() {
+            showModal('<div class="modal-title">tu calendario en otras apps.</div><div class="finance-empty-line">Preparando tu enlace...</div>');
+            let url;
+            try { url = await pedirEnlaceCalendario(); } catch (e) { console.error(e); showModal('<div class="modal-title">tu calendario en otras apps.</div><div class="finance-empty-line">No se pudo preparar el enlace. Prueba de nuevo en un rato.</div>'); return; }
+            const webcal = url.replace(/^https:/, 'webcal:');
+            window._calendarioFeedUrl = url;
+            showModal(`
+                <div class="modal-title">tu calendario en otras apps.</div>
+                <p class="finance-modal-note" style="margin-top:0">Este enlace es personal: quien lo tenga puede ver tu calendario. Las apps lo vuelven a leer solas cada pocas horas.</p>
+                <div class="feed-url">${escapeHtml(url)}</div>
+                <div class="ajuste-botones" style="margin:10px 0 16px">
+                    <button class="btn-modal-primary" style="width:auto;margin:0" onclick="navigator.clipboard.writeText(window._calendarioFeedUrl).then(() => showToast('Enlace copiado'))">copiar enlace.</button>
+                    <a class="btn-secondary" style="width:auto;margin:0;text-decoration:none;display:inline-flex;align-items:center" href="${escapeHtml(webcal)}">abrir en el calendario.</a>
+                </div>
+                <div class="modal-label">Google Calendar</div>
+                <p class="finance-modal-note">En el ordenador: calendar.google.com → «Otros calendarios» (+) → <b>Desde URL</b> → pega el enlace.</p>
+                <div class="modal-label">iPhone</div>
+                <p class="finance-modal-note">Pulsa «abrir en el calendario.» desde el iPhone, o: Ajustes → Calendario → Cuentas → Añadir cuenta → Otra → <b>Añadir calendario suscrito</b> → pega el enlace.</p>
+                <div class="modal-label">Outlook</div>
+                <p class="finance-modal-note">Añadir calendario → <b>Suscribirse desde la web</b> → pega el enlace.</p>
+                <button class="btn-secondary" style="margin-top:6px" onclick="cambiarEnlaceCalendario()">cambiar enlace (el anterior deja de funcionar).</button>
+            `);
+        }
+
+        async function cambiarEnlaceCalendario() {
+            if (!confirm('El enlace actual dejará de funcionar en las apps donde lo hayas añadido. ¿Seguir?')) return;
+            calendarioFeedVersion = (Number(calendarioFeedVersion) || 0) + 1;
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); return; }
+            openCalendarioFeed();
+        }
