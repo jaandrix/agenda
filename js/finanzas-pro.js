@@ -215,7 +215,7 @@
                 const dias = Math.min(...fechas.map(d => Math.abs((new Date(t.date) - new Date(d)) / 86400000)));
                 const diff = Math.abs(Number(t.amount) - Number(f.amount));
                 const margen = dias === 0 ? 0.5 : 0.15;
-                if (dias > 10 || diff > Math.max(1, Number(t.amount) * margen)) return;
+                if (dias > 3 || diff > Math.max(1, Number(t.amount) * margen)) return;
                 const nota = (diff < 0.005 ? 0 : 100) + dias;
                 if (nota < mejorNota) { mejor = t; mejorNota = nota; }
             });
@@ -2801,6 +2801,20 @@
                 const rule = activeRules.find(rl => description.toLowerCase().includes(rl.matchText.toLowerCase()) && rl.otherAccount !== m.account);
                 const effectiveAccount = rule ? (type === 'income' ? rule.otherAccount : m.account) : m.account;
                 const dedupeKey = `${effectiveAccount}|${date}|${amount}|${description}`;
+                // Primero, lo que ya existe tal cual (misma cuenta, día, importe
+                // y concepto): esa fila es ese movimiento y no se busca nada
+                // más. Antes se buscaba antes un pendiente parecido, y el
+                // aparcamiento del 1 de octubre «completaba» el pendiente del
+                // 9, que se movía al día 1 y quedaba duplicado.
+                if (!esAnulado) {
+                    const exacta = [dedupeKey, ...altDates.map(d => `${effectiveAccount}|${d}|${amount}|${description}`)].find(yaEsta);
+                    if (exacta) {
+                        consumir(exacta);
+                        const pend = !esPendiente && financePro.transactions.find(t => t.pendiente && !pendientesUsados.has(t) && `${t.account}|${t.date}|${t.amount}|${t.bankNote ?? t.note ?? ''}` === exacta);
+                        if (pend) { delete pend.pendiente; pendientesUsados.add(pend); completados++; } else skipped++;
+                        return;
+                    }
+                }
                 // Un pendiente ya importado se actualiza al llegar completado
                 // (el importe final puede cambiar: divisa, propina, reserva
                 // de hotel) en vez de entrar otra vez como movimiento nuevo.
