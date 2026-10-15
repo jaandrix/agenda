@@ -164,7 +164,7 @@
                     <div>
                         <span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span>
                         <div class="trip-manager-title">${escapeHtml(t.title)}</div>
-                        <div class="trip-manager-sub">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}</div>
+                        <div class="trip-manager-sub">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${financeProGastoViaje(t.id) ? ` · ${financeMoney(financeProGastoViaje(t.id))} gastados` : ''}</div>
                     </div>
                     <div style="display:flex;gap:8px;flex-shrink:0">
                         <button class="btn-secondary" style="width:auto" onclick="abrirCompartirViajeModal('${t.id}')">Compartir</button>

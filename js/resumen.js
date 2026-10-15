@@ -603,7 +603,7 @@
             const dia = hoy.getDate();
             if (dia < 7) return null;
             const noEsGasto = ['cat_inversion_gasto', 'cat_coleccionables'];
-            const gastos = (financePro.transactions || []).filter(t => t && t.type === 'expense' && t.date && !noEsGasto.includes(t.category));
+            const gastos = (financePro.transactions || []).filter(t => t && t.type === 'expense' && t.date && !t.ahorro && !noEsGasto.includes(t.category));
             const mesDe = offset => financeMonthKey(new Date(hoy.getFullYear(), hoy.getMonth() - offset, 1));
             const primero = gastos.reduce((min, t) => (!min || t.date < min ? t.date : min), null);
             if (!primero || primero > mesDe(3) + '-01') return null;

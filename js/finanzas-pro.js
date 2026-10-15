@@ -606,7 +606,7 @@
         function financeProMonthTotals(monthKey) {
             let income = 0, expense = 0;
             financePro.transactions.forEach(t => {
-                if (t.date.slice(0, 7) !== monthKey) return;
+                if (t.date.slice(0, 7) !== monthKey || t.ahorro) return;
                 if (t.type === 'income') income += Number(t.amount) || 0;
                 else if (t.type === 'expense') expense += Number(t.amount) || 0;
             });
@@ -637,7 +637,7 @@
             const pctVsPrevMonth = (prevBal !== null && prevBal !== 0) ? ((lastBal - prevBal) / Math.abs(prevBal)) * 100 : null;
             const catTotals = {};
             financePro.transactions.forEach(t => {
-                if (t.type !== 'expense' || t.date.slice(0, 7) !== now) return;
+                if (t.type !== 'expense' || t.date.slice(0, 7) !== now || t.ahorro) return;
                 const k = t.category || '_none';
                 catTotals[k] = (catTotals[k] || 0) + (Number(t.amount) || 0);
             });
@@ -766,7 +766,7 @@
         function financeProCategoryExpense(catId, monthKey) {
             monthKey = monthKey || financeMonthKey();
             return financePro.transactions
-                .filter(t => t.type === 'expense' && t.category === catId && t.date.slice(0, 7) === monthKey)
+                .filter(t => t.type === 'expense' && t.category === catId && t.date.slice(0, 7) === monthKey && !t.viaje && !t.ahorro)
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
@@ -787,7 +787,7 @@
             const incomeCat = financePro.categories.find(c => c.type === 'income' && c.name.toLowerCase() === cat.name.toLowerCase());
             if (!incomeCat) return 0;
             return financePro.transactions
-                .filter(t => t.type === 'income' && t.category === incomeCat.id && t.date.slice(0, 7) === monthKey)
+                .filter(t => t.type === 'income' && t.category === incomeCat.id && t.date.slice(0, 7) === monthKey && !t.ahorro)
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
@@ -1046,7 +1046,7 @@
             financePro.categories.filter(c => c.type === 'expense').forEach(c => { gastoPorNombre[c.name.toLowerCase()] = c.id; });
             const lista = [];
             financePro.transactions.forEach(t => {
-                if (!t.date) return;
+                if (!t.date || t.viaje || t.ahorro) return;
                 if (t.type === 'expense') {
                     if (t.recurringEntryId || RITMO_FUERA.includes(t.category) || esAjuste(t.category)) return;
                     lista.push({ date: t.date, cat: t.category || '', valor: Number(t.amount) || 0 });
@@ -1848,6 +1848,7 @@
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         <button class="finance-oneoff-btn" onclick="openFinanceProProgramadosModal()">programar gastos.${financePro.programados?.length ? ` <span class="finance-programados-count">${financePro.programados.length}</span>` : ''}</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProDuplicatesModal()">Buscar duplicados</button>
+                        <button class="finance-oneoff-btn" onclick="openFinanceProViajeModal()">gastos de un viaje.</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">Registro rápido</button>
                         <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
                     </div>
@@ -2027,8 +2028,8 @@
                 // neto es el del mes entero (antes sumaba solo esos 5 y no
                 // coincidía con el del listado completo).
                 const delMes = full ? groups[m] : financePro.transactions.filter(t => t.date.slice(0, 7) === m);
-                const income = delMes.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-                const expense = delMes.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+                const income = delMes.filter(t => t.type === 'income' && !t.ahorro).reduce((s, t) => s + Number(t.amount), 0);
+                const expense = delMes.filter(t => t.type === 'expense' && !t.ahorro).reduce((s, t) => s + Number(t.amount), 0);
                 const monthTotal = income - expense;
                 return `<div class="finance-pro-tx-month-group">
                     <div class="finance-pro-tx-month-summary finance-pro-tx-month-summary-light">
@@ -2086,7 +2087,7 @@
                 ${financeProCategoryBadge(cat)}
                 <div class="finance-pro-tx-main">
                     <div class="finance-pro-tx-title">${escapeHtml(cat ? cat.name : 'Sin categoría')}${cat && t.categoriaAuto ? '<span class="finance-cat-auto" title="Puesta por bitácora a partir de movimientos parecidos. Ábrelo y guarda para confirmarla.">auto.</span>' : ''}</div>
-                    <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}${t.pendiente ? ' · pendiente.' : ''}</div>
+                    <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}${t.pendiente ? ' · pendiente.' : ''}${t.viaje ? ' · <span class="finance-marca">viaje.</span>' : ''}${t.ahorro ? ' · <span class="finance-marca">ahorro.</span>' : ''}</div>
                     ${t.note ? `<div class="finance-pro-tx-note">${escapeHtml(t.note)}</div>` : ''}
                 </div>
                 <div class="finance-pro-tx-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
@@ -2142,6 +2143,7 @@
                     ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
                 ${d.categoriaAuto && d.category ? '<div class="finance-modal-note" style="margin:-4px 0 8px">Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.</div>' : ''}`}
+                ${renderFinanceProMarcasTx(d)}
                 <div class="modal-label">Nota (opcional)</div>
                 <input class="modal-input" value="${escapeHtml(d.note || '')}" onchange="financeProDraftSet('note',this.value)" placeholder="Ej. Cena con amigos">
                 <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction()">Guardar</button>
@@ -2169,7 +2171,10 @@
                 amount,
                 category: d.type === 'transfer' ? undefined : (d.category || undefined),
                 transferTo: d.type === 'transfer' ? d.transferTo : undefined,
-                note: (d.note || '').trim() || undefined
+                note: (d.note || '').trim() || undefined,
+                viaje: d.type === 'expense' && d.viaje ? true : undefined,
+                viajeId: d.type === 'expense' && d.viaje && d.viajeId ? d.viajeId : undefined,
+                ahorro: d.type !== 'transfer' && d.ahorro ? true : undefined
             };
             // Al editar se conserva de dónde vino el movimiento (manual,
             // cargo automático, ya conciliado con el banco...): si se
@@ -2895,7 +2900,8 @@
                 financePro.transactions.push({
                     id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
                     date, account: m.account, type, amount, category, note: description || undefined,
-                    pendiente: esPendiente || undefined
+                    pendiente: esPendiente || undefined,
+                    ahorro: /^(From|To) [A-Z]{3} \S/.test(description) || undefined
                 });
                 added++;
             });
@@ -3015,5 +3021,101 @@
 
         function portfolioCurrentValue() {
             return (investmentData.funds || []).reduce((s, f) => s + fundCurrentValue(f), 0);
+        }
+
+        // ============================================================
+        //  VIAJES Y AHORRO
+        //  "viaje": cuenta como gasto, pero no en presupuestos ni en el ritmo
+        //  (un viaje rompe cualquier presupuesto de comida o transporte sin
+        //  decir nada del día a día). "ahorro": dinero que va o viene de un
+        //  bolsillo de ahorro; mueve el saldo, pero no es ingreso ni gasto.
+        // ============================================================
+        function financeProViajesConFecha() {
+            return entries.filter(e => e.type === 'travel' && e.startDate).sort((a, b) => b.startDate.localeCompare(a.startDate));
+        }
+
+        function financeProNombreViaje(v) {
+            return `${v.destination || v.title || 'viaje'}${v.startDate ? `, ${formatTravelRange(v.startDate, v.endDate)}` : ''}`;
+        }
+
+        function renderFinanceProMarcasTx(d) {
+            const viajes = financeProViajesConFecha();
+            return `
+                ${d.type === 'expense' ? `
+                <label class="finance-tx-marca"><input type="checkbox" ${d.viaje ? 'checked' : ''} onchange="financeProDraftSet('viaje',this.checked);document.getElementById('finance-tx-viaje').hidden=!this.checked"><span><b>gasto de viaje.</b><small>Cuenta como gasto, pero no entra en los presupuestos ni en el ritmo del mes.</small></span></label>
+                ${viajes.length ? `<div id="finance-tx-viaje" ${d.viaje ? '' : 'hidden'}><select class="modal-input" onchange="financeProDraftSet('viajeId',this.value)"><option value="">sin un viaje concreto</option>${viajes.map(v => `<option value="${v.id}" ${d.viajeId === v.id ? 'selected' : ''}>${escapeHtml(financeProNombreViaje(v))}</option>`).join('')}</select></div>` : '<div id="finance-tx-viaje" hidden></div>'}` : ''}
+                ${d.type !== 'transfer' ? `
+                <label class="finance-tx-marca"><input type="checkbox" ${d.ahorro ? 'checked' : ''} onchange="financeProDraftSet('ahorro',this.checked)"><span><b>${d.type === 'income' ? 'viene de mis ahorros.' : 'va a mis ahorros.'}</b><small>${d.type === 'income' ? 'Sube el saldo, pero no cuenta como ingreso (lo que sacas de una hucha o un bolsillo).' : 'Baja el saldo, pero no cuenta como gasto (lo que apartas a una hucha o un bolsillo).'}</small></span></label>` : ''}`;
+        }
+
+        function financeProGastoViaje(viajeId) {
+            return financePro.transactions.filter(t => t.type === 'expense' && t.viaje && t.viajeId === viajeId).reduce((s, t) => s + (Number(t.amount) || 0), 0);
+        }
+
+        // Marcar de una vez todo lo de un viaje: se eligen el viaje (o las
+        // fechas) y salen los gastos de esos días, ya marcados salvo las
+        // suscripciones y gastos fijos, que se cobran igual estés donde estés.
+        function openFinanceProViajeModal() {
+            const v = financeProViajesConFecha()[0];
+            window._viajeMarca = { viajeId: v?.id || '', desde: v?.startDate || '', hasta: v?.endDate || v?.startDate || '', sel: null };
+            showModal(`<div class="modal-title">gastos de un viaje.</div><div id="finance-viaje-cuerpo">${renderFinanceProViajeCuerpo()}</div>`);
+        }
+
+        function financeProViajeLista() {
+            const v = window._viajeMarca;
+            if (!v.desde || !v.hasta) return [];
+            return financePro.transactions.filter(t => t.type === 'expense' && !t.ahorro && t.date >= v.desde && t.date <= v.hasta)
+                .sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        function renderFinanceProViajeCuerpo() {
+            const v = window._viajeMarca;
+            const viajes = financeProViajesConFecha();
+            const lista = financeProViajeLista();
+            if (!v.sel) v.sel = new Set(lista.filter(t => t.viaje || !t.recurringEntryId).map(t => t.id));
+            const total = lista.filter(t => v.sel.has(t.id)).reduce((s, t) => s + (Number(t.amount) || 0), 0);
+            return `
+                <p class="finance-modal-note" style="margin-top:0">Los gastos de un viaje siguen contando como gasto, pero no entran en los presupuestos ni en el ritmo del mes. Elige el viaje o las fechas y desmarca lo que no fuera del viaje.</p>
+                ${viajes.length ? `<div class="modal-label">viaje</div>
+                <select class="modal-input" onchange="financeProViajeElegir(this.value)"><option value="">elegir las fechas a mano</option>${viajes.map(x => `<option value="${x.id}" ${v.viajeId === x.id ? 'selected' : ''}>${escapeHtml(financeProNombreViaje(x))}</option>`).join('')}</select>` : ''}
+                <div class="lab-horas">
+                    <div><div class="modal-label">desde</div><input class="modal-input" type="date" value="${v.desde}" onchange="window._viajeMarca.desde=this.value;window._viajeMarca.sel=null;financeProViajeRepintar()"></div>
+                    <div><div class="modal-label">hasta</div><input class="modal-input" type="date" value="${v.hasta}" onchange="window._viajeMarca.hasta=this.value;window._viajeMarca.sel=null;financeProViajeRepintar()"></div>
+                </div>
+                <div class="finance-viaje-lista">${lista.length ? lista.map(t => {
+                    const cat = financeProCategoryById(t.category);
+                    return `<label class="finance-viaje-fila"><input type="checkbox" ${v.sel.has(t.id) ? 'checked' : ''} onchange="financeProViajeMarcar('${t.id}',this.checked)"><span>${financeDateLabelShort(t.date)}</span><b>${escapeHtml(t.note || cat?.name || 'gasto')}</b><i>${financeMoney(t.amount)}</i></label>`;
+                }).join('') : `<div class="finance-empty-line">${v.desde && v.hasta ? 'No hay gastos esos días.' : 'Elige las fechas del viaje.'}</div>`}</div>
+                ${lista.length ? `<div class="finance-viaje-total"><span>${v.sel.size} de ${lista.length} marcados</span><b>${financeMoney(total)}</b></div>` : ''}
+                <button class="btn-modal-primary" onclick="guardarFinanceProViaje()" ${lista.length ? '' : 'disabled'}>guardar.</button>`;
+        }
+
+        function financeProViajeRepintar() {
+            const el = document.getElementById('finance-viaje-cuerpo');
+            if (el) el.innerHTML = renderFinanceProViajeCuerpo();
+        }
+
+        function financeProViajeElegir(id) {
+            const x = getTrip(id);
+            Object.assign(window._viajeMarca, { viajeId: id, sel: null }, x ? { desde: x.startDate, hasta: x.endDate || x.startDate } : {});
+            financeProViajeRepintar();
+        }
+
+        function financeProViajeMarcar(id, marcado) {
+            const v = window._viajeMarca;
+            if (marcado) v.sel.add(id); else v.sel.delete(id);
+            financeProViajeRepintar();
+        }
+
+        async function guardarFinanceProViaje() {
+            const v = window._viajeMarca;
+            let marcados = 0;
+            financeProViajeLista().forEach(t => {
+                if (v.sel.has(t.id)) { t.viaje = true; if (v.viajeId) t.viajeId = v.viajeId; marcados++; }
+                else if (t.viaje) { delete t.viaje; delete t.viajeId; }
+            });
+            closeModal();
+            render();
+            try { await saveData(); showToast(`${marcados} ${marcados === 1 ? 'gasto marcado' : 'gastos marcados'} como viaje`); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
