@@ -40,6 +40,7 @@
             else if (currentView === 'actualizaciones') content.innerHTML = renderActualizaciones();
             else if (currentView === 'universidad') content.innerHTML = renderUniversidad();
             else if (currentView === 'profesorado') content.innerHTML = renderProfesorado();
+            else if (currentView === 'compra') content.innerHTML = renderCompra();
             else if (currentView === 'suggestions') { content.innerHTML = renderSuggestions(); loadMySuggestions(); }
             else if (currentView === 'bandeja') { content.innerHTML = renderBandeja(); if (!aplicandoBandeja && Date.now() - bandejaUltimaLectura > 15000) setTimeout(aplicarBandejaConector, 0); }
             else if (currentView === 'settings') { content.innerHTML = renderSettings();

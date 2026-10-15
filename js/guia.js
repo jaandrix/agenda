@@ -155,6 +155,18 @@ const GUIA = [
         trucos: ['Los trabajos de Estudios aparecen solos aquí el día de su entrega.', 'Al completar una tarea queda constancia en el calendario.'],
     },
     {
+        id: 'compra', grupo: 'general', titulo: 'compra.',
+        lema: 'La lista de la compra, en el orden del súper.',
+        intro: 'Listas de la compra que se ordenan solas por secciones (frutas y verduras, carne y pescado, lácteos, despensa, limpieza...), como se recorre la tienda. Es un apartado opcional de la rama #home: actívalo en Ajustes → apartados.',
+        pasos: ['Escribe lo que falta según te acuerdes: «2 leche, pan, tomates 1,20 €». La cantidad y el precio se entienden solos.', 'En el súper, toca el círculo de cada cosa al echarla al carro: baja a «en el carro.».', 'Al acabar, <b>terminar la compra.</b> la limpia y, si quieres, apunta el gasto en Finanzas.'],
+        botones: [
+            [guiaBoton('lo de siempre.'), 'Lo que más compras y no está en la lista, para añadirlo con un toque. Aprende de cada compra terminada.'],
+            [guiaBoton('listas.'), 'Una lista por sitio o por súper: casa, el piso, Mercadona... Se cambia de una a otra arriba.'],
+            [guiaBoton('nombre de un producto'), 'Cambia el nombre, la cantidad o el precio por unidad, o quítalo. El precio se recuerda para la próxima vez.'],
+            [guiaBoton('terminar la compra.'), 'Saca de la lista lo del carro y apunta el gasto en comida y bebida con el importe que diga el ticket. Cuando importes el extracto, se emparejará con el cargo del banco.'],
+        ],
+    },
+    {
         id: 'habitos', grupo: 'general', titulo: 'rutinas.',
         lema: 'Lo que haces para estar bien, a tu ritmo.',
         intro: 'Antes se llamaba Hábitos. Sirve igual si las rutinas son el centro de tu día como si solo quieres probar con una. Sin puntos ni medallas: una semana de bolitas y tu racha en texto normal.',

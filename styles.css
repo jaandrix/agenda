@@ -7545,3 +7545,39 @@ body.papel .lp-cerebro { --lp-azul:#2f6fe0; }
 @media (prefers-reduced-motion: reduce) {
     .lp-cerebro-flota, .lp-pulso, .lp-neurona.activo, .lp-cerebro-ficha > * { animation:none; }
 }
+
+/* ============================================================
+   COMPRA (compra.js)
+   ============================================================ */
+.compra { max-width:680px; }
+.compra-cab { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-bottom:14px; }
+.compra-titulo { font-size:26px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); }
+.compra-sub { margin-top:2px; font-size:13px; color:var(--text-secondary); }
+.compra-listas { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.compra-listas small { opacity:.6; margin-left:2px; }
+.compra-anadir { display:flex; gap:8px; margin-bottom:12px; }
+.compra-anadir .modal-input { margin:0; flex:1; min-width:0; }
+.compra-anadir .btn-modal-primary { width:auto; margin:0; padding-left:20px; padding-right:20px; }
+.compra-frecuentes { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-bottom:16px; }
+.compra-frecuentes span { font-size:12px; font-weight:700; color:var(--text-secondary); margin-right:2px; }
+.compra-frecuentes button { padding:6px 11px; border:1px dashed var(--border-strong); border-radius:999px; background:none; font-family:var(--font-family); font-size:12.5px; font-weight:600; color:var(--text-primary); cursor:pointer; }
+.compra-frecuentes button:hover { border-style:solid; }
+.compra-vacio { padding:20px; border:1px dashed var(--border-strong); border-radius:18px; font-size:14px; line-height:1.55; color:var(--text-secondary); }
+.compra-vacio b { display:block; margin-bottom:4px; font-size:18px; color:var(--text-primary); }
+.compra-seccion { margin-bottom:14px; }
+.compra-seccion-titulo { display:flex; justify-content:space-between; padding-bottom:5px; border-bottom:1px solid var(--text-primary); font-size:13px; font-weight:800; color:var(--text-primary); }
+.compra-seccion-titulo span { font-variant-numeric:tabular-nums; }
+.compra-item { display:grid; grid-template-columns:30px minmax(0, 1fr) auto; align-items:center; gap:12px; padding:9px 2px; border-bottom:1px solid var(--border); }
+.compra-check { width:26px; height:26px; box-sizing:border-box; padding:0; border-radius:50%; border:2px solid var(--border-strong); background:none; cursor:pointer; transition:background-color .15s var(--ease-out), border-color .15s var(--ease-out), transform .12s var(--ease-out); min-height:0 !important; }
+.compra-check:active { transform:scale(.88); }
+.compra-check.on { background:var(--m-acento); border-color:var(--m-acento); }
+.compra-item-txt { display:flex; align-items:baseline; gap:8px; min-width:0; padding:0; border:0; background:none; font-family:var(--font-family); text-align:left; cursor:pointer; min-height:0 !important; }
+.compra-item-txt b { font-size:15px; font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.compra-item-txt span { font-size:12.5px; color:var(--text-secondary); white-space:nowrap; }
+.compra-item i { font-style:normal; font-size:13px; font-weight:700; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.compra-item.hecho b { color:var(--text-secondary); text-decoration:line-through; text-decoration-thickness:1px; }
+.compra-carro { opacity:.85; }
+.compra-terminar { margin-top:12px; }
+.compra-lista-fila { display:flex; align-items:center; gap:10px; padding:10px 2px; border-top:1px solid var(--border); }
+.compra-lista-fila b { font-size:14px; color:var(--text-primary); }
+.compra-lista-fila span { flex:1; font-size:12px; color:var(--text-secondary); }

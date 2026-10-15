@@ -42,6 +42,7 @@
                 perfilLaboral = (saved.perfilLaboral && typeof saved.perfilLaboral === 'object') ? saved.perfilLaboral : null;
                 profesorado = (saved.profesorado && typeof saved.profesorado === 'object') ? saved.profesorado : null;
                 agendaLaboral = (saved.agendaLaboral && typeof saved.agendaLaboral === 'object') ? saved.agendaLaboral : null;
+                listaCompra = (saved.listaCompra && typeof saved.listaCompra === 'object') ? saved.listaCompra : null;
                 bienvenida = saved.bienvenida || null;
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
@@ -236,6 +237,7 @@
             perfilLaboral: [() => perfilLaboral, v => { perfilLaboral = v; }],
             profesorado: [() => profesorado, v => { profesorado = v; }],
             agendaLaboral: [() => agendaLaboral, v => { agendaLaboral = v; }],
+            listaCompra: [() => listaCompra, v => { listaCompra = v; }],
             bienvenida: [() => bienvenida, v => { bienvenida = v; }]
         };
         let datosBase = null;

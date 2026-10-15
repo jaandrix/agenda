@@ -53,7 +53,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `agenda-laboral` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `guia` → `landing`.
+  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `guia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -235,6 +235,19 @@ a menor resolución.
 - **Perfil (`js/perfil.js`):** foto y frase en la tabla `perfiles_fotos` (solo la ven uno mismo y sus
   amigos, ver `supabase/sql/perfiles_fotos.sql`). Toda foto se procesa en el cliente a 256 px, blanco y
   negro con grano (`procesarFotoPerfil`). Sale en Home (`#mi-avatar`, inicio móvil) y en la lista de amigos.
+- **Rutinas (antes Hábitos; vista y datos siguen siendo `habits`, en `planificador.js`):** momento del día,
+  `frecuencia` (diaria / días / x por semana), `pasos` con `pasosHechos`, semana de bolitas que marca días
+  pasados, `habitStreak` respeta los días que no tocan; al marcar se repinta solo la rutina (`repintarRutina`).
+- **Compra (`js/compra.js`, vista `compra`, opcional de #home):** `listaCompra` (sincronizado) con listas,
+  secciones del súper por palabras clave (`COMPRA_SECCIONES`), "lo de siempre" (`frecuentes`) y "terminar la
+  compra." que apunta el gasto en Finanzas. Mercadona tiene API pública sin CORS (tienda.mercadona.es/api,
+  necesitaría una Edge Function); DIA bloquea con antibots: no se usa.
+- **Ramas de apartados:** `RAMAS_APARTADOS` en ajustes.js agrupa los opcionales (#school, #home, #work, #mind).
+- **Importar extractos:** primero la coincidencia exacta, luego pendientes (≤3 días, importe exacto antes que
+  aproximado, sin reutilizar), recuento de claves (dos cargos iguales cuentan dos) y, si el CSV trae saldo
+  (`Balance`), `financeProCuadreExtracto` compara y enseña qué sobra o falta. Marcas `viaje` (fuera de
+  presupuestos y ritmo; pestaña Gastos del viaje) y `ahorro` (bolsillos de Revolut, ni ingreso ni gasto).
+- **Landing:** el cerebro de la portada (`montarCerebro` en landing.js, `CEREBRO_ZONAS`).
 - **CV (`js/cv.js`, Empleo → "crear mi cv."):** asistente por pasos (contacto, cada empleo con
   `cvFunciones`/`cvAprendido`/`cvHabilidades`, formación, idiomas, habilidades, perfil propuesto)
   que guarda `perfilLaboral` (sincronizado) y genera un PDF de una columna con jsPDF.

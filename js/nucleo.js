@@ -573,6 +573,8 @@
         let profesorado = null;
         // Horario y citas de trabajo (agenda-laboral.js).
         let agendaLaboral = null;
+        // Listas de la compra (compra.js).
+        let listaCompra = null;
         // Cuándo vio la bienvenida (bienvenida.js); null = todavía no.
         let bienvenida = null;
         // Cambios de la IA que esperan validación en "bandeja." (filas de
@@ -789,6 +791,7 @@
             studies: 'Estudios',
             universidad: 'Universidad',
             profesorado: 'Profesorado',
+            compra: 'Compra',
             links: 'Enlaces',
             actualizaciones: 'Envíos',
             bandeja: 'Bandeja',
@@ -806,6 +809,7 @@
                 { view: 'calendar', icon: '◷', text: 'Home' },
                 { view: 'home', icon: '⌂', text: 'Panorama' },
                 { view: 'planner', icon: '▤', text: 'Planificador' },
+                { view: 'compra', icon: '◍', text: 'Compra' },
                 { view: 'habits', icon: '○', text: 'Rutinas' },
                 { view: 'notes', icon: '✎', text: 'Notas' },
             ] },
@@ -1213,7 +1217,7 @@
             culture: () => renderCulture(), collectibles: () => renderCollectibles(), documents: () => renderDocuments(),
             friends: () => renderFriendsView(), tags: () => renderTagsView(), graph: () => renderGraph(),
             bandeja: () => renderBandeja(), suggestions: () => renderSuggestions(), settings: () => renderSettings(),
-            actualizaciones: () => renderActualizaciones(), universidad: () => renderUniversidad(), profesorado: () => renderProfesorado(),
+            actualizaciones: () => renderActualizaciones(), universidad: () => renderUniversidad(), profesorado: () => renderProfesorado(), compra: () => renderCompra(),
         };
 
         // Efectos que en escritorio se disparan tras pintar ciertas vistas
@@ -1462,6 +1466,7 @@
         const APARTADOS_OPCIONALES = [
             { view: 'universidad', titulo: 'universidad.', texto: 'Tu carrera por cuatrimestres: créditos, media, fechas de exámenes y qué necesitas para aprobar.', porDefecto: () => false },
             { view: 'profesorado', titulo: 'profesorado.', texto: 'Si das clase: el cuadrante del curso con todas tus clases, y lo que no das en su día pasa a pendientes.', porDefecto: () => (profesorado?.clases || []).length > 0 },
+            { view: 'compra', titulo: 'compra.', texto: 'Listas de la compra ordenadas por secciones del súper, con lo de siempre a un toque.', porDefecto: () => (listaCompra?.listas || []).some(l => (l.items || []).length) },
             { view: 'actualizaciones', titulo: 'envíos.', texto: 'Tus pedidos por internet y por dónde van.', porDefecto: () => pedidos.length > 0 },
             { view: 'projects', titulo: 'proyectos.', texto: 'Proyectos con fases, lista o tablero.', porDefecto: () => entries.some(e => e.type === 'project') },
             { view: 'links', titulo: 'enlaces.', texto: 'Webs y recursos guardados por carpetas.', porDefecto: () => links.length > 0 },
