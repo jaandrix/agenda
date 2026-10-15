@@ -85,7 +85,12 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   la derecha, `toggleMenuMovil`) y una página por apartado con título enorme en dos
   tonos (`renderMobileCabecera`). Planificador, Finanzas, Estudios, Hábitos, Eventos,
   Notas y Viajes tienen vista propia (`MOBILE_SECCIONES`); el resto reutiliza su
-  `renderXxx()` de escritorio dentro de `.m-generico`. Navegar con `mobileIr(view)`.
+  `renderXxx()` de escritorio dentro de `.m-generico`. Navegar con `mobileIr(view)` (si ya estás en esa
+  vista, sube arriba). Barra de pestañas abajo (`renderMobileTabbar`: inicio, plan, + captura, el último
+  apartado visitado `mobileReciente` y menú; el botón de menú de arriba está oculto). El inicio enseña la
+  semana del día elegido (o el mes en bolitas, `mobileVerMes`) y el día como horario (`.m-tl`, con marca de
+  "ahora"). Paleta propia del móvil (`body.mobile-standalone` / `body.pwa` + tema) con `--m-superficie`
+  para las tarjetas. Tamaño de letra del móvil con `zoom` (`TAMANOS_LETRA` en datos.js).
 - **Tres temas:** "asfalto" (oscuro, por defecto, sin clase), "papel" (claro, clase
   `body.papel`) y "teja" (piedra cálida, negro y naranja teja a lo cartel suizo; por
   compatibilidad conserva la clave `acuarela` y las clases `body.papel.acuarela`:

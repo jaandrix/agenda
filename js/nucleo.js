@@ -878,6 +878,14 @@
         let mobileMenuAbierto = false;
         let mobileDiaSel = null;
         let mobileMes = null;
+        // Inicio: la semana del día elegido, o el mes entero en bolitas.
+        let mobileVerMes = false;
+        try { mobileVerMes = localStorage.getItem('bitacora_m_ver_mes') === '1'; } catch (_) { /* sin almacenamiento */ }
+        // La cuarta pestaña de la barra de abajo es el último apartado
+        // visitado (que no sea inicio ni el planificador): ir y volver
+        // entre dos sitios sin abrir el menú.
+        let mobileReciente = 'finances';
+        try { mobileReciente = localStorage.getItem('bitacora_m_reciente') || 'finances'; } catch (_) { /* sin almacenamiento */ }
 
         // En la versión móvil, los apartados que reutilizan el render de
         // escritorio existen dos veces (el de #content, oculto, y el de
@@ -903,6 +911,13 @@
         // Sin el aviso de privacidad de Finanzas que pone switchView: en el
         // móvil se entra a consultar o apuntar algo rápido.
         function mobileIr(view) {
+            const shellActual = document.getElementById('mobile-shell');
+            // Tocar la pestaña en la que ya estás sube arriba del todo.
+            if (view === currentView && !mobileMenuAbierto && shellActual) { shellActual.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+            if (view !== 'calendar' && view !== 'planner' && NAV_VIEW_LABELS[view]) {
+                mobileReciente = view;
+                try { localStorage.setItem('bitacora_m_reciente', view); } catch (_) { /* sin almacenamiento */ }
+            }
             mobileMenuAbierto = false;
             if (view !== 'travels') window._openTripId = null;
             if (view === 'calendar') { mobileDiaSel = null; mobileMes = null; }
@@ -932,6 +947,7 @@
                     ${renderMobileTopbar(view)}
                     <main class="m-pagina">${view === 'calendar' ? renderAvisoPrueba(true) + renderMobileInicio(entra) : renderMobileSeccion(view)}</main>
                 </div>
+                ${renderMobileTabbar(view)}
                 ${renderMobileMenu(view)}`;
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
             if (mobileLastEffectView !== view) {
@@ -939,6 +955,26 @@
                 const effect = MOBILE_SECTION_EFFECTS[view];
                 if (effect) setTimeout(effect, 0);
             }
+        }
+
+        const M_ICONOS = {
+            inicio: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M24 8h12v10h28V8h12v10h6a10 10 0 0 1 10 10v54a10 10 0 0 1-10 10H18A10 10 0 0 1 8 82V28a10 10 0 0 1 10-10h6zM20 40v40h60V40z"/><rect x="30" y="50" width="16" height="16" rx="4"/></svg>',
+            plan: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="17" cy="22" r="9"/><rect x="34" y="16" width="58" height="12" rx="6"/><circle cx="17" cy="50" r="9"/><rect x="34" y="44" width="46" height="12" rx="6"/><circle cx="17" cy="78" r="9"/><rect x="34" y="72" width="52" height="12" rx="6"/></svg>',
+            mas: '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="43" y="14" width="14" height="72" rx="7"/><rect x="14" y="43" width="72" height="14" rx="7"/></svg>',
+            menu: '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="14" y="30" width="72" height="12" rx="6"/><rect x="14" y="58" width="72" height="12" rx="6"/></svg>',
+        };
+
+        function renderMobileTabbar(view) {
+            const reciente = NAV_VIEW_LABELS[mobileReciente] && apartadoVisible(mobileReciente) ? mobileReciente : 'finances';
+            const nombre = (NAV_VIEW_LABELS[reciente] || '').toLowerCase();
+            const pestana = (v, icono, texto, extra = '') => `<button class="m-tab ${view === v ? 'activa' : ''}" onclick="mobileIr('${v}')" ${extra}>${icono}<span>${texto}</span></button>`;
+            return `<nav class="m-tabbar" aria-label="Apartados">
+                ${pestana('calendar', M_ICONOS.inicio, 'inicio.')}
+                ${pestana('planner', M_ICONOS.plan, 'plan.')}
+                <button class="m-tab-mas" onclick="openCommandPalette('create')" aria-label="Añadir algo">${M_ICONOS.mas}</button>
+                ${pestana(reciente, `<i class="m-tab-letra">${escapeHtml(nombre.charAt(0))}</i>`, escapeHtml(nombre.length > 9 ? nombre.slice(0, 8) + '…' : nombre) + '.', `aria-label="${escapeHtml(nombre)}"`)}
+                <button class="m-tab ${mobileMenuAbierto ? 'activa' : ''}" onclick="toggleMenuMovil()">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
+            </nav>`;
         }
 
         // En la portada, la marca; en cualquier apartado, el mismo hueco es
@@ -1048,8 +1084,22 @@
             const d = new Date(date + 'T12:00:00');
             mobileMes = { y: d.getFullYear(), m: d.getMonth() };
             const pagina = document.querySelector('#mobile-shell .m-pagina');
-            if (pagina && currentView === 'calendar') pagina.innerHTML = renderMobileInicio();
+            if (pagina && currentView === 'calendar') pagina.innerHTML = renderAvisoPrueba(true) + renderMobileInicio();
             else render();
+        }
+
+        function mobileAlternarMes() {
+            mobileVerMes = !mobileVerMes;
+            try { localStorage.setItem('bitacora_m_ver_mes', mobileVerMes ? '1' : '0'); } catch (_) { /* sin almacenamiento */ }
+            if (mobileVerMes && mobileDiaSel) { const d = new Date(mobileDiaSel + 'T12:00:00'); mobileMes = { y: d.getFullYear(), m: d.getMonth() }; }
+            const pagina = document.querySelector('#mobile-shell .m-pagina');
+            if (pagina) pagina.innerHTML = renderAvisoPrueba(true) + renderMobileInicio(mobileVerMes);
+        }
+
+        function mobileCambiarSemana(delta) {
+            const d = new Date((mobileDiaSel || isoLocal(new Date())) + 'T12:00:00');
+            d.setDate(d.getDate() + delta * 7);
+            mobileElegirDia(isoLocal(d));
         }
 
         function mobileCambiarMes(delta) {
@@ -1057,7 +1107,7 @@
             const d = new Date(base.y, base.m + delta, 1);
             mobileMes = { y: d.getFullYear(), m: d.getMonth() };
             const pagina = document.querySelector('#mobile-shell .m-pagina');
-            if (pagina) pagina.innerHTML = renderMobileInicio();
+            if (pagina) pagina.innerHTML = renderAvisoPrueba(true) + renderMobileInicio();
         }
 
         function renderMobileInicio(entra) {
@@ -1080,6 +1130,17 @@
             for (let i = 0; i < resto; i++) celdas.push('<span class="m-punto m-punto-fuera"></span>');
             const letraHoy = (new Date().getDay() + 6) % 7;
 
+            // Semana (lunes a domingo) del día elegido.
+            const lunes = new Date(d); lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7));
+            const semana = Array.from({ length: 7 }, (_, i) => { const x = new Date(lunes); x.setDate(x.getDate() + i); return x; });
+            const tira = semana.map((x, i) => {
+                const iso = isoLocal(x);
+                const ocupado = mobileOcupacionDia(iso) > 0;
+                return `<button class="m-dia-pill ${iso === sel ? 'sel' : ''} ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''}" onclick="mobileElegirDia('${iso}')" aria-label="${MOBILE_DIAS_LARGOS[x.getDay()]} ${x.getDate()}${ocupado ? ', con cosas' : ''}">
+                    <small>${['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</small><b>${x.getDate()}</b><i class="${ocupado ? 'on' : ''}"></i></button>`;
+            }).join('');
+            const etiqueta = mobileVerMes ? `${MOBILE_MESES[m]}${y !== new Date().getFullYear() ? ' ' + y : ''}.` : `${MOBILE_MESES[lunes.getMonth()]}${semana[6].getMonth() !== lunes.getMonth() ? ' – ' + MOBILE_MESES[semana[6].getMonth()] : ''}.`;
+
             return `
             <section class="m-hero">
                 <div class="m-hero-fila">
@@ -1089,16 +1150,18 @@
                 <div class="m-hero-mes"><span>${MOBILE_MESES[d.getMonth()]}.</span><span class="m-hero-dia">${MOBILE_DIAS[d.getDay()]}.</span></div>
                 <div class="m-hero-anio">${d.getFullYear()}${sel !== hoy ? `<button class="m-hoy-link" onclick="mobileElegirDia('${hoy}')">volver a hoy.</button>` : ''}</div>
             </section>
-            <section class="m-mes">
+            <section class="m-mes m-superficie">
                 <div class="m-mes-cab">
-                    <span class="m-etiqueta">${MOBILE_MESES[m]} ${y !== new Date().getFullYear() ? y : ''}</span>
+                    <span class="m-etiqueta">${etiqueta}</span>
                     <div class="m-mes-flechas">
-                        <button onclick="mobileCambiarMes(-1)" aria-label="Mes anterior">‹</button>
-                        <button onclick="mobileCambiarMes(1)" aria-label="Mes siguiente">›</button>
+                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(-1)' : 'mobileCambiarSemana(-1)'}" aria-label="${mobileVerMes ? 'Mes anterior' : 'Semana anterior'}">‹</button>
+                        <button class="m-mes-modo" onclick="mobileAlternarMes()">${mobileVerMes ? 'semana.' : 'mes.'}</button>
+                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(1)' : 'mobileCambiarSemana(1)'}" aria-label="${mobileVerMes ? 'Mes siguiente' : 'Semana siguiente'}">›</button>
                     </div>
                 </div>
+                ${mobileVerMes ? `
                 <div class="m-mes-letras">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => `<span class="${i === letraHoy && y === new Date().getFullYear() && m === new Date().getMonth() ? 'hoy' : ''}">${l}</span>`).join('')}</div>
-                <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>
+                <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>` : `<div class="m-semana-tira">${tira}</div>`}
             </section>
             ${renderMobileDiaPanel(sel, hoy)}
             ${renderMobileTeselas()}`;
@@ -1143,13 +1206,27 @@
             filas.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
             const d = new Date(sel + 'T12:00:00');
             const titulo = sel === hoy ? 'hoy.' : `${MOBILE_DIAS_LARGOS[d.getDay()]} ${d.getDate()}.`;
+            // Horario: lo que no tiene hora arriba; lo demás en una línea de
+            // tiempo con la hora a la izquierda y, si es hoy, una marca de
+            // "ahora" entre lo pasado y lo que viene.
+            const sinHora = filas.filter(f => !f.hora), conHora = filas.filter(f => f.hora);
+            const ahora = new Date(), horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+            let marcaPuesta = sel !== hoy;
+            const linea = conHora.map(f => {
+                let marca = '';
+                if (!marcaPuesta && f.hora > horaAhora) { marca = `<div class="m-tl-ahora"><span>ahora, ${horaAhora}.</span></div>`; marcaPuesta = true; }
+                const pasada = sel < hoy || (sel === hoy && f.hora < horaAhora);
+                return `${marca}<div class="m-tl-item ${pasada ? 'pasada' : ''}"><div class="m-tl-hora">${escapeHtml(f.hora)}</div><div class="m-tl-eje"><i></i></div><div class="m-tl-carta">${f.html}</div></div>`;
+            }).join('') + (!marcaPuesta && conHora.length ? `<div class="m-tl-ahora"><span>ahora, ${horaAhora}.</span></div>` : '');
             return `
             <section class="m-dia">
                 <div class="m-dia-cab">
-                    <div class="m-dia-titulo">${titulo}</div>
+                    <div><div class="m-dia-titulo">${titulo}</div><div class="m-dia-sub">${filas.length ? `${filas.length} ${filas.length === 1 ? 'cosa' : 'cosas'}.` : 'libre.'}</div></div>
                     <button class="m-mas" onclick="openNewEntryForDay('${sel}')" aria-label="Añadir algo este día">+</button>
                 </div>
-                ${filas.length ? `<div class="m-lista">${filas.map(f => f.html).join('')}</div>` : '<div class="m-vacio">nada este día.</div>'}
+                ${sinHora.length ? `<div class="m-lista m-tl-sinhora">${sinHora.map(f => f.html).join('')}</div>` : ''}
+                ${conHora.length ? `<div class="m-tl">${linea}</div>` : ''}
+                ${!filas.length ? '<div class="m-vacio">nada este día.</div>' : ''}
             </section>`;
         }
 

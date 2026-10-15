@@ -7896,3 +7896,107 @@ button.landing-about-link { border:0; background:none; font-family:inherit; curs
     .login-marca-lema { display:none; }
     #login-screen #login-box { padding:30px 26px 32px; }
 }
+
+/* ============================================================
+   MÓVIL v2: paleta propia, barra de pestañas abajo, semana + horario en
+   el inicio y bloques en tarjetas. Se mantiene lo de siempre (cifras y
+   títulos enormes, menú numerado), con más aire y menos líneas.
+   ============================================================ */
+body.mobile-standalone:not(.papel):not(.fundador), body.pwa:not(.papel):not(.fundador) {
+    --bg-app:#121211; --bg-card:#1d1d1b; --bg-card-hover:#262624; --bg-input:#1f1f1d; --bg-modal:#1d1d1b;
+    --text-primary:#f4f2eb; --text-secondary:#a29f96; --text-muted:#6d6a63;
+    --border:rgba(244,242,235,.08); --border-strong:rgba(244,242,235,.16);
+    --accent:#f4f2eb; --accent-contrast:#121211; --m-punto:#2a2a27; --m-superficie:#1d1d1b;
+}
+body.mobile-standalone.papel:not(.acuarela), body.pwa.papel:not(.acuarela) {
+    --bg-app:#efeee9; --bg-card:#ffffff; --bg-card-hover:#f6f5f1; --bg-modal:#ffffff;
+    --border:rgba(22,21,20,.07); --m-superficie:#ffffff; --m-punto:#e2e0d9;
+}
+body.mobile-standalone.acuarela, body.pwa.acuarela, body.mobile-standalone.fundador, body.pwa.fundador { --m-superficie:var(--bg-card); }
+body.mobile-standalone { background:var(--bg-app); }
+
+/* Más rápido al tocar: sin el retraso del doble toque ni el destello gris. */
+#mobile-shell button, #mobile-shell [onclick], #mobile-shell [data-open-entry], .m-tabbar button { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+/* Los difuminados son de lo que más cuesta a la GPU del móvil. */
+body.mobile-standalone .modal-overlay, body.pwa .modal-overlay { backdrop-filter:none; -webkit-backdrop-filter:none; background:rgba(0,0,0,.55); }
+/* Listas largas: lo que no se ve no se pinta. */
+#mobile-shell .m-fila, #mobile-shell .m-evento, #mobile-shell .m-nota { content-visibility:auto; contain-intrinsic-size:auto 60px; }
+
+.m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 104px); }
+.m-superficie { background:var(--m-superficie); border-radius:24px; padding:16px; }
+
+/* ---- Barra de pestañas ---- */
+.m-tabbar { position:fixed; left:12px; right:12px; bottom:calc(env(safe-area-inset-bottom, 0px) + 10px); z-index:55; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)) 64px repeat(2, minmax(0, 1fr)); align-items:center; height:66px; padding:0 6px; box-sizing:border-box; border-radius:24px; background:var(--m-superficie); border:1px solid var(--border); box-shadow:0 14px 34px -14px rgba(0,0,0,.55); }
+.m-tab { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; height:54px; padding:0; border:0; border-radius:16px; background:none; color:var(--text-muted); font-family:var(--font-family); font-size:10.5px; font-weight:700; cursor:pointer; transition:color .15s ease, transform .12s var(--ease-out); }
+.m-tab svg { width:21px; height:21px; }
+.m-tab span { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.m-tab:active { transform:scale(.92); }
+.m-tab.activa { color:var(--text-primary); }
+.m-tab-letra { display:grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--text-muted); color:var(--m-superficie); font-style:normal; font-size:12px; font-weight:800; line-height:1; }
+.m-tab.activa .m-tab-letra { background:var(--text-primary); }
+.m-tab { position:relative; }
+.m-tab .m-menu-aviso { top:6px; right:calc(50% - 18px); }
+/* El menú vive ya en la barra de abajo. */
+.m-topbar .m-menu-btn { display:none; }
+.m-tab-mas { justify-self:center; width:56px; height:56px; padding:0; border:0; border-radius:50%; background:var(--m-acento); color:var(--m-sobre-acento); display:grid; place-items:center; cursor:pointer; box-shadow:0 10px 22px -10px var(--m-acento); transition:transform .12s var(--ease-out); }
+.m-tab-mas svg { width:22px; height:22px; }
+.m-tab-mas:active { transform:scale(.9); }
+body.m-menu-abierto .m-tabbar { z-index:61; }
+.m-menu-cuerpo { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 110px); }
+.pomo-pastilla { bottom:calc(env(safe-area-inset-bottom, 0px) + 88px) !important; }
+
+/* ---- Inicio ---- */
+.m-hero-num { font-size:min(32vw, 136px); }
+.m-hero-mes, .m-hero-anio { font-size:28px; }
+.m-mes.m-superficie { margin-top:22px; }
+.m-mes-cab { margin-bottom:12px; }
+.m-mes-flechas { align-items:center; }
+.m-mes-flechas button { border-color:var(--border); }
+.m-mes-flechas .m-mes-modo { width:auto; padding:0 12px; border-radius:999px; font-family:var(--font-family); font-size:12px; font-weight:700; }
+.m-semana-tira { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:4px; }
+.m-dia-pill { display:flex; flex-direction:column; align-items:center; gap:4px; padding:9px 0 8px; border:0; border-radius:999px; background:none; color:var(--text-primary); font-family:var(--font-family); cursor:pointer; transition:background-color .18s ease, transform .12s var(--ease-out); }
+.m-dia-pill small { font-size:11px; font-weight:700; color:var(--text-muted); }
+.m-dia-pill b { font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; }
+.m-dia-pill i { width:5px; height:5px; border-radius:50%; background:transparent; }
+.m-dia-pill i.on { background:var(--m-acento); }
+.m-dia-pill.pasado b { color:var(--text-secondary); }
+.m-dia-pill.hoy small, .m-dia-pill.hoy b { color:var(--m-acento); }
+.m-dia-pill.sel { background:var(--text-primary); }
+.m-dia-pill.sel small, .m-dia-pill.sel b { color:var(--bg-app); }
+.m-dia-pill:active { transform:scale(.94); }
+
+.m-dia { margin-top:28px; }
+.m-dia-cab { border-bottom:0; padding-bottom:6px; }
+.m-dia-sub { margin-top:2px; font-size:13px; font-weight:600; color:var(--text-secondary); }
+.m-tl-sinhora { margin-bottom:12px; }
+.m-lista { background:var(--m-superficie); border-radius:20px; padding:0 16px; }
+.m-lista > .m-fila:last-child, .m-lista > :last-child .m-fila { border-bottom:0; }
+.m-tl { position:relative; }
+.m-tl-item { display:grid; grid-template-columns:46px 18px minmax(0, 1fr); align-items:stretch; }
+.m-tl-hora { padding-top:20px; font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.m-tl-eje { position:relative; display:flex; justify-content:center; }
+.m-tl-eje::before { content:''; position:absolute; top:0; bottom:0; width:2px; background:var(--border-strong); }
+.m-tl-item:first-child .m-tl-eje::before { top:24px; }
+.m-tl-item:last-child .m-tl-eje::before { bottom:calc(100% - 24px); }
+.m-tl-eje i { position:relative; margin-top:21px; width:10px; height:10px; border-radius:50%; background:var(--m-acento); box-shadow:0 0 0 4px var(--bg-app); }
+.m-tl-item.pasada .m-tl-eje i { background:var(--text-muted); }
+.m-tl-item.pasada .m-tl-hora { color:var(--text-muted); }
+.m-tl-carta { padding:4px 0 6px 6px; }
+.m-tl-carta .m-fila { min-height:0; padding:12px 14px; border:0; border-radius:18px; background:var(--m-superficie); }
+.m-tl-carta .m-fila-hora { display:none; }
+.m-tl-ahora { position:relative; display:flex; align-items:center; gap:8px; margin:4px 0 4px 46px; height:18px; }
+.m-tl-ahora::before { content:''; position:absolute; left:3px; width:12px; height:12px; border-radius:50%; background:var(--text-primary); }
+.m-tl-ahora::after { content:''; flex:1; height:2px; margin-left:22px; background:var(--text-primary); opacity:.85; order:2; }
+.m-tl-ahora span { order:1; margin-left:26px; font-size:11px; font-weight:800; color:var(--text-primary); white-space:nowrap; }
+
+/* ---- Teselas en tarjetas ---- */
+.m-teselas { gap:10px; margin-top:28px; border-top:0; }
+.m-tesela, .m-tesela:nth-child(even) { min-height:124px; padding:16px; border:0; border-radius:22px; background:var(--m-superficie); }
+.m-tesela:active { background:var(--bg-card-hover); transform:scale(.98); }
+
+/* ---- Apartados ---- */
+.m-bloque-cab { border-bottom:0; padding-bottom:10px; margin-top:26px; }
+.m-titulo { font-size:min(50px, calc(140vw / var(--largo, 10))); }
+.m-evento, .m-nota, .m-viaje { border-radius:20px; }
+/* Móvil: las pestañas de Ocio en varias filas, todas a la vista. */
+.m-generico .culture-barra .culture-tabs { flex-wrap:wrap; overflow:visible; border-radius:20px; }
