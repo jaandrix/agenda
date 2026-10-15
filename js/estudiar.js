@@ -265,6 +265,7 @@ function pomoMas(min) {
 function pomoFoco(abrir) {
     let capa = document.getElementById('pomo-foco');
     if (!abrir) { capa?.remove(); document.body.classList.remove('pomo-foco-abierto'); pomoPintar(false); return; }
+    vtCortar();
     if (!capa) {
         capa = document.createElement('div');
         capa.id = 'pomo-foco';

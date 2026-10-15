@@ -343,6 +343,7 @@
         function invalidarCachesDerivadas() {
             patronesCache = null;
             actividadPorDiaCache = null;
+            financeSaldosCache = null;
         }
 
         // Clave de semana ISO (año-Wsemana), usada para no disparar el

@@ -80,6 +80,11 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `saveData()` encola las llamadas (`saveChain`) para que no se solapen.
 - **Modales:** patrón único `showModal(html)` / `closeModal()` sobre un solo
   `#modal-container` — no hay pila de modales, abrir uno sustituye el anterior.
+- **Transiciones de vista (`conTransicion`, interfaz.js):** mientras dura una, el navegador pinta su "foto"
+  por encima de todo; por eso `showModal`, el buscador y otras capas llaman a `vtCortar()` para cortarla
+  (si no, quedaban debajo, tapadas por el contenido). **Cualquier capa nueva que se abra encima debe
+  llamar a `vtCortar()`.** Finanzas cachea los saldos por pintado (`financeSaldosCache`, se vacía en
+  `render()` e `invalidarCachesDerivadas()`).
 - **PWA / versión móvil:** cuando la app se abre en modo standalone (añadida a
   pantalla de inicio en iOS/Android), se oculta la interfaz de escritorio y se
   muestra un `#mobile-shell` aparte que sigue siempre a `currentView`: inicio con el

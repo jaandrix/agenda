@@ -134,13 +134,27 @@
             return vtUltimoPuntero && Date.now() - vtUltimoPuntero.t < 1000 ? vtUltimoPuntero : null;
         }
 
+        // Mientras dura una transición, el navegador pinta su "foto" por encima
+        // de todo: un modal o el buscador abiertos en ese momento quedaban
+        // debajo, tapados por las casillas del calendario. Por eso abrir
+        // cualquier capa corta la transición en curso (vtCortar), salvo
+        // cuando la propia capa es el cambio que se anima (showModalDesde).
+        let vtActiva = null, vtEnCambio = false;
+
         function conTransicion(tipo, cambio) {
             if (!VT_DISPONIBLE || vtReducido()) { cambio(); return null; }
             const html = document.documentElement;
             html.dataset.vt = tipo;
-            const t = document.startViewTransition(cambio);
-            t.finished.finally(() => { if (html.dataset.vt === tipo) delete html.dataset.vt; });
+            const t = document.startViewTransition(() => { vtEnCambio = true; try { cambio(); } finally { vtEnCambio = false; } });
+            vtActiva = t;
+            t.finished.finally(() => { if (vtActiva === t) vtActiva = null; if (html.dataset.vt === tipo) delete html.dataset.vt; });
             return t;
+        }
+
+        function vtCortar() {
+            if (!vtActiva || vtEnCambio) return;
+            try { vtActiva.skipTransition(); } catch (_) { /* ya había terminado */ }
+            vtActiva = null;
         }
 
         // El orden de la barra lateral es el "mapa" de la app: bajar en

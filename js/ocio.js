@@ -28,7 +28,7 @@
             const tipoActivo = CULTURE_TAB_TO_TYPE[cultureTab];
             const pendientes = recomendaciones.filter(r => r.tipo === tipoActivo).length;
 
-            let html = `<div style="max-width:980px">
+            let html = `<div style="max-width:1240px">
                 <div class="culture-barra" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
                 <div class="culture-tabs" style="margin-bottom:0">
                     ${tabs.map(t => `
@@ -46,7 +46,6 @@
                 ${(!cultureSharedMode && cultureTab === 'series') ? `
                 <button class="btn-secondary btn-acento" style="width:auto" onclick="openImdbSeriesImportModal()">importar imdb.</button>
                 ` : ''}
-                <span class="culture-salto"></span>
                 ${!cultureSharedMode && cultureTab !== 'lists' ? `<button class="btn-secondary" style="width:auto" onclick="buscarPortadasPestana()">buscar portadas.</button>` : ''}
                 <button class="btn-secondary culture-shared-toggle" style="width:auto" onclick="toggleCultureSharedMode()">
                     ${cultureSharedMode ? '← mi biblioteca.' : `recomendaciones.${pendientes ? ` (${pendientes})` : ''}`}

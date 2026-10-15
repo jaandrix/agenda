@@ -2318,6 +2318,7 @@
 
         function openCommandPalette(mode) {
             if (document.getElementById('command-palette-overlay')) return;
+            vtCortar();
             cpMode = mode;
             cpSelectedIndex = 0;
             const overlay = document.createElement('div');

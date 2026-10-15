@@ -213,6 +213,7 @@
                 return;
             }
             if (actual || !btn) return;
+            vtCortar();
             const r = btn.getBoundingClientRect();
             const overlay = document.createElement('div');
             overlay.id = 'estancia-overlay';

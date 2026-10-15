@@ -292,18 +292,38 @@
             return !(t.pendiente && t.type === 'income');
         }
 
-        function financeProAccountBalance(key) {
-            let bal = Number(financePro.accounts[key]?.balance0 || 0);
+        // Finanzas pedía el saldo de cada cuenta (y la serie mensual) muchas
+        // veces por pintado, y cada vez recorría todos los movimientos: con
+        // unos miles, se notaba al entrar. Ahora se calcula una vez y se
+        // guarda hasta el siguiente pintado o cambio de datos (render() e
+        // invalidarCachesDerivadas() la vacían; además caduca sola).
+        let financeSaldosCache = null;
+        function financeSaldosVigente(c) {
+            return c && c.txs === financePro.transactions && c.n === financePro.transactions.length && Date.now() - c.cuando < 1500
+                && c.base === JSON.stringify(Object.values(financePro.accounts || {}).map(a => a?.balance0 || 0));
+        }
+
+        function financeProSaldos() {
+            if (financeSaldosVigente(financeSaldosCache)) return financeSaldosCache.saldos;
+            const saldos = {};
+            new Set([...FINANCE_PRO_ACCOUNT_KEYS, ...Object.keys(financePro.accounts || {})]).forEach(k => { saldos[k] = Number(financePro.accounts[k]?.balance0 || 0); });
             financePro.transactions.forEach(t => {
                 if (!financeProCuentaEnSaldo(t)) return;
+                const importe = Number(t.amount) || 0;
                 if (t.type === 'transfer') {
-                    if (t.account === key) bal -= Number(t.amount) || 0;
-                    if (t.transferTo === key) bal += Number(t.amount) || 0;
-                } else if (t.account === key) {
-                    bal += (t.type === 'income' ? 1 : -1) * (Number(t.amount) || 0);
+                    if (t.account in saldos) saldos[t.account] -= importe;
+                    if (t.transferTo in saldos) saldos[t.transferTo] += importe;
+                } else if (t.account in saldos) {
+                    saldos[t.account] += (t.type === 'income' ? 1 : -1) * importe;
                 }
             });
-            return bal;
+            financeSaldosCache = { txs: financePro.transactions, n: financePro.transactions.length, cuando: Date.now(), base: JSON.stringify(Object.values(financePro.accounts || {}).map(a => a?.balance0 || 0)), saldos, mensual: {} };
+            return saldos;
+        }
+
+        function financeProAccountBalance(key) {
+            const saldos = financeProSaldos();
+            return key in saldos ? saldos[key] : 0;
         }
 
         function financeProTotalBalance() {
@@ -331,9 +351,18 @@
         //  FINANZAS PRO — gráficas (saldo acumulado mes a mes)
         // ============================================================
         function financeProMonthlyBalances(key, rangeMonths) {
+            financeProSaldos();
+            const clave = `${key || ''}|${rangeMonths || ''}`;
+            const memo = financeSaldosCache.mensual;
+            if (!(clave in memo)) memo[clave] = financeProMonthlyBalancesCalc(key, rangeMonths);
+            return memo[clave];
+        }
+
+        function financeProMonthlyBalancesCalc(key, rangeMonths) {
             const txs = financePro.transactions;
             if (!txs.length) return [];
-            const sorted = [...txs].sort((a, b) => a.date.localeCompare(b.date));
+            if (!financeSaldosCache.ordenados) financeSaldosCache.ordenados = [...txs].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+            const sorted = financeSaldosCache.ordenados;
             const startMonth = sorted[0].date.slice(0, 7);
             // Normalmente el último mes es "ahora", pero si hay algún
             // movimiento fechado más adelante, el rango tiene que llegar

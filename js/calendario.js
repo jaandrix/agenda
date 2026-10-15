@@ -3,6 +3,7 @@
         // ============================================================
         function render() {
             invalidateLinkableIndex();
+            financeSaldosCache = null;
             if (!apartadoVisible(currentView)) currentView = 'calendar';
             const socio = document.getElementById('socio-badge');
             if (socio) {

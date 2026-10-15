@@ -57,6 +57,7 @@
         }
 
         function showModal(htmlContent) {
+            vtCortar();
             vtFichaOrigen = null;
             const container = document.getElementById('modal-container');
             container.innerHTML = `
