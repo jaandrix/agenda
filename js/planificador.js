@@ -574,81 +574,169 @@
         }
 
         // ============================================================
-        //  HÁBITOS
-        //  Seguimiento de constancia deliberadamente sin puntos, insignias
-        //  ni rachas destacadas en rojo/fuego: solo una cuadrícula discreta
-        //  de los últimos días y un número de racha en texto normal.
+        //  RUTINAS (antes Hábitos; la vista y los datos siguen llamándose
+        //  `habits` para no romper lo guardado ni el conector)
+        //  Pensado para dos tipos de persona: quien vive de rutinas (momentos
+        //  del día, frecuencias, rutinas con pasos, marcar días pasados) y
+        //  quien solo quiere probar (ideas que se añaden con un toque, una
+        //  sola para empezar). Sin puntos, insignias ni fuego: una semana de
+        //  bolitas y la racha en texto normal.
+        //  Campos de cada rutina: texto, activo, completadas { fecha: true },
+        //  y opcionales momento ('manana' | 'tarde' | 'noche'), frecuencia
+        //  { tipo: 'diaria' | 'dias' | 'semana', dias: [0..6], veces },
+        //  pasos [texto] y pasosHechos { fecha: [índices] }.
         // ============================================================
+        const RUTINA_MOMENTOS = [['manana', 'por la mañana.'], ['tarde', 'por la tarde.'], ['noche', 'por la noche.'], ['', 'cuando sea.']];
+        const RUTINA_LETRAS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+        const RUTINAS_IDEAS = [
+            { texto: 'Beber un vaso de agua al levantarme', momento: 'manana' },
+            { texto: 'Rutina de mañana', momento: 'manana', pasos: ['Beber agua', 'Estirar 5 minutos', 'Hacer la cama'] },
+            { texto: 'Caminar 20 minutos', momento: 'tarde' },
+            { texto: 'Leer 10 minutos', momento: 'noche' },
+            { texto: 'Dejar el móvil a las 23:30', momento: 'noche' },
+            { texto: 'Hacer deporte', momento: 'tarde', frecuencia: { tipo: 'semana', veces: 3 } },
+        ];
+
+        function rutinaFrecuencia(h) { return h.frecuencia && h.frecuencia.tipo ? h.frecuencia : { tipo: 'diaria' }; }
+
+        function rutinaToca(h, iso) {
+            const f = rutinaFrecuencia(h);
+            if (f.tipo !== 'dias' || !(f.dias || []).length) return true;
+            return f.dias.includes(new Date(iso + 'T12:00:00').getDay());
+        }
+
+        function rutinaLunes(iso) {
+            const d = new Date(iso + 'T12:00:00');
+            d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+            return d.toISOString().slice(0, 10);
+        }
+
+        function rutinaHechasSemana(h, iso = todayISO()) {
+            const d = new Date(rutinaLunes(iso) + 'T12:00:00');
+            let n = 0;
+            for (let i = 0; i < 7; i++) { if (h.completadas?.[d.toISOString().slice(0, 10)]) n++; d.setDate(d.getDate() + 1); }
+            return n;
+        }
+
+        // Los días que no tocan no rompen la racha; en las de "x veces por
+        // semana" la racha se cuenta en semanas cumplidas.
         function habitStreak(habit, dateStr = todayISO()) {
+            const f = rutinaFrecuencia(habit);
+            if (f.tipo === 'semana') {
+                const veces = Number(f.veces) || 1;
+                let semanas = 0;
+                const d = new Date(rutinaLunes(dateStr) + 'T12:00:00');
+                if (rutinaHechasSemana(habit, dateStr) < veces) d.setDate(d.getDate() - 7);
+                for (let i = 0; i < 300; i++) {
+                    if (rutinaHechasSemana(habit, d.toISOString().slice(0, 10)) >= veces) { semanas++; d.setDate(d.getDate() - 7); } else break;
+                }
+                return semanas;
+            }
             let streak = 0;
             let d = new Date(dateStr + 'T12:00:00');
             // Lo que aún no se ha marcado hoy no rompe la racha: el día no ha
             // terminado, así que se cuenta desde ayer.
             if (!habit.completadas?.[dateStr]) d.setDate(d.getDate() - 1);
-            while (true) {
+            for (let i = 0; i < 2000; i++) {
                 const iso = d.toISOString().slice(0, 10);
-                if (habit.completadas?.[iso]) { streak++; d.setDate(d.getDate() - 1); }
-                else break;
+                if (habit.completadas?.[iso]) streak++;
+                else if (rutinaToca(habit, iso)) break;
+                d.setDate(d.getDate() - 1);
             }
             return streak;
         }
 
-        function renderHabitDots(habit, days = 14) {
-            const cells = [];
-            const d = new Date();
-            for (let i = days - 1; i >= 0; i--) {
-                const dd = new Date(d);
-                dd.setDate(dd.getDate() - i);
-                const iso = dd.toISOString().slice(0, 10);
-                cells.push(`<span class="habit-dot ${habit.completadas?.[iso] ? 'on' : ''}" title="${iso}"></span>`);
-            }
-            return `<div class="habit-dots">${cells.join('')}</div>`;
+        function rutinaTextoFrecuencia(h) {
+            const f = rutinaFrecuencia(h);
+            if (f.tipo === 'dias' && (f.dias || []).length) return [1, 2, 3, 4, 5, 6, 0].filter(d => f.dias.includes(d)).map(d => ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][d]).join(', ') + '.';
+            if (f.tipo === 'semana') return `${f.veces || 1} ${Number(f.veces) === 1 ? 'vez' : 'veces'} por semana, llevas ${rutinaHechasSemana(h)}.`;
+            return 'todos los días.';
         }
 
-        function renderHabits() {
-            return `
-            <div style="max-width:640px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                    <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Hábitos</div>
-                    <button class="btn-modal-primary" style="width:auto" onclick="openAddHabit()">+ Hábito</button>
+        function rutinaPasosHoy(h, iso = todayISO()) {
+            return new Set((h.pasosHechos?.[iso] || []).filter(i => i < (h.pasos || []).length));
+        }
+
+        function renderRutina(h, movil = false) {
+            const hoy = todayISO();
+            const on = !!h.completadas?.[hoy];
+            const pasos = h.pasos || [];
+            const hechos = rutinaPasosHoy(h);
+            const racha = habitStreak(h);
+            const f = rutinaFrecuencia(h);
+            const parcial = !on && pasos.length && hechos.size ? hechos.size / pasos.length : 0;
+            const semana = Array.from({ length: 7 }, (_, i) => {
+                const d = new Date(); d.setDate(d.getDate() - 6 + i);
+                const iso = d.toISOString().slice(0, 10);
+                const toca = rutinaToca(h, iso);
+                return `<button class="rutina-dia ${h.completadas?.[iso] ? 'on' : ''} ${toca ? '' : 'libre'} ${iso === hoy ? 'hoy' : ''}" onclick="rutinaMarcarDia('${h.id}','${iso}')" aria-label="${iso}"><i>${RUTINA_LETRAS[d.getDay()]}</i><span></span></button>`;
+            }).join('');
+            return `<div class="rutina ${on ? 'hecha' : ''} ${movil ? 'rutina-movil' : ''}" data-rutina="${h.id}">
+                <button class="rutina-check ${on ? 'on' : ''}" style="--p:${Math.round(parcial * 100)}" onclick="toggleHabitToday('${h.id}')" aria-label="${on ? 'Desmarcar' : 'Hecha hoy'}"></button>
+                <div class="rutina-cuerpo">
+                    <button class="rutina-nombre" onclick="openHabitMenu('${h.id}')">${escapeHtml(h.texto)}</button>
+                    <div class="rutina-meta">${rutinaTextoFrecuencia(h)} ${racha ? `<b>racha de ${racha} ${f.tipo === 'semana' ? (racha === 1 ? 'semana' : 'semanas') : (racha === 1 ? 'día' : 'días')}.</b>` : ''}</div>
+                    ${pasos.length ? `<div class="rutina-pasos">${pasos.map((p, i) => `<button class="rutina-paso ${on || hechos.has(i) ? 'on' : ''}" onclick="rutinaMarcarPaso('${h.id}',${i})"><span></span>${escapeHtml(p)}</button>`).join('')}</div>` : ''}
+                    <div class="rutina-semana">${semana}</div>
+                    ${h.objetivoId && entries.find(g => g.id === h.objetivoId) ? `<div class="rutina-objetivo">${h.kaizen ? 'paso kaizen' : 'rutina'} para «${escapeHtml(entries.find(g => g.id === h.objetivoId).title)}».</div>` : ''}
                 </div>
-                <div style="color:var(--text-secondary);margin-bottom:20px;font-size:12.5px">Solo para llevar la cuenta, sin presión. Marca el día cuando lo hagas.</div>
-                ${habits.length ? habits.filter(h => h.activo !== false).map(h => {
-                    const today = todayISO();
-                    const streak = habitStreak(h);
-                    return `
-                    <div class="habit-card">
-                        <div class="habit-card-head">
-                            <label class="habit-check-row">
-                                <input type="checkbox" ${h.completadas?.[today] ? 'checked' : ''} onchange="toggleHabitToday('${h.id}')">
-                                <span>${escapeHtml(h.texto)}</span>
-                            </label>
-                            <span class="habit-menu" onclick="openHabitMenu('${h.id}')">⋯</span>
-                        </div>
-                        ${renderHabitDots(h)}
-                        ${h.objetivoId && entries.find(g => g.id === h.objetivoId) ? `<div class="habit-objetivo">${h.kaizen ? 'paso kaizen' : 'rutina'} para «${escapeHtml(entries.find(g => g.id === h.objetivoId).title)}».</div>` : ''}
-                        <div class="habit-streak-text">${streak > 0 ? `Racha: ${streak} día${streak === 1 ? '' : 's'}` : 'Sin racha activa'}</div>
-                    </div>`;
-                }).join('') : `<div class="empty-state"><div class="empty-title">ningún hábito todavía.</div><div class="empty-sub">Pulsa + Hábito para empezar a seguir alguno, sin más presión que la cuadrícula.</div></div>`}
             </div>`;
         }
 
-        function openAddHabit() {
-            showModal(`
-                <div class="modal-title">+ Hábito</div>
-                <div class="modal-label">¿Qué quieres seguir?</div>
-                <input id="habit-texto" class="modal-input" placeholder="Ej: Leer 10 minutos">
-                <button class="btn-modal-primary" onclick="saveHabit()">Añadir</button>
-            `);
-            setTimeout(() => document.getElementById('habit-texto')?.focus(), 50);
+        // El cuerpo es el mismo en escritorio y en el móvil: lo de hoy por
+        // momentos del día, lo que hoy no toca y lo que está en pausa.
+        function renderRutinasCuerpo(movil = false) {
+            const hoy = todayISO();
+            const activas = habits.filter(h => h.activo !== false);
+            const deHoy = activas.filter(h => rutinaToca(h, hoy));
+            const otras = activas.filter(h => !rutinaToca(h, hoy));
+            const pausadas = habits.filter(h => h.activo === false);
+            const ideas = RUTINAS_IDEAS.filter(i => !habits.some(h => h.texto.toLowerCase() === i.texto.toLowerCase()));
+            const grupos = RUTINA_MOMENTOS.map(([k, t]) => [t, deHoy.filter(h => (h.momento || '') === k)]).filter(([, l]) => l.length);
+            return `
+                ${!activas.length ? `<div class="rutinas-vacio"><b>empieza por una.</b>Una rutina pequeña que hagas casi sin pensar vale más que diez que te agobien. Elige una idea o escribe la tuya; cuando la tengas, añade otra.</div>` : ''}
+                ${grupos.map(([t, l]) => `<div class="rutinas-grupo"><div class="rutinas-grupo-titulo">${t}</div>${l.map(h => renderRutina(h, movil)).join('')}</div>`).join('')}
+                ${otras.length ? `<div class="rutinas-grupo"><div class="rutinas-grupo-titulo">hoy no toca.</div>${otras.map(h => renderRutina(h, movil)).join('')}</div>` : ''}
+                ${activas.length < 4 && ideas.length ? `<div class="rutinas-ideas"><div class="rutinas-grupo-titulo">ideas para empezar.</div><div class="rutinas-ideas-lista">${ideas.map((i, n) => `<button class="rutinas-idea" onclick="rutinaDesdeIdea(${RUTINAS_IDEAS.indexOf(i)})">+ ${escapeHtml(i.texto.toLowerCase())}.${i.pasos ? `<small>${i.pasos.length} pasos</small>` : ''}</button>`).join('')}</div></div>` : ''}
+                ${pausadas.length ? `<details class="rutinas-pausa"><summary>en pausa. ${pausadas.length}</summary>${pausadas.map(h => `<button class="rutinas-pausada" onclick="openHabitMenu('${h.id}')">${escapeHtml(h.texto)}</button>`).join('')}</details>` : ''}`;
         }
 
-        async function saveHabit() {
-            const texto = document.getElementById('habit-texto')?.value.trim();
-            if (!texto) { showToast('Escribe el hábito', true); return; }
-            habits.push({ id: 'habit_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), texto, activo: true, completadas: {} });
-            closeModal();
-            render();
+        function rutinasResumenHoy() {
+            const hoy = todayISO();
+            const deHoy = habits.filter(h => h.activo !== false && rutinaToca(h, hoy));
+            return { total: deHoy.length, hechas: deHoy.filter(h => h.completadas?.[hoy]).length };
+        }
+
+        function renderHabits() {
+            const r = rutinasResumenHoy();
+            return `
+            <div class="rutinas">
+                <div class="rutinas-cab">
+                    <div>
+                        <div class="rutinas-titulo">Rutinas</div>
+                        <div class="rutinas-sub" id="rutinas-sub">${r.total ? `${r.hechas} de ${r.total} hoy.` : 'Lo que haces para estar bien, sin presión.'}</div>
+                    </div>
+                    <button class="btn-modal-primary" style="width:auto" onclick="openAddHabit()">+ rutina.</button>
+                </div>
+                ${renderRutinasCuerpo()}
+            </div>`;
+        }
+
+        // Al marcar se repinta solo esa rutina (y la cuenta de hoy), no el
+        // apartado entero: con muchas rutinas el repintado completo se notaba.
+        function repintarRutina(id) {
+            const h = habits.find(x => x.id === id);
+            const tarjetas = document.querySelectorAll(`[data-rutina="${id}"]`);
+            if (!h || !tarjetas.length || (currentView !== 'habits' && currentView !== 'calendar')) { render(); return; }
+            tarjetas.forEach(t => { t.outerHTML = renderRutina(h, !!t.closest('#mobile-shell')); });
+            const r = rutinasResumenHoy();
+            document.querySelectorAll('#rutinas-sub').forEach(el => { el.textContent = r.total ? `${r.hechas} de ${r.total} hoy.` : ''; });
+            if (typeof renderMobileShell === 'function' && document.querySelector('#mobile-shell .m-cab')) {
+                document.querySelectorAll('#mobile-shell .m-sub').forEach(el => { if (currentView === 'habits') el.textContent = r.total ? `${r.hechas} de ${r.total} hoy.` : 'sin presión.'; });
+            }
+        }
+
+        async function guardarRutinas() {
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -658,18 +746,107 @@
             const today = todayISO();
             h.completadas = h.completadas || {};
             h.completadas[today] = !h.completadas[today];
-            render();
-            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            if (!h.completadas[today]) delete h.completadas[today];
+            if ((h.pasos || []).length) {
+                h.pasosHechos = h.pasosHechos || {};
+                if (h.completadas[today]) h.pasosHechos[today] = h.pasos.map((_, i) => i); else delete h.pasosHechos[today];
+            }
+            if (currentView === 'habits') repintarRutina(id); else render();
+            guardarRutinas();
         }
 
-        function openHabitMenu(id) {
+        function rutinaMarcarPaso(id, i) {
             const h = habits.find(x => x.id === id);
             if (!h) return;
+            const hoy = todayISO();
+            h.pasosHechos = h.pasosHechos || {};
+            const hechos = rutinaPasosHoy(h);
+            if (h.completadas?.[hoy]) h.pasos.forEach((_, n) => hechos.add(n));
+            if (hechos.has(i)) hechos.delete(i); else hechos.add(i);
+            h.pasosHechos[hoy] = [...hechos];
+            h.completadas = h.completadas || {};
+            if (hechos.size === h.pasos.length) h.completadas[hoy] = true; else delete h.completadas[hoy];
+            repintarRutina(id);
+            guardarRutinas();
+        }
+
+        // Se puede marcar o desmarcar cualquier día de la última semana: a
+        // quien se le olvidó apuntarlo ayer no se le rompe la racha.
+        function rutinaMarcarDia(id, iso) {
+            const h = habits.find(x => x.id === id);
+            if (!h) return;
+            if (iso === todayISO()) { toggleHabitToday(id); return; }
+            h.completadas = h.completadas || {};
+            if (h.completadas[iso]) delete h.completadas[iso]; else h.completadas[iso] = true;
+            repintarRutina(id);
+            guardarRutinas();
+        }
+
+        function rutinaDesdeIdea(n) {
+            const i = RUTINAS_IDEAS[n];
+            if (!i) return;
+            habits.push({ id: 'habit_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), texto: i.texto, activo: true, completadas: {}, momento: i.momento || '', frecuencia: i.frecuencia || { tipo: 'diaria' }, pasos: i.pasos ? [...i.pasos] : undefined });
+            render();
+            guardarRutinas();
+            showToast(`«${i.texto}» añadida. Tócala para ajustarla.`);
+        }
+
+        function openAddHabit() { openRutina(null); }
+        function openHabitMenu(id) { openRutina(id); }
+
+        function openRutina(id) {
+            const h = id ? habits.find(x => x.id === id) : null;
+            const f = h ? rutinaFrecuencia(h) : { tipo: 'diaria' };
+            window._rutinaBorrador = { momento: h?.momento || '', tipo: f.tipo, dias: [...(f.dias || [])], veces: f.veces || 3 };
+            const b = window._rutinaBorrador;
+            const chip = (grupo, valor, texto, activo) => `<button type="button" class="profe-chip ${activo ? 'activa' : ''}" onclick="rutinaElegir('${grupo}','${valor}',this)">${texto}</button>`;
             showModal(`
-                <div class="modal-title">${escapeHtml(h.texto)}</div>
-                <button class="btn-secondary" onclick="toggleHabitActiveState('${id}')">${h.activo === false ? 'Reactivar' : 'Pausar'}</button>
-                <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteHabit('${id}')">Eliminar hábito</button>
+                <div class="modal-title">${h ? 'rutina.' : 'nueva rutina.'}</div>
+                <div class="modal-label">qué</div>
+                <input id="rutina-texto" class="modal-input" value="${escapeHtml(h?.texto || '')}" placeholder="Leer 10 minutos, rutina de mañana...">
+                <div class="modal-label">cuándo, más o menos</div>
+                <div class="profe-dias-elegir" data-grupo="momento">${RUTINA_MOMENTOS.map(([k, t]) => chip('momento', k, t.replace('por la ', '').replace('cuando sea.', 'cuando sea.'), b.momento === k)).join('')}</div>
+                <div class="modal-label">cada cuánto</div>
+                <div class="profe-dias-elegir" data-grupo="tipo">${[['diaria', 'todos los días.'], ['dias', 'algunos días.'], ['semana', 'x veces por semana.']].map(([k, t]) => chip('tipo', k, t, b.tipo === k)).join('')}</div>
+                <div id="rutina-dias" class="profe-dias-elegir" ${b.tipo === 'dias' ? '' : 'hidden'}>${[1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" class="profe-chip ${b.dias.includes(d) ? 'activa' : ''}" onclick="rutinaDia(${d},this)">${['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][d]}</button>`).join('')}</div>
+                <div id="rutina-veces" ${b.tipo === 'semana' ? '' : 'hidden'}><input id="rutina-veces-n" class="modal-input" type="number" min="1" max="7" value="${b.veces}" style="max-width:120px"></div>
+                <div class="modal-label">pasos (opcional, uno por línea)</div>
+                <textarea id="rutina-pasos" class="modal-input" rows="3" placeholder="Beber agua&#10;Estirar 5 minutos&#10;Hacer la cama">${escapeHtml((h?.pasos || []).join('\n'))}</textarea>
+                <button class="btn-modal-primary" onclick="guardarRutina('${h?.id || ''}')">guardar.</button>
+                ${h ? `<button class="btn-secondary" style="margin-top:8px" onclick="toggleHabitActiveState('${h.id}')">${h.activo === false ? 'reactivar.' : 'poner en pausa.'}</button>
+                <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteHabit('${h.id}')">eliminar rutina.</button>` : ''}
             `);
+            setTimeout(() => { if (!h) document.getElementById('rutina-texto')?.focus(); }, 50);
+        }
+
+        function rutinaElegir(grupo, valor, btn) {
+            window._rutinaBorrador[grupo] = valor;
+            btn.parentNode.querySelectorAll('.profe-chip').forEach(x => x.classList.toggle('activa', x === btn));
+            if (grupo === 'tipo') {
+                document.getElementById('rutina-dias').hidden = valor !== 'dias';
+                document.getElementById('rutina-veces').hidden = valor !== 'semana';
+            }
+        }
+
+        function rutinaDia(d, btn) {
+            const b = window._rutinaBorrador;
+            b.dias = b.dias.includes(d) ? b.dias.filter(x => x !== d) : [...b.dias, d];
+            btn.classList.toggle('activa');
+        }
+
+        function guardarRutina(id) {
+            const texto = document.getElementById('rutina-texto')?.value.trim();
+            if (!texto) { showToast('Escribe la rutina', true); return; }
+            const b = window._rutinaBorrador;
+            const pasos = (document.getElementById('rutina-pasos')?.value || '').split('\n').map(x => x.trim()).filter(Boolean);
+            const frecuencia = b.tipo === 'dias' && b.dias.length ? { tipo: 'dias', dias: [...b.dias].sort() } : b.tipo === 'semana' ? { tipo: 'semana', veces: Math.min(7, Math.max(1, Number(document.getElementById('rutina-veces-n')?.value) || 3)) } : { tipo: 'diaria' };
+            const datos = { texto, momento: b.momento || '', frecuencia, pasos: pasos.length ? pasos : undefined };
+            const h = id && habits.find(x => x.id === id);
+            if (h) Object.assign(h, datos);
+            else habits.push({ id: 'habit_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), activo: true, completadas: {}, ...datos });
+            closeModal();
+            render();
+            guardarRutinas();
         }
 
         async function toggleHabitActiveState(id) {
@@ -678,14 +855,14 @@
             h.activo = h.activo === false ? true : false;
             closeModal();
             render();
-            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            guardarRutinas();
         }
 
         async function deleteHabit(id) {
-            if (!confirm('¿Eliminar este hábito? Se pierde su historial.')) return;
+            if (!confirm('¿Eliminar esta rutina? Se pierde su historial.')) return;
             habits = habits.filter(h => h.id !== id);
             closeModal();
             render();
-            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            guardarRutinas();
         }
 

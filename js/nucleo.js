@@ -782,7 +782,7 @@
             notes: 'Notas',
             goals: 'Objetivos',
             planner: 'Planificador del día',
-            habits: 'Hábitos',
+            habits: 'Rutinas',
             graph: 'Conexiones',
             collectibles: 'Coleccionables',
             friends: 'Social',
@@ -806,7 +806,7 @@
                 { view: 'calendar', icon: '◷', text: 'Home' },
                 { view: 'home', icon: '⌂', text: 'Panorama' },
                 { view: 'planner', icon: '▤', text: 'Planificador' },
-                { view: 'habits', icon: '○', text: 'Hábitos' },
+                { view: 'habits', icon: '○', text: 'Rutinas' },
                 { view: 'notes', icon: '✎', text: 'Notas' },
             ] },
             { label: 'Desarrollo', items: [
@@ -1183,7 +1183,7 @@
                 </button>`;
             const teselas = [
                 tesela('planner', total ? `${hechas}<small>/${total}</small>` : '0', total ? 'tareas de hoy hechas.' : 'tareas para hoy.', total ? `<span class="m-tesela-anillo">${mobileAnillo(hechas / total, 44)}</span>` : ''),
-                tesela('habits', activos.length ? `${habHechos}<small>/${activos.length}</small>` : '—', 'hábitos hoy.'),
+                tesela('habits', activos.length ? `${habHechos}<small>/${activos.length}</small>` : '—', 'rutinas hoy.'),
                 tesela('finances', `${Math.round(expense).toLocaleString('es-ES')}<small>€</small>`, `gastado en ${MOBILE_MESES[new Date().getMonth()]}.`),
                 !apartadoVisible('studies') ? '' : examen ? tesela('studies', diasExamen === 0 ? 'hoy' : diasExamen, `${diasExamen === 0 ? '' : diasExamen === 1 ? 'día para ' : 'días para '}${escapeHtml(examen.title || 'el examen').toLowerCase()}.`) : tesela('studies', '—', 'sin exámenes a la vista.'),
             ].filter(Boolean);
@@ -1280,27 +1280,10 @@
         }
 
         function renderMobileHabits() {
-            const hoy = todayISO();
-            const activos = habits.filter(h => h.activo !== false);
-            const hechos = activos.filter(h => h.completadas?.[hoy]).length;
-            return `${renderMobileCabecera('hábitos', activos.length ? `${hechos} de ${activos.length} hoy.` : 'sin presión.')}
-                <button class="m-boton m-boton-acento m-boton-ancho" onclick="openAddHabit()">+ hábito.</button>
-                ${activos.length ? activos.map(h => {
-                    const on = !!h.completadas?.[hoy];
-                    const racha = habitStreak(h);
-                    const puntos = Array.from({ length: 14 }, (_, i) => {
-                        const d = new Date(); d.setDate(d.getDate() - 13 + i);
-                        return `<span class="${h.completadas?.[d.toISOString().slice(0, 10)] ? 'on' : ''}"></span>`;
-                    }).join('');
-                    return `<div class="m-habito ${on ? 'hecho' : ''}">
-                        <button class="m-check m-check-grande ${on ? 'on' : ''}" onclick="toggleHabitToday('${h.id}')" aria-label="Hecho hoy"></button>
-                        <div class="m-habito-cuerpo" onclick="openHabitMenu('${h.id}')">
-                            <div class="m-habito-nombre">${escapeHtml(h.texto)}</div>
-                            <div class="m-habito-racha">${racha > 0 ? `racha de ${racha} día${racha === 1 ? '' : 's'}.` : 'sin racha.'}</div>
-                            <div class="m-habito-puntos">${puntos}</div>
-                        </div>
-                    </div>`;
-                }).join('') : '<div class="m-vacio">ningún hábito todavía.</div>'}`;
+            const r = rutinasResumenHoy();
+            return `${renderMobileCabecera('rutinas', r.total ? `${r.hechas} de ${r.total} hoy.` : 'sin presión.')}
+                <button class="m-boton m-boton-acento m-boton-ancho" onclick="openAddHabit()">+ rutina.</button>
+                <div class="rutinas rutinas-en-movil">${renderRutinasCuerpo(true)}</div>`;
         }
 
         function renderMobileFinances() {

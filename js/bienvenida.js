@@ -62,7 +62,7 @@ function renderBienvenidaPaso() {
         const opcionales = APARTADOS_OPCIONALES.filter(o => !(o.view === 'universidad' && b.perfil === 'trabajador'));
         cuerpo = `
             <h2>elige qué quieres ver.</h2>
-            <p>Siempre tienes calendario, planificador, hábitos, notas, eventos, finanzas, ocio, viajes y social. Estos son opcionales:</p>
+            <p>Siempre tienes calendario, planificador, rutinas, notas, eventos, finanzas, ocio, viajes y social. Estos son opcionales:</p>
             <div class="bienvenida-lista">${opcionales.map(o => `
                 <label class="bienvenida-fila">
                     <span><b>${o.titulo}</b><small>${o.texto}</small></span>

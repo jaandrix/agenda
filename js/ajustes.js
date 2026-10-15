@@ -467,14 +467,38 @@
             showModal(`<div class="modal-title">apartados opcionales.</div><div id="apartados-opcionales">${renderApartadosOpcionales()}</div>`);
         }
 
+        // Los opcionales se agrupan en ramas (bitácora#school...). Lo que no
+        // esté en ninguna rama cae en #otros, así un apartado nuevo nunca se
+        // queda sin poder activarse.
+        const RAMAS_APARTADOS = [
+            { id: 'school', texto: 'Para quien estudia o da clase.', apartados: ['universidad', 'profesorado'] },
+            { id: 'home', texto: 'El día a día de casa.', apartados: ['compra', 'actualizaciones', 'collectibles'] },
+            { id: 'work', texto: 'Proyectos y recursos de trabajo.', apartados: ['projects', 'links'] },
+            { id: 'mind', texto: 'Tu segundo cerebro: cómo se relaciona todo.', apartados: ['tags', 'graph'] },
+        ];
+
         function renderApartadosOpcionales() {
             const { opcionales } = configApartados();
-            return `<p class="finance-modal-note" style="margin-top:0">Lo que desactives desaparece de los menús, pero sus datos se quedan guardados.</p>
-                ${APARTADOS_OPCIONALES.map(o => `
-                    <div class="ajustes-opcional">
-                        <div><b>${o.titulo}</b><span>${o.texto}</span></div>
-                        <button class="finance-pro-switch ${opcionales[o.view] ? 'on' : ''}" onclick="alternarOpcional('${o.view}');document.getElementById('apartados-opcionales').innerHTML=renderApartadosOpcionales()" aria-label="${o.titulo}"><span class="finance-pro-switch-knob"></span></button>
-                    </div>`).join('')}`;
+            const enRama = new Set(RAMAS_APARTADOS.flatMap(r => r.apartados));
+            const ramas = [...RAMAS_APARTADOS, { id: 'otros', texto: 'El resto.', apartados: APARTADOS_OPCIONALES.map(o => o.view).filter(v => !enRama.has(v)) }]
+                .map(r => ({ ...r, items: r.apartados.map(v => APARTADOS_OPCIONALES.find(o => o.view === v)).filter(Boolean) }))
+                .filter(r => r.items.length);
+            return `<p class="finance-modal-note" style="margin-top:0">Toca un apartado para encenderlo o apagarlo. Lo que apagues desaparece de los menús, pero sus datos se quedan guardados.</p>
+                <div class="ramas">${ramas.map(r => {
+                    const activos = r.items.filter(o => opcionales[o.view]).length;
+                    return `<section class="rama">
+                        <div class="rama-cab">
+                            <span class="rama-nombre">bitácora<b>#${r.id}</b></span>
+                            <span class="rama-cuenta">${activos} de ${r.items.length}</span>
+                        </div>
+                        <div class="rama-texto">${r.texto}</div>
+                        <div class="rama-apartados">${r.items.map(o => `
+                            <button class="rama-apartado ${opcionales[o.view] ? 'on' : ''}" onclick="alternarOpcional('${o.view}');document.getElementById('apartados-opcionales').innerHTML=renderApartadosOpcionales()" aria-pressed="${!!opcionales[o.view]}">
+                                <span class="rama-apartado-cab"><b>${o.titulo}</b><i aria-hidden="true"></i></span>
+                                <small>${o.texto}</small>
+                            </button>`).join('')}</div>
+                    </section>`;
+                }).join('')}</div>`;
         }
 
         function bloqueAjuste(id, icono, titulo, texto, cuerpo, clase = '') {
@@ -695,7 +719,7 @@
                 <div class="condiciones">
                     <p>Se borra <b>para siempre</b>, sin forma de recuperarlo:</p>
                     <ul>
-                        <li>todo lo que hay en tu Bitácora: entradas, notas, finanzas, estudios, hábitos, documentos y archivos subidos;</li>
+                        <li>todo lo que hay en tu Bitácora: entradas, notas, finanzas, estudios, rutinas, documentos y archivos subidos;</li>
                         <li>tus copias de seguridad, tus amistades, tu código de amigo y tus conectores con Claude o ChatGPT;</li>
                         <li>en los grupos de gastos compartidos sigues apareciendo con tu nombre, sin cuenta, para que a tus amigos les cuadren las cuentas.</li>
                     </ul>

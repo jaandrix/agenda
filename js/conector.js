@@ -154,13 +154,13 @@
                 if (op.accion === 'crear') {
                     if (habits.some(h => h.id === ref)) return null;
                     habits.push({ id: ref, texto: op.texto, activo: true, completadas: {} });
-                    return linea('hábito', `hábito nuevo «${corto(op.texto)}».`, { accion: 'habito_quitar', id: ref });
+                    return linea('rutina', `rutina nueva «${corto(op.texto)}».`, { accion: 'habito_quitar', id: ref });
                 }
                 const h = habits.find(x => x.id === op.id);
                 if (!h) return null;
                 const antes = h.activo;
                 h.activo = !!op.activo;
-                return linea('hábito', `hábito «${corto(h.texto)}» ${op.activo ? 'reactivado' : 'en pausa'}.`, { accion: 'habito_activo', id: h.id, antes });
+                return linea('rutina', `rutina «${corto(h.texto)}» ${op.activo ? 'reactivado' : 'en pausa'}.`, { accion: 'habito_activo', id: h.id, antes });
             }
             if (op.tipo === 'tarea_recurrente') {
                 if (op.accion === 'crear') {
@@ -476,12 +476,12 @@
         function apartadoDeOp(op) {
             if (op.tipo === 'entrada_crear' || op.tipo === 'entrada_editar') return ENTRADA_APARTADO[op.entryType] || 'otros';
             if (op.tipo === 'deseo') return 'finanzas';
-            if (op.tipo === 'habito') return 'hábitos y esfuerzo';
+            if (op.tipo === 'habito') return 'rutinas y esfuerzo';
             if (op.tipo === 'tarea_recurrente') return 'planificador';
             if (op.tipo === 'enlace') return 'enlaces';
             if (op.tipo === 'clase') return 'estudios';
             if (op.tipo === 'borrar') return { evento: 'eventos', tarea: 'planificador', movimiento: 'finanzas' }[op.coleccion] || 'otros';
-            return { tarea: 'planificador', editar_tarea: 'planificador', movimiento: 'finanzas', editar_movimiento: 'finanzas', importar: 'finanzas', nota: 'notas', dia: 'hábitos y esfuerzo', estudio_crear: 'estudios', estudio_editar: 'estudios' }[op.tipo] || 'otros';
+            return { tarea: 'planificador', editar_tarea: 'planificador', movimiento: 'finanzas', editar_movimiento: 'finanzas', importar: 'finanzas', nota: 'notas', dia: 'rutinas y esfuerzo', estudio_crear: 'estudios', estudio_editar: 'estudios' }[op.tipo] || 'otros';
         }
 
         // Qué se propone, contado como lo leería el usuario. detalle va en un
@@ -521,7 +521,7 @@
                     return { tipo: d.active === false ? `baja de ${nombre}` : d.active === true ? `reactivar ${nombre}` : `cambio de ${nombre}`, texto: `«${op.resumen}»`, meta: [d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `progreso ${d.currentValue}${d.targetValue !== undefined ? ' de ' + d.targetValue : ''}` : '', d.status || '', d.startDate ? fecha(d.startDate) : '', d.endDate ? '→ ' + fecha(d.endDate) : '', d.expenses ? 'gastos' : '', d.notes !== undefined ? 'notas' : '', ...(op.entryType === 'travel' ? reservasTexto(d, entries.find(x => x.id === op.id) || {}) : [])].filter(Boolean).join(' · '), detalle: op.entryType === 'travel' ? detalleReservas(d, entries.find(x => x.id === op.id) || {}) : '' };
                 }
                 case 'deseo': return { tipo: op.accion === 'quitar' ? 'quitar deseo' : 'nuevo deseo', texto: `«${op.titulo}»`, meta: op.precio ? financeMoney(op.precio) : '' };
-                case 'habito': return { tipo: op.accion === 'crear' ? 'nuevo hábito' : op.activo ? 'reactivar hábito' : 'pausar hábito', texto: `«${op.texto}»`, meta: '' };
+                case 'habito': return { tipo: op.accion === 'crear' ? 'nueva rutina' : op.activo ? 'reactivar rutina' : 'pausar rábito', texto: `«${op.texto}»`, meta: '' };
                 case 'tarea_recurrente': {
                     const d = op.datos || {};
                     const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
@@ -610,7 +610,7 @@
         }
 
         const REGISTRO_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M12 14h76v54H42L22 86V68H12z"/></svg>';
-        const BANDEJA_ORDEN = ['planificador', 'estudios', 'finanzas', 'viajes', 'objetivos', 'notas', 'hábitos y esfuerzo', 'documentos', 'enlaces', 'cumpleaños', 'eventos', 'otros'];
+        const BANDEJA_ORDEN = ['planificador', 'estudios', 'finanzas', 'viajes', 'objetivos', 'notas', 'rutinas y esfuerzo', 'documentos', 'enlaces', 'cumpleaños', 'eventos', 'otros'];
         let bandejaHistorialAbierto = false;
         let bandejaBusqueda = '';
 

@@ -90,7 +90,7 @@ function openPilar(goalId, i) {
                 ? `<div class="pilar-centro" id="pilar-centro">${escapeHtml(p.texto || 'pilar')}</div>`
                 : `<div class="pilar-accion">
                         <textarea id="pilar-accion-${k}" class="modal-input" rows="2" placeholder="acción ${k + 1}">${escapeHtml(p.acciones[k])}</textarea>
-                        ${p.acciones[k].trim() ? (habitoDe(p.acciones[k].trim()) ? '<span class="pilar-habito-ya">es hábito.</span>' : `<button class="pilar-habito" onclick="pilarAHabito('${goalId}', ${i}, ${k})">→ hábito.</button>`) : ''}
+                        ${p.acciones[k].trim() ? (habitoDe(p.acciones[k].trim()) ? '<span class="pilar-habito-ya">es rutina.</span>' : `<button class="pilar-habito" onclick="pilarAHabito('${goalId}', ${i}, ${k})">→ rutina.</button>`) : ''}
                    </div>`).join('')}
         </div>
         <button class="btn-modal-primary" onclick="guardarPilar('${goalId}', ${i})">guardar.</button>
@@ -128,7 +128,7 @@ async function pilarAHabito(goalId, i, k) {
     if (!habits.some(h => h.objetivoId === goalId && h.texto === texto && h.activo !== false)) {
         habits.push({ id: 'habit_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), texto, activo: true, completadas: {}, objetivoId: goalId });
     }
-    showToast('Añadido a Hábitos');
+    showToast('Añadida a Rutinas');
     openPilar(goalId, i);
     await guardarMetodo();
 }
@@ -199,7 +199,7 @@ async function crearKaizen(goalId) {
 async function quitarKaizen(goalId) {
     const g = entries.find(e => e.id === goalId);
     if (!g) return;
-    if (!confirm('¿Cambiar el paso kaizen? El hábito actual se pausa (su historial se conserva).')) return;
+    if (!confirm('¿Cambiar el paso kaizen? La rutina actual se pausa (su historial se conserva).')) return;
     const h = habits.find(x => x.id === g.kaizenHabitId);
     if (h) h.activo = false;
     delete g.kaizenHabitId;

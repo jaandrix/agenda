@@ -7428,3 +7428,64 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 .finance-cuadre-cifras small { display:block; font-size:11.5px; color:var(--text-secondary); }
 .finance-cuadre-cifras b { font-size:17px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; }
 .finance-cuadre-cifras .mal b { color:#d0596f; }
+
+/* Ajustes → apartados por ramas (bitácora#school...). */
+.ramas { display:flex; flex-direction:column; gap:14px; }
+.rama { padding:16px; border-radius:20px; background:var(--bg-card); border:1px solid var(--border); }
+.rama-cab { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.rama-nombre { font-size:15px; font-weight:600; color:var(--text-secondary); letter-spacing:-.2px; }
+.rama-nombre b { font-weight:800; color:var(--text-primary); }
+.rama-cuenta { font-size:11.5px; font-weight:700; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.rama-texto { margin:2px 0 12px; font-size:12.5px; color:var(--text-secondary); }
+.rama-apartados { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:8px; }
+.rama-apartado { display:flex; flex-direction:column; gap:4px; padding:12px 14px; border:1.5px solid var(--border-strong); border-radius:16px; background:none; font-family:var(--font-family); color:var(--text-primary); text-align:left; cursor:pointer; transition:background-color .18s var(--ease-out), border-color .18s var(--ease-out), transform .12s var(--ease-out); }
+.rama-apartado:active { transform:scale(.97); }
+.rama-apartado-cab { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.rama-apartado b { font-size:14px; font-weight:800; }
+.rama-apartado small { font-size:12px; line-height:1.4; color:var(--text-secondary); }
+.rama-apartado i { width:14px; height:14px; box-sizing:border-box; border-radius:50%; border:2px solid var(--border-strong); flex-shrink:0; transition:background-color .18s var(--ease-out), border-color .18s var(--ease-out); }
+.rama-apartado.on { border-color:var(--text-primary); background:var(--bg-card-hover); }
+.rama-apartado.on i { background:var(--m-acento); border-color:var(--m-acento); }
+
+/* ============================================================
+   RUTINAS (antes Hábitos)
+   ============================================================ */
+.rutinas { max-width:720px; }
+.rutinas-cab { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-bottom:18px; }
+.rutinas-titulo { font-size:26px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); }
+.rutinas-sub { margin-top:2px; font-size:13px; color:var(--text-secondary); }
+.rutinas-grupo { margin-bottom:18px; }
+.rutinas-grupo-titulo { margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid var(--text-primary); font-size:13px; font-weight:800; color:var(--text-primary); }
+.rutina { display:grid; grid-template-columns:44px minmax(0, 1fr); gap:14px; padding:14px 2px; border-bottom:1px solid var(--border); }
+.rutina-check { width:44px; height:44px; box-sizing:border-box; padding:0; border-radius:50%; border:2px solid var(--border-strong); background:conic-gradient(var(--m-acento) calc(var(--p) * 1%), transparent 0); cursor:pointer; transition:background-color .2s var(--ease-out), border-color .2s var(--ease-out), transform .12s var(--ease-out); -webkit-mask:radial-gradient(circle, transparent 0, #000 0); }
+.rutina-check:active { transform:scale(.9); }
+.rutina-check.on { background:var(--m-acento); border-color:var(--m-acento); }
+.rutina-cuerpo { min-width:0; }
+.rutina-nombre { display:block; max-width:100%; padding:0; border:0; background:none; font-family:var(--font-family); font-size:16px; font-weight:800; letter-spacing:-.2px; color:var(--text-primary); text-align:left; cursor:pointer; }
+.rutina.hecha .rutina-nombre { color:var(--text-secondary); }
+.rutina-meta { margin-top:2px; font-size:12.5px; color:var(--text-secondary); }
+.rutina-meta b { font-weight:700; color:var(--text-primary); }
+.rutina-pasos { display:flex; flex-direction:column; gap:2px; margin:8px 0 2px; }
+.rutina-paso { display:flex; align-items:center; gap:9px; padding:4px 0; border:0; background:none; font-family:var(--font-family); font-size:13.5px; color:var(--text-primary); text-align:left; cursor:pointer; }
+.rutina-paso span { width:16px; height:16px; box-sizing:border-box; flex-shrink:0; border-radius:50%; border:2px solid var(--border-strong); transition:background-color .15s var(--ease-out); }
+.rutina-paso.on { color:var(--text-secondary); text-decoration:line-through; text-decoration-thickness:1px; }
+.rutina-paso.on span { background:var(--m-acento); border-color:var(--m-acento); }
+.rutina-semana { display:flex; gap:6px; margin-top:10px; }
+.rutina-dia { display:flex; flex-direction:column; align-items:center; gap:3px; padding:0; border:0; background:none; cursor:pointer; font-family:var(--font-family); }
+.rutina-dia i { font-style:normal; font-size:10px; font-weight:700; color:var(--text-secondary); }
+.rutina-dia span { width:18px; height:18px; box-sizing:border-box; border-radius:50%; border:2px solid var(--border-strong); }
+.rutina-dia.on span { background:var(--m-acento); border-color:var(--m-acento); }
+.rutina-dia.libre span { border-style:dashed; opacity:.45; }
+.rutina-dia.hoy i { color:var(--m-acento); }
+.rutina-objetivo { margin-top:6px; font-size:11.5px; color:var(--text-secondary); }
+.rutinas-vacio { margin-bottom:18px; padding:20px; border:1px dashed var(--border-strong); border-radius:18px; font-size:14px; line-height:1.55; color:var(--text-secondary); }
+.rutinas-vacio b { display:block; margin-bottom:4px; font-size:18px; color:var(--text-primary); }
+.rutinas-ideas { margin-bottom:18px; }
+.rutinas-ideas-lista { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+.rutinas-idea { display:inline-flex; align-items:baseline; gap:6px; padding:9px 14px; border:1.5px dashed var(--border-strong); border-radius:999px; background:none; font-family:var(--font-family); font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; }
+.rutinas-idea:hover { border-style:solid; }
+.rutinas-idea small { font-size:11px; color:var(--text-secondary); }
+.rutinas-pausa summary { cursor:pointer; font-size:13px; font-weight:700; color:var(--text-secondary); padding:6px 0; }
+.rutinas-pausada { display:block; width:100%; padding:9px 2px; border:0; border-bottom:1px solid var(--border); background:none; font-family:var(--font-family); font-size:14px; color:var(--text-secondary); text-align:left; cursor:pointer; }
+.rutinas-en-movil { margin-top:16px; }
+.m-generico .rutina-check, .rutinas-en-movil .rutina-check, .rutinas-en-movil .rutina-dia, .rutinas-en-movil .rutina-paso, .rutinas-en-movil .rutina-nombre { min-height:0; }

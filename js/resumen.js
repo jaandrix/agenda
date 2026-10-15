@@ -512,27 +512,27 @@
                 'esfuerzo 4-5.', 'esfuerzo 1-2.', patronesEuros);
 
             anadir('habitos-planes', patronesComparar(dias, conPlanes, tasaHabitos), okTasa,
-                r => `Los días con planes cumples el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} de un día sin planes.`,
+                r => `Los días con planes cumples el <b>${patronesPct(r.con)}</b> de tus rutinas, frente al ${patronesPct(r.sin)} de un día sin planes.`,
                 'con planes.', 'sin planes.', patronesPct);
 
             anadir('habitos-examen', patronesComparar(dias, iso => semanaExamen.has(iso), tasaHabitos), okTasa,
-                r => `La semana antes de un examen cumples el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} habitual.`,
+                r => `La semana antes de un examen cumples el <b>${patronesPct(r.con)}</b> de tus rutinas, frente al ${patronesPct(r.sin)} habitual.`,
                 'antes de examen.', 'resto.', patronesPct);
 
             anadir('habitos-viaje', patronesComparar(dias, iso => enTramo(tramosViaje, iso), tasaHabitos), okTasa,
-                r => `De viaje mantienes el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} en casa.`,
+                r => `De viaje mantienes el <b>${patronesPct(r.con)}</b> de tus rutinas, frente al ${patronesPct(r.sin)} en casa.`,
                 'de viaje.', 'en casa.', patronesPct);
 
             // Solo lunes a viernes: comparar días de trabajo contra fines de
             // semana mediría el fin de semana, no el trabajo.
             const diaLaborable = iso => { const d = diaSemana(iso); return (d === 0 || d === 6) ? null : enTramo(tramosTrabajo, iso); };
             anadir('habitos-trabajo', patronesComparar(dias, diaLaborable, tasaHabitos), okTasa,
-                r => `Entre semana, los días que trabajas cumples el <b>${patronesPct(r.con)}</b> de tus hábitos, frente al ${patronesPct(r.sin)} los que no.`,
+                r => `Entre semana, los días que trabajas cumples el <b>${patronesPct(r.con)}</b> de tus rutinas, frente al ${patronesPct(r.sin)} los que no.`,
                 'trabajando.', 'sin trabajar.', patronesPct);
 
             anadir('esfuerzo-habitos', patronesComparar(dias, iso => { const t = tasaHabitos(iso); return t === null ? null : t >= 0.5; }, esfuerzo), okEsfuerzo,
-                r => `Cuando cumples al menos la mitad de tus hábitos, puntúas tu esfuerzo con un <b>${patronesNum(r.con)}</b> de media, frente a ${patronesNum(r.sin)}.`,
-                'hábitos ≥ 50 %.', 'hábitos < 50 %.', patronesNum);
+                r => `Cuando cumples al menos la mitad de tus rutinas, puntúas tu esfuerzo con un <b>${patronesNum(r.con)}</b> de media, frente a ${patronesNum(r.sin)}.`,
+                'rutinas ≥ 50 %.', 'rutinas < 50 %.', patronesNum);
 
             anadir('esfuerzo-nota', patronesComparar(dias, iso => diasNota.has(iso), esfuerzo), okEsfuerzo,
                 r => `Los días que escribes en tu diario puntúas tu esfuerzo con un <b>${patronesNum(r.con)}</b>, frente a ${patronesNum(r.sin)} cuando no escribes.`,
@@ -664,7 +664,7 @@
                 if (hx && hx.con < hx.sin) {
                     avisos.push({
                         accion: "switchView('studies')",
-                        frase: `Examen de ${escapeHtml(ex.asignatura)} ${avisoCuando(ex.date)}. La semana antes de un examen tus hábitos bajan al <b>${patronesPct(hx.con)}</b>: quizá convenga quedarte solo con los esenciales.`
+                        frase: `Examen de ${escapeHtml(ex.asignatura)} ${avisoCuando(ex.date)}. La semana antes de un examen tus rutinas bajan al <b>${patronesPct(hx.con)}</b>: quizá convenga quedarte solo con los esenciales.`
                     });
                 } else if (planesAntes >= 2) {
                     avisos.push({
@@ -718,7 +718,7 @@
                 <div class="modal-title">patrones.</div>
                 <div class="finance-modal-note" style="margin-bottom:14px">Cruces entre tus apartados en los últimos ${PATRONES_DIAS} días. Solo aparece lo que difícilmente es casualidad.</div>
                 ${hallazgos.length ? hallazgos.map(renderPatronItem).join('') : `
-                    <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">Todavía no hay datos suficientes para ver patrones claros. Cuantos más gastos, hábitos, planes y puntuaciones de esfuerzo registres, más cosas aparecerán aquí.</div>`}
+                    <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">Todavía no hay datos suficientes para ver patrones claros. Cuantos más gastos, rutinas, planes y puntuaciones de esfuerzo registres, más cosas aparecerán aquí.</div>`}
             `);
         }
 
