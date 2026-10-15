@@ -200,7 +200,7 @@ const GUIA = [
         botones: [
             [guiaBoton('filtro.'), 'Muestra solo un tipo: social, teatro, cine, concierto, estudios, trabajo, salud, hogar, viajes, otro o deportes (con fútbol, baloncesto, F1 y MotoGP).'],
             [guiaBoton('buscar...'), 'Por título o lugar.'],
-            [guiaBoton('Importar eventos'), 'Varios de golpe: pega texto o sube un archivo .ics de Google o Apple Calendar.'],
+            [guiaBoton('importar calendario.'), 'Trae otro calendario: sube el archivo .ics que exportan Google, Apple u Outlook, o pega su enlace (en Google Calendar, «Dirección secreta en formato iCal»; también los calendarios de equipos, ligas o la universidad). Antes de importar te enseña cuántos eventos hay y eliges si solo de hoy en adelante o todo; las repeticiones se desdoblan para los próximos 12 meses y no se duplica nada si lo vuelves a importar. Para cualquier otro formato (una captura, un PDF), copia las instrucciones para una IA y pega lo que te devuelva. También está en Ajustes → tus datos.'],
             [guiaBoton('Mostrar pasados'), 'Los que ya pasaron.'],
             [guiaBoton('Aviso'), 'En el formulario: una hora antes o sin aviso.'],
             [guiaBoton('Entradas'), 'En el formulario: guarda las entradas con QR (una por persona) para enseñarlas en la puerta.'],

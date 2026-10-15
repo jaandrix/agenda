@@ -17,61 +17,163 @@
             return `En ${days} días`;
         }
 
+        const EVENTOS_PROMPT_IA = `Convierte este calendario (o esta lista de fechas) en líneas para importar en Bitácora.
+Una línea por evento, con este formato exacto, sin numerar y sin texto antes ni después:
+EVENTO|AAAA-MM-DD|HH:MM|tipo|título|lugar|notas
+La hora, el lugar y las notas pueden ir vacíos (deja los | igualmente). Tipo, uno de: ${Object.keys(EVENT_TYPE_LABELS).join(', ')}; si dudas, otro.
+Si un evento se repite, escribe una línea por cada fecha de los próximos 12 meses.
+Calendario:
+`;
+
         function openEventsImportModal() {
             showModal(`
-                <div class="modal-title">Importar eventos</div>
+                <div class="modal-title">importar calendario.</div>
 
-                <div class="events-section-label" style="margin-top:0">Desde un calendario (.ics)</div>
+                <div class="events-section-label" style="margin-top:0">desde un archivo .ics.</div>
                 <div class="doc-upload-box" onclick="document.getElementById('ics-import-input').click()">
                     <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir archivo .ics</div>
                     <div style="font-size:12px;color:var(--text-secondary)">Exportado desde Google Calendar, Apple Calendar u Outlook</div>
                 </div>
                 <input type="file" id="ics-import-input" accept=".ics,text/calendar" style="display:none" onchange="handleIcsImport(event)">
 
-                <div class="events-section-label" style="margin-top:22px">O pega texto</div>
+                <div class="events-section-label" style="margin-top:22px">desde un enlace.</div>
+                <div class="compra-anadir" style="margin-bottom:6px">
+                    <input id="ics-url" class="modal-input" placeholder="https://... o webcal://..." autocomplete="off" onkeydown="if(event.key==='Enter')importarIcsDesdeUrl()">
+                    <button class="btn-modal-primary" onclick="importarIcsDesdeUrl()">traer.</button>
+                </div>
+                <div class="est-ayuda">En Google Calendar: configuración del calendario → «Dirección secreta en formato iCal». También valen los calendarios de un equipo, una liga o la universidad que se puedan añadir a otro calendario.</div>
+
+                <div class="events-section-label" style="margin-top:18px">o pega texto.</div>
                 <textarea id="events-text-import" class="modal-input" rows="1" placeholder="Pega aquí líneas EVENTO|fecha|hora|tipo|título|lugar|notas..." style="margin-bottom:8px;resize:vertical;min-height:38px;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-                <button class="btn-secondary" style="width:auto;margin:0;padding:7px 14px;font-size:12px;border-radius:14px" onclick="processEventsTextImport()">Procesar texto</button>
-                <div style="font-size:10px;color:var(--text-secondary);margin-top:6px">Formato: EVENTO|AAAA-MM-DD|HH:MM|tipo|título|lugar|notas — hora, lugar y notas pueden ir vacíos. Tipo: ${Object.keys(EVENT_TYPE_LABELS).join('/')}. El prompt para generar estas líneas a partir de una foto o un enlace está guardado en Ajustes → Prompts guardados.</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="btn-secondary" style="width:auto;margin:0;padding:7px 14px;font-size:12px;border-radius:14px" onclick="processEventsTextImport()">procesar texto.</button>
+                    <button class="btn-secondary" style="width:auto;margin:0;padding:7px 14px;font-size:12px;border-radius:14px" onclick="navigator.clipboard.writeText(EVENTOS_PROMPT_IA).then(() => showToast('Copiado: pégalo en Claude o ChatGPT junto al calendario (captura, PDF, web...)'))">copiar instrucciones para una IA.</button>
+                </div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:6px">Para cualquier otro formato (una captura, un PDF, una web): copia las instrucciones, pásaselas a una IA con el calendario y pega aquí lo que te devuelva.</div>
                 <div id="events-import-summary" style="font-size:12px;margin-top:8px;color:var(--text-secondary)"></div>
             `);
         }
 
         // Formato .ics (RFC 5545): primero se "desdoblan" las líneas partidas
-        // (una línea que empieza por espacio es continuación de la
-        // anterior), y luego se recorren los bloques BEGIN:VEVENT/END:VEVENT
-        // sacando solo los campos que hacen falta. Los eventos recurrentes
-        // (RRULE) no se expanden: se importa únicamente la fecha base de
-        // cada VEVENT, no cada repetición futura.
+        // (una línea que empieza por espacio es continuación de la anterior)
+        // y luego se recorren los bloques BEGIN:VEVENT/END:VEVENT.
         function parseIcs(text) {
             const unfolded = text.replace(/\r\n/g, '\n').split('\n').reduce((lines, line) => {
-                if ((line.startsWith(' ') || line.startsWith('\t')) && lines.length) {
-                    lines[lines.length - 1] += line.slice(1);
-                } else {
-                    lines.push(line);
-                }
+                if ((line.startsWith(' ') || line.startsWith('\t')) && lines.length) lines[lines.length - 1] += line.slice(1);
+                else lines.push(line);
                 return lines;
             }, []);
-
             const events = [];
             let cur = null;
             unfolded.forEach(line => {
-                if (line.trim() === 'BEGIN:VEVENT') { cur = {}; return; }
+                if (line.trim() === 'BEGIN:VEVENT') { cur = { exdates: [] }; return; }
                 if (line.trim() === 'END:VEVENT') { if (cur) events.push(cur); cur = null; return; }
                 if (!cur) return;
                 const idx = line.indexOf(':');
                 if (idx === -1) return;
-                const key = line.slice(0, idx).split(';')[0].trim().toUpperCase();
-                const value = line.slice(idx + 1);
-                if (key === 'SUMMARY') cur.summary = value;
-                else if (key === 'LOCATION') cur.location = value;
-                else if (key === 'DESCRIPTION') cur.description = value;
-                else if (key === 'DTSTART') cur.dtstart = value;
+                const [key, ...params] = line.slice(0, idx).split(';').map(s => s.trim());
+                const value = line.slice(idx + 1).trim();
+                const tzid = (params.find(p => /^TZID=/i.test(p)) || '').slice(5).replace(/^"|"$/g, '');
+                switch (key.toUpperCase()) {
+                    case 'SUMMARY': cur.summary = value; break;
+                    case 'LOCATION': cur.location = value; break;
+                    case 'DESCRIPTION': cur.description = value; break;
+                    case 'UID': cur.uid = value; break;
+                    case 'STATUS': cur.status = value.toUpperCase(); break;
+                    case 'RRULE': cur.rrule = value; break;
+                    case 'DTSTART': cur.dtstart = icsFecha(value, tzid); break;
+                    case 'DTEND': cur.dtend = icsFecha(value, tzid); break;
+                    case 'RECURRENCE-ID': cur.recurrenceId = icsFecha(value, tzid); break;
+                    case 'EXDATE': value.split(',').forEach(v => { const f = icsFecha(v, tzid); if (f) cur.exdates.push(f.date); }); break;
+                }
             });
             return events;
         }
 
         function icsUnescape(s) {
-            return (s || '').replace(/\\n/gi, ' ').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+            return (s || '').replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+        }
+
+        // Fecha y hora "de pared" en la zona de este dispositivo. Las horas en
+        // UTC (terminadas en Z, como exporta Google) y las de otra zona
+        // horaria se convierten; antes entraban una o dos horas desplazadas.
+        function icsFecha(valor, tzid) {
+            const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/.exec(String(valor || '').trim());
+            if (!m) return null;
+            const [, y, mo, d, h, mi, , z] = m;
+            if (h === undefined) return { date: `${y}-${mo}-${d}`, time: '' };
+            let instante;
+            if (z) instante = new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi));
+            else if (tzid && tzid !== Intl.DateTimeFormat().resolvedOptions().timeZone) instante = icsDesdeZona(+y, +mo, +d, +h, +mi, tzid);
+            if (!instante) return { date: `${y}-${mo}-${d}`, time: `${h}:${mi}` };
+            return { date: isoLocal(instante), time: `${String(instante.getHours()).padStart(2, '0')}:${String(instante.getMinutes()).padStart(2, '0')}` };
+        }
+
+        function icsDesdeZona(y, mo, d, h, mi, zona) {
+            try {
+                const comoUtc = Date.UTC(y, mo - 1, d, h, mi);
+                const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(comoUtc)).map(x => [x.type, x.value]));
+                const enZona = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute);
+                return new Date(comoUtc - (enZona - comoUtc));
+            } catch (_) { return null; }
+        }
+
+        // Repeticiones (RRULE) de los próximos 12 meses: diaria, semanal (con
+        // sus días), mensual y anual, con INTERVAL, COUNT, UNTIL y EXDATE.
+        function icsFechasDe(ev) {
+            const base = ev.dtstart.date;
+            if (!ev.rrule) return [base];
+            const r = Object.fromEntries(ev.rrule.split(';').map(p => p.split('=')).map(([k, v]) => [k.toUpperCase(), v]));
+            const intervalo = Math.max(1, +r.INTERVAL || 1);
+            const limite = Math.min(+r.COUNT || 400, 400);
+            const hasta = r.UNTIL ? (icsFecha(r.UNTIL)?.date || '9999-12-31') : '9999-12-31';
+            const tope = isoLocal(new Date(Date.now() + 365 * 864e5));
+            const DIAS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+            const porDia = r.FREQ === 'WEEKLY' && r.BYDAY ? r.BYDAY.split(',').map(x => DIAS.indexOf(x.slice(-2))).filter(i => i >= 0) : null;
+            const fechas = [];
+            const d0 = new Date(base + 'T12:00:00');
+            let n = 0;
+            for (let i = 0; fechas.length < limite && i < 2000; i++) {
+                let candidatas;
+                if (r.FREQ === 'DAILY') { const d = new Date(d0); d.setDate(d.getDate() + i * intervalo); candidatas = [d]; }
+                else if (r.FREQ === 'WEEKLY') {
+                    const lunes = new Date(d0); lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7) + i * 7 * intervalo);
+                    candidatas = (porDia || [d0.getDay()]).map(dia => { const d = new Date(lunes); d.setDate(d.getDate() + ((dia + 6) % 7)); return d; }).sort((a, b) => a - b);
+                }
+                else if (r.FREQ === 'MONTHLY') { const d = new Date(d0); d.setMonth(d.getMonth() + i * intervalo); candidatas = d.getDate() === d0.getDate() ? [d] : []; }
+                else if (r.FREQ === 'YEARLY') { const d = new Date(d0); d.setFullYear(d.getFullYear() + i * intervalo); candidatas = [d]; }
+                else return [base];
+                let fuera = false;
+                for (const d of candidatas) {
+                    const iso = isoLocal(d);
+                    if (iso < base) continue;
+                    if (iso > hasta || iso > tope) { fuera = true; break; }
+                    n++;
+                    if (n > limite) { fuera = true; break; }
+                    if (!ev.exdates.includes(iso)) fechas.push(iso);
+                }
+                if (fuera) break;
+            }
+            return fechas;
+        }
+
+        // Pasa los VEVENT a eventos de Bitácora. Una instancia modificada
+        // (RECURRENCE-ID) sustituye a la fecha que tocaba en su serie.
+        function icsAEventos(texto) {
+            const vevents = parseIcs(texto).filter(ev => ev.dtstart && ev.status !== 'CANCELLED');
+            const cambiadas = new Set(vevents.filter(ev => ev.recurrenceId).map(ev => `${ev.uid}|${ev.recurrenceId.date}`));
+            const salida = [];
+            vevents.forEach(ev => {
+                const title = icsUnescape(ev.summary).trim();
+                if (!title) return;
+                const fechas = ev.recurrenceId ? [ev.dtstart.date] : icsFechasDe(ev).filter(f => !cambiadas.has(`${ev.uid}|${f}`));
+                fechas.forEach(date => salida.push({
+                    title, date, time: ev.dtstart.time, endTime: ev.dtend?.time || '',
+                    place: icsUnescape(ev.location).trim(), notes: icsUnescape(ev.description).trim().slice(0, 1000),
+                    icsId: ev.uid ? `${ev.uid}|${date}` : '',
+                }));
+            });
+            return salida;
         }
 
         function handleIcsImport(event) {
@@ -79,38 +181,67 @@
             event.target.value = '';
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = async function (e) {
-                try {
-                    const vevents = parseIcs(String(e.target.result));
-                    if (!vevents.length) { showToast('No se han encontrado eventos en ese archivo .ics', true); return; }
-
-                    let added = 0, duplicates = 0, errors = 0;
-                    vevents.forEach((ev, i) => {
-                        const title = icsUnescape(ev.summary).trim();
-                        const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/.exec(ev.dtstart || '');
-                        if (!title || !m) { errors++; return; }
-                        const date = `${m[1]}-${m[2]}-${m[3]}`;
-                        const time = m[4] ? `${m[4]}:${m[5]}` : '';
-                        const place = icsUnescape(ev.location).trim();
-                        const notes = icsUnescape(ev.description).trim();
-
-                        if (entries.some(en => en.type === 'event' && en.title === title && en.date === date)) { duplicates++; return; }
-                        entries.push({ id: 'evt_ics_' + Date.now() + '_' + i, type: 'event', title, eventType: 'otro', date, time, place, notes });
-                        added++;
-                    });
-
-                    closeModal();
-                    render();
-                    showToast(`Importados ${added} evento${added === 1 ? '' : 's'}` +
-                        (duplicates ? ` · ${duplicates} ya existían` : '') +
-                        (errors ? ` · ${errors} sin título o fecha válida` : ''));
-                    try { await saveData(); } catch (err) { console.error('Error guardando eventos importados de .ics:', err); showToast('No se pudo guardar en la nube', true); }
-                } catch (err) {
-                    console.error('Error importando .ics:', err);
-                    showToast('Error al leer el archivo .ics', true);
-                }
-            };
+            reader.onload = e => previsualizarIcs(String(e.target.result));
             reader.readAsText(file);
+        }
+
+        async function importarIcsDesdeUrl() {
+            const url = document.getElementById('ics-url')?.value.trim();
+            if (!url) { showToast('Pega primero la dirección del calendario', true); return; }
+            showToast('Descargando el calendario...');
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/calendario-ics`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+                    body: JSON.stringify({ url }),
+                });
+                const r = await res.json().catch(() => ({}));
+                if (!r.ics) { showToast(r.error || 'No se pudo descargar el calendario', true); return; }
+                previsualizarIcs(r.ics);
+            } catch (e) { console.error(e); showToast('No se pudo descargar el calendario', true); }
+        }
+
+        function icsFechaTexto(iso) {
+            return new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function previsualizarIcs(texto) {
+            let lista;
+            try { lista = icsAEventos(texto); } catch (e) { console.error(e); showToast('Error al leer el calendario', true); return; }
+            if (!lista.length) { showToast('No se han encontrado eventos en ese calendario', true); return; }
+            const hoy = todayISO();
+            const futuros = lista.filter(e => e.date >= hoy);
+            window._icsCandidatos = lista;
+            window._icsSoloFuturos = futuros.length > 0;
+            const fechas = lista.map(e => e.date).sort();
+            showModal(`
+                <div class="modal-title">importar calendario.</div>
+                <p class="finance-modal-note" style="margin-top:0">${lista.length} ${lista.length === 1 ? 'evento' : 'eventos'}, del ${icsFechaTexto(fechas[0])} al ${icsFechaTexto(fechas[fechas.length - 1])}. ${futuros.length} de hoy en adelante.</p>
+                <div class="profe-dias-elegir" id="ics-rango">
+                    <button type="button" class="profe-chip ${futuros.length ? 'activa' : ''}" ${futuros.length ? '' : 'disabled'} onclick="window._icsSoloFuturos=true;this.parentNode.querySelectorAll('.profe-chip').forEach(x=>x.classList.toggle('activa',x===this))">de hoy en adelante. (${futuros.length})</button>
+                    <button type="button" class="profe-chip ${futuros.length ? '' : 'activa'}" onclick="window._icsSoloFuturos=false;this.parentNode.querySelectorAll('.profe-chip').forEach(x=>x.classList.toggle('activa',x===this))">todo. (${lista.length})</button>
+                </div>
+                <div class="est-lista" style="margin:8px 0 14px">${(futuros.length ? futuros : lista).slice(0, 8).map(e => `<div class="est-lista-fila" style="cursor:default"><b>${escapeHtml(e.title)}</b><span>${icsFechaTexto(e.date)}${e.time ? `, ${e.time}` : ''}${e.place ? `, ${escapeHtml(e.place)}` : ''}</span></div>`).join('')}${(futuros.length || lista.length) > 8 ? `<div class="est-lista-fila" style="cursor:default"><span>y ${(futuros.length || lista.length) - 8} más.</span></div>` : ''}</div>
+                <button class="btn-modal-primary" onclick="confirmarImportIcs()">importar.</button>
+            `);
+        }
+
+        async function confirmarImportIcs() {
+            const hoy = todayISO();
+            const lista = (window._icsCandidatos || []).filter(e => !window._icsSoloFuturos || e.date >= hoy);
+            const yaIcs = new Set(entries.filter(e => e.icsId).map(e => e.icsId));
+            let added = 0, duplicates = 0;
+            lista.forEach((ev, i) => {
+                if ((ev.icsId && yaIcs.has(ev.icsId)) || entries.some(en => en.type === 'event' && en.title === ev.title && en.date === ev.date)) { duplicates++; return; }
+                entries.push({ id: 'evt_ics_' + Date.now() + '_' + i, type: 'event', categoryId: getCategoryIdForType('event'), tags: [], eventType: 'otro', ...ev });
+                added++;
+            });
+            window._icsCandidatos = null;
+            closeModal();
+            render();
+            showToast(`Importados ${added} evento${added === 1 ? '' : 's'}${duplicates ? `, ${duplicates} ya estaban` : ''}.`);
+            try { await saveData(); } catch (err) { console.error('Error guardando eventos importados de .ics:', err); showToast('No se pudo guardar en la nube', true); }
         }
 
         // Mismo patrón que otros importadores de texto de la app: líneas con
@@ -156,7 +287,7 @@
         function renderEvents() {
             const allEvents = entries.filter(e => e.type === 'event' && !isCalendarLogEntry(e));
             if (!allEvents.length) {
-                return `<div style="max-width:980px"><button class="btn-secondary btn-acento" style="width:auto" onclick="openEventsImportModal()">Importar eventos</button></div><div class="empty-state"><div class="empty-title">ningún evento todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Evento", o importa arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                return `<div style="max-width:980px"><button class="btn-secondary btn-acento" style="width:auto" onclick="openEventsImportModal()">importar calendario.</button></div><div class="empty-state"><div class="empty-title">ningún evento todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Evento", o importa arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: events, banner } = applyMonthFilterTo('event', allEvents);
             if (!events.length) return banner + `<div class="empty-state"><div class="empty-title">ningún evento ese mes.</div></div>`;
@@ -221,7 +352,7 @@
                 <div class="events-toolbar">
                     <input type="text" id="events-search-input" class="modal-input" style="margin:0;max-width:260px" placeholder="Buscar por título o lugar..." value="${escapeHtml(eventsSearchQuery)}" oninput="setEventsSearchQuery(this.value)">
                     ${renderEventsFiltro()}
-                    <button class="btn-secondary btn-acento" style="width:auto" onclick="openEventsImportModal()">Importar eventos</button>
+                    <button class="btn-secondary btn-acento" style="width:auto" onclick="openEventsImportModal()">importar calendario.</button>
                 </div>
                 <div id="events-list-content">${renderEventsListContent(events)}</div>
             </div>`;

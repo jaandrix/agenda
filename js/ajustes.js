@@ -546,6 +546,7 @@
                             <div class="ajuste-botones">
                                 <button class="btn-secondary" style="width:auto" onclick="exportData()">exportar.</button>
                                 <button class="btn-secondary" style="width:auto" onclick="document.getElementById('import-input').click()">importar.</button>
+                                <button class="btn-secondary" style="width:auto" onclick="openEventsImportModal()">importar calendario.</button>
                             </div>`)}
                     </div>
 
