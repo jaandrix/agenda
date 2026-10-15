@@ -44,6 +44,7 @@
                 agendaLaboral = (saved.agendaLaboral && typeof saved.agendaLaboral === 'object') ? saved.agendaLaboral : null;
                 listaCompra = (saved.listaCompra && typeof saved.listaCompra === 'object') ? saved.listaCompra : null;
                 estudiar = (saved.estudiar && typeof saved.estudiar === 'object') ? saved.estudiar : null;
+                avisoDiarioVisto = typeof saved.avisoDiarioVisto === 'string' ? saved.avisoDiarioVisto : null;
                 bienvenida = saved.bienvenida || null;
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
@@ -240,6 +241,7 @@
             agendaLaboral: [() => agendaLaboral, v => { agendaLaboral = v; }],
             listaCompra: [() => listaCompra, v => { listaCompra = v; }],
             estudiar: [() => estudiar, v => { estudiar = v; }],
+            avisoDiarioVisto: [() => avisoDiarioVisto, v => { avisoDiarioVisto = v; }],
             bienvenida: [() => bienvenida, v => { bienvenida = v; }]
         };
         let datosBase = null;

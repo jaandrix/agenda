@@ -959,20 +959,11 @@
 
         function maybeShowDailyAlert() {
             const today = todayISO();
-            let openDate = '', d0730 = '';
-            try { openDate = localStorage.getItem('bitacora_alert_open_date') || ''; } catch (e) {}
-            try { d0730 = localStorage.getItem('bitacora_alert_0730_date') || ''; } catch (e) {}
-
-            if (openDate !== today) {
-                try { localStorage.setItem('bitacora_alert_open_date', today); } catch (e) {}
-                showDailyAlertPopup();
-                return;
-            }
-            const now = new Date();
-            const past0730 = now.getHours() > 7 || (now.getHours() === 7 && now.getMinutes() >= 30);
-            if (past0730 && d0730 !== today) {
-                try { localStorage.setItem('bitacora_alert_0730_date', today); } catch (e) {}
-                showDailyAlertPopup();
-            }
+            if (avisoDiarioVisto === today) return;
+            const { birthdays, exams, events } = getTodayAlerts();
+            if (!birthdays.length && !exams.length && !events.length) return;
+            avisoDiarioVisto = today;
+            showDailyAlertPopup();
+            saveData().catch(e => console.error(e));
         }
 

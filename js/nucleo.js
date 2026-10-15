@@ -577,6 +577,9 @@
         let listaCompra = null;
         // Pomodoro, plan del día, temario y tarjetas de repaso (estudiar.js).
         let estudiar = null;
+        // Día en que ya se enseñó "tienes esto para hoy.", sincronizado para que
+        // salga una sola vez entre todos los dispositivos.
+        let avisoDiarioVisto = null;
         // Cuándo vio la bienvenida (bienvenida.js); null = todavía no.
         let bienvenida = null;
         // Cambios de la IA que esperan validación en "bandeja." (filas de
@@ -2322,7 +2325,10 @@
                 cpSelectedIndex = Math.max(0, cpSelectedIndex - 1);
                 renderCommandPaletteList(document.getElementById('command-palette-input').value);
             } else if (e.key === 'Enter') {
+                // Sin esto, el mismo ENTER sube hasta el atajo global y, como
+                // el buscador ya se ha cerrado, abre otro encima.
                 e.preventDefault();
+                e.stopPropagation();
                 const raw = document.getElementById('command-palette-input').value.trim().toLowerCase();
                 if (cpMode === 'nav' && raw.startsWith('/')) {
                     const cmd = PALETTE_COMMANDS.find(c => c.cmd === raw.slice(1));
@@ -2332,6 +2338,7 @@
                 if (filtered[cpSelectedIndex]) selectCommandPaletteItem(cpSelectedIndex);
             } else if (e.key === 'Escape') {
                 e.preventDefault();
+                e.stopPropagation();
                 closeCommandPalette();
             }
         }
@@ -2519,6 +2526,7 @@
         // ENTER abre "¿dónde quieres ir?"; ESPACIO abre la captura rápida
         // ("¿dónde quieres crear la entrada?") — mismas condiciones.
         document.addEventListener('keydown', function(e) {
+            if (e.defaultPrevented || e.repeat) return;
             if (e.key === 'Enter') {
                 if (!canUseGlobalShortcut()) return;
                 e.preventDefault();

@@ -168,13 +168,13 @@
                         <div class="trip-manager-title">${escapeHtml(t.title)}</div>
                         <div class="trip-manager-sub">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${financeProGastoViaje(t.id) ? ` · ${financeMoney(financeProGastoViaje(t.id))} gastados` : ''}</div>
                     </div>
-                    <div style="display:flex;gap:8px;flex-shrink:0">
+                    <div class="trip-manager-botones" style="display:flex;gap:8px;flex-shrink:0">
                         <button class="btn-secondary" style="width:auto" onclick="abrirCompartirViajeModal('${t.id}')">Compartir</button>
                         <button class="btn-secondary" style="width:auto" onclick="openEditEntry('${t.id}')">✎ Editar</button>
                         <button class="btn-secondary btn-danger-pill" style="width:auto" onclick="deleteTripFromManager('${t.id}')">Eliminar</button>
                     </div>
                 </div>
-                <div class="culture-tabs" style="margin-top:16px">
+                <div class="culture-tabs trip-tabs" style="margin-top:16px">
                     ${tabs.map(tb => `<button class="culture-tab ${tripManagerTab === tb.id ? 'active' : ''}" onclick="setTripManagerTab('${tb.id}')"><span>${tb.label}</span>${tb.count !== undefined ? `<span class="culture-tab-count">${tb.count}</span>` : ''}</button>`).join('')}
                 </div>
                 <div class="culture-tab-content"><div class="cal-view-anim">${body}</div></div>
@@ -512,7 +512,7 @@
                     ? `<button class="doc-action-download" onclick="openEntryDocHtml('trips','${tripId}','${escapeHtml(doc.name)}')">Ver</button>`
                     : `<button class="doc-action-download" onclick="downloadTripDocument('${tripId}','${escapeHtml(doc.name)}')">Descargar</button>`;
                 return `<div class="doc-item">
-                    <div class="doc-info"><span style="font-size:20px">${isHtml ? '▥' : '📄'}</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name)}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
+                    <div class="doc-info"><span style="font-size:20px">${isHtml ? '▥' : '📄'}</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
                         ${openBtn}
                         <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteTripDocument('${tripId}','${escapeHtml(doc.name)}')">✕</button>
@@ -596,7 +596,7 @@
                 const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
                 return `<div class="doc-item">
-                    <div class="doc-info"><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name)}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
+                    <div class="doc-info"><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
                         <button class="doc-action-download" onclick="downloadWorkDocument('${workId}','${escapeHtml(doc.name)}')">Descargar</button>
                         <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteWorkDocument('${workId}','${escapeHtml(doc.name)}')">✕</button>
