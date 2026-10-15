@@ -575,6 +575,8 @@
         let agendaLaboral = null;
         // Listas de la compra (compra.js).
         let listaCompra = null;
+        // Pomodoro, plan del día, temario y tarjetas de repaso (estudiar.js).
+        let estudiar = null;
         // Cuándo vio la bienvenida (bienvenida.js); null = todavía no.
         let bienvenida = null;
         // Cambios de la IA que esperan validación en "bandeja." (filas de
@@ -792,6 +794,7 @@
             universidad: 'Universidad',
             profesorado: 'Profesorado',
             compra: 'Compra',
+            estudiar: 'Estudiar',
             links: 'Enlaces',
             actualizaciones: 'Envíos',
             bandeja: 'Bandeja',
@@ -818,6 +821,7 @@
                 { view: 'finances', icon: '◫', text: 'Finanzas' },
                 { view: 'work', icon: '◫', text: 'Empleo' },
                 { view: 'studies', icon: '◎', text: 'Estudios' },
+                { view: 'estudiar', icon: '◔', text: 'Estudiar' },
                 { view: 'universidad', icon: '◎', text: 'Universidad' },
                 { view: 'profesorado', icon: '▦', text: 'Profesorado' },
                 { view: 'documents', icon: '▤', text: 'Documentos' },
@@ -1219,6 +1223,7 @@
             friends: () => renderFriendsView(), tags: () => renderTagsView(), graph: () => renderGraph(),
             bandeja: () => renderBandeja(), suggestions: () => renderSuggestions(), settings: () => renderSettings(),
             actualizaciones: () => renderActualizaciones(), universidad: () => renderUniversidad(), profesorado: () => renderProfesorado(), compra: () => renderCompra(),
+            estudiar: () => renderEstudiar(),
         };
 
         // Efectos que en escritorio se disparan tras pintar ciertas vistas
@@ -1465,6 +1470,7 @@
         // haya elegido: así las cuentas que ya lo usaban no lo pierden y las
         // nuevas empiezan con lo básico.
         const APARTADOS_OPCIONALES = [
+            { view: 'estudiar', titulo: 'estudiar.', texto: 'Pomodoro, el día dividido en temas, el temario por asignaturas y tarjetas de repaso espaciado al estilo Anki.', porDefecto: () => (estudiar?.tarjetas || []).length > 0 },
             { view: 'universidad', titulo: 'universidad.', texto: 'Tu carrera por cuatrimestres: créditos, media, fechas de exámenes y qué necesitas para aprobar.', porDefecto: () => false },
             { view: 'profesorado', titulo: 'profesorado.', texto: 'Si das clase: el cuadrante del curso con todas tus clases, y lo que no das en su día pasa a pendientes.', porDefecto: () => (profesorado?.clases || []).length > 0 },
             { view: 'compra', titulo: 'compra.', texto: 'Listas de la compra ordenadas por secciones del súper, con lo de siempre a un toque.', porDefecto: () => (listaCompra?.listas || []).some(l => (l.items || []).length) },
@@ -1486,7 +1492,7 @@
 
         function apartadoVisible(view) {
             const { perfil, opcionales } = configApartados();
-            if ((view === 'studies' || view === 'universidad') && perfil === 'trabajador') return false;
+            if ((view === 'studies' || view === 'universidad' || view === 'estudiar') && perfil === 'trabajador') return false;
             if (view === 'work' && perfil === 'estudiante') return false;
             if (APARTADOS_OPCIONALES.some(o => o.view === view) && !opcionales[view]) return false;
             return true;
@@ -2477,6 +2483,7 @@
             if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || document.activeElement?.isContentEditable) return false;
             if (document.getElementById('command-palette-overlay')) return false;
             if (document.getElementById('logout-confirm-overlay')) return false;
+            if (currentView === 'estudiar' && estRepaso?.cola?.length) return false;
             if (document.querySelector('.centered-message-overlay')) return false;
             if (document.getElementById('modal-container')?.innerHTML.trim()) return false;
             if (document.getElementById('login-screen')?.style.display !== 'none') return false;

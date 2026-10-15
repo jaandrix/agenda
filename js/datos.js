@@ -43,6 +43,7 @@
                 profesorado = (saved.profesorado && typeof saved.profesorado === 'object') ? saved.profesorado : null;
                 agendaLaboral = (saved.agendaLaboral && typeof saved.agendaLaboral === 'object') ? saved.agendaLaboral : null;
                 listaCompra = (saved.listaCompra && typeof saved.listaCompra === 'object') ? saved.listaCompra : null;
+                estudiar = (saved.estudiar && typeof saved.estudiar === 'object') ? saved.estudiar : null;
                 bienvenida = saved.bienvenida || null;
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
@@ -238,6 +239,7 @@
             profesorado: [() => profesorado, v => { profesorado = v; }],
             agendaLaboral: [() => agendaLaboral, v => { agendaLaboral = v; }],
             listaCompra: [() => listaCompra, v => { listaCompra = v; }],
+            estudiar: [() => estudiar, v => { estudiar = v; }],
             bienvenida: [() => bienvenida, v => { bienvenida = v; }]
         };
         let datosBase = null;

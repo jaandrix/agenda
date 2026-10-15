@@ -471,7 +471,7 @@
         // esté en ninguna rama cae en #otros, así un apartado nuevo nunca se
         // queda sin poder activarse.
         const RAMAS_APARTADOS = [
-            { id: 'school', texto: 'Para quien estudia o da clase.', apartados: ['universidad', 'profesorado'] },
+            { id: 'school', texto: 'Para quien estudia o da clase.', apartados: ['estudiar', 'universidad', 'profesorado'] },
             { id: 'home', texto: 'El día a día de casa.', apartados: ['compra', 'actualizaciones', 'collectibles'] },
             { id: 'work', texto: 'Proyectos y recursos de trabajo.', apartados: ['projects', 'links'] },
             { id: 'mind', texto: 'Tu segundo cerebro: cómo se relaciona todo.', apartados: ['tags', 'graph'] },

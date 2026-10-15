@@ -53,7 +53,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `agenda-laboral` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `guia` → `landing`.
+  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `guia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -242,6 +242,13 @@ a menor resolución.
   secciones del súper por palabras clave (`COMPRA_SECCIONES`), "lo de siempre" (`frecuentes`) y "terminar la
   compra." que apunta el gasto en Finanzas. Mercadona tiene API pública sin CORS (tienda.mercadona.es/api,
   necesitaría una Edge Function); DIA bloquea con antibots: no se usa.
+- **Estudiar (`js/estudiar.js`, vista `estudiar`, opcional de #school):** separado de Estudios a propósito.
+  `estudiar` (sincronizado): pomodoro (el que está en marcha va en localStorage `bitacora-pomodoro`, con
+  pastilla flotante `#pomo-pastilla` fuera de la vista), plan del día repartido en pomodoros (`estRepartir`,
+  "pasar al planificador."), temario por asignatura y tarjetas tipo Anki (básica, ida y vuelta, escribir,
+  huecos `{{c1::}}`) programadas con FSRS-4.5 (`fsrsOpciones`, estado por cara en `repasos['id:cara']`).
+  Importa "frente;reverso" o TSV y exporta TSV para Anki. Durante un repaso, `canUseGlobalShortcut` se
+  desactiva para que espacio y 1-4 no abran la captura rápida.
 - **Ramas de apartados:** `RAMAS_APARTADOS` en ajustes.js agrupa los opcionales (#school, #home, #work, #mind).
 - **Importar extractos:** primero la coincidencia exacta, luego pendientes (≤3 días, importe exacto antes que
   aproximado, sin reutilizar), recuento de claves (dos cargos iguales cuentan dos) y, si el CSV trae saldo
