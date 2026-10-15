@@ -490,6 +490,8 @@
         // ---- Documentos (reutiliza el bucket "documents" con prefijo por viaje) ----
         function renderTripDocumentsTab(t) {
             const docs = tripDocumentsCache[t.id];
+            // En el móvil nadie los pedía y se quedaba en "Cargando documentos...".
+            if (!docs) setTimeout(() => loadTripDocuments(t.id), 0);
             return `
                 <div class="doc-upload-box" onclick="document.getElementById('trip-doc-input-${t.id}').click()">
                     <div style="font-size:28px;margin-bottom:6px">📄</div>
@@ -554,14 +556,18 @@
             }
         }
         async function downloadTripDocument(tripId, name) {
+            // En la app instalada (iPhone), window.open tras un await se
+            // bloquea: la ventana se abre antes y luego se le pone la dirección.
+            const ventana = window.open('', '_blank');
             try {
                 const { data: { user } } = await sb.auth.getUser();
                 if (!user) return;
                 const path = `${user.id}/trips/${tripId}/${name}`;
                 const { data, error } = await sb.storage.from('documents').createSignedUrl(path, 60);
                 if (error) throw error;
-                window.open(data.signedUrl, '_blank');
+                if (ventana) ventana.location.href = data.signedUrl; else window.location.href = data.signedUrl;
             } catch (e) {
+                ventana?.close();
                 console.error('Error descargando documento del viaje:', e);
                 showToast('Error al descargar: ' + (e?.message || 'desconocido'), true);
             }

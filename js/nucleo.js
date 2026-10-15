@@ -1391,7 +1391,7 @@
                 return `<div class="m-evento" data-open-entry="${e.id}">
                     <div class="m-evento-fecha"><span>${d.getDate()}</span><small>${MOBILE_DIAS[d.getDay()]}.</small></div>
                     <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(e.title || '')}</div><div class="m-fila-meta">${escapeHtml([e.time, e.place].filter(Boolean).join(' · '))}</div></div>
-                    <span class="m-evento-icono">${icono}</span>
+                    ${(e.entradas || []).length ? `<button class="m-mini" onclick="event.stopPropagation();abrirEntradas('${e.id}',0)">qr.</button>` : `<span class="m-evento-icono">${icono}</span>`}
                 </div>`;
             };
             let mesActual = '';
