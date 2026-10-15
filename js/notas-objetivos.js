@@ -64,7 +64,13 @@
             const note = notes.find(n => n.id === id);
             if (!note) return;
             window.openNoteId = id;
-            document.getElementById('content').innerHTML = renderNoteDetail(note);
+            // En el móvil, #content está oculto: la nota se abre dentro de la
+            // página de Notas del móvil (renderMobileNotes la enseña).
+            if (mobileStandaloneActive) {
+                if (currentView !== 'notes') aplicarSwitchView('notes');
+                renderMobileShell();
+                document.getElementById('mobile-shell')?.scrollTo(0, 0);
+            } else document.getElementById('content').innerHTML = renderNoteDetail(note);
             requestAnimationFrame(() => {
                 const editor = document.getElementById('note-content-input');
                 if (editor) autoResizeNote(editor);
@@ -79,7 +85,7 @@
 
             return `
                 <div class="note-detail note-detail-wide">
-                    <button class="btn-secondary" style="width:auto;padding:6px 14px;margin-bottom:16px" onclick="closeNoteDetail()">← Volver</button>
+                    <button class="btn-secondary" style="width:auto;padding:6px 14px;margin-bottom:16px" onclick="closeNoteDetail()">← notas.</button>
                     <div class="note-detail-fecha">${note.date === todayISO() ? 'hoy, ' : ''}${formatNoteFecha(note.date, true)}</div>
                     <textarea id="note-title-input" class="note-titulo-input" rows="1" placeholder="título de la nota." maxlength="120" oninput="autoSaveNoteTitle('${note.id}', this.value);autoResizeNote(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${escapeHtml(note.title || '')}</textarea>
                     ${editable ? `
@@ -95,7 +101,8 @@
 
         function closeNoteDetail() {
             window.openNoteId = null;
-            document.getElementById('content').innerHTML = renderNotes();
+            if (mobileStandaloneActive) renderMobileShell();
+            else document.getElementById('content').innerHTML = renderNotes();
         }
 
         let noteSaveTimer;

@@ -923,6 +923,7 @@
             }
             mobileMenuAbierto = false;
             if (view !== 'travels') window._openTripId = null;
+            if (view !== 'notes') window.openNoteId = null;
             if (view === 'calendar') { mobileDiaSel = null; mobileMes = null; }
             const shell = document.getElementById('mobile-shell');
             conTransicion(vtDireccionSidebar(currentView, view), () => {
@@ -1507,6 +1508,8 @@
         }
 
         function renderMobileNotes() {
+            const abierta = window.openNoteId && notes.find(n => n.id === window.openNoteId);
+            if (abierta) return `<div class="m-generico m-nota-abierta">${renderNoteDetail(abierta)}</div>`;
             const lista = [...notes].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
             return `${renderMobileCabecera('notas', lista.length ? `${lista.length} escrita${lista.length === 1 ? '' : 's'}.` : 'ninguna todavía.')}
                 <button class="m-boton m-boton-acento m-boton-ancho" onclick="openWriteNote()">+ nota de hoy.</button>

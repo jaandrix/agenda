@@ -269,7 +269,7 @@
                 closeModal();
                 devModeActive = true;
                 document.body.classList.add('dev-mode');
-                document.getElementById('content').innerHTML = renderSettings();
+                render();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
                 console.error('Error al guardar la contraseña global:', e);
@@ -285,7 +285,7 @@
                 // Desactivar
                 devModeActive = false;
                 document.body.classList.remove('dev-mode');
-                document.getElementById('content').innerHTML = renderSettings();
+                render();
                 showToast('Modo desarrollador desactivado');
                 return;
             }
@@ -348,7 +348,7 @@
                 closeModal();
                 devModeActive = true;
                 document.body.classList.add('dev-mode');
-                document.getElementById('content').innerHTML = renderSettings();
+                render();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
                 console.error('Error verificando contraseña:', e);
@@ -416,7 +416,7 @@
                 prompts.push({ id: 'prompt_' + Date.now(), title, content, updatedAt: new Date().toISOString() });
             }
             closeModal();
-            document.getElementById('content').innerHTML = renderSettings();
+            render();
             try { await saveData();
                 showToast('Prompt guardado'); } catch (e) { console.error(e);
                 showToast('No se pudo guardar en la nube', true); }
@@ -426,7 +426,7 @@
             if (!confirm('¿Eliminar este prompt?')) return;
             prompts = prompts.filter(p => p.id !== id);
             closeModal();
-            document.getElementById('content').innerHTML = renderSettings();
+            render();
             try { await saveData();
                 showToast('Prompt eliminado'); } catch (e) { console.error(e);
                 showToast('No se pudo guardar en la nube', true); }

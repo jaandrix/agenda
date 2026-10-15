@@ -569,8 +569,8 @@
                         <div id="font-options-container">${renderFontOptionsList()}</div>
                         <div class="ajuste-subtitulo">tamaño de letra en el móvil.</div>
                         ${renderSelectorTamanoLetra()}
-                        <div class="ajuste-subtitulo">ancho.</div>
-                        <button class="btn-secondary" style="width:auto" onclick="toggleMode()">alternar modo ancho.</button>`, 'ajuste-ancho')}
+                        <div class="solo-escritorio"><div class="ajuste-subtitulo">ancho.</div>
+                        <button class="btn-secondary" style="width:auto" onclick="toggleMode()">alternar modo ancho.</button></div>`, 'ajuste-ancho')}
 
                     <div class="ajustes-grupo">más.</div>
                     <div class="ajustes-rejilla">

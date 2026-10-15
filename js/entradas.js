@@ -20,6 +20,13 @@
             return startDate?`desde ${fmt(startDate)}, ${startDate.slice(0,4)}`:`hasta ${fmt(endDate)}, ${endDate.slice(0,4)}`;
         }
         function getTravelTotal(entry){return(entry.expenses||[]).reduce((sum,x)=>sum+(Number(x.amount)||0),0);}
+        // "jueves, 15 de octubre" (con el año solo si no es el actual), en vez
+        // de la fecha en bruto 2026-10-15.
+        function fechaLegible(iso) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return iso || '';
+            const d = new Date(iso + 'T12:00:00');
+            return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) });
+        }
         function detailField(label,value){if(value===undefined||value===null||value==='')return '';return `<div class="entry-detail-field"><div class="entry-detail-label">${label}</div><div class="entry-detail-value">${value}</div></div>`;}
         async function toggleAvisoEvento(id) {
             const e = entries.find(x => x.id === id);
@@ -46,7 +53,7 @@
                 fields+=detailField('Prioridad',`<span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[pPriority]}"></span> ${PROJECT_PRIORITY_LABEL[pPriority]}`);
                 if(entry.endDate){
                     const overdue = entry.endDate < todayISO() && pBucket !== 'Completado';
-                    fields+=detailField('Fecha límite', overdue ? `<span class="project-overdue">${escapeHtml(entry.endDate)} (vencido)</span>` : escapeHtml(entry.endDate));
+                    fields+=detailField('Fecha límite', overdue ? `<span class="project-overdue">${escapeHtml(fechaLegible(entry.endDate))} (vencido)</span>` : escapeHtml(fechaLegible(entry.endDate)));
                 }
                 const tasks=Array.isArray(entry.tasks)?entry.tasks:[];
                 const doneCount = tasks.filter(t=>t.done).length;
@@ -104,7 +111,7 @@
                     <div id="work-doc-list-${entry.id}">Cargando documentos...</div>
                 </div>`;
             }else if(entry.type==='event'){
-                fields+=detailField('Fecha',escapeHtml(entry.date||''));
+                fields+=detailField('Fecha',escapeHtml(fechaLegible(entry.date||'')));
                 if(entry.time)fields+=detailField('Hora',escapeHtml(entry.time));
                 if(entry.time)fields+=detailField('Aviso',`<span class="evento-aviso-fila">${entry.sinAviso?'sin aviso.':(preferenciasAvisos.eventos===false?'apagado en ajustes.':'una hora antes.')}<button class="evento-aviso-btn" onclick="toggleAvisoEvento('${entry.id}')">${entry.sinAviso?'avisarme.':'silenciar.'}</button></span>`);
                 if(entry.place)fields+=detailField('Lugar',escapeHtml(entry.place));
@@ -115,7 +122,7 @@
                 if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(' · '));
                 fields+=renderEntryDocsSection('events',entry.id,'Documentos');
             }else{
-                fields+=detailField('Fecha',escapeHtml(entry.date||entry.startDate||'')); fields+=detailField('Estado',escapeHtml(entry.status||''));
+                fields+=detailField('Fecha',escapeHtml(fechaLegible(entry.date||entry.startDate||''))); fields+=detailField('Estado',escapeHtml(entry.status||''));
                 fields+=detailField('Lugar',escapeHtml(entry.place||entry.destination||'')); fields+=detailField('Notas',entry.notes?linkifyText(entry.notes):'');
                 if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(' · '));
                 if(entry.author)fields+=detailField('Autor',escapeHtml(entry.author));
