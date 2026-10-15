@@ -1469,7 +1469,11 @@
         // `porDefecto` decide si un opcional está activo mientras el usuario no
         // haya elegido: así las cuentas que ya lo usaban no lo pierden y las
         // nuevas empiezan con lo básico.
+        // Estudios y Empleo también se encienden y apagan aquí; mientras no se
+        // haya elegido, manda el perfil de la bienvenida.
         const APARTADOS_OPCIONALES = [
+            { view: 'studies', titulo: 'estudios.', texto: 'Asignaturas, horario, exámenes y entregas.', porDefecto: () => apartadosConfig?.perfil !== 'trabajador' },
+            { view: 'work', titulo: 'empleo.', texto: 'Tu trabajo actual, el historial, la agenda laboral y tu cv.', porDefecto: () => apartadosConfig?.perfil !== 'estudiante' },
             { view: 'estudiar', titulo: 'estudiar.', texto: 'Pomodoro, el día dividido en temas, el temario por asignaturas y tarjetas de repaso espaciado al estilo Anki.', porDefecto: () => (estudiar?.tarjetas || []).length > 0 },
             { view: 'universidad', titulo: 'universidad.', texto: 'Tu carrera por cuatrimestres: créditos, media, fechas de exámenes y qué necesitas para aprobar.', porDefecto: () => false },
             { view: 'profesorado', titulo: 'profesorado.', texto: 'Si das clase: el cuadrante del curso con todas tus clases, y lo que no das en su día pasa a pendientes.', porDefecto: () => (profesorado?.clases || []).length > 0 },
@@ -1491,9 +1495,7 @@
         }
 
         function apartadoVisible(view) {
-            const { perfil, opcionales } = configApartados();
-            if ((view === 'studies' || view === 'universidad' || view === 'estudiar') && perfil === 'trabajador') return false;
-            if (view === 'work' && perfil === 'estudiante') return false;
+            const { opcionales } = configApartados();
             if (APARTADOS_OPCIONALES.some(o => o.view === view) && !opcionales[view]) return false;
             return true;
         }

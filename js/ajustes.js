@@ -446,16 +446,8 @@
         };
 
         function renderAjustesApartados() {
-            const { perfil, opcionales } = configApartados();
+            const { opcionales } = configApartados();
             return `
-                <div class="ajuste-subtitulo">perfil.</div>
-                <div class="ajustes-perfiles">
-                    ${PERFILES.map(p => `
-                        <button class="ajustes-perfil ${p.id === perfil ? 'activo' : ''}" onclick="elegirPerfil('${p.id}')">
-                            <b>${p.titulo}</b><span>${p.texto}</span>
-                        </button>`).join('')}
-                </div>
-                <div class="ajuste-subtitulo">apartados opcionales.</div>
                 <div class="ajustes-opcionales-resumen">
                     <span>${(() => { const activos = APARTADOS_OPCIONALES.filter(o => opcionales[o.view]); return activos.length ? `${activos.length} de ${APARTADOS_OPCIONALES.length} activos: ${activos.map(o => o.titulo.replace(/\.$/, '')).join(', ')}.` : 'Ninguno activo.'; })()}</span>
                     <button class="btn-secondary" style="width:auto" onclick="openApartadosOpcionales()">elegir apartados.</button>
@@ -463,27 +455,46 @@
         }
 
         // Son muchos y la lista alargaba Ajustes: se eligen en su modal.
+        // Los cambios se apuntan en un borrador y se aplican de una vez con
+        // "guardar selección.": aplicarlos con cada toque repintaba los menús
+        // y la vista de detrás, y se veían saltos.
+        let apartadosBorrador = null;
+
         function openApartadosOpcionales() {
-            showModal(`<div class="modal-title">apartados opcionales.</div><div id="apartados-opcionales">${renderApartadosOpcionales()}</div>`);
+            apartadosBorrador = { ...configApartados().opcionales };
+            showModal(`<div class="modal-title">apartados.</div><div id="apartados-opcionales">${renderApartadosOpcionales()}</div>
+                <button class="btn-modal-primary apartados-guardar" onclick="guardarSeleccionApartados()">guardar selección.</button>`);
+        }
+
+        function alternarBorradorApartado(view) {
+            apartadosBorrador[view] = !apartadosBorrador[view];
+            document.getElementById('apartados-opcionales').innerHTML = renderApartadosOpcionales();
+        }
+
+        function guardarSeleccionApartados() {
+            const opcionales = apartadosBorrador;
+            apartadosBorrador = null;
+            closeModal();
+            guardarConfigApartados({ opcionales });
         }
 
         // Los opcionales se agrupan en ramas (bitácora#school...). Lo que no
         // esté en ninguna rama cae en #otros, así un apartado nuevo nunca se
         // queda sin poder activarse.
         const RAMAS_APARTADOS = [
-            { id: 'school', texto: 'Para quien estudia o da clase.', apartados: ['estudiar', 'universidad', 'profesorado'] },
+            { id: 'school', texto: 'Para quien estudia o da clase.', apartados: ['studies', 'estudiar', 'universidad', 'profesorado'] },
             { id: 'home', texto: 'El día a día de casa.', apartados: ['compra', 'actualizaciones', 'collectibles'] },
-            { id: 'work', texto: 'Proyectos y recursos de trabajo.', apartados: ['projects', 'links'] },
+            { id: 'work', texto: 'Tu trabajo, proyectos y recursos.', apartados: ['work', 'projects', 'links'] },
             { id: 'mind', texto: 'Tu segundo cerebro: cómo se relaciona todo.', apartados: ['tags', 'graph'] },
         ];
 
         function renderApartadosOpcionales() {
-            const { opcionales } = configApartados();
+            const opcionales = apartadosBorrador || configApartados().opcionales;
             const enRama = new Set(RAMAS_APARTADOS.flatMap(r => r.apartados));
             const ramas = [...RAMAS_APARTADOS, { id: 'otros', texto: 'El resto.', apartados: APARTADOS_OPCIONALES.map(o => o.view).filter(v => !enRama.has(v)) }]
                 .map(r => ({ ...r, items: r.apartados.map(v => APARTADOS_OPCIONALES.find(o => o.view === v)).filter(Boolean) }))
                 .filter(r => r.items.length);
-            return `<p class="finance-modal-note" style="margin-top:0">Toca un apartado para encenderlo o apagarlo. Lo que apagues desaparece de los menús, pero sus datos se quedan guardados.</p>
+            return `<p class="finance-modal-note" style="margin-top:0">Toca los apartados que quieras ver y pulsa <b>guardar selección.</b> abajo. Lo que apagues desaparece de los menús, pero sus datos se quedan guardados.</p>
                 <div class="ramas">${ramas.map(r => {
                     const activos = r.items.filter(o => opcionales[o.view]).length;
                     return `<section class="rama">
@@ -493,7 +504,7 @@
                         </div>
                         <div class="rama-texto">${r.texto}</div>
                         <div class="rama-apartados">${r.items.map(o => `
-                            <button class="rama-apartado ${opcionales[o.view] ? 'on' : ''}" onclick="alternarOpcional('${o.view}');document.getElementById('apartados-opcionales').innerHTML=renderApartadosOpcionales()" aria-pressed="${!!opcionales[o.view]}">
+                            <button class="rama-apartado ${opcionales[o.view] ? 'on' : ''}" onclick="alternarBorradorApartado('${o.view}')" aria-pressed="${!!opcionales[o.view]}">
                                 <span class="rama-apartado-cab"><b>${o.titulo}</b><i aria-hidden="true"></i></span>
                                 <small>${o.texto}</small>
                             </button>`).join('')}</div>
@@ -539,7 +550,7 @@
                     </div>
 
                     <div class="ajustes-grupo">apartados.</div>
-                    ${bloqueAjuste('settings-apartados-section', 'apartados', 'qué quieres ver.', 'Bitácora se adapta a ti: elige tu perfil y activa solo los apartados que vayas a usar. Lo que desactives desaparece de los menús, pero sus datos se quedan guardados.', renderAjustesApartados(), 'ajuste-ancho')}
+                    ${bloqueAjuste('settings-apartados-section', 'apartados', 'qué quieres ver.', 'Activa solo los apartados que vayas a usar. Lo que desactives desaparece de los menús, pero sus datos se quedan guardados.', renderAjustesApartados(), 'ajuste-ancho')}
 
                     <div class="ajustes-grupo">conexiones.</div>
                     <div class="ajustes-rejilla">

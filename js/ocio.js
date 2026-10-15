@@ -46,13 +46,14 @@
                 ${(!cultureSharedMode && cultureTab === 'series') ? `
                 <button class="btn-secondary btn-acento" style="width:auto" onclick="openImdbSeriesImportModal()">importar imdb.</button>
                 ` : ''}
+                <span class="culture-salto"></span>
                 ${!cultureSharedMode && cultureTab !== 'lists' ? `<button class="btn-secondary" style="width:auto" onclick="buscarPortadasPestana()">buscar portadas.</button>` : ''}
                 <button class="btn-secondary culture-shared-toggle" style="width:auto" onclick="toggleCultureSharedMode()">
                     ${cultureSharedMode ? '← mi biblioteca.' : `recomendaciones.${pendientes ? ` (${pendientes})` : ''}`}
                 </button>
                 </div>
                 <div class="culture-tab-content">
-                <div class="cal-view-anim">`;
+                <div class="${cultureAnimar() ? 'cal-view-anim' : ''}">`;
 
             if (cultureSharedMode) {
                 html += renderGhostGrid(tipoActivo);
@@ -369,6 +370,33 @@
             window.open(url, '_blank', `noopener,width=${w},height=${h},left=${left},top=${top}`);
         }
 
+        // La animación de entrada solo al cambiar de pestaña: al entrar en
+        // Ocio ya anima la transición de la vista, y al repintar por
+        // cualquier otro motivo (guardar, una portada nueva) la rejilla
+        // daba un salto, como si temblara.
+        let cultureAnimClave = null;
+        function cultureAnimar() {
+            const clave = `${cultureTab}|${cultureSharedMode}`;
+            const animar = cultureAnimClave !== null && cultureAnimClave !== clave;
+            cultureAnimClave = clave;
+            return animar;
+        }
+
+        // Las tarjetas miden unos 120 px: con la imagen mediana de cada
+        // fuente basta, y la grande se deja para la ficha.
+        function portadaMiniatura(url) {
+            return String(url || '')
+                .replace(/(covers\.openlibrary\.org\/b\/id\/\d+)-L\.jpg/, '$1-M.jpg')
+                .replace('image.tmdb.org/t/p/w500/', 'image.tmdb.org/t/p/w342/')
+                .replace('/original_untouched/', '/medium_portrait/')
+                .replace('zoom=2', 'zoom=1');
+        }
+
+        // Al repintar, una <img> nueva con loading="lazy" pasa un fotograma
+        // en blanco aunque la imagen ya esté en caché: por eso parpadeaban.
+        // Las que ya se vieron una vez se pintan sin lazy.
+        const portadasVistas = new Set();
+
         function renderMediaCard(entry, metaLine, badge) {
             const gold = Number(entry.rating) === 5;
             const stars = entry.rating ? '★'.repeat(entry.rating) : '';
@@ -379,7 +407,7 @@
             // debajo, haya portada o no, para que la rejilla vaya a juego. El
             // grano iguala las portadas que vienen de fuentes distintas.
             const caja = entry.portada
-                ? `<div class="media-portada"><img src="${escapeHtml(entry.portada)}" alt="" loading="lazy" decoding="async" onerror="this.closest('.media-portada').classList.add('rota')"><span class="media-portada-icono">${mediaCardIcon(entry.type)}</span></div>`
+                ? `<div class="media-portada"><img src="${escapeHtml(portadaMiniatura(entry.portada))}" alt="" ${portadasVistas.has(portadaMiniatura(entry.portada)) ? '' : 'loading="lazy"'} onload="portadasVistas.add(this.getAttribute('src'))" onerror="this.closest('.media-portada').classList.add('rota')"><span class="media-portada-icono">${mediaCardIcon(entry.type)}</span></div>`
                 : `<div class="media-portada sin-portada"><div class="media-card-icon">${mediaCardIcon(entry.type)}</div>${entry.portadaPendiente ? `<button class="media-card-elegir" onclick="event.stopPropagation();openElegirPortada('${entry.id}')">elegir portada.</button>` : ''}</div>`;
             return `
                 <div class="media-card media-card-portada media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" data-open-entry="${entry.id}">

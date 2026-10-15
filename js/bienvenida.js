@@ -59,7 +59,7 @@ function renderBienvenidaPaso() {
                     <b>${p.id === 'estudiante' ? 'estudio.' : p.id === 'trabajador' ? 'trabajo.' : 'las dos cosas.'}</b><span>${p.texto}</span>
                 </button>`).join('')}</div>`;
     } else if (paso === 'apartados') {
-        const opcionales = APARTADOS_OPCIONALES.filter(o => !(o.view === 'universidad' && b.perfil === 'trabajador'));
+        const opcionales = APARTADOS_OPCIONALES.filter(o => o.view !== 'studies' && o.view !== 'work' && !(o.view === 'universidad' && b.perfil === 'trabajador'));
         cuerpo = `
             <h2>elige qué quieres ver.</h2>
             <p>Siempre tienes calendario, planificador, rutinas, notas, eventos, finanzas, ocio, viajes y social. Estos son opcionales:</p>
@@ -140,7 +140,7 @@ async function terminarBienvenida(abrirGuia) {
     bienvenidaLeer();
     const b = bienvenidaBorrador;
     if (b.nombre && !userName) userName = b.nombre;
-    apartadosConfig = { ...configApartados(), perfil: b.perfil, opcionales: b.opcionales };
+    apartadosConfig = { ...configApartados(), perfil: b.perfil, opcionales: { ...b.opcionales, studies: b.perfil !== 'trabajador', work: b.perfil !== 'estudiante' } };
     if (b.tarea) {
         const ahora = new Date();
         const hora = `${String(Math.min(23, ahora.getHours() + 1)).padStart(2, '0')}:00`;
