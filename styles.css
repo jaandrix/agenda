@@ -7817,3 +7817,18 @@ body.mobile-standalone .pomo-pastilla { bottom:calc(18px + env(safe-area-inset-b
 .m-app, .m-menu-cuerpo, body.mobile-standalone #modal-container .modal-sheet, body.pwa #modal-container .modal-sheet { zoom:var(--m-zoom, 1); }
 .tamano-letra { display:flex; flex-wrap:wrap; gap:6px; }
 .m-menu-letra { display:flex; flex-direction:column; gap:8px; margin-top:18px; }
+
+/* Landing: actualizaciones. */
+button.landing-about-link { border:0; background:none; font-family:inherit; cursor:pointer; padding:0; }
+@media (max-width:720px) { .landing-topbar .landing-novedades-link { display:inline-block; } }
+.landing-novedades-link { position:relative; }
+.landing-novedades-link::after { content:''; position:absolute; top:-2px; right:-8px; width:6px; height:6px; border-radius:50%; background:var(--m-acento, #e8572a); }
+.novedades { display:flex; flex-direction:column; max-height:62vh; overflow:auto; margin:0 -4px; padding:0 4px; }
+.novedades-mes { position:sticky; top:0; z-index:1; padding:10px 0 6px; background:var(--bg-card); font-size:12px; font-weight:800; color:var(--m-acento, #e8572a); }
+.novedad { padding:12px 0 14px; border-top:1px solid var(--border); }
+.novedad-cab { display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:11px; color:var(--text-secondary); }
+.novedad-nuevo { font-weight:700; }
+.novedad-rama b { color:var(--text-primary); }
+.novedad h3 { margin:6px 0 4px; font-size:18px; font-weight:800; letter-spacing:.2px; color:var(--text-primary); }
+.novedad p { margin:0 0 6px; font-size:13.5px; line-height:1.5; color:var(--text-secondary); }
+.novedad-para { display:inline-block; padding:3px 9px; border-radius:999px; border:1px solid var(--border-strong); font-size:11px; font-weight:600; color:var(--text-primary); }

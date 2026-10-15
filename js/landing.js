@@ -152,3 +152,52 @@ function montarCerebro() {
     }
 }
 montarCerebro();
+
+// ------------------------------------------------------------
+//  ACTUALIZACIONES (landing): lo nuevo de Bitácora, apartado a
+//  apartado, con su rama y para quién es. Al añadir un apartado o algo
+//  grande, se apunta aquí arriba del todo.
+// ------------------------------------------------------------
+const NOVEDADES = [
+    { fecha: '2026-10-16', rama: 'todos', nombre: 'calendarios', para: 'todos.', texto: 'Trae tu calendario de Google, Apple u Outlook, o el de tu equipo o tu universidad, con un archivo o un enlace.' },
+    { fecha: '2026-10-15', rama: 'school', nombre: 'estudiar', para: 'estudiantes y opositores.', texto: 'Pomodoro, el día dividido en temas, el temario por asignaturas y tarjetas de repaso espaciado al estilo Anki.' },
+    { fecha: '2026-10-15', rama: 'home', nombre: 'compra', para: 'quien hace la compra.', texto: 'Listas que se ordenan solas por secciones del súper, con lo de siempre a un toque y el gasto directo a Finanzas.' },
+    { fecha: '2026-10-15', rama: 'todos', nombre: 'rutinas', para: 'todos.', texto: 'Los hábitos pasan a ser rutinas: por momentos del día, con pasos y a tu ritmo.' },
+    { fecha: '2026-10-15', rama: 'todos', nombre: 'portadas en ocio', para: 'quien lee, ve series o juega.', texto: 'Libros, películas, series y juegos con su portada, encontrada sola.' },
+    { fecha: '2026-10-09', rama: 'school', nombre: 'profesorado', para: 'docentes.', texto: 'El cuadrante del curso con todas tus clases, cuaderno de notas, deberes y lo que no das en su día, a pendientes.' },
+    { fecha: '2026-10-09', rama: 'work', nombre: 'agenda laboral', para: 'quien trabaja con horario o citas.', texto: 'Tu horario y tus citas de trabajo, aparte y, si quieres, dentro de tu calendario.' },
+    { fecha: '2026-10-07', rama: 'school', nombre: 'universidad', para: 'universitarios.', texto: 'Tu carrera por cuatrimestres: créditos, media, fechas de exámenes y la nota que necesitas para aprobar.' },
+    { fecha: '2026-10-07', rama: 'work', nombre: 'crear mi cv', para: 'quien busca trabajo.', texto: 'Un asistente por pasos que convierte tu historial de Empleo en un CV en PDF, limpio y de una página.' },
+    { fecha: '2026-10-07', rama: 'todos', nombre: 'social', para: 'quien comparte planes.', texto: 'Gastos compartidos al estilo Tricount, eventos con amigos y vuestras recomendaciones.' },
+    { fecha: '2026-10-07', rama: 'home', nombre: 'envíos', para: 'quien compra por internet.', texto: 'Tus pedidos y por dónde van, actualizados solos.' },
+    { fecha: '2026-10-06', rama: 'mind', nombre: 'conexiones', para: 'quien quiere un segundo cerebro.', texto: 'Cómo se relacionan tus viajes, personas, lugares, etiquetas y notas.' },
+    { fecha: '2026-10-06', rama: 'todos', nombre: 'método', para: 'quien persigue un objetivo.', texto: 'Objetivos con el método Harada, un paso kaizen y revisión semanal.' },
+    { fecha: '2026-10-06', rama: 'todos', nombre: 'documentos', para: 'todos.', texto: 'Garantías, contratos, seguros y el DNI con su caducidad: Bitácora te avisa a tiempo.' },
+    { fecha: '2026-10-06', rama: 'todos', nombre: 'bitácora en el móvil', para: 'todos.', texto: 'Una app propia en la pantalla de inicio, rápida y pensada para el dedo.' },
+    { fecha: '2026-10-05', rama: 'todos', nombre: 'avisos', para: 'todos.', texto: 'El resumen de la mañana y un aviso antes de cada evento, en el móvil.' },
+    { fecha: '2026-10-03', rama: 'todos', nombre: 'claude y chatgpt', para: 'quien usa IA.', texto: 'Conecta tu Bitácora y pídele cosas hablando: apuntar, consultar, planificar.' },
+    { fecha: '2026-10-01', rama: 'todos', nombre: 'entradas con qr', para: 'quien va a conciertos, cine o partidos.', texto: 'Guarda la entrada de un evento y enséñala sin conexión.' },
+    { fecha: '2026-09-30', rama: 'todos', nombre: 'patrones', para: 'todos.', texto: 'Panorama encuentra relaciones entre tus apartados: cómo duermes, gastas o rindes según el día.' },
+    { fecha: '2026-09-21', rama: 'todos', nombre: 'finanzas', para: 'todos.', texto: 'Importa el extracto del banco, cuadra con tu saldo real y sabe a qué ritmo gastas.' },
+    { fecha: '2026-09-17', rama: 'todos', nombre: 'viajes', para: 'quien viaja.', texto: 'Cada viaje con reservas, lugares, itinerario, mapa, documentos y lo que gastaste.' },
+    { fecha: '2026-07-28', rama: 'todos', nombre: 'bitácora', para: 'todos.', texto: 'El comienzo: calendario, planificador, eventos, ocio y notas, en un solo sitio.' },
+];
+
+function openNovedades() {
+    const mes = f => new Date(f + 'T12:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    let ultimoMes = '';
+    const filas = NOVEDADES.map(n => {
+        const m = mes(n.fecha);
+        const cab = m !== ultimoMes ? `<div class="novedades-mes">${m}.</div>` : '';
+        ultimoMes = m;
+        return `${cab}<article class="novedad">
+            <div class="novedad-cab"><span class="novedad-nuevo">nuevo en bitácora.</span><span class="novedad-rama">bitácora<b>#${n.rama}</b></span></div>
+            <h3>${n.nombre.toUpperCase()}.</h3>
+            <p>${n.texto}</p>
+            <div class="novedad-para">para ${n.para}</div>
+        </article>`;
+    }).join('');
+    showModal(`<div class="modal-title">actualizaciones.<button class="modal-close" onclick="closeModal()">✕</button></div>
+        <p class="finance-modal-note" style="margin-top:0">Todo lo que ha ido llegando a Bitácora, lo último primero.</p>
+        <div class="novedades">${filas}</div>`);
+}

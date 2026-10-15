@@ -254,7 +254,9 @@ a menor resolución.
   aproximado, sin reutilizar), recuento de claves (dos cargos iguales cuentan dos) y, si el CSV trae saldo
   (`Balance`), `financeProCuadreExtracto` compara y enseña qué sobra o falta. Marcas `viaje` (fuera de
   presupuestos y ritmo; pestaña Gastos del viaje) y `ahorro` (bolsillos de Revolut, ni ingreso ni gasto).
-- **Landing:** el cerebro de la portada (`montarCerebro` en landing.js, `CEREBRO_ZONAS`).
+- **Landing:** el cerebro de la portada (`montarCerebro` en landing.js, `CEREBRO_ZONAS`) y el modal
+  "actualizaciones." (`NOVEDADES` / `openNovedades` en landing.js). **Al añadir un apartado o algo grande, apuntarlo
+  arriba del todo en `NOVEDADES`** (fecha, rama, nombre, para quién y una línea).
 - **CV (`js/cv.js`, Empleo → "crear mi cv."):** asistente por pasos (contacto, cada empleo con
   `cvFunciones`/`cvAprendido`/`cvHabilidades`, formación, idiomas, habilidades, perfil propuesto)
   que guarda `perfilLaboral` (sincronizado) y genera un PDF de una columna con jsPDF.
