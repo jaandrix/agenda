@@ -177,10 +177,13 @@
         function cerrarFichaHaciaOrigen(container, sheet) {
             const selector = vtFichaOrigen;
             vtFichaOrigen = null;
-            if (!selector || !sheet || !VT_DISPONIBLE || vtReducido()) return false;
+            // Con otra transición aún en marcha, empezar esta la cortaría de golpe.
+            if (!selector || !sheet || !VT_DISPONIBLE || vtReducido() || document.documentElement.dataset.vt) return false;
             sheet.style.viewTransitionName = 'ficha';
             const t = conTransicion('ficha', () => {
-                container.innerHTML = '';
+                // La transición aplica el cambio un fotograma después: si para
+                // entonces ya se abrió otro modal, no hay que borrarlo.
+                if (container.contains(sheet)) container.innerHTML = '';
                 const el = document.querySelector(selector);
                 if (el) el.style.viewTransitionName = 'ficha';
             });

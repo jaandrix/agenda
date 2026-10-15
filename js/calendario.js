@@ -773,7 +773,10 @@
         window._dayPrefillDate = null;
         function openNewEntryForDay(date) {
             window._dayPrefillDate = date;
-            closeModal();
+            // Sin animación de cierre: el buscador sale encima en el acto, y
+            // la ficha volviendo a su casilla a la vez se veía como un salto.
+            vtFichaOrigen = null;
+            document.getElementById('modal-container').innerHTML = '';
             openCommandPalette('create');
         }
 

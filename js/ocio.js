@@ -383,6 +383,7 @@
                 : `<div class="media-portada sin-portada"><div class="media-card-icon">${mediaCardIcon(entry.type)}</div>${entry.portadaPendiente ? `<button class="media-card-elegir" onclick="event.stopPropagation();openElegirPortada('${entry.id}')">elegir portada.</button>` : ''}</div>`;
             return `
                 <div class="media-card media-card-portada media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" data-open-entry="${entry.id}">
+                    ${gold ? '<span class="media-chapa" title="5 estrellas"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 6l13 30 32 3-24 21 7 32-28-17-28 17 7-32L5 39l32-3z"/></svg></span>' : ''}
                     ${caja}
                     <div class="media-card-title">${escapeHtml(entry.title)}</div>
                     <div class="media-card-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>

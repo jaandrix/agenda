@@ -2347,7 +2347,7 @@
             const list = document.getElementById('command-palette-list');
             const item = list?._filtered?.[index];
             const prefillDate = window._dayPrefillDate;
-            closeCommandPalette();
+            closeCommandPalette(true);
             if (!item) return;
             if (item.kind === 'create') {
                 openNewEntry(item.type);
@@ -2453,11 +2453,14 @@
             await handleLogout();
         }
 
-        function closeCommandPalette() {
+        // `inmediato` al elegir algo: lo que se abre después trae su propia
+        // animación, y el buscador desvaneciéndose encima se superponía.
+        function closeCommandPalette(inmediato) {
             const overlay = document.getElementById('command-palette-overlay');
             document.body.classList.remove('cp-blur');
             window._dayPrefillDate = null;
             if (!overlay) return;
+            if (inmediato) { overlay.remove(); return; }
             overlay.style.animation = 'modalOverlayOut 0.18s ease both';
             setTimeout(() => overlay.remove(), 170);
         }
