@@ -27,7 +27,7 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'trabajo', 'salud', 'hogar', 'viajes', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. En los campos de fecha también puedes escribir "hoy", "mañana" o "pasado mañana", y la hora como 7:30. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
 const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
 const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
@@ -39,6 +39,40 @@ function hoyISO(): string {
 // mismo, y sin ella "dentro de un rato" o "lo de esta tarde" fallaban.
 function ahoraMadrid(): string {
     return new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+}
+// La IA a veces manda "hoy", "mañana", "15/10/2026", "7:30" o "7,30" en vez de
+// AAAA-MM-DD y HH:MM. Antes, la fecha o la hora no válidas se descartaban
+// en silencio (un evento "hoy a las 7,30" quedaba sin hora). Se resuelven
+// aquí, con la fecha real de Madrid, antes de llamar a cualquier herramienta.
+const CAMPOS_FECHA = ['fecha', 'desde', 'hasta', 'fecha_inicio', 'fecha_fin', 'caduca', 'dia'];
+const CAMPOS_HORA = ['hora', 'hora_fin', 'hora_inicio'];
+function normalizarFecha(v: any): any {
+    if (typeof v !== 'string') return v;
+    const t = v.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const rel: Record<string, number> = { hoy: 0, manana: 1, 'pasado manana': 2, ayer: -1, anteayer: -2 };
+    if (t in rel) return sumarDias(hoyISO(), rel[t]);
+    let m = t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+    if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    return v;
+}
+function normalizarHora(v: any): any {
+    if (typeof v !== 'string') return v;
+    const m = v.trim().toLowerCase().match(/^(\d{1,2})(?:[:.,h ]\s*(\d{2}))?\s*(?:h|hrs?|horas?)?$/);
+    if (!m) return v;
+    const h = Number(m[1]), min = Number(m[2] || 0);
+    return h < 24 && min < 60 ? `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}` : v;
+}
+function normalizarArgumentos(a: any): any {
+    if (!a || typeof a !== 'object' || Array.isArray(a)) return a;
+    const r: any = { ...a };
+    for (const k of Object.keys(r)) {
+        if (CAMPOS_FECHA.includes(k)) r[k] = normalizarFecha(r[k]);
+        else if (CAMPOS_HORA.includes(k)) r[k] = normalizarHora(r[k]);
+        else if (Array.isArray(r[k])) r[k] = r[k].map(normalizarArgumentos);
+    }
+    return r;
 }
 function sumarDias(iso: string, n: number): string {
     const d = new Date(iso + 'T12:00:00Z');
@@ -1388,7 +1422,7 @@ async function responder(userId: string, msg: any) {
     if (id === undefined || id === null) return null;
     try {
         if (method === 'initialize') {
-            return { jsonrpc: '2.0', id, result: { protocolVersion: params?.protocolVersion || PROTOCOLO, capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } }, serverInfo: { name: 'bitacora', title: 'Bitácora', version: '2.0.0' }, instructions: INSTRUCCIONES } };
+            return { jsonrpc: '2.0', id, result: { protocolVersion: params?.protocolVersion || PROTOCOLO, capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } }, serverInfo: { name: 'bitacora', title: 'Bitácora', version: '2.0.0' }, instructions: `Ahora mismo en Madrid es ${ahoraMadrid()}, ${hoyISO()}. ` + INSTRUCCIONES } };
         }
         if (method === 'ping') return { jsonrpc: '2.0', id, result: {} };
         if (method === 'tools/list') return { jsonrpc: '2.0', id, result: { tools: HERRAMIENTAS } };
@@ -1396,7 +1430,7 @@ async function responder(userId: string, msg: any) {
             const { data: acceso } = await sbAdmin.rpc('tiene_acceso', { p_user: userId });
             if (!acceso) return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: 'La prueba gratuita o la suscripción de Bitácora de esta cuenta ha terminado. Para seguir usando el conector, suscríbete en appbitacora.es (tus datos siguen guardados).' }], isError: true } };
             try {
-                const res = await llamar(userId, params?.name, params?.arguments || {});
+                const res = await llamar(userId, params?.name, normalizarArgumentos(params?.arguments || {}));
                 const text = typeof res === 'string' ? res : JSON.stringify(compactar(res));
                 return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text }] } };
             } catch (e) {
