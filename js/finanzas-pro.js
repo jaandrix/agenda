@@ -200,17 +200,24 @@
         // la fecha de inicio exacta — la que se guardó al importarlo
         // pendiente — es casi seguro la misma operación y el margen se
         // amplía: una fianza de hotel de 120 € puede acabar en 98 €.
-        function financeProBuscarPendiente(f) {
+        // Un pendiente que ya ha emparejado otra fila del mismo extracto no
+        // vale para una segunda (`usados`), y el importe exacto va antes que
+        // el aproximado: dos peajes de Autopistas pendientes el mismo día
+        // (8,42 € y 5,03 €) caían dentro del margen y el segundo pisaba al
+        // primero, que desaparecía.
+        function financeProBuscarPendiente(f, usados) {
             const texto = financeProNormalizar(f.note);
             const fechas = [f.date, ...(f.altDates || [])];
-            let mejor = null, mejorDias = Infinity;
+            let mejor = null, mejorNota = Infinity;
             financePro.transactions.forEach(t => {
-                if (!t.pendiente || t.account !== f.account || t.type !== f.type) return;
+                if (!t.pendiente || t.account !== f.account || t.type !== f.type || usados?.has(t)) return;
                 if (financeProNormalizar(t.bankNote ?? t.note) !== texto) return;
                 const dias = Math.min(...fechas.map(d => Math.abs((new Date(t.date) - new Date(d)) / 86400000)));
+                const diff = Math.abs(Number(t.amount) - Number(f.amount));
                 const margen = dias === 0 ? 0.5 : 0.15;
-                if (Math.abs(Number(t.amount) - Number(f.amount)) > Math.max(1, Number(t.amount) * margen)) return;
-                if (dias <= 10 && dias < mejorDias) { mejor = t; mejorDias = dias; }
+                if (dias > 10 || diff > Math.max(1, Number(t.amount) * margen)) return;
+                const nota = (diff < 0.005 ? 0 : 100) + dias;
+                if (nota < mejorNota) { mejor = t; mejorNota = nota; }
             });
             return mejor;
         }
@@ -2740,6 +2747,7 @@
             // que corresponde al reintento, que sigue en el extracto.
             const clavePendiente = (nota, importe, fecha) => `${financeProNormalizar(nota).trim()}|${Number(importe).toFixed(2)}|${fecha}`;
             const pendientesEnArchivo = new Set();
+            const pendientesUsados = new Set();
             if (m.status >= 0) rows.forEach(r => {
                 if (!/pending|pendiente|processing|procesando/.test(String(r[m.status] || '').toLowerCase())) return;
                 const fecha = financeProParseDate(r[m.date]) || r.map(financeProParseDate).find(Boolean);
@@ -2798,7 +2806,8 @@
                 // de hotel) en vez de entrar otra vez como movimiento nuevo.
                 // Dos pendientes solo son el mismo si comparten fecha de
                 // inicio exacta: si no, serían dos compras en el mismo sitio.
-                const candidato = financeProBuscarPendiente({ account: effectiveAccount, type: rule ? 'transfer' : type, amount, date, altDates, note: description });
+                const candidato = financeProBuscarPendiente({ account: effectiveAccount, type: rule ? 'transfer' : type, amount, date, altDates, note: description }, pendientesUsados);
+                if (candidato) pendientesUsados.add(candidato);
                 const pendiente = candidato && esPendiente && candidato.date !== date ? null : candidato;
                 if (esAnulado) {
                     const sigueEnArchivo = pendiente && pendientesEnArchivo.has(clavePendiente(pendiente.bankNote ?? pendiente.note, pendiente.amount, pendiente.date));
@@ -2836,6 +2845,7 @@
                         amount, note: description || undefined,
                         pendiente: esPendiente || undefined
                     });
+                    pendientesUsados.add(financePro.transactions[financePro.transactions.length - 1]);
                     added++;
                     return;
                 }
@@ -2876,6 +2886,7 @@
                         if (e && !esPendiente && (e.proAccount || e.type === 'subscription') && financeProCuentaRecurrente(e) !== m.account) e.proAccount = m.account;
                     }
                     Object.assign(auto, { date, account: m.account, amount, note: description || auto.note, conciliado: true, pendiente: esPendiente || undefined });
+                    pendientesUsados.add(auto);
                     if (category) auto.category = category;
                     if (nuevo) added++; else conciliados++;
                     return;
@@ -2890,6 +2901,7 @@
                 const manual = manualPrevio;
                 if (manual) {
                     Object.assign(manual, { date, bankNote: description, conciliado: true, pendiente: esPendiente || undefined });
+                    pendientesUsados.add(manual);
                     if (!manual.note && description) manual.note = description;
                     if (!manual.category && category) manual.category = category;
                     if (manual.category) manual.needsReview = false;
@@ -2903,6 +2915,7 @@
                     pendiente: esPendiente || undefined,
                     ahorro: /^(From|To) [A-Z]{3} \S/.test(description) || undefined
                 });
+                pendientesUsados.add(financePro.transactions[financePro.transactions.length - 1]);
                 added++;
             });
             const categorizados = financeProAutoCategorizar();
@@ -3048,16 +3061,27 @@
                 <label class="finance-tx-marca"><input type="checkbox" ${d.ahorro ? 'checked' : ''} onchange="financeProDraftSet('ahorro',this.checked)"><span><b>${d.type === 'income' ? 'viene de mis ahorros.' : 'va a mis ahorros.'}</b><small>${d.type === 'income' ? 'Sube el saldo, pero no cuenta como ingreso (lo que sacas de una hucha o un bolsillo).' : 'Baja el saldo, pero no cuenta como gasto (lo que apartas a una hucha o un bolsillo).'}</small></span></label>` : ''}`;
         }
 
+        // Los gastos de un viaje: los marcados con ese viaje y, si se marcaron
+        // sin elegir viaje, los que caen dentro de sus fechas.
+        function financeProGastosDelViaje(viaje) {
+            if (!viaje) return [];
+            const fin = viaje.endDate || viaje.startDate;
+            return financePro.transactions.filter(t => t.type === 'expense' && t.viaje
+                && (t.viajeId === viaje.id || (!t.viajeId && viaje.startDate && t.date >= viaje.startDate && t.date <= fin)))
+                .sort((a, b) => a.date.localeCompare(b.date));
+        }
+
         function financeProGastoViaje(viajeId) {
-            return financePro.transactions.filter(t => t.type === 'expense' && t.viaje && t.viajeId === viajeId).reduce((s, t) => s + (Number(t.amount) || 0), 0);
+            return financeProGastosDelViaje(getTrip(viajeId)).reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
         // Marcar de una vez todo lo de un viaje: se eligen el viaje (o las
         // fechas) y salen los gastos de esos días, ya marcados salvo las
         // suscripciones y gastos fijos, que se cobran igual estés donde estés.
-        function openFinanceProViajeModal() {
-            const v = financeProViajesConFecha()[0];
-            window._viajeMarca = { viajeId: v?.id || '', desde: v?.startDate || '', hasta: v?.endDate || v?.startDate || '', sel: null };
+        function openFinanceProViajeModal(viajeId) {
+            const viajes = financeProViajesConFecha();
+            const v = (viajeId && getTrip(viajeId)) || viajes.find(x => x.startDate <= todayISO()) || viajes[0];
+            window._viajeMarca = { viajeId: v?.id || '', desde: v?.startDate || '', hasta: v?.endDate || v?.startDate || '', sel: null, nuevo: '' };
             showModal(`<div class="modal-title">gastos de un viaje.</div><div id="finance-viaje-cuerpo">${renderFinanceProViajeCuerpo()}</div>`);
         }
 
@@ -3087,6 +3111,7 @@
                     return `<label class="finance-viaje-fila"><input type="checkbox" ${v.sel.has(t.id) ? 'checked' : ''} onchange="financeProViajeMarcar('${t.id}',this.checked)"><span>${financeDateLabelShort(t.date)}</span><b>${escapeHtml(t.note || cat?.name || 'gasto')}</b><i>${financeMoney(t.amount)}</i></label>`;
                 }).join('') : `<div class="finance-empty-line">${v.desde && v.hasta ? 'No hay gastos esos días.' : 'Elige las fechas del viaje.'}</div>`}</div>
                 ${lista.length ? `<div class="finance-viaje-total"><span>${v.sel.size} de ${lista.length} marcados</span><b>${financeMoney(total)}</b></div>` : ''}
+                ${!v.viajeId && lista.length ? `<div class="modal-label">guardarlo también en viajes</div><input class="modal-input" placeholder="Nombre del viaje (Viena, Pirineo...). Vacío para no crearlo" value="${escapeHtml(v.nuevo || '')}" oninput="window._viajeMarca.nuevo=this.value">` : ''}
                 <button class="btn-modal-primary" onclick="guardarFinanceProViaje()" ${lista.length ? '' : 'disabled'}>guardar.</button>`;
         }
 
@@ -3110,6 +3135,13 @@
         async function guardarFinanceProViaje() {
             const v = window._viajeMarca;
             let marcados = 0;
+            const nombre = (v.nuevo || '').trim();
+            if (!v.viajeId && nombre && v.desde) {
+                const viaje = { id: 'trip_' + Date.now(), type: 'travel', title: nombre, destination: nombre, startDate: v.desde, endDate: v.hasta || v.desde, date: v.desde, categoryId: getCategoryIdForType('travel') };
+                entries.push(viaje);
+                filteredEntries = [...entries];
+                v.viajeId = viaje.id;
+            }
             financeProViajeLista().forEach(t => {
                 if (v.sel.has(t.id)) { t.viaje = true; if (v.viajeId) t.viajeId = v.viajeId; marcados++; }
                 else if (t.viaje) { delete t.viaje; delete t.viajeId; }

@@ -146,6 +146,7 @@
                 { id: 'mapa', label: 'Mapa', count: t.itinerario.filter(i => i.lat && i.lon).length },
                 { id: 'documentos', label: 'Documentos' },
                 { id: 'listas', label: 'Listas', count: t.listas.length },
+                { id: 'gastos', label: 'Gastos', count: financeProGastosDelViaje(t).length },
             ];
 
             let body = '';
@@ -156,6 +157,7 @@
             else if (tripManagerTab === 'mapa') body = renderTripMapTab(t);
             else if (tripManagerTab === 'documentos') body = renderTripDocumentsTab(t);
             else if (tripManagerTab === 'listas') body = renderTripListsTab(t);
+            else if (tripManagerTab === 'gastos') body = renderTripGastosTab(t);
 
             return `
             <div style="max-width:820px">
@@ -181,7 +183,7 @@
 
         // ---- Resumen ----
         function renderTripResumenTab(t) {
-            const total = getTravelTotal(t);
+            const total = getTravelTotal(t) + financeProGastoViaje(t.id);
             const itemsTotal = t.listas.reduce((s, l) => s + (l.items || []).length, 0);
             const itemsHechos = t.listas.reduce((s, l) => s + (l.items || []).filter(i => i.hecho).length, 0);
             return `
@@ -729,5 +731,39 @@
             l.items = (l.items || []).filter(x => x.id !== itemId);
             try { await saveData(); } catch (e) { console.error(e); }
             render();
+        }
+
+        // Lo que se gastó en el viaje, sacado de Finanzas: los movimientos
+        // marcados como gasto de viaje (con este viaje o dentro de sus fechas).
+        function renderTripGastosTab(t) {
+            const gastos = financeProGastosDelViaje(t);
+            const manual = t.expenses || [];
+            const total = gastos.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+            const fin = t.endDate || t.startDate;
+            const dias = t.startDate ? Math.max(1, Math.round((new Date(fin + 'T12:00:00') - new Date(t.startDate + 'T12:00:00')) / 86400000) + 1) : 0;
+            const porCat = {};
+            gastos.forEach(x => { const k = x.category || ''; porCat[k] = (porCat[k] || 0) + (Number(x.amount) || 0); });
+            const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
+            const porDia = {};
+            gastos.forEach(x => (porDia[x.date] = porDia[x.date] || []).push(x));
+            if (!gastos.length && !manual.length) return `
+                <div class="empty-state"><div class="empty-title">sin gastos todavía.</div>
+                <div class="empty-sub">En Finanzas, marca los gastos de estos días como «gasto de viaje.» (o usa «gastos de un viaje.» para marcarlos todos de una vez) y aparecerán aquí.</div>
+                <button class="btn-secondary" style="width:auto;margin-top:12px" onclick="openFinanceProViajeModal('${t.id}')">marcar los gastos de estas fechas.</button></div>`;
+            return `
+                <div class="viaje-gastos-cifras">
+                    <div><b>${financeMoney(total)}</b><small>gastado en el viaje</small></div>
+                    ${dias ? `<div><b>${financeMoney(total / dias)}</b><small>al día, en ${dias} ${dias === 1 ? 'día' : 'días'}</small></div>` : ''}
+                    <div><b>${gastos.length}</b><small>${gastos.length === 1 ? 'movimiento' : 'movimientos'}</small></div>
+                </div>
+                ${cats.length ? `<div class="viaje-gastos-cats">${cats.map(([k, v]) => {
+                    const cat = financeProCategoryById(k);
+                    return `<div class="viaje-gastos-cat"><span>${escapeHtml(cat?.name || 'sin categoría')}</span><i><em style="width:${Math.round(v / total * 100)}%"></em></i><b>${financeMoney(v)}</b></div>`;
+                }).join('')}</div>` : ''}
+                ${Object.entries(porDia).map(([d, xs]) => `
+                    <div class="viaje-gastos-dia"><span>${new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}.</span><b>${financeMoney(xs.reduce((s, x) => s + (Number(x.amount) || 0), 0))}</b></div>
+                    ${xs.map(x => `<button class="viaje-gastos-fila" onclick="openFinanceProTransactionModal('${x.id}')"><span>${escapeHtml(x.note || financeProCategoryById(x.category)?.name || 'gasto')}</span><i>${escapeHtml(financeProCategoryById(x.category)?.name || '')}</i><b>${financeMoney(x.amount)}</b></button>`).join('')}`).join('')}
+                ${manual.length ? `<div class="viaje-gastos-dia"><span>apuntados a mano en el viaje.</span><b>${financeMoney(getTravelTotal(t))}</b></div>${manual.map(x => `<div class="viaje-gastos-fila"><span>${escapeHtml(x.concept || x.name || x.description || 'gasto')}</span><i></i><b>${financeMoney(Number(x.amount) || 0)}</b></div>`).join('')}` : ''}
+                <button class="btn-secondary" style="width:auto;margin-top:14px" onclick="openFinanceProViajeModal('${t.id}')">revisar qué gastos son del viaje.</button>`;
         }
 

@@ -7402,3 +7402,22 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 .finance-viaje-fila i { font-style:normal; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
 .finance-viaje-total { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; font-size:13px; color:var(--text-secondary); }
 .finance-viaje-total b { font-size:18px; color:var(--text-primary); }
+
+/* Viajes: pestaña de gastos, sacados de Finanzas. */
+.viaje-gastos-cifras { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:16px; }
+.viaje-gastos-cifras div { padding:14px 16px; border-radius:16px; background:var(--bg-card); border:1px solid var(--border); }
+.viaje-gastos-cifras b { display:block; font-size:24px; font-weight:800; letter-spacing:-.5px; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.viaje-gastos-cifras small { font-size:12px; color:var(--text-secondary); }
+.viaje-gastos-cats { display:flex; flex-direction:column; gap:7px; margin-bottom:18px; }
+.viaje-gastos-cat { display:grid; grid-template-columns:130px minmax(0, 1fr) 80px; align-items:center; gap:10px; font-size:13px; color:var(--text-primary); }
+.viaje-gastos-cat span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.viaje-gastos-cat i { height:8px; border-radius:999px; background:var(--bg-card-hover); overflow:hidden; }
+.viaje-gastos-cat em { display:block; height:100%; border-radius:inherit; background:var(--text-primary); }
+.viaje-gastos-cat b { text-align:right; font-variant-numeric:tabular-nums; }
+.viaje-gastos-dia { display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-bottom:6px; border-bottom:1px solid var(--text-primary); font-size:13px; font-weight:700; color:var(--text-primary); }
+.viaje-gastos-dia span::first-letter { text-transform:lowercase; }
+.viaje-gastos-fila { display:grid; grid-template-columns:minmax(0, 1fr) auto auto; align-items:baseline; gap:12px; width:100%; padding:8px 2px; border:0; border-bottom:1px solid var(--border); background:none; font-family:var(--font-family); text-align:left; color:var(--text-primary); cursor:pointer; }
+.viaje-gastos-fila span { font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.viaje-gastos-fila i { font-style:normal; font-size:11.5px; color:var(--text-secondary); }
+.viaje-gastos-fila b { font-size:13.5px; font-variant-numeric:tabular-nums; }
+@media (max-width:600px) { .viaje-gastos-cat { grid-template-columns:96px minmax(0, 1fr) 70px; } }
