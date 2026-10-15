@@ -375,22 +375,18 @@
             const statusContent = stars
                 ? `<div class="media-card-stars">${stars}</div>`
                 : (badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : '');
-            // Con portada, la tarjeta es la portada (con grano, para que
-            // todas vayan a juego) y el título pasa debajo.
-            if (entry.portada) return `
-                <div class="media-card media-card-portada media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" data-open-entry="${entry.id}">
-                    <div class="media-portada"><img src="${escapeHtml(entry.portada)}" alt="" loading="lazy" decoding="async" onerror="this.closest('.media-portada').classList.add('rota')"><span class="media-portada-icono">${mediaCardIcon(entry.type)}</span></div>
-                    <div class="media-card-title">${escapeHtml(entry.title)}</div>
-                    <div class="media-card-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
-                    <div class="media-card-status-slot">${statusContent}</div>
-                </div>`;
+            // Todas las tarjetas tienen la forma de una portada (2:3) y el título
+            // debajo, haya portada o no, para que la rejilla vaya a juego. El
+            // grano iguala las portadas que vienen de fuentes distintas.
+            const caja = entry.portada
+                ? `<div class="media-portada"><img src="${escapeHtml(entry.portada)}" alt="" loading="lazy" decoding="async" onerror="this.closest('.media-portada').classList.add('rota')"><span class="media-portada-icono">${mediaCardIcon(entry.type)}</span></div>`
+                : `<div class="media-portada sin-portada"><div class="media-card-icon">${mediaCardIcon(entry.type)}</div>${entry.portadaPendiente ? `<button class="media-card-elegir" onclick="event.stopPropagation();openElegirPortada('${entry.id}')">elegir portada.</button>` : ''}</div>`;
             return `
-                <div class="media-card media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" data-open-entry="${entry.id}">
-                    <div class="media-card-icon">${mediaCardIcon(entry.type)}</div>
+                <div class="media-card media-card-portada media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" data-open-entry="${entry.id}">
+                    ${caja}
                     <div class="media-card-title">${escapeHtml(entry.title)}</div>
                     <div class="media-card-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
                     <div class="media-card-status-slot">${statusContent}</div>
-                    ${entry.portadaPendiente ? `<button class="media-card-elegir" onclick="event.stopPropagation();openElegirPortada('${entry.id}')">elegir portada.</button>` : ''}
                 </div>`;
         }
 

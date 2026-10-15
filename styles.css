@@ -7613,12 +7613,15 @@ body.papel .lp-cerebro { --lp-azul:#2f6fe0; }
 .media-portada-icono { position:absolute; inset:0; display:none; align-items:center; justify-content:center; color:var(--text-secondary); }
 .media-portada.rota img { display:none; }
 .media-portada.rota .media-portada-icono { display:flex; }
-.media-card-portada .media-card-title { min-height:0; font-size:13px; text-align:center; }
+.media-card-portada .media-card-title { min-height:0; font-size:12.5px; line-height:1.3; text-align:center; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .media-card-portada .media-card-meta { color:var(--text-secondary); }
 .media-card-gold.media-card-portada { border:0; box-shadow:none; }
 .media-card-gold.media-card-portada .media-portada { box-shadow:0 0 0 3px rgba(217,178,60,.95), 0 10px 24px -14px rgba(0,0,0,.6); }
-.media-card-grid:has(.media-card-portada) { grid-template-columns:repeat(auto-fill, minmax(132px, 1fr)); row-gap:18px; }
-.media-card-elegir { margin-top:2px; padding:4px 10px; border:1px dashed currentColor; border-radius:999px; background:none; color:inherit; opacity:.8; font-family:var(--font-family); font-size:11px; font-weight:700; cursor:pointer; }
+.media-card-grid:has(.media-card-portada) { grid-template-columns:repeat(auto-fill, minmax(104px, 120px)); gap:18px 14px; }
+.media-portada.sin-portada { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:#0c0c0e; color:#f2f2f2; }
+.media-portada.sin-portada::after { opacity:.3; }
+
+.media-card-elegir { margin-top:2px; padding:4px 9px; border:1px dashed currentColor; border-radius:999px; background:none; color:inherit; opacity:.8; position:relative; z-index:1; font-family:var(--font-family); font-size:11px; font-weight:700; cursor:pointer; }
 .portada-rejilla { display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:12px; max-height:52vh; overflow:auto; padding:2px; }
 .portada-candidata { display:flex; flex-direction:column; gap:4px; padding:0; border:0; background:none; font-family:var(--font-family); text-align:left; color:var(--text-primary); cursor:pointer; }
 .portada-marco { display:block; aspect-ratio:2 / 3; border-radius:10px; overflow:hidden; background:var(--bg-card-hover); transition:transform .15s var(--ease-out), box-shadow .15s ease; }
@@ -7632,8 +7635,9 @@ body.papel .lp-cerebro { --lp-azul:#2f6fe0; }
 .m-generico .culture-tab-content .media-card.media-card-portada { padding:10px 2px; }
 .m-generico .culture-tab-content .media-card-portada .media-portada { grid-area:icono; width:40px; border-radius:6px; box-shadow:none; }
 .m-generico .culture-tab-content .media-card-portada .media-card-title { text-align:left; }
-.media-card:has(.media-card-elegir) { height:auto; min-height:176px; }
-.m-generico .culture-tab-content .media-card-elegir { grid-column:2 / -1; justify-self:start; }
+.m-generico .culture-tab-content .media-card-elegir { display:none; }
+.m-generico .culture-tab-content .media-portada.sin-portada { aspect-ratio:auto; background:none; overflow:visible; }
+.m-generico .culture-tab-content .media-portada.sin-portada::after { display:none; }
 
 /* ============================================================
    ESTUDIAR: pomodoro, plan del día, temario y tarjetas de repaso.
