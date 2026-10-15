@@ -63,7 +63,7 @@
         let calYear = new Date().getFullYear();
         let calMonth = new Date().getMonth();
         let calViewMode = 'month'; // 'day' | 'week' | 'month'
-        let calSelectedDate = new Date().toISOString().slice(0, 10);
+        let calSelectedDate = todayISO();
         const CAL_MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
             'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
         ];
@@ -124,7 +124,7 @@
 
         function jumpToToday() {
             const t = new Date();
-            const hoy = t.toISOString().slice(0, 10);
+            const hoy = isoLocal(t);
             conTransicion(hoy > calSelectedDate ? 'adelante' : hoy < calSelectedDate ? 'atras' : 'fundido', () => {
                 calYear = t.getFullYear();
                 calMonth = t.getMonth();
@@ -599,7 +599,7 @@
                 if (recurring.length) entriesByDate[dateStr] = [...(entriesByDate[dateStr] || []), ...recurring];
             }
 
-            const today = new Date().toISOString().slice(0, 10);
+            const today = todayISO();
             const dayNames = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
             const firstDay = new Date(calYear, calMonth, 1).getDay();
@@ -671,7 +671,7 @@
             conTransicion(delta > 0 ? 'adelante' : 'atras', () => {
                 const d = new Date(calSelectedDate + 'T12:00:00');
                 d.setDate(d.getDate() + delta * 7);
-                calSelectedDate = d.toISOString().slice(0, 10);
+                calSelectedDate = isoLocal(d);
                 calYear = d.getFullYear();
                 calMonth = d.getMonth();
                 render();
@@ -683,7 +683,7 @@
             const dow = base.getDay();
             const monday = new Date(base);
             monday.setDate(base.getDate() - ((dow + 6) % 7));
-            const today = new Date().toISOString().slice(0, 10);
+            const today = todayISO();
             const entriesByDate = buildEntriesByDate(monday.getFullYear());
 
             let html = `
@@ -697,7 +697,7 @@
             for (let i = 0; i < 7; i++) {
                 const d = new Date(monday);
                 d.setDate(monday.getDate() + i);
-                const dateStr = d.toISOString().slice(0, 10);
+                const dateStr = isoLocal(d);
                 const isToday = dateStr === today;
                 const recurring = getRecurringCalendarEntries(dateStr);
                 const dayEntries = [...(entriesByDate[dateStr] || []), ...recurring];
@@ -727,7 +727,7 @@
             conTransicion(delta > 0 ? 'adelante' : 'atras', () => {
                 const d = new Date(calSelectedDate + 'T12:00:00');
                 d.setDate(d.getDate() + delta);
-                calSelectedDate = d.toISOString().slice(0, 10);
+                calSelectedDate = isoLocal(d);
                 calYear = d.getFullYear();
                 calMonth = d.getMonth();
                 render();
@@ -773,12 +773,11 @@
         // pero rellenando la fecha con el día sobre el que se pinchó.
         window._dayPrefillDate = null;
         function openNewEntryForDay(date) {
-            window._dayPrefillDate = date;
-            // Sin animación de cierre: el buscador sale encima en el acto, y
-            // la ficha volviendo a su casilla a la vez se veía como un salto.
+            // Sin animación de cierre: la hoja de apuntar sale encima en el
+            // acto, y la ficha volviendo a su casilla a la vez se veía como un salto.
             vtFichaOrigen = null;
             document.getElementById('modal-container').innerHTML = '';
-            openCommandPalette('create');
+            openApuntar(date);
         }
 
         function isBirthdayOnDate(entry, dateStr) {

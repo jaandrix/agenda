@@ -777,7 +777,7 @@
             if (Math.abs(diff) < 0.01) { showToast('El saldo ya coincidía'); return; }
             financePro.transactions.push({
                 id: 'ptx_adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                date: new Date().toISOString().slice(0, 10),
+                date: todayISO(),
                 account: key,
                 type: diff > 0 ? 'income' : 'expense',
                 amount: Math.abs(diff),
@@ -1779,7 +1779,7 @@
             if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
             financePro.transactions.push({
                 id: 'ptx_q_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                date: new Date().toISOString().slice(0, 10),
+                date: todayISO(),
                 account, type: d.type, amount, needsReview: true, manual: true
             });
             window._financeProQuickDraft = null;
@@ -1896,7 +1896,7 @@
 
         function openFinanceProProgramadosModal() {
             const manana = new Date(); manana.setDate(manana.getDate() + 1);
-            window._financeProgramadoDraft = { date: manana.toISOString().slice(0, 10), amount: '', account: 'bancos', category: '', note: '' };
+            window._financeProgramadoDraft = { date: isoLocal(manana), amount: '', account: 'bancos', category: '', note: '' };
             showModal(`
                 <div class="modal-title">programar gastos.</div>
                 <div class="finance-modal-note" style="margin-bottom:12px">Se añaden solos a tus movimientos el día que indiques. Si después importas el extracto del banco, el cargo real sustituye al programado en vez de duplicarse.</div>
@@ -2143,7 +2143,7 @@
             const existing = id ? financePro.transactions.find(t => t.id === id) : null;
             window._financeProTxDraft = existing
                 ? { ...existing, category: existing.category || '', transferTo: existing.transferTo || '', note: existing.note || '' }
-                : { type: 'expense', account: presetAccount || FINANCE_PRO_ACCOUNT_KEYS[0], date: new Date().toISOString().slice(0, 10), amount: '', category: '', note: '', transferTo: '' };
+                : { type: 'expense', account: presetAccount || FINANCE_PRO_ACCOUNT_KEYS[0], date: todayISO(), amount: '', category: '', note: '', transferTo: '' };
             showModal(`
                 <div class="modal-title">${existing ? 'Editar movimiento' : '+ Movimiento'}</div>
                 <div id="finance-pro-tx-modal-body">${renderFinanceProTxModalBody()}</div>
@@ -2201,7 +2201,7 @@
             if (d.type === 'transfer' && (!d.transferTo || d.transferTo === d.account)) { showToast('Elige una cuenta destino distinta', true); return; }
             const entry = {
                 id: window._financeProTxEditId || ('ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
-                date: d.date || new Date().toISOString().slice(0, 10),
+                date: d.date || todayISO(),
                 account: d.account,
                 type: d.type,
                 amount,

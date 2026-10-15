@@ -267,6 +267,11 @@ a menor resolución.
   pendiente/curso/hecha, fecha, fase; `tasks` se mantiene sincronizado para la ficha, el conector y las
   estadísticas), fases y diario. "→ hoy" crea una tarea del planificador con `proyectoTareaId` y
   `togglePlannerItemDone` la completa en el proyecto. El planificador enseña "siguientes pasos.".
+- **Apuntar (`js/apuntar.js`):** el + del móvil, el rayo del escritorio y el "+" de cada día abren `openApuntar(fecha)`:
+  una línea que `interpretarApunte` convierte en tarea (hoy a pasado mañana), evento (más allá), gasto/ingreso
+  (importe con €), compra («comprar …») o nota, con vista previa y cambio de tipo; debajo, accesos a cada formulario.
+- **Fechas:** `todayISO()` e `isoLocal(d)` son en hora local. Nunca `toISOString().slice(0, 10)` para "hoy" (en UTC,
+  de 0:00 a 2:00 daba el día anterior).
 - **Ramas de apartados:** `RAMAS_APARTADOS` en ajustes.js agrupa los opcionales (#school, #home, #work, #mind).
 - **Importar extractos:** primero la coincidencia exacta, luego pendientes (≤3 días, importe exacto antes que
   aproximado, sin reutilizar), recuento de claves (dos cargos iguales cuentan dos) y, si el CSV trae saldo

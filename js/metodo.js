@@ -172,7 +172,7 @@ function renderKaizen(g) {
     const racha = habitStreak(h);
     const dias = Array.from({ length: 21 }, (_, k) => {
         const d = new Date(); d.setDate(d.getDate() - 20 + k);
-        return `<span class="${h.completadas?.[d.toISOString().slice(0, 10)] ? 'on' : ''}"></span>`;
+        return `<span class="${h.completadas?.[isoLocal(d)] ? 'on' : ''}"></span>`;
     }).join('');
     return `
         <section class="metodo-bloque">

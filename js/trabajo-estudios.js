@@ -44,7 +44,7 @@
                 </div>`;
             }
 
-            const todayStr = new Date().toISOString().slice(0, 10);
+            const todayStr = todayISO();
             const daysBetween = (start, end) => countWorkingDays(start, end || todayISO());
 
             const sorted = [...work].sort((a, b) => {

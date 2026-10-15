@@ -466,11 +466,11 @@
         function bitacoraUpdateStreak() {
             const dates = bitacoraActivityDates();
             const today = new Date();
-            const todayStr = today.toISOString().slice(0, 10);
+            const todayStr = isoLocal(today);
             const cursor = new Date(today);
             if (!dates.has(todayStr)) cursor.setDate(cursor.getDate() - 1);
             let streak = 0;
-            while (dates.has(cursor.toISOString().slice(0, 10))) {
+            while (dates.has(isoLocal(cursor))) {
                 streak++;
                 cursor.setDate(cursor.getDate() - 1);
             }
@@ -728,7 +728,10 @@
         // Tamaño de letra de la versión móvil, por dispositivo. Se aplica con
         // zoom a la app y a los modales: como toda la app está en px, así
         // crecen a la vez textos, botones y huecos sin descuadrar nada.
-        const TAMANOS_LETRA = [['pequena', 'pequeña.', 0.92], ['normal', 'normal.', 1], ['grande', 'grande.', 1.1], ['muy-grande', 'muy grande.', 1.22]];
+        // La base («normal.») va un 6 % por encima del tamaño de escritorio: los
+        // apartados que reutilizan la vista de escritorio traen textos de 11-13 px,
+        // por debajo de los ~17 pt que recomienda Apple para el texto normal.
+        const TAMANOS_LETRA = [['pequena', 'pequeña.', 0.96], ['normal', 'normal.', 1.06], ['grande', 'grande.', 1.16], ['muy-grande', 'muy grande.', 1.28]];
 
         function tamanoLetraActual() {
             let t = 'normal';

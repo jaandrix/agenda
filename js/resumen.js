@@ -394,7 +394,7 @@
         const PATRONES_GASTO_EXCLUIDO = ['cat_vivienda', 'cat_inversion_gasto', 'cat_coleccionables', 'cat_finanzas_gasto'];
         const PATRONES_DIAS_SEMANA = ['los domingos', 'los lunes', 'los martes', 'los miércoles', 'los jueves', 'los viernes', 'los sábados'];
 
-        function patronesIso(d) { return d.toISOString().slice(0, 10); }
+        function patronesIso(d) { return isoLocal(d); }
 
         function patronesComparar(dias, cond, valor) {
             const a = [], b = [];

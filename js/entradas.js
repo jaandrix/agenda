@@ -200,7 +200,7 @@
 
         function renderEntryModal(type, entry) {
             const isEdit = !!entry;
-            const today = new Date().toISOString().slice(0, 10);
+            const today = todayISO();
             const label = TYPE_LABELS[type] || 'Entrada';
             const nuevoNueva = TYPE_GENDER[type] === 'a' ? 'Nueva' : 'Nuevo';
             const title = isEdit ? 'Editar ' + label : nuevoNueva + ' ' + label;
@@ -911,7 +911,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `bitacora_${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `bitacora_${todayISO()}.json`;
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exportado');

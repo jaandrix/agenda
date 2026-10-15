@@ -8082,3 +8082,53 @@ body.mobile-standalone .command-palette-overlay, body.pwa .command-palette-overl
 /* Ocio: pestañas y botones en una sola fila cuando cabe. */
 .culture-barra > .btn-secondary { padding-left:14px; padding-right:14px; }
 @media (min-width:1100px) { .culture-barra { flex-wrap:nowrap !important; } .culture-barra > .btn-secondary { flex-shrink:0; } .culture-barra .culture-tabs { flex-shrink:1; min-width:0; } }
+
+/* ============================================================
+   MÓVIL v3: barra pegada al borde de abajo y más grande, zonas táctiles de
+   44 px como mínimo (guía de Apple) y campos de texto a 16 px (con menos,
+   Safari hace zoom al tocarlos).
+   ============================================================ */
+.m-tabbar { left:0; right:0; bottom:0; height:calc(env(safe-area-inset-bottom, 0px) + 76px); padding:0 8px env(safe-area-inset-bottom, 0px); grid-template-columns:repeat(2, minmax(0, 1fr)) 76px repeat(2, minmax(0, 1fr)); border-width:1px 0 0; border-radius:26px 26px 0 0; box-shadow:0 -12px 32px -20px rgba(0,0,0,.6); }
+.m-tab { height:64px; gap:5px; font-size:11.5px; }
+.m-tab svg { width:25px; height:25px; }
+.m-tab-letra { width:26px; height:26px; font-size:13.5px; }
+.m-tab-mas { width:62px; height:62px; margin-top:-26px; box-shadow:0 12px 24px -10px var(--m-acento), 0 0 0 6px var(--m-superficie); }
+.m-tab-mas svg { width:24px; height:24px; }
+.m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 112px); }
+.m-menu-cuerpo { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 120px); }
+.pomo-pastilla { bottom:calc(env(safe-area-inset-bottom, 0px) + 92px) !important; }
+
+/* Zonas táctiles: lo que se ve puede ser pequeño, pero el dedo acierta. */
+#mobile-shell .m-mini, #mobile-shell .profe-chip, #mobile-shell .m-pestanas button, #mobile-shell .est-enlace, #mobile-shell .proy-hoy { min-height:40px; }
+#mobile-shell .m-mini { padding:9px 15px; font-size:13.5px; }
+#mobile-shell .profe-chip { padding:9px 15px; font-size:13.5px; }
+#mobile-shell .m-check, #mobile-shell .compra-check, #mobile-shell .proy-estado { position:relative; }
+#mobile-shell .m-check::after, #mobile-shell .compra-check::after, #mobile-shell .proy-estado::after, #mobile-shell .m-dia-pill::after { content:''; position:absolute; inset:-8px; }
+#mobile-shell .m-check { width:32px; height:32px; }
+#mobile-shell .m-dia-pill { position:relative; padding:11px 0 10px; }
+#mobile-shell .m-dia-pill b { font-size:19px; }
+#mobile-shell .m-etiqueta { font-size:13px; }
+#mobile-shell .m-fila-titulo { font-size:16.5px; }
+#mobile-shell .m-fila-meta { font-size:13.5px; }
+#mobile-shell .m-fila-hora { font-size:14px; }
+#mobile-shell .m-boton { min-height:52px; font-size:16px; }
+body.mobile-standalone .modal-input, body.mobile-standalone #modal-container input:not([type=checkbox]):not([type=radio]):not([type=range]), body.mobile-standalone #modal-container textarea, body.mobile-standalone #modal-container select, body.mobile-standalone #mobile-shell input:not([type=checkbox]):not([type=radio]):not([type=range]), body.mobile-standalone #mobile-shell textarea, body.mobile-standalone #mobile-shell select,
+body.pwa .modal-input, body.pwa #modal-container input:not([type=checkbox]):not([type=radio]):not([type=range]), body.pwa #modal-container textarea, body.pwa #modal-container select, body.pwa #mobile-shell input:not([type=checkbox]):not([type=radio]):not([type=range]), body.pwa #mobile-shell textarea, body.pwa #mobile-shell select { font-size:16px; }
+body.mobile-standalone .btn-modal-primary, body.pwa .btn-modal-primary, body.mobile-standalone #modal-container .btn-secondary, body.pwa #modal-container .btn-secondary { min-height:48px; font-size:15.5px; }
+body.mobile-standalone .modal-label, body.pwa .modal-label { font-size:13px; }
+
+/* ---- Hoja «apuntar.» ---- */
+.apuntar-texto { min-height:64px; font-size:17px !important; line-height:1.4; resize:none; }
+.apuntar-vista { min-height:44px; margin:8px 0 12px; }
+.apuntar-pista { font-size:13px; color:var(--text-secondary); }
+.apuntar-resumen { padding:10px 14px; border-radius:14px; background:color-mix(in srgb, var(--m-acento) 14%, transparent); color:var(--text-primary); font-size:14.5px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; }
+.apuntar-como { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; font-size:12.5px; color:var(--text-secondary); }
+.apuntar-como button { min-height:34px; padding:6px 13px; border:1px solid var(--border-strong); border-radius:999px; background:none; font-family:var(--font-family); font-size:13px; font-weight:700; color:var(--text-primary); cursor:pointer; }
+.apuntar-como button.activa { border-color:var(--text-primary); background:var(--text-primary); color:var(--bg-modal, var(--bg-card)); }
+.apuntar-o { margin:18px 0 10px; font-size:12.5px; font-weight:700; color:var(--text-secondary); text-align:center; }
+.apuntar-rejilla { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; }
+.apuntar-rejilla button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; min-height:80px; padding:10px 4px; border:1px solid var(--border); border-radius:18px; background:var(--bg-card-hover); font-family:var(--font-family); font-size:12.5px; font-weight:700; color:var(--text-primary); cursor:pointer; transition:transform .12s var(--ease-out); }
+.apuntar-rejilla button:active { transform:scale(.95); }
+.apuntar-rejilla i { display:grid; place-items:center; width:30px; height:30px; }
+.apuntar-rejilla svg { width:26px; height:26px; }
+.apuntar-todos { display:block; margin:12px auto 0; }

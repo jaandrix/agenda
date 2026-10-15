@@ -498,7 +498,7 @@
             d.setHours(0, 0, 0, 0);
             const day = d.getDay() || 7;
             d.setDate(d.getDate() - day + 1);
-            return d.toISOString().slice(0, 10);
+            return isoLocal(d);
         }
 
         function formatWeeklyTasksWeek() {
@@ -595,7 +595,7 @@
             const task = (Array.isArray(weeklyTasks) ? weeklyTasks : []).find(t => t && t.id === taskId);
             if (!task || task.completed) return;
 
-            const completedDate = new Date().toISOString().slice(0, 10);
+            const completedDate = todayISO();
             task.completed = true;
             task.completedAt = new Date().toISOString();
 

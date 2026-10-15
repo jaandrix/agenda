@@ -708,7 +708,7 @@
             if (min < 1) return 'ahora';
             if (min < 60) return `hace ${min} min`;
             if (min < 1440) return `hace ${Math.round(min / 60)} h`;
-            return financeDateLabelShort(new Date(iso).toISOString().slice(0, 10));
+            return financeDateLabelShort(isoLocal(new Date(iso)));
         }
 
         function renderBandejaItem(f) {

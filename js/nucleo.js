@@ -359,7 +359,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `bitacora_${new Date().toISOString().slice(0, 10)}.json`;
+                a.download = `bitacora_${todayISO()}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
             } catch (e) {
@@ -975,7 +975,7 @@
             return `<nav class="m-tabbar" aria-label="Apartados">
                 ${pestana('calendar', M_ICONOS.inicio, 'inicio.')}
                 ${pestana('planner', M_ICONOS.plan, 'plan.')}
-                <button class="m-tab-mas" onclick="openCommandPalette('create')" aria-label="Añadir algo">${M_ICONOS.mas}</button>
+                <button class="m-tab-mas" onclick="openApuntar()" aria-label="Apuntar algo">${M_ICONOS.mas}</button>
                 ${pestana(reciente, `<i class="m-tab-letra">${escapeHtml(nombre.charAt(0))}</i>`, escapeHtml(nombre.length > 9 ? nombre.slice(0, 8) + '…' : nombre) + '.', `aria-label="${escapeHtml(nombre)}"`)}
                 <button class="m-tab ${mobileMenuAbierto ? 'activa' : ''}" onclick="toggleMenuMovil()">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
             </nav>`;
@@ -1788,7 +1788,7 @@
             const d = new Date();
             d.setDate(d.getDate() + offsets[word]);
             const label = { hoy: 'Hoy', ayer: 'Ayer', manana: 'Mañana' }[word];
-            return { label, date: d.toISOString().slice(0, 10) };
+            return { label, date: isoLocal(d) };
         }
 
         function goToCalendarDate(dateStr) {
@@ -1950,7 +1950,9 @@
         // ============================================================
         //  UTILITY FUNCTIONS
         // ============================================================
-        function todayISO() { return new Date().toISOString().slice(0, 10); }
+        // En hora local: con toISOString (UTC), entre medianoche y las 2:00 la app
+        // creía que aún era ayer.
+        function todayISO() { return isoLocal(new Date()); }
 
         // Fechas de Notas a la manera del resto de la app: "sáb 3 oct 2026"
         // en las tarjetas y "sábado 3 de octubre de 2026." dentro, en vez

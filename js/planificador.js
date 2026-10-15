@@ -17,7 +17,7 @@
             const d = new Date(date);
             if (d.getHours() < 4) d.setDate(d.getDate() - 1);
             d.setDate(d.getDate() + offsetDays);
-            return d.toISOString().slice(0, 10);
+            return isoLocal(d);
         }
 
         // Adapta datos guardados con el formato antiguo (un único { dayKey, items })
@@ -637,13 +637,13 @@
         function rutinaLunes(iso) {
             const d = new Date(iso + 'T12:00:00');
             d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-            return d.toISOString().slice(0, 10);
+            return isoLocal(d);
         }
 
         function rutinaHechasSemana(h, iso = todayISO()) {
             const d = new Date(rutinaLunes(iso) + 'T12:00:00');
             let n = 0;
-            for (let i = 0; i < 7; i++) { if (h.completadas?.[d.toISOString().slice(0, 10)]) n++; d.setDate(d.getDate() + 1); }
+            for (let i = 0; i < 7; i++) { if (h.completadas?.[isoLocal(d)]) n++; d.setDate(d.getDate() + 1); }
             return n;
         }
 
@@ -657,7 +657,7 @@
                 const d = new Date(rutinaLunes(dateStr) + 'T12:00:00');
                 if (rutinaHechasSemana(habit, dateStr) < veces) d.setDate(d.getDate() - 7);
                 for (let i = 0; i < 300; i++) {
-                    if (rutinaHechasSemana(habit, d.toISOString().slice(0, 10)) >= veces) { semanas++; d.setDate(d.getDate() - 7); } else break;
+                    if (rutinaHechasSemana(habit, isoLocal(d)) >= veces) { semanas++; d.setDate(d.getDate() - 7); } else break;
                 }
                 return semanas;
             }
@@ -667,7 +667,7 @@
             // terminado, así que se cuenta desde ayer.
             if (!habit.completadas?.[dateStr]) d.setDate(d.getDate() - 1);
             for (let i = 0; i < 2000; i++) {
-                const iso = d.toISOString().slice(0, 10);
+                const iso = isoLocal(d);
                 if (habit.completadas?.[iso]) streak++;
                 else if (rutinaToca(habit, iso)) break;
                 d.setDate(d.getDate() - 1);
@@ -696,7 +696,7 @@
             const parcial = !on && pasos.length && hechos.size ? hechos.size / pasos.length : 0;
             const semana = Array.from({ length: 7 }, (_, i) => {
                 const d = new Date(); d.setDate(d.getDate() - 6 + i);
-                const iso = d.toISOString().slice(0, 10);
+                const iso = isoLocal(d);
                 const toca = rutinaToca(h, iso);
                 return `<button class="rutina-dia ${h.completadas?.[iso] ? 'on' : ''} ${toca ? '' : 'libre'} ${iso === hoy ? 'hoy' : ''}" onclick="rutinaMarcarDia('${h.id}','${iso}')" aria-label="${iso}"><i>${RUTINA_LETRAS[d.getDay()]}</i><span></span></button>`;
             }).join('');
