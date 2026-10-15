@@ -91,7 +91,10 @@ Deno.serve(async (req) => {
     const errores: { servicio: string; estado?: number; mensaje: string }[] = [];
     for (const row of subs) {
         try {
-            await webpush.sendNotification(row.subscription, notificationPayload);
+            // urgency high: con la prioridad normal, Apple y Google pueden
+            // retrasar la entrega hasta que el móvil se despierta por otra
+            // cosa, y el aviso de "en una hora" llegaba tarde.
+            await webpush.sendNotification(row.subscription, notificationPayload, { urgency: 'high', TTL: 3600 });
             sent++;
         } catch (err) {
             // 404/410 = el navegador ya no reconoce esta suscripción (se

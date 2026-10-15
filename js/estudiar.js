@@ -166,7 +166,9 @@ function pomoConfig() { return { trabajo: 25, descanso: 5, largo: 15, cada: 4, .
 function pomoLeer() { try { return JSON.parse(localStorage.getItem(POMO_CLAVE)) || null; } catch (_) { return null; } }
 function pomoGuardar(p) { try { if (p) localStorage.setItem(POMO_CLAVE, JSON.stringify(p)); else localStorage.removeItem(POMO_CLAVE); } catch (_) { /* sin almacenamiento */ } }
 function pomoDuracion(fase) { return pomoConfig()[fase] * EST_MIN; }
-function pomoResta(p) { return p.fin ? Math.max(0, p.fin - Date.now()) : (p.resta ?? pomoDuracion(p.fase)); }
+// `extra`: los minutos que se le han sumado a esta fase con "+5 min.".
+function pomoTotal(p) { return pomoDuracion(p.fase) + (p.extra || 0); }
+function pomoResta(p) { return p.fin ? Math.max(0, p.fin - Date.now()) : (p.resta ?? pomoTotal(p)); }
 function pomoReloj(ms) { const s = Math.ceil(ms / 1000); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 
 function pomoEmpezar(itemId) {
@@ -199,8 +201,8 @@ function pomoSaltar() {
 
 // Suma lo estudiado: los minutos siempre, el pomodoro solo si se completó.
 function pomoSumar(p, completo) {
-    const ms = pomoDuracion('trabajo') - pomoResta(p);
-    const min = completo ? pomoConfig().trabajo : Math.floor(ms / EST_MIN);
+    const ms = pomoTotal(p) - pomoResta(p);
+    const min = completo ? Math.round(pomoTotal(p) / EST_MIN) : Math.floor(ms / EST_MIN);
     if (min <= 0 && !completo) return;
     const dia = estDiario();
     dia.minutos += min;
@@ -218,11 +220,13 @@ function pomoFinFase(p, completo) {
     const cfg = pomoConfig();
     if (p.fase === 'trabajo') {
         pomoSumar(p, completo);
+        delete p.extra;
         p.ciclo = (p.ciclo || 0) + 1;
         p.fase = p.ciclo % cfg.cada === 0 ? 'largo' : 'descanso';
         p.fin = Date.now() + pomoDuracion(p.fase); delete p.resta;
         if (completo) pomoAvisar('Pomodoro terminado. Toca descansar.');
     } else {
+        delete p.extra;
         p.fase = 'trabajo'; p.fin = null; p.resta = pomoDuracion('trabajo');
         if (completo) pomoAvisar('Fin del descanso. ¿Seguimos?');
     }
@@ -247,6 +251,32 @@ function pomoAvisar(texto) {
     try { if (document.hidden && window.Notification?.permission === 'granted') new Notification('Bitácora', { body: texto, icon: 'icon-192.png' }); } catch (_) { /* iOS solo notifica desde el service worker */ }
 }
 
+function pomoMas(min) {
+    const p = pomoLeer();
+    if (!p) return;
+    const ms = min * EST_MIN;
+    if (p.fin) p.fin += ms; else p.resta = pomoResta(p) + ms;
+    p.extra = (p.extra || 0) + ms;
+    pomoGuardar(p);
+    pomoPintar(true);
+}
+
+// Modo foco: el reloj a pantalla completa, encima de todo, sin nada más.
+function pomoFoco(abrir) {
+    let capa = document.getElementById('pomo-foco');
+    if (!abrir) { capa?.remove(); document.body.classList.remove('pomo-foco-abierto'); pomoPintar(false); return; }
+    if (!capa) {
+        capa = document.createElement('div');
+        capa.id = 'pomo-foco';
+        capa.className = 'pomo-foco';
+        document.body.appendChild(capa);
+    }
+    document.body.classList.add('pomo-foco-abierto');
+    capa.innerHTML = renderEstPomodoro(true);
+}
+
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && document.getElementById('pomo-foco')) { ev.stopPropagation(); pomoFoco(false); } }, true);
+
 function pomoTick() {
     const p = pomoLeer();
     if (p?.fin && Date.now() >= p.fin) { pomoFinFase(p, true); return; }
@@ -259,10 +289,11 @@ function pomoPintar(todo) {
     if (todo && currentView === 'estudiar' && !estRepaso) {
         if (/INPUT|TEXTAREA/.test(document.activeElement?.tagName || '')) estPintarPomodoro(); else render();
     }
+    if (todo && document.getElementById('pomo-foco')) pomoFoco(true);
     document.querySelectorAll('.pomo-reloj').forEach(el => { el.textContent = pomoReloj(p ? pomoResta(p) : pomoDuracion('trabajo')); });
-    if (p) document.querySelectorAll('.est-pomo').forEach(el => el.style.setProperty('--pomo-avance', `${(1 - pomoResta(p) / pomoDuracion(p.fase)) * 100}%`));
+    if (p) document.querySelectorAll('.est-pomo').forEach(el => el.style.setProperty('--pomo-pct', ((1 - pomoResta(p) / pomoTotal(p)) * 100).toFixed(2)));
     let pastilla = document.getElementById('pomo-pastilla');
-    const ver = p && (p.fin || p.resta < pomoDuracion(p.fase)) && currentView !== 'estudiar';
+    const ver = p && (p.fin || p.resta < pomoTotal(p)) && currentView !== 'estudiar' && !document.getElementById('pomo-foco');
     if (!ver) { pastilla?.remove(); return; }
     if (!pastilla) {
         pastilla = document.createElement('button');
@@ -281,25 +312,35 @@ function estPintarPomodoro() {
     if (caja) caja.outerHTML = renderEstPomodoro();
 }
 
-function renderEstPomodoro() {
+function renderEstPomodoro(foco) {
     const p = pomoLeer();
     const cfg = pomoConfig();
     const fase = p?.fase || 'trabajo';
     const enMarcha = !!p?.fin;
     const resta = p ? pomoResta(p) : pomoDuracion('trabajo');
     const it = p?.itemId ? estPlanHoy().items.find(x => x.id === p.itemId) : null;
-    const total = pomoDuracion(fase);
+    const total = p ? pomoTotal(p) : pomoDuracion('trabajo');
     const ciclo = (p?.ciclo || 0) % cfg.cada;
-    return `<div class="est-pomo fase-${fase} ${enMarcha ? 'en-marcha' : ''}" style="--pomo-avance:${(1 - resta / total) * 100}%">
-        <div class="est-pomo-fase">${p && !enMarcha && resta < total ? 'en pausa.' : POMO_FASES[fase]}</div>
-        <div class="est-pomo-reloj pomo-reloj">${pomoReloj(resta)}</div>
+    const pausado = p && !enMarcha && resta < total;
+    return `<div class="est-pomo fase-${fase} ${enMarcha ? 'en-marcha' : ''} ${foco ? 'est-pomo-grande' : ''}" style="--pomo-pct:${((1 - resta / total) * 100).toFixed(2)}">
+        <div class="est-pomo-esquina">
+            ${p ? `<button onclick="pomoMas(5)" title="Cinco minutos más">+5 min.</button>` : ''}
+            <button onclick="pomoFoco(${foco ? 'false' : 'true'})" title="${foco ? 'Salir del modo foco' : 'Pantalla completa'}">${foco ? 'salir.' : 'ampliar.'}</button>
+        </div>
+        <div class="est-pomo-anillo">
+            <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="est-pomo-pista" cx="60" cy="60" r="54"/><circle class="est-pomo-arco" cx="60" cy="60" r="54" pathLength="100" transform="rotate(-90 60 60)"/></svg>
+            <div class="est-pomo-centro">
+                <div class="est-pomo-fase">${pausado ? 'en pausa.' : POMO_FASES[fase]}</div>
+                <div class="est-pomo-reloj pomo-reloj">${pomoReloj(resta)}</div>
+                <div class="est-pomo-ciclo">${Array.from({ length: cfg.cada }, (_, i) => `<i class="${i < ciclo ? 'on' : ''}"></i>`).join('')}</div>
+            </div>
+        </div>
         ${it ? `<div class="est-pomo-tema">${escapeHtml(it.texto)}</div>` : ''}
-        <div class="est-pomo-ciclo">${Array.from({ length: cfg.cada }, (_, i) => `<i class="${i < ciclo ? 'on' : ''}"></i>`).join('')}</div>
         <div class="est-pomo-botones">
-            ${enMarcha ? `<button class="btn-modal-primary" onclick="pomoPausar()">pausa.</button>` : `<button class="btn-modal-primary" onclick="pomoEmpezar()">${p && resta < total ? 'seguir.' : 'empezar.'}</button>`}
+            ${enMarcha ? `<button class="btn-modal-primary" onclick="pomoPausar()">pausa.</button>` : `<button class="btn-modal-primary" onclick="pomoEmpezar()">${pausado ? 'seguir.' : 'empezar.'}</button>`}
             ${p ? `<button class="btn-secondary" onclick="pomoSaltar()">${fase === 'trabajo' ? 'descansar ya.' : 'saltar descanso.'}</button><button class="btn-secondary" onclick="pomoParar()">parar.</button>` : ''}
         </div>
-        <button class="est-pomo-ajustes" onclick="openEstAjustes()">${cfg.trabajo} min · ${cfg.descanso} de descanso</button>
+        ${foco ? '' : `<button class="est-pomo-ajustes" onclick="openEstAjustes()">${cfg.trabajo} min de estudio, ${cfg.descanso} de descanso.</button>`}
     </div>`;
 }
 

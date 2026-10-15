@@ -133,10 +133,11 @@ function calcularAvisos(data: any, hoy: string, pendientesBandeja: number): Avis
 // fecha y la hora, así si el evento se mueve se vuelve a avisar.
 function avisosEventos(data: any): Aviso[] {
     return (data.entries || []).filter((e: any) => e?.type === 'event' && !e.calendarLog && !/^(weekly_task_done_|planner_done_|recurring_done_)/.test(e.id || '') && !e.sinAviso && /^\d{4}-\d{2}-\d{2}$/.test(e.date || '') && /^\d{1,2}:\d{2}$/.test(e.time || ''))
-        .filter((e: any) => { const m = minutosHasta(e.date, e.time); return m > 0 && m <= ANTELACION; })
-        .map((e: any) => ({
+        .map((e: any) => ({ e, m: minutosHasta(e.date, e.time) }))
+        .filter(({ m }: any) => m > 0 && m <= ANTELACION)
+        .map(({ e, m }: any) => ({
             clave: `evento:${e.id}:${e.date}T${e.time}`, tipo: 'eventos', prioridad: 0, titulo: titulo(e.title),
-            texto: `Empieza en una hora, a las ${e.time}${e.place ? ` · ${e.place}` : ''}.`, url: '/',
+            texto: `Empieza ${m >= 55 ? 'en una hora' : `en ${m} minutos`}, a las ${e.time}${e.place ? ` · ${e.place}` : ''}.`, url: '/',
         }));
 }
 

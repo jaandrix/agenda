@@ -27,13 +27,18 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'trabajo', 'salud', 'hogar', 'viajes', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" de la herramienta agenda si dudas del día. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
 const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
 const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
 // ---------------------------------------------------------------- fechas
 function hoyISO(): string {
     return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+// Hora de pared de Madrid ("lunes, 15:42"): Claude no sabe la hora por sí
+// mismo, y sin ella "dentro de un rato" o "lo de esta tarde" fallaban.
+function ahoraMadrid(): string {
+    return new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
 }
 function sumarDias(iso: string, n: number): string {
     const d = new Date(iso + 'T12:00:00Z');
@@ -228,7 +233,7 @@ function agenda(data: any, desde: string, hasta: string) {
         dias.push(dia);
     }
     const pendientes = (data.dayPlanner?.backlog || []).filter((t: any) => !t.done).map((t: any) => ({ id: t.id, titulo: t.title, notas: t.notes || undefined, sin_validar: t.sinValidar || undefined }));
-    return { hoy: hoyISO(), dias, tareas_pendientes_sin_fecha: pendientes };
+    return { hoy: hoyISO(), ahora: ahoraMadrid(), dias, tareas_pendientes_sin_fecha: pendientes };
 }
 
 function nombreCategoria(data: any, id: string) {
@@ -508,7 +513,7 @@ const APARTADOS: Record<string, (d: any) => unknown> = {
 const HERRAMIENTAS = [
     {
         name: 'agenda',
-        description: 'Lo que el usuario tiene entre dos fechas: eventos del calendario, planificador del día, tareas recurrentes, exámenes y entregas, cumpleaños y cargos de suscripciones; además, sus tareas pendientes sin fecha. Por defecto, hoy y los 7 días siguientes. Devuelve también la fecha de hoy.',
+        description: 'Lo que el usuario tiene entre dos fechas: eventos del calendario, planificador del día, tareas recurrentes, exámenes y entregas, cumpleaños y cargos de suscripciones; además, sus tareas pendientes sin fecha. Por defecto, hoy y los 7 días siguientes. Devuelve también la fecha de hoy y la hora actual (Madrid).',
         inputSchema: { type: 'object', properties: { desde: { type: 'string', description: 'AAAA-MM-DD' }, hasta: { type: 'string', description: 'AAAA-MM-DD (máximo 62 días)' } } },
         annotations: { readOnlyHint: true },
     },

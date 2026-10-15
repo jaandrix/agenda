@@ -7647,20 +7647,36 @@ body.papel .lp-cerebro { --lp-azul:#2f6fe0; }
    ============================================================ */
 .estudiar { max-width:760px; }
 .est-pestanas small { opacity:.6; margin-left:2px; }
-.est-pomo { position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; padding:26px 18px 16px; margin-bottom:14px; border-radius:22px; background:var(--bg-card); border:1px solid var(--border); overflow:hidden; }
-.est-pomo::before { content:''; position:absolute; left:0; top:0; height:4px; width:var(--pomo-avance, 0%); background:var(--m-acento); transition:width 1s linear; }
-.est-pomo.fase-descanso::before, .est-pomo.fase-largo::before { background:#3fb68b; }
+.est-pomo { position:relative; display:flex; flex-direction:column; align-items:center; gap:10px; padding:22px 18px 16px; margin-bottom:14px; border-radius:24px; background:var(--bg-card); border:1px solid var(--border); }
+.est-pomo-esquina { position:absolute; top:12px; right:12px; display:flex; gap:6px; }
+.est-pomo-esquina button { padding:5px 10px; border:1px solid var(--border); border-radius:999px; background:none; font-family:var(--font-family); font-size:11.5px; font-weight:700; color:var(--text-secondary); cursor:pointer; min-height:0 !important; }
+.est-pomo-esquina button:hover { color:var(--text-primary); border-color:var(--border-strong); }
+.est-pomo-anillo { position:relative; width:min(250px, 70vw); aspect-ratio:1; margin-top:14px; }
+.est-pomo-anillo svg { position:absolute; inset:0; width:100%; height:100%; }
+.est-pomo-pista { fill:none; stroke:var(--border); stroke-width:4; }
+.est-pomo-arco { fill:none; stroke:var(--m-acento); stroke-width:4; stroke-linecap:round; stroke-dasharray:100; stroke-dashoffset:calc(100 - var(--pomo-pct, 0)); transition:stroke-dashoffset 1s linear; }
+.est-pomo.fase-descanso .est-pomo-arco, .est-pomo.fase-largo .est-pomo-arco { stroke:#3fb68b; }
+.est-pomo-centro { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
 .est-pomo-fase { font-size:13px; font-weight:800; color:var(--text-secondary); }
-.est-pomo-reloj { font-size:clamp(56px, 12vw, 88px); font-weight:800; letter-spacing:-3px; line-height:1; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.est-pomo-reloj { font-size:clamp(46px, 12vw, 62px); font-weight:800; letter-spacing:-2px; line-height:1; color:var(--text-primary); font-variant-numeric:tabular-nums; }
 .est-pomo.en-marcha.fase-trabajo .est-pomo-reloj { color:var(--m-acento); }
 .est-pomo-tema { max-width:100%; font-size:14px; font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.est-pomo-ciclo { display:flex; gap:6px; margin:4px 0 6px; }
-.est-pomo-ciclo i { width:9px; height:9px; border-radius:50%; border:1.5px solid var(--border-strong); box-sizing:border-box; }
+.est-pomo-ciclo { display:flex; gap:6px; }
+.est-pomo-ciclo i { width:8px; height:8px; border-radius:50%; border:1.5px solid var(--border-strong); box-sizing:border-box; }
 .est-pomo-ciclo i.on { background:var(--text-primary); border-color:var(--text-primary); }
 .est-pomo-botones { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
 .est-pomo-botones button { width:auto; margin:0; padding-left:20px; padding-right:20px; }
-.est-pomo-ajustes { margin-top:6px; padding:2px 6px; border:0; background:none; font-family:var(--font-family); font-size:12px; color:var(--text-secondary); cursor:pointer; }
+.est-pomo-ajustes { margin-top:2px; padding:2px 6px; border:0; background:none; font-family:var(--font-family); font-size:12px; color:var(--text-secondary); cursor:pointer; }
 .est-pomo-ajustes:hover { color:var(--text-primary); }
+/* Modo foco: el pomodoro a pantalla completa. */
+.pomo-foco { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; padding:24px; background:var(--bg-app); animation:pomo-foco-entra .22s var(--ease-out) both; }
+@keyframes pomo-foco-entra { from { opacity:0; transform:scale(.98); } to { opacity:1; transform:none; } }
+.pomo-foco .est-pomo { width:min(560px, 100%); margin:0; background:none; border:0; }
+.pomo-foco .est-pomo-esquina { position:fixed; top:calc(16px + env(safe-area-inset-top, 0px)); right:16px; }
+.pomo-foco .est-pomo-anillo { width:min(440px, 80vw, 60vh); }
+.pomo-foco .est-pomo-reloj { font-size:clamp(64px, 14vmin, 120px); letter-spacing:-4px; }
+.pomo-foco .est-pomo-tema { font-size:17px; }
+@media (prefers-reduced-motion: reduce) { .est-pomo-arco { transition:none; } .pomo-foco { animation:none; } }
 .est-cifras { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin-bottom:18px; }
 .est-cifras > * { display:flex; flex-direction:column; gap:2px; padding:12px 14px; border-radius:16px; background:var(--bg-card); border:1px solid var(--border); font-family:var(--font-family); text-align:left; color:var(--text-primary); }
 .est-cifras b { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
@@ -7768,7 +7784,7 @@ body.papel .lp-cerebro { --lp-azul:#2f6fe0; }
 .pomo-pastilla b { font-size:14px; font-weight:800; font-variant-numeric:tabular-nums; }
 .pomo-pastilla span { font-size:12px; color:var(--text-secondary); }
 @keyframes pomo-latido { 50% { opacity:.35; } }
-@media (prefers-reduced-motion: reduce) { .pomo-pastilla i { animation:none; } .est-pomo::before { transition:none; } }
+@media (prefers-reduced-motion: reduce) { .pomo-pastilla i { animation:none; } }
 body.mobile-standalone .pomo-pastilla { bottom:calc(18px + env(safe-area-inset-bottom)); }
 @media (max-width:600px) {
     .est-cifras b { font-size:19px; }
