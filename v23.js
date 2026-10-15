@@ -110,7 +110,7 @@
             for (let i = 0; i < 7; i++) {
                 const d = new Date(today);
                 d.setDate(d.getDate() - i);
-                const key = d.toISOString().slice(0, 10);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 const v = dailyEffort[key] || 0;
                 if (v > 0) { effortSum += v; effortCount++; }
             }

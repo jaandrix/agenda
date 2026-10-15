@@ -49,7 +49,7 @@
                     ${plannerToday.map(it => `
                         <label class="weekly-task-row">
                             <input class="weekly-task-check" type="checkbox" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', 0)">
-                            <span class="weekly-task-text" style="${it.done ? 'text-decoration:line-through;opacity:0.6' : ''}">${escapeHtml(it.time)} · ${escapeHtml(it.title)}</span>
+                            <span class="weekly-task-text" style="${it.done ? 'text-decoration:line-through;opacity:0.6' : ''}">${it.time ? `${escapeHtml(it.time)} · ` : ''}${escapeHtml(it.title)}</span>
                         </label>`).join('')}
                     ${dueToday.map(t => `
                         <label class="weekly-task-row">
@@ -244,7 +244,7 @@
 
         function openHomeUpcomingModal() {
             const rangeBirthdays = getBirthdaysInRange('month');
-            const today = new Date().toISOString().slice(0, 10);
+            const today = todayISO();
             const upcoming = entries.filter(e => {
                 if (e.type === 'travel' && e.startDate && e.startDate > today) return true;
                 if (e.type === 'project' && e.endDate && e.endDate > today) return true;
@@ -301,11 +301,27 @@
             return dates[0] || todayISO();
         }
 
+        // Días cotizados: la unión de los periodos de todos los empleos. Dos
+        // trabajos a la vez no cotizan el doble; antes se sumaban.
+        function diasCotizados() {
+            const tramos = entries.filter(e => e.type === 'work' && e.startDate)
+                .map(e => [e.startDate, (e.endDate && e.endDate < todayISO()) ? e.endDate : todayISO()])
+                .filter(([a, b]) => a <= b).sort((x, y) => x[0].localeCompare(y[0]));
+            let total = 0, ini = null, fin = null;
+            tramos.forEach(([a, b]) => {
+                if (fin && a <= fin) { if (b > fin) fin = b; return; }
+                if (ini) total += countWorkingDays(ini, fin);
+                ini = a; fin = b;
+            });
+            if (ini) total += countWorkingDays(ini, fin);
+            return total;
+        }
+
         function openHomeStatsModal() {
             const subsTotal = entries.filter(e => e.type === 'subscription' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
             const fixedTotal = entries.filter(e => e.type === 'fixed_expense' && e.active !== false).reduce((s, e) => s + (e.amount || 0), 0);
             const activeProjects = entries.filter(e => e.type === 'project' && e.status !== 'Completado');
-            const workDays = entries.filter(e => e.type === 'work').reduce((sum, job) => sum + countWorkingDays(job.startDate, job.endDate || todayISO()), 0);
+            const workDays = diasCotizados();
 
             // días: nº de días distintos con algo registrado desde la
             // primera entrada · entradas: total de entries · acciones:
@@ -320,6 +336,10 @@
                 if (bitacoraActivityCount(iso) > 0) activeDays++;
             }
             const totalActions = entries.length + (notes || []).length + (financePro?.transactions || []).length;
+            // "entradas" sin los registros automáticos (tarea completada, etc.).
+            const entradasPropias = entries.filter(e => !isCalendarLogEntry(e)).length;
+            const eventos = entries.filter(e => e.type === 'event' && !isCalendarLogEntry(e)).length;
+            const tarjetasEstudio = (typeof estudiar !== 'undefined' && estudiar?.tarjetas?.length) || 0;
 
             const stats = [
                 [entries.filter(e=>e.type==='book').length, 'libros'], [entries.filter(e=>e.type==='movie').length, 'películas'],
@@ -327,15 +347,18 @@
                 [entries.filter(e=>e.type==='travel').length, 'viajes'], [activeProjects.length, 'proyectos activos'],
                 [notes.length, 'notas'], [entries.filter(e=>e.type==='goal').length, 'objetivos'],
                 [entries.filter(e=>e.type==='place').length, 'lugares'], [entries.filter(e=>e.type==='birthday').length, 'cumpleaños'],
-                [workDays, 'días cotizados'], [subsTotal.toLocaleString('es-ES') + '€', 'suscripciones/mes'],
-                [fixedTotal.toLocaleString('es-ES') + '€', 'gastos fijos/mes']
+                [eventos, 'eventos'], [(habits || []).filter(h => h.activo !== false).length, 'rutinas activas'],
+                [(financePro?.transactions || []).length, 'movimientos'],
+                ...(tarjetasEstudio ? [[tarjetasEstudio, 'tarjetas de estudio']] : []),
+                [workDays, 'días cotizados'], [financeMoney(subsTotal), 'suscripciones/mes'],
+                [financeMoney(fixedTotal), 'gastos fijos/mes']
             ];
 
             showModal(`
                 <div class="modal-title">estadísticas.</div>
                 <div class="home-stats-headline">
                     <div class="home-stats-headline-item"><div class="num" id="home-stats-days" data-value="${activeDays}">0</div><div class="txt">días</div></div>
-                    <div class="home-stats-headline-item"><div class="num" id="home-stats-entries" data-value="${entries.length}">0</div><div class="txt">entradas</div></div>
+                    <div class="home-stats-headline-item"><div class="num" id="home-stats-entries" data-value="${entradasPropias}">0</div><div class="txt">entradas</div></div>
                     <div class="home-stats-headline-item"><div class="num" id="home-stats-actions" data-value="${totalActions}">0</div><div class="txt">acciones</div></div>
                 </div>
                 <div class="home-stats-chart-label">actividad · últimos 30 días</div>
