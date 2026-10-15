@@ -7576,3 +7576,61 @@ body.papel .lp-cerebro { --lp-azul:#2f6fe0; }
 .compra-lista-fila { display:flex; align-items:center; gap:10px; padding:10px 2px; border-top:1px solid var(--border); }
 .compra-lista-fila b { font-size:14px; color:var(--text-primary); }
 .compra-lista-fila span { flex:1; font-size:12px; color:var(--text-secondary); }
+
+/* Planificador: tareas sin hora y prioridad. */
+.planner-sin-hora-titulo { margin:6px 0 4px; font-size:12px; font-weight:800; color:var(--text-secondary); }
+.planner-item.prioridad-alta { box-shadow:inset 3px 0 0 #e5484d; }
+.planner-item.prioridad-media { box-shadow:inset 3px 0 0 #f0a020; }
+.planner-item.prioridad-baja { box-shadow:inset 3px 0 0 #4c8df6; }
+.planner-item.prioridad-alta .planner-item-check { border-color:#e5484d; }
+.planner-item.prioridad-media .planner-item-check { border-color:#f0a020; }
+.planner-item.prioridad-baja .planner-item-check { border-color:#4c8df6; }
+.planner-prioridad { margin-left:8px; font-style:normal; font-size:11px; font-weight:700; color:var(--text-secondary); }
+.prioridad-alta .planner-prioridad { color:#e5484d; }
+.prioridad-media .planner-prioridad { color:#f0a020; }
+.prioridad-baja .planner-prioridad { color:#4c8df6; }
+.planner-item-editar { cursor:pointer; }
+.planner-item-editar:hover { text-decoration:underline; text-underline-offset:3px; }
+.planner-hora-fila { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.planner-hora-fila .modal-input { margin:0; flex:1; }
+.planner-hora-fila .modal-input:disabled { opacity:.35; }
+.prioridad-chip-alta.activa { background:#e5484d; border-color:#e5484d; color:#fff; }
+.prioridad-chip-media.activa { background:#f0a020; border-color:#f0a020; color:#1d1a14; }
+.prioridad-chip-baja.activa { background:#4c8df6; border-color:#4c8df6; color:#fff; }
+.m-fila.prioridad-alta { box-shadow:inset 3px 0 0 #e5484d; padding-left:8px; }
+.m-fila.prioridad-media { box-shadow:inset 3px 0 0 #f0a020; padding-left:8px; }
+.m-fila.prioridad-baja { box-shadow:inset 3px 0 0 #4c8df6; padding-left:8px; }
+
+/* ============================================================
+   OCIO: portadas. Todas llevan el mismo grano y la misma viñeta, para que
+   las de fuentes distintas vayan a juego.
+   ============================================================ */
+.media-card.media-card-portada { height:auto; padding:0 0 6px; gap:6px; background:none; border:0; box-shadow:none; color:var(--text-primary); }
+.media-card.media-card-portada:hover { transform:translateY(-3px); box-shadow:none; }
+.media-portada { position:relative; width:100%; aspect-ratio:2 / 3; border-radius:12px; overflow:hidden; background:var(--bg-card-hover); box-shadow:0 10px 24px -14px rgba(0,0,0,.6); }
+.media-portada img { display:block; width:100%; height:100%; object-fit:cover; filter:saturate(.85) contrast(1.04); }
+.media-portada::after { content:''; position:absolute; inset:0; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); mix-blend-mode:overlay; opacity:.55; box-shadow:inset 0 0 40px rgba(0,0,0,.35); }
+.media-portada-icono { position:absolute; inset:0; display:none; align-items:center; justify-content:center; color:var(--text-secondary); }
+.media-portada.rota img { display:none; }
+.media-portada.rota .media-portada-icono { display:flex; }
+.media-card-portada .media-card-title { min-height:0; font-size:13px; text-align:center; }
+.media-card-portada .media-card-meta { color:var(--text-secondary); }
+.media-card-gold.media-card-portada { border:0; box-shadow:none; }
+.media-card-gold.media-card-portada .media-portada { box-shadow:0 0 0 3px rgba(217,178,60,.95), 0 10px 24px -14px rgba(0,0,0,.6); }
+.media-card-grid:has(.media-card-portada) { grid-template-columns:repeat(auto-fill, minmax(132px, 1fr)); row-gap:18px; }
+.media-card-elegir { margin-top:2px; padding:4px 10px; border:1px dashed currentColor; border-radius:999px; background:none; color:inherit; opacity:.8; font-family:var(--font-family); font-size:11px; font-weight:700; cursor:pointer; }
+.portada-rejilla { display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:12px; max-height:52vh; overflow:auto; padding:2px; }
+.portada-candidata { display:flex; flex-direction:column; gap:4px; padding:0; border:0; background:none; font-family:var(--font-family); text-align:left; color:var(--text-primary); cursor:pointer; }
+.portada-marco { display:block; aspect-ratio:2 / 3; border-radius:10px; overflow:hidden; background:var(--bg-card-hover); transition:transform .15s var(--ease-out), box-shadow .15s ease; }
+.portada-marco img { width:100%; height:100%; object-fit:cover; display:block; }
+.portada-candidata:hover .portada-marco { transform:translateY(-2px); box-shadow:0 0 0 2px var(--text-primary); }
+.portada-candidata b { font-size:12px; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.portada-candidata small { font-size:10.5px; color:var(--text-secondary); }
+.entry-detail-portada { width:120px; margin:4px 0 12px; border-radius:10px; overflow:hidden; aspect-ratio:2 / 3; }
+.entry-detail-portada img { width:100%; height:100%; object-fit:cover; display:block; }
+/* En el móvil, la fila de lista lleva la portada pequeña en vez del icono. */
+.m-generico .culture-tab-content .media-card.media-card-portada { padding:10px 2px; }
+.m-generico .culture-tab-content .media-card-portada .media-portada { grid-area:icono; width:40px; border-radius:6px; box-shadow:none; }
+.m-generico .culture-tab-content .media-card-portada .media-card-title { text-align:left; }
+.media-card:has(.media-card-elegir) { height:auto; min-height:176px; }
+.m-generico .culture-tab-content .media-card-elegir { grid-column:2 / -1; justify-self:start; }

@@ -103,7 +103,9 @@
         function renderPlanner() {
             resetDayPlannerIfNeeded();
             const offset = plannerDayOffset;
-            const items = [...plannerItemsForOffset(offset)].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+            const todos = plannerItemsForOffset(offset);
+            const items = todos.filter(i => i.time).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+            const sinHora = todos.filter(i => !i.time).sort((a, b) => (PLANNER_PRIORIDAD_ORDEN[a.prioridad] ?? 3) - (PLANNER_PRIORIDAD_ORDEN[b.prioridad] ?? 3));
             const now = new Date();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
             const today = todayISO();
@@ -161,16 +163,17 @@
                 ` : ''}
 
                 <div class="planner-timeline vt-interior">
-                    ${items.length ? items.map(it => {
-                        const [h, m] = String(it.time).split(':').map(Number);
+                    ${sinHora.length ? `<div class="planner-sin-hora-titulo">sin hora.</div>` : ''}
+                    ${[...sinHora, ...items].length ? [...sinHora, ...items].map((it, n) => {
+                        const [h, m] = String(it.time || '').split(':').map(Number);
                         const itemMinutes = (h || 0) * 60 + (m || 0);
-                        const isPast = offset === 0 && itemMinutes < nowMinutes;
-                        return `
-                        <div class="planner-item ${isPast && !it.arrastrado ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''} ${it.arrastrado ? 'planner-item-arrastrado' : ''}">
-                            <div class="planner-item-time">${escapeHtml(it.time)}</div>
+                        const isPast = offset === 0 && !!it.time && itemMinutes < nowMinutes;
+                        return `${n === sinHora.length && sinHora.length && items.length ? '<div class="planner-sin-hora-titulo">con hora.</div>' : ''}
+                        <div class="planner-item ${isPast && !it.arrastrado ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''} ${it.arrastrado ? 'planner-item-arrastrado' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}">
+                            <div class="planner-item-time">${it.time ? escapeHtml(it.time) : '—'}</div>
                             <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})">
                             <div class="planner-item-body">
-                                <div class="planner-item-title"><span ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''} ${it.valorarPeliculaId ? `class="planner-item-enlace" onclick="openEditEntry('${it.valorarPeliculaId}')" title="Abrir la película para valorarla"` : ''}>${escapeHtml(it.title)}</span></div>
+                                <div class="planner-item-title"><span ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''} ${it.valorarPeliculaId ? `class="planner-item-enlace" onclick="openEditEntry('${it.valorarPeliculaId}')" title="Abrir la película para valorarla"` : `class="planner-item-editar" onclick="openAddPlannerItem('${it.id}')" title="Editar"`}>${escapeHtml(it.title)}</span>${it.prioridad ? `<i class="planner-prioridad">${PLANNER_PRIORIDADES[it.prioridad]}</i>` : ''}</div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
                                 ${renderPlannerSubtasks(it, offset)}
                             </div>
@@ -303,38 +306,62 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
-        function openAddPlannerItem() {
+        // Prioridad de cada tarea: color en el borde y en el círculo, y orden
+        // dentro de "sin hora.". Sin elegir, la tarea no lleva color.
+        const PLANNER_PRIORIDADES = { alta: 'alta.', media: 'media.', baja: 'baja.' };
+        const PLANNER_PRIORIDAD_ORDEN = { alta: 0, media: 1, baja: 2 };
+
+        // Crear y editar comparten modal. La hora es opcional: sin hora, la
+        // tarea va al bloque "sin hora." del día, ordenada por prioridad.
+        function openAddPlannerItem(id) {
             const offset = plannerDayOffset;
+            const it = id ? plannerItemsForOffset(offset).find(x => x.id === id) : null;
             const now = new Date();
             const defaultTime = offset === 0
                 ? `${String(now.getHours()).padStart(2, '0')}:${String(Math.ceil(now.getMinutes() / 5) * 5 % 60).padStart(2, '0')}`
                 : '09:00';
             const titleSuffix = offset === 0 ? 'de hoy' : (offset === 1 ? 'de mañana' : 'de pasado mañana');
+            window._plannerBorrador = { sinHora: it ? !it.time : false, prioridad: it?.prioridad || '' };
+            const b = window._plannerBorrador;
             showModal(`
-                <div class="modal-title">+ Evento ${titleSuffix}</div>
-                <div class="modal-label">Hora</div>
-                <input id="planner-item-time" class="modal-input" type="time" value="${defaultTime}">
+                <div class="modal-title">${it ? 'tarea.' : `+ tarea ${titleSuffix}`}</div>
                 <div class="modal-label">Título</div>
-                <input id="planner-item-title" class="modal-input" type="text" placeholder="¿Qué vas a hacer?">
+                <input id="planner-item-title" class="modal-input" type="text" placeholder="¿Qué vas a hacer?" value="${escapeHtml(it?.title || '')}">
+                <div class="modal-label">Hora</div>
+                <div class="planner-hora-fila">
+                    <input id="planner-item-time" class="modal-input" type="time" value="${it?.time || defaultTime}" ${b.sinHora ? 'disabled' : ''}>
+                    <button type="button" class="profe-chip ${b.sinHora ? 'activa' : ''}" onclick="plannerSinHora(this)">sin hora.</button>
+                </div>
+                <div class="modal-label">Prioridad</div>
+                <div class="profe-dias-elegir planner-prioridades">${[['', 'ninguna.'], ['alta', 'alta.'], ['media', 'media.'], ['baja', 'baja.']].map(([k, t]) => `<button type="button" class="profe-chip ${k ? `prioridad-chip-${k}` : ''} ${b.prioridad === k ? 'activa' : ''}" onclick="window._plannerBorrador.prioridad='${k}';this.parentNode.querySelectorAll('.profe-chip').forEach(x=>x.classList.toggle('activa',x===this))">${t}</button>`).join('')}</div>
                 <div class="modal-label">Notas (opcional)</div>
-                <textarea id="planner-item-notes" class="modal-input" rows="2" placeholder="Detalles adicionales..."></textarea>
-                <button class="btn-modal-primary" onclick="savePlannerItem(${offset})">Añadir a la timeline</button>
+                <textarea id="planner-item-notes" class="modal-input" rows="2" placeholder="Detalles adicionales...">${escapeHtml(it?.notes || '')}</textarea>
+                <button class="btn-modal-primary" onclick="savePlannerItem(${offset}, '${it?.id || ''}')">${it ? 'guardar.' : 'añadir.'}</button>
+                ${it ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="closeModal();deletePlannerItem('${it.id}', ${offset})">eliminar tarea.</button>` : ''}
             `);
-            setTimeout(() => document.getElementById('planner-item-title')?.focus(), 50);
+            setTimeout(() => { if (!it) document.getElementById('planner-item-title')?.focus(); }, 50);
         }
 
-        async function savePlannerItem(offset = plannerDayOffset) {
-            const time = document.getElementById('planner-item-time')?.value || '';
+        function plannerSinHora(btn) {
+            const b = window._plannerBorrador;
+            b.sinHora = !b.sinHora;
+            btn.classList.toggle('activa', b.sinHora);
+            const t = document.getElementById('planner-item-time');
+            if (t) t.disabled = b.sinHora;
+        }
+
+        async function savePlannerItem(offset = plannerDayOffset, id = '') {
+            const b = window._plannerBorrador || {};
+            const time = b.sinHora ? '' : (document.getElementById('planner-item-time')?.value || '');
             const title = document.getElementById('planner-item-title')?.value.trim() || '';
             const notes = document.getElementById('planner-item-notes')?.value.trim() || '';
-            if (!time || !title) { showToast('Indica al menos hora y título', true); return; }
-
-            plannerItemsForOffset(offset).push({
-                id: 'planner_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                time, title, notes, done: false
-            });
+            if (!title) { showToast('Escribe la tarea', true); return; }
+            const datos = { time, title, notes, prioridad: b.prioridad || undefined };
+            const existente = id && plannerItemsForOffset(offset).find(x => x.id === id);
+            if (existente) Object.assign(existente, datos);
+            else plannerItemsForOffset(offset).push({ id: 'planner_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), ...datos, done: false });
             closeModal();
-            if (currentView === 'planner') render();
+            if (currentView === 'planner') render(); else renderMobileShell();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 

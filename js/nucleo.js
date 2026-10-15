@@ -1135,7 +1135,7 @@
         function renderMobileFilaTarea(it, offset) {
             const subs = Array.isArray(it.subtasks) ? it.subtasks : [];
             const meta = [it.arrastrado && !it.done ? 'de ayer' : '', subs.length ? `${subs.filter(s => s.done).length}/${subs.length} subtareas` : '', it.notes || ''].filter(Boolean).map(escapeHtml).join(' · ');
-            return `<div class="m-fila ${it.done ? 'hecha' : ''} ${it.arrastrado && !it.done ? 'arrastrada' : ''}">
+            return `<div class="m-fila ${it.done ? 'hecha' : ''} ${it.arrastrado && !it.done ? 'arrastrada' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}">
                 <span class="m-fila-hora">${escapeHtml(it.time || '—')}</span>
                 <div class="m-fila-cuerpo" onclick="mobileTareaAcciones('${it.id}', ${offset})"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div>
                 <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarTarea('${it.id}', ${offset})" aria-label="Marcar hecha"></button>
@@ -1162,7 +1162,8 @@
                 ${it.notes ? `<div class="finance-modal-note" style="margin-bottom:12px">${escapeHtml(it.notes)}</div>` : ''}
                 ${subs.length ? `<div class="m-modal-subtareas">${subs.map(st => `
                     <label class="planner-subtask-row"><input type="checkbox" ${st.done ? 'checked' : ''} onchange="togglePlannerSubtaskDone('${it.id}','${st.id}',${offset});renderMobileShell()"><span class="${st.done ? 'done' : ''}">${escapeHtml(st.text)}</span></label>`).join('')}</div>` : ''}
-                <button class="btn-modal-primary" onclick="closeModal();addPlannerSubtask('${it.id}',${offset}).then(renderMobileShell)">+ subtarea.</button>
+                <button class="btn-modal-primary" onclick="plannerDayOffset=${offset};openAddPlannerItem('${it.id}')">editar.</button>
+                <button class="btn-secondary" style="margin-top:8px" onclick="closeModal();addPlannerSubtask('${it.id}',${offset}).then(renderMobileShell)">+ subtarea.</button>
                 <button class="btn-secondary btn-danger-pill" style="width:100%;margin-top:10px" onclick="closeModal();deletePlannerItem('${it.id}',${offset}).then(renderMobileShell)">borrar tarea.</button>
             `);
         }
@@ -1253,7 +1254,7 @@
         function renderMobilePlanner() {
             resetDayPlannerIfNeeded();
             const off = plannerDayOffset;
-            const items = [...plannerItemsForOffset(off)].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+            const items = [...plannerItemsForOffset(off)].sort((a, b) => (a.time ? 1 : 0) - (b.time ? 1 : 0) || String(a.time).localeCompare(String(b.time)) || (PLANNER_PRIORIDAD_ORDEN[a.prioridad] ?? 3) - (PLANNER_PRIORIDAD_ORDEN[b.prioridad] ?? 3));
             const hoy = todayISO();
             const rec = off === 0 ? recurringTasksDueToday() : [];
             const total = items.length + rec.length;

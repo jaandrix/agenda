@@ -46,6 +46,7 @@
                 ${(!cultureSharedMode && cultureTab === 'series') ? `
                 <button class="btn-secondary btn-acento" style="width:auto" onclick="openImdbSeriesImportModal()">importar imdb.</button>
                 ` : ''}
+                ${!cultureSharedMode && cultureTab !== 'lists' ? `<button class="btn-secondary" style="width:auto" onclick="buscarPortadasPestana()">buscar portadas.</button>` : ''}
                 <button class="btn-secondary culture-shared-toggle" style="width:auto" onclick="toggleCultureSharedMode()">
                     ${cultureSharedMode ? '← mi biblioteca.' : `recomendaciones.${pendientes ? ` (${pendientes})` : ''}`}
                 </button>
@@ -374,14 +375,126 @@
             const statusContent = stars
                 ? `<div class="media-card-stars">${stars}</div>`
                 : (badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : '');
+            // Con portada, la tarjeta es la portada (con grano, para que
+            // todas vayan a juego) y el título pasa debajo.
+            if (entry.portada) return `
+                <div class="media-card media-card-portada media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" data-open-entry="${entry.id}">
+                    <div class="media-portada"><img src="${escapeHtml(entry.portada)}" alt="" loading="lazy" decoding="async" onerror="this.closest('.media-portada').classList.add('rota')"><span class="media-portada-icono">${mediaCardIcon(entry.type)}</span></div>
+                    <div class="media-card-title">${escapeHtml(entry.title)}</div>
+                    <div class="media-card-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
+                    <div class="media-card-status-slot">${statusContent}</div>
+                </div>`;
             return `
                 <div class="media-card media-card-type-${entry.type} ${gold ? 'media-card-gold' : ''}" data-open-entry="${entry.id}">
                     <div class="media-card-icon">${mediaCardIcon(entry.type)}</div>
                     <div class="media-card-title">${escapeHtml(entry.title)}</div>
                     <div class="media-card-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
                     <div class="media-card-status-slot">${statusContent}</div>
+                    ${entry.portadaPendiente ? `<button class="media-card-elegir" onclick="event.stopPropagation();openElegirPortada('${entry.id}')">elegir portada.</button>` : ''}
                 </div>`;
         }
+
+        // ============================================================
+        //  PORTADAS
+        //  La Edge Function `portadas` busca en Open Library / Google Books
+        //  (libros), TVmaze (series), Steam (juegos) y TMDB (películas, si
+        //  hay clave). Si la primera candidata coincide con el título, se
+        //  pone sola; si no, la tarjeta ofrece "elegir portada.".
+        // ============================================================
+        const PORTADA_TIPOS = ['book', 'movie', 'series', 'game'];
+        const portadaNorm = t => stripAccents(String(t || '').toLowerCase()).replace(/[^a-z0-9]+/g, ' ').trim();
+
+        async function buscarPortadas(tipo, q, anio) {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) return { resultados: [] };
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/portadas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                body: JSON.stringify({ tipo, q, anio }),
+            });
+            return res.ok ? res.json() : { resultados: [] };
+        }
+
+        function portadaConsulta(e) {
+            return e.type === 'book' && e.author ? `${e.title} ${e.author}` : e.title;
+        }
+
+        function portadaAnio(e) {
+            return e.type === 'movie' || e.type === 'series' ? String(e.year || '').slice(0, 4) : '';
+        }
+
+        // Devuelve true si la puso sola.
+        async function portadaAuto(e) {
+            if (!e || !PORTADA_TIPOS.includes(e.type) || e.portada || !e.title) return false;
+            const { resultados = [] } = await buscarPortadas(e.type, portadaConsulta(e), portadaAnio(e));
+            const titulo = portadaNorm(e.title);
+            const buena = resultados.find(r => portadaNorm(r.titulo) === titulo) || (resultados[0] && portadaNorm(resultados[0].titulo).includes(titulo) && titulo.length > 3 ? resultados[0] : null);
+            if (buena) { e.portada = buena.imagen; delete e.portadaPendiente; return true; }
+            e.portadaPendiente = true;
+            return false;
+        }
+
+        async function portadaTrasGuardar(id) {
+            const e = entries.find(x => x.id === id);
+            if (!e || e.portada || !PORTADA_TIPOS.includes(e.type)) return;
+            try { await portadaAuto(e); render(); await saveData(); } catch (err) { console.error(err); }
+        }
+
+        function openElegirPortada(id, consulta) {
+            const e = entries.find(x => x.id === id);
+            if (!e) return;
+            const q = consulta ?? portadaConsulta(e);
+            showModal(`
+                <div class="modal-title">portada de ${escapeHtml(e.title)}.</div>
+                <div class="compra-anadir">
+                    <input id="portada-q" class="modal-input" value="${escapeHtml(q)}" onkeydown="if(event.key==='Enter')openElegirPortada('${id}',this.value)">
+                    <button class="btn-modal-primary" onclick="openElegirPortada('${id}',document.getElementById('portada-q').value)">buscar.</button>
+                </div>
+                <div id="portada-resultados" class="portada-rejilla"><div class="finance-empty-line">Buscando...</div></div>
+                <div class="modal-label" style="margin-top:12px">o pega el enlace de una imagen</div>
+                <div class="compra-anadir">
+                    <input id="portada-url" class="modal-input" placeholder="https://...">
+                    <button class="btn-secondary" style="width:auto;margin:0" onclick="ponerPortada('${id}',document.getElementById('portada-url').value.trim())">usar.</button>
+                </div>
+                ${e.portada ? `<button class="btn-secondary" style="margin-top:8px" onclick="ponerPortada('${id}','')">quitar la portada.</button>` : ''}
+            `);
+            buscarPortadas(e.type, q, portadaAnio(e)).then(({ resultados = [], necesitaClave }) => {
+                const caja = document.getElementById('portada-resultados');
+                if (!caja) return;
+                window._portadaCandidatas = resultados;
+                caja.innerHTML = resultados.length ? resultados.slice(0, 18).map((r, i) => `<button class="portada-candidata" onclick="ponerPortada('${id}', window._portadaCandidatas[${i}].imagen)"><span class="portada-marco"><img src="${escapeHtml(r.imagen)}" alt="" loading="lazy" onerror="this.closest('.portada-candidata').remove()"></span><b>${escapeHtml(r.titulo || '')}</b><small>${escapeHtml([r.anio, r.autor, r.fuente].filter(Boolean).join(' · '))}</small></button>`).join('')
+                    : `<div class="finance-empty-line">${necesitaClave ? 'Las portadas de películas llegan desde TMDB, que todavía no está conectado. Mientras tanto, puedes pegar el enlace de una imagen.' : 'No he encontrado nada. Prueba a escribir el título de otra forma (o en su idioma original).'}</div>`;
+            }).catch(() => { const caja = document.getElementById('portada-resultados'); if (caja) caja.innerHTML = '<div class="finance-empty-line">No se pudo buscar ahora.</div>'; });
+        }
+
+        async function ponerPortada(id, url) {
+            const e = entries.find(x => x.id === id);
+            if (!e) return;
+            if (url && !/^https:\/\//.test(url)) { showToast('El enlace tiene que empezar por https://', true); return; }
+            if (url) { e.portada = url; delete e.portadaPendiente; } else { delete e.portada; e.portadaPendiente = true; }
+            closeModal();
+            render();
+            try { await saveData(); } catch (err) { console.error(err); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Busca de una vez las portadas de lo que no tiene en la pestaña
+        // actual, una a una para no saturar las fuentes.
+        async function buscarPortadasPestana() {
+            const tipo = CULTURE_TAB_TO_TYPE[cultureTab];
+            const lista = entries.filter(e => e.type === tipo && !e.portada && e.title);
+            if (!lista.length) { showToast('Todo tiene ya su portada'); return; }
+            showToast(`Buscando ${lista.length} portadas...`);
+            let puestas = 0;
+            for (const e of lista) {
+                try { if (await portadaAuto(e)) puestas++; } catch (err) { console.error(err); }
+                await new Promise(r => setTimeout(r, 250));
+            }
+            render();
+            try { await saveData(); } catch (err) { console.error(err); }
+            const faltan = lista.length - puestas;
+            showToast(`${puestas} ${puestas === 1 ? 'portada puesta' : 'portadas puestas'}${faltan ? `, ${faltan} para elegir a mano` : ''}.`);
+        }
+
         function renderMediaCardGrid(items, metaFn, badgeFn) {
             return `<div class="media-card-grid">${items.map(e => renderMediaCard(e, metaFn ? metaFn(e) : '', badgeFn ? badgeFn(e) : '')).join('')}</div>`;
         }
