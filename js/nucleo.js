@@ -1380,7 +1380,8 @@
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
                         <button class="m-mini" onclick="scheduleBacklogTaskToday('${it.id}')">→ hoy</button>
                         <button class="m-check ${it.done ? 'on' : ''}" onclick="toggleBacklogTaskDone('${it.id}')" aria-label="Marcar hecha"></button>
-                    </div>`).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin pendientes.</div>'}`;
+                    </div>`).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin pendientes.</div>'}
+                ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}`;
         }
 
         function renderMobileHabits() {

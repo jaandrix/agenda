@@ -254,6 +254,11 @@ a menor resolución.
   huecos `{{c1::}}`) programadas con FSRS-4.5 (`fsrsOpciones`, estado por cara en `repasos['id:cara']`).
   Importa "frente;reverso" o TSV y exporta TSV para Anki. Durante un repaso, `canUseGlobalShortcut` se
   desactiva para que espacio y 1-4 no abran la captura rápida.
+- **Proyectos → gestor (`js/proyecto.js`):** cada proyecto se abre en su gestor (`abrirProyecto`, `proyectoAbierto`):
+  resumen (siguiente paso, la colina 0-1 de Basecamp, cifras, fases), tareas por fases (`tareas` con estado
+  pendiente/curso/hecha, fecha, fase; `tasks` se mantiene sincronizado para la ficha, el conector y las
+  estadísticas), fases y diario. "→ hoy" crea una tarea del planificador con `proyectoTareaId` y
+  `togglePlannerItemDone` la completa en el proyecto. El planificador enseña "siguientes pasos.".
 - **Ramas de apartados:** `RAMAS_APARTADOS` en ajustes.js agrupa los opcionales (#school, #home, #work, #mind).
 - **Importar extractos:** primero la coincidencia exacta, luego pendientes (≤3 días, importe exacto antes que
   aproximado, sin reutilizar), recuento de claves (dos cargos iguales cuentan dos) y, si el CSV trae saldo

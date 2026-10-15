@@ -377,8 +377,8 @@
                         <div><div class="modal-label">Fecha inicio</div><input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : ''}"></div>
                         <div><div class="modal-label">Fecha límite</div><input type="date" id="modal-end" class="modal-input" value="${isEdit ? entry.endDate || '' : ''}"></div>
                     </div>
-                    <div class="modal-label">Ruta de hitos (uno por línea; añade ✓ al final para marcarlo hecho)</div>
-                    <textarea id="modal-tasks" class="modal-input" rows="3">${isEdit ? (entry.tasks || []).map(t => t.text + (t.done ? ' ✓' : '')).join('\n') : ''}</textarea>
+                    ${isEdit && Array.isArray(entry.tareas) ? '' : `<div class="modal-label">Tareas (una por línea; luego se gestionan dentro del proyecto)</div>
+                    <textarea id="modal-tasks" class="modal-input" rows="3">${isEdit ? (entry.tasks || []).map(t => t.text + (t.done ? ' ✓' : '')).join('\n') : ''}</textarea>`}
                     <div class="modal-label">Características (una por línea, formato Etiqueta: Valor)</div>
                     <textarea id="modal-features" class="modal-input" rows="2" placeholder="Presupuesto: 500€&#10;Cliente: Ada&#10;Stack: React + Supabase">${isEdit ? (entry.features || []).map(f => f.label + ': ' + f.value).join('\n') : ''}</textarea>
                     <div class="modal-label">Notas</div>
@@ -653,8 +653,10 @@
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.endDate = document.getElementById('modal-end')?.value || '';
                 entry.date = entry.startDate || entry.endDate || '';
-                const tasksRaw = document.getElementById('modal-tasks')?.value?.split('\n').filter(t => t.trim()) || [];
-                entry.tasks = tasksRaw.map(t => {
+                // Con el gestor del proyecto, las tareas viven allí (`tareas`) y
+                // este formulario ya no las enseña: no hay que pisarlas.
+                const tasksRaw = document.getElementById('modal-tasks')?.value?.split('\n').filter(t => t.trim());
+                if (tasksRaw) entry.tasks = tasksRaw.map(t => {
                     const done = /(?:^|\s)(?:✓|✔|☑|\[x\]|x)$/i.test(t.trim());
                     return { text: t.replace(/(?:\s+(?:✓|✔|☑|\[x\]|x))$/i, '').trim(), done };
                 });

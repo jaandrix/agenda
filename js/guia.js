@@ -342,8 +342,17 @@ const GUIA = [
     },
     {
         id: 'proyectos', grupo: 'desarrollo', titulo: 'proyectos.',
-        lema: 'Cosas grandes, en tareas.',
-        intro: 'Cada proyecto con su lista de tareas; al marcarlas ves el progreso. Se pueden vincular a un objetivo. Es un apartado opcional: actívalo o quítalo en Ajustes → apartados.',
+        lema: 'Cosas grandes, paso a paso.',
+        intro: 'Cada proyecto se abre en su propio gestor: el siguiente paso siempre a la vista, dónde está en la colina, sus tareas por fases y un diario de lo que vas decidiendo. Se pueden vincular a un objetivo. Es un apartado opcional: actívalo o quítalo en Ajustes → apartados.',
+        pasos: ['Crea el proyecto con el botón +, con su fecha límite.', 'Ábrelo y, en <b>tareas.</b>, pártelo en pasos que se puedan hacer en una sentada (pega varios, uno por línea). Si es largo, crea <b>fases.</b> y agrúpalas.', 'Marca con ★ el siguiente paso, o deja que Bitácora elija el primero en marcha o pendiente.', 'Cuando vayas a trabajar en él, <b>→ hoy</b> lo lleva al planificador. Al marcarlo hecho allí, se marca también en el proyecto.'],
+        botones: [
+            [guiaBoton('siguiente paso.'), 'Lo único que tienes que hacer ahora en ese proyecto. <b>hecho.</b> lo completa y trae el siguiente. También salen todos juntos en el planificador, en «siguientes pasos.».'],
+            [guiaBoton('la colina.'), 'Dónde está el proyecto: cuesta arriba (pensando, probando) aún no sabes cómo hacerlo; pasada la cima (decidido), cuesta abajo, ya solo es hacer. Muévela según lo sientas: dice más que un porcentaje.'],
+            [guiaBoton('○ ◐ ●'), 'El círculo de cada tarea: pendiente, en marcha y hecha. Tócalo para avanzarla; toca el nombre para ponerle fecha, fase o notas.'],
+            [guiaBoton('diario.'), 'La bitácora del proyecto: apunta decisiones y avances con su fecha.'],
+            [guiaBoton('Lista · Tablero'), 'Todos tus proyectos en lista (con su siguiente paso) o en tablero por estado, arrastrándolos de columna.'],
+        ],
+        trucos: ['Una tarea pequeña y concreta se empieza; «hacer la web» no. Si llevas días sin tocar una, pártela.', 'Claude puede añadir tareas a un proyecto; aparecen en el gestor.'],
     },
     {
         id: 'enlaces', grupo: 'desarrollo', titulo: 'enlaces.',

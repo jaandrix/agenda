@@ -682,6 +682,8 @@
         function setProjectViewMode(mode) { projectViewMode = mode; render(); }
 
         function renderProjects() {
+            const abierto = typeof proyectoActual === 'function' && proyectoAbierto ? proyectoActual() : null;
+            if (abierto) return renderGestorProyecto(abierto);
             const projects = entries.filter(e => e.type === 'project');
             if (!projects.length) {
                 return `<div class="empty-state"><div class="empty-title">ningún proyecto todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Proyecto"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
@@ -718,7 +720,7 @@
                 const dateObj = p.endDate ? new Date(p.endDate + 'T00:00:00') : null;
 
                 return `
-                    <div class="line-row" data-open-entry="${p.id}">
+                    <div class="line-row" onclick="abrirProyecto('${p.id}')" style="cursor:pointer">
                         <div class="line-row-date">
                             <div class="line-row-date-day ${overdue ? 'line-row-date-overdue' : ''}">${dateObj ? String(dateObj.getDate()).padStart(2, '0') : '–'}</div>
                             ${dateObj ? `<div class="line-row-date-month">${dateObj.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')}</div>` : ''}
@@ -726,7 +728,7 @@
                         <div class="line-row-icon">${PROJECT_ICON_FLAG}</div>
                         <div class="line-row-body">
                             <div class="line-row-title"><span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span><span class="line-row-title-text">${escapeHtml(p.title)}</span></div>
-                            <div class="line-row-meta">${escapeHtml(p.projectCategory || 'Sin categoría')}${total > 0 ? ` · ${done}/${total} hitos · ${pct}%` : ''}</div>
+                            <div class="line-row-meta">${(() => { const sig = proyectoSiguiente(p); return sig && bucket !== 'Completado' ? `siguiente: ${escapeHtml(sig.texto)}` : escapeHtml(p.projectCategory || 'Sin categoría'); })()}${total > 0 ? ` · ${done}/${total} · ${pct}%` : ''}</div>
                         </div>
                         <div class="line-row-side"><span class="badge ${statusClass}">${bucket}</span></div>
                     </div>`;
@@ -749,7 +751,7 @@
                             const overdue = p.endDate && p.endDate < today && col !== 'Completado';
                             const priority = p.priority || 'media';
                             return `
-                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${p.id}')" data-open-entry="${p.id}" style="border-left:4px solid ${color}">
+                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${p.id}')" onclick="abrirProyecto('${p.id}')" style="border-left:4px solid ${color}">
                                 <div class="kanban-card-title">${escapeHtml(p.title)}</div>
                                 ${total > 0 ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>` : ''}
                                 <div class="kanban-card-foot">

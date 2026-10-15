@@ -159,6 +159,8 @@ montarCerebro();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-16', rama: 'work', nombre: 'proyectos', para: 'quien tiene algo entre manos.', texto: 'Cada proyecto con su siguiente paso a la vista, la colina para saber dónde está, tareas por fases que van al planificador y un diario.' },
+    { fecha: '2026-10-16', rama: 'todos', nombre: 'nueva versión móvil', para: 'todos.', texto: 'Barra de pestañas, tu semana y tu día como un horario, y el tamaño de letra a tu gusto.' },
     { fecha: '2026-10-16', rama: 'todos', nombre: 'calendarios', para: 'todos.', texto: 'Trae tu calendario de Google, Apple u Outlook, o el de tu equipo o tu universidad, con un archivo o un enlace.' },
     { fecha: '2026-10-15', rama: 'school', nombre: 'estudiar', para: 'estudiantes y opositores.', texto: 'Pomodoro, el día dividido en temas, el temario por asignaturas y tarjetas de repaso espaciado al estilo Anki.' },
     { fecha: '2026-10-15', rama: 'home', nombre: 'compra', para: 'quien hace la compra.', texto: 'Listas que se ordenan solas por secciones del súper, con lo de siempre a un toque y el gasto directo a Finanzas.' },

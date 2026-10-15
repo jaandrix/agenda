@@ -143,6 +143,7 @@
                 </div>
 
                 ${renderPlannerBacklog()}
+                ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}
 
                 <div class="culture-tabs" style="margin-bottom:18px">
                     ${PLANNER_DAY_TABS.map(t => `
@@ -398,6 +399,7 @@
                 const assignment = findAssignmentById(item.linkedAssignmentId);
                 if (assignment) assignment.done = item.done;
             }
+            if (item.proyectoTareaId && typeof proyectoTareaDesdePlanner === 'function') proyectoTareaDesdePlanner(item.proyectoId, item.proyectoTareaId, item.done);
 
             // Al completarla, queda constancia como evento en el calendario
             // (con la fecha real en que se completó); al desmarcarla, se retira.
