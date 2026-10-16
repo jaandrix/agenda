@@ -911,17 +911,29 @@
             document.body.classList.toggle('mobile-standalone', mobileStandaloneActive);
             if (mobileStandaloneActive) {
                 mobileAjustarAlto();
+                setTimeout(mobileAjustarAlto, 400);
                 window.addEventListener('resize', mobileAjustarAlto);
+                window.addEventListener('orientationchange', () => setTimeout(mobileAjustarAlto, 300));
             }
         }
 
-        // iOS, en la app de la pantalla de inicio con viewport-fit=cover,
-        // da una ventana tan alta como la pantalla menos la barra de estado:
-        // lo fijo abajo se quedaba a esa distancia del borde. Se mide el
-        // hueco y la app se estira hasta el borde real.
+        // iOS, en la app de la pantalla de inicio, deja a lo fijo un hueco
+        // tan alto como la pantalla menos la barra de estado. Sin
+        // viewport-fit=cover ese hueco empezaba bajo la barra (franja negra
+        // arriba); con cover empieza arriba y lo que falta queda abajo.
+        // innerHeight sí mide la pantalla entera, así que no delata nada:
+        // se mide dónde acaba de verdad algo fijo pegado abajo.
         function mobileAjustarAlto() {
-            const vertical = navigator.standalone === true && window.innerHeight > window.innerWidth;
-            const hueco = vertical ? screen.height - window.innerHeight : 0;
+            const ios = navigator.standalone === true || /iP(hone|od|ad)/.test(navigator.userAgent);
+            let hueco = 0;
+            if (ios && window.innerHeight > window.innerWidth) {
+                const sonda = document.createElement('div');
+                sonda.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;visibility:hidden';
+                document.body.appendChild(sonda);
+                const fondo = Math.min(sonda.getBoundingClientRect().bottom, document.documentElement.clientHeight);
+                sonda.remove();
+                hueco = Math.round(screen.height - fondo);
+            }
             document.documentElement.style.setProperty('--m-hueco-abajo', hueco > 0 && hueco < 120 ? hueco + 'px' : '0px');
         }
 
@@ -965,6 +977,10 @@
             const view = NAV_VIEW_LABELS[currentView] ? currentView : 'calendar';
             const entra = mobileLastEffectView !== view;
             requestAnimationFrame(() => document.body.classList.remove('pwa'));
+            // Repintar sustituye todo el móvil, menú incluido: sin esto, tocar
+            // un ajuste (tema, letra, un interruptor) te devolvía arriba.
+            const scrollMenu = shell.querySelector('.m-menu-cuerpo')?.scrollTop || 0;
+            const scrollPagina = entra ? 0 : shell.scrollTop;
             shell.innerHTML = `
                 <div class="m-app">
                     ${renderMobileTopbar(view)}
@@ -973,6 +989,8 @@
                 ${renderMobileTabbar(view)}
                 ${renderMobileMenu(view)}`;
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
+            if (scrollMenu) { const cuerpo = shell.querySelector('.m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = scrollMenu; }
+            if (scrollPagina) shell.scrollTop = scrollPagina;
             mobilePlegarTitulo(shell);
             if (!shell.dataset.plegado) {
                 shell.dataset.plegado = '1';

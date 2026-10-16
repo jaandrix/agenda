@@ -8252,3 +8252,11 @@ body.mobile-standalone .m-tabbar { bottom:calc(-1 * var(--m-hueco-abajo, 0px)); 
    su columna hasta caber en una sola línea. */
 .profe-tabla { table-layout:fixed; width:calc(68px + var(--n, 1) * 200px); }
 @media (max-width:700px) { .profe-tabla { width:calc(68px + var(--n, 1) * 160px); } }
+
+/* Profesorado: ocultar lo pendiente, sustituir al importar y borrar todo. */
+.profe-pestanas { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.profe-chip-ocultar { margin-left:auto; }
+.profe-sustituir { display:flex; align-items:flex-start; gap:10px; margin:14px 0 4px; padding:12px 14px; border-radius:14px; background:var(--bg-input); font-size:13px; line-height:1.45; color:var(--text-secondary); cursor:pointer; }
+.profe-sustituir input { flex-shrink:0; margin-top:2px; }
+.profe-sustituir b { color:var(--text-primary); }
+.profe-borrar-todo { display:block; margin-top:22px; }

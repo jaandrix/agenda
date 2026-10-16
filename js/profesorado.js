@@ -159,7 +159,7 @@ function renderProfesorado() {
         <div class="uni-cabecera">
             <div>
                 <div class="uni-titulo">profesorado.</div>
-                <div class="uni-sub">${p.clases.length} ${p.clases.length === 1 ? 'clase' : 'clases'} · ${dadas} de ${conCasilla.length} tareas hechas.</div>
+                <div class="uni-sub">${p.clases.length} ${p.clases.length === 1 ? 'clase' : 'clases'}${p.ocultarPendientes ? '' : ` · ${dadas} de ${conCasilla.length} tareas hechas`}.</div>
             </div>
             <div class="profe-botones">
                 <button class="pedido-btn solo-escritorio" onclick="openClaseProfe()">+ clase.</button>
@@ -170,7 +170,7 @@ function renderProfesorado() {
             </div>
         </div>
         <div id="profe-pendientes">${renderPendientesProfe()}</div>
-        <div class="profe-pestanas">${[['cuadrante', 'cuadrante.'], ['horario', 'horario semanal.']].map(([k, t]) => `<button class="profe-chip ${profeVista === k ? 'activa' : ''}" onclick="profeVista='${k}';profeIrAHoy=${k === 'cuadrante'};render()">${t}</button>`).join('')}</div>
+        <div class="profe-pestanas">${[['cuadrante', 'cuadrante.'], ['horario', 'horario semanal.']].map(([k, t]) => `<button class="profe-chip ${profeVista === k ? 'activa' : ''}" onclick="profeVista='${k}';profeIrAHoy=${k === 'cuadrante'};render()">${t}</button>`).join('')}<button class="profe-chip profe-chip-ocultar ${p.ocultarPendientes ? 'activa' : ''}" onclick="profeAlternarPendientes()" title="Esconde las tareas que no pudiste dar y el aviso">${p.ocultarPendientes ? 'ver lo pendiente.' : 'ocultar lo pendiente.'}</button></div>
         ${profeVista === 'horario' ? renderHorarioSemanalProfe() : `<div class="profe-cuadrante">
             <div class="profe-nav">
                 ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(-1)" aria-label="Antes">‹</button>` : ''}
@@ -202,6 +202,7 @@ function renderProfesorado() {
 
 function renderItemProfe(s, c, hoy) {
     const estado = s.descartada ? 'descartada' : s.hecha === true ? 'hecha' : profeEsPendiente(s, hoy) ? 'pendiente' : s.hecha === null ? 'sin-casilla' : 'por-dar';
+    if (estado === 'pendiente' && datosProfe().ocultarPendientes) return '';
     return `<div class="profe-item ${estado}" style="--c:${c.color}" data-id="${s.id}">
         <span class="profe-asa" onpointerdown="profeArrastrar(event,'${s.id}')" aria-label="Arrastrar"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><circle cx="35" cy="22" r="9"/><circle cx="65" cy="22" r="9"/><circle cx="35" cy="50" r="9"/><circle cx="65" cy="50" r="9"/><circle cx="35" cy="78" r="9"/><circle cx="65" cy="78" r="9"/></svg></span>
         <button class="profe-item-txt" onclick="openSesionProfe('${s.id}')">${escapeHtml(profeSinEnlacesLargos(s.titulo))}</button>
@@ -235,6 +236,7 @@ function repintarCeldaProfe(claseId, fecha) {
 }
 
 function renderPendientesProfe() {
+    if (datosProfe().ocultarPendientes) return '';
     const pend = profePendientes();
     if (!pend.length) return '';
     const p = datosProfe();
@@ -911,9 +913,10 @@ function openImportarProfe() {
             <ol class="profe-pasos">
                 <li>Copia la instrucción de abajo y dásela a cualquier IA que pueda crear archivos (Claude, ChatGPT...), adjuntando tu cuadrante actual.</li>
                 <li>La IA lo transformará y te dará un archivo <b>cuadrante-bitacora.json</b>.</li>
-                <li>Súbelo aquí. Se suma a lo que ya tengas: no se borra nada.</li>
+                <li>Súbelo aquí.</li>
             </ol>
         </div>
+        ${datosProfe().clases.length ? `<label class="profe-sustituir"><input type="checkbox" id="profe-sustituir"> <span><b>sustituir mi cuadrante.</b> Borra tus clases, tareas y festivos actuales antes de importar. Sin marcar, se suma a lo que ya tienes.</span></label>` : ''}
         <details class="profe-prompt-caja">
             <summary>ver la instrucción para la ia.</summary>
             <pre class="profe-prompt">${escapeHtml(PROFE_PROMPT_IA)}</pre>
@@ -926,7 +929,32 @@ function openImportarProfe() {
             <textarea id="profe-json" class="modal-input" rows="5" placeholder='{"formato":"bitacora-cuadrante", ...}'></textarea>
             <button class="btn-secondary" onclick="importarProfe(document.getElementById('profe-json').value)">importar el texto.</button>
         </details>
+        ${datosProfe().clases.length || datosProfe().sesiones.length ? `<button class="btn-secondary btn-danger-pill profe-borrar-todo" onclick="borrarTodoProfe()">borrar todo el cuadrante.</button>` : ''}
     `);
+}
+
+function profeAlternarPendientes() {
+    const p = datosProfe();
+    p.ocultarPendientes = !p.ocultarPendientes;
+    render();
+    guardarProfe(p.ocultarPendientes ? 'Lo pendiente queda oculto' : 'Vuelves a ver lo pendiente');
+}
+
+// Empezar de cero: clases, tareas, festivos y todo lo de cada clase
+// (alumnos, notas, deberes...). Solo se conserva la preferencia de
+// ocultar lo pendiente.
+function vaciarProfe() {
+    const ocultar = !!profesorado?.ocultarPendientes;
+    profesorado = { clases: [], sesiones: [], festivos: [], ocultarPendientes: ocultar };
+}
+
+function borrarTodoProfe() {
+    const p = datosProfe();
+    if (!confirm(`Se borrarán ${p.clases.length} ${p.clases.length === 1 ? 'clase' : 'clases'}, ${p.sesiones.length} ${p.sesiones.length === 1 ? 'tarea' : 'tareas'}, los festivos y todo lo de cada clase (alumnos, notas, deberes). No se puede deshacer. ¿Seguro?`)) return;
+    vaciarProfe();
+    closeModal();
+    render();
+    guardarProfe('Cuadrante borrado.');
 }
 
 // En la casilla, un enlace se queda en su dominio: entero ocupaba media
@@ -947,6 +975,10 @@ function importarArchivoProfe(input) {
 function importarProfe(texto) {
     let datos;
     try { datos = JSON.parse(texto.slice(texto.indexOf('{'), texto.lastIndexOf('}') + 1)); } catch (e) { showToast('No se ha podido leer: tiene que ser el archivo .json que dio la IA', true); return; }
+    if (document.getElementById('profe-sustituir')?.checked) {
+        if (!confirm('Se borrará tu cuadrante actual (clases, tareas, festivos y todo lo de cada clase) y se pondrá el nuevo en su lugar. ¿Seguro?')) return;
+        vaciarProfe();
+    }
     const p = datosProfe();
     const fechaOk = f => /^\d{4}-\d{2}-\d{2}$/.test(String(f || '').slice(0, 10));
     const porNombre = new Map(p.clases.map(c => [c.nombre.trim().toLowerCase(), c]));
