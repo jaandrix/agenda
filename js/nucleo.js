@@ -913,7 +913,10 @@
 
         // Sin el aviso de privacidad de Finanzas que pone switchView: en el
         // móvil se entra a consultar o apuntar algo rápido.
-        function mobileIr(view) {
+        // Como en una app nativa: entrar en un apartado empuja la página
+        // desde la derecha, volver al inicio la devuelve y cambiar de
+        // pestaña solo funde.
+        function mobileIr(view, tipo) {
             const shellActual = document.getElementById('mobile-shell');
             // Tocar la pestaña en la que ya estás sube arriba del todo.
             if (view === currentView && !mobileMenuAbierto && shellActual) { shellActual.scrollTo({ top: 0, behavior: 'smooth' }); return; }
@@ -926,7 +929,7 @@
             if (view !== 'notes') window.openNoteId = null;
             if (view === 'calendar') { mobileDiaSel = null; mobileMes = null; }
             const shell = document.getElementById('mobile-shell');
-            conTransicion(vtDireccionSidebar(currentView, view), () => {
+            conTransicion(tipo || (view === 'calendar' ? 'm-atras' : 'm-adelante'), () => {
                 aplicarSwitchView(view);
                 if (shell) shell.scrollTop = 0;
             });
@@ -954,11 +957,23 @@
                 ${renderMobileTabbar(view)}
                 ${renderMobileMenu(view)}`;
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
+            mobilePlegarTitulo(shell);
+            if (!shell.dataset.plegado) {
+                shell.dataset.plegado = '1';
+                shell.addEventListener('scroll', () => mobilePlegarTitulo(shell), { passive: true });
+            }
             if (mobileLastEffectView !== view) {
                 mobileLastEffectView = view;
                 const effect = MOBILE_SECTION_EFFECTS[view];
                 if (effect) setTimeout(effect, 0);
             }
+        }
+
+        // Al bajar, el título grande se recoge en la barra de arriba, como
+        // los títulos grandes de iOS.
+        function mobilePlegarTitulo(shell) {
+            const plegada = shell.scrollTop > 56;
+            if (document.body.classList.contains('m-plegada') !== plegada) document.body.classList.toggle('m-plegada', plegada);
         }
 
         const M_ICONOS = {
@@ -971,7 +986,7 @@
         function renderMobileTabbar(view) {
             const reciente = NAV_VIEW_LABELS[mobileReciente] && apartadoVisible(mobileReciente) ? mobileReciente : 'finances';
             const nombre = (NAV_VIEW_LABELS[reciente] || '').toLowerCase();
-            const pestana = (v, icono, texto, extra = '') => `<button class="m-tab ${view === v ? 'activa' : ''}" onclick="mobileIr('${v}')" ${extra}>${icono}<span>${texto}</span></button>`;
+            const pestana = (v, icono, texto, extra = '') => `<button class="m-tab ${view === v ? 'activa' : ''}" onclick="mobileIr('${v}', 'm-pestana')" ${extra}>${icono}<span>${texto}</span></button>`;
             return `<nav class="m-tabbar" aria-label="Apartados">
                 ${pestana('calendar', M_ICONOS.inicio, 'inicio.')}
                 ${pestana('planner', M_ICONOS.plan, 'plan.')}
@@ -989,7 +1004,7 @@
             <div class="m-topbar">
                 ${view === 'calendar'
                     ? `<span class="m-marca-fila"><button class="mi-avatar" onclick="openMiPerfil()" aria-label="Mi perfil">${avatarHtml(miPerfil.foto, miNombreVisible(), 'avatar-cabecera')}</button><span class="m-marca">bitácora.</span></span>`
-                    : `<button class="m-inicio" onclick="mobileIr('calendar')"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M70 10L58 0 8 50l50 50 12-10-40-40z"/></svg>inicio.</button>`}
+                    : `<button class="m-inicio" onclick="mobileIr('calendar')"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M70 10L58 0 8 50l50 50 12-10-40-40z"/></svg>inicio.</button><span class="m-topbar-titulo" aria-hidden="true">${escapeHtml((NAV_VIEW_LABELS[view] || '').toLowerCase())}.</span>`}
                 <button class="m-menu-btn" onclick="toggleMenuMovil()" aria-label="Abrir el menú">
                     <span></span><span></span>
                     ${avisos ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}

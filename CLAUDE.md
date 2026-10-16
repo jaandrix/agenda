@@ -93,8 +93,10 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   la derecha, `toggleMenuMovil`) y una página por apartado con título enorme en dos
   tonos (`renderMobileCabecera`). Planificador, Finanzas, Estudios, Hábitos, Eventos,
   Notas y Viajes tienen vista propia (`MOBILE_SECCIONES`); el resto reutiliza su
-  `renderXxx()` de escritorio dentro de `.m-generico`. Navegar con `mobileIr(view)` (si ya estás en esa
-  vista, sube arriba). Barra de pestañas abajo (`renderMobileTabbar`: inicio, plan, + captura, el último
+  `renderXxx()` de escritorio dentro de `.m-generico`. Navegar con `mobileIr(view, tipo)` (si ya estás en esa
+  vista, sube arriba; la página entra de lado: `m-adelante`/`m-atras`, o funde con `m-pestana` desde la barra; al bajar,
+  `body.m-plegada` recoge el título en la barra de arriba). En `.m-generico`, una sola acción naranja (`btn-modal-primary`) y
+  el resto de botones con tinte translúcido. Barra de pestañas abajo (`renderMobileTabbar`: inicio, plan, + captura, el último
   apartado visitado `mobileReciente` y menú; el botón de menú de arriba está oculto). El inicio enseña la
   semana del día elegido (o el mes en bolitas, `mobileVerMes`) y el día como horario (`.m-tl`, con marca de
   "ahora"). Paleta propia del móvil (`body.mobile-standalone` / `body.pwa` + tema) con `--m-superficie`

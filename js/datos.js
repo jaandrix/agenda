@@ -653,6 +653,10 @@
         function aplicarClasesTema(tema) {
             ['papel', 'acuarela', 'fundador'].forEach(c => document.body.classList.remove(c));
             (THEME_CLASSES[tema] || []).forEach(c => document.body.classList.add(c));
+            // La barra de estado del móvil toma el fondo del tema.
+            const meta = document.querySelector('meta[name="theme-color"]');
+            const fondo = getComputedStyle(document.body).getPropertyValue('--bg-app').trim();
+            if (meta && fondo) meta.content = fondo;
         }
 
         function temaActual() {
