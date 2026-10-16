@@ -557,6 +557,7 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+        let calAnimClave = null;
         function renderCalendar() {
             let html = `<div class="cal-home">`;
             html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
@@ -572,7 +573,12 @@
             </div>`;
 
             const body = calViewMode === 'month' ? renderCalMonth() : calViewMode === 'week' ? renderCalWeek() : renderCalDay();
-            html += `<div class="cal-view-anim">${body}</div>`;
+            // La rejilla se anima solo al cambiar de vista o de periodo, no en
+            // cada repintado (al guardar algo, al marcar un día...).
+            const clave = `${calViewMode}|${(body.match(/data-cal-date="(\d{4}-\d{2}-\d{2})"/) || [])[1] || calSelectedDate}`;
+            const animar = calAnimClave !== clave;
+            calAnimClave = clave;
+            html += `<div class="${animar ? 'cal-view-anim' : ''}">${body}</div>`;
 
             html += renderOnThisDayCard();
             html += `</div>`;
@@ -751,7 +757,14 @@
         function showDayEntries(date) {
             window._selectedDate = date;
             calSelectedDate = date;
-            render();
+            // Solo se cambia la casilla marcada: repintar todo el calendario
+            // relanzaba la animación de entrada de la rejilla a la vez que el
+            // modal salía de la casilla, y se notaba como un tirón.
+            const celda = document.querySelector(`.cal-month-cell[data-cal-date="${date}"]`);
+            if (celda) {
+                document.querySelectorAll('.cal-month-cell.is-selected').forEach(c => c.classList.remove('is-selected'));
+                celda.classList.add('is-selected');
+            } else render();
 
             const dateObj = new Date(date + 'T12:00:00');
             const weekday = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
