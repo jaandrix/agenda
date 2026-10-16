@@ -182,7 +182,7 @@ function renderProfesorado() {
                 </div>
             </div>
             <div class="profe-tabla-wrap">
-                <table class="profe-tabla">
+                <table class="profe-tabla" style="--n:${p.clases.length}">
                     <thead><tr><th class="profe-col-dia"></th>${p.clases.map(c => `<th style="--c:${c.color}"><button class="profe-clase" onclick="openFichaClaseProfe('${c.id}')"><b>${escapeHtml(c.nombre)}</b><small>${escapeHtml(c.materia || '')}${(c.dias || []).length ? `${c.materia ? ' · ' : ''}${c.dias.map(d => PROFE_LETRAS[d]).join(' ')}` : ''}</small></button></th>`).join('')}</tr></thead>
                     <tbody>${dias.map((d, f) => {
                         const w = new Date(d + 'T12:00:00').getDay();
@@ -204,7 +204,7 @@ function renderItemProfe(s, c, hoy) {
     const estado = s.descartada ? 'descartada' : s.hecha === true ? 'hecha' : profeEsPendiente(s, hoy) ? 'pendiente' : s.hecha === null ? 'sin-casilla' : 'por-dar';
     return `<div class="profe-item ${estado}" style="--c:${c.color}" data-id="${s.id}">
         <span class="profe-asa" onpointerdown="profeArrastrar(event,'${s.id}')" aria-label="Arrastrar"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><circle cx="35" cy="22" r="9"/><circle cx="65" cy="22" r="9"/><circle cx="35" cy="50" r="9"/><circle cx="65" cy="50" r="9"/><circle cx="35" cy="78" r="9"/><circle cx="65" cy="78" r="9"/></svg></span>
-        <button class="profe-item-txt" onclick="openSesionProfe('${s.id}')">${escapeHtml(s.titulo)}</button>
+        <button class="profe-item-txt" onclick="openSesionProfe('${s.id}')">${escapeHtml(profeSinEnlacesLargos(s.titulo))}</button>
         ${profeConCasilla(s) && !s.descartada ? `<button class="profe-check ${s.hecha ? 'on' : ''}" onclick="profeHecha('${s.id}')" aria-label="${s.hecha ? 'Marcar por hacer' : 'Marcar hecha'}"></button>` : ''}
     </div>`;
 }
@@ -927,6 +927,12 @@ function openImportarProfe() {
             <button class="btn-secondary" onclick="importarProfe(document.getElementById('profe-json').value)">importar el texto.</button>
         </details>
     `);
+}
+
+// En la casilla, un enlace se queda en su dominio: entero ocupaba media
+// columna. El texto completo sigue en la tarea.
+function profeSinEnlacesLargos(texto) {
+    return String(texto || '').replace(/https?:\/\/(?:www\.)?([^\s\/]+)\S*/g, '$1/…');
 }
 
 function importarArchivoProfe(input) {

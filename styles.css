@@ -8248,3 +8248,7 @@ body.mobile-standalone .m-tabbar { bottom:calc(-1 * var(--m-hueco-abajo, 0px)); 
 /* Sin la barrita de desplazamiento de las webs. */
 #mobile-shell, .m-menu-cuerpo { scrollbar-width:none; }
 #mobile-shell::-webkit-scrollbar, .m-menu-cuerpo::-webkit-scrollbar { display:none; width:0; height:0; }
+/* Columnas de ancho fijo: con width:max-content, una tarea larga ensanchaba
+   su columna hasta caber en una sola línea. */
+.profe-tabla { table-layout:fixed; width:calc(68px + var(--n, 1) * 200px); }
+@media (max-width:700px) { .profe-tabla { width:calc(68px + var(--n, 1) * 160px); } }
