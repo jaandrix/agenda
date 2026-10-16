@@ -1412,7 +1412,7 @@
             const rec = off === 0 ? recurringTasksDueToday() : [];
             const total = items.length + rec.length;
             const hechas = items.filter(i => i.done).length + rec.filter(t => t.completadas?.[hoy]).length;
-            const backlog = dayPlanner.backlog;
+            const backlog = backlogVisibles();
             return `${renderMobileCabecera('planificador', total ? `${hechas} de ${total} hechas.` : 'nada planeado.')}
                 <div class="m-pestanas">${['hoy', 'mañana', 'pasado'].map((l, i) => `<button class="${off === i ? 'activa' : ''}" onclick="setPlannerDayOffset(${i})">${l}.</button>`).join('')}</div>
                 ${total ? `<div class="m-progreso">${mobileAnillo(hechas / total)}<div><div class="m-progreso-num">${Math.round(hechas / total * 100)}<small>%</small></div><div class="m-progreso-txt">del día, hecho.</div></div></div>` : ''}
@@ -1434,7 +1434,8 @@
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
                         <button class="m-mini" onclick="scheduleBacklogTaskToday('${it.id}')">→ hoy</button>
                         <button class="m-check ${it.done ? 'on' : ''}" onclick="toggleBacklogTaskDone('${it.id}')" aria-label="Marcar hecha"></button>
-                    </div>`).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin pendientes.</div>'}
+                    </div>`).join('')}</div>` : `<div class="m-vacio m-vacio-peque">${dayPlanner.backlog.length ? 'todo hecho.' : 'sin pendientes.'}</div>`}
+                ${backlogBotonHechas('m-mini m-backlog-hechas')}
                 ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}`;
         }
 

@@ -193,16 +193,39 @@
         // pestaña (hoy/mañana/pasado mañana) que tengas seleccionada.
         // "→ hoy" la convierte en un evento normal de la timeline de hoy
         // cuando por fin le toca hacerse.
+        // Las ya hechas no se quedan a la vista para siempre: se esconden y
+        // un botón las enseña cuando hace falta (se recuerda por dispositivo).
+        let backlogVerHechas = false;
+        try { backlogVerHechas = localStorage.getItem('bitacora_backlog_hechas') === '1'; } catch (_) { /* sin almacenamiento */ }
+
+        function backlogVisibles() {
+            return backlogVerHechas ? dayPlanner.backlog : dayPlanner.backlog.filter(it => !it.done);
+        }
+
+        function backlogBotonHechas(clase) {
+            const n = dayPlanner.backlog.filter(it => it.done).length;
+            if (!n) return '';
+            return `<button class="${clase}" onclick="alternarBacklogHechas()">${backlogVerHechas ? 'ocultar completadas.' : `mostrar completadas (${n}).`}</button>`;
+        }
+
+        function alternarBacklogHechas() {
+            backlogVerHechas = !backlogVerHechas;
+            try { localStorage.setItem('bitacora_backlog_hechas', backlogVerHechas ? '1' : '0'); } catch (_) { /* sin almacenamiento */ }
+            render();
+        }
+
         function renderPlannerBacklog() {
             resetDayPlannerIfNeeded();
-            const items = dayPlanner.backlog;
+            const items = backlogVisibles();
+            const quedan = dayPlanner.backlog.length;
             return `
             <div class="planner-backlog">
                 <div class="planner-backlog-head">
                     <div class="planner-backlog-title">tareas pendientes.</div>
                     <button class="planner-backlog-add" onclick="openAddBacklogTask()">+ tarea</button>
                 </div>
-                ${items.length ? items.map(it => renderBacklogRow(it)).join('') : '<div class="finance-empty-line" style="margin:6px 0 4px">Sin tareas pendientes — apunta aquí lo que quieras hacer sin ponerle día todavía.</div>'}
+                ${items.length ? items.map(it => renderBacklogRow(it)).join('') : `<div class="finance-empty-line" style="margin:6px 0 4px">${quedan ? 'Todo hecho por aquí.' : 'Sin tareas pendientes — apunta aquí lo que quieras hacer sin ponerle día todavía.'}</div>`}
+                ${backlogBotonHechas('planner-backlog-hechas')}
             </div>`;
         }
 

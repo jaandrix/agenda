@@ -8296,3 +8296,8 @@ body.papel .m-fila.negativa .m-fila-cifra { color:#a3243b; }
 .m-app { padding-bottom:138px; }
 .m-menu-cuerpo { padding-bottom:134px; }
 .pomo-pastilla { bottom:114px !important; }
+
+/* Tareas pendientes sin día: botón para ver las ya completadas. */
+.planner-backlog-hechas { display:block; margin:10px 0 2px; padding:4px 0; border:0; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; }
+.planner-backlog-hechas:hover { color:var(--text-primary); }
+.m-backlog-hechas { display:block; margin:10px 0 0; }

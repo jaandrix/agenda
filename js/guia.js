@@ -152,7 +152,7 @@ const GUIA = [
             [guiaBoton('alta. · media. · baja.'), 'La prioridad de la tarea: le da color (rojo, ámbar o azul) y ordena las que no tienen hora.'],
             [guiaBoton('↻ (tarjeta)'), 'Tareas recurrentes: las que se repiten (cada día, ciertos días de la semana, cada mes o cada N días).'],
             [guiaBoton('progreso de hoy.'), 'Un sello por tarea; se rellenan al completarlas.'],
-            [guiaBoton('tareas pendientes. → + tarea'), 'Cosas sin día ni hora. <b>→ hoy</b> las pasa a la línea de tiempo de hoy.'],
+            [guiaBoton('tareas pendientes. → + tarea'), 'Cosas sin día ni hora. <b>→ hoy</b> las pasa a la línea de tiempo de hoy. Las que marcas hechas se esconden; <b>mostrar completadas.</b> las enseña otra vez.'],
             [guiaBoton('+ subtarea'), 'Divide una tarea en pasos.'],
         ],
         trucos: ['Pulsa el nombre de una tarea para editarla.', 'Los trabajos de Estudios aparecen solos aquí el día de su entrega.', 'Al completar una tarea queda constancia en el calendario.'],
