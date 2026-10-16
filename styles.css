@@ -8284,3 +8284,15 @@ body.papel .m-fila.negativa .m-fila-cifra { color:#a3243b; }
 .profe-compacto .profe-celda-cab { min-height:12px; padding-bottom:0; }
 .profe-compacto .profe-nueva { height:22px; font-size:12px; }
 .profe-chip.oculto { display:none; }
+
+/* Barra de abajo v8: más alta, iconos más grandes y una burbuja suave
+   detrás de cada uno (más marcada en la pestaña activa). */
+.m-tabbar { height:100px; }
+.m-tab { height:84px; gap:5px; }
+.m-tab svg { width:24px; height:24px; padding:10px; box-sizing:content-box; border-radius:50%; background:color-mix(in srgb, var(--text-primary) 6%, transparent); transition:background-color .18s ease; }
+.m-tab.activa svg { background:color-mix(in srgb, var(--text-primary) 13%, transparent); }
+.m-tab-letra { width:28px; height:28px; margin:8px; font-size:14px; box-shadow:0 0 0 8px color-mix(in srgb, var(--text-primary) 6%, transparent); }
+.m-tab.activa .m-tab-letra { box-shadow:0 0 0 8px color-mix(in srgb, var(--text-primary) 13%, transparent); }
+.m-app { padding-bottom:138px; }
+.m-menu-cuerpo { padding-bottom:134px; }
+.pomo-pastilla { bottom:114px !important; }

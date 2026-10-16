@@ -66,19 +66,29 @@ const CEREBRO_ZONAS = [
     { id: 'notas', zona: 'memoria de trabajo.', x: 92, y: 34, nx: 176, ny: 34, titulo: 'notas.', texto: 'Lo que no quieres olvidar.', con: 'calendario' },
     { id: 'finanzas', zona: 'lóbulo parietal.', x: 152, y: 32, nx: 430, ny: 34, titulo: 'finanzas.', texto: 'Tu dinero, cuadrado con el banco.', con: 'viajes' },
     { id: 'viajes', zona: 'células de lugar.', x: 200, y: 86, nx: 548, ny: 150, titulo: 'viajes.', texto: 'Cada viaje, con lo que gastaste.', con: 'finanzas' },
-    { id: 'rutinas', zona: 'ganglios basales.', x: 150, y: 150, nx: 520, ny: 372, titulo: 'rutinas.', texto: 'Lo que haces cada día, sin presión.', con: 'planificador' },
-    { id: 'calendario', zona: 'hipocampo.', x: 120, y: 110, nx: 312, ny: 436, titulo: 'calendario.', texto: 'Todo lo que tiene fecha.', con: 'estudios' },
-    { id: 'estudios', zona: 'lóbulo temporal.', x: 80, y: 120, nx: 92, ny: 380, titulo: 'estudios.', texto: 'Exámenes, entregas y notas.', con: 'calendario' },
+    { id: 'rutinas', zona: 'ganglios basales.', x: 140, y: 118, nx: 520, ny: 372, titulo: 'rutinas.', texto: 'Lo que haces cada día, sin presión.', con: 'planificador' },
+    { id: 'calendario', zona: 'hipocampo.', x: 118, y: 132, nx: 312, ny: 436, titulo: 'calendario.', texto: 'Todo lo que tiene fecha.', con: 'estudios' },
+    { id: 'estudios', zona: 'lóbulo temporal.', x: 86, y: 142, nx: 92, ny: 380, titulo: 'estudios.', texto: 'Exámenes, entregas y notas.', con: 'calendario' },
     { id: 'social', zona: 'sistema límbico.', x: 104, y: 98, nx: 30, ny: 232, titulo: 'social.', texto: 'Gastos y planes con amigos.', con: 'finanzas' },
 ];
 // El cerebro se dibuja en 240 × 200 y se coloca centrado en el lienzo,
 // ampliado CEREBRO_ESCALA veces.
 const CEREBRO_ESCALA = 1.35, CEREBRO_DX = 300 - 120 * 1.35, CEREBRO_DY = 228 - 100 * 1.35;
-const CEREBRO_SILUETA = 'M60 140C30 140 18 112 28 92C14 74 26 46 52 44C58 22 90 14 108 26C124 10 158 12 166 30C190 26 214 46 208 72C226 88 220 118 198 124C202 142 186 158 164 154C160 168 140 174 127 166C123 172 121 180 121 188C117 193 108 193 104 189C104 178 102 168 96 159C84 157 70 152 60 140Z';
+const CEREBRO_SILUETA = 'M34 120Q23.1 110.7 22 100Q16.0 88.7 20 78Q19.2 65.6 28 56Q31.7 43.5 44 36Q51.4 25.5 66 22Q76.5 13.7 92 14Q104.9 7.6 120 11Q134.6 7.0 148 13Q163.1 12.0 174 20Q189.3 22.8 198 33Q211.2 39.8 216 52Q226.2 61.9 227 75Q232.5 86.0 228 98C227 112 222 122 212 128C220 138 220 154 206 162C192 170 172 170 160 162C152 160 148 163 146 168L142 190C141 195 133 195 132 190L131 166C122 160 104 160 92 156C76 158 62 152 58 142C54 132 46 126 34 120Z';
 const CEREBRO_SURCOS = [
-    'M118 28C112 50 126 70 116 96', 'M52 104C80 96 110 100 150 112', 'M132 150C150 140 176 138 196 126', 'M60 70C72 62 86 66 90 78', 'M140 46C150 58 168 56 176 66',
-    'M150 84C164 80 180 90 190 102', 'M74 124C92 118 110 126 128 128', 'M140 156C152 152 164 152 174 146', 'M134 163C146 161 156 162 162 157',
-    'M38 92C50 88 58 94 62 104', 'M88 46C94 56 106 58 112 52', 'M168 104C176 112 190 112 196 108',
+    'M58 134C74 126 92 116 112 113C128 111 140 105 152 102',
+    'M126 13C118 28 130 42 122 58C114 74 120 86 112 102',
+    'M212 128C196 136 176 144 158 156',
+    'M168 146C184 143 200 146 214 150',
+    'M166 156C180 153 194 156 206 160',
+    'M36 72C46 64 58 72 56 84C54 94 64 98 70 92',
+    'M70 38C78 50 90 46 96 56',
+    'M146 30C150 44 162 40 170 52C176 60 186 58 190 66',
+    'M140 70C152 62 164 74 176 70C186 68 194 80 200 90',
+    'M72 100C80 92 92 98 96 108',
+    'M80 146C94 140 108 146 124 144',
+    'M204 60C212 72 216 84 214 98',
+    'M96 70C104 62 116 68 118 80',
 ];
 
 function montarCerebro() {

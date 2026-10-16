@@ -657,6 +657,18 @@
             const meta = document.querySelector('meta[name="theme-color"]');
             const fondo = getComputedStyle(document.body).getPropertyValue('--bg-app').trim();
             if (meta && fondo) meta.content = fondo;
+            // Detrás de la hora del iPhone se ve el fondo de la página, e iOS
+            // no lo repintaba al cambiar de tema hasta que algo se movía: se
+            // le da el color del tema y se fuerza un repintado mínimo.
+            if (fondo) document.documentElement.style.backgroundColor = fondo;
+            requestAnimationFrame(() => {
+                const shell = document.getElementById('mobile-shell');
+                if (!shell || !document.body.classList.contains('mobile-standalone')) return;
+                const y = shell.scrollTop;
+                shell.scrollTop = y + 1;
+                shell.scrollTop = y;
+                window.scrollTo(0, 0);
+            });
         }
 
         function temaActual() {
