@@ -8241,3 +8241,10 @@ body.papel .m-fila.negativa .m-fila-cifra { color:#a3243b; }
 .m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) * .5 + 112px); }
 .m-menu-cuerpo { padding-bottom:calc(env(safe-area-inset-bottom, 0px) * .5 + 108px); }
 .pomo-pastilla { bottom:calc(env(safe-area-inset-bottom, 0px) * .5 + 90px) !important; }
+/* Hasta el borde real de la pantalla (ver mobileAjustarAlto). */
+body.mobile-standalone #mobile-shell, body.mobile-standalone .m-menu { bottom:calc(-1 * var(--m-hueco-abajo, 0px)); }
+body.mobile-standalone .m-tabbar { bottom:calc(-1 * var(--m-hueco-abajo, 0px)); }
+.m-app { min-height:calc(100dvh + var(--m-hueco-abajo, 0px)); }
+/* Sin la barrita de desplazamiento de las webs. */
+#mobile-shell, .m-menu-cuerpo { scrollbar-width:none; }
+#mobile-shell::-webkit-scrollbar, .m-menu-cuerpo::-webkit-scrollbar { display:none; width:0; height:0; }

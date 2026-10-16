@@ -909,6 +909,20 @@
         function initMobileShell() {
             mobileStandaloneActive = isMobileStandaloneMode();
             document.body.classList.toggle('mobile-standalone', mobileStandaloneActive);
+            if (mobileStandaloneActive) {
+                mobileAjustarAlto();
+                window.addEventListener('resize', mobileAjustarAlto);
+            }
+        }
+
+        // iOS, en la app de la pantalla de inicio con viewport-fit=cover,
+        // da una ventana tan alta como la pantalla menos la barra de estado:
+        // lo fijo abajo se quedaba a esa distancia del borde. Se mide el
+        // hueco y la app se estira hasta el borde real.
+        function mobileAjustarAlto() {
+            const vertical = navigator.standalone === true && window.innerHeight > window.innerWidth;
+            const hueco = vertical ? screen.height - window.innerHeight : 0;
+            document.documentElement.style.setProperty('--m-hueco-abajo', hueco > 0 && hueco < 120 ? hueco + 'px' : '0px');
         }
 
         // Sin el aviso de privacidad de Finanzas que pone switchView: en el
