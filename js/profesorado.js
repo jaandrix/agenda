@@ -22,6 +22,14 @@ let profeSemanas = 0;
 let profeIrAHoy = false;
 let profeVista = 'cuadrante';
 let profePendAbierto = null;
+let profeCompleto = false;
+try { profeCompleto = localStorage.getItem('bitacora_profe_completo') === '1'; } catch (_) { /* sin almacenamiento */ }
+
+function profeAlternarCompleto() {
+    profeCompleto = !profeCompleto;
+    try { localStorage.setItem('bitacora_profe_completo', profeCompleto ? '1' : '0'); } catch (_) { /* sin almacenamiento */ }
+    render();
+}
 
 function datosProfe() {
     if (!profesorado || typeof profesorado !== 'object') profesorado = { clases: [], sesiones: [], festivos: [] };
@@ -170,7 +178,7 @@ function renderProfesorado() {
             </div>
         </div>
         <div id="profe-pendientes">${renderPendientesProfe()}</div>
-        <div class="profe-pestanas">${[['cuadrante', 'cuadrante.'], ['horario', 'horario semanal.']].map(([k, t]) => `<button class="profe-chip ${profeVista === k ? 'activa' : ''}" onclick="profeVista='${k}';profeIrAHoy=${k === 'cuadrante'};render()">${t}</button>`).join('')}<button class="profe-chip profe-chip-ocultar ${p.ocultarPendientes ? 'activa' : ''}" onclick="profeAlternarPendientes()" title="Esconde las tareas que no pudiste dar y el aviso">${p.ocultarPendientes ? 'ver lo pendiente.' : 'ocultar lo pendiente.'}</button></div>
+        <div class="profe-pestanas">${[['cuadrante', 'cuadrante.'], ['horario', 'horario semanal.']].map(([k, t]) => `<button class="profe-chip ${profeVista === k ? 'activa' : ''}" onclick="profeVista='${k}';profeIrAHoy=${k === 'cuadrante'};render()">${t}</button>`).join('')}<button class="profe-chip profe-chip-ocultar ${profeVista === 'horario' ? 'oculto' : ''}" onclick="profeAlternarCompleto()" title="Ver cada tarea entera o solo sus primeras palabras">${profeCompleto ? 'resumir tareas.' : 'ver títulos completos.'}</button><button class="profe-chip ${p.ocultarPendientes ? 'activa' : ''}" onclick="profeAlternarPendientes()" title="Esconde las tareas que no pudiste dar y el aviso">${p.ocultarPendientes ? 'ver lo pendiente.' : 'ocultar lo pendiente.'}</button></div>
         ${profeVista === 'horario' ? renderHorarioSemanalProfe() : `<div class="profe-cuadrante">
             <div class="profe-nav">
                 ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(-1)" aria-label="Antes">‹</button>` : ''}
@@ -181,7 +189,7 @@ function renderProfesorado() {
                     <button class="profe-chip" onclick="profeDesde=null;profeIrAHoy=true;render()">hoy.</button>
                 </div>
             </div>
-            <div class="profe-tabla-wrap">
+            <div class="profe-tabla-wrap ${profeCompleto ? '' : 'profe-compacto'}">
                 <table class="profe-tabla" style="--n:${p.clases.length}">
                     <thead><tr><th class="profe-col-dia"></th>${p.clases.map(c => `<th style="--c:${c.color}"><button class="profe-clase" onclick="openFichaClaseProfe('${c.id}')"><b>${escapeHtml(c.nombre)}</b><small>${escapeHtml(c.materia || '')}${(c.dias || []).length ? `${c.materia ? ' · ' : ''}${c.dias.map(d => PROFE_LETRAS[d]).join(' ')}` : ''}</small></button></th>`).join('')}</tr></thead>
                     <tbody>${dias.map((d, f) => {
@@ -205,7 +213,7 @@ function renderItemProfe(s, c, hoy) {
     if (estado === 'pendiente' && datosProfe().ocultarPendientes) return '';
     return `<div class="profe-item ${estado}" style="--c:${c.color}" data-id="${s.id}">
         <span class="profe-asa" onpointerdown="profeArrastrar(event,'${s.id}')" aria-label="Arrastrar"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><circle cx="35" cy="22" r="9"/><circle cx="65" cy="22" r="9"/><circle cx="35" cy="50" r="9"/><circle cx="65" cy="50" r="9"/><circle cx="35" cy="78" r="9"/><circle cx="65" cy="78" r="9"/></svg></span>
-        <button class="profe-item-txt" onclick="openSesionProfe('${s.id}')">${escapeHtml(profeSinEnlacesLargos(s.titulo))}</button>
+        <button class="profe-item-txt" onclick="openSesionProfe('${s.id}')" title="${escapeHtml(s.titulo)}">${escapeHtml(profeSinEnlacesLargos(s.titulo))}</button>
         ${profeConCasilla(s) && !s.descartada ? `<button class="profe-check ${s.hecha ? 'on' : ''}" onclick="profeHecha('${s.id}')" aria-label="${s.hecha ? 'Marcar por hacer' : 'Marcar hecha'}"></button>` : ''}
     </div>`;
 }

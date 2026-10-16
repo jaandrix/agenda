@@ -61,7 +61,8 @@
             document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';
             showAuthMode('login');
-            showLandingScreen();
+            if (isMobileStandaloneMode()) goToLogin();
+            else showLandingScreen();
         }
 
         // ============================================================
@@ -549,7 +550,10 @@
                 await startApp();
             } else {
                 document.body.classList.remove('pwa');
-                showLandingScreen();
+                // Quien abre la app desde la pantalla de inicio viene a
+                // entrar: la landing sigue a un "← volver." de distancia.
+                if (isMobileStandaloneMode()) goToLogin();
+                else showLandingScreen();
             }
         });
 
@@ -909,32 +913,6 @@
         function initMobileShell() {
             mobileStandaloneActive = isMobileStandaloneMode();
             document.body.classList.toggle('mobile-standalone', mobileStandaloneActive);
-            if (mobileStandaloneActive) {
-                mobileAjustarAlto();
-                setTimeout(mobileAjustarAlto, 400);
-                window.addEventListener('resize', mobileAjustarAlto);
-                window.addEventListener('orientationchange', () => setTimeout(mobileAjustarAlto, 300));
-            }
-        }
-
-        // iOS, en la app de la pantalla de inicio, deja a lo fijo un hueco
-        // tan alto como la pantalla menos la barra de estado. Sin
-        // viewport-fit=cover ese hueco empezaba bajo la barra (franja negra
-        // arriba); con cover empieza arriba y lo que falta queda abajo.
-        // innerHeight sí mide la pantalla entera, así que no delata nada:
-        // se mide dónde acaba de verdad algo fijo pegado abajo.
-        function mobileAjustarAlto() {
-            const ios = navigator.standalone === true || /iP(hone|od|ad)/.test(navigator.userAgent);
-            let hueco = 0;
-            if (ios && window.innerHeight > window.innerWidth) {
-                const sonda = document.createElement('div');
-                sonda.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;visibility:hidden';
-                document.body.appendChild(sonda);
-                const fondo = Math.min(sonda.getBoundingClientRect().bottom, document.documentElement.clientHeight);
-                sonda.remove();
-                hueco = Math.round(screen.height - fondo);
-            }
-            document.documentElement.style.setProperty('--m-hueco-abajo', hueco > 0 && hueco < 120 ? hueco + 'px' : '0px');
         }
 
         // Sin el aviso de privacidad de Finanzas que pone switchView: en el
