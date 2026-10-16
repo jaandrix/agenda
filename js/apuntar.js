@@ -18,29 +18,62 @@ const APUNTAR_DIAS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'vier
 function apuntarNorm(t) { return stripAccents(String(t || '').toLowerCase()); }
 
 // Lee fecha, hora e importe del texto y deja el resto como título.
+// Entiende, entre otras: «ayer», «en 3 días», «dentro de 2 semanas», «la
+// semana que viene», «el finde», «el lunes que viene», «15/10/2026», «a
+// las 7 de la tarde», «a la una», «19h», «7 pm», «a mediodía», «8 menos
+// cuarto», «de 18 a 20», «esta tarde», «mañana por la mañana», «gasté 12
+// en el cine», «me han pagado 50», «recuérdame…», «nota: …».
+const APUNTAR_NUMEROS = { una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12 };
+const APUNTAR_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
 function interpretarApunte(texto) {
     let resto = ' ' + String(texto || '').trim() + ' ';
     const n = apuntarNorm(resto);
-    const r = { fecha: apuntarFechaBase || todayISO(), fechaDicha: false, hora: '', importe: null, ingreso: false, comprar: false, titulo: '' };
+    const r = { fecha: apuntarFechaBase || todayISO(), fechaDicha: false, hora: '', importe: null, ingreso: false, comprar: false, nota: false, titulo: '' };
     const quitar = (re) => { const m = apuntarNorm(resto).match(re); if (!m) return null; resto = resto.slice(0, m.index) + ' ' + resto.slice(m.index + m[0].length); return m; };
 
-    let m = quitar(/[+]?\s*(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os)?\b)/);
-    if (m) { r.importe = Number(m[1].replace(',', '.')); r.ingreso = /^\s*\+/.test(m[0]) || /\b(cobr|ingres|nomina|me pagan|me han pagado)/.test(n); }
+    // Qué es: prefijos que no forman parte del título.
+    if (quitar(/^\s*(?:nota|idea|apunte)\s*:\s*/)) r.nota = true;
+    quitar(/^\s*(?:recuerdame|recordar|acuerdate de|no olvidar|no olvides|tengo que|apunta|apuntar)\s+(?:que\s+)?/);
+    if (quitar(/^\s*(?:anade|anadir|pon|apunta)?\s*(?:a|en)\s+la\s+(?:lista\s+de\s+la\s+)?compra\s*:?\s*/) || quitar(/\s+a\s+la\s+(?:lista\s+de\s+la\s+)?compra\s*$/)) r.comprar = true;
+
+    let m = quitar(/[+]?\s*(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os)?\b)/) || quitar(/€\s*(\d+(?:[.,]\d{1,2})?)/);
+    if (!m && (m = quitar(/\b(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cuesta|costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|ingrese|ingreso de)\s+(\d+(?:[.,]\d{1,2})?)\b/))) {
+        resto = ' ' + m[0].replace(/\s*\d+(?:[.,]\d{1,2})?\s*$/, '') + ' ' + resto;
+    }
+    if (m) { r.importe = Number(m[1].replace(',', '.')); r.ingreso = /^\s*\+/.test(m[0]) || /\b(cobr|ingres|nomina|me pagan|me han pagado|me ingresan)/.test(n); }
+    if (r.importe != null) quitar(/^\s*(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|ingrese)\b/);
 
     const base = new Date(todayISO() + 'T12:00:00');
     const enDias = k => { const d = new Date(base); d.setDate(d.getDate() + k); return isoLocal(d); };
-    if ((m = quitar(/\bpasado manana\b/))) { r.fecha = enDias(2); r.fechaDicha = true; }
-    else if ((m = quitar(/\bmanana\b(?!\s+(?:por|de)\s+la)/))) { r.fecha = enDias(1); r.fechaDicha = true; }
-    else if ((m = quitar(/\bhoy\b/))) { r.fecha = enDias(0); r.fechaDicha = true; }
-    else if ((m = quitar(/\b(?:el\s+)?(?:proximo\s+)?(domingo|lunes|martes|miercoles|jueves|viernes|sabado)\b/))) {
+    const dia = k => { r.fecha = enDias(k); r.fechaDicha = true; };
+    // Momento del día (se usa como hora si no se dice otra).
+    let momento = '';
+    if ((m = quitar(/\b(?:por|de)\s+la\s+(manana|tarde|noche)\b/))) momento = m[1];
+    else if ((m = quitar(/\besta\s+(manana|tarde|noche)\b/))) { momento = m[1]; dia(0); }
+    else if (quitar(/\b(?:a|al)\s+medio\s?dia\b/)) momento = 'mediodia';
+
+    if (quitar(/\banteayer\b/)) dia(-2);
+    else if (quitar(/\bayer\b/)) dia(-1);
+    else if (quitar(/\bpasado\s+manana\b/)) dia(2);
+    else if (quitar(/\bmanana\b/)) dia(1);
+    else if (quitar(/\bhoy\b/)) dia(0);
+    else if ((m = quitar(/\b(?:en|dentro\s+de)\s+(\d{1,2}|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+(dias?|semanas?|mes(?:es)?)\b/))) {
+        const cant = /^\d+$/.test(m[1]) ? Number(m[1]) : (APUNTAR_NUMEROS[m[1]] || 1);
+        if (m[2].startsWith('mes')) { const d = new Date(base); d.setMonth(d.getMonth() + cant); r.fecha = isoLocal(d); r.fechaDicha = true; }
+        else dia(cant * (m[2].startsWith('semana') ? 7 : 1));
+    }
+    else if (quitar(/\b(?:la\s+)?(?:semana\s+que\s+viene|proxima\s+semana|siguiente\s+semana)\b/)) dia(((1 - base.getDay() + 7) % 7) || 7);
+    else if (quitar(/\b(?:este|el)\s+(?:finde|fin\s+de\s+semana)\b/)) dia((6 - base.getDay() + 7) % 7);
+    else if ((m = quitar(/\b(?:el\s+)?(?:proximo\s+)?(domingo|lunes|martes|miercoles|jueves|viernes|sabado)(\s+que\s+viene|\s+proximo)?\b/))) {
         const objetivo = APUNTAR_DIAS.indexOf(m[1]);
         let k = (objetivo - base.getDay() + 7) % 7; if (k === 0) k = 7;
-        r.fecha = enDias(k); r.fechaDicha = true;
-    } else if ((m = quitar(/\b(?:el\s+(?:dia\s+)?)?(\d{1,2})\s*(?:\/|de\s+)(\d{1,2}|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/))) {
-        const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-        const mes = /^\d+$/.test(m[2]) ? Number(m[2]) - 1 : meses.indexOf(m[2]);
-        const d = new Date(base.getFullYear(), mes, Number(m[1]), 12);
-        if (isoLocal(d) < todayISO()) d.setFullYear(d.getFullYear() + 1);
+        dia(k);
+    } else if ((m = quitar(/\b(?:el\s+(?:dia\s+)?)?(\d{1,2})\s*(?:\/|-|de\s+)(\d{1,2}|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s*(?:\/|-|de\s+)(\d{4}|\d{2}))?\b/))) {
+        const mes = /^\d+$/.test(m[2]) ? Number(m[2]) - 1 : APUNTAR_MESES.indexOf(m[2]);
+        const anio = m[3] ? Number(m[3].length === 2 ? '20' + m[3] : m[3]) : base.getFullYear();
+        const d = new Date(anio, mes, Number(m[1]), 12);
+        if (!m[3] && isoLocal(d) < todayISO()) d.setFullYear(d.getFullYear() + 1);
         r.fecha = isoLocal(d); r.fechaDicha = true;
     } else if ((m = quitar(/\bel\s+(?:dia\s+)?(\d{1,2})\b/))) {
         const d = new Date(base.getFullYear(), base.getMonth(), Number(m[1]), 12);
@@ -48,14 +81,30 @@ function interpretarApunte(texto) {
         r.fecha = isoLocal(d); r.fechaDicha = true;
     }
 
-    if ((m = quitar(/\b(?:a\s+las?\s+)(\d{1,2})(?:\s*[:.,h]\s*(\d{2})|\s+y\s+(media|cuarto))?\s*(?:h\b|de la (manana|tarde|noche))?/)) || (m = quitar(/\b(\d{1,2})[:.](\d{2})\b/))) {
-        let h = Number(m[1]); const min = m[2] ? Number(m[2]) : m[3] === 'media' ? 30 : m[3] === 'cuarto' ? 15 : 0;
-        if ((m[4] === 'tarde' || m[4] === 'noche') && h < 12) h += 12;
-        if (h < 24 && min < 60) r.hora = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-    }
+    // Hora: «a las 19», «a la una y media», «19:30», «19h», «7 pm», «8 menos
+    // cuarto», «de 18 a 20» (se queda la de empezar), «sobre las 8».
+    const num = '(\\d{1,2}|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)';
+    const reHora = new RegExp(`\\b(?:de|desde)?\\s*(?:a|sobre|hacia)?\\s*(?:las?\\s+)?${num}(?:\\s*[:.,h]\\s*(\\d{2})|\\s+y\\s+(media|cuarto)|\\s+menos\\s+(cuarto|\\d{1,2}))?(?:\\s*(am|pm|h\\b|de la (?:manana|tarde|noche|madrugada)))?(?:\\s+(?:a|hasta)\\s+(?:las?\\s+)?\\d{1,2}(?:[:.]\\d{2})?)?`);
+    const leerHora = mm => {
+        let h = /^\d+$/.test(mm[1]) ? Number(mm[1]) : APUNTAR_NUMEROS[mm[1]];
+        let min = mm[2] ? Number(mm[2]) : mm[3] === 'media' ? 30 : mm[3] === 'cuarto' ? 15 : 0;
+        const dicha = h;
+        if (mm[4]) { h -= 1; min = 60 - (mm[4] === 'cuarto' ? 15 : Number(mm[4])); if (h < 0) h = 23; }
+        const suf = mm[5] || '';
+        // «a la una», «a las 5» a secas casi siempre es por la tarde.
+        const tarde = /pm|tarde|noche/.test(suf) || (!suf && /tarde|noche/.test(momento)) || (!suf && !momento && !mm[2] && dicha >= 1 && dicha <= 7);
+        if (tarde && h < 12) h += 12;
+        if (/am|madrugada|manana/.test(suf) && h === 12) h = 0;
+        return h < 24 && min < 60 ? `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}` : '';
+    };
+    const marcaHora = /\b(?:a|sobre|hacia|desde)\s+(?:las?\s+)?(?:\d|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)|\bde\s+\d{1,2}\s+a\s+\d|\b\d{1,2}\s*(?:[:.]\d{2}|h\b|am\b|pm\b)/;
+    if (marcaHora.test(apuntarNorm(resto)) && (m = quitar(reHora)) && /\d|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce/.test(m[0])) r.hora = leerHora(m);
+    if (!r.hora && momento) r.hora = { manana: '09:00', mediodia: '14:00', tarde: '17:00', noche: '21:00' }[momento];
 
-    if (/^\s*(?:comprar|compra|anadir a la compra)\b/.test(apuntarNorm(resto))) { r.comprar = true; resto = resto.replace(/^\s*(?:comprar|compra|añadir a la compra|anadir a la compra)\b\s*:?/i, ''); }
-    const t = resto.replace(/\s+/g, ' ').replace(/^[\s,.;:-]+|[\s,.;:-]+$/g, '').trim();
+    if (/^\s*(?:comprar|compra)\b/.test(apuntarNorm(resto))) { r.comprar = true; resto = resto.replace(/^\s*(?:comprar|compra)\b\s*:?/i, ''); }
+    if (r.comprar) quitar(/^\s*(?:anade|anadir|pon|poner|mete|meter|apunta)\s+/);
+    if (r.importe != null) quitar(/^\s*(?:en|de|del|por)\s+(?:el\s+|la\s+|los\s+|las\s+)?/);
+    const t = resto.replace(/\s+/g, ' ').replace(/^[\s,.;:-]+|[\s,.;:-]+$/g, '').replace(/\s+(?:a|el|en|para|de)$/i, '').trim();
     r.titulo = t.charAt(0).toUpperCase() + t.slice(1);
     return r;
 }
@@ -63,6 +112,7 @@ function interpretarApunte(texto) {
 // Qué se crearía, salvo que se elija otro tipo a mano.
 function apuntarTipo(r) {
     if (apuntarTipoElegido) return apuntarTipoElegido;
+    if (r.nota) return 'nota';
     if (r.importe != null) return 'gasto';
     if (r.comprar && apartadoVisible('compra')) return 'compra';
     const dias = Math.round((new Date(r.fecha + 'T12:00:00') - new Date(currentPlannerDayKey() + 'T12:00:00')) / 864e5);
@@ -81,7 +131,7 @@ function pintarVistaApunte() {
     const caja = document.getElementById('apuntar-vista');
     const texto = document.getElementById('apuntar-texto')?.value || '';
     if (!caja) return;
-    if (!texto.trim()) { caja.innerHTML = '<span class="apuntar-pista">Escribe como hablas: Bitácora pone la fecha, la hora o el importe.</span>'; return; }
+    if (!texto.trim()) { caja.innerHTML = '<span class="apuntar-pista">Escribe como hablas: «dentista el jueves a las 5 de la tarde», «gasté 12 en el cine», «recuérdame llamar a mamá mañana», «nota: …». Bitácora pone la fecha, la hora o el importe.</span>'; return; }
     const r = interpretarApunte(texto);
     const tipo = apuntarTipo(r);
     const desc = tipo === 'gasto' ? `${r.ingreso ? 'ingreso' : 'gasto'} de ${r.importe != null ? financeMoney(r.importe) : '—'}${r.titulo ? ` · ${escapeHtml(r.titulo)}` : ''}`
@@ -140,7 +190,7 @@ async function guardarApunte() {
         const hoy = todayISO();
         let nota = notes.find(n => n.date === hoy);
         if (!nota) { nota = { id: 'note_' + Date.now(), date: hoy, content: '', createdAt: new Date().toISOString() }; notes.push(nota); }
-        nota.content = [nota.content, texto.trim()].filter(Boolean).join('\n\n');
+        nota.content = [nota.content, (r.nota ? texto.replace(/^\s*(?:nota|idea|apunte)\s*:\s*/i, '') : texto).trim()].filter(Boolean).join('\n\n');
         aviso = 'Añadido a la nota de hoy';
     } else {
         if (!r.titulo) { showToast('Falta qué es (por ejemplo, «gimnasio»)', true); return; }

@@ -943,6 +943,7 @@
 
         function toggleMenuMovil() {
             mobileMenuAbierto = !mobileMenuAbierto;
+            if (mobileMenuAbierto) { const cuerpo = document.querySelector('#m-menu .m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = 0; }
             document.getElementById('m-menu')?.classList.toggle('abierto', mobileMenuAbierto);
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
         }

@@ -73,7 +73,7 @@ const GUIA = [
             'Debajo, tu <b>semana</b>: toca un día para verlo; las flechas pasan de semana y <b>mes.</b> despliega el mes entero en bolitas (en color, los días con algo). <b>volver a hoy.</b> te devuelve.',
             'El día sale como un <b>horario</b>: lo que no tiene hora arriba y lo demás en una línea de tiempo, con una marca de «ahora» entre lo hecho y lo que viene. Marca las tareas sin salir de la portada; el <b>+</b> añade algo a ese día.',
             'Más abajo, las teselas: tareas y rutinas de hoy, gasto del mes, próximo examen, bandeja, pedidos y próximo viaje. Tócalas para ir a cada apartado.',
-            'El <b>+</b> naranja abre <b>apuntar.</b>: escribe como hablas («gimnasio mañana a las 19», «café 2,40 €», «comprar pan») y Bitácora te enseña qué va a crear antes de guardarlo; con un toque cambias el tipo. Debajo, accesos grandes a cada formulario.',
+            'El <b>+</b> naranja abre <b>apuntar.</b>: escribe como hablas («gimnasio mañana a las 19», «dentista el jueves a las 5 de la tarde», «reunión en 3 días», «gasté 12 en el cine», «comprar pan», «recuérdame llamar a mamá», «nota: …») y Bitácora te enseña qué va a crear antes de guardarlo; con un toque cambias el tipo. Debajo, accesos grandes a cada formulario.',
             'La <b>barra de abajo</b>: inicio, planificador, el <b>+</b> naranja para apuntar cualquier cosa, el último apartado que visitaste (para ir y volver) y el menú con todo. Tocar la pestaña en la que ya estás sube arriba del todo.',
         ],
         botones: [
