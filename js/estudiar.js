@@ -264,7 +264,10 @@ function pomoMas(min) {
 // Modo foco: el reloj a pantalla completa, encima de todo, sin nada más.
 function pomoFoco(abrir) {
     let capa = document.getElementById('pomo-foco');
-    if (!abrir) { capa?.remove(); document.body.classList.remove('pomo-foco-abierto'); pomoPintar(false); return; }
+    if (!abrir) {
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        capa?.remove(); document.body.classList.remove('pomo-foco-abierto'); pomoPintar(false); return;
+    }
     vtCortar();
     if (!capa) {
         capa = document.createElement('div');
@@ -326,7 +329,8 @@ function renderEstPomodoro(foco) {
     return `<div class="est-pomo fase-${fase} ${enMarcha ? 'en-marcha' : ''} ${foco ? 'est-pomo-grande' : ''}" style="--pomo-pct:${((1 - resta / total) * 100).toFixed(2)}">
         <div class="est-pomo-esquina">
             ${p ? `<button onclick="pomoMas(5)" title="Cinco minutos más">+5 min.</button>` : ''}
-            <button onclick="pomoFoco(${foco ? 'false' : 'true'})" title="${foco ? 'Salir del modo foco' : 'Pantalla completa'}">${foco ? 'salir.' : 'ampliar.'}</button>
+            ${foco && document.fullscreenEnabled ? `<button onclick="alternarPantallaCompleta('pomo-foco')">${document.fullscreenElement ? 'salir de pantalla completa.' : 'pantalla completa.'}</button>` : ''}
+            <button onclick="pomoFoco(${foco ? 'false' : 'true'})" title="${foco ? 'Salir del modo focus' : 'El reloj solo, a toda la ventana'}">${foco ? 'salir.' : 'modo focus.'}</button>
         </div>
         <div class="est-pomo-anillo">
             <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="est-pomo-pista" cx="60" cy="60" r="54"/><circle class="est-pomo-arco" cx="60" cy="60" r="54" pathLength="100" transform="rotate(-90 60 60)"/></svg>
@@ -821,8 +825,62 @@ function estEmpezarRepaso(mazoId) {
 
 function estSalirRepaso() {
     estRepaso = null;
+    if (estFoco) salirEstFoco();
+    else render();
+}
+
+// Modo focus del repaso: la tarjeta sola, a toda la ventana, en una capa
+// colgada de <body> (como el reloj del pomodoro y el cuadrante grande).
+// Mientras está abierta, la página solo enseña un aviso: así hay una única
+// tarjeta y los atajos y el campo de escribir encuentran la buena.
+let estFoco = false;
+
+function abrirEstFoco() {
+    vtCortar();
+    estFoco = true;
     render();
 }
+
+function salirEstFoco() {
+    estFoco = false;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    pintarEstFoco('');
+    render();
+}
+
+function pintarEstFoco(html) {
+    let capa = document.getElementById('est-foco');
+    if (!html) {
+        capa?.remove();
+        document.body.classList.remove('est-foco-abierto');
+        return;
+    }
+    if (!capa) {
+        capa = document.createElement('div');
+        capa.id = 'est-foco';
+        capa.setAttribute('role', 'dialog');
+        capa.setAttribute('aria-label', 'Repaso en modo focus');
+        document.body.appendChild(capa);
+    }
+    document.body.classList.add('est-foco-abierto');
+    capa.innerHTML = `<div class="est-foco-esquina">
+            ${document.fullscreenEnabled ? `<button class="profe-chip" onclick="alternarPantallaCompleta('est-foco')">${document.fullscreenElement ? 'salir de pantalla completa.' : 'pantalla completa.'}</button>` : ''}
+            <button class="profe-chip" onclick="salirEstFoco()">salir del modo focus.</button>
+        </div>
+        <div class="estudiar">${html}</div>`;
+    setTimeout(() => capa.querySelector('#est-escrito')?.focus(), 0);
+}
+
+document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape' || !estFoco || document.fullscreenElement) return;
+    if (document.querySelector('#modal-container .modal-sheet')) return;
+    ev.stopPropagation();
+    salirEstFoco();
+}, true);
+document.addEventListener('fullscreenchange', () => {
+    if (estFoco && currentView === 'estudiar') render();
+    if (document.getElementById('pomo-foco')) pomoFoco(true);
+});
 
 function estMostrar() {
     if (!estRepaso || estRepaso.mostrar) return;
@@ -873,7 +931,7 @@ function renderEstRepaso() {
     return `<div class="est-repaso">
         <div class="est-repaso-cab">
             <button class="est-enlace" onclick="estSalirRepaso()">← salir.</button>
-            <span>${escapeHtml(m?.nombre || '')} · quedan ${pendientes}</span>
+            <span>${escapeHtml(m?.nombre || '')} · quedan ${pendientes}${estFoco ? '' : ` · <button class="est-enlace" onclick="abrirEstFoco()" title="La tarjeta sola, a toda la ventana">modo focus.</button>`}</span>
         </div>
         <div class="est-barra"><i style="width:${Math.min(100, estRepaso.hechas / Math.max(1, estRepaso.total) * 100)}%"></i></div>
         <div class="est-carta ${!r ? 'nueva' : ''}">
@@ -904,6 +962,11 @@ document.addEventListener('keydown', ev => {
 function renderEstudiar() {
     datosEstudiar();
     setTimeout(() => pomoPintar(false), 0);
+    if (estRepaso && estFoco) {
+        pintarEstFoco(renderEstRepaso());
+        return `<div class="estudiar"><div class="profe-grande-aviso">El repaso está en modo focus. <button class="profe-chip" onclick="salirEstFoco()">volver aquí.</button></div></div>`;
+    }
+    pintarEstFoco('');
     if (estRepaso) return `<div class="estudiar">${renderEstRepaso()}</div>`;
     const c = estCuentas();
     const porRepasar = c.toca + c.nuevasHoy;

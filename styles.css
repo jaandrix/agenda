@@ -8315,3 +8315,14 @@ body.profe-grande-abierto { overflow:hidden; }
 body.profe-grande-abierto #fab, body.profe-grande-abierto .pomo-pastilla { display:none !important; }
 .profe-grande-aviso { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:18px 20px; border-radius:16px; background:var(--bg-card); font-size:14px; color:var(--text-secondary); }
 @media (max-width:700px) { #profe-grande { padding:calc(env(safe-area-inset-top, 0px) + 10px) 10px 12px; } }
+
+/* Repaso en modo focus (ver pintarEstFoco). */
+#est-foco { position:fixed; inset:0; z-index:950; overflow-y:auto; display:flex; align-items:center; justify-content:center; padding:72px 24px 32px; box-sizing:border-box; background:var(--bg-app); color:var(--text-primary); animation:pomo-foco-entra .22s var(--ease-out) both; }
+#est-foco .estudiar { width:min(760px, 100%); }
+#est-foco .est-repaso { max-width:none; }
+#est-foco .est-carta { min-height:300px; }
+#est-foco .est-carta-pregunta { font-size:clamp(22px, 3.2vw, 32px); }
+#est-foco .est-carta-respuesta { font-size:clamp(18px, 2.4vw, 24px); }
+.est-foco-esquina { position:fixed; top:calc(16px + env(safe-area-inset-top, 0px)); right:16px; display:flex; gap:8px; }
+body.est-foco-abierto { overflow:hidden; }
+body.est-foco-abierto #fab, body.est-foco-abierto .pomo-pastilla { display:none !important; }

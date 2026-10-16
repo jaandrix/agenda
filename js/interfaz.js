@@ -151,6 +151,13 @@
             return t;
         }
 
+        // Pantalla completa del navegador para una capa a toda la ventana
+        // (modo focus del pomodoro y del repaso).
+        function alternarPantallaCompleta(id) {
+            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+            else document.getElementById(id)?.requestFullscreen?.().catch(() => {});
+        }
+
         function vtCortar() {
             if (!vtActiva || vtEnCambio) return;
             try { vtActiva.skipTransition(); } catch (_) { /* ya había terminado */ }

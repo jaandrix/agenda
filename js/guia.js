@@ -297,6 +297,7 @@ const GUIA = [
         botones: [
             [guiaBoton('empezar. · pausa. · parar.'), 'El pomodoro: 25 minutos de estudio y 5 de descanso (cada 4, uno largo de 15). El descanso empieza solo; el siguiente pomodoro espera a que le des. Sigue contando aunque cambies de apartado, en la pastilla de abajo a la derecha.'],
             [guiaBoton('empiezo a las'), 'La hora desde la que se reparte el plan de hoy. Sin ella, empieza ahora.'],
+            [guiaBoton('modo focus.'), 'En el pomodoro, el reloj solo a toda la ventana; en un repaso, la tarjeta sola y más grande. Dentro, <b>pantalla completa.</b> quita también las pestañas y la barra del navegador. Esc vuelve.'],
             [guiaBoton('− + ↑ ▶ ×'), 'Menos o más pomodoros para ese tema, subirlo en el orden, estudiarlo ahora o quitarlo.'],
             [guiaBoton('pasar al planificador.'), 'Lleva cada bloque al Planificador del día con su hora.'],
             [guiaBoton('→ hoy'), 'En el temario: pasa ese tema al plan de hoy. Al marcarlo como hecho en el plan, también queda estudiado en el temario.'],
