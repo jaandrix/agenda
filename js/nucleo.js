@@ -1011,36 +1011,38 @@
             return 0;
         }
 
+        // Menú del móvil: una hoja con los apartados agrupados en tarjetas
+        // (como los ajustes de iOS) y, al final, tema, letra y guía.
         function renderMobileMenu(view) {
-            let n = 0;
             const muestras = { asfalto: ['#302f2c', '#efede3'], papel: ['#FAF8F5', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F'], fundador: ['#1a1916', '#d4b06a'] };
             const tema = temaActual();
+            const flecha = '<svg class="m-mfila-flecha" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M30 10l12-10 50 50-50 50-12-10 40-40z"/></svg>';
             return `
             <div class="m-menu ${mobileMenuAbierto ? 'abierto' : ''}" id="m-menu">
                 <div class="m-menu-top">
-                    <span class="m-marca">bitácora.</span>
-                    <button class="m-cerrar" onclick="toggleMenuMovil()">cerrar <span aria-hidden="true">×</span></button>
+                    <span class="m-menu-titulo">menú.</span>
+                    <button class="m-menu-x" onclick="toggleMenuMovil()" aria-label="Cerrar el menú"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M22 12l28 28 28-28 10 10-28 28 28 28-10 10-28-28-28 28-10-10 28-28-28-28z"/></svg></button>
                 </div>
                 <div class="m-menu-cuerpo">
                     ${navSeccionesVisibles().map(sec => `
                         <div class="m-menu-grupo">${escapeHtml(sec.label.toLowerCase())}.</div>
-                        ${sec.items.map(it => {
-                            const i = n++;
+                        <section class="m-mtarjeta">${sec.items.map(it => {
+                            const nombre = (it.view === 'calendar' ? 'inicio' : it.text).toLowerCase();
                             const cuenta = mobileCuentaMenu(it.view);
-                            return `<button class="m-menu-fila ${it.view === view ? 'activa' : ''}" style="--i:${Math.min(i, 20)}" onclick="mobileIr('${it.view}')">
-                                <sup>${String(i).padStart(2, '0')}</sup><span class="m-menu-texto">${escapeHtml((it.view === 'calendar' ? 'inicio' : it.text).toLowerCase())}</span>${cuenta ? `<span class="m-menu-cuenta">${cuenta}</span>` : ''}
+                            return `<button class="m-mfila ${it.view === view ? 'activa' : ''}" onclick="mobileIr('${it.view}')">
+                                <i class="m-mfila-ico">${escapeHtml(nombre.charAt(0))}</i><span class="m-mfila-txt">${escapeHtml(nombre)}</span>${cuenta ? `<b class="m-mfila-cuenta">${cuenta}</b>` : ''}${flecha}
                             </button>`;
-                        }).join('')}`).join('')}
-                    <div class="m-menu-pie">
-                        <div class="m-menu-temas">
-                            ${temasDisponibles().map(t => `<button class="m-tema ${t === tema ? 'activo' : ''}" onclick="setTheme('${t}');render()" aria-label="Tema ${THEME_LABELS[t]}"><span style="background:${muestras[t][0]}"></span><span style="background:${muestras[t][1]}"></span></button>`).join('')}
+                        }).join('')}</section>`).join('')}
+                    <div class="m-menu-grupo">a tu gusto.</div>
+                    <section class="m-mtarjeta m-mtarjeta-ajustes">
+                        <div class="m-mopcion"><span>tema.</span>
+                            <div class="m-segmento">${temasDisponibles().map(t => `<button class="${t === tema ? 'activo' : ''}" onclick="setTheme('${t}');render()" aria-label="Tema ${THEME_LABELS[t]}"><i style="background:linear-gradient(90deg, ${muestras[t][0]} 50%, ${muestras[t][1]} 50%)"></i>${t === tema ? `<b>${escapeHtml(THEME_LABELS[t].toLowerCase())}.</b>` : ''}</button>`).join('')}</div>
                         </div>
-                        <button class="m-enlace" onclick="toggleMenuMovil();openGuia()">guía.</button>
-                    </div>
-                    <div class="m-menu-letra">
-                        <span class="m-etiqueta">letra.</span>
-                        ${renderSelectorTamanoLetra()}
-                    </div>
+                        <div class="m-mopcion"><span>letra.</span>
+                            <div class="m-segmento m-segmento-letra">${TAMANOS_LETRA.map(([id, , z]) => `<button class="${id === tamanoLetraActual() ? 'activo' : ''}" onclick="setTamanoLetra('${id}')" aria-label="Letra ${id}" style="font-size:${Math.round(13 * z)}px">Aa</button>`).join('')}</div>
+                        </div>
+                        <button class="m-mfila" onclick="toggleMenuMovil();openGuia()"><i class="m-mfila-ico">?</i><span class="m-mfila-txt">guía de bitácora</span>${flecha}</button>
+                    </section>
                 </div>
             </div>`;
         }
@@ -1152,7 +1154,7 @@
                     <div class="m-hero-tiempo">${renderTiempoWidget()}</div>
                 </div>
                 <div class="m-hero-mes"><span>${MOBILE_MESES[d.getMonth()]}.</span><span class="m-hero-dia">${MOBILE_DIAS[d.getDay()]}.</span></div>
-                <div class="m-hero-anio">${d.getFullYear()}${sel !== hoy ? `<button class="m-hoy-link" onclick="mobileElegirDia('${hoy}')">volver a hoy.</button>` : ''}</div>
+                ${d.getFullYear() !== new Date().getFullYear() || sel !== hoy ? `<div class="m-hero-anio">${d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() : ''}${sel !== hoy ? `<button class="m-hoy-link" onclick="mobileElegirDia('${hoy}')">volver a hoy.</button>` : ''}</div>` : ''}
             </section>
             <section class="m-mes m-superficie">
                 <div class="m-mes-cab">
@@ -1292,14 +1294,17 @@
                 tesela('planner', total ? `${hechas}<small>/${total}</small>` : '0', total ? 'tareas de hoy hechas.' : 'tareas para hoy.', total ? `<span class="m-tesela-anillo">${mobileAnillo(hechas / total, 44)}</span>` : ''),
                 tesela('habits', activos.length ? `${habHechos}<small>/${activos.length}</small>` : '—', 'rutinas hoy.'),
                 tesela('finances', `${Math.round(expense).toLocaleString('es-ES')}<small>€</small>`, `gastado en ${MOBILE_MESES[new Date().getMonth()]}.`),
-                !apartadoVisible('studies') ? '' : examen ? tesela('studies', diasExamen === 0 ? 'hoy' : diasExamen, `${diasExamen === 0 ? '' : diasExamen === 1 ? 'día para ' : 'días para '}${escapeHtml(examen.title || 'el examen').toLowerCase()}.`) : tesela('studies', '—', 'sin exámenes a la vista.'),
+                !apartadoVisible('studies') || !examen ? '' : tesela('studies', diasExamen === 0 ? 'hoy' : diasExamen, `${diasExamen === 0 ? '' : diasExamen === 1 ? 'día para ' : 'días para '}${escapeHtml(examen.title || 'el examen').toLowerCase()}.`),
             ].filter(Boolean);
-            if (bandejaPendiente.length) teselas.push(tesela('bandeja', bandejaPendiente.length, `${bandejaPendiente.length === 1 ? 'cambio' : 'cambios'} de claude por validar.`, '', 'm-tesela-acento'));
+            // Cuatro como mucho, para que el inicio respire: las tres de siempre
+            // y la más urgente de las demás.
+            const extra = [];
+            if (bandejaPendiente.length) extra.push(tesela('bandeja', bandejaPendiente.length, `${bandejaPendiente.length === 1 ? 'cambio' : 'cambios'} de claude por validar.`, '', 'm-tesela-acento'));
+            if (viaje && diasViaje <= 14) extra.push(tesela('travels', diasViaje === 0 ? 'hoy' : diasViaje, `${diasViaje === 0 ? 'empieza ' : diasViaje === 1 ? 'día para ' : 'días para '}${escapeHtml((viaje.destination || viaje.title || '').split(',')[0])}.`));
             const enCamino = pedidos.filter(p => p.estado !== 'entregado');
-            if (enCamino.length) teselas.push(tesela('actualizaciones', enCamino.length, `${enCamino.length === 1 ? 'pedido' : 'pedidos'} en camino.`));
-            if (viaje) teselas.push(tesela('travels', diasViaje === 0 ? 'hoy' : diasViaje, `${diasViaje === 0 ? 'empieza ' : diasViaje === 1 ? 'día para ' : 'días para '}${escapeHtml((viaje.destination || viaje.title || '').split(',')[0])}.`));
-            if (teselas.length % 2) teselas.push(tesela('notes', notes.length, 'notas escritas.'));
-            return `<section class="m-teselas">${teselas.join('')}</section>`;
+            if (enCamino.length) extra.push(tesela('actualizaciones', enCamino.length, `${enCamino.length === 1 ? 'pedido' : 'pedidos'} en camino.`));
+            const todas = [...teselas.slice(0, 3), ...extra, ...teselas.slice(3)].slice(0, 4);
+            return `<section class="m-teselas">${todas.join('')}</section>`;
         }
 
         // ---- Apartados ----

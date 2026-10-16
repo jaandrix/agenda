@@ -8132,3 +8132,47 @@ body.mobile-standalone .modal-label, body.pwa .modal-label { font-size:13px; }
 .apuntar-rejilla i { display:grid; place-items:center; width:30px; height:30px; }
 .apuntar-rejilla svg { width:26px; height:26px; }
 .apuntar-todos { display:block; margin:12px auto 0; }
+
+/* ============================================================
+   MÓVIL v4: + plano, barra más alta, número del día más contenido y el
+   menú como una hoja con tarjetas (en la línea de los ajustes de iOS).
+   ============================================================ */
+.m-tab-mas { box-shadow:none; margin-top:-22px; border:6px solid var(--m-superficie); width:68px; height:68px; box-sizing:border-box; }
+.m-tabbar { height:calc(env(safe-area-inset-bottom, 0px) + 84px); }
+.m-tab { height:70px; font-size:12px; }
+.m-tab svg { width:27px; height:27px; }
+.m-tab-letra { width:28px; height:28px; font-size:14px; }
+.m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 120px); }
+.pomo-pastilla { bottom:calc(env(safe-area-inset-bottom, 0px) + 100px) !important; }
+
+.m-hero-num { font-size:min(24vw, 104px); }
+.m-hero-mes { margin-top:10px; font-size:26px; }
+.m-hero-anio { font-size:22px; }
+
+/* Menú */
+.m-menu { padding:env(safe-area-inset-top, 0px) 16px 0; transform:translateY(24px); transition:opacity .2s ease, transform .3s var(--ease-out), visibility 0s linear .3s; }
+.m-menu.abierto { transform:none; }
+.m-menu-top { min-height:64px; padding:0 4px; }
+.m-menu-titulo { font-size:30px; font-weight:800; letter-spacing:-.04em; color:var(--text-primary); }
+.m-menu-x { width:44px; height:44px; display:grid; place-items:center; padding:0; border:0; border-radius:50%; background:var(--m-superficie); color:var(--text-primary); cursor:pointer; }
+.m-menu-x svg { width:16px; height:16px; }
+.m-menu-cuerpo { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 130px); }
+.m-menu-grupo { margin:22px 6px 8px; font-size:13px; font-weight:700; color:var(--text-secondary); }
+.m-mtarjeta { border-radius:22px; background:var(--m-superficie); overflow:hidden; }
+.m-mfila { display:flex; align-items:center; gap:14px; width:100%; min-height:56px; padding:0 16px; border:0; background:none; color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; position:relative; }
+.m-mfila + .m-mfila::before { content:''; position:absolute; top:0; left:62px; right:0; height:1px; background:var(--border); }
+.m-mfila:active { background:var(--bg-card-hover); }
+.m-mfila-ico { display:grid; place-items:center; width:32px; height:32px; flex-shrink:0; border-radius:10px; background:var(--bg-card-hover); font-style:normal; font-size:15px; font-weight:800; color:var(--text-primary); }
+.m-mfila.activa .m-mfila-ico { background:var(--m-acento); color:var(--m-sobre-acento); }
+.m-mfila-txt { flex:1; min-width:0; font-size:17px; font-weight:600; letter-spacing:-.01em; }
+.m-mfila-cuenta { min-width:24px; height:24px; box-sizing:border-box; display:inline-grid; place-items:center; padding:0 7px; border-radius:999px; background:var(--m-acento); color:var(--m-sobre-acento); font-size:12px; font-weight:800; }
+.m-mfila-flecha { width:11px; height:11px; flex-shrink:0; color:var(--text-muted); }
+.m-menu.abierto .m-mtarjeta { animation:mFila .38s var(--ease-out) both; }
+.m-mtarjeta-ajustes { padding-top:6px; }
+.m-mopcion { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 16px; font-size:15px; font-weight:600; color:var(--text-primary); }
+.m-segmento { display:flex; gap:4px; padding:4px; border-radius:999px; background:var(--bg-card-hover); }
+.m-segmento button { display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 10px; border:0; border-radius:999px; background:none; color:var(--text-secondary); font-family:var(--font-family); font-weight:700; cursor:pointer; }
+.m-segmento button.activo { background:var(--bg-app); color:var(--text-primary); box-shadow:0 2px 8px -3px rgba(0,0,0,.35); }
+.m-segmento i { width:18px; height:18px; border-radius:50%; box-shadow:inset 0 0 0 1px var(--border-strong); }
+.m-segmento b { font-size:12.5px; }
+.m-segmento-letra button { min-width:38px; justify-content:center; }
