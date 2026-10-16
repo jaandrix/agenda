@@ -8183,19 +8183,6 @@ body.mobile-standalone .modal-label, body.pwa .modal-label { font-size:13px; }
    tocar y los apartados de escritorio con los mismos botones y
    superficies que el resto del móvil.
    ============================================================ */
-html[data-vt^="m-"] body.mobile-standalone .m-app { view-transition-name:m-app; }
-html[data-vt^="m-"]::view-transition-group(m-app) { animation-duration:.28s; }
-@keyframes mSalirIzq { to { opacity:0; transform:translateX(-18%); } }
-@keyframes mEntrarDer { from { opacity:0; transform:translateX(28%); } }
-@keyframes mSalirDer { to { opacity:0; transform:translateX(18%); } }
-@keyframes mEntrarIzq { from { opacity:0; transform:translateX(-28%); } }
-html[data-vt="m-adelante"]::view-transition-old(m-app) { animation:mSalirIzq .2s ease-out both; }
-html[data-vt="m-adelante"]::view-transition-new(m-app) { animation:mEntrarDer .3s var(--ease-out) both; }
-html[data-vt="m-atras"]::view-transition-old(m-app) { animation:mSalirDer .2s ease-out both; }
-html[data-vt="m-atras"]::view-transition-new(m-app) { animation:mEntrarIzq .3s var(--ease-out) both; }
-html[data-vt="m-pestana"]::view-transition-old(m-app) { animation:vtFundirSalida .12s ease-out both; }
-html[data-vt="m-pestana"]::view-transition-new(m-app) { animation:mFundirEntra .2s ease-out both; }
-@keyframes mFundirEntra { from { opacity:0; } }
 
 .m-topbar { transition:box-shadow .2s ease; }
 .m-topbar-titulo { position:absolute; left:50%; bottom:0; max-width:52%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:60px; font-size:17px; font-weight:800; letter-spacing:-.02em; color:var(--text-primary); opacity:0; transform:translate(-50%, 6px); transition:opacity .18s ease, transform .22s var(--ease-out); pointer-events:none; }
@@ -8212,3 +8199,38 @@ body.m-plegada .m-cab { opacity:.25; }
 /* Una sola acción destacada por pantalla (la naranja); el resto, en superficie. */
 .m-generico .btn-secondary:not(.btn-danger-pill):not(.ajuste-peligro) { background:color-mix(in srgb, var(--text-primary) 8%, transparent) !important; border-color:transparent !important; color:var(--text-primary) !important; min-height:46px; }
 .m-generico .empty-state, .m-vacio-grande, .m-generico :is(.docs2-vacio, .docs2-fichas-vacio, .bandeja-vacia, .pedidos-vacio, .uni-vacio, .etiquetas-vacio, .notas-hoy-vacia, .metodo-vacio, .rutinas-vacio) { border:0 !important; background:var(--m-superficie); border-radius:20px; }
+
+/* ============================================================
+   MÓVIL v6: la app pinta bajo la barra de estado (viewport-fit=cover),
+   páginas que entran sin View Transitions, cambio de día suave, barra
+   de abajo más alta y botones de semana de tamaño de dedo.
+   ============================================================ */
+@keyframes mPagAdelante { from { opacity:0; transform:translateX(28px); } }
+@keyframes mPagAtras { from { opacity:0; transform:translateX(-28px); } }
+@keyframes mPagFunde { from { opacity:0; } }
+.m-pagina.m-pag-adelante { animation:mPagAdelante .3s var(--ease-out) both; }
+.m-pagina.m-pag-atras { animation:mPagAtras .3s var(--ease-out) both; }
+.m-pagina.m-pag-funde { animation:mPagFunde .18s ease-out both; }
+@keyframes mCambiaDia { from { opacity:0; transform:translateX(var(--m-dx, 18px)); } }
+.m-cambia-dia { animation:mCambiaDia .26s var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) { .m-pagina[class*="m-pag-"], .m-cambia-dia { animation:none; } }
+
+.m-hero-lado { display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+.m-hoy-link { margin:0; min-height:36px; padding:0 14px; border-radius:999px; background:color-mix(in srgb, var(--m-acento) 14%, transparent); }
+.m-mes-flechas { gap:8px; }
+.m-mes-flechas button { width:44px; height:44px; font-size:22px; }
+.m-mes-flechas .m-mes-modo { height:44px; padding:0 18px; font-size:14px; }
+
+.m-tabbar { height:calc(env(safe-area-inset-bottom, 0px) + 80px); }
+.m-tab { height:72px; }
+.m-tab-mas { margin-top:-26px; }
+.m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 124px); }
+.m-menu-cuerpo { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 120px); }
+.pomo-pastilla { bottom:calc(env(safe-area-inset-bottom, 0px) + 96px) !important; }
+body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { max-height:calc(100dvh - env(safe-area-inset-top, 0px) - 24px); }
+
+.m-fila.negativa .m-fila-cifra { color:#e0707f; }
+body.papel .m-fila.negativa .m-fila-cifra { color:#a3243b; }
+/* Fuera del flujo: la cabecera mide lo mismo estés o no en hoy. */
+.m-hero-lado { position:relative; }
+.m-hero-lado .m-hoy-link { position:absolute; top:100%; right:0; margin-top:8px; white-space:nowrap; }

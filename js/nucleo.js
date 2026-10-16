@@ -915,7 +915,8 @@
         // móvil se entra a consultar o apuntar algo rápido.
         // Como en una app nativa: entrar en un apartado empuja la página
         // desde la derecha, volver al inicio la devuelve y cambiar de
-        // pestaña solo funde.
+        // pestaña solo funde. Sin View Transitions: en iOS la foto de la
+        // página entera parpadeaba, se superponía y se quedaba transparente.
         function mobileIr(view, tipo) {
             const shellActual = document.getElementById('mobile-shell');
             // Tocar la pestaña en la que ya estás sube arriba del todo.
@@ -929,10 +930,11 @@
             if (view !== 'notes') window.openNoteId = null;
             if (view === 'calendar') { mobileDiaSel = null; mobileMes = null; }
             const shell = document.getElementById('mobile-shell');
-            conTransicion(tipo || (view === 'calendar' ? 'm-atras' : 'm-adelante'), () => {
-                aplicarSwitchView(view);
-                if (shell) shell.scrollTop = 0;
-            });
+            vtCortar();
+            aplicarSwitchView(view);
+            if (shell) shell.scrollTop = 0;
+            const anim = tipo === 'm-pestana' ? 'm-pag-funde' : view === 'calendar' ? 'm-pag-atras' : 'm-pag-adelante';
+            document.querySelector('#mobile-shell .m-pagina')?.classList.add(anim);
         }
 
         function toggleMenuMovil() {
@@ -983,6 +985,12 @@
             menu: '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="14" y="30" width="72" height="12" rx="6"/><rect x="14" y="58" width="72" height="12" rx="6"/></svg>',
         };
 
+        const M_ABREVIATURAS = { documentos: 'docs', universidad: 'uni', profesorado: 'profe', coleccionables: 'colecc', conexiones: 'conex', sugerencias: 'ideas', actualizaciones: 'envíos', etiquetas: 'etiq', planificador: 'plan' };
+        function mobileAbreviatura(nombre) {
+            if (nombre.length <= 9) return nombre;
+            return M_ABREVIATURAS[nombre] || nombre.slice(0, 5);
+        }
+
         function renderMobileTabbar(view) {
             const reciente = NAV_VIEW_LABELS[mobileReciente] && apartadoVisible(mobileReciente) ? mobileReciente : 'finances';
             const nombre = (NAV_VIEW_LABELS[reciente] || '').toLowerCase();
@@ -991,7 +999,7 @@
                 ${pestana('calendar', M_ICONOS.inicio, 'inicio.')}
                 ${pestana('planner', M_ICONOS.plan, 'plan.')}
                 <button class="m-tab-mas" onclick="openApuntar()" aria-label="Apuntar algo">${M_ICONOS.mas}</button>
-                ${pestana(reciente, `<i class="m-tab-letra">${escapeHtml(nombre.charAt(0))}</i>`, escapeHtml(nombre.length > 9 ? nombre.slice(0, 8) + '…' : nombre) + '.', `aria-label="${escapeHtml(nombre)}"`)}
+                ${pestana(reciente, `<i class="m-tab-letra">${escapeHtml(nombre.charAt(0))}</i>`, escapeHtml(mobileAbreviatura(nombre)) + '.', `aria-label="${escapeHtml(nombre)}"`)}
                 <button class="m-tab ${mobileMenuAbierto ? 'activa' : ''}" onclick="toggleMenuMovil()">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
             </nav>`;
         }
@@ -1100,13 +1108,23 @@
             return entradas.length + mobileDiaPlanner(date).length;
         }
 
+        // Al cambiar de día solo se mueve lo que cambia: el número y el
+        // horario entran desde el lado hacia el que vas, y la tira de la
+        // semana solo si cambia de semana.
         function mobileElegirDia(date) {
+            const antes = mobileDiaSel || isoLocal(new Date());
             mobileDiaSel = date;
             const d = new Date(date + 'T12:00:00');
             mobileMes = { y: d.getFullYear(), m: d.getMonth() };
             const pagina = document.querySelector('#mobile-shell .m-pagina');
-            if (pagina && currentView === 'calendar') pagina.innerHTML = renderAvisoPrueba(true) + renderMobileInicio();
-            else render();
+            if (!pagina || currentView !== 'calendar') { render(); return; }
+            pagina.innerHTML = renderAvisoPrueba(true) + renderMobileInicio();
+            if (date === antes) return;
+            pagina.style.setProperty('--m-dx', date > antes ? '18px' : '-18px');
+            const lunes = iso => { const x = new Date(iso + 'T12:00:00'); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return isoLocal(x); };
+            const piezas = ['.m-hero-num', '.m-hero-mes', '.m-dia'];
+            if (lunes(date) !== lunes(antes)) piezas.push('.m-semana-tira');
+            piezas.forEach(sel => pagina.querySelector(sel)?.classList.add('m-cambia-dia'));
         }
 
         function mobileAlternarMes() {
@@ -1166,10 +1184,12 @@
             <section class="m-hero">
                 <div class="m-hero-fila">
                     <div class="m-hero-num">${d.getDate()}</div>
-                    <div class="m-hero-tiempo">${renderTiempoWidget()}</div>
+                    <div class="m-hero-lado">
+                        <div class="m-hero-tiempo">${renderTiempoWidget()}</div>
+                        ${sel !== hoy ? `<button class="m-hoy-link" onclick="mobileElegirDia('${hoy}')">volver a hoy.</button>` : ''}
+                    </div>
                 </div>
-                <div class="m-hero-mes"><span>${MOBILE_MESES[d.getMonth()]}.</span><span class="m-hero-dia">${MOBILE_DIAS[d.getDay()]}.</span></div>
-                ${d.getFullYear() !== new Date().getFullYear() || sel !== hoy ? `<div class="m-hero-anio">${d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() : ''}${sel !== hoy ? `<button class="m-hoy-link" onclick="mobileElegirDia('${hoy}')">volver a hoy.</button>` : ''}</div>` : ''}
+                <div class="m-hero-mes"><span>${MOBILE_MESES[d.getMonth()]}${d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''}.</span><span class="m-hero-dia">${MOBILE_DIAS[d.getDay()]}.</span></div>
             </section>
             <section class="m-mes m-superficie">
                 <div class="m-mes-cab">
@@ -1455,7 +1475,7 @@
                     const cat = financeProCategoryById(t.category);
                     const d = new Date((t.date || todayISO()) + 'T12:00:00');
                     const signo = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '⇄';
-                    return `<div class="m-fila ${t.type === 'income' ? 'positiva' : ''}">
+                    return `<div class="m-fila ${t.type === 'income' ? 'positiva' : t.type === 'expense' ? 'negativa' : ''}">
                         <span class="m-fila-hora">${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}</span>
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.note || t.bankNote || cat?.name || 'movimiento')}</div><div class="m-fila-meta">${escapeHtml([cat?.name, financePro.accounts[t.account]?.name].filter(Boolean).join(' · ').toLowerCase())}</div></div>
                         <span class="m-fila-cifra">${signo}${financeMoney(t.amount)}</span>

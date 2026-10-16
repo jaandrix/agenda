@@ -94,7 +94,8 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   tonos (`renderMobileCabecera`). Planificador, Finanzas, Estudios, Hábitos, Eventos,
   Notas y Viajes tienen vista propia (`MOBILE_SECCIONES`); el resto reutiliza su
   `renderXxx()` de escritorio dentro de `.m-generico`. Navegar con `mobileIr(view, tipo)` (si ya estás en esa
-  vista, sube arriba; la página entra de lado: `m-adelante`/`m-atras`, o funde con `m-pestana` desde la barra; al bajar,
+  vista, sube arriba; la página entra de lado con `.m-pag-adelante`/`.m-pag-atras` o funde desde la barra con `m-pestana`, sin View Transitions, que en iOS
+  parpadeaban; `viewport-fit=cover` hace que la app pinte bajo la barra de estado, así que todo lo fijo arriba usa `env(safe-area-inset-top)`; al bajar,
   `body.m-plegada` recoge el título en la barra de arriba). En `.m-generico`, una sola acción naranja (`btn-modal-primary`) y
   el resto de botones con tinte translúcido. Barra de pestañas abajo (`renderMobileTabbar`: inicio, plan, + captura, el último
   apartado visitado `mobileReciente` y menú; el botón de menú de arriba está oculto). El inicio enseña la
