@@ -8234,3 +8234,10 @@ body.papel .m-fila.negativa .m-fila-cifra { color:#a3243b; }
 /* Fuera del flujo: la cabecera mide lo mismo estés o no en hoy. */
 .m-hero-lado { position:relative; }
 .m-hero-lado .m-hoy-link { position:absolute; top:100%; right:0; margin-top:8px; white-space:nowrap; }
+/* La barra crece desde el borde: solo media zona segura bajo los iconos
+   (la rayita de inicio queda encima de su fondo, como en iOS). */
+.m-tabbar { height:calc(env(safe-area-inset-bottom, 0px) * .5 + 74px); padding-bottom:calc(env(safe-area-inset-bottom, 0px) * .5); }
+.m-tab { height:70px; }
+.m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) * .5 + 112px); }
+.m-menu-cuerpo { padding-bottom:calc(env(safe-area-inset-bottom, 0px) * .5 + 108px); }
+.pomo-pastilla { bottom:calc(env(safe-area-inset-bottom, 0px) * .5 + 90px) !important; }
