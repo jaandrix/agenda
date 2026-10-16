@@ -979,7 +979,7 @@
         }
 
         const M_ICONOS = {
-            inicio: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M24 8h12v10h28V8h12v10h6a10 10 0 0 1 10 10v54a10 10 0 0 1-10 10H18A10 10 0 0 1 8 82V28a10 10 0 0 1 10-10h6zM20 40v40h60V40z"/><rect x="30" y="50" width="16" height="16" rx="4"/></svg>',
+            inicio: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M37 7a5 5 0 1 1 0 10a5 5 0 1 1 0-10zm0 2a3 3 0 1 0 0 6a3 3 0 1 0 0-6zM63 7a5 5 0 1 1 0 10a5 5 0 1 1 0-10zm0 2a3 3 0 1 0 0 6a3 3 0 1 0 0-6z"/><path d="M30 18h42c10 0 16 6 16 16v29c0 10-6 16-16 16H6c4-4 7-11 7-22V34c0-10 6-16 16-16z"/><path d="M20 85h54c8 0 13-3 16-8c1 8-4 14-14 14H25c-3 0-5-2-5-6z"/></svg>',
             plan: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="17" cy="22" r="9"/><rect x="34" y="16" width="58" height="12" rx="6"/><circle cx="17" cy="50" r="9"/><rect x="34" y="44" width="46" height="12" rx="6"/><circle cx="17" cy="78" r="9"/><rect x="34" y="72" width="52" height="12" rx="6"/></svg>',
             mas: '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="43" y="14" width="14" height="72" rx="7"/><rect x="14" y="43" width="72" height="14" rx="7"/></svg>',
             menu: '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="14" y="30" width="72" height="12" rx="6"/><rect x="14" y="58" width="72" height="12" rx="6"/></svg>',
