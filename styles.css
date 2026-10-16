@@ -8301,3 +8301,17 @@ body.papel .m-fila.negativa .m-fila-cifra { color:#a3243b; }
 .planner-backlog-hechas { display:block; margin:10px 0 2px; padding:4px 0; border:0; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; }
 .planner-backlog-hechas:hover { color:var(--text-primary); }
 .m-backlog-hechas { display:block; margin:10px 0 0; }
+
+/* Profesorado: el cuadrante en pantalla grande (ver pintarProfeGrande).
+   Por debajo de los modales (1100) para poder editar tareas desde ahí. */
+#profe-grande { position:fixed; inset:0; z-index:950; display:flex; flex-direction:column; padding:14px 18px 16px; box-sizing:border-box; background:var(--bg-app); color:var(--text-primary); }
+#profe-grande .profe-cuadrante { flex:1; min-height:0; display:flex; flex-direction:column; }
+#profe-grande .profe-tabla-wrap { flex:1; min-height:0; max-height:none; }
+#profe-grande .profe-pista { display:none; }
+.profe-grande-cab { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.profe-grande-cab b { font-size:20px; font-weight:800; letter-spacing:-.03em; }
+.profe-grande-cab span { margin-right:auto; font-size:13px; color:var(--text-secondary); }
+body.profe-grande-abierto { overflow:hidden; }
+body.profe-grande-abierto #fab, body.profe-grande-abierto .pomo-pastilla { display:none !important; }
+.profe-grande-aviso { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:18px 20px; border-radius:16px; background:var(--bg-card); font-size:14px; color:var(--text-secondary); }
+@media (max-width:700px) { #profe-grande { padding:calc(env(safe-area-inset-top, 0px) + 10px) 10px 12px; } }

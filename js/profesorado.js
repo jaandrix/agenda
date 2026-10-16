@@ -25,6 +25,63 @@ let profePendAbierto = null;
 let profeCompleto = false;
 try { profeCompleto = localStorage.getItem('bitacora_profe_completo') === '1'; } catch (_) { /* sin almacenamiento */ }
 
+// Pantalla grande: el cuadrante solo, a toda la ventana. Va en una capa
+// colgada de <body> (dentro de #content quedaría por debajo de la barra
+// lateral) y mientras está abierta no se pinta también en la página, para
+// que los repintados por selector encuentren una sola tabla.
+let profeGrande = false;
+
+function abrirProfeGrande() {
+    vtCortar();
+    profeGrande = true;
+    profeIrAHoy = true;
+    render();
+}
+
+function cerrarProfeGrande() {
+    profeGrande = false;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    pintarProfeGrande('');
+    render();
+}
+
+function profeAlternarPantallaCompleta() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else document.getElementById('profe-grande')?.requestFullscreen?.().catch(() => {});
+}
+
+function pintarProfeGrande(cuadrante) {
+    let capa = document.getElementById('profe-grande');
+    if (!profeGrande || !cuadrante) {
+        capa?.remove();
+        document.body.classList.remove('profe-grande-abierto');
+        return;
+    }
+    if (!capa) {
+        capa = document.createElement('div');
+        capa.id = 'profe-grande';
+        capa.setAttribute('role', 'dialog');
+        capa.setAttribute('aria-label', 'Cuadrante en pantalla grande');
+        document.body.appendChild(capa);
+    }
+    document.body.classList.add('profe-grande-abierto');
+    const p = datosProfe();
+    capa.innerHTML = `
+        <div class="profe-grande-cab">
+            <b>profesorado.</b><span>${p.clases.length} ${p.clases.length === 1 ? 'clase' : 'clases'}</span>
+            ${document.fullscreenEnabled ? `<button class="profe-chip" onclick="profeAlternarPantallaCompleta()">${document.fullscreenElement ? 'salir de pantalla completa.' : 'pantalla completa.'}</button>` : ''}
+            <button class="profe-chip profe-grande-cerrar" onclick="cerrarProfeGrande()">cerrar.</button>
+        </div>
+        ${cuadrante}`;
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || !profeGrande || document.fullscreenElement) return;
+    if (document.querySelector('#modal-container .modal-overlay, #modal-container .modal-sheet')) return;
+    cerrarProfeGrande();
+}, true);
+document.addEventListener('fullscreenchange', () => { if (profeGrande && currentView === 'profesorado') render(); });
+
 function profeAlternarCompleto() {
     profeCompleto = !profeCompleto;
     try { localStorage.setItem('bitacora_profe_completo', profeCompleto ? '1' : '0'); } catch (_) { /* sin almacenamiento */ }
@@ -162,6 +219,33 @@ function renderProfesorado() {
             } else if (sitio) [marco.scrollTop, marco.scrollLeft] = sitio;
         });
     }, 0);
+    const cuadrante = `<div class="profe-cuadrante">
+            <div class="profe-nav">
+                ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(-1)" aria-label="Antes">‹</button>` : ''}
+                <span class="profe-rango">${profeFecha(dias[0])} — ${profeFecha(dias[dias.length - 1])}</span>
+                ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(1)" aria-label="Después">›</button>` : ''}
+                <div class="profe-nav-der">
+                    ${[[1, '1 semana'], [2, '2 semanas'], [4, '4 semanas'], [0, 'todo el curso']].map(([n, t]) => `<button class="profe-chip ${profeSemanas === n ? 'activa' : ''}" onclick="profeSemanas=${n};profeIrAHoy=${n === 0};render()">${t}</button>`).join('')}
+                    <button class="profe-chip" onclick="profeDesde=null;profeIrAHoy=true;render()">hoy.</button>
+                    ${profeGrande ? '' : '<button class="profe-chip profe-chip-grande" onclick="abrirProfeGrande()" title="El cuadrante a toda la ventana, sin nada más">pantalla grande.</button>'}
+                </div>
+            </div>
+            <div class="profe-tabla-wrap ${profeCompleto ? '' : 'profe-compacto'}">
+                <table class="profe-tabla" style="--n:${p.clases.length}">
+                    <thead><tr><th class="profe-col-dia"></th>${p.clases.map(c => `<th style="--c:${c.color}"><button class="profe-clase" onclick="openFichaClaseProfe('${c.id}')"><b>${escapeHtml(c.nombre)}</b><small>${escapeHtml(c.materia || '')}${(c.dias || []).length ? `${c.materia ? ' · ' : ''}${c.dias.map(d => PROFE_LETRAS[d]).join(' ')}` : ''}</small></button></th>`).join('')}</tr></thead>
+                    <tbody>${dias.map((d, f) => {
+                        const w = new Date(d + 'T12:00:00').getDay();
+                        const festivo = profeEsFestivo(d);
+                        return `<tr class="${d === hoy ? 'hoy' : ''} ${d < hoy ? 'pasado' : ''} ${festivo ? 'festivo' : ''} ${w === 1 && f > 0 ? 'profe-semana-nueva' : ''}">
+                            <th class="profe-col-dia"><button onclick="openDiaProfe('${d}')" title="${festivo ? 'Día sin clase' : '¿No hay clase este día?'}"><span>${d === hoy ? 'hoy.' : PROFE_DIAS[w]}</span>${Number(d.slice(8))}${d.slice(8) === '01' || f === 0 ? `<em>${new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short' })}</em>` : ''}${festivo ? `<i>${escapeHtml((profeNombreFestivo(d) || 'no lectivo').toLowerCase())}.</i>` : ''}</button></th>
+                            ${p.clases.map((c, ci) => renderCeldaProfe(c, d, f, ci, hoy)).join('')}
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>
+            </div>
+            <div class="profe-pista">Escribe en una casilla y pulsa Intro para añadir la tarea. Arrastra una tarea por su asa para llevarla a otro día, toca su texto para editarla y su círculo para marcarla hecha. El lápiz de cada casilla guarda una nota de cómo fue esa clase. Pulsa un día si al final no hay clase (o si sí la hay): las tareas se corren solas.</div>
+        </div>`;
+    pintarProfeGrande(profeVista === 'cuadrante' ? cuadrante : '');
     return `
     <div class="uni-vista profe">
         <div class="uni-cabecera">
@@ -179,31 +263,7 @@ function renderProfesorado() {
         </div>
         <div id="profe-pendientes">${renderPendientesProfe()}</div>
         <div class="profe-pestanas">${[['cuadrante', 'cuadrante.'], ['horario', 'horario semanal.']].map(([k, t]) => `<button class="profe-chip ${profeVista === k ? 'activa' : ''}" onclick="profeVista='${k}';profeIrAHoy=${k === 'cuadrante'};render()">${t}</button>`).join('')}<button class="profe-chip profe-chip-ocultar ${profeVista === 'horario' ? 'oculto' : ''}" onclick="profeAlternarCompleto()" title="Ver cada tarea entera o solo sus primeras palabras">${profeCompleto ? 'resumir tareas.' : 'ver títulos completos.'}</button><button class="profe-chip ${p.ocultarPendientes ? 'activa' : ''}" onclick="profeAlternarPendientes()" title="Esconde las tareas que no pudiste dar y el aviso">${p.ocultarPendientes ? 'ver lo pendiente.' : 'ocultar lo pendiente.'}</button></div>
-        ${profeVista === 'horario' ? renderHorarioSemanalProfe() : `<div class="profe-cuadrante">
-            <div class="profe-nav">
-                ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(-1)" aria-label="Antes">‹</button>` : ''}
-                <span class="profe-rango">${profeFecha(dias[0])} — ${profeFecha(dias[dias.length - 1])}</span>
-                ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(1)" aria-label="Después">›</button>` : ''}
-                <div class="profe-nav-der">
-                    ${[[1, '1 semana'], [2, '2 semanas'], [4, '4 semanas'], [0, 'todo el curso']].map(([n, t]) => `<button class="profe-chip ${profeSemanas === n ? 'activa' : ''}" onclick="profeSemanas=${n};profeIrAHoy=${n === 0};render()">${t}</button>`).join('')}
-                    <button class="profe-chip" onclick="profeDesde=null;profeIrAHoy=true;render()">hoy.</button>
-                </div>
-            </div>
-            <div class="profe-tabla-wrap ${profeCompleto ? '' : 'profe-compacto'}">
-                <table class="profe-tabla" style="--n:${p.clases.length}">
-                    <thead><tr><th class="profe-col-dia"></th>${p.clases.map(c => `<th style="--c:${c.color}"><button class="profe-clase" onclick="openFichaClaseProfe('${c.id}')"><b>${escapeHtml(c.nombre)}</b><small>${escapeHtml(c.materia || '')}${(c.dias || []).length ? `${c.materia ? ' · ' : ''}${c.dias.map(d => PROFE_LETRAS[d]).join(' ')}` : ''}</small></button></th>`).join('')}</tr></thead>
-                    <tbody>${dias.map((d, f) => {
-                        const w = new Date(d + 'T12:00:00').getDay();
-                        const festivo = profeEsFestivo(d);
-                        return `<tr class="${d === hoy ? 'hoy' : ''} ${d < hoy ? 'pasado' : ''} ${festivo ? 'festivo' : ''} ${w === 1 && f > 0 ? 'profe-semana-nueva' : ''}">
-                            <th class="profe-col-dia"><button onclick="openDiaProfe('${d}')" title="${festivo ? 'Día sin clase' : '¿No hay clase este día?'}"><span>${d === hoy ? 'hoy.' : PROFE_DIAS[w]}</span>${Number(d.slice(8))}${d.slice(8) === '01' || f === 0 ? `<em>${new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short' })}</em>` : ''}${festivo ? `<i>${escapeHtml((profeNombreFestivo(d) || 'no lectivo').toLowerCase())}.</i>` : ''}</button></th>
-                            ${p.clases.map((c, ci) => renderCeldaProfe(c, d, f, ci, hoy)).join('')}
-                        </tr>`;
-                    }).join('')}</tbody>
-                </table>
-            </div>
-            <div class="profe-pista">Escribe en una casilla y pulsa Intro para añadir la tarea. Arrastra una tarea por su asa para llevarla a otro día, toca su texto para editarla y su círculo para marcarla hecha. El lápiz de cada casilla guarda una nota de cómo fue esa clase. Pulsa un día si al final no hay clase (o si sí la hay): las tareas se corren solas.</div>
-        </div>`}
+        ${profeVista === 'horario' ? renderHorarioSemanalProfe() : profeGrande ? `<div class="profe-grande-aviso">El cuadrante está abierto en pantalla grande. <button class="profe-chip" onclick="cerrarProfeGrande()">volver aquí.</button></div>` : cuadrante}
         ${renderMisClasesProfe()}
     </div>`;
 }
