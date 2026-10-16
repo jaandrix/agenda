@@ -287,8 +287,8 @@ a menor resolución.
   partir de imágenes reales del usuario), tarjeta "próximo evento hoy." a dos
   columnas cuando hay varios (eventos normales / trabajos-exámenes).
 - **Versión móvil PWA:** ver arquitectura arriba.
-- **Landing (`#landing-screen` en index.html, movimiento en `js/landing.js`):** portada, cinta, cinco
-  bloques con recortes pequeños de componentes reales (`img/landing/*.webp`, hechos con datos inventados y
+- **Landing (`#landing-screen` en index.html, movimiento en `js/landing.js`):** portada, cinta, seis
+  bloques (calendario, finanzas, estudios, empleo, amigos, móvil) con recortes de componentes reales en tema claro (`img/landing/*-claro.webp`, hechos con datos inventados y
   Chrome headless aislando un elemento) sobre tarjetas `.lp-captura`,
   promesa, cómo la usa su creador, precios, preguntas y pie con los textos legales. Los bloques con
   `.revela` aparecen al hacer scroll (IntersectionObserver sobre `#landing-screen`, que es el

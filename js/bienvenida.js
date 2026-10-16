@@ -46,7 +46,7 @@ function renderBienvenidaPaso() {
         cuerpo = `
             <div class="bienvenida-marca">bitácora.</div>
             <h2>tu vida, en un solo sitio.</h2>
-            <p>Calendario, tareas, estudios, dinero, planes y amigos, juntos y conectados entre sí. Sin scroll infinito, sin anuncios, sin ruido.</p>
+            <p>Tu calendario, tus tareas, tus finanzas, tus estudios y tus planes, conectados entre sí: lo que apuntas en un sitio aparece donde hace falta. Sin anuncios.</p>
             <div class="bienvenida-promesas"><span>sin anuncios.</span><span>tus datos son tuyos.</span><span>exportas todo cuando quieras.</span></div>
             <label class="bienvenida-label" for="bv-nombre">¿cómo te llamas?</label>
             <input id="bv-nombre" class="modal-input" value="${escapeHtml(b.nombre)}" placeholder="Tu nombre" autocomplete="given-name" onkeydown="if(event.key==='Enter')bienvenidaIr(1)">`;
