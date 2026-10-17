@@ -126,7 +126,9 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   describan qué hace el código.
 - **Diffs mínimos**, sin refactors no pedidos, sin abstracciones prematuras.
 - **Sin gestos de plantilla** (barrido del 2026-10-17, para que no "parezca hecha con IA"): nada de rayas de color a
-  un lado (`border-left`/`inset` de 2px+ en tarjetas o filas: el color va en una marca cuadrada, un punto o el asa),
+  un lado (`border-left`/`inset` de 2px+ en tarjetas o filas: el color va en un punto o en el asa; la prioridad de
+  una tarea, en el aro del círculo de marcar), ni pastillas: botones, chips y pestañas llevan esquina de 10 px
+  (grupos de pestañas 12 px por fuera y 8 px dentro); redondo solo lo que significa algo (marcar, contadores, barras),
   ni etiquetas en mayúsculas espaciadas (las etiquetas van en minúscula), ni etiquetas pequeñas encima de un título,
   ni números de sección, ni velos con `backdrop-filter: blur`, ni tarjetas que se elevan al pasar el ratón, ni
   resplandores radiales de acento, ni anillos de progreso como adorno (en su lugar, sellos), ni rayas largas («—»)
