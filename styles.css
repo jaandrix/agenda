@@ -8453,3 +8453,6 @@ body.acuarela #fab { color:var(--m-sobre-acento); }
 .compra-prod-fila em { font-style:normal; font-size:12px; font-weight:700; }
 .compra-prod-fila em.sube { color:#c2410c; }
 .compra-prod-fila em.baja { color:#2f7d4f; }
+
+.compra-terminar-arriba { width:auto !important; margin:0 !important; min-height:36px; padding:0 16px !important; border-radius:999px !important; font-size:13px; }
+.compra-terminar-arriba small { margin-left:4px; opacity:.7; }

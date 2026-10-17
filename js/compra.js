@@ -158,7 +158,7 @@ function renderCompra() {
     };
     return `
     <div class="compra">
-        ${renderCompraCabecera(`${pendientes.length ? `${pendientes.length} por coger${carro.length ? `, ${carro.length} en el carro` : ''}.` : carro.length ? 'Todo en el carro.' : 'La lista está vacía.'}${estimado ? ` ${conEstimado ? 'Unos' : ''} ${financeMoney(estimado)}.` : ''}`, true)}
+        ${renderCompraCabecera(`${pendientes.length ? `${pendientes.length} por coger${carro.length ? `, ${carro.length} en el carro` : ''}.` : carro.length ? 'Todo en el carro.' : 'La lista está vacía.'}${estimado ? ` ${conEstimado ? 'Unos' : ''} ${financeMoney(estimado)}.` : ''}`, true, carro.length)}
         ${pestanas}
         ${d.listas.length > 1 ? `<div class="compra-listas">${d.listas.map(x => `<button class="profe-chip ${x.id === l.id ? 'activa' : ''}" onclick="compraElegirLista('${x.id}')">${escapeHtml(x.nombre.toLowerCase())}. <small>${x.items.filter(i => !i.hecho).length}</small></button>`).join('')}</div>` : ''}
         <div class="compra-anadir">
@@ -173,13 +173,15 @@ function renderCompra() {
     </div>`;
 }
 
-function renderCompraCabecera(sub, conListas) {
+// Con algo en el carro, «terminar la compra» también arriba: abajo queda
+// después de todo lo pendiente y con la lista a medias no se veía.
+function renderCompraCabecera(sub, conListas, enCarro) {
     return `<div class="compra-cab">
         <div>
             <div class="compra-titulo">compras.</div>
             <div class="compra-sub">${sub}</div>
         </div>
-        ${conListas ? `<div class="compra-cab-botones">${Object.keys(datosCompra().frecuentes).length ? '<button class="pedido-btn" onclick="openCompraFrecuentes()">lo de siempre.</button>' : ''}<button class="pedido-btn" onclick="openCompraListas()">listas.</button></div>` : ''}
+        ${conListas ? `<div class="compra-cab-botones">${enCarro ? `<button class="btn-modal-primary compra-terminar-arriba" onclick="openCompraTerminar()">terminar la compra. <small>${enCarro}</small></button>` : ''}${Object.keys(datosCompra().frecuentes).length ? '<button class="pedido-btn" onclick="openCompraFrecuentes()">lo de siempre.</button>' : ''}<button class="pedido-btn" onclick="openCompraListas()">listas.</button></div>` : ''}
     </div>`;
 }
 
