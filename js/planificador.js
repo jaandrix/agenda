@@ -6,9 +6,9 @@
         // ============================================================
 
         const PLANNER_DAY_TABS = [
-            { offset: 0, label: 'Hoy' },
-            { offset: 1, label: 'Mañana' },
-            { offset: 2, label: 'Pasado mañana' }
+            { offset: 0, label: 'hoy.' },
+            { offset: 1, label: 'mañana.' },
+            { offset: 2, label: 'pasado mañana.' }
         ];
 
         // Clave del "día lógico" para un desplazamiento de días dado: antes de
@@ -763,7 +763,7 @@
             <div class="rutinas">
                 <div class="rutinas-cab">
                     <div>
-                        <div class="rutinas-titulo">Rutinas</div>
+                        <div class="rutinas-titulo">rutinas.</div>
                         <div class="rutinas-sub" id="rutinas-sub">${r.total ? `${r.hechas} de ${r.total} hoy.` : 'Lo que haces para estar bien, sin presión.'}</div>
                     </div>
                     <button class="btn-modal-primary" style="width:auto" onclick="openAddHabit()">+ rutina.</button>

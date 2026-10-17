@@ -35,16 +35,16 @@
             let html = `
                 <div style="max-width:820px">
                     <div style="margin-bottom:16px">
-                        <div style="font-size:20px;font-weight:700">Viajes</div>
+                        <div style="font-size:20px;font-weight:700">viajes.</div>
                         <div style="font-size:12px;color:var(--text-secondary)">Tus viajes y lugares, con su propio gestor: lugares que ver, itinerario, documentos y listas.</div>
                     </div>
                     ${renderSharedTripsSection()}
                     <div class="culture-tabs">
                         <button class="culture-tab ${travelPlacesTab === 'travels' ? 'active' : ''}" onclick="setTravelPlacesTab('travels')">
-                            <span>Viajes</span><span class="culture-tab-count">${travels.length}</span>
+                            <span>viajes.</span><span class="culture-tab-count">${travels.length}</span>
                         </button>
                         <button class="culture-tab ${travelPlacesTab === 'places' ? 'active' : ''}" onclick="setTravelPlacesTab('places')">
-                            <span>Lugares</span><span class="culture-tab-count">${places.length}</span>
+                            <span>lugares.</span><span class="culture-tab-count">${places.length}</span>
                         </button>
                     </div>
                     <div class="culture-tab-content">

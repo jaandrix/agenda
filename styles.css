@@ -5863,8 +5863,7 @@ body.acuarela .events-toolbar .btn-secondary[style*="#3b82f6"] { background:var(
    color al pasar de una vista a otra.
    ============================================================ */
 .anual-overlay { position:fixed; inset:0; z-index:1090; display:flex; padding:24px 16px; box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain; background:rgba(0,0,0,0); backdrop-filter:none; -webkit-backdrop-filter:none; transition:background .4s ease, backdrop-filter .4s ease, -webkit-backdrop-filter .4s ease; }
-.anual-overlay.abierto { background:rgba(0,0,0,.74); backdrop-filter:none; -webkit-backdrop-filter:none; }
-body.papel .anual-overlay.abierto { background:rgba(250,248,245,.35); }
+.anual-overlay.abierto { background:var(--bg-app); backdrop-filter:none; -webkit-backdrop-filter:none; }
 .anual-cerrar { position:fixed; top:max(16px, env(safe-area-inset-top)); right:16px; width:40px; height:40px; box-sizing:border-box; border-radius:50%; border:1px solid var(--border-strong); background:var(--bg-card); color:var(--text-primary); font-size:15px; cursor:pointer; opacity:0; transition:opacity .3s ease; z-index:2; }
 .anual-overlay.abierto .anual-cerrar { opacity:1; }
 .anual-flotante { width:min(92vw, 760px); margin:auto; display:flex; flex-direction:column; align-items:center; gap:10px; color:var(--text-primary); transform:translate(var(--dx), var(--dy)) scale(.1); opacity:0; transition:transform .38s var(--ease-out), opacity .3s ease .08s; }
@@ -5912,6 +5911,13 @@ body.papel .anual-overlay.abierto { background:rgba(250,248,245,.35); }
 .anual-leyenda .anual-estrella { width:12px; height:12px; flex-shrink:0; transition:none; }
 .anual-leyenda .anual-leyenda-futuro { opacity:.2; }
 .anual-leyenda .anual-leyenda-hoy { background-color:var(--m-acento); }
+/* Pizarra no tiene un segundo color: hoy va en aro para no confundirse con lo vivido. */
+body.pizarra .anual-grid:not([data-vista="esfuerzo"]) .anual-estrella[data-hoy], body.pizarra .anual-leyenda .anual-leyenda-hoy {
+    background-color:var(--text-primary);
+    -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='38' fill='none' stroke='black' stroke-width='22'/%3E%3C/svg%3E");
+    mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='38' fill='none' stroke='black' stroke-width='22'/%3E%3C/svg%3E");
+    -webkit-mask-size:92%; mask-size:92%;
+}
 .anual-leyenda .anual-leyenda-viaje { background-color:#d4a017; }
 .anual-leyenda .anual-leyenda-apagada { opacity:.2; }
 .anual-leyenda-nota { width:100%; text-align:center; }
@@ -7088,7 +7094,7 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 .profe-color { width:34px; height:34px; box-sizing:border-box; padding:0; border-radius:50%; border:3px solid transparent; background:var(--c); cursor:pointer; box-shadow:inset 0 0 0 2px var(--bg-modal); }
 .profe-color.activa { border-color:var(--text-primary); }
 
-.profe-pendientes { display:flex; flex-direction:column; gap:12px; padding:16px 18px; border-radius:18px; background:var(--bg-card); border:1px solid var(--border); border-left:3px solid #a3243b; }
+.profe-pendientes { display:flex; flex-direction:column; gap:12px; padding:16px 18px; border-radius:18px; background:var(--bg-card); border:1px solid color-mix(in srgb, #a3243b 45%, var(--border)); }
 .profe-aviso { font-size:13.5px; line-height:1.5; color:var(--text-secondary); }
 .profe-aviso b { color:var(--text-primary); }
 .profe-pend-grupo { display:flex; flex-direction:column; }
@@ -7138,7 +7144,9 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 .profe-nueva:focus { background:var(--bg-input); box-shadow:inset 0 0 0 2px var(--c); }
 .profe-item { display:flex; align-items:flex-start; gap:2px; margin-bottom:3px; padding:3px 4px 3px 0; border-radius:6px; border-left:3px solid var(--c); background:color-mix(in srgb, var(--c) 17%, transparent); }
 .profe-asa { flex-shrink:0; display:flex; align-items:center; justify-content:center; width:16px; height:22px; color:var(--text-secondary); opacity:.55; cursor:grab; touch-action:none; }
-.profe-asa svg { width:11px; height:11px; }
+/* Iconos por máscara y no SVG en línea: el cuadrante de todo el curso repetía miles de nodos. */
+.profe-asa::before, .profe-nota-btn::before { content:''; display:block; background:currentColor; -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='35' cy='22' r='9'/%3E%3Ccircle cx='65' cy='22' r='9'/%3E%3Ccircle cx='35' cy='50' r='9'/%3E%3Ccircle cx='65' cy='50' r='9'/%3E%3Ccircle cx='35' cy='78' r='9'/%3E%3Ccircle cx='65' cy='78' r='9'/%3E%3C/svg%3E") center / contain no-repeat; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='35' cy='22' r='9'/%3E%3Ccircle cx='65' cy='22' r='9'/%3E%3Ccircle cx='35' cy='50' r='9'/%3E%3Ccircle cx='65' cy='50' r='9'/%3E%3Ccircle cx='35' cy='78' r='9'/%3E%3Ccircle cx='65' cy='78' r='9'/%3E%3C/svg%3E") center / contain no-repeat; }
+.profe-asa::before { width:11px; height:11px; }
 .profe-item:hover .profe-asa { opacity:1; }
 .profe-item-txt { flex:1; min-width:0; padding:3px 2px; border:0; background:none; font-family:var(--font-family); font-size:12.5px; line-height:1.35; color:var(--text-primary); text-align:left; cursor:pointer; overflow-wrap:anywhere; }
 .profe-check { width:18px; height:18px; min-width:0; min-height:0; margin:2px 0 0 2px; box-sizing:border-box; flex-shrink:0; padding:0; border:2px solid var(--c); border-radius:50%; background:none; cursor:pointer; }
@@ -7224,7 +7232,7 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
 .profe-celda-cab { display:flex; align-items:center; justify-content:space-between; gap:4px; min-height:16px; padding:0 2px 2px 4px; }
 .profe-celda-cab span { font-size:10px; font-weight:600; color:var(--text-secondary); font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .profe-nota-btn { flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; width:20px; height:18px; min-height:0 !important; padding:0; border:0; border-radius:4px; background:none; color:var(--text-secondary); opacity:.25; cursor:pointer; transition:opacity .15s ease; }
-.profe-nota-btn svg { width:10px; height:10px; }
+.profe-nota-btn::before { width:10px; height:10px; -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M70 8l22 22-52 52H18V60z'/%3E%3Cpath d='M8 88h84v8H8z'/%3E%3C/svg%3E"); mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M70 8l22 22-52 52H18V60z'/%3E%3Cpath d='M8 88h84v8H8z'/%3E%3C/svg%3E"); }
 .profe-celda:hover .profe-nota-btn { opacity:.7; }
 .profe-nota-btn.con { opacity:1; color:var(--c); }
 .profe-entrega { display:block; width:100%; margin-bottom:3px; padding:3px 6px; border:1px dashed var(--c); border-radius:6px; background:none; font-family:var(--font-family); font-size:11px; font-weight:700; color:var(--text-primary); text-align:left; cursor:pointer; min-height:0 !important; }

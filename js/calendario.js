@@ -184,6 +184,7 @@
             yearCalYear = new Date().getFullYear();
             yearCalVista = 'dias';
             if (document.getElementById('anual-overlay')) return;
+            vtCortar();
             const origen = document.querySelector('.year-cal-btn');
             const r = origen?.getBoundingClientRect();
             const overlay = document.createElement('div');
@@ -581,7 +582,7 @@
             let html = `<div class="cal-home">`;
             html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
                 <div class="culture-tabs" style="margin-bottom:0">
-                    ${[['day','Día'],['week','Semana'],['month','Mes']].map(([id,label]) => `
+                    ${[['day','día.'],['week','semana.'],['month','mes.']].map(([id,label]) => `
                         <button class="culture-tab ${calViewMode===id?'active':''}" onclick="setCalView('${id}')">${label}</button>
                     `).join('')}
                 </div>
@@ -665,7 +666,7 @@
                 // de un vistazo, sin tener que abrirlo.
                 const barsHtml = dayEntries.slice(0, 4).map(e => {
                     const cat = categories.find(c => c.id === e.categoryId);
-                    const color = cat ? cat.color : 'var(--text-muted)';
+                    const color = cat ? tintaCategoria(cat.color) : 'var(--text-muted)';
                     return `<span style="width:5px;height:5px;border-radius:50%;display:block;background:${color};flex-shrink:0"></span>`;
                 }).join('');
 
@@ -736,7 +737,7 @@
                     <div class="cal-week-col-items">
                         ${dayEntries.slice(0, 4).map(e => {
                             const cat = categories.find(c => c.id === e.categoryId);
-                            const color = cat?.color || 'var(--text-secondary)';
+                            const color = tintaCategoria(cat?.color) || 'var(--text-secondary)';
                             return `<div class="cal-week-item" style="border-left-color:${color}">${escapeHtml(e.title || '')}</div>`;
                         }).join('') || '<div class="cal-week-empty">—</div>'}
                         ${dayEntries.length > 4 ? `<div class="cal-week-more">+${dayEntries.length - 4} más</div>` : ''}
@@ -771,6 +772,12 @@
                 <button class="cal-nav-arrow" onclick="changeDay(1)"><i class='ico ico-der' aria-hidden=true></i></button>
             </div>
             <div class="vt-interior">${body || '<div class="empty-state"><div class="empty-title">nada por aquí todavía.</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}</div>`;
+        }
+
+        // Evento es negro por defecto: en los temas oscuros sus puntos
+        // desaparecían sobre las casillas, así que el negro sigue la tinta.
+        function tintaCategoria(color) {
+            return /^#0{3}(0{3})?$/i.test(color || '') ? 'var(--text-primary)' : color;
         }
 
         function showDayEntries(date) {
@@ -844,7 +851,7 @@
         function renderDayEntryRows(all) {
             return all.map(e => {
                 const cat = categories.find(c => c.id === e.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
+                const color = tintaCategoria(cat?.color) || 'var(--text-secondary)';
                 const catName = cat?.name || 'Sin categoría';
 
                 let titleHtml, metaHtml;
@@ -893,7 +900,7 @@
         function renderDayEntryCards(all) {
             return all.map(e => {
                 const cat = categories.find(c => c.id === e.categoryId);
-                const color = cat?.color || 'var(--text-secondary)';
+                const color = tintaCategoria(cat?.color) || 'var(--text-secondary)';
                 const catName = cat?.name || 'Sin categoría';
 
                 let titleHtml, metaHtml;

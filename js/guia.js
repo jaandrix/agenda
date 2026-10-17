@@ -51,7 +51,7 @@ const GUIA = [
         lema: 'Un solo gesto para apuntar cualquier cosa.',
         intro: 'Casi todo en Bitácora es una «entrada»: un evento, un libro, un viaje, un objetivo, un cumpleaños, un documento... Se crean todas igual.',
         pasos: [
-            'Pulsa el botón redondo del <b>rayo</b> (abajo a la derecha), <b>+ Añadir</b> (arriba) o la tecla <b>Espacio</b>.',
+            'Pulsa el botón redondo del <b>rayo</b> (abajo a la derecha), <b>+ añadir.</b> (arriba) o la tecla <b>Espacio</b>.',
             'Elige el tipo: escribe sus primeras letras («ev» para evento, «li» para libro...) y pulsa Enter.',
             'Rellena el formulario. Los campos cambian según el tipo: un evento pide fecha, hora, lugar y aviso; un libro, autor y valoración.',
             'Pulsa <b>Guardar</b>. Aparecerá en su apartado y, si tiene fecha, en el calendario.',

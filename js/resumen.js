@@ -167,8 +167,8 @@
             <div>
                 <div class="home-cabecera">
                     <div>
-                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:2px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
-                        <div class="resumen-titulo" style="font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text-primary)">Centro de resumen</div>
+                        <div class="resumen-titulo" style="font-size:20px;font-weight:700;margin-bottom:2px;color:var(--text-primary)">panorama.</div>
+                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:18px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}.</div>
                     </div>
                     <div class="home-estancia" id="home-estancia">
                         <button class="home-estancia-btn" title="tu estancia en bitácora." aria-expanded="false" onclick="toggleHomeEstancia()">${HOME_ICON_ESTANCIA}</button>
@@ -838,7 +838,7 @@
 
             if (sortedMonths.length) {
                 html += `
-                <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:20px 0 12px 0">Entradas por mes</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin:20px 0 12px 0">entradas por mes.</div>
                 <div style="display:flex;gap:8px;align-items:flex-end;height:100px;padding-top:8px">`;
                 sortedMonths.forEach(m => {
                     const count = monthCount[m] || 0;

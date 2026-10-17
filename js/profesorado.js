@@ -108,12 +108,27 @@ function profeLunes(iso) {
     return profeSumar(iso, -((d.getDay() + 6) % 7));
 }
 
+// toLocaleDateString con opciones monta un formateador en cada llamada, y el
+// cuadrante pide cientos de fechas por pintado: se reutilizan y se recuerdan.
+const PROFE_FMT = {
+    dia: new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }),
+    mes: new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }),
+    corta: new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }),
+};
+const profeFechaCache = new Map();
+function profeFormatear(iso, tipo) {
+    const k = tipo + iso;
+    let t = profeFechaCache.get(k);
+    if (t === undefined) { t = PROFE_FMT[tipo].format(new Date(iso + 'T12:00:00')); profeFechaCache.set(k, t); }
+    return t;
+}
+
 function profeFecha(iso, conDia = false) {
-    return new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', conDia ? { weekday: 'long', day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' });
+    return profeFormatear(iso, conDia ? 'dia' : 'mes');
 }
 
 function profeFechaCorta(iso) {
-    return new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+    return profeFormatear(iso, 'corta');
 }
 
 function profeEsFestivo(iso) { return datosProfe().festivos.includes(iso); }
@@ -272,7 +287,7 @@ function renderItemProfe(s, c, hoy) {
     const estado = s.descartada ? 'descartada' : s.hecha === true ? 'hecha' : profeEsPendiente(s, hoy) ? 'pendiente' : s.hecha === null ? 'sin-casilla' : 'por-dar';
     if (estado === 'pendiente' && datosProfe().ocultarPendientes) return '';
     return `<div class="profe-item ${estado}" style="--c:${c.color}" data-id="${s.id}">
-        <span class="profe-asa" onpointerdown="profeArrastrar(event,'${s.id}')" aria-label="Arrastrar"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><circle cx="35" cy="22" r="9"/><circle cx="65" cy="22" r="9"/><circle cx="35" cy="50" r="9"/><circle cx="65" cy="50" r="9"/><circle cx="35" cy="78" r="9"/><circle cx="65" cy="78" r="9"/></svg></span>
+        <span class="profe-asa" onpointerdown="profeArrastrar(event,'${s.id}')" aria-label="Arrastrar"></span>
         <button class="profe-item-txt" onclick="openSesionProfe('${s.id}')" title="${escapeHtml(s.titulo)}">${escapeHtml(profeSinEnlacesLargos(s.titulo))}</button>
         ${profeConCasilla(s) && !s.descartada ? `<button class="profe-check ${s.hecha ? 'on' : ''}" onclick="profeHecha('${s.id}')" aria-label="${s.hecha ? 'Marcar por hacer' : 'Marcar hecha'}"></button>` : ''}
     </div>`;
@@ -287,7 +302,7 @@ function renderCeldaProfe(c, d, f, ci, hoy) {
     return `<td class="profe-celda ${lectiva ? 'lectiva' : 'libre'}" data-clase="${c.id}" data-fecha="${d}" style="--c:${c.color}">
         <div class="profe-celda-cab">
             <span>${franjas.map(h => `${h.inicio}${h.aula ? ` · ${escapeHtml(h.aula)}` : ''}`).join(', ')}</span>
-            <button class="profe-nota-btn ${nota ? 'con' : ''}" onclick="openNotaDiaProfe('${c.id}','${d}')" title="${nota ? escapeHtml(nota) : 'Nota de esta clase'}" aria-label="Nota de esta clase"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M70 8l22 22-52 52H18V60z"/><path d="M8 88h84v8H8z"/></svg></button>
+            <button class="profe-nota-btn ${nota ? 'con' : ''}" onclick="openNotaDiaProfe('${c.id}','${d}')" title="${nota ? escapeHtml(nota) : 'Nota de esta clase'}" aria-label="Nota de esta clase"></button>
         </div>
         ${entregas.map(x => `<button class="profe-entrega" onclick="openFichaClaseProfe('${c.id}','deberes')">entrega: ${escapeHtml(x.titulo)}</button>`).join('')}
         ${items.map(s => renderItemProfe(s, c, hoy)).join('')}

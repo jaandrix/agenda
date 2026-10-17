@@ -1647,15 +1647,15 @@
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
                 <div class="finance-toolbar-row">
                     <div class="finance-pro-settings-links">
-                        <button onclick="openFinanceProAccountsSettings()"><i class='ico ico-lapiz' aria-hidden=true></i> Renombrar / saldo inicial</button>
+                        <button onclick="openFinanceProAccountsSettings()"><i class='ico ico-lapiz' aria-hidden=true></i> nombres y saldo inicial.</button>
                         <span>·</span>
-                        <button onclick="openFinanceProCategoriesModal()">Categorías</button>
+                        <button onclick="openFinanceProCategoriesModal()">categorías.</button>
                         <span>·</span>
-                        <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
+                        <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} importar.</button>
                         <span>·</span>
-                        <button onclick="exportFinanceMarkdown()"><i class='ico ico-bajar' aria-hidden=true></i> Exportar</button>
+                        <button onclick="exportFinanceMarkdown()"><i class='ico ico-bajar' aria-hidden=true></i> exportar.</button>
                         <span>·</span>
-                        <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} Reglas</button>
+                        <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} reglas.</button>
                     </div>
                     ${blurToggleBtn}
                 </div>

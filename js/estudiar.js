@@ -974,7 +974,7 @@ function renderEstudiar() {
     return `<div class="estudiar">
         <div class="compra-cab">
             <div>
-                <div class="compra-titulo">Estudiar</div>
+                <div class="compra-titulo">estudiar.</div>
                 <div class="compra-sub">Pomodoro, plan del día, temario y repaso espaciado.</div>
             </div>
             <button class="pedido-btn" onclick="openEstAjustes()">ajustes.</button>

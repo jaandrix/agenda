@@ -93,7 +93,7 @@
                 html += `</div>`;
             }
             if (historial.length) {
-                html += `<div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin:${actuales.length ? '4px' : '0'} 0 6px 0">Historial</div>`;
+                html += `<div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin:${actuales.length ? '4px' : '0'} 0 6px 0">historial.</div>`;
                 html += `<div class="line-row-list">`;
                 historial.forEach(w => { html += renderWorkHistoryRow(w, todayStr, daysBetween); });
                 html += `</div>`;
@@ -639,11 +639,11 @@
                     <h3>Expediente</h3>
                     <div class="studies-expediente-grid">
                         <div class="card bone-surface" style="margin:0">
-                            <div class="label" style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">Nota media${ex.hasCreditos ? ' (ponderada por créditos)' : ''}</div>
+                            <div class="label" style="font-size:12px;color:var(--bone-muted);font-weight:600">nota media${ex.hasCreditos ? ' (ponderada por créditos)' : ''}.</div>
                             <div class="value" style="font-size:28px;font-weight:700;color:var(--bone-text);margin-top:4px">${ex.media !== null ? `<span class="nota-final ${gradeTierClass(ex.media)}" style="font-size:28px;padding:0">${ex.media.toFixed(2)}</span>` : '—'}</div>
                         </div>
                         <div class="card bone-surface" style="margin:0">
-                            <div class="label" style="font-size:12px;color:var(--bone-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">Asignaturas</div>
+                            <div class="label" style="font-size:12px;color:var(--bone-muted);font-weight:600">asignaturas.</div>
                             <div style="font-size:13px;color:var(--bone-text);margin-top:6px">
                                 <strong style="color:#16a34a">${ex.aprobadas}</strong> aprobadas · <strong style="color:#dc2626">${ex.suspensas}</strong> suspensas · <strong>${ex.pendientes}</strong> pendientes
                             </div>
@@ -667,7 +667,7 @@
                 </div>` : ''}
 
                 <section class="studies-section" id="studies-schedule-section">
-                    <h3>Horario semanal</h3>
+                    <h3>horario semanal.</h3>
                     ${renderScheduleGrid()}
                 </section>
 
