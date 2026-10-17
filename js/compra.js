@@ -236,49 +236,108 @@ function compraResumenCenido(dias = 60) {
     return { compras: conTicket.length, total, planeado, extra, extras: Object.values(extras).sort((a, b) => b.veces - a.veces || b.importe - a.importe), sinComprar, deLista };
 }
 
-// Por producto: dónde sale más barato (si se ha comprado en varias
-// tiendas) y qué ha subido desde la vez anterior.
-function compraInformePrecios() {
-    const porProducto = {};
+// ---- la base de datos personal (sale del historial) ----
+// Cada producto atado a su tienda: su último precio y, si hay más de una
+// referencia, cuánto ha variado desde la primera.
+function compraProductos() {
+    const mapa = {};
     datosCompra().historial.forEach(c => (c.items || []).forEach(i => {
         if (!(Number(i.precio) > 0)) return;
-        const k = i.clave || compraClave(i.texto);
-        (porProducto[k] = porProducto[k] || { texto: i.texto, precios: [] }).precios.push({ fecha: c.fecha, tienda: c.tienda || '', precio: Number(i.precio) });
+        const clave = i.clave || compraClave(i.texto);
+        const tienda = c.tienda || '';
+        const k = `${clave}|${compraClave(tienda)}`;
+        const p = mapa[k] = mapa[k] || { clave, texto: i.texto, tienda, precios: [] };
+        p.precios.push({ fecha: c.fecha, precio: Number(i.precio), texto: i.texto });
     }));
-    const baratos = [], suben = [];
-    Object.values(porProducto).forEach(p => {
-        p.precios.sort((a, b) => b.fecha.localeCompare(a.fecha));
-        const ultimoPorTienda = {};
-        p.precios.forEach(x => { const t = x.tienda || '—'; if (!ultimoPorTienda[t]) ultimoPorTienda[t] = x; });
-        const tiendas = Object.values(ultimoPorTienda);
-        if (tiendas.length > 1) {
-            tiendas.sort((a, b) => a.precio - b.precio);
-            if (tiendas[1].precio - tiendas[0].precio >= 0.05) baratos.push({ texto: p.texto, tienda: tiendas[0].tienda, precio: tiendas[0].precio, ahorro: tiendas[tiendas.length - 1].precio - tiendas[0].precio });
-        }
-        const [ultimo, ...antes] = p.precios;
-        const previo = antes.find(x => x.tienda === ultimo.tienda);
-        if (previo && ultimo.precio - previo.precio >= 0.05) suben.push({ texto: p.texto, tienda: ultimo.tienda, antes: previo.precio, ahora: ultimo.precio });
+    return Object.values(mapa).map(p => {
+        p.precios.sort((a, b) => a.fecha.localeCompare(b.fecha));
+        const ultimo = p.precios[p.precios.length - 1], primero = p.precios[0], previo = p.precios[p.precios.length - 2];
+        p.texto = ultimo.texto;
+        p.actual = ultimo.precio;
+        p.fecha = ultimo.fecha;
+        p.variacion = p.precios.length > 1 && primero.precio ? Math.round((ultimo.precio - primero.precio) / primero.precio * 100) : null;
+        p.ultimaSubida = previo && previo.precio ? (ultimo.precio - previo.precio) / previo.precio : 0;
+        return p;
     });
-    return { baratos: baratos.sort((a, b) => b.ahorro - a.ahorro).slice(0, 8), suben: suben.sort((a, b) => (b.ahora / b.antes) - (a.ahora / a.antes)).slice(0, 8), productos: Object.keys(porProducto).length };
+}
+
+// La cesta habitual: lo que más veces aparece en tus compras (al menos dos
+// si hay bastante historial) y lo que te cuesta en cada tienda con el
+// último precio de allí. Si dos tiendas comparten productos, cuánto cambia
+// en esos.
+function compraCestaHabitual() {
+    const veces = {};
+    datosCompra().historial.forEach(c => new Set((c.items || []).map(i => i.clave || compraClave(i.texto))).forEach(k => { veces[k] = (veces[k] || 0) + 1; }));
+    const ordenadas = Object.entries(veces).sort((a, b) => b[1] - a[1]);
+    const repetidas = ordenadas.filter(([, n]) => n > 1);
+    const cesta = (repetidas.length >= 3 ? repetidas : ordenadas).slice(0, 12).map(([k]) => k);
+    if (!cesta.length) return null;
+    const productos = compraProductos();
+    const porTienda = {};
+    productos.filter(p => cesta.includes(p.clave)).forEach(p => {
+        const t = porTienda[p.tienda || '—'] = porTienda[p.tienda || '—'] || { tienda: p.tienda || 'sin tienda', total: 0, precios: {} };
+        t.total += p.actual;
+        t.precios[p.clave] = p.actual;
+    });
+    const tiendas = Object.values(porTienda).map(t => ({ ...t, n: Object.keys(t.precios).length }))
+        .filter(t => t.n).sort((a, b) => b.n - a.n || a.total - b.total).slice(0, 3);
+    let comparacion = null;
+    if (tiendas.length > 1) {
+        const [a, b] = tiendas;
+        const comunes = Object.keys(a.precios).filter(k => k in b.precios);
+        if (comunes.length >= 2) {
+            const ta = comunes.reduce((s, k) => s + a.precios[k], 0), tb = comunes.reduce((s, k) => s + b.precios[k], 0);
+            if (Math.abs(ta - tb) >= 0.1) comparacion = { barata: ta < tb ? a.tienda : b.tienda, diferencia: Math.abs(ta - tb), comunes: comunes.length };
+        }
+    }
+    return { tamano: cesta.length, tiendas, comparacion };
+}
+
+function compraAvisoPrecios() {
+    return compraProductos().filter(p => p.ultimaSubida >= 0.1).sort((a, b) => b.ultimaSubida - a.ultimaSubida);
+}
+
+function compraEsteMes() {
+    const hoy = todayISO().slice(0, 7);
+    const delMes = datosCompra().historial.filter(c => String(c.fecha).slice(0, 7) === hoy);
+    const total = delMes.reduce((s, c) => s + (Number(c.total) || 0), 0);
+    return { compras: delMes.length, total, media: delMes.length ? total / delMes.length : 0 };
 }
 
 function renderCompraHistorial() {
     const d = datosCompra();
     if (!d.historial.length) return `<div class="compra-vacio"><b>aquí se guardan tus compras.</b>Cada compra se guarda al pulsar <b>terminar la compra.</b> Si además le pasas la foto del ticket a Claude o ChatGPT con el conector («apunta este ticket en Bitácora»), cada producto queda con su precio y su tienda, y con el tiempo verás dónde te sale más barato lo que sueles comprar.</div>`;
     const r = compraResumenCenido();
-    const inf = compraInformePrecios();
     const pct = r.total ? Math.round(r.planeado / r.total * 100) : 0;
+    const mes = compraEsteMes();
+    const cesta = compraCestaHabitual();
+    const avisos = compraAvisoPrecios();
+    const nProductos = compraProductos().length;
     const fecha = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '');
+    const nombreMes = new Date().toLocaleDateString('es-ES', { month: 'long' });
+    const aviso = avisos[0];
     return `
-        ${r.compras ? `<div class="compra-panel">
-            <div class="compra-panel-titulo">cómo te ciñes a la lista. <small>últimos 60 días · ${r.compras} ${r.compras === 1 ? 'ticket' : 'tickets'}</small></div>
-            <div class="compra-cenido"><div class="compra-cenido-barra"><i style="width:${pct}%"></i></div><div class="compra-cenido-cifras"><b>${pct} %</b> de lo gastado estaba en la lista · <b>${financeMoney(r.extra)}</b> en cosas que añadiste en la tienda${r.sinComprar ? ` · ${r.sinComprar} ${r.sinComprar === 1 ? 'cosa' : 'cosas'} de la lista sin comprar` : ''}.</div></div>
-        </div>` : ''}
-        ${inf.baratos.length || inf.suben.length ? `<div class="compra-panel">
-            <div class="compra-panel-titulo">tus precios. <small>${inf.productos} productos con precio</small></div>
-            ${inf.baratos.length ? `<div class="compra-panel-sub">dónde te sale más barato.</div>${inf.baratos.map(x => `<div class="compra-precio-fila"><span>${escapeHtml(x.texto)}</span><b>${escapeHtml(x.tienda)} · ${financeMoney(x.precio)}</b><small>−${financeMoney(x.ahorro)}</small></div>`).join('')}` : ''}
-            ${inf.suben.length ? `<div class="compra-panel-sub">lo que ha subido.</div>${inf.suben.map(x => `<div class="compra-precio-fila"><span>${escapeHtml(x.texto)}</span><b>${financeMoney(x.antes)} → ${financeMoney(x.ahora)}</b><small>${x.tienda ? escapeHtml(x.tienda) : ''}</small></div>`).join('')}` : ''}
-        </div>` : ''}
+        <div class="compra-franja">
+            <div class="compra-dato">
+                <span class="compra-dato-etq">${nombreMes}.</span>
+                <b>${financeMoney(mes.total)}</b>
+                <small>${mes.compras ? `${mes.compras} ${mes.compras === 1 ? 'compra' : 'compras'} · unos ${financeMoney(mes.media)} cada una` : 'sin compras este mes'}</small>
+            </div>
+            <div class="compra-dato">
+                <span class="compra-dato-etq">tu cesta habitual.</span>
+                ${cesta && cesta.tiendas.length ? `<div class="compra-cesta">${cesta.tiendas.map(t => `<div><span>${escapeHtml(t.tienda)}</span><b>${financeMoney(t.total)}</b>${t.n < cesta.tamano ? `<small>${t.n} de ${cesta.tamano}</small>` : ''}</div>`).join('')}</div>
+                <small>${cesta.comparacion ? `En los ${cesta.comparacion.comunes} productos que tienen las dos, ${escapeHtml(cesta.comparacion.barata)} sale ${financeMoney(cesta.comparacion.diferencia)} más barata.` : `Lo que más compras (${cesta.tamano} ${cesta.tamano === 1 ? 'producto' : 'productos'}), con lo último que pagaste.`}</small>` : '<small>Aparecerá cuando tengas tickets con precios.</small>'}
+            </div>
+            ${aviso ? `<div class="compra-dato compra-dato-aviso">
+                <span class="compra-dato-etq">ha subido.</span>
+                <b>${escapeHtml(aviso.texto)}</b>
+                <small>+${Math.round(aviso.ultimaSubida * 100)} % en ${escapeHtml(aviso.tienda || 'su tienda')}: ${financeMoney(aviso.precios[aviso.precios.length - 2].precio)} → ${financeMoney(aviso.actual)}${avisos.length > 1 ? ` · y ${avisos.length - 1} más` : ''}</small>
+            </div>` : ''}
+        </div>
+        <div class="compra-franja-pie">
+            ${r.compras ? `<span>En los últimos 60 días, el <b>${pct} %</b> de lo gastado estaba en tu lista.</span>` : '<span></span>'}
+            ${nProductos ? `<button class="pedido-btn" onclick="openCompraProductos()">tus productos. <small>${nProductos}</small></button>` : ''}
+        </div>
         <div class="compra-seccion-titulo compra-historial-titulo">compras.</div>
         ${[...d.historial].sort((a, b) => b.fecha.localeCompare(a.fecha)).map(c => {
             const plan = (c.items || []).filter(i => i.planeado);
@@ -289,6 +348,41 @@ function renderCompraHistorial() {
                 <span class="compra-hist-total">${c.total ? financeMoney(c.total) : '—'}</span>
             </button>`;
         }).join('')}`;
+}
+
+// ---- «tus productos.»: todo lo que Bitácora ha ido recogiendo ----
+let compraProdBusca = '', compraProdOrden = 'nombre', compraProdTienda = '';
+
+function openCompraProductos() {
+    const tiendas = [...new Set(compraProductos().map(p => p.tienda).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    showModal(`
+        <div class="modal-title">tus productos.</div>
+        <p class="finance-modal-note" style="margin-top:0">Todo lo que ha salido en tus tickets, cada uno con su tienda y lo último que pagaste. Entre paréntesis, cuánto ha cambiado desde la primera vez.</p>
+        <input id="compra-prod-busca" class="modal-input" placeholder="Buscar un producto..." value="${escapeHtml(compraProdBusca)}" oninput="compraProdBusca=this.value;pintarCompraProductos()" autocomplete="off">
+        <div class="compra-prod-filtros">
+            <select class="modal-input" onchange="compraProdOrden=this.value;pintarCompraProductos()">${[['nombre', 'por nombre'], ['barato', 'más baratos primero'], ['caro', 'más caros primero'], ['tienda', 'por tienda'], ['cambio', 'lo que más ha cambiado']].map(([k, t]) => `<option value="${k}" ${k === compraProdOrden ? 'selected' : ''}>${t}</option>`).join('')}</select>
+            <select class="modal-input" onchange="compraProdTienda=this.value;pintarCompraProductos()"><option value="">todas las tiendas</option>${tiendas.map(t => `<option value="${escapeHtml(t)}" ${t === compraProdTienda ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}</select>
+        </div>
+        <div id="compra-prod-lista" class="compra-prod-lista"></div>
+    `);
+    pintarCompraProductos();
+}
+
+function pintarCompraProductos() {
+    const caja = document.getElementById('compra-prod-lista');
+    if (!caja) return;
+    const q = compraClave(compraProdBusca);
+    let ps = compraProductos().filter(p => (!q || compraClave(p.texto).includes(q) || p.clave.includes(q)) && (!compraProdTienda || p.tienda === compraProdTienda));
+    const porNombre = (a, b) => a.texto.localeCompare(b.texto) || a.actual - b.actual;
+    ps.sort(compraProdOrden === 'barato' ? (a, b) => a.actual - b.actual
+        : compraProdOrden === 'caro' ? (a, b) => b.actual - a.actual
+        : compraProdOrden === 'tienda' ? (a, b) => (a.tienda || '').localeCompare(b.tienda || '') || porNombre(a, b)
+        : compraProdOrden === 'cambio' ? (a, b) => Math.abs(b.variacion || 0) - Math.abs(a.variacion || 0) || porNombre(a, b)
+        : porNombre);
+    caja.innerHTML = ps.map(p => `<div class="compra-prod-fila">
+        <span><b>${escapeHtml(p.texto)}</b><small>${escapeHtml(p.tienda || 'sin tienda')} · ${new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${p.precios.length > 1 ? ` · ${p.precios.length} veces` : ''}</small></span>
+        <i>${financeMoney(p.actual)}${p.variacion ? ` <em class="${p.variacion > 0 ? 'sube' : 'baja'}">(${p.variacion > 0 ? '+' : ''}${p.variacion} %)</em>` : ''}</i>
+    </div>`).join('') || '<div class="finance-empty-line">Nada con ese nombre.</div>';
 }
 
 function openCompraHistorial(id) {

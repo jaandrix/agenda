@@ -8427,3 +8427,29 @@ body.acuarela #fab { color:var(--m-sobre-acento); }
 .m-app { padding-bottom:150px; }
 .m-menu-cuerpo { padding-bottom:146px; }
 .pomo-pastilla { bottom:126px !important; }
+
+/* Compras: la franja de un vistazo y «tus productos.». */
+.compra-franja { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px; margin-bottom:8px; }
+.compra-dato { display:flex; flex-direction:column; gap:4px; padding:14px 16px; border-radius:18px; background:var(--bg-card); border:1px solid var(--border); min-width:0; }
+.compra-dato-etq { font-size:12px; font-weight:700; color:var(--text-secondary); }
+.compra-dato > b { font-size:24px; font-weight:800; letter-spacing:-.03em; color:var(--text-primary); font-variant-numeric:tabular-nums; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.compra-dato small { font-size:12px; line-height:1.4; color:var(--text-secondary); }
+.compra-dato-aviso > b { font-size:17px; letter-spacing:-.01em; }
+.compra-cesta { display:flex; flex-direction:column; gap:3px; margin:2px 0 2px; }
+.compra-cesta div { display:flex; align-items:baseline; gap:8px; font-size:14px; }
+.compra-cesta span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-primary); font-weight:600; }
+.compra-cesta b { font-weight:800; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.compra-cesta small { font-size:11px; }
+.compra-franja-pie { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; font-size:13px; color:var(--text-secondary); }
+.compra-franja-pie b { color:var(--text-primary); }
+.compra-franja-pie small { margin-left:4px; color:var(--text-secondary); }
+.compra-prod-filtros { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0 6px; }
+.compra-prod-lista { max-height:55vh; overflow-y:auto; }
+.compra-prod-fila { display:flex; align-items:center; gap:12px; padding:9px 0; border-top:1px solid var(--border); }
+.compra-prod-fila span { flex:1; min-width:0; }
+.compra-prod-fila b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14.5px; font-weight:600; color:var(--text-primary); }
+.compra-prod-fila small { font-size:12px; color:var(--text-secondary); }
+.compra-prod-fila i { flex-shrink:0; font-style:normal; font-weight:800; font-size:14.5px; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.compra-prod-fila em { font-style:normal; font-size:12px; font-weight:700; }
+.compra-prod-fila em.sube { color:#c2410c; }
+.compra-prod-fila em.baja { color:#2f7d4f; }
