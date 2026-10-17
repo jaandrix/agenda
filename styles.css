@@ -8415,3 +8415,15 @@ body.acuarela #fab { color:var(--m-sobre-acento); }
 .compra-frec-fila em { font-style:normal; font-size:12.5px; color:var(--text-secondary); }
 .compra-frec-fila .profe-chip { flex-shrink:0; }
 .compra-frec-quitar { color:#dc2626; }
+
+/* Barra de abajo v9: algo más alta y con los iconos un pelín mayores. */
+.m-tabbar { height:112px; padding-bottom:18px; }
+.m-tab { height:94px; gap:6px; font-size:12.5px; }
+.m-tab svg { width:27px; height:27px; padding:11px; }
+.m-tab-letra { width:31px; height:31px; margin:9px; font-size:15px; box-shadow:0 0 0 9px color-mix(in srgb, var(--text-primary) 6%, transparent); }
+.m-tab.activa .m-tab-letra { box-shadow:0 0 0 9px color-mix(in srgb, var(--text-primary) 13%, transparent); }
+.m-tab-mas { width:72px; height:72px; margin-top:-28px; }
+.m-tab-mas svg { width:30px; height:30px; }
+.m-app { padding-bottom:150px; }
+.m-menu-cuerpo { padding-bottom:146px; }
+.pomo-pastilla { bottom:126px !important; }
