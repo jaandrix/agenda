@@ -620,13 +620,13 @@
         // Dos tonos únicos — "asfalto" (oscuro, por defecto, sin clase en
         // <body>) y "papel" (claro, body.papel). Sustituyen a los tres
         // temas anteriores (oscuro puro / claro puro / beige).
-        const THEMES = ['asfalto', 'papel', 'acuarela', 'fundador'];
-        const THEME_LABELS = { asfalto: 'asfalto', papel: 'papel', acuarela: 'teja', fundador: 'fundador' };
+        const THEMES = ['asfalto', 'papel', 'acuarela', 'pizarra', 'fundador'];
+        const THEME_LABELS = { asfalto: 'asfalto', papel: 'papel', acuarela: 'teja', pizarra: 'pizarra', fundador: 'fundador' };
         // Teja (antes acuarela, de ahí la clave y la clase) es un tema
         // claro: lleva también la clase papel para heredar todos los
         // ajustes de tema claro, y encima los suyos (body.acuarela).
         // Fundador: oscuro con dorado, solo para socios fundadores.
-        const THEME_CLASSES = { asfalto: [], papel: ['papel'], acuarela: ['papel', 'acuarela'], fundador: ['fundador'] };
+        const THEME_CLASSES = { asfalto: [], papel: ['papel'], acuarela: ['papel', 'acuarela'], pizarra: ['papel', 'pizarra'], fundador: ['fundador'] };
         // Los temas antiguos ('dark'/'light'/'beige') que ya hubiera
         // guardados en localStorage de sesiones previas migran al tono más
         // parecido la primera vez que se cargan, para no cambiarle el tema
@@ -643,7 +643,7 @@
         }
 
         function aplicarClasesTema(tema) {
-            ['papel', 'acuarela', 'fundador'].forEach(c => document.body.classList.remove(c));
+            ['papel', 'acuarela', 'pizarra', 'fundador'].forEach(c => document.body.classList.remove(c));
             (THEME_CLASSES[tema] || []).forEach(c => document.body.classList.add(c));
             // La barra de estado del móvil toma el fondo del tema.
             const meta = document.querySelector('meta[name="theme-color"]');
@@ -686,7 +686,7 @@
 
         function renderSelectorTema() {
             const actual = temaActual();
-            const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F', '#161514'], fundador: ['#1a1916', '#d4b06a', '#f1ead8'] };
+            const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F', '#161514'], pizarra: ['#C0C8CA', '#2E4156', '#1A2D42'], fundador: ['#1a1916', '#d4b06a', '#f1ead8'] };
             return `<div class="tema-selector">${temasDisponibles().map(t => `
                 <button class="tema-opcion ${t === actual ? 'active' : ''}" data-tema="${t}" onclick="setTheme('${t}')">
                     <span class="tema-muestra">${muestras[t].map(c => `<span style="background:${c}"></span>`).join('')}</span>

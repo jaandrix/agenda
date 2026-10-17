@@ -103,7 +103,8 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   semana del día elegido (o el mes en bolitas, `mobileVerMes`) y el día como horario (`.m-tl`, con marca de
   "ahora"). Paleta propia del móvil (`body.mobile-standalone` / `body.pwa` + tema) con `--m-superficie`
   para las tarjetas. Tamaño de letra del móvil con `zoom` (`TAMANOS_LETRA` en datos.js).
-- **Tres temas:** "asfalto" (oscuro, por defecto, sin clase), "papel" (claro, clase
+- **Temas:** "pizarra" (gris azulado con tinta azul marino, clase `body.papel.pizarra`, sus colores al final de
+  `styles.css` en "TEMA PIZARRA"; barra lateral y barra de abajo en `#1A2D42`). Y los de siempre: "asfalto" (oscuro, por defecto, sin clase), "papel" (claro, clase
   `body.papel`) y "teja" (piedra cálida, negro y naranja teja a lo cartel suizo; por
   compatibilidad conserva la clave `acuarela` y las clases `body.papel.acuarela`:
   hereda todo lo de papel y añade su paleta). Variables CSS en `:root`, `body.papel` y

@@ -169,6 +169,7 @@ montarCerebro();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-17', rama: 'todos', nombre: 'tema pizarra', para: 'quien quiere un tono frío y sereno.', texto: 'Un cuarto tema: gris azulado de pizarra con tinta azul marino. Se elige en Ajustes o en el menú del móvil.' },
     { fecha: '2026-10-17', rama: 'home', nombre: 'compras', para: 'quien quiere saber lo que gasta en el súper.', texto: 'Pásale el ticket a Claude o ChatGPT y Bitácora guarda cada precio y su tienda, separa lo que estaba en la lista de lo que añadiste allí y aprende dónde te sale más barato.' },
     { fecha: '2026-10-16', rama: 'todos', nombre: 'tu calendario en otras apps', para: 'quien usa Google o el Calendario del iPhone.', texto: 'Suscríbete a Bitácora desde tu calendario de siempre: eventos, cumpleaños y viajes, al día solos.' },
     { fecha: '2026-10-16', rama: 'work', nombre: 'proyectos', para: 'quien tiene algo entre manos.', texto: 'Cada proyecto con su siguiente paso a la vista, la colina para saber dónde está, tareas por fases que van al planificador y un diario.' },

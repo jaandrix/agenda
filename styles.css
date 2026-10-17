@@ -7904,11 +7904,11 @@ body.mobile-standalone:not(.papel):not(.fundador), body.pwa:not(.papel):not(.fun
     --border:rgba(244,242,235,.08); --border-strong:rgba(244,242,235,.16);
     --accent:#f4f2eb; --accent-contrast:#121211; --m-punto:#2a2a27; --m-superficie:#1d1d1b;
 }
-body.mobile-standalone.papel:not(.acuarela), body.pwa.papel:not(.acuarela) {
+body.mobile-standalone.papel:not(.acuarela):not(.pizarra), body.pwa.papel:not(.acuarela):not(.pizarra) {
     --bg-app:#efeee9; --bg-card:#ffffff; --bg-card-hover:#f6f5f1; --bg-modal:#ffffff;
     --border:rgba(22,21,20,.07); --m-superficie:#ffffff; --m-punto:#e2e0d9;
 }
-body.mobile-standalone.acuarela, body.pwa.acuarela, body.mobile-standalone.fundador, body.pwa.fundador { --m-superficie:var(--bg-card); }
+body.mobile-standalone.acuarela, body.pwa.acuarela, body.mobile-standalone.fundador, body.pwa.fundador, body.mobile-standalone.pizarra, body.pwa.pizarra { --m-superficie:var(--bg-card); }
 body.mobile-standalone { background:var(--bg-app); }
 
 /* Más rápido al tocar: sin el retraso del doble toque ni el destello gris. */
@@ -8526,3 +8526,78 @@ a { text-underline-offset:3px; }
 .m-sellos i { width:18px; height:18px; box-sizing:border-box; border-radius:4px; border:1.5px solid color-mix(in srgb, var(--text-primary) 30%, transparent); }
 .m-sellos i.on { background:var(--m-acento); border-color:var(--m-acento); }
 .m-sellos span { margin-left:6px; font-size:14px; font-weight:600; color:var(--text-secondary); }
+
+
+/* ============================================================
+   TEMA PIZARRA: el gris azulado de la piedra de pizarra, frío y sereno.
+   Cinco tonos: #D4D8DD (lo más claro: tarjetas y hojas), #C0C8CA (el
+   fondo), #AAB7B7 (bordes, campos y lo apagado), #2E4156 (el acento y el
+   texto secundario) y #1A2D42 (la tinta: texto, barra lateral y lo
+   activo). Hereda todo lo de papel y cambia la paleta.
+   ============================================================ */
+body.papel.pizarra {
+    --bg-app: #C0C8CA;
+    --bg-sidebar: #1A2D42;
+    --bg-card: #D4D8DD;
+    --bg-card-hover: #C8CED3;
+    --bg-input: #C6CDD0;
+    --bg-modal: #D4D8DD;
+    --bg-fab: #2E4156;
+    --border: #B4BFC0;
+    --border-strong: #AAB7B7;
+    --text-primary: #1A2D42;
+    --text-secondary: #2E4156;
+    --text-muted: #6E7D86;
+    --accent: #1A2D42;
+    --accent-contrast: #D4D8DD;
+    --badge-pending-bg: #C0C8CA;
+    --badge-pending-text: #1A2D42;
+    --badge-progress-bg: #AAB7B7;
+    --badge-progress-text: #1A2D42;
+    --badge-done-bg: #1A2D42;
+    --badge-done-text: #D4D8DD;
+    --badge-default-bg: #C0C8CA;
+    --badge-default-text: #1A2D42;
+    --shadow: 0 6px 22px rgba(26,45,66,0.12);
+    --landing-grid-line: rgba(26,45,66,0.07);
+    --m-acento: #2E4156;
+    --m-sobre-acento: #D4D8DD;
+    --m-punto: #AAB7B7;
+}
+/* El texto secundario es el azul medio: el apagado, algo más claro. */
+body.papel.pizarra .m-hero-dia, body.papel.pizarra .m-etiqueta { color:#56677A; }
+
+/* Escritorio: la barra lateral en la tinta, con letras claras. */
+body.papel.pizarra #sidebar {
+    --text-primary: #D4D8DD;
+    --text-secondary: #AAB7B7;
+    --text-muted: #7F8F9C;
+    --bg-card: #2E4156;
+    --bg-card-hover: #2E4156;
+    --border: rgba(212,216,221,.12);
+    --border-strong: rgba(212,216,221,.22);
+    --accent: #D4D8DD;
+    --accent-contrast: #1A2D42;
+    background: #1A2D42;
+    color: #D4D8DD;
+}
+
+/* Móvil: el fondo en #C0C8CA y las tarjetas en #D4D8DD; la barra de abajo
+   y el menú en la tinta, como la lateral del escritorio. */
+body.mobile-standalone.pizarra, body.pwa.pizarra { --m-superficie:#D4D8DD; --m-punto:#AAB7B7; }
+body.mobile-standalone.pizarra .m-tabbar {
+    background:#1A2D42; border-color:#1A2D42;
+    --text-primary:#D4D8DD; --text-secondary:#AAB7B7; --text-muted:#8696A3;
+}
+body.mobile-standalone.pizarra .m-tab-mas { background:#AAB7B7; color:#1A2D42; border-color:#1A2D42; }
+body.mobile-standalone.pizarra .m-tab-letra { background:#AAB7B7; color:#1A2D42; }
+body.mobile-standalone.pizarra .m-tab.activa .m-tab-letra { background:#D4D8DD; }
+
+/* El botón de apuntar del escritorio: la tinta con el rayo claro. */
+body.pizarra #fab { background:#1A2D42; color:#D4D8DD; }
+body.pizarra #fab.fab-pulse::after { border-color:#1A2D42; }
+body.pizarra .planner-stamp-bar { background:#1A2D42; }
+body.pizarra .planner-stamp-label { color:#AAB7B7; }
+body.pizarra .planner-stamp-count { color:#D4D8DD; }
+body.pizarra .planner-stamp-dot { border-color:#56677A; }
+body.pizarra .planner-stamp-dot.filled { background:#D4D8DD; border-color:#D4D8DD; }

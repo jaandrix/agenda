@@ -28,7 +28,7 @@ const GUIA = [
             'Si usas Bitácora en varios dispositivos a la vez, se combinan los cambios de todos sin pisarse.',
         ],
         trucos: [
-            'Tres temas en Ajustes: <b>asfalto</b> (oscuro), <b>papel</b> (claro) y <b>teja</b> (piedra cálida con naranja).',
+            'Cuatro temas en Ajustes: <b>asfalto</b> (oscuro), <b>papel</b> (claro), <b>teja</b> (piedra cálida con naranja) y <b>pizarra</b> (gris azulado con tinta azul marino).',
             'Si no sabes dónde está algo, pulsa <b>Enter</b> y escríbelo: el buscador te lleva directo.',
         ],
     },
