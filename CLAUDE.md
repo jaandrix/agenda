@@ -272,7 +272,10 @@ a menor resolución.
   (`aprendido`, clave `compraClave`), "lo de siempre" (`frecuentes`), `historial` de compras (al terminar o con el ticket) y
   "terminar la compra." que apunta el gasto en Finanzas. El ticket llega por la herramienta `ticket_compra` del conector (op
   `ticket`, `compraAplicarTicket` / `compraDeshacerTicket`): cada línea con precio, sección y `de_lista`; lo que no estaba en la
-  lista es un extra. Precios (último por tienda, más barato, lo que sube) y "cómo te ciñes" salen del historial. Mercadona tiene API pública sin CORS (tienda.mercadona.es/api,
+  lista es un extra. Precios (último por tienda, más barato, lo que sube) y "cómo te ciñes" salen del historial.
+  Pestaña recetas (`listaCompra.recetas`, `openReceta` / `openEditarReceta` / `recetaALaLista`): ingredientes con
+  coste según los tickets (cada ingrediente cuenta una vez) y paso a la lista marcado con `recetas`; herramienta
+  `receta` del conector (op `receta`, `compraAplicarReceta` / `compraDeshacerReceta`). Mercadona tiene API pública sin CORS (tienda.mercadona.es/api,
   necesitaría una Edge Function); DIA bloquea con antibots: no se usa.
 - **Estudiar (`js/estudiar.js`, vista `estudiar`, opcional de #school):** separado de Estudios a propósito.
   `estudiar` (sincronizado): pomodoro (el que está en marcha va en localStorage `bitacora-pomodoro`, con

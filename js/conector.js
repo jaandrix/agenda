@@ -140,6 +140,11 @@
                 if (!ids.length) return null;
                 return linea('compra', `${ids.length} ${ids.length === 1 ? 'cosa' : 'cosas'} a la lista «${corto(lista.nombre)}».`, { accion: 'compra', listaId: lista.id, ids });
             }
+            if (op.tipo === 'receta') {
+                const r = compraAplicarReceta(op, ref);
+                if (!r) return null;
+                return linea('compra', r.resumen, r.deshacer);
+            }
             if (op.tipo === 'ticket') {
                 const r = compraAplicarTicket(op, ref);
                 if (!r) return null;
@@ -435,6 +440,8 @@
                 e.tarjetas = e.tarjetas.filter(t => !fuera.has(t.id));
                 Object.keys(e.repasos).forEach(k => { if (fuera.has(k.split(':')[0])) delete e.repasos[k]; });
                 if (d.mazoId && !e.tarjetas.some(t => t.mazoId === d.mazoId)) e.mazos = e.mazos.filter(m => m.id !== d.mazoId);
+            } else if (d.accion === 'receta') {
+                compraDeshacerReceta(d);
             } else if (d.accion === 'ticket') {
                 compraDeshacerTicket(d);
             } else if (d.accion === 'compra') {
@@ -490,7 +497,7 @@
         // Se aplican solos (el usuario no quiere validarlos): crear y editar
         // eventos, las entradas con QR de un evento y Ocio. El resto espera
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
-        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'proyecto'];
+        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto'];
         // Filas ya validadas o descartadas aquí que el servidor quizá aún no
         // ha borrado (se borran después de guardar): sin esto, una lectura
         // de la bandeja en ese intervalo las devolvía como pendientes y
@@ -623,6 +630,7 @@
                 }
                 case 'tarjetas': return { tipo: 'tarjetas de estudio', texto: `${(op.tarjetas || []).length} en «${op.mazo}»`, meta: '', detalle: (op.tarjetas || []).slice(0, 6).map(t => t.frente).join('\n') };
                 case 'compra': return { tipo: 'lista de la compra', texto: (op.cosas || []).join(', '), meta: op.lista || '' };
+                case 'receta': return { tipo: 'receta', texto: `«${op.nombre || ''}»`, meta: `${(op.ingredientes || []).length} ingredientes` };
                 case 'ticket': return { tipo: 'ticket de la compra', texto: op.tienda || '', meta: [op.total ? financeMoney(Number(op.total)) : '', `${(op.lineas || []).length} productos`].filter(Boolean).join(' · ') };
                 case 'proyecto': return { tipo: 'proyecto', texto: op.accion === 'tareas' ? (op.tareas || []).join(', ') : op.tarea || op.texto || '', meta: op.accion };
                 case 'enlace': return { tipo: 'nuevo enlace', texto: `«${op.titulo}»`, meta: [op.url.replace(/^https?:\/\//, '').slice(0, 60), op.categoryId ? (linkCategories.find(c => c.id === op.categoryId)?.name || '') : ''].filter(Boolean).join(' · ') };

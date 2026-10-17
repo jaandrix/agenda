@@ -19,11 +19,11 @@
 const COMPRA_SECCIONES = [
     // Antes que frutas y verduras: «patatas de jamón» son patatas fritas.
     ['aperitivo', 'aperitivos y dulces.', /\b(patatas? (?:fritas|de bolsa|de jamon|jamon|serrano|sabor|onduladas|campesinas|lisas|al punto de sal|chips)|chips|nachos|doritos|snack|ganchito|palomita|maiz frito|frutos secos|cacahuet|pipas|pistacho|anacardo|chicle|caramelo|golosina|gominola|regaliz|chocolatina|bombon|tortitas? (?:de maiz|de arroz|campestre)|aceitunas?|encurtido|pepinillo|banderilla)/],
-    ['fruta', 'frutas y verduras.', /\b(manzan|platan|naranj|mandarin|limon|lima\b|pera\b|peras\b|uvas?\b|fres|kiwi|melon|sandi|pina\b|mango|aguacate|tomate(?! frito)|lechug|cebolla|ajo\b|ajos\b|patata|zanahori|pimient|calabac|calabaza|berenjen|pepino|brocoli|coliflor|espinac|acelga|champin|seta|fruta|verdura|ensalad|canonigo|rucula|perejil|cilantro|albahaca|puerro|apio|judias? verdes?|alcachof|esparrago|boniato|melocoton|nectarina|cereza|arandano|frambuesa)/],
+    ['fruta', 'frutas y verduras.', /\b(manzan|platan|naranj|mandarin|limon|lima\b|pera\b|peras\b|uvas?\b|fres|kiwi|melon|sandi|pina\b|mango|aguacate|tomate(?! frito)|lechug|cebolla|ajo\b|ajos\b|patata|zanahori|pimiento|calabac|calabaza|berenjen|pepino|brocoli|coliflor|espinac|acelga|champin|seta|fruta|verdura|ensalad|canonigo|rucula|perejil|cilantro|albahaca|puerro|apio|judias? verdes?|alcachof|esparrago|boniato|melocoton|nectarina|cereza|arandano|frambuesa)/],
     ['fresco', 'carne y pescado.', /\b(pollo|pavo|ternera|cerdo|solomillo|lomo|costilla|secreto|presa|pluma|chuleta|entrecot|cordero|conejo|pechuga|muslo|alitas?|carne|filete|hamburgues|albondiga|salchich|chorizo|jamon|fuet|salchichon|mortadela|bacon|beicon|panceta|pescado|salmon|merluza|bacalao|dorada|lubina|sardina|boqueron|gamba|langostino|calamar|sepia|pulpo|mejill|almeja)/],
     ['lacteo', 'lácteos y huevos.', /\b(leche(?! de avena| de soja| de almendra)|yogur|queso|roquefort|mozzarella|mantequilla|margarina|nata|huevo|kefir|batido|natillas|flan|cuajada|requeson)/],
     ['pan', 'panadería.', /\b(pan\b|panes|barra|baguette|bocadillo|chapata|hogaza|bollo|bolleria|croissant|cruasan|magdalen|napolitana|donut|tostad|biscote|bizcocho|galleta|picos\b|rosquilla)/],
-    ['despensa', 'despensa.', /\b(arroz|pasta|macarr|espagu|tallarin|fideo|lenteja|garbanzo|alubia|judion|harina|azucar|sal\b|aceite|vinagre|atun|sardinas en lata|conserva|tomate frito|tomate triturado|salsa|ketchup|mayonesa|mostaza|especia|pimenton|oregano|caldo|pastilla de caldo|sopa|pure|cafe|te\b|infusion|manzanilla|cacao|cereal|avena|muesli|miel|mermelada|chocolate|crema de cacao|levadura|pan rallado|maiz dulce)/],
+    ['despensa', 'despensa.', /\b(arroz|pasta|macarr|espagu|tallarin|fideo|lenteja|garbanzo|alubia|judion|harina|azucar|sal\b|aceite|vinagre|atun|sardinas en lata|conserva|tomate frito|tomate triturado|salsa|ketchup|mayonesa|mostaza|especia|pimienta|pimenton|oregano|caldo|pastilla de caldo|sopa|pure|cafe|te\b|infusion|manzanilla|cacao|cereal|avena|muesli|miel|mermelada|chocolate|crema de cacao|levadura|pan rallado|maiz dulce)/],
     ['congelado', 'congelados.', /\b(congelad|helado|pizza|nugget|croqueta|empanadilla|guisantes|varitas|lasana)/],
     ['bebida', 'bebidas.', /\b(agua|refresco|coca.?cola|fanta|aquarius|zumo|nectar|cerveza|vino|cava|sidra|bebida|tonica|gaseosa|leche de (?:avena|soja|almendra)|bebida vegetal|isotonica|energetica)/],
     ['limpieza', 'limpieza y hogar.', /\b(detergente|suavizante|lejia|friegasuelos|lavavajillas|fregona|mopa|bayeta|estropajo|papel de cocina|papel higienico|servilleta|bolsas? de basura|basura|limpia|limpiador|quitagrasas|ambientador|insecticida|pilas?\b|bombilla|papel de aluminio|film|vela)/],
@@ -39,6 +39,7 @@ function datosCompra() {
     if (!listaCompra.frecuentes || typeof listaCompra.frecuentes !== 'object') listaCompra.frecuentes = {};
     if (!Array.isArray(listaCompra.historial)) listaCompra.historial = [];
     if (!listaCompra.aprendido || typeof listaCompra.aprendido !== 'object') listaCompra.aprendido = {};
+    if (!Array.isArray(listaCompra.recetas)) listaCompra.recetas = [];
     if (!listaCompra.listas.length) listaCompra.listas.push({ id: 'lista_' + Date.now(), nombre: 'Casa', items: [] });
     listaCompra.listas.forEach(l => { if (!Array.isArray(l.items)) l.items = []; });
     if (!listaCompra.listas.some(l => l.id === listaCompra.actual)) listaCompra.actual = listaCompra.listas[0].id;
@@ -138,7 +139,8 @@ function compraTiendaDeLista(l) {
 
 function renderCompra() {
     const d = datosCompra();
-    const pestanas = `<div class="profe-pestanas compra-pestanas">${[['lista', 'lista.'], ['historial', `historial.${d.historial.length ? ` <small>${d.historial.length}</small>` : ''}`]].map(([k, t]) => `<button class="profe-chip ${compraPestana === k ? 'activa' : ''}" onclick="compraPestana='${k}';render()">${t}</button>`).join('')}</div>`;
+    const pestanas = `<div class="profe-pestanas compra-pestanas">${[['lista', 'lista.'], ['historial', `historial.${d.historial.length ? ` <small>${d.historial.length}</small>` : ''}`], ['recetas', `recetas.${d.recetas.length ? ` <small>${d.recetas.length}</small>` : ''}`]].map(([k, t]) => `<button class="profe-chip ${compraPestana === k ? 'activa' : ''}" onclick="compraPestana='${k}';render()">${t}</button>`).join('')}</div>`;
+    if (compraPestana === 'recetas') return `<div class="compra">${renderCompraCabecera(`${d.recetas.length} ${d.recetas.length === 1 ? 'receta' : 'recetas'}.`)}${pestanas}${renderCompraRecetas()}</div>`;
     if (compraPestana === 'historial') return `<div class="compra">${renderCompraCabecera(`${d.historial.length} ${d.historial.length === 1 ? 'compra guardada' : 'compras guardadas'}.`)}${pestanas}${renderCompraHistorial()}</div>`;
     const l = compraListaActual();
     const tienda = compraTiendaDeLista(l);
@@ -152,7 +154,7 @@ function renderCompra() {
         const p = compraPrecioItem(it, tienda);
         return `<div class="compra-item ${it.hecho ? 'hecho' : ''}">
         <button class="compra-check ${it.hecho ? 'on' : ''}" onclick="compraMarcar('${it.id}')" aria-label="${it.hecho ? 'Sacar del carro' : 'Al carro'}"></button>
-        <button class="compra-item-txt" onclick="openCompraItem('${it.id}')"><b>${escapeHtml(it.texto)}</b>${it.cantidad ? `<span>${escapeHtml(it.cantidad)}</span>` : ''}</button>
+        <button class="compra-item-txt" onclick="openCompraItem('${it.id}')"><b>${escapeHtml(it.texto)}</b>${it.cantidad ? `<span>${escapeHtml(it.cantidad)}</span>` : ''}${(it.recetas || []).length ? `<em>para ${escapeHtml(it.recetas.join(', ').toLowerCase())}</em>` : ''}</button>
         ${p ? `<i class="${p.estimado ? 'estimado' : ''}" title="${p.estimado ? `Lo que pagaste la última vez${p.tienda ? ' en ' + escapeHtml(p.tienda) : ''}` : ''}">${p.estimado ? '≈ ' : ''}${financeMoney(p.precio * compraUnidades(it))}</i>` : ''}
     </div>`;
     };
@@ -750,4 +752,197 @@ function compraDeshacerTicket(dh) {
     if (dh.txCreado) financePro.transactions = financePro.transactions.filter(t => t.id !== dh.txCreado);
     if (dh.txAntes) { const t = financePro.transactions.find(x => x.id === dh.txAntes.id); if (t) t.amount = dh.txAntes.amount; }
     if (dh.aprendidoAntes) d.aprendido = dh.aprendidoAntes;
+}
+
+// ============================================================
+//  RECETAS (pestaña de Compras)
+//  Cada receta con sus ingredientes (los de tus compras, con lo que te
+//  costaron según tus tickets), raciones, pasos y notas. «añadir a la
+//  lista.» mete lo que falte en la lista de la compra, marcado con la
+//  receta para la que es. Datos: listaCompra.recetas = [{ id, nombre,
+//  raciones, ingredientes: [{ texto, cantidad }], pasos, notas, creada }].
+// ============================================================
+function compraReceta(id) { return datosCompra().recetas.find(r => r.id === id); }
+
+// Lo que cuesta, con el último precio de cada ingrediente en tus tickets.
+function compraCosteReceta(r) {
+    let total = 0, conPrecio = 0;
+    (r.ingredientes || []).forEach(i => {
+        const p = compraPrecioItem({ texto: i.texto, cantidad: '', precio: null });
+        if (p) { total += p.precio; conPrecio++; }
+    });
+    return { total, conPrecio, n: (r.ingredientes || []).length };
+}
+
+function compraIngredientesTexto(r) {
+    return (r.ingredientes || []).map(i => [i.cantidad, i.texto].filter(Boolean).join(' ')).join('\n');
+}
+
+function renderCompraRecetas() {
+    const d = datosCompra();
+    const nueva = '<button class="btn-modal-primary compra-receta-nueva" onclick="openEditarReceta()">+ receta.</button>';
+    if (!d.recetas.length) return `${nueva}<div class="compra-vacio"><b>tus recetas, con lo que llevan.</b>Apunta lo que cocinas a menudo con sus ingredientes: Bitácora te dirá cuánto te cuesta cada una según tus tickets y, cuando quieras hacerla, pasa a la lista lo que falte. También puedes pedírselo a Claude o ChatGPT con el conector («guarda esta receta en Bitácora»).</div>`;
+    const enLista = new Set(compraListaActual().items.filter(i => !i.hecho).map(i => compraClave(i.texto)));
+    return `${nueva}<div class="compra-recetas">${[...d.recetas].sort((a, b) => a.nombre.localeCompare(b.nombre)).map(r => {
+        const c = compraCosteReceta(r);
+        const faltan = (r.ingredientes || []).filter(i => !enLista.has(compraClave(i.texto))).length;
+        return `<div class="compra-receta">
+            <button class="compra-receta-cuerpo" onclick="openReceta('${r.id}')">
+                <b>${escapeHtml(r.nombre)}</b>
+                <small>${c.n} ${c.n === 1 ? 'ingrediente' : 'ingredientes'}${r.raciones ? ` · ${r.raciones} ${Number(r.raciones) === 1 ? 'ración' : 'raciones'}` : ''}${c.conPrecio ? ` · ≈ ${financeMoney(c.total)}${r.raciones > 1 ? ` (${financeMoney(c.total / r.raciones)} la ración)` : ''}` : ''}</small>
+            </button>
+            ${faltan ? `<button class="pedido-btn" onclick="recetaALaLista('${r.id}')">a la lista.</button>` : '<span class="compra-receta-ok">en la lista.</span>'}
+        </div>`;
+    }).join('')}</div>`;
+}
+
+function openReceta(id) {
+    const r = compraReceta(id);
+    if (!r) return;
+    const c = compraCosteReceta(r);
+    const enLista = new Set(compraListaActual().items.filter(i => !i.hecho).map(i => compraClave(i.texto)));
+    showModal(`
+        <div class="modal-title">${escapeHtml(r.nombre)}.</div>
+        <p class="finance-modal-note" style="margin-top:0">${r.raciones ? `${r.raciones} ${Number(r.raciones) === 1 ? 'ración' : 'raciones'}` : 'Sin raciones'}${c.conPrecio ? ` · ≈ ${financeMoney(c.total)}${c.conPrecio < c.n ? ` (con precio de ${c.conPrecio} de ${c.n} ingredientes)` : ''}` : ''}</p>
+        <div class="compra-seccion-titulo">ingredientes.</div>
+        ${(r.ingredientes || []).map(i => {
+            const p = compraPrecioItem({ texto: i.texto, cantidad: '', precio: null });
+            return `<div class="compra-hist-linea"><span><b>${escapeHtml(i.texto)}</b>${i.cantidad ? `<small>${escapeHtml(i.cantidad)}</small>` : ''}</span><i>${enLista.has(compraClave(i.texto)) ? '<em class="compra-en-lista">en la lista.</em> ' : ''}${p ? `≈ ${financeMoney(p.precio)}` : ''}</i></div>`;
+        }).join('') || '<div class="compra-hist-vacio">Sin ingredientes.</div>'}
+        ${r.pasos ? `<div class="compra-seccion-titulo" style="margin-top:16px">cómo se hace.</div><div class="compra-receta-pasos">${escapeHtml(r.pasos).replace(/\n/g, '<br>')}</div>` : ''}
+        ${r.notas ? `<div class="compra-seccion-titulo" style="margin-top:16px">notas.</div><div class="compra-receta-pasos">${escapeHtml(r.notas).replace(/\n/g, '<br>')}</div>` : ''}
+        <button class="btn-modal-primary" style="margin-top:16px" onclick="recetaALaLista('${r.id}');closeModal()">añadir a la lista lo que falte.</button>
+        <div class="compra-receta-acciones">
+            <button class="btn-secondary" onclick="openEditarReceta('${r.id}')">editar.</button>
+            <button class="btn-secondary" style="color:#dc2626" onclick="borrarReceta('${r.id}')">borrar.</button>
+        </div>
+    `);
+}
+
+function openEditarReceta(id) {
+    const r = id ? compraReceta(id) : null;
+    const productos = [...new Set([...compraProductos().map(p => p.texto), ...Object.keys(datosCompra().frecuentes).map(t => t.charAt(0).toUpperCase() + t.slice(1))])].sort((a, b) => a.localeCompare(b));
+    const habituales = Object.entries(datosCompra().frecuentes).sort((a, b) => b[1] - a[1]).slice(0, 14).map(([t]) => t);
+    showModal(`
+        <div class="modal-title">${r ? 'editar receta.' : 'receta nueva.'}</div>
+        <div class="modal-label">nombre</div>
+        <input id="receta-nombre" class="modal-input" value="${escapeHtml(r?.nombre || '')}" placeholder="Pasta con nata y solomillo">
+        <div class="modal-label">raciones</div>
+        <input id="receta-raciones" class="modal-input" inputmode="numeric" value="${r?.raciones || ''}" placeholder="2">
+        <div class="modal-label">ingredientes <small style="font-weight:500;color:var(--text-secondary)">(uno por línea: «200 g nata», «2 huevos»)</small></div>
+        <textarea id="receta-ingredientes" class="modal-input" rows="6" placeholder="200 g nata\nsolomillo de cerdo\n250 g pasta">${escapeHtml(r ? compraIngredientesTexto(r) : '')}</textarea>
+        ${habituales.length ? `<div class="compra-receta-sugeridas"><span>de tus compras:</span>${habituales.map(t => `<button type="button" class="profe-chip" onclick="recetaAnadirIngrediente('${escapeHtml(t).replace(/'/g, '&#39;')}')">+ ${escapeHtml(t)}</button>`).join('')}</div>` : ''}
+        <input id="receta-buscar" class="modal-input" list="receta-productos" placeholder="Buscar en tus productos y añadir..." onchange="if(this.value){recetaAnadirIngrediente(this.value);this.value=''}" style="margin-top:8px">
+        <datalist id="receta-productos">${productos.map(p => `<option value="${escapeHtml(p)}">`).join('')}</datalist>
+        <div class="modal-label">cómo se hace</div>
+        <textarea id="receta-pasos" class="modal-input" rows="4" placeholder="Los pasos, como los dirías.">${escapeHtml(r?.pasos || '')}</textarea>
+        <div class="modal-label">notas</div>
+        <textarea id="receta-notas" class="modal-input" rows="2" placeholder="De dónde es, trucos...">${escapeHtml(r?.notas || '')}</textarea>
+        <button class="btn-modal-primary" style="margin-top:14px" onclick="guardarReceta(${r ? `'${r.id}'` : ''})">guardar.</button>
+    `);
+    setTimeout(() => document.getElementById('receta-nombre')?.focus(), 60);
+}
+
+function recetaAnadirIngrediente(texto) {
+    const t = document.getElementById('receta-ingredientes');
+    if (!t) return;
+    const lineas = t.value.split('\n').map(x => x.trim()).filter(Boolean);
+    if (!lineas.some(l => compraClave(compraInterpretar(l).texto) === compraClave(texto))) lineas.push(texto.toLowerCase());
+    t.value = lineas.join('\n');
+}
+
+function compraLeerIngredientes(texto) {
+    return String(texto || '').split(/\n/).map(x => x.trim()).filter(Boolean).map(l => {
+        const it = compraInterpretar(l);
+        return { texto: it.texto, cantidad: it.cantidad || '' };
+    }).filter(i => i.texto);
+}
+
+function guardarReceta(id) {
+    const nombre = document.getElementById('receta-nombre')?.value.trim();
+    if (!nombre) { showToast('Ponle un nombre a la receta', true); return; }
+    const d = datosCompra();
+    const datos = {
+        nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1),
+        raciones: Math.max(0, parseInt(document.getElementById('receta-raciones')?.value, 10) || 0) || null,
+        ingredientes: compraLeerIngredientes(document.getElementById('receta-ingredientes')?.value),
+        pasos: document.getElementById('receta-pasos')?.value.trim() || '',
+        notas: document.getElementById('receta-notas')?.value.trim() || '',
+    };
+    const r = id ? compraReceta(id) : null;
+    if (r) Object.assign(r, datos);
+    else d.recetas.push({ id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), creada: todayISO(), ...datos });
+    compraPestana = 'recetas';
+    closeModal();
+    render();
+    guardarCompra();
+    showToast(r ? 'Receta guardada' : 'Receta creada');
+}
+
+function borrarReceta(id) {
+    const r = compraReceta(id);
+    if (!r || !confirm(`¿Borrar la receta «${r.nombre}»?`)) return;
+    datosCompra().recetas = datosCompra().recetas.filter(x => x.id !== id);
+    closeModal();
+    render();
+    guardarCompra();
+}
+
+// Mete en la lista actual los ingredientes que no estén ya, marcados con la
+// receta; si ya estaban, solo les añade la receta. Devuelve lo añadido.
+function recetaALaLista(id, sinAviso) {
+    const r = compraReceta(id);
+    if (!r) return [];
+    const l = compraListaActual();
+    const anadidos = [];
+    (r.ingredientes || []).forEach(i => {
+        const ya = l.items.find(x => !x.hecho && compraClave(x.texto) === compraClave(i.texto));
+        const para = i.cantidad ? `${r.nombre} (${i.cantidad})` : r.nombre;
+        if (ya) { ya.recetas = [...new Set([...(ya.recetas || []), para])]; return; }
+        const it = { id: 'cmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), texto: i.texto, cantidad: '', precio: null, hecho: false, recetas: [para] };
+        l.items.push(it);
+        anadidos.push(it.id);
+    });
+    if (!sinAviso) {
+        render();
+        guardarCompra();
+        showToast(anadidos.length ? `${anadidos.length} ${anadidos.length === 1 ? 'ingrediente' : 'ingredientes'} a la lista «${l.nombre}»` : 'Ya tenías todo en la lista');
+    }
+    return anadidos;
+}
+
+// Op 'receta' del conector: crea la receta (o la actualiza si ya hay una con
+// ese nombre) y, si se pide, pasa a la lista lo que falte.
+function compraAplicarReceta(op, ref) {
+    const d = datosCompra();
+    const nombre = String(op.nombre || '').trim();
+    if (!nombre) return null;
+    const datos = {
+        nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1),
+        raciones: parseInt(op.raciones, 10) || null,
+        ingredientes: compraLeerIngredientes((op.ingredientes || []).join('\n')),
+        pasos: (Array.isArray(op.pasos) ? op.pasos.map((p, k) => `${k + 1}. ${String(p).replace(/^\s*\d+[.)]\s*/, '')}`).join('\n') : String(op.pasos || '')).trim(),
+        notas: String(op.notas || '').trim(),
+    };
+    const previa = d.recetas.find(r => compraClave(r.nombre) === compraClave(datos.nombre));
+    const antes = previa ? JSON.parse(JSON.stringify(previa)) : null;
+    let receta = previa;
+    if (previa) Object.assign(previa, datos);
+    else { receta = { id: `rec_${ref || Date.now()}`, creada: todayISO(), ...datos }; d.recetas.push(receta); }
+    const anadidos = op.a_la_lista ? recetaALaLista(receta.id, true) : [];
+    return {
+        resumen: `Receta «${receta.nombre}»: ${datos.ingredientes.length} ingredientes${anadidos.length ? `, ${anadidos.length} a la lista` : ''}.`,
+        deshacer: { accion: 'receta', id: receta.id, nombre: receta.nombre, antes, listaId: compraListaActual().id, anadidos },
+    };
+}
+
+function compraDeshacerReceta(dh) {
+    const d = datosCompra();
+    if (dh.antes) { const i = d.recetas.findIndex(r => r.id === dh.id); if (i >= 0) d.recetas[i] = dh.antes; }
+    else d.recetas = d.recetas.filter(r => r.id !== dh.id);
+    const l = d.listas.find(x => x.id === dh.listaId);
+    if (l) {
+        l.items = l.items.filter(x => !(dh.anadidos || []).includes(x.id));
+        if (dh.nombre) l.items.forEach(x => { if (x.recetas) x.recetas = x.recetas.filter(t => t !== dh.nombre && !t.startsWith(dh.nombre + ' (')); });
+    }
 }

@@ -8601,3 +8601,18 @@ body.pizarra .planner-stamp-label { color:#AAB7B7; }
 body.pizarra .planner-stamp-count { color:#D4D8DD; }
 body.pizarra .planner-stamp-dot { border-color:#56677A; }
 body.pizarra .planner-stamp-dot.filled { background:#D4D8DD; border-color:#D4D8DD; }
+
+/* Compras: recetas. */
+.compra-receta-nueva { width:auto !important; margin:0 0 14px !important; padding:0 18px !important; }
+.compra-recetas { border-top:1px solid var(--border); }
+.compra-receta { display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); }
+.compra-receta-cuerpo { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; padding:12px 2px; border:0; background:none; font-family:var(--font-family); text-align:left; color:var(--text-primary); cursor:pointer; }
+.compra-receta-cuerpo b { font-size:15.5px; font-weight:700; }
+.compra-receta-cuerpo small { font-size:12.5px; color:var(--text-secondary); }
+.compra-receta-ok { flex-shrink:0; font-size:12.5px; color:var(--text-secondary); }
+.compra-receta-pasos { padding:6px 0; font-size:14px; line-height:1.6; color:var(--text-primary); }
+.compra-receta-acciones { display:flex; gap:8px; margin-top:8px; }
+.compra-receta-acciones .btn-secondary { flex:1; }
+.compra-receta-sugeridas { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; font-size:12.5px; color:var(--text-secondary); }
+.compra-en-lista { font-style:normal; font-size:11.5px; color:var(--text-secondary); }
+.compra-item-txt em { display:block; font-style:normal; font-size:11.5px; color:var(--text-secondary); }

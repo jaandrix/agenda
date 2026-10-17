@@ -571,6 +571,7 @@ const APARTADOS: Record<string, (d: any) => unknown> = {
             })),
             compras_recientes: historial.slice(0, 8).map((c: any) => ({ fecha: c.fecha, tienda: c.tienda || '', total: c.total || null, con_ticket: c.fuente === 'ticket', productos: (c.items || []).map((i: any) => i.texto), extras: (c.items || []).filter((i: any) => !i.planeado).map((i: any) => i.texto) })),
             ultimos_precios: Object.values(precios).slice(0, 150),
+            recetas: (lc.recetas || []).map((r: any) => ({ nombre: r.nombre, raciones: r.raciones || null, ingredientes: (r.ingredientes || []).map((i: any) => [i.cantidad, i.texto].filter(Boolean).join(' ')) })),
         };
     },
 };
@@ -894,6 +895,22 @@ const HERRAMIENTAS = [
         name: 'compra',
         description: 'Añade cosas a la lista de la compra del apartado Compra (se ordenan solas por secciones del súper). Cada cosa puede llevar cantidad y precio: "2 leche", "tomates 1,20 €". Útil para pasar los ingredientes de una receta. Se aplica solo, sin validar.',
         inputSchema: { type: 'object', properties: { cosas: { type: 'array', items: { type: 'string' }, maxItems: 80 }, lista: { type: 'string', description: 'Opcional: nombre de otra lista (si no, la actual)' } }, required: ['cosas'] },
+    },
+    {
+        name: 'receta',
+        description: 'Guarda una receta en Compras → recetas de Bitácora (por ejemplo a partir de una foto, un enlace o lo que el usuario dicte): nombre, raciones, ingredientes (uno por elemento, con su cantidad delante: «200 g nata», «2 huevos») y pasos. Si ya hay una receta con ese nombre, la actualiza. Con a_la_lista: true, además pasa a la lista de la compra los ingredientes que falten. Usa nombres de ingredientes sencillos, como se apuntarían en una lista. Se aplica solo y se puede deshacer.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                nombre: { type: 'string' },
+                raciones: { type: 'number' },
+                ingredientes: { type: 'array', items: { type: 'string' }, maxItems: 60 },
+                pasos: { type: 'array', items: { type: 'string' }, maxItems: 40 },
+                notas: { type: 'string' },
+                a_la_lista: { type: 'boolean', description: 'Pasar a la lista de la compra los ingredientes que falten' },
+            },
+            required: ['nombre', 'ingredientes'],
+        },
     },
     {
         name: 'ticket_compra',
@@ -1299,6 +1316,14 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (!cosas.length) throw new Error('Falta qué comprar');
             await encolar(userId, { tipo: 'compra', cosas, lista: a.lista ? String(a.lista) : '' });
             return `Añadido a la lista de la compra${a.lista ? ' «' + a.lista + '»' : ''}: ${cosas.join(', ')}.`;
+        }
+        case 'receta': {
+            const ingredientes = (Array.isArray(a.ingredientes) ? a.ingredientes : []).map((x: any) => String(x || '').trim()).filter(Boolean).slice(0, 60);
+            const nombre = String(a.nombre || '').trim().slice(0, 120);
+            if (!nombre || !ingredientes.length) throw new Error('Hacen falta el nombre y al menos un ingrediente');
+            const pasos = (Array.isArray(a.pasos) ? a.pasos : []).map((x: any) => String(x || '').trim()).filter(Boolean).slice(0, 40);
+            await encolar(userId, { tipo: 'receta', nombre, raciones: Number(a.raciones) || null, ingredientes, pasos, notas: String(a.notas || '').slice(0, 2000), a_la_lista: a.a_la_lista === true });
+            return `Receta «${nombre}» guardada en Compras → recetas con ${ingredientes.length} ingredientes${a.a_la_lista === true ? '; lo que faltaba pasa a la lista de la compra' : ''}.`;
         }
         case 'ticket_compra': {
             const num = (x: any) => { const n = Number(String(x ?? '').replace(',', '.')); return Number.isFinite(n) ? n : null; };

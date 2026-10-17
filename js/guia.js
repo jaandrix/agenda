@@ -172,6 +172,7 @@ const GUIA = [
             [guiaBoton('tus productos.'), 'Todo lo que ha salido en tus tickets, cada producto con su tienda y lo último que pagaste; entre paréntesis, cuánto ha cambiado desde la primera vez. Se busca por nombre y se ordena por precio, por tienda o por lo que más ha cambiado.'],
             [guiaBoton('≈ precio'), 'En la lista, lo que te costó la última vez según tus tickets (de esa tienda si la lista se llama como ella), y el total estimado arriba.'],
             [guiaBoton('sección'), 'Al abrir un producto puedes cambiarlo de sección; Bitácora lo recuerda. Los tickets también le enseñan dónde va cada cosa.'],
+            [guiaBoton('recetas.'), 'Tus recetas con sus ingredientes (uno por línea, con su cantidad), raciones, pasos y notas. Al escribirlos te sugiere lo que ya compras. Cada una dice lo que te cuesta según tus tickets y por ración, y <b>a la lista.</b> pasa lo que falte a la lista de la compra, marcado con la receta. También puedes decirle a Claude «guarda esta receta en Bitácora» con una foto o un enlace.'],
         ],
     },
     {
