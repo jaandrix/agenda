@@ -437,13 +437,13 @@ function openCompraTerminar() {
         <div class="modal-label">tienda</div>
         <input id="compra-tienda" class="modal-input" list="compra-tiendas" value="${escapeHtml(tienda)}" placeholder="Mercadona, Lidl, el mercado...">
         <datalist id="compra-tiendas">${compraTiendasConocidas().map(t => `<option value="${escapeHtml(t)}">`).join('')}</datalist>
-        <label class="finance-tx-marca"><input type="checkbox" id="compra-a-finanzas" checked onchange="document.getElementById('compra-gasto').hidden=!this.checked"><span><b>apuntar el gasto en finanzas.</b><small>Lo que pagaste, en comida y bebida.</small></span></label>
-        <div id="compra-gasto">
+        <label class="finance-tx-marca"><input type="checkbox" id="compra-a-finanzas" onchange="document.getElementById('compra-gasto').hidden=!this.checked"><span><b>apuntar también el gasto en finanzas.</b><small>Normalmente no hace falta: el cargo llega con el extracto del banco.</small></span></label>
+        <div id="compra-gasto" hidden>
             <div class="lab-horas">
                 <div><div class="modal-label">importe</div><input id="compra-importe" class="modal-input" inputmode="decimal" value="${importe ? importe.toFixed(2).replace('.', ',') : ''}" placeholder="0,00"></div>
                 <div><div class="modal-label">cuenta</div><select id="compra-cuenta" class="modal-input">${cuentas.map(k => `<option value="${k}" ${k === (financePro.cuentaImport || 'bancos') ? 'selected' : ''}>${escapeHtml(financePro.accounts[k]?.name || k)}</option>`).join('')}</select></div>
             </div>
-            <div class="finance-modal-note">Si luego importas el extracto del banco, este gasto se emparejará con el cargo real. Si pasas el ticket por el conector, el importe se corrige con el del ticket.</div>
+            <div class="finance-modal-note">Si luego importas el extracto del banco, este gasto se emparejará con el cargo real.</div>
         </div>
         <button class="btn-modal-primary" onclick="terminarCompra()">terminar.</button>
     `);
@@ -457,8 +457,8 @@ async function terminarCompra() {
     carro.forEach(i => { const k = i.texto.toLowerCase(); d.frecuentes[k] = (d.frecuentes[k] || 0) + 1; });
     l.items = l.items.filter(i => !i.hecho);
     let gasto = '', txId = null, total = 0;
+    const importe = Number(String(document.getElementById('compra-importe')?.value || '').replace(',', '.'));
     if (document.getElementById('compra-a-finanzas')?.checked) {
-        const importe = Number(String(document.getElementById('compra-importe')?.value || '').replace(',', '.'));
         if (importe > 0) {
             total = Math.round(importe * 100) / 100;
             const cat = financePro.categories.find(c => c.type === 'expense' && /comida/i.test(c.name));
@@ -470,7 +470,7 @@ async function terminarCompra() {
     if (carro.length) {
         d.historial.push({
             id: 'cmpr_' + Date.now(), fecha: todayISO(), tienda, listaId: l.id, fuente: 'manual', txId,
-            total: total || Math.round(compraImporte(carro, tienda) * 100) / 100,
+            total: total || (importe > 0 ? Math.round(importe * 100) / 100 : Math.round(compraImporte(carro, tienda) * 100) / 100),
             items: carro.map(i => { const p = compraPrecioItem(i, tienda); return { texto: i.texto, clave: compraClave(i.texto), deLista: i.texto, cantidad: i.cantidad || '', precio: p && !p.estimado ? p.precio : null, importe: p && !p.estimado ? Math.round(p.precio * compraUnidades(i) * 100) / 100 : null, planeado: true, seccion: compraSeccion(i.texto) }; }),
         });
     }
@@ -578,11 +578,13 @@ function compraAplicarTicket(op, ref) {
         if (!previa) { const k = q.item.texto.toLowerCase(); d.frecuentes[k] = (d.frecuentes[k] || 0) + 1; }
     });
 
-    // Finanzas: cada ticket con su gasto exacto. El estimado que se apuntó al
+    // Finanzas solo si se pide expresamente (gasto: true): el gasto real ya
+    // llega con el extracto del banco y el ticket es para Compras. Si se
+    // pide, cada ticket va con su gasto exacto y el estimado que se apuntó al
     // terminar a mano se corrige (ticket completo) o se le resta lo de este
     // ticket (parcial); si se queda en nada, se quita.
     let txCreado = null, txAntes = null, txQuitado = null;
-    if (op.gasto !== false && total > 0) {
+    if (op.gasto === true && total > 0) {
         const tx = previa?.txId ? financePro.transactions.find(t => t.id === previa.txId) : null;
         if (tx && completa) { txAntes = { id: tx.id, amount: tx.amount }; tx.amount = total; }
         else {
