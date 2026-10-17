@@ -8347,3 +8347,55 @@ body.est-foco-abierto #fab, body.est-foco-abierto .pomo-pastilla { display:none 
 .finance-pro-settings-links button { gap:6px; padding:7px 13px; border-radius:999px; background:color-mix(in srgb, var(--text-primary) 7%, transparent); color:var(--text-primary); font-size:12px; font-weight:600; transition:background-color .15s ease, transform .12s var(--ease-out); }
 .finance-pro-settings-links button:hover { background:color-mix(in srgb, var(--text-primary) 13%, transparent); }
 .finance-pro-settings-links button:active { transform:scale(.96); }
+
+/* Compras: historial, precios y cómo te ciñes a la lista. */
+.compra-titulo { text-transform:none; }
+.compra-pestanas { margin-bottom:14px; }
+.compra-item i.estimado { color:var(--text-secondary); font-style:normal; }
+.compra-nota { margin-top:6px; font-size:12px; color:var(--text-secondary); }
+.compra-panel { margin-bottom:16px; padding:16px 18px; border-radius:18px; background:var(--bg-card); border:1px solid var(--border); }
+.compra-panel-titulo { font-size:14px; font-weight:800; color:var(--text-primary); }
+.compra-panel-titulo small { margin-left:6px; font-size:12px; font-weight:500; color:var(--text-secondary); }
+.compra-panel-sub { margin:14px 0 6px; font-size:12px; font-weight:700; color:var(--text-secondary); }
+.compra-cenido { margin-top:10px; }
+.compra-cenido-barra { height:10px; border-radius:999px; background:color-mix(in srgb, var(--m-acento) 22%, transparent); overflow:hidden; }
+.compra-cenido-barra i { display:block; height:100%; border-radius:999px; background:var(--text-primary); }
+.compra-cenido-cifras { margin-top:8px; font-size:13px; line-height:1.5; color:var(--text-secondary); }
+.compra-cenido-cifras b { color:var(--text-primary); }
+.compra-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.compra-chips span { padding:5px 11px; border-radius:999px; background:color-mix(in srgb, var(--m-acento) 14%, transparent); font-size:12.5px; font-weight:600; color:var(--text-primary); }
+.compra-chips small { color:var(--text-secondary); }
+.compra-precio-fila { display:grid; grid-template-columns:minmax(0, 1fr) auto auto; gap:10px; align-items:baseline; padding:6px 0; border-top:1px solid var(--border); font-size:13px; }
+.compra-precio-fila span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-primary); }
+.compra-precio-fila b { font-weight:700; font-variant-numeric:tabular-nums; }
+.compra-precio-fila small { color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.compra-historial-titulo { margin-top:6px; }
+.compra-hist-fila { display:grid; grid-template-columns:76px minmax(0, 1fr) auto; gap:12px; align-items:center; width:100%; padding:11px 2px; border:0; border-bottom:1px solid var(--border); background:none; font-family:var(--font-family); text-align:left; color:var(--text-primary); cursor:pointer; }
+.compra-hist-fecha { font-size:12.5px; color:var(--text-secondary); }
+.compra-hist-cuerpo b { display:block; font-size:14.5px; }
+.compra-hist-cuerpo small { font-size:12px; color:var(--text-secondary); }
+.compra-hist-total { font-size:14.5px; font-weight:700; font-variant-numeric:tabular-nums; }
+.compra-hist-linea { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:7px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
+.compra-hist-linea span b { font-weight:600; }
+.compra-hist-linea small { display:block; font-size:11.5px; color:var(--text-secondary); }
+.compra-hist-linea i { font-style:normal; font-weight:700; font-variant-numeric:tabular-nums; }
+.compra-hist-vacio { padding:8px 0; font-size:13px; color:var(--text-secondary); }
+
+/* Apuntar: aviso si no entiende nada y registro de lo apuntado. */
+.apuntar-duda { margin-top:8px; padding:10px 14px; border-radius:14px; background:var(--bg-input); font-size:13.5px; line-height:1.45; color:var(--text-secondary); }
+.apuntar-duda button { margin-left:4px; padding:0; border:0; background:none; color:var(--text-primary); font-family:var(--font-family); font-size:13.5px; font-weight:700; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.apuntar-reg { display:flex; align-items:center; gap:8px; padding:9px 0; border-top:1px solid var(--border); }
+.apuntar-reg-txt { flex:1; min-width:0; }
+.apuntar-reg-txt b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:600; color:var(--text-primary); }
+.apuntar-reg-txt small { font-size:12px; color:var(--text-secondary); }
+.apuntar-reg .profe-chip { flex-shrink:0; }
+
+/* Botón de apuntar (antes un rayo): una pastilla con el + y su nombre, del
+   naranja de acento como el + del móvil; en pantallas estrechas, solo el +. */
+#fab { width:auto; height:52px; gap:9px; padding:0 22px 0 18px; border-radius:999px; background:var(--m-acento); color:var(--m-sobre-acento); box-shadow:0 14px 30px -12px rgba(0,0,0,.55), 0 2px 6px -2px rgba(0,0,0,.25); }
+body.acuarela #fab { color:var(--m-sobre-acento); }
+#fab .fab-texto { font-size:15px; font-weight:800; letter-spacing:-.01em; }
+@media (hover: hover) and (pointer: fine) { #fab:hover { transform:translateY(-2px); box-shadow:0 18px 34px -12px rgba(0,0,0,.6), 0 2px 6px -2px rgba(0,0,0,.25); } }
+#fab:active { transform:scale(.96); }
+#fab.fab-pulse::after { border-radius:999px; border-color:var(--m-acento); }
+@media (max-width: 768px) { #fab { width:52px; padding:0; } #fab .fab-texto { display:none; } }

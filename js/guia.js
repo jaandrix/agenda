@@ -73,7 +73,7 @@ const GUIA = [
             'Debajo, tu <b>semana</b>: toca un día para verlo; las flechas pasan de semana y <b>mes.</b> despliega el mes entero en bolitas (en color, los días con algo). <b>volver a hoy.</b> te devuelve.',
             'El día sale como un <b>horario</b>: lo que no tiene hora arriba y lo demás en una línea de tiempo, con una marca de «ahora» entre lo hecho y lo que viene. Marca las tareas sin salir de la portada; el <b>+</b> añade algo a ese día.',
             'Más abajo, las teselas: tareas y rutinas de hoy, gasto del mes, próximo examen, bandeja, pedidos y próximo viaje. Tócalas para ir a cada apartado.',
-            'El <b>+</b> naranja abre <b>apuntar.</b>: escribe como hablas («gimnasio mañana a las 19», «dentista el jueves a las 5 de la tarde», «reunión en 3 días», «gasté 12 en el cine», «comprar pan», «recuérdame llamar a mamá», «nota: …») y Bitácora te enseña qué va a crear antes de guardarlo; con un toque cambias el tipo. Debajo, accesos grandes a cada formulario.',
+            'El <b>+</b> naranja abre <b>apuntar.</b>: escribe como hablas («gimnasio mañana a las 19», «dentista el jueves a las 5 de la tarde», «reunión en 3 días», «gasté 12 en el cine», «comprar pan», «recuérdame llamar a mamá», «nota: …») y Bitácora te enseña qué va a crear antes de guardarlo; con un toque cambias el tipo, y si no entiende nada te avisa. Abajo, <b>lo último que apuntaste</b>: <b>deshacer.</b> lo borra y <b>cambiar.</b> te lo deja escrito para elegir otro tipo. Debajo, accesos grandes a cada formulario.',
             'La <b>barra de abajo</b>: inicio, planificador, el <b>+</b> naranja para apuntar cualquier cosa, el último apartado que visitaste (para ir y volver) y el menú con todo. Tocar la pestaña en la que ya estás sube arriba del todo.',
         ],
         botones: [
@@ -93,7 +93,7 @@ const GUIA = [
         ],
         botones: [
             [guiaBoton('se aplica solo'), 'Crear o editar eventos, añadir entradas con QR, los cambios en Ocio, las tarjetas de estudio, la lista de la compra y las tareas, el siguiente paso y el diario de un proyecto.'],
-            [guiaBoton('ideas para pedirle'), '«Hazme tarjetas de estos apuntes» (con un PDF o una foto), «pasa los ingredientes de esta receta a la compra», «añade estas tareas al proyecto de la web», «¿qué hora es y qué me queda hoy?». Sabe la fecha y la hora de Madrid.'],
+            [guiaBoton('ideas para pedirle'), '«Hazme tarjetas de estos apuntes» (con un PDF o una foto), «pasa los ingredientes de esta receta a la compra», «apunta este ticket en Bitácora» (con la foto), «añade estas tareas al proyecto de la web», «¿qué hora es y qué me queda hoy?». Sabe la fecha y la hora de Madrid.'],
             [guiaBoton('pasa por la bandeja'), 'Todo lo demás (tareas, movimientos, extractos, estudios, viajes, suscripciones, borrados...) espera a que lo valides en <b>bandeja.</b>'],
             [guiaBoton('revocar'), 'En Ajustes puedes revocar un enlace si lo pierdes o ya no lo usas.'],
         ],
@@ -158,15 +158,19 @@ const GUIA = [
         trucos: ['Pulsa el nombre de una tarea para editarla.', 'Los trabajos de Estudios aparecen solos aquí el día de su entrega.', 'Al completar una tarea queda constancia en el calendario.'],
     },
     {
-        id: 'compra', grupo: 'general', titulo: 'compra.',
-        lema: 'La lista de la compra, en el orden del súper.',
+        id: 'compra', grupo: 'general', titulo: 'compras.',
+        lema: 'La lista de la compra, en el orden del súper, y lo que te cuesta.',
         intro: 'Listas de la compra que se ordenan solas por secciones (frutas y verduras, carne y pescado, lácteos, despensa, limpieza...), como se recorre la tienda. Es un apartado opcional de la rama #home: actívalo en Ajustes → apartados.',
         pasos: ['Escribe lo que falta según te acuerdes: «2 leche, pan, tomates 1,20 €». La cantidad y el precio se entienden solos.', 'En el súper, toca el círculo de cada cosa al echarla al carro: baja a «en el carro.».', 'Al acabar, <b>terminar la compra.</b> la limpia y, si quieres, apunta el gasto en Finanzas.'],
         botones: [
             [guiaBoton('lo de siempre.'), 'Lo que más compras y no está en la lista, para añadirlo con un toque. Aprende de cada compra terminada.'],
             [guiaBoton('listas.'), 'Una lista por sitio o por súper: casa, el piso, Mercadona... Se cambia de una a otra arriba.'],
             [guiaBoton('nombre de un producto'), 'Cambia el nombre, la cantidad o el precio por unidad, o quítalo. El precio se recuerda para la próxima vez.'],
-            [guiaBoton('terminar la compra.'), 'Saca de la lista lo del carro y apunta el gasto en comida y bebida con el importe que diga el ticket. Cuando importes el extracto, se emparejará con el cargo del banco.'],
+            [guiaBoton('terminar la compra.'), 'Saca de la lista lo del carro, la guarda en el historial con su tienda y apunta el gasto en comida y bebida. Cuando importes el extracto, se emparejará con el cargo del banco.'],
+            [guiaBoton('el ticket'), 'Pásale la foto a Claude o ChatGPT con el conector: «apunta este ticket en Bitácora». Se une a la compra de ese día con el precio de cada cosa: lo que estaba en la lista, lo que fue un extra y lo que se quedó sin comprar. Lo comprado sale de la lista y el gasto se corrige con el total. Si compras en varias tiendas, un ticket por tienda.'],
+            [guiaBoton('historial.'), 'Tus compras con su tienda y su total. Arriba, <b>cómo te ciñes a la lista.</b> (qué parte del gasto era lo planeado y lo que más se cuela) y <b>tus precios.</b>: dónde te sale más barato cada cosa y qué ha subido.'],
+            [guiaBoton('≈ precio'), 'En la lista, lo que te costó la última vez según tus tickets (de esa tienda si la lista se llama como ella), y el total estimado arriba.'],
+            [guiaBoton('sección'), 'Al abrir un producto puedes cambiarlo de sección; Bitácora lo recuerda. Los tickets también le enseñan dónde va cada cosa.'],
         ],
     },
     {

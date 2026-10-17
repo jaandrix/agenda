@@ -27,7 +27,7 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'trabajo', 'salud', 'hogar', 'viajes', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. En los campos de fecha también puedes escribir "hoy", "mañana" o "pasado mañana", y la hora como 7:30. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. En los campos de fecha también puedes escribir "hoy", "mañana" o "pasado mañana", y la hora como 7:30. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Con la foto de un ticket de la compra, usa ticket_compra (lee antes apartado("compra") para emparejar cada producto con la lista); así Bitácora guarda los precios, la tienda y lo que fue un extra. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
 const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
 const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
@@ -551,7 +551,28 @@ const APARTADOS: Record<string, (d: any) => unknown> = {
             plan_de_hoy: e.plan?.[hoyISO()]?.items?.map((i: any) => ({ tema: i.texto, pomodoros: i.pomodoros, hechos: i.hechos, hecho: !!i.hecho })) || [],
         };
     },
-    compra: d => ({ listas: (d.listaCompra?.listas || []).map((l: any) => ({ nombre: l.nombre, por_coger: (l.items || []).filter((i: any) => !i.hecho).map((i: any) => [i.cantidad, i.texto].filter(Boolean).join(' ')) })) }),
+    // Listas (lo que falta y lo que ya está en el carro), las últimas
+    // compras y lo último que costó cada producto en cada tienda: para unir
+    // un ticket con la lista o responder «¿cuánto me costará la compra?».
+    compra: d => {
+        const lc = d.listaCompra || {};
+        const historial = (lc.historial || []).slice().sort((a: any, b: any) => String(b.fecha).localeCompare(String(a.fecha)));
+        const precios: Record<string, any> = {};
+        historial.forEach((c: any) => (c.items || []).forEach((i: any) => {
+            if (!(Number(i.precio) > 0)) return;
+            const k = `${i.clave || i.texto}|${c.tienda || ''}`;
+            if (!precios[k]) precios[k] = { producto: i.texto, tienda: c.tienda || '', precio: Number(i.precio), fecha: c.fecha };
+        }));
+        return {
+            listas: (lc.listas || []).map((l: any) => ({
+                nombre: l.nombre,
+                por_coger: (l.items || []).filter((i: any) => !i.hecho).map((i: any) => [i.cantidad, i.texto].filter(Boolean).join(' ')),
+                en_el_carro: (l.items || []).filter((i: any) => i.hecho).map((i: any) => [i.cantidad, i.texto].filter(Boolean).join(' ')),
+            })),
+            compras_recientes: historial.slice(0, 8).map((c: any) => ({ fecha: c.fecha, tienda: c.tienda || '', total: c.total || null, con_ticket: c.fuente === 'ticket', productos: (c.items || []).map((i: any) => i.texto), extras: (c.items || []).filter((i: any) => !i.planeado).map((i: any) => i.texto) })),
+            ultimos_precios: Object.values(precios).slice(0, 150),
+        };
+    },
 };
 
 // ---------------------------------------------------------------- herramientas
@@ -873,6 +894,38 @@ const HERRAMIENTAS = [
         name: 'compra',
         description: 'Añade cosas a la lista de la compra del apartado Compra (se ordenan solas por secciones del súper). Cada cosa puede llevar cantidad y precio: "2 leche", "tomates 1,20 €". Útil para pasar los ingredientes de una receta. Se aplica solo, sin validar.',
         inputSchema: { type: 'object', properties: { cosas: { type: 'array', items: { type: 'string' }, maxItems: 80 }, lista: { type: 'string', description: 'Opcional: nombre de otra lista (si no, la actual)' } }, required: ['cosas'] },
+    },
+    {
+        name: 'ticket_compra',
+        description: 'Guarda el ticket de una compra (normalmente una foto que pasa el usuario) en el historial de Compras de Bitácora: tienda, fecha, total y cada línea con su precio. Antes, lee las listas con apartado("compra") para emparejar: en cada línea pon en de_lista el texto EXACTO del elemento de la lista al que corresponde (por_coger o en_el_carro), aunque el ticket lo llame distinto (lista «Patatas de jamón» ↔ ticket «PATATAS SERRANO»; «Pan» ↔ «3 BOCADILLOS»); déjalo vacío si no estaba en la lista: es un extra no planeado. Si la lista ya no está en Bitácora y el usuario te dice de palabra qué llevaba, pásalo en lista_planeada. Lee solo los productos: ignora IVA, base imponible, total, forma de pago, tarjeta y códigos. En Mercadona, «1 3 BOCADILLOS» es 1 unidad del producto «3 bocadillos»; en las líneas a peso («0,456 kg x 2,19 €/kg») la cantidad son los kg. producto es un nombre genérico y legible en minúscula («patatas fritas serrano», «nata para cocinar»), sin marca salvo que importe. seccion es la del súper. Si el usuario compró en varias tiendas, haz una llamada por ticket, cada una con su tienda. Por defecto apunta también el gasto en Finanzas (corrige el de la compra si ya se terminó a mano en Bitácora); no registres además el movimiento con registrar_movimiento. Se aplica solo y se puede deshacer.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                tienda: { type: 'string', description: 'Nombre de la tienda tal como se conoce: «Mercadona», «Lidl», «Carrefour Express»...' },
+                fecha: { type: 'string', description: 'Fecha del ticket, AAAA-MM-DD' },
+                total: { type: 'number', description: 'Total pagado en euros' },
+                lista: { type: 'string', description: 'Opcional: nombre de la lista de Bitácora con la que se hizo la compra' },
+                lista_planeada: { type: 'array', items: { type: 'string' }, description: 'Opcional: lo que el usuario dice que llevaba en la lista, si ya no está en Bitácora' },
+                gasto: { type: 'boolean', description: 'Apuntar el gasto en Finanzas (por defecto, sí)' },
+                lineas: {
+                    type: 'array', maxItems: 150,
+                    items: {
+                        type: 'object',
+                        properties: {
+                            descripcion: { type: 'string', description: 'El texto de la línea tal cual en el ticket' },
+                            producto: { type: 'string', description: 'Nombre genérico y legible, en minúscula' },
+                            cantidad: { type: 'number', description: 'Unidades o kg' },
+                            precio_unidad: { type: 'number' },
+                            importe: { type: 'number', description: 'Lo que suma la línea' },
+                            seccion: { type: 'string', enum: ['aperitivo', 'fruta', 'fresco', 'lacteo', 'pan', 'despensa', 'congelado', 'bebida', 'limpieza', 'higiene', 'otros'], description: 'aperitivo = aperitivos, snacks y dulces (patatas fritas, chicles, frutos secos)' },
+                            de_lista: { type: 'string', description: 'Texto exacto del elemento de la lista que es este producto, o vacío si fue un extra' },
+                        },
+                        required: ['producto', 'importe'],
+                    },
+                },
+            },
+            required: ['tienda', 'lineas'],
+        },
     },
     {
         name: 'proyecto',
@@ -1246,6 +1299,27 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (!cosas.length) throw new Error('Falta qué comprar');
             await encolar(userId, { tipo: 'compra', cosas, lista: a.lista ? String(a.lista) : '' });
             return `Añadido a la lista de la compra${a.lista ? ' «' + a.lista + '»' : ''}: ${cosas.join(', ')}.`;
+        }
+        case 'ticket_compra': {
+            const num = (x: any) => { const n = Number(String(x ?? '').replace(',', '.')); return Number.isFinite(n) ? n : null; };
+            const lineas = (Array.isArray(a.lineas) ? a.lineas : []).slice(0, 150).map((l: any) => ({
+                descripcion: String(l?.descripcion || '').slice(0, 120),
+                producto: String(l?.producto || l?.descripcion || '').trim().slice(0, 120),
+                cantidad: num(l?.cantidad),
+                precio_unidad: num(l?.precio_unidad),
+                importe: num(l?.importe),
+                seccion: String(l?.seccion || ''),
+                de_lista: String(l?.de_lista || '').trim().slice(0, 120),
+            })).filter((l: any) => l.producto);
+            if (!lineas.length) throw new Error('El ticket no tiene productos');
+            const f = normalizarFecha(a.fecha);
+            const fecha = typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f) ? f : hoyISO();
+            const total = num(a.total) || Math.round(lineas.reduce((s: number, l: any) => s + (l.importe || 0), 0) * 100) / 100;
+            const tienda = String(a.tienda || '').trim().slice(0, 60);
+            await encolar(userId, { tipo: 'ticket', tienda, fecha, total, lista: a.lista ? String(a.lista) : '', lista_planeada: Array.isArray(a.lista_planeada) ? a.lista_planeada.map((x: any) => String(x || '').trim()).filter(Boolean).slice(0, 80) : [], gasto: a.gasto !== false, lineas });
+            const extras = lineas.filter((l: any) => !l.de_lista);
+            const sumaExtras = extras.reduce((s: number, l: any) => s + (l.importe || 0), 0);
+            return `Ticket${tienda ? ' de ' + tienda : ''} del ${fecha} guardado en el historial de Compras: ${lineas.length} productos, ${total.toFixed(2).replace('.', ',')} €. ${lineas.length - extras.length} estaban en la lista y ${extras.length} fueron extras${extras.length ? ' (' + sumaExtras.toFixed(2).replace('.', ',') + ' €: ' + extras.map((l: any) => l.producto).join(', ') + ')' : ''}.${a.gasto !== false ? ' El gasto queda apuntado en Finanzas.' : ''} Lo comprado sale de la lista.`;
         }
         case 'proyecto': {
             const q = norm(a.proyecto).trim();

@@ -594,6 +594,9 @@
         // Día en que ya se enseñó "tienes esto para hoy.", sincronizado para que
         // salga una sola vez entre todos los dispositivos.
         let avisoDiarioVisto = null;
+        // Lo último que se apuntó con el + / el rayo (apuntar.js), para
+        // revisarlo, deshacerlo o cambiarlo de tipo desde cualquier sitio.
+        let apuntesRecientes = [];
         // Versión del enlace del calendario suscribible (calendario-feed):
         // subirla invalida el enlace anterior.
         let calendarioFeedVersion = 0;
@@ -813,7 +816,7 @@
             studies: 'Estudios',
             universidad: 'Universidad',
             profesorado: 'Profesorado',
-            compra: 'Compra',
+            compra: 'Compras',
             estudiar: 'Estudiar',
             links: 'Enlaces',
             actualizaciones: 'Envíos',
@@ -832,7 +835,7 @@
                 { view: 'calendar', icon: '◷', text: 'Home' },
                 { view: 'home', icon: '⌂', text: 'Panorama' },
                 { view: 'planner', icon: '▤', text: 'Planificador' },
-                { view: 'compra', icon: '◍', text: 'Compra' },
+                { view: 'compra', icon: '◍', text: 'Compras' },
                 { view: 'habits', icon: '○', text: 'Rutinas' },
                 { view: 'notes', icon: '✎', text: 'Notas' },
             ] },
@@ -1630,7 +1633,7 @@
             { view: 'estudiar', titulo: 'estudiar.', texto: 'Pomodoro, el día dividido en temas, el temario por asignaturas y tarjetas de repaso espaciado al estilo Anki.', porDefecto: () => (estudiar?.tarjetas || []).length > 0 },
             { view: 'universidad', titulo: 'universidad.', texto: 'Tu carrera por cuatrimestres: créditos, media, fechas de exámenes y qué necesitas para aprobar.', porDefecto: () => false },
             { view: 'profesorado', titulo: 'profesorado.', texto: 'Si das clase: el cuadrante del curso con todas tus clases, y lo que no das en su día pasa a pendientes.', porDefecto: () => (profesorado?.clases || []).length > 0 },
-            { view: 'compra', titulo: 'compra.', texto: 'Listas de la compra ordenadas por secciones del súper, con lo de siempre a un toque.', porDefecto: () => (listaCompra?.listas || []).some(l => (l.items || []).length) },
+            { view: 'compra', titulo: 'compras.', texto: 'Listas de la compra por secciones del súper, historial con los tickets y lo que te cuesta cada cosa en cada tienda.', porDefecto: () => (listaCompra?.listas || []).some(l => (l.items || []).length) },
             { view: 'actualizaciones', titulo: 'envíos.', texto: 'Tus pedidos por internet y por dónde van.', porDefecto: () => pedidos.length > 0 },
             { view: 'projects', titulo: 'proyectos.', texto: 'Proyectos con fases, lista o tablero.', porDefecto: () => entries.some(e => e.type === 'project') },
             { view: 'links', titulo: 'enlaces.', texto: 'Webs y recursos guardados por carpetas.', porDefecto: () => links.length > 0 },

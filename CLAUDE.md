@@ -255,9 +255,12 @@ a menor resolución.
 - **Rutinas (antes Hábitos; vista y datos siguen siendo `habits`, en `planificador.js`):** momento del día,
   `frecuencia` (diaria / días / x por semana), `pasos` con `pasosHechos`, semana de bolitas que marca días
   pasados, `habitStreak` respeta los días que no tocan; al marcar se repinta solo la rutina (`repintarRutina`).
-- **Compra (`js/compra.js`, vista `compra`, opcional de #home):** `listaCompra` (sincronizado) con listas,
-  secciones del súper por palabras clave (`COMPRA_SECCIONES`), "lo de siempre" (`frecuentes`) y "terminar la
-  compra." que apunta el gasto en Finanzas. Mercadona tiene API pública sin CORS (tienda.mercadona.es/api,
+- **Compras (`js/compra.js`, vista `compra`, opcional de #home; en la interfaz "Compras"):** `listaCompra` (sincronizado)
+  con listas, secciones del súper por palabras clave (`COMPRA_SECCIONES`, con `aperitivo` antes que fruta) más lo aprendido
+  (`aprendido`, clave `compraClave`), "lo de siempre" (`frecuentes`), `historial` de compras (al terminar o con el ticket) y
+  "terminar la compra." que apunta el gasto en Finanzas. El ticket llega por la herramienta `ticket_compra` del conector (op
+  `ticket`, `compraAplicarTicket` / `compraDeshacerTicket`): cada línea con precio, sección y `de_lista`; lo que no estaba en la
+  lista es un extra. Precios (último por tienda, más barato, lo que sube) y "cómo te ciñes" salen del historial. Mercadona tiene API pública sin CORS (tienda.mercadona.es/api,
   necesitaría una Edge Function); DIA bloquea con antibots: no se usa.
 - **Estudiar (`js/estudiar.js`, vista `estudiar`, opcional de #school):** separado de Estudios a propósito.
   `estudiar` (sincronizado): pomodoro (el que está en marcha va en localStorage `bitacora-pomodoro`, con
@@ -273,7 +276,8 @@ a menor resolución.
   `togglePlannerItemDone` la completa en el proyecto. El planificador enseña "siguientes pasos.".
 - **Apuntar (`js/apuntar.js`):** el + del móvil, el rayo del escritorio y el "+" de cada día abren `openApuntar(fecha)`:
   una línea que `interpretarApunte` convierte en tarea (hoy a pasado mañana), evento (más allá), gasto/ingreso
-  (importe con €), compra («comprar …») o nota, con vista previa y cambio de tipo; debajo, accesos a cada formulario.
+  (importe con €), compra («comprar …») o nota, con vista previa y cambio de tipo; debajo, accesos a cada formulario y
+  `apuntesRecientes` (sincronizado, 40) con deshacer/cambiar. El botón flotante del escritorio es "+ apuntar." (#fab).
 - **Fechas:** `todayISO()` e `isoLocal(d)` son en hora local. Nunca `toISOString().slice(0, 10)` para "hoy" (en UTC,
   de 0:00 a 2:00 daba el día anterior).
 - **Ramas de apartados:** `RAMAS_APARTADOS` en ajustes.js agrupa los opcionales (#school, #home, #work, #mind).

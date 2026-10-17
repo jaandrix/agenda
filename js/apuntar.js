@@ -138,7 +138,9 @@ function pintarVistaApunte() {
         : tipo === 'compra' ? `a la compra: ${escapeHtml(r.titulo || '…')}`
         : `${tipo === 'tarea' ? 'tarea' : 'evento'} · ${apuntarFechaTexto(r.fecha)}${r.hora ? ` a las ${r.hora}` : tipo === 'tarea' ? ', sin hora' : ''} · ${escapeHtml(r.titulo || '…')}`;
     const tipos = [['tarea', 'tarea.'], ['evento', 'evento.'], ['gasto', 'gasto.'], ...(apartadoVisible('compra') ? [['compra', 'compra.']] : []), ['nota', 'nota.']];
+    const nadaReconocido = !apuntarTipoElegido && tipo === 'tarea' && !r.fechaDicha && !r.hora && r.importe == null && !r.comprar && !r.nota;
     caja.innerHTML = `<div class="apuntar-resumen">${desc}</div>
+        ${nadaReconocido ? `<div class="apuntar-duda">No he encontrado fecha, hora ni importe: irá como tarea para hoy. <button type="button" onclick="apuntarTipoElegido='nota';pintarVistaApunte()">mejor como nota.</button></div>` : ''}
         <div class="apuntar-como"><span>como:</span>${tipos.map(([k, t]) => `<button type="button" class="${k === tipo ? 'activa' : ''}" onclick="apuntarTipoElegido='${k}';pintarVistaApunte()">${t}</button>`).join('')}</div>`;
 }
 
@@ -163,6 +165,7 @@ function openApuntar(fecha) {
         <div class="apuntar-o">o elige qué quieres apuntar</div>
         <div class="apuntar-rejilla">${accesos.map(([t, icono, accion]) => `<button onclick="${accion}"><i>${APUNTAR_ICONOS[icono]}</i><span>${t}</span></button>`).join('')}</div>
         <button class="m-enlace apuntar-todos" onclick="closeModal();window._dayPrefillDate=apuntarFechaBase;openCommandPalette('create');window._dayPrefillDate=apuntarFechaBase">todos los tipos.</button>
+        ${apuntesRecientes.length ? `<div class="apuntar-o">lo último que apuntaste</div>${apuntesRecientes.slice(0, 3).map(apuntarFilaRegistro).join('')}${apuntesRecientes.length > 3 ? `<button class="m-enlace apuntar-todos" onclick="openApuntesRecientes()">ver todo (${apuntesRecientes.length}).</button>` : ''}` : ''}
     `);
     pintarVistaApunte();
     setTimeout(() => document.getElementById('apuntar-texto')?.focus(), 60);
@@ -175,40 +178,141 @@ async function guardarApunte() {
     const tipo = apuntarTipo(r);
     const id = p => `${p}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     let aviso = '';
+    let hecho = null;
     if (tipo === 'gasto') {
         if (!(r.importe > 0)) { showToast('Falta el importe (por ejemplo, 2,40 €)', true); return; }
         const ultima = [...(financePro.transactions || [])].reverse().find(t => t.manual && t.account)?.account;
         const cuenta = FINANCE_PRO_ACCOUNT_KEYS.includes(ultima) ? ultima : FINANCE_PRO_ACCOUNT_KEYS.includes('bancos') ? 'bancos' : FINANCE_PRO_ACCOUNT_KEYS[0];
-        financePro.transactions.push({ id: id('ptx_q'), date: r.fechaDicha ? r.fecha : todayISO(), account: cuenta, type: r.ingreso ? 'income' : 'expense', amount: r.importe, note: r.titulo || undefined, needsReview: true, manual: true });
+        const txId = id('ptx_q');
+        financePro.transactions.push({ id: txId, date: r.fechaDicha ? r.fecha : todayISO(), account: cuenta, type: r.ingreso ? 'income' : 'expense', amount: r.importe, note: r.titulo || undefined, needsReview: true, manual: true });
+        hecho = { tipo: 'gasto', txId };
         aviso = `${r.ingreso ? 'Ingreso' : 'Gasto'} de ${financeMoney(r.importe)} en ${financePro.accounts[cuenta]?.name || cuenta}. Ponle categoría en Finanzas.`;
     } else if (tipo === 'compra') {
         closeModal();
+        const lista = compraListaActual();
         compraAnadir(r.titulo || texto);
+        apuntarRegistrar(texto, 'compra', `a la compra: ${r.titulo || texto}`, { tipo: 'compra', listaId: lista.id, textos: (r.titulo || texto).split(/\n|,(?!\d)/).map(x => compraInterpretar(x.trim()).texto).filter(Boolean) });
         showToast('Añadido a la lista de la compra');
         return;
     } else if (tipo === 'nota') {
         const hoy = todayISO();
         let nota = notes.find(n => n.date === hoy);
         if (!nota) { nota = { id: 'note_' + Date.now(), date: hoy, content: '', createdAt: new Date().toISOString() }; notes.push(nota); }
-        nota.content = [nota.content, (r.nota ? texto.replace(/^\s*(?:nota|idea|apunte)\s*:\s*/i, '') : texto).trim()].filter(Boolean).join('\n\n');
+        const anadido = (r.nota ? texto.replace(/^\s*(?:nota|idea|apunte)\s*:\s*/i, '') : texto).trim();
+        nota.content = [nota.content, anadido].filter(Boolean).join('\n\n');
+        hecho = { tipo: 'nota', notaId: nota.id, texto: anadido };
         aviso = 'Añadido a la nota de hoy';
     } else {
         if (!r.titulo) { showToast('Falta qué es (por ejemplo, «gimnasio»)', true); return; }
         const dias = Math.round((new Date(r.fecha + 'T12:00:00') - new Date(currentPlannerDayKey() + 'T12:00:00')) / 864e5);
         if (tipo === 'tarea' && dias >= 0 && dias <= 2) {
-            plannerItemsForOffset(dias).push({ id: id('planner'), time: r.hora, title: r.titulo, notes: '', done: false });
+            const tareaId = id('planner');
+            plannerItemsForOffset(dias).push({ id: tareaId, time: r.hora, title: r.titulo, notes: '', done: false });
+            hecho = { tipo: 'tarea', tareaId };
             aviso = `Tarea para ${apuntarFechaTexto(r.fecha)}${r.hora ? ' a las ' + r.hora : ''}`;
         } else {
-            entries.push({ id: id('evt'), type: 'event', categoryId: getCategoryIdForType('event'), tags: [], eventType: 'otro', title: r.titulo, date: r.fecha, time: r.hora, place: '', notes: '' });
+            const eventoId = id('evt');
+            entries.push({ id: eventoId, type: 'event', categoryId: getCategoryIdForType('event'), tags: [], eventType: 'otro', title: r.titulo, date: r.fecha, time: r.hora, place: '', notes: '' });
+            hecho = { tipo: 'evento', eventoId };
             filteredEntries = [...entries];
             aviso = `Evento el ${apuntarFechaTexto(r.fecha)}${r.hora ? ' a las ' + r.hora : ''}`;
         }
     }
     closeModal();
+    if (hecho) apuntarRegistrar(texto, hecho.tipo, aviso, hecho);
     invalidarCachesDerivadas();
     render();
     showToast(aviso);
     try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+// ---- registro de lo apuntado: revisar, deshacer o cambiar de tipo ----
+const APUNTES_MAX = 40;
+const APUNTAR_TIPO_NOMBRE = { tarea: 'tarea', evento: 'evento', gasto: 'gasto', compra: 'compra', nota: 'nota' };
+
+function apuntarRegistrar(texto, tipo, resumen, deshacer) {
+    apuntesRecientes = [{ id: 'apn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), cuando: new Date().toISOString(), texto: String(texto || '').trim(), tipo, resumen, deshacer }, ...apuntesRecientes].slice(0, APUNTES_MAX);
+}
+
+function apuntarFilaRegistro(a) {
+    const cuando = new Date(a.cuando);
+    const hoy = isoLocal(cuando) === todayISO();
+    return `<div class="apuntar-reg">
+        <div class="apuntar-reg-txt"><b>${escapeHtml(a.texto)}</b><small>${escapeHtml(APUNTAR_TIPO_NOMBRE[a.tipo] || a.tipo)} · ${hoy ? cuando.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : cuando.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${a.deshecho ? ' · deshecho' : ''}</small></div>
+        ${a.deshecho ? '' : `<button class="profe-chip" onclick="cambiarApunte('${a.id}')" title="Deshacerlo y volver a escribirlo">cambiar.</button><button class="profe-chip" onclick="deshacerApunte('${a.id}')">deshacer.</button>`}
+    </div>`;
+}
+
+function openApuntesRecientes() {
+    showModal(`
+        <div class="modal-title">lo que has apuntado.</div>
+        <p class="finance-modal-note" style="margin-top:0">Lo último que apuntaste con el + o el rayo, en cualquier dispositivo. <b>deshacer.</b> lo borra de donde se guardó; <b>cambiar.</b> lo borra y te lo deja escrito para elegir otro tipo.</p>
+        ${apuntesRecientes.map(apuntarFilaRegistro).join('') || '<div class="finance-empty-line">Nada todavía.</div>'}
+    `);
+}
+
+// Quita lo que creó el apunte. Devuelve false si ya no existe.
+function apuntarQuitar(dh) {
+    if (!dh) return false;
+    if (dh.tipo === 'tarea') {
+        resetDayPlannerIfNeeded();
+        let ok = false;
+        Object.keys(dayPlanner.days || {}).forEach(k => { const antes = (dayPlanner.days[k] || []).length; dayPlanner.days[k] = (dayPlanner.days[k] || []).filter(i => i.id !== dh.tareaId); ok = ok || dayPlanner.days[k].length !== antes; });
+        return ok;
+    }
+    if (dh.tipo === 'evento') {
+        const antes = entries.length;
+        entries = entries.filter(e => e.id !== dh.eventoId);
+        filteredEntries = [...entries];
+        return entries.length !== antes;
+    }
+    if (dh.tipo === 'gasto') {
+        const antes = financePro.transactions.length;
+        financePro.transactions = financePro.transactions.filter(t => t.id !== dh.txId);
+        return financePro.transactions.length !== antes;
+    }
+    if (dh.tipo === 'compra') {
+        const l = datosCompra().listas.find(x => x.id === dh.listaId);
+        if (!l) return false;
+        const fuera = new Set((dh.textos || []).map(t => t.toLowerCase()));
+        const antes = l.items.length;
+        l.items = l.items.filter(i => i.hecho || !fuera.has(i.texto.toLowerCase()));
+        return l.items.length !== antes;
+    }
+    if (dh.tipo === 'nota') {
+        const n = notes.find(x => x.id === dh.notaId);
+        if (!n || !dh.texto) return false;
+        const i = n.content.lastIndexOf(dh.texto);
+        if (i < 0) return false;
+        n.content = (n.content.slice(0, i) + n.content.slice(i + dh.texto.length)).replace(/\n{3,}/g, '\n\n').trim();
+        return true;
+    }
+    return false;
+}
+
+async function deshacerApunte(id) {
+    const a = apuntesRecientes.find(x => x.id === id);
+    if (!a || a.deshecho) return;
+    const ok = apuntarQuitar(a.deshacer);
+    a.deshecho = true;
+    invalidarCachesDerivadas();
+    closeModal();
+    render();
+    showToast(ok ? 'Deshecho' : 'Ya no estaba: lo habrías borrado o cambiado antes');
+    try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+function cambiarApunte(id) {
+    const a = apuntesRecientes.find(x => x.id === id);
+    if (!a || a.deshecho) return;
+    apuntarQuitar(a.deshacer);
+    a.deshecho = true;
+    invalidarCachesDerivadas();
+    render();
+    openApuntar();
+    const t = document.getElementById('apuntar-texto');
+    if (t) { t.value = a.texto; pintarVistaApunte(); }
+    saveData().catch(e => console.error(e));
 }
 
 const APUNTAR_ICONOS = {

@@ -45,6 +45,7 @@
                 listaCompra = (saved.listaCompra && typeof saved.listaCompra === 'object') ? saved.listaCompra : null;
                 estudiar = (saved.estudiar && typeof saved.estudiar === 'object') ? saved.estudiar : null;
                 avisoDiarioVisto = typeof saved.avisoDiarioVisto === 'string' ? saved.avisoDiarioVisto : null;
+                apuntesRecientes = Array.isArray(saved.apuntesRecientes) ? saved.apuntesRecientes : [];
                 calendarioFeedVersion = Number(saved.calendarioFeedVersion) || 0;
                 bienvenida = saved.bienvenida || null;
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
@@ -243,6 +244,7 @@
             listaCompra: [() => listaCompra, v => { listaCompra = v; }],
             estudiar: [() => estudiar, v => { estudiar = v; }],
             avisoDiarioVisto: [() => avisoDiarioVisto, v => { avisoDiarioVisto = v; }],
+            apuntesRecientes: [() => apuntesRecientes, v => { apuntesRecientes = Array.isArray(v) ? v : []; }],
             calendarioFeedVersion: [() => calendarioFeedVersion, v => { calendarioFeedVersion = Number(v) || 0; }],
             bienvenida: [() => bienvenida, v => { bienvenida = v; }]
         };

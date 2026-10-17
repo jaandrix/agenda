@@ -1,29 +1,44 @@
 // ============================================================
-//  COMPRA (vista 'compra', apartado opcional de la rama #home)
+//  COMPRAS (vista 'compra', apartado opcional de la rama #home)
 //  Listas de la compra ordenadas por secciones del súper (como se recorre
 //  la tienda), con lo que ya está en el carro abajo y tachado, lo que más
-//  compras a un toque y un total estimado. Al terminar se limpia el carro
-//  y, si se quiere, el gasto pasa a Finanzas.
+//  compras a un toque y un total estimado. Al terminar, la compra pasa al
+//  historial y, si se quiere, el gasto a Finanzas.
+//  El ticket (foto a Claude o ChatGPT con el conector, op 'ticket') se une
+//  a la compra de ese día: cada línea con su precio y su tienda, lo que
+//  estaba en la lista y lo que fue un extra no planeado. Del historial
+//  sale la base de precios: el último de cada producto en cada tienda,
+//  dónde sale más barato, qué ha subido y el estimado de la próxima lista.
 //  Datos: `listaCompra` (sincronizado) = { listas: [{ id, nombre, items:
 //  [{ id, texto, cantidad, precio, hecho }] }], actual, frecuentes: {
-//  'texto en minúscula': veces } }.
+//  'texto en minúscula': veces }, historial: [{ id, fecha, tienda,
+//  listaId, total, fuente: 'manual'|'ticket', items: [{ texto, clave,
+//  deLista, cantidad, precio, importe, planeado, seccion }], sinComprar,
+//  txId }], aprendido: { clave: seccion } }.
 // ============================================================
 const COMPRA_SECCIONES = [
-    ['fruta', 'frutas y verduras.', /\b(manzan|plátan|platan|naranj|limon|limón|pera|uva|fres|kiwi|melon|melón|sandí|sandi|piña|aguacate|tomate|lechug|cebolla|ajo|patata|zanahori|pimient|calabac|berenjen|pepino|brócoli|brocoli|espinac|champiñ|seta|fruta|verdura|ensalad|perejil|cilantro)/],
-    ['fresco', 'carne y pescado.', /\b(pollo|pavo|ternera|cerdo|carne|filete|hamburgues|salchich|chorizo|jamón|jamon|lomo|bacon|beicon|pescado|salmón|salmon|merluza|atún fresco|gamba|langostino|calamar|sepia|mejill)/],
-    ['lacteo', 'lácteos y huevos.', /\b(leche|yogur|queso|mantequilla|nata|huevo|kéfir|kefir|batido)/],
-    ['pan', 'panadería.', /\b(pan\b|barra|baguette|bollo|croissant|cruasán|magdalen|tostad|biscote|bizcocho|galleta)/],
-    ['despensa', 'despensa.', /\b(arroz|pasta|macarr|espagu|lenteja|garbanzo|alubia|harina|azúcar|azucar|sal\b|aceite|vinagre|atún|atun|conserva|tomate frito|salsa|especia|café|cafe|té\b|cacao|cereal|avena|miel|mermelada|chocolate|frutos secos|nuez|almendra|patatas fritas|snack)/],
-    ['congelado', 'congelados.', /\b(congelad|helado|pizza|nugget|guisantes congelados)/],
-    ['bebida', 'bebidas.', /\b(agua|refresco|coca|zumo|cerveza|vino|bebida|tónica|tonica|leche de avena|bebida vegetal)/],
-    ['limpieza', 'limpieza y hogar.', /\b(detergente|suavizante|lejía|lejia|friegasuelos|lavavajillas|bayeta|estropajo|papel de cocina|papel higiénico|papel higienico|servilleta|bolsa de basura|basura|limpia|ambientador|pila|bombilla)/],
-    ['higiene', 'higiene.', /\b(champú|champu|gel|jabón|jabon|pasta de dientes|dentífrico|cepillo|desodorante|compresa|tampón|tampon|crema|cuchilla|maquinilla|algodón|algodon|colonia)/],
+    // Antes que frutas y verduras: «patatas de jamón» son patatas fritas.
+    ['aperitivo', 'aperitivos y dulces.', /\b(patatas? (?:fritas|de bolsa|de jamon|jamon|serrano|sabor|onduladas|campesinas|lisas|al punto de sal|chips)|chips|nachos|doritos|snack|ganchito|palomita|maiz frito|frutos secos|cacahuet|pipas|pistacho|anacardo|chicle|caramelo|golosina|gominola|regaliz|chocolatina|bombon|tortitas? (?:de maiz|de arroz|campestre)|aceitunas?|encurtido|pepinillo|banderilla)/],
+    ['fruta', 'frutas y verduras.', /\b(manzan|platan|naranj|mandarin|limon|lima\b|pera\b|peras\b|uvas?\b|fres|kiwi|melon|sandi|pina\b|mango|aguacate|tomate(?! frito)|lechug|cebolla|ajo\b|ajos\b|patata|zanahori|pimient|calabac|calabaza|berenjen|pepino|brocoli|coliflor|espinac|acelga|champin|seta|fruta|verdura|ensalad|canonigo|rucula|perejil|cilantro|albahaca|puerro|apio|judias? verdes?|alcachof|esparrago|boniato|melocoton|nectarina|cereza|arandano|frambuesa)/],
+    ['fresco', 'carne y pescado.', /\b(pollo|pavo|ternera|cerdo|solomillo|lomo|costilla|secreto|presa|pluma|chuleta|entrecot|cordero|conejo|pechuga|muslo|alitas?|carne|filete|hamburgues|albondiga|salchich|chorizo|jamon|fuet|salchichon|mortadela|bacon|beicon|panceta|pescado|salmon|merluza|bacalao|dorada|lubina|sardina|boqueron|gamba|langostino|calamar|sepia|pulpo|mejill|almeja)/],
+    ['lacteo', 'lácteos y huevos.', /\b(leche(?! de avena| de soja| de almendra)|yogur|queso|roquefort|mozzarella|mantequilla|margarina|nata|huevo|kefir|batido|natillas|flan|cuajada|requeson)/],
+    ['pan', 'panadería.', /\b(pan\b|panes|barra|baguette|bocadillo|chapata|hogaza|bollo|bolleria|croissant|cruasan|magdalen|napolitana|donut|tostad|biscote|bizcocho|galleta|picos\b|rosquilla)/],
+    ['despensa', 'despensa.', /\b(arroz|pasta|macarr|espagu|tallarin|fideo|lenteja|garbanzo|alubia|judion|harina|azucar|sal\b|aceite|vinagre|atun|sardinas en lata|conserva|tomate frito|tomate triturado|salsa|ketchup|mayonesa|mostaza|especia|pimenton|oregano|caldo|pastilla de caldo|sopa|pure|cafe|te\b|infusion|manzanilla|cacao|cereal|avena|muesli|miel|mermelada|chocolate|crema de cacao|levadura|pan rallado|maiz dulce)/],
+    ['congelado', 'congelados.', /\b(congelad|helado|pizza|nugget|croqueta|empanadilla|guisantes|varitas|lasana)/],
+    ['bebida', 'bebidas.', /\b(agua|refresco|coca.?cola|fanta|aquarius|zumo|nectar|cerveza|vino|cava|sidra|bebida|tonica|gaseosa|leche de (?:avena|soja|almendra)|bebida vegetal|isotonica|energetica)/],
+    ['limpieza', 'limpieza y hogar.', /\b(detergente|suavizante|lejia|friegasuelos|lavavajillas|fregona|mopa|bayeta|estropajo|papel de cocina|papel higienico|servilleta|bolsas? de basura|basura|limpia|limpiador|quitagrasas|ambientador|insecticida|pilas?\b|bombilla|papel de aluminio|film|vela)/],
+    ['higiene', 'higiene.', /\b(champu|acondicionador|gel\b|jabon|pasta de dientes|dentifrico|cepillo|desodorante|compresa|tampon|crema|cuchilla|maquinilla|algodon|bastoncillo|colonia|toallitas|panal|protector solar|enjuague)/],
 ];
+const COMPRA_SECCION_NOMBRE = Object.fromEntries([...COMPRA_SECCIONES.map(([k, t]) => [k, t]), ['otros', 'otros.']]);
+
+let compraPestana = 'lista';
 
 function datosCompra() {
     if (!listaCompra || typeof listaCompra !== 'object') listaCompra = { listas: [], frecuentes: {} };
     if (!Array.isArray(listaCompra.listas)) listaCompra.listas = [];
     if (!listaCompra.frecuentes || typeof listaCompra.frecuentes !== 'object') listaCompra.frecuentes = {};
+    if (!Array.isArray(listaCompra.historial)) listaCompra.historial = [];
+    if (!listaCompra.aprendido || typeof listaCompra.aprendido !== 'object') listaCompra.aprendido = {};
     if (!listaCompra.listas.length) listaCompra.listas.push({ id: 'lista_' + Date.now(), nombre: 'Casa', items: [] });
     listaCompra.listas.forEach(l => { if (!Array.isArray(l.items)) l.items = []; });
     if (!listaCompra.listas.some(l => l.id === listaCompra.actual)) listaCompra.actual = listaCompra.listas[0].id;
@@ -35,9 +50,63 @@ function compraListaActual() {
     return d.listas.find(l => l.id === d.actual);
 }
 
+// Clave para reconocer el mismo producto escrito de otra forma: sin
+// tildes, en minúscula, sin cantidades delante y en singular aproximado.
+function compraClave(texto) {
+    return stripAccents(String(texto || '').toLowerCase())
+        .replace(/^\s*\d+(?:[.,]\d+)?\s*(?:kg|g|l|ml|uds?|paquetes?|botes?|latas?|docenas?|x)?\s+/, '')
+        .replace(/[^a-z0-9ñ ]+/g, ' ').replace(/\s+/g, ' ').trim()
+        .split(' ').map(p => p.length > 4 ? p.replace(/(?:es|s)$/, '') : p).join(' ');
+}
+
 function compraSeccion(texto) {
-    const t = texto.toLowerCase();
+    const d = datosCompra();
+    const k = compraClave(texto);
+    if (d.aprendido[k]) return d.aprendido[k];
+    const t = stripAccents(String(texto || '').toLowerCase());
+    // «Caldo de pollo» o «sopa de pescado» son despensa aunque nombren carne.
+    if (/\b(caldo|sopa|cubito|pastilla de caldo|crema de verduras)\b/.test(t)) return 'despensa';
     return (COMPRA_SECCIONES.find(([, , re]) => re.test(t)) || ['otros'])[0];
+}
+
+// Palabras que cuentan para emparejar «Patatas de jamón» con «PATATAS
+// SERRANO» o «Nata» con «NATA PARA COCINAR».
+const COMPRA_VACIAS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'con', 'sin', 'para', 'y', 'en', 'al', 'a', 'pack', 'bandeja', 'bolsa', 'hacendado', 'unidad']);
+function compraPalabras(texto) {
+    return compraClave(texto).split(' ').filter(p => p.length > 2 && !COMPRA_VACIAS.has(p));
+}
+function compraParecido(a, b) {
+    const pa = compraPalabras(a), pb = new Set(compraPalabras(b));
+    if (!pa.length || !pb.size) return 0;
+    const comunes = pa.filter(p => pb.has(p)).length;
+    return comunes / Math.min(pa.length, pb.size);
+}
+
+// ---- base de precios (sale del historial) ----
+// Primero el mismo producto; si no, uno que lleve todas sus palabras
+// («Chicle» → «chicle hierbabuena»).
+function compraPrecios(texto) {
+    const k = compraClave(texto);
+    if (!k) return [];
+    const buscar = coincide => datosCompra().historial.flatMap(c => (c.items || [])
+        .filter(i => Number(i.precio) > 0 && coincide(i))
+        .map(i => ({ fecha: c.fecha, tienda: c.tienda || '', precio: Number(i.precio) })))
+        .sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const exactos = buscar(i => i.clave === k || (i.deLista && compraClave(i.deLista) === k));
+    return exactos.length ? exactos : buscar(i => compraParecido(texto, i.texto) >= 1 && compraPalabras(texto).length >= 1);
+}
+
+function compraPrecioEstimado(texto, tienda) {
+    const ps = compraPrecios(texto);
+    if (!ps.length) return null;
+    const enTienda = tienda ? ps.find(p => compraClave(p.tienda) === compraClave(tienda)) : null;
+    return enTienda || ps[0];
+}
+
+function compraPrecioItem(it, tienda) {
+    if (Number(it.precio) > 0) return { precio: Number(it.precio), estimado: false };
+    const e = compraPrecioEstimado(it.texto, tienda);
+    return e ? { precio: e.precio, estimado: true, tienda: e.tienda } : null;
 }
 
 // "2 leche", "leche x2", "3 kg patatas" o "leche 1,20 €": cantidad delante o
@@ -59,45 +128,165 @@ function compraUnidades(it) {
     return /kg|g\b|ml|\bl\b/i.test(it.cantidad || '') ? 1 : (n > 0 ? n : 1);
 }
 
-function compraImporte(items) {
-    return items.reduce((s, it) => s + (Number(it.precio) > 0 ? Number(it.precio) * compraUnidades(it) : 0), 0);
+function compraImporte(items, tienda) {
+    return items.reduce((s, it) => { const p = compraPrecioItem(it, tienda); return s + (p ? p.precio * compraUnidades(it) : 0); }, 0);
+}
+
+function compraTiendaDeLista(l) {
+    return l && l.nombre && compraClave(l.nombre) !== 'casa' ? l.nombre : '';
 }
 
 function renderCompra() {
     const d = datosCompra();
+    const pestanas = `<div class="profe-pestanas compra-pestanas">${[['lista', 'lista.'], ['historial', `historial.${d.historial.length ? ` <small>${d.historial.length}</small>` : ''}`]].map(([k, t]) => `<button class="profe-chip ${compraPestana === k ? 'activa' : ''}" onclick="compraPestana='${k}';render()">${t}</button>`).join('')}</div>`;
+    if (compraPestana === 'historial') return `<div class="compra">${renderCompraCabecera(`${d.historial.length} ${d.historial.length === 1 ? 'compra guardada' : 'compras guardadas'}.`)}${pestanas}${renderCompraHistorial()}</div>`;
     const l = compraListaActual();
+    const tienda = compraTiendaDeLista(l);
     const pendientes = l.items.filter(i => !i.hecho);
     const carro = l.items.filter(i => i.hecho);
     const enLista = new Set(l.items.map(i => i.texto.toLowerCase()));
     const frecuentes = Object.entries(d.frecuentes).filter(([t]) => !enLista.has(t)).sort((a, b) => b[1] - a[1]).slice(0, 12);
     const grupos = [...COMPRA_SECCIONES.map(([k, t]) => [k, t]), ['otros', 'otros.']]
         .map(([k, t]) => [t, pendientes.filter(i => compraSeccion(i.texto) === k)]).filter(([, xs]) => xs.length);
-    const estimado = compraImporte(l.items);
-    const fila = it => `<div class="compra-item ${it.hecho ? 'hecho' : ''}">
+    const estimado = compraImporte(l.items, tienda);
+    const conEstimado = l.items.some(i => !(Number(i.precio) > 0) && compraPrecioItem(i, tienda));
+    const fila = it => {
+        const p = compraPrecioItem(it, tienda);
+        return `<div class="compra-item ${it.hecho ? 'hecho' : ''}">
         <button class="compra-check ${it.hecho ? 'on' : ''}" onclick="compraMarcar('${it.id}')" aria-label="${it.hecho ? 'Sacar del carro' : 'Al carro'}"></button>
         <button class="compra-item-txt" onclick="openCompraItem('${it.id}')"><b>${escapeHtml(it.texto)}</b>${it.cantidad ? `<span>${escapeHtml(it.cantidad)}</span>` : ''}</button>
-        ${Number(it.precio) > 0 ? `<i>${financeMoney(Number(it.precio) * compraUnidades(it))}</i>` : ''}
+        ${p ? `<i class="${p.estimado ? 'estimado' : ''}" title="${p.estimado ? `Lo que pagaste la última vez${p.tienda ? ' en ' + escapeHtml(p.tienda) : ''}` : ''}">${p.estimado ? '≈ ' : ''}${financeMoney(p.precio * compraUnidades(it))}</i>` : ''}
     </div>`;
+    };
     return `
     <div class="compra">
-        <div class="compra-cab">
-            <div>
-                <div class="compra-titulo">Compra</div>
-                <div class="compra-sub">${pendientes.length ? `${pendientes.length} por coger${carro.length ? `, ${carro.length} en el carro` : ''}.` : carro.length ? 'Todo en el carro.' : 'La lista está vacía.'}${estimado ? ` Unos ${financeMoney(estimado)}.` : ''}</div>
-            </div>
-            <button class="pedido-btn" onclick="openCompraListas()">listas.</button>
-        </div>
+        ${renderCompraCabecera(`${pendientes.length ? `${pendientes.length} por coger${carro.length ? `, ${carro.length} en el carro` : ''}.` : carro.length ? 'Todo en el carro.' : 'La lista está vacía.'}${estimado ? ` ${conEstimado ? 'Unos' : ''} ${financeMoney(estimado)}.` : ''}`, true)}
+        ${pestanas}
         ${d.listas.length > 1 ? `<div class="compra-listas">${d.listas.map(x => `<button class="profe-chip ${x.id === l.id ? 'activa' : ''}" onclick="compraElegirLista('${x.id}')">${escapeHtml(x.nombre.toLowerCase())}. <small>${x.items.filter(i => !i.hecho).length}</small></button>`).join('')}</div>` : ''}
         <div class="compra-anadir">
             <input id="compra-nuevo" class="modal-input" placeholder="Añadir: 2 leche, pan, tomates 1,20 €..." onkeydown="if(event.key==='Enter'){event.preventDefault();compraAnadir(this.value)}" autocomplete="off">
             <button class="btn-modal-primary" onclick="compraAnadir(document.getElementById('compra-nuevo').value)">añadir.</button>
         </div>
         ${frecuentes.length ? `<div class="compra-frecuentes"><span>lo de siempre.</span>${frecuentes.map(([t]) => `<button onclick="compraAnadir('${escapeHtml(t).replace(/'/g, '&#39;')}', true)">+ ${escapeHtml(t)}</button>`).join('')}</div>` : ''}
-        ${!l.items.length ? `<div class="compra-vacio"><b>apunta lo que falta.</b>Escríbelo según te acuerdes: se ordena solo por secciones del súper, como se recorre la tienda. Lo que más compras te saldrá aquí para añadirlo con un toque.</div>` : ''}
+        ${!l.items.length ? `<div class="compra-vacio"><b>apunta lo que falta.</b>Escríbelo según te acuerdes: se ordena solo por secciones del súper, como se recorre la tienda. Lo que más compras te saldrá aquí para añadirlo con un toque, y con los tickets sabrá lo que suele costarte.</div>` : ''}
         ${grupos.map(([t, xs]) => `<div class="compra-seccion"><div class="compra-seccion-titulo">${t}</div>${xs.map(fila).join('')}</div>`).join('')}
-        ${carro.length ? `<div class="compra-seccion compra-carro"><div class="compra-seccion-titulo">en el carro.${compraImporte(carro) ? ` <span>${financeMoney(compraImporte(carro))}</span>` : ''}</div>${carro.map(fila).join('')}
+        ${carro.length ? `<div class="compra-seccion compra-carro"><div class="compra-seccion-titulo">en el carro.${compraImporte(carro, tienda) ? ` <span>${financeMoney(compraImporte(carro, tienda))}</span>` : ''}</div>${carro.map(fila).join('')}
             <button class="btn-modal-primary compra-terminar" onclick="openCompraTerminar()">terminar la compra.</button></div>` : ''}
+        ${conEstimado ? '<div class="compra-nota">≈ lo que pagaste la última vez, según tus tickets.</div>' : ''}
     </div>`;
+}
+
+function renderCompraCabecera(sub, conListas) {
+    return `<div class="compra-cab">
+        <div>
+            <div class="compra-titulo">compras.</div>
+            <div class="compra-sub">${sub}</div>
+        </div>
+        ${conListas ? '<button class="pedido-btn" onclick="openCompraListas()">listas.</button>' : ''}
+    </div>`;
+}
+
+// ---- historial ----
+// Lo planeado frente a lo que se coló, solo con las compras que tienen
+// ticket (sin él no se sabe qué hubo fuera de la lista).
+function compraResumenCenido(dias = 60) {
+    const desde = isoLocal(new Date(Date.now() - dias * 864e5));
+    const conTicket = datosCompra().historial.filter(c => c.fuente === 'ticket' && c.fecha >= desde);
+    let total = 0, planeado = 0, extra = 0;
+    const extras = {};
+    conTicket.forEach(c => (c.items || []).forEach(i => {
+        const imp = Number(i.importe) || 0;
+        total += imp;
+        if (i.planeado) planeado += imp;
+        else { extra += imp; const k = i.clave || compraClave(i.texto); extras[k] = extras[k] || { texto: i.texto, veces: 0, importe: 0 }; extras[k].veces++; extras[k].importe += imp; }
+    }));
+    const sinComprar = conTicket.reduce((s, c) => s + (c.sinComprar || []).length, 0);
+    const deLista = conTicket.reduce((s, c) => s + (c.items || []).filter(i => i.planeado).length, 0);
+    return { compras: conTicket.length, total, planeado, extra, extras: Object.values(extras).sort((a, b) => b.veces - a.veces || b.importe - a.importe), sinComprar, deLista };
+}
+
+// Por producto: dónde sale más barato (si se ha comprado en varias
+// tiendas) y qué ha subido desde la vez anterior.
+function compraInformePrecios() {
+    const porProducto = {};
+    datosCompra().historial.forEach(c => (c.items || []).forEach(i => {
+        if (!(Number(i.precio) > 0)) return;
+        const k = i.clave || compraClave(i.texto);
+        (porProducto[k] = porProducto[k] || { texto: i.texto, precios: [] }).precios.push({ fecha: c.fecha, tienda: c.tienda || '', precio: Number(i.precio) });
+    }));
+    const baratos = [], suben = [];
+    Object.values(porProducto).forEach(p => {
+        p.precios.sort((a, b) => b.fecha.localeCompare(a.fecha));
+        const ultimoPorTienda = {};
+        p.precios.forEach(x => { const t = x.tienda || '—'; if (!ultimoPorTienda[t]) ultimoPorTienda[t] = x; });
+        const tiendas = Object.values(ultimoPorTienda);
+        if (tiendas.length > 1) {
+            tiendas.sort((a, b) => a.precio - b.precio);
+            if (tiendas[1].precio - tiendas[0].precio >= 0.05) baratos.push({ texto: p.texto, tienda: tiendas[0].tienda, precio: tiendas[0].precio, ahorro: tiendas[tiendas.length - 1].precio - tiendas[0].precio });
+        }
+        const [ultimo, ...antes] = p.precios;
+        const previo = antes.find(x => x.tienda === ultimo.tienda);
+        if (previo && ultimo.precio - previo.precio >= 0.05) suben.push({ texto: p.texto, tienda: ultimo.tienda, antes: previo.precio, ahora: ultimo.precio });
+    });
+    return { baratos: baratos.sort((a, b) => b.ahorro - a.ahorro).slice(0, 8), suben: suben.sort((a, b) => (b.ahora / b.antes) - (a.ahora / a.antes)).slice(0, 8), productos: Object.keys(porProducto).length };
+}
+
+function renderCompraHistorial() {
+    const d = datosCompra();
+    if (!d.historial.length) return `<div class="compra-vacio"><b>aquí se guardan tus compras.</b>Cada vez que pulsas <b>terminar la compra.</b> se guarda lo que compraste. Y si le pasas la foto del ticket a Claude o ChatGPT con el conector («apunta este ticket en Bitácora»), Bitácora sabrá lo que costó cada cosa, en qué tienda y qué fue un extra que no estaba en la lista.</div>`;
+    const r = compraResumenCenido();
+    const inf = compraInformePrecios();
+    const pct = r.total ? Math.round(r.planeado / r.total * 100) : 0;
+    const fecha = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '');
+    return `
+        ${r.compras ? `<div class="compra-panel">
+            <div class="compra-panel-titulo">cómo te ciñes a la lista. <small>últimos 60 días · ${r.compras} ${r.compras === 1 ? 'ticket' : 'tickets'}</small></div>
+            <div class="compra-cenido"><div class="compra-cenido-barra"><i style="width:${pct}%"></i></div><div class="compra-cenido-cifras"><b>${pct} %</b> de lo gastado estaba en la lista · <b>${financeMoney(r.extra)}</b> en extras${r.sinComprar ? ` · ${r.sinComprar} ${r.sinComprar === 1 ? 'cosa' : 'cosas'} de la lista sin comprar` : ''}.</div></div>
+            ${r.extras.length ? `<div class="compra-panel-sub">lo que más se cuela.</div><div class="compra-chips">${r.extras.slice(0, 8).map(x => `<span>${escapeHtml(x.texto.toLowerCase())}${x.veces > 1 ? ` <small>×${x.veces}</small>` : ''}</span>`).join('')}</div>` : ''}
+        </div>` : ''}
+        ${inf.baratos.length || inf.suben.length ? `<div class="compra-panel">
+            <div class="compra-panel-titulo">tus precios. <small>${inf.productos} productos con precio</small></div>
+            ${inf.baratos.length ? `<div class="compra-panel-sub">dónde te sale más barato.</div>${inf.baratos.map(x => `<div class="compra-precio-fila"><span>${escapeHtml(x.texto)}</span><b>${escapeHtml(x.tienda)} · ${financeMoney(x.precio)}</b><small>−${financeMoney(x.ahorro)}</small></div>`).join('')}` : ''}
+            ${inf.suben.length ? `<div class="compra-panel-sub">lo que ha subido.</div>${inf.suben.map(x => `<div class="compra-precio-fila"><span>${escapeHtml(x.texto)}</span><b>${financeMoney(x.antes)} → ${financeMoney(x.ahora)}</b><small>${x.tienda ? escapeHtml(x.tienda) : ''}</small></div>`).join('')}` : ''}
+        </div>` : ''}
+        <div class="compra-seccion-titulo compra-historial-titulo">compras.</div>
+        ${[...d.historial].sort((a, b) => b.fecha.localeCompare(a.fecha)).map(c => {
+            const plan = (c.items || []).filter(i => i.planeado);
+            const extras = (c.items || []).filter(i => !i.planeado);
+            return `<button class="compra-hist-fila" onclick="openCompraHistorial('${c.id}')">
+                <span class="compra-hist-fecha">${fecha(c.fecha)}</span>
+                <span class="compra-hist-cuerpo"><b>${escapeHtml(c.tienda || 'sin tienda')}</b><small>${(c.items || []).length} productos${c.fuente === 'ticket' ? ` · ${plan.length} de la lista, ${extras.length} ${extras.length === 1 ? 'extra' : 'extras'}` : ' · sin ticket'}</small></span>
+                <span class="compra-hist-total">${c.total ? financeMoney(c.total) : '—'}</span>
+            </button>`;
+        }).join('')}`;
+}
+
+function openCompraHistorial(id) {
+    const c = datosCompra().historial.find(x => x.id === id);
+    if (!c) return;
+    const plan = (c.items || []).filter(i => i.planeado);
+    const extras = (c.items || []).filter(i => !i.planeado);
+    const linea = i => `<div class="compra-hist-linea"><span><b>${escapeHtml(i.texto)}</b>${i.deLista && compraClave(i.deLista) !== i.clave ? `<small>en la lista: ${escapeHtml(i.deLista)}</small>` : ''}</span><i>${Number(i.importe) > 0 ? financeMoney(Number(i.importe)) : ''}</i></div>`;
+    const suma = xs => xs.reduce((s, i) => s + (Number(i.importe) || 0), 0);
+    showModal(`
+        <div class="modal-title">${escapeHtml(c.tienda || 'compra')}.</div>
+        <p class="finance-modal-note" style="margin-top:0">${new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · ${c.total ? financeMoney(c.total) : 'sin importe'}${c.fuente === 'ticket' ? ' · con ticket' : ' · sin ticket todavía'}</p>
+        ${c.fuente === 'ticket' ? `
+            <div class="compra-seccion-titulo">de tu lista. <span>${financeMoney(suma(plan))}</span></div>${plan.map(linea).join('') || '<div class="compra-hist-vacio">nada.</div>'}
+            <div class="compra-seccion-titulo" style="margin-top:16px">extras. <span>${financeMoney(suma(extras))}</span></div>${extras.map(linea).join('') || '<div class="compra-hist-vacio">ninguno: te has ceñido a la lista.</div>'}
+            ${(c.sinComprar || []).length ? `<div class="compra-seccion-titulo" style="margin-top:16px">de la lista, sin comprar.</div>${c.sinComprar.map(t => `<div class="compra-hist-linea"><span>${escapeHtml(t)}</span></div>`).join('')}` : ''}`
+            : `${(c.items || []).map(linea).join('')}<p class="finance-modal-note">Pásale la foto del ticket a Claude o ChatGPT con el conector y se unirá a esta compra con sus precios.</p>`}
+        <button class="btn-secondary" style="margin-top:16px;color:#dc2626" onclick="borrarCompraHistorial('${c.id}')">quitar del historial.</button>
+    `);
+}
+
+function borrarCompraHistorial(id) {
+    const d = datosCompra();
+    if (!confirm('¿Quitar esta compra del historial? Sus precios dejarán de contar.')) return;
+    d.historial = d.historial.filter(x => x.id !== id);
+    closeModal();
+    render();
+    guardarCompra();
 }
 
 async function guardarCompra() {
@@ -117,8 +306,7 @@ function compraAnadir(texto, desdeFrecuente) {
         if (!it.texto) return;
         const ya = l.items.find(x => !x.hecho && x.texto.toLowerCase() === it.texto.toLowerCase());
         if (ya) { if (it.cantidad) ya.cantidad = it.cantidad; if (it.precio) ya.precio = it.precio; return; }
-        const previo = datosCompra().listas.flatMap(x => x.items).find(x => x.texto.toLowerCase() === it.texto.toLowerCase() && Number(x.precio) > 0);
-        l.items.push({ id: 'cmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), texto: it.texto, cantidad: it.cantidad, precio: it.precio ?? previo?.precio ?? null, hecho: false });
+        l.items.push({ id: 'cmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), texto: it.texto, cantidad: it.cantidad, precio: it.precio ?? null, hecho: false });
     });
     compraRepintar(!desdeFrecuente);
     guardarCompra();
@@ -141,15 +329,21 @@ function compraElegirLista(id) {
 function openCompraItem(id) {
     const it = compraListaActual().items.find(x => x.id === id);
     if (!it) return;
+    const seccion = compraSeccion(it.texto);
+    const precios = compraPrecios(it.texto).slice(0, 6);
     showModal(`
         <div class="modal-title">${escapeHtml(it.texto)}</div>
         <div class="modal-label">qué</div>
         <input id="compra-it-texto" class="modal-input" value="${escapeHtml(it.texto)}">
         <div class="lab-horas">
             <div><div class="modal-label">cantidad</div><input id="compra-it-cant" class="modal-input" value="${escapeHtml(it.cantidad || '')}" placeholder="2, 1 kg, 3 latas..."></div>
-            <div><div class="modal-label">precio por unidad</div><input id="compra-it-precio" class="modal-input" inputmode="decimal" value="${it.precio ? String(it.precio).replace('.', ',') : ''}" placeholder="1,20"></div>
+            <div><div class="modal-label">precio por unidad</div><input id="compra-it-precio" class="modal-input" inputmode="decimal" value="${it.precio ? String(it.precio).replace('.', ',') : ''}" placeholder="${precios[0] ? String(precios[0].precio).replace('.', ',') : '1,20'}"></div>
         </div>
-        <button class="btn-modal-primary" onclick="guardarCompraItem('${id}')">guardar.</button>
+        <div class="modal-label">sección</div>
+        <select id="compra-it-seccion" class="modal-input">${Object.entries(COMPRA_SECCION_NOMBRE).map(([k, t]) => `<option value="${k}" ${k === seccion ? 'selected' : ''}>${t}</option>`).join('')}</select>
+        <div class="finance-modal-note" style="margin-top:4px">Si la cambias, Bitácora lo recuerda para la próxima vez.</div>
+        ${precios.length ? `<div class="modal-label" style="margin-top:12px">lo que te ha costado.</div>${precios.map(p => `<div class="compra-hist-linea"><span>${new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${p.tienda ? ` · ${escapeHtml(p.tienda)}` : ''}</span><i>${financeMoney(p.precio)}</i></div>`).join('')}` : ''}
+        <button class="btn-modal-primary" style="margin-top:14px" onclick="guardarCompraItem('${id}')">guardar.</button>
         <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarCompraItem('${id}')">quitar de la lista.</button>
     `);
 }
@@ -161,6 +355,8 @@ function guardarCompraItem(id) {
     it.cantidad = document.getElementById('compra-it-cant').value.trim();
     const p = Number(document.getElementById('compra-it-precio').value.replace(',', '.'));
     it.precio = p > 0 ? Math.round(p * 100) / 100 : null;
+    const seccion = document.getElementById('compra-it-seccion')?.value;
+    if (seccion && seccion !== compraSeccion(it.texto)) datosCompra().aprendido[compraClave(it.texto)] = seccion;
     closeModal();
     render();
     guardarCompra();
@@ -178,7 +374,7 @@ function openCompraListas() {
     const d = datosCompra();
     showModal(`
         <div class="modal-title">listas.</div>
-        <p class="finance-modal-note" style="margin-top:0">Una por sitio o por súper: casa, el piso, Mercadona, la del finde...</p>
+        <p class="finance-modal-note" style="margin-top:0">Una por sitio o por súper: casa, el piso, Mercadona, Lidl... Si se llama como la tienda, los tickets de esa tienda se emparejan con ella y los precios estimados son los de allí.</p>
         ${d.listas.map(l => `<div class="compra-lista-fila"><b>${escapeHtml(l.nombre)}</b><span>${l.items.length} productos</span>
             <button class="pedido-btn" onclick="compraRenombrarLista('${l.id}')">renombrar.</button>
             ${d.listas.length > 1 ? `<button class="pedido-btn" style="color:#dc2626" onclick="compraBorrarLista('${l.id}')">eliminar.</button>` : ''}</div>`).join('')}
@@ -221,23 +417,33 @@ function compraBorrarLista(id) {
     guardarCompra();
 }
 
+function compraTiendasConocidas() {
+    const d = datosCompra();
+    return [...new Set([...d.historial.map(c => c.tienda), ...d.listas.map(compraTiendaDeLista)].filter(Boolean))];
+}
+
 // Al terminar: lo del carro sale de la lista, cuenta para "lo de
-// siempre" y, si se quiere, se apunta el gasto en Finanzas.
+// siempre", se guarda en el historial (con su tienda, para unirle luego el
+// ticket) y, si se quiere, se apunta el gasto en Finanzas.
 function openCompraTerminar() {
     const l = compraListaActual();
     const carro = l.items.filter(i => i.hecho);
-    const importe = compraImporte(carro);
+    const tienda = compraTiendaDeLista(l) || datosCompra().historial.slice(-1)[0]?.tienda || '';
+    const importe = compraImporte(carro, tienda);
     const cuentas = typeof FINANCE_PRO_ACCOUNT_KEYS !== 'undefined' ? FINANCE_PRO_ACCOUNT_KEYS : [];
     showModal(`
         <div class="modal-title">terminar la compra.</div>
-        <p class="finance-modal-note" style="margin-top:0">${carro.length} ${carro.length === 1 ? 'producto sale' : 'productos salen'} de la lista. Lo que quede sin coger se queda para la próxima.</p>
+        <p class="finance-modal-note" style="margin-top:0">${carro.length} ${carro.length === 1 ? 'producto sale' : 'productos salen'} de la lista y se guardan en el historial. Lo que quede sin coger se queda para la próxima.</p>
+        <div class="modal-label">tienda</div>
+        <input id="compra-tienda" class="modal-input" list="compra-tiendas" value="${escapeHtml(tienda)}" placeholder="Mercadona, Lidl, el mercado...">
+        <datalist id="compra-tiendas">${compraTiendasConocidas().map(t => `<option value="${escapeHtml(t)}">`).join('')}</datalist>
         <label class="finance-tx-marca"><input type="checkbox" id="compra-a-finanzas" checked onchange="document.getElementById('compra-gasto').hidden=!this.checked"><span><b>apuntar el gasto en finanzas.</b><small>Lo que pagaste, en comida y bebida.</small></span></label>
         <div id="compra-gasto">
             <div class="lab-horas">
                 <div><div class="modal-label">importe</div><input id="compra-importe" class="modal-input" inputmode="decimal" value="${importe ? importe.toFixed(2).replace('.', ',') : ''}" placeholder="0,00"></div>
                 <div><div class="modal-label">cuenta</div><select id="compra-cuenta" class="modal-input">${cuentas.map(k => `<option value="${k}" ${k === (financePro.cuentaImport || 'bancos') ? 'selected' : ''}>${escapeHtml(financePro.accounts[k]?.name || k)}</option>`).join('')}</select></div>
             </div>
-            <div class="finance-modal-note">Si luego importas el extracto del banco, este gasto se emparejará con el cargo real.</div>
+            <div class="finance-modal-note">Si luego importas el extracto del banco, este gasto se emparejará con el cargo real. Si pasas el ticket por el conector, el importe se corrige con el del ticket.</div>
         </div>
         <button class="btn-modal-primary" onclick="terminarCompra()">terminar.</button>
     `);
@@ -247,19 +453,145 @@ async function terminarCompra() {
     const d = datosCompra();
     const l = compraListaActual();
     const carro = l.items.filter(i => i.hecho);
+    const tienda = (document.getElementById('compra-tienda')?.value || '').trim();
     carro.forEach(i => { const k = i.texto.toLowerCase(); d.frecuentes[k] = (d.frecuentes[k] || 0) + 1; });
     l.items = l.items.filter(i => !i.hecho);
-    let gasto = '';
+    let gasto = '', txId = null, total = 0;
     if (document.getElementById('compra-a-finanzas')?.checked) {
         const importe = Number(String(document.getElementById('compra-importe')?.value || '').replace(',', '.'));
         if (importe > 0) {
+            total = Math.round(importe * 100) / 100;
             const cat = financePro.categories.find(c => c.type === 'expense' && /comida/i.test(c.name));
-            financePro.transactions.push({ id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), date: todayISO(), account: document.getElementById('compra-cuenta')?.value || 'bancos', type: 'expense', amount: Math.round(importe * 100) / 100, category: cat?.id, note: `Compra${l.nombre && l.nombre.toLowerCase() !== 'casa' ? ` (${l.nombre})` : ''}`, manual: true });
+            txId = 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+            financePro.transactions.push({ id: txId, date: todayISO(), account: document.getElementById('compra-cuenta')?.value || 'bancos', type: 'expense', amount: total, category: cat?.id, note: `Compra${tienda ? ` (${tienda})` : l.nombre && l.nombre.toLowerCase() !== 'casa' ? ` (${l.nombre})` : ''}`, manual: true });
             gasto = ` y ${financeMoney(importe)} en finanzas`;
         }
+    }
+    if (carro.length) {
+        d.historial.push({
+            id: 'cmpr_' + Date.now(), fecha: todayISO(), tienda, listaId: l.id, fuente: 'manual', txId,
+            total: total || Math.round(compraImporte(carro, tienda) * 100) / 100,
+            items: carro.map(i => { const p = compraPrecioItem(i, tienda); return { texto: i.texto, clave: compraClave(i.texto), deLista: i.texto, cantidad: i.cantidad || '', precio: p && !p.estimado ? p.precio : null, importe: p && !p.estimado ? Math.round(p.precio * compraUnidades(i) * 100) / 100 : null, planeado: true, seccion: compraSeccion(i.texto) }; }),
+        });
     }
     closeModal();
     render();
     await guardarCompra();
     showToast(`Compra terminada${gasto}.`);
+}
+
+// ---- el ticket que llega por el conector (op 'ticket') ----
+// Cada línea trae el producto, su precio y, si la IA la reconoce, el
+// elemento de la lista al que corresponde. Lo que no estaba en la lista es
+// un extra. Se une a la compra que ya se terminó a mano ese día (misma
+// tienda o lista) para no duplicarla; lo comprado sale de las listas.
+// Devuelve el resumen y lo necesario para deshacerlo.
+function compraAplicarTicket(op, ref) {
+    const d = datosCompra();
+    const fechaOk = /^\d{4}-\d{2}-\d{2}$/.test(String(op.fecha || '')) ? op.fecha : todayISO();
+    const tienda = String(op.tienda || '').trim();
+    const kTienda = compraClave(tienda);
+    const listaNombrada = op.lista ? d.listas.find(l => compraClave(l.nombre) === compraClave(op.lista)) : null;
+    const listaTienda = kTienda ? d.listas.find(l => { const k = compraClave(l.nombre); return k && (k === kTienda || kTienda.includes(k) || k.includes(kTienda)); }) : null;
+    const listaPrincipal = listaNombrada || listaTienda || null;
+    const candidatas = listaPrincipal ? [listaPrincipal, ...d.listas.filter(l => l !== listaPrincipal)] : d.listas;
+    const planeadaDicha = (Array.isArray(op.lista_planeada) ? op.lista_planeada : []).map(x => String(x || '').trim()).filter(Boolean);
+    const usadas = new Set();
+    const usadasDichas = new Set();
+    const quitados = [];
+    const lineas = (Array.isArray(op.lineas) ? op.lineas : []).filter(x => x && (x.producto || x.descripcion));
+    const items = lineas.map(x => {
+        const texto = String(x.producto || x.descripcion).trim();
+        const nombreTexto = texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+        const deListaIA = String(x.de_lista || '').trim();
+        // 1) Lo que la IA dice; 2) parecido de palabras con la lista.
+        let elegido = null;
+        for (const l of candidatas) {
+            for (const it of l.items) {
+                if (usadas.has(it.id)) continue;
+                const k = compraClave(it.texto);
+                if ((deListaIA && (k === compraClave(deListaIA) || compraParecido(deListaIA, it.texto) >= 1)) || (!deListaIA && compraParecido(texto, it.texto) >= 1)) { elegido = { l, it }; break; }
+            }
+            if (elegido) break;
+        }
+        let deLista = '';
+        if (elegido) { usadas.add(elegido.it.id); quitados.push({ listaId: elegido.l.id, item: { ...elegido.it } }); deLista = elegido.it.texto; }
+        else {
+            const dicha = planeadaDicha.find(p => !usadasDichas.has(p) && ((deListaIA && (compraClave(p) === compraClave(deListaIA) || compraParecido(deListaIA, p) >= 1)) || compraParecido(texto, p) >= 1));
+            if (dicha) { usadasDichas.add(dicha); deLista = dicha; }
+            else if (deListaIA) deLista = deListaIA;
+        }
+        const cantidad = Number(String(x.cantidad ?? 1).replace(',', '.')) || 1;
+        const importe = Number(String(x.importe ?? '').replace(',', '.')) || (Number(String(x.precio_unidad ?? '').replace(',', '.')) * cantidad) || null;
+        const precio = Number(String(x.precio_unidad ?? '').replace(',', '.')) || (importe ? Math.round(importe / cantidad * 100) / 100 : null);
+        const seccion = COMPRA_SECCION_NOMBRE[x.seccion] ? x.seccion : compraSeccion(deLista || texto);
+        return { texto: nombreTexto, clave: compraClave(texto), deLista, cantidad: x.cantidad != null ? String(x.cantidad) : '', precio, importe: importe ? Math.round(importe * 100) / 100 : null, planeado: !!deLista, seccion, linea: String(x.descripcion || '') };
+    });
+    if (!items.length) return null;
+    const total = Number(String(op.total ?? '').replace(',', '.')) || Math.round(items.reduce((s, i) => s + (i.importe || 0), 0) * 100) / 100;
+    // Lo de la lista que no salió en el ticket: lo de la lista de esa
+    // tienda que sigue pendiente y lo que se dijo de palabra.
+    const sinComprar = [
+        ...(listaPrincipal ? listaPrincipal.items.filter(it => !usadas.has(it.id) && !it.hecho).map(it => it.texto) : []),
+        ...planeadaDicha.filter(p => !usadasDichas.has(p)),
+    ];
+
+    // Aprende la sección de cada producto (la del ticket manda).
+    const aprendidoAntes = { ...d.aprendido };
+    items.forEach(i => { if (i.seccion && i.seccion !== 'otros') { d.aprendido[i.clave] = i.seccion; if (i.deLista) d.aprendido[compraClave(i.deLista)] = i.seccion; } });
+
+    // ¿Ya había una compra de ese día terminada a mano?
+    const cerca = iso => Math.abs(new Date(iso + 'T12:00:00') - new Date(fechaOk + 'T12:00:00')) <= 864e5;
+    const previa = d.historial.find(c => c.fuente === 'manual' && cerca(c.fecha) && ((kTienda && compraClave(c.tienda) === kTienda) || (listaPrincipal && c.listaId === listaPrincipal.id) || (!c.tienda && !kTienda)));
+    const previaCopia = previa ? JSON.parse(JSON.stringify(previa)) : null;
+    // Lo que se terminó a mano y sale en el ticket cuenta como de la lista.
+    if (previa) items.forEach(i => {
+        if (i.planeado) return;
+        const m = (previa.items || []).find(p => p.planeado && compraParecido(p.deLista || p.texto, i.texto) >= 1);
+        if (m) { i.planeado = true; i.deLista = m.deLista || m.texto; }
+    });
+    const entrada = previa || { id: `cmpr_${ref || Date.now()}` };
+    Object.assign(entrada, { fecha: fechaOk, tienda: tienda || entrada.tienda || '', listaId: (listaPrincipal || compraListaActual()).id, fuente: 'ticket', total, items, sinComprar });
+    if (!previa) d.historial.push(entrada);
+
+    // Lo comprado sale de las listas y cuenta para «lo de siempre».
+    quitados.forEach(q => {
+        const l = d.listas.find(x => x.id === q.listaId);
+        if (l) l.items = l.items.filter(x => x.id !== q.item.id);
+        if (!previa) { const k = q.item.texto.toLowerCase(); d.frecuentes[k] = (d.frecuentes[k] || 0) + 1; }
+    });
+
+    // Finanzas: corrige el gasto de la compra terminada a mano o lo crea.
+    let txCreado = null, txAntes = null;
+    if (op.gasto !== false && total > 0) {
+        const tx = previa?.txId ? financePro.transactions.find(t => t.id === previa.txId) : null;
+        if (tx) { txAntes = { id: tx.id, amount: tx.amount }; tx.amount = total; }
+        else {
+            const cat = financePro.categories.find(c => c.type === 'expense' && /comida/i.test(c.name));
+            const ultima = [...(financePro.transactions || [])].reverse().find(t => t.manual && t.account)?.account;
+            const cuenta = FINANCE_PRO_ACCOUNT_KEYS.includes(ultima) ? ultima : FINANCE_PRO_ACCOUNT_KEYS.includes('bancos') ? 'bancos' : FINANCE_PRO_ACCOUNT_KEYS[0];
+            txCreado = `ptx_${ref || Date.now()}`;
+            financePro.transactions.push({ id: txCreado, date: fechaOk, account: cuenta, type: 'expense', amount: total, category: cat?.id, note: `Compra${tienda ? ` (${tienda})` : ''}`, manual: true, needsReview: !cat });
+            entrada.txId = txCreado;
+        }
+    }
+
+    const plan = items.filter(i => i.planeado), extras = items.filter(i => !i.planeado);
+    const sumaExtras = extras.reduce((s, i) => s + (i.importe || 0), 0);
+    const pct = total ? Math.round((total - sumaExtras) / total * 100) : 0;
+    const resumen = `Ticket${tienda ? ` de ${tienda}` : ''}: ${items.length} productos, ${financeMoney(total)}. ${plan.length} de la lista (${pct} %), ${extras.length} ${extras.length === 1 ? 'extra' : 'extras'}${extras.length ? ` (${financeMoney(sumaExtras)})` : ''}${sinComprar.length ? `; sin comprar: ${sinComprar.join(', ')}` : ''}.`;
+    return { resumen, deshacer: { accion: 'ticket', entradaId: entrada.id, previa: previaCopia, quitados, txCreado, txAntes, aprendidoAntes } };
+}
+
+function compraDeshacerTicket(dh) {
+    const d = datosCompra();
+    if (dh.previa) { const i = d.historial.findIndex(c => c.id === dh.entradaId); if (i >= 0) d.historial[i] = dh.previa; }
+    else d.historial = d.historial.filter(c => c.id !== dh.entradaId);
+    (dh.quitados || []).forEach(q => {
+        const l = d.listas.find(x => x.id === q.listaId);
+        if (l && !l.items.some(x => x.id === q.item.id)) l.items.push(q.item);
+    });
+    if (dh.txCreado) financePro.transactions = financePro.transactions.filter(t => t.id !== dh.txCreado);
+    if (dh.txAntes) { const t = financePro.transactions.find(x => x.id === dh.txAntes.id); if (t) t.amount = dh.txAntes.amount; }
+    if (dh.aprendidoAntes) d.aprendido = dh.aprendidoAntes;
 }
