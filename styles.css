@@ -5166,6 +5166,12 @@ html[data-vt="atras"]::view-transition-new(interior) { animation: vtEntrarDesdeI
 /* Con nombre propio, el contenido se pintaría por encima del modal
    durante la transición (los grupos con nombre se apilan sobre root). */
 html[data-vt="ficha"] #content { view-transition-name: none; }
+/* La foto de #content se pinta por encima de todo lo que no tenga nombre
+   propio: sin esto, al cambiar de apartado las tarjetas tapaban un momento
+   el botón de apuntar. En la ficha no, que ahí el botón va bajo el velo. */
+html[data-vt]:not([data-vt="ficha"]) #fab { view-transition-name: fab; }
+html[data-vt]:not([data-vt="ficha"]) .pomo-pastilla { view-transition-name: pomo-pastilla; }
+::view-transition-group(fab), ::view-transition-group(pomo-pastilla) { animation: none; }
 html[data-vt="ficha"]::view-transition-old(root) { display: block; animation: vtFundirSalida .26s ease both; }
 ::view-transition-group(ficha) { animation-duration: .36s; animation-timing-function: var(--ease-out); }
 ::view-transition-old(ficha), ::view-transition-new(ficha) { width: 100%; height: 100%; object-fit: cover; object-position: top; overflow: clip; }
