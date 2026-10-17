@@ -23,7 +23,7 @@ const COMPRA_SECCIONES = [
     ['fresco', 'carne y pescado.', /\b(pollo|pavo|ternera|cerdo|solomillo|lomo|costilla|secreto|presa|pluma|chuleta|entrecot|cordero|conejo|pechuga|muslo|alitas?|carne|filete|hamburgues|albondiga|salchich|chorizo|jamon|fuet|salchichon|mortadela|bacon|beicon|panceta|pescado|salmon|merluza|bacalao|dorada|lubina|sardina|boqueron|gamba|langostino|calamar|sepia|pulpo|mejill|almeja)/],
     ['lacteo', 'lácteos y huevos.', /\b(leche(?! de avena| de soja| de almendra)|yogur|queso|roquefort|mozzarella|mantequilla|margarina|nata|huevo|kefir|batido|natillas|flan|cuajada|requeson)/],
     ['pan', 'panadería.', /\b(pan\b|panes|barra|baguette|bocadillo|chapata|hogaza|bollo|bolleria|croissant|cruasan|magdalen|napolitana|donut|tostad|biscote|bizcocho|galleta|picos\b|rosquilla)/],
-    ['despensa', 'despensa.', /\b(arroz|pasta|macarr|espagu|tallarin|fideo|lenteja|garbanzo|alubia|judion|harina|azucar|sal\b|aceite|vinagre|atun|sardinas en lata|conserva|tomate frito|tomate triturado|salsa|ketchup|mayonesa|mostaza|especia|pimienta|pimenton|oregano|caldo|pastilla de caldo|sopa|pure|cafe|te\b|infusion|manzanilla|cacao|cereal|avena|muesli|miel|mermelada|chocolate|crema de cacao|levadura|pan rallado|maiz dulce)/],
+    ['despensa', 'pasta, arroz y conservas.', /\b(arroz|pasta|macarr|espagu|tallarin|fideo|lenteja|garbanzo|alubia|judion|harina|azucar|sal\b|aceite|vinagre|atun|sardinas en lata|conserva|tomate frito|tomate triturado|salsa|ketchup|mayonesa|mostaza|especia|pimienta|pimenton|oregano|caldo|pastilla de caldo|sopa|pure|cafe|te\b|infusion|manzanilla|cacao|cereal|avena|muesli|miel|mermelada|chocolate|crema de cacao|levadura|pan rallado|maiz dulce)/],
     ['congelado', 'congelados.', /\b(congelad|helado|pizza|nugget|croqueta|empanadilla|guisantes|varitas|lasana)/],
     ['bebida', 'bebidas.', /\b(agua|refresco|coca.?cola|fanta|aquarius|zumo|nectar|cerveza|vino|cava|sidra|bebida|tonica|gaseosa|leche de (?:avena|soja|almendra)|bebida vegetal|isotonica|energetica)/],
     ['limpieza', 'limpieza y hogar.', /\b(detergente|suavizante|lejia|friegasuelos|lavavajillas|fregona|mopa|bayeta|estropajo|papel de cocina|papel higienico|servilleta|bolsas? de basura|basura|limpia|limpiador|quitagrasas|ambientador|insecticida|pilas?\b|bombilla|papel de aluminio|film|vela)/],
@@ -180,7 +180,7 @@ function renderCompra() {
 function renderCompraCabecera(sub, conListas, enCarro) {
     return `<div class="compra-cab">
         <div>
-            <div class="compra-titulo">compras.</div>
+            <div class="compra-titulo">despensa.</div>
             <div class="compra-sub">${sub}</div>
         </div>
         ${conListas ? `<div class="compra-cab-botones">${enCarro ? `<button class="btn-modal-primary compra-terminar-arriba" onclick="openCompraTerminar()">terminar la compra. <small>${enCarro}</small></button>` : ''}${Object.keys(datosCompra().frecuentes).length ? '<button class="pedido-btn" onclick="openCompraFrecuentes()">lo de siempre.</button>' : ''}<button class="pedido-btn" onclick="openCompraListas()">listas.</button></div>` : ''}
@@ -707,7 +707,7 @@ function compraAplicarTicket(op, ref) {
     });
 
     // Finanzas solo si se pide expresamente (gasto: true): el gasto real ya
-    // llega con el extracto del banco y el ticket es para Compras. Si se
+    // llega con el extracto del banco y el ticket es para Despensa. Si se
     // pide, cada ticket va con su gasto exacto y el estimado que se apuntó al
     // terminar a mano se corrige (ticket completo) o se le resta lo de este
     // ticket (parcial); si se queda en nada, se quita.
@@ -755,7 +755,7 @@ function compraDeshacerTicket(dh) {
 }
 
 // ============================================================
-//  RECETAS (pestaña de Compras)
+//  RECETAS (pestaña de Despensa)
 //  Cada receta con sus ingredientes (los de tus compras, con lo que te
 //  costaron según tus tickets), raciones, pasos y notas. «añadir a la
 //  lista.» mete lo que falte en la lista de la compra, marcado con la

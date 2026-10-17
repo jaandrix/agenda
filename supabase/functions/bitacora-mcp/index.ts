@@ -893,12 +893,12 @@ const HERRAMIENTAS = [
     },
     {
         name: 'compra',
-        description: 'Añade cosas a la lista de la compra del apartado Compra (se ordenan solas por secciones del súper). Cada cosa puede llevar cantidad y precio: "2 leche", "tomates 1,20 €". Útil para pasar los ingredientes de una receta. Se aplica solo, sin validar.',
+        description: 'Añade cosas a la lista de la compra del apartado Despensa (se ordenan solas por secciones del súper). Cada cosa puede llevar cantidad y precio: "2 leche", "tomates 1,20 €". Útil para pasar los ingredientes de una receta. Se aplica solo, sin validar.',
         inputSchema: { type: 'object', properties: { cosas: { type: 'array', items: { type: 'string' }, maxItems: 80 }, lista: { type: 'string', description: 'Opcional: nombre de otra lista (si no, la actual)' } }, required: ['cosas'] },
     },
     {
         name: 'receta',
-        description: 'Guarda una receta en Compras → recetas de Bitácora (por ejemplo a partir de una foto, un enlace o lo que el usuario dicte): nombre, raciones, ingredientes (uno por elemento, con su cantidad delante: «200 g nata», «2 huevos») y pasos. Si ya hay una receta con ese nombre, la actualiza. Con a_la_lista: true, además pasa a la lista de la compra los ingredientes que falten. Usa nombres de ingredientes sencillos, como se apuntarían en una lista. Se aplica solo y se puede deshacer.',
+        description: 'Guarda una receta en Despensa → recetas de Bitácora (por ejemplo a partir de una foto, un enlace o lo que el usuario dicte): nombre, raciones, ingredientes (uno por elemento, con su cantidad delante: «200 g nata», «2 huevos») y pasos. Si ya hay una receta con ese nombre, la actualiza. Con a_la_lista: true, además pasa a la lista de la compra los ingredientes que falten. Usa nombres de ingredientes sencillos, como se apuntarían en una lista. Se aplica solo y se puede deshacer.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -914,7 +914,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'ticket_compra',
-        description: 'Guarda el ticket de una compra (normalmente una foto que pasa el usuario) en el historial de Compras de Bitácora: tienda, fecha, total y cada línea con su precio. Antes, lee las listas con apartado("compra") para emparejar: en cada línea pon en de_lista el texto EXACTO del elemento de la lista al que corresponde (por_coger o en_el_carro), aunque el ticket lo llame distinto (lista «Patatas de jamón» ↔ ticket «PATATAS SERRANO»; «Pan» ↔ «3 BOCADILLOS»); déjalo vacío si no estaba en la lista (lo añadió en la tienda). Si la lista ya no está en Bitácora y el usuario te dice de palabra qué llevaba, pásalo en lista_planeada. Lee solo los productos: ignora IVA, base imponible, total, forma de pago, tarjeta y códigos. En Mercadona, «1 3 BOCADILLOS» es 1 unidad del producto «3 bocadillos»; en las líneas a peso («0,456 kg x 2,19 €/kg») la cantidad son los kg. producto es un nombre genérico y legible en minúscula («patatas fritas serrano», «nata para cocinar»), sin marca salvo que importe. seccion es la del súper. Si el usuario compró en varias tiendas, haz una llamada por ticket, cada una con su tienda. Si dice que el ticket es parte de una compra que ya terminó en Bitácora (aparece en compras_recientes sin ticket), llama igual: Bitácora lo une a esa compra y deja lo que no sale en este ticket esperando el siguiente; en de_lista puedes usar los productos de esa compra. No apunta nada en Finanzas (el cargo real llega con el extracto del banco): no registres tampoco el movimiento con registrar_movimiento, salvo que el usuario pida expresamente apuntar el gasto; entonces usa gasto: true. Se aplica solo y se puede deshacer.',
+        description: 'Guarda el ticket de una compra (normalmente una foto que pasa el usuario) en el historial de Despensa de Bitácora: tienda, fecha, total y cada línea con su precio. Antes, lee las listas con apartado("compra") para emparejar: en cada línea pon en de_lista el texto EXACTO del elemento de la lista al que corresponde (por_coger o en_el_carro), aunque el ticket lo llame distinto (lista «Patatas de jamón» ↔ ticket «PATATAS SERRANO»; «Pan» ↔ «3 BOCADILLOS»); déjalo vacío si no estaba en la lista (lo añadió en la tienda). Si la lista ya no está en Bitácora y el usuario te dice de palabra qué llevaba, pásalo en lista_planeada. Lee solo los productos: ignora IVA, base imponible, total, forma de pago, tarjeta y códigos. En Mercadona, «1 3 BOCADILLOS» es 1 unidad del producto «3 bocadillos»; en las líneas a peso («0,456 kg x 2,19 €/kg») la cantidad son los kg. producto es un nombre genérico y legible en minúscula («patatas fritas serrano», «nata para cocinar»), sin marca salvo que importe. seccion es la del súper. Si el usuario compró en varias tiendas, haz una llamada por ticket, cada una con su tienda. Si dice que el ticket es parte de una compra que ya terminó en Bitácora (aparece en compras_recientes sin ticket), llama igual: Bitácora lo une a esa compra y deja lo que no sale en este ticket esperando el siguiente; en de_lista puedes usar los productos de esa compra. No apunta nada en Finanzas (el cargo real llega con el extracto del banco): no registres tampoco el movimiento con registrar_movimiento, salvo que el usuario pida expresamente apuntar el gasto; entonces usa gasto: true. Se aplica solo y se puede deshacer.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -1323,7 +1323,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (!nombre || !ingredientes.length) throw new Error('Hacen falta el nombre y al menos un ingrediente');
             const pasos = (Array.isArray(a.pasos) ? a.pasos : []).map((x: any) => String(x || '').trim()).filter(Boolean).slice(0, 40);
             await encolar(userId, { tipo: 'receta', nombre, raciones: Number(a.raciones) || null, ingredientes, pasos, notas: String(a.notas || '').slice(0, 2000), a_la_lista: a.a_la_lista === true });
-            return `Receta «${nombre}» guardada en Compras → recetas con ${ingredientes.length} ingredientes${a.a_la_lista === true ? '; lo que faltaba pasa a la lista de la compra' : ''}.`;
+            return `Receta «${nombre}» guardada en Despensa → recetas con ${ingredientes.length} ingredientes${a.a_la_lista === true ? '; lo que faltaba pasa a la lista de la compra' : ''}.`;
         }
         case 'ticket_compra': {
             const num = (x: any) => { const n = Number(String(x ?? '').replace(',', '.')); return Number.isFinite(n) ? n : null; };
@@ -1344,7 +1344,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             await encolar(userId, { tipo: 'ticket', tienda, fecha, total, lista: a.lista ? String(a.lista) : '', lista_planeada: Array.isArray(a.lista_planeada) ? a.lista_planeada.map((x: any) => String(x || '').trim()).filter(Boolean).slice(0, 80) : [], gasto: a.gasto === true, lineas });
             const extras = lineas.filter((l: any) => !l.de_lista);
             const sumaExtras = extras.reduce((s: number, l: any) => s + (l.importe || 0), 0);
-            return `Ticket${tienda ? ' de ' + tienda : ''} del ${fecha} guardado en el historial de Compras: ${lineas.length} productos, ${total.toFixed(2).replace('.', ',')} €. ${lineas.length - extras.length} estaban en la lista y ${extras.length} se añadieron en la tienda${extras.length ? ' (' + sumaExtras.toFixed(2).replace('.', ',') + ' €: ' + extras.map((l: any) => l.producto).join(', ') + ')' : ''}.${a.gasto === true ? ' El gasto queda apuntado en Finanzas.' : ''} Lo comprado sale de la lista.`;
+            return `Ticket${tienda ? ' de ' + tienda : ''} del ${fecha} guardado en el historial de Despensa: ${lineas.length} productos, ${total.toFixed(2).replace('.', ',')} €. ${lineas.length - extras.length} estaban en la lista y ${extras.length} se añadieron en la tienda${extras.length ? ' (' + sumaExtras.toFixed(2).replace('.', ',') + ' €: ' + extras.map((l: any) => l.producto).join(', ') + ')' : ''}.${a.gasto === true ? ' El gasto queda apuntado en Finanzas.' : ''} Lo comprado sale de la lista.`;
         }
         case 'proyecto': {
             const q = norm(a.proyecto).trim();

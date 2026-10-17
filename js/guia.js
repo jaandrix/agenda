@@ -158,9 +158,9 @@ const GUIA = [
         trucos: ['Pulsa el nombre de una tarea para editarla.', 'Los trabajos de Estudios aparecen solos aquí el día de su entrega.', 'Al completar una tarea queda constancia en el calendario.'],
     },
     {
-        id: 'compra', grupo: 'general', titulo: 'compras.',
+        id: 'compra', grupo: 'general', titulo: 'despensa.',
         lema: 'La lista de la compra, en el orden del súper, y lo que te cuesta.',
-        intro: 'Listas de la compra que se ordenan solas por secciones (frutas y verduras, carne y pescado, lácteos, despensa, limpieza...), como se recorre la tienda. Es un apartado opcional de la rama #home: actívalo en Ajustes → apartados.',
+        intro: 'Listas de la compra que se ordenan solas por secciones (frutas y verduras, carne y pescado, lácteos, pasta y conservas, limpieza...), como se recorre la tienda. Es un apartado opcional de la rama #home: actívalo en Ajustes → apartados.',
         pasos: ['Escribe lo que falta según te acuerdes: «2 leche, pan, tomates 1,20 €». La cantidad y el precio se entienden solos.', 'En el súper, toca el círculo de cada cosa al echarla al carro: baja a «en el carro.».', 'Al acabar, <b>terminar la compra.</b> la limpia y, si quieres, apunta el gasto en Finanzas.'],
         botones: [
             [guiaBoton('lo de siempre.'), 'Arriba, junto a listas.: lo que más veces has comprado, de más a menos, para añadirlo a la lista con un toque. Aprende de cada compra terminada y de cada ticket; <b>quitar.</b> borra lo que ya no compras.'],

@@ -267,7 +267,7 @@ a menor resolución.
 - **Rutinas (antes Hábitos; vista y datos siguen siendo `habits`, en `planificador.js`):** momento del día,
   `frecuencia` (diaria / días / x por semana), `pasos` con `pasosHechos`, semana de bolitas que marca días
   pasados, `habitStreak` respeta los días que no tocan; al marcar se repinta solo la rutina (`repintarRutina`).
-- **Compras (`js/compra.js`, vista `compra`, opcional de #home; en la interfaz "Compras"):** `listaCompra` (sincronizado)
+- **Compras (`js/compra.js`, vista `compra`, opcional de #home; en la interfaz "Despensa", antes "Compra" y "Compras"):** `listaCompra` (sincronizado)
   con listas, secciones del súper por palabras clave (`COMPRA_SECCIONES`, con `aperitivo` antes que fruta) más lo aprendido
   (`aprendido`, clave `compraClave`), "lo de siempre" (`frecuentes`), `historial` de compras (al terminar o con el ticket) y
   "terminar la compra." que apunta el gasto en Finanzas. El ticket llega por la herramienta `ticket_compra` del conector (op
