@@ -8616,3 +8616,14 @@ body.pizarra .planner-stamp-dot.filled { background:#D4D8DD; border-color:#D4D8D
 .compra-receta-sugeridas { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; font-size:12.5px; color:var(--text-secondary); }
 .compra-en-lista { font-style:normal; font-size:11.5px; color:var(--text-secondary); }
 .compra-item-txt em { display:block; font-style:normal; font-size:11.5px; color:var(--text-secondary); }
+
+/* Apuntar: cada cosa detectada en su fila, con su tipo y lo que le falta. */
+.apuntar-varias { margin:2px 0 6px; font-size:12.5px; font-weight:700; color:var(--text-secondary); }
+.apuntar-item { display:flex; align-items:center; gap:10px; padding:9px 10px 9px 12px; margin-bottom:6px; border-radius:12px; background:var(--bg-input); }
+.apuntar-item.incompleto { box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--m-acento) 55%, transparent); }
+.apuntar-item-ico { display:grid; place-items:center; flex-shrink:0; width:30px; height:30px; color:var(--text-primary); }
+.apuntar-item-ico svg { width:22px; height:22px; }
+.apuntar-item-cuerpo { flex:1; min-width:0; }
+.apuntar-item .apuntar-resumen { padding:0; background:none; font-size:15px; line-height:1.35; }
+.apuntar-falta { display:block; margin-top:2px; font-size:12.5px; color:var(--m-acento); font-weight:600; }
+.apuntar-item-tipo { flex-shrink:0; width:auto !important; max-width:42%; min-height:36px; padding:0 10px; border-radius:10px; border:1px solid var(--border-strong); background:var(--bg-card); color:var(--text-primary); font-family:var(--font-family); font-size:13px; font-weight:600; }

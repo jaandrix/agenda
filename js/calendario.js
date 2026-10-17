@@ -840,8 +840,8 @@
                     titleHtml = `Trabajando en ${e.company || 'empresa sin nombre'}${scheduleText}`;
                     metaHtml = e.position || catName;
                 } else if (e.type === 'birthday') {
-                    const years = e.birthDate ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
-                    titleHtml = `cumpleaños de ${e.title} (${years} años)`;
+                    const years = e.birthDate && !e.sinAnio ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
+                    titleHtml = `cumpleaños de ${e.title}${years === '?' ? '' : ` (${years} años)`}`;
                     metaHtml = 'Cumpleaños';
                 } else {
                     titleHtml = e.title;
@@ -888,8 +888,8 @@
                     titleHtml = `Trabajando en ${e.company || 'empresa sin nombre'}${scheduleText}`;
                     metaHtml = e.position || catName;
                 } else if (e.type === 'birthday') {
-                    const years = e.birthDate ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
-                    titleHtml = `cumpleaños de ${e.title} (${years} años)`;
+                    const years = e.birthDate && !e.sinAnio ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
+                    titleHtml = `cumpleaños de ${e.title}${years === '?' ? '' : ` (${years} años)`}`;
                     metaHtml = 'Cumpleaños';
                 } else {
                     titleHtml = e.title;
@@ -953,7 +953,7 @@
 
             const rows = [
                 ...birthdays.map(e => {
-                    const years = e.birthDate ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : null;
+                    const years = e.birthDate && !e.sinAnio ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : null;
                     return row(BIRTHDAY_ICON_CAKE, escapeHtml(e.title), years ? `${years} años` : '');
                 }),
                 ...exams.map(ex => row(STUDIES_ICON_EXAM, escapeHtml(ex.title || 'Examen'), escapeHtml(ex.subject), "closeModal();switchView('studies')")),

@@ -379,10 +379,10 @@
             return null;
         }
 
-        async function deshacerConector(id) {
+        async function deshacerConector(id, sinPreguntar) {
             const l = registroConector.find(x => x.id === id);
             if (!l || l.deshecho || !l.deshacer) return;
-            if (!confirm(`¿Deshacer esto?\n\n${l.resumen}`)) return;
+            if (!sinPreguntar && !confirm(`¿Deshacer esto?\n\n${l.resumen}`)) return;
             const d = l.deshacer;
             if (d.accion === 'quitar') {
                 const loc = localizarConector(d.coleccion, d.id);

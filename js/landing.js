@@ -169,6 +169,7 @@ montarCerebro();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-17', rama: 'todos', nombre: 'apuntar, más listo', para: 'quien apunta al vuelo.', texto: 'Varias cosas en una frase, y cada una a su sitio: exámenes y entregas en su asignatura, cumpleaños, lo que se repite, clases, viajes, gastos con su categoría y lo que falta en casa.' },
     { fecha: '2026-10-17', rama: 'home', nombre: 'recetas', para: 'quien cocina y hace la compra.', texto: 'Tus recetas con sus ingredientes y lo que te cuestan según tus tickets; con un toque, lo que falte pasa a la lista de la compra.' },
     { fecha: '2026-10-17', rama: 'todos', nombre: 'tema pizarra', para: 'quien quiere un tono frío y sereno.', texto: 'Un cuarto tema: gris azulado de pizarra con tinta azul marino. Se elige en Ajustes o en el menú del móvil.' },
     { fecha: '2026-10-17', rama: 'home', nombre: 'despensa', para: 'quien quiere saber lo que gasta en el súper.', texto: 'Pásale el ticket a Claude o ChatGPT y Bitácora guarda cada precio y su tienda, separa lo que estaba en la lista de lo que añadiste allí y aprende dónde te sale más barato.' },

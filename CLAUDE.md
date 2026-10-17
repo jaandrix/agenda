@@ -289,10 +289,15 @@ a menor resolución.
   pendiente/curso/hecha, fecha, fase; `tasks` se mantiene sincronizado para la ficha, el conector y las
   estadísticas), fases y diario. "→ hoy" crea una tarea del planificador con `proyectoTareaId` y
   `togglePlannerItemDone` la completa en el proyecto. El planificador enseña "siguientes pasos.".
-- **Apuntar (`js/apuntar.js`):** el + del móvil, el rayo del escritorio y el "+" de cada día abren `openApuntar(fecha)`:
-  una línea que `interpretarApunte` convierte en tarea (hoy a pasado mañana), evento (más allá), gasto/ingreso
-  (importe con €), compra («comprar …») o nota, con vista previa y cambio de tipo; debajo, accesos a cada formulario y
-  `apuntesRecientes` (sincronizado, 40) con deshacer/cambiar. El botón flotante del escritorio es "+ apuntar." (#fab).
+- **Apuntar (`js/apuntar.js`):** el + del móvil, el rayo del escritorio y el "+" de cada día abren `openApuntar(fecha)`.
+  `apuntarTrocear` parte una frase en varias cosas (líneas, «;», puntos, y comas o «y» seguidas de una fecha o un verbo
+  de `APUNTAR_ARRANQUE`, o cuando los dos trozos tienen su propia fecha/hora/repetición/importe, salvo listas de días);
+  `interpretarApunte` saca fecha (también rangos «del 3 al 7»), hora (y hora de fin), importe, cuenta, categoría,
+  repetición, lugar y de qué se trata; `apuntarTipo` elige entre tarea, evento, gasto, compra, nota, cumple, examen,
+  trabajo, recurrente, clase y viaje. Los tipos nuevos se crean con `aplicarOpConector` (se registran en el historial
+  del conector con origen «apuntar» y se deshacen con `deshacerConector(ref, true)`). Vista previa por cosa con su
+  selector de tipo; `apuntesRecientes` (sincronizado, 40) con deshacer/cambiar. Cumpleaños sin año: `birthDate` 2000 y
+  `sinAnio`. El botón flotante del escritorio es "+ apuntar." (#fab).
 - **Fechas:** `todayISO()` e `isoLocal(d)` son en hora local. Nunca `toISOString().slice(0, 10)` para "hoy" (en UTC,
   de 0:00 a 2:00 daba el día anterior).
 - **Ramas de apartados:** `RAMAS_APARTADOS` en ajustes.js agrupa los opcionales (#school, #home, #work, #mind).
