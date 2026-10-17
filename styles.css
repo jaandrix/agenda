@@ -8404,3 +8404,14 @@ body.acuarela #fab { color:var(--m-sobre-acento); }
    que el de acento. */
 #fab, body.acuarela #fab { background:color-mix(in srgb, var(--m-acento) 78%, #8f857e); color:#fff; }
 #fab.fab-pulse::after { border-color:color-mix(in srgb, var(--m-acento) 78%, #8f857e); }
+
+/* Compras: «lo de siempre.» en un modal. */
+.compra-cab-botones { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.compra-frec-lista { max-height:60vh; overflow-y:auto; }
+.compra-frec-fila { display:flex; align-items:center; gap:8px; padding:9px 0; border-top:1px solid var(--border); }
+.compra-frec-fila span { flex:1; min-width:0; }
+.compra-frec-fila b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14.5px; font-weight:600; color:var(--text-primary); }
+.compra-frec-fila small { font-size:12px; color:var(--text-secondary); }
+.compra-frec-fila em { font-style:normal; font-size:12.5px; color:var(--text-secondary); }
+.compra-frec-fila .profe-chip { flex-shrink:0; }
+.compra-frec-quitar { color:#dc2626; }

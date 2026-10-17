@@ -144,8 +144,6 @@ function renderCompra() {
     const tienda = compraTiendaDeLista(l);
     const pendientes = l.items.filter(i => !i.hecho);
     const carro = l.items.filter(i => i.hecho);
-    const enLista = new Set(l.items.map(i => i.texto.toLowerCase()));
-    const frecuentes = Object.entries(d.frecuentes).filter(([t]) => !enLista.has(t)).sort((a, b) => b[1] - a[1]).slice(0, 12);
     const grupos = [...COMPRA_SECCIONES.map(([k, t]) => [k, t]), ['otros', 'otros.']]
         .map(([k, t]) => [t, pendientes.filter(i => compraSeccion(i.texto) === k)]).filter(([, xs]) => xs.length);
     const estimado = compraImporte(l.items, tienda);
@@ -167,8 +165,7 @@ function renderCompra() {
             <input id="compra-nuevo" class="modal-input" placeholder="Añadir: 2 leche, pan, tomates 1,20 €..." onkeydown="if(event.key==='Enter'){event.preventDefault();compraAnadir(this.value)}" autocomplete="off">
             <button class="btn-modal-primary" onclick="compraAnadir(document.getElementById('compra-nuevo').value)">añadir.</button>
         </div>
-        ${frecuentes.length ? `<div class="compra-frecuentes"><span>lo de siempre.</span>${frecuentes.map(([t]) => `<button onclick="compraAnadir('${escapeHtml(t).replace(/'/g, '&#39;')}', true)">+ ${escapeHtml(t)}</button>`).join('')}</div>` : ''}
-        ${!l.items.length ? `<div class="compra-vacio"><b>apunta lo que falta.</b>Escríbelo según te acuerdes: se ordena solo por secciones del súper, como se recorre la tienda. Lo que más compras te saldrá aquí para añadirlo con un toque, y con los tickets sabrá lo que suele costarte.</div>` : ''}
+        ${!l.items.length ? `<div class="compra-vacio"><b>apunta lo que falta.</b>Escríbelo según te acuerdes: se ordena solo por secciones del súper, como se recorre la tienda. Lo que más compras lo tienes en <b>lo de siempre.</b>, arriba, para añadirlo con un toque; y con los tickets sabrá lo que suele costarte.</div>` : ''}
         ${grupos.map(([t, xs]) => `<div class="compra-seccion"><div class="compra-seccion-titulo">${t}</div>${xs.map(fila).join('')}</div>`).join('')}
         ${carro.length ? `<div class="compra-seccion compra-carro"><div class="compra-seccion-titulo">en el carro.${compraImporte(carro, tienda) ? ` <span>${financeMoney(compraImporte(carro, tienda))}</span>` : ''}</div>${carro.map(fila).join('')}
             <button class="btn-modal-primary compra-terminar" onclick="openCompraTerminar()">terminar la compra.</button></div>` : ''}
@@ -182,8 +179,42 @@ function renderCompraCabecera(sub, conListas) {
             <div class="compra-titulo">compras.</div>
             <div class="compra-sub">${sub}</div>
         </div>
-        ${conListas ? '<button class="pedido-btn" onclick="openCompraListas()">listas.</button>' : ''}
+        ${conListas ? `<div class="compra-cab-botones">${Object.keys(datosCompra().frecuentes).length ? '<button class="pedido-btn" onclick="openCompraFrecuentes()">lo de siempre.</button>' : ''}<button class="pedido-btn" onclick="openCompraListas()">listas.</button></div>` : ''}
     </div>`;
+}
+
+// «Lo de siempre»: lo que más veces has comprado (cuenta cada compra
+// terminada y cada ticket), para añadirlo a la lista sin escribirlo. Se
+// puede quitar lo que ya no compras; si lo vuelves a comprar, vuelve.
+function openCompraFrecuentes() {
+    const d = datosCompra();
+    const enLista = new Set(compraListaActual().items.filter(i => !i.hecho).map(i => i.texto.toLowerCase()));
+    const filas = Object.entries(d.frecuentes).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 60);
+    showModal(`
+        <div class="modal-title">lo de siempre.</div>
+        <p class="finance-modal-note" style="margin-top:0">Lo que más veces has comprado. Añádelo a la lista con un toque o quita lo que ya no compras.</p>
+        <div class="compra-frec-lista">${filas.map(([t, n]) => {
+            const ya = enLista.has(t);
+            const arg = escapeHtml(t).replace(/'/g, '&#39;');
+            return `<div class="compra-frec-fila">
+                <span><b>${escapeHtml(t.charAt(0).toUpperCase() + t.slice(1))}</b><small>${n} ${n === 1 ? 'vez' : 'veces'}</small></span>
+                ${ya ? '<em>en la lista.</em>' : `<button class="profe-chip" onclick="compraFrecuenteAnadir('${arg}')">+ añadir.</button>`}
+                <button class="profe-chip compra-frec-quitar" onclick="compraFrecuenteQuitar('${arg}')" aria-label="Quitar de lo de siempre">quitar.</button>
+            </div>`;
+        }).join('') || '<div class="finance-empty-line">Todavía nada: se llena al terminar compras o con los tickets.</div>'}</div>
+    `);
+}
+
+function compraFrecuenteAnadir(texto) {
+    compraAnadir(texto, true);
+    openCompraFrecuentes();
+}
+
+function compraFrecuenteQuitar(texto) {
+    delete datosCompra().frecuentes[texto];
+    openCompraFrecuentes();
+    render();
+    guardarCompra();
 }
 
 // ---- historial ----

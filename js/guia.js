@@ -163,7 +163,7 @@ const GUIA = [
         intro: 'Listas de la compra que se ordenan solas por secciones (frutas y verduras, carne y pescado, lácteos, despensa, limpieza...), como se recorre la tienda. Es un apartado opcional de la rama #home: actívalo en Ajustes → apartados.',
         pasos: ['Escribe lo que falta según te acuerdes: «2 leche, pan, tomates 1,20 €». La cantidad y el precio se entienden solos.', 'En el súper, toca el círculo de cada cosa al echarla al carro: baja a «en el carro.».', 'Al acabar, <b>terminar la compra.</b> la limpia y, si quieres, apunta el gasto en Finanzas.'],
         botones: [
-            [guiaBoton('lo de siempre.'), 'Lo que más compras y no está en la lista, para añadirlo con un toque. Aprende de cada compra terminada.'],
+            [guiaBoton('lo de siempre.'), 'Arriba, junto a listas.: lo que más veces has comprado, de más a menos, para añadirlo a la lista con un toque. Aprende de cada compra terminada y de cada ticket; <b>quitar.</b> borra lo que ya no compras.'],
             [guiaBoton('listas.'), 'Una lista por sitio o por súper: casa, el piso, Mercadona... Se cambia de una a otra arriba.'],
             [guiaBoton('nombre de un producto'), 'Cambia el nombre, la cantidad o el precio por unidad, o quítalo. El precio se recuerda para la próxima vez.'],
             [guiaBoton('terminar la compra.'), 'Saca de la lista lo del carro y la guarda en el historial con su tienda. Si marcas <b>apuntar también el gasto en finanzas.</b>, lo apunta en comida y bebida y se emparejará con el cargo del extracto.'],
