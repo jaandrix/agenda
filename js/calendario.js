@@ -13,7 +13,26 @@
             }
             pintarAvatarCabecera();
             const content = document.getElementById('content');
-            if (currentView === 'calendar') content.innerHTML = renderAvisoPrueba() + renderCalendar();
+            // En el móvil #content está oculto y lo pinta renderMobileShell:
+            // construir aquí también la versión de escritorio era trabajo
+            // doble (y dejaba ids repetidos). Solo se lanzan las cargas de
+            // datos que rellenan esos apartados, como antes.
+            if (mobileStandaloneActive) {
+                if (content.firstChild) content.innerHTML = '';
+                ({
+                    documents: () => { loadDocuments(); loadViewerFiles(); },
+                    friends: () => loadFriendsViewData(),
+                    suggestions: () => loadMySuggestions(),
+                    bandeja: () => { if (!aplicandoBandeja && Date.now() - bandejaUltimaLectura > 15000) setTimeout(aplicarBandejaConector, 0); },
+                    settings: () => {
+                        if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
+                        loadSettingsSubscriptionInfo();
+                        cargarConectoresAjustes();
+                        loadSettingsPushInfo();
+                    },
+                })[currentView]?.();
+            }
+            else if (currentView === 'calendar') content.innerHTML = renderAvisoPrueba() + renderCalendar();
             else if (currentView === 'home') content.innerHTML = renderHome();
             else if (currentView === 'culture') content.innerHTML = renderCulture();
             else if (currentView === 'travels') { content.innerHTML = renderTravels();

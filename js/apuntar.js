@@ -308,6 +308,7 @@ function apuntarRecurrenciaTexto(rc) {
 
 // Lo que se va a crear, en una línea, y si le falta algo para poder hacerlo.
 function apuntarDescribir(r, tipo) {
+    if (r.comprar && tipo !== 'compra' && r.titulo && !/^comprar\b/i.test(r.titulo)) r = { ...r, titulo: 'Comprar ' + r.titulo.charAt(0).toLowerCase() + r.titulo.slice(1) };
     const cuando = `${apuntarFechaTexto(r.fecha)}${r.hora ? ` a las ${r.hora}${r.horaFin ? '–' + r.horaFin : ''}` : ''}`;
     const tit = escapeHtml(r.titulo || '…');
     switch (tipo) {
@@ -391,6 +392,7 @@ function openApuntar(fecha) {
 
 // Crea una cosa. Devuelve { aviso, hecho } o { error }.
 function apuntarCrear(texto, r, tipo) {
+    if (r.comprar && tipo !== 'compra' && r.titulo && !/^comprar\b/i.test(r.titulo)) r = { ...r, titulo: 'Comprar ' + r.titulo.charAt(0).toLowerCase() + r.titulo.slice(1) };
     const id = p => `${p}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const conector = (op, prefijo) => {
         const ref = id(prefijo);

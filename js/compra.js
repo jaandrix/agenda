@@ -167,7 +167,7 @@ function renderCompra() {
             <input id="compra-nuevo" class="modal-input" placeholder="Añadir: 2 leche, pan, tomates 1,20 €..." onkeydown="if(event.key==='Enter'){event.preventDefault();compraAnadir(this.value)}" autocomplete="off">
             <button class="btn-modal-primary" onclick="compraAnadir(document.getElementById('compra-nuevo').value)">añadir.</button>
         </div>
-        ${!l.items.length ? `<div class="compra-vacio"><b>apunta lo que falta.</b>Escríbelo tal como te venga a la cabeza: se ordena por secciones, en el orden en que se recorre el súper. Lo que compras a menudo está arriba, en <b>lo de siempre.</b> Cuando pases tus tickets, junto a cada cosa verás lo que te costó la última vez.</div>` : ''}
+        ${!l.items.length ? `<div class="compra-vacio"><b>apunta lo que falta.</b>Escríbelo tal como te venga a la cabeza: se ordena por secciones, en el orden en que se recorre el súper. Lo que compras a menudo está arriba, en «lo de siempre». Cuando pases tus tickets, junto a cada cosa verás lo que te costó la última vez.</div>` : ''}
         ${grupos.map(([t, xs]) => `<div class="compra-seccion"><div class="compra-seccion-titulo">${t}</div>${xs.map(fila).join('')}</div>`).join('')}
         ${carro.length ? `<div class="compra-seccion compra-carro"><div class="compra-seccion-titulo">en el carro.${compraImporte(carro, tienda) ? ` <span>${financeMoney(compraImporte(carro, tienda))}</span>` : ''}</div>${carro.map(fila).join('')}
             <button class="btn-modal-primary compra-terminar" onclick="openCompraTerminar()">terminar la compra.</button></div>` : ''}
@@ -310,7 +310,7 @@ function compraEsteMes() {
 
 function renderCompraHistorial() {
     const d = datosCompra();
-    if (!d.historial.length) return `<div class="compra-vacio"><b>aquí se guardan tus compras.</b>Cada compra se guarda al pulsar <b>terminar la compra.</b> Si además le pasas la foto del ticket a Claude o ChatGPT con el conector («apunta este ticket en Bitácora»), cada producto queda con su precio y su tienda, y con el tiempo verás dónde te sale más barato lo que sueles comprar.</div>`;
+    if (!d.historial.length) return `<div class="compra-vacio"><b>aquí se guardan tus compras.</b>Cada compra se guarda al pulsar «terminar la compra». Si además le pasas la foto del ticket a Claude o ChatGPT con el conector («apunta este ticket en Bitácora»), cada producto queda con su precio y su tienda, y con el tiempo verás dónde te sale más barato lo que sueles comprar.</div>`;
     const r = compraResumenCenido();
     const pct = r.total ? Math.round(r.planeado / r.total * 100) : 0;
     const mes = compraEsteMes();

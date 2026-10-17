@@ -487,19 +487,20 @@
         #mobile-menu-panel {
             position: fixed;
             top: 0;
-            left: -280px;
+            left: 0;
+            transform: translateX(-100%);
             width: 280px;
             height: 100dvh;
             background: var(--bg-sidebar);
             z-index: 101;
-            transition: left 0.3s ease;
+            transition: transform 0.3s var(--ease-out, ease-out);
             padding: 24px 16px 16px 16px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
         }
         #mobile-menu-panel.open {
-            left: 0;
+            transform: none;
         }
 
         #mobile-menu-panel .menu-header {
@@ -8627,3 +8628,15 @@ body.pizarra .planner-stamp-dot.filled { background:#D4D8DD; border-color:#D4D8D
 .apuntar-item .apuntar-resumen { padding:0; background:none; font-size:15px; line-height:1.35; }
 .apuntar-falta { display:block; margin-top:2px; font-size:12.5px; color:var(--m-acento); font-weight:600; }
 .apuntar-item-tipo { flex-shrink:0; width:auto !important; max-width:42%; min-height:36px; padding:0 10px; border-radius:10px; border:1px solid var(--border-strong); background:var(--bg-card); color:var(--text-primary); font-family:var(--font-family); font-size:13px; font-weight:600; }
+
+/* Repaso del móvil (2026-10-17). */
+/* Profesorado: los dos interruptores, en su sitio y no empujados a la derecha. */
+.m-generico .profe-chip-ocultar { margin-left:0; }
+/* Estudiar: las cifras sin partir palabras («pomodoro / s.»). */
+.m-generico .est-cifras span { overflow-wrap:normal; word-break:keep-all; hyphens:none; font-size:11.5px; line-height:1.25; }
+/* Ocio: los botones de la barra, en dos líneas antes que cortados. */
+.m-generico .culture-barra > button { white-space:normal !important; line-height:1.2; text-overflow:clip; }
+/* Finanzas: «pegar extracto.» en una línea. */
+.m-acciones .m-boton { white-space:nowrap; font-size:15px; padding-left:8px; padding-right:8px; }
+/* El tiempo del inicio, con sitio para el dedo. */
+#mobile-shell .m-hero-tiempo .tiempo-widget { min-height:44px; min-width:44px; display:inline-flex; align-items:center; justify-content:flex-end; }
