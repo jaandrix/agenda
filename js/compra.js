@@ -540,19 +540,36 @@ function compraAplicarTicket(op, ref) {
     const aprendidoAntes = { ...d.aprendido };
     items.forEach(i => { if (i.seccion && i.seccion !== 'otros') { d.aprendido[i.clave] = i.seccion; if (i.deLista) d.aprendido[compraClave(i.deLista)] = i.seccion; } });
 
-    // ¿Ya había una compra de ese día terminada a mano?
+    // ¿Ya había una compra de ese día (o del anterior) terminada a mano? Vale
+    // si la tienda coincide o si una de las dos no la dice; gana la que
+    // coincide. El ticket puede ser solo una parte (compra en varias
+    // tiendas): lo suyo pasa a su propia compra y el resto se queda en la
+    // terminada, esperando el siguiente ticket.
     const cerca = iso => Math.abs(new Date(iso + 'T12:00:00') - new Date(fechaOk + 'T12:00:00')) <= 864e5;
-    const previa = d.historial.find(c => c.fuente === 'manual' && cerca(c.fecha) && ((kTienda && compraClave(c.tienda) === kTienda) || (listaPrincipal && c.listaId === listaPrincipal.id) || (!c.tienda && !kTienda)));
+    const manuales = d.historial.filter(c => c.fuente === 'manual' && cerca(c.fecha));
+    const previa = manuales.find(c => kTienda && compraClave(c.tienda) === kTienda)
+        || manuales.find(c => listaPrincipal && c.listaId === listaPrincipal.id && (!c.tienda || !kTienda))
+        || manuales.find(c => !c.tienda || !kTienda);
     const previaCopia = previa ? JSON.parse(JSON.stringify(previa)) : null;
     // Lo que se terminó a mano y sale en el ticket cuenta como de la lista.
+    const cubiertos = new Set();
     if (previa) items.forEach(i => {
-        if (i.planeado) return;
-        const m = (previa.items || []).find(p => p.planeado && compraParecido(p.deLista || p.texto, i.texto) >= 1);
-        if (m) { i.planeado = true; i.deLista = m.deLista || m.texto; }
+        const k = (previa.items || []).findIndex((p, n) => !cubiertos.has(n) && ((i.deLista && compraClave(i.deLista) === compraClave(p.deLista || p.texto)) || compraParecido(p.deLista || p.texto, i.texto) >= 1 || compraParecido(i.texto, p.deLista || p.texto) >= 1));
+        if (k < 0) return;
+        cubiertos.add(k);
+        const p = previa.items[k];
+        i.planeado = true;
+        i.deLista = i.deLista || p.deLista || p.texto;
     });
-    const entrada = previa || { id: `cmpr_${ref || Date.now()}` };
+    const resto = previa ? (previa.items || []).filter((p, n) => !cubiertos.has(n)) : [];
+    const completa = previa && !resto.length;
+    const entrada = completa ? previa : { id: `cmpr_${ref || Date.now()}` };
     Object.assign(entrada, { fecha: fechaOk, tienda: tienda || entrada.tienda || '', listaId: (listaPrincipal || compraListaActual()).id, fuente: 'ticket', total, items, sinComprar });
-    if (!previa) d.historial.push(entrada);
+    if (!completa) d.historial.push(entrada);
+    if (previa && !completa) {
+        previa.items = resto;
+        previa.total = Math.round(resto.reduce((s, p) => s + (Number(p.importe) || 0), 0) * 100) / 100 || null;
+    }
 
     // Lo comprado sale de las listas y cuenta para «lo de siempre».
     quitados.forEach(q => {
@@ -561,15 +578,21 @@ function compraAplicarTicket(op, ref) {
         if (!previa) { const k = q.item.texto.toLowerCase(); d.frecuentes[k] = (d.frecuentes[k] || 0) + 1; }
     });
 
-    // Finanzas: corrige el gasto de la compra terminada a mano o lo crea.
-    let txCreado = null, txAntes = null;
+    // Finanzas: cada ticket con su gasto exacto. El estimado que se apuntó al
+    // terminar a mano se corrige (ticket completo) o se le resta lo de este
+    // ticket (parcial); si se queda en nada, se quita.
+    let txCreado = null, txAntes = null, txQuitado = null;
     if (op.gasto !== false && total > 0) {
         const tx = previa?.txId ? financePro.transactions.find(t => t.id === previa.txId) : null;
-        if (tx) { txAntes = { id: tx.id, amount: tx.amount }; tx.amount = total; }
+        if (tx && completa) { txAntes = { id: tx.id, amount: tx.amount }; tx.amount = total; }
         else {
+            if (tx) {
+                const queda = Math.round((tx.amount - total) * 100) / 100;
+                if (queda >= 0.5) { txAntes = { id: tx.id, amount: tx.amount }; tx.amount = queda; }
+                else { txQuitado = { ...tx }; financePro.transactions = financePro.transactions.filter(t => t.id !== tx.id); previa.txId = null; }
+            }
             const cat = financePro.categories.find(c => c.type === 'expense' && /comida/i.test(c.name));
-            const ultima = [...(financePro.transactions || [])].reverse().find(t => t.manual && t.account)?.account;
-            const cuenta = FINANCE_PRO_ACCOUNT_KEYS.includes(ultima) ? ultima : FINANCE_PRO_ACCOUNT_KEYS.includes('bancos') ? 'bancos' : FINANCE_PRO_ACCOUNT_KEYS[0];
+            const cuenta = tx?.account || (() => { const ultima = [...(financePro.transactions || [])].reverse().find(t => t.manual && t.account)?.account; return FINANCE_PRO_ACCOUNT_KEYS.includes(ultima) ? ultima : FINANCE_PRO_ACCOUNT_KEYS.includes('bancos') ? 'bancos' : FINANCE_PRO_ACCOUNT_KEYS[0]; })();
             txCreado = `ptx_${ref || Date.now()}`;
             financePro.transactions.push({ id: txCreado, date: fechaOk, account: cuenta, type: 'expense', amount: total, category: cat?.id, note: `Compra${tienda ? ` (${tienda})` : ''}`, manual: true, needsReview: !cat });
             entrada.txId = txCreado;
@@ -580,13 +603,18 @@ function compraAplicarTicket(op, ref) {
     const sumaExtras = extras.reduce((s, i) => s + (i.importe || 0), 0);
     const pct = total ? Math.round((total - sumaExtras) / total * 100) : 0;
     const resumen = `Ticket${tienda ? ` de ${tienda}` : ''}: ${items.length} productos, ${financeMoney(total)}. ${plan.length} de la lista (${pct} %), ${extras.length} ${extras.length === 1 ? 'extra' : 'extras'}${extras.length ? ` (${financeMoney(sumaExtras)})` : ''}${sinComprar.length ? `; sin comprar: ${sinComprar.join(', ')}` : ''}.`;
-    return { resumen, deshacer: { accion: 'ticket', entradaId: entrada.id, previa: previaCopia, quitados, txCreado, txAntes, aprendidoAntes } };
+    const parte = previa && !completa ? ` Queda${resto.length === 1 ? '' : 'n'} ${resto.length} de esa compra a la espera de otro ticket.` : '';
+    return { resumen: resumen + parte, deshacer: { accion: 'ticket', entradaId: entrada.id, previa: previaCopia, completa, quitados, txCreado, txAntes, txQuitado, aprendidoAntes } };
 }
 
 function compraDeshacerTicket(dh) {
     const d = datosCompra();
-    if (dh.previa) { const i = d.historial.findIndex(c => c.id === dh.entradaId); if (i >= 0) d.historial[i] = dh.previa; }
-    else d.historial = d.historial.filter(c => c.id !== dh.entradaId);
+    if (dh.previa && (dh.completa ?? true)) { const i = d.historial.findIndex(c => c.id === dh.entradaId); if (i >= 0) d.historial[i] = dh.previa; }
+    else {
+        d.historial = d.historial.filter(c => c.id !== dh.entradaId);
+        if (dh.previa) { const i = d.historial.findIndex(c => c.id === dh.previa.id); if (i >= 0) d.historial[i] = dh.previa; }
+    }
+    if (dh.txQuitado && !financePro.transactions.some(t => t.id === dh.txQuitado.id)) financePro.transactions.push(dh.txQuitado);
     (dh.quitados || []).forEach(q => {
         const l = d.listas.find(x => x.id === q.listaId);
         if (l && !l.items.some(x => x.id === q.item.id)) l.items.push(q.item);
