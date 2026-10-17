@@ -132,7 +132,7 @@
                             <div class="etiqueta-fila" data-open-entry="${e.id}">
                                 <span class="etiqueta-fila-titulo">${escapeHtml(e.title || '')}</span>
                                 ${(e.tags || []).filter(t => t !== tag).length ? `<span class="etiqueta-fila-otras">${(e.tags || []).filter(t => t !== tag).slice(0, 3).map(t => '#' + escapeHtml(t)).join(' ')}</span>` : ''}
-                                <button class="etiqueta-quitar" title="Quitar #${escapeHtml(tag)} de esta entrada" onclick="event.stopPropagation();quitarEtiquetaDeEntrada('${e.id}','${tagEsc}')">×</button>
+                                <button class="etiqueta-quitar" title="Quitar #${escapeHtml(tag)} de esta entrada" onclick="event.stopPropagation();quitarEtiquetaDeEntrada('${e.id}','${tagEsc}')"><i class='ico ico-x' aria-hidden=true></i></button>
                             </div>`).join('')}
                         </div>`).join('')}
                 </div>`;
@@ -382,7 +382,7 @@
             }
             if (status === 'denied') {
                 const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
-                return `<div style="font-size:12.5px;color:var(--text-secondary)">${ios ? 'Bloqueadas en el iPhone: ve a Ajustes del iPhone → Notificaciones → Bitácora y activa «Permitir notificaciones». Después vuelve aquí.' : 'Bloqueadas desde los ajustes del navegador/sistema — actívalas ahí para poder usarlas aquí.'}</div>`;
+                return `<div style="font-size:12.5px;color:var(--text-secondary)">${ios ? 'Bloqueadas en el iPhone: ve a Ajustes del iPhone → Notificaciones → Bitácora y activa «Permitir notificaciones». Después vuelve aquí.' : 'Bloqueadas desde los ajustes del navegador/sistema: actívalas ahí para poder usarlas aquí.'}</div>`;
             }
             if (status === 'sin-sw') {
                 return `<div style="font-size:12.5px;color:var(--text-secondary)">No se ha podido preparar el servicio de notificaciones. Cierra Bitácora del todo y vuelve a abrirla desde el icono de inicio.</div>`;
@@ -778,7 +778,7 @@
 
         function confirmCancelSubscription() {
             showModal(`
-                <div class="modal-title">Cancelar suscripción<button class="modal-close" onclick="closeModal()">✕</button></div>
+                <div class="modal-title">Cancelar suscripción<button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
                 <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:22px">
                     Mantendrás el acceso hasta el final del periodo ya pagado. No se te volverá a cobrar después.
                 </p>

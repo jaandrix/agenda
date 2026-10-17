@@ -221,9 +221,9 @@ function renderProfesorado() {
     }, 0);
     const cuadrante = `<div class="profe-cuadrante">
             <div class="profe-nav">
-                ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(-1)" aria-label="Antes">‹</button>` : ''}
-                <span class="profe-rango">${profeFecha(dias[0])} — ${profeFecha(dias[dias.length - 1])}</span>
-                ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(1)" aria-label="Después">›</button>` : ''}
+                ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(-1)" aria-label="Antes"><i class='ico ico-izq' aria-hidden=true></i></button>` : ''}
+                <span class="profe-rango">${profeFecha(dias[0])} – ${profeFecha(dias[dias.length - 1])}</span>
+                ${profeSemanas ? `<button class="cal-nav-arrow" onclick="profeMover(1)" aria-label="Después"><i class='ico ico-der' aria-hidden=true></i></button>` : ''}
                 <div class="profe-nav-der">
                     ${[[1, '1 semana'], [2, '2 semanas'], [4, '4 semanas'], [0, 'todo el curso']].map(([n, t]) => `<button class="profe-chip ${profeSemanas === n ? 'activa' : ''}" onclick="profeSemanas=${n};profeIrAHoy=${n === 0};render()">${t}</button>`).join('')}
                     <button class="profe-chip" onclick="profeDesde=null;profeIrAHoy=true;render()">hoy.</button>

@@ -510,7 +510,7 @@ function renderEstHoy() {
             </div>
             <div class="est-plan-acciones">
                 ${it.hecho ? '' : `<button onclick="estPlanPomodoros('${it.id}',-1)" aria-label="Un pomodoro menos">−</button><button onclick="estPlanPomodoros('${it.id}',1)" aria-label="Un pomodoro más">+</button><button onclick="estPlanMover('${it.id}',-1)" aria-label="Subir">↑</button><button class="est-play" onclick="pomoEmpezar('${it.id}')" aria-label="Estudiar esto ahora">▶</button>`}
-                <button onclick="estPlanQuitar('${it.id}')" aria-label="Quitar">×</button>
+                <button onclick="estPlanQuitar('${it.id}')" aria-label="Quitar"><i class='ico ico-x' aria-hidden=true></i></button>
             </div>
         </div>`;
     };
@@ -574,7 +574,7 @@ function renderEstTemario() {
                 <button class="compra-check ${t.hecho ? 'on' : ''}" onclick="estTemaMarcar('${t.id}')" aria-label="Estudiado"></button>
                 <span>${escapeHtml(t.nombre)}</span>
                 ${t.hecho ? '' : `<button class="est-enlace" onclick="estTemaAHoy('${t.id}')">→ hoy</button>`}
-                <button class="est-quitar" onclick="estTemaQuitar('${t.id}')" aria-label="Quitar">×</button>
+                <button class="est-quitar" onclick="estTemaQuitar('${t.id}')" aria-label="Quitar"><i class='ico ico-x' aria-hidden=true></i></button>
             </div>`).join('')}
             <div class="compra-anadir est-tema-anadir">
                 <input id="est-tema-${g.id || 'otros'}" class="modal-input" placeholder="+ tema (pega varios, uno por línea)" onkeydown="if(event.key==='Enter'){event.preventDefault();estTemaAnadir('${g.id}',this.value)}" onpaste="setTimeout(()=>{if(this.value.includes('\\n'))estTemaAnadir('${g.id}',this.value)},0)" autocomplete="off">

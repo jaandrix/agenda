@@ -120,7 +120,7 @@
                     <div class="coll-fila-nombre">${esTop ? '<span class="coll-top" title="La más valiosa de su categoría">✦</span>' : ''}${escapeHtml(item.name)}</div>
                     ${estado}
                     <div class="coll-fila-valor">${financeMoney(item.value)}</div>
-                    <button class="coll-fila-borrar" title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')">×</button>
+                    <button class="coll-fila-borrar" title="Eliminar" onclick="event.stopPropagation();deleteCollectible('${item.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>`;
         }
 

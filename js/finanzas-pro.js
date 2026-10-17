@@ -439,7 +439,7 @@
 
         function renderFinanceProLineChart(dataPoints, color, idSuffix, compact) {
             if (dataPoints.length < 2) {
-                return `<div class="finance-empty-state" style="padding:${compact ? '10px 0' : '30px 0'}">Sin histórico suficiente todavía — necesitas movimientos en al menos 2 meses distintos.</div>`;
+                return `<div class="finance-empty-state" style="padding:${compact ? '10px 0' : '30px 0'}">Sin histórico suficiente todavía: necesitas movimientos en al menos 2 meses distintos.</div>`;
             }
             const W = compact ? 320 : 900, H = compact ? 90 : 200, padX = compact ? 8 : 28, padT = 8, padB = compact ? 16 : 22;
             const innerW = W - padX * 2, innerH = H - padT - padB;
@@ -537,7 +537,7 @@
         function renderFinanceProMultiLineChart(seriesList, idSuffix) {
             const base = seriesList[0].data;
             if (!base || base.length < 2) {
-                return `<div class="finance-empty-state" style="padding:30px 0">Sin histórico suficiente todavía — necesitas movimientos en al menos 2 meses distintos.</div>`;
+                return `<div class="finance-empty-state" style="padding:30px 0">Sin histórico suficiente todavía: necesitas movimientos en al menos 2 meses distintos.</div>`;
             }
             const W = 900, H = 200, padX = 28, padT = 8, padB = 22;
             const innerW = W - padX * 2, innerH = H - padT - padB;
@@ -838,7 +838,7 @@
             return `<section class="finance-panel" style="margin-top:16px">
                 <div class="finance-panel-head">
                     ${financePanelHeadIcon(FINANCE_ICON_TARGET, 'fin-pink', financeMonthLabel(monthKey), 'Presupuestos')}
-                    <button class="finance-icon-btn" title="Editar presupuestos" onclick="openFinanceProCategoriesModal()">✎</button>
+                    <button class="finance-icon-btn" title="Editar presupuestos" onclick="openFinanceProCategoriesModal()"><i class='ico ico-lapiz' aria-hidden=true></i></button>
                 </div>
                 ${ids.map(id => {
                     const cat = financeProCategoryById(id);
@@ -914,7 +914,7 @@
             if (target <= 0) return { text: 'Define un objetivo (botón "✎ Objetivo") para ver tu previsión automática.' };
             const remaining = target - financeUnifiedPatrimony();
             if (remaining <= 0) return { text: 'Objetivo alcanzado.' };
-            if (avgDelta <= 0) return { text: `A tu ritmo actual (${financeMoney(avgDelta)}/mes de media) no te acercas al objetivo — te faltan ${financeMoney(remaining)}.` };
+            if (avgDelta <= 0) return { text: `A tu ritmo actual (${financeMoney(avgDelta)}/mes de media) no te acercas al objetivo: te faltan ${financeMoney(remaining)}.` };
             const monthsToGo = Math.ceil(remaining / avgDelta);
             return { text: `A este ritmo (+${financeMoney(avgDelta)}/mes de media), llegarías a tu objetivo en ${monthsToGo} mes${monthsToGo === 1 ? '' : 'es'}.` };
         }
@@ -959,9 +959,9 @@
             const atCurrentYear = year >= new Date().getFullYear();
             return `
                 <div class="finance-year-summary-nav">
-                    <button onclick="financeShiftYearlyPctYear(-1)" aria-label="Año anterior">‹</button>
+                    <button onclick="financeShiftYearlyPctYear(-1)" aria-label="Año anterior"><i class='ico ico-izq' aria-hidden=true></i></button>
                     <strong>${year}</strong>
-                    <button onclick="financeShiftYearlyPctYear(1)" aria-label="Año siguiente" ${atCurrentYear ? 'disabled' : ''}>›</button>
+                    <button onclick="financeShiftYearlyPctYear(1)" aria-label="Año siguiente" ${atCurrentYear ? 'disabled' : ''}><i class='ico ico-der' aria-hidden=true></i></button>
                 </div>
                 <div class="finance-year-summary-list">
                     ${months.map(m => `
@@ -1264,7 +1264,7 @@
                     const meses = Object.keys(f.meses || {}).sort();
                     return `<div class="ritmo-historico-fila">
                         <span><b>${escapeHtml(f.nombre.toLowerCase())}.</b> ${meses.length} ${meses.length === 1 ? 'mes' : 'meses'}${meses.length ? ` · ${etiqueta(meses[0])} – ${etiqueta(meses[meses.length - 1])}` : ''}</span>
-                        <button class="doc-action-delete-btn" title="Olvidar estos históricos" onclick="borrarHistoricoFuente('${id}')">✕</button>
+                        <button class="doc-action-delete-btn" title="Olvidar estos históricos" onclick="borrarHistoricoFuente('${id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>`;
                 }).join('')}
                 <button class="finance-oneoff-btn" onclick="openHistoricosModal()">añadir históricos.</button>
@@ -1505,7 +1505,7 @@
         function buildFinanceExportMarkdown() {
             const today = todayISO();
             const lines = [];
-            lines.push(`# Finanzas — Bitácora`);
+            lines.push(`# Finanzas · Bitácora`);
             lines.push(`Exportado el ${today}. Todas las cifras en euros salvo que se indique lo contrario.`);
             lines.push('');
 
@@ -1578,7 +1578,7 @@
                 lines.push('');
             }
 
-            lines.push('## Largo plazo — previsión de sueldo (perfil general)');
+            lines.push('## Largo plazo · previsión de sueldo (perfil general)');
             const fc = financeProfile.forecastProfile || {};
             lines.push(mdTable(['Campo', 'Valor'], [
                 ['Sueldo actual', financeMoney(fc.salary || 0)],
@@ -1591,9 +1591,9 @@
 
             const invAccounts = financeProfile.investmentAccounts || [];
             if (invAccounts.length) {
-                lines.push('## Largo plazo — cuentas de inversión');
+                lines.push('## Largo plazo · cuentas de inversión');
                 invAccounts.forEach(acc => {
-                    lines.push(`### ${mdEscape(acc.name)}${acc.notes ? ' — ' + mdEscape(acc.notes) : ''}`);
+                    lines.push(`### ${mdEscape(acc.name)}${acc.notes ? ' · ' + mdEscape(acc.notes) : ''}`);
                     lines.push(`Aportado: ${financeMoney(investmentAccountInvested(acc))} · Valor actual: ${financeMoney(investmentAccountValue(acc))}`);
                     const contribs = (acc.contributions || []).slice().sort((a, b) => a.month.localeCompare(b.month));
                     lines.push(mdTable(['Mes', 'Aportación', 'Valor registrado'], contribs.map(c => [financeMonthLabel(c.month), financeMoney(c.amount || 0), c.value !== undefined ? financeMoney(c.value) : '—'])));
@@ -1603,7 +1603,7 @@
 
             const budgetHist = (financeProfile.budgetHistory || []).slice().sort((a, b) => a.month.localeCompare(b.month));
             if (budgetHist.length) {
-                lines.push('## Largo plazo — planificación de sueldo (meses grabados)');
+                lines.push('## Largo plazo · planificación de sueldo (meses grabados)');
                 budgetHist.forEach(h => {
                     lines.push(`### ${financeMonthLabel(h.month)}`);
                     lines.push(`Sueldo: ${financeMoney(h.salary || 0)}${h.contributions ? ` · Aportaciones: ${financeMoney(h.contributions)}` : ''}${h.saved ? ` · Ahorrado (sin asignar): ${financeMoney(h.saved)}` : ''}`);
@@ -1615,7 +1615,7 @@
             const plans = financeProfile.budgetPlans || {};
             const pendingMonths = Object.keys(plans).filter(m => (plans[m].salary || plans[m].contributions || (plans[m].allocations || []).length) && !budgetHist.some(h => h.month === m)).sort();
             if (pendingMonths.length) {
-                lines.push('## Largo plazo — planificación en curso (todavía sin grabar)');
+                lines.push('## Largo plazo · planificación en curso (todavía sin grabar)');
                 pendingMonths.forEach(m => {
                     const p = plans[m];
                     lines.push(`### ${financeMonthLabel(m)}`);
@@ -1647,13 +1647,13 @@
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
                 <div class="finance-toolbar-row">
                     <div class="finance-pro-settings-links">
-                        <button onclick="openFinanceProAccountsSettings()">✎ Renombrar / saldo inicial</button>
+                        <button onclick="openFinanceProAccountsSettings()"><i class='ico ico-lapiz' aria-hidden=true></i> Renombrar / saldo inicial</button>
                         <span>·</span>
                         <button onclick="openFinanceProCategoriesModal()">Categorías</button>
                         <span>·</span>
                         <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} Importar</button>
                         <span>·</span>
-                        <button onclick="exportFinanceMarkdown()">⭳ Exportar</button>
+                        <button onclick="exportFinanceMarkdown()"><i class='ico ico-bajar' aria-hidden=true></i> Exportar</button>
                         <span>·</span>
                         <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} Reglas</button>
                     </div>
@@ -1682,7 +1682,7 @@
                 ${renderFinanceProTxSection()}
 
                 <div class="finance-dashboard-foot-actions" style="margin-top:20px">
-                    <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()">✎ Corregir registros</button>
+                    <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()"><i class='ico ico-lapiz' aria-hidden=true></i> Corregir registros</button>
                 </div>
             </div>`;
         }
@@ -1693,7 +1693,7 @@
         function openFinanceProAccountsSettings() {
             showModal(`
                 <div class="modal-title">Cuentas PRO</div>
-                <div class="finance-modal-note" style="margin-bottom:12px">El saldo inicial es el punto de partida de cada cuenta antes de tus movimientos registrados — útil si no vas a importar todo tu historial.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">El saldo inicial es el punto de partida de cada cuenta antes de tus movimientos registrados: útil si no vas a importar todo tu historial.</div>
                 ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
                     <div class="modal-label">Nombre</div>
                     <input class="modal-input" id="pro-acc-name-${k}" value="${escapeHtml(financePro.accounts[k].name)}">
@@ -1748,7 +1748,7 @@
             window._financeProQuickDraft = { type: 'expense', amount: '' };
             showModal(`
                 <div class="modal-title">Registro rápido</div>
-                <div class="finance-modal-note" style="margin-bottom:10px">Escribe el importe y toca la cuenta — se guarda al instante sin categoría. Lo ajustas luego desde "Ajustar movimientos".</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">Escribe el importe y toca la cuenta: se guarda al instante sin categoría. Lo ajustas luego desde "Ajustar movimientos".</div>
                 <div id="finance-quick-capture-body">${renderFinanceProQuickCaptureBody()}</div>
             `);
         }
@@ -1940,7 +1940,7 @@
                             <div class="finance-programado-meta">${financeDateLabelShort(p.date)} · ${escapeHtml(financePro.accounts[p.account]?.name || p.account)}</div>
                         </div>
                         <span class="finance-negative">-${financeMoney(p.amount)}</span>
-                        <button class="doc-action-delete-btn" title="Quitar" onclick="deleteFinanceProProgramado('${p.id}')">✕</button>
+                        <button class="doc-action-delete-btn" title="Quitar" onclick="deleteFinanceProProgramado('${p.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>`).join('') : `<div class="finance-empty-state">No hay gastos programados.</div>`}
 
                 ${suscripciones.length ? `
@@ -2322,7 +2322,7 @@
                         ${t.note ? `<div class="finance-dup-item-note">${escapeHtml(t.note)}</div>` : ''}
                     </div>
                     <div class="finance-dup-item-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</div>
-                    ${conBorrar ? `<button class="doc-action-delete-btn" title="Eliminar esta copia" onclick="deleteFinanceProTransaction('${t.id}')">✕</button>` : ''}
+                    ${conBorrar ? `<button class="doc-action-delete-btn" title="Eliminar esta copia" onclick="deleteFinanceProTransaction('${t.id}')"><i class='ico ico-x' aria-hidden=true></i></button>` : ''}
                 </div>`;
         }
 
@@ -2333,7 +2333,7 @@
             showModal(`
                 <div class="modal-title">Posibles duplicados</div>
                 ${pairs.length ? `
-                <div class="finance-modal-note" style="margin-bottom:12px">Mismo importe, misma cuenta y misma nota, con fechas muy cercanas — típico de importar dos extractos con periodos solapados. Revisa cada pareja y elimina la copia sobrante.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Mismo importe, misma cuenta y misma nota, con fechas muy cercanas: típico de importar dos extractos con periodos solapados. Revisa cada pareja y elimina la copia sobrante.</div>
                 ${pairs.map(([a, b]) => `<div class="finance-dup-pair">${renderFinanceProDupItem(a, true)}${renderFinanceProDupItem(b, true)}</div>`).join('')}` : ''}
                 ${posibles.length ? `
                 <div class="finance-kicker" style="margin:${pairs.length ? '20px' : '0'} 0 6px">mismo importe, concepto distinto.</div>
@@ -2393,7 +2393,7 @@
             financeProNewCatColor = FINANCE_PRO_PALETTE[0];
             showModal(`
                 <div class="modal-title">Categorías</div>
-                <div class="finance-modal-note" style="margin-bottom:10px">En las de gasto puedes poner un presupuesto mensual — cuando te acerques o te pases, se avisa en Movimientos.</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">En las de gasto puedes poner un presupuesto mensual: cuando te acerques o te pases, se avisa en Movimientos.</div>
                 <div id="finance-pro-cat-list">${renderFinanceProCategoryList()}</div>
                 <div class="modal-label" style="margin-top:14px">Nueva categoría</div>
                 <input id="new-cat-name" class="modal-input" placeholder="Nombre">
@@ -2425,7 +2425,7 @@
             const row = c => `<div class="finance-budget-row" style="cursor:default">
                 <div class="finance-budget-row-head" style="align-items:center">
                     <span style="display:flex;align-items:center;gap:8px;color:var(--text-primary)">${financeProCategoryBadge(c)}${escapeHtml(c.name)}</span>
-                    <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceProCategory('${c.id}')">✕</button>
+                    <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceProCategory('${c.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>
                 ${c.type === 'expense' ? `
                 <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
@@ -2484,7 +2484,7 @@
         function openFinanceProRulesModal() {
             showModal(`
                 <div class="modal-title">Reglas de traspaso</div>
-                <div class="finance-modal-note" style="margin-bottom:12px">Para movimientos recurrentes que en realidad son traspasos entre tus propias cuentas (traer saldo de un banco a otro, por ejemplo) — al importar, si el concepto contiene el texto de una regla activa, se registra como traspaso en vez de como ingreso o gasto.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Para movimientos recurrentes que en realidad son traspasos entre tus propias cuentas (traer saldo de un banco a otro, por ejemplo): al importar, si el concepto contiene el texto de una regla activa, se registra como traspaso en vez de como ingreso o gasto.</div>
                 <div id="finance-pro-rules-list">${renderFinanceProRulesList()}</div>
                 <div class="finance-panel" style="margin-top:14px">
                     <div class="modal-label">El concepto contiene</div>
@@ -2508,7 +2508,7 @@
                         <div class="finance-rule-text">"${escapeHtml(r.matchText)}"</div>
                         <div class="finance-rule-sub">Traspaso con ${escapeHtml(financePro.accounts[r.otherAccount]?.name || r.otherAccount)}</div>
                     </div>
-                    <button class="finance-icon-btn" title="Eliminar" onclick="deleteFinanceProRule('${r.id}')">✕</button>
+                    <button class="finance-icon-btn" title="Eliminar" onclick="deleteFinanceProRule('${r.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>`).join('');
         }
 

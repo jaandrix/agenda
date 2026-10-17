@@ -153,8 +153,8 @@
                         </div>
                         <div class="docs2-archivo-acciones">
                             <button title="${doc.kind === 'pdf' ? 'Descargar' : 'Ver'}" onclick="event.stopPropagation();${abrir}">${doc.kind === 'pdf' ? '↓' : '→'}</button>
-                            <button title="Renombrar" onclick="event.stopPropagation();${renameFn}('${n}')">✎</button>
-                            <button title="Eliminar" class="borrar" onclick="event.stopPropagation();${deleteFn}('${n}')">✕</button>
+                            <button title="Renombrar" onclick="event.stopPropagation();${renameFn}('${n}')"><i class='ico ico-lapiz' aria-hidden=true></i></button>
+                            <button title="Eliminar" class="borrar" onclick="event.stopPropagation();${deleteFn}('${n}')"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>
                     </div>`;
             }).join('')}</div>`;
@@ -307,7 +307,7 @@
                             <div class="docs-row-name">${n}<span class="docs-row-kind">${isHtml ? 'HTML' : 'PDF'}</span></div>
                             <div class="docs-row-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
                         </div>
-                        <div class="doc-actions">${openBtn}<button class="doc-action-delete-btn" title="Eliminar" onclick="deleteEntryDoc('${kind}','${id}','${n}')">✕</button></div>
+                        <div class="doc-actions">${openBtn}<button class="doc-action-delete-btn" title="Eliminar" onclick="deleteEntryDoc('${kind}','${id}','${n}')"><i class='ico ico-x' aria-hidden=true></i></button></div>
                     </div>`;
             }).join('')}</div>`;
         }
@@ -471,7 +471,7 @@
                     <div class="modal-sheet viewer-modal-sheet">
                         <div class="viewer-modal-head">
                             <div class="viewer-modal-title">${escapeHtml(name)}</div>
-                            <button class="modal-close" onclick="closeModal()">✕</button>
+                            <button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>
                         <iframe id="viewer-modal-iframe" class="viewer-modal-iframe" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
                     </div>
@@ -526,7 +526,7 @@
                 return 'Sin conexión a internet en ese momento.';
             }
             if (status === 401 || raw.includes('jwt') || raw.includes('not authenticated') || raw.includes('invalid token')) {
-                return 'La sesión había caducado — vuelve a iniciar sesión y se reintentará solo.';
+                return 'La sesión había caducado: vuelve a iniciar sesión y se reintentará solo.';
             }
             if (status === 403 || raw.includes('row-level security') || raw.includes('permission denied') || raw.includes('policy')) {
                 return 'Permiso denegado por Supabase (revisa las políticas RLS del bucket "documents").';
@@ -647,7 +647,7 @@
             return `
                 <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
                     <div class="modal-sheet">
-                        <div class="modal-title">Backups automáticos<button class="modal-close" onclick="closeModal()">✕</button></div>
+                        <div class="modal-title">Backups automáticos<button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
                         <div style="font-size:12px;color:var(--text-secondary);margin:-10px 0 14px">
                             Bitácora guarda una copia de seguridad completa la primera vez que abres la app cada día, y conserva las 7 más recientes.
                         </div>

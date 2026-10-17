@@ -76,7 +76,7 @@
                     <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Empleo</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         <button class="btn-secondary btn-acento" style="width:auto" onclick="openWorkImportModal()">importar vida laboral.</button>
-                        <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()">⭳ Descargar resumen (PDF)</button>
+                        <button class="btn-secondary" style="width:auto" onclick="generateWorkResumePDF()"><i class='ico ico-bajar' aria-hidden=true></i> Descargar resumen (PDF)</button>
                         <button class="btn-modal-primary" style="width:auto;margin:0" onclick="openCv()">crear mi cv.</button>
                     </div>
                 </div>
@@ -416,7 +416,7 @@
                     <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir el PDF del Informe de Vida Laboral</div>
                     <div style="font-size:12px;color:var(--text-secondary)">Sede Electrónica de la Seguridad Social → Tu Seguridad Social → Informes y certificados → Informe de vida laboral</div>
                 </div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-top:10px">El PDF se procesa aquí mismo, en tu navegador — no se sube a ningún servidor.</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:10px">El PDF se procesa aquí mismo, en tu navegador: no se sube a ningún servidor.</div>
                 <input type="file" id="work-import-input" accept="application/pdf" style="display:none" onchange="handleWorkPdfImport(event)">
             `);
         }
@@ -512,7 +512,7 @@
                 if (!rows.length) {
                     showModal(`
                         <div class="modal-title">No se ha podido leer la tabla</div>
-                        <div style="font-size:13px;color:var(--text-secondary)">No he reconocido ningún periodo en este PDF. Puede que el formato de tu informe difiera del habitual — añade tu experiencia manualmente con el botón +.</div>
+                        <div style="font-size:13px;color:var(--text-secondary)">No he reconocido ningún periodo en este PDF. Puede que el formato de tu informe difiera del habitual: añade tu experiencia manualmente con el botón +.</div>
                         <button class="btn-secondary" style="margin-top:12px" onclick="closeModal()">Entendido</button>
                     `);
                     return;
@@ -530,7 +530,7 @@
             const rows = window._workImportDraft || [];
             showModal(`
                 <div class="modal-title">Revisa antes de importar</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">He encontrado ${rows.length} periodo${rows.length === 1 ? '' : 's'}. Desmarca los que no quieras añadir — el texto de un PDF no siempre se lee perfecto, comprueba las fechas.</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">He encontrado ${rows.length} periodo${rows.length === 1 ? '' : 's'}. Desmarca los que no quieras añadir: el texto de un PDF no siempre se lee perfecto, comprueba las fechas.</div>
                 <div id="work-import-review-list" style="max-height:380px;overflow-y:auto">${renderWorkImportRows()}</div>
                 <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmWorkImport()">Importar seleccionados</button>
             `);
@@ -661,7 +661,7 @@
                 <div class="event-hero" style="border-color:${(nextExam.subjectColor || '#3b82f6')}66;margin-bottom:18px">
                     <div class="event-hero-body">
                         <div class="event-hero-kicker" style="color:${nextExam.subjectColor || '#3b82f6'}">Próximo examen · ${eventCountdownLabel(nextExam.date)}</div>
-                        <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')} — ${escapeHtml(nextExam.subjectName)}</div>
+                        <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')} – ${escapeHtml(nextExam.subjectName)}</div>
                         <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
                     </div>
                 </div>` : ''}
@@ -719,7 +719,7 @@
                         <div class="studies-quicknote-text">${linkifyText(n.text)}</div>
                         <div class="studies-quicknote-meta">
                             <span>${new Date(n.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                            <button title="Eliminar" onclick="deleteQuickNote('${n.id}')">✕</button>
+                            <button title="Eliminar" onclick="deleteQuickNote('${n.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>
                     </div>`).join('') : '<div class="finance-empty-line">Aún no hay notas rápidas.</div>'}
             `;

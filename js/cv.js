@@ -213,7 +213,7 @@ function cvFechas(inicio, fin) {
         return isNaN(d) ? iso : d.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }).replace('.', '');
     };
     const hoy = todayISO();
-    return `${f(inicio)} — ${!fin || fin >= hoy ? 'actualidad' : f(fin)}`;
+    return `${f(inicio)} – ${!fin || fin >= hoy ? 'actualidad' : f(fin)}`;
 }
 
 async function guardarYGenerarCv() {
@@ -296,7 +296,7 @@ function generarPdfCv() {
     if (p.formacion?.length) seccion('Formación', () => {
         p.formacion.forEach((f, i) => {
             if (i) y += 8;
-            const fechas = f.inicio || f.fin ? `${f.inicio || ''} — ${f.fin || 'en curso'}` : '';
+            const fechas = f.inicio || f.fin ? `${f.inicio || ''} – ${f.fin || 'en curso'}` : '';
             doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
             const anchoFechas = fechas ? doc.getTextWidth(fechas) : 0;
             if (fechas) { doc.setTextColor(...GRIS); doc.text(fechas, W - M - anchoFechas, y); }
@@ -306,7 +306,7 @@ function generarPdfCv() {
     });
 
     if (p.habilidades?.length) seccion('Habilidades', () => texto(p.habilidades.join('   ·   '), COL, 10));
-    if (p.idiomas?.length) seccion('Idiomas', () => texto(p.idiomas.map(i => `${i.idioma} — ${i.nivel.toLowerCase()}`).join('   ·   '), COL, 10));
+    if (p.idiomas?.length) seccion('Idiomas', () => texto(p.idiomas.map(i => `${i.idioma} – ${i.nivel.toLowerCase()}`).join('   ·   '), COL, 10));
     if (p.otros) seccion('Otros', () => texto(p.otros, COL, 10));
 
     const nombreArchivo = (p.nombre || 'cv').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

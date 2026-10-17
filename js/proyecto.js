@@ -310,7 +310,7 @@ function renderProyectoFases(p) {
                 <button class="compra-check ${f.hecha ? 'on' : ''}" onclick="proyectoFase('${f.id}','hecha')" aria-label="Fase completada"></button>
                 <div class="proy-fase-txt"><b>${i + 1}. ${escapeHtml(f.nombre)}</b><span>${[f.fecha ? proyectoFechaCorta(f.fecha) : 'sin fecha', `${h} de ${ts.length} tareas`].join(', ')}.</span><i><em style="width:${f.hecha ? 100 : ts.length ? h / ts.length * 100 : 0}%"></em></i></div>
                 <button class="proy-icono" onclick="proyectoFase('${f.id}','subir')" aria-label="Subir">↑</button>
-                <button class="proy-icono" onclick="proyectoFase('${f.id}','quitar')" aria-label="Quitar">×</button>
+                <button class="proy-icono" onclick="proyectoFase('${f.id}','quitar')" aria-label="Quitar"><i class='ico ico-x' aria-hidden=true></i></button>
             </div>`;
         }).join('') : '<div class="compra-vacio"><b>las etapas del proyecto.</b>Divide el camino en fases con su fecha (idea, diseño, primera versión, entrega...). Las tareas se agrupan por fase y cada una muestra su avance.</div>'}`;
 }
@@ -319,7 +319,7 @@ function renderProyectoDiario(p) {
     return `
         <textarea id="proy-diario" class="modal-input" rows="3" placeholder="Qué has decidido, qué has hecho, qué te ha frenado..."></textarea>
         <button class="btn-modal-primary proy-apuntar" onclick="proyectoApuntar()">apuntar.</button>
-        ${p.diario.length ? p.diario.map(d => `<div class="proy-apunte"><div class="proy-apunte-cab"><span>${new Date(d.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</span><button class="est-quitar" onclick="proyectoQuitarApunte('${d.id}')" aria-label="Quitar">×</button></div><p>${escapeHtml(d.texto).replace(/\n/g, '<br>')}</p></div>`).join('')
+        ${p.diario.length ? p.diario.map(d => `<div class="proy-apunte"><div class="proy-apunte-cab"><span>${new Date(d.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</span><button class="est-quitar" onclick="proyectoQuitarApunte('${d.id}')" aria-label="Quitar"><i class='ico ico-x' aria-hidden=true></i></button></div><p>${escapeHtml(d.texto).replace(/\n/g, '<br>')}</p></div>`).join('')
             : '<div class="compra-vacio"><b>la bitácora del proyecto.</b>Apunta las decisiones y los avances según pasan. Dentro de un mes sabrás por qué hiciste cada cosa.</div>'}`;
 }
 

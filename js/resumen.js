@@ -266,7 +266,7 @@
                         <div class="entry-item">
                             <div class="entry-color-dot" style="background:#ec4899"></div>
                             <div class="entry-info">
-                                <div class="entry-title">🎂 ${escapeHtml(b.title)}</div>
+                                <div class="entry-title">cumpleaños de ${escapeHtml(b.title)}</div>
                                 <div class="entry-meta">${b.birthDate.slice(8,10)}/${b.birthDate.slice(5,7)}</div>
                             </div>
                         </div>`).join('')}
@@ -780,7 +780,7 @@
                 ${inbox.map(i => `
                     <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
                         <span style="font-size:13px">${escapeHtml(i.text)}</span>
-                        <button class="btn-secondary" style="width:auto;padding:2px 10px;font-size:11px" onclick="deleteInboxItem('${i.id}');closeModal();openHomeInboxModal()">✕</button>
+                        <button class="btn-secondary" style="width:auto;padding:2px 10px;font-size:11px" onclick="deleteInboxItem('${i.id}');closeModal();openHomeInboxModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>`).join('')}
             `);
         }

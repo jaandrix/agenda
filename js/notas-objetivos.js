@@ -238,7 +238,7 @@
                             </div>
                             <span class="badge ${statusClass}">${e.status}</span>
                             <div class="entry-actions">
-                                <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')">✕</button>
+                                <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                             </div>
                         </div>`;
                 });
@@ -263,7 +263,7 @@
                             const color = cat?.color || 'var(--text-secondary)';
                             const pct = goalProgressPct(g);
                             return `
-                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${g.id}')" data-open-entry="${g.id}" style="border-left:4px solid ${color}">
+                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${g.id}')" data-open-entry="${g.id}" data-color="${color}" style="--c:${color}">
                                 <div class="kanban-card-title">${escapeHtml(g.title)}</div>
                                 ${pct !== null ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>` : ''}
                             </div>`;

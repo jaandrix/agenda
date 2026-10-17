@@ -125,6 +125,15 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   una limitación, un bug ya corregido y por qué se hizo así). Nunca comentarios que
   describan qué hace el código.
 - **Diffs mínimos**, sin refactors no pedidos, sin abstracciones prematuras.
+- **Sin gestos de plantilla** (barrido del 2026-10-17, para que no "parezca hecha con IA"): nada de rayas de color a
+  un lado (`border-left`/`inset` de 2px+ en tarjetas o filas: el color va en una marca cuadrada, un punto o el asa),
+  ni etiquetas en mayúsculas espaciadas (las etiquetas van en minúscula), ni etiquetas pequeñas encima de un título,
+  ni números de sección, ni velos con `backdrop-filter: blur`, ni tarjetas que se elevan al pasar el ratón, ni
+  resplandores radiales de acento, ni anillos de progreso como adorno (en su lugar, sellos), ni rayas largas («—»)
+  como inciso en los textos. Los iconos pequeños son `<i class='ico ico-x'>` (x, izq, der, lapiz, bajar, repetir,
+  apagar, cambio: máscaras SVG en styles.css), nunca glifos (✕ ‹ › ✎ ⭳ ↻ ⏻ ⇄) ni emojis. La selección, el cursor, el
+  foco y las barras de scroll llevan la tinta del tema. En el inicio del móvil, el día va en renglones con puntos
+  guía (`.m-libro`), no en teselas.
 - **La app NO tiene reset global de `box-sizing: border-box`** — si el tamaño en
   píxeles de algo importa (centrar contenido interno de un elemento con borde, p. ej.
   un checkbox a medida), hay que declararlo explícitamente en ese elemento o los

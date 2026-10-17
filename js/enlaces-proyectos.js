@@ -46,8 +46,8 @@
             return `
                 <div class="link-card" style="${color ? `border:3px solid ${color}` : ''}">
                     <div class="link-card-actions">
-                        <button class="link-card-icon-btn link-card-delete" title="Eliminar" onclick="deleteLink('${l.id}')">✕</button>
-                        <button class="link-card-icon-btn link-card-edit" title="Editar" onclick="openEditLink('${l.id}')">✎</button>
+                        <button class="link-card-icon-btn link-card-delete" title="Eliminar" onclick="deleteLink('${l.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
+                        <button class="link-card-icon-btn link-card-edit" title="Editar" onclick="openEditLink('${l.id}')"><i class='ico ico-lapiz' aria-hidden=true></i></button>
                     </div>
                     <div class="link-card-title">${escapeHtml(l.title)}</div>
                     <a href="javascript:void(0)" class="link-card-url" data-ext-url="${escapeHtml(l.url)}" onclick="openLinkPopup(event,this)">enlace</a>
@@ -201,7 +201,7 @@
             const s = findSubject(id);
             if (!s) return;
             showModal(`
-                <div class="modal-title">Profesor — ${escapeHtml(s.name)}</div>
+                <div class="modal-title">Profesor – ${escapeHtml(s.name)}</div>
                 <input id="subject-professor-input" class="modal-input" placeholder="Nombre del profesor" value="${escapeHtml(s.professor || '')}">
                 <button class="btn-modal-primary" onclick="saveSubjectProfessor('${id}')">Guardar</button>
             `);
@@ -310,7 +310,7 @@
             const total = subjectWeightTotal(s);
             if (!total) return '';
             if (total === 100) return 'Peso repartido: 100%.';
-            if (total > 100) return `Peso repartido: ${total}% — te has pasado ${total - 100}%.`;
+            if (total > 100) return `Peso repartido: ${total} %. Te has pasado ${total - 100} puntos.`;
             return `Peso repartido: ${total}% (quedan ${100 - total}% sin asignar).`;
         }
 
@@ -379,7 +379,7 @@
                     <div class="studies-row-head">
                         <input class="studies-row-title-input" value="${escapeHtml(item.title || '')}" placeholder="${listKey === 'exams' ? 'Examen sin título' : 'Trabajo sin título'}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
                         ${cd ? `<span class="studies-row-countdown ${cd.due ? 'due-soon' : ''} ${cd.past ? 'past' : ''}">${cd.text}</span>` : ''}
-                        <button class="studies-row-remove" title="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})">✕</button>
+                        <button class="studies-row-remove" title="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                     <div class="studies-row-fields">
                         <div class="studies-row-field"><label>Fecha</label><input type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)"></div>
@@ -612,7 +612,7 @@
                 cellsHtml += items.map(({ b, i }) => `
                     <div class="studies-block ${i === nowIdx ? 'studies-block-now' : ''}">
                         <span>${escapeHtml(b.time || '')} ${escapeHtml(b.subject || '')}</span>
-                        <button title="Eliminar" onclick="removeScheduleBlock('${d.key}',${i})">✕</button>
+                        <button title="Eliminar" onclick="removeScheduleBlock('${d.key}',${i})"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>`).join('');
                 cellsHtml += `</div>`;
             });
@@ -751,7 +751,7 @@
                             const overdue = p.endDate && p.endDate < today && col !== 'Completado';
                             const priority = p.priority || 'media';
                             return `
-                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${p.id}')" onclick="abrirProyecto('${p.id}')" style="border-left:4px solid ${color}">
+                            <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${p.id}')" onclick="abrirProyecto('${p.id}')" data-color="${color}" style="--c:${color}">
                                 <div class="kanban-card-title">${escapeHtml(p.title)}</div>
                                 ${total > 0 ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>` : ''}
                                 <div class="kanban-card-foot">

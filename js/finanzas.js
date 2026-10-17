@@ -417,8 +417,8 @@
                     <span>${escapeHtml(a.name)}</span>
                     <span style="display:flex;gap:8px;align-items:center">
                         <strong style="font-variant-numeric:tabular-nums">${financeMoney(a.balance)}</strong>
-                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px" onclick="openCustomAccountEditor('${a.id}', true)">✎</button>
-                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceCustomAccount('${a.id}')">✕</button>
+                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px" onclick="openCustomAccountEditor('${a.id}', true)"><i class='ico ico-lapiz' aria-hidden=true></i></button>
+                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceCustomAccount('${a.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </span>
                 </div>`).join('');
         }
@@ -492,7 +492,7 @@
 
             showModal(`
                 <div class="modal-title">Actualizar ${escapeHtml(financeMonthLabel(monthKey))}</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Rellena solo lo que sepas ahora mismo — no hace falta que sea exacto ni completo.</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Rellena solo lo que sepas ahora mismo: no hace falta que sea exacto ni completo.</div>
 
                 <div class="modal-label">Sueldo recibido este mes${forecast > 0 ? ` (previsto: ${financeMoney(forecast)})` : ''}</div>
                 <input id="mfu-salario" class="modal-input" type="number" step="0.01" placeholder="0.00" value="${existingSalary !== undefined ? existingSalary : (forecast || '')}">
@@ -711,9 +711,9 @@
 
         function renderLongTermMonthNav(month) {
             return `<div class="longterm-month-nav">
-                <button class="lt-nav-btn" onclick="setLongtermViewMonth('${longtermMonthOffset(month, -1)}')" title="Mes anterior">‹</button>
+                <button class="lt-nav-btn" onclick="setLongtermViewMonth('${longtermMonthOffset(month, -1)}')" title="Mes anterior"><i class='ico ico-izq' aria-hidden=true></i></button>
                 <div class="longterm-month-nav-label">${escapeHtml(financeMonthLabel(month))}</div>
-                <button class="lt-nav-btn" onclick="setLongtermViewMonth('${longtermMonthOffset(month, 1)}')" title="Mes siguiente">›</button>
+                <button class="lt-nav-btn" onclick="setLongtermViewMonth('${longtermMonthOffset(month, 1)}')" title="Mes siguiente"><i class='ico ico-der' aria-hidden=true></i></button>
             </div>`;
         }
 
@@ -753,7 +753,7 @@
                     <div class="longterm-modal-title">largo plazo.</div>
                     <div class="longterm-modal-head-actions">
                         <button class="lt-icon-circle" title="Nueva cuenta de inversión" onclick="openAddInvestmentAccountModal()">+</button>
-                        <button class="lt-icon-circle" title="Cerrar" onclick="closeModal()">✕</button>
+                        <button class="lt-icon-circle" title="Cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                 </div>
 
@@ -816,7 +816,7 @@
                     <div class="wishlist-available" title="Sueldo sin asignar acumulado en los meses ya cerrados">${financeMoney(available)} disponibles</div>
                 </div>
                 <div id="wishlist-list">
-                    ${items.length ? items.map(it => renderWishlistRow(it, available)).join('') : '<div class="finance-empty-line" style="margin:8px 0">Todavía no has añadido nada — apunta aquí lo que te gustaría comprarte más adelante.</div>'}
+                    ${items.length ? items.map(it => renderWishlistRow(it, available)).join('') : '<div class="finance-empty-line" style="margin:8px 0">Todavía no has añadido nada: apunta aquí lo que te gustaría comprarte más adelante.</div>'}
                 </div>
                 <button class="finance-oneoff-btn" style="margin-top:8px" onclick="addWishlistItem()">+ Añadir deseo</button>
             </div>`;
@@ -830,7 +830,7 @@
                 <input class="modal-input wishlist-label" value="${escapeHtml(item.title || '')}" placeholder="Ej. Auriculares, viaje, videoconsola..." oninput="updateWishlistItem('${item.id}','title',this.value,false)" onchange="updateWishlistItem('${item.id}','title',this.value,true)">
                 <input class="modal-input wishlist-price" type="number" min="0" step="0.01" value="${item.price || ''}" placeholder="0.00" oninput="updateWishlistItem('${item.id}','price',this.value,false)" onchange="updateWishlistItem('${item.id}','price',this.value,true)">
                 <span id="wishlist-badge-${item.id}" class="wishlist-badge ${affordable ? 'wishlist-badge-yes' : 'wishlist-badge-no'}" title="${affordable ? 'Ya es buen momento para comprarlo' : 'Todavía no es buen momento'}">${affordable ? '✓' : '✕'}</span>
-                <button class="doc-action-delete-btn" title="Eliminar" onclick="removeWishlistItem('${item.id}')">✕</button>
+                <button class="doc-action-delete-btn" title="Eliminar" onclick="removeWishlistItem('${item.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
             </div>`;
         }
 
@@ -849,7 +849,7 @@
         function renderWishlistList() {
             const available = wishlistAvailableSavings();
             const items = financeProfile.wishlist || [];
-            return items.length ? items.map(it => renderWishlistRow(it, available)).join('') : '<div class="finance-empty-line" style="margin:8px 0">Todavía no has añadido nada — apunta aquí lo que te gustaría comprarte más adelante.</div>';
+            return items.length ? items.map(it => renderWishlistRow(it, available)).join('') : '<div class="finance-empty-line" style="margin:8px 0">Todavía no has añadido nada: apunta aquí lo que te gustaría comprarte más adelante.</div>';
         }
 
         function addWishlistItem() {
@@ -896,10 +896,10 @@
                 <div class="lt-card" id="longterm-planning-section">
                     <div class="longterm-section-head">
                         <div class="longterm-section-title">planificación del sueldo.</div>
-                        <button class="finance-icon-btn" title="Editar este mes" onclick="editBudgetHistoryMonth('${month}')">✎</button>
+                        <button class="finance-icon-btn" title="Editar este mes" onclick="editBudgetHistoryMonth('${month}')"><i class='ico ico-lapiz' aria-hidden=true></i></button>
                     </div>
                     ${renderLongTermMonthNav(month)}
-                    <div class="finance-empty-line" style="margin:10px 0">Mes ya grabado — esto es lo que previste entonces frente a lo que pasó de verdad.</div>
+                    <div class="finance-empty-line" style="margin:10px 0">Mes ya grabado: esto es lo que previste entonces frente a lo que pasó de verdad.</div>
                     ${renderBudgetHistoryMonthTable(recorded)}
                 </div>`;
             }
@@ -927,7 +927,7 @@
             ensureLongTermData();
             const plan = getBudgetPlanForMonth(longtermViewMonth || financeMonthKey());
             const cats = (financePro.categories || []).filter(c => c.type === 'expense');
-            if (!plan.allocations.length) return '<div class="finance-empty-line" style="margin:8px 0">Sin casillas todavía — añade una por cada sitio al que quieras llevar el sueldo (alquiler, ahorro, ocio...).</div>';
+            if (!plan.allocations.length) return '<div class="finance-empty-line" style="margin:8px 0">Sin casillas todavía: añade una por cada sitio al que quieras llevar el sueldo (alquiler, ahorro, ocio...).</div>';
             return `
                 <div class="budget-alloc-row budget-alloc-row-head">
                     <span>Casilla</span><span>Previsto</span><span>Categoría</span><span>Gastado</span><span></span>
@@ -947,7 +947,7 @@
                 <input class="modal-input budget-alloc-amount" type="number" min="0" step="0.01" value="${a.amount || ''}" placeholder="0.00" title="Límite de presupuesto" oninput="updateBudgetAllocation('${a.id}','amount',this.value,false)" onchange="updateBudgetAllocation('${a.id}','amount',this.value,true)">
                 <div class="budget-alloc-auto-tag">automático.</div>
                 <div class="budget-alloc-spent${Number(a.amount) > 0 && gastado > Number(a.amount) ? ' over' : ''}">${financeMoney(gastado)}</div>
-                <button class="doc-action-delete-btn" title="Quitar de este mes" onclick="removeBudgetAllocation('${a.id}')">✕</button>
+                <button class="doc-action-delete-btn" title="Quitar de este mes" onclick="removeBudgetAllocation('${a.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
             </div>`;
             }
             // Gasto real hasta ahora este mes en la categoría vinculada —
@@ -965,7 +965,7 @@
                     ${cats.map(c => `<option value="${c.id}" ${a.categoryId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
                 <div class="budget-alloc-spent${over ? ' over' : ''}">${spent != null ? financeMoney(spent) : '—'}${pres?.devuelto > 0 ? `<small title="Lo devuelto este mes amplía lo que puedes gastar en esta casilla">+${financeMoney(pres.devuelto)} devuelto.</small>` : ''}</div>
-                <button class="doc-action-delete-btn" title="Eliminar" onclick="removeBudgetAllocation('${a.id}')">✕</button>
+                <button class="doc-action-delete-btn" title="Eliminar" onclick="removeBudgetAllocation('${a.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
             </div>`;
         }
 
@@ -1066,7 +1066,7 @@
             const month = longtermViewMonth || financeMonthKey();
             const plan = getBudgetPlanForMonth(month);
             if (!plan.allocations.length && !plan.salary && !plan.contributions) { showToast('Añade el sueldo, las aportaciones o al menos una casilla antes de grabar', true); return; }
-            if (!confirm(`¿Grabar la planificación de ${financeMonthLabel(month)}? Pasará al historial — podrás reabrirla con ✎ si hace falta.`)) return;
+            if (!confirm(`¿Grabar la planificación de ${financeMonthLabel(month)}? Pasará al historial: podrás reabrirla con ✎ si hace falta.`)) return;
             const actuals = {};
             plan.allocations.forEach(a => {
                 // financeProCategorySpend ya descuenta devoluciones/reembolsos
@@ -1154,7 +1154,7 @@
                 </div>
                 <div class="investment-account-value">${financeMoney(value)}</div>
                 <button class="finance-oneoff-btn" style="width:auto" onclick="openAccountMonthlyUpdate('${acc.id}')">+ mes</button>
-                <button class="doc-action-delete-btn" title="Eliminar cuenta" onclick="deleteInvestmentAccount('${acc.id}')">✕</button>
+                <button class="doc-action-delete-btn" title="Eliminar cuenta" onclick="deleteInvestmentAccount('${acc.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
             </div>`;
         }
 

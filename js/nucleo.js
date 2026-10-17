@@ -110,7 +110,7 @@
 
         function openPromoVideo() {
             showModal(`
-                <div class="modal-title">Bitácora en 40 segundos<button class="modal-close" onclick="closeModal()">✕</button></div>
+                <div class="modal-title">Bitácora en 40 segundos<button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
                 <div class="promo-video-modal">
                     <video src="promo.mp4" controls autoplay playsinline></video>
                 </div>
@@ -397,10 +397,10 @@
             showModal(`
                 <div class="modal-title">
                     <span>¿Qué es <span style="color:var(--m-acento)">Bitácora</span>?</span>
-                    <button class="modal-close" onclick="closeModal()">✕</button>
+                    <button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>
                 <div class="about-modal">
-                    <p class="about-intro">Bitácora es un espacio único y tranquilo para reunir tu vida entera — desde tu ocio hasta tu trabajo, pasando por tus rutinas y tu forma de organizarte — sin la sobrecarga de tener una app distinta para cada cosa, y sin el ruido del contenido rápido de siempre. No busca ser perfecta en cada rincón: busca que no tengas que abrir diez apps distintas para saberlo todo de tu vida.</p>
+                    <p class="about-intro">Bitácora es un espacio único y tranquilo para reunir tu vida entera: desde tu ocio hasta tu trabajo, pasando por tus rutinas y tu forma de organizarte, sin la sobrecarga de tener una app distinta para cada cosa, y sin el ruido del contenido rápido de siempre. No busca ser perfecta en cada rincón: busca que no tengas que abrir diez apps distintas para saberlo todo de tu vida.</p>
 
                     <div class="about-grid">
                         <div class="about-feature">
@@ -411,7 +411,7 @@
                         <div class="about-feature">
                             
                             <div class="about-feature-title">Ocio</div>
-                            <div class="about-feature-desc">Lleva la cuenta de libros, películas, series y videojuegos — y recomiéndaselos a tus amigos dentro de la propia app.</div>
+                            <div class="about-feature-desc">Lleva la cuenta de libros, películas, series y videojuegos, y recomiéndaselos a tus amigos dentro de la propia app.</div>
                         </div>
                         <div class="about-feature">
                             
@@ -426,7 +426,7 @@
                         <div class="about-feature">
                             
                             <div class="about-feature-title">Organización</div>
-                            <div class="about-feature-desc">Objetivos, proyectos, enlaces y coleccionables — cada aspecto de tu vida tiene su sitio propio.</div>
+                            <div class="about-feature-desc">Objetivos, proyectos, enlaces y coleccionables: cada aspecto de tu vida tiene su sitio propio.</div>
                         </div>
                         <div class="about-feature">
                             
@@ -1100,14 +1100,6 @@
         const MOBILE_DIAS_LARGOS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
         const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-        function mobileAnillo(frac, tam = 92) {
-            const r = 40, c = 2 * Math.PI * r, f = Math.max(0, Math.min(1, frac || 0));
-            return `<svg class="m-anillo" width="${tam}" height="${tam}" viewBox="0 0 100 100" aria-hidden="true">
-                <circle cx="50" cy="50" r="${r}" class="m-anillo-pista"/>
-                <circle cx="50" cy="50" r="${r}" class="m-anillo-arco" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - f)}" transform="rotate(-90 50 50)"/>
-            </svg>`;
-        }
-
         // ---- Inicio: el mes en bolitas ----
         function mobileDiaPlanner(date) {
             resetDayPlannerIfNeeded();
@@ -1209,9 +1201,9 @@
                 <div class="m-mes-cab">
                     <span class="m-etiqueta">${etiqueta}</span>
                     <div class="m-mes-flechas">
-                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(-1)' : 'mobileCambiarSemana(-1)'}" aria-label="${mobileVerMes ? 'Mes anterior' : 'Semana anterior'}">‹</button>
+                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(-1)' : 'mobileCambiarSemana(-1)'}" aria-label="${mobileVerMes ? 'Mes anterior' : 'Semana anterior'}"><i class='ico ico-izq' aria-hidden=true></i></button>
                         <button class="m-mes-modo" onclick="mobileAlternarMes()">${mobileVerMes ? 'semana.' : 'mes.'}</button>
-                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(1)' : 'mobileCambiarSemana(1)'}" aria-label="${mobileVerMes ? 'Mes siguiente' : 'Semana siguiente'}">›</button>
+                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(1)' : 'mobileCambiarSemana(1)'}" aria-label="${mobileVerMes ? 'Mes siguiente' : 'Semana siguiente'}"><i class='ico ico-der' aria-hidden=true></i></button>
                     </div>
                 </div>
                 ${mobileVerMes ? `
@@ -1255,7 +1247,7 @@
             if (sel === hoy) {
                 recurringTasksDueToday().forEach(t => {
                     const hecha = !!t.completadas?.[hoy];
-                    filas.push({ hora: '', html: `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora">↻</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="mobileMarcarRecurrente('${t.id}')" aria-label="Marcar hecha"></button></div>` });
+                    filas.push({ hora: '', html: `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="mobileMarcarRecurrente('${t.id}')" aria-label="Marcar hecha"></button></div>` });
                 });
             }
             filas.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
@@ -1333,27 +1325,27 @@
             const diasExamen = examen ? Math.round((new Date(examen.date + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000) : null;
             const viaje = entries.filter(e => e.type === 'travel' && e.startDate && e.startDate >= hoy).sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
             const diasViaje = viaje ? Math.round((new Date(viaje.startDate + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000) : null;
-            const tesela = (view, cifra, texto, extra = '', clase = '') => `
-                <button class="m-tesela ${clase}" onclick="mobileIr('${view}')">
-                    <span class="m-tesela-cifra">${cifra}</span>
-                    <span class="m-tesela-texto">${texto}</span>
-                    ${extra}
+            // Un renglón por cosa, con puntos guía hasta la cifra, como en un
+            // cuaderno: se lee de un vistazo y no compite con el día.
+            const renglon = (view, etiqueta, valor, clase = '') => `
+                <button class="m-libro-fila ${clase}" onclick="mobileIr('${view}')">
+                    <span>${etiqueta}</span><i aria-hidden="true"></i><b>${valor}</b>
                 </button>`;
-            const teselas = [
-                tesela('planner', total ? `${hechas}<small>/${total}</small>` : '0', total ? 'tareas de hoy hechas.' : 'tareas para hoy.', total ? `<span class="m-tesela-anillo">${mobileAnillo(hechas / total, 44)}</span>` : ''),
-                tesela('habits', activos.length ? `${habHechos}<small>/${activos.length}</small>` : '—', 'rutinas hoy.'),
-                tesela('finances', `${Math.round(expense).toLocaleString('es-ES')}<small>€</small>`, `gastado en ${MOBILE_MESES[new Date().getMonth()]}.`),
-                !apartadoVisible('studies') || !examen ? '' : tesela('studies', diasExamen === 0 ? 'hoy' : diasExamen, `${diasExamen === 0 ? '' : diasExamen === 1 ? 'día para ' : 'días para '}${escapeHtml(examen.title || 'el examen').toLowerCase()}.`),
+            const lineas = [
+                renglon('planner', 'tareas de hoy', total ? `${hechas} de ${total}` : 'ninguna'),
+                renglon('habits', 'rutinas', activos.length ? `${habHechos} de ${activos.length}` : 'ninguna hoy'),
+                renglon('finances', `gastado en ${MOBILE_MESES[new Date().getMonth()]}`, `${Math.round(expense).toLocaleString('es-ES')} €`),
+                !apartadoVisible('studies') || !examen ? '' : renglon('studies', escapeHtml(examen.title || 'el examen').toLowerCase(), diasExamen === 0 ? 'hoy' : diasExamen === 1 ? 'mañana' : `en ${diasExamen} días`),
             ].filter(Boolean);
             // Cuatro como mucho, para que el inicio respire: las tres de siempre
             // y la más urgente de las demás.
             const extra = [];
-            if (bandejaPendiente.length) extra.push(tesela('bandeja', bandejaPendiente.length, `${bandejaPendiente.length === 1 ? 'cambio' : 'cambios'} de claude por validar.`, '', 'm-tesela-acento'));
-            if (viaje && diasViaje <= 14) extra.push(tesela('travels', diasViaje === 0 ? 'hoy' : diasViaje, `${diasViaje === 0 ? 'empieza ' : diasViaje === 1 ? 'día para ' : 'días para '}${escapeHtml((viaje.destination || viaje.title || '').split(',')[0])}.`));
+            if (bandejaPendiente.length) extra.push(renglon('bandeja', 'cambios de claude por validar', bandejaPendiente.length, 'acento'));
+            if (viaje && diasViaje <= 14) extra.push(renglon('travels', `viaje a ${escapeHtml((viaje.destination || viaje.title || '').split(',')[0])}`, diasViaje === 0 ? 'hoy' : diasViaje === 1 ? 'mañana' : `en ${diasViaje} días`));
             const enCamino = pedidos.filter(p => p.estado !== 'entregado');
-            if (enCamino.length) extra.push(tesela('actualizaciones', enCamino.length, `${enCamino.length === 1 ? 'pedido' : 'pedidos'} en camino.`));
-            const todas = [...teselas.slice(0, 3), ...extra, ...teselas.slice(3)].slice(0, 4);
-            return `<section class="m-teselas">${todas.join('')}</section>`;
+            if (enCamino.length) extra.push(renglon('actualizaciones', `${enCamino.length === 1 ? 'pedido' : 'pedidos'} en camino`, enCamino.length));
+            const todas = [...lineas.slice(0, 3), ...extra, ...lineas.slice(3)].slice(0, 4);
+            return `<section class="m-libro">${todas.join('')}</section>`;
         }
 
         // ---- Apartados ----
@@ -1419,7 +1411,7 @@
             const backlog = backlogVisibles();
             return `${renderMobileCabecera('planificador', total ? `${hechas} de ${total} hechas.` : 'nada planeado.')}
                 <div class="m-pestanas">${['hoy', 'mañana', 'pasado'].map((l, i) => `<button class="${off === i ? 'activa' : ''}" onclick="setPlannerDayOffset(${i})">${l}.</button>`).join('')}</div>
-                ${total ? `<div class="m-progreso">${mobileAnillo(hechas / total)}<div><div class="m-progreso-num">${Math.round(hechas / total * 100)}<small>%</small></div><div class="m-progreso-txt">del día, hecho.</div></div></div>` : ''}
+                ${total ? `<div class="m-sellos" aria-label="${hechas} de ${total} hechas">${Array.from({ length: Math.min(total, 24) }, (_, k) => `<i class="${k < hechas ? 'on' : ''}"></i>`).join('')}<span>${hechas} de ${total}, hecho.</span></div>` : ''}
                 <div class="m-acciones">
                     <button class="m-boton m-boton-acento" onclick="openAddPlannerItem()">+ tarea.</button>
                     <button class="m-boton" onclick="openManageRecurringTasks()">recurrentes.</button>
@@ -1427,7 +1419,7 @@
                 <div class="m-lista">
                     ${rec.map(t => {
                         const hecha = !!t.completadas?.[hoy];
-                        return `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora">↻</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div><div class="m-fila-meta">recurrente</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="toggleRecurringTaskDoneToday('${t.id}')" aria-label="Marcar hecha"></button></div>`;
+                        return `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div><div class="m-fila-meta">recurrente</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="toggleRecurringTaskDoneToday('${t.id}')" aria-label="Marcar hecha"></button></div>`;
                     }).join('')}
                     ${items.map(it => renderMobileFilaTarea(it, off)).join('')}
                 </div>
@@ -1489,7 +1481,7 @@
                 ${ultimos.length ? `<div class="m-lista">${ultimos.map(t => {
                     const cat = financeProCategoryById(t.category);
                     const d = new Date((t.date || todayISO()) + 'T12:00:00');
-                    const signo = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '⇄';
+                    const signo = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '<i class="ico ico-cambio" aria-hidden="true"></i>';
                     return `<div class="m-fila ${t.type === 'income' ? 'positiva' : t.type === 'expense' ? 'negativa' : ''}">
                         <span class="m-fila-hora">${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}</span>
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.note || t.bankNote || cat?.name || 'movimiento')}</div><div class="m-fila-meta">${escapeHtml([cat?.name, financePro.accounts[t.account]?.name].filter(Boolean).join(' · ').toLowerCase())}</div></div>
@@ -1937,7 +1929,7 @@
                 <div class="nav-hidden-drawer">
                     <button class="nav-hidden-toggle" onclick="toggleHiddenDrawer(this)">
                         <span class="nav-text">Apartados ocultos (${items.length})</span>
-                        <span class="nav-hidden-arrow">›</span>
+                        <span class="nav-hidden-arrow"><i class='ico ico-der' aria-hidden=true></i></span>
                     </button>
                     <div class="nav-hidden-list">
                         ${items.map((x, i) => `

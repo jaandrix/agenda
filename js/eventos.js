@@ -522,7 +522,7 @@ Calendario:
                     <div class="entrada-editor-fila">
                         <span class="entrada-editor-icono">${ENTRADA_ICONO}</span>
                         <input class="modal-input entrada-editor-etiqueta" value="${escapeHtml(x.etiqueta || '')}" placeholder="Entrada ${i + 1}${personas > 1 ? ' de ' + personas : ''} · p. ej. fila 12, asiento 8" oninput="window._entradasDraft[${i}].etiqueta = this.value">
-                        <button type="button" class="planner-item-delete" title="Quitar entrada" onclick="quitarEntradaDraft(${i})">×</button>
+                        <button type="button" class="planner-item-delete" title="Quitar entrada" onclick="quitarEntradaDraft(${i})"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>`).join('')}
                 ${personas > 1 ? `<div class="entrada-editor-progreso">${Math.min(lista.length, personas)} de ${personas} entradas añadidas.</div>` : ''}
                 <div class="entrada-editor-acciones">
@@ -648,7 +648,7 @@ Calendario:
                     <div class="entrada-ticket-cabecera">
                         <span class="entrada-ticket-kicker">${ENTRADA_ICONO}entrada.</span>
                         <span class="entrada-ticket-fecha">${escapeHtml(fecha)}</span>
-                        <button class="modal-close" onclick="closeModal()">✕</button>
+                        <button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                     <div class="entrada-ticket-titulo">${escapeHtml(ev.title || '')}</div>
                     <div class="entrada-ticket-meta">${[ev.place, ev.time].filter(Boolean).map(escapeHtml).join(' · ')}</div>
@@ -657,9 +657,9 @@ Calendario:
                     ${entrada.etiqueta ? `<div class="entrada-ticket-etiqueta">${escapeHtml(entrada.etiqueta)}</div>` : ''}
                     ${lista.length > 1 ? `
                         <div class="entrada-ticket-nav">
-                            <button class="btn-secondary" onclick="abrirEntradas('${ev.id}', ${i - 1})">‹</button>
+                            <button class="btn-secondary" onclick="abrirEntradas('${ev.id}', ${i - 1})"><i class='ico ico-izq' aria-hidden=true></i></button>
                             <span>${i + 1} de ${lista.length}</span>
-                            <button class="btn-secondary" onclick="abrirEntradas('${ev.id}', ${i + 1})">›</button>
+                            <button class="btn-secondary" onclick="abrirEntradas('${ev.id}', ${i + 1})"><i class='ico ico-der' aria-hidden=true></i></button>
                         </div>` : ''}
                     <div class="entrada-ticket-nota">Sube el brillo de la pantalla para que lo lean a la primera.</div>
                 </div>

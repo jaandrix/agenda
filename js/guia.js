@@ -117,7 +117,7 @@ const GUIA = [
     {
         id: 'home', grupo: 'general', titulo: 'home.',
         lema: 'Tu calendario de toda la vida.',
-        intro: 'La primera pantalla: un calendario con todo lo que tiene fecha en Bitácora — eventos, viajes, cumpleaños, exámenes, pagos de suscripciones...',
+        intro: 'La primera pantalla: un calendario con todo lo que tiene fecha en Bitácora: eventos, viajes, cumpleaños, exámenes, pagos de suscripciones...',
         botones: [
             [guiaBoton('Día · Semana · Mes'), 'Cambia la vista. En el mes, cada punto bajo un día es una cosa ese día.'],
             [guiaBoton('‹ ›'), 'Mes, semana o día anterior y siguiente.'],

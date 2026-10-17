@@ -25,7 +25,7 @@
                         <div class="apuntes-window-actions">
                             <button class="apuntes-window-action" type="button" title="Minimizar" onclick="minimizeApuntes()">−</button>
                             <button class="apuntes-window-action" type="button" title="Maximizar" onclick="maximizeApuntes()">□</button>
-                            <button class="apuntes-window-action" type="button" title="Cerrar" onclick="closeApuntes()">×</button>
+                            <button class="apuntes-window-action" type="button" title="Cerrar" onclick="closeApuntes()"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>
                     </div>
                     <iframe class="apuntes-window-frame" src="/apuntes/index.html" title="Apuntes"></iframe>

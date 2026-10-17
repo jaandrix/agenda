@@ -537,7 +537,7 @@
                 <div class="modal-sheet">
                     <div class="modal-title">
                         ${title}
-                        <button class="modal-close" onclick="closeModal()">✕</button>
+                        <button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
 
                     <div class="modal-label">Título</div>
@@ -807,7 +807,7 @@
                 <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
                     <input class="modal-input" style="flex:2" value="${exp.description || ''}" placeholder="Concepto" onchange="updateExpense(${index}, 'description', this.value)">
                     <input class="modal-input" style="flex:1" type="number" value="${exp.amount || ''}" placeholder="€" onchange="updateExpense(${index}, 'amount', this.value)">
-                    <button onclick="removeExpense(${index})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px">✕</button>
+                    <button onclick="removeExpense(${index})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>`;
         }
 

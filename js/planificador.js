@@ -114,17 +114,15 @@
             // esté mirando la pestaña de mañana/pasado mañana.
             const todayItemsCount = offset === 0 ? items.length : plannerItemsForOffset(0).length;
             const todayDueCount = offset === 0 ? dueToday.length : recurringTasksDueToday().length;
-            const activeLabel = PLANNER_DAY_TABS.find(t => t.offset === offset)?.label || 'Hoy';
             const emptyLabel = offset === 0 ? 'para hoy' : (offset === 1 ? 'para mañana' : 'para pasado mañana');
 
             return `
             <div class="planner-view">
                 <div class="planner-head">
                     <div>
-                        <div class="finance-kicker">${activeLabel}</div>
-                        <h3 style="margin:2px 0 0 0">planificador.</h3>
+                        <h3 style="margin:0">planificador.</h3>
                         <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">
-                            Cada día empieza de cero a las 4:00 am — lo que no marques como hecho se arrastra a hoy, destacado en granate. Puedes ir dejando planificados los próximos dos días.
+                            Cada día empieza de cero a las 4:00 am: lo que no marques como hecho se arrastra a hoy, destacado en granate. Puedes ir dejando planificados los próximos dos días.
                         </p>
                     </div>
                 </div>
@@ -178,7 +176,7 @@
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
                                 ${renderPlannerSubtasks(it, offset)}
                             </div>
-                            <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}', ${offset})">×</button>
+                            <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}', ${offset})"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>`;
                     }).join('') : `
                         <div class="finance-empty-state">Aún no has añadido eventos ${emptyLabel}. Pulsa <strong>+ evento.</strong> para empezar tu planificación.</div>
@@ -224,7 +222,7 @@
                     <div class="planner-backlog-title">tareas pendientes.</div>
                     <button class="planner-backlog-add" onclick="openAddBacklogTask()">+ tarea</button>
                 </div>
-                ${items.length ? items.map(it => renderBacklogRow(it)).join('') : `<div class="finance-empty-line" style="margin:6px 0 4px">${quedan ? 'Todo hecho por aquí.' : 'Sin tareas pendientes — apunta aquí lo que quieras hacer sin ponerle día todavía.'}</div>`}
+                ${items.length ? items.map(it => renderBacklogRow(it)).join('') : `<div class="finance-empty-line" style="margin:6px 0 4px">${quedan ? 'Todo hecho por aquí.' : 'Sin tareas pendientes: apunta aquí lo que quieras hacer sin ponerle día todavía.'}</div>`}
                 ${backlogBotonHechas('planner-backlog-hechas')}
             </div>`;
         }
@@ -238,7 +236,7 @@
                         ${it.notes ? `<div class="planner-backlog-row-notes">${escapeHtml(it.notes)}</div>` : ''}
                     </div>
                     <button class="planner-backlog-schedule" title="Asignar a hoy" onclick="scheduleBacklogTaskToday('${it.id}')">→ hoy</button>
-                    <button class="planner-item-delete" title="Eliminar" onclick="deleteBacklogTask('${it.id}')">×</button>
+                    <button class="planner-item-delete" title="Eliminar" onclick="deleteBacklogTask('${it.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>`;
         }
 
@@ -575,7 +573,7 @@
                         <span class="friend-list-name" style="${t.activo ? '' : 'opacity:.5;text-decoration:line-through'}">${escapeHtml(t.texto)} <span style="color:var(--text-secondary);font-weight:400">— ${detalle}</span></span>
                         <span style="display:flex;gap:6px">
                             <button class="btn-secondary" style="padding:4px 10px;font-size:11px" onclick="toggleRecurringTaskActiveState('${t.id}')">${t.activo ? 'Pausar' : 'Reactivar'}</button>
-                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteRecurringTask('${t.id}')">✕</button>
+                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteRecurringTask('${t.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                         </span>
                     </div>`;
             }).join('');

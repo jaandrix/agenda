@@ -651,7 +651,7 @@
                 <div class="modal-title">Importar desde Letterboxd</div>
                 <div class="doc-upload-box" onclick="document.getElementById('letterboxd-import-input').click()">
                     <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
-                    <div style="font-size:12px;color:var(--text-secondary)">Sube tu archivo diary.csv o watched.csv — Letterboxd → Settings → Import & Export → Export Your Data</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">Sube tu archivo diary.csv o watched.csv: Letterboxd → Settings → Import & Export → Export Your Data</div>
                 </div>
                 <input type="file" id="letterboxd-import-input" accept=".csv,text/csv" style="display:none" onchange="handleLetterboxdImport(event)">
             `);
@@ -824,7 +824,7 @@
         function openImdbSeriesImportModal() {
             showModal(`
                 <div class="modal-title">Importar desde IMDb</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Series según tus valoraciones de IMDb — de un mismo archivo de valoraciones, solo se cogen las series (se ignoran películas y episodios sueltos).</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Series según tus valoraciones de IMDb: de un mismo archivo de valoraciones, solo se cogen las series (se ignoran películas y episodios sueltos).</div>
                 <div class="doc-upload-box" onclick="document.getElementById('imdb-series-import-input').click()">
                     <div style="font-weight:500;margin-bottom:4px;color:var(--text-primary)">Elegir archivo CSV</div>
                     <div style="font-size:12px;color:var(--text-secondary)">IMDb → Your Ratings → Export</div>
@@ -1150,23 +1150,23 @@
         // primera vez y no tiene ni idea de por dónde empezar.
         const HELP_VIEW_DESC = {
             calendar: 'Tu calendario de toda la vida: cambia entre vista de día, semana, mes o año, y toca cualquier día para ver o añadir lo que tengas planeado ese día.',
-            home: 'Un resumen de un vistazo: lo próximo que tienes encima, cumpleaños cercanos y accesos directos a lo que más usas — para no tener que ir apartado por apartado.',
+            home: 'Un resumen de un vistazo: lo próximo que tienes encima, cumpleaños cercanos y accesos directos a lo que más usas, para no tener que ir apartado por apartado.',
             planner: 'La franja horaria de tu día, hora a hora. Tiene pestañas para dejar ya planificados hoy, mañana y pasado mañana, y se vacía sola cada madrugada.',
             bandeja: 'Lo que Claude o ChatGPT proponen cambiar en tu Bitácora y espera tu visto bueno: nada se aplica hasta que lo validas. Los eventos y Ocio se aplican solos. Debajo, el historial de todo lo hecho, con opción de deshacer.',
-            notes: 'Una nota de texto libre por día, como un diario — sin campos ni estructura, escribe lo que quieras.',
+            notes: 'Una nota de texto libre por día, como un diario: sin campos ni estructura, escribe lo que quieras.',
             events: 'Planes con fecha, hora y lugar: conciertos, citas, quedadas... Puedes añadirlos a mano o importar varios de golpe pegando texto o subiendo un archivo .ics de Google/Apple Calendar.',
-            finances: 'Registra cada ingreso y gasto, y sigue tus inversiones — verás tu balance y cómo evoluciona con gráficas.',
+            finances: 'Registra cada ingreso y gasto, y sigue tus inversiones: verás tu balance y cómo evoluciona con gráficas.',
             work: 'El historial de tus empleos: empresa, fechas, sueldo, y los documentos de cada uno (contrato, nóminas) guardados dentro.',
             studies: 'Tus asignaturas, con los exámenes de cada una y tus propios apuntes guardados sin salir de Bitácora.',
             documents: 'Un cajón para documentos importantes (DNI, contratos, seguros...), a mano cuando de verdad los necesites.',
             goals: 'Objetivos que quieres cumplir a medio o largo plazo. Puedes vincular cada uno a los proyectos con los que estás trabajando para conseguirlo.',
             projects: 'Proyectos con sus propias tareas: ve marcando lo que completas y verás el progreso de cada proyecto.',
             links: 'Enlaces web guardados por categoría, para no perderlos entre veinte pestañas abiertas.',
-            culture: 'Lleva la cuenta de lo que lees, ves y juegas — libros, películas, series y videojuegos — con tu valoración y notas. Se puede importar desde Letterboxd, Goodreads o IMDb.',
+            culture: 'Lleva la cuenta de lo que lees, ves y juegas: libros, películas, series y videojuegos, con tu valoración y notas. Se puede importar desde Letterboxd, Goodreads o IMDb.',
             travels: 'Cada viaje con su itinerario día a día y los gastos que vas llevando, para no perder el control fuera de casa.',
             collectibles: 'Un catálogo de tus coleccionables (cartas, videojuegos...) con su valor de mercado actual.',
             friends: 'Añade amigos dentro de Bitácora para recomendaros películas, libros o series entre vosotros, y compartir viajes.',
-            tags: 'Todas tus entradas de golpe, filtradas por la etiqueta que elijas — útil cuando sabes qué buscas pero no en qué apartado lo metiste.',
+            tags: 'Todas tus entradas de golpe, filtradas por la etiqueta que elijas: útil cuando sabes qué buscas pero no en qué apartado lo metiste.',
             settings: 'Tu cuenta: exportar o importar tus datos, tu suscripción, el tema claro/oscuro, y el resto de opciones generales.',
         };
 
@@ -1193,7 +1193,7 @@
                 </div>`).join('');
 
             showModal(`
-                <div class="modal-title">Cómo usar Bitácora<button class="modal-close" onclick="closeModal()">✕</button></div>
+                <div class="modal-title">Cómo usar Bitácora<button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
                 <button class="guia-ayuda-btn" onclick="openGuia()">guía completa de bitácora. <span>→</span></button>
                 <div class="help-section-label" style="color:var(--m-acento)">Movimiento por Bitácora</div>
                 <div class="help-kbd-list">

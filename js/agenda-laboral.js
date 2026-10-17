@@ -71,9 +71,9 @@ function renderAgendaLaboral() {
                 <div class="lab-mes">${mes} <span>${y}</span></div>
             </div>
             <div class="lab-controles">
-                <button class="lab-btn" onclick="labCambiarMes(-1)" aria-label="Mes anterior">‹</button>
+                <button class="lab-btn" onclick="labCambiarMes(-1)" aria-label="Mes anterior"><i class='ico ico-izq' aria-hidden=true></i></button>
                 <button class="lab-btn" onclick="labMes=null;render()">hoy.</button>
-                <button class="lab-btn" onclick="labCambiarMes(1)" aria-label="Mes siguiente">›</button>
+                <button class="lab-btn" onclick="labCambiarMes(1)" aria-label="Mes siguiente"><i class='ico ico-der' aria-hidden=true></i></button>
                 <span class="lab-sep"></span>
                 <button class="lab-btn" onclick="openHorarioLaboral()">horario.</button>
                 <button class="lab-btn lab-btn-principal" onclick="openCitaLaboral()">+ cita.</button>

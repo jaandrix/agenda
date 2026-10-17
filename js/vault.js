@@ -232,7 +232,7 @@
                 <div class="modal-title" style="color:var(--accent-purple)">⚙ Configurar Modo Desarrollador</div>
                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
                     Esta es la contraseña global que se usará para activar el Modo Desarrollador.
-                    <br><strong>Guárdala bien</strong> — no hay forma de recuperarla si la pierdes.
+                    <br><strong>Guárdala bien</strong>: no hay forma de recuperarla si la pierdes.
                 </div>
                 <div class="form-row">
                     <label class="modal-label">Nueva contraseña</label>
@@ -514,7 +514,7 @@
                                 <div class="vault-task" onclick="toggleVaultTask(${realIdx})">
                                     <span class="task-check">◯</span>
                                     <span class="task-text">${escapeHtml(t.text)}</span>
-                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
+                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})"><i class='ico ico-x' aria-hidden=true></i></button>
                                 </div>
                             `;
                         }).join('')}
@@ -528,7 +528,7 @@
                                 <div class="vault-task done" onclick="toggleVaultTask(${realIdx})">
                                     <span class="task-check">●</span>
                                     <span class="task-text">${escapeHtml(t.text)}</span>
-                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})">✕</button>
+                                    <button class="task-delete" onclick="event.stopPropagation();deleteVaultTask(${realIdx})"><i class='ico ico-x' aria-hidden=true></i></button>
                                 </div>
                             `;
                         }).join('')}

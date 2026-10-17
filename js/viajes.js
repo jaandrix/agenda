@@ -170,7 +170,7 @@
                     </div>
                     <div class="trip-manager-botones" style="display:flex;gap:8px;flex-shrink:0">
                         <button class="btn-secondary" style="width:auto" onclick="abrirCompartirViajeModal('${t.id}')">Compartir</button>
-                        <button class="btn-secondary" style="width:auto" onclick="openEditEntry('${t.id}')">✎ Editar</button>
+                        <button class="btn-secondary" style="width:auto" onclick="openEditEntry('${t.id}')"><i class='ico ico-lapiz' aria-hidden=true></i> Editar</button>
                         <button class="btn-secondary btn-danger-pill" style="width:auto" onclick="deleteTripFromManager('${t.id}')">Eliminar</button>
                     </div>
                 </div>
@@ -223,7 +223,7 @@
                                 <div class="viaje-reserva-meta">${escapeHtml(TRANSPORTE_TIPOS[x.tipo] || x.tipo || 'transporte')}${x.compania ? ' · ' + escapeHtml(x.compania) : ''}${x.numero ? ' · ' + escapeHtml(x.numero) : ''}</div>
                                 <div class="viaje-reserva-ruta">${escapeHtml(x.origen || '?')} → ${escapeHtml(x.destino || '?')}</div>
                             </div>
-                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteTripReserva('${t.id}','transportes','${x.id}')">✕</button>
+                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteTripReserva('${t.id}','transportes','${x.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>
                         <div class="viaje-reserva-datos">
                             ${dato('salida', fechaHoraViaje(x.salida))}
@@ -245,7 +245,7 @@
                                 <div class="viaje-reserva-ruta">${escapeHtml(x.nombre || 'alojamiento')}</div>
                                 ${x.direccion ? `<div class="viaje-reserva-meta" style="margin-top:2px">${escapeHtml(x.direccion)}</div>` : ''}
                             </div>
-                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteTripReserva('${t.id}','alojamientos','${x.id}')">✕</button>
+                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteTripReserva('${t.id}','alojamientos','${x.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>
                         <div class="viaje-reserva-datos">
                             ${dato('entrada', fechaHoraViaje(x.entrada))}
@@ -341,7 +341,7 @@
                     <div class="trip-check-row">
                         <input type="checkbox" ${p.visitado ? 'checked' : ''} onchange="toggleTripPlace('${t.id}','${p.id}')">
                         <span style="flex:1;cursor:pointer;${p.visitado ? 'text-decoration:line-through;opacity:.5' : ''}" onclick="toggleTripPlace('${t.id}','${p.id}')">${escapeHtml(p.nombre)}</span>
-                        <button class="friend-remove-btn" title="Quitar" onclick="deleteTripPlace('${t.id}','${p.id}')">✕</button>
+                        <button class="friend-remove-btn" title="Quitar" onclick="deleteTripPlace('${t.id}','${p.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                 `).join('') : '<div class="empty-state"><div class="empty-title">ningún lugar todavía.</div><div class="empty-sub">Añade los sitios que quieres visitar.</div></div>'}
             `;
@@ -384,7 +384,7 @@
                                 ${it.lugar ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">📍 ${escapeHtml(it.lugar)}${it.lat ? '' : ' · localizando...'}</div>` : ''}
                                 ${it.notas ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${linkifyText(it.notas)}</div>` : ''}
                             </div>
-                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteItineraryItem('${t.id}','${it.id}')">✕</button>
+                            <button class="friend-remove-btn" title="Eliminar" onclick="deleteItineraryItem('${t.id}','${it.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>
                     </div>
                 `).join('') : '<div class="empty-state"><div class="empty-title">sin itinerario todavía.</div><div class="empty-sub">Añade horarios y planes para cada día del viaje.</div></div>'}
@@ -515,7 +515,7 @@
                     <div class="doc-info"><span style="font-size:20px">${isHtml ? '▥' : '📄'}</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
                         ${openBtn}
-                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteTripDocument('${tripId}','${escapeHtml(doc.name)}')">✕</button>
+                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteTripDocument('${tripId}','${escapeHtml(doc.name)}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                 </div>`;
             }).join('');
@@ -599,7 +599,7 @@
                     <div class="doc-info"><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
                         <button class="doc-action-download" onclick="downloadWorkDocument('${workId}','${escapeHtml(doc.name)}')">Descargar</button>
-                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteWorkDocument('${workId}','${escapeHtml(doc.name)}')">✕</button>
+                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteWorkDocument('${workId}','${escapeHtml(doc.name)}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                 </div>`;
             }).join('');
@@ -674,13 +674,13 @@
                     <div class="card" style="margin-bottom:14px">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                             <div style="font-weight:700">${escapeHtml(l.nombre)} <span style="font-weight:400;color:var(--text-secondary);font-size:12px">(${(l.items || []).filter(i => i.hecho).length}/${(l.items || []).length})</span></div>
-                            <button class="friend-remove-btn" title="Eliminar lista" onclick="deleteTripList('${t.id}','${l.id}')">✕</button>
+                            <button class="friend-remove-btn" title="Eliminar lista" onclick="deleteTripList('${t.id}','${l.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>
                         ${(l.items || []).map(i => `
                             <div class="trip-check-row">
                                 <input type="checkbox" ${i.hecho ? 'checked' : ''} onchange="toggleTripListItem('${t.id}','${l.id}','${i.id}')">
                                 <span style="flex:1;cursor:pointer;${i.hecho ? 'text-decoration:line-through;opacity:.5' : ''}" onclick="toggleTripListItem('${t.id}','${l.id}','${i.id}')">${escapeHtml(i.texto)}</span>
-                                <button class="friend-remove-btn" title="Quitar" onclick="deleteTripListItem('${t.id}','${l.id}','${i.id}')">✕</button>
+                                <button class="friend-remove-btn" title="Quitar" onclick="deleteTripListItem('${t.id}','${l.id}','${i.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                             </div>
                         `).join('')}
                         <div style="display:flex;gap:8px;margin-top:10px">

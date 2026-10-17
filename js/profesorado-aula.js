@@ -78,7 +78,7 @@ function renderFichaProfe() {
         resumen: renderFichaResumenProfe, cuaderno: renderCuadernoProfe, deberes: renderDeberesProfe, horario: renderHorarioClaseProfe, notas: renderNotasClaseProfe,
     }[profeFicha.pestana](c);
     return `
-        <div class="modal-title modal-title-contenido"><span class="profe-ficha-titulo" style="--c:${c.color}">${escapeHtml(c.nombre)}</span><button class="modal-close" onclick="closeModal()" aria-label="Cerrar">✕</button></div>
+        <div class="modal-title modal-title-contenido"><span class="profe-ficha-titulo" style="--c:${c.color}">${escapeHtml(c.nombre)}</span><button class="modal-close" onclick="closeModal()" aria-label="Cerrar"><i class='ico ico-x' aria-hidden=true></i></button></div>
         <div class="profe-ficha-sub">${escapeHtml(c.materia || 'sin materia')} · ${c.alumnos.length} ${c.alumnos.length === 1 ? 'alumno' : 'alumnos'} · ${(c.dias || []).length ? c.dias.map(d => PROFE_DIAS[d]).join(', ') : 'de lunes a viernes'}</div>
         <div class="profe-pestanas">${pestanas.map(([k, t]) => `<button class="profe-chip ${profeFicha.pestana === k ? 'activa' : ''}" onclick="profeIrPestana('${k}')">${t}</button>`).join('')}</div>
         ${cuerpo}`;
@@ -450,7 +450,7 @@ function renderFranjasProfe() {
         <input class="modal-input" type="time" value="${h.inicio || ''}" onchange="window._profeFranjas[${i}].inicio=this.value" aria-label="Empieza">
         <input class="modal-input" type="time" value="${h.fin || ''}" onchange="window._profeFranjas[${i}].fin=this.value" aria-label="Acaba">
         <input class="modal-input" value="${escapeHtml(h.aula || '')}" placeholder="Aula" onchange="window._profeFranjas[${i}].aula=this.value.trim()">
-        <button class="friend-remove-btn" onclick="window._profeFranjas.splice(${i},1);document.getElementById('profe-franjas').innerHTML=renderFranjasProfe()" aria-label="Quitar franja">✕</button>
+        <button class="friend-remove-btn" onclick="window._profeFranjas.splice(${i},1);document.getElementById('profe-franjas').innerHTML=renderFranjasProfe()" aria-label="Quitar franja"><i class='ico ico-x' aria-hidden=true></i></button>
     </div>`).join('');
 }
 
@@ -617,7 +617,7 @@ function renderPlantillasRepartirProfe() {
     const pl = datosProfe().plantillas || [];
     if (!pl.length) return '';
     return `<div class="modal-label">o empieza desde una plantilla</div>
-        <div class="profe-plantillas">${pl.map(x => `<span class="profe-plantilla"><button type="button" class="profe-chip" onclick="profeUsarPlantilla('${x.id}')">${escapeHtml(x.nombre)} <small>${x.tareas.length}</small></button><button type="button" class="profe-plantilla-x" onclick="profeBorrarPlantilla('${x.id}')" aria-label="Borrar plantilla">✕</button></span>`).join('')}</div>`;
+        <div class="profe-plantillas">${pl.map(x => `<span class="profe-plantilla"><button type="button" class="profe-chip" onclick="profeUsarPlantilla('${x.id}')">${escapeHtml(x.nombre)} <small>${x.tareas.length}</small></button><button type="button" class="profe-plantilla-x" onclick="profeBorrarPlantilla('${x.id}')" aria-label="Borrar plantilla"><i class='ico ico-x' aria-hidden=true></i></button></span>`).join('')}</div>`;
 }
 
 // ------------------------------------------------------------

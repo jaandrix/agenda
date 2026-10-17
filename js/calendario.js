@@ -172,7 +172,7 @@
             overlay.className = 'anual-overlay';
             overlay.style.setProperty('--dx', r ? Math.round(r.left + r.width / 2 - window.innerWidth / 2) + 'px' : '0px');
             overlay.style.setProperty('--dy', r ? Math.round(r.top + r.height / 2 - window.innerHeight / 2) + 'px' : '0px');
-            overlay.innerHTML = `<button class="anual-cerrar" onclick="cerrarCalendarioAnual()" aria-label="Cerrar">✕</button><div class="anual-flotante" id="anual-flotante">${renderCalendarioAnual()}</div>`;
+            overlay.innerHTML = `<button class="anual-cerrar" onclick="cerrarCalendarioAnual()" aria-label="Cerrar"><i class='ico ico-x' aria-hidden=true></i></button><div class="anual-flotante" id="anual-flotante">${renderCalendarioAnual()}</div>`;
             overlay.addEventListener('click', e => { if (e.target === overlay) cerrarCalendarioAnual(); });
             document.body.appendChild(overlay);
             document.addEventListener('keydown', cerrarCalendarioAnualConTecla, true);
@@ -270,9 +270,9 @@
             }
             return `
                 <div class="anual-cabecera">
-                    <button class="anual-flecha" onclick="cambiarYearCal(-1)" aria-label="Año anterior">‹</button>
+                    <button class="anual-flecha" onclick="cambiarYearCal(-1)" aria-label="Año anterior"><i class='ico ico-izq' aria-hidden=true></i></button>
                     <div class="anual-anio">${yearCalYear}</div>
-                    <button class="anual-flecha" onclick="cambiarYearCal(1)" aria-label="Año siguiente">›</button>
+                    <button class="anual-flecha" onclick="cambiarYearCal(1)" aria-label="Año siguiente"><i class='ico ico-der' aria-hidden=true></i></button>
                 </div>
                 <div class="anual-resumen" id="anual-resumen">${renderYearCalResumen()}</div>
                 <div class="anual-grid" data-vista="${yearCalVista}" onclick="clickEstrellaAnual(event)">${filas}</div>
@@ -294,7 +294,7 @@
             const current = dailyEffort[dateStr] || 0;
             const fecha = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
             showModal(`
-                <div class="modal-title">Esfuerzo — ${escapeHtml(fecha)}</div>
+                <div class="modal-title">Esfuerzo – ${escapeHtml(fecha)}</div>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">¿Cuánto te esforzaste ese día en cumplir tus objetivos?</div>
                 <div class="effort-picker-row">
                     ${[1, 2, 3, 4, 5].map(n => `<button class="effort-picker-btn year-dot-effort-${n} ${current === n ? 'active' : ''}" onclick="setDailyEffort('${dateStr}',${n})">${n}</button>`).join('')}
@@ -617,9 +617,9 @@
 
             let html = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                <button class="cal-nav-arrow" onclick="changeMonth(-1)">‹</button>
+                <button class="cal-nav-arrow" onclick="changeMonth(-1)"><i class='ico ico-izq' aria-hidden=true></i></button>
                 <span style="font-size:17px;font-weight:600;color:var(--text-primary)">${CAL_MONTH_NAMES[calMonth]} ${calYear}</span>
-                <button class="cal-nav-arrow" onclick="changeMonth(1)">›</button>
+                <button class="cal-nav-arrow" onclick="changeMonth(1)"><i class='ico ico-der' aria-hidden=true></i></button>
             </div>
             <div class="vt-interior" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
 
@@ -694,9 +694,9 @@
 
             let html = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                <button class="cal-nav-arrow" onclick="changeWeek(-1)">‹</button>
+                <button class="cal-nav-arrow" onclick="changeWeek(-1)"><i class='ico ico-izq' aria-hidden=true></i></button>
                 <span style="font-size:15px;font-weight:600;color:var(--text-primary)">Semana del ${monday.getDate()} de ${CAL_MONTH_NAMES[monday.getMonth()]}</span>
-                <button class="cal-nav-arrow" onclick="changeWeek(1)">›</button>
+                <button class="cal-nav-arrow" onclick="changeWeek(1)"><i class='ico ico-der' aria-hidden=true></i></button>
             </div>
             <div class="cal-week-grid vt-interior">`;
 
@@ -747,9 +747,9 @@
 
             return `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                <button class="cal-nav-arrow" onclick="changeDay(-1)">‹</button>
+                <button class="cal-nav-arrow" onclick="changeDay(-1)"><i class='ico ico-izq' aria-hidden=true></i></button>
                 <span class="cal-day-title" style="font-size:15px;font-weight:600;color:var(--text-primary);text-transform:capitalize">${dateLabel}</span>
-                <button class="cal-nav-arrow" onclick="changeDay(1)">›</button>
+                <button class="cal-nav-arrow" onclick="changeDay(1)"><i class='ico ico-der' aria-hidden=true></i></button>
             </div>
             <div class="vt-interior">${body || '<div class="empty-state"><div class="empty-title">nada por aquí todavía.</div><div class="empty-sub">No hay nada registrado este día.</div></div>'}</div>`;
         }
@@ -775,7 +775,7 @@
             showModalDesde(`.cal-month-cell[data-cal-date="${date}"]`, `
                 <div class="modal-title day-modal-title">
                     <span><span class="day-modal-weekday">${weekday}</span>, ${restDate}:</span>
-                    <button class="modal-close" onclick="closeModal()">✕</button>
+                    <button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>
                 <div class="day-modal-list">${rows}</div>
                 <button class="day-modal-add-btn" style="margin-top:14px" onclick="openNewEntryForDay('${date}')">+ Añadir entrada este día</button>
@@ -841,7 +841,7 @@
                     metaHtml = e.position || catName;
                 } else if (e.type === 'birthday') {
                     const years = e.birthDate ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
-                    titleHtml = `🎂 ${e.title} (${years} años)`;
+                    titleHtml = `cumpleaños de ${e.title} (${years} años)`;
                     metaHtml = 'Cumpleaños';
                 } else {
                     titleHtml = e.title;
@@ -856,7 +856,7 @@
                         <div class="entry-meta">${metaHtml}</div>
                     </div>
                     <div class="entry-actions">
-                        <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')">✕</button>
+                        <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                 </div>`;
             }).join('');
@@ -889,7 +889,7 @@
                     metaHtml = e.position || catName;
                 } else if (e.type === 'birthday') {
                     const years = e.birthDate ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
-                    titleHtml = `🎂 ${e.title} (${years} años)`;
+                    titleHtml = `cumpleaños de ${e.title} (${years} años)`;
                     metaHtml = 'Cumpleaños';
                 } else {
                     titleHtml = e.title;
@@ -903,7 +903,7 @@
                         <div class="day-entry-title">${titleHtml}</div>
                         <div class="day-entry-meta">${metaHtml}</div>
                     </div>
-                    <button class="day-entry-delete" title="Eliminar" onclick="event.stopPropagation();deleteEntry('${e.id}')">✕</button>
+                    <button class="day-entry-delete" title="Eliminar" onclick="event.stopPropagation();deleteEntry('${e.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>`;
             }).join('');
         }
@@ -963,7 +963,7 @@
             document.getElementById('modal-container').innerHTML = `
                 <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
                     <div class="modal-sheet">
-                        <div class="modal-title">tienes esto para hoy.<button class="modal-close" onclick="closeModal()">✕</button></div>
+                        <div class="modal-title">tienes esto para hoy.<button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
                         <div class="line-row-list">${rows}</div>
                         <button class="btn-secondary" style="width:100%;margin-top:14px" onclick="closeModal()">entendido.</button>
                     </div>
