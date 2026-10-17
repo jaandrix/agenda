@@ -6,7 +6,7 @@
 //  historial y, si se quiere, el gasto a Finanzas.
 //  El ticket (foto a Claude o ChatGPT con el conector, op 'ticket') se une
 //  a la compra de ese día: cada línea con su precio y su tienda, lo que
-//  estaba en la lista y lo que fue un extra no planeado. Del historial
+//  estaba en la lista y lo que se añadió en la tienda. Del historial
 //  sale la base de precios: el último de cada producto en cada tienda,
 //  dónde sale más barato, qué ha subido y el estimado de la próxima lista.
 //  Datos: `listaCompra` (sincronizado) = { listas: [{ id, nombre, items:
@@ -165,7 +165,7 @@ function renderCompra() {
             <input id="compra-nuevo" class="modal-input" placeholder="Añadir: 2 leche, pan, tomates 1,20 €..." onkeydown="if(event.key==='Enter'){event.preventDefault();compraAnadir(this.value)}" autocomplete="off">
             <button class="btn-modal-primary" onclick="compraAnadir(document.getElementById('compra-nuevo').value)">añadir.</button>
         </div>
-        ${!l.items.length ? `<div class="compra-vacio"><b>apunta lo que falta.</b>Escríbelo según te acuerdes: se ordena solo por secciones del súper, como se recorre la tienda. Lo que más compras lo tienes en <b>lo de siempre.</b>, arriba, para añadirlo con un toque; y con los tickets sabrá lo que suele costarte.</div>` : ''}
+        ${!l.items.length ? `<div class="compra-vacio"><b>apunta lo que falta.</b>Escríbelo tal como te venga a la cabeza: se ordena por secciones, en el orden en que se recorre el súper. Lo que compras a menudo está arriba, en <b>lo de siempre.</b> Cuando pases tus tickets, junto a cada cosa verás lo que te costó la última vez.</div>` : ''}
         ${grupos.map(([t, xs]) => `<div class="compra-seccion"><div class="compra-seccion-titulo">${t}</div>${xs.map(fila).join('')}</div>`).join('')}
         ${carro.length ? `<div class="compra-seccion compra-carro"><div class="compra-seccion-titulo">en el carro.${compraImporte(carro, tienda) ? ` <span>${financeMoney(compraImporte(carro, tienda))}</span>` : ''}</div>${carro.map(fila).join('')}
             <button class="btn-modal-primary compra-terminar" onclick="openCompraTerminar()">terminar la compra.</button></div>` : ''}
@@ -264,7 +264,7 @@ function compraInformePrecios() {
 
 function renderCompraHistorial() {
     const d = datosCompra();
-    if (!d.historial.length) return `<div class="compra-vacio"><b>aquí se guardan tus compras.</b>Cada vez que pulsas <b>terminar la compra.</b> se guarda lo que compraste. Y si le pasas la foto del ticket a Claude o ChatGPT con el conector («apunta este ticket en Bitácora»), Bitácora sabrá lo que costó cada cosa, en qué tienda y qué fue un extra que no estaba en la lista.</div>`;
+    if (!d.historial.length) return `<div class="compra-vacio"><b>aquí se guardan tus compras.</b>Cada compra se guarda al pulsar <b>terminar la compra.</b> Si además le pasas la foto del ticket a Claude o ChatGPT con el conector («apunta este ticket en Bitácora»), cada producto queda con su precio y su tienda, y con el tiempo verás dónde te sale más barato lo que sueles comprar.</div>`;
     const r = compraResumenCenido();
     const inf = compraInformePrecios();
     const pct = r.total ? Math.round(r.planeado / r.total * 100) : 0;
@@ -272,8 +272,7 @@ function renderCompraHistorial() {
     return `
         ${r.compras ? `<div class="compra-panel">
             <div class="compra-panel-titulo">cómo te ciñes a la lista. <small>últimos 60 días · ${r.compras} ${r.compras === 1 ? 'ticket' : 'tickets'}</small></div>
-            <div class="compra-cenido"><div class="compra-cenido-barra"><i style="width:${pct}%"></i></div><div class="compra-cenido-cifras"><b>${pct} %</b> de lo gastado estaba en la lista · <b>${financeMoney(r.extra)}</b> en extras${r.sinComprar ? ` · ${r.sinComprar} ${r.sinComprar === 1 ? 'cosa' : 'cosas'} de la lista sin comprar` : ''}.</div></div>
-            ${r.extras.length ? `<div class="compra-panel-sub">lo que más se cuela.</div><div class="compra-chips">${r.extras.slice(0, 8).map(x => `<span>${escapeHtml(x.texto.toLowerCase())}${x.veces > 1 ? ` <small>×${x.veces}</small>` : ''}</span>`).join('')}</div>` : ''}
+            <div class="compra-cenido"><div class="compra-cenido-barra"><i style="width:${pct}%"></i></div><div class="compra-cenido-cifras"><b>${pct} %</b> de lo gastado estaba en la lista · <b>${financeMoney(r.extra)}</b> en cosas que añadiste en la tienda${r.sinComprar ? ` · ${r.sinComprar} ${r.sinComprar === 1 ? 'cosa' : 'cosas'} de la lista sin comprar` : ''}.</div></div>
         </div>` : ''}
         ${inf.baratos.length || inf.suben.length ? `<div class="compra-panel">
             <div class="compra-panel-titulo">tus precios. <small>${inf.productos} productos con precio</small></div>
@@ -286,7 +285,7 @@ function renderCompraHistorial() {
             const extras = (c.items || []).filter(i => !i.planeado);
             return `<button class="compra-hist-fila" onclick="openCompraHistorial('${c.id}')">
                 <span class="compra-hist-fecha">${fecha(c.fecha)}</span>
-                <span class="compra-hist-cuerpo"><b>${escapeHtml(c.tienda || 'sin tienda')}</b><small>${(c.items || []).length} productos${c.fuente === 'ticket' ? ` · ${plan.length} de la lista, ${extras.length} ${extras.length === 1 ? 'extra' : 'extras'}` : ' · sin ticket'}</small></span>
+                <span class="compra-hist-cuerpo"><b>${escapeHtml(c.tienda || 'sin tienda')}</b><small>${(c.items || []).length} productos${c.fuente === 'ticket' ? ` · ${plan.length} de la lista${extras.length ? `, ${extras.length} ${extras.length === 1 ? 'añadido' : 'añadidos'} en la tienda` : ''}` : ' · sin ticket'}</small></span>
                 <span class="compra-hist-total">${c.total ? financeMoney(c.total) : '—'}</span>
             </button>`;
         }).join('')}`;
@@ -304,7 +303,7 @@ function openCompraHistorial(id) {
         <p class="finance-modal-note" style="margin-top:0">${new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · ${c.total ? financeMoney(c.total) : 'sin importe'}${c.fuente === 'ticket' ? ' · con ticket' : ' · sin ticket todavía'}</p>
         ${c.fuente === 'ticket' ? `
             <div class="compra-seccion-titulo">de tu lista. <span>${financeMoney(suma(plan))}</span></div>${plan.map(linea).join('') || '<div class="compra-hist-vacio">nada.</div>'}
-            <div class="compra-seccion-titulo" style="margin-top:16px">extras. <span>${financeMoney(suma(extras))}</span></div>${extras.map(linea).join('') || '<div class="compra-hist-vacio">ninguno: te has ceñido a la lista.</div>'}
+            ${extras.length ? `<div class="compra-seccion-titulo" style="margin-top:16px">añadido en la tienda. <span>${financeMoney(suma(extras))}</span></div>${extras.map(linea).join('')}` : ''}
             ${(c.sinComprar || []).length ? `<div class="compra-seccion-titulo" style="margin-top:16px">de la lista, sin comprar.</div>${c.sinComprar.map(t => `<div class="compra-hist-linea"><span>${escapeHtml(t)}</span></div>`).join('')}` : ''}`
             : `${(c.items || []).map(linea).join('')}<p class="finance-modal-note">Pásale la foto del ticket a Claude o ChatGPT con el conector y se unirá a esta compra con sus precios.</p>`}
         <button class="btn-secondary" style="margin-top:16px;color:#dc2626" onclick="borrarCompraHistorial('${c.id}')">quitar del historial.</button>
@@ -635,7 +634,7 @@ function compraAplicarTicket(op, ref) {
     const plan = items.filter(i => i.planeado), extras = items.filter(i => !i.planeado);
     const sumaExtras = extras.reduce((s, i) => s + (i.importe || 0), 0);
     const pct = total ? Math.round((total - sumaExtras) / total * 100) : 0;
-    const resumen = `Ticket${tienda ? ` de ${tienda}` : ''}: ${items.length} productos, ${financeMoney(total)}. ${plan.length} de la lista (${pct} %), ${extras.length} ${extras.length === 1 ? 'extra' : 'extras'}${extras.length ? ` (${financeMoney(sumaExtras)})` : ''}${sinComprar.length ? `; sin comprar: ${sinComprar.join(', ')}` : ''}.`;
+    const resumen = `Ticket${tienda ? ` de ${tienda}` : ''}: ${items.length} productos, ${financeMoney(total)}. ${plan.length} de la lista (${pct} %)${extras.length ? `, ${extras.length} ${extras.length === 1 ? 'añadido' : 'añadidos'} en la tienda (${financeMoney(sumaExtras)})` : ''}${sinComprar.length ? `; sin comprar: ${sinComprar.join(', ')}` : ''}.`;
     const parte = previa && !completa ? ` Queda${resto.length === 1 ? '' : 'n'} ${resto.length} de esa compra a la espera de otro ticket.` : '';
     return { resumen: resumen + parte, deshacer: { accion: 'ticket', entradaId: entrada.id, previa: previaCopia, completa, quitados, txCreado, txAntes, txQuitado, aprendidoAntes } };
 }
