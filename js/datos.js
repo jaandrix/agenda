@@ -604,24 +604,15 @@
             if (type) openNewEntry(type);
         }
 
-        const FAB_ICON_DEFAULT = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M13 2 3 14h6l-1 8 10-12h-6z"/></svg>';
-
-        // El FAB (captura rápida) cambia de icono según el apartado activo
-        // y añade un anillo de pulso cuando hay uno contextual — misma idea
-        // que el resto de icono TARJETA BITACORA, sin cambiar su acción
-        // (sigue abriendo la paleta de comandos / tecla ESPACIO).
+        // El botón de apuntar no cambia de dibujo (está en index.html: el rayo y
+        // «apuntar.»); en Empleo solo añade un anillo de pulso. Antes se
+        // reescribía con el rayo antiguo y la pastilla quedaba descentrada.
         function updateFabIcon() {
             const fab = document.getElementById('fab');
             if (!fab) return;
-            if (currentView === 'work') {
-                fab.innerHTML = FAB_ICON_DEFAULT;
-                fab.classList.add('fab-pulse');
-                fab.title = 'Captura rápida · Empleo (tecla ESPACIO)';
-            } else {
-                fab.innerHTML = FAB_ICON_DEFAULT;
-                fab.classList.remove('fab-pulse');
-                fab.title = 'Captura rápida (tecla ESPACIO)';
-            }
+            fab.classList.toggle('fab-pulse', currentView === 'work');
+            fab.title = currentView === 'work' ? 'Apuntar algo · Empleo (tecla ESPACIO)' : 'Apuntar algo (tecla ESPACIO)';
+        }
         }
 
         // ============================================================
