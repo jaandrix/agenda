@@ -613,7 +613,6 @@
             fab.classList.toggle('fab-pulse', currentView === 'work');
             fab.title = currentView === 'work' ? 'Apuntar algo · Empleo (tecla ESPACIO)' : 'Apuntar algo (tecla ESPACIO)';
         }
-        }
 
         // ============================================================
         //  THEME
