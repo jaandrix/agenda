@@ -71,16 +71,30 @@
 
         // ------------------------------------------------------------
         //  PRESUPUESTO SUAVE: una línea, sin notificación, cuando una
-        //  categoría pasa del 80 % de su presupuesto del mes.
+        //  categoría pasa del 80 % de su presupuesto del mes. El límite es el
+        //  de las casillas de Largo plazo de este mes vinculadas a esa
+        //  categoría (lo planificado para este mes manda) y, si no tiene
+        //  casilla, el presupuesto mensual de la categoría.
         // ------------------------------------------------------------
+        function asistLimitesDelMes(mes) {
+            const limites = {};
+            Object.entries(financePro.categoryBudgets || {}).forEach(([id, v]) => { if (Number(v) > 0) limites[id] = { limite: Number(v), nombre: '' }; });
+            const casillas = (financeProfile?.budgetPlans?.[mes]?.allocations || []).filter(a => a.categoryId && !a.auto && Number(a.amount) > 0);
+            const porCat = {};
+            casillas.forEach(a => { (porCat[a.categoryId] = porCat[a.categoryId] || []).push(a); });
+            Object.entries(porCat).forEach(([id, l]) => {
+                limites[id] = { limite: l.reduce((s, a) => s + Number(a.amount), 0), nombre: l.length === 1 ? (l[0].label || '').trim() : '' };
+            });
+            return limites;
+        }
+
         function asistPresupuestosAlerta() {
-            const budgets = financePro.categoryBudgets || {};
             const mes = financeMonthKey();
             const hoy = new Date();
             const quedanDias = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate() - hoy.getDate() + 1;
-            return Object.keys(budgets).filter(id => budgets[id] > 0 && financeProCategoryById(id)).map(id => {
-                const { gastado, limite } = financeProPresupuestoConDevoluciones(id, mes, budgets[id]);
-                return { cat: financeProCategoryById(id), gastado, limite, pct: limite ? gastado / limite : 0, quedanDias };
+            return Object.entries(asistLimitesDelMes(mes)).filter(([id]) => financeProCategoryById(id)).map(([id, l]) => {
+                const { gastado, limite } = financeProPresupuestoConDevoluciones(id, mes, l.limite);
+                return { cat: financeProCategoryById(id), nombre: l.nombre, gastado, limite, pct: limite ? gastado / limite : 0, quedanDias };
             }).filter(x => x.pct >= 0.8).sort((a, b) => b.pct - a.pct);
         }
 
@@ -89,7 +103,7 @@
             if (!lista.length) return '';
             return `<div class="asist-presupuesto">${lista.slice(0, 3).map(x => {
                 const queda = x.limite - x.gastado;
-                const nombre = escapeHtml(x.cat.name.toLowerCase());
+                const nombre = escapeHtml((x.nombre || x.cat.name).toLowerCase());
                 return `<div>${queda >= 0
                     ? `vas al <b>${Math.round(x.pct * 100)} %</b> en ${nombre}: quedan ${financeMoney(queda)} para ${x.quedanDias} ${x.quedanDias === 1 ? 'día' : 'días'}.`
                     : `${nombre} se ha pasado <b>${financeMoney(-queda)}</b> del presupuesto este mes.`}</div>`;

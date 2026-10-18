@@ -352,8 +352,8 @@ a menor resolución.
   acciones, cada acción puede pasar a Hábitos), paso kaizen (hábito ligado al
   objetivo), "para qué" y hansei semanal (lista global `hansei`).
 - **Asistente (`js/asistente.js`):** `openResumenSemana` (Panorama → «esta semana.», y el aviso del domingo a las 20:00 de
-  avisos-diarios, tipo `semana`, que abre la app en `/?semana`), `renderAvisoPresupuestos` (línea suave al pasar del 80 % de
-  `financePro.categoryBudgets`), `asistSuscripcionesDetectadas` (misma regla que la herramienta del conector; «no es» va a
+  avisos-diarios, tipo `semana`, que abre la app en `/?semana`), `renderAvisoPresupuestos` (línea suave al pasar del 80 %; el límite es el de las
+  casillas de Largo plazo del mes vinculadas a la categoría, `asistLimitesDelMes`, y si no `financePro.categoryBudgets`), `asistSuscripcionesDetectadas` (misma regla que la herramienta del conector; «no es» va a
   `financePro.suscripcionesIgnoradas`), `openPuedoPermitirme`/`asistPermitir`, `responderPregunta` (respuestas arriba en el
   buscador, `kind: 'respuesta'`) y `revisarCumplesRegalo` (tarea en `dayPlanner.backlog` una semana antes; `e.regaloAviso`
   guarda el año; aviso `regalos` en Ajustes).
