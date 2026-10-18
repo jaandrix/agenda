@@ -326,7 +326,7 @@
                 const nube = data.data || {};
                 const { cambiado } = aplicarFusionConNube(nube);
                 datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(nube[k])]));
-                if (cambiado) { invalidarCachesDerivadas(); render(); }
+                if (cambiado) { invalidarCachesDerivadas(); repintarTrasModal(); }
             }).catch(e => console.error('No se pudo sincronizar con la nube:', e));
         }
 

@@ -56,6 +56,9 @@ async function cargarEventosCompartidos() {
 }
 
 function pintarSocial() {
+    // Las cargas de amigos, grupos y eventos acaban cuando quieren: con un
+    // modal abierto, su repintado se veía a través del fondo como un tic.
+    if (modalEnPantalla()) { repintarAlCerrar = true; return; }
     const el = document.getElementById('social');
     if (el) el.outerHTML = renderFriendsView();
 }

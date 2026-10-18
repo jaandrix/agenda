@@ -170,8 +170,12 @@
         // Repintar la vista con un modal abierto se veía a través del fondo
         // como un destello (sobre todo en el móvil): se deja para cuando se cierra.
         let repintarAlCerrar = false;
+        function modalEnPantalla() {
+            const o = document.querySelector('#modal-container .modal-overlay');
+            return !!o && !o.dataset.cerrando;
+        }
         function repintarTrasModal() {
-            if (document.querySelector('#modal-container .modal-overlay')) repintarAlCerrar = true;
+            if (modalEnPantalla()) repintarAlCerrar = true;
             else render();
         }
 

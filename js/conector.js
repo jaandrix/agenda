@@ -592,7 +592,7 @@
                 if (cambios || firmaAntes !== bandejaPendiente.map(f => f.id).join()) {
                     invalidarCachesDerivadas();
                     renderAllNavs();
-                    render();
+                    repintarTrasModal();
                 }
                 const origenes = new Set(automaticas.map(f => f.op?.origen === 'siri' ? 'Siri' : f.op?.origen === 'correo' || f.op?.tipo === 'correo' ? 'tu correo' : 'Claude o ChatGPT'));
                 const avisos = [cambios ? `${cambios} ${cambios === 1 ? 'cambio aplicado' : 'cambios aplicados'} desde ${origenes.size === 1 ? [...origenes][0] : 'fuera de la app'}` : '', nuevasPendientes ? `${nuevasPendientes} ${nuevasPendientes === 1 ? 'espera' : 'esperan'} tu validación en «bandeja.»` : ''].filter(Boolean);

@@ -87,7 +87,8 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   nunca con `innerHTML` directo, por lo mismo. Para refrescar un modal abierto, cambiar su contenido por dentro.
   Nada de transiciones de vista para abrir modales (`showModalDesde` es ya un `showModal`): parpadeaban en escritorio.
   Con un modal abierto no se llama a `render()`: `repintarTrasModal()` lo deja para cuando se cierre (se veía a
-  través del fondo como un destello, sobre todo en el móvil).
+  través del fondo como un destello, sobre todo en el móvil). Lo usan también los repintados que llegan solos
+  (sincronizar con la nube, volver a la app, la bandeja) y `pintarSocial` (mira `modalEnPantalla()`).
 - **Transiciones de vista (`conTransicion`, interfaz.js):** mientras dura una, el navegador pinta su "foto"
   por encima de todo; por eso `showModal`, el buscador y otras capas llaman a `vtCortar()` para cortarla
   (si no, quedaban debajo, tapadas por el contenido). **Cualquier capa nueva que se abra encima debe

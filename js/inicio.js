@@ -125,5 +125,5 @@
                 mobileMes = null;
                 plannerDayOffset = 0;
             }
-            render();
+            repintarTrasModal();
         }
