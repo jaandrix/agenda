@@ -28,7 +28,7 @@
                 const extracto = extractoNota(n.content);
                 return `${cab}
                     <div class="note-card ${n.title ? '' : 'sin-titulo'} ${n.date === hoy ? 'note-card-hoy' : ''}" onclick="openReadNote('${n.id}')">
-                        <div class="note-card-fecha">${formatNoteFecha(n.date)}${n.date === hoy ? ' · hoy' : ''}</div>
+                        <div class="note-card-fecha">${formatNoteFecha(n.date)}${n.date === hoy ? ', hoy' : ''}</div>
                         <div class="note-card-title">${n.title ? escapeHtml(n.title) : 'sin título.'}</div>
                         ${extracto ? `<div class="note-card-extracto">${escapeHtml(extracto)}</div>` : ''}
                     </div>`;
@@ -38,7 +38,7 @@
                 <div class="notas-cabecera">
                     <div>
                         <div class="notas-titulo">notas.</div>
-                        <div class="notas-sub">${escritas.length} ${escritas.length === 1 ? 'nota escrita' : 'notas escritas'} · ${escritosMes.size} ${escritosMes.size === 1 ? 'día' : 'días'} este mes.</div>
+                        <div class="notas-sub">${escritas.length} ${escritas.length === 1 ? 'nota escrita' : 'notas escritas'}, ${escritosMes.size} ${escritosMes.size === 1 ? 'día' : 'días'} este mes.</div>
                     </div>
                     <button class="btn-modal-primary notas-escribir" onclick="openWriteNote()">${notaHoy ? 'seguir con la de hoy.' : 'escribir la de hoy.'}</button>
                 </div>
@@ -228,10 +228,10 @@
                             <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
                             <div class="entry-info">
                                 <div class="entry-title">${escapeHtml(e.title)}</div>
-                                <div class="entry-meta">${tags} ${e.notes ? ' · ' + linkifyText(e.notes) : ''}</div>
+                                <div class="entry-meta">${tags} ${e.notes ? ', ' + linkifyText(e.notes) : ''}</div>
                                 ${pct !== null ? `
                                     <div class="progress-bar-bg" style="margin-top:8px;max-width:260px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
-                                    <div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${goalNumber(e.currentValue)} / ${goalNumber(e.targetValue)} ${escapeHtml(e.unit || '')} · ${pct}%</div>
+                                    <div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${goalNumber(e.currentValue)} / ${goalNumber(e.targetValue)} ${escapeHtml(e.unit || '')}, ${pct}%</div>
                                 ` : ''}
                                 ${milestones.length ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${msDone}/${milestones.length} hitos</div>` : ''}
                                 ${e.mandala?.pilares?.some(p => p.texto) || e.kaizenHabitId ? `<div class="objetivo-metodo-marcas">${e.mandala?.pilares?.some(p => p.texto) ? '<span>mandala.</span>' : ''}${e.kaizenHabitId ? '<span>kaizen.</span>' : ''}</div>` : ''}

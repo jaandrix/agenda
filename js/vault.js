@@ -497,7 +497,7 @@
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                         <div>
                             <div style="font-size:20px;font-weight:700;color:var(--text-primary)">Vault</div>
-                            <div style="font-size:13px;color:var(--text-secondary)">${pending.length} pendientes · ${done.length} completadas</div>
+                            <div style="font-size:13px;color:var(--text-secondary)">${pending.length} pendientes, ${done.length} completadas</div>
                         </div>
                         <button class="btn-secondary" onclick="changeVaultPassword()" style="margin:0;padding:6px 12px;font-size:12px;width:auto;color:var(--vault-accent)">🔑 Cambiar contraseña</button>
                     </div>

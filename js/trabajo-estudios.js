@@ -214,7 +214,7 @@
             const scheduleText = (w.startTime || w.endTime) ? `${w.startTime || '--'} - ${w.endTime || '--'}` : (w
                 .schedule || '');
             const heading = w.company || w.title;
-            const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
+            const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(', ');
             const modalidadLabel = WORK_MODALIDAD_LABELS[w.modalidad] || '';
             return `
                 <div class="work-current-card" data-open-entry="${w.id}">
@@ -225,7 +225,7 @@
                         ${subheading ? `<div class="work-current-card-sub">${escapeHtml(subheading)}</div>` : ''}
                         <div class="work-current-card-meta">
                             <span>${w.startDate || ''} → Actual</span>
-                            <span>${getCotizationDays(w, todayStr)} días cotizados · ${getCotizationSource(w)}</span>
+                            <span>${getCotizationDays(w, todayStr)} días cotizados, ${getCotizationSource(w)}</span>
                             ${modalidadLabel ? `<span>${modalidadLabel}</span>` : ''}
                             ${scheduleText ? `<span>${scheduleText}</span>` : ''}
                             ${w.salary ? `<span>${w.salary}€/mes</span>` : ''}
@@ -246,16 +246,16 @@
         function renderWorkHistoryRow(w, todayStr, daysBetween) {
             const { isActive, daysHere } = computeWorkDaysHere(w, todayStr, daysBetween);
             const heading = w.company || w.title;
-            const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
+            const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(', ');
             const dateRange = `${w.startDate || ''}${w.endDate ? ' → ' + w.endDate : ' → Actual'}`;
             const modalidadLabel = WORK_MODALIDAD_LABELS[w.modalidad] || '';
-            const meta = [subheading, dateRange, modalidadLabel].filter(Boolean).join(' · ');
+            const meta = [subheading, dateRange, modalidadLabel].filter(Boolean).join(', ');
             return `
                 <div class="line-row" data-open-entry="${w.id}">
                     <div class="line-row-icon">${WORK_ICON_LAPTOP}</div>
                     <div class="line-row-body">
                         <div class="line-row-title"><span class="line-row-title-text">${escapeHtml(heading)}</span></div>
-                        <div class="line-row-meta">${escapeHtml(meta)}${!isActive && w.motivoSalida ? ' · ' + escapeHtml(w.motivoSalida) : ''}</div>
+                        <div class="line-row-meta">${escapeHtml(meta)}${!isActive && w.motivoSalida ? ', ' + escapeHtml(w.motivoSalida) : ''}</div>
                     </div>
                     <div class="line-row-side">
                         <div class="work-history-days">${daysHere}</div>
@@ -287,7 +287,7 @@
             doc.setFont('helvetica', 'bold'); doc.setFontSize(22);
             doc.text('Resumen de vida laboral', marginX, 48);
             doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-            doc.text(`${userName || 'Bitácora'} · generado el ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`, marginX, 70);
+            doc.text(`${userName || 'Bitácora'}, generado el ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`, marginX, 70);
             y = 92 + 36;
 
             const todayStr = todayISO();
@@ -345,7 +345,7 @@
                 const manualDaysHere = Number(w.cotizedDays);
                 const daysHere = Number.isFinite(manualDaysHere) && manualDaysHere >= 0 ? manualDaysHere : calculatedDaysHere;
                 const heading = w.company || w.title || 'Puesto';
-                const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(' · ');
+                const subheading = [w.position, w.company ? w.title : ''].filter(Boolean).join(', ');
 
                 doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...DARK);
                 doc.text(heading, marginX, y);
@@ -367,7 +367,7 @@
                 if (WORK_MODALIDAD_LABELS[w.modalidad]) metaParts.push(WORK_MODALIDAD_LABELS[w.modalidad]);
                 if (w.salary) metaParts.push(`${w.salary}€/mes`);
                 doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...GRAY);
-                doc.text(metaParts.join('   ·   '), marginX, y);
+                doc.text(metaParts.join('  ,   '), marginX, y);
                 y += 16;
 
                 if (w.logros) {
@@ -395,7 +395,7 @@
             for (let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
                 doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRAY);
-                doc.text(`Bitácora · Página ${i} de ${pageCount}`, marginX, pageH - 24);
+                doc.text(`Bitácora, página ${i} de ${pageCount}`, marginX, pageH - 24);
             }
 
             doc.save(`vida-laboral-${todayISO()}.pdf`);
@@ -543,7 +543,7 @@
                     <input type="checkbox" class="weekly-task-check" style="margin-top:2px" ${r.include ? 'checked' : ''} onchange="window._workImportDraft[${i}].include=this.checked">
                     <span class="weekly-task-text">
                         <strong>${escapeHtml(r.company)}</strong><br>
-                        <span style="color:var(--text-secondary);font-size:11.5px">${r.startDate || '¿?'} → ${r.endDate || 'Actual'} · ${r.cotizedDays} días${r.situacion ? ' · ' + escapeHtml(r.situacion) : ''}</span>
+                        <span style="color:var(--text-secondary);font-size:11.5px">${r.startDate || '¿?'} → ${r.endDate || 'Actual'}, ${r.cotizedDays} días${r.situacion ? ', ' + escapeHtml(r.situacion) : ''}</span>
                     </span>
                 </label>`).join('');
         }
@@ -645,7 +645,7 @@
                         <div class="card bone-surface" style="margin:0">
                             <div class="label" style="font-size:12px;color:var(--bone-muted);font-weight:600">asignaturas.</div>
                             <div style="font-size:13px;color:var(--bone-text);margin-top:6px">
-                                <strong style="color:#16a34a">${ex.aprobadas}</strong> aprobadas · <strong style="color:#dc2626">${ex.suspensas}</strong> suspensas · <strong>${ex.pendientes}</strong> pendientes
+                                <strong style="color:#16a34a">${ex.aprobadas}</strong> aprobadas, <strong style="color:#dc2626">${ex.suspensas}</strong> suspensas, <strong>${ex.pendientes}</strong> pendientes
                             </div>
                             ${ex.hasCreditos ? `<div style="font-size:11px;color:var(--bone-muted);margin-top:6px">${ex.creditosSuperados} / ${ex.creditosTotales} créditos superados</div>` : ''}
                         </div>
@@ -660,7 +660,7 @@
                 ${nextExam ? `
                 <div class="event-hero" style="border-color:${(nextExam.subjectColor || '#3b82f6')}66;margin-bottom:18px">
                     <div class="event-hero-body">
-                        <div class="event-hero-kicker" style="color:${nextExam.subjectColor || '#3b82f6'}">Próximo examen · ${eventCountdownLabel(nextExam.date)}</div>
+                        <div class="event-hero-kicker" style="color:${nextExam.subjectColor || '#3b82f6'}">Próximo examen, ${eventCountdownLabel(nextExam.date)}</div>
                         <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')} – ${escapeHtml(nextExam.subjectName)}</div>
                         <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
                     </div>

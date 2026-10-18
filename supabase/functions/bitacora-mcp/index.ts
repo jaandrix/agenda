@@ -27,7 +27,7 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'trabajo', 'salud', 'hogar', 'viajes', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. En los campos de fecha también puedes escribir "hoy", "mañana" o "pasado mañana", y la hora como 7:30. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Con la foto de un ticket de la compra, usa ticket_compra (lee antes apartado("compra") para emparejar cada producto con la lista); así Bitácora guarda los precios, la tienda y lo que fue un extra. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo.`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. En los campos de fecha también puedes escribir "hoy", "mañana" o "pasado mañana", y la hora como 7:30. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Con la foto de un ticket de la compra, usa ticket_compra (lee antes apartado("compra") para emparejar cada producto con la lista); así Bitácora guarda los precios, la tienda y lo que fue un extra. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo. En los textos que guardes (títulos, notas, personas) separa con comas o «y», nunca con el punto medio (·).`;
 const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
 const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
@@ -100,7 +100,7 @@ function aplicarOp(data: any, op: any, id: string) {
             data.dayPlanner.days = data.dayPlanner.days || {};
             (data.dayPlanner.days[op.fecha] = data.dayPlanner.days[op.fecha] || []).push({ id: ref, time: op.hora, title: op.titulo, notes: op.notas || '', done: false, sinValidar: true });
         } else {
-            (data.dayPlanner.backlog = data.dayPlanner.backlog || []).unshift({ id: ref, title: op.titulo, notes: [op.fecha ? 'para el ' + op.fecha : '', op.notas || ''].filter(Boolean).join(' · '), done: false, sinValidar: true });
+            (data.dayPlanner.backlog = data.dayPlanner.backlog || []).unshift({ id: ref, title: op.titulo, notes: [op.fecha ? 'para el ' + op.fecha : '', op.notas || ''].filter(Boolean).join(', '), done: false, sinValidar: true });
         }
     } else if (op.tipo === 'movimiento') {
         data.financePro = data.financePro || { transactions: [] };
@@ -218,7 +218,17 @@ async function cargarDatos(userId: string) {
     return data;
 }
 
+// El punto medio («a · b · c») es una costumbre de la IA que no va con el
+// estilo de Bitácora: en lo que se guarda, los separadores son comas.
+function sinPuntoMedio(v: any): any {
+    if (typeof v === 'string') return v.replace(/\s*·\s*/g, ', ');
+    if (Array.isArray(v)) return v.map(sinPuntoMedio);
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, sinPuntoMedio(x)]));
+    return v;
+}
+
 async function encolar(userId: string, op: any) {
+    op = sinPuntoMedio(op);
     const { error } = await sbAdmin.from('conector_bandeja').insert({ user_id: userId, op });
     if (error) throw new Error('No se pudo guardar: ' + error.message);
 }
@@ -364,7 +374,7 @@ function resumenPeriodo(data: any, desde: string, hasta: string) {
     for (let f = desde; f <= hasta && fechas.length < 93; f = sumarDias(f, 1)) fechas.push(f);
     const dentro = (f: unknown) => typeof f === 'string' && f >= desde && f <= hasta;
     const eventos = (data.entries || []).filter((e: any) => e?.type === 'event' && !e.calendarLog && dentro(e.date))
-        .sort((a: any, b: any) => a.date.localeCompare(b.date)).map((e: any) => `${e.date} · ${e.title}`);
+        .sort((a: any, b: any) => a.date.localeCompare(b.date)).map((e: any) => `${e.date}: ${e.title}`);
     const plan = fechas.map(f => {
         const l = data.dayPlanner?.days?.[f] || [];
         return { fecha: f, hechas: l.filter((t: any) => t.done).map((t: any) => t.title), sin_hacer: l.filter((t: any) => !t.done).map((t: any) => t.title) };
@@ -853,7 +863,7 @@ const HERRAMIENTAS = [
         description: 'Añade o quita una clase del horario semanal de Estudios (por ejemplo, desde la foto o el PDF del horario: una llamada por clase). Queda en la bandeja hasta que el usuario lo valide.',
         inputSchema: {
             type: 'object',
-            properties: { accion: { type: 'string', enum: ['anadir', 'quitar'] }, dia: { type: 'string', enum: Object.keys(DIAS_CLASE) }, hora: { type: 'string', description: 'HH:MM de inicio' }, texto: { type: 'string', description: 'Asignatura y, si hay, aula: "Sostenibilidad · Aula 3"' } },
+            properties: { accion: { type: 'string', enum: ['anadir', 'quitar'] }, dia: { type: 'string', enum: Object.keys(DIAS_CLASE) }, hora: { type: 'string', description: 'HH:MM de inicio' }, texto: { type: 'string', description: 'Asignatura y, si hay, aula: "Sostenibilidad, aula 3"' } },
             required: ['accion', 'dia', 'hora', 'texto'],
         },
     },

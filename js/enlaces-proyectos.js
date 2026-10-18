@@ -345,7 +345,7 @@
             const past = withDate.filter(it => it.date < todayISO()).sort((a, b) => b.date.localeCompare(a.date));
             const next = upcoming[0];
             const kicker = items.length
-                ? `${items.length} ${label.toLowerCase()}${next ? ` · próximo ${studiesItemCountdown(next.date).text}` : ''}`
+                ? `${items.length} ${label.toLowerCase()}${next ? `, próximo ${studiesItemCountdown(next.date).text}` : ''}`
                 : `sin ${label.toLowerCase()} todavía`;
             return `
             <div class="studies-editorial-block" id="studies-block-${listKey}-${s.id}">
@@ -728,7 +728,7 @@
                         <div class="line-row-icon">${PROJECT_ICON_FLAG}</div>
                         <div class="line-row-body">
                             <div class="line-row-title"><span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span><span class="line-row-title-text">${escapeHtml(p.title)}</span></div>
-                            <div class="line-row-meta">${(() => { const sig = proyectoSiguiente(p); return sig && bucket !== 'Completado' ? `siguiente: ${escapeHtml(sig.texto)}` : escapeHtml(p.projectCategory || 'Sin categoría'); })()}${total > 0 ? ` · ${done}/${total} · ${pct}%` : ''}</div>
+                            <div class="line-row-meta">${(() => { const sig = proyectoSiguiente(p); return sig && bucket !== 'Completado' ? `siguiente: ${escapeHtml(sig.texto)}` : escapeHtml(p.projectCategory || 'Sin categoría'); })()}${total > 0 ? `, ${done}/${total}, ${pct}%` : ''}</div>
                         </div>
                         <div class="line-row-side"><span class="badge ${statusClass}">${bucket}</span></div>
                     </div>`;

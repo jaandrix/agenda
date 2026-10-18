@@ -247,7 +247,7 @@ function renderProfesorado() {
             </div>
             <div class="profe-tabla-wrap ${profeCompleto ? '' : 'profe-compacto'}">
                 <table class="profe-tabla" style="--n:${p.clases.length}">
-                    <thead><tr><th class="profe-col-dia"></th>${p.clases.map(c => `<th style="--c:${c.color}"><button class="profe-clase" onclick="openFichaClaseProfe('${c.id}')"><b>${escapeHtml(c.nombre)}</b><small>${escapeHtml(c.materia || '')}${(c.dias || []).length ? `${c.materia ? ' · ' : ''}${c.dias.map(d => PROFE_LETRAS[d]).join(' ')}` : ''}</small></button></th>`).join('')}</tr></thead>
+                    <thead><tr><th class="profe-col-dia"></th>${p.clases.map(c => `<th style="--c:${c.color}"><button class="profe-clase" onclick="openFichaClaseProfe('${c.id}')"><b>${escapeHtml(c.nombre)}</b><small>${escapeHtml(c.materia || '')}${(c.dias || []).length ? `${c.materia ? ', ' : ''}${c.dias.map(d => PROFE_LETRAS[d]).join(' ')}` : ''}</small></button></th>`).join('')}</tr></thead>
                     <tbody>${dias.map((d, f) => {
                         const w = new Date(d + 'T12:00:00').getDay();
                         const festivo = profeEsFestivo(d);
@@ -266,7 +266,7 @@ function renderProfesorado() {
         <div class="uni-cabecera">
             <div>
                 <div class="uni-titulo">profesorado.</div>
-                <div class="uni-sub">${p.clases.length} ${p.clases.length === 1 ? 'clase' : 'clases'}${p.ocultarPendientes ? '' : ` · ${dadas} de ${conCasilla.length} tareas hechas`}.</div>
+                <div class="uni-sub">${p.clases.length} ${p.clases.length === 1 ? 'clase' : 'clases'}${p.ocultarPendientes ? '' : `, ${dadas} de ${conCasilla.length} tareas hechas`}.</div>
             </div>
             <div class="profe-botones">
                 <button class="pedido-btn solo-escritorio" onclick="openClaseProfe()">+ clase.</button>
@@ -301,7 +301,7 @@ function renderCeldaProfe(c, d, f, ci, hoy) {
     const entregas = profeEntregasDia(c.id, d);
     return `<td class="profe-celda ${lectiva ? 'lectiva' : 'libre'}" data-clase="${c.id}" data-fecha="${d}" style="--c:${c.color}">
         <div class="profe-celda-cab">
-            <span>${franjas.map(h => `${h.inicio}${h.aula ? ` · ${escapeHtml(h.aula)}` : ''}`).join(', ')}</span>
+            <span>${franjas.map(h => `${h.inicio}${h.aula ? `, ${escapeHtml(h.aula)}` : ''}`).join(', ')}</span>
             <button class="profe-nota-btn ${nota ? 'con' : ''}" onclick="openNotaDiaProfe('${c.id}','${d}')" title="${nota ? escapeHtml(nota) : 'Nota de esta clase'}" aria-label="Nota de esta clase"></button>
         </div>
         ${entregas.map(x => `<button class="profe-entrega" onclick="openFichaClaseProfe('${c.id}','deberes')">entrega: ${escapeHtml(x.titulo)}</button>`).join('')}
@@ -910,7 +910,7 @@ function openRepartirProfe(claseId) {
         <div class="modal-title">repartir temario.</div>
         <p class="finance-modal-note" style="margin-top:0">Pega las tareas o temas, uno por línea, y se colocan uno por clase en los días de ese grupo a partir de la fecha que elijas. Los días que ya tienen algo y los festivos se saltan.</p>
         <div class="modal-label">clase</div>
-        <select id="profe-rep-clase" class="modal-input">${p.clases.map(c => `<option value="${c.id}" ${c.id === claseId ? 'selected' : ''}>${escapeHtml(c.nombre)}${c.materia ? ` · ${escapeHtml(c.materia)}` : ''}</option>`).join('')}</select>
+        <select id="profe-rep-clase" class="modal-input">${p.clases.map(c => `<option value="${c.id}" ${c.id === claseId ? 'selected' : ''}>${escapeHtml(c.nombre)}${c.materia ? `, ${escapeHtml(c.materia)}` : ''}</option>`).join('')}</select>
         <div class="modal-label">desde</div>
         <input id="profe-rep-desde" class="modal-input" type="date" value="${isoLocal(new Date())}">
         <div class="modal-label">tareas</div>

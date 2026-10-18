@@ -17,7 +17,8 @@
                 ensureRecurringProCharges();
                 convertirCinesEnPeliculas();
                 setInterval(convertirCinesEnPeliculas, 5 * 60000);
-                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { sincronizarDesdeNube(); convertirCinesEnPeliculas(); aplicarBandejaConector(); actualizarAnalisisIA(); } });
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { refrescarAlVolver(); sincronizarDesdeNube(); convertirCinesEnPeliculas(); aplicarBandejaConector(); actualizarAnalisisIA(); } else ocultoDesde = { hora: Date.now(), dia: todayISO() }; });
+                window.addEventListener('pageshow', e => { if (e.persisted) refrescarAlVolver(true); });
                 window.addEventListener('focus', sincronizarDesdeNube);
                 aplicarBandejaConector();
                 setTimeout(actualizarAnalisisIA, 1500);
@@ -100,4 +101,23 @@
             }
         } else {
             currentView = 'calendar';
+        }
+
+        // Con la app en segundo plano (sobre todo la del iPhone) nada se repinta: al
+        // volver seguían la hora, el saludo y el día de cuando se dejó. Si ha pasado
+        // un rato se repinta, y si ya es otro día se vuelve a hoy. No se toca si se
+        // está escribiendo en un campo de la página, para no perder lo escrito.
+        let ocultoDesde = null;
+        function refrescarAlVolver(forzar) {
+            const fuera = ocultoDesde;
+            ocultoDesde = null;
+            if (!forzar && (!fuera || Date.now() - fuera.hora < 30000)) return;
+            const activo = document.activeElement;
+            if (activo && activo.matches('input, textarea, [contenteditable="true"]') && activo.closest('#content, #mobile-shell')) return;
+            if (!fuera || fuera.dia !== todayISO()) {
+                mobileDiaSel = null;
+                mobileMes = null;
+                plannerDayOffset = 0;
+            }
+            render();
         }

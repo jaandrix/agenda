@@ -80,7 +80,7 @@
                                 <div class="line-row-icon">${TRAVEL_ICON_MOUNTAIN}</div>
                                 <div class="line-row-body">
                                     <div class="line-row-title"><span class="line-row-title-text">${escapeHtml(t.title)}</span></div>
-                                    <div class="line-row-meta">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${extra.length ? ' · ' + extra.join(' · ') : ''}</div>
+                                    <div class="line-row-meta">${escapeHtml(t.destination || '')}${t.startDate ? ', ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${extra.length ? ', ' + extra.join(', ') : ''}</div>
                                 </div>
                                 <div class="line-row-side"><span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span></div>
                             </div>`;
@@ -166,7 +166,7 @@
                     <div>
                         <span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span>
                         <div class="trip-manager-title">${escapeHtml(t.title)}</div>
-                        <div class="trip-manager-sub">${escapeHtml(t.destination || '')}${t.startDate ? ' · ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${financeProGastoViaje(t.id) ? ` · ${financeMoney(financeProGastoViaje(t.id))} gastados` : ''}</div>
+                        <div class="trip-manager-sub">${escapeHtml(t.destination || '')}${t.startDate ? ', ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${financeProGastoViaje(t.id) ? `, ${financeMoney(financeProGastoViaje(t.id))} gastados` : ''}</div>
                     </div>
                     <div class="trip-manager-botones" style="display:flex;gap:8px;flex-shrink:0">
                         <button class="btn-secondary" style="width:auto" onclick="abrirCompartirViajeModal('${t.id}')">Compartir</button>
@@ -205,7 +205,7 @@
             if (!v) return '';
             const [d, h] = String(v).split('T');
             const f = /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) : d;
-            return f + (h ? ' · ' + h.slice(0, 5) : '');
+            return f + (h ? ', ' + h.slice(0, 5) : '');
         }
         function renderTripReservasTab(t) {
             const transportes = [...t.transportes].sort((a, b) => (a.salida || '').localeCompare(b.salida || ''));
@@ -220,7 +220,7 @@
                     <div class="card viaje-reserva">
                         <div class="viaje-reserva-top">
                             <div style="min-width:0">
-                                <div class="viaje-reserva-meta">${escapeHtml(TRANSPORTE_TIPOS[x.tipo] || x.tipo || 'transporte')}${x.compania ? ' · ' + escapeHtml(x.compania) : ''}${x.numero ? ' · ' + escapeHtml(x.numero) : ''}</div>
+                                <div class="viaje-reserva-meta">${escapeHtml(TRANSPORTE_TIPOS[x.tipo] || x.tipo || 'transporte')}${x.compania ? ', ' + escapeHtml(x.compania) : ''}${x.numero ? ', ' + escapeHtml(x.numero) : ''}</div>
                                 <div class="viaje-reserva-ruta">${escapeHtml(x.origen || '?')} → ${escapeHtml(x.destino || '?')}</div>
                             </div>
                             <button class="friend-remove-btn" title="Eliminar" onclick="deleteTripReserva('${t.id}','transportes','${x.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
@@ -379,9 +379,9 @@
                     <div class="card" style="margin-bottom:10px">
                         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
                             <div style="min-width:0">
-                                <div style="font-size:11px;color:var(--text-secondary);font-weight:600">${it.dia ? escapeHtml(new Date(it.dia + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'Sin día'}${it.hora ? ' · ' + escapeHtml(it.hora) : ''}</div>
+                                <div style="font-size:11px;color:var(--text-secondary);font-weight:600">${it.dia ? escapeHtml(new Date(it.dia + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })) : 'Sin día'}${it.hora ? ', ' + escapeHtml(it.hora) : ''}</div>
                                 <div style="font-weight:600;margin-top:2px">${escapeHtml(it.titulo)}</div>
-                                ${it.lugar ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">📍 ${escapeHtml(it.lugar)}${it.lat ? '' : ' · localizando...'}</div>` : ''}
+                                ${it.lugar ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">📍 ${escapeHtml(it.lugar)}${it.lat ? '' : ', localizando...'}</div>` : ''}
                                 ${it.notas ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${linkifyText(it.notas)}</div>` : ''}
                             </div>
                             <button class="friend-remove-btn" title="Eliminar" onclick="deleteItineraryItem('${t.id}','${it.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
@@ -420,7 +420,7 @@
             withCoords.forEach((it, i) => {
                 const dayLabel = it.dia ? new Date(it.dia + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '';
                 L.marker([it.lat, it.lon]).addTo(map)
-                    .bindPopup(`<strong>${i + 1}. ${escapeHtml(it.titulo)}</strong><br>${escapeHtml(dayLabel)}${it.hora ? ' · ' + escapeHtml(it.hora) : ''}`);
+                    .bindPopup(`<strong>${i + 1}. ${escapeHtml(it.titulo)}</strong><br>${escapeHtml(dayLabel)}${it.hora ? ', ' + escapeHtml(it.hora) : ''}`);
             });
             if (latlngs.length > 1) L.polyline(latlngs, { color: '#3b82f6', weight: 3, opacity: 0.7, dashArray: '6,6' }).addTo(map);
             map.fitBounds(latlngs, { padding: [30, 30] });
@@ -512,7 +512,7 @@
                     ? `<button class="doc-action-download" onclick="openEntryDocHtml('trips','${tripId}','${escapeHtml(doc.name)}')">Ver</button>`
                     : `<button class="doc-action-download" onclick="downloadTripDocument('${tripId}','${escapeHtml(doc.name)}')">Descargar</button>`;
                 return `<div class="doc-item">
-                    <div class="doc-info"><span style="font-size:20px">${isHtml ? '▥' : '📄'}</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
+                    <div class="doc-info"><span style="font-size:20px">${isHtml ? '▥' : '📄'}</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ', ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
                         ${openBtn}
                         <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteTripDocument('${tripId}','${escapeHtml(doc.name)}')"><i class='ico ico-x' aria-hidden=true></i></button>
@@ -596,7 +596,7 @@
                 const sizeKb = doc.metadata?.size ? Math.round(doc.metadata.size / 1024) + ' KB' : '';
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
                 return `<div class="doc-item">
-                    <div class="doc-info"><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div></div></div>
+                    <div class="doc-info"><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ', ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
                         <button class="doc-action-download" onclick="downloadWorkDocument('${workId}','${escapeHtml(doc.name)}')">Descargar</button>
                         <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteWorkDocument('${workId}','${escapeHtml(doc.name)}')"><i class='ico ico-x' aria-hidden=true></i></button>

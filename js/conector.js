@@ -73,7 +73,17 @@
 
         // Aplica una operación de la bandeja y devuelve su línea del registro
         // (o null si ya estaba aplicada o ya no hay a qué aplicarla).
+        // Lo que llega de la IA a veces separa con el punto medio («a · b»),
+        // que no va con el estilo de la app: se guarda con comas.
+        function sinPuntoMedioConector(v) {
+            if (typeof v === 'string') return v.replace(/\s*·\s*/g, ', ');
+            if (Array.isArray(v)) return v.map(sinPuntoMedioConector);
+            if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, sinPuntoMedioConector(x)]));
+            return v;
+        }
+
         function aplicarOpConector(op, ref) {
+            op = sinPuntoMedioConector(op);
             const linea = (tipo, resumen, deshacer) => ({ id: ref, cuando: new Date().toISOString(), tipo, resumen, deshacer });
             const corto = t => { const x = String(t || '').trim(); return x.length > 70 ? x.slice(0, 70) + '…' : x; };
             if (op.tipo === 'evento') {
@@ -85,13 +95,13 @@
             if (op.tipo === 'tarea') {
                 if (localizarTareaConector(ref)) return null;
                 if (op.fecha && op.hora) insertarConector('tarea', { id: ref, time: op.hora, title: op.titulo, notes: op.notas || '', done: false }, op.fecha);
-                else dayPlanner.backlog.unshift({ id: ref, title: op.titulo, notes: [op.fecha ? 'para el ' + op.fecha : '', op.notas || ''].filter(Boolean).join(' · '), done: false });
+                else dayPlanner.backlog.unshift({ id: ref, title: op.titulo, notes: [op.fecha ? 'para el ' + op.fecha : '', op.notas || ''].filter(Boolean).join(', '), done: false });
                 return linea('tarea', `tarea «${corto(op.titulo)}»${op.fecha && op.hora ? ` el ${op.fecha} a las ${op.hora}` : ' en tareas pendientes'}.`, { accion: 'quitar', coleccion: 'tarea', id: ref });
             }
             if (op.tipo === 'movimiento') {
                 if (financePro.transactions.some(t => t.id === ref)) return null;
                 financePro.transactions.push({ id: ref, date: op.fecha, account: op.cuenta, type: op.type, amount: op.importe, category: op.categoria || undefined, note: op.concepto || undefined, manual: true, needsReview: !op.categoria });
-                return linea('movimiento', `${op.type === 'income' ? 'ingreso' : 'gasto'} de ${financeMoney(op.importe)} · ${corto(op.concepto)} (${op.fecha}).`, { accion: 'quitar', coleccion: 'movimiento', id: ref });
+                return linea('movimiento', `${op.type === 'income' ? 'ingreso' : 'gasto'} de ${financeMoney(op.importe)}, ${corto(op.concepto)} (${op.fecha}).`, { accion: 'quitar', coleccion: 'movimiento', id: ref });
             }
             if (op.tipo === 'nota') {
                 const fecha = op.fecha || todayISO();
@@ -201,7 +211,7 @@
                 entries.push({ id: ref, type: op.entryType, categoryId: getCategoryIdForType(op.entryType), tags: [], ...datos });
                 filteredEntries = [...entries];
                 if (op.entryType === 'travel') geocodificarItinerarioViaje(entries[entries.length - 1]);
-                return linea(ENTRADA_TIPO_REGISTRO[op.entryType] || 'entrada', `${ENTRADA_NOMBRE[op.entryType] || 'entrada'} «${corto(datos.title)}»${op.entryType === 'travel' && datos.date ? ' · ' + datos.date : ''}${op.entryType === 'document' && datos.date ? ' · caduca ' + datos.date : ''}${op.entryType === 'birthday' && datos.date ? ' · ' + datos.date.slice(8) + '/' + datos.date.slice(5, 7) : ''}${op.entryType === 'subscription' || op.entryType === 'fixed_expense' ? ` · ${financeMoney(datos.amount)} el día ${datos.renewalDay}` : ''}.`, { accion: 'quitar', coleccion: 'evento', id: ref });
+                return linea(ENTRADA_TIPO_REGISTRO[op.entryType] || 'entrada', `${ENTRADA_NOMBRE[op.entryType] || 'entrada'} «${corto(datos.title)}»${op.entryType === 'travel' && datos.date ? ', ' + datos.date : ''}${op.entryType === 'document' && datos.date ? ', caduca ' + datos.date : ''}${op.entryType === 'birthday' && datos.date ? ', ' + datos.date.slice(8) + '/' + datos.date.slice(5, 7) : ''}${op.entryType === 'subscription' || op.entryType === 'fixed_expense' ? `, ${financeMoney(datos.amount)} el día ${datos.renewalDay}` : ''}.`, { accion: 'quitar', coleccion: 'evento', id: ref });
             }
             if (op.tipo === 'entrada_editar') {
                 const e = entries.find(x => x.id === op.id);
@@ -226,7 +236,7 @@
                 }
                 if (lista.some(x => x.id === ref)) return null;
                 lista.push({ id: ref, title: op.titulo, price: Number(op.precio) || 0 });
-                return linea('deseo', `deseo «${corto(op.titulo)}»${op.precio ? ' · ' + financeMoney(op.precio) : ''}.`, { accion: 'deseo_quitar', id: ref });
+                return linea('deseo', `deseo «${corto(op.titulo)}»${op.precio ? ', ' + financeMoney(op.precio) : ''}.`, { accion: 'deseo_quitar', id: ref });
             }
             if (op.tipo === 'habito') {
                 if (op.accion === 'crear') {
@@ -549,7 +559,7 @@
                     render();
                 }
                 const avisos = [cambios ? `${cambios} ${cambios === 1 ? 'cambio aplicado' : 'cambios aplicados'} desde Claude o ChatGPT` : '', nuevasPendientes ? `${nuevasPendientes} ${nuevasPendientes === 1 ? 'espera' : 'esperan'} tu validación en «bandeja.»` : ''].filter(Boolean);
-                if (avisos.length && currentView !== 'bandeja') showToast(avisos.join(' · '));
+                if (avisos.length && currentView !== 'bandeja') showToast(avisos.join(', '));
             } catch (e) {
                 console.error('Bandeja del conector:', e);
             } finally {
@@ -560,8 +570,8 @@
         function detalleReservas(d, antes = {}) {
             const nuevos = k => (d[k] || []).filter(x => !(antes[k] || []).some(y => y.id === x.id && JSON.stringify(y) === JSON.stringify(x)));
             return [
-                ...nuevos('transportes').map(x => `${TRANSPORTE_TIPOS[x.tipo] || x.tipo || 'transporte'} ${x.origen || '?'} → ${x.destino || '?'}${x.salida ? ' · ' + fechaHoraViaje(x.salida) : ''}${x.numero ? ' · ' + x.numero : ''}`),
-                ...nuevos('alojamientos').map(x => `${x.nombre}${x.entrada ? ' · ' + fechaHoraViaje(x.entrada) : ''}${x.salida ? ' → ' + fechaHoraViaje(x.salida) : ''}`),
+                ...nuevos('transportes').map(x => `${TRANSPORTE_TIPOS[x.tipo] || x.tipo || 'transporte'} ${x.origen || '?'} → ${x.destino || '?'}${x.salida ? ', ' + fechaHoraViaje(x.salida) : ''}${x.numero ? ', ' + x.numero : ''}`),
+                ...nuevos('alojamientos').map(x => `${x.nombre}${x.entrada ? ', ' + fechaHoraViaje(x.entrada) : ''}${x.salida ? ' → ' + fechaHoraViaje(x.salida) : ''}`),
                 ...nuevos('itinerario').map(x => `${x.dia || ''}${x.hora ? ' ' + x.hora : ''} ${x.titulo}`.trim()),
             ].join('\n');
         }
@@ -591,10 +601,10 @@
             const fecha = f => f ? financeDateLabelShort(f) : '';
             const c = op.cambios || {};
             switch (op.tipo) {
-                case 'tarea': return { tipo: 'nueva tarea', texto: `«${op.titulo}»`, meta: op.fecha && op.hora ? `${fecha(op.fecha)} · ${op.hora}` : 'a tareas pendientes', detalle: op.notas };
-                case 'editar_tarea': return { tipo: 'cambio de tarea', texto: `«${op.resumen}»`, meta: [c.hecha === true ? 'marcar hecha' : c.hecha === false ? 'volver a pendiente' : '', c.sinFecha ? 'pasar a tareas pendientes' : (c.fecha || c.hora) ? `mover a ${fecha(c.fecha) || 'su día'}${c.hora ? ' · ' + c.hora : ''}` : '', c.titulo ? `título: «${c.titulo}»` : '', c.notas !== undefined ? 'cambiar notas' : ''].filter(Boolean).join(' · ') };
-                case 'movimiento': return { tipo: op.type === 'income' ? 'nuevo ingreso' : 'nuevo gasto', texto: `${financeMoney(op.importe)} · ${op.concepto || 'sin concepto'}`, meta: `${fecha(op.fecha)} · ${financePro.accounts[op.cuenta]?.name || op.cuenta}${op.categoria ? ' · ' + (financeProCategoryById(op.categoria)?.name || '').toLowerCase() : ' · sin categoría'}` };
-                case 'editar_movimiento': return { tipo: 'corregir movimiento', texto: `«${op.resumen}»`, meta: [c.category ? 'categoría ' + (financeProCategoryById(c.category)?.name || '').toLowerCase() : '', c.note ? `concepto «${c.note}»` : '', c.amount ? financeMoney(c.amount) : '', c.date ? fecha(c.date) : '', c.account ? financePro.accounts[c.account]?.name : ''].filter(Boolean).join(' · ') };
+                case 'tarea': return { tipo: 'nueva tarea', texto: `«${op.titulo}»`, meta: op.fecha && op.hora ? `${fecha(op.fecha)}, ${op.hora}` : 'a tareas pendientes', detalle: op.notas };
+                case 'editar_tarea': return { tipo: 'cambio de tarea', texto: `«${op.resumen}»`, meta: [c.hecha === true ? 'marcar hecha' : c.hecha === false ? 'volver a pendiente' : '', c.sinFecha ? 'pasar a tareas pendientes' : (c.fecha || c.hora) ? `mover a ${fecha(c.fecha) || 'su día'}${c.hora ? ', ' + c.hora : ''}` : '', c.titulo ? `título: «${c.titulo}»` : '', c.notas !== undefined ? 'cambiar notas' : ''].filter(Boolean).join(', ') };
+                case 'movimiento': return { tipo: op.type === 'income' ? 'nuevo ingreso' : 'nuevo gasto', texto: `${financeMoney(op.importe)}, ${op.concepto || 'sin concepto'}`, meta: `${fecha(op.fecha)}, ${financePro.accounts[op.cuenta]?.name || op.cuenta}${op.categoria ? ', ' + (financeProCategoryById(op.categoria)?.name || '').toLowerCase() : ', sin categoría'}` };
+                case 'editar_movimiento': return { tipo: 'corregir movimiento', texto: `«${op.resumen}»`, meta: [c.category ? 'categoría ' + (financeProCategoryById(c.category)?.name || '').toLowerCase() : '', c.note ? `concepto «${c.note}»` : '', c.amount ? financeMoney(c.amount) : '', c.date ? fecha(c.date) : '', c.account ? financePro.accounts[c.account]?.name : ''].filter(Boolean).join(', ') };
                 case 'importar': {
                     const lineas = String(op.csv || '').split(/\r?\n/).filter(l => l.trim());
                     return { tipo: 'importar extracto', texto: `${lineas.length - 1} filas`, meta: op.cuenta ? financePro.accounts[op.cuenta]?.name || op.cuenta : 'última cuenta usada', detalle: lineas.slice(0, 6).join('\n') + (lineas.length > 6 ? '\n…' : '') };
@@ -602,23 +612,23 @@
                 case 'nota': return { tipo: 'nota', texto: `«${String(op.titulo || op.texto || '').slice(0, 80)}»`, meta: `nota del ${fecha(op.fecha) || 'día'}`, detalle: [op.titulo, op.texto].filter(Boolean).join('\n') };
                 case 'dia': {
                     const nombres = ids => (ids || []).map(id => habits.find(h => h.id === id)?.texto).filter(Boolean).map(x => x.toLowerCase());
-                    return { tipo: 'día', texto: [op.esfuerzo ? `esfuerzo ${op.esfuerzo}/5` : '', ...nombres(op.hechos).map(n => n + ' ✓'), ...nombres(op.noHechos).map(n => n + ' ✗')].filter(Boolean).join(' · ') || 'sin cambios', meta: fecha(op.fecha) };
+                    return { tipo: 'día', texto: [op.esfuerzo ? `esfuerzo ${op.esfuerzo}/5` : '', ...nombres(op.hechos).map(n => n + ' ✓'), ...nombres(op.noHechos).map(n => n + ' ✗')].filter(Boolean).join(', ') || 'sin cambios', meta: fecha(op.fecha) };
                 }
                 case 'borrar': return { tipo: `borrar ${op.coleccion}`, texto: op.resumen, meta: 'se puede deshacer después' };
                 case 'entrada_crear': {
                     const d = op.datos || {};
                     const nombre = ENTRADA_NOMBRE[op.entryType] || 'entrada';
-                    const meta = op.entryType === 'travel' ? [d.startDate && fecha(d.startDate), d.endDate && '→ ' + fecha(d.endDate), d.companions && 'con ' + d.companions, d.expenses?.length ? `${d.expenses.length} gasto${d.expenses.length === 1 ? '' : 's'}` : '', ...reservasTexto(d)].filter(Boolean).join(' · ')
-                        : op.entryType === 'subscription' || op.entryType === 'fixed_expense' ? `${financeMoney(d.amount)} · día ${d.renewalDay} de cada mes${d.proAccount ? ' · ' + (financePro.accounts[d.proAccount]?.name || d.proAccount) : ''}${d.vigilar ? ' · avisar si no llega' : ''}`
-                        : op.entryType === 'goal' ? [d.goalType === 'numeric' ? `${d.currentValue ?? 0} de ${d.targetValue ?? '?'} ${d.unit || ''}`.trim() : '', { short: 'corto plazo', medium: 'medio plazo', long: 'largo plazo' }[d.term] || '', d.milestones?.length ? `${d.milestones.length} hitos` : ''].filter(Boolean).join(' · ')
+                    const meta = op.entryType === 'travel' ? [d.startDate && fecha(d.startDate), d.endDate && '→ ' + fecha(d.endDate), d.companions && 'con ' + d.companions, d.expenses?.length ? `${d.expenses.length} gasto${d.expenses.length === 1 ? '' : 's'}` : '', ...reservasTexto(d)].filter(Boolean).join(', ')
+                        : op.entryType === 'subscription' || op.entryType === 'fixed_expense' ? `${financeMoney(d.amount)}, día ${d.renewalDay} de cada mes${d.proAccount ? ', ' + (financePro.accounts[d.proAccount]?.name || d.proAccount) : ''}${d.vigilar ? ', avisar si no llega' : ''}`
+                        : op.entryType === 'goal' ? [d.goalType === 'numeric' ? `${d.currentValue ?? 0} de ${d.targetValue ?? '?'} ${d.unit || ''}`.trim() : '', { short: 'corto plazo', medium: 'medio plazo', long: 'largo plazo' }[d.term] || '', d.milestones?.length ? `${d.milestones.length} hitos` : ''].filter(Boolean).join(', ')
                         : op.entryType === 'birthday' ? fecha(d.birthDate)
-                        : op.entryType === 'document' ? [d.docTipo, d.date ? 'caduca ' + fecha(d.date) : 'sin fecha', d.url ? 'con enlace' : ''].filter(Boolean).join(' · ') : '';
+                        : op.entryType === 'document' ? [d.docTipo, d.date ? 'caduca ' + fecha(d.date) : 'sin fecha', d.url ? 'con enlace' : ''].filter(Boolean).join(', ') : '';
                     return { tipo: `nuevo ${nombre}`.replace('nuevo suscripción', 'nueva suscripción'), texto: `«${d.title || ''}»`, meta, detalle: (op.entryType === 'travel' && detalleReservas(d)) || d.notes || (d.expenses?.length ? d.expenses.map(g => `${g.description}: ${financeMoney(g.amount)}`).join('\n') : '') };
                 }
                 case 'entrada_editar': {
                     const d = op.datos || {};
                     const nombre = ENTRADA_NOMBRE[op.entryType] || 'entrada';
-                    return { tipo: d.active === false ? `baja de ${nombre}` : d.active === true ? `reactivar ${nombre}` : `cambio de ${nombre}`, texto: `«${op.resumen}»`, meta: [d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `progreso ${d.currentValue}${d.targetValue !== undefined ? ' de ' + d.targetValue : ''}` : '', d.status || '', d.startDate ? fecha(d.startDate) : '', d.endDate ? '→ ' + fecha(d.endDate) : '', d.expenses ? 'gastos' : '', d.notes !== undefined ? 'notas' : '', ...(op.entryType === 'travel' ? reservasTexto(d, entries.find(x => x.id === op.id) || {}) : [])].filter(Boolean).join(' · '), detalle: op.entryType === 'travel' ? detalleReservas(d, entries.find(x => x.id === op.id) || {}) : '' };
+                    return { tipo: d.active === false ? `baja de ${nombre}` : d.active === true ? `reactivar ${nombre}` : `cambio de ${nombre}`, texto: `«${op.resumen}»`, meta: [d.amount ? financeMoney(d.amount) : '', d.renewalDay ? 'día ' + d.renewalDay : '', d.currentValue !== undefined ? `progreso ${d.currentValue}${d.targetValue !== undefined ? ' de ' + d.targetValue : ''}` : '', d.status || '', d.startDate ? fecha(d.startDate) : '', d.endDate ? '→ ' + fecha(d.endDate) : '', d.expenses ? 'gastos' : '', d.notes !== undefined ? 'notas' : '', ...(op.entryType === 'travel' ? reservasTexto(d, entries.find(x => x.id === op.id) || {}) : [])].filter(Boolean).join(', '), detalle: op.entryType === 'travel' ? detalleReservas(d, entries.find(x => x.id === op.id) || {}) : '' };
                 }
                 case 'deseo': return { tipo: op.accion === 'quitar' ? 'quitar deseo' : 'nuevo deseo', texto: `«${op.titulo}»`, meta: op.precio ? financeMoney(op.precio) : '' };
                 case 'habito': return { tipo: op.accion === 'crear' ? 'nueva rutina' : op.activo ? 'reactivar rutina' : 'pausar rutina', texto: `«${op.texto}»`, meta: '' };
@@ -631,12 +641,12 @@
                 case 'tarjetas': return { tipo: 'tarjetas de estudio', texto: `${(op.tarjetas || []).length} en «${op.mazo}»`, meta: '', detalle: (op.tarjetas || []).slice(0, 6).map(t => t.frente).join('\n') };
                 case 'compra': return { tipo: 'lista de la compra', texto: (op.cosas || []).join(', '), meta: op.lista || '' };
                 case 'receta': return { tipo: 'receta', texto: `«${op.nombre || ''}»`, meta: `${(op.ingredientes || []).length} ingredientes` };
-                case 'ticket': return { tipo: 'ticket de la compra', texto: op.tienda || '', meta: [op.total ? financeMoney(Number(op.total)) : '', `${(op.lineas || []).length} productos`].filter(Boolean).join(' · ') };
+                case 'ticket': return { tipo: 'ticket de la compra', texto: op.tienda || '', meta: [op.total ? financeMoney(Number(op.total)) : '', `${(op.lineas || []).length} productos`].filter(Boolean).join(', ') };
                 case 'proyecto': return { tipo: 'proyecto', texto: op.accion === 'tareas' ? (op.tareas || []).join(', ') : op.tarea || op.texto || '', meta: op.accion };
-                case 'enlace': return { tipo: 'nuevo enlace', texto: `«${op.titulo}»`, meta: [op.url.replace(/^https?:\/\//, '').slice(0, 60), op.categoryId ? (linkCategories.find(c => c.id === op.categoryId)?.name || '') : ''].filter(Boolean).join(' · ') };
-                case 'clase': return { tipo: op.accion === 'quitar' ? 'quitar clase' : 'nueva clase', texto: `«${op.texto}»`, meta: `${(STUDIES_DAYS.find(d => d.key === op.dia)?.label || op.dia).toLowerCase()} · ${op.hora}` };
-                case 'estudio_crear': return { tipo: op.lista === 'exams' ? 'nuevo examen' : 'nuevo trabajo', texto: `«${op.item?.title || ''}» · ${op.asignatura || findSubject(op.subjectId)?.name || ''}`, meta: [op.item?.date ? fecha(op.item.date) : 'sin fecha', op.item?.time || '', op.item?.weight ? `peso ${op.item.weight} %` : ''].filter(Boolean).join(' · ') };
-                case 'estudio_editar': return { tipo: op.lista === 'exams' ? 'cambio de examen' : 'cambio de trabajo', texto: `«${op.resumen}»`, meta: [c.grade !== undefined ? `nota ${c.grade}` : '', c.done === true ? 'marcar entregado' : c.done === false ? 'volver a pendiente' : '', c.date ? fecha(c.date) : '', c.time ? c.time : '', c.weight ? `peso ${c.weight} %` : '', c.title ? `título: «${c.title}»` : ''].filter(Boolean).join(' · ') };
+                case 'enlace': return { tipo: 'nuevo enlace', texto: `«${op.titulo}»`, meta: [op.url.replace(/^https?:\/\//, '').slice(0, 60), op.categoryId ? (linkCategories.find(c => c.id === op.categoryId)?.name || '') : ''].filter(Boolean).join(', ') };
+                case 'clase': return { tipo: op.accion === 'quitar' ? 'quitar clase' : 'nueva clase', texto: `«${op.texto}»`, meta: `${(STUDIES_DAYS.find(d => d.key === op.dia)?.label || op.dia).toLowerCase()}, ${op.hora}` };
+                case 'estudio_crear': return { tipo: op.lista === 'exams' ? 'nuevo examen' : 'nuevo trabajo', texto: `«${op.item?.title || ''}», ${op.asignatura || findSubject(op.subjectId)?.name || ''}`, meta: [op.item?.date ? fecha(op.item.date) : 'sin fecha', op.item?.time || '', op.item?.weight ? `peso ${op.item.weight} %` : ''].filter(Boolean).join(', ') };
+                case 'estudio_editar': return { tipo: op.lista === 'exams' ? 'cambio de examen' : 'cambio de trabajo', texto: `«${op.resumen}»`, meta: [c.grade !== undefined ? `nota ${c.grade}` : '', c.done === true ? 'marcar entregado' : c.done === false ? 'volver a pendiente' : '', c.date ? fecha(c.date) : '', c.time ? c.time : '', c.weight ? `peso ${c.weight} %` : '', c.title ? `título: «${c.title}»` : ''].filter(Boolean).join(', ') };
             }
             return { tipo: op.tipo, texto: '', meta: '' };
         }
@@ -657,7 +667,7 @@
             try {
                 await saveData();
                 await sb.from('conector_bandeja').delete().in('id', filas.map(f => f.id));
-                showToast(aplicadas === filas.length ? `${aplicadas} ${aplicadas === 1 ? 'cambio validado' : 'cambios validados'}` : `${aplicadas} de ${filas.length} aplicados · el resto ya no tenía a qué aplicarse`);
+                showToast(aplicadas === filas.length ? `${aplicadas} ${aplicadas === 1 ? 'cambio validado' : 'cambios validados'}` : `${aplicadas} de ${filas.length} aplicados, el resto ya no tenía a qué aplicarse`);
             } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -734,7 +744,7 @@
                     <div class="bandeja-item-cuerpo">
                         <div class="bandeja-item-tipo">${escapeHtml(d.tipo)}.</div>
                         <div class="bandeja-item-texto">${escapeHtml(d.texto)}</div>
-                        <div class="bandeja-item-meta">${escapeHtml([d.meta, 'pedido ' + haceCuanto(f.creado)].filter(Boolean).join(' · '))}</div>
+                        <div class="bandeja-item-meta">${escapeHtml([d.meta, 'pedido ' + haceCuanto(f.creado)].filter(Boolean).join(', '))}</div>
                         ${d.detalle ? `<details class="bandeja-item-detalle"><summary>ver contenido.</summary><pre>${escapeHtml(d.detalle)}</pre></details>` : ''}
                     </div>
                     <div class="bandeja-item-acciones">
@@ -866,7 +876,7 @@
                 <div style="line-height:1.5;margin-bottom:12px">Conecta Bitácora a Claude o a ChatGPT para preguntarle por tu agenda, tus gastos o cualquier apartado, y pedirle que apunte cosas (un evento a partir de una entrada, un gasto a partir de un ticket...). Usa tu propia suscripción de Claude o ChatGPT.</div>
                 ${(data || []).map(t => `
                     <div class="conector-fila">
-                        <div><b>${escapeHtml(t.nombre)}.</b><small>creado el ${fecha(t.creado)}${t.ultimo_uso ? ` · usado por última vez el ${fecha(t.ultimo_uso)}` : ' · sin usar todavía'}</small></div>
+                        <div><b>${escapeHtml(t.nombre)}.</b><small>creado el ${fecha(t.creado)}${t.ultimo_uso ? `, usado por última vez el ${fecha(t.ultimo_uso)}` : ', sin usar todavía'}</small></div>
                         <button class="finance-oneoff-btn" onclick="revocarConector('${t.token_hash}')">revocar.</button>
                     </div>`).join('')}
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">

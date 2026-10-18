@@ -554,7 +554,7 @@
             const lines = seriesList.map((s, si) => {
                 const path = financeSmoothPath(s.data.map((d, i) => [x(i), y(d.balance)]));
                 const points = s.data.map((d, i) => {
-                    const tip = escapeHtml(`${s.label} · ${financeMonthLabel(d.month)}: ${financeMoney(d.balance)}`).replace(/"/g, '&quot;');
+                    const tip = escapeHtml(`${s.label}, ${financeMonthLabel(d.month)}: ${financeMoney(d.balance)}`).replace(/"/g, '&quot;');
                     return `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="9" fill="transparent" onmousemove="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)" onmouseleave="financeProChartTooltipHide('${idSuffix}-${si}-${i}')" onclick="financeProChartTooltipShow(event,'${idSuffix}-${si}-${i}',&quot;${tip}&quot;)"/>
                         <circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3.5" fill="${s.color}" style="pointer-events:none"/>`;
                 }).join('');
@@ -691,22 +691,22 @@
             const incVsAvg = s.avgIncome ? ((s.curTotals.income - s.avgIncome) / s.avgIncome) * 100 : null;
             const topCatObj = s.topCat && s.topCat !== '_none' ? financeProCategoryById(s.topCat) : null;
             showModal(`
-                <div class="modal-title">Estadísticas · ${escapeHtml(financeMonthLabel(s.now))}</div>
+                <div class="modal-title">Estadísticas de ${escapeHtml(financeMonthLabel(s.now))}</div>
                 <div class="finance-stats-grid">
                     <div class="finance-stats-card">
                         <div class="finance-stats-label">Gastos este mes</div>
                         <div class="finance-stats-value finance-negative">${financeMoney(s.curTotals.expense)}</div>
-                        <div class="finance-stats-sub">${financeProPctLabel(expVsPrev)} vs mes anterior · ${financeProPctLabel(expVsAvg)} vs media (6m)</div>
+                        <div class="finance-stats-sub">${financeProPctLabel(expVsPrev)} vs mes anterior, ${financeProPctLabel(expVsAvg)} vs media (6m)</div>
                     </div>
                     <div class="finance-stats-card">
                         <div class="finance-stats-label">Ingresos este mes</div>
                         <div class="finance-stats-value finance-positive">${financeMoney(s.curTotals.income)}</div>
-                        <div class="finance-stats-sub">${financeProPctLabel(incVsPrev)} vs mes anterior · ${financeProPctLabel(incVsAvg)} vs media (6m)</div>
+                        <div class="finance-stats-sub">${financeProPctLabel(incVsPrev)} vs mes anterior, ${financeProPctLabel(incVsAvg)} vs media (6m)</div>
                     </div>
                     <div class="finance-stats-card">
                         <div class="finance-stats-label">Evolución del saldo</div>
                         <div class="finance-stats-value">${financeProPctLabel(s.pctVsPrevMonth)}</div>
-                        <div class="finance-stats-sub">vs mes anterior · ${financeProPctLabel(s.pctSinceStart)} desde el primer registro</div>
+                        <div class="finance-stats-sub">vs mes anterior, ${financeProPctLabel(s.pctSinceStart)} desde el primer registro</div>
                     </div>
                     <div class="finance-stats-card">
                         <div class="finance-stats-label">Tasa de ahorro</div>
@@ -759,7 +759,7 @@
             const current = financeProAccountBalance(key);
             window._financeProAdjustKey = key;
             showModal(`
-                <div class="modal-title">Modificar saldo · ${escapeHtml(acc.name)}</div>
+                <div class="modal-title">Modificar saldo de ${escapeHtml(acc.name)}</div>
                 <div class="finance-modal-note" style="margin-bottom:12px">Saldo actual: ${financeMoney(current)}. Escribe el saldo real y se creará un movimiento "Ajuste de saldo" con la diferencia para cuadrarlo, sin tocar tu histórico.</div>
                 <div class="modal-label">Saldo real (€)</div>
                 <input class="modal-input" id="pro-acc-adjust-target" type="number" step="0.01" value="${current.toFixed(2)}">
@@ -784,7 +784,7 @@
                 note: 'Ajuste de saldo'
             });
             render();
-            try { await saveData(); showToast(`Saldo ajustado · ${diff > 0 ? '+' : '-'}${financeMoney(Math.abs(diff))}`); }
+            try { await saveData(); showToast(`Saldo ajustado, ${diff > 0 ? '+' : '-'}${financeMoney(Math.abs(diff))}`); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -1047,7 +1047,7 @@
         }
 
         function openFinanceMonthlyBalancesModal() {
-            showModal(`<div class="modal-title">Saldos netos · últimos 6 meses</div>
+            showModal(`<div class="modal-title">Saldos netos, últimos 6 meses</div>
                 <div class="finance-modal-note" style="margin-bottom:6px">Ingresos menos gastos de cada mes en tus cuentas PRO. Las barras tenues por debajo de la línea son meses en negativo.</div>
                 ${renderFinanceMonthlyBalancesChart()}`);
         }
@@ -1263,7 +1263,7 @@
                 ${fuentes.map(([id, f]) => {
                     const meses = Object.keys(f.meses || {}).sort();
                     return `<div class="ritmo-historico-fila">
-                        <span><b>${escapeHtml(f.nombre.toLowerCase())}.</b> ${meses.length} ${meses.length === 1 ? 'mes' : 'meses'}${meses.length ? ` · ${etiqueta(meses[0])} – ${etiqueta(meses[meses.length - 1])}` : ''}</span>
+                        <span><b>${escapeHtml(f.nombre.toLowerCase())}.</b> ${meses.length} ${meses.length === 1 ? 'mes' : 'meses'}${meses.length ? `, ${etiqueta(meses[0])} – ${etiqueta(meses[meses.length - 1])}` : ''}</span>
                         <button class="doc-action-delete-btn" title="Olvidar estos históricos" onclick="borrarHistoricoFuente('${id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>`;
                 }).join('')}
@@ -1316,7 +1316,7 @@
             const opciones = (sel, opcional) => `${opcional ? `<option value="-1" ${sel === -1 ? 'selected' : ''}>No tengo esta columna</option>` : ''}${cab.map((c, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${escapeHtml(String(c).slice(0, 24))}</option>`).join('')}`;
             const filas = h.archivos.reduce((s, a) => s + a.length - 1, 0);
             document.getElementById('historico-body').innerHTML = `
-                <div class="finance-modal-note" style="margin:12px 0 8px">${h.archivos.length} ${h.archivos.length === 1 ? 'extracto' : 'extractos'} · ${filas} filas. Comprueba las columnas (se usan las mismas para todos).</div>
+                <div class="finance-modal-note" style="margin:12px 0 8px">${h.archivos.length} ${h.archivos.length === 1 ? 'extracto' : 'extractos'}, ${filas} filas. Comprueba las columnas (se usan las mismas para todos).</div>
                 <div class="finance-correction-inputs">
                     <div><div class="modal-label">fecha</div><select class="modal-input" onchange="window._historico.map.date=Number(this.value)">${opciones(h.map.date)}</select></div>
                     <div><div class="modal-label">importe</div><select class="modal-input" onchange="window._historico.map.amount=Number(this.value)">${opciones(h.map.amount)}</select></div>
@@ -1505,7 +1505,7 @@
         function buildFinanceExportMarkdown() {
             const today = todayISO();
             const lines = [];
-            lines.push(`# Finanzas · Bitácora`);
+            lines.push(`# Finanzas en Bitácora`);
             lines.push(`Exportado el ${today}. Todas las cifras en euros salvo que se indique lo contrario.`);
             lines.push('');
 
@@ -1517,7 +1517,7 @@
                 ['Inversión a largo plazo', financeMoney(financeProfile.invested || 0), financeMoney(financeProfile.investedTarget || 0)],
                 ...(financeProfile.customAccounts || []).map(a => [mdEscape(a.name), financeMoney(a.balance || 0), '—'])
             ]));
-            lines.push(`**Patrimonio operativo total**: ${financeMoney(financeCorePatrimony())} · **Objetivo total**: ${financeMoney(financeTargetTotal())}`);
+            lines.push(`**Patrimonio operativo total**: ${financeMoney(financeCorePatrimony())}, **Objetivo total**: ${financeMoney(financeTargetTotal())}`);
             lines.push('');
 
             lines.push('## Cuentas (Finanzas PRO)');
@@ -1578,23 +1578,23 @@
                 lines.push('');
             }
 
-            lines.push('## Largo plazo · previsión de sueldo (perfil general)');
+            lines.push('## Largo plazo, previsión de sueldo (perfil general)');
             const fc = financeProfile.forecastProfile || {};
             lines.push(mdTable(['Campo', 'Valor'], [
                 ['Sueldo actual', financeMoney(fc.salary || 0)],
                 ['Meses de contrato', fc.contractMonths || '—'],
-                ['Plan mensual · emergencia', financeMoney(fc.emergencyMonthlyPlan || 0)],
-                ['Plan mensual · vacaciones', financeMoney(fc.vacationMonthlyPlan || 0)],
-                ['Plan mensual · inversión', financeMoney(fc.investMonthlyPlan || 0)]
+                ['Plan mensual, emergencia', financeMoney(fc.emergencyMonthlyPlan || 0)],
+                ['Plan mensual, vacaciones', financeMoney(fc.vacationMonthlyPlan || 0)],
+                ['Plan mensual, inversión', financeMoney(fc.investMonthlyPlan || 0)]
             ]));
             lines.push('');
 
             const invAccounts = financeProfile.investmentAccounts || [];
             if (invAccounts.length) {
-                lines.push('## Largo plazo · cuentas de inversión');
+                lines.push('## Largo plazo, cuentas de inversión');
                 invAccounts.forEach(acc => {
-                    lines.push(`### ${mdEscape(acc.name)}${acc.notes ? ' · ' + mdEscape(acc.notes) : ''}`);
-                    lines.push(`Aportado: ${financeMoney(investmentAccountInvested(acc))} · Valor actual: ${financeMoney(investmentAccountValue(acc))}`);
+                    lines.push(`### ${mdEscape(acc.name)}${acc.notes ? ', ' + mdEscape(acc.notes) : ''}`);
+                    lines.push(`Aportado: ${financeMoney(investmentAccountInvested(acc))}, Valor actual: ${financeMoney(investmentAccountValue(acc))}`);
                     const contribs = (acc.contributions || []).slice().sort((a, b) => a.month.localeCompare(b.month));
                     lines.push(mdTable(['Mes', 'Aportación', 'Valor registrado'], contribs.map(c => [financeMonthLabel(c.month), financeMoney(c.amount || 0), c.value !== undefined ? financeMoney(c.value) : '—'])));
                 });
@@ -1603,10 +1603,10 @@
 
             const budgetHist = (financeProfile.budgetHistory || []).slice().sort((a, b) => a.month.localeCompare(b.month));
             if (budgetHist.length) {
-                lines.push('## Largo plazo · planificación de sueldo (meses grabados)');
+                lines.push('## Largo plazo, planificación de sueldo (meses grabados)');
                 budgetHist.forEach(h => {
                     lines.push(`### ${financeMonthLabel(h.month)}`);
-                    lines.push(`Sueldo: ${financeMoney(h.salary || 0)}${h.contributions ? ` · Aportaciones: ${financeMoney(h.contributions)}` : ''}${h.saved ? ` · Ahorrado (sin asignar): ${financeMoney(h.saved)}` : ''}`);
+                    lines.push(`Sueldo: ${financeMoney(h.salary || 0)}${h.contributions ? `, Aportaciones: ${financeMoney(h.contributions)}` : ''}${h.saved ? `, Ahorrado (sin asignar): ${financeMoney(h.saved)}` : ''}`);
                     lines.push(mdTable(['Casilla', 'Previsto', 'Real'], h.allocations.map(a => [a.label || '(sin nombre)', financeMoney(a.amount || 0), h.actuals[a.id] != null ? financeMoney(h.actuals[a.id]) : '—'])));
                 });
                 lines.push('');
@@ -1615,11 +1615,11 @@
             const plans = financeProfile.budgetPlans || {};
             const pendingMonths = Object.keys(plans).filter(m => (plans[m].salary || plans[m].contributions || (plans[m].allocations || []).length) && !budgetHist.some(h => h.month === m)).sort();
             if (pendingMonths.length) {
-                lines.push('## Largo plazo · planificación en curso (todavía sin grabar)');
+                lines.push('## Largo plazo, planificación en curso (todavía sin grabar)');
                 pendingMonths.forEach(m => {
                     const p = plans[m];
                     lines.push(`### ${financeMonthLabel(m)}`);
-                    lines.push(`Sueldo previsto: ${financeMoney(p.salary || 0)}${p.contributions ? ` · Aportaciones previstas: ${financeMoney(p.contributions)}` : ''}`);
+                    lines.push(`Sueldo previsto: ${financeMoney(p.salary || 0)}${p.contributions ? `, Aportaciones previstas: ${financeMoney(p.contributions)}` : ''}`);
                     lines.push(mdTable(['Casilla', 'Previsto'], (p.allocations || []).map(a => [a.label || '(sin nombre)', financeMoney(a.amount || 0)])));
                 });
                 lines.push('');
@@ -1648,13 +1648,9 @@
                 <div class="finance-toolbar-row">
                     <div class="finance-pro-settings-links">
                         <button onclick="openFinanceProAccountsSettings()"><i class='ico ico-lapiz' aria-hidden=true></i> nombres y saldo inicial.</button>
-                        <span>·</span>
                         <button onclick="openFinanceProCategoriesModal()">categorías.</button>
-                        <span>·</span>
                         <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} importar.</button>
-                        <span>·</span>
                         <button onclick="exportFinanceMarkdown()"><i class='ico ico-bajar' aria-hidden=true></i> exportar.</button>
-                        <span>·</span>
                         <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} reglas.</button>
                     </div>
                     ${blurToggleBtn}
@@ -1785,7 +1781,7 @@
             window._financeProQuickDraft = null;
             closeModal();
             render();
-            try { await saveData(); showToast('Guardado · ajústalo luego en «Ajustar movimientos»'); }
+            try { await saveData(); showToast('Guardado, ajústalo luego en «Ajustar movimientos»'); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -1937,7 +1933,7 @@
                     <div class="finance-programado-row">
                         <div class="finance-programado-main">
                             <div>${escapeHtml(p.note || 'Gasto programado')}</div>
-                            <div class="finance-programado-meta">${financeDateLabelShort(p.date)} · ${escapeHtml(financePro.accounts[p.account]?.name || p.account)}</div>
+                            <div class="finance-programado-meta">${financeDateLabelShort(p.date)}, ${escapeHtml(financePro.accounts[p.account]?.name || p.account)}</div>
                         </div>
                         <span class="finance-negative">-${financeMoney(p.amount)}</span>
                         <button class="doc-action-delete-btn" title="Quitar" onclick="deleteFinanceProProgramado('${p.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
@@ -1950,7 +1946,7 @@
                     <div class="finance-programado-row">
                         <div class="finance-programado-main">
                             <div>${escapeHtml(e.title || 'Suscripción')}</div>
-                            <div class="finance-programado-meta">Día ${Number(e.renewalDay) || 1} de cada mes · ${escapeHtml(financePro.accounts[financeProCuentaRecurrente(e)]?.name || '')}</div>
+                            <div class="finance-programado-meta">Día ${Number(e.renewalDay) || 1} de cada mes, ${escapeHtml(financePro.accounts[financeProCuentaRecurrente(e)]?.name || '')}</div>
                         </div>
                         <span class="finance-negative">-${financeMoney(Number(e.amount) || 0)}</span>
                     </div>`).join('')}` : ''}
@@ -2113,7 +2109,7 @@
                     <div class="finance-metric-icon fin-slate finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>
                     <div class="finance-pro-tx-main">
                         <div class="finance-pro-tx-title">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} → ${escapeHtml(financePro.accounts[t.transferTo]?.name || t.transferTo)}</div>
-                        <div class="finance-pro-tx-sub">${t.note ? escapeHtml(t.note) + ' · ' : ''}${financeDateLabelShort(t.date)}${t.pendiente ? ' · pendiente.' : ''}</div>
+                        <div class="finance-pro-tx-sub">${t.note ? escapeHtml(t.note) + ', ' : ''}${financeDateLabelShort(t.date)}${t.pendiente ? ', pendiente.' : ''}</div>
                     </div>
                     <div class="finance-pro-tx-amount">${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
                 </div>`;
@@ -2123,7 +2119,7 @@
                 ${financeProCategoryBadge(cat)}
                 <div class="finance-pro-tx-main">
                     <div class="finance-pro-tx-title">${escapeHtml(cat ? cat.name : 'Sin categoría')}${cat && t.categoriaAuto ? '<span class="finance-cat-auto" title="Puesta por bitácora a partir de movimientos parecidos. Ábrelo y guarda para confirmarla.">auto.</span>' : ''}</div>
-                    <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}${t.pendiente ? ' · pendiente.' : ''}${t.viaje ? ' · <span class="finance-marca">viaje.</span>' : ''}${t.ahorro ? ' · <span class="finance-marca">ahorro.</span>' : ''}</div>
+                    <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)}, ${financeDateLabelShort(t.date)}${t.pendiente ? ', pendiente.' : ''}${t.viaje ? ', <span class="finance-marca">viaje.</span>' : ''}${t.ahorro ? ', <span class="finance-marca">ahorro.</span>' : ''}</div>
                     ${t.note ? `<div class="finance-pro-tx-note">${escapeHtml(t.note)}</div>` : ''}
                 </div>
                 <div class="finance-pro-tx-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
@@ -2234,7 +2230,7 @@
             render();
             if (window._financeProTxReturnToAll) openFinanceProAllTxModal(); else closeModal();
             window._financeProTxReturnToAll = false;
-            try { await saveData(); showToast(categorizados ? `Movimiento guardado · ${categorizados} parecido${categorizados === 1 ? '' : 's'} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : 'Movimiento guardado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            try { await saveData(); showToast(categorizados ? `Movimiento guardado, ${categorizados} parecido${categorizados === 1 ? '' : 's'} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : 'Movimiento guardado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         async function deleteFinanceProTransaction(id) {
@@ -2318,7 +2314,7 @@
             return `
                 <div class="finance-dup-item">
                     <div class="finance-dup-item-main">
-                        <div>${escapeHtml(financePro.accounts[t.account]?.name || t.account)} · ${financeDateLabelShort(t.date)}${cat ? ' · ' + escapeHtml(cat.name) : ''}</div>
+                        <div>${escapeHtml(financePro.accounts[t.account]?.name || t.account)}, ${financeDateLabelShort(t.date)}${cat ? ', ' + escapeHtml(cat.name) : ''}</div>
                         ${t.note ? `<div class="finance-dup-item-note">${escapeHtml(t.note)}</div>` : ''}
                     </div>
                     <div class="finance-dup-item-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</div>
@@ -2816,7 +2812,7 @@
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
             const cuadre = financeProCuadreExtracto(imp);
             if (cuadre && !cuadre.cuadra) openFinanceProCuadre(cuadre);
-            else if (cuadre) showToast(`${financeProResumenImport(r)} · saldo cuadrado con el extracto: ${financeMoney(cuadre.esperado)}`);
+            else if (cuadre) showToast(`${financeProResumenImport(r)}, saldo cuadrado con el extracto: ${financeMoney(cuadre.esperado)}`);
         }
 
         // ============================================================
@@ -2924,7 +2920,7 @@
 
         function financeProResumenImport(r) {
             const { added, skipped, conciliados, completados, anulados, categorizados } = r;
-            return `${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? ` · ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${completados ? ` · ${completados} pendiente${completados === 1 ? '' : 's'} ya completado${completados === 1 ? '' : 's'}` : ''}${anulados ? ` · ${anulados} pendiente${anulados === 1 ? '' : 's'} anulado${anulados === 1 ? '' : 's'} y retirado${anulados === 1 ? '' : 's'}` : ''}${categorizados ? ` · ${categorizados} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : ''}${skipped ? ` · ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`;
+            return `${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? `, ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${completados ? `, ${completados} pendiente${completados === 1 ? '' : 's'} ya completado${completados === 1 ? '' : 's'}` : ''}${anulados ? `, ${anulados} pendiente${anulados === 1 ? '' : 's'} anulado${anulados === 1 ? '' : 's'} y retirado${anulados === 1 ? '' : 's'}` : ''}${categorizados ? `, ${categorizados} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : ''}${skipped ? `, ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`;
         }
 
         function financeProEjecutarImport(imp) {
@@ -3184,7 +3180,7 @@
                 <div class="card" style="margin-bottom:12px">
                     <div class="card-title">Total mensual</div>
                     <div class="card-value">${total.toLocaleString('es-ES')}€</div>
-                    <div class="card-sub">${active.length} activos · ${(total * 12).toLocaleString('es-ES')}€/año</div>
+                    <div class="card-sub">${active.length} activos, ${(total * 12).toLocaleString('es-ES')}€/año</div>
                 </div>
                 ${sorted.length ? sorted.map(s => {
                     const daysUntil = s.renewalDay >= todayDay ? s.renewalDay - todayDay : s.renewalDay + 31 - todayDay;
@@ -3193,7 +3189,7 @@
                         <div class="entry-color-dot" style="background:${daysUntil <= 3 ? '#e17055' : 'var(--text-secondary)'}"></div>
                         <div class="entry-info">
                             <div class="entry-title">${escapeHtml(s.title)}</div>
-                            <div class="entry-meta">Día ${s.renewalDay} · en ${daysUntil} días</div>
+                            <div class="entry-meta">Día ${s.renewalDay}, en ${daysUntil} días</div>
                         </div>
                         <span style="font-weight:600;font-size:13px">${s.amount.toLocaleString('es-ES')}€</span>
                     </div>`;

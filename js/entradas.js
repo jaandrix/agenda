@@ -58,7 +58,7 @@
                 const tasks=Array.isArray(entry.tasks)?entry.tasks:[];
                 const doneCount = tasks.filter(t=>t.done).length;
                 const pct = tasks.length ? Math.round(doneCount/tasks.length*100) : 0;
-                fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Ruta de hitos${tasks.length?` · ${doneCount}/${tasks.length} · ${pct}%`:''}</div>
+                fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Ruta de hitos${tasks.length?`, ${doneCount}/${tasks.length}, ${pct}%`:''}</div>
                     ${tasks.length?`<div class="progress-bar-bg" style="margin-bottom:4px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>`:''}
                     ${tasks.length?`<div class="project-roadmap">${tasks.map((task,i)=>`
                         <label class="project-roadmap-item" onclick="event.stopPropagation()">
@@ -81,16 +81,16 @@
                 if(gPct!==null){
                     fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Progreso</div>
                         <div class="progress-bar-bg" style="margin-bottom:6px"><div class="progress-bar-fill" style="width:${gPct}%;background:#2563eb"></div></div>
-                        <div class="entry-detail-value">${goalNumber(entry.currentValue)} / ${goalNumber(entry.targetValue)} ${escapeHtml(entry.unit||'')} · ${gPct}%</div></div>`;
+                        <div class="entry-detail-value">${goalNumber(entry.currentValue)} / ${goalNumber(entry.targetValue)} ${escapeHtml(entry.unit||'')}, ${gPct}%</div></div>`;
                 }
                 const milestones=Array.isArray(entry.milestones)?entry.milestones:[];
                 if(milestones.length){
                     const msDone=milestones.filter(m=>m.done).length;
-                    fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Hitos · ${msDone}/${milestones.length}</div>
+                    fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Hitos: ${msDone}/${milestones.length}</div>
                         ${milestones.map((m,i)=>`<label class="project-task-row" onclick="event.stopPropagation()"><input type="checkbox" ${m.done?'checked':''} onchange="toggleGoalMilestone('${entry.id}',${i})"><span class="${m.done?'done':''}">${escapeHtml(m.text)}</span></label>`).join('')}</div>`;
                 }
                 fields+=renderGoalLinkedProjects(entry.id,entry.title||'');
-                if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(' · '));
+                if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(', '));
                 if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
                 fields+=renderEntryDocsSection('goals',entry.id,'Documentos');
             }else if(entry.type==='work'){
@@ -119,12 +119,12 @@
                 const evTypeLabel=EVENT_TYPE_LABELS[entry.eventType]||'';
                 if(evTypeLabel)fields+=detailField('Tipo',evTypeLabel);
                 if(entry.notes)fields+=detailField('Notas',linkifyText(entry.notes));
-                if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(' · '));
+                if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(', '));
                 fields+=renderEntryDocsSection('events',entry.id,'Documentos');
             }else{
                 fields+=detailField('Fecha',escapeHtml(fechaLegible(entry.date||entry.startDate||''))); fields+=detailField('Estado',escapeHtml(entry.status||''));
                 fields+=detailField('Lugar',escapeHtml(entry.place||entry.destination||'')); fields+=detailField('Notas',entry.notes?linkifyText(entry.notes):'');
-                if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(' · '));
+                if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(', '));
                 if(entry.author)fields+=detailField('Autor',escapeHtml(entry.author));
                 if(entry.company)fields+=detailField('Empresa',escapeHtml(entry.company));
                 if(entry.position)fields+=detailField('Cargo',escapeHtml(entry.position));
@@ -334,7 +334,7 @@
                         <option value="general" ${isEdit && entry.cotizationType === 'practicas' ? '' : 'selected'}>Régimen general</option>
                         <option value="practicas" ${isEdit && entry.cotizationType === 'practicas' ? 'selected' : ''}>Prácticas formativas</option>
                     </select>
-                    <div class="modal-label">Vida laboral · días cotizados</div>
+                    <div class="modal-label">Vida laboral, días cotizados</div>
                     <input type="number" id="modal-cotized-days" class="modal-input" value="${isEdit && Number.isFinite(Number(entry.cotizedDays)) ? entry.cotizedDays : ''}" min="0" step="1" placeholder="Ej: 32">
                     <div style="font-size:11px;color:var(--text-secondary);margin:-4px 0 10px">
                         Opcional. Si introduces aquí la cifra real de tu informe de Vida Laboral, Bitácora la utilizará en lugar de su estimación. Si lo dejas vacío, calculará los días automáticamente, incluyendo fines de semana.

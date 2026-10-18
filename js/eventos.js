@@ -278,8 +278,8 @@ Calendario:
             const summaryEl = document.getElementById('events-import-summary');
             if (summaryEl) {
                 summaryEl.textContent = `Importados: ${added}` +
-                    (duplicates ? ` · ${duplicates} ya existían` : '') +
-                    (errors ? ` · ${errors} línea${errors === 1 ? '' : 's'} con error` : '');
+                    (duplicates ? `, ${duplicates} ya existían` : '') +
+                    (errors ? `, ${errors} línea${errors === 1 ? '' : 's'} con error` : '');
             }
             saveData().catch(e => { console.error('Error guardando eventos importados:', e); showToast('No se pudo guardar en la nube', true); });
         }
@@ -314,7 +314,7 @@ Calendario:
                             <div class="event-hero-multi-icon">${icon}</div>
                             <div class="event-hero-multi-body">
                                 <div class="event-hero-multi-title">${escapeHtml(e.title)}</div>
-                                <div class="event-hero-multi-meta">${t ? escapeHtml(t) + ' · ' : ''}${e.time ? escapeHtml(e.time) : 'sin hora'}${e.place ? ' · ' + escapeHtml(e.place) : ''}</div>
+                                <div class="event-hero-multi-meta">${t ? escapeHtml(t) + ', ' : ''}${e.time ? escapeHtml(e.time) : 'sin hora'}${e.place ? ', ' + escapeHtml(e.place) : ''}</div>
                             </div>
                         </div>`;
                     };
@@ -323,7 +323,7 @@ Calendario:
                     const rightEvents = todayEvents.filter(studyLinked);
                     html += `
                         <div class="event-hero event-hero-flat event-hero-multi">
-                            <div class="event-hero-kicker" style="margin-bottom:8px">${kicker} · ${todayEvents.length} eventos</div>
+                            <div class="event-hero-kicker" style="margin-bottom:8px">${kicker}, ${todayEvents.length} eventos</div>
                             <div class="event-hero-multi-columns">
                                 <div class="event-hero-multi-col">
                                     ${leftEvents.length ? `<div class="event-hero-multi-list">${leftEvents.map(renderRow).join('')}</div>` : '<div class="event-hero-multi-empty">Sin eventos.</div>'}
@@ -341,7 +341,7 @@ Calendario:
                             <div class="event-hero-body">
                                 <div class="event-hero-kicker">${kicker}</div>
                                 <div class="event-hero-title">${escapeHtml(next.title)}</div>
-                                <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ' · ' : ''}${escapeHtml(next.date)}${next.time ? ' · ' + escapeHtml(next.time) : ''}${next.place ? ' · ' + escapeHtml(next.place) : ''}</div>
+                                <div class="event-hero-meta">${nextType ? escapeHtml(nextType) + ', ' : ''}${escapeHtml(next.date)}${next.time ? ', ' + escapeHtml(next.time) : ''}${next.place ? ', ' + escapeHtml(next.place) : ''}</div>
                             </div>
                             ${next.entradas?.length ? `<button class="event-hero-entrada" onclick="event.stopPropagation();abrirEntradas('${next.id}')">${ENTRADA_ICONO}<span>entrada.</span></button>` : `<div class="event-hero-icon">${EVENT_HERO_ICON_ALERT}</div>`}
                         </div>`;
@@ -476,7 +476,7 @@ Calendario:
             if (!nuevas.length) return;
             filteredEntries = [...entries];
             render();
-            showToast(nuevas.length === 1 ? `«${nuevas[0]}» añadida a películas vistas · valórala cuando puedas` : `${nuevas.length} películas añadidas a vistas`);
+            showToast(nuevas.length === 1 ? `«${nuevas[0]}» añadida a películas vistas, valórala cuando puedas` : `${nuevas.length} películas añadidas a vistas`);
             saveData().catch(e => console.error(e));
         }
 
@@ -516,12 +516,12 @@ Calendario:
             const lista = window._entradasDraft || [];
             const personas = window._personasEvento || 1;
             const siguiente = lista.length + 1;
-            const textoSubir = personas > 1 && siguiente <= personas ? `subir QR · entrada ${siguiente} de ${personas}.` : 'subir captura del QR.';
+            const textoSubir = personas > 1 && siguiente <= personas ? `subir QR, entrada ${siguiente} de ${personas}.` : 'subir captura del QR.';
             return `
                 ${lista.map((x, i) => `
                     <div class="entrada-editor-fila">
                         <span class="entrada-editor-icono">${ENTRADA_ICONO}</span>
-                        <input class="modal-input entrada-editor-etiqueta" value="${escapeHtml(x.etiqueta || '')}" placeholder="Entrada ${i + 1}${personas > 1 ? ' de ' + personas : ''} · p. ej. fila 12, asiento 8" oninput="window._entradasDraft[${i}].etiqueta = this.value">
+                        <input class="modal-input entrada-editor-etiqueta" value="${escapeHtml(x.etiqueta || '')}" placeholder="Entrada ${i + 1}${personas > 1 ? ' de ' + personas : ''}, p. ej. fila 12, asiento 8" oninput="window._entradasDraft[${i}].etiqueta = this.value">
                         <button type="button" class="planner-item-delete" title="Quitar entrada" onclick="quitarEntradaDraft(${i})"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>`).join('')}
                 ${personas > 1 ? `<div class="entrada-editor-progreso">${Math.min(lista.length, personas)} de ${personas} entradas añadidas.</div>` : ''}
@@ -592,7 +592,7 @@ Calendario:
                 nueva.svg = await qrEntradaSvg(nueva);
                 window._entradasDraft.push(nueva);
                 document.getElementById('entradas-editor').innerHTML = renderEntradasEditor();
-                showToast('Entrada añadida · se guardará con el evento');
+                showToast('Entrada añadida, se guardará con el evento');
             } catch (e) {
                 console.error(e);
                 showToast('No se pudo leer la imagen', true);
@@ -651,7 +651,7 @@ Calendario:
                         <button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                     <div class="entrada-ticket-titulo">${escapeHtml(ev.title || '')}</div>
-                    <div class="entrada-ticket-meta">${[ev.place, ev.time].filter(Boolean).map(escapeHtml).join(' · ')}</div>
+                    <div class="entrada-ticket-meta">${[ev.place, ev.time].filter(Boolean).map(escapeHtml).join(', ')}</div>
                     <div class="entrada-ticket-corte"></div>
                     <div class="entrada-ticket-qr">${svg}</div>
                     ${entrada.etiqueta ? `<div class="entrada-ticket-etiqueta">${escapeHtml(entrada.etiqueta)}</div>` : ''}
@@ -783,7 +783,7 @@ Calendario:
                         <div class="entry-color-dot" style="background:${color}"></div>
                         <div class="entry-info">
                             <div class="entry-title">${p.title}</div>
-                            <div class="entry-meta">${p.date || 'Sin fecha'}${p.notes ? ' · ' + linkifyText(p.notes) : ''}</div>
+                            <div class="entry-meta">${p.date || 'Sin fecha'}${p.notes ? ', ' + linkifyText(p.notes) : ''}</div>
                         </div>
                     </div>`;
             });

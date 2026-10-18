@@ -39,7 +39,7 @@ function textoLlegada(p) {
     if (d < 0) return `debía llegar el ${fechaCortaPedido(p.fechaEstimada)}.`;
     if (d === 0) return 'llega hoy.';
     if (d === 1) return 'llega mañana.';
-    return `llega en ${d} días · ${fechaCortaPedido(p.fechaEstimada)}.`;
+    return `llega en ${d} días, ${fechaCortaPedido(p.fechaEstimada)}.`;
 }
 
 function fechaCortaPedido(iso) {
@@ -66,7 +66,7 @@ function renderActualizaciones() {
         <div class="pedidos-cabecera">
             <div>
                 <div class="pedidos-titulo">envíos.</div>
-                <div class="pedidos-sub">${activos.length ? `${activos.length} ${activos.length === 1 ? 'pedido en camino' : 'pedidos en camino'}${estaSemana ? ` · ${estaSemana} llega${estaSemana === 1 ? '' : 'n'} esta semana` : ''}${retrasados ? ` · ${retrasados} con retraso` : ''}.` : 'Nada en camino ahora mismo.'}</div>
+                <div class="pedidos-sub">${activos.length ? `${activos.length} ${activos.length === 1 ? 'pedido en camino' : 'pedidos en camino'}${estaSemana ? `, ${estaSemana} llega${estaSemana === 1 ? '' : 'n'} esta semana` : ''}${retrasados ? `, ${retrasados} con retraso` : ''}.` : 'Nada en camino ahora mismo.'}</div>
             </div>
             <button class="btn-modal-primary pedidos-nuevo" onclick="openPedido()">+ pedido.</button>
         </div>
@@ -116,7 +116,7 @@ function renderPedidoTarjeta(p) {
 function fechaMovimiento(f) {
     const d = new Date(f.length > 10 ? f : f + 'T12:00:00');
     if (isNaN(d)) return f;
-    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + (f.length > 10 ? ' · ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '');
+    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + (f.length > 10 ? ', ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '');
 }
 
 // Consulta ya el transportista (la Edge Function seguimiento-pedidos lo hace

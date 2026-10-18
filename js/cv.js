@@ -68,14 +68,14 @@ function renderCvPaso() {
         pregunta = 'Lo básico para que te puedan contactar.';
         cuerpo = `
             ${campo('cv-nombre', 'Nombre y apellidos', b.nombre)}
-            ${campo('cv-titular', 'Qué eres, en una línea', b.titular, 'placeholder="Estudiante de Psicología · Dependiente con experiencia en atención al cliente"')}
+            ${campo('cv-titular', 'Qué eres, en una línea', b.titular, 'placeholder="Estudiante de Psicología, Dependiente con experiencia en atención al cliente"')}
             <div class="modal-row">${campo('cv-email', 'Correo', b.email, 'type="email"')}${campo('cv-telefono', 'Teléfono', b.telefono, 'type="tel"')}</div>
             <div class="modal-row">${campo('cv-ciudad', 'Ciudad', b.ciudad)}${campo('cv-web', 'LinkedIn o web (opcional)', b.web)}</div>`;
     } else if (paso.startsWith('emp:')) {
         const w = entries.find(e => e.id === paso.slice(4));
         const d = cvEmpleosBorrador[w.id];
         titulo = `${escapeHtml(cvPuesto(w).toLowerCase())}.`;
-        pregunta = `${escapeHtml(cvEmpresa(w) || 'Este empleo')} · ${cvFechas(w.startDate, w.endDate)}. Cuéntale a Bitácora qué hiciste allí; con eso se escribe esta parte del CV.`;
+        pregunta = `${escapeHtml(cvEmpresa(w) || 'Este empleo')}, ${cvFechas(w.startDate, w.endDate)}. Cuéntale a Bitácora qué hiciste allí; con eso se escribe esta parte del CV.`;
         cuerpo = `
             <div class="modal-label">¿Qué hacías en tu día a día?</div>
             <textarea id="cv-funciones" class="modal-input cv-texto" placeholder="Atendía a clientes en caja, reponía el almacén y cerraba la tienda.">${escapeHtml(d.funciones)}</textarea>
@@ -112,15 +112,15 @@ function renderCvPaso() {
         titulo = 'listo.';
         pregunta = 'Tu CV tendrá:';
         cuerpo = `<ul class="cv-resumen-lista">
-            <li><b>${escapeHtml(b.nombre || 'sin nombre')}</b>${b.titular ? ` · ${escapeHtml(b.titular)}` : ''}</li>
-            <li>${empleos.length} ${empleos.length === 1 ? 'empleo' : 'empleos'} · ${b.formacion.filter(f => f.titulo).length} de formación · ${b.idiomas.filter(i => i.idioma).length} idiomas · ${b.habilidades.length} habilidades</li>
+            <li><b>${escapeHtml(b.nombre || 'sin nombre')}</b>${b.titular ? `, ${escapeHtml(b.titular)}` : ''}</li>
+            <li>${empleos.length} ${empleos.length === 1 ? 'empleo' : 'empleos'}, ${b.formacion.filter(f => f.titulo).length} de formación, ${b.idiomas.filter(i => i.idioma).length} idiomas, ${b.habilidades.length} habilidades</li>
             ${!b.email && !b.telefono ? '<li class="cv-falta">Falta un correo o un teléfono de contacto.</li>' : ''}
         </ul>`;
     }
     const ultimo = cvPaso === pasos.length - 1;
     return `
         <div class="cv-progreso">${pasos.map((_, i) => `<span class="${i <= cvPaso ? 'hecho' : ''}"></span>`).join('')}</div>
-        <div class="cv-kicker">crear mi cv. · ${cvPaso + 1} de ${pasos.length}</div>
+        <div class="cv-kicker">crear mi cv. paso ${cvPaso + 1} de ${pasos.length}.</div>
         <div class="modal-title">${titulo}</div>
         <div class="cv-pregunta">${pregunta}</div>
         ${cuerpo}
@@ -263,7 +263,7 @@ function generarPdfCv() {
     doc.text(p.nombre || '', M, y);
     y += 20;
     if (p.titular) texto(p.titular, M, 12, 'normal', GRIS, W - M * 2);
-    const contacto = [p.email, p.telefono, p.ciudad, p.web].filter(Boolean).join('   ·   ');
+    const contacto = [p.email, p.telefono, p.ciudad, p.web].filter(Boolean).join('  ,   ');
     if (contacto) { y += 2; texto(contacto, M, 9, 'normal', GRIS, W - M * 2); }
     y += 6;
 
@@ -279,7 +279,7 @@ function generarPdfCv() {
             const anchoFechas = doc.getTextWidth(fechas);
             doc.setTextColor(...GRIS); doc.text(fechas, W - M - anchoFechas, y);
             texto(cvPuesto(w), COL, 11, 'bold', NEGRO, ANCHO - anchoFechas - 12);
-            if (cvEmpresa(w)) texto(cvEmpresa(w) + (WORK_MODALIDAD_LABELS[w.modalidad] ? ` · ${WORK_MODALIDAD_LABELS[w.modalidad].toLowerCase()}` : ''), COL, 9.5, 'normal', GRIS);
+            if (cvEmpresa(w)) texto(cvEmpresa(w) + (WORK_MODALIDAD_LABELS[w.modalidad] ? `, ${WORK_MODALIDAD_LABELS[w.modalidad].toLowerCase()}` : ''), COL, 9.5, 'normal', GRIS);
             y += 3;
             if (w.cvFunciones) texto(w.cvFunciones, COL, 9.5);
             String(w.cvAprendido || '').split('\n').map(x => x.trim()).filter(Boolean).forEach(l => {
@@ -289,7 +289,7 @@ function generarPdfCv() {
                 doc.text('–', COL, y);
                 texto(l, COL + 11, 9.5, 'normal', NEGRO, ANCHO - 11);
             });
-            if ((w.cvHabilidades || []).length) { y += 2; texto(w.cvHabilidades.join(' · '), COL, 8.5, 'normal', GRIS); }
+            if ((w.cvHabilidades || []).length) { y += 2; texto(w.cvHabilidades.join(', '), COL, 8.5, 'normal', GRIS); }
         });
     });
 
@@ -305,8 +305,8 @@ function generarPdfCv() {
         });
     });
 
-    if (p.habilidades?.length) seccion('Habilidades', () => texto(p.habilidades.join('   ·   '), COL, 10));
-    if (p.idiomas?.length) seccion('Idiomas', () => texto(p.idiomas.map(i => `${i.idioma} – ${i.nivel.toLowerCase()}`).join('   ·   '), COL, 10));
+    if (p.habilidades?.length) seccion('Habilidades', () => texto(p.habilidades.join('  ,   '), COL, 10));
+    if (p.idiomas?.length) seccion('Idiomas', () => texto(p.idiomas.map(i => `${i.idioma} – ${i.nivel.toLowerCase()}`).join('  ,   '), COL, 10));
     if (p.otros) seccion('Otros', () => texto(p.otros, COL, 10));
 
     const nombreArchivo = (p.nombre || 'cv').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

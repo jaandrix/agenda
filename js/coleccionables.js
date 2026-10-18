@@ -353,7 +353,7 @@
             const item = collectibles.find(c => c.id === id);
             const detalles = await Promise.all(lista.slice(0, 8).map(c => mercadoCarta(c.id).catch(() => null)));
             const opciones = detalles.filter(Boolean);
-            const rareza = c => c.rarity && !/^(ninguno|none)$/i.test(c.rarity) ? ' · ' + escapeHtml(c.rarity.toLowerCase()) : '';
+            const rareza = c => c.rarity && !/^(ninguno|none)$/i.test(c.rarity) ? ', ' + escapeHtml(c.rarity.toLowerCase()) : '';
             mercadoPintar(`
                 <div class="coll-mercado-nota">Hay ${lista.length} ${lista.length === 1 ? 'carta posible' : 'cartas posibles'}. ¿Cuál es la tuya?${lista.length > 8 ? ' Añade el set o el número de la carta para afinar.' : ''}</div>
                 <div class="coll-mercado-opciones">
@@ -399,10 +399,10 @@
                     ${c.image ? `<img src="${escapeHtml(c.image)}/low.webp" alt="" loading="lazy">` : ''}
                     <div class="coll-mercado-info">
                         <div class="coll-mercado-nombre">${escapeHtml(c.name)}</div>
-                        <div class="coll-mercado-set">${escapeHtml(c.set?.name || '')} · #${escapeHtml(c.localId)}${c.rarity && !/^(ninguno|none)$/i.test(c.rarity) ? ' · ' + escapeHtml(c.rarity.toLowerCase()) : ''}</div>
+                        <div class="coll-mercado-set">${escapeHtml(c.set?.name || '')}, #${escapeHtml(c.localId)}${c.rarity && !/^(ninguno|none)$/i.test(c.rarity) ? ', ' + escapeHtml(c.rarity.toLowerCase()) : ''}</div>
                         ${cm || tpVariante ? `
                         <div class="coll-mercado-precios">
-                            ${cm ? `<div><span>cardmarket.</span><b>${eur(tendencia)}</b><small>media 30 días ${eur(cm.avg30)} · desde ${eur(cm.low)}</small></div>` : ''}
+                            ${cm ? `<div><span>cardmarket.</span><b>${eur(tendencia)}</b><small>media 30 días ${eur(cm.avg30)}, desde ${eur(cm.low)}</small></div>` : ''}
                             ${tpVariante ? `<div><span>tcgplayer.</span><b>${usd(tpVariante.marketPrice)}</b><small>de ${usd(tpVariante.lowPrice)} a ${usd(tpVariante.highPrice)}</small></div>` : ''}
                         </div>
                         ${noCuadran ? '<div class="coll-mercado-nota aviso">Las dos fuentes no cuadran: puede que una esté mirando otra versión de la carta. Compruébalo en Cardmarket.</div>' : ''}` : '<div class="coll-mercado-nota">Esta carta todavía no tiene precios publicados.</div>'}

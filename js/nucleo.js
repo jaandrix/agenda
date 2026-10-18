@@ -231,7 +231,7 @@
                         <button onclick="descargarDatosCuenta(this)">descargar mis datos.</button>
                         <span>Por si cambias de idea o quieres llevarlos a otra cuenta (Ajustes → tus datos → importar).</span>
                     </div>
-                    <div class="paywall-legal"><a href="legal.html#condiciones" target="_blank" rel="noopener">condiciones.</a> · <a href="legal.html#privacidad" target="_blank" rel="noopener">privacidad.</a></div>
+                    <div class="paywall-legal"><a href="legal.html#condiciones" target="_blank" rel="noopener">condiciones.</a> <a href="legal.html#privacidad" target="_blank" rel="noopener">privacidad.</a></div>
                     <a class="login-back" onclick="handleLogout()">Cerrar sesión</a>
                 </div>
             `; })();
@@ -949,6 +949,9 @@
             if (mobileMenuAbierto) { const cuerpo = document.querySelector('#m-menu .m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = 0; }
             document.getElementById('m-menu')?.classList.toggle('abierto', mobileMenuAbierto);
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
+            // Con el menú abierto la pestaña encendida es la del menú, no la del apartado de debajo.
+            const vista = NAV_VIEW_LABELS[currentView] ? currentView : 'calendar';
+            document.querySelectorAll('.m-tabbar .m-tab').forEach(b => b.classList.toggle('activa', b.classList.contains('m-tab-menu') ? mobileMenuAbierto : !mobileMenuAbierto && b.dataset.vista === vista));
         }
 
         let mobileLastEffectView = null;
@@ -1008,13 +1011,13 @@
         function renderMobileTabbar(view) {
             const reciente = NAV_VIEW_LABELS[mobileReciente] && apartadoVisible(mobileReciente) ? mobileReciente : 'finances';
             const nombre = (NAV_VIEW_LABELS[reciente] || '').toLowerCase();
-            const pestana = (v, icono, texto, extra = '') => `<button class="m-tab ${view === v ? 'activa' : ''}" onclick="mobileIr('${v}', 'm-pestana')" ${extra}>${icono}<span>${texto}</span></button>`;
+            const pestana = (v, icono, texto, extra = '') => `<button class="m-tab ${view === v && !mobileMenuAbierto ? 'activa' : ''}" data-vista="${v}" onclick="mobileIr('${v}', 'm-pestana')" ${extra}>${icono}<span>${texto}</span></button>`;
             return `<nav class="m-tabbar" aria-label="Apartados">
                 ${pestana('calendar', M_ICONOS.inicio, 'inicio.')}
                 ${pestana('planner', M_ICONOS.plan, 'plan.')}
                 <button class="m-tab-mas" onclick="openApuntar()" aria-label="Apuntar algo">${M_ICONOS.mas}</button>
                 ${pestana(reciente, `<i class="m-tab-letra">${escapeHtml(nombre.charAt(0))}</i>`, escapeHtml(mobileAbreviatura(nombre)) + '.', `aria-label="${escapeHtml(nombre)}"`)}
-                <button class="m-tab ${mobileMenuAbierto ? 'activa' : ''}" onclick="toggleMenuMovil()">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
+                <button class="m-tab m-tab-menu ${mobileMenuAbierto ? 'activa' : ''}" onclick="toggleMenuMovil()">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
             </nav>`;
         }
 
@@ -1228,7 +1231,7 @@
                 if (e.type !== 'birthday' && enPlanificador.has(claveFila(e.title, hora))) return;
                 if (e.type === 'work') {
                     const horario = (e.startTime || e.endTime) ? `de ${e.startTime || '--'} a ${e.endTime || '--'}` : '';
-                    const meta = [horario, e.position].filter(Boolean).map(escapeHtml).join(' · ');
+                    const meta = [horario, e.position].filter(Boolean).map(escapeHtml).join(', ');
                     filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(e.startTime || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">trabajando en ${escapeHtml(e.company || 'tu empresa')}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div></div>` });
                     return;
                 }
@@ -1238,7 +1241,7 @@
                 }
                 const titulo = e.type === 'birthday' ? `cumpleaños de ${escapeHtml(e.title)}` : escapeHtml(e.title || '');
                 const cat = categories.find(c => c.id === e.categoryId);
-                const meta = [e.place, cat?.name].filter(Boolean).map(escapeHtml).join(' · ');
+                const meta = [e.place, cat?.name].filter(Boolean).map(escapeHtml).join(', ');
                 filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(hora) || '—'}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${titulo}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div><span class="m-fila-bola" aria-hidden="true"></span></div>` });
             });
             tareasDia.forEach(it => {
@@ -1279,7 +1282,7 @@
 
         function renderMobileFilaTarea(it, offset) {
             const subs = Array.isArray(it.subtasks) ? it.subtasks : [];
-            const meta = [it.arrastrado && !it.done ? 'de ayer' : '', subs.length ? `${subs.filter(s => s.done).length}/${subs.length} subtareas` : '', it.notes || ''].filter(Boolean).map(escapeHtml).join(' · ');
+            const meta = [it.arrastrado && !it.done ? 'de ayer' : '', subs.length ? `${subs.filter(s => s.done).length}/${subs.length} subtareas` : '', it.notes || ''].filter(Boolean).map(escapeHtml).join(', ');
             return `<div class="m-fila ${it.done ? 'hecha' : ''} ${it.arrastrado && !it.done ? 'arrastrada' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}">
                 <span class="m-fila-hora">${escapeHtml(it.time || '—')}</span>
                 <div class="m-fila-cuerpo" onclick="mobileTareaAcciones('${it.id}', ${offset})"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div>
@@ -1484,7 +1487,7 @@
                     const signo = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '<i class="ico ico-cambio" aria-hidden="true"></i>';
                     return `<div class="m-fila ${t.type === 'income' ? 'positiva' : t.type === 'expense' ? 'negativa' : ''}">
                         <span class="m-fila-hora">${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}</span>
-                        <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.note || t.bankNote || cat?.name || 'movimiento')}</div><div class="m-fila-meta">${escapeHtml([cat?.name, financePro.accounts[t.account]?.name].filter(Boolean).join(' · ').toLowerCase())}</div></div>
+                        <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.note || t.bankNote || cat?.name || 'movimiento')}</div><div class="m-fila-meta">${escapeHtml([cat?.name, financePro.accounts[t.account]?.name].filter(Boolean).join(', ').toLowerCase())}</div></div>
                         <span class="m-fila-cifra">${signo}${financeMoney(t.amount)}</span>
                     </div>`;
                 }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin movimientos.</div>'}`;
@@ -1508,7 +1511,7 @@
                     <div class="m-destacado-texto">
                         <div class="m-etiqueta">${dias === 0 ? 'examen.' : dias === 1 ? 'día para el examen.' : 'días para el examen.'}</div>
                         <div class="m-destacado-titulo">${escapeHtml(ex.title || 'examen')}</div>
-                        <div class="m-fila-meta">${escapeHtml(ex.subjectName)} · ${fechaCorta(ex.date)}</div>
+                        <div class="m-fila-meta">${escapeHtml(ex.subjectName)}, ${fechaCorta(ex.date)}</div>
                     </div>
                 </div>` : ''}
                 <div class="m-bloque-cab"><div class="m-etiqueta">clases de hoy.</div></div>
@@ -1536,7 +1539,7 @@
                 const icono = EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro || '';
                 return `<div class="m-evento" data-open-entry="${e.id}">
                     <div class="m-evento-fecha"><span>${d.getDate()}</span><small>${MOBILE_DIAS[d.getDay()]}.</small></div>
-                    <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(e.title || '')}</div><div class="m-fila-meta">${escapeHtml([e.time, e.place].filter(Boolean).join(' · '))}</div></div>
+                    <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(e.title || '')}</div><div class="m-fila-meta">${escapeHtml([e.time, e.place].filter(Boolean).join(', '))}</div></div>
                     ${(e.entradas || []).length ? `<button class="m-mini" onclick="event.stopPropagation();abrirEntradas('${e.id}',0)">qr.</button>` : `<span class="m-evento-icono">${icono}</span>`}
                 </div>`;
             };
@@ -1564,7 +1567,7 @@
                 ${lista.map(n => {
                     const extracto = extractoNota(n.content);
                     return `<div class="m-nota" onclick="openReadNote('${n.id}')">
-                        <div class="m-fila-meta">${formatNoteFecha(n.date)}${n.date === todayISO() ? ' · hoy' : ''}</div>
+                        <div class="m-fila-meta">${formatNoteFecha(n.date)}${n.date === todayISO() ? ', hoy' : ''}</div>
                         <div class="m-nota-titulo">${n.title ? escapeHtml(n.title) : 'sin título.'}</div>
                         ${extracto ? `<div class="m-nota-texto">${escapeHtml(extracto)}</div>` : ''}
                     </div>`;
@@ -1587,7 +1590,7 @@
                     <div class="m-etiqueta">${escapeHtml(st.label.toLowerCase())}.</div>
                     <div class="m-viaje-titulo">${escapeHtml(t.title || t.destination || 'viaje')}</div>
                     <div class="m-viaje-pie">
-                        <div class="m-fila-meta">${t.startDate ? escapeHtml(formatTravelRange(t.startDate, t.endDate)) : 'sin fecha'}${reservas ? ` · ${reservas} reserva${reservas === 1 ? '' : 's'}` : ''}</div>
+                        <div class="m-fila-meta">${t.startDate ? escapeHtml(formatTravelRange(t.startDate, t.endDate)) : 'sin fecha'}${reservas ? `, ${reservas} reserva${reservas === 1 ? '' : 's'}` : ''}</div>
                         ${grande && t.startDate > hoy ? `<div class="m-viaje-cuenta">${Math.round((new Date(t.startDate + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000)}<small>días</small></div>` : ''}
                     </div>
                 </div>`;
@@ -1858,7 +1861,7 @@
         function applyMonthFilterTo(type, items) {
             if (!entryMonthFilter || entryMonthFilter.type !== type) return { items, banner: '' };
             const filtered = items.filter(e => e.date && Number(e.date.slice(5, 7)) === entryMonthFilter.month);
-            const banner = `<div class="month-filter-banner">Mostrando ${ENTRY_TYPE_LABEL_PLURAL[type].toLowerCase()} de <strong>${escapeHtml(entryMonthFilter.monthLabel)}</strong> (todos los años) · <a href="javascript:void(0)" onclick="clearEntryMonthFilter()">Quitar filtro</a></div>`;
+            const banner = `<div class="month-filter-banner">Mostrando ${ENTRY_TYPE_LABEL_PLURAL[type].toLowerCase()} de <strong>${escapeHtml(entryMonthFilter.monthLabel)}</strong> (todos los años), <a href="javascript:void(0)" onclick="clearEntryMonthFilter()">Quitar filtro</a></div>`;
             return { items: filtered, banner };
         }
 
@@ -2168,7 +2171,7 @@
                 </div>`;
             }
             return `<div class="entry-detail-field" style="grid-column:1/-1">
-                <div class="entry-detail-label">Proyectos vinculados · ${linked.length}</div>
+                <div class="entry-detail-label">Proyectos vinculados (${linked.length})</div>
                 ${linked.map(p => {
                     const prog = projectTaskProgress(p);
                     return `<div class="review-item" data-open-entry="${p.id}">

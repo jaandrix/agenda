@@ -263,7 +263,7 @@
             }
             if (yearCalVista === 'esfuerzo') {
                 const notas = dias.map(x => dailyEffort[x.iso]).filter(Boolean);
-                return notas.length ? `media ${(notas.reduce((a, b) => a + b, 0) / notas.length).toLocaleString('es-ES', { maximumFractionDigits: 1 })} · ${notas.length} ${notas.length === 1 ? 'día puntuado' : 'días puntuados'}.` : 'todavía sin días puntuados.';
+                return notas.length ? `media ${(notas.reduce((a, b) => a + b, 0) / notas.length).toLocaleString('es-ES', { maximumFractionDigits: 1 })}, ${notas.length} ${notas.length === 1 ? 'día puntuado' : 'días puntuados'}.` : 'todavía sin días puntuados.';
             }
             const quedan = dias.length - vividos;
             return quedan <= 0 ? `${yearCalYear} ya terminó.` : `le ${quedan === 1 ? 'queda 1 día' : `quedan ${quedan} días`} a ${yearCalYear}.`;
@@ -476,16 +476,17 @@
         function contenidoTiempoWidget() {
             if (!tiempoActual) return '';
             const tipo = tiempoTipo(tiempoActual.code, tiempoActual.esDia);
-            return `${tiempoIcono(tipo)}<span>${Math.round(tiempoActual.temp)}°</span>`;
+            const sensacion = Number.isFinite(tiempoActual.sensacion) ? ` <small class="tiempo-sensacion">(${Math.round(tiempoActual.sensacion)}°)</small>` : '';
+            return `${tiempoIcono(tipo)}<span>${Math.round(tiempoActual.temp)}°${sensacion}</span>`;
         }
 
         function renderTiempoWidget() {
             if (!tiempoActual) {
                 try { const g = JSON.parse(localStorage.getItem(TIEMPO_CACHE) || 'null'); if (g && g.clave === tiempoClave()) tiempoActual = g; } catch (e) { /* sin almacenamiento: se pide a la red */ }
             }
-            if (!tiempoActual || Date.now() - tiempoActual.hora > 30 * 60000) setTimeout(cargarTiempo, 0);
+            if (!tiempoActual || Date.now() - tiempoActual.hora > 30 * 60000 || !('sensacion' in tiempoActual)) setTimeout(() => cargarTiempo(!tiempoActual || !('sensacion' in tiempoActual)), 0);
             const c = ciudadTiempo || CIUDAD_TIEMPO_DEFECTO;
-            const desc = tiempoActual ? `${c.nombre}: ${TIEMPO_TEXTO[tiempoTipo(tiempoActual.code, tiempoActual.esDia)]}, ${Math.round(tiempoActual.temp)}°` : c.nombre;
+            const desc = tiempoActual ? `${c.nombre}: ${TIEMPO_TEXTO[tiempoTipo(tiempoActual.code, tiempoActual.esDia)]}, ${Math.round(tiempoActual.temp)}°${Number.isFinite(tiempoActual.sensacion) ? `, sensación de ${Math.round(tiempoActual.sensacion)}°` : ''}` : c.nombre;
             return `<button class="tiempo-widget" onclick="openTiempo()" title="${escapeHtml(desc)}" aria-label="${escapeHtml(desc)}">${contenidoTiempoWidget()}</button>`;
         }
 
@@ -496,11 +497,11 @@
             tiempoCargando = true;
             try {
                 const c = ciudadTiempo || CIUDAD_TIEMPO_DEFECTO;
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=4&timezone=auto`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,apparent_temperature,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=4&timezone=auto`;
                 const r = await fetch(url).then(x => x.json());
                 if (!r?.current) return;
                 tiempoActual = {
-                    clave, hora: Date.now(), temp: r.current.temperature_2m, code: r.current.weather_code, esDia: r.current.is_day === 1,
+                    clave, hora: Date.now(), temp: r.current.temperature_2m, sensacion: r.current.apparent_temperature, code: r.current.weather_code, esDia: r.current.is_day === 1,
                     dias: (r.daily?.time || []).map((f, i) => ({ fecha: f, code: r.daily.weather_code[i], max: r.daily.temperature_2m_max[i], min: r.daily.temperature_2m_min[i], lluvia: r.daily.precipitation_probability_max?.[i] }))
                 };
                 try { localStorage.setItem(TIEMPO_CACHE, JSON.stringify(tiempoActual)); } catch (e) { /* sin almacenamiento */ }
@@ -523,8 +524,8 @@
                 <div class="tiempo-ahora">
                     ${tiempoIcono(tipo, 56)}
                     <div>
-                        <div class="tiempo-ahora-temp">${Math.round(tiempoActual.temp)}°</div>
-                        <div class="tiempo-ahora-desc">${TIEMPO_TEXTO[tipo]}.${hoy ? ` máx ${Math.round(hoy.max)}° · mín ${Math.round(hoy.min)}°` : ''}</div>
+                        <div class="tiempo-ahora-temp">${Math.round(tiempoActual.temp)}°${Number.isFinite(tiempoActual.sensacion) ? ` <small class="tiempo-sensacion">(sensación de ${Math.round(tiempoActual.sensacion)}°)</small>` : ''}</div>
+                        <div class="tiempo-ahora-desc">${TIEMPO_TEXTO[tipo]}.${hoy ? ` máx ${Math.round(hoy.max)}°, mín ${Math.round(hoy.min)}°` : ''}</div>
                     </div>
                 </div>
                 ${(tiempoActual.dias || []).length > 1 ? `
@@ -858,7 +859,7 @@
 
                 if (e._recurringPayment) {
                     titleHtml = `Pago: ${e.title}`;
-                    metaHtml = `${e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'} · ${financeMoney(e.amount)}`;
+                    metaHtml = `${e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'}, ${financeMoney(e.amount)}`;
                 } else if (e.type === 'work') {
                     const start = e.startTime || '';
                     const end = e.endTime || '';
@@ -871,7 +872,7 @@
                     metaHtml = 'Cumpleaños';
                 } else {
                     titleHtml = e.title;
-                    metaHtml = `${catName}${e.notes ? ' · ' + linkifyText(e.notes) : ''}`;
+                    metaHtml = `${catName}${e.notes ? ', ' + linkifyText(e.notes) : ''}`;
                 }
 
                 return `
@@ -906,7 +907,7 @@
                 let titleHtml, metaHtml;
                 if (e._recurringPayment) {
                     titleHtml = `Pago: ${e.title}`;
-                    metaHtml = `${e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'} · ${financeMoney(e.amount)}`;
+                    metaHtml = `${e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'}, ${financeMoney(e.amount)}`;
                 } else if (e.type === 'work') {
                     const start = e.startTime || '';
                     const end = e.endTime || '';
@@ -919,7 +920,7 @@
                     metaHtml = 'Cumpleaños';
                 } else {
                     titleHtml = e.title;
-                    metaHtml = `${catName}${e.notes ? ' · ' + linkifyText(e.notes) : ''}`;
+                    metaHtml = `${catName}${e.notes ? ', ' + linkifyText(e.notes) : ''}`;
                 }
 
                 return `

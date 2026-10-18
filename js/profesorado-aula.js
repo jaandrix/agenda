@@ -79,7 +79,7 @@ function renderFichaProfe() {
     }[profeFicha.pestana](c);
     return `
         <div class="modal-title modal-title-contenido"><span class="profe-ficha-titulo" style="--c:${c.color}">${escapeHtml(c.nombre)}</span><button class="modal-close" onclick="closeModal()" aria-label="Cerrar"><i class='ico ico-x' aria-hidden=true></i></button></div>
-        <div class="profe-ficha-sub">${escapeHtml(c.materia || 'sin materia')} · ${c.alumnos.length} ${c.alumnos.length === 1 ? 'alumno' : 'alumnos'} · ${(c.dias || []).length ? c.dias.map(d => PROFE_DIAS[d]).join(', ') : 'de lunes a viernes'}</div>
+        <div class="profe-ficha-sub">${escapeHtml(c.materia || 'sin materia')}, ${c.alumnos.length} ${c.alumnos.length === 1 ? 'alumno' : 'alumnos'}, ${(c.dias || []).length ? c.dias.map(d => PROFE_DIAS[d]).join(', ') : 'de lunes a viernes'}</div>
         <div class="profe-pestanas">${pestanas.map(([k, t]) => `<button class="profe-chip ${profeFicha.pestana === k ? 'activa' : ''}" onclick="profeIrPestana('${k}')">${t}</button>`).join('')}</div>
         ${cuerpo}`;
 }
@@ -163,10 +163,10 @@ function renderCuadernoProfe(c) {
             </div>
         </div>
         ${!alumnos.length ? `<div class="profe-ficha-vacio" style="padding:18px 2px">Añade a tus alumnos con <b>+ alumnos.</b>: puedes pegar la lista entera, uno por línea.</div>` : `
-        <div class="profe-cuaderno-resumen">${mediaGrupo !== null ? `Media del grupo: <b class="${mediaGrupo < 5 ? 'suspenso' : ''}">${profeNotaTexto(mediaGrupo)}</b> · ${suspensos ? `<b class="suspenso">${suspensos} por debajo de 5</b>` : 'nadie por debajo de 5'}` : 'Todavía no hay notas.'}</div>
+        <div class="profe-cuaderno-resumen">${mediaGrupo !== null ? `Media del grupo: <b class="${mediaGrupo < 5 ? 'suspenso' : ''}">${profeNotaTexto(mediaGrupo)}</b>, ${suspensos ? `<b class="suspenso">${suspensos} por debajo de 5</b>` : 'nadie por debajo de 5'}` : 'Todavía no hay notas.'}</div>
         <div class="profe-cuaderno-wrap">
             <table class="profe-cuaderno">
-                <thead><tr><th class="profe-cuaderno-alumno">alumno.</th>${cols.map(e => `<th><button onclick="openColumnaProfe('${e.id}')"><b>${escapeHtml(e.nombre)}</b><small>${e.fecha ? profeFecha(e.fecha) : ''}${Number(e.peso) && Number(e.peso) !== 1 ? ` · peso ${String(e.peso).replace('.', ',')}` : ''}${e.periodo ? ` · ${e.periodo}ª` : ''}</small></button></th>`).join('')}<th class="profe-cuaderno-media">media.</th></tr></thead>
+                <thead><tr><th class="profe-cuaderno-alumno">alumno.</th>${cols.map(e => `<th><button onclick="openColumnaProfe('${e.id}')"><b>${escapeHtml(e.nombre)}</b><small>${e.fecha ? profeFecha(e.fecha) : ''}${Number(e.peso) && Number(e.peso) !== 1 ? `, peso ${String(e.peso).replace('.', ',')}` : ''}${e.periodo ? `, ${e.periodo}ª` : ''}</small></button></th>`).join('')}<th class="profe-cuaderno-media">media.</th></tr></thead>
                 <tbody>${alumnos.map((a, f) => {
                     const media = profeMediaAlumno(c, a.id, cols);
                     return `<tr>
@@ -489,7 +489,7 @@ function renderHorarioSemanalProfe() {
         <div class="profe-semana-cab"><span></span>${dias.map(d => `<span class="${d === hoyDia ? 'hoy' : ''}">${PROFE_DIAS[d]}</span>`).join('')}</div>
         <div class="profe-semana-cuerpo" style="height:${alto}px">
             <div class="profe-semana-horas">${horas.map(m => `<span style="top:${(m - desde) * 1.1}px">${String(m / 60).padStart(2, '0')}:00</span>`).join('')}</div>
-            ${dias.map(d => `<div class="profe-semana-dia ${d === hoyDia ? 'hoy' : ''}">${horas.map(m => `<i style="top:${(m - desde) * 1.1}px"></i>`).join('')}${franjas.filter(f => Number(f.dia) === d).map(f => `<button class="profe-bloque" style="--c:${f.c.color};top:${(min(f.inicio) - desde) * 1.1}px;height:${(min(f.fin) - min(f.inicio)) * 1.1 - 3}px" onclick="openFichaClaseProfe('${f.c.id}','horario')"><b>${escapeHtml(f.c.nombre)}</b><small>${f.inicio}–${f.fin}${f.aula ? ` · ${escapeHtml(f.aula)}` : ''}</small></button>`).join('')}</div>`).join('')}
+            ${dias.map(d => `<div class="profe-semana-dia ${d === hoyDia ? 'hoy' : ''}">${horas.map(m => `<i style="top:${(m - desde) * 1.1}px"></i>`).join('')}${franjas.filter(f => Number(f.dia) === d).map(f => `<button class="profe-bloque" style="--c:${f.c.color};top:${(min(f.inicio) - desde) * 1.1}px;height:${(min(f.fin) - min(f.inicio)) * 1.1 - 3}px" onclick="openFichaClaseProfe('${f.c.id}','horario')"><b>${escapeHtml(f.c.nombre)}</b><small>${f.inicio}–${f.fin}${f.aula ? `, ${escapeHtml(f.aula)}` : ''}</small></button>`).join('')}</div>`).join('')}
         </div>
     </div>`;
 }

@@ -192,7 +192,7 @@ function openPlanesPago() {
             ${renderPlanesPago()}
             ${suscripcionActual?.estado === 'prueba' ? renderCanjeRegalo() : ''}
         </div>
-        <div class="paywall-legal"><a href="legal.html#condiciones" target="_blank" rel="noopener">condiciones.</a> · <a href="legal.html#privacidad" target="_blank" rel="noopener">privacidad.</a></div>
+        <div class="paywall-legal"><a href="legal.html#condiciones" target="_blank" rel="noopener">condiciones.</a> <a href="legal.html#privacidad" target="_blank" rel="noopener">privacidad.</a></div>
     `);
     cargarPlazasFundador();
 }

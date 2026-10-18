@@ -19,11 +19,11 @@
 
         function renderCulture() {
             const tabs = [
-                { id: 'books', label: 'libros.', icon: '◊', count: entries.filter(e => e.type === 'book').length },
-                { id: 'series', label: 'series.', icon: '◈', count: entries.filter(e => e.type === 'series').length },
-                { id: 'movies', label: 'películas.', icon: '▸', count: entries.filter(e => e.type === 'movie').length },
-                { id: 'games', label: 'videojuegos.', icon: '◉', count: entries.filter(e => e.type === 'game').length },
-                { id: 'lists', label: 'listas.', icon: '☰', count: cultureLists.length },
+                { id: 'books', label: 'libros.', corto: 'libros.', count: entries.filter(e => e.type === 'book').length },
+                { id: 'series', label: 'series.', corto: 'series.', count: entries.filter(e => e.type === 'series').length },
+                { id: 'movies', label: 'películas.', corto: 'pelis.', count: entries.filter(e => e.type === 'movie').length },
+                { id: 'games', label: 'videojuegos.', corto: 'juegos.', count: entries.filter(e => e.type === 'game').length },
+                { id: 'lists', label: 'listas.', corto: 'listas.', count: cultureLists.length },
             ];
             const tipoActivo = CULTURE_TAB_TO_TYPE[cultureTab];
             const pendientes = recomendaciones.filter(r => r.tipo === tipoActivo).length;
@@ -33,7 +33,7 @@
                 <div class="culture-tabs" style="margin-bottom:0">
                     ${tabs.map(t => `
                         <button class="culture-tab ${cultureTab === t.id ? 'active' : ''}" onclick="setCultureTab('${t.id}')">
-                            <span>${t.label}</span>
+                            <span class="culture-tab-largo">${t.label}</span><span class="culture-tab-corto">${t.corto}</span>
                             <span class="culture-tab-count">${t.count}</span>
                         </button>`).join('')}
                 </div>
@@ -80,7 +80,7 @@
                 <div>
                     <button class="btn-secondary" style="width:auto;margin-bottom:12px" onclick="window._selectedCultureList=null;render()">← Volver a Listas</button>
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-                        <div style="font-size:18px;font-weight:700">${escapeHtml(list.name)} · ${items.length}</div>
+                        <div style="font-size:18px;font-weight:700">${escapeHtml(list.name)} (${items.length})</div>
                         <div style="display:flex;gap:8px">
                             <button class="finance-oneoff-btn" onclick="openCultureListPicker('${list.id}')">+ Añadir</button>
                             <button class="finance-oneoff-btn" onclick="abrirCompartirListaModal('${list.id}')">Compartir</button>
@@ -157,7 +157,7 @@
             return filtered.map(e => `
                 <label class="weekly-task-row">
                     <input type="checkbox" class="weekly-task-check" ${pending.includes(e.id) ? 'checked' : ''} onchange="toggleCultureListEntry('${e.id}')">
-                    <span class="weekly-task-text">${escapeHtml(e.title)} <span style="color:var(--text-secondary)">· ${TYPE_LABELS[e.type] || ''}</span></span>
+                    <span class="weekly-task-text">${escapeHtml(e.title)} <span style="color:var(--text-secondary)">(${(TYPE_LABELS[e.type] || '').toLowerCase()})</span></span>
                 </label>`).join('');
         }
 
@@ -306,7 +306,7 @@
                         return `
                         <div class="card" style="background:transparent;border-style:dashed;margin-bottom:10px">
                             <div style="font-weight:600">${escapeHtml(lista.name || 'Lista')}</div>
-                            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">De ${escapeHtml(l.remitente_nombre || 'un amigo')} · ${items.length} elemento${items.length === 1 ? '' : 's'}</div>
+                            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">De ${escapeHtml(l.remitente_nombre || 'un amigo')}, ${items.length} elemento${items.length === 1 ? '' : 's'}</div>
                             ${l.nota ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${linkifyText(l.nota)}</div>` : ''}
                             <div style="display:flex;gap:8px;margin-top:10px">
                                 <button class="btn-modal-primary" style="width:auto" onclick="anadirListaCompartidaAMisListas('${l.id}')">+ Añadir a mis listas</button>
@@ -403,8 +403,7 @@
                 ? `<div class="media-card-stars">${stars}</div>`
                 : (badge ? `<div class="media-card-badge">${escapeHtml(badge)}</div>` : '');
             // Todas las tarjetas tienen la forma de una portada (2:3) y el título
-            // debajo, haya portada o no, para que la rejilla vaya a juego. El
-            // grano iguala las portadas que vienen de fuentes distintas.
+            // debajo, haya portada o no, para que la rejilla vaya a juego.
             const caja = entry.portada
                 ? `<div class="media-portada"><img src="${escapeHtml(portadaMiniatura(entry.portada))}" alt="" ${portadasVistas.has(portadaMiniatura(entry.portada)) ? '' : 'loading="lazy"'} onload="portadasVistas.add(this.getAttribute('src'))" onerror="this.closest('.media-portada').classList.add('rota')"><span class="media-portada-icono">${mediaCardIcon(entry.type)}</span></div>`
                 : `<div class="media-portada sin-portada"><div class="media-card-icon">${mediaCardIcon(entry.type)}</div>${entry.portadaPendiente ? `<button class="media-card-elegir" onclick="event.stopPropagation();openElegirPortada('${entry.id}')">elegir portada.</button>` : ''}</div>`;
@@ -486,7 +485,7 @@
                 const caja = document.getElementById('portada-resultados');
                 if (!caja) return;
                 window._portadaCandidatas = resultados;
-                caja.innerHTML = resultados.length ? resultados.slice(0, 18).map((r, i) => `<button class="portada-candidata" onclick="ponerPortada('${id}', window._portadaCandidatas[${i}].imagen)"><span class="portada-marco"><img src="${escapeHtml(r.imagen)}" alt="" loading="lazy" onerror="this.closest('.portada-candidata').remove()"></span><b>${escapeHtml(r.titulo || '')}</b><small>${escapeHtml([r.anio, r.autor, r.fuente].filter(Boolean).join(' · '))}</small></button>`).join('')
+                caja.innerHTML = resultados.length ? resultados.slice(0, 18).map((r, i) => `<button class="portada-candidata" onclick="ponerPortada('${id}', window._portadaCandidatas[${i}].imagen)"><span class="portada-marco"><img src="${escapeHtml(r.imagen)}" alt="" loading="lazy" onerror="this.closest('.portada-candidata').remove()"></span><b>${escapeHtml(r.titulo || '')}</b><small>${escapeHtml([r.anio, r.autor, r.fuente].filter(Boolean).join(', '))}</small></button>`).join('')
                     : `<div class="finance-empty-line">${necesitaClave ? 'Las portadas de películas llegan desde TMDB, que todavía no está conectado. Mientras tanto, puedes pegar el enlace de una imagen.' : 'No he encontrado nada. Prueba a escribir el título de otra forma (o en su idioma original).'}</div>`;
             }).catch(() => { const caja = document.getElementById('portada-resultados'); if (caja) caja.innerHTML = '<div class="finance-empty-line">No se pudo buscar ahora.</div>'; });
         }
@@ -600,9 +599,9 @@
                     closeModal();
                     render();
                     showToast(`Importados ${added} libro${added === 1 ? '' : 's'}` +
-                        (duplicates ? ` · ${duplicates} ya existían` : '') +
-                        (skippedToRead ? ` · ${skippedToRead} pendientes de leer omitidos` : '') +
-                        (errors ? ` · ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
+                        (duplicates ? `, ${duplicates} ya existían` : '') +
+                        (skippedToRead ? `, ${skippedToRead} pendientes de leer omitidos` : '') +
+                        (errors ? `, ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
                     try { await saveData(); } catch (err) { console.error('Error guardando la importación de Goodreads:', err); showToast('No se pudo guardar en la nube', true); }
                 } catch (err) {
                     console.error('Error importando CSV de Goodreads:', err);
@@ -799,7 +798,7 @@
                             title,
                             date,
                             rating,
-                            notes: [listName ? `Lista Letterboxd: ${listName}` : '', year ? `Año: ${year}` : '', uri].filter(Boolean).join(' · ')
+                            notes: [listName ? `Lista Letterboxd: ${listName}` : '', year ? `Año: ${year}` : '', uri].filter(Boolean).join(', ')
                         });
                         added++;
                     }
@@ -807,8 +806,8 @@
                     closeModal();
                     render();
                     showToast(`Importadas ${added} película${added === 1 ? '' : 's'}` +
-                        (duplicates ? ` · ${duplicates} ya existían` : '') +
-                        (errors ? ` · ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
+                        (duplicates ? `, ${duplicates} ya existían` : '') +
+                        (errors ? `, ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
                     try { await saveData(); } catch (err) { console.error('Error guardando la importación de Letterboxd:', err); showToast('No se pudo guardar en la nube', true); }
                 } catch (err) {
                     console.error('Error importando CSV de Letterboxd:', err);
@@ -896,9 +895,9 @@
                     closeModal();
                     render();
                     showToast(`Importadas ${added} serie${added === 1 ? '' : 's'}` +
-                        (duplicates ? ` · ${duplicates} ya existían` : '') +
-                        (skippedNotSeries ? ` · ${skippedNotSeries} no eran series` : '') +
-                        (errors ? ` · ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
+                        (duplicates ? `, ${duplicates} ya existían` : '') +
+                        (skippedNotSeries ? `, ${skippedNotSeries} no eran series` : '') +
+                        (errors ? `, ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
                     try { await saveData(); } catch (err) { console.error('Error guardando la importación de IMDb:', err); showToast('No se pudo guardar en la nube', true); }
                 } catch (err) {
                     console.error('Error importando CSV de IMDb:', err);
@@ -1008,7 +1007,7 @@
                     icon: NOTIF_ICON_EVENT,
                     iconClass: 'icon-event',
                     title: e.title,
-                    sub: e.time ? `Hoy · ${e.time}` : 'Hoy',
+                    sub: e.time ? `Hoy, ${e.time}` : 'Hoy',
                     date: today + 'T' + (e.time || '00:00'),
                     onClick: () => { closeNotifPanel(); navigateToEntry(e.id); }
                 });
@@ -1498,7 +1497,7 @@
                         return `
                         <div class="trip-card" style="background:transparent;border-style:dashed">
                             <div style="font-weight:700;font-size:15px;color:var(--text-primary)">${escapeHtml(viaje.title || 'Viaje')}</div>
-                            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${escapeHtml(viaje.destination || '')}${viaje.startDate ? ' · ' + escapeHtml(formatTravelRange(viaje.startDate, viaje.endDate)) : ''}</div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${escapeHtml(viaje.destination || '')}${viaje.startDate ? ', ' + escapeHtml(formatTravelRange(viaje.startDate, viaje.endDate)) : ''}</div>
                             <div style="font-size:11px;color:var(--text-secondary);margin-top:6px">De ${escapeHtml(v.remitente_nombre || 'un amigo')}</div>
                             ${v.nota ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;font-style:italic">"${escapeHtml(v.nota)}"</div>` : ''}
                             <div style="display:flex;gap:8px;margin-top:10px">

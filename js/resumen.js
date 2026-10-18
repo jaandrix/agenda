@@ -49,7 +49,7 @@
                     ${plannerToday.map(it => `
                         <label class="weekly-task-row">
                             <input class="weekly-task-check" type="checkbox" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', 0)">
-                            <span class="weekly-task-text" style="${it.done ? 'text-decoration:line-through;opacity:0.6' : ''}">${it.time ? `${escapeHtml(it.time)} · ` : ''}${escapeHtml(it.title)}</span>
+                            <span class="weekly-task-text" style="${it.done ? 'text-decoration:line-through;opacity:0.6' : ''}">${it.time ? `${escapeHtml(it.time)}, ` : ''}${escapeHtml(it.title)}</span>
                         </label>`).join('')}
                     ${dueToday.map(t => `
                         <label class="weekly-task-row">
@@ -362,7 +362,7 @@
                     <div class="home-stats-headline-item"><div class="num" id="home-stats-entries" data-value="${entradasPropias}">0</div><div class="txt">entradas</div></div>
                     <div class="home-stats-headline-item"><div class="num" id="home-stats-actions" data-value="${totalActions}">0</div><div class="txt">acciones</div></div>
                 </div>
-                <div class="home-stats-chart-label">actividad · últimos 30 días</div>
+                <div class="home-stats-chart-label">actividad de los últimos 30 días.</div>
                 <div id="home-stats-chart">${renderHomeStatsChart(30)}</div>
                 <div class="home-stats-breakdown-label">por categoría</div>
                 <div class="summary-stat-list">

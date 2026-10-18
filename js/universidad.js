@@ -25,9 +25,9 @@ function cuatrisOrdenados() {
 
 function nombreCuatri(q, corto = false) {
     if (!q) return '';
-    if (q.periodo === 0) return corto ? `${q.curso}º curso.` : `${q.curso}º curso${q.anio ? ` · ${q.anio}` : ''}.`;
+    if (q.periodo === 0) return corto ? `${q.curso}º curso.` : `${q.curso}º curso${q.anio ? `, ${q.anio}` : ''}.`;
     const periodo = q.periodo === 1 ? '1er' : '2º';
-    return corto ? `${q.curso}º · ${periodo} cuatri.` : `${q.curso}º curso · ${periodo} cuatrimestre${q.anio ? ` · ${q.anio}` : ''}.`;
+    return corto ? `${q.curso}º, ${periodo} cuatri.` : `${q.curso}º curso, ${periodo} cuatrimestre${q.anio ? `, ${q.anio}` : ''}.`;
 }
 
 // Estudios llama a esto para listar asignaturas: con Universidad activa,
@@ -181,7 +181,7 @@ function renderUniversidad() {
         <div class="uni-cabecera">
             <div>
                 <div class="uni-titulo">universidad.</div>
-                <div class="uni-sub">${escapeHtml(c.grado || 'mi carrera')}${c.universidad ? ` · ${escapeHtml(c.universidad)}` : ''}</div>
+                <div class="uni-sub">${escapeHtml(c.grado || 'mi carrera')}${c.universidad ? `, ${escapeHtml(c.universidad)}` : ''}</div>
             </div>
             <button class="pedido-btn" onclick="openConfigCarrera()">editar carrera.</button>
         </div>
@@ -242,7 +242,7 @@ function renderCuatriActual(q) {
                 </div>
             </div>
             <div class="uni-bloque-cab">
-                <div class="uni-etiqueta">asignaturas. <span>${asignaturas.length}${creditos ? ` · ${creditos} créditos` : ''}</span></div>
+                <div class="uni-etiqueta">asignaturas. <span>${asignaturas.length}${creditos ? `, ${creditos} créditos` : ''}</span></div>
                 <button class="pedido-btn" onclick="nuevaAsignaturaEn('${q.id}')">+ asignatura.</button>
             </div>
             ${asignaturas.length ? `<div class="uni-asignaturas">${asignaturas.map(renderAsignaturaUni).join('')}</div>` : '<div class="finance-empty-line">Añade las asignaturas de este cuatrimestre.</div>'}
@@ -258,10 +258,10 @@ function renderAsignaturaUni(s) {
             <span class="uni-asig-color" style="background:${escapeHtml(s.color || '#5b8def')}"></span>
             <button class="uni-asig-cuerpo" onclick="openSubjectDetail('${s.id}')">
                 <span class="uni-asig-nombre">${escapeHtml(s.name)}</span>
-                <span class="uni-asig-meta">${s.creditos ? `${s.creditos} créditos · ` : ''}${s.anual ? 'anual · ' : ''}${estado}.${necesita ? ` ${necesita}` : ''}</span>
+                <span class="uni-asig-meta">${s.creditos ? `${s.creditos} créditos, ` : ''}${s.anual ? 'anual, ' : ''}${estado}.${necesita ? ` ${necesita}` : ''}</span>
             </button>
             <span class="uni-asig-nota">${nota !== null ? nota.toFixed(1) : '—'}</span>
-            <button class="uni-asig-editar" onclick="openAsignaturaCarrera('${s.id}')" aria-label="Créditos y nota">···</button>
+            <button class="uni-asig-editar" onclick="openAsignaturaCarrera('${s.id}')" aria-label="Créditos y nota"><i class='ico ico-lapiz' aria-hidden=true></i></button>
         </div>`;
 }
 

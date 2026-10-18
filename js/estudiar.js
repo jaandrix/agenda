@@ -506,7 +506,7 @@ function renderEstHoy() {
             <button class="compra-check ${it.hecho ? 'on' : ''}" onclick="estPlanMarcar('${it.id}')" aria-label="Marcar como estudiado"></button>
             <div class="est-plan-txt">
                 <b>${a?.color ? `<i style="background:${escapeHtml(a.color)}"></i>` : ''}${escapeHtml(it.texto)}</b>
-                <span>${f && !it.hecho ? `${estHora(f[0])}–${estHora(f[1])} · ` : ''}${Array.from({ length: it.pomodoros || 1 }, (_, i) => `<em class="${i < (it.hechos || 0) ? 'on' : ''}"></em>`).join('')}</span>
+                <span>${f && !it.hecho ? `${estHora(f[0])}–${estHora(f[1])}, ` : ''}${Array.from({ length: it.pomodoros || 1 }, (_, i) => `<em class="${i < (it.hechos || 0) ? 'on' : ''}"></em>`).join('')}</span>
             </div>
             <div class="est-plan-acciones">
                 ${it.hecho ? '' : `<button onclick="estPlanPomodoros('${it.id}',-1)" aria-label="Un pomodoro menos">−</button><button onclick="estPlanPomodoros('${it.id}',1)" aria-label="Un pomodoro más">+</button><button onclick="estPlanMover('${it.id}',-1)" aria-label="Subir">↑</button><button class="est-play" onclick="pomoEmpezar('${it.id}')" aria-label="Estudiar esto ahora">▶</button>`}
@@ -788,7 +788,7 @@ function renderEstTarjetas() {
             return `<div class="est-mazo">
                 <button class="est-mazo-info" onclick="openEstVerMazo('${m.id}')">
                     <b>${a?.color ? `<i style="background:${escapeHtml(a.color)}"></i>` : ''}${escapeHtml(m.nombre)}</b>
-                    <span>${c.total} ${c.total === 1 ? 'tarjeta' : 'tarjetas'}${a ? ` · ${escapeHtml(a.name)}` : ''}</span>
+                    <span>${c.total} ${c.total === 1 ? 'tarjeta' : 'tarjetas'}${a ? `, ${escapeHtml(a.name)}` : ''}</span>
                 </button>
                 <div class="est-mazo-cifras"><span class="nuevas" title="Nuevas para hoy">${c.nuevasHoy}</span><span class="toca" title="Por repasar">${c.toca}</span></div>
                 <div class="est-mazo-acciones">
@@ -931,7 +931,7 @@ function renderEstRepaso() {
     return `<div class="est-repaso">
         <div class="est-repaso-cab">
             <button class="est-enlace" onclick="estSalirRepaso()">← salir.</button>
-            <span>${escapeHtml(m?.nombre || '')} · quedan ${pendientes}${estFoco ? '' : ` · <button class="est-enlace" onclick="abrirEstFoco()" title="La tarjeta sola, a toda la ventana">modo focus.</button>`}</span>
+            <span>${escapeHtml(m?.nombre || '')}, quedan ${pendientes}${estFoco ? '' : `, <button class="est-enlace" onclick="abrirEstFoco()" title="La tarjeta sola, a toda la ventana">modo focus.</button>`}</span>
         </div>
         <div class="est-barra"><i style="width:${Math.min(100, estRepaso.hechas / Math.max(1, estRepaso.total) * 100)}%"></i></div>
         <div class="est-carta ${!r ? 'nueva' : ''}">

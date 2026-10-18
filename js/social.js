@@ -169,7 +169,7 @@ function renderFriendsView() {
         gruposGastos.length ? `${gruposGastos.length} ${gruposGastos.length === 1 ? 'grupo' : 'grupos'}` : '',
         solicitudesRecibidas.length ? `${solicitudesRecibidas.length} ${solicitudesRecibidas.length === 1 ? 'solicitud' : 'solicitudes'}` : '',
         eventosCompartidosRecibidos.length ? `${eventosCompartidosRecibidos.length} ${eventosCompartidosRecibidos.length === 1 ? 'evento por ver' : 'eventos por ver'}` : '',
-    ].filter(Boolean).join(' · ');
+    ].filter(Boolean).join(', ');
     return `
     <div class="ajustes-vista social" id="social">
         <div class="ajustes-cabecera">
@@ -209,7 +209,7 @@ function renderListaGrupos() {
                     </span>
                     <span class="social-grupo-pie">
                         <span class="social-grupo-saldo ${t.saldo > 0 ? 'positivo' : t.saldo < 0 ? 'negativo' : ''}">${textoSaldo(t.saldo)}</span>
-                        <span class="social-grupo-meta">${dinero(t.total / 100)} · ${((n) => `${n} ${n === 1 ? 'gasto' : 'gastos'}`)(g.gastos.filter(x => x.tipo !== 'transferencia').length)}</span>
+                        <span class="social-grupo-meta">${dinero(t.total / 100)}, ${((n) => `${n} ${n === 1 ? 'gasto' : 'gastos'}`)(g.gastos.filter(x => x.tipo !== 'transferencia').length)}</span>
                     </span>
                 </button>`;
             }).join('')}
@@ -232,7 +232,7 @@ function renderEventosSocial() {
                 <div class="social-recibido">
                     <div class="social-recibido-de">${escapeHtml(e.nombre || 'Un amigo')}</div>
                     <div class="social-recibido-titulo">${escapeHtml(ev.title || 'Evento')}</div>
-                    <div class="social-recibido-meta">${ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}${ev.time ? ` · ${escapeHtml(ev.time)}` : ''}${ev.place ? ` · ${escapeHtml(ev.place)}` : ''}</div>
+                    <div class="social-recibido-meta">${ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}${ev.time ? `, ${escapeHtml(ev.time)}` : ''}${ev.place ? `, ${escapeHtml(ev.place)}` : ''}</div>
                     ${e.nota ? `<div class="social-recibido-nota">«${escapeHtml(e.nota)}»</div>` : ''}
                     <div class="ajuste-botones"><button class="btn-modal-primary social-btn" onclick="aceptarEventoCompartido('${e.id}')">añadir.</button><button class="btn-secondary" style="width:auto" onclick="descartarEventoCompartido('${e.id}')">descartar.</button></div>
                 </div>`;
@@ -287,7 +287,7 @@ function renderGrupoGastos() {
         </div>
         <div class="ajustes-cabecera social-grupo-nombre">
             <div class="ajustes-titulo">${escapeHtml(g.nombre)}</div>
-            <div class="ajustes-sub">${g.descripcion ? `${escapeHtml(g.descripcion)} · ` : ''}${g.miembros.length} personas</div>
+            <div class="ajustes-sub">${g.descripcion ? `${escapeHtml(g.descripcion)}, ` : ''}${g.miembros.length} personas</div>
         </div>
         <div class="social-miembros">${g.miembros.map(m => `<span class="${m.user_id ? '' : 'invitado'}">${escapeHtml(nombreMiembro(g, m.id))}</span>`).join('')}</div>
         <div class="social-cifras">
@@ -320,7 +320,7 @@ function renderGastosGrupo(g) {
             const parte = (x.reparto || []).find(r => r.miembro === yo);
             const sub = x.tipo === 'transferencia'
                 ? `${nombreMiembro(g, x.pagado_por)} → ${nombreMiembro(g, x.reparto?.[0]?.miembro)}`
-                : `${x.tipo === 'ingreso' ? 'recibido por' : 'pagado por'} ${nombreMiembro(g, x.pagado_por).replace(/^tú$/, 'ti')}${x.categoria ? ` · ${escapeHtml(x.categoria)}` : ''}`;
+                : `${x.tipo === 'ingreso' ? 'recibido por' : 'pagado por'} ${nombreMiembro(g, x.pagado_por).replace(/^tú$/, 'ti')}${x.categoria ? `, ${escapeHtml(x.categoria)}` : ''}`;
             return `
             <button class="social-gasto ${x.tipo}" onclick="openGastoCompartido('${g.id}', '${x.id}')">
                 <span class="social-gasto-cuerpo"><b>${escapeHtml(x.titulo)}</b><small>${sub}</small></span>
@@ -604,7 +604,7 @@ function openCompartirEvento(entryId) {
     showModal(`
         <div class="modal-title">compartir un evento.</div>
         <div class="modal-label">Evento</div>
-        <select id="ce-evento" class="modal-input">${proximos.map(e => `<option value="${e.id}" ${e.id === entryId ? 'selected' : ''}>${escapeHtml(e.title || 'Evento')} · ${new Date(e.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${e.time ? ` ${e.time}` : ''}</option>`).join('')}</select>
+        <select id="ce-evento" class="modal-input">${proximos.map(e => `<option value="${e.id}" ${e.id === entryId ? 'selected' : ''}>${escapeHtml(e.title || 'Evento')}, ${new Date(e.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${e.time ? ` ${e.time}` : ''}</option>`).join('')}</select>
         <div class="modal-label">Con quién</div>
         <div class="social-elegir">${amigos.map(a => `<label><input type="checkbox" class="ce-amigo" value="${a.friend_id}"> ${escapeHtml(a.nombre_visible || a.friend_nombre || 'Amigo')}</label>`).join('')}</div>
         <div class="modal-label">Nota (opcional)</div>

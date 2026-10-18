@@ -943,7 +943,7 @@
                 const nombre = a.auto === 'subscription' ? (r.n === 1 ? 'suscripción' : 'suscripciones') : (r.n === 1 ? 'gasto fijo' : 'gastos fijos');
                 return `
             <div class="budget-alloc-row budget-alloc-row-auto">
-                <div class="budget-alloc-auto-label"><span>${escapeHtml(a.label)}.</span><small>${r.n} ${nombre} · ${financeMoney(r.total)}</small></div>
+                <div class="budget-alloc-auto-label"><span>${escapeHtml(a.label)}.</span><small>${r.n} ${nombre}, ${financeMoney(r.total)}</small></div>
                 <input class="modal-input budget-alloc-amount" type="number" min="0" step="0.01" value="${a.amount || ''}" placeholder="0.00" title="Límite de presupuesto" oninput="updateBudgetAllocation('${a.id}','amount',this.value,false)" onchange="updateBudgetAllocation('${a.id}','amount',this.value,true)">
                 <div class="budget-alloc-auto-tag">automático.</div>
                 <div class="budget-alloc-spent${Number(a.amount) > 0 && gastado > Number(a.amount) ? ' over' : ''}">${financeMoney(gastado)}</div>
@@ -1150,7 +1150,7 @@
                 <span class="lt-dot ${updatedThisMonth ? 'lt-dot-today' : ''}" title="${updatedThisMonth ? 'Actualizada este mes' : 'Sin actualizar este mes'}"></span>
                 <div class="investment-account-main">
                     <div class="investment-account-name">${escapeHtml(acc.name)}</div>
-                    <div class="investment-account-meta">${financeMoney(invested)} aportado${gain !== 0 ? ` · ${gain >= 0 ? '+' : ''}${financeMoney(gain)}` : ''}</div>
+                    <div class="investment-account-meta">${financeMoney(invested)} aportado${gain !== 0 ? `, ${gain >= 0 ? '+' : ''}${financeMoney(gain)}` : ''}</div>
                 </div>
                 <div class="investment-account-value">${financeMoney(value)}</div>
                 <button class="finance-oneoff-btn" style="width:auto" onclick="openAccountMonthlyUpdate('${acc.id}')">+ mes</button>

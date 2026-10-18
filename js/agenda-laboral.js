@@ -84,7 +84,7 @@ function renderAgendaLaboral() {
         <footer class="lab-pie">
             <div class="lab-proximas">
                 <div class="lab-sobre">próximas.</div>
-                ${proximas.length ? proximas.map(c => `<button class="lab-proxima" onclick="openCitaLaboral('${c.id}')"><span>${new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}${c.ini ? ` · ${c.ini}` : ''}</span><b>${escapeHtml(c.titulo || LAB_TIPOS[c.tipo])}</b><em>${LAB_TIPOS[c.tipo] || ''}</em></button>`).join('') : '<div class="lab-nada">Ninguna cita por delante.</div>'}
+                ${proximas.length ? proximas.map(c => `<button class="lab-proxima" onclick="openCitaLaboral('${c.id}')"><span>${new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}${c.ini ? `, ${c.ini}` : ''}</span><b>${escapeHtml(c.titulo || LAB_TIPOS[c.tipo])}</b><em>${LAB_TIPOS[c.tipo] || ''}</em></button>`).join('') : '<div class="lab-nada">Ninguna cita por delante.</div>'}
             </div>
             <div class="lab-interruptor">
                 <span><b>en el calendario principal.</b><small>${a.enPrincipal ? 'Tu horario y tus citas de trabajo salen también en Home y en el inicio.' : 'Tu horario y tus citas de trabajo solo se ven aquí.'}</small></span>
@@ -119,7 +119,7 @@ function openDiaLaboral(iso) {
         <div class="modal-title">${titulo}.</div>
         <div class="lab-dia">
             <div class="lab-dia-fila lab-dia-horario"><span>horario.</span><b>${h ? `${h.ini} – ${h.fin}` : 'no trabajas este día.'}</b></div>
-            ${citas.map(c => `<button class="lab-dia-fila" onclick="openCitaLaboral('${c.id}')"><span>${c.ini || '—'}${c.fin ? `–${c.fin}` : ''}</span><b>${escapeHtml(c.titulo || LAB_TIPOS[c.tipo])}</b><em>${LAB_TIPOS[c.tipo] || ''}${c.lugar ? ` · ${escapeHtml(c.lugar)}` : ''}</em></button>`).join('')}
+            ${citas.map(c => `<button class="lab-dia-fila" onclick="openCitaLaboral('${c.id}')"><span>${c.ini || '—'}${c.fin ? `–${c.fin}` : ''}</span><b>${escapeHtml(c.titulo || LAB_TIPOS[c.tipo])}</b><em>${LAB_TIPOS[c.tipo] || ''}${c.lugar ? `, ${escapeHtml(c.lugar)}` : ''}</em></button>`).join('')}
         </div>
         <button class="btn-modal-primary" onclick="openCitaLaboral(null,'${iso}')">+ cita este día.</button>
     `);

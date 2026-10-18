@@ -72,7 +72,7 @@ function construirConexiones() {
         const clave = normalizarTexto(s.name);
         if (!clave) return;
         const nombre = String(s.name).replace(/\.$/, '');
-        anadir('asignatura', s.id, nombre, null, { sub: `${(s.exams || []).length} exámenes · ${(s.assignments || []).length} trabajos` });
+        anadir('asignatura', s.id, nombre, null, { sub: `${(s.exams || []).length} exámenes, ${(s.assignments || []).length} trabajos` });
         visibles.filter(e => e.type === 'event' && (e.linkedSubjectId === s.id || normalizarTexto(e.title).includes(clave))).forEach(e => anadir('asignatura', s.id, null, e));
     });
 
@@ -144,7 +144,7 @@ function renderGraph() {
 function iconoDeEntrada(e) {
     if (e.type === 'event') return EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro;
     if (e.type === 'travel') return EVENT_TYPE_ICONS.viajes;
-    return `<span class="conexiones-fila-letra">${escapeHtml((TYPE_LABELS[e.type] || e.type || '·').slice(0, 1))}</span>`;
+    return `<span class="conexiones-fila-letra">${escapeHtml((TYPE_LABELS[e.type] || e.type || '').slice(0, 1))}</span>`;
 }
 
 // Constelación: el centro y, alrededor, hasta 24 elementos repartidos en

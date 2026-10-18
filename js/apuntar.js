@@ -312,16 +312,16 @@ function apuntarDescribir(r, tipo) {
     const cuando = `${apuntarFechaTexto(r.fecha)}${r.hora ? ` a las ${r.hora}${r.horaFin ? '–' + r.horaFin : ''}` : ''}`;
     const tit = escapeHtml(r.titulo || '…');
     switch (tipo) {
-        case 'gasto': return { texto: `${r.ingreso ? 'ingreso' : 'gasto'} de ${r.importe != null ? financeMoney(r.importe) : '—'}${r.titulo ? ` · ${tit}` : ''}${r.categoria ? ` · ${escapeHtml((financePro.categories.find(c => c.id === r.categoria)?.name || '').toLowerCase())}` : ''}${r.cuenta === 'efectivo' ? ' · efectivo' : ''}${r.fechaDicha && r.fecha !== todayISO() ? ' · ' + apuntarFechaTexto(r.fecha) : ''}`, falta: !(r.importe > 0) ? 'falta el importe' : '' };
+        case 'gasto': return { texto: `${r.ingreso ? 'ingreso' : 'gasto'} de ${r.importe != null ? financeMoney(r.importe) : '—'}${r.titulo ? `, ${tit}` : ''}${r.categoria ? `, ${escapeHtml((financePro.categories.find(c => c.id === r.categoria)?.name || '').toLowerCase())}` : ''}${r.cuenta === 'efectivo' ? ', efectivo' : ''}${r.fechaDicha && r.fecha !== todayISO() ? ', ' + apuntarFechaTexto(r.fecha) : ''}`, falta: !(r.importe > 0) ? 'falta el importe' : '' };
         case 'compra': return { texto: `a la compra: ${tit}`, falta: r.titulo ? '' : 'falta qué comprar' };
         case 'nota': return { texto: `a la nota de hoy`, falta: '' };
-        case 'cumple': return { texto: `cumpleaños de ${tit} · ${new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`, falta: !r.fechaDicha ? 'falta el día' : !r.titulo ? 'falta de quién' : '' };
-        case 'examen': case 'trabajo': return { texto: `${tipo === 'examen' ? (r.estudio?.clase && r.estudio.clase !== 'examen' ? 'examen ' + r.estudio.clase : 'examen') : 'entrega'} de ${escapeHtml((r.asignatura?.name || '?').toLowerCase())} · ${cuando}`, falta: !r.asignatura ? 'no encuentro la asignatura' : !r.fechaDicha ? 'falta la fecha' : '' };
-        case 'recurrente': return { texto: `${tit} · ${apuntarRecurrenciaTexto(r.recurrencia) || 'todos los días'}${r.hora ? ' a las ' + r.hora : ''}`, falta: r.titulo ? '' : 'falta qué hacer' };
-        case 'clase': return { texto: `clase de ${tit} · ${apuntarRecurrenciaTexto(r.recurrencia)} a las ${r.hora || '?'}`, falta: !r.recurrencia?.dias?.length ? 'faltan los días' : !r.hora ? 'falta la hora' : '' };
-        case 'viaje': return { texto: `viaje a ${tit} · ${apuntarFechaTexto(r.fecha)}${r.fechaFin ? ' → ' + apuntarFechaTexto(r.fechaFin) : ''}`, falta: r.titulo ? '' : 'falta el destino' };
-        case 'evento': return { texto: `evento · ${cuando}${r.lugar ? ' · ' + escapeHtml(r.lugar) : ''} · ${tit}`, falta: r.titulo ? '' : 'falta qué es' };
-        default: return { texto: `tarea · ${cuando}${r.hora ? '' : ', sin hora'} · ${tit}`, falta: r.titulo ? '' : 'falta qué es' };
+        case 'cumple': return { texto: `cumpleaños de ${tit}, ${new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`, falta: !r.fechaDicha ? 'falta el día' : !r.titulo ? 'falta de quién' : '' };
+        case 'examen': case 'trabajo': return { texto: `${tipo === 'examen' ? (r.estudio?.clase && r.estudio.clase !== 'examen' ? 'examen ' + r.estudio.clase : 'examen') : 'entrega'} de ${escapeHtml((r.asignatura?.name || '?').toLowerCase())}, ${cuando}`, falta: !r.asignatura ? 'no encuentro la asignatura' : !r.fechaDicha ? 'falta la fecha' : '' };
+        case 'recurrente': return { texto: `${tit}, ${apuntarRecurrenciaTexto(r.recurrencia) || 'todos los días'}${r.hora ? ' a las ' + r.hora : ''}`, falta: r.titulo ? '' : 'falta qué hacer' };
+        case 'clase': return { texto: `clase de ${tit}, ${apuntarRecurrenciaTexto(r.recurrencia)} a las ${r.hora || '?'}`, falta: !r.recurrencia?.dias?.length ? 'faltan los días' : !r.hora ? 'falta la hora' : '' };
+        case 'viaje': return { texto: `viaje a ${tit}, ${apuntarFechaTexto(r.fecha)}${r.fechaFin ? ' → ' + apuntarFechaTexto(r.fechaFin) : ''}`, falta: r.titulo ? '' : 'falta el destino' };
+        case 'evento': return { texto: `evento, ${cuando}${r.lugar ? ', ' + escapeHtml(r.lugar) : ''}, ${tit}`, falta: r.titulo ? '' : 'falta qué es' };
+        default: return { texto: `tarea, ${cuando}${r.hora ? '' : ', sin hora'}, ${tit}`, falta: r.titulo ? '' : 'falta qué es' };
     }
 }
 
@@ -506,7 +506,7 @@ function apuntarFilaRegistro(a) {
     const cuando = new Date(a.cuando);
     const hoy = isoLocal(cuando) === todayISO();
     return `<div class="apuntar-reg">
-        <div class="apuntar-reg-txt"><b>${escapeHtml(a.texto)}</b><small>${escapeHtml(APUNTAR_TIPO_NOMBRE[a.tipo] || a.tipo)} · ${hoy ? cuando.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : cuando.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${a.deshecho ? ' · deshecho' : ''}</small></div>
+        <div class="apuntar-reg-txt"><b>${escapeHtml(a.texto)}</b><small>${escapeHtml(APUNTAR_TIPO_NOMBRE[a.tipo] || a.tipo)}, ${hoy ? cuando.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : cuando.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${a.deshecho ? ', deshecho' : ''}</small></div>
         ${a.deshecho ? '' : `<button class="profe-chip" onclick="cambiarApunte('${a.id}')" title="Deshacerlo y volver a escribirlo">cambiar.</button><button class="profe-chip" onclick="deshacerApunte('${a.id}')">deshacer.</button>`}
     </div>`;
 }

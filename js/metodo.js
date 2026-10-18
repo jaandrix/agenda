@@ -235,7 +235,7 @@ function renderHansei() {
                 <summary>semanas anteriores. <span>${anteriores.length}</span></summary>
                 ${anteriores.map(h => `
                     <div class="hansei-pasada">
-                        <div class="hansei-pasada-semana">semana ${Number(h.semana.split('-W')[1])} · ${h.semana.slice(0, 4)}</div>
+                        <div class="hansei-pasada-semana">semana ${Number(h.semana.split('-W')[1])}, ${h.semana.slice(0, 4)}</div>
                         ${h.bien ? `<div><b>bien.</b> ${escapeHtml(h.bien)}</div>` : ''}
                         ${h.mal ? `<div><b>mi parte.</b> ${escapeHtml(h.mal)}</div>` : ''}
                         ${h.cambio ? `<div><b>cambio.</b> ${escapeHtml(h.cambio)}</div>` : ''}

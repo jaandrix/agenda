@@ -91,7 +91,7 @@
         function desgloseTipos(lista) {
             const n = {};
             lista.forEach(e => { n[e.type] = (n[e.type] || 0) + 1; });
-            return Object.entries(n).sort((a, b) => b[1] - a[1]).map(([t, c]) => `${c} ${c === 1 ? (TYPE_LABELS[t] || t).toLowerCase() : (TIPO_PLURAL[t] || t)}`).join(' · ');
+            return Object.entries(n).sort((a, b) => b[1] - a[1]).map(([t, c]) => `${c} ${c === 1 ? (TYPE_LABELS[t] || t).toLowerCase() : (TIPO_PLURAL[t] || t)}`).join(', ');
         }
 
         function renderTagsView() {
@@ -118,7 +118,7 @@
                     <div class="etiqueta-cabecera">
                         <div>
                             <div class="etiqueta-nombre">#${escapeHtml(tag)}</div>
-                            <div class="etiquetas-sub">${items.length} ${items.length === 1 ? 'entrada' : 'entradas'} · ${desgloseTipos(items)}</div>
+                            <div class="etiquetas-sub">${items.length} ${items.length === 1 ? 'entrada' : 'entradas'}, ${desgloseTipos(items)}</div>
                         </div>
                         <div class="etiqueta-acciones">
                             ${hayConexion ? `<button class="finance-oneoff-btn" onclick="conexionSeleccionada='etiqueta:${tagEsc}';conexionAnimar=true;switchView('graph')">ver conexiones.</button>` : ''}
@@ -632,7 +632,7 @@
                 const dias = Math.max(0, Math.ceil((new Date(sub.trial_fin) - new Date()) / 86400000));
                 body.innerHTML = `
                     <div class="settings-subscription-card settings-subscription-card-neutral">
-                        <div class="settings-subscription-status">Prueba gratuita · ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`}</div>
+                        <div class="settings-subscription-status">Prueba gratuita, ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`}</div>
                         <div class="settings-subscription-note">Sin tarjeta. Si te convence, suscríbete cuando quieras; si no, tus datos se quedan guardados.</div>
                         ${renderPlanesPago()}
                         ${renderCanjeRegalo()}
@@ -643,7 +643,7 @@
             if (sub.estado === 'regalo') {
                 body.innerHTML = `
                     <div class="settings-subscription-card settings-subscription-card-neutral">
-                        <div class="settings-subscription-status">Regalo de un socio fundador · hasta el ${new Date(sub.periodo_fin).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                        <div class="settings-subscription-status">Regalo de un socio fundador, hasta el ${new Date(sub.periodo_fin).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                         <div class="settings-subscription-note">Seis meses de Bitácora sin pagar nada. Si quieres seguir después, suscríbete cuando quieras.</div>
                         ${renderPlanesPago()}
                     </div>`;
@@ -686,7 +686,7 @@
             if (sub.cancela_al_final_periodo) {
                 body.innerHTML = `
                     <div class="settings-subscription-card">
-                        <div class="settings-subscription-status">Suscripción ${planLabel} · se cancela${fecha ? ' el ' + fecha : ''}</div>
+                        <div class="settings-subscription-status">Suscripción ${planLabel}, se cancela${fecha ? ' el ' + fecha : ''}</div>
                         <div class="settings-subscription-note">Mantienes el acceso hasta esa fecha. No se te volverá a cobrar.</div>
                         ${botonPortal}
                     </div>`;
@@ -695,7 +695,7 @@
 
             body.innerHTML = `
                 <div class="settings-subscription-card">
-                    <div class="settings-subscription-status">Suscripción ${planLabel}${sub.estado === 'trialing' ? ' (en prueba)' : ''} · se renueva${fecha ? ' el ' + fecha : ''}</div>
+                    <div class="settings-subscription-status">Suscripción ${planLabel}${sub.estado === 'trialing' ? ' (en prueba)' : ''}, se renueva${fecha ? ' el ' + fecha : ''}</div>
                     <div class="ajuste-botones">
                         ${botonPortal}
                         <button class="btn-secondary" style="width:auto;margin-top:10px;color:#7f1d1d" onclick="confirmCancelSubscription()">Cancelar suscripción</button>

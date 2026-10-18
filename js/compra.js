@@ -325,7 +325,7 @@ function renderCompraHistorial() {
             <div class="compra-dato">
                 <span class="compra-dato-etq">${nombreMes}.</span>
                 <b>${financeMoney(mes.total)}</b>
-                <small>${mes.compras ? `${mes.compras} ${mes.compras === 1 ? 'compra' : 'compras'} · unos ${financeMoney(mes.media)} cada una` : 'sin compras este mes'}</small>
+                <small>${mes.compras ? `${mes.compras} ${mes.compras === 1 ? 'compra' : 'compras'}, unos ${financeMoney(mes.media)} cada una` : 'sin compras este mes'}</small>
             </div>
             <div class="compra-dato">
                 <span class="compra-dato-etq">tu cesta habitual.</span>
@@ -335,7 +335,7 @@ function renderCompraHistorial() {
             ${aviso ? `<div class="compra-dato compra-dato-aviso">
                 <span class="compra-dato-etq">ha subido.</span>
                 <b>${escapeHtml(aviso.texto)}</b>
-                <small>+${Math.round(aviso.ultimaSubida * 100)} % en ${escapeHtml(aviso.tienda || 'su tienda')}: ${financeMoney(aviso.precios[aviso.precios.length - 2].precio)} → ${financeMoney(aviso.actual)}${avisos.length > 1 ? ` · y ${avisos.length - 1} más` : ''}</small>
+                <small>+${Math.round(aviso.ultimaSubida * 100)} % en ${escapeHtml(aviso.tienda || 'su tienda')}: ${financeMoney(aviso.precios[aviso.precios.length - 2].precio)} → ${financeMoney(aviso.actual)}${avisos.length > 1 ? `, y ${avisos.length - 1} más` : ''}</small>
             </div>` : ''}
         </div>
         <div class="compra-franja-pie">
@@ -348,7 +348,7 @@ function renderCompraHistorial() {
             const extras = (c.items || []).filter(i => !i.planeado);
             return `<button class="compra-hist-fila" onclick="openCompraHistorial('${c.id}')">
                 <span class="compra-hist-fecha">${fecha(c.fecha)}</span>
-                <span class="compra-hist-cuerpo"><b>${escapeHtml(c.tienda || 'sin tienda')}</b><small>${(c.items || []).length} productos${c.fuente === 'ticket' ? ` · ${plan.length} de la lista${extras.length ? `, ${extras.length} ${extras.length === 1 ? 'añadido' : 'añadidos'} en la tienda` : ''}` : ' · sin ticket'}</small></span>
+                <span class="compra-hist-cuerpo"><b>${escapeHtml(c.tienda || 'sin tienda')}</b><small>${(c.items || []).length} productos${c.fuente === 'ticket' ? `, ${plan.length} de la lista${extras.length ? `, ${extras.length} ${extras.length === 1 ? 'añadido' : 'añadidos'} en la tienda` : ''}` : ', sin ticket'}</small></span>
                 <span class="compra-hist-total">${c.total ? financeMoney(c.total) : '—'}</span>
             </button>`;
         }).join('')}`;
@@ -384,7 +384,7 @@ function pintarCompraProductos() {
         : compraProdOrden === 'cambio' ? (a, b) => Math.abs(b.variacion || 0) - Math.abs(a.variacion || 0) || porNombre(a, b)
         : porNombre);
     caja.innerHTML = ps.map(p => `<div class="compra-prod-fila">
-        <span><b>${escapeHtml(p.texto)}</b><small>${escapeHtml(p.tienda || 'sin tienda')} · ${new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${p.precios.length > 1 ? ` · ${p.precios.length} veces` : ''}</small></span>
+        <span><b>${escapeHtml(p.texto)}</b><small>${escapeHtml(p.tienda || 'sin tienda')}, ${new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${p.precios.length > 1 ? `, ${p.precios.length} veces` : ''}</small></span>
         <i>${financeMoney(p.actual)}${p.variacion ? ` <em class="${p.variacion > 0 ? 'sube' : 'baja'}">(${p.variacion > 0 ? '+' : ''}${p.variacion} %)</em>` : ''}</i>
     </div>`).join('') || '<div class="finance-empty-line">Nada con ese nombre.</div>';
 }
@@ -398,7 +398,7 @@ function openCompraHistorial(id) {
     const suma = xs => xs.reduce((s, i) => s + (Number(i.importe) || 0), 0);
     showModal(`
         <div class="modal-title">${escapeHtml(c.tienda || 'compra')}.</div>
-        <p class="finance-modal-note" style="margin-top:0">${new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · ${c.total ? financeMoney(c.total) : 'sin importe'}${c.fuente === 'ticket' ? ' · con ticket' : ' · sin ticket todavía'}</p>
+        <p class="finance-modal-note" style="margin-top:0">${new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}, ${c.total ? financeMoney(c.total) : 'sin importe'}${c.fuente === 'ticket' ? ', con ticket' : ', sin ticket todavía'}</p>
         ${c.fuente === 'ticket' ? `
             <div class="compra-seccion-titulo">de tu lista. <span>${financeMoney(suma(plan))}</span></div>${plan.map(linea).join('') || '<div class="compra-hist-vacio">nada.</div>'}
             ${extras.length ? `<div class="compra-seccion-titulo" style="margin-top:16px">añadido en la tienda. <span>${financeMoney(suma(extras))}</span></div>${extras.map(linea).join('')}` : ''}
@@ -470,7 +470,7 @@ function openCompraItem(id) {
         <div class="modal-label">sección</div>
         <select id="compra-it-seccion" class="modal-input">${Object.entries(COMPRA_SECCION_NOMBRE).map(([k, t]) => `<option value="${k}" ${k === seccion ? 'selected' : ''}>${t}</option>`).join('')}</select>
         <div class="finance-modal-note" style="margin-top:4px">Si la cambias, Bitácora lo recuerda para la próxima vez.</div>
-        ${precios.length ? `<div class="modal-label" style="margin-top:12px">lo que te ha costado.</div>${precios.map(p => `<div class="compra-hist-linea"><span>${new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${p.tienda ? ` · ${escapeHtml(p.tienda)}` : ''}</span><i>${financeMoney(p.precio)}</i></div>`).join('')}` : ''}
+        ${precios.length ? `<div class="modal-label" style="margin-top:12px">lo que te ha costado.</div>${precios.map(p => `<div class="compra-hist-linea"><span>${new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${p.tienda ? `, ${escapeHtml(p.tienda)}` : ''}</span><i>${financeMoney(p.precio)}</i></div>`).join('')}` : ''}
         <button class="btn-modal-primary" style="margin-top:14px" onclick="guardarCompraItem('${id}')">guardar.</button>
         <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarCompraItem('${id}')">quitar de la lista.</button>
     `);
@@ -789,7 +789,7 @@ function renderCompraRecetas() {
         return `<div class="compra-receta">
             <button class="compra-receta-cuerpo" onclick="openReceta('${r.id}')">
                 <b>${escapeHtml(r.nombre)}</b>
-                <small>${c.n} ${c.n === 1 ? 'ingrediente' : 'ingredientes'}${r.raciones ? ` · ${r.raciones} ${Number(r.raciones) === 1 ? 'ración' : 'raciones'}` : ''}${c.conPrecio ? ` · ≈ ${financeMoney(c.total)}${r.raciones > 1 ? ` (${financeMoney(c.total / r.raciones)} la ración)` : ''}` : ''}</small>
+                <small>${c.n} ${c.n === 1 ? 'ingrediente' : 'ingredientes'}${r.raciones ? `, ${r.raciones} ${Number(r.raciones) === 1 ? 'ración' : 'raciones'}` : ''}${c.conPrecio ? `, ≈ ${financeMoney(c.total)}${r.raciones > 1 ? ` (${financeMoney(c.total / r.raciones)} la ración)` : ''}` : ''}</small>
             </button>
             ${faltan ? `<button class="pedido-btn" onclick="recetaALaLista('${r.id}')">a la lista.</button>` : '<span class="compra-receta-ok">en la lista.</span>'}
         </div>`;
@@ -803,7 +803,7 @@ function openReceta(id) {
     const enLista = new Set(compraListaActual().items.filter(i => !i.hecho).map(i => compraClave(i.texto)));
     showModal(`
         <div class="modal-title">${escapeHtml(r.nombre)}.</div>
-        <p class="finance-modal-note" style="margin-top:0">${r.raciones ? `${r.raciones} ${Number(r.raciones) === 1 ? 'ración' : 'raciones'}` : 'Sin raciones'}${c.conPrecio ? ` · ≈ ${financeMoney(c.total)}${c.conPrecio < c.n ? ` (con precio de ${c.conPrecio} de ${c.n} ingredientes)` : ''}` : ''}</p>
+        <p class="finance-modal-note" style="margin-top:0">${r.raciones ? `${r.raciones} ${Number(r.raciones) === 1 ? 'ración' : 'raciones'}` : 'Sin raciones'}${c.conPrecio ? `, ≈ ${financeMoney(c.total)}${c.conPrecio < c.n ? ` (con precio de ${c.conPrecio} de ${c.n} ingredientes)` : ''}` : ''}</p>
         <div class="compra-seccion-titulo">ingredientes.</div>
         ${(r.ingredientes || []).map(i => {
             const p = compraPrecioItem({ texto: i.texto, cantidad: '', precio: null });

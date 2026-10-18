@@ -19,6 +19,8 @@
                 const saved = (data && data.data) ? data.data : {};
                 datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(saved[k])]));
                 entries = saved.entries || [];
+                // Lo que apuntó la IA con el punto medio («valle · maria») pasa a comas, una vez.
+                entries.forEach(e => ['title', 'notes', 'place', 'companions'].forEach(k => { if (typeof e[k] === 'string' && e[k].includes('·')) e[k] = e[k].replace(/\s*·\s*/g, ', '); }));
                 normalizeWorkCotizationData();
                 categories = saved.categories || getDefaultCategories();
                 // El rosa de "Evento" (en cualquiera de sus dos tonos
@@ -611,7 +613,7 @@
             const fab = document.getElementById('fab');
             if (!fab) return;
             fab.classList.toggle('fab-pulse', currentView === 'work');
-            fab.title = currentView === 'work' ? 'Apuntar algo · Empleo (tecla ESPACIO)' : 'Apuntar algo (tecla ESPACIO)';
+            fab.title = currentView === 'work' ? 'Apuntar algo, Empleo (tecla ESPACIO)' : 'Apuntar algo (tecla ESPACIO)';
         }
 
         // ============================================================

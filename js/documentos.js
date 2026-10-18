@@ -13,7 +13,7 @@
                     <div class="docs2-cabecera">
                         <div>
                             <div class="docs2-titulo">documentos.</div>
-                            <div class="docs2-sub"><span id="docs2-n-archivos">${archivos} ${archivos === 1 ? 'archivo' : 'archivos'}</span> · ${fichas.length} ${fichas.length === 1 ? 'ficha' : 'fichas'}${pronto ? ` · <b>${pronto} ${pronto === 1 ? 'caduca' : 'caducan'} en menos de un mes</b>` : ''}.</div>
+                            <div class="docs2-sub"><span id="docs2-n-archivos">${archivos} ${archivos === 1 ? 'archivo' : 'archivos'}</span>, ${fichas.length} ${fichas.length === 1 ? 'ficha' : 'fichas'}${pronto ? `, <b>${pronto} ${pronto === 1 ? 'caduca' : 'caducan'} en menos de un mes</b>` : ''}.</div>
                         </div>
                         <div class="docs2-acciones">
                             <button class="btn-secondary" style="width:auto" onclick="openBackupsModal()">copias.</button>
@@ -54,9 +54,9 @@
             const estado = f => {
                 if (!f.date) return { cifra: '—', texto: 'sin caducidad.', clase: '' };
                 const d = diasHasta(f.date);
-                if (d < 0) return { cifra: -d, texto: `${d === -1 ? 'día caducada' : 'días caducada'} · ${financeDateLabelShort(f.date)}`, clase: 'caducada' };
+                if (d < 0) return { cifra: -d, texto: `${d === -1 ? 'día caducada' : 'días caducada'}, ${financeDateLabelShort(f.date)}`, clase: 'caducada' };
                 if (d === 0) return { cifra: 'hoy', texto: 'caduca hoy.', clase: 'pronto' };
-                return { cifra: d, texto: `${d === 1 ? 'día' : 'días'} · ${financeDateLabelShort(f.date)}`, clase: d <= 30 ? 'pronto' : '' };
+                return { cifra: d, texto: `${d === 1 ? 'día' : 'días'}, ${financeDateLabelShort(f.date)}`, clase: d <= 30 ? 'pronto' : '' };
             };
             if (!fichas.length) {
                 return `<div class="docs2-fichas-vacio" onclick="openNewEntry('document')">${DOC_ICONO_FICHA}<div><b>fichas.</b> Garantías, contratos, seguros, el DNI... con su fecha de caducidad: Bitácora te avisa cuando se acerca. Claude también puede apuntarlas por ti.</div></div>`;
@@ -149,7 +149,7 @@
                         <div class="docs2-archivo-icono ${doc.kind}">${DOC_ICONO}<span>${doc.kind === 'pdf' ? 'PDF' : 'HTML'}</span></div>
                         <div class="docs2-archivo-cuerpo">
                             <div class="docs2-archivo-nombre" title="${nombreVisible}">${nombreVisible}</div>
-                            <div class="docs2-archivo-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
+                            <div class="docs2-archivo-meta">${date}${sizeKb ? ', ' + sizeKb : ''}</div>
                         </div>
                         <div class="docs2-archivo-acciones">
                             <button title="${doc.kind === 'pdf' ? 'Descargar' : 'Ver'}" onclick="event.stopPropagation();${abrir}">${doc.kind === 'pdf' ? '↓' : '→'}</button>
@@ -305,7 +305,7 @@
                         <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
                         <div class="docs-row-body">
                             <div class="docs-row-name">${n}<span class="docs-row-kind">${isHtml ? 'HTML' : 'PDF'}</span></div>
-                            <div class="docs-row-meta">${date}${sizeKb ? ' · ' + sizeKb : ''}</div>
+                            <div class="docs-row-meta">${date}${sizeKb ? ', ' + sizeKb : ''}</div>
                         </div>
                         <div class="doc-actions">${openBtn}<button class="doc-action-delete-btn" title="Eliminar" onclick="deleteEntryDoc('${kind}','${id}','${n}')"><i class='ico ico-x' aria-hidden=true></i></button></div>
                     </div>`;
