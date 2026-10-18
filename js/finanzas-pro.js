@@ -2890,9 +2890,15 @@
             render();
             try { await saveData(); showToast(financeProResumenImport(r)); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
-            const cuadre = financeProCuadreExtracto(imp);
+            let cuadre = financeProCuadreExtracto(imp);
+            const quitados = financeProResolverDuplicados(cuadre);
+            if (quitados) {
+                cuadre = financeProCuadreExtracto(imp);
+                render();
+                try { await saveData(); } catch (e) { console.error(e); }
+            }
             if (cuadre && !cuadre.cuadra) openFinanceProCuadre(cuadre);
-            else if (cuadre) showToast(`${financeProResumenImport(r)}, saldo cuadrado con el extracto: ${financeMoney(cuadre.esperado)}`);
+            else if (cuadre) showToast(`${financeProResumenImport(r)}${quitados ? `, ${quitados} ${quitados === 1 ? 'duplicado quitado' : 'duplicados quitados'}` : ''}, saldo cuadrado con el extracto: ${financeMoney(cuadre.esperado)}`);
         }
 
         // ============================================================
@@ -2937,10 +2943,16 @@
             financePro.transactions.forEach(t => { if (deCuenta(t) && financeProCuentaEnSaldo(t) && t.date <= hasta) actual += signo(t) * (Number(t.amount) || 0); });
             actual = Math.round(actual * 100) / 100;
             if (Math.abs(esperado - actual) < 0.005) return { cuadra: true, esperado, actual, cuenta };
-            const movs = financePro.transactions.filter(t => deCuenta(t) && t.date >= desde && t.date <= hasta && financeProCuentaEnSaldo(t))
+            // El primer día del extracto no está entero: el de octubre de Revolut
+            // trae del 30 de septiembre solo lo que se completó el 1 (eBay), y
+            // lo completado el mismo 30 está en el de septiembre. Se cruza desde
+            // el primer día en que se completó algo, en los dos lados.
+            const lleno = completas.map(f => f.fechas.reduce((a, b) => a > b ? a : b)).reduce((a, b) => a < b ? a : b);
+            const inicioFila = f => f.fechas.reduce((a, b) => a < b ? a : b);
+            const movs = financePro.transactions.filter(t => deCuenta(t) && t.date >= lleno && t.date <= hasta && financeProCuentaEnSaldo(t))
                 .map(t => ({ t, val: Math.round(signo(t) * (Number(t.amount) || 0) * 100) / 100 }));
             const libres = new Set(movs);
-            const libresFilas = new Set(filas.filter(f => !(f.pend && f.val > 0)));
+            const libresFilas = new Set(filas.filter(f => !(f.pend && f.val > 0) && inicioFila(f) >= lleno));
             const cerca = (f, t) => f.fechas.some(d => Math.abs((new Date(d) - new Date(t.date)) / 86400000) <= 3);
             const emparejar = exigeNombre => [...libresFilas].forEach(f => {
                 const mov = [...libres].find(x => Math.abs(x.val - f.val) < 0.005 && (exigeNombre
@@ -2950,8 +2962,34 @@
             });
             emparejar(true);
             emparejar(false);
-            return { cuadra: false, esperado, actual, diff: Math.round((esperado - actual) * 100) / 100, cuenta, desde, hasta,
-                sobran: [...libres].map(x => x.t), faltan: [...libresFilas] };
+            // Un sobrante con su gemelo en el extracto (mismo importe, ±3 días)
+            // es un duplicado de un movimiento que sí está: el apunte a mano o
+            // renombrado que no se fundió con el del banco.
+            const gemelo = x => movs.find(o => o !== x && !libres.has(o) && Math.abs(o.val - x.val) < 0.005 && Math.abs((new Date(o.t.date) - new Date(x.t.date)) / 86400000) <= 3);
+            return { cuadra: false, esperado, actual, diff: Math.round((esperado - actual) * 100) / 100, cuenta, desde: lleno, hasta,
+                sobran: [...libres].map(x => x.t), faltan: [...libresFilas],
+                duplicados: [...libres].map(x => ({ t: x.t, val: x.val, gemelo: gemelo(x)?.t })) };
+        }
+
+        // Si todo lo que sobra son duplicados de movimientos del extracto y
+        // quitarlos deja el saldo exacto, se resuelve solo: se quita cada
+        // duplicado y su nota y categoría pasan a su gemelo del banco. Si no
+        // cuadra al céntimo, no se toca nada y se enseña el aviso.
+        function financeProResolverDuplicados(c) {
+            if (!c || c.cuadra || c.faltan.length || !c.duplicados?.length || c.duplicados.some(d => !d.gemelo)) return false;
+            const efecto = -c.duplicados.reduce((x, d) => x + d.val, 0);
+            if (Math.abs(efecto - c.diff) >= 0.005) return false;
+            const fuera = new Set();
+            c.duplicados.forEach(({ t, gemelo }) => {
+                if (!gemelo.category && t.category) { gemelo.category = t.category; gemelo.needsReview = false; delete gemelo.categoriaAuto; }
+                if (t.note && t.note !== gemelo.note && financeProNormalizar(t.note) !== financeProNormalizar(gemelo.bankNote ?? gemelo.note)) {
+                    if (!gemelo.bankNote) gemelo.bankNote = gemelo.note;
+                    gemelo.note = t.note;
+                }
+                fuera.add(t);
+            });
+            financePro.transactions = financePro.transactions.filter(t => !fuera.has(t));
+            return fuera.size;
         }
 
         function openFinanceProCuadre(c) {

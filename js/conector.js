@@ -380,6 +380,7 @@
                 const imp = financeProPrepararImport(op.csv, op.cuenta);
                 if (!imp) return linea('importar', 'extracto recibido pero no se ha podido leer.', null);
                 const r = financeProEjecutarImport(imp);
+                financeProResolverDuplicados(financeProCuadreExtracto(imp));
                 const despues = new Map(financePro.transactions.map(t => [t.id, JSON.stringify(t)]));
                 const anadidos = [...despues.keys()].filter(id => !antes.has(id));
                 const modificados = [...antes].filter(([id, j]) => despues.has(id) && despues.get(id) !== j).map(([, j]) => JSON.parse(j));
