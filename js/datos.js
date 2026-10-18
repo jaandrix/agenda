@@ -50,6 +50,7 @@
                 apuntesRecientes = Array.isArray(saved.apuntesRecientes) ? saved.apuntesRecientes : [];
                 calendarioFeedVersion = Number(saved.calendarioFeedVersion) || 0;
                 bienvenida = saved.bienvenida || null;
+                servicios = (saved.servicios && typeof saved.servicios === 'object') ? saved.servicios : {};
                 financeIncome = saved.financeIncome || { current: 0, next: 0 };
                 financeProfile = saved.financeProfile || {
                     cash: 0, cashTarget: 0, invested: 0, investedTarget: 0,
@@ -248,7 +249,8 @@
             avisoDiarioVisto: [() => avisoDiarioVisto, v => { avisoDiarioVisto = v; }],
             apuntesRecientes: [() => apuntesRecientes, v => { apuntesRecientes = Array.isArray(v) ? v : []; }],
             calendarioFeedVersion: [() => calendarioFeedVersion, v => { calendarioFeedVersion = Number(v) || 0; }],
-            bienvenida: [() => bienvenida, v => { bienvenida = v; }]
+            bienvenida: [() => bienvenida, v => { bienvenida = v; }],
+            servicios: [() => servicios, v => { servicios = (v && typeof v === 'object') ? v : {}; }]
         };
         let datosBase = null;
         const clonarDatos = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));

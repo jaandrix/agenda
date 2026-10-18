@@ -140,6 +140,7 @@
             const status = tripStatus(t);
             const tabs = [
                 { id: 'resumen', label: 'Resumen' },
+                { id: 'destino', label: 'Destino' },
                 { id: 'reservas', label: 'Reservas', count: t.transportes.length + t.alojamientos.length },
                 { id: 'lugares', label: 'Lugares', count: t.places.length },
                 { id: 'itinerario', label: 'Itinerario', count: t.itinerario.length },
@@ -151,6 +152,7 @@
 
             let body = '';
             if (tripManagerTab === 'resumen') body = renderTripResumenTab(t);
+            else if (tripManagerTab === 'destino') body = renderTripDestinoTab(t);
             else if (tripManagerTab === 'reservas') body = renderTripReservasTab(t);
             else if (tripManagerTab === 'lugares') body = renderTripPlacesTab(t);
             else if (tripManagerTab === 'itinerario') body = renderTripItineraryTab(t);

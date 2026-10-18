@@ -602,6 +602,8 @@
         let calendarioFeedVersion = 0;
         // Cuándo vio la bienvenida (bienvenida.js); null = todavía no.
         let bienvenida = null;
+        // Servicios públicos conectados (servicios.js): festivos, luz, equipos...
+        let servicios = {};
         // Cambios de la IA que esperan validación en "bandeja." (filas de
         // conector_bandeja que no se aplican solas, ver OPS_AUTOMATICAS).
         let bandejaPendiente = [];
@@ -1259,7 +1261,7 @@
             for (let dia = 1; dia <= diasMes; dia++) {
                 const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                 const ocupado = mobileOcupacionDia(iso) > 0;
-                const clases = ['m-punto', iso < hoy ? 'pasado' : 'futuro', ocupado ? 'ocupado' : '', iso === hoy ? 'hoy' : '', iso === sel ? 'sel' : ''].filter(Boolean).join(' ');
+                const clases = ['m-punto', iso < hoy ? 'pasado' : 'futuro', ocupado ? 'ocupado' : '', iso === hoy ? 'hoy' : '', iso === sel ? 'sel' : '', festivoDe(iso) ? 'festivo' : ''].filter(Boolean).join(' ');
                 celdas.push(`<button class="${clases}" style="--o:${huecos + dia}" onclick="mobileElegirDia('${iso}')" aria-label="${dia} de ${MOBILE_MESES[m]}${ocupado ? ', con cosas' : ''}"><span>${dia}</span></button>`);
             }
             const resto = (7 - (celdas.length % 7)) % 7;
@@ -1274,7 +1276,7 @@
             const tiraDe = k => Array.from({ length: 7 }, (_, i) => { const x = new Date(lunes); x.setDate(x.getDate() + k * 7 + i); return x; }).map((x, i) => {
                 const iso = isoLocal(x);
                 const ocupado = mobileOcupacionDia(iso) > 0;
-                return `<button class="m-dia-pill ${iso === sel ? 'sel' : ''} ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''}" onclick="mobileElegirDia('${iso}')" aria-label="${MOBILE_DIAS_LARGOS[x.getDay()]} ${x.getDate()}${ocupado ? ', con cosas' : ''}" ${k ? 'tabindex="-1"' : ''}>
+                return `<button class="m-dia-pill ${iso === sel ? 'sel' : ''} ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''} ${festivoDe(iso) ? 'festivo' : ''}" onclick="mobileElegirDia('${iso}')" aria-label="${MOBILE_DIAS_LARGOS[x.getDay()]} ${x.getDate()}${ocupado ? ', con cosas' : ''}" ${k ? 'tabindex="-1"' : ''}>
                     <small>${['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</small><b>${x.getDate()}</b><i class="${ocupado ? 'on' : ''}"></i></button>`;
             }).join('');
             const etiqueta = mobileVerMes ? `${MOBILE_MESES[m]}${y !== new Date().getFullYear() ? ' ' + y : ''}.` : `${MOBILE_MESES[lunes.getMonth()]}${semana[6].getMonth() !== lunes.getMonth() ? ' – ' + MOBILE_MESES[semana[6].getMonth()] : ''}.`;
@@ -1303,6 +1305,7 @@
                 <div class="m-mes-letras">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => `<span class="${i === letraHoy && y === new Date().getFullYear() && m === new Date().getMonth() ? 'hoy' : ''}">${l}</span>`).join('')}</div>
                 <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>` : `<div class="m-semana-carrusel">${[-1, 0, 1].map(k => `<div class="m-semana-tira">${tiraDe(k)}</div>`).join('')}</div>`}
             </section>
+            ${renderLineaFestivos('m-serv-linea')}
             ${renderMobileDiaPanel(sel, hoy)}
             ${renderMobileTeselas()}`;
         }
@@ -1361,12 +1364,13 @@
             return `
             <section class="m-dia">
                 <div class="m-dia-cab">
-                    <div><div class="m-dia-titulo">${titulo}</div><div class="m-dia-sub">${filas.length ? `${filas.length} ${filas.length === 1 ? 'cosa' : 'cosas'}.` : 'libre.'}</div></div>
+                    <div><div class="m-dia-titulo">${titulo}</div><div class="m-dia-sub">${festivoDe(sel) ? `festivo, ${escapeHtml(festivoDe(sel).nombre.toLowerCase())}. ` : ''}${filas.length ? `${filas.length} ${filas.length === 1 ? 'cosa' : 'cosas'}.` : 'libre.'}</div></div>
                     <button class="m-mas" onclick="openNewEntryForDay('${sel}')" aria-label="Añadir algo este día">+</button>
                 </div>
                 ${sinHora.length ? `<div class="m-lista m-tl-sinhora">${sinHora.map(f => f.html).join('')}</div>` : ''}
                 ${conHora.length ? `<div class="m-tl">${linea}</div>` : ''}
                 ${!filas.length ? '<div class="m-vacio">nada este día.</div>' : ''}
+                ${renderEntradaTuDia(sel)}
             </section>`;
         }
 
@@ -1375,7 +1379,7 @@
             const meta = [it.arrastrado && !it.done ? 'de ayer' : '', subs.length ? `${subs.filter(s => s.done).length}/${subs.length} subtareas` : '', it.notes || ''].filter(Boolean).map(escapeHtml).join(', ');
             return `<div class="m-fila ${it.done ? 'hecha' : ''} ${it.arrastrado && !it.done ? 'arrastrada' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}">
                 <span class="m-fila-hora">${escapeHtml(it.time || '—')}</span>
-                <div class="m-fila-cuerpo" onclick="mobileTareaAcciones('${it.id}', ${offset})"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div>
+                <div class="m-fila-cuerpo" onclick="mobileTareaAcciones('${it.id}', ${offset})"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}${it.done ? '' : luzAviso(it.title, servMasDias(currentPlannerDayKey(), offset), it.time)}</div>
                 <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarTarea('${it.id}', ${offset})" aria-label="Marcar hecha"></button>
             </div>`;
         }
@@ -1505,6 +1509,7 @@
             return `${renderMobileCabecera('planificador', total ? `${hechas} de ${total} hechas.` : 'nada planeado.')}
                 <div class="m-pestanas">${['hoy', 'mañana', 'pasado'].map((l, i) => `<button class="${off === i ? 'activa' : ''}" onclick="setPlannerDayOffset(${i})">${l}.</button>`).join('')}</div>
                 ${total ? `<div class="m-sellos" aria-label="${hechas} de ${total} hechas">${Array.from({ length: Math.min(total, 24) }, (_, k) => `<i class="${k < hechas ? 'on' : ''}"></i>`).join('')}<span>${hechas} de ${total}, hecho.</span></div>` : ''}
+                ${off <= 1 ? renderLuzDia(servMasDias(currentPlannerDayKey(), off)) : ''}
                 <div class="m-acciones">
                     <button class="m-boton m-boton-acento" onclick="openAddPlannerItem()">+ tarea.</button>
                     <button class="m-boton" onclick="openManageRecurringTasks()">recurrentes.</button>

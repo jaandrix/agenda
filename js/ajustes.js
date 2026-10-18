@@ -559,6 +559,7 @@
                     <div class="ajustes-grupo">conexiones.</div>
                     <div class="ajustes-rejilla">
                         ${bloqueAjuste('settings-conector-section', 'conector', 'claude y chatgpt.', '', `<div id="settings-conector-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${bloqueAjuste('settings-servicios-section', 'lugar', 'dónde vives.', 'Para tus festivos, los puentes y el precio de la luz.', renderAjustesServicios())}
                         ${bloqueAjuste('', 'calendario', 'tu calendario en otras apps.', 'Suscríbete a Bitácora desde Google Calendar, el Calendario del iPhone u Outlook: tus eventos, cumpleaños, viajes y fechas límite, siempre al día.', `<button class="btn-secondary" style="width:auto" onclick="openCalendarioFeed()">obtener enlace.</button>`)}
                         ${bloqueAjuste('settings-push-section', 'avisos', 'notificaciones.', 'Avisos en este dispositivo: el resumen de la mañana y una hora antes de cada evento.', `<div id="settings-push-body">${renderPushSettingsBody('cargando')}</div>`)}
                     </div>

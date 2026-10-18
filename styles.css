@@ -8773,3 +8773,89 @@ body.papel .m-finanzas-ritmo .negativa { color:#a3243b; }
 .asist-permitir-enlace { display:block; margin:12px 0 0; }
 .command-palette-item.command-palette-respuesta { white-space:normal; line-height:1.45; font-weight:600; border:1px solid var(--border-strong); border-radius:10px; margin-bottom:6px; }
 .command-palette-item.command-palette-respuesta span { white-space:normal; }
+
+/* ============================================================
+   SERVICIOS (servicios.js): festivos y puentes, la luz, el destino del
+   viaje y tu día.
+   ============================================================ */
+.serv-linea { display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%; box-sizing:border-box; margin:0 0 14px; padding:12px 14px; border:1px dashed var(--border-strong); border-radius:14px; background:none; font-family:var(--font-family); font-size:13.5px; line-height:1.45; color:var(--text-secondary); text-align:left; }
+.serv-linea > span { flex:1; min-width:180px; }
+.serv-linea b { color:var(--text-primary); margin-right:4px; }
+.serv-linea-puente { border-style:solid; cursor:pointer; }
+.serv-cerrar { display:inline-grid; place-items:center; width:32px; height:32px; flex-shrink:0; padding:0; border:0; border-radius:10px; background:none; color:var(--text-secondary); cursor:pointer; }
+.m-serv-linea { margin:16px 0 0; }
+.cal-linea { margin:-4px 0 12px; }
+.asist-linea { margin:12px 0 0; }
+.cal-month-cell.es-festivo .cal-num { color:var(--m-acento) !important; }
+.cal-festivo { display:block; max-width:100%; margin:-2px 0 3px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:9.5px; font-weight:600; line-height:1.2; color:var(--m-acento); }
+.day-modal-festivo { margin:-8px 0 12px; font-size:13px; font-weight:600; color:var(--m-acento); }
+.m-dia-pill.festivo b { color:var(--m-acento); }
+.m-dia-pill.festivo.sel b { color:inherit; }
+.m-punto.festivo span { color:var(--m-acento); font-weight:800; }
+.serv-resultados { display:flex; flex-direction:column; gap:4px; margin-top:6px; }
+.serv-resultado { display:flex; flex-direction:column; align-items:flex-start; gap:1px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--bg-card); color:var(--text-primary); font-family:var(--font-family); font-size:14px; text-align:left; cursor:pointer; }
+.serv-resultado span { font-size:12px; color:var(--text-secondary); }
+.serv-elegida { margin-top:8px; font-size:13.5px; font-weight:600; color:var(--text-primary); }
+.serv-lista { display:flex; flex-direction:column; }
+.serv-lista-fila { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
+.serv-lista-fila span { min-width:150px; color:var(--text-secondary); }
+.serv-lista-fila b { flex:1; font-weight:600; }
+.serv-fila-anadir { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1.4fr) auto; gap:8px; margin-top:8px; align-items:center; }
+.serv-fila-anadir .modal-input { margin:0; }
+.serv-ajustes { display:flex; flex-direction:column; gap:12px; }
+.serv-ajustes-fila { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.serv-ajustes-fila > div { display:flex; flex-direction:column; gap:2px; min-width:0; font-size:13.5px; }
+.serv-ajustes-fila span { font-size:12.5px; color:var(--text-secondary); line-height:1.4; }
+.serv-ajustes-fila input[type="checkbox"] { width:20px; height:20px; flex-shrink:0; accent-color:var(--m-acento); }
+
+/* La luz. */
+.luz-dia { margin:0 0 14px; padding:14px 16px 10px; border:1px solid var(--border); border-radius:16px; background:var(--bg-card); }
+.luz-dia-cab { display:flex; gap:8px; flex-wrap:wrap; align-items:baseline; margin-bottom:10px; font-size:13px; line-height:1.4; color:var(--text-secondary); }
+.luz-dia-cab b { color:var(--text-primary); font-size:14px; }
+.luz-barras { display:grid; grid-template-columns:repeat(24, minmax(0, 1fr)); align-items:end; gap:2px; height:46px; }
+.luz-barras i { display:block; height:var(--alto); border-radius:3px 3px 1px 1px; background:var(--border-strong); }
+.luz-barras i.pasada { opacity:.35; }
+.luz-barras i.barata { background:#2f7d4f; opacity:1; }
+.luz-barras i.ahora { opacity:1; background:var(--text-secondary); outline:1.5px solid var(--text-primary); outline-offset:1px; }
+.luz-horas { display:flex; justify-content:space-between; margin-top:4px; font-size:10px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.luz-cargando { font-size:12.5px; color:var(--text-secondary); padding:10px 14px; }
+.luz-aviso { display:flex; align-items:flex-start; gap:6px; margin-top:4px; font-size:12px; line-height:1.4; color:#2f7d4f; }
+body:not(.papel) .luz-aviso { color:#6fc28f; }
+.luz-rayo { display:inline-block; width:11px; height:13px; flex-shrink:0; margin-top:1px; background:currentColor; -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M60 4L16 58h28l-8 38 48-56H54z'/%3E%3C/svg%3E") center / contain no-repeat; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M60 4L16 58h28l-8 38 48-56H54z'/%3E%3C/svg%3E") center / contain no-repeat; }
+
+/* El destino del viaje. */
+.destino-cab { display:flex; align-items:baseline; gap:10px; margin-bottom:14px; }
+.destino-cab b { font-size:24px; font-weight:800; letter-spacing:-.03em; }
+.destino-cab span { font-size:14px; color:var(--text-secondary); }
+.destino-rejilla { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-bottom:10px; }
+.destino-tarjeta { padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--bg-card); }
+.destino-tarjeta:first-child { grid-column:1 / -1; }
+.destino-tarjeta-titulo { margin-bottom:8px; font-size:13px; font-weight:700; color:var(--text-secondary); }
+.destino-texto { margin:0 0 6px; font-size:14px; line-height:1.5; }
+.destino-dias { display:grid; grid-template-columns:repeat(auto-fill, minmax(64px, 1fr)); gap:8px; }
+.destino-dia { display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 4px; border-radius:12px; background:var(--bg-app); font-size:12px; }
+.destino-dia span { color:var(--text-secondary); }
+.destino-dia b { font-size:16px; }
+.destino-dia small { color:var(--text-secondary); }
+.destino-conversor { display:flex; align-items:center; gap:10px; }
+.destino-conversor .modal-input { margin:0; max-width:180px; }
+.destino-conversor b { font-size:16px; font-variant-numeric:tabular-nums; }
+
+/* Tu día. */
+.tudia-cab { display:flex; align-items:flex-start; gap:12px; margin-bottom:16px; }
+.tudia-cab > div:first-child { flex:1; min-width:0; }
+.tudia-fecha { font-size:24px; font-weight:800; letter-spacing:-.03em; line-height:1.1; }
+.tudia-sub { margin-top:4px; font-size:13px; font-weight:600; color:var(--m-acento); }
+.tudia-tiempo { display:flex; align-items:center; gap:6px; font-size:18px; font-weight:700; }
+.tudia-tiempo small { font-size:13px; color:var(--text-secondary); font-weight:600; }
+.tudia-bloque { margin-bottom:14px; }
+.tudia-bloque-titulo { margin-bottom:6px; font-size:13px; font-weight:700; color:var(--text-secondary); }
+.tudia-fila { padding:7px 0; border-bottom:1px solid var(--border); font-size:14px; line-height:1.45; }
+.tudia-fila span { color:var(--text-secondary); }
+.tudia-nota { margin:0; padding:12px 14px; border-radius:12px; background:var(--bg-card); font-size:14px; line-height:1.55; white-space:pre-wrap; }
+.tudia-hace { margin:4px 0 14px; padding:12px 14px; border:1px dashed var(--border-strong); border-radius:12px; font-size:13.5px; line-height:1.45; color:var(--text-secondary); }
+.tudia-hace b { color:var(--text-primary); }
+.tudia-nav { display:flex; justify-content:space-between; gap:8px; }
+.tudia-entrada { display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; margin-top:14px; padding:13px 14px; border:1px solid var(--border-strong); border-radius:14px; background:none; color:var(--text-primary); font-family:var(--font-family); font-size:13.5px; text-align:left; cursor:pointer; }
+.tudia-entrada span { flex:1; color:var(--text-secondary); line-height:1.4; }
+.tudia-entrada .ico { width:12px; height:12px; color:var(--text-secondary); }

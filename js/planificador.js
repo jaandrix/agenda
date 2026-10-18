@@ -161,6 +161,7 @@
                     </div>
                 ` : ''}
 
+                ${plannerDayOffset <= 1 ? renderLuzDia(servMasDias(currentPlannerDayKey(), plannerDayOffset)) : ''}
                 <div class="planner-timeline vt-interior">
                     ${sinHora.length ? `<div class="planner-sin-hora-titulo">sin hora.</div>` : ''}
                     ${[...sinHora, ...items].length ? [...sinHora, ...items].map((it, n) => {
@@ -174,6 +175,7 @@
                             <div class="planner-item-body">
                                 <div class="planner-item-title"><span ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''} ${it.valorarPeliculaId ? `class="planner-item-enlace" onclick="openEditEntry('${it.valorarPeliculaId}')" title="Abrir la película para valorarla"` : `class="planner-item-editar" onclick="openAddPlannerItem('${it.id}')" title="Editar"`}>${escapeHtml(it.title)}</span>${it.prioridad ? `<i class="planner-prioridad">${PLANNER_PRIORIDADES[it.prioridad]}</i>` : ''}</div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
+                                ${it.done ? '' : luzAviso(it.title, servMasDias(currentPlannerDayKey(), offset), it.time)}
                                 ${renderPlannerSubtasks(it, offset)}
                             </div>
                             <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}', ${offset})"><i class='ico ico-x' aria-hidden=true></i></button>

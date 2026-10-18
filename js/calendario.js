@@ -642,6 +642,7 @@
                 <span style="font-size:17px;font-weight:600;color:var(--text-primary)">${CAL_MONTH_NAMES[calMonth]} ${calYear}</span>
                 <button class="cal-nav-arrow" onclick="changeMonth(1)"><i class='ico ico-der' aria-hidden=true></i></button>
             </div>
+            ${renderLineaFestivos('cal-linea')}
             <div class="vt-interior" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
 
             dayNames.forEach(d => {
@@ -675,9 +676,11 @@
                     `<span style="font-size:8px;line-height:5px;color:var(--text-secondary);flex-shrink:0">+${dayEntries.length - 4}</span>` :
                     '';
 
+                const festivo = festivoDe(dateStr);
                 html += `
-                <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" data-cal-date="${dateStr}" onclick="showDayEntries('${dateStr}')">
-                    <span style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
+                <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''} ${festivo ? 'es-festivo' : ''}" data-cal-date="${dateStr}" onclick="showDayEntries('${dateStr}')" ${festivo ? `title="${escapeHtml(festivo.nombre)}"` : ''}>
+                    <span class="cal-num" style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
+                    ${festivo ? `<span class="cal-festivo">${escapeHtml(festivo.nombre)}</span>` : ''}
                     <div style="display:flex;flex-direction:row;flex-wrap:wrap;gap:3px;align-items:center;justify-content:center">${barsHtml}${extra}</div>
                 </div>`;
             }
@@ -804,7 +807,9 @@
                     <span><span class="day-modal-weekday">${weekday}</span>, ${restDate}:</span>
                     <button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>
+                ${festivoDe(date) ? `<div class="day-modal-festivo">festivo, ${escapeHtml(festivoDe(date).nombre)}.</div>` : ''}
                 <div class="day-modal-list">${rows}</div>
+                ${renderEntradaTuDia(date)}
                 <button class="day-modal-add-btn" style="margin-top:14px" onclick="openNewEntryForDay('${date}')">+ Añadir entrada este día</button>
             `);
         }

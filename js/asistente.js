@@ -46,6 +46,8 @@
                     return `${e.time ? `<b>${escapeHtml(e.time)}</b> ` : ''}${escapeHtml(e.title || '')}`;
                 });
                 asistCargosEntre(d, d).forEach(x => cosas.push(`cargo de ${escapeHtml(x.e.title)}, ${financeMoney(Number(x.e.amount))}`));
+                const fest = typeof festivoDe === 'function' ? festivoDe(d) : null;
+                if (fest) cosas.unshift(`<b>festivo</b>, ${escapeHtml(fest.nombre)}`);
                 return cosas.length ? `<div class="asist-dia"><span>${asistFecha(d, true)}.</span><div>${cosas.map(c => `<div>${c}</div>`).join('')}</div></div>` : '';
             }).filter(Boolean);
             const desde = asistSumar(hoy, -6);
@@ -64,6 +66,7 @@
                 <div class="asist-bloque-cab">lo que viene.</div>
                 ${filasDia.length ? `<div class="asist-dias">${filasDia.join('')}</div>` : '<p class="finance-modal-note">Nada apuntado para los próximos siete días.</p>'}
                 ${cargos.length ? `<p class="finance-modal-note">${cargos.length} ${cargos.length === 1 ? 'cargo' : 'cargos'} por ${financeMoney(cargos.reduce((s, x) => s + Number(x.e.amount), 0))} esta semana.</p>` : ''}
+                ${typeof renderLineaFestivos === 'function' ? renderLineaFestivos('asist-linea') : ''}
                 <div class="asist-bloque-cab">la que acaba.</div>
                 <div class="asist-pasada">${pasada}</div>
             `);
