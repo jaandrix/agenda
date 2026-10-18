@@ -2037,22 +2037,25 @@
         .friend-remove-btn:hover { background: rgba(220,38,38,.12); }
 
         /* ---------------- Vista anual (calendario de puntos) ---------------- */
+        /* Mismo material que el grupo día/semana/mes (antes un círculo negro
+           con el punto blanco, que chocaba con todo lo de alrededor). */
         .year-cal-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 0;
-            background: #000;
-            color: #fff;
+            width: 36px;
+            height: 36px;
+            box-sizing: border-box;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
             padding: 0;
-            transition: transform .15s ease, opacity .15s ease;
+            transition: transform .15s ease, color .15s ease, border-color .15s ease;
         }
-        @media (hover: hover) and (pointer: fine) { .year-cal-btn:hover { transform: scale(1.06); opacity: .85; } }
+        @media (hover: hover) and (pointer: fine) { .year-cal-btn:hover { color: var(--text-primary); border-color: var(--border-strong); } }
         .year-cal-btn:active { transform: scale(0.95); }
         /* Botón "Cambio de vista": mismo lenguaje visual que year-cal-btn pero
            más pequeño y con un icono de dos círculos superpuestos (comparar

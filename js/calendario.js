@@ -557,7 +557,7 @@
                     `).join('')}
                 </div>
                 <button class="year-cal-btn" onclick="abrirCalendarioAnual()" title="Esfuerzo" aria-label="Esfuerzo">
-                    <svg width="18" height="18" viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="30"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 100 100" fill="currentColor"><circle cx="20" cy="20" r="11"/><circle cx="50" cy="20" r="11"/><circle cx="80" cy="20" r="11"/><circle cx="20" cy="50" r="11"/><circle cx="50" cy="50" r="11"/><circle cx="80" cy="50" r="11"/><circle cx="20" cy="80" r="11"/><circle cx="50" cy="80" r="11"/><circle cx="80" cy="80" r="11"/></svg>
                 </button>
                 ${renderTiempoWidget()}
             </div>`;
