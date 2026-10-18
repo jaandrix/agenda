@@ -1756,7 +1756,7 @@
                     <button class="${d.type === 'expense' ? 'active' : ''}" onclick="financeProQuickSet('type','expense')">Gasto</button>
                     <button class="${d.type === 'income' ? 'active' : ''}" onclick="financeProQuickSet('type','income')">Ingreso</button>
                 </div>
-                <input class="modal-input finance-quick-amount-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" value="${d.amount}" oninput="financeProQuickSet('amount', this.value)" autofocus>
+                <input class="modal-input finance-quick-amount-input" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="${escapeHtml(String(d.amount))}" oninput="financeProQuickSet('amount', this.value)" autofocus>
                 <div class="modal-label" style="margin-top:12px">Toca la cuenta para guardar</div>
                 <div class="finance-quick-account-row">
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<button class="finance-quick-account-btn" onclick="financeProQuickSave('${k}')">${FINANCE_PRO_ACCOUNT_META[k].icon}<span>${escapeHtml(financePro.accounts[k].name)}</span></button>`).join('')}
@@ -1771,7 +1771,7 @@
 
         async function financeProQuickSave(account) {
             const d = window._financeProQuickDraft;
-            const amount = Math.abs(Number(d.amount));
+            const amount = Math.abs(financeProParseEuroAmount(d.amount));
             if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
             financePro.transactions.push({
                 id: 'ptx_q_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
@@ -1911,7 +1911,7 @@
             return `
                 <div class="finance-correction-inputs">
                     <div><div class="modal-label">Fecha</div><input class="modal-input" type="date" value="${d.date}" onchange="financeProProgramadoSet('date',this.value)"></div>
-                    <div><div class="modal-label">Importe (€)</div><input class="modal-input" type="number" min="0" step="0.01" inputmode="decimal" value="${d.amount}" oninput="financeProProgramadoSet('amount',this.value)" placeholder="0.00"></div>
+                    <div><div class="modal-label">Importe (€)</div><input class="modal-input" type="text" inputmode="decimal" autocomplete="off" value="${escapeHtml(String(d.amount ?? ''))}" oninput="financeProProgramadoSet('amount',this.value)" placeholder="0,00"></div>
                 </div>
                 <div class="modal-label">Concepto</div>
                 <input class="modal-input" value="${escapeHtml(d.note)}" oninput="financeProProgramadoSet('note',this.value)" placeholder="p. ej. matrícula, seguro del coche...">
@@ -1959,7 +1959,7 @@
 
         async function saveFinanceProProgramado() {
             const d = window._financeProgramadoDraft;
-            const amount = Math.abs(Number(d.amount));
+            const amount = Math.abs(financeProParseEuroAmount(d.amount));
             if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
             if (!d.date) { showToast('Elige una fecha', true); return; }
             financePro.programados.push({
@@ -2158,7 +2158,7 @@
                 <div class="modal-label">Fecha</div>
                 <input class="modal-input" type="date" value="${d.date}" onchange="financeProDraftSet('date',this.value)">
                 <div class="modal-label">Importe (€)</div>
-                <input class="modal-input" type="number" min="0" step="0.01" value="${d.amount}" onchange="financeProDraftSet('amount',this.value)" placeholder="0.00">
+                <input class="modal-input" type="text" inputmode="decimal" autocomplete="off" value="${escapeHtml(String(d.amount ?? ''))}" oninput="window._financeProTxDraft.amount=this.value" placeholder="0,00">
                 <div class="modal-label">${d.type === 'transfer' ? 'Cuenta origen' : 'Cuenta'}</div>
                 <select class="modal-input" onchange="financeProDraftSet('account',this.value)">
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${d.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
@@ -2177,7 +2177,7 @@
                 ${d.categoriaAuto && d.category ? '<div class="finance-modal-note" style="margin:-4px 0 8px">Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.</div>' : ''}`}
                 ${renderFinanceProMarcasTx(d)}
                 <div class="modal-label">Nota (opcional)</div>
-                <input class="modal-input" value="${escapeHtml(d.note || '')}" onchange="financeProDraftSet('note',this.value)" placeholder="Ej. Cena con amigos">
+                <input class="modal-input" value="${escapeHtml(d.note || '')}" oninput="window._financeProTxDraft.note=this.value" placeholder="Ej. Cena con amigos">
                 <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction()">Guardar</button>
                 ${window._financeProTxEditId ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceProTransaction('${window._financeProTxEditId}')">Eliminar movimiento</button>` : ''}
             `;
@@ -2192,7 +2192,9 @@
 
         async function saveFinanceProTransaction() {
             const d = window._financeProTxDraft;
-            const amount = Math.abs(Number(d.amount));
+            // El importe se escribe como texto (en el iPhone, el campo numérico
+            // con teclado en español dejaba vacío «12,50» y daba error).
+            const amount = Math.abs(financeProParseEuroAmount(d.amount));
             if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
             if (d.type === 'transfer' && (!d.transferTo || d.transferTo === d.account)) { showToast('Elige una cuenta destino distinta', true); return; }
             const entry = {

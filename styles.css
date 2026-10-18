@@ -5512,13 +5512,13 @@ body.mobile-standalone.m-menu-abierto #mobile-shell { overflow:hidden; }
 /* Cabecera de cada apartado: nombre enorme y, debajo y en gris, el dato
    que más importa. --largo (caracteres) encoge el título para que quepa. */
 .m-cab { margin:12px 0 24px; }
-.m-titulo { margin:0; font-size:min(54px, calc(148vw / var(--largo, 10))); font-weight:800; letter-spacing:-.05em; line-height:.95; color:var(--text-primary); overflow-wrap:anywhere; }
-.m-sub { margin-top:4px; font-size:min(30px, 8vw); font-weight:700; letter-spacing:-.035em; line-height:1.05; color:var(--text-muted); }
+.m-titulo { margin:0; font-size:min(54px, calc(148vw / var(--largo, 10) / var(--m-zoom, 1))); font-weight:800; letter-spacing:-.05em; line-height:.95; color:var(--text-primary); overflow-wrap:anywhere; }
+.m-sub { margin-top:4px; font-size:min(30px, calc(8vw / var(--m-zoom, 1))); font-weight:700; letter-spacing:-.035em; line-height:1.05; color:var(--text-muted); }
 
 /* ---- Inicio ---- */
 .m-hero { margin-top:4px; }
 .m-hero-fila { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
-.m-hero-num { margin-left:-.04em; font-size:min(40vw, 172px); font-weight:700; letter-spacing:-.07em; line-height:.8; color:var(--text-primary); }
+.m-hero-num { margin-left:-.04em; font-size:min(calc(40vw / var(--m-zoom, 1)), 172px); font-weight:700; letter-spacing:-.07em; line-height:.8; color:var(--text-primary); }
 .m-hero-tiempo .tiempo-widget { position:static; margin:0; font-size:17px; }
 .m-hero-mes { display:flex; justify-content:space-between; align-items:baseline; margin-top:16px; font-size:32px; font-weight:800; letter-spacing:-.045em; line-height:1; }
 .m-hero-dia { color:var(--text-muted); }
@@ -5627,7 +5627,7 @@ body.mobile-standalone.m-menu-abierto #mobile-shell { overflow:hidden; }
 
 /* ---- Finanzas ---- */
 .m-cifra-bloque { margin-bottom:24px; }
-.m-cifra { margin-top:4px; font-size:min(56px, 13.5vw); font-weight:700; letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
+.m-cifra { margin-top:4px; font-size:min(56px, calc(13.5vw / var(--m-zoom, 1))); font-weight:700; letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
 .m-cifra-media { font-size:28px; font-weight:700; letter-spacing:-.04em; line-height:1.05; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
 .m-composicion { display:grid; grid-template-columns:46% 1fr; gap:18px; align-items:end; margin-bottom:24px; }
 .m-composicion-svg { display:block; width:100%; }
@@ -7954,7 +7954,7 @@ body.m-menu-abierto .m-tabbar { z-index:61; }
 .pomo-pastilla { bottom:calc(env(safe-area-inset-bottom, 0px) + 88px) !important; }
 
 /* ---- Inicio ---- */
-.m-hero-num { font-size:min(32vw, 136px); }
+.m-hero-num { font-size:min(calc(32vw / var(--m-zoom, 1)), 136px); }
 .m-hero-mes, .m-hero-anio { font-size:28px; }
 .m-mes.m-superficie { margin-top:22px; }
 .m-mes-cab { margin-bottom:12px; }
@@ -8004,7 +8004,7 @@ body.m-menu-abierto .m-tabbar { z-index:61; }
 
 /* ---- Apartados ---- */
 .m-bloque-cab { border-bottom:0; padding-bottom:10px; margin-top:26px; }
-.m-titulo { font-size:min(50px, calc(140vw / var(--largo, 10))); }
+.m-titulo { font-size:min(50px, calc(140vw / var(--largo, 10) / var(--m-zoom, 1))); }
 .m-evento, .m-nota, .m-viaje { border-radius:20px; }
 /* Móvil: las pestañas de Ocio en varias filas, todas a la vista. */
 .m-generico .culture-barra .culture-tabs { flex-wrap:wrap; overflow:visible; border-radius:12px; }
@@ -8154,7 +8154,7 @@ body.mobile-standalone .modal-label, body.pwa .modal-label { font-size:13px; }
 .m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 120px); }
 .pomo-pastilla { bottom:calc(env(safe-area-inset-bottom, 0px) + 100px) !important; }
 
-.m-hero-num { font-size:min(24vw, 104px); }
+.m-hero-num { font-size:min(calc(24vw / var(--m-zoom, 1)), 104px); }
 .m-hero-mes { margin-top:10px; font-size:26px; }
 .m-hero-anio { font-size:22px; }
 
@@ -8236,7 +8236,7 @@ body.m-plegada .m-cab { opacity:.25; }
 .m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 124px); }
 .m-menu-cuerpo { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 120px); }
 .pomo-pastilla { bottom:calc(env(safe-area-inset-bottom, 0px) + 96px) !important; }
-body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { max-height:calc(100dvh - env(safe-area-inset-top, 0px) - 24px); }
+body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { max-height:calc((100dvh - env(safe-area-inset-top, 0px) - 24px) / var(--m-zoom, 1)); }
 
 .m-fila.negativa .m-fila-cifra { color:#e0707f; }
 body.papel .m-fila.negativa .m-fila-cifra { color:#a3243b; }
@@ -8682,7 +8682,11 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { box-sizing:border-b
 
 /* La tira de la semana y el mes se deslizan con el dedo (mobileDeslizarFranja):
    el navegador se queda solo con el desplazamiento vertical. */
-.m-semana-tira, .m-mes-puntos { touch-action:pan-y; -webkit-user-select:none; user-select:none; will-change:transform; }
+.m-mes-puntos { touch-action:pan-y; -webkit-user-select:none; user-select:none; will-change:transform; }
+/* La semana, en carrusel nativo: tres semanas y encaje por semana. */
+.m-semana-carrusel { display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; scrollbar-width:none; -webkit-overflow-scrolling:touch; margin:-4px 0; padding:4px 0; -webkit-user-select:none; user-select:none; }
+.m-semana-carrusel::-webkit-scrollbar { display:none; }
+.m-semana-carrusel > .m-semana-tira { flex:0 0 100%; box-sizing:border-box; scroll-snap-align:start; scroll-snap-stop:always; }
 
 /* Horario de Estudios en el móvil: un día cada vez, en filas. */
 .m-horario-dias { display:grid; grid-template-columns:repeat(auto-fit, minmax(0, 1fr)); gap:6px; margin-bottom:6px; }
@@ -8696,3 +8700,28 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { box-sizing:border-b
 .m-horario-punto { width:9px; height:9px; flex-shrink:0; border-radius:50%; background:var(--text-secondary); opacity:.6; }
 .m-horario-asig { flex:1; min-width:0; font-size:16px; font-weight:600; line-height:1.25; color:var(--text-primary); }
 .m-horario-fila small { flex-shrink:0; font-size:12px; color:var(--text-secondary); }
+/* Iconos de categoría (set del usuario, rejilla de 48): ocupan casi la mitad de su insignia, como en su diseño. */
+.finance-pro-tx-icon svg[viewBox="0 0 48 48"] { width:58%; height:58%; }
+
+/* Con el tamaño de letra del móvil (zoom en la hoja), las medidas de pantalla
+   se multiplicaban: la guía y los modales largos salían por arriba y la X
+   quedaba fuera. Se dividen por el mismo zoom. */
+body.mobile-standalone .modal-sheet.guia-sheet, body.pwa .modal-sheet.guia-sheet { width:calc(100vw / var(--m-zoom, 1)); height:calc(92dvh / var(--m-zoom, 1)); max-height:none; }
+
+/* Finanzas en el móvil: ritmo del mes, en qué se va, próximos cargos. */
+.m-finanzas-ritmo { padding:16px; border-radius:18px; font-size:15px; line-height:1.45; }
+.m-finanzas-ritmo b { font-weight:700; font-variant-numeric:tabular-nums; }
+.m-finanzas-ritmo .negativa { color:#e0707f; font-weight:700; }
+body.papel .m-finanzas-ritmo .negativa { color:#a3243b; }
+.m-finanzas-ritmo .positiva { font-weight:700; }
+.m-finanzas-ritmo small { display:block; margin-top:6px; font-size:13px; color:var(--text-secondary); }
+.m-finanzas-cat .finance-pro-tx-icon { width:36px; height:36px; flex-shrink:0; }
+.m-finanzas-barra { display:block; height:5px; margin-top:6px; border-radius:999px; background:var(--border); overflow:hidden; }
+.m-finanzas-barra > i { display:block; height:100%; border-radius:999px; background:var(--text-primary); }
+.m-finanzas-aviso { display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; margin-top:18px; padding:14px 16px; border:1px solid var(--border-strong); border-radius:14px; background:var(--m-superficie, var(--bg-card)); color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; }
+.m-finanzas-aviso b { font-size:15px; }
+.m-finanzas-aviso span { font-size:13px; color:var(--text-secondary); }
+/* «volver a hoy.» al lado del tiempo y no debajo: con la zona táctil del
+   tiempo, el enlace de debajo se montaba sobre el día de la semana. */
+.m-hero-lado { flex-direction:row-reverse; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:6px 8px; }
+.m-hero-lado .m-hoy-link { position:static; margin:0; }

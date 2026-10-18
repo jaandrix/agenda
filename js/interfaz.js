@@ -632,3 +632,46 @@
             }
         }
 
+
+        // Al cambiar de pestaña (lista/historial, hoy/mañana, libros/series...)
+        // el contenido se cambiaba de golpe. Lo que queda debajo del grupo de
+        // pestañas entra ahora desde el lado de la pestaña elegida, con la
+        // misma animación que el cambio de día del móvil.
+        const PESTANAS_ANIMADAS = '.culture-tabs, .profe-pestanas, .social-subtabs, .m-pestanas, .est-pestanas';
+        function animarCambioPestana(e) {
+            const boton = e.target.closest?.('button');
+            const grupo = boton?.closest(PESTANAS_ANIMADAS);
+            if (!grupo || boton.matches('.active, .activa, .activo') || vtReducido()) return;
+            const botones = [...grupo.querySelectorAll('button')];
+            const nueva = botones.indexOf(boton), actual = botones.findIndex(b => b.matches('.active, .activa, .activo'));
+            const dx = actual >= 0 && nueva < actual ? '-18px' : '18px';
+            const clase = [...grupo.classList].find(c => PESTANAS_ANIMADAS.split(', ').includes('.' + c));
+            const animar = () => document.querySelectorAll('.' + clase).forEach(g => {
+                if (!g.offsetParent) return;
+                // Lo de debajo: los hermanos siguientes que no son botones de la
+                // misma barra (en Ocio, las pestañas van con botones al lado).
+                let base = g, debajo = [];
+                for (let i = 0; i < 3 && base; i++) {
+                    debajo = [];
+                    for (let x = base.nextElementSibling; x; x = x.nextElementSibling) if (!x.matches('button, .btn-secondary')) debajo.push(x);
+                    if (debajo.length) break;
+                    base = base.parentElement;
+                }
+                debajo.forEach(x => {
+                    x.style.setProperty('--m-dx', dx);
+                    x.classList.remove('m-cambia-dia');
+                    void x.offsetWidth;
+                    x.classList.add('m-cambia-dia');
+                    const fin = ev => { if (ev.target !== x) return; x.classList.remove('m-cambia-dia'); x.removeEventListener('animationend', fin); };
+                    x.addEventListener('animationend', fin);
+                });
+            });
+            // Algunas pestañas repintan al momento y otras un poco después: se
+            // anima en cuanto cambia la página (o al siguiente fotograma si no cambia).
+            let hecho = false;
+            const una = () => { if (hecho) return; hecho = true; obs.disconnect(); requestAnimationFrame(animar); };
+            const obs = new MutationObserver(una);
+            obs.observe(document.body, { childList: true, subtree: true });
+            setTimeout(una, 450);
+        }
+        document.addEventListener('click', animarCambioPestana, true);

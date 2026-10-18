@@ -977,6 +977,7 @@
             if (scrollMenu) { const cuerpo = shell.querySelector('.m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = scrollMenu; }
             if (scrollPagina) shell.scrollTop = scrollPagina;
             mobilePlegarTitulo(shell);
+            mobileCentrarCarrusel();
             if (!shell.dataset.plegado) {
                 shell.dataset.plegado = '1';
                 shell.addEventListener('scroll', () => mobilePlegarTitulo(shell), { passive: true });
@@ -1129,12 +1130,14 @@
             const pagina = document.querySelector('#mobile-shell .m-pagina');
             if (!pagina || currentView !== 'calendar') { render(); return; }
             pagina.innerHTML = renderAvisoPrueba(true) + renderMobileInicio();
+            mobileCentrarCarrusel();
             if (date === antes) return;
             pagina.style.setProperty('--m-dx', date > antes ? '18px' : '-18px');
             const lunes = iso => { const x = new Date(iso + 'T12:00:00'); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return isoLocal(x); };
             const piezas = ['.m-hero-num', '.m-hero-mes', '.m-dia'];
-            if (lunes(date) !== lunes(antes)) piezas.push('.m-semana-tira');
+            if (lunes(date) !== lunes(antes) && !mobileCarruselGesto) piezas.push('.m-semana-carrusel');
             piezas.forEach(sel => pagina.querySelector(sel)?.classList.add('m-cambia-dia'));
+            mobileCentrarCarrusel();
         }
 
         function mobileAlternarMes() {
@@ -1143,6 +1146,36 @@
             if (mobileVerMes && mobileDiaSel) { const d = new Date(mobileDiaSel + 'T12:00:00'); mobileMes = { y: d.getFullYear(), m: d.getMonth() }; }
             const pagina = document.querySelector('#mobile-shell .m-pagina');
             if (pagina) pagina.innerHTML = renderAvisoPrueba(true) + renderMobileInicio(mobileVerMes);
+            mobileCentrarCarrusel();
+        }
+
+        // Carrusel de la semana: se coloca en la del centro sin animación y, al
+        // terminar de encajar en la anterior o la siguiente, esa pasa a ser la
+        // elegida (mismo día de la semana) y se recoloca en el centro.
+        let mobileCarruselGesto = false;
+        function mobileCentrarCarrusel() {
+            const c = document.querySelector('#mobile-shell .m-semana-carrusel');
+            if (!c || c.dataset.listo) return;
+            c.dataset.listo = '1';
+            c.scrollLeft = c.clientWidth;
+            let espera = 0;
+            c.addEventListener('scroll', () => {
+                clearTimeout(espera);
+                espera = setTimeout(() => {
+                    const w = c.clientWidth;
+                    if (!w || !c.isConnected) return;
+                    const paso = Math.round(c.scrollLeft / w) - 1;
+                    if (!paso || Math.abs(c.scrollLeft - (paso + 1) * w) > 2) return;
+                    mobileCarruselGesto = true;
+                    try { mobileCambiarSemana(paso); } finally { mobileCarruselGesto = false; }
+                }, 90);
+            }, { passive: true });
+        }
+
+        function mobileCarruselPaso(paso) {
+            const c = document.querySelector('#mobile-shell .m-semana-carrusel');
+            if (!c || !c.clientWidth) { mobileCambiarSemana(paso); return; }
+            c.scrollBy({ left: paso * c.clientWidth, behavior: vtReducido() ? 'auto' : 'smooth' });
         }
 
         function mobileCambiarSemana(delta) {
@@ -1159,13 +1192,13 @@
             if (pagina) pagina.innerHTML = renderAvisoPrueba(true) + renderMobileInicio();
         }
 
-        // Deslizar la tira de la semana (o el mes en bolitas) la lleva entera a
-        // la semana o al mes de al lado. La tira sigue al dedo; si no se llega
+        // Deslizar el mes en bolitas lo lleva entero al mes de al lado (la
+        // semana va en un carrusel, mobileCentrarCarrusel). La tira sigue al dedo; si no se llega
         // lejos ni se suelta con fuerza, vuelve a su sitio. Solo cuenta un
         // gesto horizontal: el vertical sigue moviendo la página, y un toque
         // sigue eligiendo el día.
         function mobileDeslizarFranja(e) {
-            const tira = e.target.closest?.('.m-semana-tira, .m-mes-puntos');
+            const tira = e.target.closest?.('.m-mes-puntos');
             if (!tira || (e.pointerType === 'mouse' && e.button !== 0)) return;
             const x0 = e.clientX, y0 = e.clientY, t0 = performance.now();
             const ancho = tira.offsetWidth || 300;
@@ -1197,7 +1230,6 @@
                     tira.style.transform = `translateX(${-paso * ancho * .5}px)`;
                     tira.style.opacity = '0';
                     setTimeout(() => {
-                        if (!tira.classList.contains('m-mes-puntos')) { mobileCambiarSemana(paso); return; }
                         mobileCambiarMes(paso);
                         const pagina = document.querySelector('#mobile-shell .m-pagina');
                         pagina?.style.setProperty('--m-dx', paso > 0 ? '24px' : '-24px');
@@ -1237,10 +1269,12 @@
             // Semana (lunes a domingo) del día elegido.
             const lunes = new Date(d); lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7));
             const semana = Array.from({ length: 7 }, (_, i) => { const x = new Date(lunes); x.setDate(x.getDate() + i); return x; });
-            const tira = semana.map((x, i) => {
+            // Tres semanas seguidas (la anterior, la elegida y la siguiente) en un
+            // carrusel que encaja por semanas: al arrastrar se ve llegar la de al lado.
+            const tiraDe = k => Array.from({ length: 7 }, (_, i) => { const x = new Date(lunes); x.setDate(x.getDate() + k * 7 + i); return x; }).map((x, i) => {
                 const iso = isoLocal(x);
                 const ocupado = mobileOcupacionDia(iso) > 0;
-                return `<button class="m-dia-pill ${iso === sel ? 'sel' : ''} ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''}" onclick="mobileElegirDia('${iso}')" aria-label="${MOBILE_DIAS_LARGOS[x.getDay()]} ${x.getDate()}${ocupado ? ', con cosas' : ''}">
+                return `<button class="m-dia-pill ${iso === sel ? 'sel' : ''} ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''}" onclick="mobileElegirDia('${iso}')" aria-label="${MOBILE_DIAS_LARGOS[x.getDay()]} ${x.getDate()}${ocupado ? ', con cosas' : ''}" ${k ? 'tabindex="-1"' : ''}>
                     <small>${['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</small><b>${x.getDate()}</b><i class="${ocupado ? 'on' : ''}"></i></button>`;
             }).join('');
             const etiqueta = mobileVerMes ? `${MOBILE_MESES[m]}${y !== new Date().getFullYear() ? ' ' + y : ''}.` : `${MOBILE_MESES[lunes.getMonth()]}${semana[6].getMonth() !== lunes.getMonth() ? ' – ' + MOBILE_MESES[semana[6].getMonth()] : ''}.`;
@@ -1260,14 +1294,14 @@
                 <div class="m-mes-cab">
                     <span class="m-etiqueta">${etiqueta}</span>
                     <div class="m-mes-flechas">
-                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(-1)' : 'mobileCambiarSemana(-1)'}" aria-label="${mobileVerMes ? 'Mes anterior' : 'Semana anterior'}"><i class='ico ico-izq' aria-hidden=true></i></button>
+                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(-1)' : 'mobileCarruselPaso(-1)'}" aria-label="${mobileVerMes ? 'Mes anterior' : 'Semana anterior'}"><i class='ico ico-izq' aria-hidden=true></i></button>
                         <button class="m-mes-modo" onclick="mobileAlternarMes()">${mobileVerMes ? 'semana.' : 'mes.'}</button>
-                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(1)' : 'mobileCambiarSemana(1)'}" aria-label="${mobileVerMes ? 'Mes siguiente' : 'Semana siguiente'}"><i class='ico ico-der' aria-hidden=true></i></button>
+                        <button onclick="${mobileVerMes ? 'mobileCambiarMes(1)' : 'mobileCarruselPaso(1)'}" aria-label="${mobileVerMes ? 'Mes siguiente' : 'Semana siguiente'}"><i class='ico ico-der' aria-hidden=true></i></button>
                     </div>
                 </div>
                 ${mobileVerMes ? `
                 <div class="m-mes-letras">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => `<span class="${i === letraHoy && y === new Date().getFullYear() && m === new Date().getMonth() ? 'hoy' : ''}">${l}</span>`).join('')}</div>
-                <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>` : `<div class="m-semana-tira">${tira}</div>`}
+                <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>` : `<div class="m-semana-carrusel">${[-1, 0, 1].map(k => `<div class="m-semana-tira">${tiraDe(k)}</div>`).join('')}</div>`}
             </section>
             ${renderMobileDiaPanel(sel, hoy)}
             ${renderMobileTeselas()}`;
@@ -1501,6 +1535,50 @@
                 <div class="rutinas rutinas-en-movil">${renderRutinasCuerpo(true)}</div>`;
         }
 
+        // Lo que el móvil añade a Finanzas: el ritmo del mes frente al anterior,
+        // en qué se va el dinero, los próximos cargos y lo que queda por ajustar.
+        function renderMobileFinanzasMes() {
+            const ahora = new Date();
+            const mes = financeMonthKey();
+            const pasado = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+            const mesPasado = `${pasado.getFullYear()}-${String(pasado.getMonth() + 1).padStart(2, '0')}`;
+            const dia = ahora.getDate();
+            const diasMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0).getDate();
+            const gasto = (clave, hastaDia) => financePro.transactions.reduce((t, x) => x.type === 'expense' && !x.ahorro && x.date.slice(0, 7) === clave && (!hastaDia || Number(x.date.slice(8)) <= hastaDia) ? t + (Number(x.amount) || 0) : t, 0);
+            const ahoraGasto = gasto(mes);
+            const antes = gasto(mesPasado, dia);
+            const previsto = dia >= 5 ? ahoraGasto / dia * diasMes : null;
+            const dif = ahoraGasto - antes;
+            const ritmo = ahoraGasto || antes ? `
+                <div class="m-bloque-cab"><div class="m-etiqueta">ritmo.</div></div>
+                <div class="m-finanzas-ritmo m-superficie">
+                    <div><b>${financeMoney(ahoraGasto)}</b> gastados hasta hoy${antes ? `, <span class="${dif > 0 ? 'negativa' : 'positiva'}">${financeMoney(Math.abs(dif))} ${dif > 0 ? 'más' : 'menos'}</span> que a día ${dia} de ${MOBILE_MESES[pasado.getMonth()]}` : ''}.</div>
+                    ${previsto ? `<small>A este ritmo, unos ${financeMoney(Math.round(previsto))} a final de mes.</small>` : ''}
+                </div>` : '';
+            const porCat = {};
+            financePro.transactions.forEach(x => { if (x.type === 'expense' && !x.ahorro && x.date.slice(0, 7) === mes) porCat[x.category || ''] = (porCat[x.category || ''] || 0) + (Number(x.amount) || 0); });
+            const top = Object.entries(porCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const maximo = top[0]?.[1] || 1;
+            const categorias = top.length ? `
+                <div class="m-bloque-cab"><div class="m-etiqueta">en qué se va.</div></div>
+                <div class="m-lista">${top.map(([id, total]) => {
+                    const cat = financeProCategoryById(id);
+                    return `<div class="m-fila m-finanzas-cat">${financeProCategoryBadge(cat)}<div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml((cat?.name || 'sin categoría').toLowerCase())}.</div><i class="m-finanzas-barra"><i style="width:${Math.max(4, Math.round(total / maximo * 100))}%;${cat?.color ? `background:${cat.color}` : ''}"></i></i></div><span class="m-fila-cifra">${financeMoney(total)}</span></div>`;
+                }).join('')}</div>` : '';
+            const cargos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0).map(e => {
+                const diaCobro = Number(e.renewalDay) || 1;
+                const fecha = new Date(ahora.getFullYear(), ahora.getMonth() + (diaCobro < dia ? 1 : 0), 1);
+                fecha.setDate(Math.min(diaCobro, new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate()));
+                return { e, fecha, faltan: Math.round((fecha - new Date(ahora.getFullYear(), ahora.getMonth(), dia)) / 864e5) };
+            }).filter(x => x.faltan <= 14).sort((a, b) => a.faltan - b.faltan);
+            const proximos = cargos.length ? `
+                <div class="m-bloque-cab"><div class="m-etiqueta">próximos cargos.</div><span class="m-fila-meta">${financeMoney(cargos.reduce((t, x) => t + Number(x.e.amount), 0))} en 14 días.</span></div>
+                <div class="m-lista">${cargos.slice(0, 5).map(x => `<div class="m-fila"><span class="m-fila-hora">${x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : `${x.fecha.getDate()} ${MOBILE_MESES[x.fecha.getMonth()].slice(0, 3)}`}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(x.e.title || '')}</div></div><span class="m-fila-cifra">${financeMoney(Number(x.e.amount))}</span></div>`).join('')}</div>` : '';
+            const porAjustar = financeProPendingReviewCount();
+            const aviso = porAjustar ? `<button class="m-finanzas-aviso" onclick="openFinanceProReviewModal()"><b>${porAjustar} ${porAjustar === 1 ? 'movimiento' : 'movimientos'} por ajustar.</b><span>ponles categoría y revisa la cuenta.</span></button>` : '';
+            return aviso + ritmo + categorias + proximos;
+        }
+
         function renderMobileFinances() {
             const ahora = new Date();
             const { income, expense } = financeProMonthTotals(financeMonthKey());
@@ -1529,9 +1607,10 @@
                     <div><div class="m-etiqueta">sale.</div><div class="m-cifra-media">${financeMoney(expense)}</div></div>
                 </div>
                 <div class="m-acciones">
-                    <button class="m-boton m-boton-acento" onclick="openFinanceProQuickCaptureModal()">+ movimiento.</button>
+                    <button class="m-boton m-boton-acento" onclick="openFinanceProTransactionModal()">+ movimiento.</button>
                     <button class="m-boton" onclick="pegarExtractoBancario()">importar extracto.</button>
                 </div>
+                ${renderMobileFinanzasMes()}
                 <div class="m-bloque-cab"><div class="m-etiqueta">cuentas.</div></div>
                 <div class="m-lista">${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
                     <div class="m-fila"><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml((financePro.accounts[k]?.name || k).toLowerCase())}.</div></div><span class="m-fila-cifra">${financeMoney(financeProAccountBalance(k))}</span></div>`).join('')}

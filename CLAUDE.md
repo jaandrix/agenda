@@ -101,10 +101,13 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   el resto de botones con tinte translúcido. Barra de pestañas abajo (`renderMobileTabbar`: inicio, plan, + captura, el último
   apartado visitado `mobileReciente` y menú; el botón de menú de arriba está oculto). El inicio enseña la
   semana del día elegido (o el mes en bolitas, `mobileVerMes`) y el día como horario (`.m-tl`, con marca de
-  "ahora"; la tira de la semana y el mes en bolitas se deslizan con el dedo, `mobileDeslizarFranja`). Al volver de segundo plano
+  "ahora"; la semana va en un carrusel nativo de tres semanas con encaje por semana, `mobileCentrarCarrusel` / `mobileCarruselPaso`; el mes en bolitas se desliza con `mobileDeslizarFranja`). Al volver de segundo plano
   más de 30 s se repinta sola (`refrescarAlVolver`, inicio.js) y si cambió el día vuelve a hoy. Estudios en el móvil enseña el horario
   un día cada vez (`renderMobileHorario`). Paleta propia del móvil (`body.mobile-standalone` / `body.pwa` + tema) con `--m-superficie`
-  para las tarjetas. Tamaño de letra del móvil con `zoom` (`TAMANOS_LETRA` en datos.js).
+  para las tarjetas. Tamaño de letra del móvil con `zoom` (`TAMANOS_LETRA` en datos.js): dentro de lo que lleva zoom (`.m-app`, las hojas de los
+  modales) las medidas de pantalla (vh, dvh, vw) se dividen por `var(--m-zoom, 1)`, o la hoja sale por arriba. Al tocar una pestaña de
+  `PESTANAS_ANIMADAS` (interfaz.js) lo de debajo entra de lado (`animarCambioPestana`). Iconos de categorías de Finanzas: el set del
+  usuario en rejilla de 48 (`FINANCE_PRO_CATEGORY_ICON_SET`), no rehacerlos.
 - **Temas:** "pizarra" (gris azulado con tinta azul marino, clase `body.papel.pizarra`, sus colores al final de
   `styles.css` en "TEMA PIZARRA"; barra lateral y barra de abajo en `#1A2D42`). Y los de siempre: "asfalto" (oscuro, por defecto, sin clase), "papel" (claro, clase
   `body.papel`) y "teja" (piedra cálida, negro y naranja teja a lo cartel suizo; por

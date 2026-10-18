@@ -80,7 +80,7 @@ const GUIA = [
             [guiaBoton('‹ inicio.'), 'Arriba a la izquierda en cualquier apartado: vuelve a la portada.'],
             [guiaBoton('temas, letra.'), 'Al final del menú, los círculos cambian el tema y «letra.» el tamaño del texto en el móvil.'],
         ],
-        trucos: ['Planificador, Finanzas, Estudios, Rutinas, Eventos, Notas y Viajes tienen página propia en el móvil; el resto usa la de escritorio adaptada, con los mismos botones en píldora.', 'En Ocio, libros y películas salen en lista; en Profesorado, el cuadrante se desliza de lado y las tarjetas de las clases también.'],
+        trucos: ['Planificador, Finanzas, Estudios, Rutinas, Eventos, Notas y Viajes tienen página propia en el móvil; el resto usa la de escritorio adaptada, con los mismos botones en píldora.', 'En el inicio, arrastra la semana con el dedo: las semanas pasan como un carrusel y encajan al soltar. Finanzas en el móvil enseña también el ritmo del mes frente al anterior, en qué se va el dinero y los próximos cargos.', 'En Ocio, libros y películas salen en lista; en Profesorado, el cuadrante se desliza de lado y las tarjetas de las clases también.'],
     },
     {
         id: 'claude', grupo: 'empezar', titulo: 'claude y chatgpt.',
