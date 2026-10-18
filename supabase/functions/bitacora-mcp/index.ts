@@ -687,7 +687,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'importar_extracto',
-        description: 'Importa un extracto bancario en CSV (Revolut, Ibercaja...) que el usuario comparta: pasa aquí el contenido completo del archivo, sin tocarlo. Bitácora lo procesa con su propio importador al abrirse: no duplica lo ya registrado, fusiona los gastos apuntados a mano y las suscripciones, actualiza los pendientes y categoriza solo lo que tiene claro.',
+        description: 'Importa un extracto bancario en CSV (Revolut, Ibercaja, Santander...) que el usuario comparta: pasa aquí el contenido completo del archivo, sin tocarlo; si es un Excel, pásalo como CSV con todas sus filas (las de arriba con los datos de la cuenta pueden quedarse, Bitácora busca sola la cabecera). Bitácora lo procesa con su propio importador al abrirse: no duplica lo ya registrado, fusiona los gastos apuntados a mano y las suscripciones, actualiza los pendientes y categoriza solo lo que tiene claro.',
         inputSchema: { type: 'object', properties: { csv: { type: 'string' }, cuenta: { type: 'string', enum: CUENTAS, description: 'Cuenta de Bitácora a la que pertenece; por defecto la última usada al importar' } }, required: ['csv'] },
     },
     {
@@ -1115,7 +1115,7 @@ async function llamar(userId: string, nombre: string, a: any) {
         case 'importar_extracto': {
             const csv = String(a.csv || '').trim();
             const lineas = csv.split(/\r?\n/).filter(l => l.trim());
-            if (lineas.length < 2 || !/[,;]/.test(lineas[0])) throw new Error('Eso no parece un CSV con cabecera y filas');
+            if (lineas.length < 2 || !/[,;\t]/.test(lineas.slice(0, 15).join('\n'))) throw new Error('Eso no parece un CSV con cabecera y filas');
             if (csv.length > 400000) throw new Error('El extracto es demasiado grande; impórtalo por partes (por meses)');
             const cuenta = CUENTAS.includes(a.cuenta) ? a.cuenta : (data.financePro?.cuentaImport || '');
             await encolar(userId, { tipo: 'importar', csv, cuenta, resumen: `${lineas.length - 1} filas` });

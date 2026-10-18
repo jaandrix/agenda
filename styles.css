@@ -5183,7 +5183,7 @@ html[data-vt="ficha"]::view-transition-old(root) { display: block; animation: vt
 .finance-correction-row { padding:10px 0; border-bottom:1px solid var(--border); }
 .finance-correction-row:last-of-type { border-bottom:none; }
 .finance-correction-month { font-size:11px; font-weight:700; text-transform:capitalize; margin-bottom:6px; }
-.finance-correction-inputs { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.finance-correction-inputs { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; }
 .finance-correction-inputs .modal-input { margin-bottom:0; }
 .finance-account-icon { font-size:14px; color:var(--text-secondary); margin-bottom:6px; }
 .finance-account-label { font-size:10px; text-transform:lowercase; letter-spacing:0; font-weight:700; color:var(--text-secondary); }

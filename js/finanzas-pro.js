@@ -2541,8 +2541,8 @@
             window._financeProImport = null;
             showModal(`
                 <div class="modal-title">Importar movimientos</div>
-                <div class="finance-modal-note" style="margin-bottom:12px">Sube el CSV que exporta tu banco o tu app de finanzas (si tienes un Excel, guárdalo primero como CSV), o pega su contenido si lo has copiado desde el botón de compartir. En el siguiente paso indicas qué columna es cada dato.</div>
-                <input type="file" id="finance-pro-import-file" accept=".csv,text/csv" class="modal-input" onchange="handleFinanceProImportFile(event)">
+                <div class="finance-modal-note" style="margin-bottom:12px">Sube el Excel o el CSV que exporta tu banco o tu app de finanzas, o pega su contenido si lo has copiado desde el botón de compartir. En el siguiente paso indicas qué columna es cada dato.</div>
+                <input type="file" id="finance-pro-import-file" accept=".csv,.xlsx,.xls,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="modal-input" onchange="handleFinanceProImportFile(event)">
                 <button class="finance-oneoff-btn finance-import-pegar" onclick="pegarExtractoBancario()">pegar extracto.</button>
                 <div id="finance-pro-import-body"></div>
             `);
@@ -2552,8 +2552,12 @@
         // detecta solo si el separador es "," o ";" — este último es muy
         // habitual en extractos de bancos españoles).
         function financeProParseCSV(text) {
-            const firstLine = text.split(/\r?\n/)[0] || '';
-            const sep = (firstLine.match(/;/g) || []).length >= (firstLine.match(/,/g) || []).length ? ';' : ',';
+            // El separador se cuenta en las primeras líneas y no solo en la
+            // primera: hay bancos que ponen antes el nombre de la cuenta, y lo
+            // copiado de una hoja de cálculo llega separado por tabuladores.
+            const inicio = text.split(/\r?\n/).slice(0, 12).join('\n');
+            const veces = c => inicio.split(c).length - 1;
+            const sep = veces('\t') > Math.max(veces(';'), veces(',')) ? '\t' : veces(';') >= veces(',') ? ';' : ',';
             const rows = [];
             let row = [], field = '', inQuotes = false;
             for (let i = 0; i < text.length; i++) {
@@ -2584,14 +2588,98 @@
         // su nombre de cabecera (en español e inglés, las variantes más
         // habituales) y solo se cae a la posición fija si no se reconoce
         // ninguna cabecera así.
+        // Los patrones van por orden de preferencia: Ibercaja trae
+        // "Concepto" (TARJETA VISA) y "Descripción" (el comercio), y manda
+        // la descripción aunque venga después.
         function financeProGuessColumn(headerRow, patterns, fallback) {
-            const idx = headerRow.findIndex(h => patterns.some(p => String(h || '').trim().toLowerCase() === p));
-            return idx >= 0 ? idx : fallback;
+            const cab = headerRow.map(h => String(h || '').trim().toLowerCase());
+            for (const p of patterns) { const idx = cab.indexOf(p); if (idx >= 0) return idx; }
+            return fallback;
         }
 
-        function handleFinanceProImportFile(event) {
+        // Muchos bancos (Ibercaja, Santander) ponen arriba la cuenta, el
+        // titular o los filtros, y la tabla empieza más abajo: la cabecera
+        // es la primera fila con una columna de fecha y otra de importe.
+        function financeProFilaCabecera(rows) {
+            for (let i = 0; i < Math.min(rows.length, 40); i++) {
+                const cab = rows[i].map(h => String(h || '').trim().toLowerCase());
+                if (cab.some(h => /^(fecha|date|started date|completed date|f\. ?operaci)/.test(h)) && cab.some(h => /^(importe|amount|cantidad|cargo|abono|debe|haber)/.test(h))) return i;
+            }
+            return 0;
+        }
+
+        // Lector propio de .xlsx (un zip con XML dentro): ExcelJS no abría el
+        // de Ibercaja, que escribe las etiquetas con prefijo (x:row, x:c), y
+        // así no hace falta cargar ninguna librería. Lee la primera hoja.
+        async function financeProLeerExcel(file) {
+            const buf = new Uint8Array(await file.arrayBuffer());
+            const dv = new DataView(buf.buffer);
+            let fin = buf.length - 22;
+            while (fin >= 0 && dv.getUint32(fin, true) !== 0x06054b50) fin--;
+            if (fin < 0) throw new Error('no es un xlsx');
+            const partes = {};
+            for (let k = 0, p = dv.getUint32(fin + 16, true); k < dv.getUint16(fin + 10, true); k++) {
+                const nLen = dv.getUint16(p + 28, true), eLen = dv.getUint16(p + 30, true), cLen = dv.getUint16(p + 32, true);
+                const nombre = new TextDecoder().decode(buf.subarray(p + 46, p + 46 + nLen));
+                const local = dv.getUint32(p + 42, true);
+                const ini = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+                partes[nombre] = { metodo: dv.getUint16(p + 10, true), datos: buf.subarray(ini, ini + dv.getUint32(p + 20, true)) };
+                p += 46 + nLen + eLen + cLen;
+            }
+            const leer = async nombre => {
+                const e = partes[nombre];
+                if (!e) return null;
+                const txt = e.metodo === 0 ? new TextDecoder().decode(e.datos) : await new Response(new Blob([e.datos]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+                return new DOMParser().parseFromString(txt, 'application/xml');
+            };
+            const todos = (nodo, tag) => [...nodo.getElementsByTagNameNS('*', tag)];
+            const texto = nodo => todos(nodo, 't').filter(t => t.parentNode.localName !== 'rPh').map(t => t.textContent).join('');
+            const ss = await leer('xl/sharedStrings.xml');
+            const compartidas = ss ? todos(ss, 'si').map(texto) : [];
+            // Las fechas guardadas como número llevan un formato de fecha en styles.xml.
+            const estilos = await leer('xl/styles.xml');
+            const formatos = {};
+            if (estilos) todos(estilos, 'numFmt').forEach(f => { formatos[f.getAttribute('numFmtId')] = f.getAttribute('formatCode') || ''; });
+            const xfs = estilos ? todos(todos(estilos, 'cellXfs')[0] || estilos, 'xf').map(x => x.getAttribute('numFmtId') || '0') : [];
+            const esFecha = id => (+id >= 14 && +id <= 22) || (+id >= 45 && +id <= 47) || /[dmy]/i.test((formatos[id] || '').replace(/"[^"]*"|\[[^\]]*\]/g, ''));
+            const hojas = Object.keys(partes).filter(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            const hoja = hojas.length ? await leer(hojas[0]) : null;
+            if (!hoja) throw new Error('sin hojas');
+            const columna = ref => [...String(ref || '').replace(/\d+$/, '')].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+            const rows = [];
+            todos(hoja, 'row').forEach(fila => {
+                const celdas = [];
+                todos(fila, 'c').forEach((c, pos) => {
+                    const tipo = c.getAttribute('t'), v = todos(c, 'v')[0]?.textContent ?? '';
+                    let valor;
+                    if (tipo === 's') valor = compartidas[+v] ?? '';
+                    else if (tipo === 'inlineStr') valor = texto(c);
+                    else if (!tipo || tipo === 'n') {
+                        valor = v;
+                        if (v !== '' && esFecha(xfs[+c.getAttribute('s') || 0])) {
+                            const d = new Date(Math.round((+v - 25569) * 86400000));
+                            valor = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+                        }
+                    } else valor = v;
+                    const idx = c.getAttribute('r') ? columna(c.getAttribute('r')) : pos;
+                    while (celdas.length < idx) celdas.push('');
+                    celdas[idx] = String(valor).trim();
+                });
+                if (celdas.some(Boolean)) rows.push(celdas);
+            });
+            const ancho = Math.max(0, ...rows.map(r => r.length));
+            return rows.map(r => r.concat(Array(ancho - r.length).fill('')));
+        }
+
+        async function handleFinanceProImportFile(event) {
             const file = event.target.files[0];
             if (!file) return;
+            if (/\.xls$/i.test(file.name)) { showToast('Ese Excel es del formato antiguo (.xls): ábrelo y guárdalo como .xlsx o CSV', true); return; }
+            if (/\.xlsx$/i.test(file.name) || /spreadsheetml/.test(file.type)) {
+                try { financeProCargarTextoImport(await financeProLeerExcel(file)); }
+                catch (e) { console.error(e); showToast('No se pudo leer el Excel', true); }
+                return;
+            }
             const reader = new FileReader();
             reader.onload = () => financeProCargarTextoImport(String(reader.result));
             reader.onerror = () => showToast('No se pudo leer el archivo', true);
@@ -2626,7 +2714,8 @@
         // Columnas adivinadas por cabecera y cuenta (la pedida, o la última
         // usada al importar). También la usa el conector, sin ventana.
         function financeProPrepararImport(texto, cuentaPedida) {
-            const rows = financeProParseCSV(String(texto || '').trim());
+            const todas = Array.isArray(texto) ? texto : financeProParseCSV(String(texto || '').trim());
+            const rows = todas.slice(financeProFilaCabecera(todas));
             if (rows.length < 2 || rows[0].length < 3) return null;
             const header = rows[0];
             // La fecha que cuenta es la de la compra, no la de cuando el
@@ -2635,9 +2724,9 @@
             // Además siempre viene rellena (también en los pendientes).
             // La de finalización sigue usándose al reimportar para
             // reconocer movimientos ya importados con esa fecha (altDates).
-            const date = financeProGuessColumn(header, ['started date', 'fecha de inicio', 'completed date', 'fecha de finalización', 'date', 'fecha'], 0);
-            const amount = financeProGuessColumn(header, ['amount', 'importe'], 1);
-            const description = financeProGuessColumn(header, ['description', 'descripción', 'concepto'], header.length > 2 ? 2 : 0);
+            const date = financeProGuessColumn(header, ['started date', 'fecha de inicio', 'completed date', 'fecha de finalización', 'date', 'fecha', 'fecha operación', 'fecha operacion', 'fecha de operación', 'fecha de operacion', 'f. operación', 'f.operación', 'fecha valor'], 0);
+            const amount = financeProGuessColumn(header, ['amount', 'importe', 'importe (€)', 'importe eur', 'cantidad'], 1);
+            const description = financeProGuessColumn(header, ['description', 'descripción', 'descripcion', 'concepto', 'detalle', 'movimiento'], header.length > 2 ? 2 : 0);
             const category = financeProGuessColumn(header, ['category', 'categoría', 'categoria'], -1);
             const status = financeProGuessColumn(header, ['state', 'estado'], -1);
             const account = FINANCE_PRO_ACCOUNT_KEYS.includes(cuentaPedida) ? cuentaPedida : FINANCE_PRO_ACCOUNT_KEYS.includes(financePro.cuentaImport) ? financePro.cuentaImport : FINANCE_PRO_ACCOUNT_KEYS[0];
@@ -2701,7 +2790,8 @@
 
         function financeProParseEuroAmount(str) {
             if (str === undefined || str === null) return NaN;
-            let s = String(str).trim().replace(/[€\s]/g, '');
+            // Santander escribe el negativo con el signo menos tipográfico (−).
+            let s = String(str).trim().replace(/[\u2212\u2013]/g, '-').replace(/[€\s]|eur$/gi, '');
             if (!s) return NaN;
             if (s.includes(',') && s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
             else s = s.replace(/,/g, '');

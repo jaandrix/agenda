@@ -1471,7 +1471,7 @@
                 </div>
                 <div class="m-acciones">
                     <button class="m-boton m-boton-acento" onclick="openFinanceProQuickCaptureModal()">+ movimiento.</button>
-                    <button class="m-boton" onclick="pegarExtractoBancario()">pegar extracto.</button>
+                    <button class="m-boton" onclick="pegarExtractoBancario()">importar extracto.</button>
                 </div>
                 <div class="m-bloque-cab"><div class="m-etiqueta">cuentas.</div></div>
                 <div class="m-lista">${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
