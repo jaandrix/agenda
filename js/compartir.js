@@ -29,7 +29,7 @@ async function compartirCrear(tipo, datos, ref) {
         compartidoCache[id] = { id, tipo, datos, eventos: [], cierre: null, creado: new Date().toISOString() };
         await servGuardarDatos();
         openCompartido(id, true);
-        if (currentView === 'friends') pintarSocial();
+        repintarTrasModal();
     } catch (e) {
         console.error(e);
         showToast(e.status === 401 ? 'Inicia sesión para compartir' : 'No se ha podido crear el enlace', true);
@@ -182,6 +182,8 @@ async function openCompartido(id, recien) {
     // Solo se repinta si llegó algo nuevo, y por dentro: repintar el modal
     // entero lo hacía parpadear como si se cerrara y se volviera a abrir.
     if (document.getElementById('cmpt-' + id) && JSON.stringify(compartidoCache[id] || null) !== antes) pintarCompartido(id, recien);
+    const lista = document.getElementById('cmpt-mios');
+    if (lista) lista.innerHTML = compartidosFilas();
 }
 
 function pintarCompartido(id, recien) {
@@ -250,7 +252,7 @@ async function quedadaElegir(id, i) {
     const van = compartidoVotos(compartidoCache[id], 'voto').filter(v => v.si.includes(i)).map(v => v.nombre);
     entries.push({ id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), type: 'event', eventType: 'social', categoryId: getCategoryIdForType('event'), tags: [], title: c.datos.titulo, date: o.fecha, time: o.hora || '', place: c.datos.lugar || '', notes: [c.datos.nota, van.length ? `Con ${van.join(', ')}.` : ''].filter(Boolean).join('\n'), compartidoId: id });
     filteredEntries = [...entries];
-    render();
+    repintarTrasModal();
     pintarCompartido(id);
     showToast('Decidido. Ya está en tu calendario');
     await servGuardarDatos();
@@ -261,7 +263,7 @@ async function quedadaReabrir(id) {
     catch (e) { showToast('No se ha podido reabrir', true); return; }
     entries = entries.filter(e => e.compartidoId !== id);
     filteredEntries = [...entries];
-    render();
+    repintarTrasModal();
     pintarCompartido(id);
     await servGuardarDatos();
 }
@@ -297,8 +299,8 @@ async function compartidoBorrar(id) {
     catch (e) { if (e.status !== 404) { showToast('No se ha podido borrar', true); return; } }
     servicios.compartidos = compartidosLista().filter(x => x.id !== id);
     delete compartidoCache[id];
+    repintarTrasModal();
     closeModal();
-    if (currentView === 'friends') pintarSocial();
     await servGuardarDatos();
 }
 
@@ -309,7 +311,12 @@ function renderEnlacesSocial() {
     const faltan = l.filter(c => !compartidoCache[c.id]);
     if (faltan.length && !compartidosCargando) {
         compartidosCargando = true;
-        Promise.all(faltan.slice(0, 20).map(c => cargarCompartido(c.id))).finally(() => { compartidosCargando = false; if (currentView === 'friends' && !document.querySelector('.modal-overlay')) pintarSocial(); });
+        Promise.all(faltan.slice(0, 20).map(c => cargarCompartido(c.id))).finally(() => {
+            compartidosCargando = false;
+            // Solo cambian los resúmenes de la lista: se cambian por dentro, sin repintar Social.
+            const lista = document.getElementById('cmpt-mios');
+            if (lista) lista.innerHTML = compartidosFilas();
+        });
     }
     return `
         <div class="ajustes-rejilla">
@@ -319,9 +326,13 @@ function renderEnlacesSocial() {
                     <button class="cmpt-nuevo" onclick="openCompartirEvento()"><b>invitación.</b><span>Un evento tuyo: lo añaden a su calendario y te dicen si van.</span></button>
                     <button class="cmpt-nuevo" onclick="compartirElegirLista()"><b>lista.</b><span>La compra de la cena, lo que falta en el piso: todos tachan y añaden.</span></button>
                 </div>`)}
-            ${l.length ? bloqueSocial('', 'recibido', 'lo que has compartido.', '', `<div class="cmpt-mios">${l.map(c => `
-                <button class="cmpt-mio" onclick="openCompartido('${c.id}')"><span class="cmpt-tipo">${COMPARTIR_TIPOS[c.tipo] || ''}</span><b>${escapeHtml(c.titulo || 'Sin nombre')}</b><small>${escapeHtml(compartidoCache[c.id]?.borrado ? 'Ya no existe.' : compartidoResumen(compartidoCache[c.id]))}</small></button>`).join('')}</div>`) : ''}
+            ${l.length ? bloqueSocial('', 'recibido', 'lo que has compartido.', '', `<div class="cmpt-mios" id="cmpt-mios">${compartidosFilas()}</div>`) : ''}
         </div>`;
+}
+
+function compartidosFilas() {
+    return compartidosLista().map(c => `
+                <button class="cmpt-mio" onclick="openCompartido('${c.id}')"><span class="cmpt-tipo">${COMPARTIR_TIPOS[c.tipo] || ''}</span><b>${escapeHtml(c.titulo || 'Sin nombre')}</b><small>${escapeHtml(compartidoCache[c.id]?.borrado ? 'Ya no existe.' : compartidoResumen(compartidoCache[c.id]))}</small></button>`).join('');
 }
 
 function compartirElegirLista() {

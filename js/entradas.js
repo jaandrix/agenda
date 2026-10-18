@@ -167,6 +167,14 @@
         // ============================================================
         //  CLOSE MODAL
         // ============================================================
+        // Repintar la vista con un modal abierto se veía a través del fondo
+        // como un destello (sobre todo en el móvil): se deja para cuando se cierra.
+        let repintarAlCerrar = false;
+        function repintarTrasModal() {
+            if (document.querySelector('#modal-container .modal-overlay')) repintarAlCerrar = true;
+            else render();
+        }
+
         function closeModal() {
             editId = null;
             editType = null;
@@ -178,7 +186,10 @@
             overlay.style.animation = 'modalOverlayOut 0.16s ease-out both';
             if (sheet) sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.16s var(--ease-out) both`;
             // Si entretanto se abrió otro modal, reutiliza este overlay y quita la marca.
-            setTimeout(() => { if (container.contains(overlay) && overlay.dataset.cerrando) container.innerHTML = ''; }, 160);
+            setTimeout(() => {
+                if (container.contains(overlay) && overlay.dataset.cerrando) container.innerHTML = '';
+                if (repintarAlCerrar && !container.querySelector('.modal-overlay')) { repintarAlCerrar = false; render(); }
+            }, 160);
         }
 
         // ============================================================
