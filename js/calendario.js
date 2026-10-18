@@ -961,14 +961,14 @@
                 ...events.map(e => row(EVENT_TYPE_ICONS[e.eventType] || EVENT_TYPE_ICONS.otro, escapeHtml(e.title), e.time ? escapeHtml(e.time) : '', `closeModal();navigateToEntry('${e.id}')`))
             ].join('');
 
-            document.getElementById('modal-container').innerHTML = `
+            ponerModal(`
                 <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
                     <div class="modal-sheet">
                         <div class="modal-title">tienes esto para hoy.<button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
                         <div class="line-row-list">${rows}</div>
                         <button class="btn-secondary" style="width:100%;margin-top:14px" onclick="closeModal()">entendido.</button>
                     </div>
-                </div>`;
+                </div>`);
         }
 
         function maybeShowDailyAlert() {

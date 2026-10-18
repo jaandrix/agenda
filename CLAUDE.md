@@ -82,6 +82,10 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `saveData()` encola las llamadas (`saveChain`) para que no se solapen.
 - **Modales:** patrón único `showModal(html)` / `closeModal()` sobre un solo
   `#modal-container` — no hay pila de modales, abrir uno sustituye el anterior.
+  Si ya hay uno en pantalla (o cerrándose), `showModal` cambia solo su contenido sin volver a animar el fondo; los
+  modales que traen su propio overlay (ficha de evento, formulario, documentos) se pintan con `ponerModal(html)`,
+  nunca con `innerHTML` directo, por lo mismo. Para refrescar un modal abierto, cambiar su contenido por dentro.
+  Nada de transiciones de vista para abrir modales (`showModalDesde` es ya un `showModal`): parpadeaban en escritorio.
 - **Transiciones de vista (`conTransicion`, interfaz.js):** mientras dura una, el navegador pinta su "foto"
   por encima de todo; por eso `showModal`, el buscador y otras capas llaman a `vtCortar()` para cortarla
   (si no, quedaban debajo, tapadas por el contenido). **Cualquier capa nueva que se abra encima debe

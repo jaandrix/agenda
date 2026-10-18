@@ -7,7 +7,7 @@
         function openNewEntry(type) {
             editId = null;
             editType = type;
-            document.getElementById('modal-container').innerHTML = renderEntryModal(type, null);
+            ponerModal(renderEntryModal(type, null));
         }
 
         // ============================================================
@@ -140,7 +140,7 @@
                 : '';
             return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title modal-title-contenido${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div>${renderBacklinksBlock(entry.id, entry.type==='goal' ? ['project'] : null)}${entry.portada ? `<div class="entry-detail-portada"><img src="${escapeHtml(entry.portada)}" alt=""></div>` : ''}<div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">Editar</button>${['book', 'movie', 'series', 'game'].includes(entry.type) ? `<button class="btn-secondary" style="width:auto" onclick="openElegirPortada('${entry.id}')">portada.</button>` : ''}<button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">Eliminar</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>${recomendarBtn}${entry.type==='event' && entry.date >= todayISO() && amigos.length ? `<button class="btn-secondary" style="width:auto" onclick="openCompartirEvento('${entry.id}')">compartir.</button>` : ''}</div></div></div>`;
         }
-        function openEntryDetail(id){if(String(id).startsWith('lab_')){openCitaLaboral(id);return;}if(String(id).startsWith('srv_')){openServicioDetalle(id);return;}const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}document.getElementById('modal-container').innerHTML=renderEntryDetailModal(entry);if(entry.type==='work')loadWorkDocuments(entry.id);if(['project','goal','event'].includes(entry.type))loadEntryDocs(entry.type==='project'?'projects':entry.type==='goal'?'goals':'events',entry.id);}
+        function openEntryDetail(id){if(String(id).startsWith('lab_')){openCitaLaboral(id);return;}if(String(id).startsWith('srv_')){openServicioDetalle(id);return;}const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}ponerModal(renderEntryDetailModal(entry));if(entry.type==='work')loadWorkDocuments(entry.id);if(['project','goal','event'].includes(entry.type))loadEntryDocs(entry.type==='project'?'projects':entry.type==='goal'?'goals':'events',entry.id);}
         async function toggleProjectTask(projectId,taskIndex){
             const project=entries.find(e=>e.id===projectId); if(!project||!Array.isArray(project.tasks)||!project.tasks[taskIndex])return;
             project.tasks[taskIndex].done=!project.tasks[taskIndex].done;
@@ -161,7 +161,7 @@
             if (!entry) return;
             editId = id;
             editType = entry.type;
-            document.getElementById('modal-container').innerHTML = renderEntryModal(entry.type, entry);
+            ponerModal(renderEntryModal(entry.type, entry));
         }
 
         // ============================================================
@@ -174,10 +174,11 @@
             const overlay = container.querySelector('.modal-overlay');
             if (!overlay) { container.innerHTML = ''; return; }
             const sheet = overlay.querySelector('.modal-sheet');
-            if (cerrarFichaHaciaOrigen(container, sheet)) return;
-            overlay.style.animation = 'modalOverlayOut 0.18s ease both';
-            if (sheet) sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.18s var(--ease-out) both`;
-            setTimeout(() => { if (container.contains(overlay)) container.innerHTML = ''; }, 170);
+            overlay.dataset.cerrando = '1';
+            overlay.style.animation = 'modalOverlayOut 0.16s ease-out both';
+            if (sheet) sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.16s var(--ease-out) both`;
+            // Si entretanto se abrió otro modal, reutiliza este overlay y quita la marca.
+            setTimeout(() => { if (container.contains(overlay) && overlay.dataset.cerrando) container.innerHTML = ''; }, 160);
         }
 
         // ============================================================

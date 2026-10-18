@@ -1765,7 +1765,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
-            animation: modalOverlayIn 0.5s var(--ease-in-out) both;
+            animation: modalOverlayIn 0.2s ease-out both;
         }
 
         .modal-sheet {
@@ -5139,9 +5139,9 @@ html[data-vt="acercar"]::view-transition-old(contenido) { animation: vtFundirSal
 html[data-vt="acercar"]::view-transition-new(contenido) { animation: vtAcercarEntra .32s var(--ease-out) .04s both; transform-origin: var(--vt-ox, 50%) var(--vt-oy, 30%); }
 html[data-vt="alejar"]::view-transition-old(contenido) { animation: vtAlejarSale .18s var(--ease-out) both; transform-origin: var(--vt-ox, 50%) var(--vt-oy, 30%); }
 html[data-vt="alejar"]::view-transition-new(contenido) { animation: vtAlejarEntra .3s var(--ease-out) .06s both; }
-@keyframes modalSheetDesdePunto { from { opacity: 0; transform: scale(.84); } to { opacity: 1; transform: scale(1); } }
+@keyframes modalSheetDesdePunto { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
 @keyframes modalSheetHaciaPunto { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.9); } }
-.modal-sheet.modal-sheet-desde-punto { animation: modalSheetDesdePunto .28s var(--ease-out) both; }
+.modal-sheet.modal-sheet-desde-punto { animation: modalSheetDesdePunto .22s var(--ease-out) both; }
 
 /* Capa 3: lo que avanza en el tiempo (días del planificador, meses,
    semanas y días del calendario) se desliza en horizontal; el futuro
@@ -8930,3 +8930,7 @@ body:not(.papel) .luz-aviso { color:#6fc28f; }
 .cmpt-item.hecho b { text-decoration:line-through; color:var(--text-muted); }
 @media (max-width:520px) { .cmpt-botones { flex-wrap:wrap; } .cmpt-botones .btn-modal-primary { flex-basis:100%; } .cmpt-opcion-edit { grid-template-columns:1fr 96px 36px; } }
 @media (max-width:520px) { .anual-grid .anual-estrella { -webkit-mask-size:82%; mask-size:82%; } }
+
+/* Pasar de un modal a otro: sin volver a crecer, solo el contenido nuevo aparece. */
+@keyframes modalSheetCambio { from { opacity: .4; } }
+.modal-sheet.modal-sheet-cambio { animation: modalSheetCambio .14s ease-out both; }

@@ -355,7 +355,7 @@
                 const { data, error } = await sb.storage.from('documents').download(path);
                 if (error) throw error;
                 const html = await data.text();
-                document.getElementById('modal-container').innerHTML = renderViewerFrameModal(name);
+                ponerModal(renderViewerFrameModal(name));
                 document.getElementById('viewer-modal-iframe').srcdoc = html;
             } catch (e) {
                 console.error('Error abriendo el documento:', e);
@@ -457,7 +457,7 @@
                 const { data, error } = await sb.storage.from('documents').download(path);
                 if (error) throw error;
                 const html = await data.text();
-                document.getElementById('modal-container').innerHTML = renderViewerFrameModal(name);
+                ponerModal(renderViewerFrameModal(name));
                 document.getElementById('viewer-modal-iframe').srcdoc = html;
             } catch (e) {
                 console.error('Error abriendo el archivo:', e);
@@ -659,7 +659,7 @@
         }
 
         function openBackupsModal() {
-            document.getElementById('modal-container').innerHTML = renderBackupsModal();
+            ponerModal(renderBackupsModal());
             loadBackups();
             renderBackupFailureBanner();
         }

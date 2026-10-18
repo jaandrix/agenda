@@ -176,9 +176,12 @@ async function cargarCompartido(id) {
 async function openCompartido(id, recien) {
     const fila = compartidosLista().find(x => x.id === id);
     if (!fila) { showToast('Ese enlace ya no está entre los tuyos', true); return; }
+    const antes = JSON.stringify(compartidoCache[id] || null);
     pintarCompartido(id, recien);
     await cargarCompartido(id);
-    if (document.getElementById('cmpt-' + id)) pintarCompartido(id, recien);
+    // Solo se repinta si llegó algo nuevo, y por dentro: repintar el modal
+    // entero lo hacía parpadear como si se cerrara y se volviera a abrir.
+    if (document.getElementById('cmpt-' + id) && JSON.stringify(compartidoCache[id] || null) !== antes) pintarCompartido(id, recien);
 }
 
 function pintarCompartido(id, recien) {
@@ -219,7 +222,7 @@ function pintarCompartido(id, recien) {
             ${fila.ref && getTrip(fila.ref) ? `<button class="btn-secondary" style="width:auto" onclick="compartidoActualizar('${id}')">actualizar con lo último.</button>` : ''}`;
         }
     }
-    showModal(`
+    const html = `
         <div id="cmpt-${id}">
             <div class="modal-title">${escapeHtml((fila?.titulo || c?.datos?.titulo || 'compartido').toLowerCase())}.</div>
             <p class="finance-modal-note" style="margin-top:0">${recien ? 'Listo. Mándalo por WhatsApp o donde quieras: se abre sin cuenta ni app.' : escapeHtml(compartidoResumen(c))}</p>
@@ -231,8 +234,10 @@ function pintarCompartido(id, recien) {
             </div>
             <div class="cmpt-cuerpo">${cuerpo}</div>
             <button class="btn-secondary btn-danger-pill" style="width:100%;margin-top:18px" onclick="compartidoBorrar('${id}')">dejar de compartir.</button>
-        </div>
-    `);
+        </div>`;
+    const abierto = document.getElementById('cmpt-' + id);
+    if (abierto) abierto.outerHTML = html;
+    else showModal(html);
 }
 
 async function quedadaElegir(id, i) {

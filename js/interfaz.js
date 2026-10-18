@@ -167,52 +167,14 @@
         // El orden de la barra lateral es el "mapa" de la app: bajar en
         // ella hace que el contenido nuevo entre desde abajo, y subir,
         // desde arriba.
-        // Capa 4: un elemento que existe en las dos vistas no desaparece y
-        // reaparece, viaja. La tarjeta pulsada se convierte en el modal y,
-        // al cerrarlo, el modal vuelve a su sitio. Se guarda un selector y
-        // no el elemento porque lo normal es que al cerrar se vuelva a
-        // pintar la vista (render()) y el elemento original ya no exista.
+        // Antes la tarjeta pulsada se convertía en el modal con una
+        // transición de vista, pero el navegador fotografiaba la página
+        // entera y la fundía: en escritorio parpadeaba al abrir y al cerrar.
+        // El modal normal ya nace del punto pulsado, que da el mismo gesto.
         let vtFichaOrigen = null;
 
         function showModalDesde(selector, htmlContent) {
-            const el = document.querySelector(selector);
-            if (!el || !VT_DISPONIBLE || vtReducido()) { showModal(htmlContent); return; }
-            el.style.viewTransitionName = 'ficha';
-            const t = conTransicion('ficha', () => {
-                el.style.viewTransitionName = '';
-                showModal(htmlContent);
-                vtFichaOrigen = selector;
-                const sheet = document.querySelector('#modal-container .modal-sheet');
-                if (sheet) {
-                    sheet.classList.remove('modal-sheet-desde-punto');
-                    sheet.classList.add('modal-sheet-ficha');
-                    sheet.style.viewTransitionName = 'ficha';
-                }
-            });
-            t?.finished.finally(() => {
-                const sheet = document.querySelector('#modal-container .modal-sheet');
-                if (sheet) sheet.style.viewTransitionName = '';
-            });
-        }
-
-        function cerrarFichaHaciaOrigen(container, sheet) {
-            const selector = vtFichaOrigen;
-            vtFichaOrigen = null;
-            // Con otra transición aún en marcha, empezar esta la cortaría de golpe.
-            if (!selector || !sheet || !VT_DISPONIBLE || vtReducido() || document.documentElement.dataset.vt) return false;
-            sheet.style.viewTransitionName = 'ficha';
-            const t = conTransicion('ficha', () => {
-                // La transición aplica el cambio un fotograma después: si para
-                // entonces ya se abrió otro modal, no hay que borrarlo.
-                if (container.contains(sheet)) container.innerHTML = '';
-                const el = document.querySelector(selector);
-                if (el) el.style.viewTransitionName = 'ficha';
-            });
-            t?.finished.finally(() => {
-                const el = document.querySelector(selector);
-                if (el) el.style.viewTransitionName = '';
-            });
-            return true;
+            showModal(htmlContent);
         }
 
         // Misma animación que el panel "filtro." de Eventos, para otros

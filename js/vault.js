@@ -60,6 +60,20 @@
             vtCortar();
             vtFichaOrigen = null;
             const container = document.getElementById('modal-container');
+            // Con un modal ya en pantalla (o cerrándose porque se pasa de uno
+            // a otro), se cambia su contenido sin volver a animarlo: tirarlo y
+            // crearlo de nuevo hacía que se cerrara y se abriera otra vez.
+            const previo = container.querySelector('.modal-overlay');
+            if (previo) {
+                delete previo.dataset.cerrando;
+                previo.style.animation = 'none';
+                const hoja = document.createElement('div');
+                hoja.className = 'modal-sheet modal-sheet-cambio';
+                hoja.innerHTML = htmlContent;
+                previo.replaceChildren(hoja);
+                enfocarPrimerCampo(container);
+                return;
+            }
             container.innerHTML = `
                 <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
                     <div class="modal-sheet">
@@ -82,6 +96,25 @@
             // setTimeout(0) en vez de requestAnimationFrame: el foco tiene
             // que "ganar" a cualquier auto-focus que el propio contenido del
             // modal dispare (algunos modales ya llaman a su focus() propio).
+            enfocarPrimerCampo(container);
+        }
+
+        // Para los modales que traen su propio overlay (la ficha de un
+        // evento, el formulario...): si ya había uno abierto, el nuevo no
+        // vuelve a fundir el fondo desde cero, que se veía como un parpadeo.
+        function ponerModal(html) {
+            vtCortar();
+            const container = document.getElementById('modal-container');
+            const habia = !!container.querySelector('.modal-overlay');
+            container.innerHTML = html;
+            const overlay = habia && container.querySelector('.modal-overlay');
+            if (overlay) {
+                overlay.style.animation = 'none';
+                overlay.querySelector('.modal-sheet')?.classList.add('modal-sheet-cambio');
+            }
+        }
+
+        function enfocarPrimerCampo(container) {
             setTimeout(() => {
                 const sheet = container.querySelector('.modal-sheet');
                 const field = sheet?.querySelector(
