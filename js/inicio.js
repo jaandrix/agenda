@@ -22,6 +22,11 @@
                 window.addEventListener('focus', sincronizarDesdeNube);
                 aplicarBandejaConector();
                 setTimeout(actualizarAnalisisIA, 1500);
+                setTimeout(revisarCumplesRegalo, 2500);
+                if (/[?&]semana\b/.test(location.search)) {
+                    history.replaceState(null, '', location.pathname);
+                    setTimeout(openResumenSemana, 900);
+                }
             }
             // Lo social no bloquea el primer pintado: va en paralelo y, al
             // llegar, repinta solo las vistas que lo enseñan. Recomendaciones,

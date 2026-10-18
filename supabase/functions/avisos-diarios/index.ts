@@ -6,6 +6,8 @@
 //   horario sola), una sola vez al día aunque haya varias pasadas en esa hora.
 // - Los eventos con hora, una hora antes de que empiecen (salvo que el
 //   evento tenga sinAviso o el usuario haya apagado el tipo "eventos").
+// - El domingo a las 20:00, la semana que viene (tipo "semana"): eventos,
+//   exámenes, entregas, cumpleaños y cargos. Abre la app en /?semana.
 //
 // Por usuario con notificaciones activadas: calcula los avisos del día
 // con sus datos (bitacora.data), quita los tipos que haya apagado en
@@ -15,7 +17,7 @@
 // Se despliega sin verificación de JWT (la llama la base de datos):
 //   supabase functions deploy avisos-diarios --no-verify-jwt
 // Secreto: AVISOS_SECRET (el mismo que lleva la tarea de pg_cron).
-// Para probar sin enviar: POST {"forzar": true, "simular": true}
+// Para probar sin enviar: POST {"forzar": true, "simular": true} (y "forzarSemana": true para el de la semana)
 // ("forzar" lanza el resumen del día aunque no sean las 9:00).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -137,8 +139,45 @@ function avisosEventos(data: any): Aviso[] {
         .filter(({ m }: any) => m > 0 && m <= ANTELACION)
         .map(({ e, m }: any) => ({
             clave: `evento:${e.id}:${e.date}T${e.time}`, tipo: 'eventos', prioridad: 0, titulo: titulo(e.title),
-            texto: `Empieza ${m >= 55 ? 'en una hora' : `en ${m} minutos`}, a las ${e.time}${e.place ? ` · ${e.place}` : ''}.`, url: '/',
+            texto: `Empieza ${m >= 55 ? 'en una hora' : `en ${m} minutos`}, a las ${e.time}${e.place ? `, ${e.place}` : ''}.`, url: '/',
         }));
+}
+
+const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const diaSemana = (iso: string) => DIAS_SEMANA[new Date(iso + 'T12:00:00Z').getUTCDay()];
+
+// La semana que empieza mañana, en una frase.
+function avisoSemana(data: any, hoy: string): Aviso | null {
+    const desde = sumarDias(hoy, 1), hasta = sumarDias(hoy, 7);
+    const dentro = (f: string) => f >= desde && f <= hasta;
+    const entries = (data.entries || []).filter(Boolean);
+    const eventos = entries.filter((e: any) => e.type === 'event' && !e.calendarLog && !/^(weekly_task_done_|planner_done_|recurring_done_)/.test(e.id || '') && dentro(String(e.date || '')));
+    const examenes: string[] = [], entregas: string[] = [];
+    (data.studies?.subjects || []).forEach((sub: any) => {
+        (sub.exams || []).forEach((x: any) => { if (x?.date && dentro(x.date)) examenes.push(`examen de ${minus(sub.name)} el ${diaSemana(x.date)}`); });
+        (sub.assignments || []).forEach((x: any) => { if (x?.date && dentro(x.date) && !x.done) entregas.push(`entrega de ${minus(sub.name)} el ${diaSemana(x.date)}`); });
+    });
+    const cumples: string[] = [];
+    entries.filter((e: any) => e.type === 'birthday' && e.birthDate).forEach((e: any) => {
+        for (let k = 1; k <= 7; k++) { const f = sumarDias(hoy, k); if (f.slice(5) === String(e.birthDate).slice(5)) cumples.push(`cumple de ${e.title} el ${diaSemana(f)}`); }
+    });
+    let cargos = 0, totalCargos = 0;
+    entries.filter((e: any) => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0).forEach((e: any) => {
+        for (let k = 1; k <= 7; k++) {
+            const f = sumarDias(hoy, k);
+            const [y, m] = f.split('-').map(Number);
+            const dia = Math.min(Number(e.renewalDay) || 1, new Date(Date.UTC(y, m, 0)).getUTCDate());
+            if (Number(f.slice(8)) === dia) { cargos++; totalCargos += Number(e.amount); }
+        }
+    });
+    const partes = [
+        eventos.length ? `${eventos.length} ${eventos.length === 1 ? 'evento' : 'eventos'}` : '',
+        ...examenes.slice(0, 2), ...entregas.slice(0, 2), ...cumples.slice(0, 2),
+        cargos ? `${cargos} ${cargos === 1 ? 'cargo' : 'cargos'} (${euros(totalCargos)})` : '',
+    ].filter(Boolean);
+    if (!partes.length) return null;
+    const frase = partes.length > 1 ? partes.slice(0, -1).join(', ') + ' y ' + partes[partes.length - 1] : partes[0];
+    return { clave: `semana:${hoy}`, tipo: 'semana', prioridad: 1, titulo: 'tu semana.', texto: frase.charAt(0).toUpperCase() + frase.slice(1) + '.', url: '/?semana' };
 }
 
 async function enviar(userId: string, a: Aviso) {
@@ -157,6 +196,7 @@ Deno.serve(async (req) => {
     const opciones = await req.json().catch(() => ({}));
     const tocaResumen = opciones.forzar || horaMadrid() === HORA;
     const hoy = hoyMadrid();
+    const tocaSemana = opciones.forzarSemana || (new Date(hoy + 'T12:00:00Z').getUTCDay() === 0 && horaMadrid() === 20);
     const { data: subs } = await sb.from('push_subscriptions').select('user_id');
     const usuarios = [...new Set((subs || []).map((s: any) => s.user_id))].filter(u => !opciones.user_id || u === opciones.user_id);
     const resumen: any[] = [];
@@ -169,6 +209,7 @@ Deno.serve(async (req) => {
         const data = fila?.data || {};
         const prefs = data.preferenciasAvisos || {};
         const eventos = prefs.eventos === false ? [] : avisosEventos(data);
+        const semanal = tocaSemana && prefs.semana !== false ? [avisoSemana(data, hoy)].filter(Boolean) as Aviso[] : [];
         // El resumen del día va una sola vez: su propia clave marca que ya
         // se hizo, aunque la hora de las 9 tenga varias pasadas.
         const claveResumen = `resumen:${hoy}`;
@@ -181,13 +222,13 @@ Deno.serve(async (req) => {
             const sinEstudios = data.apartadosConfig?.perfil === 'trabajador';
             diarios = calcularAvisos(data, hoy, count || 0).filter(a => prefs[a.tipo] !== false && !(sinEstudios && a.tipo === 'estudios'));
         }
-        const claves = [...eventos, ...diarios].map(a => a.clave);
+        const claves = [...eventos, ...semanal, ...diarios].map(a => a.clave);
         if (tocaResumen) claves.push(claveResumen);
         if (!claves.length) continue;
         const { data: enviados } = await sb.from('avisos_enviados').select('clave').eq('user_id', userId).in('clave', claves);
         const ya = new Set((enviados || []).map((e: any) => e.clave));
         const resumenHecho = ya.has(claveResumen) && !opciones.forzar;
-        const nuevos = [...eventos.filter(a => !ya.has(a.clave)), ...(resumenHecho ? [] : diarios.filter(a => !ya.has(a.clave)).slice(0, MAX_DIA))];
+        const nuevos = [...eventos.filter(a => !ya.has(a.clave)), ...semanal.filter(a => !ya.has(a.clave) || opciones.forzarSemana), ...(resumenHecho ? [] : diarios.filter(a => !ya.has(a.clave)).slice(0, MAX_DIA))];
         if (tocaResumen && !resumenHecho && !opciones.simular) await sb.from('avisos_enviados').upsert({ user_id: userId, clave: claveResumen });
         const hechos: string[] = [];
         for (const a of nuevos) {
@@ -197,7 +238,7 @@ Deno.serve(async (req) => {
                 hechos.push(a.clave);
             }
         }
-        resumen.push({ usuario: userId.slice(0, 8), eventos: eventos.length, diarios: diarios.length, ya_enviados: ya.size, [opciones.simular ? 'se_enviarian' : 'enviados']: hechos });
+        resumen.push({ usuario: userId.slice(0, 8), eventos: eventos.length, semana: semanal.length, diarios: diarios.length, ya_enviados: ya.size, [opciones.simular ? 'se_enviarian' : 'enviados']: hechos });
     }
     return json({ hoy, resumen });
 });

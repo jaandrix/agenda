@@ -56,7 +56,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `agenda-laboral` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `guia` → `landing`.
+  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `asistente` → `guia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -351,6 +351,12 @@ a menor resolución.
 - **Objetivos → método (`js/metodo.js`):** mandala del método Harada (8 pilares × 8
   acciones, cada acción puede pasar a Hábitos), paso kaizen (hábito ligado al
   objetivo), "para qué" y hansei semanal (lista global `hansei`).
+- **Asistente (`js/asistente.js`):** `openResumenSemana` (Panorama → «esta semana.», y el aviso del domingo a las 20:00 de
+  avisos-diarios, tipo `semana`, que abre la app en `/?semana`), `renderAvisoPresupuestos` (línea suave al pasar del 80 % de
+  `financePro.categoryBudgets`), `asistSuscripcionesDetectadas` (misma regla que la herramienta del conector; «no es» va a
+  `financePro.suscripcionesIgnoradas`), `openPuedoPermitirme`/`asistPermitir`, `responderPregunta` (respuestas arriba en el
+  buscador, `kind: 'respuesta'`) y `revisarCumplesRegalo` (tarea en `dayPlanner.backlog` una semana antes; `e.regaloAviso`
+  guarda el año; aviso `regalos` en Ajustes).
 - **Guía (`js/guia.js`):** modal completo con una sección por apartado (para qué sirve,
   pasos, cada botón, trucos), abierto desde Ajustes, el botón "?", el buscador y el
   menú móvil. **Al cambiar un apartado, actualizar su sección en `GUIA`.**

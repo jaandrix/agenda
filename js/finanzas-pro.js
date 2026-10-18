@@ -1734,6 +1734,8 @@
                     ${blurToggleBtn}
                 </div>
                 ${renderFinanceProReviewBanner()}
+                ${renderAvisoPresupuestos()}
+                ${renderSuscripcionesDetectadas()}
 
                 ${renderFinanceProChartPanel()}
 
@@ -1961,6 +1963,7 @@
                         <button class="finance-oneoff-btn" onclick="openFinanceProViajeModal()">gastos de un viaje.</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">Registro rápido</button>
                         <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
+                        <button class="finance-oneoff-btn" onclick="openPuedoPermitirme()">¿me lo puedo permitir?</button>
                     </div>
                 </div>
                 <div id="finance-pro-tx-list">${renderFinanceProTransactionList(false)}</div>

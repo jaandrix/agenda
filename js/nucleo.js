@@ -1576,7 +1576,8 @@
                 <div class="m-lista">${cargos.slice(0, 5).map(x => `<div class="m-fila"><span class="m-fila-hora">${x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : `${x.fecha.getDate()} ${MOBILE_MESES[x.fecha.getMonth()].slice(0, 3)}`}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(x.e.title || '')}</div></div><span class="m-fila-cifra">${financeMoney(Number(x.e.amount))}</span></div>`).join('')}</div>` : '';
             const porAjustar = financeProPendingReviewCount();
             const aviso = porAjustar ? `<button class="m-finanzas-aviso" onclick="openFinanceProReviewModal()"><b>${porAjustar} ${porAjustar === 1 ? 'movimiento' : 'movimientos'} por ajustar.</b><span>ponles categoría y revisa la cuenta.</span></button>` : '';
-            return aviso + ritmo + categorias + proximos;
+            const permitir = '<button class="m-enlace asist-permitir-enlace" onclick="openPuedoPermitirme()">¿me lo puedo permitir?</button>';
+            return aviso + renderAvisoPresupuestos() + renderSuscripcionesDetectadas() + permitir + ritmo + categorias + proximos;
         }
 
         function renderMobileFinances() {
@@ -2615,12 +2616,16 @@
                     : hiddenMatches.length ? hiddenMatches
                     : (navMatches.length || subMatches.length) ? [...navMatches, ...subMatches]
                     : q ? searchEntriesForPalette(q) : navMatches;
+                // Una pregunta («¿cuándo fue la última vez que…?», «¿cuánto
+                // gasté en…?») se responde arriba con los datos (asistente.js).
+                const respuesta = q && typeof responderPregunta === 'function' ? responderPregunta(query) : null;
+                if (respuesta) filtered = [{ kind: 'respuesta', text: respuesta.texto, respuesta }, ...filtered.filter(i => i.kind !== 'nav' && i.kind !== 'nav-sub')];
             }
             if (cpSelectedIndex >= filtered.length) cpSelectedIndex = 0;
             const list = document.getElementById('command-palette-list');
             if (!list) return;
             list.innerHTML = filtered.length ? filtered.map((item, i) => `
-                <div class="command-palette-item ${i === cpSelectedIndex ? 'active' : ''}" onmousedown="event.preventDefault();selectCommandPaletteItem(${i})">
+                <div class="command-palette-item ${item.kind === 'respuesta' ? 'command-palette-respuesta' : ''} ${i === cpSelectedIndex ? 'active' : ''}" onmousedown="event.preventDefault();selectCommandPaletteItem(${i})">
                     <span>${escapeHtml(item.text)}</span>
                 </div>`).join('') : '<div class="command-palette-empty">Sin resultados</div>';
             list._filtered = filtered;
@@ -2702,6 +2707,11 @@
                 applyEntryMonthFilter(item.type, item.month, item.monthLabel);
             } else if (item.kind === 'day-nav') {
                 goToCalendarDate(item.date);
+            } else if (item.kind === 'respuesta') {
+                const r = item.respuesta;
+                if (r.accion) r.accion();
+                else if (r.fecha) goToCalendarDate(r.fecha);
+                else if (r.vista) (mobileStandaloneActive ? mobileIr : switchView)(r.vista);
             } else if (item.kind === 'nav-sub') {
                 goToNavSubsection(item);
             } else {

@@ -43,6 +43,7 @@ const GUIA = [
             [guiaBoton('Ctrl + ↑ / ↓'), 'Pasa al apartado anterior o siguiente del menú.'],
             [guiaBoton('?'), 'Arriba a la derecha: ayuda corta con los atajos y lo que es cada apartado, y acceso a esta guía.'],
             [guiaBoton('/año, /tema, /backup, /exportar'), 'Comandos del buscador: escribe «/» para verlos. Abren el calendario anual, cambian el tema, hacen una copia o exportan tus datos.'],
+            [guiaBoton('preguntas'), 'El buscador también responde con tus datos: «¿cuándo fue la última vez que fui al dentista?», «¿cuánto gasté en gasolina en septiembre?», «¿cuándo es el cumple de Ana?», «¿cuántas veces fui al cine este año?», «¿puedo permitirme 300 €?». La respuesta sale arriba; tocándola vas al día o al apartado.'],
         ],
         trucos: ['Haz clic derecho sobre un apartado del menú para ver sus opciones rápidas.'],
     },
@@ -220,6 +221,8 @@ const GUIA = [
         intro: 'Tres cuentas (Efectivo, Bancos y Online), todos tus movimientos con categoría, y herramientas para saber cómo vas y planificar. Al entrar te pregunta si quieres ocultar las cifras.',
         botones: [
             [guiaBoton('+ Movimiento, Registro rápido'), 'Apunta un ingreso, gasto o traspaso. El rápido solo pide importe y concepto; la categoría se ajusta luego.'],
+            [guiaBoton('¿me lo puedo permitir?'), 'Escribe un precio y te dice si cabe este mes: lo que tienes, menos lo que sueles gastar hasta fin de mes, los cargos que faltan y lo programado.'],
+            [guiaBoton('avisos de Finanzas'), 'Cuando una categoría pasa del 80 % de su presupuesto sale una línea suave (sin notificación). Si un cargo se repite en el banco tres meses o más y no lo tienes como suscripción, Bitácora te pregunta si lo es: «añadir.» la da de alta y «no es.» no vuelve a proponerla.'],
             [guiaBoton('Importar'), 'Sube o pega el extracto del banco: el Excel (.xlsx) o el CSV tal cual lo descarga tu banco (Ibercaja, Santander, Revolut...), aunque traiga arriba los datos de la cuenta. Si tienes varias cuentas, las transferencias entre ellas (la salida en una y la entrada en otra, mismo importe, dos días como mucho) quedan solas como traspaso y no cuentan como ingreso ni gasto. Lo que apuntaste a mano se funde con su cargo del banco aunque lo pusieras en otra cuenta, y la fecha es siempre la del pago, no la del día en que el banco lo completó. Bitácora reconoce los movimientos, evita duplicados y aplica tus reglas de traspaso. Puedes importar mes a mes aunque los extractos se solapen: cada fila busca su pareja, lo que ya está no entra otra vez (aunque le hayas cambiado la nota, la categoría o lo hayas pasado a transferencia) y dos cargos iguales el mismo día cuentan como dos.'],
             [guiaBoton('Categorías, Reglas'), 'Tus categorías de gasto e ingreso, y las reglas de traspaso: un movimiento importado cuyo concepto contenga cierto texto (por ejemplo, lo que mandas a tu cuenta de inversión) se registra como traspaso entre cuentas en vez de como gasto.'],
             [guiaBoton('⭳ Exportar'), 'Un resumen en texto pensado para pegarlo en una IA y pedirle consejo.'],
