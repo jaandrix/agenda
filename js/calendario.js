@@ -170,19 +170,18 @@
         let dailyEffort = {};
 
         // ============================================================
-        //  CALENDARIO ANUAL (bolitas)
-        //  Una bolita por día del año, flotando en el centro sobre la
-        //  pantalla difuminada (mismo gesto que "tu estancia en bitácora."):
-        //  sale desde el botón que lo abre. Tres vistas que solo cambian un
-        //  atributo del contenedor (data-vista), así el color de cada
-        //  estrella cambia con una transición CSS escalonada en diagonal
-        //  (--o) en vez de volver a pintar la cuadrícula.
+        //  ESFUERZO (antes el calendario anual de bolitas, con vistas de
+        //  días y viajes que no se usaban): una bolita por día del año,
+        //  más intensa cuanto más te esforzaste. El selector va debajo de
+        //  la rejilla, con hoy elegido de entrada, para puntuar sin abrir
+        //  otro modal encima.
         // ============================================================
-        let yearCalVista = 'dias';
+        const ESFUERZO_PALABRAS = ['', 'flojo', 'justo', 'normal', 'bien', 'a tope'];
+        let esfuerzoDia = null;
 
         function abrirCalendarioAnual() {
             yearCalYear = new Date().getFullYear();
-            yearCalVista = 'dias';
+            esfuerzoDia = todayISO();
             if (document.getElementById('anual-overlay')) return;
             vtCortar();
             const origen = document.querySelector('.year-cal-btn');
@@ -200,7 +199,6 @@
         }
 
         function cerrarCalendarioAnualConTecla(e) {
-            // Con el selector de esfuerzo abierto encima, Escape cierra solo ese modal.
             if (e.key !== 'Escape' || document.querySelector('#modal-container .modal-overlay')) return;
             e.stopPropagation();
             cerrarCalendarioAnual();
@@ -222,23 +220,9 @@
 
         function cambiarYearCal(delta) {
             yearCalYear += delta;
+            const hoy = todayISO();
+            esfuerzoDia = String(yearCalYear) === hoy.slice(0, 4) ? hoy : null;
             refrescarCalendarioAnual();
-        }
-
-        function setYearCalVista(vista) {
-            yearCalVista = vista;
-            const grid = document.querySelector('#anual-flotante .anual-grid');
-            if (grid) grid.dataset.vista = vista;
-            document.querySelectorAll('#anual-flotante .anual-vista-btn').forEach(b => b.classList.toggle('active', b.dataset.vista === vista));
-            fundirTextoAnual('anual-resumen', renderYearCalResumen());
-            fundirTextoAnual('anual-leyenda', renderYearCalLeyenda());
-        }
-
-        function fundirTextoAnual(id, html) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.classList.add('anual-texto-fuera');
-            setTimeout(() => { el.innerHTML = html; el.classList.remove('anual-texto-fuera'); }, 180);
         }
 
         function yearCalDias() {
@@ -254,26 +238,24 @@
             return dias;
         }
 
+        const esfuerzoMedia = l => l.length ? (l.reduce((a, b) => a + b, 0) / l.length).toLocaleString('es-ES', { maximumFractionDigits: 1 }) : '';
+
         function renderYearCalResumen() {
-            const dias = yearCalDias();
-            const vividos = dias.filter(x => !x.futuro).length;
-            if (yearCalVista === 'viajes') {
-                const n = dias.filter(x => esDiaDeViaje(x.iso)).length;
-                return `${n} ${n === 1 ? 'día' : 'días'} de viaje en ${yearCalYear}.`;
-            }
-            if (yearCalVista === 'esfuerzo') {
-                const notas = dias.map(x => dailyEffort[x.iso]).filter(Boolean);
-                return notas.length ? `media ${(notas.reduce((a, b) => a + b, 0) / notas.length).toLocaleString('es-ES', { maximumFractionDigits: 1 })}, ${notas.length} ${notas.length === 1 ? 'día puntuado' : 'días puntuados'}.` : 'todavía sin días puntuados.';
-            }
-            const quedan = dias.length - vividos;
-            return quedan <= 0 ? `${yearCalYear} ya terminó.` : `le ${quedan === 1 ? 'queda 1 día' : `quedan ${quedan} días`} a ${yearCalYear}.`;
+            const notas = yearCalDias().map(x => dailyEffort[x.iso]).filter(Boolean);
+            if (!notas.length) return `todavía sin días puntuados en ${yearCalYear}.`;
+            const mes = todayISO().slice(0, 7);
+            const delMes = Object.entries(dailyEffort).filter(([k]) => k.startsWith(mes)).map(([, v]) => v);
+            return `${notas.length} ${notas.length === 1 ? 'día puntuado' : 'días puntuados'}, media ${esfuerzoMedia(notas)}${String(yearCalYear) === mes.slice(0, 4) && delMes.length ? `, ${esfuerzoMedia(delMes)} este mes` : ''}.`;
         }
 
-        function renderYearCalLeyenda() {
-            const e = (cls, txt) => `<span class="anual-leyenda-item"><span class="anual-estrella ${cls}"></span>${txt}</span>`;
-            if (yearCalVista === 'viajes') return e('anual-leyenda-viaje', 'día de viaje') + e('anual-leyenda-apagada', 'resto');
-            if (yearCalVista === 'esfuerzo') return [1, 2, 3, 4, 5].map(n => e('anual-leyenda-esfuerzo-' + n, String(n))).join('') + '<span class="anual-leyenda-nota">pulsa una bolita para puntuar ese día.</span>';
-            return e('', 'vivido') + e('anual-leyenda-futuro', 'por venir') + e('anual-leyenda-hoy', 'hoy');
+        function renderEsfuerzoSelector() {
+            if (!esfuerzoDia) return `<div class="esf-selector esf-vacio">Toca un día para puntuarlo.</div>`;
+            const actual = dailyEffort[esfuerzoDia] || 0;
+            const fecha = esfuerzoDia === todayISO() ? 'hoy' : `el ${new Date(esfuerzoDia + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '')}`;
+            return `<div class="esf-selector">
+                <div class="esf-pregunta"><span>¿cómo fue ${escapeHtml(fecha)}?</span>${actual ? `<button class="esf-quitar" onclick="setDailyEffort('${esfuerzoDia}', 0)">quitar.</button>` : ''}</div>
+                <div class="esf-botones">${[1, 2, 3, 4, 5].map(n => `<button class="esf-btn ${actual === n ? 'on' : ''}" data-n="${n}" onclick="setDailyEffort('${esfuerzoDia}', ${n})"><b>${n}</b><span>${ESFUERZO_PALABRAS[n]}</span></button>`).join('')}</div>
+            </div>`;
         }
 
         function renderCalendarioAnual() {
@@ -281,55 +263,42 @@
             const meses = ['e', 'f', 'm', 'a', 'm', 'j', 'j', 'a', 's', 'o', 'n', 'd'];
             let filas = '';
             for (let m = 0; m < 12; m++) {
-                let celdas = '';
-                dias.filter(x => x.m === m).forEach(x => {
-                    const esfuerzo = dailyEffort[x.iso];
-                    celdas += `<span class="anual-estrella" style="--o:${x.m + x.d}" data-fecha="${x.iso}" title="${x.iso}"${x.futuro ? ' data-futuro' : ''}${x.hoy ? ' data-hoy' : ''}${esDiaDeViaje(x.iso) ? ' data-viaje' : ''}${esfuerzo ? ` data-esfuerzo="${esfuerzo}"` : ''}></span>`;
-                });
-                filas += `<div class="anual-fila"><span class="anual-mes">${meses[m]}</span><div class="anual-dias">${celdas}</div></div>`;
+                const delMes = dias.filter(x => x.m === m);
+                const celdas = delMes.map(x => `<span class="anual-estrella" style="--o:${x.m + x.d}" data-fecha="${x.iso}" title="${x.iso}"${x.futuro ? ' data-futuro' : ''}${x.hoy ? ' data-hoy' : ''}${dailyEffort[x.iso] ? ` data-esfuerzo="${dailyEffort[x.iso]}"` : ''}${x.iso === esfuerzoDia ? ' data-sel' : ''}></span>`).join('');
+                filas += `<div class="anual-fila"><span class="anual-mes">${meses[m]}</span><div class="anual-dias">${celdas}</div><span class="esf-media-mes" data-mes="${m}">${esfuerzoMedia(delMes.map(x => dailyEffort[x.iso]).filter(Boolean))}</span></div>`;
             }
             return `
+                <div class="esf-titulo">esfuerzo.</div>
                 <div class="anual-cabecera">
                     <button class="anual-flecha" onclick="cambiarYearCal(-1)" aria-label="Año anterior"><i class='ico ico-izq' aria-hidden=true></i></button>
                     <div class="anual-anio">${yearCalYear}</div>
                     <button class="anual-flecha" onclick="cambiarYearCal(1)" aria-label="Año siguiente"><i class='ico ico-der' aria-hidden=true></i></button>
                 </div>
                 <div class="anual-resumen" id="anual-resumen">${renderYearCalResumen()}</div>
-                <div class="anual-grid" data-vista="${yearCalVista}" onclick="clickEstrellaAnual(event)">${filas}</div>
-                <div class="anual-vistas">
-                    ${[['dias', 'días.'], ['viajes', 'viajes.'], ['esfuerzo', 'esfuerzo.']].map(([v, t]) => `<button class="anual-vista-btn ${yearCalVista === v ? 'active' : ''}" data-vista="${v}" onclick="setYearCalVista('${v}')">${t}</button>`).join('')}
-                </div>
-                <div class="anual-leyenda" id="anual-leyenda">${renderYearCalLeyenda()}</div>`;
+                <div class="anual-grid" data-vista="esfuerzo" onclick="clickEstrellaAnual(event)">${filas}</div>
+                <div id="esf-selector">${renderEsfuerzoSelector()}</div>
+                <div class="anual-leyenda">${[1, 2, 3, 4, 5].map(n => `<span class="anual-leyenda-item"><span class="anual-estrella" data-esfuerzo="${n}"></span>${ESFUERZO_PALABRAS[n]}</span>`).join('')}</div>`;
         }
 
         function clickEstrellaAnual(e) {
             const estrella = e.target.closest('.anual-estrella');
-            if (!estrella || yearCalVista !== 'esfuerzo' || estrella.hasAttribute('data-futuro')) return;
-            openDailyEffortPicker(estrella.dataset.fecha);
-        }
-
-        // Puntuar el esfuerzo de un día concreto (1-5). Se abre como modal
-        // por encima del calendario anual, que sigue abierto debajo.
-        function openDailyEffortPicker(dateStr) {
-            const current = dailyEffort[dateStr] || 0;
-            const fecha = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-            showModal(`
-                <div class="modal-title">Esfuerzo – ${escapeHtml(fecha)}</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">¿Cuánto te esforzaste ese día en cumplir tus objetivos?</div>
-                <div class="effort-picker-row">
-                    ${[1, 2, 3, 4, 5].map(n => `<button class="effort-picker-btn year-dot-effort-${n} ${current === n ? 'active' : ''}" onclick="setDailyEffort('${dateStr}',${n})">${n}</button>`).join('')}
-                </div>
-                ${current ? `<button class="btn-secondary" style="width:auto;margin-top:14px" onclick="setDailyEffort('${dateStr}',0)">Quitar puntuación</button>` : ''}
-            `);
+            if (!estrella || estrella.hasAttribute('data-futuro')) return;
+            esfuerzoDia = estrella.dataset.fecha;
+            document.querySelectorAll('#anual-flotante .anual-estrella[data-sel]').forEach(x => x.removeAttribute('data-sel'));
+            estrella.setAttribute('data-sel', '');
+            document.getElementById('esf-selector').innerHTML = renderEsfuerzoSelector();
         }
 
         async function setDailyEffort(dateStr, value) {
             if (value > 0) dailyEffort[dateStr] = value; else delete dailyEffort[dateStr];
-            closeModal();
             const estrella = document.querySelector(`#anual-flotante .anual-estrella[data-fecha="${dateStr}"]`);
             if (estrella) { if (value > 0) estrella.dataset.esfuerzo = value; else estrella.removeAttribute('data-esfuerzo'); }
             const resumen = document.getElementById('anual-resumen');
             if (resumen) resumen.innerHTML = renderYearCalResumen();
+            const sel = document.getElementById('esf-selector');
+            if (sel) sel.innerHTML = renderEsfuerzoSelector();
+            const media = document.querySelector(`#anual-flotante .esf-media-mes[data-mes="${Number(dateStr.slice(5, 7)) - 1}"]`);
+            if (media && dateStr.startsWith(String(yearCalYear))) media.textContent = esfuerzoMedia(Object.entries(dailyEffort).filter(([k]) => k.startsWith(dateStr.slice(0, 7))).map(([, v]) => v));
             try { await saveData(); } catch (e) { console.error('Error guardando el esfuerzo diario:', e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -587,7 +556,7 @@
                         <button class="culture-tab ${calViewMode===id?'active':''}" onclick="setCalView('${id}')">${label}</button>
                     `).join('')}
                 </div>
-                <button class="year-cal-btn" onclick="abrirCalendarioAnual()" title="Vista anual">
+                <button class="year-cal-btn" onclick="abrirCalendarioAnual()" title="Esfuerzo" aria-label="Esfuerzo">
                     <svg width="18" height="18" viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="30"/></svg>
                 </button>
                 ${renderTiempoWidget()}

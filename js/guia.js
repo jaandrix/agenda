@@ -42,7 +42,7 @@ const GUIA = [
             [guiaBoton('Esc'), 'Cierra lo que esté abierto. Si no hay nada abierto, pregunta si quieres cerrar sesión.'],
             [guiaBoton('Ctrl + ↑ / ↓'), 'Pasa al apartado anterior o siguiente del menú.'],
             [guiaBoton('?'), 'Arriba a la derecha: ayuda corta con los atajos y lo que es cada apartado, y acceso a esta guía.'],
-            [guiaBoton('/año, /tema, /backup, /exportar'), 'Comandos del buscador: escribe «/» para verlos. Abren el calendario anual, cambian el tema, hacen una copia o exportan tus datos.'],
+            [guiaBoton('/año, /tema, /backup, /exportar'), 'Comandos del buscador: escribe «/» para verlos. Abren tu esfuerzo del año, cambian el tema, hacen una copia o exportan tus datos.'],
             [guiaBoton('preguntas'), 'El buscador también responde con tus datos: «¿cuándo fue la última vez que fui al dentista?», «¿cuánto gasté en gasolina en septiembre?», «¿cuándo es el cumple de Ana?», «¿cuántas veces fui al cine este año?», «¿puedo permitirme 300 €?». La respuesta sale arriba; tocándola vas al día o al apartado.'],
         ],
         trucos: ['Haz clic derecho sobre un apartado del menú para ver sus opciones rápidas.'],
@@ -157,7 +157,7 @@ const GUIA = [
         botones: [
             [guiaBoton('Día, Semana, Mes'), 'Cambia la vista. En el mes, cada punto bajo un día es una cosa ese día.'],
             [guiaBoton('‹ ›'), 'Mes, semana o día anterior y siguiente.'],
-            [guiaBoton('●'), 'El círculo negro abre el <b>calendario anual</b>: el año entero en bolitas, con vistas de días de viaje y de esfuerzo.'],
+            [guiaBoton('●'), 'El círculo abre tu <b>esfuerzo.</b>: el año en bolitas, más intensas cuanto más te esforzaste, con la media de cada mes. Debajo, «¿cómo fue hoy?» para puntuarlo del 1 (flojo) al 5 (a tope); toca cualquier día pasado para puntuar ese.'],
             [guiaBoton('tiempo'), 'La temperatura de tu ciudad. Tócala para ver la previsión de los próximos días y cambiar de ciudad.'],
             [guiaBoton('tu foto'), 'Junto al título (y junto a «bitácora.» en el móvil). Ábrela para cambiar tu foto, tu nombre visible y una frase sobre ti, que ven tus amigos. Toda foto pasa sola a blanco y negro con grano.'],
         ],
