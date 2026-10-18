@@ -92,6 +92,36 @@
                 filteredEntries = [...entries];
                 return linea('evento', `evento «${corto(op.titulo)}» el ${op.fecha}${op.hora ? ' a las ' + op.hora : ''}.`, { accion: 'quitar', coleccion: 'evento', id: ref });
             }
+            // Lo dictado a Siri pasa por el mismo intérprete que el + de la app.
+            if (op.tipo === 'apuntar') {
+                if (registroConector.some(l => l.id === ref)) return null;
+                const hechos = [], avisos = [], apuntes = [];
+                apuntarTrocear(op.texto).forEach(t => {
+                    const r = interpretarApunte(t);
+                    const tipo = apuntarTipo(r);
+                    const res = apuntarCrear(t, r, tipo);
+                    if (res.error) return;
+                    apuntarRegistrar(t, tipo, res.aviso, res.hecho);
+                    apuntes.push(apuntesRecientes[0].id);
+                    hechos.push(res.hecho);
+                    avisos.push(res.aviso.charAt(0).toLowerCase() + res.aviso.slice(1));
+                });
+                if (!hechos.length) {
+                    const l = aplicarOpConector({ tipo: 'tarea', titulo: op.texto }, ref);
+                    return l && linea('apuntar', `desde Siri, «${corto(op.texto)}» en tareas pendientes.`, l.deshacer);
+                }
+                return linea('apuntar', `desde Siri, «${corto(op.texto)}»: ${avisos.join(', ')}.`, { accion: 'apuntes', hechos, apuntes });
+            }
+            if (op.tipo === 'correo') {
+                const l = aplicarOpConector({ tipo: 'tarea', titulo: op.asunto ? `Correo: ${op.asunto}` : 'Correo reenviado', notas: [op.de ? 'De ' + op.de : '', op.extracto].filter(Boolean).join('\n') }, ref);
+                return l && linea('correo', `correo «${corto(op.asunto || op.de)}» en tareas pendientes.`, l.deshacer);
+            }
+            if (op.tipo === 'pedido') {
+                const seg = String(op.seguimiento || '').toUpperCase();
+                if (pedidos.some(p => p.id === ref || (seg && p.seguimiento === seg))) return null;
+                pedidos.push({ id: ref, titulo: op.titulo || 'Pedido', tienda: op.tienda || op.transportista || '', seguimiento: seg, url: op.url || '', fechaPedido: op.fechaPedido || todayISO(), fechaEstimada: op.fechaEstimada || '', estado: 'pedido', historial: [{ fecha: todayISO(), estado: 'pedido', nota: 'Llegó por tu correo' }] });
+                return linea('pedido', `envío «${corto(op.titulo)}»${op.tienda ? ' de ' + op.tienda : ''}.`, { accion: 'pedido_quitar', id: ref });
+            }
             if (op.tipo === 'tarea') {
                 if (localizarTareaConector(ref)) return null;
                 if (op.fecha && op.hora) insertarConector('tarea', { id: ref, time: op.hora, title: op.titulo, notes: op.notas || '', done: false }, op.fecha);
@@ -430,6 +460,11 @@
                     h.completadas = h.completadas || {};
                     if (hecho) h.completadas[d.fecha] = true; else delete h.completadas[d.fecha];
                 });
+            } else if (d.accion === 'apuntes') {
+                for (const h of d.hechos || []) { if (h.tipo === 'conector') await deshacerConector(h.ref, true); else apuntarQuitar(h); }
+                apuntesRecientes.forEach(a => { if ((d.apuntes || []).includes(a.id)) a.deshecho = true; });
+            } else if (d.accion === 'pedido_quitar') {
+                pedidos = pedidos.filter(p => p.id !== d.id);
             } else if (d.accion === 'deseo_quitar') {
                 financeProfile.wishlist = (financeProfile.wishlist || []).filter(x => x.id !== d.id);
             } else if (d.accion === 'deseo_reponer') {
@@ -508,7 +543,7 @@
         // Se aplican solos (el usuario no quiere validarlos): crear y editar
         // eventos, las entradas con QR de un evento y Ocio. El resto espera
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
-        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto'];
+        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto', 'apuntar', 'correo', 'pedido'];
         // Filas ya validadas o descartadas aquí que el servidor quizá aún no
         // ha borrado (se borran después de guardar): sin esto, una lectura
         // de la bandeja en ese intervalo las devolvía como pendientes y
@@ -559,7 +594,8 @@
                     renderAllNavs();
                     render();
                 }
-                const avisos = [cambios ? `${cambios} ${cambios === 1 ? 'cambio aplicado' : 'cambios aplicados'} desde Claude o ChatGPT` : '', nuevasPendientes ? `${nuevasPendientes} ${nuevasPendientes === 1 ? 'espera' : 'esperan'} tu validación en «bandeja.»` : ''].filter(Boolean);
+                const origenes = new Set(automaticas.map(f => f.op?.origen === 'siri' ? 'Siri' : f.op?.origen === 'correo' || f.op?.tipo === 'correo' ? 'tu correo' : 'Claude o ChatGPT'));
+                const avisos = [cambios ? `${cambios} ${cambios === 1 ? 'cambio aplicado' : 'cambios aplicados'} desde ${origenes.size === 1 ? [...origenes][0] : 'fuera de la app'}` : '', nuevasPendientes ? `${nuevasPendientes} ${nuevasPendientes === 1 ? 'espera' : 'esperan'} tu validación en «bandeja.»` : ''].filter(Boolean);
                 if (avisos.length && currentView !== 'bandeja') showToast(avisos.join(', '));
             } catch (e) {
                 console.error('Bandeja del conector:', e);
@@ -875,7 +911,7 @@
             const fecha = iso => iso ? new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
             body.innerHTML = `
                 <div style="line-height:1.5;margin-bottom:12px">Conecta Bitácora a Claude o a ChatGPT para preguntarle por tu agenda, tus gastos o cualquier apartado, y pedirle que apunte cosas (un evento a partir de una entrada, un gasto a partir de un ticket...). Usa tu propia suscripción de Claude o ChatGPT.</div>
-                ${(data || []).map(t => `
+                ${(data || []).filter(t => t.nombre !== 'siri' && t.nombre !== 'correo').map(t => `
                     <div class="conector-fila">
                         <div><b>${escapeHtml(t.nombre)}.</b><small>creado el ${fecha(t.creado)}${t.ultimo_uso ? `, usado por última vez el ${fecha(t.ultimo_uso)}` : ', sin usar todavía'}</small></div>
                         <button class="finance-oneoff-btn" onclick="revocarConector('${t.token_hash}')">revocar.</button>

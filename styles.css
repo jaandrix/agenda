@@ -8873,3 +8873,15 @@ body:not(.papel) .luz-aviso { color:#6fc28f; }
 .partido-cara > i { font-style:normal; font-size:22px; font-weight:800; color:var(--text-secondary); }
 .partido-datos { margin:0 0 16px; font-size:14px; line-height:1.6; text-align:center; color:var(--text-secondary); }
 .partido-datos b { color:var(--text-primary); }
+
+/* Siri y tu correo. */
+.atajo-pasos li { margin-bottom:6px; }
+.atajo-ejemplos { display:flex; flex-wrap:wrap; gap:6px; margin:14px 0 4px; }
+.atajo-ejemplos span { padding:6px 10px; border-radius:10px; background:var(--bg-input); border:1px solid var(--border); font-size:12px; color:var(--text-primary); }
+.atajo-correo code { font-size:12.5px; }
+.atajo-correo-lista { display:flex; flex-direction:column; border-top:1px solid var(--border); }
+.atajo-correo-lista > div { display:flex; flex-direction:column; gap:2px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.atajo-correo-lista b { color:var(--text-primary); }
+.atajo-correo-lista span { font-size:12px; color:var(--text-secondary); line-height:1.4; }
+.serv-ajustes-fila > button { white-space:nowrap; flex-shrink:0; }
+.finance-modal-note a { color:var(--text-primary); text-decoration:underline; text-underline-offset:2px; }

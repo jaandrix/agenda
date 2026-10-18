@@ -645,3 +645,85 @@
             openAjustesEquipos();
             render();
         }
+
+        // ------------------------------------------------------------
+        //  SIRI Y TU CORREO (función `entrada`). Cada puerta tiene su
+        //  propio token en conector_tokens, con nombre «siri» o «correo»:
+        //  solo sirve para apuntar (el servidor del conector lo rechaza),
+        //  así que se guarda también aquí para poder enseñarlo otra vez.
+        // ------------------------------------------------------------
+        const ENTRADA_URL = `${SUPABASE_URL}/functions/v1/entrada`;
+        const CORREO_DOMINIO = 'in.appbitacora.es';
+        AJUSTES_ICONOS.atajos = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M44 6h12v34h16L50 64 28 40h16zM8 58h22l8 14h24l8-14h22v36H8z"/></svg>';
+
+        function renderAjustesAtajos() {
+            const siri = servicios.siriToken, correo = servicios.correoToken;
+            return `
+                <div class="serv-ajustes">
+                    <div class="serv-ajustes-fila"><div><b>siri.</b><span>${siri ? 'Conectado. Di «Apunta en Bitácora» y dicta lo que sea.' : 'Dile a Siri qué apuntar sin abrir la app: «cena con Marta el viernes a las 9».'}</span></div><button class="btn-secondary" style="width:auto" onclick="openAtajoSiri()">${siri ? 'ver pasos.' : 'conectar.'}</button></div>
+                    <div class="serv-ajustes-fila"><div><b>tu correo.</b><span>${correo ? 'Reenvía aquí tus reservas y pedidos.' : 'Reenvía la confirmación de un vuelo, un hotel, unas entradas o un pedido y se apunta sola.'}</span></div><button class="btn-secondary" style="width:auto" onclick="openAtajoCorreo()">${correo ? 'ver dirección.' : 'crear dirección.'}</button></div>
+                </div>`;
+        }
+
+        async function atajoToken(nombre) {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) { showToast('Inicia sesión para conectarlo', true); return null; }
+            const token = [...crypto.getRandomValues(new Uint8Array(24))].map(b => b.toString(16).padStart(2, '0')).join('');
+            const hash = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map(b => b.toString(16).padStart(2, '0')).join('');
+            const { error } = await sb.from('conector_tokens').insert({ token_hash: await hash(token), user_id: user.id, nombre });
+            if (error) { console.error(error); showToast('No se ha podido crear', true); return null; }
+            const clave = nombre === 'siri' ? 'siriToken' : 'correoToken';
+            if (servicios[clave]) await sb.from('conector_tokens').delete().eq('token_hash', await hash(servicios[clave]));
+            servicios[clave] = token;
+            await servGuardarDatos();
+            return token;
+        }
+
+        function atajoCopiar(texto, aviso) {
+            navigator.clipboard.writeText(texto).then(() => showToast(aviso)).catch(() => showToast('No se ha podido copiar', true));
+        }
+
+        function atajoRepintarAjustes() {
+            const caja = document.querySelector('#settings-atajos-section .serv-ajustes');
+            if (caja) caja.outerHTML = renderAjustesAtajos();
+        }
+
+        async function openAtajoSiri(nuevo) {
+            if (!servicios.siriToken || nuevo) { if (!(await atajoToken('siri'))) return; atajoRepintarAjustes(); }
+            const url = `${ENTRADA_URL}?t=${servicios.siriToken}`;
+            showModal(`
+                <div class="modal-title">siri.</div>
+                <p class="finance-modal-note" style="margin-top:0">Un atajo de cuatro pasos en la app <b>Atajos</b> del iPhone. Se hace una vez y luego basta con decir <b>«Oye Siri, apunta en Bitácora»</b>.</p>
+                <div class="conector-url"><code>${escapeHtml(url)}</code></div>
+                <button class="btn-modal-primary" style="margin:10px 0 16px" onclick="atajoCopiar('${url}', 'Enlace copiado')">copiar enlace.</button>
+                <ol class="conector-pasos atajo-pasos">
+                    <li>Abre <b>Atajos</b>, pulsa <b>+</b> y llámalo <b>Apunta en Bitácora</b>: esa frase es la que dirás a Siri.</li>
+                    <li>Añade la acción <b>Dictar texto</b>.</li>
+                    <li>Añade <b>Obtener contenido de URL</b>, pega el enlace y, en su flecha: método <b>POST</b>, cuerpo de la solicitud <b>JSON</b>, un campo de texto llamado <b>texto</b> con el valor <b>Texto dictado</b>.</li>
+                    <li>Añade <b>Leer texto</b> (o <b>Mostrar resultado</b>) con el <b>Contenido de la URL</b>: Siri te confirmará lo que ha apuntado.</li>
+                </ol>
+                <div class="atajo-ejemplos">
+                    <span>«dentista el martes a las 10»</span><span>«25 euros de gasolina»</span><span>«comprar leche y huevos»</span><span>«cumple de Lucía el 3 de mayo»</span>
+                </div>
+                <p class="finance-modal-note">Lo dictado pasa por el mismo intérprete que el + de la app: entra como tarea, evento, gasto, compra o lo que toque, y se puede deshacer desde «lo que has apuntado.». Este enlace solo sirve para apuntar; si lo pierdes o lo compartes por error, <a href="#" onclick="event.preventDefault();if(confirm('¿Cambiar el enlace? El atajo actual dejará de funcionar hasta que pegues el nuevo.'))openAtajoSiri(true)">cámbialo</a>.</p>
+            `);
+        }
+
+        async function openAtajoCorreo(nuevo) {
+            if (!servicios.correoToken || nuevo) { if (!(await atajoToken('correo'))) return; atajoRepintarAjustes(); }
+            const dir = `${servicios.correoToken}@${CORREO_DOMINIO}`;
+            showModal(`
+                <div class="modal-title">tu correo.</div>
+                <p class="finance-modal-note" style="margin-top:0">Tu dirección para reenviar cosas a Bitácora. Guárdala como contacto, «Bitácora», para tenerla a mano al reenviar.</p>
+                <div class="conector-url atajo-correo"><code>${escapeHtml(dir)}</code></div>
+                <button class="btn-modal-primary" style="margin:10px 0 16px" onclick="atajoCopiar('${dir}', 'Dirección copiada')">copiar dirección.</button>
+                <div class="atajo-correo-lista">
+                    <div><b>vuelos, trenes y autobuses.</b><span>Un evento a la hora de salida, con el número de reserva.</span></div>
+                    <div><b>hoteles y apartamentos.</b><span>La entrada en el calendario, con la salida en las notas.</span></div>
+                    <div><b>entradas y restaurantes.</b><span>El concierto, el partido o la cena, con su sitio.</span></div>
+                    <div><b>pedidos.</b><span>Un envío nuevo en Envíos, con su número de seguimiento.</span></div>
+                    <div><b>cualquier otro correo.</b><span>Queda en tus tareas pendientes, con el asunto y quién lo manda.</span></div>
+                </div>
+                <p class="finance-modal-note">Lo leen mejor los correos que traen sus datos por dentro, como muchos de aerolíneas, Renfe, Booking, Airbnb, Ticketmaster o TheFork; el resto queda como tarea. Si alguien que no debe conoce la dirección, <a href="#" onclick="event.preventDefault();if(confirm('¿Cambiar la dirección? La actual dejará de funcionar.'))openAtajoCorreo(true)">cambia la dirección</a>.</p>
+            `);
+        }
