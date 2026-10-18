@@ -8735,3 +8735,10 @@ body.papel .m-finanzas-ritmo .negativa { color:#a3243b; }
     .modal-sheet .modal-close .ico, .modal-sheet .modal-close svg { width:16px; height:16px; }
 }
 .apuntar-recientes { padding-top:6px; }
+/* Despensa en el móvil: las pestañas van primero, bajo el título grande. La
+   cabecera de «lista.» lleva botones (listas, lo de siempre, terminar) y las
+   otras no: con las pestañas debajo, saltaban al cambiar de pestaña. */
+.m-generico .compra { display:flex; flex-direction:column; }
+.m-generico .compra > .compra-pestanas { order:-1; margin-bottom:14px; }
+.m-generico .compra-cab { flex-direction:column; align-items:stretch; gap:10px; }
+.m-generico .compra-cab-botones { justify-content:flex-start; }
