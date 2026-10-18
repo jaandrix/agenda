@@ -190,6 +190,9 @@ function renderFriendsView() {
         <div class="ajustes-grupo" id="social-eventos">eventos.</div>
         ${renderEventosSocial()}
 
+        <div class="ajustes-grupo" id="social-enlaces">con un enlace.</div>
+        ${renderEnlacesSocial()}
+
         <div class="ajustes-grupo" id="social-amigos">amigos.</div>
         ${renderAmigosSocial()}
     </div>`;
@@ -599,17 +602,18 @@ const EVENTO_CAMPOS_COMPARTIDOS = ['title', 'date', 'time', 'endDate', 'endTime'
 function openCompartirEvento(entryId) {
     const hoy = todayISO();
     const proximos = entries.filter(e => e.type === 'event' && e.date && e.date >= hoy && !isCalendarLogEntry(e)).sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
-    if (!amigos.length) { showToast('Añade primero a tus amigos en Social → amigos.', true); return; }
     if (!proximos.length && !entryId) { showToast('No tienes eventos próximos que compartir', true); return; }
+    if (!amigos.length && entryId) { compartirInvitacion(entryId); return; }
     showModal(`
         <div class="modal-title">compartir un evento.</div>
         <div class="modal-label">Evento</div>
         <select id="ce-evento" class="modal-input">${proximos.map(e => `<option value="${e.id}" ${e.id === entryId ? 'selected' : ''}>${escapeHtml(e.title || 'Evento')}, ${new Date(e.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${e.time ? ` ${e.time}` : ''}</option>`).join('')}</select>
-        <div class="modal-label">Con quién</div>
+        <button class="cmpt-nuevo cmpt-nuevo-ancho" onclick="compartirInvitacion(document.getElementById('ce-evento').value)"><b>invitar con un enlace.</b><span>Para cualquiera, aunque no use Bitácora: lo abre sin cuenta y te dice si va.</span></button>
+        ${amigos.length ? `<div class="modal-label">O a tus amigos de Bitácora</div>
         <div class="social-elegir">${amigos.map(a => `<label><input type="checkbox" class="ce-amigo" value="${a.friend_id}"> ${escapeHtml(a.nombre_visible || a.friend_nombre || 'Amigo')}</label>`).join('')}</div>
         <div class="modal-label">Nota (opcional)</div>
         <input id="ce-nota" class="modal-input" placeholder="¿Te vienes?">
-        <button class="btn-modal-primary" onclick="enviarEventoCompartido()">compartir.</button>
+        <button class="btn-modal-primary" onclick="enviarEventoCompartido()">compartir.</button>` : ''}
     `);
 }
 

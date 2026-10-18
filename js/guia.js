@@ -116,6 +116,41 @@ const GUIA = [
         ],
     },
     {
+        id: 'servicios', grupo: 'empezar', titulo: 'lo que sabe sola.',
+        lema: 'Cosas que Bitácora averigua sin que apuntes nada.',
+        intro: 'Con decirle dónde vives (y, si quieres, tus equipos), Bitácora rellena sola festivos, puentes, el precio de la luz, partidos, estrenos y el tiempo de tus viajes. Todo sale de fuentes públicas y se guarda en tu dispositivo.',
+        pasos: [
+            'Ajustes → lo que bitácora sabe sola. → <b>festivos y puentes.</b> → busca tu ciudad. Salen los festivos nacionales y los de tu comunidad; los locales los añades tú una vez.',
+            'En la misma tarjeta: <b>tus equipos.</b> (busca y añade), <b>estrenos de tus series.</b> y <b>la luz más barata.</b>',
+            'Pulsa <b>tu día.</b> en Panorama (o el aviso del día en el calendario) para ver la ficha de hoy.',
+        ],
+        botones: [
+            [guiaBoton('festivos y puentes'), 'Los festivos salen marcados en el calendario y en el inicio del móvil. Si un festivo cae en martes o jueves, Bitácora te dice qué día cogerte y cuántos días libres te salen.'],
+            [guiaBoton('la luz más barata'), 'En el planificador, el precio de cada hora (PVPC, península) y la franja más barata. Las tareas con lavadora, horno, lavavajillas, secadora o cargar el coche te dicen si es buena hora. Desde las 21:00 enseña ya el día siguiente.'],
+            [guiaBoton('tus equipos'), 'Sus partidos de liga, copa y Europa entran solos en el calendario con hora y estadio. Al abrir uno: <b>apuntar en mi calendario.</b> lo convierte en evento tuyo (con su aviso) y <b>no me interesa este.</b> lo oculta.'],
+            [guiaBoton('estrenos de tus series'), 'Las temporadas nuevas de las series que tienes en Ocio, y cada episodio de las que estás viendo.'],
+            [guiaBoton('destino'), 'En cada viaje, la pestaña <b>Destino</b>: el tiempo de esos días (o el del año pasado, si aún queda lejos), la hora allí, la moneda con conversor, los festivos del país, los enchufes y el teléfono de urgencias.'],
+            [guiaBoton('tu día'), 'La ficha de un día: tiempo, luz, lo que tienes, festivo y lo que hiciste ese día hace un año.'],
+        ],
+        trucos: ['Puedes cambiar de ciudad cuando quieras: los festivos se recalculan al momento.', 'Si un partido o un estreno no te interesa, ocúltalo y no vuelve a salir.'],
+    },
+    {
+        id: 'atajos', grupo: 'empezar', titulo: 'siri y tu correo.',
+        lema: 'Apunta sin abrir la app.',
+        intro: 'Dos puertas para meter cosas en Bitácora desde fuera: dictándoselas a Siri o reenviando un correo.',
+        pasos: [
+            'Ajustes → siri y tu correo. → <b>conectar.</b> en Siri: copia el enlace y sigue los cuatro pasos para crear el atajo «Apunta en Bitácora» en la app Atajos.',
+            'Luego di «Oye Siri, apunta en Bitácora» y dicta, por ejemplo, «dentista el martes a las 10» o «25 euros de gasolina».',
+            'En <b>tu correo.</b> → <b>crear dirección.</b>: guárdala como contacto y reenvíale la confirmación de un vuelo, un hotel, unas entradas o un pedido.',
+        ],
+        botones: [
+            [guiaBoton('siri'), 'Lo dictado pasa por el mismo intérprete que el + de apuntar: tarea, evento, gasto, compra, cumpleaños... Siri te lee lo que ha apuntado y puedes deshacerlo en «lo que has apuntado.».'],
+            [guiaBoton('tu correo'), 'Vuelos, trenes y autobuses entran como evento a la hora de salida; hoteles, con la entrada y la salida; entradas y restaurantes, con su sitio; los pedidos, en Envíos. Cualquier otro correo queda como tarea pendiente.'],
+            [guiaBoton('cámbialo'), 'Si pierdes el enlace o la dirección, o alguien que no debe la conoce, crea una nueva: la anterior deja de funcionar.'],
+        ],
+        trucos: ['Estos enlaces solo sirven para apuntar: no dejan leer nada de tu Bitácora.', 'Lo que entra así queda en el historial de la bandeja, con deshacer.'],
+    },
+    {
         id: 'home', grupo: 'general', titulo: 'home.',
         lema: 'Tu calendario de toda la vida.',
         intro: 'La primera pantalla: un calendario con todo lo que tiene fecha en Bitácora: eventos, viajes, cumpleaños, exámenes, pagos de suscripciones...',
@@ -431,7 +466,7 @@ const GUIA = [
     {
         id: 'amigos', grupo: 'otros', titulo: 'social.',
         lema: 'Bitácora con tu gente.',
-        intro: 'Todo lo que haces con tus amigos en un sitio: gastos compartidos (como Tricount), eventos que les compartes y tu lista de amigos. Las recomendaciones de Ocio y los viajes compartidos también llegan de aquí.',
+        intro: 'Todo lo que haces con tus amigos en un sitio: gastos compartidos (como Tricount), eventos que les compartes, quedadas y listas por enlace para quien no usa Bitácora y tu lista de amigos. Las recomendaciones de Ocio y los viajes compartidos también llegan de aquí.',
         pasos: ['En <b>amigos.</b>, genera tu código y compártelo, o escribe el de un amigo: le llegará una solicitud.', 'En <b>gastos.</b>, crea un grupo (un viaje, una cena, el piso) y elige quién está.', 'Cada vez que alguien pague algo, apúntalo con <b>+ gasto.</b>: lo ven y lo editan todos los del grupo.'],
         botones: [
             [guiaBoton('+ grupo.'), 'Nombre y quién está: tus amigos de Bitácora y, si hace falta, gente sin cuenta (solo con su nombre).'],
@@ -440,6 +475,7 @@ const GUIA = [
             [guiaBoton('mis gastos. total del grupo. mi saldo.'), 'Lo que te toca a ti, lo que se ha gastado en total y si te deben (verde) o debes (rojo).'],
             [guiaBoton('saldos. cómo saldar.'), 'Cuánto debe o le deben a cada uno, y la forma de dejarlo a cero con los mínimos pagos. «pagado.» apunta ese pago.'],
             [guiaBoton('compartir un evento.'), 'Manda uno de tus próximos eventos a tus amigos; les llega para añadirlo a su calendario. También desde el botón «compartir.» de cada evento.'],
+            [guiaBoton('con un enlace.'), 'Para quien no usa Bitácora: lo abre desde WhatsApp sin cuenta ni app. <b>quedada.</b> propone fechas y cada uno marca si puede; tú eliges y entra en tu calendario. <b>invitación.</b> manda un evento tuyo y te dicen si van (y con cuántos). <b>lista.</b> todos tachan y añaden; lo pendiente lo traes a tu despensa. Desde un viaje, <b>enseñar el plan.</b> Te llega un aviso cada vez que alguien responde.'],
             [guiaBoton('salir del grupo. borrar grupo para todos.'), 'Si sales y ya apareces en algún gasto, sigues con tu nombre para que las cuentas cuadren. Solo quien creó el grupo puede borrarlo.'],
             [guiaBoton('tu perfil. código de amigo'), 'Tu nombre visible, tu foto y una frase sobre ti, que ven tus amigos en su lista; y tu código permanente para conectar. La foto pasa sola a blanco y negro con grano, como todas las de bitácora. También se abre pulsando tu foto en Home.'],
         ],

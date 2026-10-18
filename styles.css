@@ -8885,3 +8885,47 @@ body:not(.papel) .luz-aviso { color:#6fc28f; }
 .atajo-correo-lista span { font-size:12px; color:var(--text-secondary); line-height:1.4; }
 .serv-ajustes-fila > button { white-space:nowrap; flex-shrink:0; }
 .finance-modal-note a { color:var(--text-primary); text-decoration:underline; text-underline-offset:2px; }
+
+/* Compartir con un enlace. */
+.cmpt-opcional { font-weight:400; color:var(--text-muted); }
+.cmpt-opciones-edit { display:flex; flex-direction:column; gap:8px; }
+.cmpt-opcion-edit { display:grid; grid-template-columns:1fr 110px 36px; gap:8px; align-items:center; }
+.cmpt-opcion-edit .modal-input { margin:0; }
+.cmpt-nuevos { display:flex; flex-direction:column; gap:8px; }
+.cmpt-nuevo { display:flex; flex-direction:column; gap:2px; width:100%; padding:12px 14px; text-align:left; border-radius:12px; border:1px solid var(--border); background:var(--bg-input); color:var(--text-primary); font-family:inherit; cursor:pointer; transition:border-color .15s ease, transform .12s ease; }
+.cmpt-nuevo:hover { border-color:var(--border-strong); }
+.cmpt-nuevo:active { transform:scale(.985); }
+.cmpt-nuevo b { font-size:14px; }
+.cmpt-nuevo span { font-size:12.5px; color:var(--text-secondary); line-height:1.4; }
+.cmpt-nuevo-ancho { margin:0 0 16px; }
+.cmpt-mios { display:flex; flex-direction:column; }
+.cmpt-mio { display:grid; grid-template-columns:auto 1fr; column-gap:10px; align-items:baseline; width:100%; padding:10px 0; text-align:left; border:0; border-bottom:1px solid var(--border); background:none; color:var(--text-primary); font-family:inherit; cursor:pointer; }
+.cmpt-mio:last-child { border-bottom:0; }
+.cmpt-mio b { font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cmpt-mio small { grid-column:2; font-size:12px; color:var(--text-secondary); }
+.cmpt-tipo { font-size:11.5px; font-weight:600; color:var(--m-acento); }
+.cmpt-url { margin-top:4px; }
+.cmpt-botones { display:flex; gap:8px; margin:10px 0 18px; }
+.cmpt-botones .btn-modal-primary { flex:1; margin:0; }
+.cmpt-botones a.btn-secondary { width:auto; display:inline-flex; align-items:center; text-decoration:none; white-space:nowrap; }
+.cmpt-evento { display:flex; flex-direction:column; gap:2px; padding:12px 14px; border-radius:12px; background:var(--bg-input); margin-bottom:12px; }
+.cmpt-evento b { font-size:15px; }
+.cmpt-evento span { font-size:12.5px; color:var(--text-secondary); }
+.cmpt-filas { display:flex; flex-direction:column; border-top:1px solid var(--border); }
+.cmpt-fila { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+.cmpt-fila-txt { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.cmpt-fila-txt b { font-size:14px; }
+.cmpt-fila-txt span { font-size:12.5px; color:var(--text-secondary); line-height:1.4; }
+.cmpt-fila.mejor .cmpt-fila-txt b::after { content:'  la que mejor va.'; font-size:11.5px; font-weight:600; color:var(--m-acento); white-space:pre; }
+.cmpt-cuenta { flex-shrink:0; min-width:28px; height:28px; display:grid; place-items:center; border-radius:50%; background:var(--bg-input); font-size:13px; font-weight:700; }
+.cmpt-fila.elegida .cmpt-cuenta, .cmpt-fila.mejor .cmpt-cuenta { background:var(--m-acento); color:var(--m-sobre-acento, #fff); }
+.cmpt-sello { font-size:12px; font-weight:700; color:var(--m-acento); }
+.cmpt-nota { margin-top:8px; padding:10px 12px; border-radius:10px; background:var(--bg-input); font-size:13px; line-height:1.45; color:var(--text-secondary); }
+.cmpt-nota b { color:var(--text-primary); margin-right:4px; }
+.cmpt-lista { display:flex; flex-direction:column; border-top:1px solid var(--border); }
+.cmpt-item { display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--border); }
+.cmpt-item > span { display:flex; flex-direction:column; min-width:0; }
+.cmpt-item b { font-weight:500; font-size:14px; }
+.cmpt-item small { font-size:11.5px; color:var(--text-muted); }
+.cmpt-item.hecho b { text-decoration:line-through; color:var(--text-muted); }
+@media (max-width:520px) { .cmpt-botones { flex-wrap:wrap; } .cmpt-botones .btn-modal-primary { flex-basis:100%; } .cmpt-opcion-edit { grid-template-columns:1fr 96px 36px; } }

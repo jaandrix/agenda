@@ -1397,9 +1397,10 @@
         function abrirCompartirViajeModal(tripId) {
             const t = getTrip(tripId);
             if (!t) return;
-            if (!amigos.length) { showToast('Añade primero un amigo desde el apartado Amigos', true); return; }
             showModal(`
                 <div class="modal-title">Compartir "${escapeHtml(t.title)}"</div>
+                <button class="cmpt-nuevo cmpt-nuevo-ancho" onclick="compartirViaje('${tripId}')"><b>enseñar el plan con un enlace.</b><span>Para la familia o quien no use Bitácora: transportes, alojamientos y el día a día, sin los números de reserva.</span></button>
+                ${amigos.length ? `
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Se enviará tal como está ahora: lugares, itinerario y listas. Si luego cambias el viaje, no se actualizará lo ya enviado.</div>
                 <div class="modal-label">Con quién</div>
                 <select id="compartir-viaje-amigo" class="modal-input">
@@ -1407,7 +1408,7 @@
                 </select>
                 <div class="modal-label">Nota (opcional)</div>
                 <textarea id="compartir-viaje-nota" class="modal-input" rows="3" placeholder="Algo que quieras contarle sobre el viaje"></textarea>
-                <button class="btn-modal-primary" onclick="enviarViajeCompartido('${tripId}')">Enviar viaje</button>
+                <button class="btn-modal-primary" onclick="enviarViajeCompartido('${tripId}')">Enviar viaje</button>` : ''}
             `);
         }
 

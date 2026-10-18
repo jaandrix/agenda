@@ -504,6 +504,7 @@ function openCompraListas() {
         <div class="modal-title">listas.</div>
         <p class="finance-modal-note" style="margin-top:0">Una por sitio o por súper: casa, el piso, Mercadona, Lidl... Si se llama como la tienda, los tickets de esa tienda se emparejan con ella y los precios estimados son los de allí.</p>
         ${d.listas.map(l => `<div class="compra-lista-fila"><b>${escapeHtml(l.nombre)}</b><span>${l.items.length} productos</span>
+            <button class="pedido-btn" onclick="compartirListaCompra('${l.id}')">compartir.</button>
             <button class="pedido-btn" onclick="compraRenombrarLista('${l.id}')">renombrar.</button>
             ${d.listas.length > 1 ? `<button class="pedido-btn" style="color:#dc2626" onclick="compraBorrarLista('${l.id}')">eliminar.</button>` : ''}</div>`).join('')}
         <div class="compra-anadir" style="margin-top:12px">

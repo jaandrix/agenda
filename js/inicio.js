@@ -23,6 +23,7 @@
                 aplicarBandejaConector();
                 setTimeout(actualizarAnalisisIA, 1500);
                 setTimeout(revisarCumplesRegalo, 2500);
+                compartidoDesdeUrl();
                 if (/[?&]semana\b/.test(location.search)) {
                     history.replaceState(null, '', location.pathname);
                     setTimeout(openResumenSemana, 900);

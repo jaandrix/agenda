@@ -25,7 +25,9 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `bitacora-mcp`, el conector para Claude/ChatGPT — ver `supabase/sql/conector_ia.sql` —, y
   `calendario-feed`, el calendario suscribible .ics para Google/iPhone/Outlook con enlace firmado por HMAC
   (secreto `CALENDARIO_SECRET`, `calendarioFeedVersion` sincronizado para anularlo), `calendario-ics`, que
-  descarga un .ics de otra web para importarlo, `portadas` (Ocio; secreto `TMDB_KEY`) y
+  descarga un .ics de otra web para importarlo, `portadas` (Ocio; secreto `TMDB_KEY`), `deportes` (partidos de
+  tus equipos: ESPN y TheSportsDB), `entrada` (Siri y el correo) y `compartir` (enlaces sin registro), ver
+  «Servicios públicos» en el mapa, y
   `avisos-diarios`, avisos push automáticos vía pg_cron cada 5 minutos: resumen del
   día a las 9:00 y cada evento con hora una hora antes, salvo `sinAviso` en el
   evento o `preferenciasAvisos.eventos === false` — ver `supabase/sql/avisos_diarios.sql`) y
@@ -56,7 +58,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `agenda-laboral` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `asistente` → `guia` → `landing`.
+  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `asistente` → `servicios` → `compartir` → `guia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -367,6 +369,23 @@ a menor resolución.
   `navSeccionesVisibles()` (menús, buscador, captura rápida, ayuda, Ctrl+flechas,
   teselas del inicio móvil); `render()` saca de un apartado oculto. "Trabajo" se llama
   **Empleo** en la interfaz (la vista sigue siendo `work`).
+- **Servicios públicos (`js/servicios.js`, datos en `servicios`, sincronizado):** festivos y puentes (Nager.Date por
+  país y comunidad, `servicios.festivos` con ciudad y `locales`; `festivoDe`, `proximosPuentes`), la luz (REE PVPC,
+  `renderLuzDia` en el planificador y `luzAviso` en tareas con aparatos), la pestaña Destino de cada viaje
+  (Open-Meteo, Frankfurter, `PAISES_VIAJE`), «tu día» (`openTuDia`), tus equipos (función `deportes`) y estrenos de
+  series (TVmaze) como entradas virtuales `srv_` en `getRecurringCalendarEntries` (se apuntan con `servicioApuntar` o
+  se ocultan en `servicios.ocultos`). Cachés en localStorage `bitacora-festivos-*`, `bitacora-luz-*`,
+  `bitacora-partidos-*`, `bitacora-serie-*`.
+- **Siri y correo (función `entrada`):** tokens en `conector_tokens` con nombre `siri` / `correo` (copias en
+  `servicios.siriToken` / `correoToken`), que `bitacora-mcp` rechaza. Siri encola la op `apuntar` (pasa por
+  `apuntarTrocear`/`interpretarApunte`/`apuntarCrear`); el correo (`<token>@in.appbitacora.es`, ForwardEmail con
+  webhook a `entrada/correo`) lee el schema.org de las reservas: ops `evento` / `pedido`, y si no, `correo` (tarea
+  pendiente). Las tres están en `OPS_AUTOMATICAS`. Necesita en IONOS los MX del subdominio `in` hacia ForwardEmail.
+- **Compartir sin registro (`js/compartir.js` + `c/index.html` + función `compartir`):** quedada (votar fechas,
+  `quedadaElegir` crea el evento con `compartidoId`), invitación (voy/quizá/no), lista (tachan y añaden) y viaje
+  (solo lectura, sin números de reserva). Se guarda en Storage (bucket `compartidos`: `<id>/meta.json` del dueño y
+  un archivo por respuesta en `<id>/ev/`); la página pública `appbitacora.es/c/#ID` no necesita cuenta. Lo tuyo en
+  `servicios.compartidos`, en Social, «con un enlace.»; aviso push al dueño en cada respuesta (`/?compartido=ID`).
 - **Resto de apartados** con su propio `renderXxx()`: Hábitos, Notas, Documentos,
   Viajes, Coleccionables, Ocio, Trabajo, Proyectos, Enlaces, Etiquetas, Ajustes.
 
