@@ -101,7 +101,9 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   el resto de botones con tinte translúcido. Barra de pestañas abajo (`renderMobileTabbar`: inicio, plan, + captura, el último
   apartado visitado `mobileReciente` y menú; el botón de menú de arriba está oculto). El inicio enseña la
   semana del día elegido (o el mes en bolitas, `mobileVerMes`) y el día como horario (`.m-tl`, con marca de
-  "ahora"). Paleta propia del móvil (`body.mobile-standalone` / `body.pwa` + tema) con `--m-superficie`
+  "ahora"; la tira de la semana y el mes en bolitas se deslizan con el dedo, `mobileDeslizarFranja`). Al volver de segundo plano
+  más de 30 s se repinta sola (`refrescarAlVolver`, inicio.js) y si cambió el día vuelve a hoy. Estudios en el móvil enseña el horario
+  un día cada vez (`renderMobileHorario`). Paleta propia del móvil (`body.mobile-standalone` / `body.pwa` + tema) con `--m-superficie`
   para las tarjetas. Tamaño de letra del móvil con `zoom` (`TAMANOS_LETRA` en datos.js).
 - **Temas:** "pizarra" (gris azulado con tinta azul marino, clase `body.papel.pizarra`, sus colores al final de
   `styles.css` en "TEMA PIZARRA"; barra lateral y barra de abajo en `#1A2D42`). Y los de siempre: "asfalto" (oscuro, por defecto, sin clase), "papel" (claro, clase
@@ -126,6 +128,9 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   una limitación, un bug ya corregido y por qué se hizo así). Nunca comentarios que
   describan qué hace el código.
 - **Diffs mínimos**, sin refactors no pedidos, sin abstracciones prematuras.
+- **Sin punto medio («·») como separador** (2026-10-18): en la interfaz, comas, o un espacio tras una etiqueta que
+  ya acaba en punto («hoy. tareas.»). Lo que llega por el conector se limpia (`sinPuntoMedio` en el servidor,
+  `sinPuntoMedioConector` en la app) y la IA tiene la instrucción de no usarlo.
 - **Sin gestos de plantilla** (barrido del 2026-10-17, para que no "parezca hecha con IA"): nada de rayas de color a
   un lado (`border-left`/`inset` de 2px+ en tarjetas o filas: el color va en un punto o en el asa; la prioridad de
   una tarea, en el aro del círculo de marcar), ni pastillas: botones, chips y pestañas llevan esquina de 10 px
@@ -297,7 +302,9 @@ a menor resolución.
   trabajo, recurrente, clase y viaje. Los tipos nuevos se crean con `aplicarOpConector` (se registran en el historial
   del conector con origen «apuntar» y se deshacen con `deshacerConector(ref, true)`). Vista previa por cosa con su
   selector de tipo; `apuntesRecientes` (sincronizado, 40) con deshacer/cambiar. Cumpleaños sin año: `birthDate` 2000 y
-  `sinAnio`. El botón flotante del escritorio es "+ apuntar." (#fab).
+  `sinAnio`. La primera palabra puede forzar el tipo (`r.forzado`: evento, tarea y los de Ocio libro/serie/peli/juego,
+  `APUNTAR_OCIO`, que se crean con la op `ocio`); con hora y sin verbo delante, o «con alguien» (`r.conGente`), es evento;
+  una «y» solo parte si después empieza otra cosa o los dos trozos tienen fecha (`apuntarConFecha`). El botón flotante del escritorio es "+ apuntar." (#fab).
 - **Fechas:** `todayISO()` e `isoLocal(d)` son en hora local. Nunca `toISOString().slice(0, 10)` para "hoy" (en UTC,
   de 0:00 a 2:00 daba el día anterior).
 - **Ramas de apartados:** `RAMAS_APARTADOS` en ajustes.js agrupa los opcionales (#school, #home, #work, #mind).

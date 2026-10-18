@@ -66,10 +66,22 @@ function apuntarFechaDe(base, k) { const d = new Date(base); d.setDate(d.getDate
 function interpretarApunte(texto) {
     let resto = ' ' + String(texto || '').trim() + ' ';
     const n = apuntarNorm(resto);
-    const r = { fecha: apuntarFechaBase || todayISO(), fechaDicha: false, fechaFin: '', anioDicho: false, hora: '', horaFin: '', importe: null, ingreso: false, comprar: false, nota: false, titulo: '', recurrencia: null, cumple: false, estudio: null, clase: false, viaje: false, eventoTipo: '', lugar: '', cuenta: '', categoria: '' };
+    const r = { fecha: apuntarFechaBase || todayISO(), fechaDicha: false, fechaFin: '', anioDicho: false, hora: '', horaFin: '', importe: null, ingreso: false, comprar: false, nota: false, titulo: '', recurrencia: null, cumple: false, estudio: null, clase: false, viaje: false, eventoTipo: '', lugar: '', cuenta: '', categoria: '', forzado: '', conGente: false };
     const quitar = (re) => { const m = apuntarNorm(resto).match(re); if (!m) return null; resto = resto.slice(0, m.index) + ' ' + resto.slice(m.index + m[0].length); return m; };
 
     quitar(/^\s*(?:y\s+)?(?:ademas|tambien|luego|despues|y|e)\s*,?\s+/);
+    // La primera palabra puede decir qué es: «evento hoy comida con Lali a
+    // las 13:30», «serie Los hombres de Paco», «leer el libro …».
+    const OCIO_PALABRA = { serie: 'serie', peli: 'peli', pelicula: 'peli', libro: 'libro', videojuego: 'juego', juego: 'juego' };
+    const dicho = quitar(/^\s*(evento|tarea|serie|peli|pelicula|libro|videojuego|juego)\s*:?\s+(?=\S)/)
+        || quitar(/^\s*(?:ver|empezar|acabar|terminar)\s+(?:la\s+)?(serie|peli|pelicula)\s+(?=\S)/) || quitar(/^\s*leer\s+(?:el\s+)?(libro)\s+(?=\S)/) || quitar(/^\s*jugar\s+(?:al?\s+)?(videojuego|juego)\s+(?=\S)/);
+    if (dicho) r.forzado = OCIO_PALABRA[dicho[1]] || dicho[1];
+    // De Ocio solo interesa el título, tal cual (en «El día de mañana» no hay fecha).
+    if (OCIO_PALABRA[dicho?.[1]]) {
+        const ti = resto.replace(/\s+/g, ' ').trim();
+        r.titulo = ti.charAt(0).toUpperCase() + ti.slice(1);
+        return r;
+    }
     // Qué es: prefijos que no forman parte del título.
     if (quitar(/^\s*(?:nota|idea|apunte|apuntar que)\s*:\s*/)) r.nota = true;
     quitar(/^\s*(?:recuerdame|recordarme|recordar|acuerdate de|no olvidar|no olvides|no te olvides de|tengo que|hay que|debo|apunta|apuntar|anota)\s+(?:que\s+)?/);
@@ -109,7 +121,10 @@ function interpretarApunte(texto) {
     if (quitar(/\b(?:viaje|viajo|me voy de viaje|me voy|escapada|vacaciones)\s+(?:a|para|en)\s+/)) r.viaje = true;
     const nn = apuntarNorm(resto);
     for (const [re, tipo] of APUNTAR_EVENTOS) if (re.test(nn)) { r.eventoTipo = tipo; break; }
-    if (/^\s*(?:pedir|llamar|reservar|mandar|enviar|escribir|pagar|preparar|revisar|mirar|buscar|cancelar|confirmar|comprar|cambiar|anular)\b/.test(nn)) r.eventoTipo = '';
+    const accion = /^\s*(?:pedir|llamar|reservar|mandar|enviar|escribir|pagar|preparar|revisar|mirar|buscar|cancelar|confirmar|comprar|cambiar|anular)\b/.test(nn);
+    if (accion) r.eventoTipo = '';
+    // Quedar con alguien («café con Marta», «con mis padres») también es una cita.
+    r.conGente = !accion && (/\bcon\s+[A-ZÁÉÍÓÚÑ]/.test(String(texto || '')) || /\bcon\s+(?:mi|mis|el|la|los|las)\s+(?:amig|famil|padres|madre|padre|novi|pareja|prim|compa|abuel|herman|tio|tia|jefe|equipo)/.test(nn));
 
     const base = new Date(todayISO() + 'T12:00:00');
     const dia = k => { r.fecha = apuntarFechaDe(base, k); r.fechaDicha = true; };
@@ -246,6 +261,11 @@ function apuntarAnclado(t) {
     return !!(r.fechaDicha || r.hora || r.recurrencia || r.importe != null);
 }
 
+function apuntarConFecha(t) {
+    const r = interpretarApunte(t);
+    return !!(r.fechaDicha || r.recurrencia);
+}
+
 function apuntarTrocear(texto) {
     const piezas = String(texto || '').replace(/([.!?])\s+(?=\S)/g, '$1\n').split(/\n+|;\s*/).map(x => x.trim()).filter(Boolean);
     const SEP = /\s*,\s*(?:y\s+)?|\s+y\s+(?:luego\s+|despu[eé]s\s+|tambi[eé]n\s+|adem[aá]s\s+)?|\s+(?:luego|despu[eé]s|adem[aá]s|tambi[eé]n)\s+/gi;
@@ -262,7 +282,10 @@ function apuntarTrocear(texto) {
             // importe («examen el 28 a las 9, gimnasio todos los lunes a las 19»).
             // Salvo que siga una lista («los lunes y jueves», «el 3 y 5»).
             const sigue = /^(?:y\s+)?(?:los\s+)?(?:lunes|martes|miercoles|jueves|viernes|sabados?|domingos?)\b|^(?:y\s+)?\d/.test(apuntarNorm(sig));
-            if (actual.trim() && (arranca || (largo && !sigue && apuntarAnclado(actual) && apuntarAnclado(sig)))) { salida.push(actual.trim()); actual = sig; }
+            // Con una «y» no basta la hora: «comida con Lali y Paco a las 13:30» es una sola cosa.
+            const conY = !/,|;/.test(sep[k - 1] || '');
+            const anclado = conY ? apuntarConFecha(actual) && apuntarConFecha(sig) : apuntarAnclado(actual) && apuntarAnclado(sig);
+            if (actual.trim() && (arranca || (largo && !sigue && anclado))) { salida.push(actual.trim()); actual = sig; }
             else actual += (sep[k - 1] || ' ') + sig;
         }
         if (actual.trim()) salida.push(actual.trim().replace(/^(?:y|e)\s+/i, ''));
@@ -274,6 +297,7 @@ function apuntarTrocear(texto) {
 function apuntarTipo(r, elegido) {
     if (elegido) return elegido;
     if (r.nota) return 'nota';
+    if (r.forzado && (!APUNTAR_OCIO[r.forzado] || apartadoVisible('culture'))) return r.forzado;
     if (r.viaje && r.fechaDicha) return 'viaje';
     if (r.cumple && r.fechaDicha) return 'cumple';
     if (r.clase && r.recurrencia?.dias?.length && r.hora) return 'clase';
@@ -281,7 +305,10 @@ function apuntarTipo(r, elegido) {
     if (r.estudio && r.asignatura && r.fechaDicha && apartadoVisible('studies')) return r.estudio.lista === 'exams' ? 'examen' : 'trabajo';
     if (r.importe != null) return 'gasto';
     if (r.comprar && apartadoVisible('compra')) return 'compra';
-    if ((r.eventoTipo || r.estudio || r.cumple) && r.fechaDicha) return 'evento';
+    if ((r.eventoTipo || r.estudio || r.cumple || r.conGente) && (r.fechaDicha || r.hora)) return 'evento';
+    // Con hora y sin un verbo delante («peluquería mañana a las 10») es una cita;
+    // «llamar a Ana a las 5» o «estudiar a las 6» siguen siendo tareas.
+    if (r.hora && !/^(?:ir\b|[a-zñ]{2,}(?:ar|er|ir)(?:me|te|se|le|lo|la|les|los)?\b)/.test(apuntarNorm(r.titulo))) return 'evento';
     const dias = Math.round((new Date(r.fecha + 'T12:00:00') - new Date(currentPlannerDayKey() + 'T12:00:00')) / 864e5);
     return dias >= 0 && dias <= 2 ? 'tarea' : 'evento';
 }
@@ -295,7 +322,9 @@ function apuntarFechaTexto(iso) {
     return new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', '');
 }
 
-const APUNTAR_TIPOS = [['tarea', 'tarea'], ['evento', 'evento'], ['gasto', 'gasto o ingreso'], ['compra', 'a la compra'], ['nota', 'nota'], ['cumple', 'cumpleaños'], ['examen', 'examen'], ['trabajo', 'trabajo o entrega'], ['recurrente', 'tarea que se repite'], ['clase', 'clase del horario'], ['viaje', 'viaje']];
+const APUNTAR_TIPOS = [['tarea', 'tarea'], ['evento', 'evento'], ['gasto', 'gasto o ingreso'], ['compra', 'a la compra'], ['nota', 'nota'], ['cumple', 'cumpleaños'], ['examen', 'examen'], ['trabajo', 'trabajo o entrega'], ['recurrente', 'tarea que se repite'], ['clase', 'clase del horario'], ['viaje', 'viaje'], ['libro', 'libro'], ['serie', 'serie'], ['peli', 'película'], ['juego', 'videojuego']];
+// Los tipos de Ocio y su entrada.
+const APUNTAR_OCIO = { libro: 'book', serie: 'series', peli: 'movie', juego: 'game' };
 const APUNTAR_DIAS_CORTOS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
 function apuntarRecurrenciaTexto(rc) {
@@ -320,6 +349,7 @@ function apuntarDescribir(r, tipo) {
         case 'recurrente': return { texto: `${tit}, ${apuntarRecurrenciaTexto(r.recurrencia) || 'todos los días'}${r.hora ? ' a las ' + r.hora : ''}`, falta: r.titulo ? '' : 'falta qué hacer' };
         case 'clase': return { texto: `clase de ${tit}, ${apuntarRecurrenciaTexto(r.recurrencia)} a las ${r.hora || '?'}`, falta: !r.recurrencia?.dias?.length ? 'faltan los días' : !r.hora ? 'falta la hora' : '' };
         case 'viaje': return { texto: `viaje a ${tit}, ${apuntarFechaTexto(r.fecha)}${r.fechaFin ? ' → ' + apuntarFechaTexto(r.fechaFin) : ''}`, falta: r.titulo ? '' : 'falta el destino' };
+        case 'libro': case 'serie': case 'peli': case 'juego': return { texto: `${{ libro: 'libro', serie: 'serie', peli: 'película', juego: 'videojuego' }[tipo]} para ocio: ${tit}`, falta: r.titulo ? '' : 'falta el título' };
         case 'evento': return { texto: `evento, ${cuando}${r.lugar ? ', ' + escapeHtml(r.lugar) : ''}, ${tit}`, falta: r.titulo ? '' : 'falta qué es' };
         default: return { texto: `tarea, ${cuando}${r.hora ? '' : ', sin hora'}, ${tit}`, falta: r.titulo ? '' : 'falta qué es' };
     }
@@ -341,10 +371,10 @@ function pintarVistaApunteYa() {
     if (!caja) return;
     apuntarAnalizar();
     if (!apuntarItems.length) {
-        caja.innerHTML = '<span class="apuntar-pista">Escribe como hablas, una o varias cosas: «dentista el jueves a las 5 y el viernes cena con Marta en La Pepita», «examen de estadística el 20», «cumple de Ana el 3 de mayo», «gasté 12 en gasolina», «se ha acabado el aceite», «gimnasio todos los lunes a las 19». Bitácora sabe dónde va cada cosa.</span>';
+        caja.innerHTML = '<span class="apuntar-pista">Escribe como hablas: «cena con Marta el viernes a las 9», «serie Los hombres de Paco», «gasté 12 en gasolina».</span>';
         return;
     }
-    const tipos = APUNTAR_TIPOS.filter(([k]) => (k !== 'compra' || apartadoVisible('compra')) && (!['examen', 'trabajo', 'clase'].includes(k) || apartadoVisible('studies')));
+    const tipos = APUNTAR_TIPOS.filter(([k]) => (k !== 'compra' || apartadoVisible('compra')) && (!['examen', 'trabajo', 'clase'].includes(k) || apartadoVisible('studies')) && (!APUNTAR_OCIO[k] || apartadoVisible('culture')));
     caja.innerHTML = `${apuntarItems.length > 1 ? `<div class="apuntar-varias">${apuntarItems.length} cosas.</div>` : ''}${apuntarItems.map((it, k) => {
         const tipo = apuntarTipo(it.r, apuntarElegidos[k]);
         const d = apuntarDescribir(it.r, tipo);
@@ -360,7 +390,7 @@ function pintarVistaApunteYa() {
     }).join('')}`;
 }
 
-const APUNTAR_ICONO_DE = { tarea: 'tarea', evento: 'evento', gasto: 'gasto', compra: 'compra', nota: 'nota', cumple: 'cumple', examen: 'examen', trabajo: 'tarea', recurrente: 'rutina', clase: 'ocio', viaje: 'viaje' };
+const APUNTAR_ICONO_DE = { tarea: 'tarea', evento: 'evento', gasto: 'gasto', compra: 'compra', nota: 'nota', cumple: 'cumple', examen: 'examen', trabajo: 'tarea', recurrente: 'rutina', clase: 'ocio', viaje: 'viaje', libro: 'ocio', serie: 'ocio', peli: 'ocio', juego: 'ocio' };
 
 function openApuntar(fecha) {
     apuntarFechaBase = fecha || null;
@@ -453,6 +483,13 @@ function apuntarCrear(texto, r, tipo) {
         if (!bien.length) return { error: 'ya estaba en el horario' };
         return { aviso: `Clase de ${r.titulo.toLowerCase()} ${apuntarRecurrenciaTexto(r.recurrencia)} a las ${r.hora}`, hecho: { tipo: 'conector', refs: bien.map(x => x.hecho.ref) } };
     }
+    if (APUNTAR_OCIO[tipo]) {
+        if (!r.titulo) return { error: 'falta el título' };
+        const hoy = todayISO();
+        const entryType = APUNTAR_OCIO[tipo];
+        const datos = entryType === 'movie' ? { date: hoy, rating: 0, notes: '' } : { status: { book: 'Leyendo', series: 'Viendo', game: 'Jugando' }[entryType], startDate: hoy, date: hoy, endDate: '', rating: 0 };
+        return conector({ tipo: 'ocio', entryType, titulo: r.titulo, datos }, 'ap_ocio');
+    }
     if (tipo === 'viaje') {
         if (!r.titulo) return { error: 'falta el destino' };
         const destino = r.titulo;
@@ -496,7 +533,7 @@ async function guardarApunte() {
 
 // ---- registro de lo apuntado: revisar, deshacer o cambiar de tipo ----
 const APUNTES_MAX = 40;
-const APUNTAR_TIPO_NOMBRE = { tarea: 'tarea', evento: 'evento', gasto: 'gasto', compra: 'compra', nota: 'nota', cumple: 'cumpleaños', examen: 'examen', trabajo: 'entrega', recurrente: 'tarea que se repite', clase: 'clase', viaje: 'viaje' };
+const APUNTAR_TIPO_NOMBRE = { tarea: 'tarea', evento: 'evento', gasto: 'gasto', compra: 'compra', nota: 'nota', cumple: 'cumpleaños', examen: 'examen', trabajo: 'entrega', recurrente: 'tarea que se repite', clase: 'clase', viaje: 'viaje', libro: 'libro', serie: 'serie', peli: 'película', juego: 'videojuego' };
 
 function apuntarRegistrar(texto, tipo, resumen, deshacer) {
     apuntesRecientes = [{ id: 'apn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), cuando: new Date().toISOString(), texto: String(texto || '').trim(), tipo, resumen, deshacer }, ...apuntesRecientes].slice(0, APUNTES_MAX);

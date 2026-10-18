@@ -126,37 +126,38 @@
         })();
 
         // ============================================================
-        //  FINANZAS PRO — iconos de categoría (sin emoticonos: mismo
-        //  trazo/estilo que el resto de iconos de Finanzas).
+        //  FINANZAS PRO — iconos de categoría: sólidos y geométricos, de la
+        //  misma familia que el resto de iconos de Bitácora (antes eran de
+        //  trazo fino y se veían pobres en las insignias de color).
         // ============================================================
-        function financeProSvgIcon(inner) {
-            return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+        function financeProSvgIcon(inner, hueco) {
+            return `<svg viewBox="0 0 100 100" width="16" height="16" fill="currentColor" ${hueco ? 'fill-rule="evenodd"' : ''}>${inner}</svg>`;
         }
         const FINANCE_PRO_CATEGORY_ICON_SET = [
-            { key: 'food', label: 'Comida y bebida', svg: financeProSvgIcon('<path d="M4 3h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V3z"/><path d="M17 6h1.5a2.5 2.5 0 0 1 0 5H17"/>') },
-            { key: 'home', label: 'Vivienda', svg: financeProSvgIcon('<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>') },
-            { key: 'car', label: 'Transporte', svg: financeProSvgIcon('<path d="M4 16V9a2 2 0 0 1 2-2h1l2-3h6l2 3h1a2 2 0 0 1 2 2v7"/><path d="M4 16h16"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/>') },
-            { key: 'bag', label: 'Compras', svg: financeProSvgIcon('<path d="M6 8V6a6 6 0 0 1 12 0v2"/><rect x="3" y="8" width="18" height="13" rx="2"/>') },
-            { key: 'ticket', label: 'Ocio', svg: financeProSvgIcon('<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M9 6v12" stroke-dasharray="2 2"/>') },
-            { key: 'heart', label: 'Salud', svg: financeProSvgIcon('<path d="M12 20s-7.5-4.6-9.7-9A5.2 5.2 0 0 1 12 6a5.2 5.2 0 0 1 9.7 5c-2.2 4.4-9.7 9-9.7 9z"/>') },
-            { key: 'phone', label: 'Comunicación', svg: financeProSvgIcon('<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>') },
-            { key: 'bank', label: 'Comisiones e impuestos', svg: financeProSvgIcon('<path d="M12 3l9 5H3z"/><path d="M5 8v10M9.5 8v10M14.5 8v10M19 8v10"/><path d="M3 21h18"/>') },
-            { key: 'book', label: 'Educación', svg: financeProSvgIcon('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 19H6"/>') },
-            { key: 'family', label: 'Familia y mascotas', svg: financeProSvgIcon('<circle cx="8" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M3 20v-1a5 5 0 0 1 5-5h1a5 5 0 0 1 5 5v1"/><path d="M14 20v-.5a3.8 3.8 0 0 1 3.8-3.8h.4a3.8 3.8 0 0 1 3.8 3.8v.5"/>') },
-            { key: 'briefcase', label: 'Sueldo / trabajo', svg: financeProSvgIcon('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>') },
-            { key: 'coin', label: 'Ingreso extra', svg: financeProSvgIcon('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8.5 10.5h5a1.75 1.75 0 0 1 0 3.5h-4a1.75 1.75 0 0 0 0 3.5h5"/>') },
-            { key: 'trend', label: 'Inversiones', svg: FINANCE_ICON_TREND },
-            { key: 'gift', label: 'Regalos', svg: financeProSvgIcon('<rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 9h18M12 9v12"/><path d="M12 9C10 4 4 5 5 8c.6 1.8 4 1 7 1zM12 9c2-5 8-4 7-1-.6 1.8-4 1-7 1z"/>') },
-            { key: 'repeat', label: 'Reembolsos', svg: FINANCE_ICON_REPEAT },
-            { key: 'plane', label: 'Viajes', svg: financeProSvgIcon('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>') },
-            { key: 'paw', label: 'Mascotas', svg: financeProSvgIcon('<circle cx="12" cy="15" r="4" fill="currentColor" stroke="none"/><circle cx="6" cy="9" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="5" r="2" fill="currentColor" stroke="none"/><circle cx="14" cy="5" r="2" fill="currentColor" stroke="none"/><circle cx="18" cy="9" r="2" fill="currentColor" stroke="none"/>') },
-            { key: 'dumbbell', label: 'Deporte', svg: financeProSvgIcon('<path d="M7 12h10"/><rect x="2" y="9" width="4" height="6" rx="1.2"/><rect x="18" y="9" width="4" height="6" rx="1.2"/><rect x="5.5" y="10.2" width="2.2" height="3.6" rx="0.6"/><rect x="16.3" y="10.2" width="2.2" height="3.6" rx="0.6"/>') },
-            { key: 'laptop', label: 'Tecnología', svg: financeProSvgIcon('<rect x="4" y="4" width="16" height="10" rx="1.5"/><path d="M2 18h20"/><path d="M9 18l1-2h4l1 2"/>') },
-            { key: 'sparkle', label: 'Bienestar y belleza', svg: financeProSvgIcon('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>') },
-            { key: 'key', label: 'Alquileres', svg: financeProSvgIcon('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/>') },
-            { key: 'star', label: 'Coleccionables', svg: FINANCE_ICON_STAR },
-            { key: 'fuel', label: 'Gasolina', svg: financeProSvgIcon('<path d="M3 21V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v15"/><path d="M3 21h10"/><rect x="5" y="6" width="6" height="5" rx="0.5"/><path d="M15 8h2l3 3v7a1.5 1.5 0 0 1-3 0v-3h-2"/>') },
-            { key: 'other', label: 'Otros', svg: financeProSvgIcon('<circle cx="12" cy="12" r="8"/>') }
+            { key: 'food', label: 'Comida y bebida', svg: financeProSvgIcon('<path d="M10 28h58v28a24 24 0 0 1-24 24h-10a24 24 0 0 1-24-24z"/><path d="M68 34h6a15 15 0 0 1 0 30h-7v-10h7a5 5 0 0 0 0-10h-6z"/><rect x="4" y="84" width="76" height="9" rx="4.5"/><rect x="24" y="6" width="8" height="16" rx="4"/><rect x="42" y="2" width="8" height="20" rx="4"/>') },
+            { key: 'home', label: 'Vivienda', svg: financeProSvgIcon('<path d="M50 8l44 38H82v44H60V64H40v26H18V46H6z"/>') },
+            { key: 'car', label: 'Transporte', svg: financeProSvgIcon('<path d="M10 58c0-7 4-11 11-12l10-20c2-4 6-6 10-6h18c4 0 8 2 10 6l10 20c7 1 11 5 11 12v14H10zM35 44h30l-6-13H41z"/><circle cx="28" cy="76" r="11"/><circle cx="72" cy="76" r="11"/>', true) },
+            { key: 'bag', label: 'Compras', svg: financeProSvgIcon('<path d="M16 34h68l-6 58H22z"/><path d="M33 34v-8a17 17 0 0 1 34 0v8h-10v-8a7 7 0 0 0-14 0v8z"/>') },
+            { key: 'ticket', label: 'Ocio', svg: financeProSvgIcon('<path d="M6 24h88v18a8 8 0 0 0 0 16v18H6V58a8 8 0 0 0 0-16zM62 29h7v10h-7zM62 45h7v10h-7zM62 61h7v10h-7z"/>', true) },
+            { key: 'heart', label: 'Salud', svg: financeProSvgIcon('<circle cx="31" cy="36" r="22"/><circle cx="69" cy="36" r="22"/><path d="M11.5 46L50 90l38.5-44z"/>') },
+            { key: 'phone', label: 'Comunicación', svg: financeProSvgIcon('<path d="M32 4h36a10 10 0 0 1 10 10v72a10 10 0 0 1-10 10H32a10 10 0 0 1-10-10V14A10 10 0 0 1 32 4zM31 16v58h38V16zM45 85a5 5 0 1 0 10 0a5 5 0 1 0-10 0z"/>', true) },
+            { key: 'bank', label: 'Comisiones e impuestos', svg: financeProSvgIcon('<path d="M50 4l46 26H4z"/><rect x="12" y="36" width="12" height="40" rx="2"/><rect x="34" y="36" width="12" height="40" rx="2"/><rect x="54" y="36" width="12" height="40" rx="2"/><rect x="76" y="36" width="12" height="40" rx="2"/><rect x="4" y="82" width="92" height="12" rx="3"/>') },
+            { key: 'book', label: 'Educación', svg: financeProSvgIcon('<path d="M4 18c16-6 30-4 42 4v70c-12-8-26-10-42-4z"/><path d="M96 18c-16-6-30-4-42 4v70c12-8 26-10 42-4z"/>') },
+            { key: 'family', label: 'Familia y mascotas', svg: financeProSvgIcon('<circle cx="34" cy="28" r="15"/><path d="M6 92a28 28 0 0 1 56 0z"/><circle cx="73" cy="40" r="12"/><path d="M54 92a21 21 0 0 1 42 0z"/>') },
+            { key: 'briefcase', label: 'Sueldo / trabajo', svg: financeProSvgIcon('<path d="M34 24v-6a10 10 0 0 1 10-10h12a10 10 0 0 1 10 10v6h20a8 8 0 0 1 8 8v52a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8V32a8 8 0 0 1 8-8zM44 18v6h12v-6zM6 50h88v7H6z"/>', true) },
+            { key: 'coin', label: 'Ingreso extra', svg: financeProSvgIcon('<ellipse cx="50" cy="20" rx="40" ry="14"/><path d="M10 31c0 8 18 14 40 14s40-6 40-14v13c0 8-18 14-40 14S10 52 10 44z"/><path d="M10 55c0 8 18 14 40 14s40-6 40-14v13c0 8-18 14-40 14S10 76 10 68z"/>') },
+            { key: 'trend', label: 'Inversiones', svg: financeProSvgIcon('<rect x="6" y="60" width="24" height="34" rx="5"/><rect x="38" y="40" width="24" height="54" rx="5"/><rect x="70" y="14" width="24" height="80" rx="5"/>') },
+            { key: 'gift', label: 'Regalos', svg: financeProSvgIcon('<circle cx="36" cy="26" r="12"/><circle cx="64" cy="26" r="12"/><rect x="6" y="36" width="40" height="18" rx="4"/><rect x="54" y="36" width="40" height="18" rx="4"/><rect x="12" y="58" width="34" height="36" rx="4"/><rect x="54" y="58" width="34" height="36" rx="4"/>') },
+            { key: 'repeat', label: 'Reembolsos', svg: FINANCE_ICON_REFRESH_BOLD.replace('<svg viewBox="0 0 100 100"', '<svg viewBox="0 0 100 100" width="16" height="16"') },
+            { key: 'plane', label: 'Viajes', svg: financeProSvgIcon('<path d="M50 3c5 0 7 7 7 14v19l37 21v11l-37-11v24l11 8v8l-18-5-18 5v-8l11-8V57L6 68V57l37-21V17c0-7 2-14 7-14z"/>') },
+            { key: 'paw', label: 'Mascotas', svg: financeProSvgIcon('<ellipse cx="50" cy="68" rx="24" ry="20"/><circle cx="18" cy="44" r="11"/><circle cx="37" cy="22" r="11"/><circle cx="63" cy="22" r="11"/><circle cx="82" cy="44" r="11"/>') },
+            { key: 'dumbbell', label: 'Deporte', svg: financeProSvgIcon('<rect x="4" y="34" width="12" height="32" rx="5"/><rect x="18" y="20" width="16" height="60" rx="6"/><rect x="32" y="44" width="36" height="12" rx="3"/><rect x="66" y="20" width="16" height="60" rx="6"/><rect x="84" y="34" width="12" height="32" rx="5"/>') },
+            { key: 'laptop', label: 'Tecnología', svg: financeProSvgIcon('<path d="M16 12h68a8 8 0 0 1 8 8v46H8V20a8 8 0 0 1 8-8zM20 24v32h60V24z"/><path d="M2 72h96v6a10 10 0 0 1-10 10H12A10 10 0 0 1 2 78z"/>', true) },
+            { key: 'sparkle', label: 'Bienestar y belleza', svg: financeProSvgIcon('<path d="M42 6c4 26 14 36 40 40c-26 4-36 14-40 40c-4-26-14-36-40-40c26-4 36-14 40-40z"/><path d="M80 58c2 11 6 15 16 17c-10 2-14 6-16 17c-2-11-6-15-16-17c10-2 14-6 16-17z"/>') },
+            { key: 'key', label: 'Alquileres', svg: financeProSvgIcon('<path d="M30 22a26 26 0 1 1 0 52a26 26 0 1 1 0-52zM30 37a11 11 0 1 0 0 22a11 11 0 1 0 0-22z"/><rect x="50" y="42" width="46" height="12" rx="4"/><rect x="72" y="50" width="11" height="18" rx="3"/><rect x="86" y="50" width="10" height="13" rx="3"/>', true) },
+            { key: 'star', label: 'Coleccionables', svg: financeProSvgIcon('<path d="M50 4l14 29 32 4-23 22 6 32-29-15-29 15 6-32L4 37l32-4z"/>') },
+            { key: 'fuel', label: 'Gasolina', svg: financeProSvgIcon('<path d="M18 6h36a8 8 0 0 1 8 8v74H10V14a8 8 0 0 1 8-8zM20 18v24h32V18z"/><rect x="4" y="84" width="64" height="10" rx="4"/><path d="M62 28h8l18 18v34a10 10 0 0 1-20 0V64h-6v-9h15v25a1 1 0 0 0 2 0V50L66 37h-4z"/>', true) },
+            { key: 'other', label: 'Otros', svg: financeProSvgIcon('<rect x="8" y="8" width="38" height="38" rx="10"/><rect x="54" y="8" width="38" height="38" rx="10"/><rect x="8" y="54" width="38" height="38" rx="10"/><rect x="54" y="54" width="38" height="38" rx="19"/>') }
         ];
         function financeProCategoryIconSvg(key) {
             return (FINANCE_PRO_CATEGORY_ICON_SET.find(i => i.key === key) || FINANCE_PRO_CATEGORY_ICON_SET[FINANCE_PRO_CATEGORY_ICON_SET.length - 1]).svg;

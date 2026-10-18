@@ -169,6 +169,7 @@ montarCerebro();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-18', rama: 'todos', nombre: 'semanas con el dedo y apuntar ocio', para: 'quien usa bitácora en el móvil.', texto: 'En el inicio del móvil, desliza la semana para ir a la siguiente o a la anterior (en la vista de mes, cambia de mes). Apuntar entiende «serie …», «peli …», «libro …» y «evento …», el horario de Estudios se ve por días y la app se pone al día sola al volver a ella.' },
     { fecha: '2026-10-18', rama: 'todos', nombre: 'importar el excel del banco', para: 'quien lleva sus cuentas en finanzas.', texto: 'El extracto de Ibercaja, Santander y otros bancos se importa tal cual lo descargas en Excel, también desde el móvil, aunque traiga arriba los datos de la cuenta.' },
     { fecha: '2026-10-17', rama: 'todos', nombre: 'apuntar, más listo', para: 'quien apunta al vuelo.', texto: 'Varias cosas en una frase, y cada una a su sitio: exámenes y entregas en su asignatura, cumpleaños, lo que se repite, clases, viajes, gastos con su categoría y lo que falta en casa.' },
     { fecha: '2026-10-17', rama: 'home', nombre: 'recetas', para: 'quien cocina y hace la compra.', texto: 'Tus recetas con sus ingredientes y lo que te cuestan según tus tickets; con un toque, lo que falte pasa a la lista de la compra.' },

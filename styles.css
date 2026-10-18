@@ -8679,3 +8679,20 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { box-sizing:border-b
 .m-generico .culture-barra .culture-tab-largo { display:none; }
 .m-generico .culture-barra .culture-tab-corto { display:block; white-space:nowrap; }
 .m-generico .culture-barra .culture-tab-count { margin:0; font-size:11px; }
+
+/* La tira de la semana y el mes se deslizan con el dedo (mobileDeslizarFranja):
+   el navegador se queda solo con el desplazamiento vertical. */
+.m-semana-tira, .m-mes-puntos { touch-action:pan-y; -webkit-user-select:none; user-select:none; will-change:transform; }
+
+/* Horario de Estudios en el móvil: un día cada vez, en filas. */
+.m-horario-dias { display:grid; grid-template-columns:repeat(auto-fit, minmax(0, 1fr)); gap:6px; margin-bottom:6px; }
+.m-horario-dias button { display:flex; flex-direction:column; align-items:center; gap:2px; min-height:52px; padding:8px 2px; border:1px solid var(--border); border-radius:10px; background:var(--m-superficie, var(--bg-card)); color:var(--text-secondary); font-family:var(--font-family); font-size:14px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.m-horario-dias button small { font-size:11px; font-weight:600; opacity:.7; min-height:13px; font-variant-numeric:tabular-nums; }
+.m-horario-dias button.hoy { color:var(--m-acento); }
+.m-horario-dias button.activo { background:var(--text-primary); border-color:var(--text-primary); color:var(--bg-app); }
+.m-horario-lista { display:flex; flex-direction:column; }
+.m-horario-fila { display:flex; align-items:center; gap:12px; min-height:48px; padding:6px 2px; border-bottom:1px solid var(--border); }
+.m-horario-hora { width:46px; flex-shrink:0; font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--text-secondary); }
+.m-horario-punto { width:9px; height:9px; flex-shrink:0; border-radius:50%; background:var(--text-secondary); opacity:.6; }
+.m-horario-asig { flex:1; min-width:0; font-size:16px; font-weight:600; line-height:1.25; color:var(--text-primary); }
+.m-horario-fila small { flex-shrink:0; font-size:12px; color:var(--text-secondary); }

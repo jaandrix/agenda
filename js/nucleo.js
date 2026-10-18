@@ -980,6 +980,7 @@
             if (!shell.dataset.plegado) {
                 shell.dataset.plegado = '1';
                 shell.addEventListener('scroll', () => mobilePlegarTitulo(shell), { passive: true });
+                shell.addEventListener('pointerdown', mobileDeslizarFranja);
             }
             if (mobileLastEffectView !== view) {
                 mobileLastEffectView = view;
@@ -1156,6 +1157,61 @@
             mobileMes = { y: d.getFullYear(), m: d.getMonth() };
             const pagina = document.querySelector('#mobile-shell .m-pagina');
             if (pagina) pagina.innerHTML = renderAvisoPrueba(true) + renderMobileInicio();
+        }
+
+        // Deslizar la tira de la semana (o el mes en bolitas) la lleva entera a
+        // la semana o al mes de al lado. La tira sigue al dedo; si no se llega
+        // lejos ni se suelta con fuerza, vuelve a su sitio. Solo cuenta un
+        // gesto horizontal: el vertical sigue moviendo la página, y un toque
+        // sigue eligiendo el día.
+        function mobileDeslizarFranja(e) {
+            const tira = e.target.closest?.('.m-semana-tira, .m-mes-puntos');
+            if (!tira || (e.pointerType === 'mouse' && e.button !== 0)) return;
+            const x0 = e.clientX, y0 = e.clientY, t0 = performance.now();
+            const ancho = tira.offsetWidth || 300;
+            let dx = 0, horizontal = null;
+            const mover = ev => {
+                dx = ev.clientX - x0;
+                if (horizontal === null && Math.abs(dx) + Math.abs(ev.clientY - y0) > 8) {
+                    horizontal = Math.abs(dx) > Math.abs(ev.clientY - y0);
+                    if (horizontal) try { tira.setPointerCapture(ev.pointerId); } catch (_) { /* el puntero ya se soltó */ }
+                }
+                if (!horizontal) return;
+                tira.style.transition = 'none';
+                tira.style.transform = `translateX(${dx}px)`;
+                tira.style.opacity = String(1 - Math.min(Math.abs(dx) / ancho, 1) * .5);
+            };
+            const soltar = ev => {
+                tira.removeEventListener('pointermove', mover);
+                tira.removeEventListener('pointerup', soltar);
+                tira.removeEventListener('pointercancel', soltar);
+                if (!horizontal) return;
+                // El clic que sigue a un arrastre no debe elegir un día.
+                const tragar = c => { c.stopPropagation(); c.preventDefault(); };
+                tira.addEventListener('click', tragar, { capture: true, once: true });
+                setTimeout(() => tira.removeEventListener('click', tragar, { capture: true }), 350);
+                const rapido = Math.abs(dx) / Math.max(1, performance.now() - t0) > .45;
+                if (ev.type === 'pointerup' && (Math.abs(dx) > ancho * .22 || (rapido && Math.abs(dx) > 24))) {
+                    const paso = dx < 0 ? 1 : -1;
+                    tira.style.transition = 'transform .14s ease-in, opacity .14s ease-in';
+                    tira.style.transform = `translateX(${-paso * ancho * .5}px)`;
+                    tira.style.opacity = '0';
+                    setTimeout(() => {
+                        if (!tira.classList.contains('m-mes-puntos')) { mobileCambiarSemana(paso); return; }
+                        mobileCambiarMes(paso);
+                        const pagina = document.querySelector('#mobile-shell .m-pagina');
+                        pagina?.style.setProperty('--m-dx', paso > 0 ? '24px' : '-24px');
+                        pagina?.querySelector('.m-mes-puntos')?.classList.add('m-cambia-dia');
+                    }, 130);
+                } else {
+                    tira.style.transition = 'transform .24s var(--ease-out), opacity .24s ease';
+                    tira.style.transform = '';
+                    tira.style.opacity = '';
+                }
+            };
+            tira.addEventListener('pointermove', mover);
+            tira.addEventListener('pointerup', soltar);
+            tira.addEventListener('pointercancel', soltar);
         }
 
         function renderMobileInicio(entra) {
@@ -1493,6 +1549,38 @@
                 }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin movimientos.</div>'}`;
         }
 
+        // El horario de la semana, un día cada vez: los días arriba y, debajo,
+        // las clases del elegido en filas, con las seguidas de la misma
+        // asignatura juntas («2 sesiones») y el color de su asignatura.
+        let mobileHorarioDia = null;
+        function renderMobileHorario() {
+            const claveHoy = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'][new Date().getDay()];
+            const dias = STUDIES_DAYS.filter(d => !['sab', 'dom'].includes(d.key) || (studies.schedule[d.key] || []).length);
+            if (!dias.some(d => (studies.schedule[d.key] || []).length)) return '<div class="m-vacio m-vacio-peque">sin horario todavía.</div>';
+            const elegido = dias.some(d => d.key === mobileHorarioDia) ? mobileHorarioDia : dias.some(d => d.key === claveHoy) ? claveHoy : dias[0].key;
+            const norm = t => stripAccents(String(t || '').toLowerCase()).replace(/[^a-z0-9ñ ]/g, '').trim();
+            const colorDe = nombre => {
+                const n = norm(nombre);
+                const s = studies.subjects.find(x => norm(x.name) === n) || studies.subjects.find(x => n && (norm(x.name).startsWith(n.split(' ')[0]) || n.startsWith(norm(x.name).split(' ')[0])));
+                return s?.color || '';
+            };
+            const bloques = (studies.schedule[elegido] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            const grupos = [];
+            bloques.forEach(b => {
+                const ultimo = grupos[grupos.length - 1];
+                if (ultimo && norm(ultimo.subject) === norm(b.subject)) ultimo.n++;
+                else grupos.push({ time: b.time, subject: b.subject, n: 1 });
+            });
+            return `<div class="m-horario-dias">${dias.map(d => {
+                    const n = (studies.schedule[d.key] || []).length;
+                    return `<button class="${d.key === elegido ? 'activo' : ''} ${d.key === claveHoy ? 'hoy' : ''}" onclick="mobileHorarioDia='${d.key}';document.getElementById('m-horario').innerHTML=renderMobileHorario()"><span>${escapeHtml(d.label.slice(0, 3).toLowerCase())}.</span><small>${n || ''}</small></button>`;
+                }).join('')}</div>
+                ${grupos.length ? `<div class="m-horario-lista">${grupos.map(g => {
+                    const color = colorDe(g.subject);
+                    return `<div class="m-horario-fila"><span class="m-horario-hora">${escapeHtml(g.time || '')}</span><i class="m-horario-punto" ${color ? `style="background:${escapeHtml(color)}"` : ''}></i><span class="m-horario-asig">${escapeHtml(g.subject || '')}</span>${g.n > 1 ? `<small>${g.n} sesiones</small>` : ''}</div>`;
+                }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin clases este día.</div>'}`;
+        }
+
         function renderMobileStudies() {
             const hoy = todayISO();
             const ex = nextUpcomingExam();
@@ -1518,11 +1606,8 @@
                 ${clasesHoy.length ? `<div class="m-lista">${clasesHoy.map(b => `<div class="m-fila"><span class="m-fila-hora">${escapeHtml(b.time || '')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(b.subject || '')}</div></div></div>`).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin clases hoy.</div>'}
                 ${entregas.length ? `<div class="m-bloque-cab"><div class="m-etiqueta">entregas.</div></div>
                 <div class="m-lista">${entregas.slice(0, 6).map(a => `<div class="m-fila"><span class="m-fila-hora">${fechaCorta(a.date)}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(a.title || 'trabajo')}</div><div class="m-fila-meta">${escapeHtml(a.asignatura)}</div></div></div>`).join('')}</div>` : ''}
-                <div class="m-bloque-cab"><div class="m-etiqueta">semana.</div></div>
-                <div class="m-semana">${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => {
-                    const bloques = (studies.schedule[d.key] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-                    return `<div class="m-semana-dia ${d.key === claveHoy ? 'hoy' : ''}"><div class="m-semana-letra">${escapeHtml(d.label.slice(0, 3).toLowerCase())}.</div><div class="m-semana-clases">${bloques.length ? bloques.map(b => `<span><b>${escapeHtml(b.time || '')}</b> ${escapeHtml(b.subject || '')}</span>`).join('') : '<span class="m-fila-meta">—</span>'}</div></div>`;
-                }).join('')}</div>
+                <div class="m-bloque-cab"><div class="m-etiqueta">horario.</div></div>
+                <div id="m-horario">${renderMobileHorario()}</div>
                 <div class="m-bloque-cab"><div class="m-etiqueta">asignaturas.</div><button class="m-mini" onclick="openAddSubject()">+ añadir.</button></div>
                 <div class="m-generico m-generico-sin-zoom studies-subjects-list">
                     ${asignaturasEnCurso().length ? asignaturasEnCurso().map((s, i, l) => renderSubjectRow(s, i, l.length)).join('') : '<div class="m-vacio m-vacio-peque">ninguna asignatura todavía.</div>'}
