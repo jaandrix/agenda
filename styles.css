@@ -3361,7 +3361,7 @@
             background:
                 linear-gradient(var(--landing-grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--landing-grid-line) 1px, transparent 1px);
-            background-size: auto, auto, 54px 54px, 54px 54px;
+            background-size: 54px 54px;
         }
         /* ===== LANDING (scroll por secciones; movimiento en js/landing.js) ===== */
         .landing-topbar {
@@ -7859,7 +7859,7 @@ button.landing-about-link { border:0; background:none; font-family:inherit; curs
     background:
         linear-gradient(rgba(239,237,227,.07) 1px, transparent 1px),
         linear-gradient(90deg, rgba(239,237,227,.07) 1px, transparent 1px);
-    background-size:auto, 54px 54px, 54px 54px;
+    background-size:54px 54px;
 }
 .login-tarjeta { position:relative; display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); width:min(780px, calc(100% - 32px)); min-height:460px; margin:auto; border-radius:28px; overflow:hidden; background:#302f2c; border:1px solid rgba(239,237,227,.12); box-shadow:0 50px 90px -40px rgba(0,0,0,.8); }
 #login-screen #login-box { max-width:none; display:flex; flex-direction:column; justify-content:center; padding:44px 42px; border:0; border-radius:0; background:none; }
