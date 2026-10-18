@@ -311,7 +311,7 @@ a menor resolución.
 - **Fechas:** `todayISO()` e `isoLocal(d)` son en hora local. Nunca `toISOString().slice(0, 10)` para "hoy" (en UTC,
   de 0:00 a 2:00 daba el día anterior).
 - **Ramas de apartados:** `RAMAS_APARTADOS` en ajustes.js agrupa los opcionales (#school, #home, #work, #mind).
-- **Importar extractos:** primero la coincidencia exacta, luego pendientes (≤3 días, importe exacto antes que
+- **Importar extractos:** la fecha es la de inicio si el extracto la trae (`colInicio`; al completarse un pendiente se queda la más temprana). Al final de cada importación, `financeProFusionarManuales` funde los apuntes a mano sueltos con su gemelo del banco (también de otra cuenta si el importe lleva céntimos) y `financeProEmparejarTraspasos` convierte en traspaso la salida y la entrada entre cuentas propias (importe exacto, ≤2 días, los dos conceptos con pinta de transferencia, nunca Bizum; el otro lado queda en `claveImport`). Después, primero la coincidencia exacta, luego pendientes (≤3 días, importe exacto antes que
   aproximado, sin reutilizar), recuento de claves (dos cargos iguales cuentan dos) y, si el CSV trae saldo
   (`Balance`), `financeProCuadreExtracto` compara y enseña qué sobra o falta. Marcas `viaje` (fuera de
   presupuestos y ritmo; pestaña Gastos del viaje) y `ahorro` (bolsillos de Revolut, ni ingreso ni gasto).

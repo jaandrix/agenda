@@ -183,15 +183,93 @@
             financePro.transactions.push(tx);
         }
 
+        // Un apunte a mano en otra cuenta (Apuntar usa la última que se usó)
+        // también vale si el importe lleva céntimos: 8,42 € no coincide por
+        // casualidad. Con uno redondo se sigue exigiendo la misma cuenta.
         function financeProBuscarManual(real) {
             let mejor = null, mejorDias = Infinity;
             financePro.transactions.forEach(t => {
-                if (!t.manual || t.conciliado || t.type !== real.type || t.account !== real.account) return;
+                if (!t.manual || t.conciliado || t.type !== real.type) return;
+                if (t.account !== real.account && financeProImporteRedondo(real.amount)) return;
                 if (Math.abs(Number(t.amount) - Number(real.amount)) >= 0.005) return;
                 const dias = Math.abs((new Date(t.date) - new Date(real.date)) / 86400000);
                 if (dias <= 3 && dias < mejorDias) { mejor = t; mejorDias = dias; }
             });
             return mejor;
+        }
+
+        // Transferencias entre cuentas propias (el sueldo llega a una cuenta y
+        // de ahí se reparte): la salida de una y la entrada en otra, mismo
+        // importe exacto, como mucho 2 días de diferencia y los dos conceptos
+        // con pinta de transferencia (un Bizum a un amigo no), son un traspaso y no un gasto y
+        // un ingreso. Se guarda uno solo; el concepto del otro lado queda en
+        // claveImport para que reimportar su extracto lo siga reconociendo.
+        const TRASPASO_CONCEPTO = /transf|traspas|top.?up|\b(?:to|from|de|a)\s+(?:eur|cuenta|ahorro)|\bto [a-z]|\bfrom [a-z]|enviad|recibid|emitid|ordenante|beneficiari|reintegro|ingreso en cuenta|cuenta propia/i;
+        function financeProEmparejarTraspasos(fechas) {
+            if (!fechas?.length) return 0;
+            const desde = fechas.reduce((a, b) => a < b ? a : b), hasta = fechas.reduce((a, b) => a > b ? a : b);
+            const enRango = t => t.date >= financeProSumarDias(desde, -2) && t.date <= financeProSumarDias(hasta, 2);
+            const libre = t => !t.ahorro && !t.recurringEntryId && !t.programadoId && !t.pendiente && enRango(t);
+            const salidas = financePro.transactions.filter(t => t.type === 'expense' && libre(t));
+            const entradas = financePro.transactions.filter(t => t.type === 'income' && libre(t));
+            const usadas = new Set();
+            let n = 0;
+            salidas.forEach(sal => {
+                const nota = sal.bankNote ?? sal.note ?? '';
+                let mejor = null, mejorDias = Infinity;
+                entradas.forEach(ent => {
+                    if (usadas.has(ent) || ent.account === sal.account || Math.abs(Number(ent.amount) - Number(sal.amount)) >= 0.005) return;
+                    const otra = ent.bankNote ?? ent.note ?? '';
+                    if (!TRASPASO_CONCEPTO.test(nota) || !TRASPASO_CONCEPTO.test(otra) || /bizum/i.test(nota + ' ' + otra)) return;
+                    const dias = Math.abs((new Date(ent.date) - new Date(sal.date)) / 86400000);
+                    if (dias <= 2 && dias < mejorDias) { mejor = ent; mejorDias = dias; }
+                });
+                if (!mejor) return;
+                usadas.add(mejor);
+                const otraNota = mejor.bankNote ?? mejor.note ?? '';
+                Object.assign(sal, { type: 'transfer', transferTo: mejor.account, category: undefined, needsReview: false, categoriaAuto: undefined });
+                if (!sal.claveImport) sal.claveImport = `${mejor.account}|${mejor.date}|${mejor.amount}|${otraNota}`;
+                financePro.transactions = financePro.transactions.filter(t => t !== mejor);
+                n++;
+            });
+            return n;
+        }
+
+        function financeProSumarDias(iso, k) {
+            const d = new Date(iso + 'T12:00:00');
+            d.setDate(d.getDate() + k);
+            return isoLocal(d);
+        }
+
+        // Si se apunta un gasto a mano cuando el extracto ya lo había traído
+        // (pendiente o no), al importar no había ninguna fila nueva con la
+        // que emparejarlo y quedaban los dos (los peajes de AUCAT). Tras cada
+        // importación, en las fechas del extracto, cada apunte a mano suelto
+        // se funde con su gemelo del banco (mismo tipo, importe exacto, ±3
+        // días, el más cercano): se quedan la nota y la categoría del usuario
+        // y la fecha, la cuenta y el concepto del banco.
+        function financeProFusionarManuales(cuenta, fechas) {
+            if (!fechas.length) return 0;
+            const desde = fechas.reduce((a, b) => a < b ? a : b), hasta = fechas.reduce((a, b) => a > b ? a : b);
+            const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000);
+            let fusionados = 0;
+            const banco = financePro.transactions.filter(t => !t.manual && t.account === cuenta && t.type !== 'transfer' && !t.recurringEntryId && !t.programadoId && t.date >= desde && t.date <= hasta);
+            banco.forEach(b => {
+                let mejor = null, mejorDias = Infinity;
+                financePro.transactions.forEach(t => {
+                    if (!t.manual || t.conciliado || t.type !== b.type || Math.abs(Number(t.amount) - Number(b.amount)) >= 0.005) return;
+                    if (t.account !== cuenta && financeProImporteRedondo(b.amount)) return;
+                    const d = dias(t.date, b.date);
+                    if (d <= 3 && d < mejorDias) { mejor = t; mejorDias = d; }
+                });
+                if (!mejor) return;
+                Object.assign(mejor, { date: b.date, account: cuenta, bankNote: b.bankNote ?? b.note, conciliado: true, pendiente: b.pendiente || undefined });
+                if (!mejor.category && b.category) mejor.category = b.category;
+                if (mejor.category) mejor.needsReview = false;
+                financePro.transactions = financePro.transactions.filter(t => t !== b);
+                fusionados++;
+            });
+            return fusionados;
         }
 
         // Mismo concepto del banco y misma cuenta son la señal fuerte; el
@@ -2921,14 +2999,21 @@
         }
 
         function financeProResumenImport(r) {
-            const { added, skipped, conciliados, completados, anulados, categorizados } = r;
-            return `${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${conciliados ? `, ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${completados ? `, ${completados} pendiente${completados === 1 ? '' : 's'} ya completado${completados === 1 ? '' : 's'}` : ''}${anulados ? `, ${anulados} pendiente${anulados === 1 ? '' : 's'} anulado${anulados === 1 ? '' : 's'} y retirado${anulados === 1 ? '' : 's'}` : ''}${categorizados ? `, ${categorizados} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : ''}${skipped ? `, ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`;
+            const { added, skipped, conciliados, completados, anulados, categorizados, traspasos } = r;
+            return `${added} movimiento${added === 1 ? '' : 's'} importado${added === 1 ? '' : 's'}${traspasos ? `, ${traspasos} ${traspasos === 1 ? 'traspaso' : 'traspasos'} entre tus cuentas` : ''}${conciliados ? `, ${conciliados} fusionado${conciliados === 1 ? '' : 's'} con movimientos ya registrados` : ''}${completados ? `, ${completados} pendiente${completados === 1 ? '' : 's'} ya completado${completados === 1 ? '' : 's'}` : ''}${anulados ? `, ${anulados} pendiente${anulados === 1 ? '' : 's'} anulado${anulados === 1 ? '' : 's'} y retirado${anulados === 1 ? '' : 's'}` : ''}${categorizados ? `, ${categorizados} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : ''}${skipped ? `, ${skipped} omitido${skipped === 1 ? '' : 's'}` : ''}`;
         }
 
         function financeProEjecutarImport(imp) {
             const m = imp.mapping;
             financePro.cuentaImport = m.account;
             const rows = m.hasHeader ? imp.rows.slice(1) : imp.rows;
+            // Si el extracto trae la fecha de inicio (Revolut), esa es la del
+            // gasto aunque se eligiera la de finalización: si no, un pago que
+            // se completaba días después quedaba con la fecha de completado.
+            const cabecera = m.hasHeader ? imp.rows[0].map(h => String(h || '').trim().toLowerCase()) : [];
+            const colInicio = cabecera.findIndex(h => h === 'started date' || h === 'fecha de inicio');
+            const fechaInicio = r => colInicio >= 0 ? financeProParseDate(r[colInicio]) : null;
+            const fechasArchivo = [];
             // Una transferencia sale en el extracto de las dos cuentas (gasto en
             // una, ingreso en la otra), y un movimiento importado que luego se
             // editó guarda en claveImport cómo venía del banco: si no, al
@@ -2998,13 +3083,14 @@
                     const d = financeProParseDate(cell);
                     if (d) altDates.push(d);
                 });
-                let date = financeProParseDate(r[m.date]);
+                let date = fechaInicio(r) || financeProParseDate(r[m.date]);
                 if (!date) {
                     // Fecha vacía en la columna elegida — típico de "fecha de
                     // finalización" en un movimiento todavía pendiente.
                     date = altDates[0] || null;
                 }
                 if (!date) { skipped++; return; }
+                fechasArchivo.push(date);
                 const description = (r[m.description] || '').trim();
                 let amount, type;
                 if (m.splitAmount) {
@@ -3055,7 +3141,7 @@
                 }
                 if (pendiente) {
                     if (esPendiente) { pendiente.amount = amount; skipped++; return; }
-                    Object.assign(pendiente, { date, amount });
+                    Object.assign(pendiente, { date: pendiente.date && pendiente.date < date ? pendiente.date : date, amount });
                     delete pendiente.pendiente;
                     registrar(dedupeKey);
                     completados++;
@@ -3138,7 +3224,7 @@
                 // para que reimportar el extracto lo siga reconociendo.
                 const manual = manualPrevio;
                 if (manual) {
-                    Object.assign(manual, { date, bankNote: description, conciliado: true, pendiente: esPendiente || undefined });
+                    Object.assign(manual, { date, account: m.account, bankNote: description, conciliado: true, pendiente: esPendiente || undefined });
                     pendientesUsados.add(manual);
                     if (!manual.note && description) manual.note = description;
                     if (!manual.category && category) manual.category = category;
@@ -3156,8 +3242,10 @@
                 pendientesUsados.add(financePro.transactions[financePro.transactions.length - 1]);
                 added++;
             });
+            conciliados += financeProFusionarManuales(m.account, fechasArchivo);
+            const traspasos = financeProEmparejarTraspasos(fechasArchivo);
             const categorizados = financeProAutoCategorizar();
-            return { added, skipped, conciliados, completados, anulados, categorizados };
+            return { added, skipped, conciliados, completados, anulados, categorizados, traspasos };
         }
 
         // ============================================================

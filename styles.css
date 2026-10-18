@@ -8725,3 +8725,13 @@ body.papel .m-finanzas-ritmo .negativa { color:#a3243b; }
    tiempo, el enlace de debajo se montaba sobre el día de la semana. */
 .m-hero-lado { flex-direction:row-reverse; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:6px 8px; }
 .m-hero-lado .m-hoy-link { position:static; margin:0; }
+
+/* Modales en el móvil: la cabecera con la X se queda arriba al desplazarse
+   (en editar evento la hoja ocupaba toda la pantalla, la X se iba con el
+   scroll y solo se podía salir guardando) y la X es más grande. */
+@media (max-width: 768px) {
+    .modal-sheet > .modal-title:first-child { position:sticky; top:-20px; z-index:3; margin-top:-20px; padding-top:20px; padding-bottom:10px; background:var(--bg-modal); }
+    .modal-sheet .modal-close { width:44px; height:44px; flex-shrink:0; }
+    .modal-sheet .modal-close .ico, .modal-sheet .modal-close svg { width:16px; height:16px; }
+}
+.apuntar-recientes { padding-top:6px; }

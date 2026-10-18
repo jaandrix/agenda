@@ -169,6 +169,7 @@ montarCerebro();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-18', rama: 'todos', nombre: 'traspasos solos entre tus cuentas', para: 'quien reparte el sueldo entre varias cuentas.', texto: 'Al importar, la transferencia que sale de una cuenta y entra en otra tuya queda como traspaso, sin contar como ingreso ni gasto. Y lo apuntado a mano ya no se duplica con el cargo del banco.' },
     { fecha: '2026-10-18', rama: 'todos', nombre: 'finanzas más completas en el móvil', para: 'quien lleva sus cuentas desde el móvil.', texto: 'El ritmo del mes frente al anterior, en qué se va el dinero y los próximos cargos. La semana del inicio pasa como un carrusel, las pestañas cambian con animación y los iconos de categorías son nuevos.' },
     { fecha: '2026-10-18', rama: 'todos', nombre: 'semanas con el dedo y apuntar ocio', para: 'quien usa bitácora en el móvil.', texto: 'En el inicio del móvil, desliza la semana para ir a la siguiente o a la anterior (en la vista de mes, cambia de mes). Apuntar entiende «serie …», «peli …», «libro …» y «evento …», el horario de Estudios se ve por días y la app se pone al día sola al volver a ella.' },
     { fecha: '2026-10-18', rama: 'todos', nombre: 'importar el excel del banco', para: 'quien lleva sus cuentas en finanzas.', texto: 'El extracto de Ibercaja, Santander y otros bancos se importa tal cual lo descargas en Excel, también desde el móvil, aunque traiga arriba los datos de la cuenta.' },
