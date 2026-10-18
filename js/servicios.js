@@ -467,6 +467,181 @@
             const f = servicios.festivos;
             return `<div class="serv-ajustes">
                 <div class="serv-ajustes-fila"><div><b>festivos y puentes.</b><span>${f?.pais ? `${escapeHtml(f.ciudad || '')}${f.region ? `, ${escapeHtml(FESTIVOS_REGIONES[f.region] || '')}` : ''}${(f.locales || []).length ? `, ${f.locales.length} ${f.locales.length === 1 ? 'festivo local' : 'festivos locales'}` : ''}.` : 'Sin ciudad elegida.'}</span></div><button class="btn-secondary" style="width:auto" onclick="openAjustesFestivos()">${f?.pais ? 'cambiar.' : 'elegir ciudad.'}</button></div>
+                <div class="serv-ajustes-fila"><div><b>tus equipos.</b><span>${(servicios.equipos || []).length ? escapeHtml(servicios.equipos.map(e => e.corto || e.nombre).join(', ')) + '.' : 'Sus partidos, solos en tu calendario.'}</span></div><button class="btn-secondary" style="width:auto" onclick="openAjustesEquipos()">${(servicios.equipos || []).length ? 'cambiar.' : 'elegir.'}</button></div>
+                <label class="serv-ajustes-fila"><div><b>estrenos de tus series.</b><span>Las temporadas nuevas de las series que tienes en Ocio, y los episodios de las que estás viendo.</span></div><input type="checkbox" ${estrenosActivos() ? 'checked' : ''} onchange="servicios.estrenos=this.checked;servGuardarDatos();render()"></label>
                 <label class="serv-ajustes-fila"><div><b>la luz más barata.</b><span>Precio por horas (PVPC, península) en el planificador y en las tareas con lavadora, horno, lavavajillas...</span></div><input type="checkbox" ${luzActiva() ? 'checked' : ''} onchange="servicios.luz=this.checked;servGuardarDatos();render()"></label>
             </div>`;
+        }
+
+        // ------------------------------------------------------------
+        //  TUS EQUIPOS (ESPN y TheSportsDB, a través de la función
+        //  `deportes`) y LOS ESTRENOS DE TUS SERIES (TVmaze, directo).
+        //  Entran en el calendario como entradas de solo lectura (srv_...):
+        //  al abrirlas se pueden apuntar como evento propio u ocultar.
+        // ------------------------------------------------------------
+        async function deportesPedir(cuerpo) {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) return {};
+            const r = await fetch(`${SUPABASE_URL}/functions/v1/deportes`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(cuerpo) });
+            return r.ok ? r.json() : {};
+        }
+
+        const partidosMemoria = {};
+        const partidosPidiendo = {};
+        function partidosDe(eq) {
+            if (partidosMemoria[eq.id]) return partidosMemoria[eq.id];
+            const g = servLeer('bitacora-partidos-' + eq.id);
+            if (g && Date.now() - g.cuando < 12 * 3600e3) return (partidosMemoria[eq.id] = g.partidos);
+            if (!partidosPidiendo[eq.id]) {
+                partidosPidiendo[eq.id] = deportesPedir({ accion: 'calendario', deporte: eq.deporte, liga: eq.liga, id: eq.id }).then(d => {
+                    if (Array.isArray(d.partidos)) { partidosMemoria[eq.id] = d.partidos; servGuardar('bitacora-partidos-' + eq.id, { cuando: Date.now(), partidos: d.partidos }); servRepintar(); }
+                }).catch(() => {}).finally(() => { setTimeout(() => { delete partidosPidiendo[eq.id]; }, 10 * 60000); });
+            }
+            return g?.partidos || [];
+        }
+
+        const seriesMemoria = {};
+        let seriesCola = null;
+        function estrenosActivos() { return servicios.estrenos !== false; }
+        // La próxima emisión de cada serie que sigues (TVmaze), de una en
+        // una y guardada un día: no hace falta más.
+        function seriesSeguidas() { return entries.filter(e => e.type === 'series' && e.title && !/abandon/i.test(e.status || '')).slice(0, 30); }
+        function estrenoDe(e) {
+            if (seriesMemoria[e.id] !== undefined) return seriesMemoria[e.id];
+            const g = servLeer('bitacora-serie-' + e.id);
+            if (g && Date.now() - g.cuando < 24 * 3600e3 && g.titulo === e.title) return (seriesMemoria[e.id] = g.v);
+            if (!seriesCola) seriesCola = (async () => {
+                for (const s of seriesSeguidas()) {
+                    const ya = servLeer('bitacora-serie-' + s.id);
+                    if (ya && Date.now() - ya.cuando < 24 * 3600e3 && ya.titulo === s.title) { seriesMemoria[s.id] = ya.v; continue; }
+                    try {
+                        const d = await fetch(`https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(s.title)}&embed=nextepisode`).then(r => r.ok ? r.json() : null);
+                        const n = d?._embedded?.nextepisode;
+                        seriesMemoria[s.id] = n?.airdate ? { fecha: n.airdate, hora: n.airtime || '', temporada: n.season, episodio: n.number, nombre: n.name || '', canal: d.network?.name || d.webChannel?.name || '' } : null;
+                        servGuardar('bitacora-serie-' + s.id, { cuando: Date.now(), titulo: s.title, v: seriesMemoria[s.id] });
+                    } catch (err) { seriesMemoria[s.id] = null; }
+                    await new Promise(r => setTimeout(r, 400));
+                }
+                servRepintar();
+            })();
+            return g?.v || null;
+        }
+
+        function servDiaLocal(isoUtc) {
+            const d = new Date(isoUtc);
+            return { fecha: isoLocal(d), hora: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` };
+        }
+
+        // Lo que estos servicios ponen en un día del calendario.
+        function serviciosCalendario(iso) {
+            const res = [];
+            const ocultos = new Set(servicios.ocultos || []);
+            const apuntados = new Set(entries.map(e => e.servicioId).filter(Boolean));
+            (servicios.equipos || []).forEach(eq => partidosDe(eq).forEach(p => {
+                const { fecha, hora } = servDiaLocal(p.fecha);
+                const id = 'srv_p_' + p.id;
+                if (fecha !== iso || ocultos.has(id) || apuntados.has(id)) return;
+                res.push({ id, type: 'event', eventType: 'deportes', title: p.local ? `${eq.corto} - ${p.rival}` : `${p.rival} - ${eq.corto}`, date: iso, time: p.horaConfirmada ? hora : '', place: p.estadio || '', notes: p.competicion || '', categoryId: getCategoryIdForType('event'), tags: [], _servicio: 'partido', _datos: { ...p, equipo: eq } });
+            }));
+            if (estrenosActivos()) seriesSeguidas().forEach(s => {
+                const n = estrenoDe(s);
+                if (!n || n.fecha !== iso) return;
+                const viendo = /viendo/i.test(s.status || '');
+                if (!viendo && n.episodio !== 1) return;
+                const id = `srv_s_${s.id}_${n.temporada}_${n.episodio}`;
+                if (ocultos.has(id) || apuntados.has(id)) return;
+                res.push({ id, type: 'event', eventType: 'cine', title: n.episodio === 1 ? `${s.title}: temporada ${n.temporada}` : `${s.title}: nuevo episodio`, date: iso, time: '', place: n.canal || '', notes: n.nombre || '', categoryId: getCategoryIdForType('event'), tags: [], _servicio: 'serie', _datos: { ...n, serie: s.title } });
+            });
+            return res;
+        }
+
+        function servicioPorId(id) {
+            if (!/^srv_[ps]_/.test(String(id))) return null;
+            const hoy = todayISO();
+            for (let k = -3; k < 400; k++) { const x = serviciosCalendario(servMasDias(hoy, k)).find(e => e.id === id); if (x) return x; }
+            return null;
+        }
+
+        function openServicioDetalle(id) {
+            const e = servicioPorId(id);
+            if (!e) return;
+            const d = e._datos;
+            const escudo = (src, alt) => src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy">` : `<span>${escapeHtml(String(alt || '?').charAt(0))}</span>`;
+            showModal(`
+                <div class="modal-title">${e._servicio === 'partido' ? 'partido.' : 'estreno.'}</div>
+                ${e._servicio === 'partido' ? `
+                <div class="partido-cara">
+                    <div>${escudo(d.local ? d.equipo.escudo : d.rivalEscudo, d.local ? d.equipo.nombre : d.rival)}<b>${escapeHtml(d.local ? d.equipo.corto : d.rival)}</b></div>
+                    <i>-</i>
+                    <div>${escudo(d.local ? d.rivalEscudo : d.equipo.escudo, d.local ? d.rival : d.equipo.nombre)}<b>${escapeHtml(d.local ? d.rival : d.equipo.corto)}</b></div>
+                </div>
+                <p class="partido-datos">${servFecha(e.date)}${e.time ? `, a las ${e.time}` : ', hora por confirmar'}.<br>${escapeHtml(d.competicion || '')}${d.estadio ? `, ${escapeHtml(d.estadio)}` : ''}.</p>`
+                : `<p class="partido-datos"><b>${escapeHtml(e.title)}</b><br>${servFecha(e.date)}${d.canal ? `, en ${escapeHtml(d.canal)}` : ''}.${d.nombre ? `<br>«${escapeHtml(d.nombre)}»` : ''}</p>`}
+                <button class="btn-modal-primary" onclick="servicioApuntar('${e.id}')">apuntar en mi calendario.</button>
+                <button class="btn-secondary" style="margin-top:8px" onclick="servicioOcultar('${e.id}')">no me interesa este.</button>
+                <p class="finance-modal-note">${e._servicio === 'partido' ? 'Sale porque sigues a este equipo (Ajustes, dónde vives).' : 'Sale porque tienes esta serie en Ocio.'} Al apuntarlo pasa a ser un evento tuyo, con su aviso una hora antes.</p>
+            `);
+        }
+
+        async function servicioApuntar(id) {
+            const e = servicioPorId(id);
+            if (!e) return;
+            entries.push({ id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), type: 'event', eventType: e.eventType, title: e.title, date: e.date, time: e.time, place: e.place, notes: e.notes, categoryId: e.categoryId, tags: [], servicioId: e.id });
+            filteredEntries = [...entries];
+            closeModal();
+            render();
+            await servGuardarDatos();
+            showToast('Apuntado en tu calendario');
+        }
+
+        async function servicioOcultar(id) {
+            servicios.ocultos = [...new Set([...(servicios.ocultos || []), id])].slice(-300);
+            closeModal();
+            render();
+            await servGuardarDatos();
+        }
+
+        function openAjustesEquipos() {
+            showModal(`
+                <div class="modal-title">tus equipos.</div>
+                <p class="finance-modal-note">Sus partidos entran solos en tu calendario, con la hora y el estadio, en todas sus competiciones: liga, copa, Champions...</p>
+                <input class="modal-input" autocomplete="off" placeholder="Busca un equipo: Zaragoza, Barça, Lakers..." oninput="equiposBuscar(this.value)">
+                <div id="equipos-resultados" class="serv-resultados"></div>
+                <div class="modal-label" style="margin-top:14px">los que sigues</div>
+                <div class="serv-lista">${(servicios.equipos || []).map((eq, i) => `<div class="serv-lista-fila equipo-fila">${eq.escudo ? `<img src="${escapeHtml(eq.escudo)}" alt="">` : ''}<b>${escapeHtml(eq.nombre)}</b><span>${escapeHtml(eq.ligaNombre || '')}</span><button class="serv-cerrar" onclick="equiposQuitar(${i})" aria-label="Dejar de seguir"><i class='ico ico-x' aria-hidden=true></i></button></div>`).join('') || '<div class="finance-modal-note">Todavía ninguno.</div>'}</div>
+            `);
+        }
+
+        let equiposBusqueda = 0;
+        function equiposBuscar(texto) {
+            clearTimeout(equiposBusqueda);
+            const caja = document.getElementById('equipos-resultados');
+            if (!caja) return;
+            if (String(texto).trim().length < 3) { caja.innerHTML = ''; return; }
+            caja.innerHTML = '<div class="finance-modal-note">Buscando...</div>';
+            equiposBusqueda = setTimeout(async () => {
+                const d = await deportesPedir({ accion: 'buscar', texto: texto.trim() }).catch(() => ({}));
+                window._equiposEncontrados = d.equipos || [];
+                if (!document.getElementById('equipos-resultados')) return;
+                caja.innerHTML = window._equiposEncontrados.map((eq, i) => `<button class="serv-resultado equipo-resultado" onclick="equiposAnadir(${i})">${eq.escudo ? `<img src="${escapeHtml(eq.escudo)}" alt="">` : ''}<div><b>${escapeHtml(eq.nombre)}</b><span>${escapeHtml(eq.ligaNombre || '')}</span></div></button>`).join('') || '<div class="finance-modal-note">No encuentro ese equipo.</div>';
+            }, 350);
+        }
+
+        async function equiposAnadir(i) {
+            const eq = window._equiposEncontrados?.[i];
+            if (!eq) return;
+            servicios.equipos = [...(servicios.equipos || []).filter(x => x.id !== eq.id), { id: eq.id, deporte: eq.deporte, liga: eq.liga, ligaNombre: eq.ligaNombre, nombre: eq.nombre, corto: eq.corto, escudo: eq.escudo }];
+            await servGuardarDatos();
+            partidosDe(eq);
+            openAjustesEquipos();
+            render();
+        }
+
+        async function equiposQuitar(i) {
+            const l = [...(servicios.equipos || [])];
+            l.splice(i, 1);
+            servicios.equipos = l;
+            await servGuardarDatos();
+            openAjustesEquipos();
+            render();
         }

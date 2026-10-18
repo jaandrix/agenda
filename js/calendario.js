@@ -99,7 +99,7 @@
                 const renewalDay = Number(e.renewalDay);
                 if (!renewalDay) return false;
                 return Math.min(renewalDay, daysInMonth) === day;
-            }).map(e => ({ ...e, date: dateStr, _recurringPayment: true })).concat(citasLaboralesCalendario(dateStr));
+            }).map(e => ({ ...e, date: dateStr, _recurringPayment: true })).concat(citasLaboralesCalendario(dateStr), serviciosCalendario(dateStr));
         }
 
         function buildEntriesByDate(year) {
