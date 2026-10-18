@@ -1585,7 +1585,7 @@
             const total = financeProTotalBalance();
             const ratio = income > 0 ? expense / income : (expense > 0 ? 1 : 0);
             const rPeq = Math.max(6, 46 * Math.sqrt(Math.min(ratio, 1)));
-            const ultimos = [...financePro.transactions].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 12);
+            const ultimos = [...financePro.transactions].sort((a, b) => financeProCompararMov(b, a)).slice(0, 12);
             return `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}
                 <div class="m-cifra-bloque">
                     <div class="m-etiqueta">patrimonio.</div>

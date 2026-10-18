@@ -451,7 +451,7 @@ function apuntarCrear(texto, r, tipo) {
         const ultima = [...(financePro.transactions || [])].reverse().find(t => t.manual && t.account)?.account;
         const cuenta = r.cuenta === 'efectivo' && FINANCE_PRO_ACCOUNT_KEYS.includes('efectivo') ? 'efectivo' : FINANCE_PRO_ACCOUNT_KEYS.includes(ultima) ? ultima : FINANCE_PRO_ACCOUNT_KEYS.includes('bancos') ? 'bancos' : FINANCE_PRO_ACCOUNT_KEYS[0];
         const txId = id('ptx_q');
-        financePro.transactions.push({ id: txId, date: r.fechaDicha ? r.fecha : todayISO(), account: cuenta, type: r.ingreso ? 'income' : 'expense', amount: r.importe, note: r.titulo || undefined, category: r.categoria || undefined, needsReview: !r.categoria, manual: true });
+        financePro.transactions.push({ id: txId, date: r.fechaDicha ? r.fecha : todayISO(), hora: financeProHoraAhora(r.fechaDicha ? r.fecha : todayISO()), account: cuenta, type: r.ingreso ? 'income' : 'expense', amount: r.importe, note: r.titulo || undefined, category: r.categoria || undefined, needsReview: !r.categoria, manual: true });
         return { aviso: `${r.ingreso ? 'Ingreso' : 'Gasto'} de ${financeMoney(r.importe)} en ${financePro.accounts[cuenta]?.name || cuenta}${r.categoria ? '' : '. Ponle categoría en Finanzas'}`, hecho: { tipo: 'gasto', txId } };
     }
     if (tipo === 'compra') {
