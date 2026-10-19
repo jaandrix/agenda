@@ -82,7 +82,7 @@
         async function volverAConectar() {
             if (!copiaUid || navigator.onLine === false) return;
             if (!modoSinConexion && !copiaPendiente) return;
-            await sb.auth.getSession().catch(() => {});
+            await authConRed(() => sb.auth.getSession()).catch(() => {});
             if (copiaPendiente) saveData().catch(e => console.error(e));
             else { modoSinConexion = false; sincronizarDesdeNube(); }
         }
@@ -90,7 +90,7 @@
 
         async function loadData() {
             try {
-                let { data: { user }, error: errorUsuario } = await sb.auth.getUser();
+                let { data: { user }, error: errorUsuario } = await authConRed(() => sb.auth.getUser());
                 if (!user && esErrorDeRed(errorUsuario)) user = usuarioGuardado();
                 if (!user) {
                     entries = [];
@@ -105,7 +105,7 @@
                 copiaUid = user.id;
                 let saved;
                 const copia = await leerCopiaLocal(user.id);
-                const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
+                const { data, error } = await consultaConRed(() => sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle());
                 if (error && !(esErrorDeRed(error) && copia)) throw error;
                 if (copia?.pendiente || error) {
                     // Sin red, o con cambios hechos sin conexión que aún no
@@ -422,9 +422,9 @@
             if (!datosBase || Date.now() - ultimaSincronizacion < 15000) return;
             ultimaSincronizacion = Date.now();
             saveChain = saveChain.then(async () => {
-                const { data: { user } } = await sb.auth.getUser();
+                const { data: { user } } = await authConRed(() => sb.auth.getUser());
                 if (!user) return;
-                const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
+                const { data, error } = await consultaConRed(() => sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle());
                 if (error || !data) return;
                 const nube = data.data || {};
                 const { cambiado } = aplicarFusionConNube(nube);
@@ -480,17 +480,17 @@
         }
 
         async function doSaveData() {
-            const { data: { user }, error: errorUsuario } = await sb.auth.getUser();
+            const { data: { user }, error: errorUsuario } = await authConRed(() => sb.auth.getUser());
             if (!user) throw (errorUsuario && esErrorDeRed(errorUsuario)) ? errorUsuario : new Error('No hay sesión activa');
 
             // Leer la versión más reciente antes de escribir. Esto evita que
             // una pestaña antigua de Bitácora borre cambios hechos desde
             // /apuntes/.
-            const { data: latestRow, error: readError } = await sb
+            const { data: latestRow, error: readError } = await consultaConRed(() => sb
                 .from('bitacora')
                 .select('data')
                 .eq('user_id', user.id)
-                .maybeSingle();
+                .maybeSingle());
 
             if (readError) throw readError;
 

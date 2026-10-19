@@ -96,6 +96,8 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   qué es «sin red»; el resto de errores sigue fallando como antes. Sin red se entra con la sesión guardada
   (`usuarioGuardado()`) y la suscripción leída la última vez (`bitacora-sub-<uid>`). El service worker guarda también
   las librerías de los CDN y las tipografías (`CDN_GUARDADOS`; en index.html llevan `crossorigin` para no ser opacas).
+  Las llamadas del arranque y del guardado van por `authConRed` / `consultaConRed` (nucleo.js): sin red no se hacen
+  y, si no responden (6 s sesión, 12 s datos), se sigue sin red; la librería de Supabase si no esperaba ~30 s renovando.
 - **Transiciones de vista (`conTransicion`, interfaz.js):** mientras dura una, el navegador pinta su "foto"
   por encima de todo; por eso `showModal`, el buscador y otras capas llaman a `vtCortar()` para cortarla
   (si no, quedaban debajo, tapadas por el contenido). **Cualquier capa nueva que se abra encima debe

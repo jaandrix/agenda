@@ -6,6 +6,23 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2ZHF0bnVrZ2Jlam9yaWV1dW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMjcyOTUsImV4cCI6MjEwMDkwMzI5NX0.sq1cepXuBaNT6qygyxKEAhVHJh7G9LZyzaeJBhc7s7s';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Sin red, la librería de Supabase intenta renovar la sesión durante
+        // unos 30 s antes de rendirse, y toda llamada que depende de ella
+        // (también las consultas) espera: la app se quedaba en «cargando».
+        // En el arranque y al guardar, sin red no se pregunta y, con una red
+        // que no responde, se deja de esperar y se sigue con la copia local.
+        // Si una llamada se queda sin respuesta, las siguientes no vuelven a
+        // esperar (el arranque sumaba esperas) hasta que alguna conteste.
+        let redSinRespuesta = false;
+        function conRed(llamada, ms, vacio) {
+            if (navigator.onLine === false || redSinRespuesta) return Promise.resolve({ ...vacio, error: { message: 'Failed to fetch (sin red)' } });
+            let espera;
+            const tope = new Promise(r => { espera = setTimeout(() => { redSinRespuesta = true; setTimeout(() => { redSinRespuesta = false; }, 20000); r({ ...vacio, error: { message: 'Failed to fetch (sin respuesta)' } }); }, ms); });
+            return Promise.race([llamada().then(x => { clearTimeout(espera); redSinRespuesta = false; return x; }), tope]);
+        }
+        const authConRed = llamada => conRed(llamada, 6000, { data: { user: null, session: null } });
+        const consultaConRed = llamada => conRed(llamada, 12000, { data: null });
+
         // ============================================================
         //  SUSCRIPCIÓN DE PAGO (Stripe)
         // ============================================================
@@ -138,7 +155,7 @@
             const boot = document.getElementById('boot-loading');
             if (boot) boot.style.display = 'none';
 
-            let { data: { user }, error: errorUsuario } = await sb.auth.getUser();
+            let { data: { user }, error: errorUsuario } = await authConRed(() => sb.auth.getUser());
             if (!user && esErrorDeRed(errorUsuario)) user = usuarioGuardado();
             if (!user) { document.body.classList.remove('pwa'); goToLogin(); return; }
             const veniaDeCheckout = new URLSearchParams(window.location.search).get('checkout') === 'success';
@@ -180,7 +197,7 @@
             const intentos = opts.allowRetry ? 4 : 1;
             const claveGuardada = 'bitacora-sub-' + user.id;
             for (let i = 0; i < intentos; i++) {
-                const { data, error } = await sb.from('suscripciones').select('*').eq('user_id', user.id).maybeSingle();
+                const { data, error } = await consultaConRed(() => sb.from('suscripciones').select('*').eq('user_id', user.id).maybeSingle());
                 if (data) { try { localStorage.setItem(claveGuardada, JSON.stringify(data)); } catch (_) { /* sin almacenamiento */ } return data; }
                 // Sin red no se sabe: vale la última que se leyó, para no
                 // enseñar la pantalla de pago a quien sí paga.
@@ -554,7 +571,7 @@
         // startApp acaba llamando a funciones de los últimos (init, en
         // inicio.js), y la sesión puede resolverse antes de que lleguen.
         document.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session }, error: errorSesion } = await sb.auth.getSession();
+            const { data: { session }, error: errorSesion } = await authConRed(() => sb.auth.getSession());
             document.getElementById('boot-loading').style.display = 'none';
             // Sin red, la sesión caducada no se puede renovar, pero sigue en
             // el dispositivo: se entra con la copia local de los datos.
