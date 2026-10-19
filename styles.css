@@ -1670,20 +1670,20 @@
         /* ============================================================
                MODAL
             ============================================================ */
-        /* El difuminado del fondo entra poco a poco (el desenfoque y el
-           oscurecido crecen desde cero) en vez de aparecer de golpe: con
-           solo la opacidad, Safari pintaba el desenfoque entero desde el
-           primer fotograma. Sin "to", cada capa acaba en su propio valor
-           (el overlay de acuarela tiene otro tono). */
+        /* El oscurecido solo funde su opacidad. Antes animaba también el
+           color y el backdrop-filter (de cuando había desenfoque): aunque
+           valiera none, Safari en iOS creaba una capa de fondo aparte
+           mientras duraba la animación y el oscurecido se pintaba dos
+           veces, más oscuro, hasta que terminaba y saltaba a su tono. */
         @keyframes modalOverlayIn {
-            from { opacity: 0; background-color: rgba(0, 0, 0, 0); backdrop-filter:none; -webkit-backdrop-filter:none; }
+            from { opacity: 0; }
         }
         @keyframes modalSheetIn {
             from { opacity: 0; transform: translateY(14px) scale(0.97); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes modalOverlayOut {
-            to { opacity: 0; background-color: rgba(0, 0, 0, 0); backdrop-filter:none; -webkit-backdrop-filter:none; }
+            to { opacity: 0; }
         }
         @keyframes modalSheetOut {
             from { opacity: 1; transform: translateY(0) scale(1); }
@@ -5806,7 +5806,7 @@ body.mobile-standalone.m-menu-abierto #mobile-shell { overflow:hidden; }
 /* Gráfico flotando en el centro sobre toda la pantalla difuminada, sin
    panel. Sale desde el botón (translate --dx/--dy + escala pequeña) y
    vuelve a él al cerrar. */
-.estancia-overlay { position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(0,0,0,0); backdrop-filter:none; -webkit-backdrop-filter:none; transition:background .4s ease, backdrop-filter .4s ease, -webkit-backdrop-filter .4s ease; }
+.estancia-overlay { position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(0,0,0,0); backdrop-filter:none; -webkit-backdrop-filter:none; transition:background .4s ease; }
 .estancia-overlay.abierto { background:rgba(0,0,0,.74); backdrop-filter:none; -webkit-backdrop-filter:none; }
 body.papel .estancia-overlay.abierto { background:rgba(255,255,255,.18); }
 .estancia-flotante { display:flex; flex-direction:column; align-items:center; gap:14px; color:var(--text-primary); transform:translate(var(--dx), var(--dy)) scale(.12); opacity:0; transition:transform .38s var(--ease-out), opacity .3s ease .08s; }
@@ -5871,7 +5871,7 @@ body.acuarela .events-toolbar .btn-secondary[style*="#3b82f6"] { background:var(
    diagonal (mes + día) y escalona tanto la aparición como el cambio de
    color al pasar de una vista a otra.
    ============================================================ */
-.anual-overlay { position:fixed; inset:0; z-index:1090; display:flex; padding:24px 16px; box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain; background:rgba(0,0,0,0); backdrop-filter:none; -webkit-backdrop-filter:none; transition:background .4s ease, backdrop-filter .4s ease, -webkit-backdrop-filter .4s ease; }
+.anual-overlay { position:fixed; inset:0; z-index:1090; display:flex; padding:24px 16px; box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain; background:rgba(0,0,0,0); backdrop-filter:none; -webkit-backdrop-filter:none; transition:background .4s ease; }
 .anual-overlay.abierto { background:var(--bg-app); backdrop-filter:none; -webkit-backdrop-filter:none; }
 .anual-cerrar { position:fixed; top:max(16px, env(safe-area-inset-top)); right:16px; width:40px; height:40px; box-sizing:border-box; border-radius:50%; border:1px solid var(--border-strong); background:var(--bg-card); color:var(--text-primary); font-size:15px; cursor:pointer; opacity:0; transition:opacity .3s ease; z-index:2; }
 .anual-overlay.abierto .anual-cerrar { opacity:1; }
