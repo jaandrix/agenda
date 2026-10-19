@@ -36,6 +36,20 @@ function estDiario(fecha = estFecha()) {
     return d[fecha];
 }
 
+// Nuevas que aún caben hoy: el límite diario más las que se añadieron a
+// mano para hoy con «10 más hoy.» (extra), sin tocar el límite.
+function estNuevasRestantes() {
+    const d = estDiario();
+    return Math.max(0, datosEstudiar().nuevasDia + (d.extra || 0) - d.nuevas);
+}
+
+function estMasHoy() {
+    const d = estDiario();
+    d.extra = (d.extra || 0) + 10;
+    render();
+    guardarEstudiar();
+}
+
 function estId(p) { return p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 function estAsignaturas() {
@@ -137,7 +151,7 @@ function estCuentas(mazoId, ahora = Date.now()) {
     const e = datosEstudiar();
     let nuevas = 0, toca = 0;
     estClaves(mazoId).forEach(k => { const r = e.repasos[k]; if (!r) nuevas++; else if (r.due <= ahora) toca++; });
-    const quedanNuevas = Math.max(0, e.nuevasDia - estDiario().nuevas);
+    const quedanNuevas = estNuevasRestantes();
     return { nuevas, nuevasHoy: Math.min(nuevas, quedanNuevas), toca, total: e.tarjetas.filter(t => !mazoId || t.mazoId === mazoId).length };
 }
 
@@ -351,13 +365,14 @@ function renderEstPomodoro(foco) {
 
 function openEstAjustes() {
     const cfg = pomoConfig();
-    const campo = (id, t, v) => `<label class="est-ajuste"><span>${t}</span><input id="${id}" class="modal-input" type="number" min="1" max="180" value="${v}"></label>`;
+    const campo = (id, t, v, max = 180) => `<label class="est-ajuste"><span>${t}</span><input id="${id}" class="modal-input" type="number" min="1" max="${max}" value="${v}"></label>`;
     showModal(`
         <div class="modal-title">ajustes de estudiar.</div>
         <div class="modal-label">Pomodoro</div>
         <div class="est-ajustes">${campo('est-a-trabajo', 'minutos de estudio', cfg.trabajo)}${campo('est-a-descanso', 'descanso corto', cfg.descanso)}${campo('est-a-largo', 'descanso largo', cfg.largo)}${campo('est-a-cada', 'descanso largo cada', cfg.cada)}</div>
         <div class="modal-label">Tarjetas</div>
-        <div class="est-ajustes">${campo('est-a-nuevas', 'tarjetas nuevas al día', datosEstudiar().nuevasDia)}</div>
+        <div class="est-ajustes">${campo('est-a-nuevas', 'tarjetas nuevas al día', datosEstudiar().nuevasDia, 500)}</div>
+        <p class="finance-modal-note">Solo cuenta las que ves por primera vez: los repasos de las que ya estudiaste no tienen límite. Con muchas nuevas cada día, los repasos de los días siguientes crecen deprisa.</p>
         <button class="btn-modal-primary" onclick="guardarEstAjustes()">guardar.</button>
     `);
 }
@@ -797,7 +812,7 @@ function renderEstTarjetas() {
                 </div>
             </div>`;
         }).join('')}
-        <div class="est-leyenda"><span class="nuevas">nuevas.</span><span class="toca">por repasar.</span> ${e.nuevasDia} nuevas al día como mucho, para no acumular repasos.</div>
+        <div class="est-leyenda"><span class="nuevas">nuevas.</span><span class="toca">por repasar.</span> ${e.nuevasDia}${estDiario().extra ? ` (+${estDiario().extra} hoy)` : ''} nuevas al día como mucho, para no acumular repasos. <button class="est-enlace" onclick="openEstAjustes()">cambiar.</button>${!estNuevasRestantes() && e.tarjetas.some(t => estCaras(t).some(c => !e.repasos[`${t.id}:${c}`])) ? ` <button class="est-enlace" onclick="estMasHoy()">10 más hoy.</button>` : ''}</div>
     </div>`;
 }
 
@@ -815,7 +830,7 @@ function estEmpezarRepaso(mazoId) {
         const ra = e.repasos[a], rb = e.repasos[b];
         return (ra.estado === 'repaso') - (rb.estado === 'repaso') || ra.due - rb.due;
     });
-    const nuevas = claves.filter(k => !e.repasos[k]).slice(0, Math.max(0, e.nuevasDia - estDiario().nuevas));
+    const nuevas = claves.filter(k => !e.repasos[k]).slice(0, estNuevasRestantes());
     const cola = [...vencidas, ...nuevas];
     if (!cola.length) { showToast('Nada que repasar ahora'); return; }
     estRepaso = { mazoId, cola, mostrar: false, hechas: 0, total: cola.length };

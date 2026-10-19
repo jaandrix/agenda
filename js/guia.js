@@ -350,7 +350,7 @@ const GUIA = [
             [guiaBoton('importar. exportar.'), 'Pega tarjetas «pregunta;respuesta», una por línea (también lo que exportan Anki y Quizlet), o llévate el mazo a Anki. <b>copiar instrucciones para una IA.</b> te da un texto para pedir a Claude o ChatGPT que haga las tarjetas de tus apuntes.'],
             [guiaBoton('ajustes.'), 'Los minutos del pomodoro y cuántas tarjetas nuevas ver al día (20 por defecto, para que los repasos no se acumulen).'],
         ],
-        trucos: ['Repasar un poco cada día rinde mucho más que darse un atracón antes del examen: las tarjetas están pensadas para eso.', 'Las tarjetas se programan con FSRS, el mismo algoritmo que usa Anki hoy en día.'],
+        trucos: ['Repasar un poco cada día rinde mucho más que darse un atracón antes del examen: las tarjetas están pensadas para eso.', 'El límite de tarjetas nuevas al día (20 al empezar) se cambia con «cambiar.» bajo los mazos, hasta 500; los repasos no tienen límite. Si un día quieres más sin cambiarlo, «10 más hoy.» añade diez solo para ese día.', 'Las tarjetas se programan con FSRS, el mismo algoritmo que usa Anki hoy en día.'],
     },
     {
         id: 'universidad', grupo: 'desarrollo', titulo: 'universidad.',
