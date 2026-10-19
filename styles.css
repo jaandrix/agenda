@@ -1670,20 +1670,20 @@
         /* ============================================================
                MODAL
             ============================================================ */
-        /* El oscurecido solo funde su opacidad. Antes animaba también el
-           color y el backdrop-filter (de cuando había desenfoque): aunque
-           valiera none, Safari en iOS creaba una capa de fondo aparte
-           mientras duraba la animación y el oscurecido se pintaba dos
-           veces, más oscuro, hasta que terminaba y saltaba a su tono. */
+        /* El oscurecido funde su color, no su opacidad: mientras una capa
+           anima la opacidad, Safari en iPhone la sube a una capa aparte y el
+           color se pintaba dos veces (casi un 83 % en vez del 55 %) hasta
+           que la animación acababa y saltaba a su tono. Sin "to", cada
+           overlay acaba en su propio color (teja tiene otro tono). */
         @keyframes modalOverlayIn {
-            from { opacity: 0; }
+            from { background-color: rgba(0, 0, 0, 0); }
         }
         @keyframes modalSheetIn {
             from { opacity: 0; transform: translateY(14px) scale(0.97); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes modalOverlayOut {
-            to { opacity: 0; }
+            to { background-color: rgba(0, 0, 0, 0); }
         }
         @keyframes modalSheetOut {
             from { opacity: 1; transform: translateY(0) scale(1); }
@@ -8945,3 +8945,7 @@ body:not(.papel) .luz-aviso { color:#6fc28f; }
 body.mobile-standalone .modal-sheet.entry-detail-card, body.pwa .modal-sheet.entry-detail-card { max-height: calc(74dvh / var(--m-zoom, 1)); overscroll-behavior: contain; }
 #mobile-shell .m-fila-qr { display:inline-flex; align-items:center; gap:6px; align-self:center; min-height:34px; padding:6px 11px; font-size:12.5px; }
 #mobile-shell .m-fila-qr svg { width:14px; height:14px; flex-shrink:0; }
+
+/* El fondo ya solo funde su color al cerrarse: la caja de las capas que no
+   traen su propia salida (buscador, cerrar sesión, mensajes) se va con ella. */
+[style*="modalOverlayOut"] > :is(.command-palette-box, .centered-message-box) { animation: modalSheetOut .16s var(--ease-out) both; }
