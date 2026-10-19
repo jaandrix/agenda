@@ -169,6 +169,7 @@ montarCerebro();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-19', rama: 'todos', nombre: 'bitácora sin conexión', para: 'quien la usa en el metro, en el avión o en la puerta de un concierto.', texto: 'Se abre aunque no haya red, con la copia guardada en el dispositivo. Lo que apuntes sin conexión se sube solo cuando vuelva.' },
     { fecha: '2026-10-18', rama: 'todos', nombre: 'quedadas, invitaciones y listas con un enlace', para: 'quien organiza planes con gente que no usa bitácora.', texto: 'Propón fechas y que cada uno marque cuándo puede, invita a un evento y mira quién viene, comparte una lista que todos tachan o enseña el plan de un viaje. Lo abren desde WhatsApp sin cuenta ni app.' },
     { fecha: '2026-10-18', rama: 'todos', nombre: 'siri y tu correo apuntan por ti', para: 'quien apunta sobre la marcha.', texto: '«Oye Siri, apunta en Bitácora» y dicta lo que sea. Y una dirección propia: reenvía la reserva de un vuelo, un hotel, unas entradas o un pedido y se apunta sola.' },
     { fecha: '2026-10-18', rama: 'todos', nombre: 'lo que bitácora sabe sola', para: 'todo el mundo.', texto: 'Festivos de tu ciudad y qué día cogerte para hacer puente, la hora más barata de la luz, los partidos de tus equipos, los estrenos de tus series, la ficha del destino de cada viaje y tu día de un vistazo.' },

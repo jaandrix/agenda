@@ -1,9 +1,97 @@
         // ============================================================
         //  LOAD / SAVE (SUPABASE)
         // ============================================================
+        // ============================================================
+        //  SIN CONEXIÓN
+        //  Copia de los datos en el dispositivo (IndexedDB), por usuario:
+        //  `base` es cómo estaban en la nube la última vez que se leyeron
+        //  o escribieron (lo mismo que datosBase) y `local`, cómo están en
+        //  la app. Sin red, la app arranca con ella; lo que se cambie se
+        //  guarda aquí con `pendiente` y, al volver la conexión, saveData
+        //  lo fusiona a tres bandas con lo que haya en la nube, igual que
+        //  con cualquier otro dispositivo.
+        // ============================================================
+        let modoSinConexion = false;
+        let copiaPendiente = false;
+        let copiaUid = null;
+        let copiaTemporizador = 0;
+        let avisoGuardadoSinConexion = false;
+
+        function esErrorDeRed(e) {
+            if (navigator.onLine === false) return true;
+            const t = String(e?.message || e?.name || e || '');
+            return /failed to fetch|networkerror|network request failed|load failed|fetch failed|AuthRetryableFetchError|the internet connection appears to be offline/i.test(t);
+        }
+
+        // El usuario de la última sesión, sacado de lo que Supabase guarda en
+        // el dispositivo: sin red no se puede preguntar al servidor.
+        function usuarioGuardado() {
+            try {
+                for (const k of Object.keys(localStorage)) {
+                    if (!/^sb-.+-auth-token$/.test(k)) continue;
+                    const s = JSON.parse(localStorage.getItem(k) || 'null');
+                    const u = s?.user || s?.currentSession?.user;
+                    if (u?.id) return u;
+                }
+            } catch (_) { /* sin almacenamiento */ }
+            return null;
+        }
+
+        function copiaDb() {
+            return new Promise((ok, mal) => {
+                const r = indexedDB.open('bitacora-copia', 1);
+                r.onupgradeneeded = () => r.result.createObjectStore('copias');
+                r.onsuccess = () => ok(r.result);
+                r.onerror = () => mal(r.error);
+            });
+        }
+
+        async function leerCopiaLocal(uid) {
+            try {
+                const db = await copiaDb();
+                return await new Promise((ok, mal) => {
+                    const r = db.transaction('copias').objectStore('copias').get(uid);
+                    r.onsuccess = () => ok(r.result || null);
+                    r.onerror = () => mal(r.error);
+                });
+            } catch (e) { console.error('No se pudo leer la copia local:', e); return null; }
+        }
+
+        async function guardarCopiaLocal() {
+            if (!copiaUid || !datosBase) return;
+            try {
+                const local = {};
+                Object.entries(DATOS_SINCRONIZADOS).forEach(([k, [leer]]) => { local[k] = leer(); });
+                const copia = JSON.parse(JSON.stringify({ uid: copiaUid, cuando: Date.now(), base: datosBase, local, apuntes, pendiente: copiaPendiente }));
+                const db = await copiaDb();
+                await new Promise((ok, mal) => {
+                    const t = db.transaction('copias', 'readwrite');
+                    t.objectStore('copias').put(copia, copiaUid);
+                    t.oncomplete = ok;
+                    t.onerror = () => mal(t.error);
+                });
+            } catch (e) { console.error('No se pudo guardar la copia local:', e); }
+        }
+
+        // Escribir la copia entera en cada guardado sería caro: se agrupa.
+        function programarCopiaLocal(espera = 1500) {
+            clearTimeout(copiaTemporizador);
+            copiaTemporizador = setTimeout(guardarCopiaLocal, espera);
+        }
+
+        async function volverAConectar() {
+            if (!copiaUid || navigator.onLine === false) return;
+            if (!modoSinConexion && !copiaPendiente) return;
+            await sb.auth.getSession().catch(() => {});
+            if (copiaPendiente) saveData().catch(e => console.error(e));
+            else { modoSinConexion = false; sincronizarDesdeNube(); }
+        }
+        window.addEventListener('online', () => setTimeout(volverAConectar, 1200));
+
         async function loadData() {
             try {
-                const { data: { user } } = await sb.auth.getUser();
+                let { data: { user }, error: errorUsuario } = await sb.auth.getUser();
+                if (!user && esErrorDeRed(errorUsuario)) user = usuarioGuardado();
                 if (!user) {
                     entries = [];
                     categories = getDefaultCategories();
@@ -14,10 +102,25 @@
                     investmentData = { initial: 0, rate: 7, monthly: 0 };
                     return true;
                 }
+                copiaUid = user.id;
+                let saved;
+                const copia = await leerCopiaLocal(user.id);
                 const { data, error } = await sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle();
-                if (error) throw error;
-                const saved = (data && data.data) ? data.data : {};
-                datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(saved[k])]));
+                if (error && !(esErrorDeRed(error) && copia)) throw error;
+                if (copia?.pendiente || error) {
+                    // Sin red, o con cambios hechos sin conexión que aún no
+                    // llegaron a la nube: se arranca con la copia. Si hay red,
+                    // el saveData de init los fusiona con la nube.
+                    datosBase = copia.base;
+                    saved = { ...copia.local, apuntes: copia.apuntes };
+                    copiaPendiente = !!copia.pendiente;
+                    modoSinConexion = !!error;
+                } else {
+                    saved = (data && data.data) ? data.data : {};
+                    datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(saved[k])]));
+                    modoSinConexion = false;
+                    programarCopiaLocal(3000);
+                }
                 entries = saved.entries || [];
                 // Lo que apuntó la IA con el punto medio («valle · maria») pasa a comas, una vez.
                 entries.forEach(e => ['title', 'notes', 'place', 'companions'].forEach(k => { if (typeof e[k] === 'string' && e[k].includes('·')) e[k] = e[k].replace(/\s*·\s*/g, ', '); }));
@@ -326,6 +429,8 @@
                 const nube = data.data || {};
                 const { cambiado } = aplicarFusionConNube(nube);
                 datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(nube[k])]));
+                modoSinConexion = false;
+                programarCopiaLocal();
                 if (cambiado) { invalidarCachesDerivadas(); repintarTrasModal(); }
             }).catch(e => console.error('No se pudo sincronizar con la nube:', e));
         }
@@ -334,7 +439,18 @@
 
         function saveData() {
             invalidarCachesDerivadas();
-            const attempt = saveChain.then(doSaveData, doSaveData);
+            // Sin red, el cambio se queda en la copia del dispositivo y se
+            // da por guardado: se subirá al volver la conexión.
+            const attempt = saveChain.then(doSaveData, doSaveData).catch(async e => {
+                if (!copiaUid || !datosBase || !esErrorDeRed(e)) throw e;
+                modoSinConexion = true;
+                copiaPendiente = true;
+                await guardarCopiaLocal();
+                if (!avisoGuardadoSinConexion) {
+                    avisoGuardadoSinConexion = true;
+                    showToast('Sin conexión: guardado en este dispositivo. Se subirá solo al volver la red.');
+                }
+            });
             saveChain = attempt.catch(() => {});
             // doSaveData mezcla con lo último de Supabase (otra pestaña u
             // otro dispositivo), así que al terminar los datos pueden haber
@@ -364,8 +480,8 @@
         }
 
         async function doSaveData() {
-            const { data: { user } } = await sb.auth.getUser();
-            if (!user) throw new Error('No hay sesión activa');
+            const { data: { user }, error: errorUsuario } = await sb.auth.getUser();
+            if (!user) throw (errorUsuario && esErrorDeRed(errorUsuario)) ? errorUsuario : new Error('No hay sesión activa');
 
             // Leer la versión más reciente antes de escribir. Esto evita que
             // una pestaña antigua de Bitácora borre cambios hechos desde
@@ -422,6 +538,9 @@
 
             datosBase = clonarDatos(fusion);
             if (cambiado) setTimeout(() => { invalidarCachesDerivadas(); render(); }, 0);
+            if (copiaPendiente) { copiaPendiente = false; avisoGuardadoSinConexion = false; showToast('Conectado de nuevo: lo que apuntaste sin red ya está en la nube.'); }
+            modoSinConexion = false;
+            programarCopiaLocal();
 
             // Mantener la memoria local sincronizada con lo que realmente
             // quedó almacenado.

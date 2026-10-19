@@ -14,6 +14,8 @@
             renderAllNavs();
             if (loaded) {
                 setTimeout(comprobarBienvenida, 700);
+                if (modoSinConexion) setTimeout(() => showToast('Sin conexión: estás viendo la copia guardada en este dispositivo.'), 900);
+                else if (copiaPendiente) saveData().catch(e => console.error(e));
                 ensureRecurringProCharges();
                 convertirCinesEnPeliculas();
                 setInterval(convertirCinesEnPeliculas, 5 * 60000);

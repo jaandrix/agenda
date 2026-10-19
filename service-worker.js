@@ -30,18 +30,32 @@ self.addEventListener('activate', (event) => {
 // próxima vez), lo que hacía que una publicación nueva pudiera tardar
 // varias recargas en verse — con esta app siempre necesitando conexión
 // para los datos de todos modos, no tiene sentido priorizar la caché.
+// Las librerías de los CDN y las tipografías también se guardan: sin
+// ellas (Supabase sobre todo) la app no arranca sin conexión y se quedaba
+// en negro. Se piden con crossorigin desde index.html para que la copia
+// sea una respuesta normal y no una opaca (que en iPhone ocupa muchísimo).
+const CDN_GUARDADOS = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
-    if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+    if (event.request.method !== 'GET') return;
+    const propio = url.origin === self.location.origin;
+    if (!propio && !CDN_GUARDADOS.includes(url.hostname)) return;
 
     event.respondWith(
-        fetch(event.request, { cache: 'no-store' }).then((response) => {
+        fetch(event.request, propio ? { cache: 'no-store' } : undefined).then((response) => {
             if (response.ok) {
                 const copy = response.clone();
                 caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
             }
             return response;
-        }).catch(() => caches.match(event.request))
+        }).catch(async () => {
+            const guardada = await caches.match(event.request);
+            if (guardada) return guardada;
+            // Abrir la app desde un aviso (/?semana, /?compartido=...) sin red.
+            if (event.request.mode === 'navigate') return caches.match('./index.html', { ignoreSearch: true });
+            return Response.error();
+        })
     );
 });
 

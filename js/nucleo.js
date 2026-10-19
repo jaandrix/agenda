@@ -138,7 +138,9 @@
             const boot = document.getElementById('boot-loading');
             if (boot) boot.style.display = 'none';
 
-            const { data: { user } } = await sb.auth.getUser();
+            let { data: { user }, error: errorUsuario } = await sb.auth.getUser();
+            if (!user && esErrorDeRed(errorUsuario)) user = usuarioGuardado();
+            if (!user) { document.body.classList.remove('pwa'); goToLogin(); return; }
             const veniaDeCheckout = new URLSearchParams(window.location.search).get('checkout') === 'success';
             const sub = await getSubscriptionStatus(user, { allowRetry: veniaDeCheckout });
 
@@ -176,9 +178,17 @@
         // rendirse, en vez de enseñar el pago de nuevo de inmediato.
         async function getSubscriptionStatus(user, opts = {}) {
             const intentos = opts.allowRetry ? 4 : 1;
+            const claveGuardada = 'bitacora-sub-' + user.id;
             for (let i = 0; i < intentos; i++) {
-                const { data } = await sb.from('suscripciones').select('*').eq('user_id', user.id).maybeSingle();
-                if (data) return data;
+                const { data, error } = await sb.from('suscripciones').select('*').eq('user_id', user.id).maybeSingle();
+                if (data) { try { localStorage.setItem(claveGuardada, JSON.stringify(data)); } catch (_) { /* sin almacenamiento */ } return data; }
+                // Sin red no se sabe: vale la última que se leyó, para no
+                // enseñar la pantalla de pago a quien sí paga.
+                if (error && esErrorDeRed(error)) {
+                    try { const g = JSON.parse(localStorage.getItem(claveGuardada) || 'null'); if (g) return g; } catch (_) { /* sin almacenamiento */ }
+                    // Nunca leída en este dispositivo: sin red no se cierra la puerta.
+                    return { estado: 'active', modulos: ['base'], sinRed: true };
+                }
                 if (i < intentos - 1) await new Promise(r => setTimeout(r, 1500));
             }
             const esLegado = new Date(user.created_at) < new Date(CUTOFF_LANZAMIENTO_PAGO);
@@ -544,9 +554,11 @@
         // startApp acaba llamando a funciones de los últimos (init, en
         // inicio.js), y la sesión puede resolverse antes de que lleguen.
         document.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await sb.auth.getSession();
+            const { data: { session }, error: errorSesion } = await sb.auth.getSession();
             document.getElementById('boot-loading').style.display = 'none';
-            if (session) {
+            // Sin red, la sesión caducada no se puede renovar, pero sigue en
+            // el dispositivo: se entra con la copia local de los datos.
+            if (session || ((navigator.onLine === false || esErrorDeRed(errorSesion)) && usuarioGuardado())) {
                 await startApp();
             } else {
                 document.body.classList.remove('pwa');

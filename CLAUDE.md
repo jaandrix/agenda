@@ -89,6 +89,13 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   Con un modal abierto no se llama a `render()`: `repintarTrasModal()` lo deja para cuando se cierre (se veía a
   través del fondo como un destello, sobre todo en el móvil). Lo usan también los repintados que llegan solos
   (sincronizar con la nube, volver a la app, la bandeja) y `pintarSocial` (mira `modalEnPantalla()`).
+- **Sin conexión (datos.js, «SIN CONEXIÓN»):** copia por usuario en IndexedDB (`bitacora-copia`: `base` = datosBase y
+  `local` = lo de la app, `pendiente`). `loadData` arranca con ella si no hay red (`modoSinConexion`) o si quedó algo
+  pendiente; `saveData` sin red guarda la copia con `pendiente` en vez de fallar, y al volver la red (`online`,
+  `volverAConectar`, o el siguiente arranque) se fusiona a tres bandas como cualquier dispositivo. `esErrorDeRed()` decide
+  qué es «sin red»; el resto de errores sigue fallando como antes. Sin red se entra con la sesión guardada
+  (`usuarioGuardado()`) y la suscripción leída la última vez (`bitacora-sub-<uid>`). El service worker guarda también
+  las librerías de los CDN y las tipografías (`CDN_GUARDADOS`; en index.html llevan `crossorigin` para no ser opacas).
 - **Transiciones de vista (`conTransicion`, interfaz.js):** mientras dura una, el navegador pinta su "foto"
   por encima de todo; por eso `showModal`, el buscador y otras capas llaman a `vtCortar()` para cortarla
   (si no, quedaban debajo, tapadas por el contenido). **Cualquier capa nueva que se abra encima debe
