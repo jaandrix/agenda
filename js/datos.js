@@ -17,6 +17,16 @@
         let copiaTemporizador = 0;
         let avisoGuardadoSinConexion = false;
 
+        // Cambia el modo y su aviso fijo («sin conexión.» en la barra de
+        // arriba del móvil y junto al reloj en el ordenador).
+        function marcarConexion(sinRed) {
+            sinRed = !!sinRed;
+            document.body.classList.toggle('sin-red', sinRed);
+            if (sinRed === modoSinConexion) return;
+            modoSinConexion = sinRed;
+            if (appInitialized) repintarTrasModal();
+        }
+
         function esErrorDeRed(e) {
             if (navigator.onLine === false) return true;
             const t = String(e?.message || e?.name || e || '');
@@ -86,7 +96,7 @@
             if (!modoSinConexion && !copiaPendiente) return;
             await authConRed(() => sb.auth.getSession()).catch(() => {});
             if (copiaPendiente) saveData().catch(e => console.error(e));
-            else { modoSinConexion = false; sincronizarDesdeNube(); }
+            else { marcarConexion(false); sincronizarDesdeNube(); }
         }
         window.addEventListener('online', () => setTimeout(volverAConectar, 1200));
         // iOS puede cerrar la app en segundo plano sin avisar: la copia se
@@ -120,11 +130,11 @@
                     datosBase = copia.base;
                     saved = { ...copia.local, apuntes: copia.apuntes };
                     copiaPendiente = !!copia.pendiente;
-                    modoSinConexion = !!error;
+                    marcarConexion(!!error);
                 } else {
                     saved = (data && data.data) ? data.data : {};
                     datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(saved[k])]));
-                    modoSinConexion = false;
+                    marcarConexion(false);
                     try { localStorage.setItem('bitacora-ultimo-usuario', JSON.stringify({ id: user.id, email: user.email, created_at: user.created_at })); } catch (_) { /* sin almacenamiento */ }
                     programarCopiaLocal(400);
                 }
@@ -436,7 +446,7 @@
                 const nube = data.data || {};
                 const { cambiado } = aplicarFusionConNube(nube);
                 datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(nube[k])]));
-                modoSinConexion = false;
+                marcarConexion(false);
                 programarCopiaLocal();
                 if (cambiado) { invalidarCachesDerivadas(); repintarTrasModal(); }
             }).catch(e => console.error('No se pudo sincronizar con la nube:', e));
@@ -450,7 +460,7 @@
             // da por guardado: se subirá al volver la conexión.
             const attempt = saveChain.then(doSaveData, doSaveData).catch(async e => {
                 if (!copiaUid || !datosBase || !esErrorDeRed(e)) throw e;
-                modoSinConexion = true;
+                marcarConexion(true);
                 copiaPendiente = true;
                 await guardarCopiaLocal();
                 if (!avisoGuardadoSinConexion) {
@@ -546,7 +556,7 @@
             datosBase = clonarDatos(fusion);
             if (cambiado) setTimeout(() => { invalidarCachesDerivadas(); render(); }, 0);
             if (copiaPendiente) { copiaPendiente = false; avisoGuardadoSinConexion = false; showToast('Conectado de nuevo: lo que apuntaste sin red ya está en la nube.'); }
-            modoSinConexion = false;
+            marcarConexion(false);
             programarCopiaLocal();
 
             // Mantener la memoria local sincronizada con lo que realmente

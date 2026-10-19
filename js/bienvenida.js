@@ -13,7 +13,7 @@ let bienvenidaPaso = 0;
 let bienvenidaBorrador = null;
 
 function comprobarBienvenida() {
-    if (bienvenida || !suscripcionActual || suscripcionActual.estado === 'legado') return;
+    if (bienvenida || !suscripcionActual || suscripcionActual.estado === 'legado' || modoSinConexion || suscripcionActual.sinRed) return;
     openBienvenida();
 }
 

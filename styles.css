@@ -8949,3 +8949,9 @@ body.mobile-standalone .modal-sheet.entry-detail-card, body.pwa .modal-sheet.ent
 /* El fondo ya solo funde su color al cerrarse: la caja de las capas que no
    traen su propia salida (buscador, cerrar sesión, mensajes) se va con ella. */
 [style*="modalOverlayOut"] > :is(.command-palette-box, .centered-message-box) { animation: modalSheetOut .16s var(--ease-out) both; }
+
+/* Aviso fijo mientras no hay conexión: en el móvil en la barra de arriba y
+   en el ordenador delante del reloj. */
+.m-sin-red { margin-left:auto; margin-right:10px; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--text-secondary); white-space:nowrap; }
+.m-sin-red::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--m-acento); }
+body.sin-red #header-clock::before { content:'sin conexión.'; margin-right:10px; font-family:var(--font-family); font-size:12.5px; font-weight:600; color:var(--m-acento); }

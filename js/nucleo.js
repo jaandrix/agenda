@@ -203,13 +203,18 @@
                 // enseñar la pantalla de pago a quien sí paga.
                 if (error && esErrorDeRed(error)) {
                     try { const g = JSON.parse(localStorage.getItem(claveGuardada) || 'null'); if (g) return g; } catch (_) { /* sin almacenamiento */ }
-                    // Nunca leída en este dispositivo: sin red no se cierra la puerta.
+                    // Nunca leída en este dispositivo: se deduce por la fecha de
+                    // alta (las cuentas antiguas no tienen fila) y, si no se
+                    // puede, sin red no se cierra la puerta.
+                    if (user.created_at && new Date(user.created_at) < new Date(CUTOFF_LANZAMIENTO_PAGO)) return { estado: 'legado', modulos: ['base'] };
                     return { estado: 'active', modulos: ['base'], sinRed: true };
                 }
                 if (i < intentos - 1) await new Promise(r => setTimeout(r, 1500));
             }
             const esLegado = new Date(user.created_at) < new Date(CUTOFF_LANZAMIENTO_PAGO);
-            if (esLegado) return { estado: 'legado', modulos: ['base'] };
+            // Sin fila también se guarda: sin red no se podría calcular si el
+            // usuario guardado no trae la fecha de alta.
+            if (esLegado) { try { localStorage.setItem(claveGuardada, JSON.stringify({ estado: 'legado', modulos: ['base'] })); } catch (_) { /* sin almacenamiento */ } return { estado: 'legado', modulos: ['base'] }; }
             const finPrueba = new Date(new Date(user.created_at).getTime() + DIAS_PRUEBA * 86400000);
             if (new Date() < finPrueba) return { estado: 'prueba', trial_fin: finPrueba.toISOString(), modulos: ['base'] };
             return { estado: 'sin_suscripcion', modulos: ['base'] };
@@ -1063,6 +1068,7 @@
                 ${view === 'calendar'
                     ? `<span class="m-marca-fila"><button class="mi-avatar" onclick="openMiPerfil()" aria-label="Mi perfil">${avatarHtml(miPerfil.foto, miNombreVisible(), 'avatar-cabecera')}</button><span class="m-marca">bitácora.</span></span>`
                     : `<button class="m-inicio" onclick="mobileIr('calendar')"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M70 10L58 0 8 50l50 50 12-10-40-40z"/></svg>inicio.</button><span class="m-topbar-titulo" aria-hidden="true">${escapeHtml((NAV_VIEW_LABELS[view] || '').toLowerCase())}.</span>`}
+                ${modoSinConexion ? '<span class="m-sin-red">sin conexión.</span>' : ''}
                 <button class="m-menu-btn" onclick="toggleMenuMovil()" aria-label="Abrir el menú">
                     <span></span><span></span>
                     ${avisos ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}
