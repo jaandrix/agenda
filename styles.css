@@ -8937,3 +8937,11 @@ body:not(.papel) .luz-aviso { color:#6fc28f; }
 /* Pasar de un modal a otro: sin volver a crecer, solo el contenido nuevo aparece. */
 @keyframes modalSheetCambio { from { opacity: .4; } }
 .modal-sheet.modal-sheet-cambio { animation: modalSheetCambio .14s ease-out both; }
+
+/* Ficha de una entrada en el móvil: como la hoja de apuntar, se queda en
+   tres cuartos de pantalla y desliza por dentro, así siempre queda fondo
+   arriba para tocar y salir. */
+@media (max-width: 600px) { .modal-sheet.entry-detail-card { max-height: 74dvh; overscroll-behavior: contain; } }
+body.mobile-standalone .modal-sheet.entry-detail-card, body.pwa .modal-sheet.entry-detail-card { max-height: calc(74dvh / var(--m-zoom, 1)); overscroll-behavior: contain; }
+#mobile-shell .m-fila-qr { display:inline-flex; align-items:center; gap:6px; align-self:center; min-height:34px; padding:6px 11px; font-size:12.5px; }
+#mobile-shell .m-fila-qr svg { width:14px; height:14px; flex-shrink:0; }

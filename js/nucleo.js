@@ -1335,7 +1335,7 @@
                 const titulo = e.type === 'birthday' ? `cumpleaños de ${escapeHtml(e.title)}` : escapeHtml(e.title || '');
                 const cat = categories.find(c => c.id === e.categoryId);
                 const meta = [e.place, cat?.name].filter(Boolean).map(escapeHtml).join(', ');
-                filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(hora) || '—'}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${titulo}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div><span class="m-fila-bola" aria-hidden="true"></span></div>` });
+                filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(hora) || '—'}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${titulo}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div>${(e.entradas || []).length ? `<button class="m-mini m-fila-qr" onclick="event.stopPropagation();abrirEntradas('${e.id}',0)" aria-label="Ver la entrada">${ENTRADA_ICONO}<span>qr.</span></button>` : '<span class="m-fila-bola" aria-hidden="true"></span>'}</div>` });
             });
             tareasDia.forEach(it => {
                 filas.push({ hora: it.time || '', html: renderMobileFilaTarea(it, offset) });
@@ -1710,7 +1710,7 @@
                 return `<div class="m-evento" data-open-entry="${e.id}">
                     <div class="m-evento-fecha"><span>${d.getDate()}</span><small>${MOBILE_DIAS[d.getDay()]}.</small></div>
                     <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(e.title || '')}</div><div class="m-fila-meta">${escapeHtml([e.time, e.place].filter(Boolean).join(', '))}</div></div>
-                    ${(e.entradas || []).length ? `<button class="m-mini" onclick="event.stopPropagation();abrirEntradas('${e.id}',0)">qr.</button>` : `<span class="m-evento-icono">${icono}</span>`}
+                    ${(e.entradas || []).length ? `<button class="m-mini m-fila-qr" onclick="event.stopPropagation();abrirEntradas('${e.id}',0)" aria-label="Ver la entrada">${ENTRADA_ICONO}<span>qr.</span></button>` : `<span class="m-evento-icono">${icono}</span>`}
                 </div>`;
             };
             let mesActual = '';

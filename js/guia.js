@@ -246,7 +246,7 @@ const GUIA = [
             [guiaBoton('importar calendario.'), 'Trae otro calendario: sube el archivo .ics que exportan Google, Apple u Outlook, o pega su enlace (en Google Calendar, «Dirección secreta en formato iCal»; también los calendarios de equipos, ligas o la universidad). Antes de importar te enseña cuántos eventos hay y eliges si solo de hoy en adelante o todo; las repeticiones se desdoblan para los próximos 12 meses y no se duplica nada si lo vuelves a importar. Para cualquier otro formato (una captura, un PDF), copia las instrucciones para una IA y pega lo que te devuelva. También está en Ajustes → tus datos.'],
             [guiaBoton('Mostrar pasados'), 'Los que ya pasaron.'],
             [guiaBoton('Aviso'), 'En el formulario: una hora antes o sin aviso.'],
-            [guiaBoton('Entradas'), 'En el formulario: guarda las entradas con QR (una por persona) para enseñarlas en la puerta.'],
+            [guiaBoton('Entradas'), 'En el formulario: guarda las entradas con QR (una por persona) para enseñarlas en la puerta. En el móvil, el evento lleva un botón «qr.» en el inicio y en Eventos que abre la entrada sin pasar por su ficha.'],
         ],
         trucos: ['Arriba ves el próximo evento; si hay varios hoy, a dos columnas (planes y exámenes).', 'Un evento de cine que ya pasó se convierte en película vista en Ocio para que la valores.'],
     },
