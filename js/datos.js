@@ -33,6 +33,8 @@
                     const u = s?.user || s?.currentSession?.user;
                     if (u?.id) return u;
                 }
+                const ultimo = JSON.parse(localStorage.getItem('bitacora-ultimo-usuario') || 'null');
+                if (ultimo?.id) return ultimo;
             } catch (_) { /* sin almacenamiento */ }
             return null;
         }
@@ -87,6 +89,10 @@
             else { modoSinConexion = false; sincronizarDesdeNube(); }
         }
         window.addEventListener('online', () => setTimeout(volverAConectar, 1200));
+        // iOS puede cerrar la app en segundo plano sin avisar: la copia se
+        // escribe ya al salir, sin esperar al temporizador.
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && copiaUid) { clearTimeout(copiaTemporizador); guardarCopiaLocal(); } });
+        window.addEventListener('pagehide', () => { if (copiaUid) { clearTimeout(copiaTemporizador); guardarCopiaLocal(); } });
 
         async function loadData() {
             try {
@@ -119,7 +125,8 @@
                     saved = (data && data.data) ? data.data : {};
                     datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(saved[k])]));
                     modoSinConexion = false;
-                    programarCopiaLocal(3000);
+                    try { localStorage.setItem('bitacora-ultimo-usuario', JSON.stringify({ id: user.id, email: user.email, created_at: user.created_at })); } catch (_) { /* sin almacenamiento */ }
+                    programarCopiaLocal(400);
                 }
                 entries = saved.entries || [];
                 // Lo que apuntó la IA con el punto medio («valle · maria») pasa a comas, una vez.
