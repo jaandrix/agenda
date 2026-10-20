@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     const secreto = Deno.env.get('AVISOS_SECRET');
     if (secreto && req.headers.get('x-internal-secret') === secreto) {
         try { return await mantenimiento(await req.json().catch(() => ({}))); }
-        catch (e) { console.error(e); return json({ error: String((e as Error).message || e) }, 500); }
+        catch (e) { console.error(e); return json({ error: 'No se ha podido abrir el portal de pago' }, 500); }
     }
     const jwt = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     const { data: { user } } = await sb.auth.getUser(jwt);

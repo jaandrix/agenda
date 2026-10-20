@@ -199,7 +199,7 @@ function openCompraFrecuentes() {
         <p class="finance-modal-note" style="margin-top:0">Lo que más veces has comprado. Añádelo a la lista con un toque o quita lo que ya no compras.</p>
         <div class="compra-frec-lista">${filas.map(([t, n]) => {
             const ya = enLista.has(t);
-            const arg = escapeHtml(t).replace(/'/g, '&#39;');
+            const arg = jsAttr(t);
             return `<div class="compra-frec-fila">
                 <span><b>${escapeHtml(t.charAt(0).toUpperCase() + t.slice(1))}</b><small>${n} ${n === 1 ? 'vez' : 'veces'}</small></span>
                 ${ya ? '<em>en la lista.</em>' : `<button class="profe-chip" onclick="compraFrecuenteAnadir('${arg}')">+ añadir.</button>`}
@@ -832,7 +832,7 @@ function openEditarReceta(id) {
         <input id="receta-raciones" class="modal-input" inputmode="numeric" value="${r?.raciones || ''}" placeholder="2">
         <div class="modal-label">ingredientes <small style="font-weight:500;color:var(--text-secondary)">(uno por línea: «200 g nata», «2 huevos»)</small></div>
         <textarea id="receta-ingredientes" class="modal-input" rows="6" placeholder="200 g nata\nsolomillo de cerdo\n250 g pasta">${escapeHtml(r ? compraIngredientesTexto(r) : '')}</textarea>
-        ${habituales.length ? `<div class="compra-receta-sugeridas"><span>de tus compras:</span>${habituales.map(t => `<button type="button" class="profe-chip" onclick="recetaAnadirIngrediente('${escapeHtml(t).replace(/'/g, '&#39;')}')">+ ${escapeHtml(t)}</button>`).join('')}</div>` : ''}
+        ${habituales.length ? `<div class="compra-receta-sugeridas"><span>de tus compras:</span>${habituales.map(t => `<button type="button" class="profe-chip" onclick="recetaAnadirIngrediente('${jsAttr(t)}')">+ ${escapeHtml(t)}</button>`).join('')}</div>` : ''}
         <input id="receta-buscar" class="modal-input" list="receta-productos" placeholder="Buscar en tus productos y añadir..." onchange="if(this.value){recetaAnadirIngrediente(this.value);this.value=''}" style="margin-top:8px">
         <datalist id="receta-productos">${productos.map(p => `<option value="${escapeHtml(p)}">`).join('')}</datalist>
         <div class="modal-label">cómo se hace</div>

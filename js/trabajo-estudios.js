@@ -499,7 +499,9 @@
             showToast('Leyendo el PDF...');
             try {
                 const buffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+                // isEvalSupported: false tapa el fallo CVE-2024-4367 de esta versión
+                // de pdf.js (un PDF preparado podía ejecutar código al abrirse).
+                const pdf = await pdfjsLib.getDocument({ data: buffer, isEvalSupported: false }).promise;
                 let fullText = '';
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);

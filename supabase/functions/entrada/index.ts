@@ -161,9 +161,26 @@ async function recibirSiri(req: Request, url: URL) {
     return texto(`Apuntado en Bitácora: ${frase}.`);
 }
 
+// Límite de peticiones por minuto y por quien llama (IP o token). Vive en la
+// memoria de cada instancia: no es exacto, pero frena a quien bombardee la
+// función sin coste extra.
+const ventanas = new Map<string, { inicio: number; n: number }>();
+function demasiadas(clave: string, max: number) {
+    const ahora = Date.now();
+    const v = ventanas.get(clave);
+    if (!v || ahora - v.inicio > 60000) { ventanas.set(clave, { inicio: ahora, n: 1 }); if (ventanas.size > 5000) ventanas.clear(); return false; }
+    v.n++;
+    return v.n > max;
+}
+const ipDe = (req: Request) => (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'sin-ip';
+
 Deno.serve(async req => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
     const url = new URL(req.url);
+    // El correo llega siempre desde los servidores de ForwardEmail: por IP
+    // frenaría a todos a la vez, así que su margen es mucho mayor.
+    const correo = url.pathname.endsWith('/correo');
+    if (demasiadas((correo ? 'correo:' : 'siri:') + ipDe(req), correo ? 600 : 30)) return texto('Demasiadas peticiones. Espera un minuto.', 429);
     try {
         if (url.pathname.endsWith('/correo')) {
             const c = await req.json().catch(() => null);

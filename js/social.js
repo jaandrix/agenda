@@ -259,7 +259,7 @@ function renderAmigosSocial() {
                 </div>
                 <div class="social-lista">
                     ${solicitudesEnviadas.map(s => `<div class="social-fila social-fila-pendiente"><b>${escapeHtml(s.nombre)}</b><small>pendiente.</small></div>`).join('')}
-                    ${amigos.map(a => `<div class="social-fila social-fila-amigo">${avatarHtml(a.foto, nombreAmigo(a))}<span class="social-amigo-txt"><b>${escapeHtml(nombreAmigo(a))}</b>${a.descripcion ? `<small>${escapeHtml(a.descripcion)}</small>` : ''}</span><button class="friend-remove-btn" title="Eliminar amigo" onclick="eliminarAmigo('${a.friend_id}', '${escapeHtml(nombreAmigo(a)).replace(/'/g, '')}')"><i class='ico ico-x' aria-hidden=true></i></button></div>`).join('')}
+                    ${amigos.map(a => `<div class="social-fila social-fila-amigo">${avatarHtml(a.foto, nombreAmigo(a))}<span class="social-amigo-txt"><b>${escapeHtml(nombreAmigo(a))}</b>${a.descripcion ? `<small>${escapeHtml(a.descripcion)}</small>` : ''}</span><button class="friend-remove-btn" title="Eliminar amigo" onclick="eliminarAmigo('${a.friend_id}', '${jsAttr(nombreAmigo(a))}')"><i class='ico ico-x' aria-hidden=true></i></button></div>`).join('')}
                     ${!amigos.length && !solicitudesEnviadas.length ? '<div class="ajuste-cargando social-vacio-linea">Aún no tienes amigos añadidos.</div>' : ''}
                 </div>`)}
             <div class="social-columna">

@@ -32,6 +32,9 @@ async function asegurarBucket() {
 
 const nuevoId = () => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(12)))).replace(/\+/g, '-').replace(/\//g, '_');
 const idValido = (id: unknown) => typeof id === 'string' && /^[A-Za-z0-9_-]{16}$/.test(id);
+// Los identificadores de las cosas de una lista acaban dentro de botones de
+// la app del dueño: solo letras, números, guion y guion bajo.
+const idItem = (v: unknown) => String(v ?? '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24);
 const txt = (v: unknown, max = 200) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
 
 async function leerJson(ruta: string) {
@@ -71,9 +74,9 @@ function respuestaValida(tipo: string, ev: any) {
         return { tipo: 'rsvp', pid, nombre, va: ev.va, mas: Math.max(0, Math.min(9, Number(ev.mas) || 0)), nota: txt(ev.nota, 200) };
     }
     if (tipo === 'lista') {
-        if (ev?.tipo === 'anadir' && txt(ev.texto, 80)) return { tipo: 'anadir', item: txt(ev.item, 24) || nuevoId(), texto: txt(ev.texto, 80), nombre };
-        if (ev?.tipo === 'marcar' && txt(ev.item, 24)) return { tipo: 'marcar', item: txt(ev.item, 24), hecho: !!ev.hecho, nombre };
-        if (ev?.tipo === 'quitar' && txt(ev.item, 24)) return { tipo: 'quitar', item: txt(ev.item, 24), nombre };
+        if (ev?.tipo === 'anadir' && txt(ev.texto, 80)) return { tipo: 'anadir', item: idItem(ev.item) || nuevoId(), texto: txt(ev.texto, 80), nombre };
+        if (ev?.tipo === 'marcar' && idItem(ev.item)) return { tipo: 'marcar', item: idItem(ev.item), hecho: !!ev.hecho, nombre };
+        if (ev?.tipo === 'quitar' && idItem(ev.item)) return { tipo: 'quitar', item: idItem(ev.item), nombre };
     }
     return null;
 }
@@ -94,9 +97,23 @@ async function avisarDueno(meta: any, ev: any) {
 
 const publico = (meta: any, evs: unknown[]) => ({ id: meta.id, tipo: meta.tipo, autor: meta.autor, creado: meta.creado, actualizado: meta.actualizado, datos: meta.datos, cierre: meta.cierre || null, eventos: evs });
 
+// Límite de peticiones por minuto y por quien llama (IP o token). Vive en la
+// memoria de cada instancia: no es exacto, pero frena a quien bombardee la
+// función sin coste extra.
+const ventanas = new Map<string, { inicio: number; n: number }>();
+function demasiadas(clave: string, max: number) {
+    const ahora = Date.now();
+    const v = ventanas.get(clave);
+    if (!v || ahora - v.inicio > 60000) { ventanas.set(clave, { inicio: ahora, n: 1 }); if (ventanas.size > 5000) ventanas.clear(); return false; }
+    v.n++;
+    return v.n > max;
+}
+const ipDe = (req: Request) => (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'sin-ip';
+
 Deno.serve(async req => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
     if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
+    if (demasiadas(ipDe(req), 90)) return json({ error: 'Demasiadas peticiones. Espera un minuto.' }, 429);
     try {
         await asegurarBucket();
         const b = await req.json().catch(() => ({}));

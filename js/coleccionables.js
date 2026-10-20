@@ -358,7 +358,7 @@
                 <div class="coll-mercado-nota">Hay ${lista.length} ${lista.length === 1 ? 'carta posible' : 'cartas posibles'}. ¿Cuál es la tuya?${lista.length > 8 ? ' Añade el set o el número de la carta para afinar.' : ''}</div>
                 <div class="coll-mercado-opciones">
                     ${opciones.map(c => `
-                        <button class="coll-mercado-opcion" onclick="elegirMercadoCarta('${id}','${escapeHtml(c.id)}')">
+                        <button class="coll-mercado-opcion" onclick="elegirMercadoCarta('${id}','${jsAttr(c.id)}')">
                             ${c.image ? `<img src="${escapeHtml(c.image)}/low.webp" alt="" loading="lazy">` : '<span class="coll-mercado-sinimg"></span>'}
                             <span>${escapeHtml(c.set?.name || '')}<small>#${escapeHtml(c.localId)}${rareza(c)}</small></span>
                         </button>`).join('')}

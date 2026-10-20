@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
                 const info = await consultar17(String(opciones.probar.numero), false);
                 return json(info ? interpretar17(info) : { nota: 'sin datos todavía' });
             }
-            catch (e) { return json({ error: String((e as Error).message || e) }, 502); }
+            catch (e) { console.error(e); return json({ error: 'No se ha podido consultar el seguimiento' }, 502); }
         }
         if (opciones.user_id) usuarios = [opciones.user_id];
         else {

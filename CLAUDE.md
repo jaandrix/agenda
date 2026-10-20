@@ -163,6 +163,11 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   apagar, cambio: máscaras SVG en styles.css), nunca glifos (✕ ‹ › ✎ ⭳ ↻ ⏻ ⇄) ni emojis. La selección, el cursor, el
   foco y las barras de scroll llevan la tinta del tema. En el inicio del móvil, el día va en renglones con puntos
   guía (`.m-libro`), no en teselas.
+- **Escapar siempre (seguridad, 2026-10-20):** `escapeHtml` escapa también las comillas (para textos dentro de atributos);
+  dentro de una cadena JS en un atributo (`onclick="f('...')"`) se usa `jsAttr()`, nunca `escapeHtml(...).replace(/'/g, ...)`.
+  Lo que llega de otras personas (amigos, enlaces compartidos) es lo más delicado. Contraseñas del Vault con PBKDF2
+  (`hashPassword` / `comprobarClave`); las de cuenta pasan por `revisarContrasena` (8 caracteres y Have I Been Pwned).
+  Auditoría de la base de datos en `supabase/sql/auditoria_seguridad_2026-10.sql`.
 - **La app NO tiene reset global de `box-sizing: border-box`** — si el tamaño en
   píxeles de algo importa (centrar contenido interno de un elemento con borde, p. ej.
   un checkbox a medida), hay que declararlo explícitamente en ese elemento o los

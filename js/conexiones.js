@@ -120,7 +120,7 @@ function renderGraph() {
                     <div class="conexiones-grupo">
                         <div class="conexiones-grupo-titulo">${CONEXION_TIPOS[g.tipo].titulo}</div>
                         <div class="conexiones-chips">${g.lista.slice(0, 24).map(c => `
-                            <button class="conexiones-chip ${c.id === actual.id ? 'activo' : ''}" onclick="elegirConexion('${escapeHtml(c.id).replace(/'/g, "\\'")}')">${escapeHtml(c.nombre)}<span>${c.items.length}</span></button>`).join('')}
+                            <button class="conexiones-chip ${c.id === actual.id ? 'activo' : ''}" onclick="elegirConexion('${jsAttr(c.id)}')">${escapeHtml(c.nombre)}<span>${c.items.length}</span></button>`).join('')}
                         </div>
                     </div>`).join('')}
             </aside>

@@ -694,7 +694,7 @@
                 return `<div class="docs-row">
                     <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
                     <div class="docs-row-body"><div class="docs-row-name">${escapeHtml(fecha)}</div><div class="docs-row-meta">${escapeHtml(iso)}</div></div>
-                    <div class="doc-actions"><button class="doc-action-download" onclick="restoreBackupFile('${escapeHtml(f.name)}')">Restaurar</button></div>
+                    <div class="doc-actions"><button class="doc-action-download" onclick="restoreBackupFile('${jsAttr(f.name)}')">Restaurar</button></div>
                 </div>`;
             }).join('')}</div>`;
         }

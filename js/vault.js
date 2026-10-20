@@ -2,12 +2,31 @@
         //  VAULT: CONTRASEÑAS EN SUPABASE
         // ============================================================
 
+        // Antes era un SHA-256 sin sal: si alguien llegaba a ver el hash, se
+        // rompía en segundos con tablas precalculadas. Ahora PBKDF2 con sal
+        // propia («pbkdf2$iteraciones$sal$hash»); los hashes viejos siguen
+        // valiendo y se cambian al formato nuevo al acertar la contraseña.
+        const hexDe = buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        async function sha256Antiguo(password) {
+            return hexDe(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password)));
+        }
+        async function pbkdf2(password, salHex, iteraciones) {
+            const sal = new Uint8Array(salHex.match(/../g).map(h => parseInt(h, 16)));
+            const clave = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+            return hexDe(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: sal, iterations: iteraciones, hash: 'SHA-256' }, clave, 256));
+        }
         async function hashPassword(password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            const sal = hexDe(crypto.getRandomValues(new Uint8Array(16)));
+            return `pbkdf2$310000$${sal}$${await pbkdf2(password, sal, 310000)}`;
+        }
+        // Devuelve true si la contraseña coincide con el hash guardado.
+        async function comprobarClave(password, guardado) {
+            if (!guardado) return false;
+            if (guardado.startsWith('pbkdf2$')) {
+                const [, it, sal, hash] = guardado.split('$');
+                return (await pbkdf2(password, sal, Number(it))) === hash;
+            }
+            return (await sha256Antiguo(password)) === guardado;
         }
 
         async function getSecret(type) {
@@ -240,9 +259,8 @@
                     return;
                 }
                 
-                const inputHash = await hashPassword(password);
-                
-                if (inputHash === storedHash) {
+                if (await comprobarClave(password, storedHash)) {
+                    if (!storedHash.startsWith('pbkdf2$')) setSecret(type, await hashPassword(password)).catch(e => console.error(e));
                     closeModal();
                     if (window._passwordSuccessCallback) {
                         window._passwordSuccessCallback();
@@ -371,9 +389,7 @@
                     return;
                 }
 
-                const inputHash = await hashPassword(input);
-
-                if (inputHash !== storedHash) {
+                if (!(await comprobarClave(input, storedHash))) {
                     errorEl.textContent = '❌ Contraseña incorrecta';
                     return;
                 }
@@ -635,8 +651,7 @@
 
             try {
                 const storedHash = await getSecret('vault');
-                const oldHash = await hashPassword(old);
-                if (oldHash !== storedHash) {
+                if (!(await comprobarClave(old, storedHash))) {
                     errorEl.textContent = '❌ Contraseña actual incorrecta';
                     return;
                 }

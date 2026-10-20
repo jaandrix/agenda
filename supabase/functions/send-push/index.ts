@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
         .from('push_subscriptions')
         .select('id, endpoint, subscription')
         .eq('user_id', payload.user_id);
-    if (error) return json({ error: error.message }, 500);
+    if (error) { console.error(error); return json({ error: 'No se han podido leer las suscripciones' }, 500); }
     if (!subs || subs.length === 0) return json({ ok: true, sent: 0, note: 'Este usuario no tiene notificaciones activadas en ningún dispositivo' });
 
     const notificationPayload = JSON.stringify({

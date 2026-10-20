@@ -102,7 +102,7 @@ function renderPedidoTarjeta(p) {
         </div>
         ${ultimo?.nota ? `<div class="pedido-nota">${escapeHtml(ultimo.nota)}</div>` : ''}
         ${movimientos.length ? `<details class="pedido-movimientos"><summary>movimientos. <span>${movimientos.length}</span></summary><ol>${movimientos.map(m => `<li><time>${escapeHtml(fechaMovimiento(m.fecha))}</time>${escapeHtml(m.texto)}</li>`).join('')}</ol></details>` : ''}
-        ${p.seguimiento ? `<div class="pedido-codigo"><code>${escapeHtml(p.seguimiento)}</code><button onclick="navigator.clipboard.writeText('${escapeHtml(p.seguimiento).replace(/'/g, '')}').then(() => showToast('Número copiado'))">copiar.</button></div>` : ''}
+        ${p.seguimiento ? `<div class="pedido-codigo"><code>${escapeHtml(p.seguimiento)}</code><button onclick="navigator.clipboard.writeText('${jsAttr(p.seguimiento)}').then(() => showToast('Número copiado'))">copiar.</button></div>` : ''}
         <div class="pedido-acciones">
             ${p.estado !== 'entregado' ? `<button class="pedido-btn pedido-btn-principal" onclick="avanzarPedido('${p.id}')">→ ${PEDIDO_ESTADOS[Math.min(paso + 1, PEDIDO_ESTADOS.length - 1)].texto}</button>` : ''}
             ${p.seguimiento && p.estado !== 'entregado' ? `<button class="pedido-btn" onclick="actualizarPedido('${p.id}', this)">actualizar.</button>` : ''}

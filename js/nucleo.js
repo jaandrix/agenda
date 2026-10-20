@@ -151,6 +151,21 @@
             showToast('Sesión cerrada en todos los dispositivos');
         }
 
+        // Contraseña nueva: al menos 8 caracteres, no trivial y que no salga en
+        // filtraciones conocidas (Have I Been Pwned por rango: solo viajan los 5
+        // primeros caracteres de su SHA-1, nunca la contraseña). Si el servicio
+        // no responde, no se bloquea el registro.
+        async function revisarContrasena(password) {
+            if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+            if (/^(.)\1+$/.test(password) || /^(12345678|password|contraseña|qwertyui)/i.test(password)) return 'Esa contraseña es demasiado fácil de adivinar.';
+            try {
+                const h = [...new Uint8Array(await crypto.subtle.digest('SHA-1', new TextEncoder().encode(password)))].map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+                const r = await Promise.race([fetch('https://api.pwnedpasswords.com/range/' + h.slice(0, 5)), new Promise((_, mal) => setTimeout(() => mal(new Error('sin respuesta')), 4000))]);
+                if (r.ok && (await r.text()).split(/\r?\n/).some(l => l.startsWith(h.slice(5) + ':'))) return 'Esa contraseña ha aparecido en filtraciones de datos de otras webs. Elige otra.';
+            } catch (_) { /* sin red o sin respuesta: no bloquea */ }
+            return '';
+        }
+
         async function startApp() {
             const boot = document.getElementById('boot-loading');
             if (boot) boot.style.display = 'none';
@@ -362,7 +377,7 @@
                         <code>${escapeHtml(c.codigo)}</code>
                         ${c.canjeado_por
                             ? `<span>regalado el ${new Date(c.canjeado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}.</span>`
-                            : `<button onclick="navigator.clipboard.writeText('${escapeHtml(c.codigo)}').then(() => showToast('Código copiado'))">copiar.</button>`}
+                            : `<button onclick="navigator.clipboard.writeText('${jsAttr(c.codigo)}').then(() => showToast('Código copiado'))">copiar.</button>`}
                     </div>`).join('')}</div>
                 <div class="regalo-pie">${libres === 1 ? 'Te queda 1 regalo.' : `Te quedan ${libres} regalos.`}</div>
             `);
@@ -493,7 +508,7 @@
             successEl.textContent = '';
 
             if (!email || !password || !password2) { errorEl.textContent = 'Rellena todos los campos.'; return; }
-            if (password.length < 6) { errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+            { const fallo = await revisarContrasena(password); if (fallo) { errorEl.textContent = fallo; return; } }
             if (password !== password2) { errorEl.textContent = 'Las contraseñas no coinciden.'; return; }
 
             btn.disabled = true;
@@ -545,7 +560,7 @@
             successEl.textContent = '';
 
             if (!password || !password2) { errorEl.textContent = 'Rellena ambos campos.'; return; }
-            if (password.length < 6) { errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+            { const fallo = await revisarContrasena(password); if (fallo) { errorEl.textContent = fallo; return; } }
             if (password !== password2) { errorEl.textContent = 'Las contraseñas no coinciden.'; return; }
 
             btn.disabled = true;
@@ -2227,10 +2242,18 @@
             return '#' + d + '/' + m + '/' + y;
         }
 
+        // También las comillas: muchos textos van dentro de atributos
+        // (title="...", value="...") y con una comilla se salían del
+        // atributo. Lo que viene de otras personas (eventos compartidos,
+        // nombres, listas por enlace) podía colar código así.
         function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str || '';
-            return div.innerHTML;
+            return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        // Para un texto dentro de una cadena JS en un atributo
+        // (onclick="f('...')"): el navegador deshace &#39; antes de ejecutar,
+        // así que la comilla se escapa también para JS.
+        function jsAttr(str) {
+            return escapeHtml(String(str ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/[\r\n]+/g, ' '));
         }
 
         // ============================================================

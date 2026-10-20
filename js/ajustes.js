@@ -21,14 +21,14 @@
             const roots = Object.values(tree).map(n => ({ n, items: entriesForTagPrefix(n.path) })).sort((a, b) => b.items.length - a.items.length || a.n.name.localeCompare(b.n.name));
             const max = Math.max(...roots.map(r => r.items.length));
             return `<div class="etiquetas-rejilla">${roots.map(({ n, items }) => {
-                const pathEsc = escapeHtml(n.path).replace(/'/g, "\\'");
+                const pathEsc = jsAttr(n.path);
                 const hijos = Object.values(n.children).sort((a, b) => a.name.localeCompare(b.name));
                 return `
                 <div class="etiqueta-tarjeta" onclick="window._selectedTag='${pathEsc}';render()">
                     <div class="etiqueta-tarjeta-top"><span class="etiqueta-tarjeta-nombre">#${escapeHtml(n.name)}</span><span class="etiqueta-tarjeta-n">${items.length}</span></div>
                     <div class="etiqueta-tarjeta-barra"><span style="width:${Math.max(6, items.length / max * 100)}%"></span></div>
                     <div class="etiqueta-tarjeta-tipos">${desgloseTipos(items)}</div>
-                    ${hijos.length ? `<div class="etiqueta-tarjeta-hijos">${hijos.map(h => `<button onclick="event.stopPropagation();window._selectedTag='${escapeHtml(h.path).replace(/'/g, "\\'")}';render()">/${escapeHtml(h.name)}</button>`).join('')}</div>` : ''}
+                    ${hijos.length ? `<div class="etiqueta-tarjeta-hijos">${hijos.map(h => `<button onclick="event.stopPropagation();window._selectedTag='${jsAttr(h.path)}';render()">/${escapeHtml(h.name)}</button>`).join('')}</div>` : ''}
                 </div>`;
             }).join('')}</div>`;
         }
@@ -108,7 +108,7 @@
             if (window._selectedTag) {
                 const tag = window._selectedTag;
                 const items = entriesForTagPrefix(tag);
-                const tagEsc = escapeHtml(tag).replace(/'/g, "\\'");
+                const tagEsc = jsAttr(tag);
                 const porTipo = {};
                 items.forEach(e => { (porTipo[e.type] = porTipo[e.type] || []).push(e); });
                 const hayConexion = typeof construirConexiones === 'function' && items.length > 0;

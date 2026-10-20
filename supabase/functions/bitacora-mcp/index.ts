@@ -1562,9 +1562,20 @@ async function responder(userId: string, msg: any) {
     }
 }
 
+// Límite por enlace y minuto, en la memoria de cada instancia: frena un
+// bucle de una IA o a quien tenga un enlace filtrado, sin coste extra.
+const ventanasMcp = new Map<string, { inicio: number; n: number }>();
+function demasiadasMcp(clave: string, max: number) {
+    const ahora = Date.now();
+    const v = ventanasMcp.get(clave);
+    if (!v || ahora - v.inicio > 60000) { ventanasMcp.set(clave, { inicio: ahora, n: 1 }); if (ventanasMcp.size > 5000) ventanasMcp.clear(); return false; }
+    return ++v.n > max;
+}
+
 Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
     const token = new URL(req.url).pathname.split('/').filter(Boolean).pop() || '';
+    if (demasiadasMcp(token.slice(0, 16) || 'sin-token', 240)) return json({ jsonrpc: '2.0', id: null, error: { code: -32029, message: 'Demasiadas peticiones. Espera un minuto.' } }, 429);
     const userId = await usuarioDelToken(token);
     if (!userId) return json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Enlace de Bitácora no válido o revocado' } }, 401);
     // Sin flujo de eventos del servidor: todas las respuestas van en el

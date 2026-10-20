@@ -511,13 +511,13 @@
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
                 const isHtml = /\.html?$/i.test(doc.name);
                 const openBtn = isHtml
-                    ? `<button class="doc-action-download" onclick="openEntryDocHtml('trips','${tripId}','${escapeHtml(doc.name)}')">Ver</button>`
-                    : `<button class="doc-action-download" onclick="downloadTripDocument('${tripId}','${escapeHtml(doc.name)}')">Descargar</button>`;
+                    ? `<button class="doc-action-download" onclick="openEntryDocHtml('trips','${tripId}','${jsAttr(doc.name)}')">Ver</button>`
+                    : `<button class="doc-action-download" onclick="downloadTripDocument('${tripId}','${jsAttr(doc.name)}')">Descargar</button>`;
                 return `<div class="doc-item">
                     <div class="doc-info"><span style="font-size:20px">${isHtml ? '▥' : '📄'}</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ', ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
                         ${openBtn}
-                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteTripDocument('${tripId}','${escapeHtml(doc.name)}')"><i class='ico ico-x' aria-hidden=true></i></button>
+                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteTripDocument('${tripId}','${jsAttr(doc.name)}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                 </div>`;
             }).join('');
@@ -600,8 +600,8 @@
                 return `<div class="doc-item">
                     <div class="doc-info"><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ', ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
-                        <button class="doc-action-download" onclick="downloadWorkDocument('${workId}','${escapeHtml(doc.name)}')">Descargar</button>
-                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteWorkDocument('${workId}','${escapeHtml(doc.name)}')"><i class='ico ico-x' aria-hidden=true></i></button>
+                        <button class="doc-action-download" onclick="downloadWorkDocument('${workId}','${jsAttr(doc.name)}')">Descargar</button>
+                        <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteWorkDocument('${workId}','${jsAttr(doc.name)}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                 </div>`;
             }).join('');
