@@ -63,8 +63,46 @@ const APUNTAR_CATEGORIAS = [
 
 function apuntarFechaDe(base, k) { const d = new Date(base); d.setDate(d.getDate() + k); return isoLocal(d); }
 
+// Importes dichos con palabras («veinticinco euros», «ciento veinte euros»):
+// se pasan a cifras antes de leer el importe, igual que si se hubieran
+// escrito con números. Solo delante de euros, € o pavos, para no tocar
+// «tres cosas» ni títulos con números.
+const APUNTAR_CIFRAS = {
+    cero: 0, un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9,
+    diez: 10, once: 11, doce: 12, trece: 13, catorce: 14, quince: 15, dieciseis: 16, diecisiete: 17, dieciocho: 18, diecinueve: 19,
+    veinte: 20, veintiun: 21, veintiuno: 21, veintiuna: 21, veintidos: 22, veintitres: 23, veinticuatro: 24, veinticinco: 25,
+    veintiseis: 26, veintisiete: 27, veintiocho: 28, veintinueve: 29, treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60,
+    setenta: 70, ochenta: 80, noventa: 90, cien: 100, ciento: 100, doscientos: 200, doscientas: 200, trescientos: 300,
+    trescientas: 300, cuatrocientos: 400, cuatrocientas: 400, quinientos: 500, quinientas: 500, seiscientos: 600,
+    seiscientas: 600, setecientos: 700, setecientas: 700, ochocientos: 800, ochocientas: 800, novecientos: 900, novecientas: 900, mil: 1000,
+};
+const APUNTAR_CIFRAS_RE = new RegExp(`\\b((?:(?:${Object.keys(APUNTAR_CIFRAS).sort((a, b) => b.length - a.length).join('|')})(?:\\s+y\\s+|\\s+))+)(?=(?:euros?|€|eur|pavos)\\b|€)`, 'g');
+
+function apuntarCifraDe(palabras) {
+    let total = 0, actual = 0;
+    palabras.split(/\s+/).filter(p => p && p !== 'y').forEach(p => {
+        const v = APUNTAR_CIFRAS[p];
+        if (v === 1000) { total += (actual || 1) * 1000; actual = 0; }
+        else actual += v;
+    });
+    return total + actual;
+}
+
+function apuntarCifrasEscritas(texto) {
+    const norm = apuntarNorm(texto);
+    if (norm.length !== texto.length) return texto;
+    let salida = texto, desfase = 0;
+    for (const m of norm.matchAll(APUNTAR_CIFRAS_RE)) {
+        const cifra = String(apuntarCifraDe(m[1].trim())) + ' ';
+        const ini = m.index + desfase;
+        salida = salida.slice(0, ini) + cifra + salida.slice(ini + m[1].length);
+        desfase += cifra.length - m[1].length;
+    }
+    return salida;
+}
+
 function interpretarApunte(texto) {
-    let resto = ' ' + String(texto || '').trim() + ' ';
+    let resto = apuntarCifrasEscritas(' ' + String(texto || '').trim() + ' ');
     const n = apuntarNorm(resto);
     const r = { fecha: apuntarFechaBase || todayISO(), fechaDicha: false, fechaFin: '', anioDicho: false, hora: '', horaFin: '', importe: null, ingreso: false, comprar: false, nota: false, titulo: '', recurrencia: null, cumple: false, estudio: null, clase: false, viaje: false, eventoTipo: '', lugar: '', cuenta: '', categoria: '', forzado: '', conGente: false };
     const quitar = (re) => { const m = apuntarNorm(resto).match(re); if (!m) return null; resto = resto.slice(0, m.index) + ' ' + resto.slice(m.index + m[0].length); return m; };
@@ -186,7 +224,9 @@ function interpretarApunte(texto) {
         if (mm[4]) { h -= 1; min = 60 - (mm[4] === 'cuarto' ? 15 : Number(mm[4])); if (h < 0) h = 23; }
         const suf = mm[5] || '';
         // «a la una», «a las 5» a secas casi siempre es por la tarde.
-        const tarde = /pm|tarde|noche/.test(suf) || (!suf && /tarde|noche/.test(momento)) || (!suf && !momento && !mm[2] && dicha >= 1 && dicha <= 7);
+        // Y de 8 a 11, si el plan es de noche: «cena con Marta a las nueve».
+        const deNoche = !suf && !momento && dicha >= 8 && dicha <= 11 && /\b(?:cena|cenar|cenamos|ceno|copas?|fiesta|concierto|discoteca|teatro)\b/.test(n);
+        const tarde = /pm|tarde|noche/.test(suf) || (!suf && /tarde|noche/.test(momento)) || (!suf && !momento && !mm[2] && dicha >= 1 && dicha <= 7) || deNoche;
         if (tarde && h < 12) h += 12;
         if (/am|madrugada|manana/.test(suf) && h === 12) h = 0;
         return h < 24 && min < 60 ? `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}` : '';

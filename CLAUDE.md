@@ -330,7 +330,7 @@ a menor resolución.
   selector de tipo; `apuntesRecientes` (sincronizado, 40) con deshacer/cambiar. Cumpleaños sin año: `birthDate` 2000 y
   `sinAnio`. La primera palabra puede forzar el tipo (`r.forzado`: evento, tarea y los de Ocio libro/serie/peli/juego,
   `APUNTAR_OCIO`, que se crean con la op `ocio`); con hora y sin verbo delante, o «con alguien» (`r.conGente`), es evento;
-  una «y» solo parte si después empieza otra cosa o los dos trozos tienen fecha (`apuntarConFecha`). El botón flotante del escritorio es "+ apuntar." (#fab).
+  una «y» solo parte si después empieza otra cosa o los dos trozos tienen fecha (`apuntarConFecha`). Los importes dichos con palabras delante de euros/€/pavos se pasan a cifras (`apuntarCifrasEscritas`), y de 8 a 11 sin «de la mañana» es de noche si el plan lo es (cena, copas, concierto…). El botón flotante del escritorio es "+ apuntar." (#fab).
 - **Fechas:** `todayISO()` e `isoLocal(d)` son en hora local. Nunca `toISOString().slice(0, 10)` para "hoy" (en UTC,
   de 0:00 a 2:00 daba el día anterior).
 - **Ramas de apartados:** `RAMAS_APARTADOS` en ajustes.js agrupa los opcionales (#school, #home, #work, #mind).
