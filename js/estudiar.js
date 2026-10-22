@@ -985,16 +985,17 @@ function renderEstudiar() {
     if (estRepaso) return `<div class="estudiar">${renderEstRepaso()}</div>`;
     const c = estCuentas();
     const porRepasar = c.toca + c.nuevasHoy;
-    const pestanas = [['hoy', 'hoy.'], ['tarjetas', `tarjetas.${porRepasar ? ` <small>${porRepasar}</small>` : ''}`], ['temario', 'temario.']];
+    const pestanas = [['hoy', 'hoy.'], ['tarjetas', `tarjetas.${porRepasar ? ` <small>${porRepasar}</small>` : ''}`], ['temario', 'temario.'], ['test', 'test.']];
     return `<div class="estudiar">
+        ${pestanasEstudios('estudiar')}
         <div class="compra-cab">
             <div>
-                <div class="compra-titulo">estudiar.</div>
-                <div class="compra-sub">Pomodoro, plan del día, temario y repaso espaciado.</div>
+                <div class="compra-titulo">repaso.</div>
+                <div class="compra-sub">Pomodoro, plan del día, temario, repaso espaciado y tests con amigos.</div>
             </div>
             <button class="pedido-btn" onclick="openEstAjustes()">ajustes.</button>
         </div>
         <div class="compra-listas est-pestanas">${pestanas.map(([k, t]) => `<button class="profe-chip ${estudiarPestana === k ? 'activa' : ''}" onclick="estudiarPestana='${k}';render()">${t}</button>`).join('')}</div>
-        ${estudiarPestana === 'tarjetas' ? renderEstTarjetas() : estudiarPestana === 'temario' ? renderEstTemario() : renderEstHoy()}
+        ${estudiarPestana === 'tarjetas' ? renderEstTarjetas() : estudiarPestana === 'temario' ? renderEstTemario() : estudiarPestana === 'test' ? renderEstTest() : renderEstHoy()}
     </div>`;
 }

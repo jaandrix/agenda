@@ -4,6 +4,7 @@
         function render() {
             invalidateLinkableIndex();
             financeSaldosCache = null;
+            if (currentView === 'studies' && !apartadoVisible('studies')) currentView = estudiosVistaInicial() || 'calendar';
             if (!apartadoVisible(currentView)) currentView = 'calendar';
             const socio = document.getElementById('socio-badge');
             if (socio) {

@@ -8965,3 +8965,42 @@ body.sin-red #header-clock::before { content:'sin conexión.'; margin-right:10px
     .apuntar-item-cuerpo { flex:1 1 calc(100% - 44px); }
     .apuntar-item > .selector-btn, .apuntar-item > .apuntar-item-tipo { margin-left:40px; max-width:calc(100% - 40px); }
 }
+
+/* ============================================================
+   ESTUDIOS CON PESTAÑAS Y TEST COMPETITIVO (test.js)
+   ============================================================ */
+.estudios-pestanas { margin-bottom:16px; }
+.est-test { display:flex; flex-direction:column; gap:10px; }
+.est-test .uni-etiqueta { margin-top:10px; }
+.est-test-acciones { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.est-test-acciones .btn-modal-primary { width:auto; margin:0; padding:10px 18px; }
+.est-test-fila { display:grid; grid-template-columns:1fr auto; gap:2px 12px; align-items:center; width:100%; text-align:left; padding:12px 14px; border:1px solid var(--border); border-radius:10px; background:var(--bg-secondary); color:var(--text-primary); font-family:var(--font-family); cursor:pointer; }
+.est-test-fila b { font-size:14px; font-weight:700; }
+.est-test-fila span { grid-column:1; font-size:12px; color:var(--text-secondary); }
+.est-test-fila i { grid-column:2; grid-row:1 / span 2; font-style:normal; font-size:12px; font-weight:700; color:var(--accent); }
+.est-test-mio { cursor:default; }
+.est-test-botones { grid-column:2; grid-row:1 / span 2; display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.est-test-amigos { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+.est-test-amigo { display:flex; align-items:center; gap:10px; font-size:14px; }
+.est-test-tabla, .est-test-repaso { margin:0 0 14px; padding-left:22px; display:flex; flex-direction:column; gap:8px; }
+.est-test-tabla li { display:grid; grid-template-columns:1fr auto auto; gap:12px; font-size:14px; }
+.est-test-tabla li.yo { font-weight:700; color:var(--accent); }
+.est-test-tabla i { font-style:normal; color:var(--text-secondary); font-size:12px; }
+.est-test-repaso li { display:flex; flex-direction:column; gap:2px; font-size:13px; }
+.est-test-repaso span { color:var(--accent); font-weight:600; }
+.est-test-juego { max-width:620px; }
+.est-test-cab { display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:var(--text-secondary); }
+.est-test-tiempo { height:6px; border-radius:3px; background:var(--border); overflow:hidden; margin:10px 0 18px; }
+.est-test-tiempo i { display:block; height:100%; background:var(--accent); transform-origin:0 50%; animation:est-test-tiempo linear forwards; }
+@keyframes est-test-tiempo { from { transform:scaleX(1); } to { transform:scaleX(0); } }
+.est-test-pregunta { font-size:20px; font-weight:700; line-height:1.3; margin-bottom:18px; }
+.est-test-opciones { display:flex; flex-direction:column; gap:8px; }
+.est-test-opciones button { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px 14px; border:1px solid var(--border); border-radius:10px; background:var(--bg-secondary); color:var(--text-primary); font-family:var(--font-family); font-size:15px; cursor:pointer; }
+.est-test-opciones button:hover { border-color:var(--text-primary); }
+.est-test-opciones kbd { flex:none; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:var(--text-primary); color:var(--accent-contrast); font-family:var(--font-family); font-size:13px; font-weight:700; }
+.est-test-opciones button.bien { border-color:#3a9e64; background:color-mix(in srgb, #3a9e64 14%, transparent); }
+.est-test-opciones button.mal { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, transparent); }
+.est-test-salir { margin-top:16px; background:none; border:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12px; text-decoration:underline; cursor:pointer; }
+.est-test-puntos { font-size:15px; margin:4px 0 16px; }
+.est-test-puntos b { font-size:40px; font-weight:800; color:var(--accent); margin-right:6px; }
+@media (prefers-reduced-motion: reduce) { .est-test-tiempo i { animation-timing-function:steps(10); } }

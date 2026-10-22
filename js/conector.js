@@ -190,6 +190,17 @@
                 if (!r) return null;
                 return linea('compra', r.resumen, r.deshacer);
             }
+            if (op.tipo === 'proyecto' && op.accion === 'crear') {
+                if (entries.some(e => e.id === ref)) return null;
+                const p = proyectoDatos({ id: ref, type: 'project', title: op.titulo, categoryId: getCategoryIdForType('project'), tags: [], date: todayISO(), notes: op.texto || '', tareas: [], fases: [], diario: [] });
+                let faseId = null;
+                if (op.fase) { const f = { id: proyId('pf'), nombre: op.fase, fecha: '', hecha: false }; p.fases.push(f); faseId = f.id; }
+                (op.tareas || []).forEach((t, i) => p.tareas.push({ id: `${ref}_${i}`, texto: t, estado: 'pendiente', faseId }));
+                p.tasks = p.tareas.map(x => ({ text: x.texto, done: false }));
+                entries.push(p);
+                filteredEntries = [...entries];
+                return linea('proyecto', `proyecto nuevo «${corto(p.title)}»${p.tareas.length ? `, ${p.tareas.length} tareas` : ''}.`, { accion: 'quitar', coleccion: 'evento', id: ref });
+            }
             if (op.tipo === 'proyecto') {
                 const p = entries.find(x => x.id === op.proyectoId && x.type === 'project');
                 if (!p) return null;
@@ -222,9 +233,145 @@
                     p.diario.unshift({ id, fecha: todayISO(), texto: op.texto });
                     resumen = `apunte en el diario de «${corto(p.title)}».`;
                     deshacer = { accion: 'proyecto_apunte', proyectoId: p.id, id };
+                } else if (['quitar', 'mover', 'estado', 'fecha', 'fase'].includes(op.accion)) {
+                    // Estas tocan tareas y fases a la vez: el deshacer guarda cómo estaban.
+                    const antes = JSON.parse(JSON.stringify({ tareas: p.tareas, fases: p.fases, siguienteId: p.siguienteId || null }));
+                    const faseDe = (nombre, crear) => {
+                        let f = p.fases.find(x => norm(x.nombre) === norm(nombre)) || p.fases.find(x => norm(x.nombre).includes(norm(nombre)));
+                        if (!f && crear) { f = { id: proyId('pf'), nombre, fecha: '', hecha: false }; p.fases.push(f); }
+                        return f;
+                    };
+                    if (op.accion === 'fase') {
+                        const f = faseDe(op.fase, !op.nuevo_nombre);
+                        if (!f) return null;
+                        if (op.nuevo_nombre) f.nombre = op.nuevo_nombre;
+                        if (op.fecha) f.fecha = op.fecha;
+                        resumen = op.nuevo_nombre ? `fase «${corto(op.fase)}» → «${corto(op.nuevo_nombre)}» (${corto(p.title)}).` : `fase «${corto(f.nombre)}» en «${corto(p.title)}».`;
+                    } else {
+                        const t = buscar(op.tarea);
+                        if (!t) return null;
+                        if (op.accion === 'quitar') { p.tareas = p.tareas.filter(x => x !== t); if (p.siguienteId === t.id) p.siguienteId = undefined; resumen = `quitada «${corto(t.texto)}» (${corto(p.title)}).`; }
+                        else if (op.accion === 'mover') { t.faseId = faseDe(op.fase, true).id; resumen = `«${corto(t.texto)}» a la fase «${corto(op.fase)}» (${corto(p.title)}).`; }
+                        else if (op.accion === 'estado') { if (!['pendiente', 'curso', 'hecha'].includes(op.estado)) return null; t.estado = op.estado; resumen = `«${corto(t.texto)}»: ${op.estado === 'curso' ? 'en curso' : op.estado} (${corto(p.title)}).`; }
+                        else { t.fecha = op.fecha || ''; resumen = `«${corto(t.texto)}»: ${op.fecha ? financeDateLabelShort(op.fecha) : 'sin fecha'} (${corto(p.title)}).`; }
+                    }
+                    deshacer = { accion: 'proyecto_restaurar', proyectoId: p.id, antes };
                 } else return null;
                 p.tasks = p.tareas.map(x => ({ text: x.texto, done: x.estado === 'hecha' }));
                 return linea('proyecto', resumen, deshacer);
+            }
+            if (op.tipo === 'test') {
+                const t = testLeer(JSON.stringify({ titulo: op.titulo, preguntas: op.preguntas }));
+                if (!t) return null;
+                const nuevo = testAnadir(t, 'test_' + ref);
+                if (!nuevo) return null;
+                return linea('test', `test «${corto(t.titulo)}», ${t.preguntas.length} preguntas (repaso → test).`, { accion: 'test_quitar', id: nuevo.id });
+            }
+            if (op.tipo === 'objetivo') {
+                const g = entries.find(x => x.id === op.id && x.type === 'goal');
+                if (!g) return null;
+                if (op.accion === 'quitar') {
+                    const i = entries.indexOf(g);
+                    entries.splice(i, 1);
+                    filteredEntries = [...entries];
+                    return linea('objetivo', `objetivo quitado: «${corto(g.title)}».`, { accion: 'reinsertar', coleccion: 'evento', item: g, i });
+                }
+                const n = t => stripAccents(String(t || '').toLowerCase()).trim();
+                const antes = { milestones: JSON.parse(JSON.stringify(g.milestones || [])), currentValue: g.currentValue ?? null, targetValue: g.targetValue ?? null, goalType: g.goalType ?? null };
+                g.milestones = Array.isArray(g.milestones) ? g.milestones : [];
+                const hito = g.milestones.find(m => n(m.text) === n(op.hito)) || g.milestones.find(m => n(m.text).includes(n(op.hito)));
+                let resumen;
+                if (op.accion === 'hitos') {
+                    const nuevos = (op.hitos || []).filter(t => !g.milestones.some(m => n(m.text) === n(t)));
+                    if (!nuevos.length) return null;
+                    nuevos.forEach(t => g.milestones.push({ text: t, done: false }));
+                    resumen = `${nuevos.length} ${nuevos.length === 1 ? 'hito' : 'hitos'} en «${corto(g.title)}».`;
+                } else if (op.accion === 'hito_hecho') {
+                    if (!hito) return null;
+                    hito.done = op.hecho !== false;
+                    resumen = `hito «${corto(hito.text)}» ${hito.done ? 'hecho' : 'pendiente'} (${corto(g.title)}).`;
+                } else if (op.accion === 'hito_quitar') {
+                    if (!hito) return null;
+                    g.milestones = g.milestones.filter(m => m !== hito);
+                    resumen = `hito quitado «${corto(hito.text)}» (${corto(g.title)}).`;
+                } else if (op.accion === 'progreso') {
+                    if (op.actual === null || op.actual === undefined) return null;
+                    g.goalType = 'numeric';
+                    g.currentValue = op.actual;
+                    if (op.meta !== null && op.meta !== undefined) g.targetValue = op.meta;
+                    resumen = `«${corto(g.title)}»: ${g.currentValue}${g.targetValue ? ' de ' + g.targetValue : ''} ${g.unit || ''}`.trim() + '.';
+                } else return null;
+                filteredEntries = [...entries];
+                return linea('objetivo', resumen, { accion: 'restaurar', id: g.id, antes });
+            }
+            if (op.tipo === 'laboral') {
+                const a = datosLaboral();
+                const antes = JSON.parse(JSON.stringify({ horario: a.horario, citas: a.citas }));
+                const nombres = LAB_DIAS;
+                let resumen;
+                if (op.accion === 'horario') {
+                    (op.dias || []).forEach(d => { a.horario[d.dia] = { ini: d.ini, fin: d.fin }; });
+                    (op.quitar || []).forEach(d => { delete a.horario[d]; });
+                    resumen = 'horario laboral: ' + [...(op.dias || []).map(d => `${nombres[d.dia]} ${d.ini}–${d.fin}`), ...(op.quitar || []).map(d => `${nombres[d]} libre`)].join(', ') + '.';
+                } else if (op.accion === 'cita_crear') {
+                    const id = 'lab_' + ref;
+                    if (a.citas.some(c => c.id === id)) return null;
+                    a.citas.push({ id, ...op.cita });
+                    resumen = `cita del trabajo «${corto(op.cita.titulo)}», ${financeDateLabelShort(op.cita.fecha)}${op.cita.ini ? ' ' + op.cita.ini : ''}.`;
+                } else {
+                    const c = a.citas.find(x => x.id === op.id);
+                    if (!c) return null;
+                    if (op.accion === 'cita_quitar') { a.citas = a.citas.filter(x => x !== c); resumen = `cita quitada «${corto(c.titulo)}».`; }
+                    else if (op.accion === 'cita_mover') { Object.assign(c, op.cambios || {}); resumen = `cita «${corto(c.titulo)}» → ${financeDateLabelShort(c.fecha)}${c.ini ? ' ' + c.ini : ''}.`; }
+                    else return null;
+                }
+                return linea('agenda laboral', resumen, { accion: 'laboral', antes });
+            }
+            if (op.tipo === 'profe') {
+                // El deshacer guarda solo las sesiones que cambian (correr un día no
+                // lectivo puede mover muchas), los días no lectivos y los deberes tocados.
+                const p = datosProfe();
+                const antesSes = new Map(p.sesiones.map(x => [x.id, JSON.stringify(x)]));
+                const antesFest = { festivos: [...p.festivos], nombres: { ...(p.nombresFestivos || {}) } };
+                const fecha = f => profeFecha(f, true);
+                let resumen, deberes = null;
+                if (op.accion === 'no_lectivo') {
+                    const movidas = profeMarcarNoLectivos(op.fechas || [], op.motivo || '', op.correr !== false);
+                    resumen = `no lectivo: ${fecha(op.fechas[0])}${op.fechas.length > 1 ? ` y ${op.fechas.length - 1} días más` : ''}${movidas ? `, ${movidas} ${movidas === 1 ? 'tarea corrida' : 'tareas corridas'}` : ''}.`;
+                } else if (op.accion === 'lectivo') {
+                    p.festivos = p.festivos.filter(f => !(op.fechas || []).includes(f));
+                    (op.fechas || []).forEach(f => { if (p.nombresFestivos) delete p.nombresFestivos[f]; });
+                    const movidas = (op.fechas || []).reduce((n, f) => n + p.clases.reduce((m, c) => m + profeAdelantarClase(c, f), 0), 0);
+                    resumen = `hay clase: ${fecha(op.fechas[0])}${op.fechas.length > 1 ? ` y ${op.fechas.length - 1} días más` : ''}${movidas ? `, ${movidas} adelantadas` : ''}.`;
+                } else if (op.accion === 'sesion_crear') {
+                    const c = profeClase(op.claseId);
+                    if (!c) return null;
+                    const id = 'ses_' + ref;
+                    if (p.sesiones.some(x => x.id === id)) return null;
+                    p.sesiones.push({ id, claseId: c.id, fecha: op.fecha, titulo: op.titulo, hecha: op.conCasilla === false ? null : false, orden: p.sesiones.filter(x => x.claseId === c.id && x.fecha === op.fecha).length });
+                    resumen = `${c.nombre}, ${fecha(op.fecha)}: «${corto(op.titulo)}».`;
+                } else if (op.accion === 'deberes') {
+                    const c = profeClase(op.claseId);
+                    if (!c) return null;
+                    aulaProfe(c);
+                    const id = 'deb_' + ref;
+                    if (c.deberes.some(x => x.id === id)) return null;
+                    c.deberes.push({ id, titulo: op.titulo, puesto: op.puesto, entrega: op.entrega, entregados: {} });
+                    deberes = { claseId: c.id, id };
+                    resumen = `deberes en ${c.nombre}: «${corto(op.titulo)}», entrega ${fecha(op.entrega)}.`;
+                } else {
+                    const s = p.sesiones.find(x => x.id === op.id);
+                    if (!s) return null;
+                    const c = profeClase(s.claseId);
+                    if (op.accion === 'sesion_quitar') { p.sesiones = p.sesiones.filter(x => x !== s); resumen = `quitada «${corto(s.titulo)}» (${c?.nombre || ''}, ${fecha(s.fecha)}).`; }
+                    else if (op.accion === 'sesion_marcar') { s.hecha = op.hecha !== false; s.descartada = undefined; resumen = `«${corto(s.titulo)}» ${s.hecha ? 'dada' : 'por dar'} (${c?.nombre || ''}).`; }
+                    else if (op.accion === 'sesion_mover') { s.fecha = op.fecha; s.orden = p.sesiones.filter(x => x !== s && x.claseId === s.claseId && x.fecha === op.fecha).length; s.descartada = undefined; resumen = `«${corto(s.titulo)}» → ${fecha(op.fecha)} (${c?.nombre || ''}).`; }
+                    else return null;
+                }
+                const despues = new Map(p.sesiones.map(x => [x.id, JSON.stringify(x)]));
+                const creadas = [...despues.keys()].filter(id => !antesSes.has(id));
+                const cambiadas = [...antesSes].filter(([id, j]) => despues.get(id) !== j).map(([, j]) => JSON.parse(j));
+                return linea('profesorado', resumen, { accion: 'profe', creadas, cambiadas, festivos: antesFest, deberes });
             }
             if (op.tipo === 'entrada') {
                 const ev = entries.find(e => e.id === op.eventoId);
@@ -502,6 +649,21 @@
                     else { const t = p.tareas.find(x => x.id === d.tareaId); if (t) t.estado = d.antes.estado; p.siguienteId = d.antes.siguienteId || undefined; }
                     p.tasks = p.tareas.map(x => ({ text: x.texto, done: x.estado === 'hecha' }));
                 }
+            } else if (d.accion === 'test_quitar') {
+                datosEstudiar().tests = datosTests().filter(x => x.id !== d.id);
+            } else if (d.accion === 'proyecto_restaurar') {
+                const p = entries.find(x => x.id === d.proyectoId);
+                if (p) { Object.assign(p, { tareas: d.antes.tareas, fases: d.antes.fases, siguienteId: d.antes.siguienteId || undefined }); p.tasks = p.tareas.map(x => ({ text: x.texto, done: x.estado === 'hecha' })); }
+            } else if (d.accion === 'laboral') {
+                const a = datosLaboral();
+                a.horario = d.antes.horario || {};
+                a.citas = d.antes.citas || [];
+            } else if (d.accion === 'profe') {
+                const p = datosProfe();
+                p.sesiones = p.sesiones.filter(x => !(d.creadas || []).includes(x.id));
+                (d.cambiadas || []).forEach(x => { const i = p.sesiones.findIndex(y => y.id === x.id); if (i >= 0) p.sesiones[i] = x; else p.sesiones.push(x); });
+                if (d.festivos) { p.festivos = d.festivos.festivos; p.nombresFestivos = d.festivos.nombres; }
+                if (d.deberes) { const c = profeClase(d.deberes.claseId); if (c?.deberes) c.deberes = c.deberes.filter(x => x.id !== d.deberes.id); }
             } else if (d.accion === 'clase_quitar') {
                 const lista = studies.schedule[d.dia] || [];
                 const i = lista.findIndex(b => b.time === d.bloque.time && b.subject === d.bloque.subject);
@@ -543,7 +705,7 @@
         // Se aplican solos (el usuario no quiere validarlos): crear y editar
         // eventos, las entradas con QR de un evento y Ocio. El resto espera
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
-        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto', 'apuntar', 'correo', 'pedido'];
+        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto', 'apuntar', 'correo', 'pedido', 'objetivo', 'laboral', 'profe', 'test'];
         // Filas ya validadas o descartadas aquí que el servidor quizá aún no
         // ha borrado (se borran después de guardar): sin esto, una lectura
         // de la bandeja en ese intervalo las devolvía como pendientes y
@@ -627,6 +789,10 @@
             if (op.tipo === 'tarea_recurrente') return 'planificador';
             if (op.tipo === 'enlace') return 'enlaces';
             if (op.tipo === 'clase') return 'estudios';
+            if (op.tipo === 'objetivo') return 'objetivos';
+            if (op.tipo === 'laboral') return 'empleo';
+            if (op.tipo === 'profe') return 'profesorado';
+            if (op.tipo === 'test') return 'estudios';
             if (op.tipo === 'borrar') return { evento: 'eventos', tarea: 'planificador', movimiento: 'finanzas' }[op.coleccion] || 'otros';
             return { tarea: 'planificador', editar_tarea: 'planificador', movimiento: 'finanzas', editar_movimiento: 'finanzas', importar: 'finanzas', nota: 'notas', dia: 'rutinas y esfuerzo', estudio_crear: 'estudios', estudio_editar: 'estudios' }[op.tipo] || 'otros';
         }
@@ -679,7 +845,11 @@
                 case 'compra': return { tipo: 'lista de la compra', texto: (op.cosas || []).join(', '), meta: op.lista || '' };
                 case 'receta': return { tipo: 'receta', texto: `«${op.nombre || ''}»`, meta: `${(op.ingredientes || []).length} ingredientes` };
                 case 'ticket': return { tipo: 'ticket de la compra', texto: op.tienda || '', meta: [op.total ? financeMoney(Number(op.total)) : '', `${(op.lineas || []).length} productos`].filter(Boolean).join(', ') };
-                case 'proyecto': return { tipo: 'proyecto', texto: op.accion === 'tareas' ? (op.tareas || []).join(', ') : op.tarea || op.texto || '', meta: op.accion };
+                case 'proyecto': return { tipo: 'proyecto', texto: op.accion === 'crear' ? op.titulo : op.accion === 'tareas' ? (op.tareas || []).join(', ') : op.tarea || op.fase || op.texto || '', meta: op.accion };
+                case 'objetivo': return { tipo: 'objetivo', texto: op.hito || (op.hitos || []).join(', ') || (op.actual ?? ''), meta: op.accion };
+                case 'laboral': return { tipo: 'agenda laboral', texto: op.cita?.titulo || op.accion, meta: op.cita?.fecha ? fecha(op.cita.fecha) : '' };
+                case 'profe': return { tipo: 'profesorado', texto: op.titulo || op.accion, meta: op.fecha ? fecha(op.fecha) : '' };
+                case 'test': return { tipo: 'test', texto: `«${op.titulo || ''}»`, meta: `${(op.preguntas || []).length} preguntas` };
                 case 'enlace': return { tipo: 'nuevo enlace', texto: `«${op.titulo}»`, meta: [op.url.replace(/^https?:\/\//, '').slice(0, 60), op.categoryId ? (linkCategories.find(c => c.id === op.categoryId)?.name || '') : ''].filter(Boolean).join(', ') };
                 case 'clase': return { tipo: op.accion === 'quitar' ? 'quitar clase' : 'nueva clase', texto: `«${op.texto}»`, meta: `${(STUDIES_DAYS.find(d => d.key === op.dia)?.label || op.dia).toLowerCase()}, ${op.hora}` };
                 case 'estudio_crear': return { tipo: op.lista === 'exams' ? 'nuevo examen' : 'nuevo trabajo', texto: `«${op.item?.title || ''}», ${op.asignatura || findSubject(op.subjectId)?.name || ''}`, meta: [op.item?.date ? fecha(op.item.date) : 'sin fecha', op.item?.time || '', op.item?.weight ? `peso ${op.item.weight} %` : ''].filter(Boolean).join(', ') };

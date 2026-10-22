@@ -865,10 +865,10 @@
             collectibles: 'Coleccionables',
             friends: 'Social',
             studies: 'Estudios',
-            universidad: 'Universidad',
+            universidad: 'Estudios',
             profesorado: 'Profesorado',
             compra: 'Despensa',
-            estudiar: 'Estudiar',
+            estudiar: 'Estudios',
             links: 'Enlaces',
             actualizaciones: 'Envíos',
             bandeja: 'Bandeja',
@@ -895,8 +895,8 @@
                 { view: 'finances', icon: '◫', text: 'Finanzas' },
                 { view: 'work', icon: '◫', text: 'Empleo' },
                 { view: 'studies', icon: '◎', text: 'Estudios' },
-                { view: 'estudiar', icon: '◔', text: 'Estudiar' },
-                { view: 'universidad', icon: '◎', text: 'Universidad' },
+                { view: 'estudiar', icon: '◔', text: 'Estudios' },
+                { view: 'universidad', icon: '◎', text: 'Estudios' },
                 { view: 'profesorado', icon: '▦', text: 'Profesorado' },
                 { view: 'documents', icon: '▤', text: 'Documentos' },
                 { view: 'goals', icon: '◉', text: 'Objetivos' },
@@ -1728,6 +1728,7 @@
             const fechaCorta = iso => { const d = new Date(iso + 'T12:00:00'); return `${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}`; };
             const subEstudios = clasesHoy.length ? `${clasesHoy.length === 1 ? 'una clase' : `${clasesHoy.length} clases`} hoy.` : entregas.length ? `${entregas.length === 1 ? 'una entrega' : `${entregas.length} entregas`} por delante.` : ex ? `examen ${eventCountdownLabel(ex.date).toLowerCase()}.` : 'sin exámenes a la vista.';
             return `${renderMobileCabecera('estudios', subEstudios)}
+                ${pestanasEstudios('studies')}
                 ${ex ? `
                 <div class="m-destacado">
                     <div class="m-destacado-cifra">${dias === 0 ? 'hoy' : dias}</div>
@@ -1845,8 +1846,8 @@
         const APARTADOS_OPCIONALES = [
             { view: 'studies', titulo: 'estudios.', texto: 'Asignaturas, horario, exámenes y entregas.', porDefecto: () => apartadosConfig?.perfil !== 'trabajador' },
             { view: 'work', titulo: 'empleo.', texto: 'Tu trabajo actual, el historial, la agenda laboral y tu cv.', porDefecto: () => apartadosConfig?.perfil !== 'estudiante' },
-            { view: 'estudiar', titulo: 'estudiar.', texto: 'Pomodoro, el día dividido en temas, el temario por asignaturas y tarjetas de repaso espaciado al estilo Anki.', porDefecto: () => (estudiar?.tarjetas || []).length > 0 },
-            { view: 'universidad', titulo: 'universidad.', texto: 'Tu carrera por cuatrimestres: créditos, media, fechas de exámenes y qué necesitas para aprobar.', porDefecto: () => false },
+            { view: 'estudiar', titulo: 'repaso.', texto: 'Pestaña de Estudios. Pomodoro, el día dividido en temas, el temario por asignaturas y tarjetas de repaso espaciado al estilo Anki.', porDefecto: () => (estudiar?.tarjetas || []).length > 0 },
+            { view: 'universidad', titulo: 'carrera.', texto: 'Pestaña de Estudios. Tu carrera por cuatrimestres: créditos, media, fechas de exámenes y qué necesitas para aprobar.', porDefecto: () => false },
             { view: 'profesorado', titulo: 'profesorado.', texto: 'Si das clase: el cuadrante del curso con todas tus clases, y lo que no das en su día pasa a pendientes.', porDefecto: () => (profesorado?.clases || []).length > 0 },
             { view: 'compra', titulo: 'despensa.', texto: 'La lista de la compra por secciones del súper, tus compras con los tickets y lo que te cuesta cada cosa, y tus recetas.', porDefecto: () => (listaCompra?.listas || []).some(l => (l.items || []).length) },
             { view: 'actualizaciones', titulo: 'envíos.', texto: 'Tus pedidos por internet y por dónde van.', porDefecto: () => pedidos.length > 0 },
@@ -1871,8 +1872,24 @@
             return true;
         }
 
+        // Estudios, Repaso (antes Estudiar) y Carrera (antes Universidad) son
+        // pestañas de un mismo apartado: en los menús sale una sola entrada, que
+        // lleva a la primera pestaña activa.
+        const ESTUDIOS_GRUPO = ['studies', 'estudiar', 'universidad'];
+        const ESTUDIOS_PESTANAS = [['studies', 'asignaturas.'], ['estudiar', 'repaso.'], ['universidad', 'carrera.']];
+        function estudiosVistaInicial() { return ESTUDIOS_GRUPO.find(v => apartadoVisible(v)) || null; }
+        function pestanasEstudios(activa) {
+            const visibles = ESTUDIOS_PESTANAS.filter(([v]) => apartadoVisible(v));
+            if (visibles.length < 2) return '';
+            return `<div class="compra-listas estudios-pestanas" role="tablist">${visibles.map(([v, t]) => `<button class="profe-chip ${v === activa ? 'activa' : ''}" role="tab" aria-selected="${v === activa}" onclick="switchView('${v}')">${t}</button>`).join('')}</div>`;
+        }
+
+        function enMenu(view) {
+            return view === 'estudiar' || view === 'universidad' ? false : view === 'studies' ? !!estudiosVistaInicial() : apartadoVisible(view);
+        }
+
         function navSeccionesVisibles() {
-            return NAV_SECTIONS.map(s => ({ ...s, items: s.items.filter(i => apartadoVisible(i.view)) })).filter(s => s.items.length);
+            return NAV_SECTIONS.map(s => ({ ...s, items: s.items.filter(i => enMenu(i.view)) })).filter(s => s.items.length);
         }
 
         async function guardarConfigApartados(cambio) {
@@ -2134,7 +2151,7 @@
 
         function renderNavButtons(sections, mobile) {
             return sections.map(sec => `<span class="nav-label">${escapeHtml(sec.label)}</span>` +
-                sec.items.filter(i => !isSectionHidden(i.view) && apartadoVisible(i.view)).map(i => mobile
+                sec.items.filter(i => !isSectionHidden(i.view) && enMenu(i.view)).map(i => mobile
                     ? `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}">${escapeHtml(i.text)}${i.view === 'bandeja' && bandejaPendiente.length ? ` <span class="nav-bandeja-badge">(${bandejaPendiente.length})</span>` : ''}</button>`
                     : `<button onclick="switchView('${i.view}')" oncontextmenu="openNavContextMenu(event,'${i.view}')" data-view="${i.view}"><span class="nav-text">${escapeHtml(i.text)}</span>${i.view === 'bandeja' && bandejaPendiente.length ? `<span class="nav-bandeja-badge">(${bandejaPendiente.length})</span>` : ''}</button>`
                 ).join('')
@@ -2146,7 +2163,7 @@
         function renderHiddenSectionsDrawer(mobile) {
             const items = bitacoraHiddenSections
                 .map(view => ({ view, label: NAV_VIEW_LABELS[view] }))
-                .filter(x => x.label && apartadoVisible(x.view));
+                .filter(x => x.label && enMenu(x.view));
             if (!items.length) return '';
             return `
                 <div class="nav-hidden-drawer">

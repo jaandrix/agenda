@@ -27,7 +27,7 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'trabajo', 'salud', 'hogar', 'viajes', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio y objetivos. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. En los campos de fecha también puedes escribir "hoy", "mañana" o "pasado mañana", y la hora como 7:30. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR y los cambios en Ocio se aplican solos. Con la foto de un ticket de la compra, usa ticket_compra (lee antes apartado("compra") para emparejar cada producto con la lista); así Bitácora guarda los precios, la tienda y lo que fue un extra. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo. En los textos que guardes (títulos, notas, personas) separa con comas o «y», nunca con el punto medio (·).`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio, objetivos, proyectos, agenda laboral y, si da clase, profesorado. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. En los campos de fecha también puedes escribir "hoy", "mañana" o "pasado mañana", y la hora como 7:30. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR, los cambios en Ocio, en proyectos (proyecto), en la agenda laboral (agenda_laboral), en el cuadrante de profesorado (profesorado) y en los hitos y el progreso de un objetivo se aplican solos, con deshacer en la bandeja; antes de mover o quitar algo, lee el apartado correspondiente para usar el nombre exacto. Con la foto de un ticket de la compra, usa ticket_compra (lee antes apartado("compra") para emparejar cada producto con la lista); así Bitácora guarda los precios, la tienda y lo que fue un extra. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo. En los textos que guardes (títulos, notas, personas) separa con comas o «y», nunca con el punto medio (·).`;
 const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
 const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
@@ -546,6 +546,30 @@ const APARTADOS: Record<string, (d: any) => unknown> = {
         return { ...grupos, listas: d.cultureLists };
     },
     objetivos: d => (d.entries || []).filter((e: any) => e?.type === 'goal'),
+    agenda_laboral: d => {
+        const a = d.agendaLaboral || {};
+        const dias = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+        const desde = sumarDias(hoyISO(), -14);
+        return {
+            en_calendario_principal: a.enPrincipal !== false,
+            horario: Object.fromEntries(Object.entries(a.horario || {}).map(([k, v]: any) => [dias[Number(k)], v])),
+            citas: (a.citas || []).filter((c: any) => (c.fecha || '') >= desde).sort((x: any, y: any) => (x.fecha + (x.ini || '')).localeCompare(y.fecha + (y.ini || ''))),
+        };
+    },
+    // Las sesiones van de dos semanas atrás a ocho adelante: el curso entero son cientos.
+    profesorado: d => {
+        const p = d.profesorado || {};
+        const desde = sumarDias(hoyISO(), -14), hasta = sumarDias(hoyISO(), 56);
+        const nombre = (id: string) => (p.clases || []).find((c: any) => c.id === id)?.nombre || '';
+        return {
+            clases: (p.clases || []).map((c: any) => ({ nombre: c.nombre, materia: c.materia, dias: c.dias, horario: c.horario, deberes: (c.deberes || []).map((x: any) => ({ titulo: x.titulo, puesto: x.puesto, entrega: x.entrega })) })),
+            sesiones: (p.sesiones || []).filter((x: any) => x.fecha >= desde && x.fecha <= hasta && !x.descartada)
+                .sort((a: any, b: any) => a.fecha.localeCompare(b.fecha) || (a.orden || 0) - (b.orden || 0))
+                .map((x: any) => ({ id: x.id, clase: nombre(x.claseId), fecha: x.fecha, titulo: x.titulo, hecha: x.hecha })),
+            no_lectivos: (p.festivos || []).filter((f: string) => f >= desde).sort(),
+            curso: p.curso,
+        };
+    },
     trabajo: d => (d.entries || []).filter((e: any) => e?.type === 'work'),
     proyectos: d => (d.entries || []).filter((e: any) => e?.type === 'project'),
     enlaces: d => ({ enlaces: d.links, categorias: d.linkCategories }),
@@ -831,11 +855,12 @@ const HERRAMIENTAS = [
     },
     {
         name: 'objetivo',
-        description: 'Crea un objetivo o actualiza uno existente: progreso numérico (actual/meta y unidad: "7 de 20 libros", "1200 de 3000 €"), estado o hitos. Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Crea un objetivo o actualiza uno existente: progreso numérico (actual/meta y unidad: "7 de 20 libros", "1200 de 3000 €"), estado o hitos (crear y actualizar quedan en la bandeja hasta que el usuario los valide). Además, sin validar y con deshacer: añadir hitos (accion=hitos), marcar o desmarcar uno (hito_hecho), quitar uno (hito_quitar), apuntar el progreso (progreso, con actual) o quitar el objetivo (quitar; confírmalo antes con el usuario).',
         inputSchema: {
             type: 'object',
             properties: {
-                accion: { type: 'string', enum: ['crear', 'actualizar'] }, titulo: { type: 'string' }, id: { type: 'string' },
+                accion: { type: 'string', enum: ['crear', 'actualizar', 'hitos', 'hito_hecho', 'hito_quitar', 'progreso', 'quitar'] }, titulo: { type: 'string' }, id: { type: 'string' },
+                hito: { type: 'string', description: 'Para hito_hecho o hito_quitar: texto (o parte) del hito' }, hecho: { type: 'boolean', description: 'Para hito_hecho (por defecto true)' },
                 plazo: { type: 'string', enum: ['corto', 'medio', 'largo'] }, actual: { type: 'number' }, meta: { type: 'number' }, unidad: { type: 'string' },
                 estado: { type: 'string', enum: ['Pendiente', 'En progreso', 'Completado'] }, hitos: { type: 'array', items: { type: 'string' } }, notas: { type: 'string' },
             },
@@ -956,18 +981,72 @@ const HERRAMIENTAS = [
     },
     {
         name: 'proyecto',
-        description: 'Trabaja dentro de un proyecto de Bitácora (búscalo por su título): añadir tareas (opcionalmente en una fase), marcar el siguiente paso, completar una tarea o apuntar en el diario del proyecto. Se aplica solo, sin validar.',
+        description: 'Trabaja dentro de un proyecto de Bitácora (búscalo por su título): crear un proyecto nuevo, añadir tareas (opcionalmente en una fase), marcar el siguiente paso, completar, quitar, mover de fase, cambiar el estado o la fecha de una tarea, crear o renombrar una fase, o apuntar en el diario del proyecto. Para ver lo que hay, usa antes apartado proyectos. Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: {
             type: 'object',
             properties: {
-                proyecto: { type: 'string', description: 'Título (o parte) del proyecto' },
-                accion: { type: 'string', enum: ['tareas', 'siguiente', 'completar', 'apunte'] },
+                proyecto: { type: 'string', description: 'Título (o parte) del proyecto; para accion=crear, el título del nuevo' },
+                accion: { type: 'string', enum: ['crear', 'tareas', 'siguiente', 'completar', 'quitar', 'mover', 'estado', 'fecha', 'fase', 'apunte'] },
+                estado: { type: 'string', enum: ['pendiente', 'curso', 'hecha'], description: 'Para accion=estado' },
+                fecha: { type: 'string', description: 'AAAA-MM-DD, para accion=fecha (vacío quita la fecha) o como fecha de la fase' },
+                nuevo_nombre: { type: 'string', description: 'Para accion=fase: renombra la fase indicada en fase' },
                 tareas: { type: 'array', items: { type: 'string' }, description: 'Para accion=tareas' },
-                fase: { type: 'string', description: 'Opcional, para accion=tareas: nombre de la fase (se crea si no existe)' },
-                tarea: { type: 'string', description: 'Para siguiente o completar: texto (o parte) de la tarea' },
+                fase: { type: 'string', description: 'Para tareas (opcional), mover (fase de destino) o fase: nombre de la fase (se crea si no existe)' },
+                tarea: { type: 'string', description: 'Para siguiente, completar, quitar, mover, estado o fecha: texto (o parte) de la tarea' },
                 texto: { type: 'string', description: 'Para accion=apunte' },
             },
             required: ['proyecto', 'accion'],
+        },
+    },
+    {
+        name: 'test',
+        description: 'Crea un test tipo test (preguntas con 2 a 6 opciones y una correcta) a partir del temario que te pase el usuario. Queda en Bitácora, Estudios → repaso → test, para practicarlo a solas o jugarlo con amigos (eso lo hace el usuario desde la app). Entre 10 y 30 preguntas cortas, 4 opciones plausibles de longitud parecida, una sola correcta, sin «todas las anteriores», y cambia de posición la correcta.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                titulo: { type: 'string' },
+                preguntas: { type: 'array', items: { type: 'object', properties: { pregunta: { type: 'string' }, opciones: { type: 'array', items: { type: 'string' } }, correcta: { type: 'integer', description: 'Posición de la opción correcta, empezando por 0' } }, required: ['pregunta', 'opciones', 'correcta'] } },
+            },
+            required: ['titulo', 'preguntas'],
+        },
+    },
+    {
+        name: 'agenda_laboral',
+        description: 'Agenda laboral de Bitácora (dentro de Empleo): fija el horario de trabajo de cada día de la semana y crea, mueve o quita citas del trabajo (reuniones, turnos, plazos). Para saber qué hay, usa antes apartado agenda_laboral. Se aplica solo y se puede deshacer desde la bandeja.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                accion: { type: 'string', enum: ['horario', 'cita_crear', 'cita_mover', 'cita_quitar'] },
+                dias: { type: 'array', description: 'Para accion=horario: días con su jornada', items: { type: 'object', properties: { dia: { type: 'string', description: 'lunes … domingo' }, ini: { type: 'string', description: 'HH:MM' }, fin: { type: 'string', description: 'HH:MM' } }, required: ['dia', 'ini', 'fin'] } },
+                sin_trabajo: { type: 'array', items: { type: 'string' }, description: 'Para accion=horario: días que pasan a no tener jornada' },
+                cita: { type: 'string', description: 'Para mover o quitar: id o título de la cita' },
+                fecha: { type: 'string', description: 'AAAA-MM-DD (para crear; para mover, la nueva fecha)' },
+                ini: { type: 'string', description: 'HH:MM' }, fin: { type: 'string', description: 'HH:MM' },
+                titulo: { type: 'string' }, tipo: { type: 'string', enum: ['reunion', 'turno', 'plazo', 'otro'] }, lugar: { type: 'string' }, notas: { type: 'string' },
+            },
+            required: ['accion'],
+        },
+    },
+    {
+        name: 'profesorado',
+        description: 'Cuadrante de Profesorado de Bitácora (para quien da clase): crea, mueve, quita o marca como dada una sesión de una clase en un día; marca días como no lectivos (lo que caía en ellos se corre a la siguiente clase) o los devuelve a lectivos; y pone deberes. La clase se indica por su nombre. Para saber qué hay, usa antes apartado profesorado. Se aplica solo y se puede deshacer desde la bandeja.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                accion: { type: 'string', enum: ['sesion_crear', 'sesion_mover', 'sesion_quitar', 'sesion_marcar', 'no_lectivo', 'lectivo', 'deberes'] },
+                clase: { type: 'string', description: 'Nombre de la clase (no hace falta para no_lectivo ni lectivo)' },
+                fecha: { type: 'string', description: 'AAAA-MM-DD' },
+                hasta: { type: 'string', description: 'AAAA-MM-DD, opcional: para no_lectivo o lectivo de varios días' },
+                titulo: { type: 'string', description: 'Lo que se da en la sesión, o el título de los deberes' },
+                sesion: { type: 'string', description: 'Para mover, quitar o marcar: id o título de la sesión' },
+                nueva_fecha: { type: 'string', description: 'Para sesion_mover' },
+                hecha: { type: 'boolean', description: 'Para sesion_marcar: true dada, false por dar' },
+                con_casilla: { type: 'boolean', description: 'Para sesion_crear: false si es un aviso sin casilla de hecho (excursión, examen de otro…)' },
+                motivo: { type: 'string', description: 'Para no_lectivo' },
+                correr: { type: 'boolean', description: 'Para no_lectivo: si lo que caía en esos días se corre (por defecto sí)' },
+                entrega: { type: 'string', description: 'Para deberes: fecha de entrega AAAA-MM-DD' },
+            },
+            required: ['accion'],
         },
     },
     {
@@ -1297,6 +1376,19 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (a.estado) datos.status = a.estado;
             if (Array.isArray(a.hitos)) datos.milestones = a.hitos.map((x: string) => ({ text: String(x), done: false }));
             if (a.notas !== undefined) datos.notes = String(a.notas || '');
+            if (['hitos', 'hito_hecho', 'hito_quitar', 'progreso', 'quitar'].includes(a.accion)) {
+                const g = entradaPorTitulo(data, ['goal'], a.titulo, a.id);
+                if (!g) throw new Error(`No encuentro el objetivo «${a.titulo}». Objetivos: ${(data.entries || []).filter((e: any) => e?.type === 'goal').map((e: any) => e.title).join(', ') || 'ninguno'}.`);
+                if (a.accion === 'hitos' && !(Array.isArray(a.hitos) && a.hitos.length)) throw new Error('Faltan los hitos');
+                if ((a.accion === 'hito_hecho' || a.accion === 'hito_quitar') && !(g.milestones || []).some((m: any) => norm(m.text).includes(norm(a.hito).trim()))) throw new Error(`No encuentro el hito «${a.hito}». Hitos: ${(g.milestones || []).map((m: any) => m.text).join(', ') || 'ninguno'}.`);
+                if (a.accion === 'progreso' && a.actual === undefined) throw new Error('Falta el valor actual');
+                await encolar(userId, { tipo: 'objetivo', id: g.id, accion: a.accion, hitos: (a.hitos || []).map((x: any) => String(x).trim()).filter(Boolean).slice(0, 40), hito: String(a.hito || ''), hecho: a.hecho !== false, actual: a.actual !== undefined ? Number(a.actual) || 0 : null, meta: a.meta !== undefined ? Number(a.meta) || 0 : null });
+                return a.accion === 'quitar' ? `Objetivo «${g.title}» quitado (se puede deshacer desde la bandeja).`
+                    : a.accion === 'hitos' ? `${a.hitos.length} ${a.hitos.length === 1 ? 'hito añadido' : 'hitos añadidos'} a «${g.title}».`
+                    : a.accion === 'hito_hecho' ? `Hito «${a.hito}» ${a.hecho === false ? 'pendiente' : 'hecho'} en «${g.title}».`
+                    : a.accion === 'hito_quitar' ? `Hito «${a.hito}» quitado de «${g.title}».`
+                    : `Progreso de «${g.title}»: ${a.actual}${a.meta ?? g.targetValue ? ' de ' + (a.meta ?? g.targetValue) : ''} ${g.unit || ''}.`;
+            }
             if (a.accion === 'actualizar') {
                 const g = entradaPorTitulo(data, ['goal'], a.titulo, a.id);
                 if (!g) throw new Error(`No encuentro el objetivo «${a.titulo}»`);
@@ -1359,17 +1451,145 @@ async function llamar(userId: string, nombre: string, a: any) {
         case 'proyecto': {
             const q = norm(a.proyecto).trim();
             const proyectos = (data.entries || []).filter((e: any) => e?.type === 'project');
+            if (a.accion === 'crear') {
+                const titulo = String(a.proyecto || '').trim();
+                if (!titulo) throw new Error('Falta el título del proyecto');
+                if (proyectos.some((e: any) => norm(e.title).trim() === q)) return `Ya existe el proyecto «${titulo}».`;
+                await encolar(userId, { tipo: 'proyecto', accion: 'crear', titulo, tareas: (a.tareas || []).map((x: any) => String(x).trim()).filter(Boolean).slice(0, 60), fase: a.fase ? String(a.fase) : '', texto: a.texto ? String(a.texto) : '' });
+                return `Proyecto «${titulo}» creado${(a.tareas || []).length ? ` con ${a.tareas.length} tareas` : ''}.`;
+            }
             const p = proyectos.find((e: any) => norm(e.title) === q) || proyectos.find((e: any) => norm(e.title).includes(q) || (q.includes(norm(e.title)) && norm(e.title).length >= 3));
             if (!p) throw new Error(`No encuentro ningún proyecto que se llame «${a.proyecto}». Proyectos: ${proyectos.map((x: any) => x.title).join(', ') || 'ninguno'}.`);
             const acc = a.accion;
             if (acc === 'tareas' && !(Array.isArray(a.tareas) && a.tareas.length)) throw new Error('Faltan las tareas');
-            if ((acc === 'siguiente' || acc === 'completar') && !a.tarea) throw new Error('Falta la tarea');
+            if (['siguiente', 'completar', 'quitar', 'mover', 'estado', 'fecha'].includes(acc) && !a.tarea) throw new Error('Falta la tarea');
             if (acc === 'apunte' && !String(a.texto || '').trim()) throw new Error('Falta el texto del apunte');
-            await encolar(userId, { tipo: 'proyecto', proyectoId: p.id, accion: acc, tareas: (a.tareas || []).map((x: any) => String(x).trim()).filter(Boolean).slice(0, 60), fase: a.fase ? String(a.fase) : '', tarea: a.tarea ? String(a.tarea) : '', texto: a.texto ? String(a.texto) : '' });
+            if ((acc === 'mover' || acc === 'fase') && !a.fase) throw new Error('Falta la fase');
+            if (acc === 'estado' && !['pendiente', 'curso', 'hecha'].includes(a.estado)) throw new Error('Estado: pendiente, curso o hecha');
+            if (acc === 'fecha' && a.fecha && !esFecha(a.fecha)) throw new Error('Fecha en formato AAAA-MM-DD');
+            if (['siguiente', 'completar', 'quitar', 'mover', 'estado', 'fecha'].includes(acc)) {
+                const qt = norm(a.tarea).trim();
+                const tareas = Array.isArray(p.tareas) ? p.tareas : (p.tasks || []).map((t: any) => ({ texto: t.text }));
+                if (!tareas.some((t: any) => norm(t.texto).includes(qt))) throw new Error(`No encuentro la tarea «${a.tarea}» en «${p.title}». Tareas: ${tareas.map((t: any) => t.texto).slice(0, 40).join(', ')}.`);
+            }
+            await encolar(userId, { tipo: 'proyecto', proyectoId: p.id, accion: acc, tareas: (a.tareas || []).map((x: any) => String(x).trim()).filter(Boolean).slice(0, 60), fase: a.fase ? String(a.fase) : '', tarea: a.tarea ? String(a.tarea) : '', texto: a.texto ? String(a.texto) : '', estado: a.estado || '', fecha: esFecha(a.fecha) ? a.fecha : '', nuevo_nombre: a.nuevo_nombre ? String(a.nuevo_nombre) : '' });
             return acc === 'tareas' ? `${a.tareas.length} ${a.tareas.length === 1 ? 'tarea añadida' : 'tareas añadidas'} a «${p.title}»${a.fase ? ' en la fase «' + a.fase + '»' : ''}.`
                 : acc === 'siguiente' ? `Siguiente paso de «${p.title}»: «${a.tarea}».`
                 : acc === 'completar' ? `Marcada como hecha en «${p.title}»: «${a.tarea}».`
+                : acc === 'quitar' ? `Quitada de «${p.title}»: «${a.tarea}».`
+                : acc === 'mover' ? `«${a.tarea}» pasa a la fase «${a.fase}» de «${p.title}».`
+                : acc === 'estado' ? `«${a.tarea}» queda ${a.estado === 'curso' ? 'en curso' : a.estado} en «${p.title}».`
+                : acc === 'fecha' ? `«${a.tarea}» ${a.fecha ? 'para el ' + a.fecha : 'sin fecha'} en «${p.title}».`
+                : acc === 'fase' ? (a.nuevo_nombre ? `Fase «${a.fase}» renombrada a «${a.nuevo_nombre}» en «${p.title}».` : `Fase «${a.fase}» lista en «${p.title}».`)
                 : `Apuntado en el diario de «${p.title}».`;
+        }
+        case 'test': {
+            const preguntas = (Array.isArray(a.preguntas) ? a.preguntas : []).slice(0, 50).map((q: any) => ({
+                pregunta: String(q?.pregunta || '').trim().slice(0, 500),
+                opciones: (Array.isArray(q?.opciones) ? q.opciones : []).map((o: any) => String(o ?? '').trim().slice(0, 200)).filter(Boolean).slice(0, 6),
+                correcta: Number(q?.correcta),
+            })).filter((q: any) => q.pregunta && q.opciones.length >= 2 && Number.isInteger(q.correcta) && q.correcta >= 0 && q.correcta < q.opciones.length);
+            if (!String(a.titulo || '').trim() || !preguntas.length) throw new Error('Hacen falta el título y al menos una pregunta con 2 a 6 opciones y su correcta (posición desde 0)');
+            await encolar(userId, { tipo: 'test', titulo: String(a.titulo).trim().slice(0, 120), preguntas });
+            return `Test «${a.titulo}» guardado en Bitácora con ${preguntas.length} preguntas (Estudios → repaso → test). Desde ahí se practica o se juega con amigos.`;
+        }
+        case 'agenda_laboral': {
+            const lab = data.agendaLaboral || {};
+            const hora = (h: any) => /^\d{1,2}:\d{2}$/.test(String(h || '')) ? String(h).padStart(5, '0') : '';
+            const DIAS: Record<string, number> = { domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6 };
+            if (a.accion === 'horario') {
+                const dias = (Array.isArray(a.dias) ? a.dias : []).map((d: any) => ({ dia: DIAS[norm(d?.dia).trim()], ini: hora(d?.ini), fin: hora(d?.fin) }));
+                if (dias.some((d: any) => d.dia === undefined || !d.ini || !d.fin)) throw new Error('Cada día con su nombre (lunes … domingo) y horas HH:MM');
+                const quitar = (Array.isArray(a.sin_trabajo) ? a.sin_trabajo : []).map((d: any) => DIAS[norm(d).trim()]);
+                if (quitar.some((d: any) => d === undefined)) throw new Error('Días sin trabajo: lunes … domingo');
+                if (!dias.length && !quitar.length) throw new Error('Faltan los días');
+                await encolar(userId, { tipo: 'laboral', accion: 'horario', dias, quitar });
+                const nombres = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+                return `Horario laboral: ${[...dias.map((d: any) => `${nombres[d.dia]} ${d.ini}-${d.fin}`), ...quitar.map((d: number) => `${nombres[d]} libre`)].join(', ')}.`;
+            }
+            const buscarCita = () => {
+                const q = norm(a.cita).trim();
+                const citas = lab.citas || [];
+                return citas.find((c: any) => c.id === a.cita) || citas.find((c: any) => norm(c.titulo).trim() === q) || citas.find((c: any) => q && norm(c.titulo).includes(q)) || null;
+            };
+            if (a.accion === 'cita_crear') {
+                if (!esFecha(a.fecha)) throw new Error('Fecha en formato AAAA-MM-DD');
+                if (!String(a.titulo || '').trim()) throw new Error('Falta el título de la cita');
+                const tipo = ['reunion', 'turno', 'plazo', 'otro'].includes(a.tipo) ? a.tipo : 'otro';
+                await encolar(userId, { tipo: 'laboral', accion: 'cita_crear', cita: { fecha: a.fecha, ini: hora(a.ini), fin: hora(a.fin), titulo: String(a.titulo).trim(), tipo, lugar: String(a.lugar || ''), notas: String(a.notas || '') } });
+                return `Cita del trabajo creada: «${a.titulo}» el ${diaSemana(a.fecha)} ${a.fecha}${hora(a.ini) ? ' a las ' + hora(a.ini) : ''}.`;
+            }
+            const c = buscarCita();
+            if (!c) throw new Error(`No encuentro la cita «${a.cita}». Usa apartado agenda_laboral para ver las citas.`);
+            if (a.accion === 'cita_quitar') {
+                await encolar(userId, { tipo: 'laboral', accion: 'cita_quitar', id: c.id });
+                return `Cita «${c.titulo}» del ${c.fecha} quitada.`;
+            }
+            if (a.accion === 'cita_mover') {
+                if (a.fecha && !esFecha(a.fecha)) throw new Error('Fecha en formato AAAA-MM-DD');
+                const cambios: any = {};
+                if (a.fecha) cambios.fecha = a.fecha;
+                if (hora(a.ini)) cambios.ini = hora(a.ini);
+                if (hora(a.fin)) cambios.fin = hora(a.fin);
+                else if (cambios.ini && c.ini && c.fin) {
+                    // Si solo cambia la hora de inicio, la cita conserva su duración.
+                    const min = (h: string) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5));
+                    const fin = Math.min(min(cambios.ini) + Math.max(0, min(c.fin) - min(c.ini)), 23 * 60 + 59);
+                    cambios.fin = `${String(Math.floor(fin / 60)).padStart(2, '0')}:${String(fin % 60).padStart(2, '0')}`;
+                }
+                if (a.titulo) cambios.titulo = String(a.titulo);
+                if (a.lugar !== undefined) cambios.lugar = String(a.lugar || '');
+                if (a.notas !== undefined) cambios.notas = String(a.notas || '');
+                if (!Object.keys(cambios).length) throw new Error('No hay nada que cambiar');
+                await encolar(userId, { tipo: 'laboral', accion: 'cita_mover', id: c.id, cambios });
+                return `Cita «${c.titulo}» → ${cambios.fecha || c.fecha}${cambios.ini ? ' a las ' + cambios.ini : ''}.`;
+            }
+            throw new Error('Acción no válida');
+        }
+        case 'profesorado': {
+            const pr = data.profesorado || {};
+            const clases = pr.clases || [];
+            const buscarClase = () => {
+                const q = norm(a.clase).trim();
+                return clases.find((c: any) => norm(c.nombre).trim() === q) || clases.find((c: any) => q && (norm(c.nombre).includes(q) || norm(c.materia).includes(q))) || null;
+            };
+            if (a.accion === 'no_lectivo' || a.accion === 'lectivo') {
+                if (!esFecha(a.fecha) || (a.hasta && !esFecha(a.hasta))) throw new Error('Fechas en formato AAAA-MM-DD');
+                const fechas: string[] = [];
+                for (let f = a.fecha, i = 0; f <= (a.hasta || a.fecha) && i < 120; f = sumarDias(f, 1), i++) fechas.push(f);
+                await encolar(userId, { tipo: 'profe', accion: a.accion, fechas, motivo: String(a.motivo || ''), correr: a.correr !== false });
+                return a.accion === 'no_lectivo' ? `${fechas.length === 1 ? 'Día no lectivo' : fechas.length + ' días no lectivos'} desde el ${a.fecha}${a.correr !== false ? '; lo que caía en ellos se corre a la siguiente clase' : ''}.` : `${fechas.length === 1 ? 'Día lectivo' : fechas.length + ' días lectivos'} otra vez desde el ${a.fecha}.`;
+            }
+            const c = buscarClase();
+            if (!c) throw new Error(`No encuentro la clase «${a.clase}». Clases: ${clases.map((x: any) => x.nombre).join(', ') || 'ninguna'}.`);
+            if (a.accion === 'sesion_crear') {
+                if (!esFecha(a.fecha) || !String(a.titulo || '').trim()) throw new Error('Hacen falta la fecha (AAAA-MM-DD) y el título');
+                await encolar(userId, { tipo: 'profe', accion: 'sesion_crear', claseId: c.id, fecha: a.fecha, titulo: String(a.titulo).trim(), conCasilla: a.con_casilla !== false });
+                return `${c.nombre}, ${diaSemana(a.fecha)} ${a.fecha}: «${a.titulo}».`;
+            }
+            if (a.accion === 'deberes') {
+                if (!String(a.titulo || '').trim() || !esFecha(a.entrega)) throw new Error('Hacen falta el título y la fecha de entrega (AAAA-MM-DD)');
+                await encolar(userId, { tipo: 'profe', accion: 'deberes', claseId: c.id, titulo: String(a.titulo).trim(), puesto: esFecha(a.fecha) ? a.fecha : hoyISO(), entrega: a.entrega });
+                return `Deberes para ${c.nombre}: «${a.titulo}», entrega el ${a.entrega}.`;
+            }
+            const q = norm(a.sesion).trim();
+            const deClase = (pr.sesiones || []).filter((x: any) => x.claseId === c.id && !x.descartada && (!esFecha(a.fecha) || x.fecha === a.fecha));
+            const s = deClase.find((x: any) => x.id === a.sesion) || deClase.find((x: any) => norm(x.titulo).trim() === q) || deClase.find((x: any) => q && norm(x.titulo).includes(q));
+            if (!s) throw new Error(`No encuentro la sesión «${a.sesion}» en ${c.nombre}${esFecha(a.fecha) ? ' el ' + a.fecha : ''}. Usa apartado profesorado para ver las sesiones.`);
+            if (a.accion === 'sesion_mover') {
+                if (!esFecha(a.nueva_fecha)) throw new Error('nueva_fecha en formato AAAA-MM-DD');
+                await encolar(userId, { tipo: 'profe', accion: 'sesion_mover', id: s.id, fecha: a.nueva_fecha });
+                return `«${s.titulo}» (${c.nombre}) pasa al ${diaSemana(a.nueva_fecha)} ${a.nueva_fecha}.`;
+            }
+            if (a.accion === 'sesion_quitar') {
+                await encolar(userId, { tipo: 'profe', accion: 'sesion_quitar', id: s.id });
+                return `«${s.titulo}» (${c.nombre}, ${s.fecha}) quitada.`;
+            }
+            if (a.accion === 'sesion_marcar') {
+                await encolar(userId, { tipo: 'profe', accion: 'sesion_marcar', id: s.id, hecha: a.hecha !== false });
+                return `«${s.titulo}» (${c.nombre}, ${s.fecha}) ${a.hecha !== false ? 'dada' : 'por dar'}.`;
+            }
+            throw new Error('Acción no válida');
         }
         case 'guardar_enlace': {
             const url = String(a.url || '').trim();

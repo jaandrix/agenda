@@ -334,11 +334,12 @@ const GUIA = [
         trucos: ['Al entrar, el cuadrante se abre con hoy en el centro, marcado en color.', 'Si tienes tareas sin dar, te lo avisa también la campana de notificaciones.', 'Las fiestas locales de Zaragoza (San Valero y Cincomarzada) vienen marcadas: si tu centro tiene otras, cámbialas pulsando el día.'],
     },
     {
-        id: 'estudiar', grupo: 'desarrollo', titulo: 'estudiar.',
+        id: 'estudiar', grupo: 'desarrollo', titulo: 'repaso.',
         lema: 'El rato de sentarse a estudiar.',
-        intro: 'Va aparte de Estudios: allí están las asignaturas, el horario y los exámenes; aquí, el pomodoro, el plan del día, el temario y tus tarjetas de repaso. Es un apartado opcional de la rama #school: actívalo en Ajustes → apartados.',
+        intro: 'Es la pestaña <b>repaso.</b> de Estudios (antes se llamaba Estudiar): en <b>asignaturas.</b> están el horario y los exámenes; aquí, el pomodoro, el plan del día, el temario y tus tarjetas de repaso. Es opcional, de la rama #school: actívalo en Ajustes → apartados.',
         pasos: ['En <b>temario.</b>, apunta los temas de cada asignatura (puedes pegar el índice entero, uno por línea).', 'En <b>hoy.</b>, añade lo que vas a estudiar y cuántos pomodoros te llevará: se coloca solo desde la hora que digas, con sus descansos.', 'Pulsa ▶ en un tema para estudiarlo y márcalo al acabar.', 'En <b>tarjetas.</b>, crea un mazo y repasa cada día lo que toque.'],
         botones: [
+            [guiaBoton('test.'), 'Tests tipo test con tu temario. <b>copiar prompt para la IA.</b> te da las instrucciones para que Claude o ChatGPT te lo hagan; pega lo que te devuelvan en <b>nuevo test.</b> (o pídeselo por el conector). <b>practicar.</b> lo juega a solas y te enseña al momento si acertaste. <b>jugar con amigos.</b> crea una partida: eliges los segundos por pregunta, cuánto tiempo está abierta y a qué amigos invitas (3 partidas al día). Cada uno la juega una vez; 100 puntos por acierto y hasta 50 más por rapidez. Se responde con 1, 2, 3… del teclado.'],
             [guiaBoton('empezar. pausa. parar.'), 'El pomodoro: 25 minutos de estudio y 5 de descanso (cada 4, uno largo de 15). El descanso empieza solo; el siguiente pomodoro espera a que le des. Sigue contando aunque cambies de apartado, en la pastilla de abajo a la derecha.'],
             [guiaBoton('empiezo a las'), 'La hora desde la que se reparte el plan de hoy. Sin ella, empieza ahora.'],
             [guiaBoton('modo focus.'), 'En el pomodoro, el reloj solo a toda la ventana; en un repaso, la tarjeta sola y más grande. Dentro, <b>pantalla completa.</b> quita también las pestañas y la barra del navegador. Esc vuelve.'],
@@ -353,9 +354,9 @@ const GUIA = [
         trucos: ['Repasar un poco cada día rinde mucho más que darse un atracón antes del examen: las tarjetas están pensadas para eso.', 'El límite de tarjetas nuevas al día (20 al empezar) se cambia con «cambiar.» bajo los mazos, hasta 500; los repasos no tienen límite. Si un día quieres más sin cambiarlo, «10 más hoy.» añade diez solo para ese día.', 'Las tarjetas se programan con FSRS, el mismo algoritmo que usa Anki hoy en día.'],
     },
     {
-        id: 'universidad', grupo: 'desarrollo', titulo: 'universidad.',
+        id: 'universidad', grupo: 'desarrollo', titulo: 'carrera.',
         lema: 'Tu carrera entera, por cuatrimestres.',
-        intro: 'Para quien estudia en la universidad: los créditos que llevas, la media del expediente, en qué semana del cuatrimestre estás, cuánto falta para los exámenes y qué necesitas sacar en cada asignatura para aprobar. Es un apartado opcional: actívalo en Ajustes → apartados. Con él activo, Estudios enseña solo las asignaturas del cuatrimestre actual.',
+        intro: 'Es la pestaña <b>carrera.</b> de Estudios (antes Universidad), para quien estudia en la universidad: los créditos que llevas, la media del expediente, en qué semana del cuatrimestre estás, cuánto falta para los exámenes y qué necesitas sacar en cada asignatura para aprobar. Es un apartado opcional: actívalo en Ajustes → apartados. Con él activo, Estudios enseña solo las asignaturas del cuatrimestre actual.',
         pasos: ['Pulsa <b>configurar mi carrera.</b>: nombre del grado, créditos totales (240 normalmente), curso y cuatrimestre actual.', 'Ajusta en <b>fechas.</b> el inicio y fin de las clases, los exámenes y la extraordinaria de tu universidad.', 'En el <b>lápiz</b> de cada asignatura pon sus créditos y, cuando salga, la nota oficial del acta.'],
         botones: [
             [guiaBoton('+ asignatura.'), 'Añade una asignatura a ese cuatrimestre (también aparece en Estudios).'],
@@ -501,7 +502,7 @@ const GUIA = [
     {
         id: 'bandeja', grupo: 'sistema', titulo: 'bandeja.',
         lema: 'Lo que Claude propone, esperando tu visto bueno.',
-        intro: 'Los cambios que piden Claude o ChatGPT (salvo eventos, entradas con QR, Ocio, tarjetas de estudio, compra y proyectos) no se aplican hasta que los validas. El número en granate del menú es lo que tienes pendiente.',
+        intro: 'Los cambios que piden Claude o ChatGPT (salvo eventos, entradas con QR, Ocio, tarjetas de estudio, tests, compra, proyectos, hitos y progreso de objetivos, agenda laboral y profesorado, que se aplican solos y se pueden deshacer aquí) no se aplican hasta que los validas. El número en granate del menú es lo que tienes pendiente.',
         botones: [
             [guiaBoton('validar cambio. descartar.'), 'Aplica o rechaza un cambio.'],
             [guiaBoton('validar los N. validar todo.'), 'Por grupo o todos de golpe.'],

@@ -424,7 +424,7 @@
                 if (view === 'planner') plannerDayOffset = 0;
 
                 document.querySelectorAll('.sidebar-nav button, #mobile-menu-panel .menu-nav button').forEach(b => {
-                    b.classList.toggle('active', b.dataset.view === view);
+                    b.classList.toggle('active', b.dataset.view === (ESTUDIOS_GRUPO.includes(view) ? 'studies' : view));
                 });
 
                 updatePageTitle();

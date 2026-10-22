@@ -165,8 +165,9 @@ function renderUniversidad() {
     const c = carreraActiva();
     if (!c) return `
         <div class="uni-vista">
+            ${pestanasEstudios('universidad')}
             <div class="uni-vacio">
-                <div class="uni-titulo">universidad.</div>
+                <div class="uni-titulo">carrera.</div>
                 <p>Tu carrera entera, organizada por cuatrimestres: créditos superados, media del expediente, cuándo empiezan los exámenes y qué necesitas sacar en cada asignatura para aprobar.</p>
                 <button class="btn-modal-primary" onclick="openConfigCarrera()">configurar mi carrera.</button>
             </div>
@@ -178,9 +179,10 @@ function renderUniversidad() {
     cuatrisOrdenados().forEach(x => (porCurso[x.curso] = porCurso[x.curso] || []).push(x));
     return `
     <div class="uni-vista">
+        ${pestanasEstudios('universidad')}
         <div class="uni-cabecera">
             <div>
-                <div class="uni-titulo">universidad.</div>
+                <div class="uni-titulo">carrera.</div>
                 <div class="uni-sub">${escapeHtml(c.grado || 'mi carrera')}${c.universidad ? `, ${escapeHtml(c.universidad)}` : ''}</div>
             </div>
             <button class="pedido-btn" onclick="openConfigCarrera()">editar carrera.</button>

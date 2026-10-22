@@ -58,7 +58,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `agenda-laboral` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `asistente` → `servicios` → `compartir` → `guia` → `landing`.
+  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `test` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `asistente` → `servicios` → `compartir` → `guia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -308,7 +308,9 @@ a menor resolución.
   coste según los tickets (cada ingrediente cuenta una vez) y paso a la lista marcado con `recetas`; herramienta
   `receta` del conector (op `receta`, `compraAplicarReceta` / `compraDeshacerReceta`). Mercadona tiene API pública sin CORS (tienda.mercadona.es/api,
   necesitaría una Edge Function); DIA bloquea con antibots: no se usa.
-- **Estudiar (`js/estudiar.js`, vista `estudiar`, opcional de #school):** separado de Estudios a propósito.
+- **Estudios con pestañas (22-10):** `studies` (asignaturas.), `estudiar` (repaso., antes Estudiar) y `universidad` (carrera., antes Universidad) siguen siendo vistas y opcionales distintos, pero en los menús salen como una sola entrada «Estudios» (`ESTUDIOS_GRUPO`, `enMenu`, `estudiosVistaInicial`, `pestanasEstudios(activa)` en nucleo.js) con pestañas arriba de cada vista; `render()` manda a la primera pestaña activa si `studies` está apagado.
+- **Test competitivo (`js/test.js`, pestaña test. de repaso):** tests tipo test en `estudiar.tests` (sincronizado) que se practican a solas o se juegan con amigos de forma asíncrona. Las partidas viven en Supabase (`partidas_test`, `resultados_test`, soluciones en `partidas_test_soluciones` que nadie lee) y todo pasa por funciones: `crear_partida_test` (3 al día, solo invita a amigos), `empezar_partida_test` (una vez por persona), `terminar_partida_test` (puntúa en el servidor: 100 por acierto y hasta 50 por rapidez), `clasificacion_partida_test`, `soluciones_partida_test`; ver `supabase/sql/tests_competitivos.sql`. Prompt para la IA en `TEST_PROMPT_IA`; herramienta `test` del conector (op `test`). Se responde con 1-6 del teclado.
+- **Repaso (antes Estudiar; `js/estudiar.js`, vista `estudiar`, opcional de #school):**
   `estudiar` (sincronizado): pomodoro (el que está en marcha va en localStorage `bitacora-pomodoro`, con
   pastilla flotante `#pomo-pastilla` fuera de la vista), plan del día repartido en pomodoros (`estRepartir`,
   "pasar al planificador."), temario por asignatura y tarjetas tipo Anki (básica, ida y vuelta, escribir,
@@ -355,8 +357,9 @@ a menor resolución.
   `.revela` aparecen al hacer scroll (IntersectionObserver sobre `#landing-screen`, que es el
   contenedor con scroll). Vault y su etiqueta "Privado" solo se ven con `body.dev-mode`.
 - **Conector Claude/ChatGPT y Bandeja:** `supabase/functions/bitacora-mcp` (servidor MCP)
-  escribe en `conector_bandeja`; la app aplica sola eventos, entradas con QR, Ocio, tarjetas de Estudiar,
-  compra y proyecto (`OPS_AUTOMATICAS`); la herramienta `agenda` devuelve también `ahora` (hora de Madrid) y deja el resto en el apartado "bandeja." para validarlo a mano
+  escribe en `conector_bandeja`; la app aplica sola eventos, entradas con QR, Ocio, tarjetas de Estudiar, tests,
+  compra, proyecto (crear, tareas, mover, estado, fecha, quitar, fases, diario), objetivo (hitos, progreso, quitar), laboral
+  (horario y citas de la agenda laboral) y profe (sesiones, días no lectivos, deberes) (`OPS_AUTOMATICAS`, con deshacer); la herramienta `agenda` devuelve también `ahora` (hora de Madrid) y deja el resto en el apartado "bandeja." para validarlo a mano
   (`aplicarOpConector` / `validarBandeja`). Historial con deshacer en `registroConector`.
 - **Social (`js/social.js`, vista `friends`, antes "Amigos"):** pestañas gastos (grupos al estilo
   Tricount en `grupos_gastos` / `grupos_gastos_miembros` / `gastos_compartidos`, datos vivos y

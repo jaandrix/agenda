@@ -659,6 +659,7 @@
             const nextExam = nextUpcomingExam();
             return `
             <div class="studies-view">
+                ${pestanasEstudios('studies')}
                 ${nextExam ? `
                 <div class="event-hero" style="border-color:${(nextExam.subjectColor || '#3b82f6')}66;margin-bottom:18px">
                     <div class="event-hero-body">
