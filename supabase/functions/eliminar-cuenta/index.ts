@@ -29,11 +29,23 @@ async function borrarCarpeta(prefijo: string) {
     if (archivos.length) await sb.storage.from('documents').remove(archivos);
 }
 
+// Límite de peticiones por minuto y por usuario. Vive en la memoria de cada
+// instancia: no es exacto, pero frena a quien bombardee la función sin coste extra.
+const ventanas = new Map<string, { inicio: number; n: number }>();
+function demasiadas(clave: string, max: number) {
+    const ahora = Date.now();
+    const v = ventanas.get(clave);
+    if (!v || ahora - v.inicio > 60000) { ventanas.set(clave, { inicio: ahora, n: 1 }); if (ventanas.size > 5000) ventanas.clear(); return false; }
+    v.n++;
+    return v.n > max;
+}
+
 Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
     const jwt = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     const { data: { user } } = await sb.auth.getUser(jwt);
     if (!user) return json({ error: 'No autorizado' }, 401);
+    if (demasiadas(user.id, 5)) return json({ error: 'Demasiadas peticiones. Espera un minuto.' }, 429);
     const opciones = await req.json().catch(() => ({}));
     if (opciones.confirmar !== 'eliminar') return json({ error: 'Falta la confirmación' }, 400);
 
