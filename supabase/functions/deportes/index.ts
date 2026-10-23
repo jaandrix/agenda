@@ -24,6 +24,10 @@ const LIGAS: [string, string, string][] = [
     ['soccer', 'esp.1', 'LaLiga'], ['soccer', 'esp.2', 'LaLiga 2'], ['soccer', 'eng.1', 'Premier League'], ['soccer', 'ita.1', 'Serie A'],
     ['soccer', 'ger.1', 'Bundesliga'], ['soccer', 'fra.1', 'Ligue 1'], ['soccer', 'por.1', 'Liga Portugal'], ['soccer', 'ned.1', 'Eredivisie'],
     ['soccer', 'usa.1', 'MLS'], ['soccer', 'mex.1', 'Liga MX'], ['soccer', 'arg.1', 'Liga Argentina'], ['soccer', 'esp.w.1', 'Liga F'],
+    // Segundas y terceras inglesas (Leicester estaba en League One y no salía), otras ligas de Europa y Brasil, y
+    // la Champions para los clubes de ligas que no están en la lista.
+    ['soccer', 'eng.2', 'Championship'], ['soccer', 'eng.3', 'League One'], ['soccer', 'eng.4', 'League Two'], ['soccer', 'sco.1', 'Scottish Premiership'],
+    ['soccer', 'bel.1', 'Pro League'], ['soccer', 'tur.1', 'Süper Lig'], ['soccer', 'bra.1', 'Brasileirão'], ['soccer', 'uefa.champions', 'Champions League'],
     ['basketball', 'nba', 'NBA'], ['basketball', 'wnba', 'WNBA'],
 ];
 
@@ -47,11 +51,17 @@ async function todosLosEquipos() {
             return equipos.length ? equipos : (c?.equipos || []);
         } catch (_) { return c?.equipos || []; }
     }));
-    return listas.flat();
+    // Un club puede salir en su liga y en la Champions: se queda una vez.
+    const vistos = new Set<string>();
+    return listas.flat().filter(e => { const k = e.deporte + e.id; if (vistos.has(k)) return false; vistos.add(k); return true; });
 }
 
+// TheSportsDB solo encuentra por el nombre completo («Leicester» no, «Leicester City» sí): se prueban también las
+// terminaciones y comienzos más comunes.
 async function buscarTsdb(texto: string) {
-    const variantes = [texto, /^real\b/i.test(texto) ? '' : 'Real ' + texto].filter(Boolean);
+    const t = texto.trim();
+    const conFinal = /\b(city|united)$/i.test(t);
+    const variantes = [t, /^real\b/i.test(t) ? '' : 'Real ' + t, conFinal ? '' : t + ' City', conFinal ? '' : t + ' United'].filter(Boolean);
     const vistos = new Set<string>();
     const res: any[] = [];
     for (const v of variantes) {
@@ -138,7 +148,7 @@ Deno.serve(async req => {
             const lista = await todosLosEquipos();
             const deEspn = lista.filter(e => norm(e.nombre).includes(q) || norm(e.corto).includes(q)).slice(0, 12);
             const nombres = new Set(deEspn.map(e => norm(e.nombre)));
-            const deTsdb = (await buscarTsdb(String(cuerpo.texto || ''))).filter(e => !nombres.has(norm(e.nombre)));
+            const deTsdb = deEspn.length >= 3 ? [] : (await buscarTsdb(String(cuerpo.texto || ''))).filter(e => !nombres.has(norm(e.nombre)));
             return json({ equipos: [...deEspn, ...deTsdb].slice(0, 14) });
         }
         if (cuerpo.accion === 'calendario') {
