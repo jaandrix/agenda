@@ -527,6 +527,7 @@
             'siri y tu correo.': 'atajo atajos iphone dictar email reenviar',
             'lo que bitácora sabe sola.': 'festivos puentes luz precio equipos fútbol series ciudad',
             'tu calendario en otras apps.': 'google icloud outlook suscribir ics enlace',
+            'correo de los domingos.': 'email correo semanal resumen domingo boletín',
             'notificaciones.': 'avisos push recordatorios resumen mañana',
             'tema y letra.': 'apariencia tema oscuro claro modo color tipografía fuente tamaño letra ancho',
             'semana de ejemplo.': 'ejemplo demo prueba datos inventados empezar',
@@ -592,6 +593,7 @@
                         ${bloqueAjuste('settings-atajos-section', 'atajos', 'siri y tu correo.', 'Apunta cosas sin abrir Bitácora: dictándolas o reenviando un correo.', renderAjustesAtajos())}
                         ${bloqueAjuste('settings-servicios-section', 'lugar', 'lo que bitácora sabe sola.', 'Festivos, puentes, la luz, tus equipos y los estrenos de tus series, sin apuntar nada.', renderAjustesServicios())}
                         ${bloqueAjuste('', 'calendario', 'tu calendario en otras apps.', 'Suscríbete a Bitácora desde Google Calendar, el Calendario del iPhone u Outlook: tus eventos, cumpleaños, viajes y fechas límite, siempre al día.', `<button class="btn-secondary" style="width:auto" onclick="openCalendarioFeed()">obtener enlace.</button>`)}
+                        ${bloqueAjuste('settings-correo-section', 'avisos', 'correo de los domingos.', 'A las 18:00 de cada domingo, a tu correo: lo que tienes la semana que viene y cómo ha ido esta. Se apaga aquí o desde el propio correo.', `<div id="settings-correo-body" class="ajuste-cargando">Cargando...</div>`)}
                         ${bloqueAjuste('settings-push-section', 'avisos', 'notificaciones.', 'Avisos en este dispositivo: el resumen de la mañana y una hora antes de cada evento.', `<div id="settings-push-body">${renderPushSettingsBody('cargando')}</div>`)}
                     </div>
 
@@ -653,6 +655,22 @@
                 </div>`;
         }
 
+        async function loadCorreoSemanalAjustes() {
+            const body = document.getElementById('settings-correo-body');
+            if (!body) return;
+            body.classList.remove('ajuste-cargando');
+            const { data, error } = await consultaConRed(() => sb.from('correo_semanal').select('activo').maybeSingle());
+            if (error) { body.innerHTML = '<div class="ajuste-texto">Ahora mismo no está disponible.</div>'; return; }
+            const on = !!data?.activo;
+            body.innerHTML = `<div class="ajuste-fila-switch"><span>${on ? 'encendido.' : 'apagado.'}</span><button class="finance-pro-switch ${on ? 'on' : ''}" onclick="alternarCorreoSemanal(${!on})" aria-label="Correo de los domingos" aria-pressed="${on}"><span class="finance-pro-switch-knob"></span></button></div>`;
+        }
+        async function alternarCorreoSemanal(activo) {
+            const { error } = await sb.rpc('poner_correo_semanal', { p_activo: activo });
+            if (error) { showToast('No se pudo cambiar', true); return; }
+            showToast(activo ? 'Te llegará el domingo a las 18:00' : 'Correo de los domingos apagado');
+            loadCorreoSemanalAjustes();
+        }
+
         const AJUSTES_GRUPOS = [['cuenta', 'cuenta.'], ['apartados', 'apartados.'], ['conexiones', 'conexiones.'], ['apariencia', 'apariencia.'], ['ayuda', 'ayuda.'], ['herramientas', 'herramientas.'], ['riesgo', 'riesgo.']];
 
         // Buscador de Ajustes: filtra los bloques por su título, su texto, lo que ya han cargado y sus palabras clave
@@ -692,6 +710,7 @@
         // sus propias secciones).
         async function loadSettingsSubscriptionInfo() {
             loadInvitarAjustes().catch(e => console.error(e));
+            loadCorreoSemanalAjustes().catch(e => console.error(e));
             const body = cuerpoAjustes('settings-subscription-body');
             if (!body) return;
             const { data: { user } } = await sb.auth.getUser();

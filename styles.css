@@ -9176,3 +9176,4 @@ body:not(.papel) .positivo, body:not(.papel) .social-grupo-saldo.positivo { colo
 body:not(.papel) .negativo, body:not(.papel) .social-grupo-saldo.negativo { color:#f08a8a; }
 body:not(.papel) .event-hero-multi-meta, body:not(.papel) .event-hero-multi-col-label, body:not(.papel) .event-hero-multi-empty, body:not(.papel) .event-hero-flat .event-hero-kicker { color:#bdbcb0; }
 body:not(.papel) .settings-subscription-card-legado .settings-subscription-status { color:#ff8a63; }
+.ajuste-fila-switch { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:14px; color:var(--text-secondary); }
