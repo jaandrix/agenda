@@ -1414,12 +1414,19 @@
                 const meta = [e.place, cat?.name].filter(Boolean).map(escapeHtml).join(', ');
                 filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(hora) || '—'}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${titulo}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div>${(e.entradas || []).length ? `<button class="m-mini m-fila-qr" onclick="event.stopPropagation();abrirEntradas('${e.id}',0)" aria-label="Ver la entrada">${ENTRADA_ICONO}<span>qr.</span></button>` : '<span class="m-fila-bola" aria-hidden="true"></span>'}</div>` });
             });
+            // Hoy, lo hecho se queda a la vista 30 minutos (por si se marcó sin querer) y luego se va; con
+            // «ver las hechas.» vuelven todas.
+            const esHoy = sel === hoy;
+            let ocultas = 0;
+            const sigue = (hecha, cuando) => !esHoy || !hecha || mobileVerHechas || mobileHechaReciente(cuando) || !(ocultas += 1);
             tareasDia.forEach(it => {
+                if (!sigue(it.done, it.hechaEn)) return;
                 filas.push({ hora: it.time || '', html: renderMobileFilaTarea(it, offset) });
             });
             if (sel === hoy) {
                 recurringTasksDueToday().forEach(t => {
                     const hecha = !!t.completadas?.[hoy];
+                    if (!sigue(hecha, t.hechaEn?.dia === hoy ? t.hechaEn.cuando : 0)) return;
                     filas.push({ hora: '', html: `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="mobileMarcarRecurrente('${t.id}')" aria-label="Marcar hecha"></button></div>` });
                 });
             }
@@ -1446,9 +1453,45 @@
                 </div>
                 ${sinHora.length ? `<div class="m-lista m-tl-sinhora">${sinHora.map(f => f.html).join('')}</div>` : ''}
                 ${conHora.length ? `<div class="m-tl">${linea}</div>` : ''}
-                ${!filas.length ? '<div class="m-vacio">nada este día.</div>' : ''}
+                ${!filas.length ? `<div class="m-vacio">${ocultas ? 'todo hecho.' : 'nada este día.'}</div>` : ''}
+                ${esHoy ? renderMobilePendientesInicio(sigue) : ''}
+                ${ocultas || (esHoy && mobileVerHechas) ? `<button class="m-enlace m-ver-hechas" onclick="mobileVerHechas=!mobileVerHechas;renderMobileShell()">${mobileVerHechas ? 'ocultar las hechas.' : `ver ${ocultas === 1 ? 'la hecha' : `las ${ocultas} hechas`}.`}</button>` : ''}
                 ${renderEntradaTuDia(sel)}
             </section>`;
+        }
+
+        // Inicio del móvil: las tareas sin día también, para no tener que ir al Planificador a verlas o marcarlas.
+        let mobileVerHechas = false;
+        let mobileHechasTemporizador = null, mobileHechasVence = 0;
+        const MOBILE_HECHA_A_LA_VISTA = 30 * 60000;
+        function mobileHechaReciente(cuando) {
+            if (!cuando) return false;
+            const vence = cuando + MOBILE_HECHA_A_LA_VISTA;
+            if (vence <= Date.now()) return false;
+            // Repinta el inicio cuando la primera hecha cumpla sus 30 minutos (si hay un modal, al cerrarlo).
+            if (!mobileHechasVence || vence < mobileHechasVence || mobileHechasVence <= Date.now()) {
+                mobileHechasVence = vence;
+                clearTimeout(mobileHechasTemporizador);
+                mobileHechasTemporizador = setTimeout(() => { mobileHechasVence = 0; if (currentView === 'calendar') repintarTrasModal(); }, vence - Date.now() + 1000);
+            }
+            return true;
+        }
+        function renderMobilePendientesInicio(sigue) {
+            const lista = (dayPlanner.backlog || []).filter(it => sigue(it.done, it.hechaEn));
+            if (!lista.length) return '';
+            return `<div class="m-pendientes-inicio">
+                <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir.</button></div>
+                <div class="m-lista">${lista.map(it => `
+                    <div class="m-fila ${it.done ? 'hecha' : ''}">
+                        <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
+                        ${it.done ? '' : `<button class="m-mini" onclick="scheduleBacklogTaskToday('${it.id}').then(renderMobileShell)">→ hoy</button>`}
+                        <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarPendiente('${it.id}')" aria-label="Marcar hecha"></button>
+                    </div>`).join('')}</div>
+            </div>`;
+        }
+        function mobileMarcarPendiente(id) {
+            toggleBacklogTaskDone(id);
+            renderMobileShell();
         }
 
         function renderMobileFilaTarea(it, offset) {

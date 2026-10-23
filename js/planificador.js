@@ -270,6 +270,7 @@
             const item = dayPlanner.backlog.find(it => it.id === id);
             if (!item) return;
             item.done = !item.done;
+            if (item.done) item.hechaEn = Date.now(); else delete item.hechaEn;
             if (currentView === 'planner') render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
@@ -412,6 +413,7 @@
             const item = plannerItemsForOffset(offset).find(it => it.id === id);
             if (!item) return;
             item.done = !item.done;
+            if (item.done) item.hechaEn = Date.now(); else delete item.hechaEn;
 
             // Si es un trabajo enlazado desde Estudios, el propio trabajo
             // guarda si está hecho — es la única copia que sobrevive una
@@ -484,6 +486,7 @@
             const today = todayISO();
             task.completadas = task.completadas || {};
             task.completadas[today] = !task.completadas[today];
+            task.hechaEn = task.completadas[today] ? { dia: today, cuando: Date.now() } : undefined;
 
             // Igual que con los eventos del planificador: cada día que se
             // completa una recurrente queda su propio evento en el calendario.

@@ -44,6 +44,7 @@
         // trabajo de Estudios, lo marca también.
         function marcarTareaConector(item, enDia, hecha) {
             item.done = hecha;
+            if (hecha) item.hechaEn = Date.now(); else delete item.hechaEn;
             if (!enDia) return;
             if (item.linkedAssignmentId) { const a = findAssignmentById(item.linkedAssignmentId); if (a) a.done = hecha; }
             const logId = 'planner_done_' + item.id;

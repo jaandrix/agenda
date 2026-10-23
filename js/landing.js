@@ -197,6 +197,7 @@ aplicarPortadaPerfil();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-23', rama: 'todos', nombre: 'todas tus tareas en el inicio del móvil', para: 'quien se organiza desde el móvil.', texto: 'El inicio enseña también las tareas sin día, con su «→ hoy». Lo que marcas como hecho se queda a la vista media hora, por si fue sin querer, y luego se va; «ver las hechas.» lo trae de vuelta.' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'tu mes, en una tarjeta', para: 'quien quiere enseñar su mes.', texto: 'En Panorama → «tu mes.», una imagen vertical con tus planes, viajes, lecturas, tareas y rutinas del mes, lista para stories. Quitas lo que no quieras enseñar antes de guardarla.' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'ajustes, con buscador', para: 'todos.', texto: 'Ajustes tiene un buscador y un índice arriba, y los grupos están más ordenados. Desde Ayuda puedes poner (o quitar) la semana de ejemplo.' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'una semana de ejemplo para empezar', para: 'quien acaba de llegar.', texto: 'Al crear la cuenta puedes verla con una semana inventada (una cena, un viaje, unos gastos, un examen) para ver desde el primer minuto cómo se conecta todo. «empezar con lo mío.» borra solo el ejemplo.' },
