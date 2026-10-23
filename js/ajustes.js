@@ -341,6 +341,7 @@
             { tipo: 'ritmo', titulo: 'ritmo de gasto.', texto: 'Cuando el gasto del día a día va bastante por encima de lo normal en ti. Como mucho dos veces al mes.' },
             { tipo: 'bandeja', titulo: 'bandeja.', texto: 'Cambios de Claude que llevan más de un día esperando tu validación.' },
             { tipo: 'semana', titulo: 'tu semana.', texto: 'El domingo a las 20:00, lo que viene en la semana: eventos, exámenes y entregas, cumpleaños y cargos.' },
+            { tipo: 'volver', titulo: 'si llevas días sin entrar.', texto: 'Tras 4 días sin abrir Bitácora, un aviso con algo tuyo (lo que tienes mañana, un cumpleaños...). Como mucho uno por semana.' },
             { tipo: 'regalos', titulo: 'regalos de cumpleaños.', texto: 'Una semana antes de cada cumpleaños, la tarea «pensar regalo» en tareas pendientes.' },
         ];
 

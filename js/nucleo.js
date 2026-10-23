@@ -209,6 +209,12 @@
                 return;
             }
             suscripcionActual = sub;
+            try {
+                if (localStorage.getItem('bitacora-actividad') !== todayISO()) {
+                    localStorage.setItem('bitacora-actividad', todayISO());
+                    sb.rpc('marcar_actividad').then(() => {}, () => {});
+                }
+            } catch (e) { /* sin almacenamiento */ }
             // Sin el tema «oliva.» desbloqueado (p. ej. otra cuenta en este dispositivo), vuelve al de por defecto.
             (sub.estado === 'prueba' ? Promise.resolve() : cargarInvitacion(user)).then(() => { if (temaActual() === 'oliva' && !temaAmigosDesbloqueado()) aplicarClasesTema('asfalto'); }).catch(e => console.error(e));
             if (sub.estado !== 'fundador' && temaActual() === 'fundador') aplicarClasesTema('asfalto');

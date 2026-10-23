@@ -27,6 +27,9 @@ const sb = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ZONA = 'Europe/Madrid';
 const MAX_DIA = 3;
 const HORA = 9;
+// A las 19:00, el aviso de fin de la prueba (3 días antes y el último día) y el de volver (4 días sin entrar).
+const HORA_TARDE = 19;
+const CORTE_PAGO = '2026-09-15T00:00:00Z';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const euros = (n: number) => (Math.round(n * 100) / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -180,6 +183,51 @@ function avisoSemana(data: any, hoy: string): Aviso | null {
     return { clave: `semana:${hoy}`, tipo: 'semana', prioridad: 1, titulo: 'tu semana.', texto: frase.charAt(0).toUpperCase() + frase.slice(1) + '.', url: '/?semana' };
 }
 
+function cuentaPropia(data: any) {
+    const propio = (x: any) => !(x?.ejemplo === true || String(x?.id || '').includes('ejemplo_'));
+    const ent = (data.entries || []).filter(propio);
+    return {
+        planes: ent.filter((e: any) => e.type === 'event' && !/^(planner_done_|recurring_done_|weekly_task_done_)/.test(e.id || '') && !e.calendarLog && !e.linkedItemId).length,
+        hechas: ent.filter((e: any) => /^(planner_done_|recurring_done_)/.test(e.id || '')).length,
+        movs: (data.financePro?.transactions || []).filter((t: any) => propio(t) && t.category).length,
+    };
+}
+
+// Fin de la prueba: solo cuentas en prueba (sin fila de suscripción), 3 días antes y el último día.
+async function avisoFinPrueba(userId: string, data: any): Promise<Aviso | null> {
+    const { data: u } = await sb.auth.admin.getUserById(userId);
+    const alta = u?.user?.created_at;
+    if (!alta || alta < CORTE_PAGO) return null;
+    const { data: sub } = await sb.from('suscripciones').select('estado').eq('user_id', userId).maybeSingle();
+    if (sub) return null;
+    const { data: inv } = await sb.from('invitaciones').select('invitado').eq('invitado', userId).maybeSingle();
+    const total = inv ? 30 : 14;
+    const quedan = Math.ceil((new Date(alta).getTime() + total * 864e5 - Date.now()) / 864e5);
+    if (quedan !== 3 && quedan !== 1) return null;
+    const c = cuentaPropia(data);
+    const partes = [c.planes ? `${c.planes} planes` : '', c.hechas ? `${c.hechas} tareas hechas` : '', c.movs ? `${c.movs} gastos ordenados` : ''].filter(Boolean);
+    const llevas = partes.length ? `Llevas ${partes.length > 1 ? partes.slice(0, -1).join(', ') + ' y ' + partes[partes.length - 1] : partes[0]} en Bitácora. ` : '';
+    return { clave: `finprueba:${quedan}`, tipo: 'finprueba', prioridad: 0, titulo: quedan === 1 ? 'tu prueba termina mañana.' : 'tu prueba termina en 3 días.', texto: `${llevas}Nada se borra; mira cómo seguir.`, url: '/?finprueba' };
+}
+
+// Volver: tras 4 días sin abrir la app, uno por semana como mucho, con algo suyo si lo hay.
+async function avisoVolver(userId: string, data: any, hoy: string): Promise<Aviso | null> {
+    const { data: act } = await sb.from('actividad').select('ultima_vez').eq('user_id', userId).maybeSingle();
+    if (!act || Date.now() - new Date(act.ultima_vez).getTime() < 4 * 864e5) return null;
+    const semana = sumarDias(hoy, -((new Date(hoy + 'T12:00:00Z').getUTCDay() + 6) % 7));
+    const manana = sumarDias(hoy, 1);
+    const propio = (x: any) => !(x?.ejemplo === true || String(x?.id || '').includes('ejemplo_'));
+    const deManana = (data.entries || []).filter((e: any) => propio(e) && e.type === 'event' && e.date === manana && !e.calendarLog);
+    let texto = '';
+    if (deManana.length) texto = `Mañana tienes «${minus(deManana[0].title)}»${deManana.length > 1 ? ` y ${deManana.length - 1} ${deManana.length === 2 ? 'cosa' : 'cosas'} más` : ''}. Échale un ojo a tu día.`;
+    else {
+        const cumple = (data.entries || []).filter((e: any) => propio(e) && e.type === 'birthday' && e.birthDate).map((e: any) => ({ e, d: [0, 1, 2, 3, 4, 5, 6, 7].find(k => sumarDias(hoy, k).slice(5) === String(e.birthDate).slice(5)) })).find((x: any) => x.d !== undefined);
+        if (cumple) texto = cumple.d === 0 ? `Hoy es el cumpleaños de ${cumple.e.title}.` : `El cumpleaños de ${cumple.e.title} es en ${cumple.d} ${cumple.d === 1 ? 'día' : 'días'}. ¿Le apuntas el regalo?`;
+    }
+    if (!texto) texto = 'Vuelve a Bitácora: apunta lo que tengas esta semana y deja la cabeza libre.';
+    return { clave: `volver:${semana}`, tipo: 'volver', prioridad: 0, titulo: 'bitácora.', texto, url: '/' };
+}
+
 async function enviar(userId: string, a: Aviso) {
     const res = await fetch(SUPABASE_URL + '/functions/v1/send-push', {
         method: 'POST',
@@ -197,6 +245,7 @@ Deno.serve(async (req) => {
     const tocaResumen = opciones.forzar || horaMadrid() === HORA;
     const hoy = hoyMadrid();
     const tocaSemana = opciones.forzarSemana || (new Date(hoy + 'T12:00:00Z').getUTCDay() === 0 && horaMadrid() === 20);
+    const tocaTarde = opciones.forzarTarde || horaMadrid() === HORA_TARDE;
     const { data: subs } = await sb.from('push_subscriptions').select('user_id');
     const usuarios = [...new Set((subs || []).map((s: any) => s.user_id))].filter(u => !opciones.user_id || u === opciones.user_id);
     const resumen: any[] = [];
@@ -222,13 +271,20 @@ Deno.serve(async (req) => {
             const sinEstudios = data.apartadosConfig?.perfil === 'trabajador';
             diarios = calcularAvisos(data, hoy, count || 0).filter(a => prefs[a.tipo] !== false && !(sinEstudios && a.tipo === 'estudios'));
         }
-        const claves = [...eventos, ...semanal, ...diarios].map(a => a.clave);
+        const tarde: Aviso[] = [];
+        if (tocaTarde) {
+            const fin = prefs.finprueba === false ? null : await avisoFinPrueba(userId, data);
+            if (fin) tarde.push(fin);
+            const volver = prefs.volver === false ? null : await avisoVolver(userId, data, hoy);
+            if (volver) tarde.push(volver);
+        }
+        const claves = [...eventos, ...semanal, ...diarios, ...tarde].map(a => a.clave);
         if (tocaResumen) claves.push(claveResumen);
         if (!claves.length) continue;
         const { data: enviados } = await sb.from('avisos_enviados').select('clave').eq('user_id', userId).in('clave', claves);
         const ya = new Set((enviados || []).map((e: any) => e.clave));
         const resumenHecho = ya.has(claveResumen) && !opciones.forzar;
-        const nuevos = [...eventos.filter(a => !ya.has(a.clave)), ...semanal.filter(a => !ya.has(a.clave) || opciones.forzarSemana), ...(resumenHecho ? [] : diarios.filter(a => !ya.has(a.clave)).slice(0, MAX_DIA))];
+        const nuevos = [...tarde.filter(a => !ya.has(a.clave)), ...eventos.filter(a => !ya.has(a.clave)), ...semanal.filter(a => !ya.has(a.clave) || opciones.forzarSemana), ...(resumenHecho ? [] : diarios.filter(a => !ya.has(a.clave)).slice(0, MAX_DIA))];
         if (tocaResumen && !resumenHecho && !opciones.simular) await sb.from('avisos_enviados').upsert({ user_id: userId, clave: claveResumen });
         const hechos: string[] = [];
         for (const a of nuevos) {

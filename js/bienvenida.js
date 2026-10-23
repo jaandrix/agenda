@@ -214,3 +214,97 @@ function revisarFinAcceso() {
 }
 setInterval(revisarFinAcceso, 10 * 60000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') revisarFinAcceso(); });
+
+// ---------- lo que llevas en Bitácora (fin de la prueba) ----------
+// Tres días antes de que acabe la prueba y el último día, una pantalla con lo que la persona ya ha apuntado y
+// conseguido, y cómo seguir. Sale una vez por cada uno de esos dos momentos (también con el aviso /?finprueba).
+function loQueLlevas() {
+    const propio = x => !(typeof esEjemplo === 'function' && esEjemplo(x));
+    const eventos = entries.filter(e => e.type === 'event' && propio(e) && !isCalendarLogEntry(e) && !e.linkedItemId).length;
+    const hechas = entries.filter(e => propio(e) && /^(planner_done_|recurring_done_|weekly_task_done_)/.test(e.id || '')).length;
+    const movs = (financePro?.transactions || []).filter(t => propio(t) && t.category).length;
+    const notas = (notes || []).filter(n => propio(n) && (n.content || '').trim()).length;
+    const dias = new Set(); habits.filter(propio).forEach(h => Object.keys(h.completadas || {}).forEach(d => h.completadas[d] && dias.add(d)));
+    const viajes = entries.filter(e => e.type === 'travel' && propio(e)).length;
+    const ocio = entries.filter(e => ['book', 'movie', 'series', 'game'].includes(e.type) && propio(e)).length;
+    const examenes = (studies?.subjects || []).filter(propio).reduce((n, s) => n + (s.exams || []).length + (s.assignments || []).length, 0);
+    return [
+        [eventos, 'planes en tu calendario.', 'plan en tu calendario.'],
+        [hechas, 'tareas hechas.', 'tarea hecha.'],
+        [movs, 'gastos e ingresos ordenados.', 'gasto ordenado.'],
+        [dias.size, 'días cumpliendo tus rutinas.', 'día cumpliendo tus rutinas.'],
+        [notas, 'días escritos en tus notas.', 'día escrito en tus notas.'],
+        [examenes, 'exámenes y entregas al día.', 'examen o entrega al día.'],
+        [viajes, 'viajes guardados.', 'viaje guardado.'],
+        [ocio, 'libros, pelis y series.', 'libro, peli o serie.'],
+    ].filter(([n]) => n > 0).map(([n, varias, una]) => ({ n, texto: n === 1 ? una : varias }));
+}
+
+function openFinPrueba() {
+    const dias = diasPrueba();
+    if (dias === null || suscripcionActual?.estado !== 'prueba') return;
+    const lista = loQueLlevas().slice(0, 6);
+    showModal(`
+        <div class="modal-title">${dias === 0 ? 'tu prueba termina hoy.' : dias === 1 ? 'tu prueba termina mañana.' : `tu prueba termina en ${dias} días.`}<button class="modal-close" onclick="closeModal()" aria-label="Cerrar"><i class='ico ico-x' aria-hidden=true></i></button></div>
+        ${lista.length ? `
+        <p class="regalo-intro">Esto es lo que ya has construido en Bitácora:</p>
+        <div class="fin-prueba-cifras">${lista.map(x => `<div><b>${x.n}</b><span>${x.texto}</span></div>`).join('')}</div>` : '<p class="regalo-intro">Aún estás a tiempo de probar lo que más te interese: apunta tus planes de la semana y mira cómo se conectan.</p>'}
+        <p class="fin-prueba-nota">Si no te suscribes, nada se borra: tus datos se quedan guardados y los puedes descargar cuando quieras.</p>
+        <div class="settings-subscription-card settings-subscription-card-neutral" style="border:0;padding:0;background:none">${renderPlanesPago()}</div>
+        <button class="btn-secondary" style="margin-top:10px" onclick="closeModal()">ahora no.</button>`);
+    cargarPlazasFundador();
+}
+
+function comprobarFinPrueba() {
+    const dias = diasPrueba();
+    if (dias === null || suscripcionActual?.estado !== 'prueba' || dias > 3) return false;
+    const momento = dias <= 1 ? 'ultimo' : 'tres';
+    const clave = 'bitacora-fin-prueba-' + momento;
+    try { if (localStorage.getItem(clave)) return false; localStorage.setItem(clave, '1'); } catch (e) { return false; }
+    openFinPrueba();
+    return true;
+}
+
+// ---------- ¿qué echas en falta? (a los 7 días) ----------
+// Una sola pregunta, una vez, entre los 7 y los 60 días de la cuenta. La respuesta va a Sugerencias con la marca
+// «[7 días]» para distinguirla.
+async function comprobarPreguntaFalta() {
+    const s = suscripcionActual;
+    if (!s || s.estado === 'legado' || modoSinConexion) return false;
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return false;
+    const edad = (Date.now() - new Date(user.created_at)) / 86400000;
+    const clave = 'bitacora-pregunta-falta-' + user.id;
+    try { if (edad < 7 || edad > 60 || localStorage.getItem(clave)) return false; } catch (e) { return false; }
+    if (modalEnPantalla()) return false;
+    showModal(`
+        <div class="modal-title">una pregunta.<button class="modal-close" onclick="cerrarPreguntaFalta()" aria-label="Cerrar"><i class='ico ico-x' aria-hidden=true></i></button></div>
+        <p class="regalo-intro">Llevas una semana con Bitácora. ¿Qué echas en falta? Lo lee la persona que la hace.</p>
+        <textarea id="pregunta-falta" class="modal-input" rows="3" placeholder="Me gustaría que..."></textarea>
+        <button class="btn-modal-primary" onclick="enviarPreguntaFalta()">enviar.</button>
+        <button class="btn-secondary" style="margin-top:8px" onclick="cerrarPreguntaFalta()">ahora no.</button>`);
+    return true;
+}
+async function cerrarPreguntaFalta() {
+    const { data: { user } } = await sb.auth.getUser();
+    try { if (user) localStorage.setItem('bitacora-pregunta-falta-' + user.id, 'cerrada'); } catch (e) { /* sin almacenamiento */ }
+    closeModal();
+}
+async function enviarPreguntaFalta() {
+    const texto = document.getElementById('pregunta-falta')?.value.trim();
+    if (!texto) { showToast('Escribe algo o pulsa «ahora no.»'); return; }
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const { error } = await sb.from('sugerencias').insert({ user_id: user.id, texto: '[7 días] ' + texto.slice(0, 2000) });
+    if (error) { showToast('No se pudo enviar', true); return; }
+    try { localStorage.setItem('bitacora-pregunta-falta-' + user.id, 'enviada'); } catch (e) { /* sin almacenamiento */ }
+    closeModal();
+    showToast('Gracias: llega tal cual');
+}
+
+// Una sola ventana por arranque: primero la bienvenida (en su sitio), luego el fin de la prueba y, si no, la pregunta.
+async function comprobarAvisosDeArranque() {
+    if (modalEnPantalla()) return;
+    if (comprobarFinPrueba()) return;
+    await comprobarPreguntaFalta();
+}
