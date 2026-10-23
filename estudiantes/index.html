@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bitácora</title>
+<link rel="canonical" href="https://appbitacora.es/">
+<script>
+// Portada de Bitácora para estudiantes: lleva a la portada general con su titular y conserva el ?ref= del vídeo
+// (si no trae ninguno, cuenta como «perfil-estudiantes» en el panel).
+(function () {
+    var q = new URLSearchParams(location.search);
+    if (!q.get('ref')) q.set('ref', 'perfil-estudiantes');
+    q.set('perfil', 'estudiantes');
+    location.replace('/?' + q.toString());
+})();
+</script>
+<meta http-equiv="refresh" content="1; url=/?perfil=estudiantes&amp;ref=perfil-estudiantes">
+</head>
+<body style="font-family:system-ui,sans-serif;background:#141414;color:#eee;display:grid;place-items:center;min-height:100vh;margin:0">
+<a href="/?perfil=estudiantes&amp;ref=perfil-estudiantes" style="color:#eee">Abrir Bitácora</a>
+</body>
+</html>

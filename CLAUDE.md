@@ -343,6 +343,7 @@ a menor resolución.
 - **Landing:** el cerebro de la portada (`montarCerebro` en landing.js, `CEREBRO_ZONAS`) y el modal
   "actualizaciones." (`NOVEDADES` / `openNovedades` en landing.js). **Al añadir un apartado o algo grande, apuntarlo
   arriba del todo en `NOVEDADES`** (fecha, rama, nombre, para quién y una línea).
+- **Portadas por perfil (23-10):** `estudiantes/`, `profes/`, `finanzas/` y `trabajo/` redirigen a `/?perfil=...` (conservan el `?ref=` del vídeo o ponen `perfil-<nombre>`); `PORTADAS` / `aplicarPortadaPerfil` en landing.js cambian el titular y suben su bloque.
 - **CV (`js/cv.js`, Empleo → "crear mi cv."):** asistente por pasos (contacto, cada empleo con
   `cvFunciones`/`cvAprendido`/`cvHabilidades`, formación, idiomas, habilidades, perfil propuesto)
   que guarda `perfilLaboral` (sincronizado) y genera un PDF de una columna con jsPDF.
