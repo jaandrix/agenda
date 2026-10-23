@@ -58,7 +58,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `agenda-laboral` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `test` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `ejemplo` → `asistente` → `tumes` → `servicios` → `compartir` → `guia` → `landing`.
+  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `test` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `ejemplo` → `invitar` → `asistente` → `tumes` → `servicios` → `compartir` → `guia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -345,6 +345,7 @@ a menor resolución.
   arriba del todo en `NOVEDADES`** (fecha, rama, nombre, para quién y una línea).
 - **Semana de ejemplo (`js/ejemplo.js`, 23-10):** opcional en el último paso de la bienvenida (`bienvenidaBorrador.ejemplo`). `cargarEjemplo(perfil)` mete eventos, un viaje, tareas, gastos (uno de viaje), una nota, una rutina y, si estudia, una asignatura con examen; todo con `ejemplo: true` e id con «ejemplo_» (`esEjemplo`). Mientras `hayEjemplo()`, franja fija `#ejemplo-franja` (la pone `render()`) con «empezar con lo mío.» → `quitarEjemplo()` borra solo eso.
 - **Tu mes (`js/tumes.js`, Panorama → «tu mes.»):** tarjeta 1080 × 1920 dibujada en canvas con los colores del tema (`dibujarTuMes`); grupos y cosas sueltas se quitan antes de exportar (`tuMesEstado.quitados`; el dinero empieza apagado); guarda o comparte el PNG (`navigator.share` con archivo).
+- **Invitar a un amigo (`js/invitar.js`, `supabase/sql/invitaciones.sql`):** código por cuenta (`mi_codigo_invitacion`, Ajustes → cuenta) y enlace `/?amigo=CODIGO` (se guarda en localStorage y va en el alta como `user_metadata.codigo_amigo`); al entrar, `usar_codigo_invitacion` da 30 días de prueba (`DIAS_PRUEBA_AMIGO`, también en `tiene_acceso`). `invitacion` (invitado, amigos) y `temaAmigosDesbloqueado()` para el tema «amigos.» (colores pendientes de Alejandro).
 - **Portadas por perfil (23-10):** `estudiantes/`, `profes/`, `finanzas/` y `trabajo/` redirigen a `/?perfil=...` (conservan el `?ref=` del vídeo o ponen `perfil-<nombre>`); `PORTADAS` / `aplicarPortadaPerfil` en landing.js cambian el titular y suben su bloque.
 - **CV (`js/cv.js`, Empleo → "crear mi cv."):** asistente por pasos (contacto, cada empleo con
   `cvFunciones`/`cvAprendido`/`cvHabilidades`, formación, idiomas, habilidades, perfil propuesto)

@@ -176,7 +176,7 @@ function renderAvisoPrueba(movil) {
     const dias = diasPrueba();
     if (dias === null) return '';
     const regalo = suscripcionActual.estado === 'regalo';
-    const total = regalo ? 183 : DIAS_PRUEBA;
+    const total = regalo ? 183 : (suscripcionActual.diasTotal || DIAS_PRUEBA);
     const pocos = dias <= 3;
     const texto = regalo
         ? (dias === 1 ? 'Queda 1 día de tu regalo.' : `Quedan ${dias} días de tu regalo.`)

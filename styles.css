@@ -9046,7 +9046,7 @@ body.con-ejemplo.mobile-standalone .m-app { padding-bottom:calc(env(safe-area-in
 .bienvenida-ejemplo { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
 
 /* Ajustes: buscador e índice de grupos (23-10). */
-.ajustes-buscador { position:sticky; top:0; z-index:5; margin:18px 0 6px; padding:10px 0; background:var(--bg-app); }
+.ajustes-buscador { margin:18px 0 6px; }
 .ajustes-buscador input { width:100%; box-sizing:border-box; }
 .ajustes-indice { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
 .ajustes-indice button { padding:7px 12px; border:1px solid var(--border-strong); border-radius:10px; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; }
@@ -9078,3 +9078,10 @@ body.con-ejemplo.mobile-standalone .m-app { padding-bottom:calc(env(safe-area-in
 /* Inicio del móvil: pendientes sin día y «ver las hechas.» (las hechas se van a los 30 minutos). */
 .m-pendientes-inicio .m-bloque-cab { margin-top:22px; }
 .m-ver-hechas { display:block; margin:14px 0 0; }
+
+/* Invitar a un amigo (js/invitar.js). */
+.invitar-codigo { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; }
+.invitar-codigo b { font-size:22px; font-weight:800; letter-spacing:.04em; font-variant-numeric:tabular-nums; }
+.invitar-codigo span { font-size:13px; color:var(--text-secondary); }
+.invitar-usar { display:flex; gap:8px; align-items:center; }
+.invitar-usar input { flex:1; text-transform:uppercase; }

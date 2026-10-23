@@ -209,6 +209,7 @@
                 return;
             }
             suscripcionActual = sub;
+            if (sub.estado !== 'prueba') cargarInvitacion(user).catch(e => console.error(e));
             if (sub.estado !== 'fundador' && temaActual() === 'fundador') aplicarClasesTema('asfalto');
             if (sessionStorage.getItem('bitacoraPlanIntencion') === 'fundador' && sub.estado !== 'fundador') {
                 sessionStorage.removeItem('bitacoraPlanIntencion');
@@ -257,8 +258,11 @@
             // Sin fila también se guarda: sin red no se podría calcular si el
             // usuario guardado no trae la fecha de alta.
             if (esLegado) { try { localStorage.setItem(claveGuardada, JSON.stringify({ estado: 'legado', modulos: ['base'] })); } catch (_) { /* sin almacenamiento */ } return { estado: 'legado', modulos: ['base'] }; }
-            const finPrueba = new Date(new Date(user.created_at).getTime() + DIAS_PRUEBA * 86400000);
-            if (new Date() < finPrueba) return { estado: 'prueba', trial_fin: finPrueba.toISOString(), modulos: ['base'] };
+            // Quien entra con el código de un amigo tiene 30 días en vez de 14 (js/invitar.js).
+            try { await aplicarCodigoAmigoPendiente(user); await cargarInvitacion(user); } catch (e) { console.error(e); }
+            const diasTotal = invitacion.invitado ? DIAS_PRUEBA_AMIGO : DIAS_PRUEBA;
+            const finPrueba = new Date(new Date(user.created_at).getTime() + diasTotal * 86400000);
+            if (new Date() < finPrueba) return { estado: 'prueba', trial_fin: finPrueba.toISOString(), diasTotal, modulos: ['base'] };
             return { estado: 'sin_suscripcion', modulos: ['base'] };
         }
 
@@ -540,7 +544,8 @@
 
             btn.disabled = true;
             btn.textContent = 'creando...';
-            const { data, error } = await sb.auth.signUp({ email, password });
+            const amigo = (document.getElementById('signup-amigo')?.value || '').trim().toUpperCase();
+            const { data, error } = await sb.auth.signUp({ email, password, options: amigo ? { data: { codigo_amigo: amigo } } : undefined });
             btn.disabled = false;
             btn.textContent = 'crear cuenta.';
 

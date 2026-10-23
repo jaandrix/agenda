@@ -435,6 +435,7 @@
         // Iconos sólidos de cada bloque de Ajustes (familia TARJETA BITACORA).
         const AJUSTES_ICONOS = {
             calendario: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M24 8h12v10h28V8h12v10h6a10 10 0 0 1 10 10v54a10 10 0 0 1-10 10H18A10 10 0 0 1 8 82V28a10 10 0 0 1 10-10h6zM20 40v40h60V40z"/><path d="M50 46l14 14H56v14H44V60h-8z"/></svg>',
+            amigos: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="34" cy="34" r="16"/><circle cx="68" cy="40" r="13"/><path d="M6 86c0-17 13-30 28-30s28 13 28 30zM58 86c0-8-2-15-6-21 4-3 10-5 16-5 13 0 26 11 26 26z"/></svg>',
             suscripcion: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 8a42 42 0 1 1 0 84 42 42 0 0 1 0-84zm0 20a22 22 0 1 0 0 44 22 22 0 0 0 0-44z"/></svg>',
             datos: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M30 8l24 26H38v28H22V34H6zM70 92L46 66h16V38h16v28h16z"/></svg>',
             conector: '<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="24" cy="50" r="18"/><circle cx="76" cy="50" r="18"/><rect x="30" y="44" width="40" height="12" rx="6"/></svg>',
@@ -518,6 +519,7 @@
         // Palabras con las que se encuentra cada ajuste en el buscador, además de su título y su texto.
         const AJUSTES_CLAVES = {
             'suscripción.': 'pago plan precio stripe factura tarjeta fundador regalo código prueba gratis',
+            'invita a un amigo.': 'invitar amigo código enlace recomendar regalo prueba 30 días tema amigos',
             'tus datos.': 'exportar importar copia seguridad json backup ics calendario',
             'qué quieres ver.': 'apartados menú perfil estudiante trabajador opcional ocultar mostrar',
             'claude y chatgpt.': 'ia inteligencia artificial conector mcp token bandeja',
@@ -569,6 +571,7 @@
                     <div class="ajustes-seccion" data-grupo="cuenta"><div class="ajustes-grupo" id="ajg-cuenta">cuenta.</div>
                     <div class="ajustes-rejilla">
                         ${bloqueAjuste('settings-subscription-section', 'suscripcion', 'suscripción.', 'Tu plan y su renovación.', `<div id="settings-subscription-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${bloqueAjuste('settings-invitar-section', 'amigos', 'invita a un amigo.', `Con tu enlace, tu amigo tiene ${DIAS_PRUEBA_AMIGO} días de prueba en vez de 14 y, cuando entre, los dos desbloqueáis el tema «amigos.».`, `<div id="settings-invitar-body" class="ajuste-cargando">Cargando...</div>`)}
                         ${bloqueAjuste('settings-account-section', 'datos', 'tus datos.', 'Todo lo que hay en Bitácora (entradas, notas, finanzas...) en un archivo JSON: para guardarlo aparte o traerlo de vuelta.', `
                             <div class="ajuste-botones">
                                 <button class="btn-secondary" style="width:auto" onclick="exportData()">exportar.</button>
@@ -687,6 +690,7 @@
         // igual que ya hacen loadDocuments()/loadFriendsViewData() con
         // sus propias secciones).
         async function loadSettingsSubscriptionInfo() {
+            loadInvitarAjustes().catch(e => console.error(e));
             const body = cuerpoAjustes('settings-subscription-body');
             if (!body) return;
             const { data: { user } } = await sb.auth.getUser();
