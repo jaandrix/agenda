@@ -197,6 +197,8 @@ aplicarPortadaPerfil();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-23', rama: 'todos', nombre: 'tu mes, en una tarjeta', para: 'quien quiere enseñar su mes.', texto: 'En Panorama → «tu mes.», una imagen vertical con tus planes, viajes, lecturas, tareas y rutinas del mes, lista para stories. Quitas lo que no quieras enseñar antes de guardarla.' },
+    { fecha: '2026-10-23', rama: 'todos', nombre: 'ajustes, con buscador', para: 'todos.', texto: 'Ajustes tiene un buscador y un índice arriba, y los grupos están más ordenados. Desde Ayuda puedes poner (o quitar) la semana de ejemplo.' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'una semana de ejemplo para empezar', para: 'quien acaba de llegar.', texto: 'Al crear la cuenta puedes verla con una semana inventada (una cena, un viaje, unos gastos, un examen) para ver desde el primer minuto cómo se conecta todo. «empezar con lo mío.» borra solo el ejemplo.' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'menos bandeja', para: 'quien usa bitácora con Claude o ChatGPT.', texto: 'Las tareas, los exámenes y trabajos, las notas, los viajes, las suscripciones y casi todo lo que le pidas a la IA se aplica solo, con deshacer en la bandeja. Solo esperan tu visto bueno el dinero y los borrados.' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'en qué se va, más claro', para: 'quien lleva sus cuentas desde el móvil.', texto: 'El reparto del gasto del mes va en una tira y una lista sobrias, con porcentajes, y puedes dejar fuera los gastos de viaje para ver tu mes normal.' },

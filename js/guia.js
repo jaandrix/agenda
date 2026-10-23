@@ -172,6 +172,7 @@ const GUIA = [
         botones: [
             [guiaBoton('a tener en cuenta.'), 'Avisos del día: cargos que no han llegado, semanas cargadas, cosas por revisar.'],
             [guiaBoton('hoy. tareas. esta semana. próximamente.'), 'Lo de hoy, tus tareas, la semana y lo que viene.'],
+            [guiaBoton('tu mes.'), 'Una tarjeta vertical con tu mes (planes, viajes, lo que terminaste de leer o ver, tareas hechas, días con rutinas, exámenes aprobados) para guardarla o subirla a stories. Antes, toca lo que no quieras enseñar y desaparece; el dinero va apagado salvo que lo enciendas.'],
             [guiaBoton('revisión semanal.'), 'Repaso guiado de la semana.'],
             [guiaBoton('actividad. estadísticas. patrones.'), 'Tu actividad día a día, cifras históricas y patrones de gasto y rutinas.'],
             [guiaBoton('bandeja. copia de seguridad.'), 'Atajos a la bandeja de Claude y a tus copias.'],

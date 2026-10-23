@@ -154,6 +154,7 @@
                 renderHomeLauncherRow(HOME_ICON_TASKS, 'tareas.', 'openHomeTasksModal()'),
                 renderHomeLauncherRow(HOME_ICON_TODAY, 'tu día.', 'openTuDia()'),
                 renderHomeLauncherRow(HOME_ICON_WEEK, 'esta semana.', 'openResumenSemana()'),
+                renderHomeLauncherRow(HOME_ICON_STATS, 'tu mes.', 'openTuMes()'),
                 renderHomeLauncherRow(HOME_ICON_UPCOMING, 'próximamente.', 'openHomeUpcomingModal()'),
                 renderHomeLauncherRow(HOME_ICON_REVIEW, 'revisión semanal.', 'openHomeReviewModal()'),
                 renderHomeLauncherRow(HOME_ICON_ACTIVITY, 'actividad.', 'openConstellationView()'),
