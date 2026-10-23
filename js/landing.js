@@ -169,6 +169,8 @@ montarCerebro();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-23', rama: 'todos', nombre: 'menos bandeja', para: 'quien usa bitácora con Claude o ChatGPT.', texto: 'Las tareas, los exámenes y trabajos, las notas, los viajes, las suscripciones y casi todo lo que le pidas a la IA se aplica solo, con deshacer en la bandeja. Solo esperan tu visto bueno el dinero y los borrados.' },
+    { fecha: '2026-10-23', rama: 'todos', nombre: 'en qué se va, más claro', para: 'quien lleva sus cuentas desde el móvil.', texto: 'El reparto del gasto del mes va en una tira y una lista sobrias, con porcentajes, y puedes dejar fuera los gastos de viaje para ver tu mes normal.' },
     { fecha: '2026-10-22', rama: 'school', nombre: 'test con amigos', para: 'estudiantes y opositores.', texto: 'En Estudios → repaso → test, crea un test tipo test con tu temario (pídeselo a una IA o por el conector), practícalo a solas o compártelo con tus amigos: cada uno lo juega una vez, contra el reloj y con el teclado, y gana quien más puntos saca.' },
     { fecha: '2026-10-22', rama: 'school', nombre: 'estudios, en una sola página', para: 'quien estudia.', texto: 'Asignaturas, repaso (antes Estudiar) y carrera (antes Universidad) pasan a ser pestañas del mismo apartado.' },
     { fecha: '2026-10-22', rama: 'todos', nombre: 'el conector llega a más sitios', para: 'quien usa bitácora con Claude o ChatGPT.', texto: 'Ahora también puede organizar tus proyectos (crear, mover, quitar, fases), los hitos y el progreso de tus objetivos, tu horario y citas del trabajo y, si das clase, el cuadrante de profesorado. Todo se puede deshacer desde la bandeja.' },

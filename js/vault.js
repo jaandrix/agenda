@@ -133,7 +133,11 @@
             }
         }
 
+        // En pantallas táctiles no se enfoca nada: el iPhone deja el campo enfocado pero sin teclado (el foco
+        // llega fuera del toque) y al tocarlo después no se abría, así que no se podía cambiar el nombre de una tarea.
+        const ES_TACTIL = window.matchMedia?.('(hover: none) and (pointer: coarse)').matches;
         function enfocarPrimerCampo(container) {
+            if (ES_TACTIL) return;
             setTimeout(() => {
                 const sheet = container.querySelector('.modal-sheet');
                 const field = sheet?.querySelector(

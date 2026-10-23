@@ -1599,7 +1599,7 @@
             const mesPasado = `${pasado.getFullYear()}-${String(pasado.getMonth() + 1).padStart(2, '0')}`;
             const dia = ahora.getDate();
             const diasMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0).getDate();
-            const gasto = (clave, hastaDia) => financePro.transactions.reduce((t, x) => x.type === 'expense' && !x.ahorro && x.date.slice(0, 7) === clave && (!hastaDia || Number(x.date.slice(8)) <= hastaDia) ? t + (Number(x.amount) || 0) : t, 0);
+            const gasto = (clave, hastaDia) => financePro.transactions.reduce((t, x) => x.type === 'expense' && !x.ahorro && !x.viaje && x.date.slice(0, 7) === clave && (!hastaDia || Number(x.date.slice(8)) <= hastaDia) ? t + (Number(x.amount) || 0) : t, 0);
             const ahoraGasto = gasto(mes);
             const antes = gasto(mesPasado, dia);
             const previsto = dia >= 5 ? ahoraGasto / dia * diasMes : null;
@@ -1610,16 +1610,32 @@
                     <div><b>${financeMoney(ahoraGasto)}</b> gastados hasta hoy${antes ? `, <span class="${dif > 0 ? 'negativa' : 'positiva'}">${financeMoney(Math.abs(dif))} ${dif > 0 ? 'más' : 'menos'}</span> que a día ${dia} de ${MOBILE_MESES[pasado.getMonth()]}` : ''}.</div>
                     ${previsto ? `<small>A este ritmo, unos ${financeMoney(Math.round(previsto))} a final de mes.</small>` : ''}
                 </div>` : '';
+            const conViajes = mobileGastoConViajes();
             const porCat = {};
-            financePro.transactions.forEach(x => { if (x.type === 'expense' && !x.ahorro && x.date.slice(0, 7) === mes) porCat[x.category || ''] = (porCat[x.category || ''] || 0) + (Number(x.amount) || 0); });
-            const top = Object.entries(porCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
-            const maximo = top[0]?.[1] || 1;
-            const categorias = top.length ? `
-                <div class="m-bloque-cab"><div class="m-etiqueta">en qué se va.</div></div>
-                <div class="m-lista">${top.map(([id, total]) => {
-                    const cat = financeProCategoryById(id);
-                    return `<div class="m-fila m-finanzas-cat">${financeProCategoryBadge(cat)}<div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml((cat?.name || 'sin categoría').toLowerCase())}.</div><i class="m-finanzas-barra"><i style="width:${Math.max(4, Math.round(total / maximo * 100))}%;${cat?.color ? `background:${cat.color}` : ''}"></i></i></div><span class="m-fila-cifra">${financeMoney(total)}</span></div>`;
-                }).join('')}</div>` : '';
+            let enViajes = 0;
+            financePro.transactions.forEach(x => {
+                if (x.type !== 'expense' || x.ahorro || x.date.slice(0, 7) !== mes) return;
+                if (x.viaje && !conViajes) { enViajes += Number(x.amount) || 0; return; }
+                porCat[x.category || ''] = (porCat[x.category || ''] || 0) + (Number(x.amount) || 0);
+            });
+            const orden = Object.entries(porCat).filter(([, t]) => t > 0).sort((a, b) => b[1] - a[1]);
+            const totalCat = orden.reduce((t, [, v]) => t + v, 0);
+            // Cinco categorías y el resto juntas; los tonos salen de la tinta del tema, sin colores por categoría.
+            const top = orden.slice(0, 5);
+            const resto = orden.slice(5).reduce((t, [, v]) => t + v, 0);
+            const filas = top.map(([id, total], k) => ({ nombre: (financeProCategoryById(id)?.name || 'sin categoría').toLowerCase(), total, tono: k }));
+            if (resto > 0) filas.push({ nombre: `otras ${orden.length - 5}`, total: resto, tono: 5 });
+            const pct = v => totalCat ? Math.round(v / totalCat * 100) : 0;
+            const hayViajes = financePro.transactions.some(x => x.type === 'expense' && x.viaje && x.date.slice(0, 7) === mes);
+            const categorias = filas.length || enViajes ? `
+                <div class="m-bloque-cab"><div class="m-etiqueta">en qué se va.</div>${hayViajes ? `<button class="m-mini" onclick="mobileAlternarGastoViajes()" aria-pressed="${conViajes}">${conViajes ? 'con viajes.' : 'sin viajes.'}</button>` : ''}</div>
+                <div class="m-encqsv">
+                    ${filas.length ? `<div class="m-encqsv-total"><b>${financeMoney(totalCat)}</b><span>${conViajes || !enViajes ? 'este mes.' : `este mes, sin ${financeMoney(enViajes)} de viajes.`}</span></div>
+                    <div class="m-encqsv-tira" role="img" aria-label="${filas.map(f => `${escapeHtml(f.nombre)} ${pct(f.total)} %`).join(', ')}">${filas.map(f => `<i class="t${f.tono}" style="flex-grow:${f.total.toFixed(2)}"></i>`).join('')}</div>
+                    <div class="m-encqsv-filas">${filas.map(f => `
+                        <div class="m-encqsv-fila"><i class="t${f.tono}" aria-hidden="true"></i><span class="m-encqsv-nombre">${escapeHtml(f.nombre)}.</span><span class="m-encqsv-pct">${pct(f.total)} %</span><span class="m-fila-cifra">${financeMoney(f.total)}</span></div>`).join('')}
+                    </div>` : `<div class="m-vacio m-vacio-peque">este mes solo hay gastos de viaje.</div>`}
+                </div>` : '';
             const cargos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0).map(e => {
                 const diaCobro = Number(e.renewalDay) || 1;
                 const fecha = new Date(ahora.getFullYear(), ahora.getMonth() + (diaCobro < dia ? 1 : 0), 1);
@@ -1633,6 +1649,14 @@
             const aviso = porAjustar ? `<button class="m-finanzas-aviso" onclick="openFinanceProReviewModal()"><b>${porAjustar} ${porAjustar === 1 ? 'movimiento' : 'movimientos'} por ajustar.</b><span>ponles categoría y revisa la cuenta.</span></button>` : '';
             const permitir = '<button class="m-enlace asist-permitir-enlace" onclick="openPuedoPermitirme()">¿me lo puedo permitir?</button>';
             return aviso + renderAvisoPresupuestos() + renderSuscripcionesDetectadas() + permitir + ritmo + categorias + proximos;
+        }
+
+        function mobileGastoConViajes() {
+            try { return localStorage.getItem('bitacora-encqsv-viajes') === '1'; } catch (e) { return false; }
+        }
+        function mobileAlternarGastoViajes() {
+            try { localStorage.setItem('bitacora-encqsv-viajes', mobileGastoConViajes() ? '0' : '1'); } catch (e) {}
+            render();
         }
 
         function renderMobileFinances() {

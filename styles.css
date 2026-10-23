@@ -8718,9 +8718,26 @@ body.mobile-standalone .modal-sheet.guia-sheet, body.pwa .modal-sheet.guia-sheet
 body.papel .m-finanzas-ritmo .negativa { color:#a3243b; }
 .m-finanzas-ritmo .positiva { font-weight:700; }
 .m-finanzas-ritmo small { display:block; margin-top:6px; font-size:13px; color:var(--text-secondary); }
-.m-finanzas-cat .finance-pro-tx-icon { width:36px; height:36px; flex-shrink:0; }
-.m-finanzas-barra { display:block; height:5px; margin-top:6px; border-radius:999px; background:var(--border); overflow:hidden; }
-.m-finanzas-barra > i { display:block; height:100%; border-radius:999px; background:var(--text-primary); }
+/* «en qué se va.»: una tira con el reparto y una fila por categoría, todo en tonos de la tinta del tema
+   (antes, una barra del color de cada categoría: demasiado color para leer de un vistazo). */
+.m-encqsv { padding:4px 0 0; }
+.m-encqsv-total { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.m-encqsv-total b { font-size:30px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.m-encqsv-total span { font-size:13px; color:var(--text-secondary); }
+.m-encqsv-tira { display:flex; gap:3px; height:12px; margin:14px 0 6px; }
+.m-encqsv-tira i { flex-basis:0; min-width:4px; border-radius:3px; }
+.m-encqsv-filas { display:flex; flex-direction:column; }
+.m-encqsv-fila { display:grid; grid-template-columns:10px minmax(0, 1fr) auto auto; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+.m-encqsv-fila:last-child { border-bottom:0; }
+.m-encqsv-fila > i { width:10px; height:10px; border-radius:3px; }
+.m-encqsv-nombre { font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.m-encqsv-pct { font-size:12.5px; color:var(--text-secondary); font-variant-numeric:tabular-nums; min-width:38px; text-align:right; }
+.m-encqsv .t0 { background:var(--text-primary); }
+.m-encqsv .t1 { background:color-mix(in srgb, var(--text-primary) 72%, transparent); }
+.m-encqsv .t2 { background:color-mix(in srgb, var(--text-primary) 52%, transparent); }
+.m-encqsv .t3 { background:color-mix(in srgb, var(--text-primary) 36%, transparent); }
+.m-encqsv .t4 { background:color-mix(in srgb, var(--text-primary) 24%, transparent); }
+.m-encqsv .t5 { background:color-mix(in srgb, var(--text-primary) 13%, transparent); }
 .m-finanzas-aviso { display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; margin-top:18px; padding:14px 16px; border:1px solid var(--border-strong); border-radius:14px; background:var(--m-superficie, var(--bg-card)); color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; }
 .m-finanzas-aviso b { font-size:15px; }
 .m-finanzas-aviso span { font-size:13px; color:var(--text-secondary); }

@@ -705,7 +705,10 @@
         // Se aplican solos (el usuario no quiere validarlos): crear y editar
         // eventos, las entradas con QR de un evento y Ocio. El resto espera
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
-        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto', 'apuntar', 'correo', 'pedido', 'objetivo', 'laboral', 'profe', 'test'];
+        // Desde el 23-10 casi todo se aplica solo (con deshacer en el historial). En la bandeja quedan el dinero
+        // (movimientos, correcciones, extractos) y los borrados, donde un error de la IA cuesta más.
+        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto', 'apuntar', 'correo', 'pedido', 'objetivo', 'laboral', 'profe', 'test',
+            'tarea', 'editar_tarea', 'tarea_recurrente', 'estudio_crear', 'estudio_editar', 'clase', 'nota', 'habito', 'dia', 'enlace', 'deseo', 'entrada_crear', 'entrada_editar'];
         // Filas ya validadas o descartadas aquí que el servidor quizá aún no
         // ha borrado (se borran después de guardar): sin esto, una lectura
         // de la bandeja en ese intervalo las devolvía como pendientes y

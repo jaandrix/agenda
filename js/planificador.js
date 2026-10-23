@@ -363,7 +363,7 @@
                 <button class="btn-modal-primary" onclick="savePlannerItem(${offset}, '${it?.id || ''}')">${it ? 'guardar.' : 'añadir.'}</button>
                 ${it ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="closeModal();deletePlannerItem('${it.id}', ${offset})">eliminar tarea.</button>` : ''}
             `);
-            setTimeout(() => { if (!it) document.getElementById('planner-item-title')?.focus(); }, 50);
+            setTimeout(() => { if (!it && !ES_TACTIL) document.getElementById('planner-item-title')?.focus(); }, 50);
         }
 
         function plannerSinHora(btn) {

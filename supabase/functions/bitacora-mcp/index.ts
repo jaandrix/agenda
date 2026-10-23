@@ -27,8 +27,9 @@ const PROTOCOLO = '2025-06-18';
 const EVENTO_TIPOS = ['social', 'teatro', 'cine', 'concierto', 'deportes', 'futbol', 'baloncesto', 'f1', 'motogp', 'estudios', 'trabajo', 'salud', 'hogar', 'viajes', 'otro'];
 const CUENTAS = ['efectivo', 'bancos', 'online'];
 
-const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio, objetivos, proyectos, agenda laboral y, si da clase, profesorado. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. En los campos de fecha también puedes escribir "hoy", "mañana" o "pasado mañana", y la hora como 7:30. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Crear o editar eventos, añadir entradas con QR, los cambios en Ocio, en proyectos (proyecto), en la agenda laboral (agenda_laboral), en el cuadrante de profesorado (profesorado) y en los hitos y el progreso de un objetivo se aplican solos, con deshacer en la bandeja; antes de mover o quitar algo, lee el apartado correspondiente para usar el nombre exacto. Con la foto de un ticket de la compra, usa ticket_compra (lee antes apartado("compra") para emparejar cada producto con la lista); así Bitácora guarda los precios, la tienda y lo que fue un extra. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Todo lo demás (tareas, Estudios, movimientos, extractos, suscripciones, viajes, objetivos, deseos, hábitos, enlaces, cumpleaños, horario, documentos, notas y cualquier borrado) queda en la bandeja de Bitácora hasta que el usuario lo valide: díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo. En los textos que guardes (títulos, notas, personas) separa con comas o «y», nunca con el punto medio (·).`;
+const INSTRUCCIONES = `Bitácora es la agenda personal del usuario: calendario, planificador del día, finanzas, estudios, hábitos, esfuerzo diario, notas, viajes, coleccionables, ocio, objetivos, proyectos, agenda laboral y, si da clase, profesorado. Las fechas van en formato AAAA-MM-DD y la zona horaria es Europe/Madrid; usa "hoy" y "ahora" de la herramienta agenda si dudas del día o de la hora. En los campos de fecha también puedes escribir "hoy", "mañana" o "pasado mañana", y la hora como 7:30. Responde en el idioma del usuario. Antes de apuntar algo con datos ambiguos (fecha, importe, cuenta), pregunta. Para editar, completar, mover o borrar algo, busca primero su id con agenda, movimientos o buscar; antes de borrar, confirma siempre con el usuario. Casi todo se aplica solo en Bitácora, con deshacer en la bandeja: eventos, tareas, exámenes y trabajos, Estudios, horario, notas, hábitos, el registro del día, tareas recurrentes, viajes, suscripciones, objetivos, deseos, enlaces, cumpleaños, documentos, Ocio, proyectos, agenda laboral y profesorado; antes de mover o quitar algo, lee el apartado correspondiente para usar el nombre exacto. Con la foto de un ticket de la compra, usa ticket_compra (lee antes apartado("compra") para emparejar cada producto con la lista); así Bitácora guarda los precios, la tienda y lo que fue un extra. Los exámenes y trabajos van SIEMPRE con estudios_crear dentro de su asignatura (Bitácora crea solo su evento en el calendario y, para trabajos, su tarea en el planificador); no los crees como eventos sueltos. Solo el dinero (registrar o corregir movimientos, importar extractos) y cualquier borrado quedan en la bandeja de Bitácora hasta que el usuario lo valide: en esos casos díselo así, sin dar el cambio por hecho. Todo queda en un historial donde el usuario puede deshacerlo. En los textos que guardes (títulos, notas, personas) separa con comas o «y», nunca con el punto medio (·).`;
 const PENDIENTE = ' Queda en la bandeja de Bitácora hasta que el usuario lo valide.';
+const SOLO = ' Ya está aplicado en Bitácora (el usuario puede deshacerlo desde la bandeja).';
 const OCIO_TIPOS: Record<string, string> = { libro: 'book', pelicula: 'movie', serie: 'series', videojuego: 'game' };
 
 // ---------------------------------------------------------------- fechas
@@ -732,7 +733,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'estudios_crear',
-        description: 'Añade un examen o un trabajo (entrega) a una asignatura de Estudios. Al validarlo, Bitácora crea su evento en el calendario y, si es un trabajo, su tarea en el planificador el día de entrega. Queda en la bandeja hasta que el usuario lo valide. Usa esto y no crear_evento para exámenes y entregas.',
+        description: 'Añade un examen o un trabajo (entrega) a una asignatura de Estudios. Bitácora crea su evento en el calendario y, si es un trabajo, su tarea en el planificador el día de entrega. Se aplica solo y se puede deshacer desde la bandeja. Usa esto y no crear_evento para exámenes y entregas.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -746,7 +747,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'estudios_editar',
-        description: 'Cambia un examen o trabajo de Estudios por su id (búscalo con agenda o apartado estudios): poner la nota obtenida, el peso, la fecha, la hora o el título, o marcar un trabajo como entregado (hecho=true). Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Cambia un examen o trabajo de Estudios por su id (búscalo con agenda o apartado estudios): poner la nota obtenida, el peso, la fecha, la hora o el título, o marcar un trabajo como entregado (hecho=true). Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: {
             type: 'object',
             properties: { id: { type: 'string' }, titulo: { type: 'string' }, fecha: { type: 'string' }, hora: { type: 'string' }, nota: { type: 'number', minimum: 0, maximum: 10 }, peso: { type: 'number' }, hecho: { type: 'boolean' } },
@@ -755,7 +756,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'viaje',
-        description: 'Crea o completa un viaje del apartado Viajes: destino, fechas, acompañantes, notas, gastos, transportes (vuelos, trenes, buses... con compañía, número, horarios, localizador y asiento), alojamientos (con dirección, entrada/salida y nº de reserva) y puntos del itinerario. Ideal a partir de correos de reservas: mete todos los datos que tengas. Si ya existe un viaje con ese título o destino (y fechas compatibles) se completa ese en vez de crear otro; con id se cambia exactamente ese. Los transportes, alojamientos, itinerario y gastos se añaden a los que ya tenga; para corregir uno, pásalo con su id (lo ves en apartado viajes), y para quitarlo, su id en quitar. Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Crea o completa un viaje del apartado Viajes: destino, fechas, acompañantes, notas, gastos, transportes (vuelos, trenes, buses... con compañía, número, horarios, localizador y asiento), alojamientos (con dirección, entrada/salida y nº de reserva) y puntos del itinerario. Ideal a partir de correos de reservas: mete todos los datos que tengas. Si ya existe un viaje con ese título o destino (y fechas compatibles) se completa ese en vez de crear otro; con id se cambia exactamente ese. Los transportes, alojamientos, itinerario y gastos se añaden a los que ya tenga; para corregir uno, pásalo con su id (lo ves en apartado viajes), y para quitarlo, su id en quitar. Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -801,7 +802,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'suscripcion',
-        description: 'Da de alta, cambia o da de baja una suscripción o un gasto fijo mensual (Netflix, alquiler, la aportación al fondo...). Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Da de alta, cambia o da de baja una suscripción o un gasto fijo mensual (Netflix, alquiler, la aportación al fondo...). Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -820,7 +821,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'deseo',
-        description: 'Añade algo a la lista de deseos (wishlist de Largo plazo) con su precio, o lo quita. Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Añade algo a la lista de deseos (wishlist de Largo plazo) con su precio, o lo quita. Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: { type: 'object', properties: { accion: { type: 'string', enum: ['anadir', 'quitar'] }, titulo: { type: 'string' }, precio: { type: 'number' } }, required: ['accion', 'titulo'] },
     },
     {
@@ -831,12 +832,12 @@ const HERRAMIENTAS = [
     },
     {
         name: 'habito',
-        description: 'Crea un hábito nuevo, o pausa o reactiva uno existente por su nombre. Para marcar un hábito como hecho un día, usa registrar_dia. Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Crea un hábito nuevo, o pausa o reactiva uno existente por su nombre. Para marcar un hábito como hecho un día, usa registrar_dia. Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: { type: 'object', properties: { accion: { type: 'string', enum: ['crear', 'pausar', 'reactivar'] }, nombre: { type: 'string' } }, required: ['accion', 'nombre'] },
     },
     {
         name: 'tarea_recurrente',
-        description: 'Crea una tarea que se repite (cada día, ciertos días de la semana, un día de cada mes o cada N días), o pausa/reactiva una existente. Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Crea una tarea que se repite (cada día, ciertos días de la semana, un día de cada mes o cada N días), o pausa/reactiva una existente. Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -855,7 +856,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'objetivo',
-        description: 'Crea un objetivo o actualiza uno existente: progreso numérico (actual/meta y unidad: "7 de 20 libros", "1200 de 3000 €"), estado o hitos (crear y actualizar quedan en la bandeja hasta que el usuario los valide). Además, sin validar y con deshacer: añadir hitos (accion=hitos), marcar o desmarcar uno (hito_hecho), quitar uno (hito_quitar), apuntar el progreso (progreso, con actual) o quitar el objetivo (quitar; confírmalo antes con el usuario).',
+        description: 'Crea un objetivo o actualiza uno existente: progreso numérico (actual/meta y unidad: "7 de 20 libros", "1200 de 3000 €"), estado o hitos (se aplica solo y se puede deshacer). También, con deshacer: añadir hitos (accion=hitos), marcar o desmarcar uno (hito_hecho), quitar uno (hito_quitar), apuntar el progreso (progreso, con actual) o quitar el objetivo (quitar; confírmalo antes con el usuario).',
         inputSchema: {
             type: 'object',
             properties: {
@@ -875,17 +876,17 @@ const HERRAMIENTAS = [
     },
     {
         name: 'guardar_enlace',
-        description: 'Guarda un enlace (artículo, vídeo, receta, web...) en el apartado Enlaces, opcionalmente en una de sus categorías. Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Guarda un enlace (artículo, vídeo, receta, web...) en el apartado Enlaces, opcionalmente en una de sus categorías. Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: { type: 'object', properties: { url: { type: 'string' }, titulo: { type: 'string' }, categoria: { type: 'string' } }, required: ['url'] },
     },
     {
         name: 'cumpleanos',
-        description: 'Apunta el cumpleaños de alguien (aparece en el calendario cada año). Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Apunta el cumpleaños de alguien (aparece en el calendario cada año). Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: { type: 'object', properties: { nombre: { type: 'string' }, apellido: { type: 'string' }, fecha: { type: 'string', description: 'AAAA-MM-DD; si no se sabe el año, usa 2000' } }, required: ['nombre', 'fecha'] },
     },
     {
         name: 'horario_clase',
-        description: 'Añade o quita una clase del horario semanal de Estudios (por ejemplo, desde la foto o el PDF del horario: una llamada por clase). Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Añade o quita una clase del horario semanal de Estudios (por ejemplo, desde la foto o el PDF del horario: una llamada por clase). Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: {
             type: 'object',
             properties: { accion: { type: 'string', enum: ['anadir', 'quitar'] }, dia: { type: 'string', enum: Object.keys(DIAS_CLASE) }, hora: { type: 'string', description: 'HH:MM de inicio' }, texto: { type: 'string', description: 'Asignatura y, si hay, aula: "Sostenibilidad, aula 3"' } },
@@ -894,7 +895,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'documento',
-        description: 'Registra una ficha en Documentos: garantía, contrato, seguro, DNI/pasaporte, matrícula... con su fecha de caducidad o fin de garantía y, si está en Drive, el enlace. Bitácora avisa en el inicio cuando se acerca la fecha. No sube archivos. Queda en la bandeja hasta que el usuario lo valide.',
+        description: 'Registra una ficha en Documentos: garantía, contrato, seguro, DNI/pasaporte, matrícula... con su fecha de caducidad o fin de garantía y, si está en Drive, el enlace. Bitácora avisa en el inicio cuando se acerca la fecha. No sube archivos. Se aplica solo y se puede deshacer desde la bandeja.',
         inputSchema: {
             type: 'object',
             properties: { titulo: { type: 'string' }, tipo: { type: 'string', enum: ['garantía', 'contrato', 'seguro', 'identidad', 'factura', 'otro'] }, caduca: { type: 'string', description: 'AAAA-MM-DD' }, enlace: { type: 'string' }, notas: { type: 'string' } },
@@ -1116,7 +1117,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             const fecha = esFecha(a.fecha) ? a.fecha : '';
             const hora = /^\d{2}:\d{2}$/.test(a.hora || '') ? a.hora : '';
             await encolar(userId, { tipo: 'tarea', titulo: String(a.titulo), fecha, hora, notas: a.notas || '' });
-            return (fecha && hora ? `Tarea propuesta para el planificador el ${fecha} a las ${hora}.` : 'Tarea propuesta para "tareas pendientes".') + PENDIENTE;
+            return (fecha && hora ? `Tarea apuntada en el planificador el ${fecha} a las ${hora}.` : 'Tarea apuntada en "tareas pendientes".') + SOLO;
         }
         case 'registrar_movimiento': {
             const importe = Math.abs(Number(a.importe));
@@ -1155,7 +1156,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (a.sin_fecha) cambios.sinFecha = true;
             if (!Object.keys(cambios).length) throw new Error('No hay nada que cambiar');
             await encolar(userId, { tipo: 'editar_tarea', id: it.id, cambios, resumen: it.title });
-            return `Propuesto: «${it.title}»${cambios.hecha === true ? ' marcada como hecha' : cambios.hecha === false ? ' marcada como pendiente' : ''}${cambios.sinFecha ? ', pasa a tareas pendientes' : cambios.fecha || cambios.hora ? `, movida a ${cambios.fecha || loc.dia || 'su día'}${cambios.hora || it.time ? ' a las ' + (cambios.hora || it.time) : ''}` : ''}.${PENDIENTE}`;
+            return `Cambiado: «${it.title}»${cambios.hecha === true ? ' marcada como hecha' : cambios.hecha === false ? ' marcada como pendiente' : ''}${cambios.sinFecha ? ', pasa a tareas pendientes' : cambios.fecha || cambios.hora ? `, movida a ${cambios.fecha || loc.dia || 'su día'}${cambios.hora || it.time ? ' a las ' + (cambios.hora || it.time) : ''}` : ''}.${SOLO}`;
         }
         case 'editar_movimiento': {
             const t = (data.financePro?.transactions || []).find((x: any) => x?.id === a.id);
@@ -1199,7 +1200,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             const perdidos = [...si.noEncontrados, ...no.noEncontrados];
             const habitos = (data.habits || []).filter((h: any) => h.activo !== false).map((h: any) => h.texto);
             if (!partes.length) throw new Error(`Nada que registrar.${perdidos.length ? ` No encuentro los hábitos: ${perdidos.join(', ')}. Los del usuario: ${habitos.join(', ')}` : ''}`);
-            return `Propuesto para el ${fecha}: ${partes.join(', ')}.${PENDIENTE}${perdidos.length ? ` No encuentro estos hábitos: ${perdidos.join(', ')} (los del usuario son: ${habitos.join(', ')}).` : ''}`;
+            return `Apuntado para el ${fecha}: ${partes.join(', ')}.${SOLO}${perdidos.length ? ` No encuentro estos hábitos: ${perdidos.join(', ')} (los del usuario son: ${habitos.join(', ')}).` : ''}`;
         }
         case 'importar_extracto': {
             const csv = String(a.csv || '').trim();
@@ -1259,11 +1260,11 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (existente) {
                 if (!Object.keys(datos).length) throw new Error('No hay nada que cambiar');
                 await encolar(userId, { tipo: 'entrada_editar', entryType: 'travel', id: existente.id, datos, resumen: existente.title });
-                return `Cambio propuesto para el viaje «${existente.title}» (${existente.id})${a.id ? '' : ', que ya existía'}.${PENDIENTE}`;
+                return `Cambiado el viaje «${existente.title}» (${existente.id})${a.id ? '' : ', que ya existía'}.${SOLO}`;
             }
             if (!datos.title) throw new Error('Falta el destino');
             await encolar(userId, { tipo: 'entrada_crear', entryType: 'travel', datos: { destination: '', startDate: '', endDate: '', date: '', companions: '', notes: '', expenses: [], transportes: [], alojamientos: [], itinerario: [], ...datos } });
-            return `Viaje propuesto: «${datos.title}»${datos.startDate ? ` del ${datos.startDate}` : ''}${datos.endDate ? ` al ${datos.endDate}` : ''}.${PENDIENTE}`;
+            return `Viaje apuntado: «${datos.title}»${datos.startDate ? ` del ${datos.startDate}` : ''}${datos.endDate ? ` al ${datos.endDate}` : ''}.${SOLO}`;
         }
         case 'suscripcion': {
             const t = a.tipo === 'gasto_fijo' ? 'fixed_expense' : 'subscription';
@@ -1275,7 +1276,7 @@ async function llamar(userId: string, nombre: string, a: any) {
                 if (ya && ya.active !== false) return `Ya existe «${ya.title}» (${euros(Number(ya.amount) || 0)}, día ${ya.renewalDay}). Si quieres cambiarla, usa accion "cambiar".`;
                 const datos: any = { title: String(a.nombre), amount: importe, renewalDay: dia, active: true, proAccount: CUENTAS.includes(a.cuenta) ? a.cuenta : (t === 'subscription' ? 'bancos' : ''), vigilar: !!a.avisar_si_no_llega, date: hoy };
                 await encolar(userId, { tipo: 'entrada_crear', entryType: t, datos });
-                return `Alta propuesta: ${t === 'subscription' ? 'suscripción' : 'gasto fijo'} «${a.nombre}», ${euros(importe)} el día ${dia} de cada mes.${PENDIENTE}`;
+                return `Alta: ${t === 'subscription' ? 'suscripción' : 'gasto fijo'} «${a.nombre}», ${euros(importe)} el día ${dia} de cada mes.${SOLO}`;
             }
             const e = entradaPorTitulo(data, ['subscription', 'fixed_expense'], a.nombre);
             if (!e) throw new Error(`No encuentro «${a.nombre}» entre sus suscripciones y gastos fijos`);
@@ -1290,7 +1291,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             }
             if (!Object.keys(datos).length) throw new Error('No hay nada que cambiar');
             await encolar(userId, { tipo: 'entrada_editar', entryType: e.type, id: e.id, datos, resumen: e.title });
-            return `${a.accion === 'baja' ? 'Baja' : a.accion === 'reactivar' ? 'Reactivación' : 'Cambio'} propuesto para «${e.title}».${PENDIENTE}`;
+            return `${a.accion === 'baja' ? 'Baja' : a.accion === 'reactivar' ? 'Reactivación' : 'Cambio'} de «${e.title}».${SOLO}`;
         }
         case 'detectar_suscripciones': {
             const r = detectarSuscripciones(data);
@@ -1301,11 +1302,11 @@ async function llamar(userId: string, nombre: string, a: any) {
                 const d = (data.financeProfile?.wishlist || []).find((x: any) => norm(x.title).includes(norm(a.titulo).trim()));
                 if (!d) throw new Error(`No encuentro «${a.titulo}» en la lista de deseos`);
                 await encolar(userId, { tipo: 'deseo', accion: 'quitar', id: d.id, titulo: d.title, precio: d.price });
-                return `Propuesto quitar «${d.title}» de la lista de deseos.${PENDIENTE}`;
+                return `Quitado «${d.title}» de la lista de deseos.${SOLO}`;
             }
             const precio = Math.abs(Number(a.precio)) || 0;
             await encolar(userId, { tipo: 'deseo', accion: 'anadir', titulo: String(a.titulo), precio });
-            return `Propuesto añadir «${a.titulo}»${precio ? ` (${euros(precio)})` : ''} a la lista de deseos.${PENDIENTE}`;
+            return `Añadido «${a.titulo}»${precio ? ` (${euros(precio)})` : ''} a la lista de deseos.${SOLO}`;
         }
         case 'puedo_permitirmelo': {
             const disponible = (data.financeProfile?.budgetHistory || []).reduce((s2: number, h: any) => s2 + (Number(h.saved) || 0), 0);
@@ -1326,12 +1327,12 @@ async function llamar(userId: string, nombre: string, a: any) {
                 const ya = (data.habits || []).find((h: any) => norm(h.texto).trim() === norm(a.nombre).trim());
                 if (ya) return `Ya existe el hábito «${ya.texto}»${ya.activo === false ? ' (pausado; usa reactivar)' : ''}.`;
                 await encolar(userId, { tipo: 'habito', accion: 'crear', texto: String(a.nombre) });
-                return `Hábito propuesto: «${a.nombre}».${PENDIENTE}`;
+                return `Hábito nuevo: «${a.nombre}».${SOLO}`;
             }
             const h = (data.habits || []).find((x: any) => norm(x.texto).includes(norm(a.nombre).trim()));
             if (!h) throw new Error(`No encuentro el hábito «${a.nombre}». Los del usuario: ${(data.habits || []).map((x: any) => x.texto).join(', ')}`);
             await encolar(userId, { tipo: 'habito', accion: 'activo', id: h.id, texto: h.texto, activo: a.accion === 'reactivar' });
-            return `Propuesto ${a.accion === 'reactivar' ? 'reactivar' : 'pausar'} «${h.texto}».${PENDIENTE}`;
+            return `${a.accion === 'reactivar' ? 'Reactivado' : 'En pausa'}: «${h.texto}».${SOLO}`;
         }
         case 'tarea_recurrente': {
             if (a.accion === 'crear') {
@@ -1341,12 +1342,12 @@ async function llamar(userId: string, nombre: string, a: any) {
                 if (f === 'mensual') datos.diaMes = Math.min(31, Math.max(1, Math.round(Number(a.dia_mes)) || 1));
                 if (f === 'intervalo') { datos.intervaloDias = Math.max(2, Math.round(Number(a.cada_dias)) || 2); datos.intervaloInicio = esFecha(a.desde) ? a.desde : hoy; }
                 await encolar(userId, { tipo: 'tarea_recurrente', accion: 'crear', datos });
-                return `Tarea recurrente propuesta: «${a.texto}» (${f}).${PENDIENTE}`;
+                return `Tarea recurrente nueva: «${a.texto}» (${f}).${SOLO}`;
             }
             const t = (data.recurringTasks || []).find((x: any) => norm(x.texto).includes(norm(a.texto).trim()));
             if (!t) throw new Error(`No encuentro la tarea recurrente «${a.texto}»`);
             await encolar(userId, { tipo: 'tarea_recurrente', accion: 'activo', id: t.id, texto: t.texto, activo: a.accion === 'reactivar' });
-            return `Propuesto ${a.accion === 'reactivar' ? 'reactivar' : 'pausar'} «${t.texto}».${PENDIENTE}`;
+            return `${a.accion === 'reactivar' ? 'Reactivada' : 'En pausa'}: «${t.texto}».${SOLO}`;
         }
         case 'avisar': {
             // El iPhone ya pone "from Bitácora" debajo del título: si el
@@ -1394,10 +1395,10 @@ async function llamar(userId: string, nombre: string, a: any) {
                 if (!g) throw new Error(`No encuentro el objetivo «${a.titulo}»`);
                 if (!Object.keys(datos).length) throw new Error('No hay nada que cambiar');
                 await encolar(userId, { tipo: 'entrada_editar', entryType: 'goal', id: g.id, datos, resumen: g.title });
-                return `Cambio propuesto para el objetivo «${g.title}»${datos.currentValue !== undefined ? `: ${datos.currentValue}${datos.targetValue ?? g.targetValue ? ' de ' + (datos.targetValue ?? g.targetValue) : ''} ${datos.unit || g.unit || ''}` : ''}.${PENDIENTE}`;
+                return `Cambiado el objetivo «${g.title}»${datos.currentValue !== undefined ? `: ${datos.currentValue}${datos.targetValue ?? g.targetValue ? ' de ' + (datos.targetValue ?? g.targetValue) : ''} ${datos.unit || g.unit || ''}` : ''}.${SOLO}`;
             }
             await encolar(userId, { tipo: 'entrada_crear', entryType: 'goal', datos: { title: String(a.titulo), term: 'short', goalType: 'simple', status: 'Pendiente', milestones: [], tags: [], notes: '', date: hoy, ...datos } });
-            return `Objetivo propuesto: «${a.titulo}».${PENDIENTE}`;
+            return `Objetivo nuevo: «${a.titulo}».${SOLO}`;
         }
         case 'analisis': {
             return data.analisisIA || 'Todavía no hay análisis guardado: se calcula al abrir Bitácora.';
@@ -1597,7 +1598,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             if ((data.links || []).some((l: any) => l.url === url)) return 'Ese enlace ya estaba guardado.';
             const cat = a.categoria ? (data.linkCategories || []).find((c: any) => norm(c.name).includes(norm(a.categoria).trim())) : null;
             await encolar(userId, { tipo: 'enlace', url, titulo: String(a.titulo || url), categoryId: cat?.id || '' });
-            return `Enlace propuesto${cat ? ' en ' + cat.name : ''}: «${a.titulo || url}».${PENDIENTE}`;
+            return `Enlace guardado${cat ? ' en ' + cat.name : ''}: «${a.titulo || url}».${SOLO}`;
         }
         case 'cumpleanos': {
             if (!esFecha(a.fecha)) throw new Error('Fecha en formato AAAA-MM-DD (si no sabes el año, usa 2000)');
@@ -1605,20 +1606,20 @@ async function llamar(userId: string, nombre: string, a: any) {
             const ya = (data.entries || []).find((e: any) => e?.type === 'birthday' && norm(e.title).trim() === norm(titulo));
             if (ya) return `Ya estaba el cumpleaños de ${ya.title} (${ya.birthDate}).`;
             await encolar(userId, { tipo: 'entrada_crear', entryType: 'birthday', datos: { title: titulo, firstName: String(a.nombre || ''), lastName: String(a.apellido || ''), birthDate: a.fecha, date: a.fecha, tags: [] } });
-            return `Cumpleaños propuesto: ${titulo}, el ${a.fecha.slice(8)}/${a.fecha.slice(5, 7)}.${PENDIENTE}`;
+            return `Cumpleaños apuntado: ${titulo}, el ${a.fecha.slice(8)}/${a.fecha.slice(5, 7)}.${SOLO}`;
         }
         case 'horario_clase': {
             const dia = DIAS_CLASE[norm(a.dia)];
             if (!dia) throw new Error('Día no válido');
             if (!/^\d{2}:\d{2}$/.test(a.hora || '')) throw new Error('Hora en formato HH:MM');
             await encolar(userId, { tipo: 'clase', accion: a.accion === 'quitar' ? 'quitar' : 'anadir', dia, hora: a.hora, texto: String(a.texto || '') });
-            return `Propuesto ${a.accion === 'quitar' ? 'quitar' : 'añadir'} «${a.texto}» el ${a.dia} a las ${a.hora}.${PENDIENTE}`;
+            return `${a.accion === 'quitar' ? 'Quitada' : 'Añadida'} la clase «${a.texto}» el ${a.dia} a las ${a.hora}.${SOLO}`;
         }
         case 'documento': {
             const datos: any = { title: String(a.titulo), docTipo: a.tipo || 'otro', date: esFecha(a.caduca) ? a.caduca : '', notes: String(a.notas || ''), tags: [] };
             if (/^https?:\/\//i.test(a.enlace || '')) datos.url = a.enlace;
             await encolar(userId, { tipo: 'entrada_crear', entryType: 'document', datos });
-            return `Ficha propuesta en Documentos: «${a.titulo}»${datos.date ? `, caduca el ${datos.date}` : ''}.${PENDIENTE}`;
+            return `Ficha guardada en Documentos: «${a.titulo}»${datos.date ? `, caduca el ${datos.date}` : ''}.${SOLO}`;
         }
         case 'estudios_crear': {
             const asig = asignaturaPorNombre(data, a.asignatura);
@@ -1631,7 +1632,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             const repetido = (asig[lista] || []).find((x: any) => norm(x.title).trim() === norm(a.titulo).trim() && (x.date || '') === item.date);
             if (repetido) return `Ya estaba en ${asig.name}: «${repetido.title}» (${repetido.date || 'sin fecha'}).`;
             await encolar(userId, { tipo: 'estudio_crear', subjectId: asig.id, lista, item, asignatura: asig.name });
-            return `${lista === 'exams' ? 'Examen' : 'Trabajo'} propuesto para ${asig.name}: «${a.titulo}»${item.date ? ` el ${diaSemana(item.date)} ${item.date}` : ''}${item.time ? ' a las ' + item.time : ''}. Al validarlo, Bitácora creará su evento en el calendario${lista === 'assignments' && item.date ? ' y la tarea en el planificador' : ''}.${PENDIENTE}`;
+            return `${lista === 'exams' ? 'Examen' : 'Trabajo'} apuntado en ${asig.name}: «${a.titulo}»${item.date ? ` el ${diaSemana(item.date)} ${item.date}` : ''}${item.time ? ' a las ' + item.time : ''}. Bitácora crea su evento en el calendario${lista === 'assignments' && item.date ? ' y la tarea en el planificador' : ''}.${SOLO}`;
         }
         case 'estudios_editar': {
             const encontrado = buscarItemEstudios(data, a.id);
@@ -1646,7 +1647,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (typeof a.hecho === 'boolean') cambios.done = a.hecho;
             if (!Object.keys(cambios).length) throw new Error('No hay nada que cambiar');
             await encolar(userId, { tipo: 'estudio_editar', subjectId: asig.id, lista, id: it.id, cambios, resumen: `${it.title || (lista === 'exams' ? 'examen' : 'trabajo')} (${asig.name})` });
-            return `Cambio propuesto para «${it.title}» de ${asig.name}.${PENDIENTE}`;
+            return `Cambiado «${it.title}» de ${asig.name}.${SOLO}`;
         }
         case 'ocio': {
             const t = OCIO_TIPOS[a.tipo];
@@ -1675,7 +1676,7 @@ async function llamar(userId: string, nombre: string, a: any) {
         case 'anotar': {
             if (!a.texto) throw new Error('Texto vacío');
             await encolar(userId, { tipo: 'nota', titulo: String(a.titulo || ''), texto: String(a.texto), fecha: hoy });
-            return `Propuesto para la nota de hoy (${hoy}) en el apartado Notas.${PENDIENTE}`;
+            return `Añadido a la nota de hoy (${hoy}) en el apartado Notas.${SOLO}`;
         }
     }
     throw new Error('Herramienta desconocida: ' + nombre);

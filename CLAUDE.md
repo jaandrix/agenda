@@ -357,7 +357,7 @@ a menor resolución.
   `.revela` aparecen al hacer scroll (IntersectionObserver sobre `#landing-screen`, que es el
   contenedor con scroll). Vault y su etiqueta "Privado" solo se ven con `body.dev-mode`.
 - **Conector Claude/ChatGPT y Bandeja:** `supabase/functions/bitacora-mcp` (servidor MCP)
-  escribe en `conector_bandeja`; la app aplica sola eventos, entradas con QR, Ocio, tarjetas de Estudiar, tests,
+  escribe en `conector_bandeja`; desde el 23-10 en la bandeja solo esperan validación el dinero (movimientos, correcciones, extractos) y los borrados, y la app aplica sola el resto (tareas, Estudios, horario, notas, hábitos, día, recurrentes, enlaces, deseos, entradas de viajes/suscripciones/objetivos/cumpleaños/documentos), eventos, entradas con QR, Ocio, tarjetas de Estudiar, tests,
   compra, proyecto (crear, tareas, mover, estado, fecha, quitar, fases, diario), objetivo (hitos, progreso, quitar), laboral
   (horario y citas de la agenda laboral) y profe (sesiones, días no lectivos, deberes) (`OPS_AUTOMATICAS`, con deshacer); la herramienta `agenda` devuelve también `ahora` (hora de Madrid) y deja el resto en el apartado "bandeja." para validarlo a mano
   (`aplicarOpConector` / `validarBandeja`). Historial con deshacer en `registroConector`.

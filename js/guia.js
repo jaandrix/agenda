@@ -81,7 +81,7 @@ const GUIA = [
             [guiaBoton('‹ inicio.'), 'Arriba a la izquierda en cualquier apartado: vuelve a la portada.'],
             [guiaBoton('temas, letra.'), 'Al final del menú, los círculos cambian el tema y «letra.» el tamaño del texto en el móvil.'],
         ],
-        trucos: ['Planificador, Finanzas, Estudios, Rutinas, Eventos, Notas y Viajes tienen página propia en el móvil; el resto usa la de escritorio adaptada, con los mismos botones en píldora.', 'En el inicio, arrastra la semana con el dedo: las semanas pasan como un carrusel y encajan al soltar. Finanzas en el móvil enseña también el ritmo del mes frente al anterior, en qué se va el dinero y los próximos cargos.', 'En Ocio, libros y películas salen en lista; en Profesorado, el cuadrante se desliza de lado y las tarjetas de las clases también.', 'Sin conexión también se abre: enseña la copia guardada en el dispositivo (agenda, tareas, finanzas, las entradas con QR...). Lo que apuntes sin red se guarda en el móvil y se sube solo al volver la conexión, sin pisar lo que hayas cambiado en otro dispositivo. El tiempo, la luz, los partidos, Social y los avisos necesitan red.'],
+        trucos: ['Planificador, Finanzas, Estudios, Rutinas, Eventos, Notas y Viajes tienen página propia en el móvil; el resto usa la de escritorio adaptada, con los mismos botones en píldora.', 'En el inicio, arrastra la semana con el dedo: las semanas pasan como un carrusel y encajan al soltar. Finanzas en el móvil enseña también el ritmo del mes frente al anterior, en qué se va el dinero (con «sin viajes.» dejas fuera los gastos marcados como viaje) y los próximos cargos.', 'En Ocio, libros y películas salen en lista; en Profesorado, el cuadrante se desliza de lado y las tarjetas de las clases también.', 'Sin conexión también se abre: enseña la copia guardada en el dispositivo (agenda, tareas, finanzas, las entradas con QR...). Lo que apuntes sin red se guarda en el móvil y se sube solo al volver la conexión, sin pisar lo que hayas cambiado en otro dispositivo. El tiempo, la luz, los partidos, Social y los avisos necesitan red.'],
     },
     {
         id: 'claude', grupo: 'empezar', titulo: 'claude y chatgpt.',
@@ -93,9 +93,9 @@ const GUIA = [
             'En un chat, activa Bitácora en el menú de herramientas y pregunta, por ejemplo: «¿qué tengo esta semana?».',
         ],
         botones: [
-            [guiaBoton('se aplica solo'), 'Crear o editar eventos, añadir entradas con QR, los cambios en Ocio, las tarjetas de estudio, la lista de la compra y las tareas, el siguiente paso y el diario de un proyecto.'],
+            [guiaBoton('se aplica solo'), 'Casi todo: eventos, tareas, exámenes y trabajos, el horario, notas, rutinas y el registro del día, tareas recurrentes, viajes, suscripciones, objetivos, deseos, enlaces, cumpleaños, documentos, Ocio, tarjetas y tests, la compra, proyectos, agenda laboral y profesorado. Todo se puede deshacer desde la bandeja.'],
             [guiaBoton('ideas para pedirle'), '«Hazme tarjetas de estos apuntes» (con un PDF o una foto), «pasa los ingredientes de esta receta a la compra», «apunta este ticket en Bitácora» (con la foto), «añade estas tareas al proyecto de la web», «¿qué hora es y qué me queda hoy?». Sabe la fecha y la hora de Madrid.'],
-            [guiaBoton('pasa por la bandeja'), 'Todo lo demás (tareas, movimientos, extractos, estudios, viajes, suscripciones, borrados...) espera a que lo valides en <b>bandeja.</b>'],
+            [guiaBoton('pasa por la bandeja'), 'Solo el dinero (gastos e ingresos que apunta, correcciones y extractos) y los borrados esperan a que los valides en <b>bandeja.</b> Lo demás (tareas, exámenes y trabajos, viajes, suscripciones, notas...) se aplica solo.'],
             [guiaBoton('revocar'), 'En Ajustes puedes revocar un enlace si lo pierdes o ya no lo usas.'],
         ],
         trucos: ['Todo lo que hace Claude queda en el historial de la bandeja, con opción de deshacer.', 'Si añadimos funciones nuevas al conector, abre un chat nuevo para que Claude las vea.', 'Para ahorrar uso, desactiva el conector en los chats que no son de Bitácora.'],
