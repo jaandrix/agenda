@@ -32,6 +32,7 @@
             if (currentView === 'studies' && !apartadoVisible('studies')) currentView = estudiosVistaInicial() || 'calendar';
             if (!apartadoVisible(currentView)) currentView = 'calendar';
             contarApartado(currentView);
+            actualizarFranjaEjemplo();
             const socio = document.getElementById('socio-badge');
             if (socio) {
                 const numero = suscripcionActual?.socio_numero;

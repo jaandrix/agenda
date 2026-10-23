@@ -197,6 +197,7 @@ aplicarPortadaPerfil();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-23', rama: 'todos', nombre: 'una semana de ejemplo para empezar', para: 'quien acaba de llegar.', texto: 'Al crear la cuenta puedes verla con una semana inventada (una cena, un viaje, unos gastos, un examen) para ver desde el primer minuto cómo se conecta todo. «empezar con lo mío.» borra solo el ejemplo.' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'menos bandeja', para: 'quien usa bitácora con Claude o ChatGPT.', texto: 'Las tareas, los exámenes y trabajos, las notas, los viajes, las suscripciones y casi todo lo que le pidas a la IA se aplica solo, con deshacer en la bandeja. Solo esperan tu visto bueno el dinero y los borrados.' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'en qué se va, más claro', para: 'quien lleva sus cuentas desde el móvil.', texto: 'El reparto del gasto del mes va en una tira y una lista sobrias, con porcentajes, y puedes dejar fuera los gastos de viaje para ver tu mes normal.' },
     { fecha: '2026-10-22', rama: 'school', nombre: 'test con amigos', para: 'estudiantes y opositores.', texto: 'En Estudios → repaso → test, crea un test tipo test con tu temario (pídeselo a una IA o por el conector), practícalo a solas o compártelo con tus amigos: cada uno lo juega una vez, contra el reloj y con el teclado, y gana quien más puntos saca.' },

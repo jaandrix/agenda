@@ -26,6 +26,7 @@ const GUIA = [
             'Pulsa cualquier apartado para entrar. El primero, <b>home</b>, es tu calendario.',
             'No hay botón de guardar: cada cambio se guarda al momento.',
             'Si usas Bitácora en varios dispositivos a la vez, se combinan los cambios de todos sin pisarse.',
+            'Si en la bienvenida elegiste ver una <b>semana de ejemplo</b> (una cena con Marta, un viaje a Lisboa, unos gastos y un examen inventados), abajo verás una franja con <b>empezar con lo mío.</b>: borra solo el ejemplo y deja lo que hayas apuntado tú.',
         ],
         trucos: [
             'Cuatro temas en Ajustes: <b>asfalto</b> (oscuro), <b>papel</b> (claro), <b>teja</b> (piedra cálida con naranja) y <b>pizarra</b> (gris azulado con tinta azul marino).',

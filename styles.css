@@ -9021,3 +9021,15 @@ body.sin-red #header-clock::before { content:'sin conexión.'; margin-right:10px
 .est-test-puntos { font-size:15px; margin:4px 0 16px; }
 .est-test-puntos b { font-size:40px; font-weight:800; color:var(--accent); margin-right:6px; }
 @media (prefers-reduced-motion: reduce) { .est-test-tiempo i { animation-timing-function:steps(10); } }
+
+/* Semana de ejemplo (js/ejemplo.js): franja fija mientras haya datos de ejemplo. */
+#ejemplo-franja { position:fixed; z-index:900; left:50%; bottom:24px; transform:translateX(-50%); width:min(720px, calc(100vw - 32px)); box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 12px 12px 18px; border-radius:14px; background:var(--text-primary); color:var(--bg-app, #111); font-family:var(--font-family); font-size:13.5px; line-height:1.35; box-shadow:0 10px 30px rgba(0,0,0,.25); animation:ejemploEntra .3s cubic-bezier(.2,.8,.2,1); }
+#ejemplo-franja b { font-weight:700; }
+#ejemplo-franja button { flex-shrink:0; padding:10px 16px; border:0; border-radius:10px; background:var(--m-acento, #EE4B1F); color:var(--m-sobre-acento, #fff); font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+body.mobile-standalone #ejemplo-franja { bottom:calc(env(safe-area-inset-bottom, 0px) + 104px); flex-direction:column; align-items:stretch; gap:10px; }
+body.mobile-standalone #ejemplo-franja button { padding:12px; font-size:15px; }
+@keyframes ejemploEntra { from { opacity:0; transform:translate(-50%, 12px); } }
+@media (prefers-reduced-motion: reduce) { #ejemplo-franja { animation:none; } }
+body.con-ejemplo #content { padding-bottom:110px; }
+body.con-ejemplo.mobile-standalone .m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 230px); }
+.bienvenida-ejemplo { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }

@@ -19,7 +19,7 @@ function comprobarBienvenida() {
 
 function openBienvenida() {
     const cfg = configApartados();
-    bienvenidaBorrador = { nombre: (nombrePublico || userName || '').trim(), perfil: cfg.perfil, opcionales: { ...cfg.opcionales }, tarea: '' };
+    bienvenidaBorrador = { nombre: (nombrePublico || userName || '').trim(), perfil: cfg.perfil, opcionales: { ...cfg.opcionales }, tarea: '', ejemplo: false };
     bienvenidaPaso = 0;
     showModal(`<div class="bienvenida" id="bienvenida">${renderBienvenidaPaso()}</div>`);
     document.querySelector('#modal-container .modal-sheet')?.classList.add('bienvenida-sheet');
@@ -101,6 +101,14 @@ function renderBienvenidaPaso() {
             <h2>todo listo.</h2>
             <p>${dias !== null ? `Tienes <b>${dias} días de prueba gratis</b>, sin tarjeta. Si te convence, la suscripción cuesta 1,99 € al mes; si no, tus datos se quedan guardados.` : 'Ya puedes empezar.'}</p>
             <div class="bienvenida-bloque">
+                <b>¿quieres verla con una semana de ejemplo?</b>
+                <span>Una cena, un viaje, unos gastos y un examen inventados, para ver desde ya cómo se conecta todo. Se quita cuando quieras con «empezar con lo mío.» y solo se borra el ejemplo.</span>
+                <div class="bienvenida-ejemplo">
+                    <button type="button" class="profe-chip ${b.ejemplo ? '' : 'activa'}" onclick="bienvenidaBorrador.ejemplo=false;bienvenidaRepintar()">no, empiezo vacía.</button>
+                    <button type="button" class="profe-chip ${b.ejemplo ? 'activa' : ''}" onclick="bienvenidaBorrador.ejemplo=true;bienvenidaRepintar()">sí, enséñamela.</button>
+                </div>
+            </div>
+            <div class="bienvenida-bloque">
                 <b>¿por dónde sigo?</b>
                 <span>Añade tus eventos y clases, prueba Social para dividir gastos con tus amigos y, si usas Claude o ChatGPT, conéctalos en Bandeja para apuntar cosas hablando.</span>
             </div>
@@ -146,6 +154,7 @@ async function terminarBienvenida(abrirGuia) {
         const hora = `${String(Math.min(23, ahora.getHours() + 1)).padStart(2, '0')}:00`;
         plannerItemsForOffset(0).push({ id: 'planner_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), time: hora, title: b.tarea, notes: '', done: false });
     }
+    if (b.ejemplo && !hayEjemplo()) cargarEjemplo(b.perfil);
     bienvenida = new Date().toISOString();
     closeModal();
     renderAllNavs();
