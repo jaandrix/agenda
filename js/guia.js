@@ -288,6 +288,7 @@ const GUIA = [
             [guiaBoton('Descargar resumen (PDF)'), 'Un resumen de tu vida laboral: días trabajados, cotizados y cada empleo.'],
             [guiaBoton('agenda laboral.'), 'Con un empleo actual aparece tu calendario de trabajo, aparte y más sobrio: solo tu horario y tus citas del trabajo. Pulsa un día para ver lo que tiene.'],
             [guiaBoton('horario.'), 'Qué días trabajas y a qué horas. Si trabajas fines de semana o un horario distinto cada día, aquí se ve y así sale en el calendario.'],
+            [guiaBoton('importar.'), 'Para traer un horario que ya tienes (escrito, en foto, en PDF o un cuadrante de turnos): copia el texto para la IA, pégalo en Claude o ChatGPT con tu horario y pega aquí lo que te devuelva. La jornada fija va a «horario.» y los turnos con fecha, como citas de turno. Importarlo dos veces no duplica nada.'],
             [guiaBoton('+ cita.'), 'Una reunión, un turno distinto al de siempre, un plazo de entrega u otra cosa del trabajo, con hora y lugar.'],
             [guiaBoton('en el calendario principal.'), 'Encendido, tu horario y tus citas de trabajo salen también en Home y en el inicio del móvil, junto a todo lo demás. Apagado, solo se ven en Empleo.'],
             [guiaBoton('rayo'), 'En Empleo, la captura rápida late para recordarte que puedes añadir un empleo.'],

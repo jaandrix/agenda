@@ -76,6 +76,7 @@ function renderAgendaLaboral() {
                 <button class="lab-btn" onclick="labCambiarMes(1)" aria-label="Mes siguiente"><i class='ico ico-der' aria-hidden=true></i></button>
                 <span class="lab-sep"></span>
                 <button class="lab-btn" onclick="openHorarioLaboral()">horario.</button>
+                <button class="lab-btn" onclick="openImportarLaboral()">importar.</button>
                 <button class="lab-btn lab-btn-principal" onclick="openCitaLaboral()">+ cita.</button>
             </div>
         </header>
@@ -173,6 +174,91 @@ function borrarCitaLaboral(id) {
     closeModal();
     render();
     guardarLaboral('Cita eliminada');
+}
+
+// ---------- importar el horario con una IA ----------
+// El horario transcrito (una foto, un PDF, un cuadrante de turnos...) se pasa por una IA con este prompt y el JSON que
+// devuelve se pega aquí: la jornada fija de cada día de la semana y, si hay turnos o días con otro horario, cada uno
+// como cita de tipo turno en su fecha.
+const LAB_PROMPT_IA = `Convierte mi horario de trabajo en JSON para importarlo en Bitácora. Responde solo con el JSON, sin explicaciones.
+
+Formato:
+{
+  "horario": { "lunes": { "ini": "09:00", "fin": "17:00" }, "martes": { "ini": "09:00", "fin": "17:00" } },
+  "turnos": [ { "fecha": "2026-11-03", "ini": "07:00", "fin": "15:00", "titulo": "Turno de mañana", "lugar": "" } ]
+}
+
+Reglas:
+- "horario": la jornada que se repite cada semana, por día (lunes, martes, miércoles, jueves, viernes, sábado, domingo). Los días que no se trabaja, no los pongas.
+- "turnos": solo si hay días concretos con otro horario (turnos rotativos, guardias, un sábado suelto...). Una entrada por día y franja, con su fecha AAAA-MM-DD.
+- Si el horario cambia cada semana, deja "horario" vacío y pon todo en "turnos".
+- Horas en formato 24 h (HH:MM). Si un turno pasa de medianoche, "fin" es la hora del día siguiente (por ejemplo "06:00").
+- Si falta el año, usa el del año en curso o el siguiente si la fecha ya ha pasado.
+
+Mi horario:
+`;
+
+function openImportarLaboral() {
+    showModal(`
+        <div class="modal-title">importar horario.</div>
+        <p class="finance-modal-note" style="margin-top:0">1. Copia este texto y pégalo en Claude o ChatGPT, con tu horario debajo (escrito, en foto o en PDF). 2. Pega aquí lo que te devuelva.</p>
+        <button class="btn-secondary" style="width:auto;margin-bottom:12px" onclick="copiarPromptLaboral()">copiar el texto para la ia.</button>
+        <textarea id="lab-importar" class="modal-input" rows="8" placeholder='{"horario": {...}, "turnos": [...]}' oninput="previaImportarLaboral()"></textarea>
+        <div id="lab-importar-previa" class="finance-modal-note"></div>
+        <button class="btn-modal-primary" onclick="importarLaboral()">importar.</button>
+        <p class="finance-modal-note">También puedes pedírselo a Claude o ChatGPT con el conector de Bitácora: «pon este horario en mi agenda laboral».</p>`);
+}
+
+async function copiarPromptLaboral() {
+    try { await navigator.clipboard.writeText(LAB_PROMPT_IA); showToast('Texto copiado: pégalo en la IA con tu horario'); }
+    catch (e) { prompt('Copia este texto:', LAB_PROMPT_IA); }
+}
+
+// Lee lo que devuelve la IA (aunque venga con texto alrededor o entre ```), y lo deja listo para importar.
+function leerImportarLaboral(texto) {
+    const t = String(texto || '').replace(/```(?:json)?/gi, '');
+    const ini = t.indexOf('{'), fin = t.lastIndexOf('}');
+    if (ini < 0 || fin <= ini) return null;
+    let d;
+    try { d = JSON.parse(t.slice(ini, fin + 1)); } catch (e) { return null; }
+    const hora = h => /^\d{1,2}:\d{2}$/.test(String(h || '').trim()) ? String(h).trim().padStart(5, '0') : '';
+    const dia = n => LAB_DIAS.findIndex(x => stripAccents(x) === stripAccents(String(n || '').toLowerCase().trim()));
+    const horario = {};
+    Object.entries(d.horario || {}).forEach(([k, v]) => { const w = dia(k); if (w >= 0 && hora(v?.ini) && hora(v?.fin)) horario[w] = { ini: hora(v.ini), fin: hora(v.fin) }; });
+    const turnos = (Array.isArray(d.turnos) ? d.turnos : []).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x?.fecha || '')).map(x => ({
+        fecha: x.fecha, ini: hora(x.ini), fin: hora(x.fin), titulo: String(x.titulo || 'turno').trim().slice(0, 80), tipo: 'turno', lugar: String(x.lugar || '').trim().slice(0, 80), notas: '',
+    }));
+    return { horario, turnos };
+}
+
+function previaImportarLaboral() {
+    const el = document.getElementById('lab-importar-previa');
+    const texto = document.getElementById('lab-importar')?.value || '';
+    if (!el) return;
+    if (!texto.trim()) { el.textContent = ''; return; }
+    const r = leerImportarLaboral(texto);
+    if (!r) { el.textContent = 'Todavía no se lee como el JSON que devuelve la IA.'; return; }
+    const dias = Object.keys(r.horario).map(w => LAB_DIAS[w]);
+    el.textContent = [dias.length ? `Horario fijo: ${dias.join(', ')}.` : '', r.turnos.length ? `${r.turnos.length} ${r.turnos.length === 1 ? 'turno' : 'turnos'} con fecha, del ${r.turnos.map(t => t.fecha).sort()[0]} al ${r.turnos.map(t => t.fecha).sort().pop()}.` : ''].filter(Boolean).join(' ') || 'No hay nada que importar.';
+}
+
+function importarLaboral() {
+    const r = leerImportarLaboral(document.getElementById('lab-importar')?.value);
+    if (!r || (!Object.keys(r.horario).length && !r.turnos.length)) { showToast('Pega el JSON que te ha devuelto la IA', true); return; }
+    const a = datosLaboral();
+    if (Object.keys(r.horario).length) a.horario = r.horario;
+    // Un turno igual (mismo día, hora y título) no se duplica si se importa dos veces.
+    const ya = new Set(a.citas.map(c => `${c.fecha}|${c.ini}|${c.titulo}`));
+    let nuevos = 0;
+    r.turnos.forEach(t => {
+        if (ya.has(`${t.fecha}|${t.ini}|${t.titulo}`)) return;
+        a.citas.push({ id: 'lab_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), ...t });
+        nuevos++;
+    });
+    if (r.turnos.length) { const d = new Date(r.turnos.map(t => t.fecha).sort()[0] + 'T12:00:00'); labMes = { y: d.getFullYear(), m: d.getMonth() }; }
+    closeModal();
+    render();
+    guardarLaboral([Object.keys(r.horario).length ? 'Horario importado' : '', nuevos ? `${nuevos} ${nuevos === 1 ? 'turno' : 'turnos'}` : ''].filter(Boolean).join(', '));
 }
 
 function openHorarioLaboral() {
