@@ -1,11 +1,37 @@
         // ============================================================
         //  RENDER
         // ============================================================
+        // Uso anónimo de los apartados (GoatCounter, sin cookies ni datos personales): una marca «apartado/<vista>»
+        // al abrir cada uno (como mucho una cada 30 min por vista) y, una vez al día, «uso/activo» y el dispositivo.
+        // Así se sabe qué apartados se usan. Los dispositivos del creador no cuentan (se marcan al entrar en modo
+        // desarrollador) para no tapar el uso real.
+        let usoUltimaVista = null;
+        function contarApartado(view) {
+            const gc = window.goatcounter;
+            if (view === usoUltimaVista || !gc?.count || devModeActive) return;
+            usoUltimaVista = view;
+            try {
+                if (localStorage.getItem('bitacora-uso-no-contar') === '1') return;
+                const marcas = JSON.parse(sessionStorage.getItem('bitacora-uso') || '{}');
+                if (Date.now() - (marcas[view] || 0) < 30 * 60000) return;
+                marcas[view] = Date.now();
+                sessionStorage.setItem('bitacora-uso', JSON.stringify(marcas));
+                gc.count({ path: 'apartado/' + view, title: NAV_VIEW_LABELS[view] || view, event: true });
+                const hoy = todayISO();
+                if (localStorage.getItem('bitacora-uso-dia') !== hoy) {
+                    localStorage.setItem('bitacora-uso-dia', hoy);
+                    gc.count({ path: 'uso/activo', title: 'abre la app', event: true });
+                    gc.count({ path: 'uso/' + (mobileStandaloneActive ? 'movil' : 'escritorio'), title: mobileStandaloneActive ? 'móvil' : 'escritorio', event: true });
+                }
+            } catch (e) { /* sin almacenamiento o sin red: no se cuenta */ }
+        }
+
         function render() {
             invalidateLinkableIndex();
             financeSaldosCache = null;
             if (currentView === 'studies' && !apartadoVisible('studies')) currentView = estudiosVistaInicial() || 'calendar';
             if (!apartadoVisible(currentView)) currentView = 'calendar';
+            contarApartado(currentView);
             const socio = document.getElementById('socio-badge');
             if (socio) {
                 const numero = suscripcionActual?.socio_numero;

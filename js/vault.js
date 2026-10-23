@@ -324,6 +324,7 @@
                 closeModal();
                 devModeActive = true;
                 document.body.classList.add('dev-mode');
+                try { localStorage.setItem('bitacora-uso-no-contar', '1'); } catch (e) {}
                 render();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
@@ -401,6 +402,7 @@
                 closeModal();
                 devModeActive = true;
                 document.body.classList.add('dev-mode');
+                try { localStorage.setItem('bitacora-uso-no-contar', '1'); } catch (e) {}
                 render();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
