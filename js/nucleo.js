@@ -6,6 +6,33 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2ZHF0bnVrZ2Jlam9yaWV1dW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMjcyOTUsImV4cCI6MjEwMDkwMzI5NX0.sq1cepXuBaNT6qygyxKEAhVHJh7G9LZyzaeJBhc7s7s';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Fallos que ven los usuarios, contados de forma anónima con GoatCounter (se ven en el pulso, «Uso de la
+        // app»): errores sin capturar y avisos de error de la app. Del mensaje se quitan números, enlaces, correos y
+        // lo que va entre comillas, para no mandar nunca datos de nadie. Cada fallo, una vez por sesión. Va aquí,
+        // en el primer archivo, para enterarse también de los que rompen la carga de otro (la pantalla en blanco).
+        const fallosPendientes = [], fallosVistos = new Set();
+        let fallosIntentos = 0;
+        function contarFallo(mensaje, origen, tipo = 'error') {
+            try { if (localStorage.getItem('bitacora-uso-no-contar') === '1') return; } catch (e) { /* sin almacenamiento */ }
+            const m = String(mensaje || '').replace(/https?:\/\/\S+/g, '').replace(/\S+@\S+/g, '').replace(/["'«»“”]([^"'«»“”]{0,120})["'«»“”]/g, (t, dentro) => /^[\w.$-]{1,40}$/.test(dentro) ? t : '«…»').replace(/\d+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 80);
+            if (!m || /ResizeObserver|^Script error|extension:\/\/|Load failed|NetworkError|Failed to fetch|AbortError/i.test(m + ' ' + (origen || ''))) return;
+            const archivo = (String(origen || '').match(/\/js\/([\w-]+)\.js/) || [])[1] || (tipo === 'aviso' ? 'app' : 'otro');
+            let vista = 'arranque';
+            try { vista = currentView || vista; } catch (e) { /* aún no existe */ }
+            const ruta = `${tipo}/${archivo}/${m}`;
+            if (fallosVistos.has(ruta)) return;
+            fallosVistos.add(ruta);
+            fallosPendientes.push({ path: ruta, title: `${vista}: ${m}`, event: true });
+            enviarFallos();
+        }
+        function enviarFallos() {
+            const gc = window.goatcounter;
+            if (!gc?.count) { if (fallosIntentos++ < 20) setTimeout(enviarFallos, 3000); return; }
+            while (fallosPendientes.length) gc.count(fallosPendientes.shift());
+        }
+        window.addEventListener('error', e => { if (e.message) contarFallo(e.message, e.filename); });
+        window.addEventListener('unhandledrejection', e => contarFallo(e.reason?.message || e.reason, e.reason?.stack));
+
         // Sin red, la librería de Supabase intenta renovar la sesión durante
         // unos 30 s antes de rendirse, y toda llamada que depende de ella
         // (también las consultas) espera: la app se quedaba en «cargando».

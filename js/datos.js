@@ -915,6 +915,7 @@
         //  TOAST
         // ============================================================
         function showToast(msg, isError = false) {
+            if (isError) contarFallo(msg, '', 'aviso');
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.className = isError ? 'error' : '';
