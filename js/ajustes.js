@@ -515,9 +515,27 @@
                 }).join('')}</div>`;
         }
 
+        // Palabras con las que se encuentra cada ajuste en el buscador, además de su título y su texto.
+        const AJUSTES_CLAVES = {
+            'suscripción.': 'pago plan precio stripe factura tarjeta fundador regalo código prueba gratis',
+            'tus datos.': 'exportar importar copia seguridad json backup ics calendario',
+            'qué quieres ver.': 'apartados menú perfil estudiante trabajador opcional ocultar mostrar',
+            'claude y chatgpt.': 'ia inteligencia artificial conector mcp token bandeja',
+            'siri y tu correo.': 'atajo atajos iphone dictar email reenviar',
+            'lo que bitácora sabe sola.': 'festivos puentes luz precio equipos fútbol series ciudad',
+            'tu calendario en otras apps.': 'google icloud outlook suscribir ics enlace',
+            'notificaciones.': 'avisos push recordatorios resumen mañana',
+            'tema y letra.': 'apariencia tema oscuro claro modo color tipografía fuente tamaño letra ancho',
+            'semana de ejemplo.': 'ejemplo demo prueba datos inventados empezar',
+            'qué es bitácora.': 'instalar app legal privacidad condiciones cookies aviso',
+            'prompts guardados.': 'ia textos copiar',
+            'modo desarrollador.': 'vault oculto desarrollador',
+            'zona de riesgo.': 'borrar eliminar cuenta cerrar sesión dispositivos',
+        };
+
         function bloqueAjuste(id, icono, titulo, texto, cuerpo, clase = '') {
             return `
-                <section class="ajuste ${clase}" ${id ? `id="${id}"` : ''}>
+                <section class="ajuste ${clase}" ${id ? `id="${id}"` : ''} data-claves="${escapeHtml(AJUSTES_CLAVES[titulo] || '')}">
                     <div class="ajuste-cab">
                         <span class="ajuste-icono">${AJUSTES_ICONOS[icono]}</span>
                         <div><div class="ajuste-titulo">${titulo}</div>${texto ? `<div class="ajuste-texto">${texto}</div>` : ''}</div>
@@ -542,7 +560,13 @@
                         <span class="ajustes-guia-flecha" aria-hidden="true">→</span>
                     </button>` : ''}
 
-                    <div class="ajustes-grupo">cuenta.</div>
+                    <div class="ajustes-buscador">
+                        <input id="ajustes-buscar" class="modal-input" type="search" placeholder="busca un ajuste: tema, avisos, exportar..." oninput="filtrarAjustes(this.value)" autocomplete="off">
+                        <nav class="ajustes-indice" aria-label="Grupos de ajustes">${AJUSTES_GRUPOS.map(([k, t]) => `<button type="button" onclick="document.getElementById('ajg-${k}')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">${t}</button>`).join('')}</nav>
+                        <div class="ajustes-sin-resultados" id="ajustes-sin-resultados" hidden></div>
+                    </div>
+
+                    <div class="ajustes-seccion" data-grupo="cuenta"><div class="ajustes-grupo" id="ajg-cuenta">cuenta.</div>
                     <div class="ajustes-rejilla">
                         ${bloqueAjuste('settings-subscription-section', 'suscripcion', 'suscripción.', 'Tu plan y su renovación.', `<div id="settings-subscription-body" class="ajuste-cargando">Cargando...</div>`)}
                         ${bloqueAjuste('settings-account-section', 'datos', 'tus datos.', 'Todo lo que hay en Bitácora (entradas, notas, finanzas...) en un archivo JSON: para guardarlo aparte o traerlo de vuelta.', `
@@ -553,10 +577,12 @@
                             </div>`)}
                     </div>
 
-                    <div class="ajustes-grupo">apartados.</div>
+                    </div>
+                    <div class="ajustes-seccion" data-grupo="apartados"><div class="ajustes-grupo" id="ajg-apartados">apartados.</div>
                     ${bloqueAjuste('settings-apartados-section', 'apartados', 'qué quieres ver.', 'Activa solo los apartados que vayas a usar. Lo que desactives desaparece de los menús, pero sus datos se quedan guardados.', renderAjustesApartados(), 'ajuste-ancho')}
 
-                    <div class="ajustes-grupo">conexiones.</div>
+                    </div>
+                    <div class="ajustes-seccion" data-grupo="conexiones"><div class="ajustes-grupo" id="ajg-conexiones">conexiones.</div>
                     <div class="ajustes-rejilla">
                         ${bloqueAjuste('settings-conector-section', 'conector', 'claude y chatgpt.', '', `<div id="settings-conector-body" class="ajuste-cargando">Cargando...</div>`)}
                         ${bloqueAjuste('settings-atajos-section', 'atajos', 'siri y tu correo.', 'Apunta cosas sin abrir Bitácora: dictándolas o reenviando un correo.', renderAjustesAtajos())}
@@ -565,7 +591,8 @@
                         ${bloqueAjuste('settings-push-section', 'avisos', 'notificaciones.', 'Avisos en este dispositivo: el resumen de la mañana y una hora antes de cada evento.', `<div id="settings-push-body">${renderPushSettingsBody('cargando')}</div>`)}
                     </div>
 
-                    <div class="ajustes-grupo">apariencia.</div>
+                    </div>
+                    <div class="ajustes-seccion" data-grupo="apariencia"><div class="ajustes-grupo" id="ajg-apariencia">apariencia.</div>
                     ${bloqueAjuste('settings-appearance-section', 'apariencia', 'tema y letra.', 'Se guarda en este dispositivo.', `
                         <div class="ajuste-subtitulo">tema.</div>
                         ${renderSelectorTema()}
@@ -576,8 +603,12 @@
                         <div class="solo-escritorio"><div class="ajuste-subtitulo">ancho.</div>
                         <button class="btn-secondary" style="width:auto" onclick="toggleMode()">alternar modo ancho.</button></div>`, 'ajuste-ancho')}
 
-                    <div class="ajustes-grupo">más.</div>
+                    </div>
+                    <div class="ajustes-seccion" data-grupo="ayuda"><div class="ajustes-grupo" id="ajg-ayuda">ayuda.</div>
                     <div class="ajustes-rejilla">
+                        ${bloqueAjuste('settings-ejemplo-section', 'guia', 'semana de ejemplo.', 'Una semana inventada (una cena, un viaje, unos gastos, un examen) para ver cómo se conecta todo. Se quita cuando quieras y solo se borra lo del ejemplo.', typeof hayEjemplo === 'function' && hayEjemplo()
+                            ? `<button class="btn-secondary" style="width:auto" onclick="openEmpezarConLoMio()">quitar el ejemplo.</button>`
+                            : `<button class="btn-secondary" style="width:auto" onclick="verSemanaEjemplo()">ver una semana de ejemplo.</button>`)}
                         ${bloqueAjuste('', 'bitacora', 'qué es bitácora.', 'La idea detrás de la app y, si lo abres desde el navegador, instalarla como app.', `
                             <div class="ajuste-botones">
                                 <button class="btn-secondary" style="width:auto" onclick="openAboutBitacora()">qué es, a fondo.</button>
@@ -589,6 +620,10 @@
                                 <a href="legal.html#aviso-legal" target="_blank" rel="noopener">aviso legal.</a>
                                 <a href="legal.html#cookies" target="_blank" rel="noopener">cookies.</a>
                             </div>`)}
+                    </div>
+                    </div>
+                    <div class="ajustes-seccion" data-grupo="herramientas"><div class="ajustes-grupo" id="ajg-herramientas">herramientas.</div>
+                    <div class="ajustes-rejilla">
                         ${bloqueAjuste('settings-prompts-section', 'prompts', 'prompts guardados.', 'Textos que usas a menudo con una IA, a mano para copiarlos.', `
                             <button class="btn-secondary" style="width:auto;margin-bottom:10px" onclick="openNewPrompt()">+ prompt.</button>
                             <div class="prompts-list">
@@ -600,13 +635,51 @@
                             </div>`)}
                         ${bloqueAjuste('settings-advanced-section', 'avanzado', 'modo desarrollador.', 'Enseña funciones ocultas, como Vault.', `
                             <button class="finance-pro-switch ${devModeActive ? 'on' : ''}" onclick="toggleDeveloperMode()" aria-label="Modo desarrollador"><span class="finance-pro-switch-knob"></span></button>`)}
+                    </div>
+                    </div>
+                    <div class="ajustes-seccion" data-grupo="riesgo"><div class="ajustes-grupo" id="ajg-riesgo">zona de riesgo.</div>
+                    <div class="ajustes-rejilla">
                         ${bloqueAjuste('settings-danger-section', 'riesgo', 'zona de riesgo.', 'Cerrar tu sesión en todos los dispositivos, o borrar tu cuenta y todo lo que hay en ella para siempre.', `
                             <div class="ajuste-botones">
                                 <button class="btn-secondary ajuste-peligro" style="width:auto" onclick="handleLogoutAllDevices()">cerrar sesión en todas partes.</button>
                                 <button class="btn-secondary ajuste-peligro" style="width:auto" onclick="openEliminarCuenta()">eliminar mi cuenta.</button>
                             </div>`, 'ajuste-riesgo')}
                     </div>
+                    </div>
                 </div>`;
+        }
+
+        const AJUSTES_GRUPOS = [['cuenta', 'cuenta.'], ['apartados', 'apartados.'], ['conexiones', 'conexiones.'], ['apariencia', 'apariencia.'], ['ayuda', 'ayuda.'], ['herramientas', 'herramientas.'], ['riesgo', 'riesgo.']];
+
+        // Buscador de Ajustes: filtra los bloques por su título, su texto, lo que ya han cargado y sus palabras clave
+        // (AJUSTES_CLAVES), sin repintar, y esconde los grupos que se quedan vacíos.
+        function filtrarAjustes(q) {
+            const norm = t => stripAccents(String(t || '').toLowerCase());
+            const palabras = norm(q).split(/\s+/).filter(Boolean);
+            const vista = document.querySelector('.ajustes-vista');
+            if (!vista) return;
+            let visibles = 0;
+            vista.querySelectorAll('.ajustes-seccion').forEach(g => {
+                let alguno = false;
+                g.querySelectorAll('section.ajuste').forEach(sec => {
+                    const texto = norm(sec.textContent + ' ' + (sec.dataset.claves || ''));
+                    const ok = palabras.every(p => texto.includes(p));
+                    sec.hidden = !ok;
+                    if (ok) { alguno = true; visibles++; }
+                });
+                g.hidden = !alguno;
+            });
+            const nada = document.getElementById('ajustes-sin-resultados');
+            if (nada) { nada.hidden = !!visibles || !palabras.length; nada.textContent = `nada con «${String(q).trim()}». prueba con otra palabra.`; }
+            vista.querySelector('.ajustes-indice')?.toggleAttribute('hidden', palabras.length > 0);
+        }
+
+        async function verSemanaEjemplo() {
+            if (hayEjemplo()) return;
+            cargarEjemplo(configApartados().perfil);
+            render();
+            showToast('Semana de ejemplo puesta: la quitas con «empezar con lo mío.»');
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // Rellena la sección "Suscripción" de Ajustes aparte, porque

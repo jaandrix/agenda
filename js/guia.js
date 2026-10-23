@@ -519,8 +519,10 @@ const GUIA = [
     {
         id: 'ajustes', grupo: 'sistema', titulo: 'ajustes.',
         lema: 'Cómo es y cómo se comporta tu Bitácora.',
-        intro: 'Agrupados en cuenta, apartados, conexiones, apariencia, más y zona de riesgo.',
+        intro: 'Agrupados en cuenta, apartados, conexiones, apariencia, ayuda, herramientas y zona de riesgo. Arriba, un buscador y un índice para saltar a cada grupo.',
         botones: [
+            [guiaBoton('busca un ajuste.'), 'Escribe lo que buscas (tema, avisos, exportar, borrar cuenta...) y solo quedan los ajustes que tienen que ver.'],
+            [guiaBoton('semana de ejemplo.'), 'En ayuda: pone una semana inventada para ver cómo se conecta todo, o la quita si ya la tienes. Solo se borra lo del ejemplo.'],
             [guiaBoton('suscripción.'), 'Tu plan y su renovación. Las cuentas nuevas tienen 14 días de prueba gratis sin tarjeta; desde aquí te suscribes (1,99 € al mes o 18,99 € al año) o te haces socio fundador.'],
             [guiaBoton('socio fundador.'), 'Un único pago de 29,99 € y Bitácora de por vida, solo para 100 personas: tu número de socio en dorado en Home y un tema exclusivo, «fundador.». Si ya tenías suscripción, se cancela sola. Además tiene tres códigos que regalan 6 meses de Bitácora (se ven pulsando su número de socio en Home o en Ajustes).'],
             [guiaBoton('¿tienes un código de regalo?'), 'Si un socio fundador te ha pasado un código, escríbelo en Ajustes → suscripción o al terminar la prueba: tienes 6 meses de Bitácora gratis.'],

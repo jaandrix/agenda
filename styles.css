@@ -9044,3 +9044,14 @@ body.mobile-standalone #ejemplo-franja button { padding:12px; font-size:15px; }
 body.con-ejemplo #content { padding-bottom:110px; }
 body.con-ejemplo.mobile-standalone .m-app { padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 230px); }
 .bienvenida-ejemplo { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+
+/* Ajustes: buscador e índice de grupos (23-10). */
+.ajustes-buscador { position:sticky; top:0; z-index:5; margin:18px 0 6px; padding:10px 0; background:var(--bg-app); }
+.ajustes-buscador input { width:100%; box-sizing:border-box; }
+.ajustes-indice { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.ajustes-indice button { padding:7px 12px; border:1px solid var(--border-strong); border-radius:10px; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12.5px; font-weight:600; cursor:pointer; }
+.ajustes-indice button:hover { color:var(--text-primary); border-color:var(--text-primary); }
+.ajustes-sin-resultados { margin-top:14px; font-size:14px; color:var(--text-secondary); }
+.ajustes-seccion[hidden], section.ajuste[hidden] { display:none !important; }
+.ajustes-grupo { scroll-margin-top:120px; }
+
