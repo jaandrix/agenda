@@ -30,20 +30,24 @@ const LIGAS: [string, string, string][] = [
 const TSDB = 'https://www.thesportsdb.com/api/v1/json/123';
 const norm = (t: unknown) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 
-let equiposCache: { cuando: number; lista: any[] } | null = null;
+// Cada liga se recuerda por separado 12 horas. Antes se guardaba la lista entera de una vez: si una liga no
+// respondía en ese momento (p. ej. la NBA), se quedaba fuera 12 horas y sus equipos no salían al buscar.
+const ligasCache = new Map<string, { cuando: number; equipos: any[] }>();
 async function todosLosEquipos() {
-    if (equiposCache && Date.now() - equiposCache.cuando < 12 * 3600e3) return equiposCache.lista;
     const listas = await Promise.all(LIGAS.map(async ([deporte, liga, nombreLiga]) => {
+        const c = ligasCache.get(liga);
+        if (c && Date.now() - c.cuando < 12 * 3600e3) return c.equipos;
         try {
-            const d = await fetch(`${ESPN}/${deporte}/${liga}/teams`).then(r => r.json());
-            return (d.sports?.[0]?.leagues?.[0]?.teams || []).map((x: any) => ({
+            const d = await fetch(`${ESPN}/${deporte}/${liga}/teams`, { signal: AbortSignal.timeout(8000) }).then(r => r.json());
+            const equipos = (d.sports?.[0]?.leagues?.[0]?.teams || []).map((x: any) => ({
                 id: String(x.team.id), deporte, liga, ligaNombre: nombreLiga, nombre: x.team.displayName, corto: x.team.shortDisplayName || x.team.displayName,
                 escudo: x.team.logos?.[0]?.href || '', color: x.team.color ? '#' + x.team.color : '',
             }));
-        } catch (_) { return []; }
+            if (equipos.length) ligasCache.set(liga, { cuando: Date.now(), equipos });
+            return equipos.length ? equipos : (c?.equipos || []);
+        } catch (_) { return c?.equipos || []; }
     }));
-    equiposCache = { cuando: Date.now(), lista: listas.flat() };
-    return equiposCache.lista;
+    return listas.flat();
 }
 
 async function buscarTsdb(texto: string) {
