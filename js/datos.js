@@ -816,8 +816,10 @@
         }
 
         function temasDisponibles() {
-            // «fundador.», solo socios; «oliva.», quien ha invitado a un amigo o ha entrado invitado (js/invitar.js).
-            return THEMES.filter(t => (t !== 'fundador' || suscripcionActual?.estado === 'fundador') && (t !== 'oliva' || (typeof temaAmigosDesbloqueado === 'function' && temaAmigosDesbloqueado())));
+            // Los socios fundadores y la cuenta del creador tienen todos. Si no: «fundador.», solo socios; «oliva.», quien
+            // ha invitado a un amigo o ha entrado invitado (js/invitar.js).
+            if (suscripcionActual?.estado === 'fundador' || cuentaDesarrollador) return [...THEMES];
+            return THEMES.filter(t => t !== 'fundador' && (t !== 'oliva' || (typeof temaAmigosDesbloqueado === 'function' && temaAmigosDesbloqueado())));
         }
 
         function toggleTheme() {

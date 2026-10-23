@@ -46,8 +46,9 @@
                 saveVaultData();
             }
 
-            // Inicializar devModeActive = false (siempre empieza desactivado)
-            devModeActive = false;
+            // El modo desarrollador empieza encendido solo en la cuenta del creador (se recuerda en la cuenta).
+            devModeActive = cuentaDesarrollador;
+            document.body.classList.toggle('dev-mode', devModeActive);
 
             if (window.innerWidth <= 768) {
                 document.querySelector('.menu-hamburger').style.display = 'block';

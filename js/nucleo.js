@@ -209,6 +209,7 @@
                 return;
             }
             suscripcionActual = sub;
+            cuentaDesarrollador = user.user_metadata?.desarrollador === true;
             try {
                 if (localStorage.getItem('bitacora-actividad') !== todayISO()) {
                     localStorage.setItem('bitacora-actividad', todayISO());
@@ -216,8 +217,8 @@
                 }
             } catch (e) { /* sin almacenamiento */ }
             // Sin el tema «oliva.» desbloqueado (p. ej. otra cuenta en este dispositivo), vuelve al de por defecto.
-            (sub.estado === 'prueba' ? Promise.resolve() : cargarInvitacion(user)).then(() => { if (temaActual() === 'oliva' && !temaAmigosDesbloqueado()) aplicarClasesTema('asfalto'); }).catch(e => console.error(e));
-            if (sub.estado !== 'fundador' && temaActual() === 'fundador') aplicarClasesTema('asfalto');
+            (sub.estado === 'prueba' ? Promise.resolve() : cargarInvitacion(user)).then(() => { if (temaActual() === 'oliva' && !temasDisponibles().includes('oliva')) aplicarClasesTema('asfalto'); }).catch(e => console.error(e));
+            if (!temasDisponibles().includes('fundador') && temaActual() === 'fundador') aplicarClasesTema('asfalto');
             if (sessionStorage.getItem('bitacoraPlanIntencion') === 'fundador' && sub.estado !== 'fundador') {
                 sessionStorage.removeItem('bitacoraPlanIntencion');
                 setTimeout(() => startStripeCheckout('fundador'), 1500);
@@ -809,6 +810,9 @@
             programados: []
         };
         let devModeActive = false;
+        // La cuenta del creador: la contraseña de desarrollador se pone una vez y queda en la cuenta
+        // (user_metadata.desarrollador), en todos sus dispositivos. Enciende el modo desarrollador y todos los temas.
+        let cuentaDesarrollador = false;
         // Oculta las cifras del dashboard financiero. Se guarda en la nube
         // (no en localStorage) para que viaje entre dispositivos.
         let blurFinances = false;

@@ -325,6 +325,7 @@
                 devModeActive = true;
                 document.body.classList.add('dev-mode');
                 try { localStorage.setItem('bitacora-uso-no-contar', '1'); } catch (e) {}
+                marcarCuentaDesarrollador(true);
                 render();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {
@@ -336,11 +337,17 @@
         // ============================================================
         //  MODE DEVELOPER GLOBAL - CONTRASEÑA EN SUPABASE - CORREGIDO
         // ============================================================
+        async function marcarCuentaDesarrollador(si) {
+            cuentaDesarrollador = si;
+            try { await sb.auth.updateUser({ data: { desarrollador: si } }); } catch (e) { console.error(e); }
+        }
+
         async function toggleDeveloperMode() {
             if (devModeActive) {
-                // Desactivar
+                // Desactivar (también en la cuenta: para volver hará falta la contraseña otra vez)
                 devModeActive = false;
                 document.body.classList.remove('dev-mode');
+                marcarCuentaDesarrollador(false);
                 render();
                 showToast('Modo desarrollador desactivado');
                 return;
@@ -403,6 +410,7 @@
                 devModeActive = true;
                 document.body.classList.add('dev-mode');
                 try { localStorage.setItem('bitacora-uso-no-contar', '1'); } catch (e) {}
+                marcarCuentaDesarrollador(true);
                 render();
                 showCenteredMessage('Modo desarrollador activado');
             } catch (e) {

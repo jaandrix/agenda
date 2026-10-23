@@ -133,7 +133,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   hereda todo lo de papel y añade su paleta). Variables CSS en `:root`, `body.papel` y
   `body.papel.acuarela`; los colores por elemento de teja están al final de
   `styles.css` ("TEMA TEJA"). Se elige en Ajustes (`setTheme`). Hay un cuarto tema, "fundador" (dorado), solo
-  para socios fundadores, y "oliva" (marfil, oliva y ciruela; `body.papel.oliva`, al final de styles.css) para quien invita a un amigo o entra invitado (`temasDisponibles()`, `temaAmigosDesbloqueado()`). **Al añadir un tema** hay que tocar `THEMES` /
+  para socios fundadores, y "oliva" (marfil, oliva y ciruela; `body.papel.oliva`, al final de styles.css) para quien invita a un amigo o entra invitado (`temasDisponibles()`, `temaAmigosDesbloqueado()`). Los socios fundadores y la cuenta del creador tienen todos: la contraseña de desarrollador se pone una vez y queda en la cuenta (`user_metadata.desarrollador`, `cuentaDesarrollador`, `marcarCuentaDesarrollador` en vault.js), con el modo desarrollador encendido al entrar en cualquier dispositivo. **Al añadir un tema** hay que tocar `THEMES` /
   `THEME_CLASSES` (datos.js), las muestras de `renderSelectorTema` y de `renderMobileMenu` (nucleo.js)
   y el script en línea de `index.html`: si falta una muestra, la PWA se queda en negro.
 
