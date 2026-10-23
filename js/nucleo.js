@@ -1895,6 +1895,7 @@
             }).join('');
             return `${renderMobileCabecera('eventos', prox.length ? `el próximo, ${eventCountdownLabel(prox[0].date).toLowerCase()}.` : 'nada a la vista.')}
                 <button class="m-boton m-boton-acento m-boton-ancho" onclick="openNewEntry('event')">+ evento.</button>
+                ${renderPartidosEventos(true)}
                 ${lista || '<div class="m-vacio">ningún evento por venir.</div>'}
                 ${pasados.length ? `<div class="m-bloque-cab"><div class="m-etiqueta">pasados.</div></div><div class="m-pasados">${pasados.map(fila).join('')}</div>` : ''}`;
         }

@@ -243,6 +243,7 @@ const GUIA = [
         lema: 'Planes con fecha, hora y lugar.',
         intro: 'Conciertos, citas, partidos, quedadas, médicos, vuelos... cada evento con su tipo e icono.',
         botones: [
+            [guiaBoton('tus equipos.'), 'Los próximos partidos de los equipos que sigues (Ajustes, «lo que bitácora sabe sola.»). Tócalo para apuntarlo como evento tuyo o para ocultarlo; con «elegir.» añades o quitas equipos.'],
             [guiaBoton('filtro.'), 'Muestra solo un tipo: social, teatro, cine, concierto, estudios, trabajo, salud, hogar, viajes, otro o deportes (con fútbol, baloncesto, F1 y MotoGP).'],
             [guiaBoton('buscar...'), 'Por título o lugar.'],
             [guiaBoton('importar calendario.'), 'Trae otro calendario: sube el archivo .ics que exportan Google, Apple u Outlook, o pega su enlace (en Google Calendar, «Dirección secreta en formato iCal»; también los calendarios de equipos, ligas o la universidad). Antes de importar te enseña cuántos eventos hay y eliges si solo de hoy en adelante o todo; las repeticiones se desdoblan para los próximos 12 meses y no se duplica nada si lo vuelves a importar. Para cualquier otro formato (una captura, un PDF), copia las instrucciones para una IA y pega lo que te devuelva. También está en Ajustes → tus datos.'],

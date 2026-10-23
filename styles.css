@@ -9177,3 +9177,16 @@ body:not(.papel) .negativo, body:not(.papel) .social-grupo-saldo.negativo { colo
 body:not(.papel) .event-hero-multi-meta, body:not(.papel) .event-hero-multi-col-label, body:not(.papel) .event-hero-multi-empty, body:not(.papel) .event-hero-flat .event-hero-kicker { color:#bdbcb0; }
 body:not(.papel) .settings-subscription-card-legado .settings-subscription-status { color:#ff8a63; }
 .ajuste-fila-switch { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:14px; color:var(--text-secondary); }
+
+/* Eventos: los próximos partidos de tus equipos (servicios.js). */
+.partidos-eventos { max-width:980px; margin:0 0 22px; }
+.partidos-cab { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+.partidos-titulo { font-size:15px; font-weight:800; color:var(--text-primary); }
+.partidos-fila { display:flex; align-items:center; gap:14px; width:100%; padding:10px 2px; border:0; border-bottom:1px solid var(--border); background:none; color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; }
+.partidos-fila:last-child { border-bottom:0; }
+.partidos-fecha { flex-shrink:0; min-width:92px; font-size:13px; font-weight:700; color:var(--text-secondary); }
+.partidos-cuerpo { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.partidos-cuerpo b { font-size:14.5px; font-weight:700; }
+.partidos-cuerpo small { font-size:12.5px; color:var(--text-secondary); }
+.partidos-vacio { font-size:13px; color:var(--text-secondary); padding:6px 0; }
+.partidos-eventos.movil { margin:4px 0 8px; }

@@ -287,7 +287,7 @@ Calendario:
         function renderEvents() {
             const allEvents = entries.filter(e => e.type === 'event' && !isCalendarLogEntry(e));
             if (!allEvents.length) {
-                return `<div style="max-width:980px"><button class="btn-secondary btn-acento" style="width:auto" onclick="openEventsImportModal()">importar calendario.</button></div><div class="empty-state"><div class="empty-title">ningún evento todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Evento", o importa arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
+                return renderPartidosEventos() + `<div style="max-width:980px"><button class="btn-secondary btn-acento" style="width:auto" onclick="openEventsImportModal()">importar calendario.</button></div><div class="empty-state"><div class="empty-title">ningún evento todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Evento", o importa arriba</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
             const { items: events, banner } = applyMonthFilterTo('event', allEvents);
             if (!events.length) return banner + `<div class="empty-state"><div class="empty-title">ningún evento ese mes.</div></div>`;
@@ -348,7 +348,7 @@ Calendario:
                 }
             }
 
-            html += `
+            html += renderPartidosEventos() + `
                 <div class="events-toolbar">
                     <input type="text" id="events-search-input" class="modal-input" style="margin:0;max-width:260px" placeholder="Buscar por título o lugar..." value="${escapeHtml(eventsSearchQuery)}" oninput="setEventsSearchQuery(this.value)">
                     ${renderEventsFiltro()}
