@@ -267,7 +267,8 @@
         // Genera un PDF descargable con el resumen de vida laboral (jsPDF,
         // cargado por CDN). Reutiliza los mismos cálculos que la vista en
         // pantalla para que ambos coincidan siempre.
-        function generateWorkResumePDF() {
+        async function generateWorkResumePDF() {
+            try { await cargarJsPDF(); } catch (e) { /* lo avisa la línea de abajo */ }
             if (typeof window.jspdf === 'undefined') { showToast('No se pudo cargar el generador de PDF', true); return; }
             const work = entries.filter(e => e.type === 'work');
             if (!work.length) { showToast('Añade primero experiencia laboral', true); return; }
@@ -493,6 +494,7 @@
             const file = event.target.files[0];
             event.target.value = '';
             if (!file) return;
+            try { await cargarScript(PDFJS_URL); } catch (e) { /* lo avisa la línea de abajo */ }
             if (typeof pdfjsLib === 'undefined') { showToast('No se pudo cargar el lector de PDF', true); return; }
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 

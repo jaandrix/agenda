@@ -224,7 +224,7 @@ async function guardarYGenerarCv() {
         if (!w) return;
         w.cvFunciones = d.funciones; w.cvAprendido = d.aprendido; w.cvHabilidades = d.habilidades;
     });
-    try { generarPdfCv(); }
+    try { await cargarJsPDF(); generarPdfCv(); }
     catch (e) { console.error(e); showToast('No se pudo generar el PDF', true); return; }
     closeModal();
     showToast('CV descargado');

@@ -36,18 +36,41 @@ self.addEventListener('activate', (event) => {
 // sea una respuesta normal y no una opaca (que en iPhone ocupa muchísimo).
 const CDN_GUARDADOS = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
+// Lo que no cambia nunca va primero a la copia guardada: los archivos de la app con versión (?v=, que se sube en
+// cada publicación), las librerías con versión exacta y las tipografías. Antes todo iba «red primero» y sin caché,
+// así que cada vez que se abría la app se volvían a bajar los 46 archivos de JavaScript y los estilos.
+const fijo = (url, propio) => (propio && url.searchParams.has('v')) || url.hostname === 'fonts.gstatic.com' ||
+    (!propio && /@\d+\.\d+\.\d+|\/\d+\.\d+\.\d+\//.test(url.pathname));
+
+async function guardarCopia(request, response, url, propio) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response);
+    // De un archivo propio con versión solo se queda la última: las copias viejas se borran.
+    if (propio && url.searchParams.has('v')) {
+        for (const vieja of await cache.keys()) {
+            const u = new URL(vieja.url);
+            if (u.pathname === url.pathname && u.origin === url.origin && u.searchParams.get('v') !== url.searchParams.get('v')) cache.delete(vieja);
+        }
+    }
+}
+
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     if (event.request.method !== 'GET') return;
     const propio = url.origin === self.location.origin;
     if (!propio && !CDN_GUARDADOS.includes(url.hostname)) return;
 
+    if (fijo(url, propio)) {
+        event.respondWith(caches.match(event.request).then(guardada => guardada || fetch(event.request).then((response) => {
+            if (response.ok) guardarCopia(event.request, response.clone(), url, propio);
+            return response;
+        })));
+        return;
+    }
+
     event.respondWith(
         fetch(event.request, propio ? { cache: 'no-store' } : undefined).then((response) => {
-            if (response.ok) {
-                const copy = response.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-            }
+            if (response.ok) guardarCopia(event.request, response.clone(), url, propio);
             return response;
         }).catch(async () => {
             const guardada = await caches.match(event.request);

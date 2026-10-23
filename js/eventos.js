@@ -499,11 +499,15 @@ Calendario:
         // ============================================================
         const ENTRADA_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M8 22h84v19a9 9 0 0 0 0 18v19H8V59a9 9 0 0 0 0-18zM60 30v8h7v-8zm0 16v8h7v-8zm0 16v8h7v-8z"/></svg>';
         const SCRIPTS_CARGADOS = {};
+        // jsPDF y pdf.js ya no se cargan al abrir la app (eran ~700 KB que solo hacen falta al exportar o leer un PDF).
+        const JSPDF_URL = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+        const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        const cargarJsPDF = () => cargarScript(JSPDF_URL);
 
         function cargarScript(url) {
             if (!SCRIPTS_CARGADOS[url]) SCRIPTS_CARGADOS[url] = new Promise((resolve, reject) => {
                 const sc = document.createElement('script');
-                sc.src = url; sc.onload = resolve;
+                sc.src = url; sc.crossOrigin = 'anonymous'; sc.onload = resolve;
                 sc.onerror = () => { delete SCRIPTS_CARGADOS[url]; reject(new Error('No se pudo cargar ' + url)); };
                 document.head.appendChild(sc);
             });
