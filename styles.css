@@ -26,7 +26,7 @@
             --border-strong: #5a5850;
             --text-primary: #efede3;
             --text-secondary: #a9a89c;
-            --text-muted: #79776c;
+            --text-muted: #9b998f;
             --accent: #efede3;
             --accent-contrast: #302f2c;
             --badge-pending-bg: #47453c;
@@ -4825,7 +4825,7 @@ details[open] > .studies-editorial-group-label::before { content:'– '; }
 .studies-day-head { font-size:10px; font-weight:700; text-transform:lowercase; letter-spacing:0; color:var(--text-secondary); text-align:center; padding:8px 4px; }
 .studies-schedule-body { display:flex; position:relative; }
 .studies-schedule-hours { width:44px; flex-shrink:0; }
-.studies-hour-label { font-size:10px; color:var(--text-muted); text-align:right; padding:2px 6px 0 0; box-sizing:border-box; border-top:1px solid var(--border); }
+.studies-hour-label { font-size:10px; color:var(--text-secondary); text-align:right; padding:2px 6px 0 0; box-sizing:border-box; border-top:1px solid var(--border); }
 .studies-schedule-days { flex:1; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); position:relative; }
 .studies-hour-line { position:absolute; left:0; right:0; height:0; border-top:1px solid var(--border); pointer-events:none; }
 .studies-day-col { position:relative; border-left:1px solid var(--border); }
@@ -7915,7 +7915,7 @@ button.landing-about-link { border:0; background:none; font-family:inherit; curs
    ============================================================ */
 body.mobile-standalone:not(.papel):not(.fundador), body.pwa:not(.papel):not(.fundador) {
     --bg-app:#121211; --bg-card:#1d1d1b; --bg-card-hover:#262624; --bg-input:#1f1f1d; --bg-modal:#1d1d1b;
-    --text-primary:#f4f2eb; --text-secondary:#a29f96; --text-muted:#6d6a63;
+    --text-primary:#f4f2eb; --text-secondary:#a29f96; --text-muted:#8a877f;
     --border:rgba(244,242,235,.08); --border-strong:rgba(244,242,235,.16);
     --accent:#f4f2eb; --accent-contrast:#121211; --m-punto:#2a2a27; --m-superficie:#1d1d1b;
 }
@@ -9168,3 +9168,11 @@ body.oliva .m-punto.sel { box-shadow:0 0 0 2px var(--bg-app), 0 0 0 4px #667447;
 .fin-prueba-cifras b { font-size:28px; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:var(--text-primary); }
 .fin-prueba-cifras span { font-size:12.5px; line-height:1.3; color:var(--text-secondary); }
 .fin-prueba-nota { margin:0 0 12px; font-size:13px; color:var(--text-secondary); }
+
+/* Accesibilidad (23-10, revisión con axe): en los temas oscuros, los colores que no llegaban a 4,5:1. El gris
+   apagado (--text-muted) ya se subió arriba; aquí van el verde y el rojo de los saldos, los textos secundarios
+   sobre las tarjetas más claras y el naranja de la suscripción. */
+body:not(.papel) .positivo, body:not(.papel) .social-grupo-saldo.positivo { color:#4cc47a; }
+body:not(.papel) .negativo, body:not(.papel) .social-grupo-saldo.negativo { color:#f08a8a; }
+body:not(.papel) .event-hero-multi-meta, body:not(.papel) .event-hero-multi-col-label, body:not(.papel) .event-hero-multi-empty, body:not(.papel) .event-hero-flat .event-hero-kicker { color:#bdbcb0; }
+body:not(.papel) .settings-subscription-card-legado .settings-subscription-status { color:#ff8a63; }

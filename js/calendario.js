@@ -635,9 +635,9 @@
 
             let html = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                <button class="cal-nav-arrow" onclick="changeMonth(-1)"><i class='ico ico-izq' aria-hidden=true></i></button>
+                <button class="cal-nav-arrow" onclick="changeMonth(-1)" aria-label="Mes anterior"><i class='ico ico-izq' aria-hidden=true></i></button>
                 <span style="font-size:17px;font-weight:600;color:var(--text-primary)">${CAL_MONTH_NAMES[calMonth]} ${calYear}</span>
-                <button class="cal-nav-arrow" onclick="changeMonth(1)"><i class='ico ico-der' aria-hidden=true></i></button>
+                <button class="cal-nav-arrow" onclick="changeMonth(1)" aria-label="Mes siguiente"><i class='ico ico-der' aria-hidden=true></i></button>
             </div>
             ${renderLineaFestivos('cal-linea')}
             <div class="vt-interior" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;

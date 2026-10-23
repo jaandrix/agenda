@@ -1006,6 +1006,9 @@
         function initMobileShell() {
             mobileStandaloneActive = isMobileStandaloneMode();
             document.body.classList.toggle('mobile-standalone', mobileStandaloneActive);
+            // En el móvil la zona principal es el <main> del propio #mobile-shell: el #content de escritorio no cuenta.
+            const contenido = document.getElementById('content');
+            if (mobileStandaloneActive) contenido?.removeAttribute('role'); else contenido?.setAttribute('role', 'main');
         }
 
         // Sin el aviso de privacidad de Finanzas que pone switchView: en el

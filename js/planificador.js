@@ -171,7 +171,7 @@
                         return `${n === sinHora.length && sinHora.length && items.length ? '<div class="planner-sin-hora-titulo">con hora.</div>' : ''}
                         <div class="planner-item ${isPast && !it.arrastrado ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''} ${it.arrastrado ? 'planner-item-arrastrado' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}">
                             <div class="planner-item-time">${it.time ? escapeHtml(it.time) : '—'}</div>
-                            <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})">
+                            <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})" aria-label="${escapeHtml(it.title)}: hecha">
                             <div class="planner-item-body">
                                 <div class="planner-item-title"><span ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''} ${it.valorarPeliculaId ? `class="planner-item-enlace" onclick="openEditEntry('${it.valorarPeliculaId}')" title="Abrir la película para valorarla"` : `class="planner-item-editar" onclick="openAddPlannerItem('${it.id}')" title="Editar"`}>${escapeHtml(it.title)}</span>${it.prioridad ? `<i class="planner-prioridad">${PLANNER_PRIORIDADES[it.prioridad]}</i>` : ''}</div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
@@ -232,7 +232,7 @@
         function renderBacklogRow(it) {
             return `
                 <div class="planner-backlog-row ${it.done ? 'done' : ''}">
-                    <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="toggleBacklogTaskDone('${it.id}')">
+                    <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="toggleBacklogTaskDone('${it.id}')" aria-label="${escapeHtml(it.title)}: hecha">
                     <div class="planner-backlog-row-body">
                         <div class="planner-backlog-row-title">${escapeHtml(it.title)}</div>
                         ${it.notes ? `<div class="planner-backlog-row-notes">${escapeHtml(it.notes)}</div>` : ''}
