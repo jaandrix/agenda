@@ -3,7 +3,7 @@
 //  Cada cuenta tiene su código (Ajustes → cuenta → «invita a un amigo.»)
 //  y un enlace appbitacora.es/?amigo=CODIGO. Quien se da de alta con él
 //  tiene 30 días de prueba en vez de 14, y los dos desbloquean el tema
-//  «amigos.». El código viaja en los datos del alta (user_metadata), así
+//  «oliva.». El código viaja en los datos del alta (user_metadata), así
 //  vale aunque se confirme el correo en otro dispositivo, y se aplica al
 //  entrar por primera vez (usar_codigo_invitacion). Ver
 //  supabase/sql/invitaciones.sql.
@@ -45,7 +45,7 @@ async function cargarInvitacion(user) {
     return invitacion;
 }
 
-// El tema «amigos.» lo desbloquean quien invita (con al menos un amigo dentro) y quien entra con un código.
+// El tema «oliva.» lo desbloquean quien invita (con al menos un amigo dentro) y quien entra con un código.
 function temaAmigosDesbloqueado() { return invitacion.invitado || invitacion.amigos > 0; }
 
 async function loadInvitarAjustes() {
@@ -59,7 +59,7 @@ async function loadInvitarAjustes() {
     const s = suscripcionActual;
     const puedeUsar = s?.estado === 'prueba' && !invitacion.invitado;
     body.innerHTML = `
-        <div class="invitar-codigo"><b>${escapeHtml(fila.codigo)}</b><span>${fila.amigos ? `${fila.amigos} ${fila.amigos === 1 ? 'amigo ha entrado' : 'amigos han entrado'} con tu código.` : 'Nadie ha entrado aún con tu código.'}</span></div>
+        <div class="invitar-codigo"><b>${escapeHtml(fila.codigo)}</b><span>${fila.amigos ? `${fila.amigos} ${fila.amigos === 1 ? 'amigo ha entrado' : 'amigos han entrado'} con tu código.` : 'Nadie ha entrado aún con tu código.'}${temaAmigosDesbloqueado() ? ' El tema «oliva.» ya es tuyo: lo tienes en Apariencia.' : ''}</span></div>
         <div class="ajuste-botones">
             <button class="btn-secondary" style="width:auto" onclick="compartirEnlaceAmigo('${jsAttr(enlace)}')">${navigator.share ? 'compartir enlace.' : 'copiar enlace.'}</button>
         </div>

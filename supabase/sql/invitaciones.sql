@@ -1,6 +1,6 @@
 -- Invitar a un amigo (23-10-2026). Cada cuenta tiene un código propio (AMIGO-XXXX-XXXX). Quien se da de alta
 -- con un código tiene 30 días de prueba en vez de 14, y cuando eso pasa los dos (quien invita y quien entra)
--- desbloquean el tema «amigos.». Nadie escribe en las tablas directamente: solo las funciones de abajo.
+-- desbloquean el tema «oliva.». Nadie escribe en las tablas directamente: solo las funciones de abajo.
 -- Ejecutar en el SQL Editor de Supabase. También cambia tiene_acceso() para contar los 30 días.
 
 create table if not exists public.invitaciones_codigos (

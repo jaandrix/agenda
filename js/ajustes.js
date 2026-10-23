@@ -571,7 +571,7 @@
                     <div class="ajustes-seccion" data-grupo="cuenta"><div class="ajustes-grupo" id="ajg-cuenta">cuenta.</div>
                     <div class="ajustes-rejilla">
                         ${bloqueAjuste('settings-subscription-section', 'suscripcion', 'suscripción.', 'Tu plan y su renovación.', `<div id="settings-subscription-body" class="ajuste-cargando">Cargando...</div>`)}
-                        ${bloqueAjuste('settings-invitar-section', 'amigos', 'invita a un amigo.', `Con tu enlace, tu amigo tiene ${DIAS_PRUEBA_AMIGO} días de prueba en vez de 14 y, cuando entre, los dos desbloqueáis el tema «amigos.».`, `<div id="settings-invitar-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${bloqueAjuste('settings-invitar-section', 'amigos', 'invita a un amigo.', `Con tu enlace, tu amigo tiene ${DIAS_PRUEBA_AMIGO} días de prueba en vez de 14 y, cuando entre, los dos desbloqueáis el tema «oliva.».`, `<div id="settings-invitar-body" class="ajuste-cargando">Cargando...</div>`)}
                         ${bloqueAjuste('settings-account-section', 'datos', 'tus datos.', 'Todo lo que hay en Bitácora (entradas, notas, finanzas...) en un archivo JSON: para guardarlo aparte o traerlo de vuelta.', `
                             <div class="ajuste-botones">
                                 <button class="btn-secondary" style="width:auto" onclick="exportData()">exportar.</button>

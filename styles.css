@@ -7919,11 +7919,11 @@ body.mobile-standalone:not(.papel):not(.fundador), body.pwa:not(.papel):not(.fun
     --border:rgba(244,242,235,.08); --border-strong:rgba(244,242,235,.16);
     --accent:#f4f2eb; --accent-contrast:#121211; --m-punto:#2a2a27; --m-superficie:#1d1d1b;
 }
-body.mobile-standalone.papel:not(.acuarela):not(.pizarra), body.pwa.papel:not(.acuarela):not(.pizarra) {
+body.mobile-standalone.papel:not(.acuarela):not(.pizarra):not(.oliva), body.pwa.papel:not(.acuarela):not(.pizarra):not(.oliva) {
     --bg-app:#efeee9; --bg-card:#ffffff; --bg-card-hover:#f6f5f1; --bg-modal:#ffffff;
     --border:rgba(22,21,20,.07); --m-superficie:#ffffff; --m-punto:#e2e0d9;
 }
-body.mobile-standalone.acuarela, body.pwa.acuarela, body.mobile-standalone.fundador, body.pwa.fundador, body.mobile-standalone.pizarra, body.pwa.pizarra { --m-superficie:var(--bg-card); }
+body.mobile-standalone.acuarela, body.pwa.acuarela, body.mobile-standalone.fundador, body.pwa.fundador, body.mobile-standalone.pizarra, body.pwa.pizarra, body.mobile-standalone.oliva, body.pwa.oliva { --m-superficie:var(--bg-card); }
 body.mobile-standalone { background:var(--bg-app); }
 
 /* Más rápido al tocar: sin el retraso del doble toque ni el destello gris. */
@@ -9085,3 +9085,79 @@ body.con-ejemplo.mobile-standalone .m-app { padding-bottom:calc(env(safe-area-in
 .invitar-codigo span { font-size:13px; color:var(--text-secondary); }
 .invitar-usar { display:flex; gap:8px; align-items:center; }
 .invitar-usar input { flex:1; text-transform:uppercase; }
+
+
+/* ============================================================
+   TEMA OLIVA (se desbloquea al invitar a un amigo o al entrar invitado;
+   paleta «oliva y ciruela» de Alejandro, 23-10). Marfil de fondo, oliva
+   para navegación, botones y selección, ciruela para los detalles y lo
+   especial, salvia para lo seleccionado. Hereda todo lo de papel.
+   ============================================================ */
+body.papel.oliva {
+    --bg-app: #F7F5EE;
+    --bg-sidebar: #536039;
+    --bg-card: #EFF1E8;
+    --bg-card-hover: #E6EADC;
+    --bg-input: #FFFEFA;
+    --bg-modal: #FFFEFA;
+    --bg-fab: #667447;
+    --border: #D8DACE;
+    --border-strong: #C4C9B6;
+    --text-primary: #252A22;
+    --text-secondary: #687064;
+    --text-muted: #8C9287;
+    --accent: #667447;
+    --accent-contrast: #FFFEFA;
+    --badge-pending-bg: #EAD5DF;
+    --badge-pending-text: #6E3B57;
+    --badge-progress-bg: #DDE4CE;
+    --badge-progress-text: #3F4A2A;
+    --badge-done-bg: #667447;
+    --badge-done-text: #FFFEFA;
+    --badge-default-bg: #EFF1E8;
+    --badge-default-text: #252A22;
+    --shadow: 0 6px 22px rgba(37,42,34,0.08);
+    --landing-grid-line: rgba(37,42,34,0.06);
+    --m-acento: #8B4F70;
+    --m-sobre-acento: #FFFEFA;
+    --m-punto: #DDE4CE;
+}
+body.papel.oliva .m-hero-dia, body.papel.oliva .m-etiqueta { color:#687064; }
+
+/* Escritorio: la barra lateral en oliva oscuro, con letras claras. */
+body.papel.oliva #sidebar {
+    --text-primary: #FFFEFA;
+    --text-secondary: #DDE4CE;
+    --text-muted: #AEB79C;
+    --bg-card: #667447;
+    --bg-card-hover: #667447;
+    --border: rgba(255,254,250,.12);
+    --border-strong: rgba(255,254,250,.22);
+    --accent: #FFFEFA;
+    --accent-contrast: #536039;
+    background: #536039;
+    color: #FFFEFA;
+}
+
+/* Móvil: fondo marfil y tarjetas en blanco salvia; la barra de abajo en oliva. */
+body.mobile-standalone.oliva, body.pwa.oliva { --m-superficie:#EFF1E8; --m-punto:#DDE4CE; }
+body.mobile-standalone.oliva .m-tabbar {
+    background:#536039; border-color:#536039;
+    --text-primary:#FFFEFA; --text-secondary:#DDE4CE; --text-muted:#AEB79C;
+}
+body.mobile-standalone.oliva .m-tab-mas { background:#667447; color:#FFFEFA; border-color:#FFFEFA; }
+body.mobile-standalone.oliva .m-tab-letra { background:#DDE4CE; color:#536039; }
+body.mobile-standalone.oliva .m-tab.activa .m-tab-letra { background:#FFFEFA; }
+
+/* El botón de apuntar, en oliva; los sellos del progreso, en ciruela. */
+body.oliva #fab { background:#667447; color:#FFFEFA; }
+body.oliva #fab.fab-pulse::after { border-color:#667447; }
+body.oliva .planner-stamp-bar { background:#536039; }
+body.oliva .planner-stamp-label { color:#DDE4CE; }
+body.oliva .planner-stamp-count { color:#FFFEFA; }
+body.oliva .planner-stamp-dot { border-color:#AEB79C; }
+body.oliva .planner-stamp-dot.filled { background:#EAD5DF; border-color:#EAD5DF; }
+/* Lo seleccionado, en oliva (como en la referencia del tema). */
+body.oliva .m-dia-pill.sel { background:#667447; }
+body.oliva .m-dia-pill.sel small, body.oliva .m-dia-pill.sel b { color:#FFFEFA; }
+body.oliva .m-punto.sel { box-shadow:0 0 0 2px var(--bg-app), 0 0 0 4px #667447; }
