@@ -9190,3 +9190,7 @@ body:not(.papel) .settings-subscription-card-legado .settings-subscription-statu
 .partidos-cuerpo small { font-size:12.5px; color:var(--text-secondary); }
 .partidos-vacio { font-size:13px; color:var(--text-secondary); padding:6px 0; }
 .partidos-eventos.movil { margin:4px 0 8px; }
+
+/* «auto.»: lo que pone Bitácora sola (los partidos de tus equipos), con el mismo aire que la etiqueta «qr.». */
+.etiqueta-auto { display:inline-flex; align-items:center; flex-shrink:0; margin-left:8px; padding:2px 8px; border:1px dashed var(--border-strong); border-radius:8px; font-size:11px; font-weight:700; line-height:1.5; color:var(--text-secondary); vertical-align:2px; white-space:nowrap; }
+#mobile-shell .m-fila > .etiqueta-auto { align-self:center; margin-left:0; min-height:28px; padding:4px 10px; font-size:12px; }

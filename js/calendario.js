@@ -881,7 +881,7 @@
                 <div class="entry-item" data-open-entry="${e.id}">
                     <div class="entry-color-dot" style="background:${color}"></div>
                     <div class="entry-info">
-                        <div class="entry-title">${titleHtml}</div>
+                        <div class="entry-title">${titleHtml}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
                         <div class="entry-meta">${metaHtml}</div>
                     </div>
                     <div class="entry-actions">
@@ -929,7 +929,7 @@
                 <div class="day-entry-card" data-open-entry="${e.id}">
                     <div class="day-entry-dot" style="background:${color}"></div>
                     <div class="day-entry-body">
-                        <div class="day-entry-title">${titleHtml}</div>
+                        <div class="day-entry-title">${titleHtml}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
                         <div class="day-entry-meta">${metaHtml}</div>
                     </div>
                     <button class="day-entry-delete" title="Eliminar" onclick="event.stopPropagation();deleteEntry('${e.id}')"><i class='ico ico-x' aria-hidden=true></i></button>

@@ -541,7 +541,7 @@
                 const { fecha, hora } = servDiaLocal(p.fecha);
                 const id = 'srv_p_' + p.id;
                 if (fecha !== iso || ocultos.has(id) || apuntados.has(id)) return;
-                res.push({ id, type: 'event', eventType: 'deportes', title: p.local ? `${eq.corto} - ${p.rival}` : `${p.rival} - ${eq.corto}`, date: iso, time: p.horaConfirmada ? hora : '', place: p.estadio || '', notes: p.competicion || '', categoryId: getCategoryIdForType('event'), tags: [], _servicio: 'partido', _datos: { ...p, equipo: eq } });
+                res.push({ id, type: 'event', eventType: eq.deporte === 'basketball' ? 'baloncesto' : 'futbol', title: p.local ? `${eq.corto} - ${p.rival}` : `${p.rival} - ${eq.corto}`, date: iso, time: p.horaConfirmada ? hora : '', place: p.estadio || '', notes: p.competicion || '', categoryId: getCategoryIdForType('event'), tags: [], _servicio: 'partido', _datos: { ...p, equipo: eq } });
             }));
             if (estrenosActivos()) seriesSeguidas().forEach(s => {
                 const n = estrenoDe(s);
@@ -555,6 +555,11 @@
             return res;
         }
 
+        // Los partidos que pone Bitácora por seguir a un equipo (y los que se apuntan desde ellos) llevan la etiqueta
+        // «auto.», como lo demás que se añade solo.
+        const esPartidoAuto = e => e?._servicio === 'partido' || /^srv_p_/.test(e?.servicioId || '');
+        const ETIQUETA_AUTO = '<span class="etiqueta-auto" title="Lo añade Bitácora porque sigues a este equipo">auto.</span>';
+
         // Próximos partidos de tus equipos (los mismos que salen en el calendario), para el apartado Eventos: antes
         // solo se veían en el calendario y parecía que no habían entrado.
         function partidosProximos(dias = 30) {
@@ -567,7 +572,7 @@
             if (!(servicios.equipos || []).length) return '';
             const lista = partidosProximos().slice(0, 6);
             const fecha = iso => { const d = new Date(iso + 'T12:00:00'); return `${MOBILE_DIAS[d.getDay()]} ${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}`; };
-            const filas = lista.map(e => `<button class="partidos-fila" data-open-entry="${e.id}"><span class="partidos-fecha">${fecha(e.date)}.</span><span class="partidos-cuerpo"><b>${escapeHtml(e.title)}</b><small>${escapeHtml([e.time || 'hora por confirmar', e._datos?.competicion].filter(Boolean).join(', '))}</small></span></button>`).join('');
+            const filas = lista.map(e => `<button class="partidos-fila" data-open-entry="${e.id}"><span class="partidos-fecha">${fecha(e.date)}.</span><span class="partidos-cuerpo"><b>${escapeHtml(e.title)}${ETIQUETA_AUTO}</b><small>${escapeHtml([e.time || 'hora por confirmar', e._datos?.competicion].filter(Boolean).join(', '))}</small></span></button>`).join('');
             return `<section class="partidos-eventos ${movil ? 'movil' : ''}">
                 <div class="${movil ? 'm-bloque-cab' : 'partidos-cab'}"><div class="${movil ? 'm-etiqueta' : 'partidos-titulo'}">tus equipos.</div><button class="${movil ? 'm-mini' : 'btn-secondary'}" style="width:auto" onclick="openAjustesEquipos()">elegir.</button></div>
                 ${filas || `<div class="${movil ? 'm-vacio m-vacio-peque' : 'partidos-vacio'}">Cargando sus partidos... si no salen en un rato, ábrelo desde aquí.</div>`}

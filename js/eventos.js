@@ -435,7 +435,7 @@ Calendario:
                 <div class="event-sq-card ${isPast ? 'event-sq-card-past' : ''}" data-open-entry="${e.id}" data-categoria="${eventCategoria(e.eventType)}">
                     <div class="event-sq-icon">${icon}</div>
                     <div class="event-sq-body">
-                        <div class="event-sq-title">${escapeHtml(e.title)}</div>
+                        <div class="event-sq-title">${escapeHtml(e.title)}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
                         <div class="event-sq-meta"><span class="event-sq-dot" style="background:${color}"></span>${escapeHtml(typeLabel || e.place || 'Evento')}${e.time ? `,&nbsp;<em>${escapeHtml(e.time)}.</em>` : ''}</div>
                     </div>
                     ${e.entradas?.length && !isPast ? `<button class="event-sq-entrada" title="Ver entrada" onclick="event.stopPropagation();abrirEntradas('${e.id}')">${ENTRADA_ICONO}</button>` : ''}
