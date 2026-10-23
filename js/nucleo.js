@@ -1623,7 +1623,19 @@
             // Cinco categorías y el resto juntas; los tonos salen de la tinta del tema, sin colores por categoría.
             const top = orden.slice(0, 5);
             const resto = orden.slice(5).reduce((t, [, v]) => t + v, 0);
-            const filas = top.map(([id, total], k) => ({ nombre: (financeProCategoryById(id)?.name || 'sin categoría').toLowerCase(), total, tono: k }));
+            const filas = top.map(([id, total], k) => ({ id, nombre: (financeProCategoryById(id)?.name || 'sin categoría').toLowerCase(), total, tono: k }));
+            // Presupuesto consumido por categoría (sin viajes ni ahorro, como los presupuestos), con una marca de
+            // dónde «tocaría» ir a día de hoy si se gastara al mismo ritmo todo el mes.
+            const limites = typeof asistLimitesDelMes === 'function' ? asistLimitesDelMes(mes) : {};
+            const gastoPresu = {};
+            financePro.transactions.forEach(x => { if (x.type === 'expense' && !x.ahorro && !x.viaje && x.date.slice(0, 7) === mes) gastoPresu[x.category || ''] = (gastoPresu[x.category || ''] || 0) + (Number(x.amount) || 0); });
+            const hoyPct = Math.round(dia / diasMes * 100);
+            const barraPresu = f => {
+                const l = limites[f.id]?.limite;
+                if (!l) return '';
+                const g = gastoPresu[f.id] || 0, p = g / l;
+                return `<div class="m-encqsv-presu ${p > 1 ? 'pasado' : p * 100 > hoyPct + 10 ? 'rapido' : ''}"><i class="m-encqsv-presu-barra"><i style="width:${Math.min(100, Math.round(p * 100))}%"></i><b style="left:${hoyPct}%" aria-hidden="true"></b></i><span>${p > 1 ? `+${financeMoney(g - l)} sobre ${financeMoney(l)}` : `${Math.round(p * 100)} % de ${financeMoney(l)}`}</span></div>`;
+            };
             if (resto > 0) filas.push({ nombre: `otras ${orden.length - 5}`, total: resto, tono: 5 });
             const pct = v => totalCat ? Math.round(v / totalCat * 100) : 0;
             const hayViajes = financePro.transactions.some(x => x.type === 'expense' && x.viaje && x.date.slice(0, 7) === mes);
@@ -1633,7 +1645,7 @@
                     ${filas.length ? `<div class="m-encqsv-total"><b>${financeMoney(totalCat)}</b><span>${conViajes || !enViajes ? 'este mes.' : `este mes, sin ${financeMoney(enViajes)} de viajes.`}</span></div>
                     <div class="m-encqsv-tira" role="img" aria-label="${filas.map(f => `${escapeHtml(f.nombre)} ${pct(f.total)} %`).join(', ')}">${filas.map(f => `<i class="t${f.tono}" style="flex-grow:${f.total.toFixed(2)}"></i>`).join('')}</div>
                     <div class="m-encqsv-filas">${filas.map(f => `
-                        <div class="m-encqsv-fila"><i class="t${f.tono}" aria-hidden="true"></i><span class="m-encqsv-nombre">${escapeHtml(f.nombre)}.</span><span class="m-encqsv-pct">${pct(f.total)} %</span><span class="m-fila-cifra">${financeMoney(f.total)}</span></div>`).join('')}
+                        <div class="m-encqsv-fila"><i class="t${f.tono}" aria-hidden="true"></i><span class="m-encqsv-nombre">${escapeHtml(f.nombre)}.</span><span class="m-encqsv-pct">${pct(f.total)} %</span><span class="m-fila-cifra">${financeMoney(f.total)}</span>${f.id !== undefined ? barraPresu(f) : ''}</div>`).join('')}
                     </div>` : `<div class="m-vacio m-vacio-peque">este mes solo hay gastos de viaje.</div>`}
                 </div>` : '';
             const cargos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0).map(e => {
