@@ -39,7 +39,7 @@ const GUIA = [
         intro: 'Además del menú, Bitácora tiene un buscador universal y atajos de teclado pensados para ir de un apartado a otro en segundos.',
         botones: [
             [guiaBoton('Enter'), 'Abre «¿dónde quieres ir?»: escribe el nombre de un apartado, una pestaña (por ejemplo «películas» o «horario semanal») o una entrada, y salta a ella.'],
-            [guiaBoton('Espacio'), 'Abre la captura rápida para crear algo nuevo (ver «crear cosas»).'],
+            [guiaBoton('Espacio'), 'Abre Apuntar: escribe como hablas («cena con Marta el viernes a las 9») y Bitácora lo coloca donde toca.'],
             [guiaBoton('Esc'), 'Cierra lo que esté abierto. Si no hay nada abierto, pregunta si quieres cerrar sesión.'],
             [guiaBoton('Ctrl + ↑ / ↓'), 'Pasa al apartado anterior o siguiente del menú.'],
             [guiaBoton('?'), 'Arriba a la derecha: ayuda corta con los atajos y lo que es cada apartado, y acceso a esta guía.'],
@@ -53,8 +53,8 @@ const GUIA = [
         lema: 'Un solo gesto para apuntar cualquier cosa.',
         intro: 'Casi todo en Bitácora es una «entrada»: un evento, un libro, un viaje, un objetivo, un cumpleaños, un documento... Se crean todas igual.',
         pasos: [
-            'Pulsa el botón redondo del <b>rayo</b> (abajo a la derecha), <b>+ añadir.</b> (arriba) o la tecla <b>Espacio</b>.',
-            'Elige el tipo: escribe sus primeras letras («ev» para evento, «li» para libro...) y pulsa Enter.',
+            'Lo más rápido: <b>+ apuntar.</b> (abajo a la derecha) o la tecla <b>Espacio</b>, y escribe como hablas. Bitácora decide si es un evento, una tarea, un gasto...',
+            'Para elegir tú el tipo, pulsa <b>+ añadir.</b> (arriba). Elige el tipo: escribe sus primeras letras («ev» para evento, «li» para libro...) y pulsa Enter.',
             'Rellena el formulario. Los campos cambian según el tipo: un evento pide fecha, hora, lugar y aviso; un libro, autor y valoración.',
             'Pulsa <b>Guardar</b>. Aparecerá en su apartado y, si tiene fecha, en el calendario.',
         ],

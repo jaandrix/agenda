@@ -3049,8 +3049,8 @@
             closeCenteredMessage(overlay);
         });
 
-        // ENTER abre "¿dónde quieres ir?"; ESPACIO abre la captura rápida
-        // ("¿dónde quieres crear la entrada?") — mismas condiciones.
+        // ENTER abre "¿dónde quieres ir?"; ESPACIO abre Apuntar (el mismo que el + del móvil y «+ apuntar.»).
+        // Antes abría la captura rápida antigua («¿dónde quieres crear la entrada?»).
         document.addEventListener('keydown', function(e) {
             if (e.defaultPrevented || e.repeat) return;
             if (e.key === 'Enter') {
@@ -3060,7 +3060,7 @@
             } else if (e.key === ' ') {
                 if (!canUseGlobalShortcut()) return;
                 e.preventDefault();
-                openCommandPalette('create');
+                openApuntar();
             }
         });
 

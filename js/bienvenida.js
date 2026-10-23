@@ -73,7 +73,7 @@ function renderBienvenidaPaso() {
             <h2>apunta lo primero.</h2>
             <p>¿Qué tienes que hacer hoy? Lo pondremos en tu planificador. Es la forma más rápida de empezar a usar Bitácora.</p>
             <input id="bv-tarea" class="modal-input" value="${escapeHtml(b.tarea)}" placeholder="Llamar al dentista, entregar la práctica..." onkeydown="if(event.key==='Enter')bienvenidaIr(1)">
-            <div class="bienvenida-pista">Más tarde, la <b>captura rápida</b> (el botón del rayo, o la tecla espacio en el ordenador) te deja apuntar cualquier cosa desde cualquier sitio.</div>`;
+            <div class="bienvenida-pista">Más tarde, <b>apuntar</b> (el botón «+ apuntar.», el + del móvil o la tecla espacio en el ordenador) te deja apuntar cualquier cosa desde cualquier sitio.</div>`;
     } else if (paso === 'contigo') {
         const disp = esDispositivo();
         const instalada = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
