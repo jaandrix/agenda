@@ -132,9 +132,15 @@ function bienvenidaLeer() {
     if (tarea) b.tarea = tarea.value.trim();
 }
 
+// Al tocar un interruptor de la lista se repinta el paso, pero sin volver arriba: se guarda dónde estaba cada zona
+// con scroll (la hoja y la lista) y se devuelve ahí.
 function bienvenidaRepintar() {
     const el = document.getElementById('bienvenida');
-    if (el) el.innerHTML = renderBienvenidaPaso();
+    if (!el) return;
+    const zonas = [el.closest('.modal-sheet'), el, el.querySelector('.bienvenida-cuerpo'), el.querySelector('.bienvenida-lista')];
+    const antes = zonas.map(z => z?.scrollTop || 0);
+    el.innerHTML = renderBienvenidaPaso();
+    [el.closest('.modal-sheet'), el, el.querySelector('.bienvenida-cuerpo'), el.querySelector('.bienvenida-lista')].forEach((z, i) => { if (z && antes[i]) z.scrollTop = antes[i]; });
 }
 
 function bienvenidaIr(delta) {
@@ -159,9 +165,13 @@ async function terminarBienvenida(abrirGuia) {
     closeModal();
     renderAllNavs();
     render();
+    // En una cuenta recién creada, el calendario llegó a quedarse en blanco hasta recargar tras cargar la semana de
+    // ejemplo: se vuelve a pintar cuando la hoja ya se ha ido y tras el primer guardado.
+    setTimeout(() => { if (!modalEnPantalla()) render(); }, 350);
     if (abrirGuia) setTimeout(() => openGuia(), 150);
     else if (b.tarea) showToast('Apuntado en tu planificador de hoy');
     try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+    if (!modalEnPantalla()) render();
     if (b.nombre && !nombrePublico) {
         try {
             const { data: { user } } = await sb.auth.getUser();

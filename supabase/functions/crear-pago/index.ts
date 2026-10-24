@@ -26,20 +26,26 @@ const PAYMENT_LINKS: Record<string, string> = {
     anual: 'https://buy.stripe.com/6oUcN4bk58LAdez5vU8Zq01',
 };
 
-let precios: Record<string, string> | null = null;
+// Si los Payment Links no se encuentran (desactivados, o la clave de Stripe es de otro modo: prueba frente a real),
+// el cobro se crea con el importe dentro (IMPORTES), como el de socio fundador: antes salía «Precio no encontrado».
+// stripe-webhook solo mira el intervalo (mensual o anual), así que vale igual. Solo se recuerda lo encontrado.
+const IMPORTES: Record<string, { centimos: number; intervalo: 'month' | 'year' }> = { mensual: { centimos: 199, intervalo: 'month' }, anual: { centimos: 1899, intervalo: 'year' } };
+const precios: Record<string, string> = {};
 async function precioDe(plan: string) {
-    if (!precios) {
-        precios = {};
-        const links = await stripe.paymentLinks.list({ limit: 100 });
-        for (const [nombre, url] of Object.entries(PAYMENT_LINKS)) {
-            const link = links.data.find(l => l.url === url);
-            if (!link) continue;
-            const items = await stripe.paymentLinks.listLineItems(link.id, { limit: 1 });
-            const precio = items.data[0]?.price?.id;
-            if (precio) precios[nombre] = precio;
-        }
+    if (precios[plan]) return precios[plan];
+    try {
+        const url = PAYMENT_LINKS[plan];
+        const links = await stripe.paymentLinks.list({ limit: 100, active: true });
+        const link = links.data.find(l => l.url === url);
+        if (!link) return undefined;
+        const items = await stripe.paymentLinks.listLineItems(link.id, { limit: 1 });
+        const precio = items.data[0]?.price?.id;
+        if (precio) precios[plan] = precio;
+        return precio;
+    } catch (e) {
+        console.error('precioDe', e);
+        return undefined;
     }
-    return precios[plan];
 }
 
 async function plazasLibres() {
@@ -64,7 +70,7 @@ Deno.serve(async (req) => {
 
     const secreto = Deno.env.get('AVISOS_SECRET');
     if (opciones.probar && secreto && req.headers.get('x-internal-secret') === secreto) {
-        return json({ mensual: await precioDe('mensual'), anual: await precioDe('anual'), plazas: await plazasLibres() });
+        return json({ mensual: await precioDe('mensual') || 'sin enlace: se cobra con el importe dentro', anual: await precioDe('anual') || 'sin enlace: se cobra con el importe dentro', plazas: await plazasLibres() });
     }
 
     const jwt = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
@@ -94,13 +100,15 @@ Deno.serve(async (req) => {
         if (plan === 'mensual' || plan === 'anual') {
             if (['active', 'trialing'].includes(actual?.estado)) return json({ error: 'Ya tienes una suscripción activa' }, 409);
             const precio = await precioDe(plan);
-            if (!precio) return json({ error: 'Precio no encontrado' }, 500);
+            const imp = IMPORTES[plan];
             const sesion = await stripe.checkout.sessions.create({
                 mode: 'subscription',
                 client_reference_id: user.id,
                 customer_email: user.email,
                 allow_promotion_codes: true,
-                line_items: [{ price: precio, quantity: 1 }],
+                line_items: [precio
+                    ? { price: precio, quantity: 1 }
+                    : { quantity: 1, price_data: { currency: 'eur', unit_amount: imp.centimos, recurring: { interval: imp.intervalo }, product_data: { name: plan === 'anual' ? 'Bitácora, plan anual' : 'Bitácora, plan mensual' } } }],
                 success_url: APP_URL + '?checkout=success',
                 cancel_url: APP_URL,
             });

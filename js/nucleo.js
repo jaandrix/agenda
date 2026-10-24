@@ -459,9 +459,13 @@
 
         async function startStripeCheckout(plan) {
             if (plan === 'fundador' && !confirm('Socio fundador: un único pago de 29,99 € (IVA incluido) y Bitácora mientras exista, sin pagar nada más. Si ya tienes una suscripción, se cancela sola y no se te vuelve a cobrar. ¿Continuar?')) return;
+            // Hasta que Stripe responde pasan unos segundos: el botón lo dice y no se puede pulsar dos veces.
+            const boton = document.activeElement?.closest?.('button');
+            const textoAntes = boton?.innerHTML;
+            if (boton) { if (boton.disabled) return; boton.disabled = true; boton.textContent = 'abriendo el pago...'; }
             try {
                 const { data: { session } } = await sb.auth.getSession();
-                if (!session) return;
+                if (!session) { if (boton) { boton.disabled = false; boton.innerHTML = textoAntes; } return; }
                 const res = await fetch(`${SUPABASE_URL}/functions/v1/crear-pago`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
@@ -472,6 +476,7 @@
                 window.location.href = r.url;
             } catch (e) {
                 console.error(e);
+                if (boton) { boton.disabled = false; boton.innerHTML = textoAntes; }
                 showToast(e.message || 'No se pudo iniciar el pago', true);
             }
         }
