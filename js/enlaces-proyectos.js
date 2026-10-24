@@ -612,18 +612,23 @@
             refrescarFichaAsignatura(s);
         }
 
+        // La ✕ y la flecha de cada fila van como SVG en línea: con la máscara de .ico, a escalas de pantalla como 125 %
+        // salían borrosas y con una raya fina al lado.
+        const FILA_ICO_X = '<svg viewBox="0 0 100 100" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M20 9 50 39 80 9l11 11-30 30 30 30-11 11-30-30-30 30L9 80l30-30L9 20z"/></svg>';
+        const FILA_ICO_ABRIR = '<svg viewBox="0 0 100 100" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M56 8h36v36L78 30 50 58 42 50l28-28L56 8zM8 20h34v12H20v48h48V58h12v34H8z"/></svg>';
+
         function renderSubjectItemRow(subjectId, listKey, item, index) {
             const cd = studiesItemCountdown(item.date);
             return `
                 <div class="studies-row" data-item-id="${item.id}">
                     <div class="studies-row-head">
-                        <input class="studies-row-title-input" value="${escapeHtml(item.title || '')}" placeholder="${listKey === 'exams' ? 'Examen sin título' : 'Trabajo sin título'}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
+                        <input class="studies-row-title-input" value="${escapeHtml(item.title || '')}" title="${escapeHtml(item.title || '')}" onblur="this.scrollLeft = 0" placeholder="${listKey === 'exams' ? 'Examen sin título' : 'Trabajo sin título'}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
                         ${cd && !cd.past ? `<span class="studies-row-countdown ${cd.due ? 'due-soon' : ''}">${cd.text}${item.time && cd.due ? ', ' + escapeHtml(item.time) : ''}</span>` : ''}
                         ${listKey === 'assignments'
                             ? `<button class="asig-estado ${estadoItemAsignatura(listKey, item).clave}" aria-pressed="${!!item.done}" title="Marcar como entregado o pendiente" onclick="alternarEntregado('${subjectId}',${index})"><i aria-hidden="true"></i>${estadoItemAsignatura(listKey, item).texto}</button>`
                             : `<span class="asig-estado ${estadoItemAsignatura(listKey, item).clave}"><i aria-hidden="true"></i>${estadoItemAsignatura(listKey, item).texto}</span>`}
-                        ${item.enlace ? `<a class="studies-row-remove" href="${escapeHtml(item.enlace)}" target="_blank" rel="noopener" title="Abrir en Classroom" aria-label="Abrir en Classroom"><i class='ico ico-abrir' aria-hidden=true></i></a>` : ''}
-                        <button class="studies-row-remove" title="Eliminar" aria-label="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})"><i class='ico ico-x' aria-hidden=true></i></button>
+                        ${item.enlace ? `<a class="studies-row-remove" href="${escapeHtml(item.enlace)}" target="_blank" rel="noopener" title="Abrir en Classroom" aria-label="Abrir en Classroom">${FILA_ICO_ABRIR}</a>` : ''}
+                        <button class="studies-row-remove" title="Eliminar" aria-label="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})">${FILA_ICO_X}</button>
                     </div>
                     <div class="studies-row-fields">
                         <div class="studies-row-field"><label>fecha y hora.</label><div class="asig-fecha-hora"><input type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)"><input type="time" value="${escapeHtml(item.time || '')}" aria-label="Hora" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'time',this.value)"></div></div>
