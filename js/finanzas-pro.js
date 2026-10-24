@@ -1786,7 +1786,7 @@
                 t.date,
                 financePro.accounts[t.account]?.name || t.account,
                 t.type === 'income' ? 'Ingreso' : t.type === 'expense' ? 'Gasto' : 'Traspaso',
-                t.type === 'transfer' ? (financePro.accounts[t.transferTo]?.name || t.transferTo) : (financeProCategoryById(t.category)?.name || '—'),
+                t.type === 'transfer' ? (financePro.accounts[t.transferTo]?.name || t.transferTo) : t.ahorro ? (t.type === 'income' ? 'De tus ahorros' : 'A tus ahorros') : (financeProCategoryById(t.category)?.name || '—'),
                 financeMoney(t.amount || 0),
                 t.note || ''
             ])));
@@ -2270,7 +2270,7 @@
                 if (financeProTxFilter.account) txs = txs.filter(t => t.account === financeProTxFilter.account || t.transferTo === financeProTxFilter.account);
                 if (financeProTxFilter.year) txs = txs.filter(t => t.date.slice(0, 4) === financeProTxFilter.year);
                 if (financeProTxFilter.month) txs = txs.filter(t => t.date.slice(5, 7) === financeProTxFilter.month);
-                if (financeProTxFilter.category === '__none__') txs = txs.filter(t => !t.category);
+                if (financeProTxFilter.category === '__none__') txs = txs.filter(t => !t.category && !t.ahorro && t.type !== 'transfer');
                 else if (financeProTxFilter.category) txs = txs.filter(t => t.category === financeProTxFilter.category);
                 if (financeProTxFilter.search.trim()) {
                     const q = financeProTxFilter.search.trim().toLowerCase();
@@ -2370,12 +2370,12 @@
                     <div class="finance-pro-tx-amount">${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
                 </div>`;
             }
-            const cat = financeProCategoryById(t.category);
+            const cat = t.ahorro ? null : financeProCategoryById(t.category);
             return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
-                ${financeProCategoryBadge(cat)}
+                ${t.ahorro ? `<div class="finance-metric-icon fin-slate finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>` : financeProCategoryBadge(cat)}
                 <div class="finance-pro-tx-main">
-                    <div class="finance-pro-tx-title">${escapeHtml(cat ? cat.name : 'Sin categoría')}${cat && t.categoriaAuto ? '<span class="finance-cat-auto" title="Puesta por bitácora a partir de movimientos parecidos. Ábrelo y guarda para confirmarla.">auto.</span>' : ''}</div>
-                    <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)}, ${financeDateLabelShort(t.date)}${t.pendiente ? ', pendiente.' : ''}${t.viaje ? ', <span class="finance-marca">viaje.</span>' : ''}${t.ahorro ? ', <span class="finance-marca">ahorro.</span>' : ''}</div>
+                    <div class="finance-pro-tx-title">${t.ahorro ? (t.type === 'income' ? 'de tus ahorros.' : 'a tus ahorros.') : escapeHtml(cat ? cat.name : 'Sin categoría')}${!t.ahorro && cat && t.categoriaAuto ? '<span class="finance-cat-auto" title="Puesta por bitácora a partir de movimientos parecidos. Ábrelo y guarda para confirmarla.">auto.</span>' : ''}</div>
+                    <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)}, ${financeDateLabelShort(t.date)}${t.pendiente ? ', pendiente.' : ''}${t.viaje ? ', <span class="finance-marca">viaje.</span>' : ''}</div>
                     ${t.note ? `<div class="finance-pro-tx-note">${escapeHtml(t.note)}</div>` : ''}
                 </div>
                 <div class="finance-pro-tx-amount ${t.type === 'income' ? 'finance-positive' : 'finance-negative'}">${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
@@ -2425,12 +2425,14 @@
                     <option value="">Elige una cuenta</option>
                     ${FINANCE_PRO_ACCOUNT_KEYS.filter(k => k !== d.account).map(k => `<option value="${k}" ${d.transferTo === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
                 </select>` : `
+                <div id="finance-tx-categoria" ${d.ahorro ? 'hidden' : ''}>
                 <div class="modal-label">Categoría</div>
                 <select class="modal-input" onchange="financeProDraftSet('category',this.value)">
                     <option value="">Sin categoría</option>
                     ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
-                ${d.categoriaAuto && d.category ? '<div class="finance-modal-note" style="margin:-4px 0 8px">Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.</div>' : ''}`}
+                ${d.categoriaAuto && d.category ? '<div class="finance-modal-note" style="margin:-4px 0 8px">Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.</div>' : ''}
+                </div>`}
                 ${renderFinanceProMarcasTx(d)}
                 <div class="modal-label">Nota (opcional)</div>
                 <input class="modal-input" value="${escapeHtml(d.note || '')}" oninput="window._financeProTxDraft.note=this.value" placeholder="Ej. Cena con amigos">
@@ -3613,7 +3615,7 @@
                 <label class="finance-tx-marca"><input type="checkbox" ${d.viaje ? 'checked' : ''} onchange="financeProDraftSet('viaje',this.checked);document.getElementById('finance-tx-viaje').hidden=!this.checked"><span><b>gasto de viaje.</b><small>Cuenta como gasto, pero no entra en los presupuestos ni en el ritmo del mes.</small></span></label>
                 ${viajes.length ? `<div id="finance-tx-viaje" ${d.viaje ? '' : 'hidden'}><select class="modal-input" onchange="financeProDraftSet('viajeId',this.value)"><option value="">sin un viaje concreto</option>${viajes.map(v => `<option value="${v.id}" ${d.viajeId === v.id ? 'selected' : ''}>${escapeHtml(financeProNombreViaje(v))}</option>`).join('')}</select></div>` : '<div id="finance-tx-viaje" hidden></div>'}` : ''}
                 ${d.type !== 'transfer' ? `
-                <label class="finance-tx-marca"><input type="checkbox" ${d.ahorro ? 'checked' : ''} onchange="financeProDraftSet('ahorro',this.checked)"><span><b>${d.type === 'income' ? 'viene de mis ahorros.' : 'va a mis ahorros.'}</b><small>${d.type === 'income' ? 'Sube el saldo, pero no cuenta como ingreso (lo que sacas de una hucha o un bolsillo).' : 'Baja el saldo, pero no cuenta como gasto (lo que apartas a una hucha o un bolsillo).'}</small></span></label>` : ''}`;
+                <label class="finance-tx-marca"><input type="checkbox" ${d.ahorro ? 'checked' : ''} onchange="financeProDraftSet('ahorro',this.checked);const c=document.getElementById('finance-tx-categoria');if(c)c.hidden=this.checked"><span><b>${d.type === 'income' ? 'viene de mis ahorros.' : 'va a mis ahorros.'}</b><small>${d.type === 'income' ? 'Sube el saldo, pero no cuenta como ingreso (lo que sacas de una hucha o un bolsillo).' : 'Baja el saldo, pero no cuenta como gasto (lo que apartas a una hucha o un bolsillo).'}</small></span></label>` : ''}`;
         }
 
         // Los gastos de un viaje: los marcados con ese viaje y, si se marcaron
