@@ -9617,3 +9617,4 @@ body.mobile-standalone :is(.estancia-overlay, .anual-overlay), body.pwa :is(.est
 .guia-ia .ico { width:13px; height:13px; }
 .ajustes-guia-ia { margin-top:8px; }
 .ajustes-guia-ia .ajuste-icono .ico { width:16px; height:16px; }
+.enlace-reenviar { display:block; margin-top:8px; padding:0; border:0; background:none; color:inherit; font:inherit; font-weight:700; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }

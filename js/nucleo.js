@@ -559,12 +559,22 @@
 
             if (error) { errorEl.textContent = 'No se pudo crear la cuenta: ' + error.message; return; }
             if (data.session) { await startApp(); } else {
-                successEl.textContent =
-                    'Cuenta creada. Revisa tu email para confirmar la cuenta antes de entrar.';
+                window._altaEmail = email;
+                successEl.innerHTML =
+                    'Cuenta creada. Revisa tu email (también la carpeta de spam o promociones) para confirmar la cuenta antes de entrar. <button type="button" class="enlace-reenviar" onclick="reenviarConfirmacion(this)">¿no te llega? reenviar.</button>';
                 document.getElementById('signup-email').value = '';
                 document.getElementById('signup-password').value = '';
                 document.getElementById('signup-password2').value = '';
             }
+        }
+
+        async function reenviarConfirmacion(boton) {
+            const email = window._altaEmail;
+            if (!email) return;
+            boton.disabled = true;
+            const { error } = await sb.auth.resend({ type: 'signup', email });
+            boton.textContent = error ? (/rate|seconds|later/i.test(error.message) ? 'espera un minuto y vuelve a probar.' : 'no se pudo reenviar.') : 'enviado de nuevo.';
+            setTimeout(() => { boton.disabled = false; boton.textContent = '¿no te llega? reenviar.'; }, 60000);
         }
 
         async function handleForgotPassword() {
