@@ -1799,12 +1799,13 @@
                     const cat = financeProNeutro(t) ? { name: financeProEtiquetaNeutro(t).replace(/\.$/, '') } : financeProCategoryById(t.category);
                     const d = new Date((t.date || todayISO()) + 'T12:00:00');
                     const signo = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '<i class="ico ico-cambio" aria-hidden="true"></i>';
-                    return `<div class="m-fila ${t.type === 'income' ? 'positiva' : t.type === 'expense' ? 'negativa' : ''}">
+                    return `<div class="m-fila m-fila-toque ${t.type === 'income' ? 'positiva' : t.type === 'expense' ? 'negativa' : ''}" role="button" tabindex="0" onclick="openFinanceProTransactionModal('${jsAttr(t.id)}')">
                         <span class="m-fila-hora">${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}</span>
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.note || t.bankNote || cat?.name || 'movimiento')}</div><div class="m-fila-meta">${escapeHtml([cat?.name, financePro.accounts[t.account]?.name].filter(Boolean).join(', ').toLowerCase())}</div></div>
                         <span class="m-fila-cifra">${signo}${financeMoney(t.amount)}</span>
                     </div>`;
-                }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin movimientos.</div>'}`;
+                }).join('')}</div>
+                <button class="m-enlace" onclick="openFinanceProAllTxModal()">ver todos los movimientos.</button>` : '<div class="m-vacio m-vacio-peque">sin movimientos.</div>'}`;
         }
 
         // El horario de la semana, un día cada vez: los días arriba y, debajo,
