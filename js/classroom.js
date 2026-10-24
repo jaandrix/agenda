@@ -4,7 +4,7 @@
         // su classroomId, así que traerlas otra vez actualiza en vez de duplicar. Lo que el usuario cambie a mano
         // (nota, peso, entregado) no se pisa: Classroom solo rellena lo que está vacío y solo marca entregado.
         // En el iPhone con la app instalada la ventana de Google no vuelve a la app: se conecta desde el navegador.
-        const CLASSROOM_CLIENT_ID = '';
+        const CLASSROOM_CLIENT_ID = '476419211198-8rftknhtf15b3u6t5q3qu4a3iuu7p0m7.apps.googleusercontent.com';
         // Hasta que Google verifique la app, solo pueden conectar las cuentas de prueba del proyecto de Google Cloud:
         // mientras tanto el botón solo sale en la cuenta del creador.
         const CLASSROOM_PARA_TODOS = false;
