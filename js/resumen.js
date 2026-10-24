@@ -180,9 +180,13 @@
             </div>`;
         }
 
+        const PANO_ICO_HOY = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M26 8h10v8h28V8h10v8h12a6 6 0 0 1 6 6v64a6 6 0 0 1-6 6H14a6 6 0 0 1-6-6V22a6 6 0 0 1 6-6h12zM18 38v44h64V38zm8 10h14v12H26z"/></svg>';
+        const PANO_ICO_RELOJ = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 6a44 44 0 1 1 0 88 44 44 0 0 1 0-88zm0 12a32 32 0 1 0 0 64 32 32 0 0 0 0-64zm-6 10h12v19l13 13-8 8-17-17z"/></svg>';
+        const PANO_ICO_ENTREGA = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M18 6h42l22 22v66H18zm40 8v18h18zM30 50v10h40V50zm0 18v10h28V68z"/></svg>';
+
         function panoTarjeta(clase, icono, titulo, sub, accion, cuerpo) {
             return `<button type="button" class="pano-card ${clase}" onclick="${accion}">
-                <span class="pano-card-cab"><span class="pano-card-icono" aria-hidden="true">${icono}</span><span class="pano-card-tit"><b>${titulo}</b><small>${sub}</small></span><i class="ico ico-der pano-card-ir" aria-hidden="true"></i></span>
+                <span class="pano-card-cab"><span class="pano-card-icono" aria-hidden="true">${icono}</span><span class="pano-card-tit"><b>${titulo}</b><small>${sub}</small></span><span class="pano-card-ir" aria-hidden="true"><i class="ico ico-der"></i></span></span>
                 <span class="pano-card-cuerpo">${cuerpo}</span>
             </button>`;
         }
@@ -196,22 +200,24 @@
             const tareasHoy = plannerItemsForOffset(0);
             const pendHoy = tareasHoy.filter(t => !t.done);
             const rut = typeof rutinasResumenHoy === 'function' ? rutinasResumenHoy() : { total: 0, hechas: 0 };
-            const cifra = (n, etq) => `<span class="pano-cifra"><b>${n}</b><small>${etq}</small></span>`;
+            const cifra = (n, etq, alerta) => `<span class="pano-cifra ${alerta ? 'alerta' : ''}"><b>${n}</b><small>${etq}</small></span>`;
             const linea = (h, t, extra = '') => `<span class="pano-linea"><span class="pano-hora">${escapeHtml(h || 'todo el día')}</span><span class="pano-linea-txt">${escapeHtml(t)}</span>${extra}</span>`;
             const vacio = t => `<span class="pano-vacio">${t}</span>`;
 
             // hoy.
             const siguientes = eventosHoy.filter(e => !hora(e) || hora(e) >= horaAhora).slice(0, 3);
-            const cHoy = `${siguientes.length ? siguientes.map(e => linea(hora(e), e.type === 'birthday' ? 'cumpleaños de ' + e.title : e.title)).join('') : vacio(eventosHoy.length ? 'Ya ha pasado todo lo de hoy.' : 'Nada en el calendario hoy.')}
-                <span class="pano-cifras">${cifra(eventosHoy.length, eventosHoy.length === 1 ? 'evento hoy' : 'eventos hoy')}${cifra(pendHoy.length, pendHoy.length === 1 ? 'tarea por hacer' : 'tareas por hacer')}${rut.total ? cifra(rut.total - rut.hechas, rut.total - rut.hechas === 1 ? 'rutina pendiente' : 'rutinas pendientes') : ''}</span>`;
+            const cHoy = `${siguientes.length ? `<span class="pano-tl">${siguientes.map(e => `<span class="pano-tl-fila"><span class="pano-hora">${escapeHtml(hora(e) || 'todo el día')}</span><i aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(e.type === 'birthday' ? 'cumpleaños de ' + e.title : e.title)}</span></span>`).join('')}</span>` : vacio(eventosHoy.length ? 'Ya ha pasado todo lo de hoy.' : 'Nada en el calendario hoy.')}
+                <span class="pano-cifras">${cifra(eventosHoy.length, eventosHoy.length === 1 ? 'evento' : 'eventos')}${cifra(pendHoy.length, pendHoy.length === 1 ? 'tarea' : 'tareas')}${rut.total ? cifra(rut.total - rut.hechas, rut.total - rut.hechas === 1 ? 'rutina' : 'rutinas') : ''}</span>`;
 
             // tareas.
             const sinDia = (dayPlanner.backlog || []).filter(t => !t.done);
             const arrastradas = pendHoy.filter(t => t.arrastrado);
             const pendientes = [...pendHoy, ...sinDia];
             const prio = k => pendientes.filter(t => t.prioridad === k).length;
-            const cTareas = `<span class="pano-cifras">${cifra(pendientes.length, 'pendientes')}${cifra(arrastradas.length, arrastradas.length === 1 ? 'de ayer' : 'de días pasados')}${cifra(pendHoy.length, 'para hoy')}</span>
-                ${prio('alta') + prio('media') + prio('baja') ? `<span class="pano-prioridades">${[['alta', 'alta'], ['media', 'media'], ['baja', 'baja']].filter(([k]) => prio(k)).map(([k, t]) => `<span><i class="pano-prio ${k}" aria-hidden="true"></i>${prio(k)} ${t}</span>`).join('')}</span>` : ''}`;
+            const primeras = [...pendientes].sort((a, b) => ({ alta: 0, media: 1, baja: 2 }[a.prioridad] ?? 3) - ({ alta: 0, media: 1, baja: 2 }[b.prioridad] ?? 3)).slice(0, 3);
+            const cTareas = `${primeras.length ? `<span class="pano-tareas">${primeras.map(t => `<span class="pano-tarea"><i class="pano-prio ${t.prioridad || ''}" aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(t.title || t.text || '')}</span></span>`).join('')}</span>` : vacio('Nada pendiente. Bien.')}
+                ${prio('alta') + prio('media') + prio('baja') ? `<span class="pano-prioridades">${[['alta', 'alta'], ['media', 'media'], ['baja', 'baja']].filter(([k]) => prio(k)).map(([k, t]) => `<span><i class="pano-prio ${k}" aria-hidden="true"></i>${prio(k)} ${t}</span>`).join('')}</span>` : ''}
+                <span class="pano-cifras">${cifra(pendientes.length, 'pendientes')}${cifra(arrastradas.length, 'atrasadas', arrastradas.length > 0)}${cifra(pendHoy.length, 'para hoy')}</span>`;
 
             // tu día.
             const conHora = [...eventosHoy.filter(hora).map(e => ({ h: hora(e), t: e.title, ev: true })), ...tareasHoy.filter(t => t.time).map(t => ({ h: t.time, t: t.title, hecha: t.done }))]
@@ -223,7 +229,7 @@
             const dias = Array.from({ length: 7 }, (_, i) => { const d = new Date(lunes); d.setDate(d.getDate() + i); const iso = isoLocal(d); return { iso, ev: getDayAllEntries(iso).filter(esEvento).length, ta: mobileDiaPlanner(iso).length }; });
             const maxDia = Math.max(1, ...dias.map(d => d.ev + d.ta));
             const totEv = dias.reduce((n, d) => n + d.ev, 0), totTa = dias.reduce((n, d) => n + d.ta, 0);
-            const cSemana = `<span class="pano-semana" role="img" aria-label="${dias.map((d, i) => `${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][i]} ${d.ev + d.ta}`).join(', ')}">${dias.map((d, i) => `<span class="pano-sem-dia ${d.iso === hoy ? 'hoy' : ''}"><span class="pano-sem-barra"><i class="ta" style="height:${d.ta / maxDia * 100}%"></i><i class="ev" style="height:${d.ev / maxDia * 100}%"></i></span><small>${'LMXJVSD'[i]}</small></span>`).join('')}</span>
+            const cSemana = `<span class="pano-semana" role="img" aria-label="${dias.map((d, i) => `${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][i]} ${d.ev + d.ta}`).join(', ')}">${dias.map((d, i) => `<span class="pano-sem-dia ${d.iso === hoy ? 'hoy' : ''}"><span class="pano-sem-barra"><i class="ta" style="height:${d.ta / maxDia * 100}%"></i><i class="ev" style="height:${d.ev / maxDia * 100}%"></i></span><small>${'LMXJVSD'[i]}</small><em>${d.ev + d.ta || ''}</em></span>`).join('')}</span>
                 <span class="pano-cifras">${cifra(totEv, totEv === 1 ? 'evento' : 'eventos')}${cifra(totTa, totTa === 1 ? 'tarea' : 'tareas')}</span>`;
 
             // tu mes.
@@ -246,7 +252,11 @@
                 const iso = isoLocal(d);
                 getDayAllEntries(iso).filter(esEvento).forEach(e => { if (prox.length < 3 && !prox.some(x => x.e.id === e.id)) prox.push({ iso, e }); });
             }
-            const cProx = prox.length ? prox.map(({ iso, e }) => { const d = new Date(iso + 'T12:00:00'); return linea(`${['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][d.getDay()]} ${d.getDate()}`, e.type === 'birthday' ? 'cumpleaños de ' + e.title : e.title, e.type === 'travel' ? '<span class="pano-tipo">viaje.</span>' : ''); }).join('') : vacio('Nada en los próximos 30 días.');
+            const cProx = prox.length ? prox.map(({ iso, e }) => {
+                const d = new Date(iso + 'T12:00:00');
+                const tipo = e.type === 'travel' ? 'viaje.' : e.type === 'birthday' ? 'cumple.' : '';
+                return `<span class="pano-prox"><span class="pano-fecha"><small>${['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][d.getDay()]}</small><b>${d.getDate()} ${d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')}</b></span><span class="pano-linea-txt">${escapeHtml(e.type === 'birthday' ? e.title : e.title)}</span>${tipo ? `<span class="pano-tipo">${tipo}</span>` : ''}</span>`;
+            }).join('') : vacio('Nada en los próximos 30 días.');
 
             // entregas.
             const entregas = typeof asignaturasEnCurso === 'function' && apartadoVisible('studies') ? asignaturasEnCurso().flatMap(s => [
@@ -258,7 +268,7 @@
                 const d = new Date(x.date + 'T12:00:00');
                 const tarde = x.date < hoy;
                 return `<span class="pano-linea ${tarde ? 'tarde' : ''}"><span class="pano-hora">${tarde ? 'vencido' : x.date === hoy ? 'hoy' : `${['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][d.getDay()]} ${d.getDate()}`}${x.time ? ' ' + escapeHtml(x.time) : ''}</span><span class="pano-linea-txt">${escapeHtml(x.title || tipo)}<small>${escapeHtml(s.name)}${tipo === 'examen' ? ', examen' : ''}</small></span></span>`;
-            }).join('')}${entregas.length > 4 ? `<span class="pano-mas">y ${entregas.length - 4} más.</span>` : ''}` : vacio('Nada pendiente de entregar.');
+            }).join('')}${entregas.length > 4 ? `<span class="pano-resto">y ${entregas.length - 4} más.</span>` : ''}` : vacio('Nada pendiente de entregar.');
 
             // revisión semanal.
             const hace7 = new Date(hoy + 'T12:00:00'); hace7.setDate(hace7.getDate() - 6);
@@ -266,16 +276,20 @@
             const hechas7 = entries.filter(e => /^(planner_done_|recurring_done_)/.test(e.id || '') && e.date >= desde && e.date <= hoy).length;
             const diasRut = new Set(); habits.forEach(hb => Object.keys(hb.completadas || {}).forEach(d => { if (d >= desde && d <= hoy && hb.completadas[d]) diasRut.add(d); }));
             const objetivos = entries.filter(e => e.type === 'goal' && e.status !== 'completed' && e.status !== 'Completado').length;
-            const cRev = `<span class="pano-cifras">${cifra(hechas7, hechas7 === 1 ? 'tarea hecha en 7 días' : 'tareas hechas en 7 días')}${cifra(`${diasRut.size}/7`, 'días con rutinas')}${objetivos ? cifra(objetivos, objetivos === 1 ? 'objetivo en curso' : 'objetivos en curso') : ''}</span>`;
+            const barra = (v, t) => `<i class="pano-barra" aria-hidden="true"><i style="width:${Math.round(Math.min(1, t ? v / t : 0) * 100)}%"></i></i>`;
+            const cRev = `<span class="pano-cifras pano-rev">
+                <span class="pano-cifra"><b>${hechas7}</b><small>tareas hechas en 7 días</small></span>
+                <span class="pano-cifra"><b>${diasRut.size}/7</b><small>días con rutinas</small>${barra(diasRut.size, 7)}</span>
+                ${objetivos ? cifra(objetivos, objetivos === 1 ? 'objetivo en curso' : 'objetivos en curso') : ''}</span>`;
 
             return `<div class="pano-grid">
-                ${panoTarjeta('', HOME_ICON_TODAY, 'tu día.', 'Tu jornada, hora por hora.', 'openTuDia()', cDia)}
-                ${panoTarjeta('hoy', HOME_ICON_TODAY, 'hoy.', 'Lo que te queda de hoy.', 'openHomeTodayModal()', cHoy)}
-                ${entregas ? panoTarjeta('', HOME_ICON_TASKS, 'entregas.', deClassroom ? 'Classroom y tus asignaturas, por fecha.' : 'Lo que tienes que entregar, por fecha.', "switchView('studies')", cEntregas) : ''}
-                ${panoTarjeta('', HOME_ICON_TASKS, 'tareas.', 'Todo lo que tienes por hacer.', 'openHomeTasksModal()', cTareas)}
+                ${panoTarjeta('', PANO_ICO_RELOJ, 'tu día.', 'Tu jornada, hora por hora.', 'openTuDia()', cDia)}
+                ${panoTarjeta('hoy', PANO_ICO_HOY, 'hoy.', 'Lo que te queda de hoy.', 'openHomeTodayModal()', cHoy)}
+                ${entregas ? panoTarjeta('', PANO_ICO_ENTREGA, 'entregas.', 'Por fecha de entrega.', "switchView('studies')", cEntregas) : ''}
+                ${panoTarjeta('', HOME_ICON_TASKS, 'tareas.', 'Lo que tienes pendiente.', 'openHomeTasksModal()', cTareas)}
                 ${panoTarjeta('', HOME_ICON_WEEK, 'esta semana.', 'Cuánto tienes cada día.', 'openResumenSemana()', cSemana)}
                 ${panoTarjeta('', HOME_ICON_STATS, 'tu mes.', `${nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}, de un vistazo.`, 'openTuMes()', cMes)}
-                ${panoTarjeta('', HOME_ICON_UPCOMING, 'próximamente.', 'Lo que viene después de hoy.', 'openHomeUpcomingModal()', cProx)}
+                ${panoTarjeta('', HOME_ICON_UPCOMING, 'próximamente.', 'Después de hoy.', 'openHomeUpcomingModal()', cProx)}
                 ${panoTarjeta(entregas ? 'doble' : 'ancha', HOME_ICON_REVIEW, 'revisión semanal.', 'Cierra la semana y prepara la siguiente.', 'openHomeReviewModal()', cRev)}
             </div>`;
         }

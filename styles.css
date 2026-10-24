@@ -9531,7 +9531,7 @@ body.papel .asig-estado.vencido { color:#a3243b; }
 @media (max-width:1199px) { .pano-card.doble { grid-column:1 / -1; } }
 .pano-linea-txt small { display:block; font-size:11.5px; color:var(--text-secondary); font-weight:400; }
 .pano-linea.tarde .pano-hora { color:var(--m-acento); }
-.pano-mas { font-size:12.5px; color:var(--text-secondary); }
+.pano-resto { font-size:12.5px; color:var(--text-secondary); }
 .studies-row-title-input { text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
 .studies-row-remove svg { display:block; flex-shrink:0; }
 .m-fila-toque { cursor:pointer; }
@@ -9559,3 +9559,45 @@ body.papel .asig-estado.vencido { color:#a3243b; }
 }
 body.mobile-standalone .modal-overlay, body.pwa .modal-overlay { overflow:hidden; overscroll-behavior:none; }
 body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { overscroll-behavior:contain; }
+
+/* Panorama más limpio (24-10, a partir de la referencia de Alejandro): tarjetas aireadas de la misma altura, icono y
+   flecha en círculo, cifras en fila con separadores, horario con línea, la cifra de cada día y barras de lo cumplido. */
+.pano-grid { gap:16px; }
+.pano-card { gap:16px; padding:22px; border-radius:18px; min-height:230px; }
+.pano-card-cab { gap:14px; }
+.pano-card-icono { width:48px; height:48px; border-radius:50%; background:color-mix(in srgb, var(--text-primary) 7%, transparent); }
+.pano-card-icono svg { width:22px; height:22px; }
+.pano-card-tit b { font-size:19px; }
+.pano-card-tit small { font-size:13px; }
+.pano-card-ir { display:grid; place-items:center; width:40px; height:40px; flex-shrink:0; border-radius:50%; background:var(--accent); color:var(--accent-contrast); transition:transform .15s ease; }
+.pano-card-ir .ico { width:15px; height:15px; }
+.pano-card:hover .pano-card-ir { transform:translateX(2px); }
+.pano-card:hover { border-color:var(--border-strong); }
+.pano-cifras { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0, 1fr); gap:0; padding-top:14px; }
+.pano-cifra { padding:0 14px; border-left:1px solid var(--border); }
+.pano-cifra:first-child { padding-left:0; border-left:0; }
+.pano-cifra b { font-size:26px; }
+.pano-cifra.alerta b, .pano-cifra.alerta small { color:var(--m-acento); }
+.pano-tl { position:relative; display:flex; flex-direction:column; gap:12px; }
+.pano-tl::before { content:''; position:absolute; left:62px; top:8px; bottom:8px; width:2px; border-radius:1px; background:var(--border); }
+.pano-tl-fila { position:relative; display:grid; grid-template-columns:46px 10px minmax(0, 1fr); align-items:center; gap:12px; font-size:14.5px; }
+.pano-tl-fila i { width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 3px var(--bg-card); }
+.pano-tl-fila:first-child i { background:var(--m-acento); }
+.pano-dia { gap:7px; }
+.pano-dia-fila { padding:6px 10px; border-radius:10px; background:color-mix(in srgb, var(--text-primary) 4%, transparent); }
+.pano-dia-fila .pano-hora { min-width:40px; }
+.pano-semana { height:104px; }
+.pano-sem-barra { width:22px; border-radius:6px; }
+.pano-sem-dia em { font-style:normal; font-size:12px; font-weight:700; color:var(--text-primary); min-height:14px; }
+.pano-prox { display:grid; grid-template-columns:52px minmax(0, 1fr) auto; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
+.pano-prox:last-child { border-bottom:0; }
+.pano-fecha { display:flex; flex-direction:column; line-height:1.15; }
+.pano-fecha small { font-size:11.5px; color:var(--text-secondary); }
+.pano-fecha b { font-size:13.5px; font-weight:700; }
+.pano-tipo { padding:3px 8px; border:1px solid var(--border); border-radius:8px; font-size:11.5px; }
+.pano-rev { grid-auto-columns:minmax(0, 1fr); }
+.pano-barra { display:block; height:6px; margin-top:8px; border-radius:3px; background:color-mix(in srgb, var(--text-primary) 10%, transparent); overflow:hidden; }
+.pano-barra i { display:block; height:100%; border-radius:3px; background:var(--accent); }
+@media (max-width:760px) { .pano-card { min-height:0; padding:18px; } }
+.pano-tareas { display:flex; flex-direction:column; gap:9px; }
+.pano-tarea { display:flex; align-items:center; gap:10px; min-width:0; font-size:14px; }
