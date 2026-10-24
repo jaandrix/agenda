@@ -657,6 +657,54 @@
                 </section>`;
         }
 
+        // Todas las entregas y exámenes de las asignaturas en curso, por fecha y hora de entrega. Lo que no tiene
+        // fecha va al final. Pendiente: trabajo sin entregar, o examen sin nota que no ha pasado.
+        let entregasFiltro = { estado: 'pendientes', tipo: 'todo', todas: false };
+        function entregasEstudios() {
+            const hoy = todayISO();
+            return asignaturasEnCurso().flatMap(s => [
+                ...(s.assignments || []).map(x => ({ x, s, k: 'assignments', tipo: 'trabajo' })),
+                ...(s.exams || []).map(x => ({ x, s, k: 'exams', tipo: 'examen' })),
+            ]).filter(e => entregasFiltro.tipo === 'todo' || (entregasFiltro.tipo === 'trabajos') === (e.k === 'assignments'))
+              .filter(e => {
+                  if (entregasFiltro.estado === 'todas') return true;
+                  const nota = e.x.grade !== '' && e.x.grade != null;
+                  return e.k === 'assignments' ? !e.x.done && !nota : !nota && (!e.x.date || e.x.date >= hoy);
+              })
+              .sort((a, b) => ((a.x.date || '9999') + (a.x.time || '99:99')).localeCompare((b.x.date || '9999') + (b.x.time || '99:99')));
+        }
+        function cambiarEntregas(campo, valor) {
+            entregasFiltro[campo] = valor;
+            if (campo !== 'todas') entregasFiltro.todas = false;
+            const el = document.getElementById('studies-entregas');
+            if (el) el.outerHTML = renderEntregasEstudios(true);
+        }
+        function renderEntregasEstudios(siempre) {
+            const hayAlgo = asignaturasEnCurso().some(s => (s.assignments || []).length || (s.exams || []).length);
+            if (!hayAlgo && !siempre) return '';
+            const lista = entregasEstudios();
+            const vista = entregasFiltro.todas ? lista : lista.slice(0, 6);
+            const seg = (campo, opciones) => `<div class="vista-seg" role="tablist">${opciones.map(([v, t]) => `<button role="tab" aria-selected="${entregasFiltro[campo] === v}" onclick="cambiarEntregas('${campo}','${v}')">${t}</button>`).join('')}</div>`;
+            return `
+                <section class="studies-section entregas" id="studies-entregas">
+                    <div class="entregas-cab"><h3>entregas.</h3>
+                        ${seg('estado', [['pendientes', 'pendientes.'], ['todas', 'todas.']])}
+                        ${seg('tipo', [['todo', 'todo.'], ['trabajos', 'trabajos.'], ['examenes', 'exámenes.']])}
+                    </div>
+                    ${lista.length ? `<div class="asig-proximas">${vista.map(({ x, s, k, tipo }) => {
+                        const cd = studiesItemCountdown(x.date);
+                        const est = estadoItemAsignatura(k, x);
+                        return `<button class="asig-prox entregas-fila" onclick="openSubjectDetail('${jsAttr(s.id)}')">
+                            <span class="asig-prox-cuando ${cd && cd.due ? 'pronto' : ''}">${cd ? escapeHtml(cd.text) + '.' : 'sin fecha.'}</span>
+                            <span class="asig-prox-txt"><b>${escapeHtml(x.title || (tipo === 'examen' ? 'examen sin título' : 'trabajo sin título'))}</b><small>${escapeHtml(s.name)}, ${tipo}${x.date ? ', ' + new Date(x.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}${x.time ? ', ' + escapeHtml(x.time) : ''}</small></span>
+                            <span class="asig-estado ${est.clave}"><i aria-hidden="true"></i>${est.texto}</span>
+                        </button>`;
+                    }).join('')}</div>
+                    ${lista.length > 6 ? `<button class="asig-enlace entregas-mas" onclick="cambiarEntregas('todas', ${!entregasFiltro.todas})">${entregasFiltro.todas ? 'ver menos.' : `ver todas. ${lista.length}`}</button>` : ''}`
+                    : `<p class="asig-vacio">${entregasFiltro.estado === 'pendientes' ? 'Nada pendiente. Bien.' : 'No hay nada con este filtro.'}</p>`}
+                </section>`;
+        }
+
         function renderStudies() {
             const nextExam = nextUpcomingExam();
             return `
@@ -670,6 +718,8 @@
                         <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
                     </div>
                 </div>` : ''}
+
+                ${renderEntregasEstudios()}
 
                 <section class="studies-section" id="studies-schedule-section">
                     <h3>horario semanal.</h3>

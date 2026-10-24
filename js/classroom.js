@@ -10,7 +10,9 @@
         const CLASSROOM_PARA_TODOS = false;
         const CLASSROOM_SCOPES = 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me.readonly';
         const CLASSROOM_API = 'https://classroom.googleapis.com/v1/';
-        const CLASSROOM_EXAMEN = /\b(examen|exam|parcial|final|control|quiz|cuestionario)\b/i;
+        // Un cuestionario de Forms suele ser una tarea más: solo es examen si lo dice el título y no se llama «tarea».
+        const CLASSROOM_EXAMEN = /\b(examen|exam|parcial|control)\b/i;
+        const classroomLista = cw => CLASSROOM_EXAMEN.test(cw.title || '') && !/\btarea\b/i.test(cw.title || '') ? 'exams' : 'assignments';
         let classroomToken = null;
         let classroomCursos = null;
 
@@ -239,16 +241,17 @@
                 const enlace = /^https:\/\/classroom\.google\.com\//.test(cw.alternateLink || '') ? cw.alternateLink : '';
                 const sitio = classroomBuscar(cw.id);
                 let lista, item, movida = false;
-                if (sitio && sitio.sub !== s) {
+                if (sitio && (sitio.sub !== s || sitio.k !== classroomLista(cw))) {
                     sitio.sub[sitio.k].splice(sitio.i, 1);
                     removeLinkedExamEvent(sitio.item.id);
                     if (sitio.k === 'assignments') removeLinkedPlannerItem(sitio.item.id);
+                    if (sitio.sub !== s) cuenta.movidas++; else cuenta.cambiadas++;
+                    sitio.k = classroomLista(cw);
                     s[sitio.k].push(sitio.item);
-                    cuenta.movidas++;
                     movida = true;
                 }
                 if (!sitio) {
-                    lista = CLASSROOM_EXAMEN.test(cw.title || '') ? 'exams' : 'assignments';
+                    lista = classroomLista(cw);
                     item = { id: 'item_cr_' + cw.id, title: cw.title || 'Tarea sin título', date, time, grade: nota, weight: '', done: !!entregada, classroomId: cw.id, classroomCurso: curso, enlace, notaClassroom: nota };
                     // Las de días ya pasados no van al planificador: si no, todo lo atrasado del curso se arrastraría a hoy.
                     if (date && date < todayISO()) item.fueraDelPlanificador = true;

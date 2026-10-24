@@ -486,7 +486,7 @@
         function renderAsignaturaProximas(s) {
             const hoy = todayISO();
             const futuras = [...(s.assignments || []).filter(x => !x.done).map(x => ({ x, tipo: 'trabajo' })), ...(s.exams || []).map(x => ({ x, tipo: 'examen' }))]
-                .filter(({ x }) => x.date && x.date >= hoy).sort((a, b) => a.x.date.localeCompare(b.x.date)).slice(0, 3);
+                .filter(({ x }) => x.date && x.date >= hoy).sort((a, b) => (a.x.date + (a.x.time || '99:99')).localeCompare(b.x.date + (b.x.time || '99:99'))).slice(0, 3);
             return `<div class="asig-panel-cab"><b>próximas entregas.</b></div>
                 ${futuras.length ? `<div class="asig-proximas">${futuras.map(({ x, tipo }) => {
                     const cd = studiesItemCountdown(x.date);
@@ -584,11 +584,12 @@
             const singular = listKey === 'exams' ? 'examen' : 'trabajo';
             const noDate = items.filter(it => !it.date);
             const withDate = items.filter(it => !!it.date);
-            const upcoming = withDate.filter(it => it.date >= todayISO()).sort((a, b) => a.date.localeCompare(b.date));
-            const past = withDate.filter(it => it.date < todayISO()).sort((a, b) => b.date.localeCompare(a.date));
+            const cuando = it => it.date + ' ' + (it.time || '99:99');
+            const upcoming = withDate.filter(it => it.date >= todayISO()).sort((a, b) => cuando(a).localeCompare(cuando(b)));
+            const past = withDate.filter(it => it.date < todayISO()).sort((a, b) => cuando(b).localeCompare(cuando(a)));
             const next = upcoming[0];
             const kicker = items.length
-                ? `${items.length} ${label.toLowerCase()}${next ? `, próximo ${studiesItemCountdown(next.date).text}` : ''}`
+                ? `${items.length} ${items.length === 1 ? singular : label.toLowerCase()}${next ? `, próximo ${studiesItemCountdown(next.date).text}` : ''}`
                 : `sin ${label.toLowerCase()} todavía`;
             return `
             <section class="studies-editorial-block asig-panel" id="studies-block-${listKey}-${s.id}">

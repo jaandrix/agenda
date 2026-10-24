@@ -8511,7 +8511,7 @@ a { text-underline-offset:3px; }
 
 /* Iconos pequeños dibujados (en vez de glifos ✕ ‹ › ✎ ⭳ ↻ ⏻ ⇄): máscaras
    sólidas y geométricas que toman el color del texto. */
-.ico { display:inline-block; width:.9em; height:.9em; vertical-align:-.12em; background:currentColor; -webkit-mask:var(--ico) center/contain no-repeat; mask:var(--ico) center/contain no-repeat; }
+.ico { display:inline-block; flex-shrink:0; width:.9em; height:.9em; vertical-align:-.12em; background:currentColor; -webkit-mask:var(--ico) center/contain no-repeat; mask:var(--ico) center/contain no-repeat; }
 .ico-x { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 9 50 39 80 9l11 11-30 30 30 30-11 11-30-30-30 30L9 80l30-30L9 20z'/%3E%3C/svg%3E"); }
 .ico-izq { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M66 6 78 18 46 50l32 32-12 12-44-44z'/%3E%3C/svg%3E"); }
 .ico-der { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M34 6 22 18l32 32-32 32 12 12 44-44z'/%3E%3C/svg%3E"); }
@@ -9470,3 +9470,22 @@ body.papel .asig-estado.vencido { color:#a3243b; }
     .asignatura .studies-row-head { flex-wrap:wrap; row-gap:6px; }
     .asignatura .studies-row-title-input { flex:1 1 100%; }
 }
+
+/* Iconos de máscara a píxel entero: a tamaños como 11,7 px el navegador los suaviza y se ven borrosos. */
+.studies-row-remove { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; padding:0; margin-left:2px; border-radius:8px; }
+.studies-row-remove .ico { width:14px; height:14px; vertical-align:0; }
+.studies-row-remove:hover { background:var(--bg-input); }
+.vista-btn .ico { width:12px; height:12px; font-size:inherit; }
+.vista-icono-btn .ico { width:16px; height:16px; font-size:inherit; }
+.asig-panel-cab .vista-btn { flex-shrink:0; white-space:nowrap; }
+.asignatura .studies-row-title-input { flex:1 1 160px; min-width:0; }
+.asignatura .studies-row-head { flex-wrap:wrap; row-gap:6px; }
+.entregas-cab { display:flex; flex-wrap:wrap; align-items:center; gap:10px 12px; margin-bottom:14px; }
+.entregas-cab h3 { margin:0 auto 0 0; }
+.entregas-fila { width:calc(100% + 20px); padding:8px 10px; margin:0 -10px; border:0; border-radius:10px; background:none; color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; align-items:center; box-sizing:border-box; }
+.entregas-fila:hover { background:var(--bg-input); }
+.entregas-fila .asig-prox-txt { flex:1; }
+.entregas-mas { margin-top:12px; }
+@media (max-width: 560px) { .entregas-fila .asig-estado { display:none; } }
+.asig-panel { container-type:inline-size; }
+@container (max-width: 520px) { .asignatura .studies-row-title-input { flex-basis:100%; } .asignatura .studies-row-head .studies-row-countdown { margin-left:0; } }
