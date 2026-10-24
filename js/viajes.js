@@ -31,68 +31,149 @@
 
             const travels = entries.filter(e => e.type === 'travel');
             const places = entries.filter(e => e.type === 'place');
-
-            let html = `
-                <div style="max-width:820px">
-                    <div style="margin-bottom:16px">
-                        <div style="font-size:20px;font-weight:700">viajes.</div>
-                        <div style="font-size:12px;color:var(--text-secondary)">Tus viajes y lugares, con su propio gestor: lugares que ver, itinerario, documentos y listas.</div>
+            const hoy = todayISO();
+            const proximos = travels.filter(t => tripStatus(t).label !== 'Completado');
+            const completados = travels.filter(t => tripStatus(t).label === 'Completado');
+            if (travelPlacesTab === 'travels') travelPlacesTab = 'proximos';
+            const pestana = travelPlacesTab;
+            // Orden: en curso primero, luego próximos por fecha, luego sin fecha; los completados, del más reciente.
+            const peso = t => ({ 'En curso': 0, 'Próximo': 1, 'Sin fecha': 2 })[tripStatus(t).label] ?? 3;
+            const listaProx = [...proximos].sort((a, b) => peso(a) - peso(b) || (a.startDate || '9').localeCompare(b.startDate || '9'));
+            const listaComp = [...completados].sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+            const destacado = listaProx.find(t => ['En curso', 'Próximo'].includes(tripStatus(t).label));
+            const lista = pestana === 'completados' ? listaComp : listaProx;
+            return `
+                <div class="viajes-vista">
+                    <div class="vista-cab">
+                        <div><div class="vista-cab-titulo">viajes.</div><div class="vista-cab-sub">Planifica lo próximo y conserva lo vivido.</div></div>
+                        <div class="vista-cab-acciones">
+                            <label class="vista-buscar"><i class="ico ico-buscar" aria-hidden="true"></i><input id="viajes-buscar" class="modal-input" type="search" placeholder="buscar viajes, lugares, notas..." aria-label="Buscar viajes" oninput="filtrarViajes()"></label>
+                            <button class="vista-btn principal" onclick="openNewEntry('travel')"><i class="ico ico-mas" aria-hidden="true"></i>nuevo viaje.</button>
+                        </div>
                     </div>
+                    ${renderViajeDestacado(destacado, places.length)}
                     ${renderSharedTripsSection()}
-                    <div class="culture-tabs">
-                        <button class="culture-tab ${travelPlacesTab === 'travels' ? 'active' : ''}" onclick="setTravelPlacesTab('travels')">
-                            <span>viajes.</span><span class="culture-tab-count">${travels.length}</span>
-                        </button>
-                        <button class="culture-tab ${travelPlacesTab === 'places' ? 'active' : ''}" onclick="setTravelPlacesTab('places')">
-                            <span>lugares.</span><span class="culture-tab-count">${places.length}</span>
-                        </button>
+                    <div class="vista-seg viajes-seg" role="tablist" aria-label="Viajes">
+                        <button role="tab" aria-selected="${pestana === 'proximos'}" onclick="setTravelPlacesTab('proximos')">próximos. <span class="vista-contador">${proximos.length}</span></button>
+                        <button role="tab" aria-selected="${pestana === 'completados'}" onclick="setTravelPlacesTab('completados')">completados. <span class="vista-contador">${completados.length}</span></button>
+                        <button role="tab" aria-selected="${pestana === 'places'}" onclick="setTravelPlacesTab('places')">lugares. <span class="vista-contador">${places.length}</span></button>
                     </div>
-                    <div class="culture-tab-content">
-            `;
+                    ${pestana === 'places' ? `<div class="viajes-lugares">${renderPlaces()}</div>` : lista.length ? `
+                    <div class="viajes-grid">${lista.map(renderViajeTarjeta).join('')}</div>
+                    <div id="viajes-sin-resultados" class="vista-vacio" hidden><b>nada con esa búsqueda.</b><button class="vista-btn" onclick="document.getElementById('viajes-buscar').value='';filtrarViajes()">limpiar búsqueda.</button></div>` : `
+                    <div class="vista-vacio">${pestana === 'completados' ? '<b>todavía no hay viajes hechos.</b>Cuando pase la fecha de un viaje, aparecerá aquí con todo lo que guardaste.' : '<b>no hay viajes por delante.</b>Crea uno y ve juntando lugares, itinerario, reservas y listas.'}</div>`}
+                </div>`;
+        }
 
-            if (travelPlacesTab === 'travels') {
-                if (!travels.length) {
-                    html += `<div class="empty-state"><div class="empty-title">ningún viaje todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Viaje"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
-                } else {
-                    const orden = { 'En curso': 0, 'Próximo': 1, 'Sin fecha': 2, 'Completado': 3 };
-                    const ordenados = [...travels].sort((a, b) => {
-                        const sa = tripStatus(a), sb = tripStatus(b);
-                        if (orden[sa.label] !== orden[sb.label]) return orden[sa.label] - orden[sb.label];
-                        return (b.startDate || '').localeCompare(a.startDate || '');
-                    });
-                    html += `<div class="line-row-list">`;
-                    ordenados.forEach(t => {
-                        const status = tripStatus(t);
-                        const places2 = Array.isArray(t.places) ? t.places : [];
-                        const listas2 = Array.isArray(t.listas) ? t.listas : [];
-                        const itemsTotal = listas2.reduce((s, l) => s + (l.items || []).length, 0);
-                        const itemsHechos = listas2.reduce((s, l) => s + (l.items || []).filter(i => i.hecho).length, 0);
-                        const dateObj = t.startDate ? new Date(t.startDate + 'T00:00:00') : null;
-                        const extra = [];
-                        if (places2.length) extra.push(`${places2.filter(p => p.visitado).length}/${places2.length} lugares`);
-                        if (itemsTotal) extra.push(`${itemsHechos}/${itemsTotal} preparativos`);
-                        html += `
-                            <div class="line-row" onclick="switchView('travels');openTripManager('${t.id}')">
-                                <div class="line-row-date">
-                                    <div class="line-row-date-day">${dateObj ? String(dateObj.getDate()).padStart(2, '0') : '–'}</div>
-                                    ${dateObj ? `<div class="line-row-date-month">${dateObj.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')}</div>` : ''}
-                                </div>
-                                <div class="line-row-icon">${TRAVEL_ICON_MOUNTAIN}</div>
-                                <div class="line-row-body">
-                                    <div class="line-row-title"><span class="line-row-title-text">${escapeHtml(t.title)}</span></div>
-                                    <div class="line-row-meta">${escapeHtml(t.destination || '')}${t.startDate ? ', ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${extra.length ? ', ' + extra.join(', ') : ''}</div>
-                                </div>
-                                <div class="line-row-side"><span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span></div>
-                            </div>`;
-                    });
-                    html += `</div>`;
-                }
-            } else {
-                html += renderPlaces();
-            }
+        // Preparativos: las cosas de las listas del viaje (maleta, papeles...) hechas frente al total.
+        function viajePreparativos(t) {
+            const listas = Array.isArray(t.listas) ? t.listas : [];
+            const total = listas.reduce((n, l) => n + (l.items || []).length, 0);
+            return { total, hechos: listas.reduce((n, l) => n + (l.items || []).filter(i => i.hecho).length, 0) };
+        }
+        function viajeDias(t) {
+            if (!t.startDate) return 0;
+            return Math.round((new Date((t.endDate || t.startDate) + 'T12:00:00') - new Date(t.startDate + 'T12:00:00')) / 86400000) + 1;
+        }
+        // Documentos: solo si ya se han cargado alguna vez (viven en Storage, no en los datos del viaje).
+        function viajeDocs(t) { return Array.isArray(tripDocumentsCache[t.id]) ? tripDocumentsCache[t.id].length : null; }
 
-            html += `</div></div>`;
-            return html;
+        function renderViajeDestacado(t, nLugares) {
+            const mapa = `<svg class="viaje-dest-mapa" viewBox="0 0 400 200" aria-hidden="true"><path d="M-10 150c60-40 90 10 150-30s80-70 140-50 90 40 130 10" /><path d="M-10 175c70-30 100 15 160-20s90-60 150-40 80 30 120 5" /><path d="M-10 125c50-45 95 5 150-35s70-75 135-55 95 45 135 15" /><path class="ruta" d="M70 160c40-10 60-60 110-70s80 20 120-10 40-50 70-55" /><circle class="punto" cx="70" cy="160" r="6" /><circle class="punto" cx="370" cy="25" r="6" /></svg>`;
+            if (!t) return `
+                <section class="viaje-dest">
+                    ${mapa}
+                    <div class="viaje-dest-cuerpo">
+                        <h2>¿cuál será el próximo?</h2>
+                        <p>Empieza a preparar un viaje y reúne lugares, itinerario, reservas y listas en un solo sitio.</p>
+                        <div class="viaje-dest-botones">
+                            <button class="vista-btn principal" onclick="openNewEntry('travel')"><i class="ico ico-mas" aria-hidden="true"></i>planificar viaje.</button>
+                            ${nLugares ? `<button class="vista-btn" onclick="setTravelPlacesTab('places')">ver lugares guardados.</button>` : ''}
+                        </div>
+                    </div>
+                </section>`;
+            const st = tripStatus(t);
+            const hoy = todayISO();
+            const faltan = st.label === 'Próximo' ? Math.round((new Date(t.startDate + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 86400000) : null;
+            const p = viajePreparativos(t);
+            const docs = viajeDocs(t);
+            return `
+                <section class="viaje-dest">
+                    ${mapa}
+                    <div class="viaje-dest-cuerpo">
+                        <h2>${escapeHtml(t.title || t.destination || 'viaje')}</h2>
+                        <p>${st.label === 'En curso' ? 'Estás de viaje' : 'Tu próximo viaje'}${t.destination ? `${st.label === 'En curso' ? ' en' : ' a'} ${escapeHtml(t.destination)}` : ''}, ${escapeHtml(formatTravelRange(t.startDate, t.endDate))}.</p>
+                        <div class="viaje-dest-datos">
+                            ${faltan !== null ? `<div><b>${faltan}</b><span>${faltan === 1 ? 'día para salir.' : 'días para salir.'}</span></div>` : ''}
+                            <div><b>${viajeDias(t)}</b><span>${viajeDias(t) === 1 ? 'día de viaje.' : 'días de viaje.'}</span></div>
+                            ${p.total ? `<div><b>${p.hechos}/${p.total}</b><span>preparativos.</span><i class="viaje-barra"><i style="width:${Math.round(p.hechos / p.total * 100)}%"></i></i></div>` : ''}
+                            ${docs ? `<div><b>${docs}</b><span>${docs === 1 ? 'documento.' : 'documentos.'}</span></div>` : ''}
+                        </div>
+                        <div class="viaje-dest-botones"><button class="vista-btn principal" onclick="openTripManager('${jsAttr(t.id)}')">abrir viaje.</button></div>
+                    </div>
+                </section>`;
+        }
+
+        function renderViajeTarjeta(t) {
+            const st = tripStatus(t);
+            const d = t.startDate ? new Date(t.startDate + 'T12:00:00') : null;
+            const p = viajePreparativos(t);
+            const docs = viajeDocs(t);
+            const lugares = (Array.isArray(t.places) ? t.places : []).map(x => x.nombre || x.name || x.title || '').join(' ');
+            const texto = [t.title, t.destination, t.notes, lugares, t.companions].filter(Boolean).join(' ');
+            const clase = { 'En curso': 'curso', 'Próximo': 'proximo', 'Completado': 'hecho' }[st.label] || 'sin';
+            return `
+                <div class="viaje-card" data-texto="${escapeHtml(texto)}">
+                    <button class="viaje-card-abrir" onclick="openTripManager('${jsAttr(t.id)}')" aria-label="Abrir ${escapeHtml(t.title || 'viaje')}">
+                        <span class="viaje-fecha">${d ? `<b>${String(d.getDate()).padStart(2, '0')}</b><span>${d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')}</span><small>${d.getFullYear()}</small>` : '<b>?</b><span>sin fecha</span>'}</span>
+                        <span class="viaje-card-cuerpo">
+                            <b>${escapeHtml(t.title || t.destination || 'viaje')}</b>
+                            ${t.destination && t.destination !== t.title ? `<small>${escapeHtml(t.destination)}</small>` : ''}
+                            <small>${t.startDate ? escapeHtml(formatTravelRange(t.startDate, t.endDate)) : 'sin fecha todavía'}</small>
+                        </span>
+                    </button>
+                    <button class="vista-icono-btn viaje-card-menu" aria-label="Opciones de ${escapeHtml(t.title || 'viaje')}" aria-haspopup="menu" onclick="menuViaje(this,'${jsAttr(t.id)}')"><i class="ico ico-puntos" aria-hidden="true"></i></button>
+                    <div class="viaje-card-pie">
+                        ${t.startDate ? `<span>${viajeDias(t)} ${viajeDias(t) === 1 ? 'día' : 'días'}</span>` : ''}
+                        <span>${p.total ? `${p.hechos}/${p.total} preparativos` : 'sin preparativos'}</span>
+                        ${docs ? `<span>${docs} ${docs === 1 ? 'doc' : 'docs'}</span>` : ''}
+                        <span class="viaje-estado ${clase}"><i aria-hidden="true"></i>${st.label.toLowerCase()}.</span>
+                    </div>
+                    ${p.total ? `<i class="viaje-barra" aria-hidden="true"><i style="width:${Math.round(p.hechos / p.total * 100)}%"></i></i>` : ''}
+                </div>`;
+        }
+
+        function filtrarViajes() {
+            const norm = x => stripAccents(String(x || '').toLowerCase());
+            const q = norm(document.getElementById('viajes-buscar')?.value).trim();
+            let n = 0;
+            document.querySelectorAll('.viajes-vista .viaje-card').forEach(el => { const ok = !q || norm(el.dataset.texto).includes(q); el.hidden = !ok; if (ok) n++; });
+            const nada = document.getElementById('viajes-sin-resultados');
+            if (nada) nada.hidden = !q || !!n;
+        }
+
+        function menuViaje(boton, id) {
+            abrirMenuAcciones(boton, [
+                ['abrir.', () => openTripManager(id)],
+                ['editar los datos.', () => openEditEntry(id)],
+                ['duplicar la planificación.', () => duplicarViaje(id)],
+                ['eliminar.', () => deleteTripFromManager(id)],
+            ]);
+        }
+
+        // Copia lugares, itinerario y listas (sin marcar) en un viaje nuevo sin fechas. No copia reservas, gastos ni
+        // documentos, que son de ese viaje.
+        async function duplicarViaje(id) {
+            const t = getTrip(id);
+            if (!t) return;
+            const limpio = JSON.parse(JSON.stringify({ places: t.places || [], itinerario: t.itinerario || [], listas: t.listas || [] }));
+            limpio.listas.forEach(l => (l.items || []).forEach(i => { i.hecho = false; }));
+            limpio.places.forEach(x => { delete x.visitado; });
+            const nuevo = { id: 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), type: 'travel', categoryId: t.categoryId, tags: [...(t.tags || [])], title: (t.title || 'viaje') + ' (copia)', destination: t.destination || '', startDate: '', endDate: '', date: '', notes: t.notes || '', ...limpio };
+            entries.push(nuevo);
+            filteredEntries = [...entries];
+            render();
+            try { await saveData(); showToast('Planificación duplicada, sin fechas'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // ============================================================
