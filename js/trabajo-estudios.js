@@ -719,8 +719,6 @@
                     </div>
                 </div>` : ''}
 
-                ${renderEntregasEstudios()}
-
                 <section class="studies-section" id="studies-schedule-section">
                     <h3>horario semanal.</h3>
                     ${renderScheduleGrid()}
@@ -739,6 +737,8 @@
                     <h3>Asignaturas${apartadoVisible('universidad') && cuatriActual() ? ` <button class="studies-uni-link" onclick="switchView('universidad')">${nombreCuatri(cuatriActual(), true)} ver la carrera →</button>` : ''}</h3>
                     ${asignaturasEnCurso().length ? `<div class="studies-subjects-list">${asignaturasEnCurso().map((s, i, l) => renderSubjectRow(s, i, l.length)).join('')}</div>` : '<div class="finance-empty-line">Aún no has añadido ninguna asignatura.</div>'}
                 </section>
+
+                ${renderEntregasEstudios()}
             </div>`;
         }
 
