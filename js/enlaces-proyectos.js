@@ -617,7 +617,7 @@
                 <div class="studies-row" data-item-id="${item.id}">
                     <div class="studies-row-head">
                         <input class="studies-row-title-input" value="${escapeHtml(item.title || '')}" placeholder="${listKey === 'exams' ? 'Examen sin título' : 'Trabajo sin título'}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
-                        ${cd && !cd.past ? `<span class="studies-row-countdown ${cd.due ? 'due-soon' : ''}">${cd.text}</span>` : ''}
+                        ${cd && !cd.past ? `<span class="studies-row-countdown ${cd.due ? 'due-soon' : ''}">${cd.text}${item.time && cd.due ? ', ' + escapeHtml(item.time) : ''}</span>` : ''}
                         ${listKey === 'assignments'
                             ? `<button class="asig-estado ${estadoItemAsignatura(listKey, item).clave}" aria-pressed="${!!item.done}" title="Marcar como entregado o pendiente" onclick="alternarEntregado('${subjectId}',${index})"><i aria-hidden="true"></i>${estadoItemAsignatura(listKey, item).texto}</button>`
                             : `<span class="asig-estado ${estadoItemAsignatura(listKey, item).clave}"><i aria-hidden="true"></i>${estadoItemAsignatura(listKey, item).texto}</span>`}
@@ -625,7 +625,7 @@
                         <button class="studies-row-remove" title="Eliminar" aria-label="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                     <div class="studies-row-fields">
-                        <div class="studies-row-field"><label>fecha.</label><input type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)"></div>
+                        <div class="studies-row-field"><label>fecha y hora.</label><div class="asig-fecha-hora"><input type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)"><input type="time" value="${escapeHtml(item.time || '')}" aria-label="Hora" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'time',this.value)"></div></div>
                         <div class="studies-row-field grade"><label>nota.</label><input type="number" min="0" max="10" step="0.1" value="${item.grade ?? ''}" placeholder="—" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'grade',this.value)"></div>
                         <div class="studies-row-field"><label>peso %.</label><input type="number" min="0" max="100" step="1" value="${item.weight ?? ''}" placeholder="—" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'weight',this.value)"></div>
                     </div>
@@ -650,8 +650,8 @@
             const s = findSubject(subjectId);
             if (!s || !s[listKey] || !s[listKey][index]) return;
             s[listKey][index][field] = value;
-            if (field === 'title' || field === 'date') syncExamCalendarEvent(s, listKey, s[listKey][index]);
-            if (listKey === 'assignments' && (field === 'title' || field === 'date')) syncAssignmentPlannerItem(s, s[listKey][index]);
+            if (field === 'title' || field === 'date' || field === 'time') syncExamCalendarEvent(s, listKey, s[listKey][index]);
+            if (listKey === 'assignments' && (field === 'title' || field === 'date' || field === 'time')) syncAssignmentPlannerItem(s, s[listKey][index]);
             // La fecha cambia el grupo (pendiente/pasado) y el "próximo en..."
             // del bloque; la nota o el peso cambian la nota final y el aviso
             // de reparto — cada uno refresca solo lo que de verdad depende de él.
@@ -723,7 +723,7 @@
             if (!Array.isArray(dayPlanner.days[item.date])) dayPlanner.days[item.date] = [];
             dayPlanner.days[item.date].push({
                 id: 'planner_assign_' + item.id,
-                time: existing?.time || '23:59',
+                time: item.time || existing?.time || '23:59',
                 title: `trabajo pendiente. ${item.title || 'Sin título'}`,
                 notes: subject?.name ? `Asignatura: ${subject.name}` : '',
                 done: !!item.done,

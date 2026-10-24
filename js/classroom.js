@@ -108,6 +108,9 @@
                         const d = await classroomPedir('courses?studentId=me&courseStates=ACTIVE&pageSize=100');
                         classroomCursos = (d.courses || []).map(c => ({ id: c.id, name: c.name || 'Clase sin nombre', section: c.section || '' }));
                         pintarClassroom();
+                        // Si ya estaban todas las clases unidas, no hace falta pasar por la lista: se traen al momento.
+                        const unidas = classroomDatos().cursos;
+                        if (classroomCursos.length && classroomCursos.every(c => unidas[c.id])) classroomTraer();
                     } catch (e) { pintarClassroom(classroomError(e)); }
                 },
                 error_callback: () => pintarClassroom('Se cerró la ventana de Google antes de terminar.'),

@@ -9450,7 +9450,9 @@ body.papel .asig-estado.vencido { color:#a3243b; }
     .asig-cab { flex-direction:column-reverse; }
     .asig-cab-acc { align-self:flex-end; }
 }
-.asignatura .studies-row-fields { display:grid; grid-template-columns:minmax(140px, 1.5fr) minmax(64px, 1fr) minmax(64px, 1fr); gap:10px; }
+.asignatura .studies-row-fields { display:grid; grid-template-columns:minmax(210px, 2.2fr) minmax(64px, 1fr) minmax(64px, 1fr); gap:10px; }
+.asig-fecha-hora { display:grid; grid-template-columns:1fr 92px; gap:6px; }
+.asig-fecha-hora input { min-width:0; }
 .asignatura .studies-row-field input { width:100%; box-sizing:border-box; }
 .asig-titulo:focus { outline:none; }
 
@@ -9462,3 +9464,9 @@ body.papel .asig-estado.vencido { color:#a3243b; }
 .classroom-aviso { margin:0 0 14px; padding:10px 12px; border-radius:10px; background:var(--bg-input); color:var(--text-primary); font-size:14px; }
 .classroom-ultima { margin-top:14px; }
 @media (max-width: 560px) { .classroom-fila { grid-template-columns:1fr; } }
+@media (max-width: 560px) {
+    .asignatura .studies-row-fields { grid-template-columns:1fr 1fr; }
+    .asignatura .studies-row-fields > .studies-row-field:first-child { grid-column:1 / -1; }
+    .asignatura .studies-row-head { flex-wrap:wrap; row-gap:6px; }
+    .asignatura .studies-row-title-input { flex:1 1 100%; }
+}
