@@ -1767,6 +1767,7 @@
             const ratio = income > 0 ? expense / income : (expense > 0 ? 1 : 0);
             const rPeq = Math.max(6, 46 * Math.sqrt(Math.min(ratio, 1)));
             const ultimos = [...financePro.transactions].sort((a, b) => financeProCompararMov(b, a)).slice(0, 12);
+            requestAnimationFrame(() => requestAnimationFrame(animateFinanceProChartPanel));
             return `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}
                 <div class="m-cifra-bloque">
                     <div class="m-etiqueta">patrimonio.</div>
@@ -1792,6 +1793,7 @@
                     <button class="m-boton" onclick="pegarExtractoBancario()">importar extracto.</button>
                 </div>
                 ${renderMobileFinanzasMes()}
+                ${renderFinanzasGrafica(true)}
                 <div class="m-bloque-cab"><div class="m-etiqueta">cuentas.</div></div>
                 <div class="m-lista">${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
                     <div class="m-fila"><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml((financePro.accounts[k]?.name || k).toLowerCase())}.</div></div><span class="m-fila-cifra">${financeMoney(financeProAccountBalance(k))}</span></div>`).join('')}

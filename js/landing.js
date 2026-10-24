@@ -197,6 +197,7 @@ aplicarPortadaPerfil();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-24', rama: 'todos', nombre: 'una gráfica de dinero que se explica', para: 'quien lleva sus finanzas.', texto: 'Tu patrimonio día a día, con los movimientos que más lo movieron escritos encima, cómo acabó cada mes y qué día de la semana gastas más. Pasa el dedo para ver cualquier día.' },
     { fecha: '2026-10-24', rama: 'todos', nombre: 'enlaces, viajes, panorama y asignaturas, renovados', para: 'todos.', texto: 'Enlaces con buscador y favoritos; Viajes con tu próximo viaje arriba y pestañas; Panorama con tarjetas que enseñan lo que hay dentro; y la ficha de cada asignatura con próximas entregas y tu progreso.' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'invita a un amigo', para: 'quien quiere compartir bitácora.', texto: 'En Ajustes → cuenta tienes tu código y tu enlace: tu amigo tiene 30 días de prueba en vez de 14 y, cuando entra, los dos desbloqueáis el tema «oliva.».' },
     { fecha: '2026-10-23', rama: 'todos', nombre: 'todas tus tareas en el inicio del móvil', para: 'quien se organiza desde el móvil.', texto: 'El inicio enseña también las tareas sin día, con su «→ hoy». Lo que marcas como hecho se queda a la vista media hora, por si fue sin querer, y luego se va; «ver las hechas.» lo trae de vuelta.' },
