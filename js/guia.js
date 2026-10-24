@@ -168,7 +168,7 @@ const GUIA = [
     {
         id: 'resumen', grupo: 'general', titulo: 'panorama.',
         lema: 'Todo lo importante, de un vistazo.',
-        intro: 'Un panel con lo que tienes encima y accesos a las vistas de resumen, para no ir apartado por apartado.',
+        intro: 'Siete tarjetas que enseñan lo que hay dentro antes de abrirlas: hoy, tareas (pendientes, de días pasados y por prioridad), tu día hora por hora, esta semana (cuánto tienes cada día), tu mes en puntos, próximamente y la revisión semanal. Cada una abre su ventana de siempre; debajo, en «más.», el resto de accesos.',
         botones: [
             [guiaBoton('a tener en cuenta.'), 'Avisos del día: cargos que no han llegado, semanas cargadas, cosas por revisar.'],
             [guiaBoton('hoy. tareas. esta semana. próximamente.'), 'Lo de hoy, tus tareas, la semana y lo que viene.'],
@@ -300,6 +300,7 @@ const GUIA = [
         lema: 'Asignaturas, exámenes, trabajos y horario.',
         intro: 'Cada asignatura con sus exámenes y trabajos (fecha, peso y nota), tu horario semanal y notas rápidas.',
         botones: [
+            [guiaBoton('ficha de una asignatura'), 'Al tocar una asignatura: sus exámenes, trabajos y nota media arriba; próximas entregas y trabajos a la izquierda; exámenes y progreso (media ponderada, cuánto de la nota está ya evaluado y trabajos entregados) a la derecha. Fecha, nota y peso se cambian en el sitio. En cada trabajo, el estado («pendiente.», «entregado.», «vencido.», «calificado.») se toca para marcarlo entregado.'],
             [guiaBoton('+ asignatura'), 'Crea una asignatura (con créditos, para la nota media ponderada).'],
             [guiaBoton('+ (en la asignatura)'), 'Añade un examen o un trabajo.'],
             [guiaBoton('+ nota rápida, notas rápidas'), 'Apuntes sueltos, a mano.'],
@@ -413,7 +414,13 @@ const GUIA = [
         id: 'enlaces', grupo: 'desarrollo', titulo: 'enlaces.',
         lema: 'Tus webs, sin veinte pestañas abiertas.',
         intro: 'Enlaces guardados por categoría, como accesos directos. Es un apartado opcional: actívalo o quítalo en Ajustes → apartados.',
-        botones: [[guiaBoton('+ enlace, + categoría'), 'Guarda un enlace o crea una categoría para agruparlos. Pulsa tu nombre para cambiarlo.']],
+        botones: [
+            [guiaBoton('buscar enlace.'), 'Busca por título, web, descripción o categoría; lo demás se esconde al momento.'],
+            [guiaBoton('rejilla. lista.'), 'Tarjetas o una fila por enlace. Se recuerda en este dispositivo.'],
+            [guiaBoton('nuevo enlace. + categoría.'), 'Guarda un enlace (con descripción si quieres) o crea una categoría para agruparlos.'],
+            [guiaBoton('estrella'), 'Lo pasa a favoritos, arriba del todo (hasta 5).'],
+            [guiaBoton('···'), 'En un enlace: editar, duplicar, copiar la dirección o eliminar. En una categoría: renombrar, cambiar el color o eliminarla eligiendo adónde van sus enlaces.'],
+        ],
         trucos: ['Claude puede guardar un enlace por ti.'],
     },
     {
@@ -432,8 +439,10 @@ const GUIA = [
     {
         id: 'viajes', grupo: 'otros', titulo: 'viajes.',
         lema: 'Cada viaje, con todo dentro.',
-        intro: 'Tus viajes y los lugares que quieres visitar. Cada viaje se abre en su gestor.',
+        intro: 'Tus viajes y los lugares que quieres visitar. Arriba, tu próximo viaje (o el que estás haciendo) con los días que faltan y cómo vas con los preparativos. Debajo, próximos, completados y lugares. Cada viaje se abre en su gestor.',
         botones: [
+            [guiaBoton('buscar.'), 'Busca entre tus viajes por destino, lugares, notas o acompañantes.'],
+            [guiaBoton('··· (en cada viaje)'), 'Abrir, editar los datos, duplicar la planificación (lugares, itinerario y listas, sin fechas, reservas ni documentos) o eliminar.'],
             [guiaBoton('Resumen'), 'Acompañantes, notas, gasto total y cifras del viaje.'],
             [guiaBoton('Reservas'), 'Transportes (vuelos, trenes...: compañía, número, horarios, localizador, asiento) y alojamientos (dirección, entrada, salida, reserva).'],
             [guiaBoton('Lugares, Itinerario, Mapa'), 'Sitios que ver, el plan día a día y su mapa.'],

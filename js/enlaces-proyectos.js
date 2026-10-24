@@ -423,34 +423,109 @@
             const s = findSubject(id);
             if (!s) return;
             showModal(renderSubjectDetailModal(s));
+            document.querySelector('#modal-container .modal-sheet')?.classList.add('asignatura-sheet');
+            // El foco va al nombre de la asignatura, no al primer campo (seleccionaba el título del primer examen).
+            setTimeout(() => document.getElementById('asig-titulo')?.focus({ preventScroll: true }), 30);
             loadEntryDocs('studies', s.id);
         }
 
         const STUDIES_ICON_EXAM = '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6M9 13h6M9 17h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
         const STUDIES_ICON_WORK = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 20l1-5 11-11 4 4-11 11-5 1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><path d="M14 5l4 4" stroke="currentColor" stroke-width="1.8"/></svg>';
 
+        // Ficha de asignatura (rediseño 24-10): cabecera con sus cifras y «añadir.», y a dos columnas: próximas
+        // entregas y trabajos a la izquierda; exámenes y progreso a la derecha (una sola columna en el móvil).
+        // Todo lo que enseña sale de los datos; si falta algo, lo dice en vez de inventarlo.
         function renderSubjectDetailModal(s) {
-            const finalGrade = subjectFinalGrade(s);
             const hasProfessor = !!(s.professor && s.professor.trim());
             return `
-                <div class="subject-detail-modal">
-                    <div class="subject-detail-head">
-                        <div>
-                            <div class="modal-title" style="margin-bottom:0">${escapeHtml(s.name)}</div>
-                            <div class="subject-detail-prof ${hasProfessor ? '' : 'subject-detail-prof-empty'}" onclick="editSubjectProfessor('${s.id}')">${hasProfessor ? escapeHtml(s.professor) : 'añadir nombre.'}</div>
+                <div class="subject-detail-modal asignatura" role="dialog" aria-modal="true" aria-labelledby="asig-titulo">
+                    <div class="asig-cab">
+                        <div class="asig-cab-txt">
+                            <div class="modal-title asig-titulo" id="asig-titulo" tabindex="-1">${escapeHtml(s.name)}.</div>
+                            <div class="subject-detail-prof ${hasProfessor ? '' : 'subject-detail-prof-empty'}" onclick="editSubjectProfessor('${s.id}')">${hasProfessor ? escapeHtml(s.professor) : 'añadir nombre del profesor.'}</div>
+                            <div class="asig-cifras" id="asig-cifras-${s.id}">${renderAsignaturaCifras(s)}</div>
                         </div>
-                        <div class="subject-detail-grade" id="subject-detail-grade-wrap" style="${finalGrade === null ? 'display:none' : ''}">
-                            <span class="nota-final ${finalGrade !== null ? gradeTierClass(finalGrade) : ''}">${finalGrade !== null ? finalGrade.toFixed(2) : ''}</span>
-                            <div class="subject-detail-grade-label">Nota final</div>
+                        <div class="asig-cab-acc">
+                            <button class="vista-btn principal" aria-haspopup="menu" onclick="abrirMenuAcciones(this,[['añadir trabajo.',()=>addSubjectItem('${s.id}','assignments')],['añadir examen.',()=>addSubjectItem('${s.id}','exams')]])"><i class="ico ico-mas" aria-hidden="true"></i>añadir.</button>
+                            <button class="vista-icono-btn" aria-label="Más opciones de la asignatura" aria-haspopup="menu" onclick="abrirMenuAcciones(this,[['eliminar asignatura.',()=>deleteSubject('${s.id}')]])"><i class="ico ico-puntos" aria-hidden="true"></i></button>
+                            <button class="vista-icono-btn" aria-label="Cerrar" onclick="closeModal()"><i class="ico ico-x" aria-hidden="true"></i></button>
                         </div>
                     </div>
-                    <div class="studies-weight-note" id="subject-weight-note">${renderSubjectWeightNote(s)}</div>
-                    ${renderSubjectItemsBlock(s, 'exams')}
-                    ${renderSubjectItemsBlock(s, 'assignments')}
-                    ${renderEntryDocsSection('studies', s.id, 'Documentos (apuntes, resúmenes...)')}
-                    <button class="finance-oneoff-btn" style="color:#dc2626;border-color:#dc2626" onclick="deleteSubject('${s.id}')">Eliminar asignatura</button>
+                    <div class="asig-cuerpo">
+                        <div class="asig-col">
+                            <section class="asig-panel" id="asig-proximas-${s.id}">${renderAsignaturaProximas(s)}</section>
+                            ${renderSubjectItemsBlock(s, 'assignments')}
+                        </div>
+                        <div class="asig-col">
+                            ${renderSubjectItemsBlock(s, 'exams')}
+                            <section class="asig-panel" id="asig-progreso-${s.id}">${renderAsignaturaProgreso(s)}</section>
+                            <div class="studies-weight-note" id="subject-weight-note">${renderSubjectWeightNote(s)}</div>
+                        </div>
+                    </div>
+                    ${renderEntryDocsSection('studies', s.id, 'documentos (apuntes, resúmenes...).')}
                 </div>
             `;
+        }
+
+        function renderAsignaturaCifras(s) {
+            const nEx = (s.exams || []).length, nTr = (s.assignments || []).length;
+            const media = subjectFinalGrade(s);
+            return `<span class="asig-cifra"><b>${nEx}</b>${nEx === 1 ? 'examen' : 'exámenes'}</span><span class="asig-cifra"><b>${nTr}</b>${nTr === 1 ? 'trabajo' : 'trabajos'}</span><span class="asig-cifra"><b class="${media !== null ? gradeTierClass(media) : ''}">${media !== null ? media.toFixed(2).replace('.', ',') : 'sin nota'}</b>nota media</span>`;
+        }
+
+        // Estado de un examen o trabajo: calificado si tiene nota; entregado si está marcado; vencido si pasó la fecha
+        // sin entregar (solo trabajos); y si no, pendiente. Nunca se da por entregado solo porque pase la fecha.
+        function estadoItemAsignatura(listKey, it) {
+            const tieneNota = it.grade !== '' && it.grade != null && !isNaN(Number(it.grade));
+            if (tieneNota) return { clave: 'nota', texto: 'calificado.' };
+            if (listKey === 'assignments' && it.done) return { clave: 'hecho', texto: 'entregado.' };
+            if (it.date && it.date < todayISO()) return listKey === 'assignments' ? { clave: 'vencido', texto: 'vencido.' } : { clave: 'pasado', texto: 'hecho, sin nota.' };
+            return { clave: 'pend', texto: 'pendiente.' };
+        }
+
+        function renderAsignaturaProximas(s) {
+            const hoy = todayISO();
+            const futuras = [...(s.assignments || []).filter(x => !x.done).map(x => ({ x, tipo: 'trabajo' })), ...(s.exams || []).map(x => ({ x, tipo: 'examen' }))]
+                .filter(({ x }) => x.date && x.date >= hoy).sort((a, b) => a.x.date.localeCompare(b.x.date)).slice(0, 3);
+            return `<div class="asig-panel-cab"><b>próximas entregas.</b></div>
+                ${futuras.length ? `<div class="asig-proximas">${futuras.map(({ x, tipo }) => {
+                    const cd = studiesItemCountdown(x.date);
+                    return `<div class="asig-prox"><span class="asig-prox-cuando ${cd.due ? 'pronto' : ''}">${escapeHtml(cd.text)}.</span><span class="asig-prox-txt"><b>${escapeHtml(x.title || (tipo === 'examen' ? 'examen sin título' : 'trabajo sin título'))}</b><small>${tipo}, ${new Date(x.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}${x.time ? ', ' + escapeHtml(x.time) : ''}</small></span></div>`;
+                }).join('')}</div>` : `<p class="asig-vacio">Nada con fecha por delante. <button class="asig-enlace" onclick="addSubjectItem('${s.id}','assignments')">añadir trabajo.</button></p>`}`;
+        }
+
+        function renderAsignaturaProgreso(s) {
+            const items = [...(s.exams || []), ...(s.assignments || [])];
+            const conNota = items.filter(x => x.grade !== '' && x.grade != null && !isNaN(Number(x.grade)));
+            const media = subjectFinalGrade(s);
+            const evaluado = conNota.reduce((n, x) => n + (Number(x.weight) > 0 ? Number(x.weight) : 0), 0);
+            const tr = s.assignments || [];
+            const entregados = tr.filter(x => x.done || (x.grade !== '' && x.grade != null)).length;
+            return `<div class="asig-panel-cab"><b>progreso.</b></div>
+                ${!conNota.length && !tr.length ? '<p class="asig-vacio">Aún no hay calificaciones. Cuando pongas notas, aquí verás cómo vas.</p>' : `
+                <div class="asig-prog">
+                    <div><b class="${media !== null ? gradeTierClass(media) : ''}">${media !== null ? media.toFixed(2).replace('.', ',') : 'sin nota'}</b><small>${media !== null ? (evaluado ? 'media ponderada.' : 'media de las notas.') : 'aún no hay calificaciones.'}</small></div>
+                    ${evaluado ? `<div><b>${Math.min(100, Math.round(evaluado))} %</b><small>de la nota ya evaluado.</small><i class="viaje-barra"><i style="width:${Math.min(100, evaluado)}%"></i></i></div>` : ''}
+                    ${tr.length ? `<div><b>${entregados}/${tr.length}</b><small>trabajos entregados.</small><i class="viaje-barra"><i style="width:${Math.round(entregados / tr.length * 100)}%"></i></i></div>` : ''}
+                </div>`}`;
+        }
+
+        // Lo que depende de varias cosas (cifras de arriba, próximas, progreso) se repinta junto tras cada cambio.
+        function refrescarFichaAsignatura(s) {
+            const poner = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+            poner(`asig-cifras-${s.id}`, renderAsignaturaCifras(s));
+            poner(`asig-proximas-${s.id}`, renderAsignaturaProximas(s));
+            poner(`asig-progreso-${s.id}`, renderAsignaturaProgreso(s));
+        }
+
+        async function alternarEntregado(subjectId, index) {
+            const s = findSubject(subjectId);
+            const it = s?.assignments?.[index];
+            if (!it) return;
+            it.done = !it.done;
+            syncAssignmentPlannerItem(s, it);
+            refreshSubjectItemsBlock(s, 'assignments');
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // Cuánto falta/pasó para la fecha de un examen o trabajo — a
@@ -489,6 +564,7 @@
                 wrap.querySelector('.nota-final').textContent = finalGrade !== null ? finalGrade.toFixed(2) : '';
                 wrap.querySelector('.nota-final').className = `nota-final ${finalGrade !== null ? gradeTierClass(finalGrade) : ''}`;
             }
+            refrescarFichaAsignatura(s);
             const note = document.getElementById('subject-weight-note');
             if (note) note.textContent = renderSubjectWeightNote(s);
         }
@@ -515,28 +591,24 @@
                 ? `${items.length} ${label.toLowerCase()}${next ? `, próximo ${studiesItemCountdown(next.date).text}` : ''}`
                 : `sin ${label.toLowerCase()} todavía`;
             return `
-            <div class="studies-editorial-block" id="studies-block-${listKey}-${s.id}">
-                <div class="studies-editorial-rule"></div>
-                <div class="studies-editorial-kicker"><span>${escapeHtml(kicker)}</span></div>
-                <div class="studies-editorial-heading-row">
-                    <div class="studies-editorial-heading">${label}</div>
-                    <button class="studies-editorial-add-btn" onclick="addSubjectItem('${s.id}','${listKey}')">+ añadir</button>
-                </div>
-                ${!items.length ? `<div class="studies-editorial-empty">Todavía no has añadido ningún ${singular}.</div>` : `
+            <section class="studies-editorial-block asig-panel" id="studies-block-${listKey}-${s.id}">
+                <div class="asig-panel-cab"><b>${label.toLowerCase()}.</b><small>${escapeHtml(kicker)}.</small><button class="vista-btn" onclick="addSubjectItem('${s.id}','${listKey}')"><i class="ico ico-mas" aria-hidden="true"></i>${singular}.</button></div>
+                ${!items.length ? `<div class="asig-vacio">Todavía no hay ${label.toLowerCase()}. ${listKey === 'exams' ? 'Apúntalos para tener todas las fechas importantes juntas y en el calendario.' : 'Al ponerles fecha, salen solos en tu planificador el día de entrega.'}</div>` : `
                     ${noDate.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
                     ${upcoming.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
                     ${past.length ? `
-                    <details class="studies-past-group" ${studiesPastGroupOpen[`${listKey}-${s.id}`] === false ? '' : 'open'} ontoggle="studiesPastGroupOpen['${listKey}-${s.id}']=this.open">
-                        <summary class="studies-editorial-group-label">pasados (${past.length})</summary>
+                    <details class="studies-past-group" ${studiesPastGroupOpen[`${listKey}-${s.id}`] === true || (studiesPastGroupOpen[`${listKey}-${s.id}`] !== false && past.length <= 3) ? 'open' : ''} ontoggle="studiesPastGroupOpen['${listKey}-${s.id}']=this.open">
+                        <summary class="studies-editorial-group-label">pasados. ${past.length}</summary>
                         ${past.map(it => renderSubjectItemRow(s.id, listKey, it, s[listKey].indexOf(it))).join('')}
                     </details>` : ''}
                 `}
-            </div>`;
+            </section>`;
         }
 
         function refreshSubjectItemsBlock(s, listKey) {
             const el = document.getElementById(`studies-block-${listKey}-${s.id}`);
             if (el) el.outerHTML = renderSubjectItemsBlock(s, listKey);
+            refrescarFichaAsignatura(s);
         }
 
         function renderSubjectItemRow(subjectId, listKey, item, index) {
@@ -545,13 +617,16 @@
                 <div class="studies-row" data-item-id="${item.id}">
                     <div class="studies-row-head">
                         <input class="studies-row-title-input" value="${escapeHtml(item.title || '')}" placeholder="${listKey === 'exams' ? 'Examen sin título' : 'Trabajo sin título'}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'title',this.value)">
-                        ${cd ? `<span class="studies-row-countdown ${cd.due ? 'due-soon' : ''} ${cd.past ? 'past' : ''}">${cd.text}</span>` : ''}
-                        <button class="studies-row-remove" title="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})"><i class='ico ico-x' aria-hidden=true></i></button>
+                        ${cd && !cd.past ? `<span class="studies-row-countdown ${cd.due ? 'due-soon' : ''}">${cd.text}</span>` : ''}
+                        ${listKey === 'assignments'
+                            ? `<button class="asig-estado ${estadoItemAsignatura(listKey, item).clave}" aria-pressed="${!!item.done}" title="Marcar como entregado o pendiente" onclick="alternarEntregado('${subjectId}',${index})"><i aria-hidden="true"></i>${estadoItemAsignatura(listKey, item).texto}</button>`
+                            : `<span class="asig-estado ${estadoItemAsignatura(listKey, item).clave}"><i aria-hidden="true"></i>${estadoItemAsignatura(listKey, item).texto}</span>`}
+                        <button class="studies-row-remove" title="Eliminar" aria-label="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                     <div class="studies-row-fields">
-                        <div class="studies-row-field"><label>Fecha</label><input type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)"></div>
-                        <div class="studies-row-field grade"><label>Nota</label><input type="number" min="0" max="10" step="0.1" value="${item.grade ?? ''}" placeholder="—" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'grade',this.value)"></div>
-                        <div class="studies-row-field"><label>Peso %</label><input type="number" min="0" max="100" step="1" value="${item.weight ?? ''}" placeholder="—" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'weight',this.value)"></div>
+                        <div class="studies-row-field"><label>fecha.</label><input type="date" value="${item.date || ''}" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'date',this.value)"></div>
+                        <div class="studies-row-field grade"><label>nota.</label><input type="number" min="0" max="10" step="0.1" value="${item.grade ?? ''}" placeholder="—" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'grade',this.value)"></div>
+                        <div class="studies-row-field"><label>peso %.</label><input type="number" min="0" max="100" step="1" value="${item.weight ?? ''}" placeholder="—" onchange="updateSubjectItem('${subjectId}','${listKey}',${index},'weight',this.value)"></div>
                     </div>
                 </div>`;
         }

@@ -9397,3 +9397,59 @@ body:not(.papel) .enlace-icono img { background:#efede6; }
 @media (max-width:760px) { .pano-grid { grid-template-columns:minmax(0, 1fr); } .pano-card { min-height:0; } }
 @media (prefers-reduced-motion: reduce) { .pano-card-ir { transition:none; } }
 .m-generico .home-cabecera .vista-cab-titulo, .m-generico .home-cabecera .vista-cab-sub { display:none; }
+
+/* Ficha de asignatura (rediseño 24-10): ancha y a dos columnas en escritorio; a pantalla completa en el móvil. */
+.modal-sheet.asignatura-sheet { width:min(1180px, calc(100vw - 32px)); max-width:none; max-height:calc(100vh - 32px); }
+.asig-cab { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:16px; margin-bottom:16px; border-bottom:1px solid var(--border); }
+.asig-titulo { margin:0 !important; font-size:30px !important; font-weight:800; letter-spacing:-.02em; }
+.asig-cab .subject-detail-prof { margin-top:4px; }
+.asig-cab-acc { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+.asig-cifras { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.asig-cifra { display:inline-flex; align-items:baseline; gap:6px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; font-size:13px; color:var(--text-secondary); }
+.asig-cifra b { font-size:17px; font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.asig-cuerpo { display:grid; grid-template-columns:minmax(0, 1.7fr) minmax(0, 1fr); gap:16px; align-items:start; }
+.asig-col { display:flex; flex-direction:column; gap:16px; min-width:0; }
+.asig-panel { padding:16px; border:1px solid var(--border); border-radius:14px; background:var(--bg-card); }
+.asignatura .studies-editorial-block { margin:0; }
+.asig-panel-cab { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin-bottom:12px; }
+.asig-panel-cab b { font-size:17px; font-weight:800; color:var(--text-primary); }
+.asig-panel-cab small { font-size:12.5px; color:var(--text-secondary); }
+.asig-panel-cab .vista-btn { margin-left:auto; height:34px; padding:0 12px; font-size:13px; }
+.asig-vacio { margin:0; font-size:13.5px; line-height:1.5; color:var(--text-secondary); }
+.asig-enlace { padding:0; border:0; background:none; color:var(--text-primary); font-family:var(--font-family); font-size:13.5px; font-weight:700; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.asig-proximas { display:flex; flex-direction:column; gap:10px; }
+.asig-prox { display:flex; align-items:baseline; gap:12px; }
+.asig-prox-cuando { flex-shrink:0; min-width:78px; font-size:13px; font-weight:700; color:var(--text-secondary); }
+.asig-prox-cuando.pronto { color:var(--m-acento); }
+.asig-prox-txt { display:flex; flex-direction:column; min-width:0; }
+.asig-prox-txt b { font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.asig-prox-txt small { font-size:12.5px; color:var(--text-secondary); }
+.asig-prog { display:flex; flex-direction:column; gap:14px; }
+.asig-prog > div { display:flex; flex-direction:column; gap:2px; }
+.asig-prog b { font-size:24px; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.asig-prog small { font-size:12.5px; color:var(--text-secondary); }
+.asig-estado { display:inline-flex; align-items:center; gap:6px; flex-shrink:0; padding:4px 10px; border:1px solid var(--border); border-radius:10px; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:12px; font-weight:700; white-space:nowrap; }
+button.asig-estado { cursor:pointer; }
+button.asig-estado:hover { border-color:var(--text-primary); color:var(--text-primary); }
+.asig-estado i { width:8px; height:8px; border-radius:50%; background:var(--text-secondary); }
+.asig-estado.hecho i, .asig-estado.nota i { background:#3f7a57; }
+.asig-estado.vencido { color:#e0707f; border-color:currentColor; }
+body.papel .asig-estado.vencido { color:#a3243b; }
+.asig-estado.vencido i { background:currentColor; }
+.asig-estado.pend i { background:var(--accent); }
+.asignatura .entry-docs-section, .asignatura [class*="docs"] { margin-top:16px; }
+@media (max-width:900px) {
+    .asig-cuerpo { grid-template-columns:minmax(0, 1fr); }
+    .asig-cuerpo .asig-col:first-child { display:contents; }
+    .asig-cuerpo .asig-col:last-child { display:contents; }
+    .asig-cuerpo [id^="asig-proximas-"] { order:1; }
+    .asig-cuerpo [id^="studies-block-exams-"] { order:2; }
+    .asig-cuerpo [id^="studies-block-assignments-"] { order:3; }
+    .asig-cuerpo [id^="asig-progreso-"] { order:4; }
+    .asig-cuerpo #subject-weight-note { order:5; }
+    .asig-cab { flex-direction:column-reverse; }
+    .asig-cab-acc { align-self:flex-end; }
+}
+.asignatura .studies-row-fields { display:grid; grid-template-columns:minmax(140px, 1.5fr) minmax(64px, 1fr) minmax(64px, 1fr); gap:10px; }
+.asignatura .studies-row-field input { width:100%; box-sizing:border-box; }
+.asig-titulo:focus { outline:none; }
