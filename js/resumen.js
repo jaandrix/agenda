@@ -149,14 +149,9 @@
 
         function renderHome() {
             const hallazgos = patronesHallazgos();
+            // Panorama (rediseño 24-10): las siete tarjetas abren los modales de siempre y enseñan antes lo que hay
+            // dentro, con datos reales; el resto de accesos sigue debajo, en su lista.
             const rows = [
-                renderHomeLauncherRow(HOME_ICON_TODAY, 'hoy.', 'openHomeTodayModal()'),
-                renderHomeLauncherRow(HOME_ICON_TASKS, 'tareas.', 'openHomeTasksModal()'),
-                renderHomeLauncherRow(HOME_ICON_TODAY, 'tu día.', 'openTuDia()'),
-                renderHomeLauncherRow(HOME_ICON_WEEK, 'esta semana.', 'openResumenSemana()'),
-                renderHomeLauncherRow(HOME_ICON_STATS, 'tu mes.', 'openTuMes()'),
-                renderHomeLauncherRow(HOME_ICON_UPCOMING, 'próximamente.', 'openHomeUpcomingModal()'),
-                renderHomeLauncherRow(HOME_ICON_REVIEW, 'revisión semanal.', 'openHomeReviewModal()'),
                 renderHomeLauncherRow(HOME_ICON_ACTIVITY, 'actividad.', 'openConstellationView()'),
                 renderHomeLauncherRow(HOME_ICON_STATS, 'estadísticas.', 'openHomeStatsModal()'),
                 renderHomeLauncherRow(HOME_ICON_PATTERNS, 'patrones.', 'openHomePatternsModal()', hallazgos.length || ''),
@@ -169,17 +164,106 @@
             <div>
                 <div class="home-cabecera">
                     <div>
-                        <div class="resumen-titulo" style="font-size:20px;font-weight:700;margin-bottom:2px;color:var(--text-primary)">panorama.</div>
-                        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:18px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}.</div>
+                        <div class="resumen-titulo vista-cab-titulo">panorama.</div>
+                        <div class="vista-cab-sub" style="margin-bottom:18px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}.</div>
                     </div>
                     <div class="home-estancia" id="home-estancia">
                         <button class="home-estancia-btn" title="tu estancia en bitácora." aria-expanded="false" onclick="toggleHomeEstancia()">${HOME_ICON_ESTANCIA}</button>
                     </div>
                 </div>
-                <div style="max-width:760px">
+                <div class="pano">
                     ${renderHomeAvisos(hallazgos)}
-                    <div class="home-launcher-list">${rows}</div>
+                    ${renderPanoramaTarjetas()}
+                    <div class="pano-mas-cab">más.</div>
+                    <div class="home-launcher-list pano-mas">${rows}</div>
                 </div>
+            </div>`;
+        }
+
+        function panoTarjeta(clase, icono, titulo, sub, accion, cuerpo) {
+            return `<button type="button" class="pano-card ${clase}" onclick="${accion}">
+                <span class="pano-card-cab"><span class="pano-card-icono" aria-hidden="true">${icono}</span><span class="pano-card-tit"><b>${titulo}</b><small>${sub}</small></span><i class="ico ico-der pano-card-ir" aria-hidden="true"></i></span>
+                <span class="pano-card-cuerpo">${cuerpo}</span>
+            </button>`;
+        }
+
+        function renderPanoramaTarjetas() {
+            const hoy = todayISO();
+            const ahora = new Date(), horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+            const esEvento = e => e.type === 'event' || e.type === 'birthday' || e.type === 'travel';
+            const hora = e => e.time || e.startTime || '';
+            const eventosHoy = getDayAllEntries(hoy).filter(esEvento).sort((a, b) => (hora(a) || '99').localeCompare(hora(b) || '99'));
+            const tareasHoy = plannerItemsForOffset(0);
+            const pendHoy = tareasHoy.filter(t => !t.done);
+            const rut = typeof rutinasResumenHoy === 'function' ? rutinasResumenHoy() : { total: 0, hechas: 0 };
+            const cifra = (n, etq) => `<span class="pano-cifra"><b>${n}</b><small>${etq}</small></span>`;
+            const linea = (h, t, extra = '') => `<span class="pano-linea"><span class="pano-hora">${escapeHtml(h || 'todo el día')}</span><span class="pano-linea-txt">${escapeHtml(t)}</span>${extra}</span>`;
+            const vacio = t => `<span class="pano-vacio">${t}</span>`;
+
+            // hoy.
+            const siguientes = eventosHoy.filter(e => !hora(e) || hora(e) >= horaAhora).slice(0, 3);
+            const cHoy = `${siguientes.length ? siguientes.map(e => linea(hora(e), e.type === 'birthday' ? 'cumpleaños de ' + e.title : e.title)).join('') : vacio(eventosHoy.length ? 'Ya ha pasado todo lo de hoy.' : 'Nada en el calendario hoy.')}
+                <span class="pano-cifras">${cifra(eventosHoy.length, eventosHoy.length === 1 ? 'evento hoy' : 'eventos hoy')}${cifra(pendHoy.length, pendHoy.length === 1 ? 'tarea por hacer' : 'tareas por hacer')}${rut.total ? cifra(rut.total - rut.hechas, rut.total - rut.hechas === 1 ? 'rutina pendiente' : 'rutinas pendientes') : ''}</span>`;
+
+            // tareas.
+            const sinDia = (dayPlanner.backlog || []).filter(t => !t.done);
+            const arrastradas = pendHoy.filter(t => t.arrastrado);
+            const pendientes = [...pendHoy, ...sinDia];
+            const prio = k => pendientes.filter(t => t.prioridad === k).length;
+            const cTareas = `<span class="pano-cifras">${cifra(pendientes.length, 'pendientes')}${cifra(arrastradas.length, arrastradas.length === 1 ? 'de ayer' : 'de días pasados')}${cifra(pendHoy.length, 'para hoy')}</span>
+                ${prio('alta') + prio('media') + prio('baja') ? `<span class="pano-prioridades">${[['alta', 'alta'], ['media', 'media'], ['baja', 'baja']].filter(([k]) => prio(k)).map(([k, t]) => `<span><i class="pano-prio ${k}" aria-hidden="true"></i>${prio(k)} ${t}</span>`).join('')}</span>` : ''}`;
+
+            // tu día.
+            const conHora = [...eventosHoy.filter(hora).map(e => ({ h: hora(e), t: e.title, ev: true })), ...tareasHoy.filter(t => t.time).map(t => ({ h: t.time, t: t.title, hecha: t.done }))]
+                .sort((a, b) => a.h.localeCompare(b.h)).slice(0, 5);
+            const cDia = conHora.length ? `<span class="pano-dia">${conHora.map(x => `<span class="pano-dia-fila ${x.hecha ? 'hecha' : ''} ${x.h < horaAhora ? 'pasada' : ''}"><span class="pano-hora">${x.h}</span><i class="${x.ev ? 'ev' : ''}" aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(x.t)}</span></span>`).join('')}</span>` : vacio('Hoy no tienes nada con hora.');
+
+            // esta semana.
+            const lunes = new Date(hoy + 'T12:00:00'); lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7));
+            const dias = Array.from({ length: 7 }, (_, i) => { const d = new Date(lunes); d.setDate(d.getDate() + i); const iso = isoLocal(d); return { iso, ev: getDayAllEntries(iso).filter(esEvento).length, ta: mobileDiaPlanner(iso).length }; });
+            const maxDia = Math.max(1, ...dias.map(d => d.ev + d.ta));
+            const totEv = dias.reduce((n, d) => n + d.ev, 0), totTa = dias.reduce((n, d) => n + d.ta, 0);
+            const cSemana = `<span class="pano-semana" role="img" aria-label="${dias.map((d, i) => `${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][i]} ${d.ev + d.ta}`).join(', ')}">${dias.map((d, i) => `<span class="pano-sem-dia ${d.iso === hoy ? 'hoy' : ''}"><span class="pano-sem-barra"><i class="ta" style="height:${d.ta / maxDia * 100}%"></i><i class="ev" style="height:${d.ev / maxDia * 100}%"></i></span><small>${'LMXJVSD'[i]}</small></span>`).join('')}</span>
+                <span class="pano-cifras">${cifra(totEv, totEv === 1 ? 'evento' : 'eventos')}${cifra(totTa, totTa === 1 ? 'tarea' : 'tareas')}</span>`;
+
+            // tu mes.
+            const h0 = new Date(hoy + 'T12:00:00'), y = h0.getFullYear(), m = h0.getMonth();
+            const huecos = (new Date(y, m, 1).getDay() + 6) % 7, nDias = new Date(y, m + 1, 0).getDate();
+            let conCosas = 0;
+            const puntos = [...Array(huecos).fill('<i class="fuera"></i>'), ...Array.from({ length: nDias }, (_, k) => {
+                const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(k + 1).padStart(2, '0')}`;
+                const n = mobileOcupacionDia(iso);
+                if (n) conCosas++;
+                return `<i class="${n >= 3 ? 'mucho' : n ? 'algo' : ''} ${iso === hoy ? 'hoy' : ''}" title="${k + 1}: ${n}"></i>`;
+            })].join('');
+            const nombreMes = h0.toLocaleDateString('es-ES', { month: 'long' });
+            const cMes = `<span class="pano-mes"><span class="pano-mes-puntos">${puntos}</span><span class="pano-mes-ley"><span><i class="mucho"></i>3 o más cosas</span><span><i class="algo"></i>1 o 2</span><span><i></i>libre</span><b>${conCosas} de ${nDias} días de ${nombreMes} con algo.</b></span></span>`;
+
+            // próximamente.
+            const prox = [];
+            for (let k = 1; k <= 30 && prox.length < 3; k++) {
+                const d = new Date(hoy + 'T12:00:00'); d.setDate(d.getDate() + k);
+                const iso = isoLocal(d);
+                getDayAllEntries(iso).filter(esEvento).forEach(e => { if (prox.length < 3 && !prox.some(x => x.e.id === e.id)) prox.push({ iso, e }); });
+            }
+            const cProx = prox.length ? prox.map(({ iso, e }) => { const d = new Date(iso + 'T12:00:00'); return linea(`${['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][d.getDay()]} ${d.getDate()}`, e.type === 'birthday' ? 'cumpleaños de ' + e.title : e.title, e.type === 'travel' ? '<span class="pano-tipo">viaje.</span>' : ''); }).join('') : vacio('Nada en los próximos 30 días.');
+
+            // revisión semanal.
+            const hace7 = new Date(hoy + 'T12:00:00'); hace7.setDate(hace7.getDate() - 6);
+            const desde = isoLocal(hace7);
+            const hechas7 = entries.filter(e => /^(planner_done_|recurring_done_)/.test(e.id || '') && e.date >= desde && e.date <= hoy).length;
+            const diasRut = new Set(); habits.forEach(hb => Object.keys(hb.completadas || {}).forEach(d => { if (d >= desde && d <= hoy && hb.completadas[d]) diasRut.add(d); }));
+            const objetivos = entries.filter(e => e.type === 'goal' && e.status !== 'completed' && e.status !== 'Completado').length;
+            const cRev = `<span class="pano-cifras">${cifra(hechas7, hechas7 === 1 ? 'tarea hecha en 7 días' : 'tareas hechas en 7 días')}${cifra(`${diasRut.size}/7`, 'días con rutinas')}${objetivos ? cifra(objetivos, objetivos === 1 ? 'objetivo en curso' : 'objetivos en curso') : ''}</span>`;
+
+            return `<div class="pano-grid">
+                ${panoTarjeta('hoy', HOME_ICON_TODAY, 'hoy.', 'Lo que te queda de hoy.', 'openHomeTodayModal()', cHoy)}
+                ${panoTarjeta('', HOME_ICON_TASKS, 'tareas.', 'Todo lo que tienes por hacer.', 'openHomeTasksModal()', cTareas)}
+                ${panoTarjeta('', HOME_ICON_TODAY, 'tu día.', 'Tu jornada, hora por hora.', 'openTuDia()', cDia)}
+                ${panoTarjeta('', HOME_ICON_WEEK, 'esta semana.', 'Cuánto tienes cada día.', 'openResumenSemana()', cSemana)}
+                ${panoTarjeta('', HOME_ICON_STATS, 'tu mes.', `${nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}, de un vistazo.`, 'openTuMes()', cMes)}
+                ${panoTarjeta('', HOME_ICON_UPCOMING, 'próximamente.', 'Lo que viene después de hoy.', 'openHomeUpcomingModal()', cProx)}
+                ${panoTarjeta('ancha', HOME_ICON_REVIEW, 'revisión semanal.', 'Cierra la semana y prepara la siguiente.', 'openHomeReviewModal()', cRev)}
             </div>`;
         }
 

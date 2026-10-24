@@ -9337,3 +9337,63 @@ body:not(.papel) .enlace-icono img { background:#efede6; }
 .viaje-card > .viaje-barra { margin-top:8px; }
 @media (max-width:1199px) { .viajes-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 @media (max-width:760px) { .viajes-grid { grid-template-columns:minmax(0, 1fr); } .viaje-dest { padding:20px; } .viaje-dest h2 { font-size:28px; } .viaje-dest-mapa { width:100%; opacity:.5; } }
+
+/* Panorama (rediseño 24-10): cada tarjeta es un botón que abre su modal, con una vista previa real. */
+.pano { max-width:1180px; }
+.pano-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; margin-top:14px; }
+.pano-card { display:flex; flex-direction:column; gap:14px; min-width:0; min-height:190px; padding:16px; border:1px solid var(--border); border-radius:14px; background:var(--bg-card); color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; transition:border-color .15s ease; }
+.pano-card:hover { border-color:var(--accent); }
+.pano-card:focus-visible { outline:2px solid var(--text-primary); outline-offset:2px; }
+.pano-card.ancha { grid-column:1 / -1; min-height:0; }
+.pano-card-cab { display:flex; align-items:center; gap:12px; }
+.pano-card-icono { display:grid; place-items:center; width:40px; height:40px; flex-shrink:0; border-radius:10px; background:var(--bg-input); color:var(--text-primary); }
+.pano-card-icono svg { width:20px; height:20px; }
+.pano-card-tit { display:flex; flex-direction:column; gap:1px; min-width:0; flex:1; }
+.pano-card-tit b { font-size:17px; font-weight:800; }
+.pano-card-tit small { font-size:12.5px; color:var(--text-secondary); }
+.pano-card-ir { font-size:14px; color:var(--text-secondary); transition:transform .15s ease, color .15s ease; }
+.pano-card:hover .pano-card-ir { color:var(--text-primary); transform:translateX(2px); }
+.pano-card-cuerpo { display:flex; flex-direction:column; gap:8px; flex:1; min-width:0; }
+.pano-linea { display:flex; align-items:baseline; gap:10px; min-width:0; font-size:14px; }
+.pano-hora { flex-shrink:0; min-width:44px; font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--text-secondary); }
+.pano-linea-txt { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+.pano-tipo { margin-left:auto; flex-shrink:0; font-size:12px; color:var(--text-secondary); }
+.pano-vacio { font-size:13.5px; color:var(--text-secondary); }
+.pano-cifras { display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:auto; padding-top:10px; border-top:1px solid var(--border); }
+.pano-cifra { display:flex; flex-direction:column; gap:1px; }
+.pano-cifra b { font-size:22px; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.pano-cifra small { font-size:12px; color:var(--text-secondary); }
+.pano-prioridades { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--text-secondary); }
+.pano-prioridades span { display:inline-flex; align-items:center; gap:6px; }
+.pano-prio { width:10px; height:10px; border-radius:50%; border:2px solid var(--text-secondary); box-sizing:border-box; }
+.pano-prio.alta { border-color:#e0707f; } .pano-prio.media { border-color:#d0a03c; } .pano-prio.baja { border-color:var(--accent); }
+.pano-dia { display:flex; flex-direction:column; gap:6px; }
+.pano-dia-fila { display:flex; align-items:center; gap:10px; min-width:0; font-size:13.5px; }
+.pano-dia-fila i { width:8px; height:8px; flex-shrink:0; border-radius:50%; background:var(--accent); }
+.pano-dia-fila i.ev { background:var(--m-acento); }
+.pano-dia-fila.pasada { opacity:.55; }
+.pano-dia-fila.hecha .pano-linea-txt { text-decoration:line-through; }
+.pano-semana { display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; height:84px; }
+.pano-sem-dia { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.pano-sem-dia small { font-size:11.5px; font-weight:600; color:var(--text-secondary); }
+.pano-sem-dia.hoy small { color:var(--text-primary); font-weight:800; }
+.pano-sem-barra { display:flex; flex-direction:column-reverse; width:16px; flex:1; overflow:hidden; border-radius:4px; background:color-mix(in srgb, var(--text-primary) 8%, transparent); }
+.pano-sem-barra i { display:block; width:100%; }
+.pano-sem-barra i.ta { background:var(--accent); }
+.pano-sem-barra i.ev { background:var(--m-acento); }
+.pano-mes { display:flex; gap:16px; align-items:flex-start; }
+.pano-mes-puntos { display:grid; grid-template-columns:repeat(7, 12px); gap:5px; flex-shrink:0; }
+.pano-mes-puntos i, .pano-mes-ley i { width:12px; height:12px; border-radius:50%; background:color-mix(in srgb, var(--text-primary) 10%, transparent); }
+.pano-mes-puntos i.fuera { visibility:hidden; }
+.pano-mes-puntos i.algo, .pano-mes-ley i.algo { background:color-mix(in srgb, var(--accent) 45%, transparent); }
+.pano-mes-puntos i.mucho, .pano-mes-ley i.mucho { background:var(--accent); }
+.pano-mes-puntos i.hoy { box-shadow:0 0 0 2px var(--bg-card), 0 0 0 4px var(--m-acento); }
+.pano-mes-ley { display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--text-secondary); }
+.pano-mes-ley span { display:inline-flex; align-items:center; gap:8px; }
+.pano-mes-ley b { margin-top:4px; font-size:12.5px; font-weight:600; color:var(--text-primary); }
+.pano-mas-cab { margin:26px 0 6px; font-size:13px; font-weight:700; color:var(--text-secondary); }
+.pano-mas { max-width:760px; }
+@media (max-width:1199px) { .pano-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+@media (max-width:760px) { .pano-grid { grid-template-columns:minmax(0, 1fr); } .pano-card { min-height:0; } }
+@media (prefers-reduced-motion: reduce) { .pano-card-ir { transition:none; } }
+.m-generico .home-cabecera .vista-cab-titulo, .m-generico .home-cabecera .vista-cab-sub { display:none; }
