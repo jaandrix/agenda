@@ -9601,3 +9601,12 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { overscroll-behavior
 @media (max-width:760px) { .pano-card { min-height:0; padding:18px; } }
 .pano-tareas { display:flex; flex-direction:column; gap:9px; }
 .pano-tarea { display:flex; align-items:center; gap:10px; min-width:0; font-size:14px; }
+/* En el iPhone, cualquier fundido del oscurecido (de opacidad o de color) podía pintarse dos veces según lo que hubiera
+   debajo (en Finanzas, al abrir «+ movimiento»): en pantallas estrechas el fondo se oscurece de golpe y solo se
+   anima la hoja, que sube deslizándose. */
+@media (max-width: 600px) {
+    .modal-overlay, .command-palette-overlay, .centered-message-overlay { animation: none !important; }
+    .estancia-overlay, .anual-overlay { transition: none !important; }
+}
+body.mobile-standalone :is(.modal-overlay, .command-palette-overlay, .centered-message-overlay), body.pwa :is(.modal-overlay, .command-palette-overlay, .centered-message-overlay) { animation: none !important; }
+body.mobile-standalone :is(.estancia-overlay, .anual-overlay), body.pwa :is(.estancia-overlay, .anual-overlay) { transition: none !important; }
