@@ -2,7 +2,7 @@
         // (Google Identity Services, ventana emergente) y no se guarda en ningún servidor. Cada clase se une a una
         // asignatura (studies.classroom.cursos: id de la clase → id de la asignatura o 'ignorar') y cada tarea guarda
         // su classroomId, así que traerlas otra vez actualiza en vez de duplicar. Lo que el usuario cambie a mano
-        // (nota, peso, entregado) no se pisa: Classroom solo rellena lo que está vacío y solo marca entregado.
+        // (nota, peso, entregado) no se pisa: Classroom solo rellena la nota si está vacía o la puso él, y solo marca entregado.
         // En el iPhone con la app instalada la ventana de Google no vuelve a la app: se conecta desde el navegador.
         const CLASSROOM_CLIENT_ID = '476419211198-8rftknhtf15b3u6t5q3qu4a3iuu7p0m7.apps.googleusercontent.com';
         // Hasta que Google verifique la app, solo pueden conectar las cuentas de prueba del proyecto de Google Cloud:
@@ -196,14 +196,15 @@
             tareas.forEach(cw => {
                 const entrega = porTarea[cw.id];
                 const entregada = entrega && (entrega.state === 'TURNED_IN' || entrega.state === 'RETURNED');
-                const nota = entrega && entrega.assignedGrade != null && cw.maxPoints ? String(Math.round(entrega.assignedGrade / cw.maxPoints * 100) / 10) : '';
+                // Hasta que el profesor la devuelve (RETURNED), Classroom manda assignedGrade a 0 aunque ya esté calificada.
+                const nota = entrega && entrega.state === 'RETURNED' && entrega.assignedGrade != null && cw.maxPoints ? String(Math.round(entrega.assignedGrade / cw.maxPoints * 100) / 10) : '';
                 const { date, time } = classroomFecha(cw);
                 const enlace = /^https:\/\/classroom\.google\.com\//.test(cw.alternateLink || '') ? cw.alternateLink : '';
                 let lista = (s.assignments.find(i => i.classroomId === cw.id) && 'assignments') || (s.exams.find(i => i.classroomId === cw.id) && 'exams');
                 let item = lista && s[lista].find(i => i.classroomId === cw.id);
                 if (!item) {
                     lista = CLASSROOM_EXAMEN.test(cw.title || '') ? 'exams' : 'assignments';
-                    item = { id: 'item_cr_' + cw.id, title: cw.title || 'Tarea sin título', date, time, grade: nota, weight: '', done: !!entregada, classroomId: cw.id, enlace };
+                    item = { id: 'item_cr_' + cw.id, title: cw.title || 'Tarea sin título', date, time, grade: nota, weight: '', done: !!entregada, classroomId: cw.id, enlace, notaClassroom: nota };
                     // Las de días ya pasados no van al planificador: si no, todo lo atrasado del curso se arrastraría a hoy.
                     if (date && date < todayISO()) item.fueraDelPlanificador = true;
                     s[lista].push(item);
@@ -212,7 +213,10 @@
                     let cambio = false;
                     if ((cw.title || '') && item.title !== cw.title) { item.title = cw.title; cambio = true; }
                     if (item.date !== date || (item.time || '') !== time) { item.date = date; item.time = time; cambio = true; }
-                    if (nota && (item.grade === '' || item.grade == null)) { item.grade = nota; cambio = true; }
+                    if (nota && (item.grade === '' || item.grade == null || item.grade === item.notaClassroom)) {
+                        if (item.grade !== nota) { item.grade = nota; cambio = true; }
+                        item.notaClassroom = nota;
+                    } else if (!nota && !item.notaClassroom && String(item.grade) === '0') { item.grade = ''; cambio = true; }
                     if (enlace) item.enlace = enlace;
                     if (cambio) cuenta.cambiadas++;
                     if (entregada && !item.done) { item.done = true; cuenta.entregadas++; cambio = true; }
