@@ -109,12 +109,14 @@
                 : `El ${servFecha(p.fecha)} es festivo (${p.nombre}): ${p.total} días libres, de ${rango}.`;
         }
 
-        // Una línea con el próximo puente o, si no lo hay, el próximo festivo.
-        function renderLineaFestivos(clase = '') {
+        // Una línea con el próximo puente. En el inicio (sinPuente) solo sale la pregunta de la ciudad: el puente
+        // se queda para «tu día» y el calendario lo marca en su día.
+        function renderLineaFestivos(clase = '', sinPuente = false) {
             if (!servicios.festivos?.pais) {
                 if (servicios.festivosNo) return '';
                 return `<div class="serv-linea ${clase}"><span>¿Dónde vives? Así verás tus festivos y los puentes que vienen.</span><button class="pedido-btn" onclick="openAjustesFestivos()">elegir ciudad.</button><button class="serv-cerrar" onclick="servicios.festivosNo=true;servGuardarDatos();render()" aria-label="Ahora no"><i class='ico ico-x' aria-hidden=true></i></button></div>`;
             }
+            if (sinPuente) return '';
             const p = proximosPuentes(45)[0];
             if (p) return `<button class="serv-linea serv-linea-puente ${clase}" onclick="openAjustesFestivos()"><b>puente.</b><span>${puenteTexto(p)}</span></button>`;
             return '';

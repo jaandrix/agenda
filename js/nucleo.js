@@ -1401,7 +1401,7 @@
                 <div class="m-mes-letras">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => `<span class="${i === letraHoy && y === new Date().getFullYear() && m === new Date().getMonth() ? 'hoy' : ''}">${l}</span>`).join('')}</div>
                 <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>` : `<div class="m-semana-carrusel">${[-1, 0, 1].map(k => `<div class="m-semana-tira">${tiraDe(k)}</div>`).join('')}</div>`}
             </section>
-            ${renderLineaFestivos('m-serv-linea')}
+            ${renderLineaFestivos('m-serv-linea', true)}
             ${renderMobileDiaPanel(sel, hoy)}
             ${renderMobileTeselas()}`;
         }
