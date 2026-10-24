@@ -248,6 +248,18 @@
             }
             const cProx = prox.length ? prox.map(({ iso, e }) => { const d = new Date(iso + 'T12:00:00'); return linea(`${['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][d.getDay()]} ${d.getDate()}`, e.type === 'birthday' ? 'cumpleaños de ' + e.title : e.title, e.type === 'travel' ? '<span class="pano-tipo">viaje.</span>' : ''); }).join('') : vacio('Nada en los próximos 30 días.');
 
+            // entregas.
+            const entregas = typeof asignaturasEnCurso === 'function' && apartadoVisible('studies') ? asignaturasEnCurso().flatMap(s => [
+                ...(s.assignments || []).filter(x => !x.done && !(x.grade !== '' && x.grade != null) && x.date).map(x => ({ x, s, tipo: 'trabajo' })),
+                ...(s.exams || []).filter(x => x.date && x.date >= hoy && !(x.grade !== '' && x.grade != null)).map(x => ({ x, s, tipo: 'examen' })),
+            ]).sort((a, b) => (a.x.date + (a.x.time || '99:99')).localeCompare(b.x.date + (b.x.time || '99:99'))) : null;
+            const deClassroom = entregas ? entregas.filter(e => e.x.classroomId).length : 0;
+            const cEntregas = entregas && entregas.length ? `${entregas.slice(0, 4).map(({ x, s, tipo }) => {
+                const d = new Date(x.date + 'T12:00:00');
+                const tarde = x.date < hoy;
+                return `<span class="pano-linea ${tarde ? 'tarde' : ''}"><span class="pano-hora">${tarde ? 'vencido' : x.date === hoy ? 'hoy' : `${['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][d.getDay()]} ${d.getDate()}`}${x.time ? ' ' + escapeHtml(x.time) : ''}</span><span class="pano-linea-txt">${escapeHtml(x.title || tipo)}<small>${escapeHtml(s.name)}${tipo === 'examen' ? ', examen' : ''}</small></span></span>`;
+            }).join('')}${entregas.length > 4 ? `<span class="pano-mas">y ${entregas.length - 4} más.</span>` : ''}` : vacio('Nada pendiente de entregar.');
+
             // revisión semanal.
             const hace7 = new Date(hoy + 'T12:00:00'); hace7.setDate(hace7.getDate() - 6);
             const desde = isoLocal(hace7);
@@ -257,13 +269,14 @@
             const cRev = `<span class="pano-cifras">${cifra(hechas7, hechas7 === 1 ? 'tarea hecha en 7 días' : 'tareas hechas en 7 días')}${cifra(`${diasRut.size}/7`, 'días con rutinas')}${objetivos ? cifra(objetivos, objetivos === 1 ? 'objetivo en curso' : 'objetivos en curso') : ''}</span>`;
 
             return `<div class="pano-grid">
-                ${panoTarjeta('hoy', HOME_ICON_TODAY, 'hoy.', 'Lo que te queda de hoy.', 'openHomeTodayModal()', cHoy)}
-                ${panoTarjeta('', HOME_ICON_TASKS, 'tareas.', 'Todo lo que tienes por hacer.', 'openHomeTasksModal()', cTareas)}
                 ${panoTarjeta('', HOME_ICON_TODAY, 'tu día.', 'Tu jornada, hora por hora.', 'openTuDia()', cDia)}
+                ${panoTarjeta('hoy', HOME_ICON_TODAY, 'hoy.', 'Lo que te queda de hoy.', 'openHomeTodayModal()', cHoy)}
+                ${entregas ? panoTarjeta('', HOME_ICON_TASKS, 'entregas.', deClassroom ? 'Classroom y tus asignaturas, por fecha.' : 'Lo que tienes que entregar, por fecha.', "switchView('studies')", cEntregas) : ''}
+                ${panoTarjeta('', HOME_ICON_TASKS, 'tareas.', 'Todo lo que tienes por hacer.', 'openHomeTasksModal()', cTareas)}
                 ${panoTarjeta('', HOME_ICON_WEEK, 'esta semana.', 'Cuánto tienes cada día.', 'openResumenSemana()', cSemana)}
                 ${panoTarjeta('', HOME_ICON_STATS, 'tu mes.', `${nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}, de un vistazo.`, 'openTuMes()', cMes)}
                 ${panoTarjeta('', HOME_ICON_UPCOMING, 'próximamente.', 'Lo que viene después de hoy.', 'openHomeUpcomingModal()', cProx)}
-                ${panoTarjeta('ancha', HOME_ICON_REVIEW, 'revisión semanal.', 'Cierra la semana y prepara la siguiente.', 'openHomeReviewModal()', cRev)}
+                ${panoTarjeta(entregas ? 'doble' : 'ancha', HOME_ICON_REVIEW, 'revisión semanal.', 'Cierra la semana y prepara la siguiente.', 'openHomeReviewModal()', cRev)}
             </div>`;
         }
 

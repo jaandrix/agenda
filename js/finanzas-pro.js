@@ -717,72 +717,15 @@
             return res;
         }
 
-        // Lo que llega una vez al mes (nómina, alquiler, suscripciones) no explica nada: se rotulan los sueltos. La compra
-        // del súper también se repite, pero varias veces al mes: esa sí cuenta para el gasto de cada día.
-        function financeMovRepetido() {
-            const memo = financeSaldosCache && financeSaldosCache.repetidos;
-            if (memo) return memo;
-            const clave = t => t.type + '|' + stripAccents(String(t.note || '').toLowerCase()).replace(/[0-9]/g, '').replace(/\s+/g, ' ').trim();
-            const meses = {}, veces = {};
-            financePro.transactions.forEach(t => {
-                const k = clave(t);
-                (meses[k] = meses[k] || new Set()).add(t.date.slice(0, 7));
-                veces[k] = (veces[k] || 0) + 1;
-            });
-            const fn = t => {
-                if (t.recurringEntryId || t.programadoId) return true;
-                const k = clave(t);
-                return meses[k]?.size >= 2 && veces[k] / meses[k].size <= 1.5;
-            };
-            if (financeSaldosCache) financeSaldosCache.repetidos = fn;
-            return fn;
-        }
-
-        function financeMovimientosDestacados(serie) {
-            if (serie.length < 2) return [];
-            const desde = serie[0].f, hasta = serie[serie.length - 1].f;
-            const vals = serie.map(d => d.v);
-            const umbral = (Math.max(...vals) - Math.min(...vals)) * 0.15;
-            const repetido = financeMovRepetido();
-            const sueltos = financePro.transactions.filter(t => (t.type === 'expense' || t.type === 'income') && !t.ahorro && !t.pendiente
-                && FINANCE_PRO_ACCOUNT_KEYS.includes(t.account) && t.date > desde && t.date <= hasta && Number(t.amount) >= umbral && !repetido(t));
-            const gastos = sueltos.filter(t => t.type === 'expense').sort((a, b) => b.amount - a.amount).slice(0, 2);
-            const ingresos = sueltos.filter(t => t.type === 'income').sort((a, b) => b.amount - a.amount).slice(0, 1);
-            return [...gastos, ...ingresos].map(t => {
-                const cat = financeProCategoryById(t.category);
-                let texto = String(t.note || cat?.name || (t.type === 'expense' ? 'gasto' : 'ingreso')).toLowerCase().trim();
-                if (texto.length > 22) texto = texto.slice(0, 21).trim() + '…';
-                return { f: t.date, texto: texto.replace(/[.…]$/, '') + '.', v: (t.type === 'expense' ? -1 : 1) * Number(t.amount) };
-            });
-        }
-
-        // Gasto medio de cada día de la semana: sin nómina, alquiler ni nada repetido, y sin los gastos muy grandes
-        // (más de 4 veces la mediana), que dicen más del mes que del día.
-        function financeGastoPorDia(serie) {
-            if (serie.length < 28) return null;
-            const desde = serie[0].f, hasta = serie[serie.length - 1].f;
-            const repetido = financeMovRepetido();
-            const gastos = financePro.transactions.filter(t => t.type === 'expense' && !t.ahorro && !t.pendiente && FINANCE_PRO_ACCOUNT_KEYS.includes(t.account) && t.date >= desde && t.date <= hasta && !repetido(t));
-            if (gastos.length < 10) return null;
-            const importes = gastos.map(t => Number(t.amount) || 0).sort((a, b) => a - b);
-            const tope = importes[Math.floor(importes.length / 2)] * 4;
-            const suma = [0, 0, 0, 0, 0, 0, 0], dias = [0, 0, 0, 0, 0, 0, 0];
-            serie.forEach(d => { dias[(new Date(d.f + 'T12:00:00').getDay() + 6) % 7]++; });
-            gastos.forEach(t => { const a = Number(t.amount) || 0; if (a <= tope) suma[(new Date(t.date + 'T12:00:00').getDay() + 6) % 7] += a; });
-            return suma.map((v, i) => v / (dias[i] || 1));
-        }
-
         function renderFinanzasGrafica(movil) {
             const rango = FINANCE_PRO_CHART_RANGES.find(r => r.key === financeProChartRange) || FINANCE_PRO_CHART_RANGES[2];
             const serie = financeSerieDiaria(rango.months, financeGrafExtras);
             const total = serie.length ? serie[serie.length - 1].v : financeProTotalBalance();
             const cambio = serie.length > 1 ? total - serie[0].v : 0;
             const tieneExtras = Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0) > 0 || (financeProfile.history || []).some(h => Number(h.invested || 0) + Number(h.emergency || 0) > 0);
-            window._finGraf = { serie, destacados: financeMovimientosDestacados(serie), rango };
-            const porDia = financeGastoPorDia(serie);
+            window._finGraf = { serie, rango };
             const periodo = rango.months === 1 ? 'en el último mes' : rango.months === 12 ? 'en el último año' : rango.months ? `en los últimos ${rango.months} meses` : 'desde el primer movimiento';
             const delta = c => `<b class="${c < 0 ? 'neg' : ''}">${c >= 0 ? '+' : '−'}${financeMoney(Math.abs(c))}</b>`;
-            const maxDia = porDia ? Math.max(...porDia) : 0;
             return `<section class="${movil ? '' : 'finance-panel '}fin-grafica ${movil ? 'movil' : ''}" ${movil ? '' : 'id="finance-pro-chart-panel"'}>
                 <div class="fin-graf-cab">
                     <div><h3>patrimonio.</h3><small class="fin-graf-sub">${financeGrafExtras ? 'tus cuentas, la inversión y la emergencia.' : 'suma de tus cuentas, hoy.'}</small></div>
@@ -795,16 +738,49 @@
                     : `<p class="asig-vacio fin-graf-vacio">La gráfica empieza en cuanto apuntes o importes tu primer movimiento.</p>`}
                 <div class="fin-graf-pie">
                     ${tieneExtras ? `<button class="asig-enlace" onclick="alternarExtrasGrafica()">${financeGrafExtras ? 'solo las cuentas.' : 'con inversión y emergencia.'}</button>` : '<span></span>'}
-                    ${movil ? '' : `<button class="vista-btn" onclick="openFinanceProStatsModal()">estadísticas.</button>`}
+                    ${movil ? '' : `<span class="fin-graf-acciones"><button class="vista-btn" onclick="openHistorialPresupuestos()">presupuestos.</button><button class="vista-btn" onclick="openFinanceProStatsModal()">estadísticas.</button></span>`}
                 </div>
-                ${porDia ? `<div class="fin-semana">
-                    <div class="fin-semana-cab"><b>qué día gastas más.</b><small>gasto medio de cada día, sin lo que se repite cada mes ni los gastos grandes.</small></div>
-                    <div class="fin-semana-fila">${['lun.', 'mar.', 'mié.', 'jue.', 'vie.', 'sáb.', 'dom.'].map((t, i) => {
-                        const r = maxDia ? 5 + Math.sqrt(porDia[i] / maxDia) * 19 : 5;
-                        return `<div class="fin-semana-dia"><span class="fin-semana-bola ${porDia[i] === maxDia && maxDia > 0 ? 'top' : ''}" style="width:${(r * 2).toFixed(0)}px;height:${(r * 2).toFixed(0)}px"></span><b>${financeMoney(porDia[i]).replace(/,\d\d€$/, ' €')}</b><small>${t}</small></div>`;
-                    }).join('')}</div>
-                </div>` : ''}
             </section>`;
+        }
+
+        function actualizarHistorialPresupuestos() {
+            if (typeof asistLimitesDelMes !== 'function') return false;
+            const hist = financePro.historialPresupuestos || (financePro.historialPresupuestos = {});
+            const actual = financeMonthKey();
+            const meses = new Set([actual, ...Object.keys(financeProfile?.budgetPlans || {}).filter(m => m <= actual)]);
+            if (Object.keys(financePro.categoryBudgets || {}).length) financePro.transactions.forEach(t => { const m = t.date.slice(0, 7); if (m <= actual) meses.add(m); });
+            let cambio = false;
+            meses.forEach(mes => {
+                const cats = {};
+                Object.entries(asistLimitesDelMes(mes)).forEach(([id, l]) => {
+                    const cat = financeProCategoryById(id);
+                    if (!cat) return;
+                    const { gastado, limite } = financeProPresupuestoConDevoluciones(id, mes, l.limite);
+                    cats[id] = { nombre: (l.nombre || cat.name || '').trim(), limite: Math.round(limite * 100) / 100, gastado: Math.round(gastado * 100) / 100 };
+                });
+                if (!Object.keys(cats).length) return;
+                const antes = JSON.stringify(hist[mes]?.categorias || {});
+                if (antes !== JSON.stringify(cats)) { hist[mes] = { categorias: cats, actualizado: todayISO() }; cambio = true; }
+            });
+            return cambio;
+        }
+
+        function openHistorialPresupuestos() {
+            if (actualizarHistorialPresupuestos()) saveData().catch(e => console.error(e));
+            const hist = financePro.historialPresupuestos || {};
+            const meses = Object.keys(hist).sort().reverse();
+            showModal(`
+                <div class="modal-title">presupuestos, mes a mes.</div>
+                ${meses.length ? meses.map(m => {
+                    const cats = Object.values(hist[m].categorias || {}).sort((a, b) => (b.gastado - b.limite) - (a.gastado - a.limite));
+                    const pasado = cats.reduce((n, c) => n + Math.max(0, c.gastado - c.limite), 0);
+                    return `<details class="presu-mes" ${m === meses[0] ? 'open' : ''}><summary><b>${escapeHtml(financeMonthLabel(m))}.</b><span>${pasado > 0 ? `te pasaste ${financeMoney(pasado)}` : 'dentro de lo previsto'}</span></summary>
+                        <div class="presu-tabla">${cats.map(c => {
+                            const dif = c.gastado - c.limite;
+                            return `<div class="presu-fila"><span>${escapeHtml(c.nombre.toLowerCase())}.</span><span>${financeMoney(c.gastado)} de ${financeMoney(c.limite)}</span><b class="${dif > 0 ? 'neg' : ''}">${dif > 0 ? '+' + financeMoney(dif) : financeMoney(-dif) + ' libres'}</b></div>`;
+                        }).join('')}</div></details>`;
+                }).join('') : '<p class="finance-modal-note">Todavía no hay meses con presupuesto. Se apuntan solos en cuanto pones límites a tus categorías o casillas en largo plazo.</p>'}
+            `);
         }
 
         function renderFinanceProChartPanel() {
@@ -820,8 +796,8 @@
                 if (!W) return;
                 const serie = g.serie, n = serie.length;
                 const movil = W < 520;
-                const H = movil ? 210 : 240, pT = 28, pB = 24, barras = 44, pR = 10;
-                const iw = W - pR, ih = H - pT - pB - barras;
+                const H = movil ? 190 : 220, pT = 18, pB = 24, pR = 10;
+                const iw = W - pR, ih = H - pT - pB;
                 const vals = serie.map(d => d.v);
                 const min = Math.min(...vals), max = Math.max(...vals), marg = (max - min) * 0.14 || Math.abs(max) * 0.05 || 1;
                 const lo = min - marg, hi = max + marg;
@@ -829,25 +805,11 @@
                 const y = v => pT + ih - ((v - lo) / (hi - lo)) * ih;
                 const linea = serie.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(d.v).toFixed(1)}`).join('');
                 const area = `${linea}L${x(n - 1).toFixed(1)},${pT + ih}L${x(0).toFixed(1)},${pT + ih}Z`;
-                const meses = {};
-                serie.forEach((d, i) => { const k = d.f.slice(0, 7); const m = meses[k] || (meses[k] = { i0: i, i1: i, n: 0 }); m.i1 = i; m.n += d.delta; });
-                const lista = Object.entries(meses);
-                const maxN = Math.max(1, ...lista.map(([, m]) => Math.abs(m.n)));
-                const yb = H - pB - barras / 2;
-                const cadaMes = Math.max(1, Math.ceil(lista.length / (movil ? 5 : 9)));
-                const barrasSvg = lista.map(([k, m], j) => {
-                    const h = Math.abs(m.n) / maxN * (barras / 2 - 4), w = Math.max(3, (x(m.i1) - x(m.i0)) * 0.55), cx = (x(m.i0) + x(m.i1)) / 2;
-                    const tip = escapeHtml(`${financeMonthLabel(k)}: ${m.n >= 0 ? '+' : '−'}${financeMoney(Math.abs(m.n))}`);
-                    return `<rect x="${(cx - w / 2).toFixed(1)}" y="${(m.n >= 0 ? yb - h : yb).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1.5, h).toFixed(1)}" rx="2" class="${m.n >= 0 ? 'fin-barra' : 'fin-barra neg'}"><title>${tip}</title></rect>`
-                        + (j % cadaMes === 0 && cx > 12 && cx < iw - 12 ? `<text x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${MESES[Number(k.slice(5, 7)) - 1]}</text>` : '');
-                }).join('');
-                const notas = g.destacados.map(m => {
-                    const i = serie.findIndex(d => d.f >= m.f);
-                    if (i < 0) return '';
-                    const cx = x(i), cy = y(serie[i].v), abajo = m.v < 0;
-                    const ancla = cx < 70 ? 'start' : cx > iw - 70 ? 'end' : 'middle';
-                    return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" class="fin-nota-punto ${abajo ? 'neg' : ''}"/>
-                        <text class="fin-nota" x="${cx.toFixed(1)}" y="${(abajo ? Math.min(cy + 20, pT + ih - 2) : Math.max(cy - 11, 12)).toFixed(1)}" text-anchor="${ancla}">${escapeHtml(m.texto)} ${m.v > 0 ? '+' : '−'}${escapeHtml(financeMoney(Math.abs(m.v)).replace(/,\d\d€$/, ' €'))}</text>`;
+                const inicios = serie.map((d, i) => ({ d, i })).filter(({ d, i }) => i === 0 || d.f.endsWith('-01'));
+                const cada = Math.max(1, Math.ceil(inicios.length / (movil ? 5 : 9)));
+                const meses = inicios.filter((_, j) => j % cada === 0).map(({ d, i }) => {
+                    const cx = x(i) + (i === 0 ? 0 : 0);
+                    return cx > 14 && cx < iw - 14 ? `<text x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${MESES[Number(d.f.slice(5, 7)) - 1]}</text>` : '';
                 }).join('');
                 const id = 'fin-raya-' + (el.closest('.movil') ? 'm' : 'd');
                 el.innerHTML = `<svg width="${W}" height="${H}" aria-hidden="true">
@@ -855,9 +817,7 @@
                     <line x1="0" x2="${iw}" y1="${y(serie[0].v).toFixed(1)}" y2="${y(serie[0].v).toFixed(1)}" class="fin-base"/>
                     <path d="${area}" fill="url(#${id})" stroke="none" class="fin-area"/>
                     <path d="${linea}" fill="none" stroke="currentColor" class="fin-linea"/>
-                    <line x1="0" x2="${iw}" y1="${yb}" y2="${yb}" class="fin-base-barras"/>
-                    ${barrasSvg}
-                    ${notas}
+                    ${meses}
                     <line class="fin-cursor" x1="0" x2="0" y1="${pT - 8}" y2="${pT + ih}" style="display:none"/>
                     <circle class="fin-fin-halo" cx="${x(n - 1).toFixed(1)}" cy="${y(serie[n - 1].v).toFixed(1)}" r="7"/>
                     <circle class="fin-fin" cx="${x(n - 1).toFixed(1)}" cy="${y(serie[n - 1].v).toFixed(1)}" r="4.5"/>
@@ -1797,6 +1757,13 @@
             lines.push(`**Total cuentas PRO**: ${financeMoney(financeProTotalBalance())}`);
             lines.push('');
 
+            const histP = financePro.historialPresupuestos || {};
+            if (Object.keys(histP).length) {
+                lines.push('## Presupuestos, mes a mes');
+                lines.push(mdTable(['Mes', 'Categoría', 'Presupuesto', 'Gastado', 'Diferencia'], Object.keys(histP).sort().flatMap(m => Object.values(histP[m].categorias || {}).map(c => [financeMonthLabel(m), c.nombre, financeMoney(c.limite), financeMoney(c.gastado), financeMoney(c.gastado - c.limite)]))));
+                lines.push('');
+            }
+
             lines.push('## Categorías');
             const cats = financePro.categories || [];
             lines.push('### Gasto');
@@ -1912,6 +1879,7 @@
 
         function renderFinanceProDashboard() {
             ensureCurrentMonthHistory();
+            if (actualizarHistorialPresupuestos()) setTimeout(() => saveData().catch(e => console.error(e)), 0);
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
@@ -1925,11 +1893,11 @@
                     </div>
                     ${blurToggleBtn}
                 </div>
+                ${renderFinanceProChartPanel()}
+
                 ${renderFinanceProReviewBanner()}
                 ${renderAvisoPresupuestos()}
                 ${renderSuscripcionesDetectadas()}
-
-                ${renderFinanceProChartPanel()}
 
                 ${renderFinanceNetworthCard()}
 

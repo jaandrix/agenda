@@ -168,7 +168,7 @@ const GUIA = [
     {
         id: 'resumen', grupo: 'general', titulo: 'panorama.',
         lema: 'Todo lo importante, de un vistazo.',
-        intro: 'Siete tarjetas que enseñan lo que hay dentro antes de abrirlas: hoy, tareas (pendientes, de días pasados y por prioridad), tu día hora por hora, esta semana (cuánto tienes cada día), tu mes en puntos, próximamente y la revisión semanal. Cada una abre su ventana de siempre; debajo, en «más.», el resto de accesos.',
+        intro: 'Tarjetas que enseñan lo que hay dentro antes de abrirlas: tu día hora por hora, hoy, entregas (si estudias: trabajos y exámenes pendientes, también los de Classroom, por fecha de entrega), tareas, esta semana, tu mes en puntos, próximamente y la revisión semanal. Cada una abre su ventana de siempre; debajo, en «más.», el resto de accesos.',
         botones: [
             [guiaBoton('a tener en cuenta.'), 'Avisos del día: cargos que no han llegado, semanas cargadas, cosas por revisar.'],
             [guiaBoton('hoy. tareas. esta semana. próximamente.'), 'Lo de hoy, tus tareas, la semana y lo que viene.'],
@@ -264,10 +264,10 @@ const GUIA = [
             [guiaBoton('Importar'), 'Sube o pega el extracto del banco: el Excel (.xlsx) o el CSV tal cual lo descarga tu banco (Ibercaja, Santander, Revolut...), aunque traiga arriba los datos de la cuenta. Si tienes varias cuentas, las transferencias entre ellas (la salida en una y la entrada en otra, mismo importe, dos días como mucho) quedan solas como traspaso y no cuentan como ingreso ni gasto. Lo que apuntaste a mano se funde con su cargo del banco aunque lo pusieras en otra cuenta, y la fecha es siempre la del pago, no la del día en que el banco lo completó. Bitácora reconoce los movimientos, evita duplicados y aplica tus reglas de traspaso. Puedes importar mes a mes aunque los extractos se solapen: cada fila busca su pareja, lo que ya está no entra otra vez (aunque le hayas cambiado la nota, la categoría o lo hayas pasado a transferencia) y dos cargos iguales el mismo día cuentan como dos.'],
             [guiaBoton('Categorías, Reglas'), 'Tus categorías de gasto e ingreso, y las reglas de traspaso: un movimiento importado cuyo concepto contenga cierto texto (por ejemplo, lo que mandas a tu cuenta de inversión) se registra como traspaso entre cuentas en vez de como gasto.'],
             [guiaBoton('⭳ Exportar'), 'Un resumen en texto pensado para pegarlo en una IA y pedirle consejo.'],
-            [guiaBoton('patrimonio.'), 'Tu saldo día a día. Arriba, cuánto ha cambiado en el periodo; la raya discontinua es donde empezaste. Encima de la línea salen los movimientos sueltos que más la movieron y, debajo, si cada mes acabaste ganando (tinta) o perdiendo (naranja). Pasa el dedo o el ratón por la gráfica para ver el saldo de cualquier día.'],
+            [guiaBoton('patrimonio.'), 'Tu saldo día a día. Arriba, cuánto ha cambiado en el periodo; la raya discontinua es donde empezaste. Pasa el dedo o el ratón por la gráfica para ver el saldo de cualquier día.'],
             [guiaBoton('1 mes. 3 meses. 6 meses. 1 año. todo.'), 'El periodo de la gráfica.'],
             [guiaBoton('con inversión y emergencia.'), 'Suma a la gráfica lo que tienes invertido y el fondo de emergencia.'],
-            [guiaBoton('qué día gastas más.'), 'El gasto medio de cada día de la semana, sin lo que se repite cada mes (nómina, alquiler) ni los gastos grandes. El día que más gastas sale en naranja.'],
+            [guiaBoton('presupuestos.'), 'Cuánto presupuestaste y cuánto gastaste en cada categoría, mes a mes. Se guarda solo al entrar en Finanzas y va también en el Markdown de exportar.'],
             [guiaBoton('Patrimonio → %, Objetivo. saldos.'), 'En la tarjeta de Patrimonio: el porcentaje (o «Variación») abre cómo ha cambiado mes a mes; <b>Objetivo.</b> fija una meta y te dice cuánto falta; <b>saldos.</b> muestra el saldo de cada mes.'],
             [guiaBoton('ritmo.'), 'Cómo va tu gasto del mes comparado con lo normal en ti a estas alturas.'],
             [guiaBoton('largo plazo.'), 'Planifica cada mes tu sueldo y aportaciones, con historial, lista de deseos con semáforo e inversiones.'],
