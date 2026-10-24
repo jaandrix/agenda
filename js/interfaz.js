@@ -374,6 +374,47 @@
         // (p. ej. abrir un modal encima) — con el aviso de privacidad de por
         // medio, ese "seguido de" deja de ser síncrono, así que se guarda
         // para lanzarlo en cuanto se responda la pregunta.
+        // Menú «···» de una cosa (un enlace, un viaje...): `acciones` es [[texto, función], ...]; la que empieza por
+        // «eliminar» va al final, separada y en rojo. Se cierra al elegir, al tocar fuera, con Escape o al hacer scroll.
+        let menuAccionesAbierto = null;
+        function abrirMenuAcciones(boton, acciones) {
+            cerrarMenuAcciones();
+            vtCortar();
+            const menu = document.createElement('div');
+            menu.className = 'menu-acciones';
+            menu.setAttribute('role', 'menu');
+            const normales = acciones.filter(a => !/^eliminar/.test(a[0])), peligro = acciones.filter(a => /^eliminar/.test(a[0]));
+            const pintar = ([texto], i, clase) => `<button type="button" role="menuitem" class="${clase}" data-i="${i}">${escapeHtml(texto)}</button>`;
+            menu.innerHTML = normales.map((a, i) => pintar(a, i, '')).join('') + (peligro.length ? '<hr>' + peligro.map((a, i) => pintar(a, normales.length + i, 'peligro')).join('') : '');
+            const todas = [...normales, ...peligro];
+            menu.addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (!b) return; cerrarMenuAcciones(); todas[+b.dataset.i][1](); });
+            menu.addEventListener('keydown', e => {
+                const items = [...menu.querySelectorAll('button')], i = items.indexOf(document.activeElement);
+                if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+                else if (e.key === 'Escape') { e.preventDefault(); cerrarMenuAcciones(); boton.focus(); }
+            });
+            document.body.appendChild(menu);
+            const r = boton.getBoundingClientRect(), w = menu.offsetWidth, h = menu.offsetHeight;
+            menu.style.left = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + 'px';
+            menu.style.top = (r.bottom + 6 + h > innerHeight - 8 ? Math.max(8, r.top - h - 6) : r.bottom + 6) + 'px';
+            boton.setAttribute('aria-expanded', 'true');
+            menuAccionesAbierto = { menu, boton };
+            menu.querySelector('button')?.focus({ preventScroll: true });
+            setTimeout(() => {
+                document.addEventListener('pointerdown', cerrarMenuFuera, true);
+                addEventListener('scroll', cerrarMenuAcciones, { capture: true, once: true });
+            }, 0);
+        }
+        function cerrarMenuFuera(e) { if (menuAccionesAbierto && !menuAccionesAbierto.menu.contains(e.target)) cerrarMenuAcciones(); }
+        function cerrarMenuAcciones() {
+            if (!menuAccionesAbierto) return;
+            menuAccionesAbierto.boton.setAttribute('aria-expanded', 'false');
+            menuAccionesAbierto.menu.remove();
+            menuAccionesAbierto = null;
+            document.removeEventListener('pointerdown', cerrarMenuFuera, true);
+        }
+
         function switchView(view, afterEnter) {
             // Al entrar en Finanzas (desde otra sección) se pregunta si
             // activar el modo privacidad (cifras ocultas) antes de mostrar

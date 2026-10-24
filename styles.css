@@ -7358,9 +7358,6 @@ button.lab-celda:hover { background:var(--bg-card-hover); }
     .profe > .uni-cabecera .profe-botones::-webkit-scrollbar { display:none; }
     .profe > .uni-cabecera .profe-botones .pedido-btn { flex-shrink:0; }
 }
-.m-generico .links-view .studies-actions-row { width:100%; }
-.m-generico .links-view .studies-actions-stack { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:8px; width:100%; }
-.m-generico .links-view .studies-actions-stack button { width:100%; margin:0; }
 
 /* ============================================================
    PROFESORADO: tarjetas de las clases. El curso en grande y del color
@@ -8523,6 +8520,13 @@ a { text-underline-offset:3px; }
 .ico-repetir { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M16 50a34 34 0 0 1 58-24l8-8v28H54l10-10a20 20 0 0 0-34 14zM84 50a34 34 0 0 1-58 24l-8 8V54h28L36 64a20 20 0 0 0 34-14z'/%3E%3C/svg%3E"); }
 .ico-apagar { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M43 6h14v44H43zM28 20l9 11a28 28 0 1 0 26 0l9-11a42 42 0 1 1-44 0z'/%3E%3C/svg%3E"); }
 .ico-cambio { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M70 8 92 30 70 52V38H14V22h56zM30 48v14h56v16H30v14L8 70z'/%3E%3C/svg%3E"); }
+.ico-puntos { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M12 40h20v20H12zM40 40h20v20H40zM68 40h20v20H68z'/%3E%3C/svg%3E"); }
+.ico-abrir { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M56 8h36v36L78 30 50 58 42 50l28-28L56 8zM8 20h34v12H20v48h48V58h12v34H8z'/%3E%3C/svg%3E"); }
+.ico-estrella { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 6l13 29 31 3-23 21 7 31-28-16-28 16 7-31L6 38l31-3z'/%3E%3C/svg%3E"); }
+.ico-buscar { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M42 8a34 34 0 0 1 27 55l25 25-9 9-25-25A34 34 0 1 1 42 8zm0 14a20 20 0 1 0 0 40 20 20 0 0 0 0-40z'/%3E%3C/svg%3E"); }
+.ico-rejilla { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M10 10h34v34H10zM56 10h34v34H56zM10 56h34v34H10zM56 56h34v34H56z'/%3E%3C/svg%3E"); }
+.ico-lista { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M10 14h14v14H10zM34 15h56v12H34zM10 43h14v14H10zM34 44h56v12H34zM10 72h14v14H10zM34 73h56v12H34z'/%3E%3C/svg%3E"); }
+.ico-mas { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M43 10h14v33h33v14H57v33H43V57H10V43h33z'/%3E%3C/svg%3E"); }
 .m-fila-hora .ico { width:15px; height:15px; }
 
 /* Inicio del móvil: el día en renglones de cuaderno, con puntos guía,
@@ -9194,3 +9198,98 @@ body:not(.papel) .settings-subscription-card-legado .settings-subscription-statu
 /* «auto.»: lo que pone Bitácora sola (los partidos de tus equipos), con el mismo aire que la etiqueta «qr.». */
 .etiqueta-auto { display:inline-flex; align-items:center; flex-shrink:0; margin-left:8px; padding:2px 8px; border:1px dashed var(--border-strong); border-radius:8px; font-size:11px; font-weight:700; line-height:1.5; color:var(--text-secondary); vertical-align:2px; white-space:nowrap; }
 #mobile-shell .m-fila > .etiqueta-auto { align-self:center; margin-left:0; min-height:28px; padding:4px 10px; font-size:12px; }
+
+/* ============================================================
+   PIEZAS COMUNES DEL REDISEÑO (24-10): cabecera de vista con buscador y
+   acciones, menú «···» de cada cosa y controles segmentados. Colores del
+   tema activo (valen en los seis temas); esquinas de 10 px; sin sombras
+   salvo en lo que flota.
+   ============================================================ */
+.vista-cab { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px 20px; margin:0 0 22px; }
+.vista-cab-titulo { font-size:34px; font-weight:800; letter-spacing:-.03em; line-height:1.05; color:var(--text-primary); }
+.vista-cab-sub { margin-top:6px; font-size:14.5px; color:var(--text-secondary); }
+.vista-cab-acciones { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.vista-buscar { position:relative; display:flex; align-items:center; min-width:220px; flex:1 1 220px; max-width:320px; }
+.vista-buscar .ico { position:absolute; left:13px; font-size:14px; color:var(--text-secondary); pointer-events:none; }
+.vista-buscar input { width:100%; box-sizing:border-box; height:42px; margin:0; padding:0 12px 0 36px; }
+.vista-seg { display:inline-flex; gap:2px; padding:3px; border:1px solid var(--border); border-radius:12px; background:var(--bg-card); }
+.vista-seg button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-width:38px; height:36px; padding:0 12px; border:0; border-radius:8px; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:13.5px; font-weight:600; cursor:pointer; white-space:nowrap; transition:background-color .15s ease, color .15s ease; }
+.vista-seg button:hover { color:var(--text-primary); }
+.vista-seg button[aria-selected="true"] { background:var(--accent); color:var(--accent-contrast); }
+.vista-btn { display:inline-flex; align-items:center; gap:8px; height:42px; padding:0 16px; border:1px solid var(--border-strong); border-radius:10px; background:var(--bg-card); color:var(--text-primary); font-family:var(--font-family); font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap; transition:background-color .15s ease, border-color .15s ease; }
+.vista-btn:hover { border-color:var(--text-primary); }
+.vista-btn.principal { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast); }
+.vista-btn.principal:hover { opacity:.92; }
+.vista-btn .ico { font-size:12px; }
+.vista-icono-btn { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; flex-shrink:0; border:1px solid transparent; border-radius:10px; background:none; color:var(--text-secondary); cursor:pointer; transition:background-color .15s ease, color .15s ease; }
+.vista-icono-btn:hover { background:var(--bg-card-hover, var(--bg-card)); color:var(--text-primary); }
+.vista-icono-btn .ico { font-size:15px; }
+.vista-icono-btn.on { color:var(--m-acento); }
+.vista-contador { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:22px; padding:0 7px; box-sizing:border-box; border-radius:999px; background:var(--bg-input); color:var(--text-secondary); font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; }
+.vista-vacio { padding:28px 20px; border:1px dashed var(--border-strong); border-radius:14px; text-align:center; color:var(--text-secondary); font-size:14px; }
+.vista-vacio b { display:block; margin-bottom:4px; font-size:16px; color:var(--text-primary); }
+.vista-vacio .vista-btn { margin-top:14px; }
+.vista-cab :focus-visible, .vista-seg button:focus-visible, .vista-icono-btn:focus-visible, .vista-btn:focus-visible { outline:2px solid var(--text-primary); outline-offset:2px; }
+@media (max-width:760px) {
+    .vista-cab-titulo { font-size:28px; }
+    .vista-buscar { max-width:none; flex-basis:100%; }
+}
+
+/* Menú «···»: flota junto a su botón; eliminar va al final, aparte y en rojo. */
+.menu-acciones { position:fixed; z-index:1200; min-width:200px; max-width:280px; padding:6px; border:1px solid var(--border-strong); border-radius:12px; background:var(--bg-modal); box-shadow:0 12px 32px rgba(0,0,0,.18); animation:menuAccionesEntra .14s ease-out; }
+.menu-acciones button { display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border:0; border-radius:8px; background:none; color:var(--text-primary); font-family:var(--font-family); font-size:14px; font-weight:600; text-align:left; cursor:pointer; }
+.menu-acciones button:hover, .menu-acciones button:focus-visible { background:var(--bg-input); outline:none; }
+.menu-acciones hr { margin:6px 4px; border:0; border-top:1px solid var(--border); }
+.menu-acciones button.peligro { color:#e0707f; }
+body.papel .menu-acciones button.peligro { color:#a3243b; }
+@keyframes menuAccionesEntra { from { opacity:0; transform:translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .menu-acciones { animation:none; } }
+
+/* Enlaces (rediseño 24-10). El color de la categoría va solo en su punto, nunca en el borde de las tarjetas. */
+.links-view { max-width:1180px; }
+.enlaces-cat { width:auto; min-width:170px; height:42px; margin:0; }
+.enlaces-contador { margin:-10px 0 12px; font-size:13px; color:var(--text-secondary); }
+.enlaces-contador:empty { display:none; }
+.enlaces-favoritos { margin:0 0 26px; padding:16px; border:1px solid var(--border); border-radius:14px; background:var(--bg-card); }
+.enlaces-bloque-cab { display:flex; align-items:center; gap:10px; margin:0 0 12px; }
+.enlaces-bloque-titulo { font-size:17px; font-weight:800; color:var(--text-primary); }
+.enlaces-bloque-sub { font-size:13px; color:var(--text-secondary); }
+.enlaces-cat-punto { width:12px; height:12px; flex-shrink:0; border-radius:50%; background:var(--border-strong); }
+.enlaces-cat-menu { margin-left:auto; }
+.enlaces-categoria { margin:0 0 26px; }
+.enlaces-fav-fila { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:10px; }
+.enlaces-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
+.enlace-card { position:relative; display:flex; align-items:flex-start; gap:6px; min-width:0; padding:12px 8px 12px 14px; border:1px solid var(--border); border-radius:12px; background:var(--bg-modal); transition:border-color .15s ease; }
+.enlace-card:hover { border-color:var(--border-strong); }
+.enlaces-favoritos .enlace-card { background:var(--bg-modal); align-items:center; }
+.enlace-abrir { display:flex; align-items:flex-start; gap:12px; flex:1; min-width:0; color:inherit; text-decoration:none; border-radius:8px; }
+.enlace-abrir:focus-visible { outline:2px solid var(--text-primary); outline-offset:3px; }
+.enlace-icono { position:relative; display:grid; place-items:center; width:40px; height:40px; flex-shrink:0; overflow:hidden; border-radius:10px; background:var(--bg-input); color:var(--text-secondary); font-size:16px; font-weight:800; }
+.enlace-icono img { position:absolute; inset:8px; width:24px; height:24px; background:var(--bg-input); }
+.enlace-cuerpo { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.enlace-cuerpo b { font-size:14.5px; font-weight:700; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.enlace-cuerpo small { font-size:12.5px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.enlace-desc { margin-top:4px; font-size:13px; line-height:1.4; color:var(--text-secondary); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.enlace-botones { display:flex; flex-shrink:0; }
+.enlace-anadir { display:flex; align-items:center; justify-content:center; gap:10px; min-height:66px; padding:12px; border:1px dashed var(--border-strong); border-radius:12px; background:none; color:var(--text-secondary); font-family:var(--font-family); font-size:14px; font-weight:600; text-align:left; cursor:pointer; transition:border-color .15s ease, color .15s ease; }
+.enlace-anadir:hover { border-color:var(--text-primary); color:var(--text-primary); }
+.enlace-anadir span { display:flex; flex-direction:column; }
+.enlace-anadir small { font-size:12px; font-weight:500; }
+.enlace-card[hidden], .enlaces-categoria[hidden], .enlace-anadir[hidden], .enlaces-favoritos[hidden] { display:none !important; }
+/* Vista en lista: una fila por enlace. */
+.enlaces-lista .enlaces-grid { grid-template-columns:minmax(0, 1fr); gap:0; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.enlaces-lista .enlaces-grid .enlace-card { border:0; border-bottom:1px solid var(--border); border-radius:0; align-items:center; }
+.enlaces-lista .enlaces-grid .enlace-card:last-child, .enlaces-lista .enlace-anadir { border-bottom:0; }
+.enlaces-lista .enlace-anadir { min-height:52px; border:0; border-radius:0; justify-content:flex-start; padding-left:20px; }
+.enlaces-lista .enlace-desc { -webkit-line-clamp:1; }
+@media (max-width:1199px) { .enlaces-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+@media (max-width:760px) { .enlaces-grid { grid-template-columns:minmax(0, 1fr); } .enlaces-cat { flex:1 1 auto; } }
+.btn-peligro { background:#b44d58 !important; border-color:#b44d58 !important; color:#fff !important; }
+/* En el móvil, el título grande ya lo pone la cabecera del móvil. */
+.m-generico .vista-cab > div:first-child { display:none; }
+.m-generico .vista-cab { margin-bottom:16px; }
+.m-generico .vista-cab-acciones { width:100%; }
+.m-generico .vista-cab-acciones .selector-btn, .m-generico .enlaces-cat { flex:1 1 auto; }
+.vista-cab-acciones .selector-btn { height:42px; margin:0; }
+body:not(.papel) .enlace-icono { background:#efede6; color:#302f2c; }
+body:not(.papel) .enlace-icono img { background:#efede6; }

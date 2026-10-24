@@ -3,55 +3,217 @@
         // ============================================================
         const LINK_CATEGORY_COLORS = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#BDB2FF'];
 
+        // Enlaces (rediseño 24-10): buscador, vista en rejilla o lista (se recuerda en este dispositivo), filtro por
+        // categoría, favoritos arriba y un menú «···» por enlace y por categoría. El buscador y el filtro esconden
+        // tarjetas sin repintar la vista, así no se pierde lo escrito.
+        let enlacesFiltroCat = '';
+        function enlacesVista() { try { return localStorage.getItem('bitacora-enlaces-vista') === 'lista' ? 'lista' : 'rejilla'; } catch (e) { return 'rejilla'; } }
+        function enlaceDominio(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return String(url || '').replace(/^https?:\/\//, '').split('/')[0]; } }
+        function enlaceIcono(l) {
+            const d = enlaceDominio(l.url);
+            const letra = escapeHtml((l.title || d || '?').trim().charAt(0).toUpperCase());
+            // El icono de la web lo da DuckDuckGo (solo recibe el dominio); si no hay, la inicial.
+            return `<span class="enlace-icono" aria-hidden="true"><span>${letra}</span>${d ? `<img src="https://icons.duckduckgo.com/ip3/${encodeURIComponent(d)}.ico" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
+        }
+
         function renderLinks() {
-            const nameDisplay = userName && userName.trim() ? escapeHtml(userName.trim()) : 'tu nombre';
-            const hasCategories = linkCategories.length > 0;
-            let body;
-            if (!links.length) {
-                body = '<div class="finance-empty-line" style="margin-top:14px">Aún no has añadido ningún enlace.</div>';
-            } else if (!hasCategories) {
-                body = `<div class="links-grid">${links.map(l => renderLinkCard(l, null)).join('')}</div>`;
-            } else {
-                const grouped = {};
-                links.forEach(l => {
-                    const key = l.categoryId || '__none__';
-                    (grouped[key] = grouped[key] || []).push(l);
-                });
-                const blocks = linkCategories.filter(c => grouped[c.id]).map(c => renderLinkCategoryBlock(c.name, c.color, grouped[c.id]));
-                if (grouped.__none__) blocks.push(renderLinkCategoryBlock('Sin categoría', null, grouped.__none__));
-                body = blocks.join('');
-            }
+            const vista = enlacesVista();
+            const favoritos = links.filter(l => l.favorito).slice(0, 5);
+            const grupos = {};
+            links.forEach(l => { const k = linkCategories.some(c => c.id === l.categoryId) ? l.categoryId : '__none__'; (grupos[k] = grupos[k] || []).push(l); });
+            const bloques = [...linkCategories.map(c => ({ c, items: grupos[c.id] || [] })), ...(grupos.__none__ ? [{ c: null, items: grupos.__none__ }] : [])]
+                .filter(b => b.c || b.items.length);
+            const cuerpo = !links.length && !linkCategories.length ? `
+                <div class="vista-vacio"><b>todavía no hay enlaces.</b>Guarda aquí las webs que usas a menudo: el campus, el banco, tu proyecto...<br><button class="vista-btn principal" onclick="openAddLink()"><i class="ico ico-mas" aria-hidden="true"></i>nuevo enlace.</button></div>`
+                : bloques.map(b => renderLinkCategoryBlock(b.c, b.items, vista)).join('');
             return `
-            <div class="links-view">
-                <div class="studies-actions-row">
-                    <div class="studies-actions-stack">
-                        <button class="btn-modal-primary studies-inline-add-btn btn-accent-blue" onclick="openAddLink()">+ enlace.</button>
-                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddLinkCategory()">+ categoría.</button>
+            <div class="links-view enlaces-${vista}">
+                <div class="vista-cab">
+                    <div><div class="vista-cab-titulo">enlaces.</div><div class="vista-cab-sub">Tus accesos y recursos, organizados.</div></div>
+                    <div class="vista-cab-acciones">
+                        <label class="vista-buscar"><i class="ico ico-buscar" aria-hidden="true"></i><input id="enlaces-buscar" class="modal-input" type="search" placeholder="buscar enlace..." aria-label="Buscar enlace" oninput="filtrarEnlaces()"></label>
+                        <div class="vista-seg" role="tablist" aria-label="Vista">
+                            <button role="tab" aria-selected="${vista === 'rejilla'}" aria-label="En rejilla" onclick="cambiarVistaEnlaces('rejilla')"><i class="ico ico-rejilla" aria-hidden="true"></i></button>
+                            <button role="tab" aria-selected="${vista === 'lista'}" aria-label="En lista" onclick="cambiarVistaEnlaces('lista')"><i class="ico ico-lista" aria-hidden="true"></i></button>
+                        </div>
+                        ${linkCategories.length ? `<select id="enlaces-cat" class="modal-input enlaces-cat" style="width:auto;min-width:190px;margin:0" aria-label="Categoría" onchange="enlacesFiltroCat=this.value;filtrarEnlaces()"><option value="">todas las categorías.</option>${linkCategories.map(c => `<option value="${c.id}" ${c.id === enlacesFiltroCat ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}${grupos.__none__ ? `<option value="__none__" ${enlacesFiltroCat === '__none__' ? 'selected' : ''}>sin categoría.</option>` : ''}</select>` : ''}
+                        <button class="vista-btn" onclick="openAddLinkCategory()">+ categoría.</button>
+                        <button class="vista-btn principal" onclick="openAddLink()"><i class="ico ico-mas" aria-hidden="true"></i>nuevo enlace.</button>
                     </div>
                 </div>
-                <h3>accesos directos de <a href="javascript:void(0)" class="bitacora-username-link" onclick="editUserName()">${nameDisplay}</a>.</h3>
-                ${body}
+                <div id="enlaces-contador" class="enlaces-contador" aria-live="polite"></div>
+                ${favoritos.length ? `
+                <section class="enlaces-favoritos" data-bloque-fav>
+                    <div class="enlaces-bloque-cab"><span class="enlaces-bloque-titulo">favoritos.</span><span class="enlaces-bloque-sub">siempre a mano.</span></div>
+                    <div class="enlaces-fav-fila">${favoritos.map(l => renderLinkCard(l, 'fav')).join('')}</div>
+                </section>` : ''}
+                ${cuerpo}
+                <div id="enlaces-sin-resultados" class="vista-vacio" hidden><b>nada con esa búsqueda.</b><button class="vista-btn" onclick="limpiarFiltrosEnlaces()">limpiar filtros.</button></div>
             </div>`;
         }
 
-        function renderLinkCategoryBlock(name, color, items) {
+        function renderLinkCategoryBlock(c, items, vista) {
+            const id = c ? c.id : '__none__';
             return `
-                <section class="studies-section">
-                    <div class="links-category-head">${color ? `<span class="links-category-dot" style="background:${color}"></span>` : ''}${escapeHtml(name)}</div>
-                    <div class="links-grid">${items.map(l => renderLinkCard(l, color)).join('')}</div>
+                <section class="enlaces-categoria" data-cat="${id}">
+                    <div class="enlaces-bloque-cab">
+                        <span class="enlaces-cat-punto" style="${c?.color ? `background:${escapeHtml(c.color)}` : ''}" aria-hidden="true"></span>
+                        <span class="enlaces-bloque-titulo">${escapeHtml(c ? c.name : 'sin categoría')}.</span>
+                        <span class="vista-contador">${items.length}</span>
+                        ${c ? `<button class="vista-icono-btn enlaces-cat-menu" aria-label="Opciones de ${escapeHtml(c.name)}" aria-haspopup="menu" onclick="menuCategoriaEnlace(this,'${jsAttr(c.id)}')"><i class="ico ico-puntos" aria-hidden="true"></i></button>` : ''}
+                    </div>
+                    <div class="enlaces-grid">
+                        ${items.map(l => renderLinkCard(l)).join('')}
+                        <button class="enlace-anadir" onclick="openAddLink('${c ? jsAttr(c.id) : ''}')"><i class="ico ico-mas" aria-hidden="true"></i><span>añadir un enlace.<small>${escapeHtml(c ? c.name : 'sin categoría')}</small></span></button>
+                    </div>
                 </section>`;
         }
 
-        function renderLinkCard(l, color) {
+        function renderLinkCard(l, modo) {
+            const d = enlaceDominio(l.url);
+            const texto = [l.title, d, l.descripcion, linkCategories.find(c => c.id === l.categoryId)?.name].filter(Boolean).join(' ');
             return `
-                <div class="link-card" style="${color ? `border:3px solid ${color}` : ''}">
-                    <div class="link-card-actions">
-                        <button class="link-card-icon-btn link-card-delete" title="Eliminar" onclick="deleteLink('${l.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
-                        <button class="link-card-icon-btn link-card-edit" title="Editar" onclick="openEditLink('${l.id}')"><i class='ico ico-lapiz' aria-hidden=true></i></button>
+                <div class="enlace-card" data-enlace="${escapeHtml(l.id)}" data-texto="${escapeHtml(texto)}" data-cat="${linkCategories.some(c => c.id === l.categoryId) ? escapeHtml(l.categoryId) : '__none__'}" ${modo === 'fav' ? 'data-fav' : ''}>
+                    <a class="enlace-abrir" href="${escapeHtml(/^https?:\/\//i.test(l.url) ? l.url : 'https://' + l.url)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(l.title)} (se abre en otra pestaña)">
+                        ${enlaceIcono(l)}
+                        <span class="enlace-cuerpo"><b>${escapeHtml(l.title)}</b><small>${escapeHtml(d)}</small>${l.descripcion && modo !== 'fav' ? `<span class="enlace-desc">${escapeHtml(l.descripcion)}</span>` : ''}</span>
+                    </a>
+                    <div class="enlace-botones">
+                        <button class="vista-icono-btn ${l.favorito ? 'on' : ''}" aria-pressed="${!!l.favorito}" aria-label="${l.favorito ? 'Quitar de favoritos' : 'Marcar como favorito'}" onclick="alternarFavoritoEnlace('${jsAttr(l.id)}')"><i class="ico ico-estrella" aria-hidden="true"></i></button>
+                        ${modo === 'fav' ? '' : `<button class="vista-icono-btn" aria-label="Opciones de ${escapeHtml(l.title)}" aria-haspopup="menu" onclick="menuEnlace(this,'${jsAttr(l.id)}')"><i class="ico ico-puntos" aria-hidden="true"></i></button>`}
                     </div>
-                    <div class="link-card-title">${escapeHtml(l.title)}</div>
-                    <a href="javascript:void(0)" class="link-card-url" data-ext-url="${escapeHtml(l.url)}" onclick="openLinkPopup(event,this)">enlace</a>
                 </div>`;
+        }
+
+        function cambiarVistaEnlaces(v) {
+            try { localStorage.setItem('bitacora-enlaces-vista', v); } catch (e) { /* sin almacenamiento */ }
+            const q = document.getElementById('enlaces-buscar')?.value || '';
+            render();
+            const campo = document.getElementById('enlaces-buscar');
+            if (campo && q) { campo.value = q; filtrarEnlaces(); }
+        }
+
+        function filtrarEnlaces() {
+            const norm = t => stripAccents(String(t || '').toLowerCase());
+            const q = norm(document.getElementById('enlaces-buscar')?.value).trim();
+            const cat = enlacesFiltroCat;
+            let n = 0;
+            document.querySelectorAll('.links-view .enlace-card:not([data-fav])').forEach(el => {
+                const ok = (!q || norm(el.dataset.texto).includes(q)) && (!cat || el.dataset.cat === cat);
+                el.hidden = !ok;
+                if (ok) n++;
+            });
+            document.querySelectorAll('.links-view .enlaces-categoria').forEach(sec => {
+                const visibles = sec.querySelectorAll('.enlace-card:not([hidden])').length;
+                sec.hidden = (q || cat) ? !visibles : false;
+                sec.querySelectorAll('.enlace-anadir').forEach(b => { b.hidden = !!q; });
+            });
+            const fav = document.querySelector('.links-view [data-bloque-fav]');
+            if (fav) fav.hidden = !!(q || cat);
+            const filtrando = !!(q || cat);
+            const contador = document.getElementById('enlaces-contador');
+            if (contador) contador.textContent = filtrando && n ? `${n} ${n === 1 ? 'enlace' : 'enlaces'}.` : '';
+            const nada = document.getElementById('enlaces-sin-resultados');
+            if (nada) nada.hidden = !filtrando || !!n;
+        }
+
+        function limpiarFiltrosEnlaces() {
+            enlacesFiltroCat = '';
+            const b = document.getElementById('enlaces-buscar'); if (b) b.value = '';
+            const c = document.getElementById('enlaces-cat'); if (c) c.value = '';
+            filtrarEnlaces();
+        }
+
+        async function alternarFavoritoEnlace(id) {
+            const l = links.find(x => x.id === id);
+            if (!l) return;
+            if (!l.favorito && links.filter(x => x.favorito).length >= 5) { showToast('Como mucho 5 favoritos: quita uno antes', true); return; }
+            l.favorito = !l.favorito;
+            render();
+            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function menuEnlace(boton, id) {
+            const l = links.find(x => x.id === id);
+            if (!l) return;
+            abrirMenuAcciones(boton, [
+                ['editar.', () => openEditLink(id)],
+                ['duplicar.', () => duplicarEnlace(id)],
+                ['copiar la dirección.', async () => { try { await navigator.clipboard.writeText(l.url); showToast('Dirección copiada'); } catch (e) { prompt('Copia la dirección:', l.url); } }],
+                ['eliminar.', () => confirmarBorrarEnlace(id)],
+            ]);
+        }
+
+        async function duplicarEnlace(id) {
+            const l = links.find(x => x.id === id);
+            if (!l) return;
+            links.splice(links.indexOf(l) + 1, 0, { ...l, id: 'link_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: l.title + ' (copia)', favorito: false, createdAt: new Date().toISOString() });
+            render();
+            try { await saveData(); showToast('Enlace duplicado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function confirmarBorrarEnlace(id) {
+            const l = links.find(x => x.id === id);
+            if (!l) return;
+            showModal(`
+                <div class="modal-title">eliminar enlace.</div>
+                <p class="finance-modal-note" style="margin-top:0">Se borra «${escapeHtml(l.title)}». No se puede deshacer.</p>
+                <button class="btn-modal-primary btn-peligro" onclick="closeModal();deleteLink('${jsAttr(id)}')">eliminar.</button>
+                <button class="btn-secondary" style="margin-top:8px" onclick="closeModal()">cancelar.</button>`);
+        }
+
+        function menuCategoriaEnlace(boton, id) {
+            const c = linkCategories.find(x => x.id === id);
+            if (!c) return;
+            abrirMenuAcciones(boton, [
+                ['renombrar o cambiar el color.', () => openEditarCategoriaEnlace(id)],
+                ['eliminar.', () => confirmarBorrarCategoriaEnlace(id)],
+            ]);
+        }
+
+        function openEditarCategoriaEnlace(id) {
+            const c = linkCategories.find(x => x.id === id);
+            if (!c) return;
+            showModal(`
+                <div class="modal-title">categoría.</div>
+                <div class="modal-label">nombre.</div>
+                <input id="link-cat-name" class="modal-input" value="${escapeHtml(c.name)}">
+                <div class="modal-label">color.</div>
+                <div class="link-color-picker">${LINK_CATEGORY_COLORS.map(col => `<button type="button" class="link-color-swatch ${col === c.color ? 'selected' : ''}" style="background:${col}" data-color="${col}" aria-label="Color ${col}" onclick="selectLinkColor(this)"></button>`).join('')}</div>
+                <input type="hidden" id="link-cat-color" value="${escapeHtml(c.color || LINK_CATEGORY_COLORS[0])}">
+                <button class="btn-modal-primary" onclick="guardarCategoriaEnlace('${jsAttr(id)}')">guardar.</button>`);
+        }
+
+        async function guardarCategoriaEnlace(id) {
+            const c = linkCategories.find(x => x.id === id);
+            const name = document.getElementById('link-cat-name')?.value.trim();
+            if (!c || !name) { showToast('Indica un nombre', true); return; }
+            c.name = name; c.color = document.getElementById('link-cat-color')?.value || c.color;
+            closeModal(); render();
+            try { await saveData(); showToast('Categoría guardada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Al borrar una categoría con enlaces, se elige qué hacer con ellos: pasarlos a otra o dejarlos sin categoría.
+        function confirmarBorrarCategoriaEnlace(id) {
+            const c = linkCategories.find(x => x.id === id);
+            if (!c) return;
+            const n = links.filter(l => l.categoryId === id).length;
+            const otras = linkCategories.filter(x => x.id !== id);
+            showModal(`
+                <div class="modal-title">eliminar categoría.</div>
+                <p class="finance-modal-note" style="margin-top:0">Se borra «${escapeHtml(c.name)}».${n ? ` Tiene ${n} ${n === 1 ? 'enlace' : 'enlaces'}: ¿adónde ${n === 1 ? 'va' : 'van'}?` : ''}</p>
+                ${n ? `<select id="link-cat-destino" class="modal-input"><option value="">sin categoría.</option>${otras.map(o => `<option value="${o.id}">${escapeHtml(o.name)}</option>`).join('')}</select>` : ''}
+                <button class="btn-modal-primary btn-peligro" onclick="borrarCategoriaEnlace('${jsAttr(id)}')">eliminar categoría.</button>
+                <button class="btn-secondary" style="margin-top:8px" onclick="closeModal()">cancelar.</button>`);
+        }
+
+        async function borrarCategoriaEnlace(id) {
+            const destino = document.getElementById('link-cat-destino')?.value || null;
+            links.forEach(l => { if (l.categoryId === id) l.categoryId = destino; });
+            linkCategories = linkCategories.filter(c => c.id !== id);
+            if (enlacesFiltroCat === id) enlacesFiltroCat = '';
+            closeModal(); render();
+            try { await saveData(); showToast('Categoría eliminada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         function openLinkPopup(event, el) {
@@ -64,19 +226,21 @@
             window.open(url, '_blank', `noopener,width=${w},height=${h},left=${left},top=${top}`);
         }
 
-        function openAddLink() {
+        function openAddLink(categoria) {
             showModal(`
-                <div class="modal-title">+ Enlace</div>
-                <div class="modal-label">Título</div>
-                <input id="link-title" class="modal-input" placeholder="Ej: Campus virtual">
-                <div class="modal-label">Enlace (URL)</div>
-                <input id="link-url" class="modal-input" placeholder="https://...">
-                <div class="modal-label">Categoría</div>
+                <div class="modal-title">nuevo enlace.</div>
+                <div class="modal-label">dirección.</div>
+                <input id="link-url" class="modal-input" placeholder="https://..." autocomplete="off">
+                <div class="modal-label">título.</div>
+                <input id="link-title" class="modal-input" placeholder="Ej: campus virtual">
+                <div class="modal-label">descripción (opcional).</div>
+                <input id="link-desc" class="modal-input" placeholder="Para qué es, en una frase">
+                <div class="modal-label">categoría.</div>
                 <select id="link-category" class="modal-input">
-                    <option value="">Sin categoría</option>
-                    ${linkCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+                    <option value="">sin categoría.</option>
+                    ${linkCategories.map(c => `<option value="${c.id}" ${c.id === categoria ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
-                <button class="btn-modal-primary" onclick="saveNewLink()">Añadir enlace</button>
+                <button class="btn-modal-primary" onclick="saveNewLink()">añadir enlace.</button>
             `);
         }
 
@@ -84,9 +248,10 @@
             const title = document.getElementById('link-title')?.value.trim();
             let url = document.getElementById('link-url')?.value.trim();
             const categoryId = document.getElementById('link-category')?.value || null;
+            const descripcion = document.getElementById('link-desc')?.value.trim() || undefined;
             if (!title || !url) { showToast('Indica un título y un enlace', true); return; }
             if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-            links.unshift({ id: 'link_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title, url, categoryId, createdAt: new Date().toISOString() });
+            links.unshift({ id: 'link_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title, url, categoryId, descripcion, createdAt: new Date().toISOString() });
             closeModal();
             render();
             try { await saveData(); showToast('Enlace añadido'); }
@@ -103,17 +268,19 @@
             const l = links.find(x => x.id === id);
             if (!l) return;
             showModal(`
-                <div class="modal-title">Editar enlace</div>
-                <div class="modal-label">Título</div>
+                <div class="modal-title">editar enlace.</div>
+                <div class="modal-label">título.</div>
                 <input id="link-title" class="modal-input" value="${escapeHtml(l.title)}">
-                <div class="modal-label">Enlace (URL)</div>
+                <div class="modal-label">dirección.</div>
                 <input id="link-url" class="modal-input" value="${escapeHtml(l.url)}">
-                <div class="modal-label">Categoría</div>
+                <div class="modal-label">descripción (opcional).</div>
+                <input id="link-desc" class="modal-input" value="${escapeHtml(l.descripcion || '')}" placeholder="Para qué es, en una frase">
+                <div class="modal-label">categoría.</div>
                 <select id="link-category" class="modal-input">
-                    <option value="">Sin categoría</option>
+                    <option value="">sin categoría.</option>
                     ${linkCategories.map(c => `<option value="${c.id}" ${c.id === l.categoryId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
-                <button class="btn-modal-primary" onclick="saveEditLink('${id}')">Guardar cambios</button>
+                <button class="btn-modal-primary" onclick="saveEditLink('${id}')">guardar.</button>
             `);
         }
 
@@ -125,7 +292,7 @@
             const categoryId = document.getElementById('link-category')?.value || null;
             if (!title || !url) { showToast('Indica un título y un enlace', true); return; }
             if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-            l.title = title; l.url = url; l.categoryId = categoryId;
+            l.title = title; l.url = url; l.categoryId = categoryId; l.descripcion = document.getElementById('link-desc')?.value.trim() || undefined;
             closeModal();
             render();
             try { await saveData(); showToast('Enlace actualizado'); }
@@ -134,15 +301,15 @@
 
         function openAddLinkCategory() {
             showModal(`
-                <div class="modal-title">+ Categoría</div>
-                <div class="modal-label">Nombre</div>
-                <input id="link-cat-name" class="modal-input" placeholder="Ej: Universidad">
-                <div class="modal-label">Color</div>
+                <div class="modal-title">nueva categoría.</div>
+                <div class="modal-label">nombre.</div>
+                <input id="link-cat-name" class="modal-input" placeholder="Ej: universidad">
+                <div class="modal-label">color.</div>
                 <div class="link-color-picker">
                     ${LINK_CATEGORY_COLORS.map((c, i) => `<button type="button" class="link-color-swatch ${i === 0 ? 'selected' : ''}" style="background:${c}" data-color="${c}" onclick="selectLinkColor(this)"></button>`).join('')}
                 </div>
                 <input type="hidden" id="link-cat-color" value="${LINK_CATEGORY_COLORS[0]}">
-                <button class="btn-modal-primary" onclick="saveNewLinkCategory()">Crear categoría</button>
+                <button class="btn-modal-primary" onclick="saveNewLinkCategory()">crear categoría.</button>
             `);
         }
 
