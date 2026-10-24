@@ -563,6 +563,12 @@
                         <span><b>guía de bitácora.</b><small>Cada apartado y cada botón, explicado.</small></span>
                         <span class="ajustes-guia-flecha" aria-hidden="true">→</span>
                     </button>` : ''}
+                    ${typeof descargarGuiaIA === 'function' ? `
+                    <button class="ajustes-guia ajustes-guia-ia" onclick="descargarGuiaIA()">
+                        <span class="ajuste-icono"><i class='ico ico-bajar' aria-hidden=true></i></span>
+                        <span><b>guía para tu ia.</b><small>Descárgala y pásasela a ChatGPT, Claude o Gemini: te enseña Bitácora paso a paso y te resuelve dudas.</small></span>
+                        <span class="ajustes-guia-flecha" aria-hidden="true">→</span>
+                    </button>` : ''}
 
                     <div class="ajustes-buscador">
                         <input id="ajustes-buscar" class="modal-input" type="search" placeholder="busca un ajuste: tema, avisos, exportar..." oninput="filtrarAjustes(this.value)" autocomplete="off">

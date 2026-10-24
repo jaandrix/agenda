@@ -58,7 +58,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `resumen` (panorama, patrones, avisos) → `ocio` → `viajes` →
   `trabajo-estudios` → `agenda-laboral` → `enlaces-proyectos` → `eventos` → `ajustes` (y notificaciones
   push) → `notas-objetivos` → `finanzas` → `finanzas-pro` → `documentos` → `vault` →
-  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `test` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `ejemplo` → `invitar` → `asistente` → `tumes` → `servicios` → `compartir` → `guia` → `landing`.
+  `conector` → `inicio` (init) → `actualizaciones` → `compra` → `estudiar` → `test` → `conexiones` → `metodo` → `universidad` → `profesorado` → `profesorado-aula` → `cv` → `social` → `perfil` → `bienvenida` → `ejemplo` → `invitar` → `asistente` → `tumes` → `servicios` → `compartir` → `guia` → `guia-ia` → `landing`.
   - Todas las funciones y variables de primer nivel son globales y compartidas entre
     archivos, así que **los nombres no pueden repetirse** entre archivos (un `let`/`const`
     duplicado rompe la carga entera; una función duplicada pisa en silencio a la otra).
@@ -394,6 +394,7 @@ a menor resolución.
   `financePro.suscripcionesIgnoradas`), `openPuedoPermitirme`/`asistPermitir`, `responderPregunta` (respuestas arriba en el
   buscador, `kind: 'respuesta'`) y `revisarCumplesRegalo` (tarea en `dayPlanner.backlog` una semana antes; `e.regaloAviso`
   guarda el año; aviso `regalos` en Ajustes).
+- **Guía para tu IA (`js/guia-ia.js`, 24-10):** «guía para tu ia.» en Ajustes y «para tu ia.» en la cabecera de la guía descargan un Markdown (`construirGuiaIA`) con instrucciones para la IA, conceptos, primeros pasos, cuenta y precios, cada apartado (sale solo de `GUIA`), recetas paso a paso (`GUIA_IA_RECETAS`), solución de problemas (`GUIA_IA_PROBLEMAS`), atajos y glosario. En el móvil se comparte con la hoja del sistema. **Al cambiar precios, la cuenta o algo que dé problemas, actualizar también esas listas.**
 - **Guía (`js/guia.js`):** modal completo con una sección por apartado (para qué sirve,
   pasos, cada botón, trucos), abierto desde Ajustes, el botón "?", el buscador y el
   menú móvil. **Al cambiar un apartado, actualizar su sección en `GUIA`.**

@@ -9610,3 +9610,10 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { overscroll-behavior
 }
 body.mobile-standalone :is(.modal-overlay, .command-palette-overlay, .centered-message-overlay), body.pwa :is(.modal-overlay, .command-palette-overlay, .centered-message-overlay) { animation: none !important; }
 body.mobile-standalone :is(.estancia-overlay, .anual-overlay), body.pwa :is(.estancia-overlay, .anual-overlay) { transition: none !important; }
+
+/* Guía descargable para una IA (guia-ia.js). */
+.guia-ia { display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 12px; flex-shrink:0; border:1px solid var(--border-strong); border-radius:10px; background:none; color:var(--text-primary); font:600 13px var(--font-family); cursor:pointer; white-space:nowrap; }
+.guia-ia:hover { background:var(--bg-input); }
+.guia-ia .ico { width:13px; height:13px; }
+.ajustes-guia-ia { margin-top:8px; }
+.ajustes-guia-ia .ajuste-icono .ico { width:16px; height:16px; }

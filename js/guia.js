@@ -594,6 +594,7 @@ function renderGuiaInterior() {
         <div class="guia-cab">
             <div><div class="guia-titulo">guía de bitácora.</div><div class="guia-sub">Cada apartado y cada botón, explicado.</div></div>
             <input class="modal-input guia-buscar" placeholder="buscar en la guía..." value="${escapeHtml(guiaFiltro)}" oninput="guiaFiltro=this.value;const c=this.selectionStart;document.getElementById('guia').innerHTML=renderGuiaInterior();const i=document.querySelector('.guia-buscar');i.focus();i.setSelectionRange(c,c)">
+            ${typeof descargarGuiaIA === 'function' ? `<button class="guia-ia" onclick="descargarGuiaIA()" title="Un archivo con toda la guía para pasárselo a ChatGPT, Claude o Gemini"><i class='ico ico-bajar' aria-hidden=true></i> para tu ia.</button>` : ''}
             <button class="guia-cerrar" onclick="closeModal()" aria-label="Cerrar la guía">×</button>
         </div>
         <div class="guia-cuerpo">
