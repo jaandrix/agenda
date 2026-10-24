@@ -24,8 +24,10 @@
             return FMT_MES_ANIO.format(new Date(y, m - 1, 1));
         }
 
+        // El efectivo y los bancos salen siempre de las cuentas de Finanzas (el saldo que se escribía a mano del
+        // sistema antiguo, financeProfile.cash, ya no se usa).
         function financeEfectivoActual() {
-            return financePro?.enabled && typeof financeProTotalBalance === 'function' ? financeProTotalBalance() : Number(financeProfile.cash || 0);
+            return typeof financeProTotalBalance === 'function' ? financeProTotalBalance() : 0;
         }
 
         function financeCorePatrimony() {
@@ -46,7 +48,7 @@
         // financeSnapshot y en las líneas configurables de la gráfica.
         function getAllAccounts() {
             return [
-                { key: 'cash', label: 'Efectivo / bancos', balance: Number(financeProfile.cash || 0) },
+                { key: 'cash', label: 'Tus cuentas', balance: Math.round(financeEfectivoActual() * 100) / 100 },
                 { key: 'emergency', label: 'Fondo de emergencia', balance: Number(financeProfile.emergency || 0) },
                 { key: 'vacation', label: 'Reserva de vacaciones', balance: Number(financeProfile.vacation || 0) },
                 { key: 'invested', label: 'Inversiones', balance: Number(financeProfile.invested || 0) },
@@ -224,7 +226,7 @@
         function openFinanceTargetEditor() {
             showModal(`
                 <div class="modal-title">Editar objetivo del patrimonio operativo</div>
-                <div class="modal-label">Efectivo / bancos (€)</div>
+                <div class="modal-label">Tus cuentas (€)</div>
                 <input id="finance-target-cash" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.cashTarget || 0)}">
                 <div class="modal-label">Fondo de emergencia (€)</div>
                 <input id="finance-target-emergency" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.emergencyTarget || 0)}">
@@ -509,11 +511,8 @@
                 <div class="modal-label">Sueldo recibido este mes${forecast > 0 ? ` (previsto: ${financeMoney(forecast)})` : ''}</div>
                 <input id="mfu-salario" class="modal-input" type="number" step="0.01" placeholder="0.00" value="${existingSalary !== undefined ? existingSalary : (forecast || '')}">
 
-                <div class="modal-label" style="margin-top:14px">Saldos actuales</div>
-                <div class="modal-row">
-                    <div><div style="font-size:11px;color:var(--text-secondary)">Efectivo</div><input id="mfu-cash" class="modal-input" type="number" step="0.01" value="${financeProfile.cash || 0}"></div>
-                    <div><div style="font-size:11px;color:var(--text-secondary)">Emergencia</div><input id="mfu-emergency" class="modal-input" type="number" step="0.01" value="${financeProfile.emergency || 0}"></div>
-                </div>
+                <div class="modal-label" style="margin-top:14px">Fondo de emergencia</div>
+                <input id="mfu-emergency" class="modal-input" type="number" step="0.01" value="${financeProfile.emergency || 0}">
                 <div class="modal-label" style="margin-top:8px">Vacaciones</div>
                 <input id="mfu-vacation" class="modal-input" type="number" step="0.01" value="${financeProfile.vacation || 0}">
 
@@ -523,7 +522,6 @@
 
         async function saveMonthlyFinanceUpdate(monthKey) {
             const salario = Number(document.getElementById('mfu-salario')?.value);
-            const cash = Number(document.getElementById('mfu-cash')?.value);
             const emergency = Number(document.getElementById('mfu-emergency')?.value);
             const vacation = Number(document.getElementById('mfu-vacation')?.value);
             const before = window._financeUpdateBefore ?? financeCorePatrimony();
@@ -536,7 +534,6 @@
                 financeProfile.salaryReal[monthKey] = salario;
             }
 
-            if (Number.isFinite(cash)) financeProfile.cash = Math.max(0, cash);
             if (Number.isFinite(emergency)) financeProfile.emergency = Math.max(0, emergency);
             if (Number.isFinite(vacation)) financeProfile.vacation = Math.max(0, vacation);
 

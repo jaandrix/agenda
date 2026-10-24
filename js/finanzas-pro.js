@@ -378,7 +378,20 @@
             return !!(t && (t.ajuste || String(t.id || '').startsWith('ptx_adj_')));
         }
 
+        // Lo que va a la inversión (la categoría «Inversiones», de gasto o de ingreso) es dinero tuyo que cambia de
+        // sitio: tampoco es gasto ni ingreso. En su propia categoría sí cuenta (financeProFueraDeCategoria): así la
+        // casilla del fondo en largo plazo sigue sabiendo cuánto se aportó.
+        function financeProEsInversion(t) {
+            if (!t || (t.type !== 'expense' && t.type !== 'income')) return false;
+            if (t.category === 'cat_inversion_gasto' || t.category === 'cat_inversion_ing') return true;
+            return financeProNormalizar(financeProCategoryById(t.category)?.name).trim() === 'inversiones';
+        }
+
         function financeProNeutro(t) {
+            return !!(t && (t.ahorro || financeProEsAjuste(t) || financeProEsInversion(t)));
+        }
+
+        function financeProFueraDeCategoria(t) {
             return !!(t && (t.ahorro || financeProEsAjuste(t)));
         }
 
@@ -1061,7 +1074,7 @@
         function financeProCategoryExpense(catId, monthKey) {
             monthKey = monthKey || financeMonthKey();
             return financePro.transactions
-                .filter(t => t.type === 'expense' && t.category === catId && t.date.slice(0, 7) === monthKey && !t.viaje && !financeProNeutro(t))
+                .filter(t => t.type === 'expense' && t.category === catId && t.date.slice(0, 7) === monthKey && !t.viaje && !financeProFueraDeCategoria(t))
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
@@ -1082,7 +1095,7 @@
             const incomeCat = financePro.categories.find(c => c.type === 'income' && c.name.toLowerCase() === cat.name.toLowerCase());
             if (!incomeCat) return 0;
             return financePro.transactions
-                .filter(t => t.type === 'income' && t.category === incomeCat.id && t.date.slice(0, 7) === monthKey && !financeProNeutro(t))
+                .filter(t => t.type === 'income' && t.category === incomeCat.id && t.date.slice(0, 7) === monthKey && !financeProFueraDeCategoria(t))
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
@@ -1139,23 +1152,6 @@
             const prevInvested = prevSnap ? Number(prevSnap.invested || 0) : Number(financeProfile.invested || 0);
             const prevEmergency = prevSnap ? Number(prevSnap.emergency || 0) : Number(financeProfile.emergency || 0);
             return { total, change: financePctChange(total, prevProBalance + prevInvested + prevEmergency) };
-        }
-
-        // Serie histórica del "Patrimonio total" (cuentas PRO + fondo de
-        // emergencia + fondo a largo/inversión) para la segunda línea de la
-        // gráfica — emergencia e inversión no tienen un valor por mes real
-        // (se actualizan a mano), así que para cada mes se usa el snapshot
-        // del histórico más cercano, sin pasarse de la fecha de ese mes.
-        function financeUnifiedPatrimonySeries(rangeMonths) {
-            const proSeries = financeProMonthlyBalances(null, rangeMonths);
-            const history = [...(financeProfile.history || [])].sort((a, b) => String(a.month).localeCompare(String(b.month)));
-            let histIdx = -1;
-            return proSeries.map(p => {
-                while (histIdx + 1 < history.length && history[histIdx + 1].month <= p.month) histIdx++;
-                const snap = histIdx >= 0 ? history[histIdx] : null;
-                const extra = snap ? (Number(snap.emergency || 0) + Number(snap.invested || 0)) : (Number(financeProfile.emergency || 0) + Number(financeProfile.invested || 0));
-                return { month: p.month, balance: p.balance + extra };
-            });
         }
 
         // Sustituye la antigua "Previsión" (sueldo/aportaciones editados a
@@ -1770,7 +1766,7 @@
 
             lines.push('## Patrimonio operativo');
             lines.push(mdTable(['Cuenta', 'Saldo', 'Objetivo'], [
-                ['Efectivo / bancos', financeMoney(financePro.enabled ? financeProTotalBalance() : (financeProfile.cash || 0)), financeMoney(financeProfile.cashTarget || 0)],
+                ['Tus cuentas', financeMoney(financeProTotalBalance()), financeMoney(financeProfile.cashTarget || 0)],
                 ['Fondo de emergencia', financeMoney(financeProfile.emergency || 0), financeMoney(financeProfile.emergencyTarget || 0)],
                 ['Reserva de vacaciones (fuera del patrimonio operativo)', financeMoney(financeProfile.vacation || 0), '—'],
                 ['Inversión a largo plazo', financeMoney(financeProfile.invested || 0), financeMoney(financeProfile.investedTarget || 0)],
@@ -1815,7 +1811,7 @@
                 t.date,
                 financePro.accounts[t.account]?.name || t.account,
                 t.type === 'income' ? 'Ingreso' : t.type === 'expense' ? 'Gasto' : 'Traspaso',
-                t.type === 'transfer' ? (financePro.accounts[t.transferTo]?.name || t.transferTo) : t.ahorro ? (t.type === 'income' ? 'De tus ahorros' : 'A tus ahorros') : financeProEsAjuste(t) ? 'Ajuste de saldo' : (financeProCategoryById(t.category)?.name || '—'),
+                t.type === 'transfer' ? (financePro.accounts[t.transferTo]?.name || t.transferTo) : financeProNeutro(t) ? financeProEtiquetaNeutro(t).replace(/^./, c => c.toUpperCase()).replace(/\.$/, '') : (financeProCategoryById(t.category)?.name || '—'),
                 financeMoney(t.amount || 0),
                 t.note || ''
             ])));
@@ -1906,6 +1902,42 @@
             showToast('Finanzas exportadas');
         }
 
+        // Finanzas en tres pestañas. Al cambiar se repinta solo el panel (no la vista entera) y se conserva el sitio
+        // de la barra de pestañas en pantalla, para que no salte el scroll al pasar a una más corta o más larga.
+        let financeTab = (() => { try { return ['resumen', 'movimientos', 'planificacion'].includes(localStorage.getItem('bitacora-fin-pestana')) ? localStorage.getItem('bitacora-fin-pestana') : 'resumen'; } catch (e) { return 'resumen'; } })();
+        function cambiarPestanaFinanzas(tab) {
+            if (tab === financeTab) return;
+            financeTab = tab;
+            try { localStorage.setItem('bitacora-fin-pestana', tab); } catch (e) {}
+            const barra = document.querySelector('.finance-dashboard .fin-pestanas');
+            const antes = barra ? barra.getBoundingClientRect().top : null;
+            const cuerpo = document.getElementById('finance-tab-cuerpo');
+            if (!cuerpo) { render(); return; }
+            cuerpo.innerHTML = renderFinanceTabCuerpo();
+            document.querySelectorAll('.finance-dashboard .fin-pestanas button').forEach(b => { b.classList.toggle('active', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
+            const ahora = document.querySelector('.finance-dashboard .fin-pestanas')?.getBoundingClientRect().top;
+            if (antes != null && ahora != null && Math.abs(ahora - antes) > 1) (document.getElementById('content') || document.scrollingElement).scrollBy?.(0, ahora - antes);
+            if (tab === 'resumen') requestAnimationFrame(animateFinanceProChartPanel);
+        }
+
+        function renderFinanceTabCuerpo() {
+            if (financeTab === 'movimientos') return renderFinanceProTxSection();
+            if (financeTab === 'planificacion') return `
+                ${renderFinanceProBudgetsPanel()}
+                ${renderFinancePlanRow()}
+                <div class="finance-dashboard-foot-actions" style="margin-top:20px">
+                    <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()"><i class='ico ico-lapiz' aria-hidden=true></i> corregir registros.</button>
+                </div>`;
+            return `
+                ${renderFinanceProChartPanel()}
+                ${renderFinanceProReviewBanner()}
+                ${renderAvisoPresupuestos()}
+                ${renderSuscripcionesDetectadas()}
+                ${renderFinanceNetworthCard()}
+                <div class="finance-section-head" style="margin-top:20px"><div class="finance-kicker">cuentas.</div></div>
+                <div class="finance-pro-accounts-grid">${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}</div>`;
+        }
+
         function renderFinanceProDashboard() {
             ensureCurrentMonthHistory();
             const unificados = financeProUnificarAjustes();
@@ -1923,33 +1955,10 @@
                     </div>
                     ${blurToggleBtn}
                 </div>
-                ${renderFinanceProChartPanel()}
-
-                ${renderFinanceProReviewBanner()}
-                ${renderAvisoPresupuestos()}
-                ${renderSuscripcionesDetectadas()}
-
-                ${renderFinanceNetworthCard()}
-
-                <div class="finance-section-head" style="margin-top:20px">
-                    <div class="finance-kicker">Cuentas</div>
+                <div class="vista-seg fin-pestanas" role="tablist" aria-label="Finanzas">
+                    ${[['resumen', 'resumen.'], ['movimientos', 'movimientos.'], ['planificacion', 'planificación.']].map(([k, t]) => `<button role="tab" data-tab="${k}" class="${financeTab === k ? 'active' : ''}" aria-selected="${financeTab === k}" onclick="cambiarPestanaFinanzas('${k}')">${t}</button>`).join('')}
                 </div>
-                <div class="finance-pro-accounts-grid">
-                    ${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}
-                </div>
-
-                ${renderFinanceProBudgetsPanel()}
-
-                <div class="finance-section-head" style="margin-top:24px">
-                    <div class="finance-kicker">planificación.</div>
-                </div>
-                ${renderFinancePlanRow()}
-
-                ${renderFinanceProTxSection()}
-
-                <div class="finance-dashboard-foot-actions" style="margin-top:20px">
-                    <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()"><i class='ico ico-lapiz' aria-hidden=true></i> Corregir registros</button>
-                </div>
+                <div id="finance-tab-cuerpo">${renderFinanceTabCuerpo()}</div>
             </div>`;
         }
 
@@ -2391,6 +2400,7 @@
 
         function financeProEtiquetaNeutro(t) {
             if (t.ahorro) return t.type === 'income' ? 'de tus ahorros.' : 'a tus ahorros.';
+            if (financeProEsInversion(t)) return t.type === 'income' ? 'de tu inversión.' : 'a tu inversión.';
             return 'ajuste de saldo.';
         }
 

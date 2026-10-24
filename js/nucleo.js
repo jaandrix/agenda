@@ -1716,13 +1716,13 @@
             // Presupuesto consumido por categoría (sin viajes ni ahorro, como los presupuestos), con una marca de
             // dónde «tocaría» ir a día de hoy si se gastara al mismo ritmo todo el mes.
             const limites = typeof asistLimitesDelMes === 'function' ? asistLimitesDelMes(mes) : {};
-            const gastoPresu = {};
-            financePro.transactions.forEach(x => { if (x.type === 'expense' && !financeProNeutro(x) && !x.viaje && x.date.slice(0, 7) === mes) gastoPresu[x.category || ''] = (gastoPresu[x.category || ''] || 0) + (Number(x.amount) || 0); });
             const hoyPct = Math.round(dia / diasMes * 100);
+            // Lo devuelto amplía el límite del mes (un reembolso en coleccionables), igual que en el escritorio.
             const barraPresu = f => {
-                const l = limites[f.id]?.limite;
+                if (!limites[f.id]?.limite) return '';
+                const { gastado: g, limite: l } = financeProPresupuestoConDevoluciones(f.id, mes, limites[f.id].limite);
                 if (!l) return '';
-                const g = gastoPresu[f.id] || 0, p = g / l;
+                const p = g / l;
                 return `<div class="m-encqsv-presu ${p > 1 ? 'pasado' : p * 100 > hoyPct + 10 ? 'rapido' : ''}"><i class="m-encqsv-presu-barra"><i style="width:${Math.min(100, Math.round(p * 100))}%"></i><b style="left:${hoyPct}%" aria-hidden="true"></b></i><span>${p > 1 ? `+${financeMoney(g - l)} sobre ${financeMoney(l)}` : `${Math.round(p * 100)} % de ${financeMoney(l)}`}</span></div>`;
             };
             if (resto > 0) filas.push({ nombre: `otras ${orden.length - 5}`, total: resto, tono: 5 });
@@ -1732,9 +1732,8 @@
                 <div class="m-bloque-cab"><div class="m-etiqueta">en qué se va.</div>${hayViajes ? `<button class="m-mini" onclick="mobileAlternarGastoViajes()" aria-pressed="${conViajes}">${conViajes ? 'con viajes.' : 'sin viajes.'}</button>` : ''}</div>
                 <div class="m-encqsv">
                     ${filas.length ? `<div class="m-encqsv-total"><b>${financeMoney(totalCat)}</b><span>${conViajes || !enViajes ? 'este mes.' : `este mes, sin ${financeMoney(enViajes)} de viajes.`}</span></div>
-                    <div class="m-encqsv-tira" role="img" aria-label="${filas.map(f => `${escapeHtml(f.nombre)} ${pct(f.total)} %`).join(', ')}">${filas.map(f => `<i class="t${f.tono}" style="flex-grow:${f.total.toFixed(2)}"></i>`).join('')}</div>
                     <div class="m-encqsv-filas">${filas.map(f => `
-                        <div class="m-encqsv-fila"><i class="t${f.tono}" aria-hidden="true"></i><span class="m-encqsv-nombre">${escapeHtml(f.nombre)}.</span><span class="m-encqsv-pct">${pct(f.total)} %</span><span class="m-fila-cifra">${financeMoney(f.total)}</span>${f.id !== undefined ? barraPresu(f) : ''}</div>`).join('')}
+                        <div class="m-encqsv-fila"><span class="m-encqsv-nombre">${escapeHtml(f.nombre)}.</span><span class="m-encqsv-pct">${pct(f.total)} %</span><span class="m-fila-cifra">${financeMoney(f.total)}</span>${f.id !== undefined ? barraPresu(f) : ''}</div>`).join('')}
                     </div>` : `<div class="m-vacio m-vacio-peque">este mes solo hay gastos de viaje.</div>`}
                 </div>` : '';
             const cargos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0).map(e => {
@@ -1749,7 +1748,7 @@
             const porAjustar = financeProPendingReviewCount();
             const aviso = porAjustar ? `<button class="m-finanzas-aviso" onclick="openFinanceProReviewModal()"><b>${porAjustar} ${porAjustar === 1 ? 'movimiento' : 'movimientos'} por ajustar.</b><span>ponles categoría y revisa la cuenta.</span></button>` : '';
             const permitir = '<button class="m-enlace asist-permitir-enlace" onclick="openPuedoPermitirme()">¿me lo puedo permitir?</button>';
-            return aviso + renderAvisoPresupuestos() + renderSuscripcionesDetectadas() + permitir + ritmo + categorias + proximos;
+            return { avisos: aviso + renderAvisoPresupuestos() + renderSuscripcionesDetectadas(), ritmo, categorias, proximos, permitir };
         }
 
         function mobileGastoConViajes() {
@@ -1764,32 +1763,27 @@
             const ahora = new Date();
             const { income, expense } = financeProMonthTotals(financeMonthKey());
             const ratio = income > 0 ? expense / income : (expense > 0 ? 1 : 0);
-            const rPeq = Math.max(6, 46 * Math.sqrt(Math.min(ratio, 1)));
+            const mesB = renderMobileFinanzasMes();
             const ultimos = [...financePro.transactions].sort((a, b) => financeProCompararMov(b, a)).slice(0, 12);
             requestAnimationFrame(() => requestAnimationFrame(animateFinanceProChartPanel));
             if (financeProUnificarAjustes()) setTimeout(() => saveData().catch(e => console.error(e)), 0);
             return `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}
                 ${renderFinanzasGrafica(true)}
-                ${income || expense ? `
-                <div class="m-composicion">
-                    <svg viewBox="0 0 100 100" class="m-composicion-svg" aria-hidden="true">
-                        <circle cx="50" cy="50" r="48" class="m-circulo-lleno"/>
-                        <circle cx="${4 + rPeq + 4}" cy="${96 - rPeq - 4}" r="${rPeq}" class="m-circulo-acento"/>
-                    </svg>
-                    <div class="m-composicion-texto">
-                        <div class="m-cifra-media">${Math.round(ratio * 100)}<small>%</small></div>
-                        <div class="m-fila-meta">de lo que ha entrado este mes, ya gastado.</div>
-                    </div>
-                </div>` : ''}
-                <div class="m-dos">
-                    <div><div class="m-etiqueta">entra.</div><div class="m-cifra-media">${financeMoney(income)}</div></div>
-                    <div><div class="m-etiqueta">sale.</div><div class="m-cifra-media">${financeMoney(expense)}</div></div>
-                </div>
                 <div class="m-acciones">
                     <button class="m-boton m-boton-acento" onclick="openFinanceProTransactionModal()">+ movimiento.</button>
                     <button class="m-boton" onclick="pegarExtractoBancario()">importar extracto.</button>
                 </div>
-                ${renderMobileFinanzasMes()}
+                ${mesB.avisos}
+                <div class="m-bloque-cab"><div class="m-etiqueta">este mes.</div></div>
+                <div class="m-dos">
+                    <div><div class="m-etiqueta">entra.</div><div class="m-cifra-media">${financeMoney(income)}</div></div>
+                    <div><div class="m-etiqueta">sale.</div><div class="m-cifra-media">${financeMoney(expense)}</div></div>
+                </div>
+                ${income || expense ? `<div class="m-gastado"><i class="m-gastado-barra"><i style="width:${Math.min(100, Math.round(ratio * 100))}%"></i></i><span>${income > 0 ? `${Math.round(ratio * 100)} % de lo que ha entrado, ya gastado.` : 'Este mes todavía no ha entrado nada.'}</span></div>` : ''}
+                ${mesB.ritmo}
+                ${mesB.categorias}
+                ${mesB.proximos}
+                ${mesB.permitir}
                 <div class="m-bloque-cab"><div class="m-etiqueta">cuentas.</div></div>
                 <div class="m-lista">${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
                     <div class="m-fila"><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml((financePro.accounts[k]?.name || k).toLowerCase())}.</div></div><span class="m-fila-cifra">${financeMoney(financeProAccountBalance(k))}</span></div>`).join('')}

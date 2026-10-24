@@ -640,7 +640,7 @@
         // el contenido se cambiaba de golpe. Lo que queda debajo del grupo de
         // pestañas entra ahora desde el lado de la pestaña elegida, con la
         // misma animación que el cambio de día del móvil.
-        const PESTANAS_ANIMADAS = '.culture-tabs, .profe-pestanas, .social-subtabs, .m-pestanas, .est-pestanas';
+        const PESTANAS_ANIMADAS = '.culture-tabs, .profe-pestanas, .social-subtabs, .m-pestanas, .est-pestanas, .fin-pestanas';
         function animarCambioPestana(e) {
             const boton = e.target.closest?.('button');
             const grupo = boton?.closest(PESTANAS_ANIMADAS);
