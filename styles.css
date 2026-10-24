@@ -9551,3 +9551,11 @@ body.papel .asig-estado.vencido { color:#a3243b; }
 .m-gastado span { font-size:13px; color:var(--text-secondary); }
 .m-gastado-barra { display:block; height:6px; border-radius:3px; background:var(--border); overflow:hidden; }
 .m-gastado-barra i { display:block; height:100%; border-radius:3px; background:var(--m-acento); }
+/* El fondo del modal no se desplaza (overflow-x:hidden lo volvía desplazable en vertical y en el iPhone se podía tirar
+   de la hoja hacia arriba con el rebote); lo que no cabe se desplaza dentro de la hoja. */
+@media (max-width: 768px) {
+    .modal-overlay { overflow:hidden; overscroll-behavior:none; }
+    .modal-sheet { overscroll-behavior:contain; }
+}
+body.mobile-standalone .modal-overlay, body.pwa .modal-overlay { overflow:hidden; overscroll-behavior:none; }
+body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { overscroll-behavior:contain; }

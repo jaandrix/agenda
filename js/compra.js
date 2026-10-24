@@ -43,6 +43,13 @@ function datosCompra() {
     if (!listaCompra.listas.length) listaCompra.listas.push({ id: 'lista_' + Date.now(), nombre: 'Casa', items: [] });
     listaCompra.listas.forEach(l => { if (!Array.isArray(l.items)) l.items = []; });
     if (!listaCompra.listas.some(l => l.id === listaCompra.actual)) listaCompra.actual = listaCompra.listas[0].id;
+    // Tickets de antes del arreglo: la segunda línea de un producto ya de la lista quedaba como extra.
+    listaCompra.historial.forEach(c => {
+        if (c.fuente !== 'ticket' || !Array.isArray(c.items)) return;
+        const de = new Map();
+        c.items.forEach(i => { if (i.planeado && i.deLista && !de.has(i.clave)) de.set(i.clave, i.deLista); });
+        c.items.forEach(i => { if (!i.planeado && de.has(i.clave)) { i.planeado = true; i.deLista = de.get(i.clave); } });
+    });
     return listaCompra;
 }
 
@@ -629,6 +636,8 @@ function compraAplicarTicket(op, ref) {
     const usadasDichas = new Set();
     const quitados = [];
     const lineas = (Array.isArray(op.lineas) ? op.lineas : []).filter(x => x && (x.producto || x.descripcion));
+    // Dos líneas iguales en el ticket (dos bricks de leche) son el mismo producto de la lista: la segunda no es un extra.
+    const yaDeLista = new Map();
     const items = lineas.map(x => {
         const texto = String(x.producto || x.descripcion).trim();
         const nombreTexto = texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
@@ -644,12 +653,15 @@ function compraAplicarTicket(op, ref) {
             if (elegido) break;
         }
         let deLista = '';
+        const claveLinea = compraClave(texto);
         if (elegido) { usadas.add(elegido.it.id); quitados.push({ listaId: elegido.l.id, item: { ...elegido.it } }); deLista = elegido.it.texto; }
+        else if (yaDeLista.has(claveLinea)) deLista = yaDeLista.get(claveLinea);
         else {
             const dicha = planeadaDicha.find(p => !usadasDichas.has(p) && ((deListaIA && (compraClave(p) === compraClave(deListaIA) || compraParecido(deListaIA, p) >= 1)) || compraParecido(texto, p) >= 1));
             if (dicha) { usadasDichas.add(dicha); deLista = dicha; }
             else if (deListaIA) deLista = deListaIA;
         }
+        if (deLista && !yaDeLista.has(claveLinea)) yaDeLista.set(claveLinea, deLista);
         const cantidad = Number(String(x.cantidad ?? 1).replace(',', '.')) || 1;
         const importe = Number(String(x.importe ?? '').replace(',', '.')) || (Number(String(x.precio_unidad ?? '').replace(',', '.')) * cantidad) || null;
         const precio = Number(String(x.precio_unidad ?? '').replace(',', '.')) || (importe ? Math.round(importe / cantidad * 100) / 100 : null);
