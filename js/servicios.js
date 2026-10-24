@@ -395,8 +395,8 @@
             const cumples = todas.filter(e => e.type === 'birthday');
             const hechas = entries.filter(e => isCalendarLogEntry(e) && e.date === fecha).map(e => String(e.title || '').replace(/^completado:\s*/i, ''));
             if (fecha === todayISO()) plannerItemsForOffset(0).filter(i => i.done).forEach(i => { if (!hechas.includes(i.title)) hechas.push(i.title); });
-            const gastos = financePro.transactions.filter(t => t.date === fecha && t.type === 'expense' && !t.ahorro);
-            const ingresos = financePro.transactions.filter(t => t.date === fecha && t.type === 'income' && !t.ahorro);
+            const gastos = financePro.transactions.filter(t => t.date === fecha && t.type === 'expense' && !financeProNeutro(t));
+            const ingresos = financePro.transactions.filter(t => t.date === fecha && t.type === 'income' && !financeProNeutro(t));
             const rutinas = (habits || []).filter(h => h.completadas?.[fecha]).map(h => h.texto || h.name || '');
             const nota = (notes || []).find(n => n.date === fecha && (n.content || '').trim());
             const ocio = entries.filter(e => ['book', 'series', 'game'].includes(e.type) && e.endDate === fecha || (e.type === 'movie' && e.date === fecha));

@@ -13,7 +13,7 @@
 
         // Gasto real (sin traspasos ni bolsillos de ahorro) entre dos fechas.
         function asistGasto(desde, hasta, filtro) {
-            return financePro.transactions.filter(t => t.type === 'expense' && !t.ahorro && t.date >= desde && t.date <= hasta && (!filtro || filtro(t)));
+            return financePro.transactions.filter(t => t.type === 'expense' && !financeProNeutro(t) && t.date >= desde && t.date <= hasta && (!filtro || filtro(t)));
         }
 
         // Próximo día de cargo de una suscripción o gasto fijo a partir de hoy.
@@ -136,7 +136,7 @@
             const yaDada = k => recurrentes.some(e => (e.conceptoBanco && k.includes(asistNorm(e.conceptoBanco).split(' ')[0])) || asistNorm(e.title).split(/[^a-z0-9]+/).some(w => w.length >= 4 && k.includes(w)));
             const grupos = {};
             financePro.transactions.forEach(t => {
-                if (t.type !== 'expense' || !t.date || t.date < desde || t.recurringEntryId || t.ahorro) return;
+                if (t.type !== 'expense' || !t.date || t.date < desde || t.recurringEntryId || financeProNeutro(t)) return;
                 const k = asistClaveCargo(t);
                 if (k.length >= 3) (grupos[k] = grupos[k] || []).push(t);
             });

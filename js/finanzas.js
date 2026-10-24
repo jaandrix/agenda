@@ -24,8 +24,12 @@
             return FMT_MES_ANIO.format(new Date(y, m - 1, 1));
         }
 
+        function financeEfectivoActual() {
+            return financePro?.enabled && typeof financeProTotalBalance === 'function' ? financeProTotalBalance() : Number(financeProfile.cash || 0);
+        }
+
         function financeCorePatrimony() {
-            return Number(financeProfile.cash || 0) + Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0);
+            return financeEfectivoActual() + Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0);
         }
 
         function financeTargetTotal() {
@@ -56,11 +60,11 @@
             return {
                 month: financeMonthKey(),
                 date: new Date().toISOString(),
-                cash: Number(financeProfile.cash || 0),
+                cash: Math.round(financeEfectivoActual() * 100) / 100,
                 invested: Number(financeProfile.invested || 0),
                 emergency: Number(financeProfile.emergency || 0),
                 vacation: Number(financeProfile.vacation || 0),
-                safe: Number(financeProfile.cash || 0) + Number(financeProfile.emergency || 0),
+                safe: financeEfectivoActual() + Number(financeProfile.emergency || 0),
                 total: financeCorePatrimony(),
                 accounts
             };
@@ -73,7 +77,14 @@
         function ensureCurrentMonthHistory() {
             const month = financeMonthKey();
             const history = Array.isArray(financeProfile.history) ? financeProfile.history : [];
-            if (history.some(h => h.month === month)) return;
+            const i = history.findIndex(h => h.month === month);
+            if (i >= 0) {
+                const nueva = financeSnapshot(), vieja = history[i];
+                if (['cash', 'invested', 'emergency', 'vacation'].every(k => Math.abs(Number(vieja[k] || 0) - Number(nueva[k] || 0)) < 0.005)) return;
+                history[i] = { ...vieja, ...nueva };
+                saveData().catch(e => console.error(e));
+                return;
+            }
             financeProfile.history = [...history, financeSnapshot()]
                 .sort((a, b) => String(a.month).localeCompare(String(b.month)))
                 .slice(-36);

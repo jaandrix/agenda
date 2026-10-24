@@ -209,7 +209,7 @@
             if (!fechas?.length) return 0;
             const desde = fechas.reduce((a, b) => a < b ? a : b), hasta = fechas.reduce((a, b) => a > b ? a : b);
             const enRango = t => t.date >= financeProSumarDias(desde, -2) && t.date <= financeProSumarDias(hasta, 2);
-            const libre = t => !t.ahorro && !t.recurringEntryId && !t.programadoId && !t.pendiente && enRango(t);
+            const libre = t => !financeProNeutro(t) && !t.recurringEntryId && !t.programadoId && !t.pendiente && enRango(t);
             const salidas = financePro.transactions.filter(t => t.type === 'expense' && libre(t));
             const entradas = financePro.transactions.filter(t => t.type === 'income' && libre(t));
             const usadas = new Set();
@@ -368,6 +368,34 @@
         // banco ya lo retiene.
         function financeProCuentaEnSaldo(t) {
             return !(t.pendiente && t.type === 'income');
+        }
+
+        // Un ajuste de saldo (modificar saldo, o cuadrar con el extracto) corrige la cuenta, pero no es un ingreso ni
+        // un gasto, igual que lo que va o viene de los ahorros: los dos mueven el saldo y se quedan fuera de entra/sale,
+        // presupuestos, ritmo y estadísticas. Antes se distinguía por una categoría «Ajuste de saldo» creada a mano
+        // (una de gasto y otra de ingreso) y solo el ritmo la apartaba.
+        function financeProEsAjuste(t) {
+            return !!(t && (t.ajuste || String(t.id || '').startsWith('ptx_adj_')));
+        }
+
+        function financeProNeutro(t) {
+            return !!(t && (t.ahorro || financeProEsAjuste(t)));
+        }
+
+        function financeProUnificarAjustes() {
+            const ids = new Set((financePro.categories || []).filter(c => financeProNormalizar(c.name).trim() === 'ajuste de saldo').map(c => c.id));
+            let cambio = false;
+            financePro.transactions.forEach(t => {
+                if (t.type === 'transfer') return;
+                if ((ids.has(t.category) || String(t.id || '').startsWith('ptx_adj_')) && !t.ajuste && !t.ahorro) { t.ajuste = true; cambio = true; }
+                if (ids.has(t.category)) { delete t.category; delete t.categoriaAuto; cambio = true; }
+            });
+            if (ids.size) {
+                financePro.categories = financePro.categories.filter(c => !ids.has(c.id));
+                Object.keys(financePro.categoryBudgets || {}).forEach(k => { if (ids.has(k)) delete financePro.categoryBudgets[k]; });
+                cambio = true;
+            }
+            return cambio;
         }
 
         // Finanzas pedía el saldo de cada cuenta (y la serie mensual) muchas
@@ -728,7 +756,7 @@
             const delta = c => `<b class="${c < 0 ? 'neg' : ''}">${c >= 0 ? '+' : '−'}${financeMoney(Math.abs(c))}</b>`;
             return `<section class="${movil ? '' : 'finance-panel '}fin-grafica ${movil ? 'movil' : ''}" ${movil ? '' : 'id="finance-pro-chart-panel"'}>
                 <div class="fin-graf-cab">
-                    <div><h3>patrimonio.</h3><small class="fin-graf-sub">${financeGrafExtras ? 'tus cuentas, la inversión y la emergencia.' : 'suma de tus cuentas, hoy.'}</small></div>
+                    <div><h3>${financeGrafExtras ? 'patrimonio.' : 'tus cuentas.'}</h3><small class="fin-graf-sub">${financeGrafExtras ? 'tus cuentas, la inversión y la emergencia.' : 'lo que tienes hoy entre todas.'}</small></div>
                     <div class="vista-seg fin-graf-rango" role="tablist" aria-label="Periodo">${FINANCE_PRO_CHART_RANGES.map(r => `<button role="tab" aria-selected="${r.key === rango.key}" onclick="financeProSetChartRange('${r.key}')"><span class="largo">${r.label}</span><span class="corto">${r.corto}</span></button>`).join('')}</div>
                 </div>
                 <div class="fin-graf-cifra" data-value="${total}">${financeMoney(total)}</div>
@@ -858,7 +886,7 @@
                 panel.querySelector('.fin-graf-cifra').textContent = financeMoney(ult.v);
                 const c = ult.v - g.serie[0].v, d = panel.querySelector('.fin-graf-delta');
                 d.innerHTML = `<b class="${c < 0 ? 'neg' : ''}">${c >= 0 ? '+' : '−'}${financeMoney(Math.abs(c))}</b> ${d.dataset.texto}.`;
-                panel.querySelector('.fin-graf-sub').textContent = financeGrafExtras ? 'tus cuentas, la inversión y la emergencia.' : 'suma de tus cuentas, hoy.';
+                panel.querySelector('.fin-graf-sub').textContent = financeGrafExtras ? 'tus cuentas, la inversión y la emergencia.' : 'lo que tienes hoy entre todas.';
             });
         }
 
@@ -872,7 +900,7 @@
         function financeProMonthTotals(monthKey) {
             let income = 0, expense = 0;
             financePro.transactions.forEach(t => {
-                if (t.date.slice(0, 7) !== monthKey || t.ahorro) return;
+                if (t.date.slice(0, 7) !== monthKey || financeProNeutro(t)) return;
                 if (t.type === 'income') income += Number(t.amount) || 0;
                 else if (t.type === 'expense') expense += Number(t.amount) || 0;
             });
@@ -903,7 +931,7 @@
             const pctVsPrevMonth = (prevBal !== null && prevBal !== 0) ? ((lastBal - prevBal) / Math.abs(prevBal)) * 100 : null;
             const catTotals = {};
             financePro.transactions.forEach(t => {
-                if (t.type !== 'expense' || t.date.slice(0, 7) !== now || t.ahorro) return;
+                if (t.type !== 'expense' || t.date.slice(0, 7) !== now || financeProNeutro(t)) return;
                 const k = t.category || '_none';
                 catTotals[k] = (catTotals[k] || 0) + (Number(t.amount) || 0);
             });
@@ -1011,7 +1039,8 @@
                 account: key,
                 type: diff > 0 ? 'income' : 'expense',
                 amount: Math.abs(diff),
-                note: 'Ajuste de saldo'
+                note: 'Ajuste de saldo',
+                ajuste: true
             });
             render();
             try { await saveData(); showToast(`Saldo ajustado, ${diff > 0 ? '+' : '-'}${financeMoney(Math.abs(diff))}`); }
@@ -1032,7 +1061,7 @@
         function financeProCategoryExpense(catId, monthKey) {
             monthKey = monthKey || financeMonthKey();
             return financePro.transactions
-                .filter(t => t.type === 'expense' && t.category === catId && t.date.slice(0, 7) === monthKey && !t.viaje && !t.ahorro)
+                .filter(t => t.type === 'expense' && t.category === catId && t.date.slice(0, 7) === monthKey && !t.viaje && !financeProNeutro(t))
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
@@ -1053,7 +1082,7 @@
             const incomeCat = financePro.categories.find(c => c.type === 'income' && c.name.toLowerCase() === cat.name.toLowerCase());
             if (!incomeCat) return 0;
             return financePro.transactions
-                .filter(t => t.type === 'income' && t.category === incomeCat.id && t.date.slice(0, 7) === monthKey && !t.ahorro)
+                .filter(t => t.type === 'income' && t.category === incomeCat.id && t.date.slice(0, 7) === monthKey && !financeProNeutro(t))
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
@@ -1312,7 +1341,7 @@
             financePro.categories.filter(c => c.type === 'expense').forEach(c => { gastoPorNombre[c.name.toLowerCase()] = c.id; });
             const lista = [];
             financePro.transactions.forEach(t => {
-                if (!t.date || t.viaje || t.ahorro) return;
+                if (!t.date || t.viaje || financeProNeutro(t)) return;
                 if (t.type === 'expense') {
                     if (t.recurringEntryId || RITMO_FUERA.includes(t.category) || esAjuste(t.category)) return;
                     lista.push({ date: t.date, cat: t.category || '', valor: Number(t.amount) || 0 });
@@ -1741,7 +1770,7 @@
 
             lines.push('## Patrimonio operativo');
             lines.push(mdTable(['Cuenta', 'Saldo', 'Objetivo'], [
-                ['Efectivo / bancos', financeMoney(financeProfile.cash || 0), financeMoney(financeProfile.cashTarget || 0)],
+                ['Efectivo / bancos', financeMoney(financePro.enabled ? financeProTotalBalance() : (financeProfile.cash || 0)), financeMoney(financeProfile.cashTarget || 0)],
                 ['Fondo de emergencia', financeMoney(financeProfile.emergency || 0), financeMoney(financeProfile.emergencyTarget || 0)],
                 ['Reserva de vacaciones (fuera del patrimonio operativo)', financeMoney(financeProfile.vacation || 0), '—'],
                 ['Inversión a largo plazo', financeMoney(financeProfile.invested || 0), financeMoney(financeProfile.investedTarget || 0)],
@@ -1786,7 +1815,7 @@
                 t.date,
                 financePro.accounts[t.account]?.name || t.account,
                 t.type === 'income' ? 'Ingreso' : t.type === 'expense' ? 'Gasto' : 'Traspaso',
-                t.type === 'transfer' ? (financePro.accounts[t.transferTo]?.name || t.transferTo) : t.ahorro ? (t.type === 'income' ? 'De tus ahorros' : 'A tus ahorros') : (financeProCategoryById(t.category)?.name || '—'),
+                t.type === 'transfer' ? (financePro.accounts[t.transferTo]?.name || t.transferTo) : t.ahorro ? (t.type === 'income' ? 'De tus ahorros' : 'A tus ahorros') : financeProEsAjuste(t) ? 'Ajuste de saldo' : (financeProCategoryById(t.category)?.name || '—'),
                 financeMoney(t.amount || 0),
                 t.note || ''
             ])));
@@ -1879,7 +1908,8 @@
 
         function renderFinanceProDashboard() {
             ensureCurrentMonthHistory();
-            if (actualizarHistorialPresupuestos()) setTimeout(() => saveData().catch(e => console.error(e)), 0);
+            const unificados = financeProUnificarAjustes();
+            if (actualizarHistorialPresupuestos() || unificados) setTimeout(() => saveData().catch(e => console.error(e)), 0);
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
@@ -2270,7 +2300,7 @@
                 if (financeProTxFilter.account) txs = txs.filter(t => t.account === financeProTxFilter.account || t.transferTo === financeProTxFilter.account);
                 if (financeProTxFilter.year) txs = txs.filter(t => t.date.slice(0, 4) === financeProTxFilter.year);
                 if (financeProTxFilter.month) txs = txs.filter(t => t.date.slice(5, 7) === financeProTxFilter.month);
-                if (financeProTxFilter.category === '__none__') txs = txs.filter(t => !t.category && !t.ahorro && t.type !== 'transfer');
+                if (financeProTxFilter.category === '__none__') txs = txs.filter(t => !t.category && !financeProNeutro(t) && t.type !== 'transfer');
                 else if (financeProTxFilter.category) txs = txs.filter(t => t.category === financeProTxFilter.category);
                 if (financeProTxFilter.search.trim()) {
                     const q = financeProTxFilter.search.trim().toLowerCase();
@@ -2301,8 +2331,8 @@
                 // neto es el del mes entero (antes sumaba solo esos 5 y no
                 // coincidía con el del listado completo).
                 const delMes = full ? groups[m] : financePro.transactions.filter(t => t.date.slice(0, 7) === m);
-                const income = delMes.filter(t => t.type === 'income' && !t.ahorro).reduce((s, t) => s + Number(t.amount), 0);
-                const expense = delMes.filter(t => t.type === 'expense' && !t.ahorro).reduce((s, t) => s + Number(t.amount), 0);
+                const income = delMes.filter(t => t.type === 'income' && !financeProNeutro(t)).reduce((s, t) => s + Number(t.amount), 0);
+                const expense = delMes.filter(t => t.type === 'expense' && !financeProNeutro(t)).reduce((s, t) => s + Number(t.amount), 0);
                 const monthTotal = income - expense;
                 return `<div class="finance-pro-tx-month-group">
                     <div class="finance-pro-tx-month-summary finance-pro-tx-month-summary-light">
@@ -2359,6 +2389,11 @@
             return valor === undefined ? '' : ` <span class="finance-pro-tx-saldo">(${financeMoney(valor)})</span>`;
         }
 
+        function financeProEtiquetaNeutro(t) {
+            if (t.ahorro) return t.type === 'income' ? 'de tus ahorros.' : 'a tus ahorros.';
+            return 'ajuste de saldo.';
+        }
+
         function renderFinanceProTxRow(t, saldos) {
             if (t.type === 'transfer') {
                 return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
@@ -2370,11 +2405,12 @@
                     <div class="finance-pro-tx-amount">${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
                 </div>`;
             }
-            const cat = t.ahorro ? null : financeProCategoryById(t.category);
+            const neutro = financeProNeutro(t);
+            const cat = neutro ? null : financeProCategoryById(t.category);
             return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
-                ${t.ahorro ? `<div class="finance-metric-icon fin-slate finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>` : financeProCategoryBadge(cat)}
+                ${neutro ? `<div class="finance-metric-icon fin-slate finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>` : financeProCategoryBadge(cat)}
                 <div class="finance-pro-tx-main">
-                    <div class="finance-pro-tx-title">${t.ahorro ? (t.type === 'income' ? 'de tus ahorros.' : 'a tus ahorros.') : escapeHtml(cat ? cat.name : 'Sin categoría')}${!t.ahorro && cat && t.categoriaAuto ? '<span class="finance-cat-auto" title="Puesta por bitácora a partir de movimientos parecidos. Ábrelo y guarda para confirmarla.">auto.</span>' : ''}</div>
+                    <div class="finance-pro-tx-title">${neutro ? financeProEtiquetaNeutro(t) : escapeHtml(cat ? cat.name : 'Sin categoría')}${!neutro && cat && t.categoriaAuto ? '<span class="finance-cat-auto" title="Puesta por bitácora a partir de movimientos parecidos. Ábrelo y guarda para confirmarla.">auto.</span>' : ''}</div>
                     <div class="finance-pro-tx-sub">${escapeHtml(financePro.accounts[t.account]?.name || t.account)}, ${financeDateLabelShort(t.date)}${t.pendiente ? ', pendiente.' : ''}${t.viaje ? ', <span class="finance-marca">viaje.</span>' : ''}</div>
                     ${t.note ? `<div class="finance-pro-tx-note">${escapeHtml(t.note)}</div>` : ''}
                 </div>
@@ -2425,7 +2461,7 @@
                     <option value="">Elige una cuenta</option>
                     ${FINANCE_PRO_ACCOUNT_KEYS.filter(k => k !== d.account).map(k => `<option value="${k}" ${d.transferTo === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
                 </select>` : `
-                <div id="finance-tx-categoria" ${d.ahorro ? 'hidden' : ''}>
+                <div id="finance-tx-categoria" ${d.ahorro || financeProEsAjuste(d) ? 'hidden' : ''}>
                 <div class="modal-label">Categoría</div>
                 <select class="modal-input" onchange="financeProDraftSet('category',this.value)">
                     <option value="">Sin categoría</option>
@@ -2473,7 +2509,7 @@
             // cargo automático, ya conciliado con el banco...): si se
             // perdiera, la próxima importación lo duplicaría.
             const prev = financePro.transactions.find(t => t.id === entry.id);
-            if (prev) ['manual', 'recurringEntryId', 'cicloMes', 'programadoId', 'conciliado', 'bankNote', 'pendiente', 'noDuplicadoDe', 'claveImport'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
+            if (prev) ['manual', 'recurringEntryId', 'cicloMes', 'programadoId', 'conciliado', 'bankNote', 'pendiente', 'noDuplicadoDe', 'claveImport', 'ajuste', 'orden'].forEach(k => { if (prev[k] !== undefined) entry[k] = prev[k]; });
             else entry.manual = true;
             // Si a un movimiento importado se le cambia la nota, el concepto
             // del banco se guarda aparte: con él se reconoce al reimportar y
@@ -2848,9 +2884,10 @@
         // Los patrones van por orden de preferencia: Ibercaja trae
         // "Concepto" (TARJETA VISA) y "Descripción" (el comercio), y manda
         // la descripción aunque venga después.
-        function financeProGuessColumn(headerRow, patterns, fallback) {
-            const cab = headerRow.map(h => String(h || '').trim().toLowerCase());
+        function financeProGuessColumn(headerRow, patterns, fallback, prefijos) {
+            const cab = headerRow.map(h => String(h || '').replace(/^\uFEFF/, '').trim().toLowerCase());
             for (const p of patterns) { const idx = cab.indexOf(p); if (idx >= 0) return idx; }
+            for (const p of prefijos || []) { const idx = cab.findIndex(h => h.startsWith(p)); if (idx >= 0) return idx; }
             return fallback;
         }
 
@@ -2860,7 +2897,7 @@
         function financeProFilaCabecera(rows) {
             for (let i = 0; i < Math.min(rows.length, 40); i++) {
                 const cab = rows[i].map(h => String(h || '').trim().toLowerCase());
-                if (cab.some(h => /^(fecha|date|started date|completed date|f\. ?operaci)/.test(h)) && cab.some(h => /^(importe|amount|cantidad|cargo|abono|debe|haber)/.test(h))) return i;
+                if (cab.some(h => /^(fecha|date|started date|completed date|booking date|value date|f\. ?(operaci|operat|valor|contable))/.test(h)) && cab.some(h => /^(importe|amount|cantidad|cargo|abono|debe|haber|neto)/.test(h))) return i;
             }
             return 0;
         }
@@ -2937,10 +2974,13 @@
                 catch (e) { console.error(e); showToast('No se pudo leer el Excel', true); }
                 return;
             }
-            const reader = new FileReader();
-            reader.onload = () => financeProCargarTextoImport(String(reader.result));
-            reader.onerror = () => showToast('No se pudo leer el archivo', true);
-            reader.readAsText(file, 'UTF-8');
+            try {
+                const buf = await file.arrayBuffer();
+                let texto;
+                try { texto = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+                catch (e) { texto = new TextDecoder('windows-1252').decode(buf); }
+                financeProCargarTextoImport(texto);
+            } catch (e) { console.error(e); showToast('No se pudo leer el archivo', true); }
         }
 
         // En el iPhone, "Copiar" en la hoja de compartir del CSV de Revolut
@@ -2971,7 +3011,7 @@
         // Columnas adivinadas por cabecera y cuenta (la pedida, o la última
         // usada al importar). También la usa el conector, sin ventana.
         function financeProPrepararImport(texto, cuentaPedida) {
-            const todas = Array.isArray(texto) ? texto : financeProParseCSV(String(texto || '').trim());
+            const todas = Array.isArray(texto) ? texto : financeProParseCSV(String(texto || '').replace(/^\uFEFF/, '').trim());
             const rows = todas.slice(financeProFilaCabecera(todas));
             if (rows.length < 2 || rows[0].length < 3) return null;
             const header = rows[0];
@@ -2981,13 +3021,20 @@
             // Además siempre viene rellena (también en los pendientes).
             // La de finalización sigue usándose al reimportar para
             // reconocer movimientos ya importados con esa fecha (altDates).
-            const date = financeProGuessColumn(header, ['started date', 'fecha de inicio', 'completed date', 'fecha de finalización', 'date', 'fecha', 'fecha operación', 'fecha operacion', 'fecha de operación', 'fecha de operacion', 'f. operación', 'f.operación', 'fecha valor'], 0);
-            const amount = financeProGuessColumn(header, ['amount', 'importe', 'importe (€)', 'importe eur', 'cantidad'], 1);
-            const description = financeProGuessColumn(header, ['description', 'descripción', 'descripcion', 'concepto', 'detalle', 'movimiento'], header.length > 2 ? 2 : 0);
+            const date = financeProGuessColumn(header, ['started date', 'fecha de inicio', 'completed date', 'fecha de finalización', 'date', 'fecha', 'fecha operación', 'fecha operacion', 'fecha de operación', 'fecha de operacion', 'f. operación', 'f.operación', 'f. operativa', 'booking date', 'fecha valor', 'f. valor', 'f.valor'], 0, ['fecha', 'f. ', 'date', 'booking']);
+            const amount = financeProGuessColumn(header, ['amount', 'importe', 'importe (€)', 'importe eur', 'cantidad', 'neto'], 1, ['importe', 'amount', 'cantidad']);
+            let description = financeProGuessColumn(header, ['description', 'descripción', 'descripcion', 'concepto', 'detalle', 'movimiento', 'partner name', 'nombre', 'payment reference'], header.length > 2 ? 2 : 0, ['descrip', 'concepto']);
+            // BBVA trae «Concepto» (Pago con tarjeta) y «Movimiento» (el comercio): manda el comercio.
+            const iMov = header.findIndex(h => String(h || '').trim().toLowerCase() === 'movimiento');
+            if (iMov >= 0 && String(header[description] || '').trim().toLowerCase() === 'concepto') description = iMov;
+            // Bancos que separan cargo y abono (o debe y haber) en dos columnas y no traen «importe».
+            const cabMin = header.map(h => String(h || '').trim().toLowerCase());
+            const iCargo = cabMin.findIndex(h => /^(cargo|debe|gastos?|salida)/.test(h)), iAbono = cabMin.findIndex(h => /^(abono|haber|ingresos?|entrada)/.test(h));
+            const separado = iCargo >= 0 && iAbono >= 0 && !cabMin.some(h => /^(importe|amount|cantidad|neto)/.test(h));
             const category = financeProGuessColumn(header, ['category', 'categoría', 'categoria'], -1);
             const status = financeProGuessColumn(header, ['state', 'estado'], -1);
             const account = FINANCE_PRO_ACCOUNT_KEYS.includes(cuentaPedida) ? cuentaPedida : FINANCE_PRO_ACCOUNT_KEYS.includes(financePro.cuentaImport) ? financePro.cuentaImport : FINANCE_PRO_ACCOUNT_KEYS[0];
-            return { rows, mapping: { hasHeader: true, date, amount, description, category, amountOut: 0, amountIn: 1, splitAmount: false, account, status, skipPending: false } };
+            return { rows, mapping: { hasHeader: true, date, amount, description, category, amountOut: separado ? iCargo : 0, amountIn: separado ? iAbono : 1, splitAmount: separado, account, status, skipPending: false } };
         }
 
         function renderFinanceProImportMapping() {
@@ -3048,11 +3095,16 @@
         function financeProParseEuroAmount(str) {
             if (str === undefined || str === null) return NaN;
             // Santander escribe el negativo con el signo menos tipográfico (−).
-            let s = String(str).trim().replace(/[\u2212\u2013]/g, '-').replace(/[€\s]|eur$/gi, '');
+            let s = String(str).trim().replace(/[\u2212\u2013]/g, '-').replace(/eur/gi, '').replace(/[€\s\u00a0]/g, '');
             if (!s) return NaN;
+            let negativo = false;
+            if (/^\(.*\)$/.test(s)) { negativo = true; s = s.slice(1, -1); }
+            if (/-$/.test(s)) { negativo = true; s = s.slice(0, -1); }
             if (s.includes(',') && s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+            else if (/^[-+]?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
             else s = s.replace(/,/g, '');
-            return Number(s);
+            const n = Number(s);
+            return negativo ? -Math.abs(n) : n;
         }
 
         function financeProParseDate(str) {
@@ -3061,6 +3113,8 @@
             if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
             m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
             if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+            m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2})(?!\d)/);
+            if (m) return `20${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
             return null;
         }
 
@@ -3094,7 +3148,7 @@
             const m = imp?.mapping;
             if (!m?.hasHeader) return null;
             const cab = imp.rows[0].map(h => String(h || '').trim().toLowerCase());
-            const iSaldo = cab.findIndex(h => /^(balance|saldo)\b/.test(h));
+            const iSaldo = cab.findIndex(h => /^(balance|saldo|disponible)\b/.test(h));
             if (iSaldo < 0) return null;
             const filas = [];
             imp.rows.slice(1).forEach((r, orden) => {
@@ -3212,7 +3266,7 @@
             const diff = Math.round((c.esperado - c.actual) * 100) / 100;
             closeModal();
             if (Math.abs(diff) < 0.005) return;
-            financePro.transactions.push({ id: 'ptx_adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), date: c.hasta, account: c.cuenta, type: diff > 0 ? 'income' : 'expense', amount: Math.abs(diff), note: 'Ajuste de saldo' });
+            financePro.transactions.push({ id: 'ptx_adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), date: c.hasta, account: c.cuenta, type: diff > 0 ? 'income' : 'expense', amount: Math.abs(diff), note: 'Ajuste de saldo', ajuste: true });
             render();
             try { await saveData(); showToast(`Saldo ajustado al del extracto: ${financeMoney(c.esperado)}`); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
@@ -3645,7 +3699,7 @@
         function financeProViajeLista() {
             const v = window._viajeMarca;
             if (!v.desde || !v.hasta) return [];
-            return financePro.transactions.filter(t => t.type === 'expense' && !t.ahorro && t.date >= v.desde && t.date <= v.hasta)
+            return financePro.transactions.filter(t => t.type === 'expense' && !financeProNeutro(t) && t.date >= v.desde && t.date <= v.hasta)
                 .sort((a, b) => a.date.localeCompare(b.date));
         }
 

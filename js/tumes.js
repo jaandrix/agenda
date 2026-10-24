@@ -46,7 +46,7 @@ function tuMesDatos(mes) {
     if (aprobados.length) grupos.push({ clave: 'examenes', una: 'examen aprobado.', varias: 'exámenes aprobados.', items: aprobados });
     let ingresos = 0, gastos = 0;
     (financePro?.transactions || []).forEach(t => {
-        if (!enMes(t.date) || t.ahorro || t.transfer || esEjemploTuMes(t)) return;
+        if (!enMes(t.date) || financeProNeutro(t) || t.transfer || esEjemploTuMes(t)) return;
         if (t.type === 'income') ingresos += Number(t.amount) || 0;
         else if (t.type === 'expense') gastos += Number(t.amount) || 0;
     });

@@ -54,7 +54,7 @@ function contenido(data: any, hoy: string) {
     const hechas = entries.filter((e: any) => /^(planner_done_|recurring_done_)/.test(e.id || '') && e.date >= antes && e.date <= hoy).length;
     const diasRutina = new Set<string>();
     (data.habits || []).filter(propio).forEach((h: any) => Object.keys(h.completadas || {}).forEach(d => { if (d >= antes && d <= hoy && h.completadas[d]) diasRutina.add(d); }));
-    const gasto = (data.financePro?.transactions || []).filter((t: any) => propio(t) && t.type === 'expense' && !t.viaje && !t.ahorro && t.date >= antes && t.date <= hoy).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
+    const gasto = (data.financePro?.transactions || []).filter((t: any) => propio(t) && t.type === 'expense' && !t.viaje && !t.ahorro && !t.ajuste && !String(t.id || '').startsWith('ptx_adj_') && t.date >= antes && t.date <= hoy).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
     return { viene, estudios, cumples, hechas, diasRutina: diasRutina.size, gasto };
 }
 

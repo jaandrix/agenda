@@ -298,9 +298,12 @@ function saldos(data: any) {
     return Object.fromEntries(CUENTAS.map(k => [fp.accounts?.[k]?.name || k, euros(res[k])]));
 }
 
+// Lo que va o viene de los ahorros y los ajustes de saldo mueven el saldo, pero no son ingreso ni gasto (como en la app).
+const neutro = (t: any) => !!(t?.ahorro || t?.ajuste || String(t?.id || '').startsWith('ptx_adj_'));
+
 function finanzas(data: any, mes: string) {
     const fp = data.financePro || {};
-    const txs = (fp.transactions || []).filter((t: any) => t?.date);
+    const txs = (fp.transactions || []).filter((t: any) => t?.date && !neutro(t));
     const delMes = (m: string) => txs.filter((t: any) => t.date.slice(0, 7) === m);
     const suma = (lista: any[], tipo: string) => lista.filter(t => t.type === tipo).reduce((s, t) => s + (Number(t.amount) || 0), 0);
     const actual = delMes(mes);
@@ -312,10 +315,17 @@ function finanzas(data: any, mes: string) {
     const dia = mes === hoy.slice(0, 7) ? Number(hoy.slice(8)) : 31;
     const hastaDia = (m2: string) => delMes(m2).filter((t: any) => t.type === 'expense' && Number(t.date.slice(8)) <= dia);
     const mediaHastaHoy = anteriores.reduce((s, m2) => s + suma(hastaDia(m2), 'expense'), 0) / 3;
-    const presupuestos = Object.entries(fp.categoryBudgets || {}).filter(([, v]) => Number(v) > 0).map(([id, v]) => {
-        const gastado = actual.filter((t: any) => t.type === 'expense' && t.category === id).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
-        return { categoria: nombreCategoria(data, id), limite: euros(Number(v)), gastado: euros(gastado) };
-    });
+    // La app guarda cada mes lo presupuestado y lo gastado por categoría (casillas de largo plazo incluidas y
+    // descontando devoluciones); si está, manda eso.
+    const guardado = fp.historialPresupuestos?.[mes]?.categorias;
+    const presupuestos = guardado
+        ? Object.values(guardado).map((c: any) => ({ categoria: c.nombre, limite: euros(Number(c.limite) || 0), gastado: euros(Number(c.gastado) || 0) }))
+        : Object.entries(fp.categoryBudgets || {}).filter(([, v]) => Number(v) > 0).map(([id, v]) => {
+            const gastado = actual.filter((t: any) => t.type === 'expense' && t.category === id).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
+            return { categoria: nombreCategoria(data, id), limite: euros(Number(v)), gastado: euros(gastado) };
+        });
+    const historial = Object.entries(fp.historialPresupuestos || {}).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6)
+        .map(([m, h]: any) => ({ mes: m, pasado: euros(Object.values(h.categorias || {}).reduce((s: number, c: any) => s + Math.max(0, (Number(c.gastado) || 0) - (Number(c.limite) || 0)), 0)) }));
     const recurrentes = (data.entries || []).filter((e: any) => (e?.type === 'subscription' || e?.type === 'fixed_expense') && e.active !== false)
         .map((e: any) => ({ nombre: e.title, tipo: e.type === 'subscription' ? 'suscripción' : 'gasto fijo', importe: euros(Number(e.amount) || 0), dia: e.renewalDay }));
     return {
@@ -326,6 +336,7 @@ function finanzas(data: any, mes: string) {
         gasto_por_categoria: Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => ({ categoria: c, total: euros(v) })),
         comparacion: { dia_del_mes: dia, gastado_hasta_hoy: euros(suma(hastaDia(mes), 'expense')), media_de_los_3_meses_anteriores_a_esta_altura: euros(mediaHastaHoy) },
         presupuestos,
+        presupuestos_meses_anteriores: historial.length ? historial : undefined,
         suscripciones_y_gastos_fijos: recurrentes,
         ultimos_movimientos: movimientosLista(data, { desde: mes + '-01', hasta: mes + '-31', limite: 15 }),
     };
@@ -346,7 +357,9 @@ function movimientosLista(data: any, f: any) {
             tipo: t.type === 'income' ? 'ingreso' : t.type === 'expense' ? 'gasto' : 'traspaso',
             importe: euros(Number(t.amount) || 0),
             concepto: t.note || t.bankNote || undefined,
-            categoria: t.type === 'transfer' ? undefined : nombreCategoria(data, t.category),
+            categoria: t.type === 'transfer' ? undefined : t.ahorro ? (t.type === 'income' ? 'de tus ahorros' : 'a tus ahorros') : neutro(t) ? 'ajuste de saldo' : nombreCategoria(data, t.category),
+            no_cuenta_como_ingreso_ni_gasto: neutro(t) || undefined,
+            viaje: t.viaje || undefined,
             cuenta: data.financePro?.accounts?.[t.account]?.name || t.account,
             pendiente: t.pendiente || undefined,
             por_revisar: t.needsReview || undefined,
@@ -386,7 +399,7 @@ function resumenPeriodo(data: any, desde: string, hasta: string) {
     }).filter((x: any) => x.tocaban);
     const habitos = (data.habits || []).filter((h: any) => h.activo !== false).map((h: any) => ({ habito: h.texto, dias_hechos: fechas.filter(f => h.completadas?.[f]).length, de: fechas.length }));
     const esf = fechas.map(f => ({ fecha: f, valor: Number(data.dailyEffort?.[f]) || 0 })).filter(x => x.valor);
-    const txs = (data.financePro?.transactions || []).filter((t: any) => t?.type === 'expense');
+    const txs = (data.financePro?.transactions || []).filter((t: any) => t?.type === 'expense' && !neutro(t));
     const fuera = ['cat_inversion_gasto', 'cat_coleccionables'];
     const gastoEntre = (a: string, b: string) => txs.filter((t: any) => t.date >= a && t.date <= b && !t.recurringEntryId && !fuera.includes(t.category)).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
     const porCat: Record<string, number> = {};

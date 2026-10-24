@@ -1688,7 +1688,7 @@
             const mesPasado = `${pasado.getFullYear()}-${String(pasado.getMonth() + 1).padStart(2, '0')}`;
             const dia = ahora.getDate();
             const diasMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0).getDate();
-            const gasto = (clave, hastaDia) => financePro.transactions.reduce((t, x) => x.type === 'expense' && !x.ahorro && !x.viaje && x.date.slice(0, 7) === clave && (!hastaDia || Number(x.date.slice(8)) <= hastaDia) ? t + (Number(x.amount) || 0) : t, 0);
+            const gasto = (clave, hastaDia) => financePro.transactions.reduce((t, x) => x.type === 'expense' && !financeProNeutro(x) && !x.viaje && x.date.slice(0, 7) === clave && (!hastaDia || Number(x.date.slice(8)) <= hastaDia) ? t + (Number(x.amount) || 0) : t, 0);
             const ahoraGasto = gasto(mes);
             const antes = gasto(mesPasado, dia);
             const previsto = dia >= 5 ? ahoraGasto / dia * diasMes : null;
@@ -1703,7 +1703,7 @@
             const porCat = {};
             let enViajes = 0;
             financePro.transactions.forEach(x => {
-                if (x.type !== 'expense' || x.ahorro || x.date.slice(0, 7) !== mes) return;
+                if (x.type !== 'expense' || financeProNeutro(x) || x.date.slice(0, 7) !== mes) return;
                 if (x.viaje && !conViajes) { enViajes += Number(x.amount) || 0; return; }
                 porCat[x.category || ''] = (porCat[x.category || ''] || 0) + (Number(x.amount) || 0);
             });
@@ -1717,7 +1717,7 @@
             // dónde «tocaría» ir a día de hoy si se gastara al mismo ritmo todo el mes.
             const limites = typeof asistLimitesDelMes === 'function' ? asistLimitesDelMes(mes) : {};
             const gastoPresu = {};
-            financePro.transactions.forEach(x => { if (x.type === 'expense' && !x.ahorro && !x.viaje && x.date.slice(0, 7) === mes) gastoPresu[x.category || ''] = (gastoPresu[x.category || ''] || 0) + (Number(x.amount) || 0); });
+            financePro.transactions.forEach(x => { if (x.type === 'expense' && !financeProNeutro(x) && !x.viaje && x.date.slice(0, 7) === mes) gastoPresu[x.category || ''] = (gastoPresu[x.category || ''] || 0) + (Number(x.amount) || 0); });
             const hoyPct = Math.round(dia / diasMes * 100);
             const barraPresu = f => {
                 const l = limites[f.id]?.limite;
@@ -1763,16 +1763,13 @@
         function renderMobileFinances() {
             const ahora = new Date();
             const { income, expense } = financeProMonthTotals(financeMonthKey());
-            const total = financeProTotalBalance();
             const ratio = income > 0 ? expense / income : (expense > 0 ? 1 : 0);
             const rPeq = Math.max(6, 46 * Math.sqrt(Math.min(ratio, 1)));
             const ultimos = [...financePro.transactions].sort((a, b) => financeProCompararMov(b, a)).slice(0, 12);
             requestAnimationFrame(() => requestAnimationFrame(animateFinanceProChartPanel));
+            if (financeProUnificarAjustes()) setTimeout(() => saveData().catch(e => console.error(e)), 0);
             return `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}
-                <div class="m-cifra-bloque">
-                    <div class="m-etiqueta">patrimonio.</div>
-                    <div class="m-cifra">${financeMoney(total)}</div>
-                </div>
+                ${renderFinanzasGrafica(true)}
                 ${income || expense ? `
                 <div class="m-composicion">
                     <svg viewBox="0 0 100 100" class="m-composicion-svg" aria-hidden="true">
@@ -1793,14 +1790,13 @@
                     <button class="m-boton" onclick="pegarExtractoBancario()">importar extracto.</button>
                 </div>
                 ${renderMobileFinanzasMes()}
-                ${renderFinanzasGrafica(true)}
                 <div class="m-bloque-cab"><div class="m-etiqueta">cuentas.</div></div>
                 <div class="m-lista">${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
                     <div class="m-fila"><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml((financePro.accounts[k]?.name || k).toLowerCase())}.</div></div><span class="m-fila-cifra">${financeMoney(financeProAccountBalance(k))}</span></div>`).join('')}
                 </div>
                 <div class="m-bloque-cab"><div class="m-etiqueta">últimos movimientos.</div></div>
                 ${ultimos.length ? `<div class="m-lista">${ultimos.map(t => {
-                    const cat = financeProCategoryById(t.category);
+                    const cat = financeProNeutro(t) ? { name: financeProEtiquetaNeutro(t).replace(/\.$/, '') } : financeProCategoryById(t.category);
                     const d = new Date((t.date || todayISO()) + 'T12:00:00');
                     const signo = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '<i class="ico ico-cambio" aria-hidden="true"></i>';
                     return `<div class="m-fila ${t.type === 'income' ? 'positiva' : t.type === 'expense' ? 'negativa' : ''}">
