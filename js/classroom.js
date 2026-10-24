@@ -43,6 +43,7 @@
 
         function pintarClassroom(aviso) {
             const datos = classroomDatos();
+            window._classroomPropuestas = {};
             const conectado = classroomToken && classroomToken.expira > Date.now();
             const pwaIos = document.body.classList.contains('mobile-standalone') && /iPhone|iPad/.test(navigator.userAgent);
             let cuerpo;
@@ -63,10 +64,15 @@
                     <option value="nueva">crear «${escapeHtml(curso.name)}».</option>
                     <option value="ignorar" ${sel === 'ignorar' ? 'selected' : ''}>no traer esta clase.</option>`;
                 cuerpo = `
-                    <p class="finance-modal-note">Une cada clase con su asignatura. Se recuerda para la próxima vez.</p>
+                    <p class="finance-modal-note">Une cada clase con su asignatura. Se recuerda para la próxima vez. Si cambias una, sus tareas se mueven a la nueva; con «no traer esta clase.» se quitan.</p>
                     <div class="classroom-lista">
                         ${classroomCursos.map(c => {
-                            const sel = datos.cursos[c.id] && (datos.cursos[c.id] === 'ignorar' || findSubject(datos.cursos[c.id])) ? datos.cursos[c.id] : classroomParecida(c.name);
+                            const guardada = datos.cursos[c.id] && (datos.cursos[c.id] === 'ignorar' || findSubject(datos.cursos[c.id])) ? datos.cursos[c.id] : '';
+                            // Una propuesta por asignatura: si ya la usa otra clase, esta se queda en «elige.».
+                            const usadas = new Set(Object.values(datos.cursos).concat(Object.values(window._classroomPropuestas || {})));
+                            const propuesta = guardada || (() => { const p = classroomParecida(c.name); return p && !usadas.has(p) ? p : ''; })();
+                            if (!guardada && propuesta) (window._classroomPropuestas = window._classroomPropuestas || {})[c.id] = propuesta;
+                            const sel = propuesta;
                             return `<label class="classroom-fila"><span><b>${escapeHtml(c.name)}</b>${c.section ? `<small>${escapeHtml(c.section)}</small>` : ''}</span>
                                 <select class="modal-input" data-curso="${escapeHtml(c.id)}">${opciones(sel, c)}</select></label>`;
                         }).join('')}
@@ -163,7 +169,16 @@
             if (!unidas.length) { pintarClassroom('Une al menos una clase con una asignatura.'); return; }
             const boton = document.querySelector('#modal-container .btn-modal-primary');
             if (boton) { boton.disabled = true; boton.textContent = 'trayendo...'; }
-            const cuenta = { nuevas: 0, cambiadas: 0, entregadas: 0, fallos: 0 };
+            const cuenta = { nuevas: 0, cambiadas: 0, entregadas: 0, movidas: 0, quitadas: 0, fallos: 0 };
+            // Las clases que pasan a «no traer» se llevan las tareas que habían traído (las de antes de guardar la clase
+            // en cada tarea se reconocen pidiendo sus tareas a Classroom).
+            const ignoradas = classroomCursos.filter(c => datos.cursos[c.id] === 'ignorar');
+            for (const c of ignoradas) {
+                try {
+                    const t = await classroomPedir(`courses/${c.id}/courseWork?pageSize=100`);
+                    (t.courseWork || []).forEach(cw => { const sitio = classroomBuscar(cw.id); if (sitio && classroomQuitar(sitio)) cuenta.quitadas++; });
+                } catch (e) { cuenta.fallos++; }
+            }
             for (const c of unidas) {
                 try {
                     const [tareas, entregas] = await Promise.all([
@@ -172,7 +187,7 @@
                     ]);
                     const porTarea = {};
                     (entregas.studentSubmissions || []).forEach(e => { porTarea[e.courseWorkId] = e; });
-                    classroomAplicar(findSubject(datos.cursos[c.id]), tareas.courseWork || [], porTarea, cuenta);
+                    classroomAplicar(findSubject(datos.cursos[c.id]), c.id, tareas.courseWork || [], porTarea, cuenta);
                 } catch (e) {
                     cuenta.fallos++;
                     if (String(e?.message).includes('401')) { classroomToken = null; break; }
@@ -184,13 +199,35 @@
             const partes = [];
             if (cuenta.nuevas) partes.push(`${cuenta.nuevas} ${cuenta.nuevas === 1 ? 'tarea nueva' : 'tareas nuevas'}`);
             if (cuenta.cambiadas) partes.push(`${cuenta.cambiadas} con cambios`);
+            if (cuenta.movidas) partes.push(`${cuenta.movidas} ${cuenta.movidas === 1 ? 'movida' : 'movidas'} de asignatura`);
+            if (cuenta.quitadas) partes.push(`${cuenta.quitadas} ${cuenta.quitadas === 1 ? 'quitada' : 'quitadas'}`);
             if (cuenta.entregadas) partes.push(`${cuenta.entregadas} ${cuenta.entregadas === 1 ? 'marcada' : 'marcadas'} como entregada${cuenta.entregadas === 1 ? '' : 's'}`);
             let aviso = partes.length ? `Listo: ${partes.join(', ')}.` : 'Todo estaba ya al día.';
             if (cuenta.fallos) aviso += ` ${cuenta.fallos === 1 ? 'Una clase no' : cuenta.fallos + ' clases no'} se pudo leer.`;
             pintarClassroom(aviso);
         }
 
-        function classroomAplicar(s, tareas, porTarea, cuenta) {
+        // Dónde está ya una tarea traída (puede estar en otra asignatura si se cambió la unión de su clase).
+        function classroomBuscar(classroomId) {
+            for (const sub of studies.subjects) for (const k of ['assignments', 'exams']) {
+                const i = (sub[k] || []).findIndex(x => x.classroomId === classroomId);
+                if (i !== -1) return { sub, k, i, item: sub[k][i] };
+            }
+            return null;
+        }
+
+        // Solo se quitan las que siguen como llegaron: si les has puesto peso o una nota tuya, se quedan.
+        function classroomQuitar(sitio) {
+            const it = sitio.item;
+            const tocada = (it.weight !== '' && it.weight != null) || (it.grade !== '' && it.grade != null && it.grade !== it.notaClassroom);
+            if (tocada) return false;
+            removeLinkedExamEvent(it.id);
+            if (sitio.k === 'assignments') removeLinkedPlannerItem(it.id);
+            sitio.sub[sitio.k].splice(sitio.i, 1);
+            return true;
+        }
+
+        function classroomAplicar(s, curso, tareas, porTarea, cuenta) {
             s.exams = s.exams || [];
             s.assignments = s.assignments || [];
             tareas.forEach(cw => {
@@ -200,16 +237,27 @@
                 const nota = entrega && entrega.state === 'RETURNED' && entrega.assignedGrade != null && cw.maxPoints ? String(Math.round(entrega.assignedGrade / cw.maxPoints * 100) / 10) : '';
                 const { date, time } = classroomFecha(cw);
                 const enlace = /^https:\/\/classroom\.google\.com\//.test(cw.alternateLink || '') ? cw.alternateLink : '';
-                let lista = (s.assignments.find(i => i.classroomId === cw.id) && 'assignments') || (s.exams.find(i => i.classroomId === cw.id) && 'exams');
-                let item = lista && s[lista].find(i => i.classroomId === cw.id);
-                if (!item) {
+                const sitio = classroomBuscar(cw.id);
+                let lista, item, movida = false;
+                if (sitio && sitio.sub !== s) {
+                    sitio.sub[sitio.k].splice(sitio.i, 1);
+                    removeLinkedExamEvent(sitio.item.id);
+                    if (sitio.k === 'assignments') removeLinkedPlannerItem(sitio.item.id);
+                    s[sitio.k].push(sitio.item);
+                    cuenta.movidas++;
+                    movida = true;
+                }
+                if (!sitio) {
                     lista = CLASSROOM_EXAMEN.test(cw.title || '') ? 'exams' : 'assignments';
-                    item = { id: 'item_cr_' + cw.id, title: cw.title || 'Tarea sin título', date, time, grade: nota, weight: '', done: !!entregada, classroomId: cw.id, enlace, notaClassroom: nota };
+                    item = { id: 'item_cr_' + cw.id, title: cw.title || 'Tarea sin título', date, time, grade: nota, weight: '', done: !!entregada, classroomId: cw.id, classroomCurso: curso, enlace, notaClassroom: nota };
                     // Las de días ya pasados no van al planificador: si no, todo lo atrasado del curso se arrastraría a hoy.
                     if (date && date < todayISO()) item.fueraDelPlanificador = true;
                     s[lista].push(item);
                     cuenta.nuevas++;
                 } else {
+                    lista = sitio.k;
+                    item = sitio.item;
+                    item.classroomCurso = curso;
                     let cambio = false;
                     if ((cw.title || '') && item.title !== cw.title) { item.title = cw.title; cambio = true; }
                     if (item.date !== date || (item.time || '') !== time) { item.date = date; item.time = time; cambio = true; }
@@ -220,7 +268,7 @@
                     if (enlace) item.enlace = enlace;
                     if (cambio) cuenta.cambiadas++;
                     if (entregada && !item.done) { item.done = true; cuenta.entregadas++; cambio = true; }
-                    if (!cambio) return;
+                    if (!cambio && !movida) return;
                 }
                 syncExamCalendarEvent(s, lista, item);
                 if (lista === 'assignments') syncAssignmentPlannerItem(s, item);
