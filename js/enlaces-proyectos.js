@@ -621,6 +621,7 @@
                         ${listKey === 'assignments'
                             ? `<button class="asig-estado ${estadoItemAsignatura(listKey, item).clave}" aria-pressed="${!!item.done}" title="Marcar como entregado o pendiente" onclick="alternarEntregado('${subjectId}',${index})"><i aria-hidden="true"></i>${estadoItemAsignatura(listKey, item).texto}</button>`
                             : `<span class="asig-estado ${estadoItemAsignatura(listKey, item).clave}"><i aria-hidden="true"></i>${estadoItemAsignatura(listKey, item).texto}</span>`}
+                        ${item.enlace ? `<a class="studies-row-remove" href="${escapeHtml(item.enlace)}" target="_blank" rel="noopener" title="Abrir en Classroom" aria-label="Abrir en Classroom"><i class='ico ico-abrir' aria-hidden=true></i></a>` : ''}
                         <button class="studies-row-remove" title="Eliminar" aria-label="Eliminar" onclick="removeSubjectItem('${subjectId}','${listKey}',${index})"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                     <div class="studies-row-fields">

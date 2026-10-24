@@ -20,6 +20,6 @@ $f$, (select (regexp_match(command, 'x-internal-secret'',\s*''([^'']+)'''))[1] f
 -- select net.http_post(
 --     url := 'https://avdqtnukgbejorieuunj.supabase.co/functions/v1/correo-semanal',
 --     headers := jsonb_build_object('Content-Type', 'application/json', 'x-internal-secret',
---         (select (regexp_match(command, 'x-internal-secret'',\s*''([^'']+)'''))[1] from cron.job where jobname = 'avisos-diarios')),
+--         (select (regexp_match(command, 'x-internal-Csecret'',\s*''([^'']+)'''))[1] from cron.job where jobname = 'avisos-diarios')),
 --     body := jsonb_build_object('forzar', true, 'user_id', (select id from auth.users where email = 'jandropas@gmail.com'))
 -- );

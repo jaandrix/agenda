@@ -681,6 +681,7 @@
                         <button class="btn-modal-primary studies-inline-add-btn btn-accent-blue" onclick="openAddSubject()">+ asignatura</button>
                         <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddQuickNote()">+ nota rápida</button>
                         <button class="btn-modal-primary studies-inline-add-btn" onclick="openQuickNotesList()">notas rápidas${(studies.quickNotes || []).length ? ` (${studies.quickNotes.length})` : ''}</button>
+                        ${classroomDisponible() ? `<button class="btn-modal-primary studies-inline-add-btn" onclick="openClassroom()">classroom.</button>` : ''}
                     </div>
                 </div>
 

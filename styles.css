@@ -9453,3 +9453,12 @@ body.papel .asig-estado.vencido { color:#a3243b; }
 .asignatura .studies-row-fields { display:grid; grid-template-columns:minmax(140px, 1.5fr) minmax(64px, 1fr) minmax(64px, 1fr); gap:10px; }
 .asignatura .studies-row-field input { width:100%; box-sizing:border-box; }
 .asig-titulo:focus { outline:none; }
+
+.classroom-lista { display:flex; flex-direction:column; gap:8px; margin:4px 0 18px; }
+.classroom-fila { display:grid; grid-template-columns:1fr minmax(160px, 220px); gap:12px; align-items:center; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--bg-card); }
+.classroom-fila span { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.classroom-fila b { font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.classroom-fila small { color:var(--text-secondary); font-size:12px; }
+.classroom-aviso { margin:0 0 14px; padding:10px 12px; border-radius:10px; background:var(--bg-input); color:var(--text-primary); font-size:14px; }
+.classroom-ultima { margin-top:14px; }
+@media (max-width: 560px) { .classroom-fila { grid-template-columns:1fr; } }
