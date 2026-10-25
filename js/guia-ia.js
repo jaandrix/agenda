@@ -173,6 +173,13 @@ const GUIA_IA_RECETAS = [
         'En la tienda, toca cada cosa al echarla al carro.',
         'Al acabar, «terminar la compra.». Si tienes el conector, pásale la foto del ticket a la IA para guardar los precios.',
     ]],
+    ['Planificar las comidas de la semana', [
+        'Despensa → pestaña «planificación.».',
+        'En cada día, pulsa «+ plato.» (o el «+» de su fila): elige si es desayuno, comida, merienda o cena, y toca una de tus recetas o escribe el plato con sus ingredientes (uno por línea).',
+        'Abajo, «lo que necesitas esta semana.» junta todos los ingredientes sin repetir y marca lo que ya tienes en la lista.',
+        'Pulsa «pasar a la lista…» y lo que falte entra en tu lista de la compra, con el plato para el que es.',
+        'Con las flechas cambias de semana; «repetir la semana pasada.» copia sus platos.',
+    ]],
     ['Dividir gastos con amigos', [
         'Social → pestaña de gastos → crea un grupo e invita a tus amigos de Bitácora.',
         'Apunta quién pagó qué: el grupo calcula quién debe a quién.',

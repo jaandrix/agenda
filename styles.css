@@ -9618,3 +9618,32 @@ body.mobile-standalone :is(.estancia-overlay, .anual-overlay), body.pwa :is(.est
 .ajustes-guia-ia { margin-top:8px; }
 .ajustes-guia-ia .ajuste-icono .ico { width:16px; height:16px; }
 .enlace-reenviar { display:block; margin-top:8px; padding:0; border:0; background:none; color:inherit; font:inherit; font-weight:700; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+
+/* Despensa, planificación de la semana (compra.js, renderCompraPlan). */
+.plan-cab { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.plan-semana { display:flex; flex-direction:column; min-width:0; }
+.plan-semana b { font-size:17px; font-weight:800; }
+.plan-semana small { font-size:12.5px; color:var(--text-secondary); }
+.plan-flecha { display:grid; place-items:center; width:36px; height:36px; border:1px solid var(--border-strong); border-radius:10px; background:none; color:var(--text-primary); cursor:pointer; }
+.plan-flecha .ico { width:13px; height:13px; }
+.plan-repetir { margin-left:auto; }
+.plan-dias { display:flex; flex-direction:column; margin-bottom:22px; border-top:1px solid var(--border); }
+.plan-dia { display:grid; grid-template-columns:96px minmax(0, 1fr) 32px; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); min-width:0; }
+.plan-dia.pasado { opacity:.55; }
+.plan-dia-cab { display:contents; }
+.plan-dia-cab b { grid-column:1; font-size:14.5px; font-weight:800; line-height:1.2; }
+.plan-dia-cab small { display:none; }
+.plan-dia.hoy .plan-dia-cab b::after { content:' hoy.'; font-weight:600; color:var(--m-acento); }
+.plan-dia-platos { grid-column:2; display:flex; flex-wrap:wrap; gap:6px; min-width:0; }
+.plan-mas { grid-column:3; grid-row:1; display:grid; place-items:center; width:32px; height:32px; border:0; border-radius:10px; background:none; color:var(--text-secondary); cursor:pointer; }
+.plan-mas:hover { background:var(--bg-input); color:var(--text-primary); }
+.plan-mas .ico { width:13px; height:13px; }
+.plan-plato { display:flex; flex-direction:column; gap:1px; max-width:100%; padding:7px 11px; border:0; border-radius:10px; background:var(--bg-input); color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; min-width:0; }
+.plan-plato small { font-size:11px; color:var(--text-secondary); }
+.plan-plato b { font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.plan-hueco { padding:7px 11px; border:1px dashed var(--border-strong); border-radius:10px; background:none; color:var(--text-secondary); font:500 13px var(--font-family); text-align:left; cursor:pointer; }
+.plan-necesario .compra-hist-linea small { display:block; font-size:12px; color:var(--text-secondary); }
+.plan-necesario .plan-ya b { color:var(--text-secondary); font-weight:500; }
+.plan-a-lista { margin-top:14px; width:auto !important; padding:0 20px !important; }
+.plan-momentos, .plan-recetas { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+@media (max-width: 560px) { .plan-dia { grid-template-columns:minmax(0, 1fr) 32px; row-gap:6px; } .plan-mas { grid-column:2; } .plan-dia-platos { grid-column:1 / -1; grid-row:2; } .plan-repetir { margin-left:0; } }

@@ -40,6 +40,7 @@ function datosCompra() {
     if (!Array.isArray(listaCompra.historial)) listaCompra.historial = [];
     if (!listaCompra.aprendido || typeof listaCompra.aprendido !== 'object') listaCompra.aprendido = {};
     if (!Array.isArray(listaCompra.recetas)) listaCompra.recetas = [];
+    if (!listaCompra.plan || typeof listaCompra.plan !== 'object') listaCompra.plan = {};
     if (!listaCompra.listas.length) listaCompra.listas.push({ id: 'lista_' + Date.now(), nombre: 'Casa', items: [] });
     listaCompra.listas.forEach(l => { if (!Array.isArray(l.items)) l.items = []; });
     if (!listaCompra.listas.some(l => l.id === listaCompra.actual)) listaCompra.actual = listaCompra.listas[0].id;
@@ -146,7 +147,8 @@ function compraTiendaDeLista(l) {
 
 function renderCompra() {
     const d = datosCompra();
-    const pestanas = `<div class="profe-pestanas compra-pestanas">${[['lista', 'lista.'], ['historial', `historial.${d.historial.length ? ` <small>${d.historial.length}</small>` : ''}`], ['recetas', `recetas.${d.recetas.length ? ` <small>${d.recetas.length}</small>` : ''}`]].map(([k, t]) => `<button class="profe-chip ${compraPestana === k ? 'activa' : ''}" onclick="compraPestana='${k}';render()">${t}</button>`).join('')}</div>`;
+    const pestanas = `<div class="profe-pestanas compra-pestanas">${[['lista', 'lista.'], ['historial', `historial.${d.historial.length ? ` <small>${d.historial.length}</small>` : ''}`], ['recetas', `recetas.${d.recetas.length ? ` <small>${d.recetas.length}</small>` : ''}`], ['plan', 'planificación.']].map(([k, t]) => `<button class="profe-chip ${compraPestana === k ? 'activa' : ''}" onclick="compraPestana='${k}';render()">${t}</button>`).join('')}</div>`;
+    if (compraPestana === 'plan') return `<div class="compra">${renderCompraCabecera('Lo que vas a comer cada día y lo que hay que comprar.')}${pestanas}${renderCompraPlan()}</div>`;
     if (compraPestana === 'recetas') return `<div class="compra">${renderCompraCabecera(`${d.recetas.length} ${d.recetas.length === 1 ? 'receta' : 'recetas'}.`)}${pestanas}${renderCompraRecetas()}</div>`;
     if (compraPestana === 'historial') return `<div class="compra">${renderCompraCabecera(`${d.historial.length} ${d.historial.length === 1 ? 'compra guardada' : 'compras guardadas'}.`)}${pestanas}${renderCompraHistorial()}</div>`;
     const l = compraListaActual();
@@ -958,4 +960,192 @@ function compraDeshacerReceta(dh) {
         l.items = l.items.filter(x => !(dh.anadidos || []).includes(x.id));
         if (dh.nombre) l.items.forEach(x => { if (x.recetas) x.recetas = x.recetas.filter(t => t !== dh.nombre && !t.startsWith(dh.nombre + ' (')); });
     }
+}
+
+// ---- planificación de la semana ----
+// listaCompra.plan = { 'AAAA-MM-DD': [{ id, momento, nombre, recetaId?, ingredientes: [{ texto, cantidad }] }] }.
+// Un plato de una receta guarda también una copia de sus ingredientes: si la receta cambia se usan los suyos al
+// día, y si se borra, la copia. Abajo, todo lo de la semana junto y sin repetir, para pasar a la lista lo que falte.
+const PLAN_MOMENTOS = [['desayuno', 'desayuno.'], ['comida', 'comida.'], ['merienda', 'merienda.'], ['cena', 'cena.']];
+const PLAN_DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+let compraPlanLunes = null;
+
+function compraLunesDe(iso) {
+    const d = new Date(iso + 'T12:00:00');
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return isoLocal(d);
+}
+function compraSumarDias(iso, n) {
+    const d = new Date(iso + 'T12:00:00');
+    d.setDate(d.getDate() + n);
+    return isoLocal(d);
+}
+function compraPlanSemana() {
+    const lunes = compraPlanLunes || compraLunesDe(todayISO());
+    return Array.from({ length: 7 }, (_, i) => compraSumarDias(lunes, i));
+}
+function compraIngredientesPlato(p) {
+    const r = p.recetaId ? compraReceta(p.recetaId) : null;
+    return (r ? r.ingredientes : p.ingredientes) || [];
+}
+
+function compraPlanNecesario(dias) {
+    const plan = datosCompra().plan;
+    const g = new Map();
+    dias.forEach((f, i) => (plan[f] || []).forEach(p => compraIngredientesPlato(p).forEach(ing => {
+        const k = compraClave(ing.texto);
+        if (!k) return;
+        const x = g.get(k) || { texto: ing.texto, cantidades: [], dias: new Set(), platos: new Set() };
+        if (ing.cantidad) x.cantidades.push(ing.cantidad);
+        x.dias.add(i);
+        x.platos.add(p.nombre);
+        g.set(k, x);
+    })));
+    return [...g.entries()].map(([k, x]) => ({ clave: k, ...x }));
+}
+
+function renderCompraPlan() {
+    const d = datosCompra();
+    const dias = compraPlanSemana();
+    const hoy = todayISO();
+    const fmt = f => new Date(f + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '');
+    const enLista = new Set(compraListaActual().items.filter(i => !i.hecho).map(i => compraClave(i.texto)));
+    const necesario = compraPlanNecesario(dias).sort((a, b) => compraSeccion(a.texto).localeCompare(compraSeccion(b.texto)) || a.texto.localeCompare(b.texto));
+    const faltan = necesario.filter(x => !enLista.has(x.clave));
+    const hayPasada = compraSumarDias(dias[0], -7) && Array.from({ length: 7 }, (_, i) => compraSumarDias(dias[0], i - 7)).some(f => (d.plan[f] || []).length);
+    const vacia = !dias.some(f => (d.plan[f] || []).length);
+    return `
+        <div class="plan-cab">
+            <button class="plan-flecha" onclick="compraPlanMover(-7)" aria-label="Semana anterior"><i class='ico ico-izq' aria-hidden=true></i></button>
+            <div class="plan-semana"><b>${dias[0] === compraLunesDe(hoy) ? 'esta semana.' : dias[0] === compraLunesDe(compraSumarDias(hoy, 7)) ? 'la semana que viene.' : `semana del ${fmt(dias[0])}.`}</b><small>${fmt(dias[0])} al ${fmt(dias[6])}</small></div>
+            <button class="plan-flecha" onclick="compraPlanMover(7)" aria-label="Semana siguiente"><i class='ico ico-der' aria-hidden=true></i></button>
+            ${vacia && hayPasada ? `<button class="pedido-btn plan-repetir" onclick="compraPlanRepetir()">repetir la semana pasada.</button>` : ''}
+        </div>
+        ${vacia && !hayPasada ? `<div class="compra-vacio"><b>planifica lo que vas a comer.</b>Pon en cada día sus platos (de tus recetas o escritos a mano, con sus ingredientes). Abajo se junta todo lo que hace falta, sin repetir, y con un toque pasa a la lista de la compra lo que te falte.</div>` : ''}
+        <div class="plan-dias">${dias.map((f, i) => {
+            const platos = [...(d.plan[f] || [])].sort((a, b) => PLAN_MOMENTOS.findIndex(m => m[0] === a.momento) - PLAN_MOMENTOS.findIndex(m => m[0] === b.momento));
+            return `<div class="plan-dia ${f === hoy ? 'hoy' : ''} ${f < hoy ? 'pasado' : ''}">
+                <div class="plan-dia-cab"><b>${PLAN_DIAS[i]}.</b><small>${fmt(f)}</small><button class="plan-mas" onclick="openPlato('${f}')" aria-label="Añadir un plato el ${PLAN_DIAS[i]}"><i class='ico ico-mas' aria-hidden=true></i></button></div>
+                <div class="plan-dia-platos">${platos.length ? platos.map(p => `<button class="plan-plato" onclick="openPlato('${f}','${jsAttr(p.id)}')"><small>${escapeHtml((PLAN_MOMENTOS.find(m => m[0] === p.momento) || ['', ''])[1])}</small><b>${escapeHtml(p.nombre)}</b></button>`).join('') : `<button class="plan-hueco" onclick="openPlato('${f}')">+ plato.</button>`}</div>
+            </div>`;
+        }).join('')}</div>
+        ${necesario.length ? `
+        <div class="plan-necesario">
+            <div class="compra-seccion-titulo">lo que necesitas esta semana. <span>${necesario.length - faltan.length ? `${necesario.length - faltan.length} ya en la lista` : ''}</span></div>
+            ${necesario.map(x => `<div class="compra-hist-linea ${enLista.has(x.clave) ? 'plan-ya' : ''}"><span><b>${escapeHtml(x.texto)}</b><small>${[...x.dias].sort().map(i => PLAN_DIAS[i].slice(0, 3)).join(', ')}${x.cantidades.length ? `, ${escapeHtml(x.cantidades.join(' + '))}` : ''}</small></span><i>${enLista.has(x.clave) ? '<em class="compra-en-lista">en la lista.</em>' : ''}</i></div>`).join('')}
+            ${faltan.length ? `<button class="btn-modal-primary plan-a-lista" onclick="compraPlanALaLista()">pasar a la lista ${faltan.length === 1 ? 'lo que falta' : `los ${faltan.length} que faltan`}.</button>` : '<div class="compra-nota">Ya tienes todo en la lista.</div>'}
+        </div>` : ''}`;
+}
+
+function compraPlanMover(n) {
+    compraPlanLunes = compraSumarDias(compraPlanSemana()[0], n);
+    render();
+}
+
+function openPlato(fecha, id) {
+    const d = datosCompra();
+    const p = id ? (d.plan[fecha] || []).find(x => x.id === id) : null;
+    const hora = new Date().getHours();
+    const momento = p?.momento || (hora < 11 ? 'comida' : hora < 17 ? 'cena' : 'comida');
+    const recetas = [...d.recetas].sort((a, b) => a.nombre.localeCompare(b.nombre));
+    const habituales = Object.entries(d.frecuentes).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([t]) => t);
+    const dia = new Date(fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    window._platoReceta = p?.recetaId || null;
+    showModal(`
+        <div class="modal-title">${p ? 'el plato.' : 'plato nuevo.'}</div>
+        <p class="finance-modal-note" style="margin-top:0">${escapeHtml(dia)}.</p>
+        <div class="modal-label">cuándo</div>
+        <div class="plan-momentos">${PLAN_MOMENTOS.map(([k, t]) => `<button type="button" class="profe-chip ${k === momento ? 'activa' : ''}" data-momento="${k}" onclick="document.querySelectorAll('.plan-momentos .profe-chip').forEach(b => b.classList.toggle('activa', b === this))">${t}</button>`).join('')}</div>
+        ${recetas.length ? `<div class="modal-label">de tus recetas</div>
+        <div class="plan-recetas">${recetas.map(r => `<button type="button" class="profe-chip ${p?.recetaId === r.id ? 'activa' : ''}" onclick="platoElegirReceta('${jsAttr(r.id)}', this)">${escapeHtml(r.nombre)}</button>`).join('')}</div>` : ''}
+        <div class="modal-label">${recetas.length ? 'o escríbelo' : 'qué vas a comer'}</div>
+        <input id="plato-nombre" class="modal-input" value="${escapeHtml(p?.nombre || '')}" placeholder="Lentejas, ensalada de pasta, pizza casera..." oninput="window._platoReceta=null;document.querySelectorAll('.plan-recetas .profe-chip').forEach(b => b.classList.remove('activa'))">
+        <div class="modal-label">ingredientes <small style="font-weight:500;color:var(--text-secondary)">(uno por línea; si eliges una receta, salen los suyos)</small></div>
+        <textarea id="plato-ingredientes" class="modal-input" rows="5" placeholder="lentejas\nchorizo\n2 zanahorias">${escapeHtml(p ? compraIngredientesTexto({ ingredientes: compraIngredientesPlato(p) }) : '')}</textarea>
+        ${habituales.length ? `<div class="compra-receta-sugeridas"><span>de tus compras:</span>${habituales.map(t => `<button type="button" class="profe-chip" onclick="platoAnadirIngrediente('${jsAttr(t)}')">+ ${escapeHtml(t)}</button>`).join('')}</div>` : ''}
+        <button class="btn-modal-primary" style="margin-top:14px" onclick="guardarPlato('${fecha}'${p ? `,'${jsAttr(p.id)}'` : ''})">guardar.</button>
+        ${p ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarPlato('${fecha}','${jsAttr(p.id)}')">quitar el plato.</button>` : ''}
+    `);
+    if (!p) setTimeout(() => document.getElementById('plato-nombre')?.focus(), 60);
+}
+
+function platoElegirReceta(id, boton) {
+    const r = compraReceta(id);
+    if (!r) return;
+    window._platoReceta = id;
+    document.querySelectorAll('.plan-recetas .profe-chip').forEach(b => b.classList.toggle('activa', b === boton));
+    document.getElementById('plato-nombre').value = r.nombre;
+    document.getElementById('plato-ingredientes').value = compraIngredientesTexto(r);
+}
+
+function platoAnadirIngrediente(texto) {
+    const t = document.getElementById('plato-ingredientes');
+    if (!t) return;
+    const lineas = t.value.split('\n').map(x => x.trim()).filter(Boolean);
+    if (!lineas.some(l => compraClave(compraInterpretar(l).texto) === compraClave(texto))) lineas.push(texto.toLowerCase());
+    t.value = lineas.join('\n');
+}
+
+function guardarPlato(fecha, id) {
+    const nombre = document.getElementById('plato-nombre')?.value.trim();
+    if (!nombre) { showToast('Escribe qué vas a comer o elige una receta', true); return; }
+    const d = datosCompra();
+    const ingredientes = compraLeerIngredientes(document.getElementById('plato-ingredientes')?.value);
+    const receta = window._platoReceta ? compraReceta(window._platoReceta) : null;
+    // Si se tocaron los ingredientes de una receta, el plato se queda con los suyos y deja de seguirla.
+    const igualQueReceta = receta && compraIngredientesTexto({ ingredientes }) === compraIngredientesTexto(receta);
+    const datos = {
+        momento: document.querySelector('.plan-momentos .profe-chip.activa')?.dataset.momento || 'comida',
+        nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1),
+        recetaId: igualQueReceta ? receta.id : undefined,
+        ingredientes,
+    };
+    const lista = d.plan[fecha] = d.plan[fecha] || [];
+    const p = id ? lista.find(x => x.id === id) : null;
+    if (p) Object.assign(p, datos);
+    else lista.push({ id: 'plato_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), ...datos });
+    closeModal();
+    render();
+    guardarCompra();
+}
+
+function borrarPlato(fecha, id) {
+    const d = datosCompra();
+    d.plan[fecha] = (d.plan[fecha] || []).filter(x => x.id !== id);
+    if (!d.plan[fecha].length) delete d.plan[fecha];
+    closeModal();
+    render();
+    guardarCompra();
+}
+
+function compraPlanRepetir() {
+    const d = datosCompra();
+    const dias = compraPlanSemana();
+    let n = 0;
+    dias.forEach(f => {
+        const antes = d.plan[compraSumarDias(f, -7)] || [];
+        if (!antes.length) return;
+        d.plan[f] = [...(d.plan[f] || []), ...antes.map(p => ({ ...JSON.parse(JSON.stringify(p)), id: 'plato_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))];
+        n += antes.length;
+    });
+    render();
+    guardarCompra();
+    showToast(`${n} ${n === 1 ? 'plato copiado' : 'platos copiados'} de la semana pasada`);
+}
+
+// Lo que falta pasa a la lista actual marcado con el plato y el día («lentejas, mar»).
+function compraPlanALaLista() {
+    const dias = compraPlanSemana();
+    const l = compraListaActual();
+    let n = 0;
+    compraPlanNecesario(dias).forEach(x => {
+        const para = [...x.platos].slice(0, 3).map(p => p.toLowerCase());
+        const ya = l.items.find(i => !i.hecho && compraClave(i.texto) === x.clave);
+        if (ya) { ya.recetas = [...new Set([...(ya.recetas || []), ...para])]; return; }
+        l.items.push({ id: 'cmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), texto: x.texto, cantidad: x.cantidades.join(' + '), precio: null, hecho: false, recetas: para });
+        n++;
+    });
+    render();
+    guardarCompra();
+    showToast(n ? `${n} ${n === 1 ? 'ingrediente' : 'ingredientes'} a la lista «${l.nombre}»` : 'Ya tenías todo en la lista');
 }

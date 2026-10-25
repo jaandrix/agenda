@@ -197,6 +197,7 @@ aplicarPortadaPerfil();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-10-25', rama: 'home', nombre: 'planifica lo que comes', para: 'quien hace la compra de la semana.', texto: 'En Despensa, «planificación.»: los platos de cada día (de tus recetas o a mano) y, abajo, todo lo que necesitas comprar esa semana, sin repetir, para pasarlo a la lista con un toque.' },
     { fecha: '2026-10-24', rama: 'todos', nombre: 'una guía para tu ia', para: 'quien quiere sacarle todo el partido.', texto: 'En Ajustes y en la guía: descarga un archivo con todo Bitácora y pásaselo a ChatGPT, Claude o Gemini. Te enseña a hacer cualquier cosa paso a paso y te ayuda si algo no te funciona.' },
     { fecha: '2026-10-24', rama: 'todos', nombre: 'una gráfica de dinero nueva', para: 'quien lleva sus finanzas.', texto: 'Tu patrimonio día a día, con cuánto ha cambiado en el periodo y dónde empezaste. Pasa el dedo para ver cualquier día. Y el historial de tus presupuestos, mes a mes.' },
     { fecha: '2026-10-24', rama: 'todos', nombre: 'enlaces, viajes, panorama y asignaturas, renovados', para: 'todos.', texto: 'Enlaces con buscador y favoritos; Viajes con tu próximo viaje arriba y pestañas; Panorama con tarjetas que enseñan lo que hay dentro; y la ficha de cada asignatura con próximas entregas y tu progreso.' },
