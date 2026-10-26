@@ -168,8 +168,7 @@
                     <button class="vista-btn pano-editar" onclick="openEditarPanorama()">editar.</button>
                 </div>
                 <div class="pano ${panoramaEditorial() ? 'pano-editorial' : ''}">
-                    ${panoramaEditorial() ? `<div class="pano-fila1">${renderPanoramaAhora()}${renderPanoramaHoy()}</div>` : ''}
-                    ${renderHomeAvisos(hallazgos)}
+                    ${panoramaEditorial() ? `<div class="pano-fila1">${renderPanoramaAhora()}${renderPanoramaHoy()}${renderPanoramaCuenta(hallazgos)}</div>` : renderHomeAvisos(hallazgos)}
                     ${panoramaEditorial() ? '' : renderPanoramaHoy()}
                     ${renderPanoramaTarjetas()}
                     <div class="pano-mas-cab">más.</div>
@@ -369,12 +368,13 @@
                 revision: [HOME_ICON_REVIEW, 'Cierra la semana y prepara la siguiente.', 'openHomeReviewModal()', () => cRev],
             };
             const ids = panoramaElegidas(!!entregas);
+            if (panoramaEditorial()) ['semana', 'mes', 'entregas', 'tareas', 'revision', 'prox'].forEach(id => { if (!ids.includes(id) && (id !== 'entregas' || entregas)) ids.push(id); });
             if (!ids.length) return `<div class="vista-vacio pano-sin-tarjetas"><p>No has elegido más tarjetas.</p><button class="vista-btn" onclick="openEditarPanorama()">editar panorama.</button></div>`;
             return `<div class="pano-grid">${ids.map((id, n) => {
                 const [icono, sub, accion, cuerpo, clase = ''] = t[id];
                 // La revisión, si va la última, ocupa lo que quede de la fila.
                 const resto = 3 - (ids.length - 1) % 3;
-                const ancho = id === 'revision' && n === ids.length - 1 ? (resto === 3 ? 'ancha' : resto === 2 ? 'doble' : '') : '';
+                const ancho = !panoramaEditorial() && id === 'revision' && n === ids.length - 1 ? (resto === 3 ? 'ancha' : resto === 2 ? 'doble' : '') : '';
                 return panoTarjeta(`${id} ${clase} ${ancho}`, icono, PANO_NOMBRES[id], sub, accion, cuerpo());
             }).join('')}</div>`;
         }
@@ -1148,7 +1148,7 @@ setInterval(() => {
 }, 30000);
 
 function panoramaCurvaSemana(dias, hoy, totEv, totTa, cifra) {
-    const W = 560, H = 170, izq = 26, abajo = 26, arriba = 12;
+    const W = 320, H = 150, izq = 22, abajo = 22, arriba = 10;
     const vals = dias.map(d => d.ev + d.ta), max = Math.max(4, ...vals);
     const paso = Math.ceil(max / 4), tope = paso * 4;
     const x = i => izq + i * (W - izq - 12) / 6, y = v => arriba + (1 - v / tope) * (H - arriba - abajo);
@@ -1168,4 +1168,32 @@ function panoramaCurvaSemana(dias, hoy, totEv, totTa, cifra) {
         <path class="area" d="${curva} L${pts[6][0]},${base} L${pts[0][0]},${base} Z"/><path class="linea" d="${curva}"/>${nodos}${etiquetas}</svg>
         ${vals.every(v => !v) ? '<span class="pano-vacio">semana despejada.</span>' : ''}
         <span class="pano-cifras">${cifra(totEv, totEv === 1 ? 'evento' : 'eventos')}${cifra(totTa, totTa === 1 ? 'tarea' : 'tareas')}</span>`;
+}
+
+// «a tener en cuenta.» del modo editorial: los avisos de siempre y, si hay movimientos, la previsión de gasto del
+// mes frente a la media de los tres anteriores, con barras de los últimos meses (la del mes en curso, prevista).
+function renderPanoramaCuenta(hallazgos) {
+    const avisos = avisosProximos(hallazgos);
+    let fin = '';
+    if (apartadoVisible('finances') && (financePro.transactions || []).length && typeof financeProMonthTotals === 'function') {
+        const hoy = new Date(), dia = hoy.getDate(), diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+        const meses = Array.from({ length: 7 }, (_, i) => { const d = new Date(hoy.getFullYear(), hoy.getMonth() - 6 + i, 1); return { clave: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, nombre: d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '') }; });
+        meses.forEach(m => { m.gasto = financeProMonthTotals(m.clave).expense; });
+        const actual = meses[6];
+        actual.prevision = dia >= 3 ? actual.gasto / dia * diasMes : actual.gasto;
+        const previos = meses.slice(3, 6).map(m => m.gasto).filter(v => v > 0);
+        const media = previos.length ? previos.reduce((a, b) => a + b, 0) / previos.length : 0;
+        const dif = media ? Math.round((actual.prevision / media - 1) * 100) : null;
+        const max = Math.max(1, media, ...meses.map(m => m.prevision || m.gasto));
+        const W = 300, H = 110, ancho = W / 7;
+        const barras = meses.map((m, i) => { const v = m.prevision || m.gasto, h = v / max * (H - 18); return `<rect class="${i === 6 ? 'actual' : ''}" x="${(i * ancho + ancho * .28).toFixed(1)}" y="${(H - 18 - h).toFixed(1)}" width="${(ancho * .44).toFixed(1)}" height="${h.toFixed(1)}"/><text x="${(i * ancho + ancho / 2).toFixed(1)}" y="${H - 3}" text-anchor="middle">${m.nombre}</text>`; }).join('');
+        const yMedia = (H - 18 - media / max * (H - 18)).toFixed(1);
+        fin = `<span class="pano-cuenta-frase">A este ritmo terminarás el mes gastando unos</span>
+            <b class="pano-cuenta-cifra">${Math.round(actual.prevision).toLocaleString('es-ES')} €</b>
+            ${dif != null ? `<span class="pano-cuenta-frase">${dif >= 0 ? `un ${dif} % más` : `un ${-dif} % menos`} que tu media de los últimos tres meses.</span>` : ''}
+            <svg class="pano-barras" viewBox="0 0 ${W} ${H}" role="img" aria-label="gasto por mes: ${meses.map(m => `${m.nombre} ${Math.round(m.prevision || m.gasto)} euros`).join(', ')}">${barras}${media ? `<line x1="0" x2="${W}" y1="${yMedia}" y2="${yMedia}"/>` : ''}</svg>`;
+    }
+    const lista = avisos.slice(0, fin ? 2 : 4).map(a => `<button type="button" class="pano-cuenta-aviso" onclick="${a.accion}">${a.frase}</button>`).join('');
+    if (!fin && !lista) return `<div class="pano-cuenta"><b class="pano-cuenta-tit">a tener en cuenta.</b><span class="pano-vacio">Nada que vigilar ahora mismo.</span></div>`;
+    return `<div class="pano-cuenta"><b class="pano-cuenta-tit">a tener en cuenta.</b>${fin ? `<button type="button" class="pano-cuenta-fin" onclick="switchView('finances')">${fin}</button>` : ''}${lista}</div>`;
 }
