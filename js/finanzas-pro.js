@@ -3031,7 +3031,7 @@
             // Además siempre viene rellena (también en los pendientes).
             // La de finalización sigue usándose al reimportar para
             // reconocer movimientos ya importados con esa fecha (altDates).
-            const date = financeProGuessColumn(header, ['started date', 'fecha de inicio', 'completed date', 'fecha de finalización', 'date', 'fecha', 'fecha operación', 'fecha operacion', 'fecha de operación', 'fecha de operacion', 'f. operación', 'f.operación', 'f. operativa', 'booking date', 'fecha valor', 'f. valor', 'f.valor'], 0, ['fecha', 'f. ', 'date', 'booking']);
+            const date = financeProGuessColumn(header, ['started date', 'fecha de inicio', 'completed date', 'fecha de finalización', 'date', 'fecha', 'fecha operación', 'fecha operacion', 'fecha de operación', 'fecha de operacion', 'f. operación', 'f.operación', 'f. operativa', 'f. contable', 'f.contable', 'fecha contable', 'booking date', 'fecha valor', 'f. valor', 'f.valor'], 0, ['fecha', 'f. ', 'date', 'booking']);
             const amount = financeProGuessColumn(header, ['amount', 'importe', 'importe (€)', 'importe eur', 'cantidad', 'neto'], 1, ['importe', 'amount', 'cantidad']);
             let description = financeProGuessColumn(header, ['description', 'descripción', 'descripcion', 'concepto', 'detalle', 'movimiento', 'partner name', 'nombre', 'payment reference'], header.length > 2 ? 2 : 0, ['descrip', 'concepto']);
             // BBVA trae «Concepto» (Pago con tarjeta) y «Movimiento» (el comercio): manda el comercio.
