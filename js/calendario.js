@@ -860,32 +860,32 @@
                 let titleHtml, metaHtml;
 
                 if (e._recurringPayment) {
-                    titleHtml = `Pago: ${e.title}`;
+                    titleHtml = `Pago: ${escapeHtml(e.title)}`;
                     metaHtml = `${e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'}, ${financeMoney(e.amount)}`;
                 } else if (e.type === 'work') {
                     const start = e.startTime || '';
                     const end = e.endTime || '';
                     const scheduleText = (start || end) ? ` de ${start || '--'} a ${end || '--'}` : '';
-                    titleHtml = `Trabajando en ${e.company || 'empresa sin nombre'}${scheduleText}`;
-                    metaHtml = e.position || catName;
+                    titleHtml = `Trabajando en ${escapeHtml(e.company || 'empresa sin nombre')}${escapeHtml(scheduleText)}`;
+                    metaHtml = escapeHtml(e.position || catName);
                 } else if (e.type === 'birthday') {
                     const years = e.birthDate && !e.sinAnio ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
-                    titleHtml = `cumpleaños de ${e.title}${years === '?' ? '' : ` (${years} años)`}`;
+                    titleHtml = `cumpleaños de ${escapeHtml(e.title)}${years === '?' ? '' : ` (${years} años)`}`;
                     metaHtml = 'Cumpleaños';
                 } else {
-                    titleHtml = e.title;
-                    metaHtml = `${catName}${e.notes ? ', ' + linkifyText(e.notes) : ''}`;
+                    titleHtml = escapeHtml(e.title);
+                    metaHtml = `${escapeHtml(catName)}${e.notes ? ', ' + linkifyText(e.notes) : ''}`;
                 }
 
                 return `
-                <div class="entry-item" data-open-entry="${e.id}">
-                    <div class="entry-color-dot" style="background:${color}"></div>
+                <div class="entry-item" data-open-entry="${escapeHtml(e.id)}">
+                    <div class="entry-color-dot" style="background:${escapeHtml(color)}"></div>
                     <div class="entry-info">
                         <div class="entry-title">${titleHtml}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
                         <div class="entry-meta">${metaHtml}</div>
                     </div>
                     <div class="entry-actions">
-                        <button class="delete" onclick="event.stopPropagation();deleteEntry('${e.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
+                        <button class="delete" onclick="event.stopPropagation();deleteEntry('${jsAttr(e.id)}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                 </div>`;
             }).join('');
@@ -908,31 +908,31 @@
 
                 let titleHtml, metaHtml;
                 if (e._recurringPayment) {
-                    titleHtml = `Pago: ${e.title}`;
+                    titleHtml = `Pago: ${escapeHtml(e.title)}`;
                     metaHtml = `${e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'}, ${financeMoney(e.amount)}`;
                 } else if (e.type === 'work') {
                     const start = e.startTime || '';
                     const end = e.endTime || '';
                     const scheduleText = (start || end) ? ` de ${start || '--'} a ${end || '--'}` : '';
-                    titleHtml = `Trabajando en ${e.company || 'empresa sin nombre'}${scheduleText}`;
-                    metaHtml = e.position || catName;
+                    titleHtml = `Trabajando en ${escapeHtml(e.company || 'empresa sin nombre')}${escapeHtml(scheduleText)}`;
+                    metaHtml = escapeHtml(e.position || catName);
                 } else if (e.type === 'birthday') {
                     const years = e.birthDate && !e.sinAnio ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
-                    titleHtml = `cumpleaños de ${e.title}${years === '?' ? '' : ` (${years} años)`}`;
+                    titleHtml = `cumpleaños de ${escapeHtml(e.title)}${years === '?' ? '' : ` (${years} años)`}`;
                     metaHtml = 'Cumpleaños';
                 } else {
-                    titleHtml = e.title;
-                    metaHtml = `${catName}${e.notes ? ', ' + linkifyText(e.notes) : ''}`;
+                    titleHtml = escapeHtml(e.title);
+                    metaHtml = `${escapeHtml(catName)}${e.notes ? ', ' + linkifyText(e.notes) : ''}`;
                 }
 
                 return `
-                <div class="day-entry-card" data-open-entry="${e.id}">
-                    <div class="day-entry-dot" style="background:${color}"></div>
+                <div class="day-entry-card" data-open-entry="${escapeHtml(e.id)}">
+                    <div class="day-entry-dot" style="background:${escapeHtml(color)}"></div>
                     <div class="day-entry-body">
                         <div class="day-entry-title">${titleHtml}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
                         <div class="day-entry-meta">${metaHtml}</div>
                     </div>
-                    <button class="day-entry-delete" title="Eliminar" onclick="event.stopPropagation();deleteEntry('${e.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
+                    <button class="day-entry-delete" title="Eliminar" onclick="event.stopPropagation();deleteEntry('${jsAttr(e.id)}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>`;
             }).join('');
         }

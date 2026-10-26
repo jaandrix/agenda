@@ -2490,12 +2490,12 @@
                 if (!target) {
                     return '<span class="wikilink wikilink-broken" title="No se encontró nada con este título">[[' + escapeHtml(label) + ']]</span>';
                 }
-                return '<a href="javascript:void(0)" class="wikilink" onclick="followMention(\'' + target.kind + '\',\'' + target.id + '\')">' + escapeHtml(label) + '</a>';
+                return '<a href="javascript:void(0)" class="wikilink" onclick="followMention(\'' + jsAttr(target.kind) + '\',\'' + jsAttr(target.id) + '\')">' + escapeHtml(label) + '</a>';
             });
             out = out.replace(/(^|[\s(])\/([a-zA-Z0-9áéíóúñÁÉÍÓÚÑ_-]{2,})/g, (match, pre, word) => {
                 const target = resolveMention(word);
                 if (!target) return match;
-                return pre + '<a href="javascript:void(0)" class="wikilink wikilink-mention" onclick="followMention(\'' + target.kind + '\',\'' + target.id + '\')" title="' + escapeHtml(target.title) + '">/' + escapeHtml(word) + '</a>';
+                return pre + '<a href="javascript:void(0)" class="wikilink wikilink-mention" onclick="followMention(\'' + jsAttr(target.kind) + '\',\'' + jsAttr(target.id) + '\')" title="' + escapeHtml(target.title) + '">/' + escapeHtml(word) + '</a>';
             });
             return out;
         }

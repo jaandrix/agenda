@@ -473,7 +473,8 @@
                             <div class="viewer-modal-title">${escapeHtml(name)}</div>
                             <button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>
-                        <iframe id="viewer-modal-iframe" class="viewer-modal-iframe" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+                        <!-- Sin allow-same-origin a propósito: con él, un script del archivo podría leer la sesión y los datos de Bitácora. Los scripts siguen funcionando, aislados. -->
+                        <iframe id="viewer-modal-iframe" class="viewer-modal-iframe" sandbox="allow-scripts allow-popups"></iframe>
                     </div>
                 </div>`;
         }

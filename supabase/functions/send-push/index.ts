@@ -58,7 +58,8 @@ Deno.serve(async (req) => {
     if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
 
     const internalSecret = Deno.env.get('INTERNAL_PUSH_SECRET');
-    if (internalSecret && req.headers.get('x-internal-secret') !== internalSecret) {
+    // Falla cerrado: sin el secreto configurado no se envía nada (antes, si faltaba, cualquiera podía mandar avisos).
+    if (!internalSecret || req.headers.get('x-internal-secret') !== internalSecret) {
         return json({ error: 'No autorizado' }, 401);
     }
 

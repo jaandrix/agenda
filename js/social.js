@@ -240,7 +240,7 @@ function renderEventosSocial() {
                     <div class="social-recibido-titulo">${escapeHtml(ev.title || 'Evento')}</div>
                     <div class="social-recibido-meta">${ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}${ev.time ? `, ${escapeHtml(ev.time)}` : ''}${ev.place ? `, ${escapeHtml(ev.place)}` : ''}</div>
                     ${e.nota ? `<div class="social-recibido-nota">«${escapeHtml(e.nota)}»</div>` : ''}
-                    <div class="ajuste-botones"><button class="btn-modal-primary social-btn" onclick="aceptarEventoCompartido('${e.id}')">añadir.</button><button class="btn-secondary" style="width:auto" onclick="descartarEventoCompartido('${e.id}')">descartar.</button></div>
+                    <div class="ajuste-botones"><button class="btn-modal-primary social-btn" onclick="aceptarEventoCompartido('${jsAttr(e.id)}')">añadir.</button><button class="btn-secondary" style="width:auto" onclick="descartarEventoCompartido('${jsAttr(e.id)}')">descartar.</button></div>
                 </div>`;
             }).join('')}</div>` : '')}
         </div>`;
@@ -633,10 +633,28 @@ async function enviarEventoCompartido() {
     showToast(destinos.length === 1 ? 'Evento compartido' : `Compartido con ${destinos.length} amigos`);
 }
 
+// Lo que manda otra persona se valida al entrar: solo texto, con forma de fecha u hora donde toca y con un largo
+// máximo. El calendario además lo escapa al pintarlo.
+const EVENTO_COMPARTIDO_FORMA = { title: [200], date: [10, /^\d{4}-\d{2}-\d{2}$/], time: [5, /^\d{2}:\d{2}$/], endDate: [10, /^\d{4}-\d{2}-\d{2}$/], endTime: [5, /^\d{2}:\d{2}$/], place: [200], notes: [4000], eventType: [40, /^[a-z0-9_-]+$/i] };
+function eventoCompartidoValido(evento) {
+    if (!evento || typeof evento !== 'object') return null;
+    const ev = {};
+    for (const k of EVENTO_CAMPOS_COMPARTIDOS) {
+        const v = evento[k];
+        if (v == null || v === '') continue;
+        if (typeof v !== 'string') return null;
+        const [max, re] = EVENTO_COMPARTIDO_FORMA[k];
+        if (re && !re.test(v)) return null;
+        ev[k] = v.slice(0, max);
+    }
+    return ev.title && ev.date ? ev : null;
+}
+
 async function aceptarEventoCompartido(id) {
     const e = eventosCompartidosRecibidos.find(x => x.id === id);
     if (!e) return;
-    const ev = Object.fromEntries(EVENTO_CAMPOS_COMPARTIDOS.filter(k => e.evento?.[k]).map(k => [k, e.evento[k]]));
+    const ev = eventoCompartidoValido(e.evento);
+    if (!ev) { showToast('Ese evento no se puede añadir: llegó con datos raros.', true); return; }
     entries.push({ id: 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), type: 'event', categoryId: getCategoryIdForType('event'), tags: [], ...ev, compartidoPor: e.nombre, createdAt: new Date().toISOString() });
     await descartarEventoCompartido(id, true);
     render();
