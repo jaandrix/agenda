@@ -9647,3 +9647,18 @@ body.mobile-standalone :is(.estancia-overlay, .anual-overlay), body.pwa :is(.est
 .plan-a-lista { margin-top:14px; width:auto !important; padding:0 20px !important; }
 .plan-momentos, .plan-recetas { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
 @media (max-width: 560px) { .plan-dia { grid-template-columns:minmax(0, 1fr) 32px; row-gap:6px; } .plan-mas { grid-column:2; } .plan-dia-platos { grid-column:1 / -1; grid-row:2; } .plan-repetir { margin-left:0; } }
+
+/* Panorama: elegir tarjetas (26-10) */
+.home-estancia { display:flex; align-items:center; gap:10px; }
+.pano-tarea.hecha .pano-linea-txt { color:var(--text-secondary); text-decoration:line-through; }
+.pano-tarea.hecha .pano-prio { background:var(--text-secondary); border-color:var(--text-secondary); }
+.pano-ed-fila { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+.pano-ed-fila label { display:flex; align-items:center; gap:10px; font-size:15px; cursor:pointer; flex:1; }
+.pano-ed-fila.apagada label { color:var(--text-secondary); }
+.pano-ed-mover { display:flex; gap:6px; }
+.pano-ed-mover button { width:34px; height:34px; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--text-primary); cursor:pointer; display:grid; place-items:center; }
+.pano-ed-mover button:disabled { opacity:.3; cursor:default; }
+.pano-ed-sube { transform:rotate(-90deg); }
+.pano-ed-baja { transform:rotate(90deg); }
+.pano-ed-acciones { display:flex; align-items:center; gap:12px; margin-top:18px; }
+.pano-ed-acciones .btn-modal-primary { flex:1; margin:0; }

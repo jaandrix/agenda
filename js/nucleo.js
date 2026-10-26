@@ -1997,7 +1997,7 @@
             const perfil = PERFILES.some(p => p.id === c.perfil) ? c.perfil : 'ambos';
             const opcionales = { ...(c.opcionales || {}) };
             APARTADOS_OPCIONALES.forEach(o => { if (opcionales[o.view] === undefined) opcionales[o.view] = o.porDefecto(); });
-            return { perfil, opcionales };
+            return { perfil, opcionales, panorama: Array.isArray(c.panorama) ? c.panorama : null };
         }
 
         function apartadoVisible(view) {

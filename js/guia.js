@@ -170,6 +170,7 @@ const GUIA = [
         lema: 'Todo lo importante, de un vistazo.',
         intro: 'Tarjetas que enseñan lo que hay dentro antes de abrirlas: tu día hora por hora, hoy, entregas (si estudias: trabajos y exámenes pendientes, también los de Classroom, por fecha de entrega), tareas, esta semana, tu mes en puntos, próximamente y la revisión semanal. Cada una abre su ventana de siempre; debajo, en «más.», el resto de accesos.',
         botones: [
+            [guiaBoton('editar.'), 'Elige qué tarjetas ves y en qué orden. Además de las de siempre puedes añadir dinero (gastado e ingresado este mes), rutinas de hoy, próximo viaje y despensa. «volver a lo de mi perfil.» deja las de estudiante o trabajador.'],
             [guiaBoton('a tener en cuenta.'), 'Avisos del día: cargos que no han llegado, semanas cargadas, cosas por revisar.'],
             [guiaBoton('hoy. tareas. esta semana. próximamente.'), 'Lo de hoy, tus tareas, la semana y lo que viene.'],
             [guiaBoton('tu mes.'), 'Una tarjeta vertical con tu mes (planes, viajes, lo que terminaste de leer o ver, tareas hechas, días con rutinas, exámenes aprobados) para guardarla o subirla a stories. Antes, toca lo que no quieras enseñar y desaparece; el dinero va apagado salvo que lo enciendas.'],

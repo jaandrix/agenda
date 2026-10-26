@@ -168,6 +168,7 @@
                         <div class="vista-cab-sub" style="margin-bottom:18px">${new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}.</div>
                     </div>
                     <div class="home-estancia" id="home-estancia">
+                        <button class="vista-btn pano-editar" onclick="openEditarPanorama()">editar.</button>
                         <button class="home-estancia-btn" title="tu estancia en bitácora." aria-expanded="false" onclick="toggleHomeEstancia()">${HOME_ICON_ESTANCIA}</button>
                     </div>
                 </div>
@@ -282,16 +283,117 @@
                 <span class="pano-cifra"><b>${diasRut.size}/7</b><small>días con rutinas</small>${barra(diasRut.size, 7)}</span>
                 ${objetivos ? cifra(objetivos, objetivos === 1 ? 'objetivo en curso' : 'objetivos en curso') : ''}</span>`;
 
-            return `<div class="pano-grid">
-                ${panoTarjeta('', PANO_ICO_RELOJ, 'tu día.', 'Tu jornada, hora por hora.', 'openTuDia()', cDia)}
-                ${panoTarjeta('hoy', PANO_ICO_HOY, 'hoy.', 'Lo que te queda de hoy.', 'openHomeTodayModal()', cHoy)}
-                ${entregas ? panoTarjeta('', PANO_ICO_ENTREGA, 'entregas.', 'Por fecha de entrega.', "switchView('studies')", cEntregas) : ''}
-                ${panoTarjeta('', HOME_ICON_TASKS, 'tareas.', 'Lo que tienes pendiente.', 'openHomeTasksModal()', cTareas)}
-                ${panoTarjeta('', HOME_ICON_WEEK, 'esta semana.', 'Cuánto tienes cada día.', 'openResumenSemana()', cSemana)}
-                ${panoTarjeta('', HOME_ICON_STATS, 'tu mes.', `${nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}, de un vistazo.`, 'openTuMes()', cMes)}
-                ${panoTarjeta('', HOME_ICON_UPCOMING, 'próximamente.', 'Después de hoy.', 'openHomeUpcomingModal()', cProx)}
-                ${panoTarjeta(entregas ? 'doble' : 'ancha', HOME_ICON_REVIEW, 'revisión semanal.', 'Cierra la semana y prepara la siguiente.', 'openHomeReviewModal()', cRev)}
-            </div>`;
+            // Tarjetas que se pueden añadir desde «editar.».
+            const cDinero = () => {
+                if (!(financePro.transactions || []).length) return vacio('Aún no hay movimientos.');
+                const mes = financeProMonthTotals(hoy.slice(0, 7));
+                const dinero = n => `${Math.round(n).toLocaleString('es-ES')} €`;
+                return `<span class="pano-cifras">${cifra(dinero(mes.expense), 'gastado este mes')}${cifra(dinero(mes.income), 'ingresado')}${cifra(dinero(financeEfectivoActual()), 'en tus cuentas')}</span>`;
+            };
+            const cRutinas = () => {
+                const deHoy = habits.filter(h => h.activo !== false && rutinaToca(h, hoy));
+                if (!deHoy.length) return vacio('Hoy no toca ninguna rutina.');
+                return `<span class="pano-tareas">${deHoy.slice(0, 4).map(h => `<span class="pano-tarea ${h.completadas?.[hoy] ? 'hecha' : ''}"><i class="pano-prio" aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(h.texto)}</span></span>`).join('')}</span>
+                    <span class="pano-cifras">${cifra(`${rut.hechas}/${rut.total}`, 'hechas hoy')}</span>`;
+            };
+            const cViaje = () => {
+                const v = entries.filter(e => e.type === 'travel' && e.startDate && (e.endDate || e.startDate) >= hoy).sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
+                if (!v) return vacio('Ningún viaje a la vista.');
+                const faltan = Math.round((new Date(v.startDate + 'T12:00:00') - new Date(hoy + 'T12:00:00')) / 864e5);
+                const f = iso => { const d = new Date(iso + 'T12:00:00'); return `${d.getDate()} ${d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')}`; };
+                return `<span class="pano-linea"><span class="pano-hora">${f(v.startDate)}${v.endDate && v.endDate !== v.startDate ? ' a ' + f(v.endDate) : ''}</span><span class="pano-linea-txt">${escapeHtml(v.title || v.destination || 'viaje')}</span></span>
+                    <span class="pano-cifras">${faltan > 0 ? cifra(faltan, faltan === 1 ? 'día para irte' : 'días para irte') : cifra('ya', 'estás de viaje')}</span>`;
+            };
+            const cDespensa = () => {
+                const pend = compraListaActual().items.filter(i => !i.hecho);
+                const platos = datosCompra().plan[hoy] || [];
+                return `${pend.length ? `<span class="pano-tareas">${pend.slice(0, 4).map(i => `<span class="pano-tarea"><i class="pano-prio" aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(i.texto)}</span></span>`).join('')}</span>` : vacio('La lista está vacía.')}
+                    <span class="pano-cifras">${cifra(pend.length, 'en la lista')}${cifra(platos.length, platos.length === 1 ? 'plato hoy' : 'platos hoy')}</span>`;
+            };
+
+            const t = {
+                dia: [PANO_ICO_RELOJ, 'Tu jornada, hora por hora.', 'openTuDia()', () => cDia],
+                hoy: [PANO_ICO_HOY, 'Lo que te queda de hoy.', 'openHomeTodayModal()', () => cHoy, 'hoy'],
+                entregas: [PANO_ICO_ENTREGA, 'Por fecha de entrega.', "switchView('studies')", () => cEntregas],
+                tareas: [HOME_ICON_TASKS, 'Lo que tienes pendiente.', 'openHomeTasksModal()', () => cTareas],
+                semana: [HOME_ICON_WEEK, 'Cuánto tienes cada día.', 'openResumenSemana()', () => cSemana],
+                mes: [HOME_ICON_STATS, `${nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}, de un vistazo.`, 'openTuMes()', () => cMes],
+                prox: [HOME_ICON_UPCOMING, 'Después de hoy.', 'openHomeUpcomingModal()', () => cProx],
+                dinero: [PANO_ICO_DINERO, 'Cómo va el mes.', "switchView('finances')", cDinero],
+                rutinas: [PANO_ICO_RUTINAS, 'Las que tocan hoy.', "switchView('habits')", cRutinas],
+                viaje: [PANO_ICO_VIAJE, 'Cuánto falta.', "switchView('travels')", cViaje],
+                despensa: [PANO_ICO_DESPENSA, 'Lo que falta en casa.', "switchView('compra')", cDespensa],
+                revision: [HOME_ICON_REVIEW, 'Cierra la semana y prepara la siguiente.', 'openHomeReviewModal()', () => cRev],
+            };
+            const ids = panoramaElegidas(!!entregas);
+            return `<div class="pano-grid">${ids.map((id, n) => {
+                const [icono, sub, accion, cuerpo, clase = ''] = t[id];
+                // La revisión, si va la última, ocupa lo que quede de la fila.
+                const resto = 3 - (ids.length - 1) % 3;
+                const ancho = id === 'revision' && n === ids.length - 1 ? (resto === 3 ? 'ancha' : resto === 2 ? 'doble' : '') : '';
+                return panoTarjeta(`${clase} ${ancho}`, icono, PANO_NOMBRES[id], sub, accion, cuerpo());
+            }).join('')}</div>`;
+        }
+
+        const PANO_ICO_DINERO = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 6a44 44 0 1 1 0 88 44 44 0 0 1 0-88zm-6 16v8H32v24h24v6H32v12h12v8h12v-8h12V44H44v-6h24V26H56v-4z"/></svg>';
+        const PANO_ICO_RUTINAS = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M12 12h76v76H12zm12 12v52h52V24zm6 24 8-8 8 8 16-16 8 8-24 24z"/></svg>';
+        const PANO_ICO_VIAJE = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M45 6h10l5 32 32 14v12l-32-8-3 24 11 8v8l-18-5-18 5v-8l11-8-3-24-32 8V52l32-14z"/></svg>';
+        const PANO_ICO_DESPENSA = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M30 30v-6a20 20 0 0 1 40 0v6h18l-6 64H18l-6-64zm10 0h20v-6a10 10 0 0 0-20 0z"/></svg>';
+
+        // Tarjetas de Panorama: el usuario elige cuáles y en qué orden (apartadosConfig.panorama); sin elección,
+        // las de su perfil. Las que dependen de un apartado apagado no salen aunque estén elegidas.
+        const PANO_NOMBRES = { dia: 'tu día.', hoy: 'hoy.', entregas: 'entregas.', tareas: 'tareas.', semana: 'esta semana.', mes: 'tu mes.', prox: 'próximamente.', dinero: 'dinero.', rutinas: 'rutinas.', viaje: 'próximo viaje.', despensa: 'despensa.', revision: 'revisión semanal.' };
+        function panoramaPorPerfil() {
+            return configApartados().perfil === 'trabajador'
+                ? ['dia', 'hoy', 'tareas', 'dinero', 'semana', 'prox', 'mes', 'revision']
+                : ['dia', 'hoy', 'entregas', 'tareas', 'semana', 'mes', 'prox', 'revision'];
+        }
+        function panoramaDisponible(id, hayEntregas) {
+            if (id === 'entregas') return hayEntregas;
+            if (id === 'dinero') return apartadoVisible('finances');
+            if (id === 'despensa') return apartadoVisible('compra');
+            if (id === 'viaje') return apartadoVisible('travels');
+            if (id === 'rutinas') return apartadoVisible('habits');
+            return !!PANO_NOMBRES[id];
+        }
+        function panoramaElegidas(hayEntregas) {
+            const c = configApartados().panorama;
+            return (Array.isArray(c) ? c : panoramaPorPerfil()).filter(id => panoramaDisponible(id, hayEntregas));
+        }
+
+        let panoramaBorrador = null;
+        function openEditarPanorama() {
+            const c = configApartados().panorama;
+            const elegidas = Array.isArray(c) ? c : panoramaPorPerfil();
+            const hayEntregas = typeof asignaturasEnCurso === 'function' && apartadoVisible('studies');
+            const todas = Object.keys(PANO_NOMBRES).filter(id => panoramaDisponible(id, hayEntregas));
+            panoramaBorrador = [...elegidas.filter(id => todas.includes(id)).map(id => ({ id, on: true })), ...todas.filter(id => !elegidas.includes(id)).map(id => ({ id, on: false }))];
+            showModal(`<div class="modal-title">editar panorama.</div>
+                <p class="vista-cab-sub" style="margin:0 0 12px">Elige qué tarjetas ves y en qué orden.</p>
+                <div id="pano-ed-lista">${renderEditarPanoramaLista()}</div>
+                <div class="pano-ed-acciones"><button class="vista-btn" onclick="panoramaVolverAlPerfil()">volver a lo de mi perfil.</button><button class="btn-modal-primary" onclick="guardarPanorama()">guardar.</button></div>`);
+        }
+        function renderEditarPanoramaLista() {
+            const b = panoramaBorrador;
+            return b.map((x, i) => `<div class="pano-ed-fila ${x.on ? '' : 'apagada'}">
+                <label><input type="checkbox" ${x.on ? 'checked' : ''} onchange="panoramaBorrador[${i}].on = this.checked; this.closest('.pano-ed-fila').classList.toggle('apagada', !this.checked)"> ${PANO_NOMBRES[x.id]}</label>
+                <span class="pano-ed-mover"><button type="button" aria-label="subir" ${i ? '' : 'disabled'} onclick="panoramaMover(${i}, -1)"><i class="ico ico-der pano-ed-sube"></i></button><button type="button" aria-label="bajar" ${i < b.length - 1 ? '' : 'disabled'} onclick="panoramaMover(${i}, 1)"><i class="ico ico-der pano-ed-baja"></i></button></span>
+            </div>`).join('');
+        }
+        function panoramaMover(i, d) {
+            const b = panoramaBorrador, j = i + d;
+            if (j < 0 || j >= b.length) return;
+            [b[i], b[j]] = [b[j], b[i]];
+            document.getElementById('pano-ed-lista').innerHTML = renderEditarPanoramaLista();
+        }
+        function guardarPanorama() {
+            const ids = panoramaBorrador.filter(x => x.on).map(x => x.id);
+            closeModal();
+            guardarConfigApartados({ panorama: ids });
+        }
+        function panoramaVolverAlPerfil() {
+            closeModal();
+            guardarConfigApartados({ panorama: null });
         }
 
         // "tu estancia en bitácora." vive dentro de un botón: al pulsarlo se
