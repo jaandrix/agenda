@@ -18,7 +18,7 @@
 // que aún está en la bandeja, para que "apúntalo" seguido de "¿qué tengo
 // el martes?" ya lo incluya.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 
 const sbAdmin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const ZONA = 'Europe/Madrid';

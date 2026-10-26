@@ -934,6 +934,8 @@
             if (isError) contarFallo(null, '', 'toast');
             const t = document.getElementById('toast');
             t.textContent = msg;
+            t.setAttribute('role', isError ? 'alert' : 'status');
+            t.setAttribute('aria-live', isError ? 'assertive' : 'polite');
             t.className = isError ? 'error' : '';
             t.classList.add('show');
             clearTimeout(t._timer);

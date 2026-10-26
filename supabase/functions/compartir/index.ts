@@ -12,7 +12,7 @@
 // sesión del dueño. Cuando alguien responde, al dueño le llega un aviso.
 // Despliegue: supabase functions deploy compartir --no-verify-jwt
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const sb = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);

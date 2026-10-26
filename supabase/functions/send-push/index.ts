@@ -26,7 +26,7 @@
 // node:crypto sin crypto.ECDH ("Not implemented") y ningún aviso llegaba a
 // enviarse; con npm: usa la compatibilidad con Node del propio Deno.
 import webpush from 'npm:web-push@3.6.7';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')!;

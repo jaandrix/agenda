@@ -10,7 +10,7 @@
 // Va en el servidor para no depender de CORS ni dejar claves en la app.
 //   supabase functions deploy portadas --no-verify-jwt
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const TMDB = Deno.env.get('TMDB_KEY') || '';

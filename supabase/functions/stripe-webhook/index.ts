@@ -24,8 +24,8 @@
 // llama la propia app para cancelar (comparte los mismos STRIPE_SECRET_KEY
 // y demás secretos ya fijados aquí, no hace falta repetirlos).
 
-import Stripe from 'https://esm.sh/stripe?target=deno';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Stripe from 'https://esm.sh/stripe@23.0.0?target=deno';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 
 const STRIPE_API_VERSION = '2025-03-31.basil';
 

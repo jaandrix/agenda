@@ -75,6 +75,24 @@
             if (error) throw error;
         }
 
+        let modalAbridor = null;
+
+        function prepararModalAccesible(container) {
+            const sheet = container.querySelector('.modal-sheet');
+            if (!sheet) return;
+            sheet.setAttribute('role', 'dialog');
+            sheet.setAttribute('aria-modal', 'true');
+            const titulo = sheet.querySelector('.modal-title');
+            if (titulo) {
+                titulo.id ||= 'modal-titulo-activo';
+                const copiaTitulo = titulo.cloneNode(true);
+                copiaTitulo.querySelectorAll('button').forEach(b => b.remove());
+                titulo.setAttribute('aria-label', copiaTitulo.textContent.trim());
+                sheet.setAttribute('aria-labelledby', titulo.id);
+            }
+            sheet.querySelectorAll('.modal-close').forEach(b => b.setAttribute('aria-label', 'cerrar'));
+        }
+
         function showModal(htmlContent) {
             vtCortar();
             vtFichaOrigen = null;
@@ -90,9 +108,11 @@
                 hoja.className = 'modal-sheet modal-sheet-cambio';
                 hoja.innerHTML = htmlContent;
                 previo.replaceChildren(hoja);
+                prepararModalAccesible(container);
                 enfocarPrimerCampo(container);
                 return;
             }
+            modalAbridor = document.activeElement instanceof HTMLElement ? document.activeElement : null;
             container.innerHTML = `
                 <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
                     <div class="modal-sheet">
@@ -100,6 +120,7 @@
                     </div>
                 </div>
             `;
+            prepararModalAccesible(container);
             // El modal nace del punto que se pulsó (un botón, un día del
             // calendario...) en vez de aparecer siempre en el centro. Se
             // usan offsetLeft/Top porque no les afecta la escala con la que
@@ -125,28 +146,43 @@
             vtCortar();
             const container = document.getElementById('modal-container');
             const habia = !!container.querySelector('.modal-overlay');
+            if (!habia) modalAbridor = document.activeElement instanceof HTMLElement ? document.activeElement : null;
             container.innerHTML = html;
             const overlay = habia && container.querySelector('.modal-overlay');
             if (overlay) {
                 overlay.style.animation = 'none';
                 overlay.querySelector('.modal-sheet')?.classList.add('modal-sheet-cambio');
             }
+            prepararModalAccesible(container);
+            enfocarPrimerCampo(container);
         }
 
-        // En pantallas táctiles no se enfoca nada: el iPhone deja el campo enfocado pero sin teclado (el foco
-        // llega fuera del toque) y al tocarlo después no se abría, así que no se podía cambiar el nombre de una tarea.
+        // En pantallas táctiles no se enfocan campos: el iPhone los dejaba enfocados sin teclado y después no lo abría.
         const ES_TACTIL = window.matchMedia?.('(hover: none) and (pointer: coarse)').matches;
         function enfocarPrimerCampo(container) {
-            if (ES_TACTIL) return;
             setTimeout(() => {
                 const sheet = container.querySelector('.modal-sheet');
-                const field = sheet?.querySelector(
+                const field = !ES_TACTIL && sheet?.querySelector(
                     'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]):not([disabled]), textarea:not([disabled]), select:not([disabled]):not(.selector-nativo)'
                 );
-                field?.focus();
+                const primero = field || sheet?.querySelector('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])');
+                if (!primero && sheet) sheet.tabIndex = -1;
+                (primero || sheet)?.focus({ preventScroll: true });
                 if (field?.tagName === 'INPUT' && (field.type === 'text' || field.type === '')) field.select?.();
             }, 0);
         }
+
+        document.addEventListener('keydown', e => {
+            const sheet = document.querySelector('#modal-container .modal-overlay:not([data-cerrando]) .modal-sheet');
+            if (!sheet) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeModal();
+            } else if (e.key === 'Tab' && !sheet.contains(document.activeElement)) {
+                e.preventDefault();
+                sheet.querySelector('button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')?.focus();
+            }
+        });
 
         // ============================================================
         //  PASSWORD ACCESS SYSTEM (para Vault) - CORREGIDO

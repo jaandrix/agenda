@@ -266,7 +266,7 @@ function openNovedades() {
             <div class="novedad-para">para ${n.para}</div>
         </article>`;
     }).join('');
-    showModal(`<div class="modal-title">actualizaciones.<button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
+    showModal(`<div class="modal-title">actualizaciones.<button class="modal-close" aria-label="cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
         <p class="finance-modal-note" style="margin-top:0">Todo lo que ha ido llegando a Bitácora, lo último primero.</p>
         <div class="novedades">${filas}</div>`);
 }

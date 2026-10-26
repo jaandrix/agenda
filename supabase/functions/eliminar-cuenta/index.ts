@@ -10,8 +10,8 @@
 // - borrar las filas de bitacora y bitacora_secrets, que no tienen cascade.
 //   supabase functions deploy eliminar-cuenta --no-verify-jwt
 
-import Stripe from 'https://esm.sh/stripe?target=deno';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Stripe from 'https://esm.sh/stripe@23.0.0?target=deno';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2025-03-31.basil', httpClient: Stripe.createFetchHttpClient() });
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);

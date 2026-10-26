@@ -99,6 +99,23 @@
             await startApp();
         }
 
+        function cambiarSuperficieActiva(activa) {
+            const superficies = {
+                landing: ['landing-screen'],
+                login: ['login-screen'],
+                paywall: ['paywall-screen'],
+                app: ['app', 'fab', 'mobile-menu-overlay', 'mobile-menu-panel', 'mobile-shell']
+            };
+            Object.entries(superficies).forEach(([nombre, ids]) => ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const inactiva = nombre !== activa;
+                el.toggleAttribute('inert', inactiva);
+                if (inactiva) el.setAttribute('aria-hidden', 'true');
+                else el.removeAttribute('aria-hidden');
+            }));
+        }
+
         function resetToLoginScreen() {
             document.getElementById('app').classList.remove('ready');
             const paywall = document.getElementById('paywall-screen');
@@ -115,6 +132,7 @@
         //  LANDING PÚBLICA
         // ============================================================
         function showLandingScreen() {
+            cambiarSuperficieActiva('landing');
             document.getElementById('app').classList.remove('ready');
             document.getElementById('login-screen').style.display = 'none';
             const paywall = document.getElementById('paywall-screen');
@@ -126,6 +144,7 @@
         // La tarjeta entra desde abajo y la "b." de la derecha se monta
         // pieza a pieza; se reinicia cada vez que se llega desde la landing.
         function entrarLogin() {
+            cambiarSuperficieActiva('login');
             const el = document.getElementById('login-screen');
             el.style.display = 'flex';
             el.classList.remove('entra');
@@ -236,6 +255,7 @@
             const paywall = document.getElementById('paywall-screen');
             if (paywall) paywall.style.display = 'none';
             document.getElementById('app').classList.add('ready');
+            cambiarSuperficieActiva('app');
 
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
@@ -288,6 +308,7 @@
         }
 
         function showPaywallScreen(user, opts = {}) {
+            cambiarSuperficieActiva('paywall');
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app').classList.remove('ready');
 

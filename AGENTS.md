@@ -15,3 +15,4 @@ Si vienes a proponer diseño (ChatGPT / Codex):
 - Antes de proponer un apartado, mira cómo está hecho hoy: su `renderXxx()` en `js/` y sus clases en `styles.css`.
   Reutiliza las piezas comunes (`.vista-cab`, `abrirMenuAcciones`, `.vista-seg`, `.vista-vacio`).
 - Nunca pidas ni uses claves de Supabase, Stripe ni otros secretos; no hacen falta para diseñar.
+- Antes de subir, ejecuta `node pruebas/comprobar.mjs`.

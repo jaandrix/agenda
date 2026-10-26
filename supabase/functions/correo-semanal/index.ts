@@ -11,7 +11,7 @@
 // Secretos: AVISOS_SECRET (el de pg_cron), RESEND_KEY y CORREO_SECRET (firma de la baja).
 // Para probar sin enviar: POST {"forzar": true, "simular": true, "user_id": "..."}.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const sb = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);

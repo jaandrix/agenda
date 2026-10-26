@@ -25,7 +25,7 @@
     <meta name="twitter:image" content="https://appbitacora.es/og-image.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" crossorigin="anonymous">
-    <link rel="stylesheet" href="styles.css?v=20261019-66">
+    <link rel="stylesheet" href="styles.css?v=20261019-67">
     <!-- Analítica de visitas, privada (GoatCounter) — sin cookies, sin
          contador visible de cara al visitante; el panel es solo tuyo. -->
     <script data-goatcounter="https://appbitacora.goatcounter.com/count"
@@ -235,21 +235,21 @@
     <!-- ============================================================
     LOGIN SCREEN
     ============================================================ -->
-    <div id="login-screen">
+    <div id="login-screen" inert aria-hidden="true">
         <button class="login-back-corner" onclick="goToLanding()">← volver.</button>
         <div class="login-top-actions">
             <button class="pwa-install-btn about-bitacora-btn" onclick="openAboutBitacora()">qué es bitácora.</button>
         </div>
-        <script src="pwa-install.js?v=20261019-66"></script>
+        <script src="pwa-install.js?v=20261019-67"></script>
         <div class="login-tarjeta">
         <div id="login-box">
             <div id="mode-login">
                 <h1>hola de nuevo<span class="login-punto">.</span></h1>
                 <p class="sub">Entra en tu bitácora.</p>
-                <input type="email" id="login-email" placeholder="Email" autocomplete="username">
-                <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
+                <input type="email" id="login-email" placeholder="Email" aria-label="Email" aria-describedby="login-error" autocomplete="email">
+                <input type="password" id="login-password" placeholder="Contraseña" aria-label="Contraseña" aria-describedby="login-error" autocomplete="current-password">
                 <button id="login-btn" onclick="handleLogin()">entrar.</button>
-                <div id="login-error"></div>
+                <div id="login-error" role="alert"></div>
                 <div class="login-links">
                     <a onclick="showAuthMode('signup')">crear cuenta.</a>
                     <a onclick="showAuthMode('forgot')">¿olvidaste la contraseña?</a>
@@ -259,12 +259,12 @@
             <div id="mode-signup" style="display:none">
                 <h1>crea tu cuenta<span class="login-punto">.</span></h1>
                 <p class="sub">14 días gratis, sin tarjeta.</p>
-                <input type="email" id="signup-email" placeholder="Email" autocomplete="username">
-                <input type="password" id="signup-password" placeholder="Contraseña (mín. 8 caracteres)" autocomplete="new-password">
-                <input type="password" id="signup-password2" placeholder="Repite la contraseña" autocomplete="new-password">
-                <input type="text" id="signup-amigo" placeholder="Código de un amigo (opcional)" autocomplete="off" autocapitalize="characters">
+                <input type="email" id="signup-email" placeholder="Email" aria-label="Email" aria-describedby="signup-error" autocomplete="email">
+                <input type="password" id="signup-password" placeholder="Contraseña (mín. 8 caracteres)" aria-label="Contraseña (mín. 8 caracteres)" aria-describedby="signup-error" autocomplete="new-password">
+                <input type="password" id="signup-password2" placeholder="Repite la contraseña" aria-label="Repite la contraseña" aria-describedby="signup-error" autocomplete="new-password">
+                <input type="text" id="signup-amigo" placeholder="Código de un amigo (opcional)" aria-label="Código de un amigo (opcional)" aria-describedby="signup-error" autocomplete="off" autocapitalize="characters">
                 <button id="signup-btn" onclick="handleSignup()">crear cuenta.</button>
-                <div id="signup-error"></div>
+                <div id="signup-error" role="alert"></div>
                 <div id="signup-success"></div>
                 <a class="login-back" onclick="showAuthMode('login')">← volver a entrar.</a>
             </div>
@@ -272,9 +272,9 @@
             <div id="mode-forgot" style="display:none">
                 <h1>recuperar contraseña<span class="login-punto">.</span></h1>
                 <p class="sub">Te enviamos un enlace a tu email.</p>
-                <input type="email" id="forgot-email" placeholder="Email" autocomplete="username">
+                <input type="email" id="forgot-email" placeholder="Email" aria-label="Email" aria-describedby="forgot-error" autocomplete="email">
                 <button id="forgot-btn" onclick="handleForgotPassword()">enviar enlace.</button>
-                <div id="forgot-error"></div>
+                <div id="forgot-error" role="alert"></div>
                 <div id="forgot-success"></div>
                 <a class="login-back" onclick="showAuthMode('login')">← volver a entrar.</a>
             </div>
@@ -282,10 +282,10 @@
             <div id="mode-reset" style="display:none">
                 <h1>nueva contraseña<span class="login-punto">.</span></h1>
                 <p class="sub">Elige tu nueva contraseña.</p>
-                <input type="password" id="reset-password" placeholder="Nueva contraseña (mín. 8 caracteres)" autocomplete="new-password">
-                <input type="password" id="reset-password2" placeholder="Repite la contraseña" autocomplete="new-password">
+                <input type="password" id="reset-password" placeholder="Nueva contraseña (mín. 8 caracteres)" aria-label="Nueva contraseña (mín. 8 caracteres)" aria-describedby="reset-error" autocomplete="new-password">
+                <input type="password" id="reset-password2" placeholder="Repite la contraseña" aria-label="Repite la contraseña" aria-describedby="reset-error" autocomplete="new-password">
                 <button id="reset-btn" onclick="handleResetPassword()">guardar contraseña.</button>
-                <div id="reset-error"></div>
+                <div id="reset-error" role="alert"></div>
                 <div id="reset-success"></div>
             </div>
         </div>
@@ -300,12 +300,12 @@
     <!-- ============================================================
     PANTALLA DE PAGO — contenido montado por showPaywallScreen() en js/nucleo.js
     ============================================================ -->
-    <div id="paywall-screen"></div>
+    <div id="paywall-screen" inert aria-hidden="true"></div>
 
     <!-- ============================================================
     APP
     ============================================================ -->
-    <div id="app">
+    <div id="app" inert aria-hidden="true">
         <!-- SIDEBAR -->
         <div id="sidebar" role="navigation" aria-label="Apartados">
             <div class="sidebar-brand">
@@ -367,15 +367,15 @@
     <!-- ============================================================
     FAB
     ============================================================ -->
-    <button id="fab" onclick="openApuntar()" title="Apuntar algo (ESPACIO abre el buscador de tipos)">
+    <button id="fab" inert aria-hidden="true" onclick="openApuntar()" title="Apuntar algo (ESPACIO abre el buscador de tipos)">
         <svg viewBox="110 8 290 524" width="14" height="25" fill="currentColor" aria-hidden="true"><path d="M288 16C290 20 289 24 287 30L232 192C226 212 236 224 256 225L362 228C384 230 392 246 380 262L196 520C191 527 184 527 186 518L258 326C264 308 254 299 236 298L146 296C124 295 116 280 128 264L278 22C281 17 286 13 288 16Z"/></svg><span class="fab-texto">apuntar.</span>
     </button>
 
     <!-- ============================================================
     MOBILE MENU
     ============================================================ -->
-    <div id="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
-    <div id="mobile-menu-panel">
+    <div id="mobile-menu-overlay" inert aria-hidden="true" onclick="toggleMobileMenu()"></div>
+    <div id="mobile-menu-panel" inert aria-hidden="true">
         <div class="menu-header">
             <span class="brand">Bitácora</span>
             <button class="menu-close" onclick="toggleMobileMenu()" aria-label="Cerrar"><i class="ico ico-x" aria-hidden="true"></i></button>
@@ -401,13 +401,13 @@
     por completo cuando body.mobile-standalone está activo; ver
     isMobileStandaloneMode()/renderMobileShell() en js/nucleo.js.
     ============================================================ -->
-    <div id="mobile-shell"></div>
+    <div id="mobile-shell" inert aria-hidden="true"></div>
 
     <!-- ============================================================
     MODAL CONTAINER
     ============================================================ -->
     <div id="modal-container"></div>
-    <div id="toast"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
 
     <!-- ============================================================
     HIDDEN INPUTS
@@ -423,57 +423,57 @@
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
-    <script src="js/nucleo.js?v=20261019-66"></script>
-    <script src="js/datos.js?v=20261019-66"></script>
-    <script src="js/interfaz.js?v=20261019-66"></script>
-    <script src="js/planificador.js?v=20261019-66"></script>
-    <script src="js/coleccionables.js?v=20261019-66"></script>
-    <script src="js/entradas.js?v=20261019-66"></script>
-    <script src="js/calendario.js?v=20261019-66"></script>
-    <script src="js/resumen.js?v=20261019-66"></script>
-    <script src="js/ocio.js?v=20261019-66"></script>
-    <script src="js/viajes.js?v=20261019-66"></script>
-    <script src="js/trabajo-estudios.js?v=20261019-66"></script>
-    <script src="js/agenda-laboral.js?v=20261019-66"></script>
-    <script src="js/enlaces-proyectos.js?v=20261019-66"></script>
-    <script src="js/eventos.js?v=20261019-66"></script>
-    <script src="js/ajustes.js?v=20261019-66"></script>
-    <script src="js/notas-objetivos.js?v=20261019-66"></script>
-    <script src="js/finanzas.js?v=20261019-66"></script>
-    <script src="js/finanzas-pro.js?v=20261019-66"></script>
-    <script src="js/documentos.js?v=20261019-66"></script>
-    <script src="js/vault.js?v=20261019-66"></script>
-    <script src="js/conector.js?v=20261019-66"></script>
-    <script src="js/inicio.js?v=20261019-66"></script>
-    <script src="js/actualizaciones.js?v=20261019-66"></script>
-    <script src="js/compra.js?v=20261019-66"></script>
-    <script src="js/estudiar.js?v=20261019-66"></script>
-    <script src="js/test.js?v=20261019-66"></script>
-    <script src="js/proyecto.js?v=20261019-66"></script>
-    <script src="js/apuntar.js?v=20261019-66"></script>
-    <script src="js/conexiones.js?v=20261019-66"></script>
-    <script src="js/metodo.js?v=20261019-66"></script>
-    <script src="js/universidad.js?v=20261019-66"></script>
-    <script src="js/classroom.js?v=20261019-66"></script>
-    <script src="js/profesorado.js?v=20261019-66"></script>
-    <script src="js/profesorado-aula.js?v=20261019-66"></script>
-    <script src="js/cv.js?v=20261019-66"></script>
-    <script src="js/social.js?v=20261019-66"></script>
-    <script src="js/perfil.js?v=20261019-66"></script>
-    <script src="js/bienvenida.js?v=20261019-66"></script>
-    <script src="js/ejemplo.js?v=20261019-66"></script>
-    <script src="js/invitar.js?v=20261019-66"></script>
-    <script src="js/asistente.js?v=20261019-66"></script>
-    <script src="js/tumes.js?v=20261019-66"></script>
-    <script src="js/servicios.js?v=20261019-66"></script>
-    <script src="js/compartir.js?v=20261019-66"></script>
-    <script src="js/guia.js?v=20261019-66"></script>
-    <script src="js/guia-ia.js?v=20261019-66"></script>
-    <script src="js/landing.js?v=20261019-66"></script>
+    <script src="js/nucleo.js?v=20261019-67"></script>
+    <script src="js/datos.js?v=20261019-67"></script>
+    <script src="js/interfaz.js?v=20261019-67"></script>
+    <script src="js/planificador.js?v=20261019-67"></script>
+    <script src="js/coleccionables.js?v=20261019-67"></script>
+    <script src="js/entradas.js?v=20261019-67"></script>
+    <script src="js/calendario.js?v=20261019-67"></script>
+    <script src="js/resumen.js?v=20261019-67"></script>
+    <script src="js/ocio.js?v=20261019-67"></script>
+    <script src="js/viajes.js?v=20261019-67"></script>
+    <script src="js/trabajo-estudios.js?v=20261019-67"></script>
+    <script src="js/agenda-laboral.js?v=20261019-67"></script>
+    <script src="js/enlaces-proyectos.js?v=20261019-67"></script>
+    <script src="js/eventos.js?v=20261019-67"></script>
+    <script src="js/ajustes.js?v=20261019-67"></script>
+    <script src="js/notas-objetivos.js?v=20261019-67"></script>
+    <script src="js/finanzas.js?v=20261019-67"></script>
+    <script src="js/finanzas-pro.js?v=20261019-67"></script>
+    <script src="js/documentos.js?v=20261019-67"></script>
+    <script src="js/vault.js?v=20261019-67"></script>
+    <script src="js/conector.js?v=20261019-67"></script>
+    <script src="js/inicio.js?v=20261019-67"></script>
+    <script src="js/actualizaciones.js?v=20261019-67"></script>
+    <script src="js/compra.js?v=20261019-67"></script>
+    <script src="js/estudiar.js?v=20261019-67"></script>
+    <script src="js/test.js?v=20261019-67"></script>
+    <script src="js/proyecto.js?v=20261019-67"></script>
+    <script src="js/apuntar.js?v=20261019-67"></script>
+    <script src="js/conexiones.js?v=20261019-67"></script>
+    <script src="js/metodo.js?v=20261019-67"></script>
+    <script src="js/universidad.js?v=20261019-67"></script>
+    <script src="js/classroom.js?v=20261019-67"></script>
+    <script src="js/profesorado.js?v=20261019-67"></script>
+    <script src="js/profesorado-aula.js?v=20261019-67"></script>
+    <script src="js/cv.js?v=20261019-67"></script>
+    <script src="js/social.js?v=20261019-67"></script>
+    <script src="js/perfil.js?v=20261019-67"></script>
+    <script src="js/bienvenida.js?v=20261019-67"></script>
+    <script src="js/ejemplo.js?v=20261019-67"></script>
+    <script src="js/invitar.js?v=20261019-67"></script>
+    <script src="js/asistente.js?v=20261019-67"></script>
+    <script src="js/tumes.js?v=20261019-67"></script>
+    <script src="js/servicios.js?v=20261019-67"></script>
+    <script src="js/compartir.js?v=20261019-67"></script>
+    <script src="js/guia.js?v=20261019-67"></script>
+    <script src="js/guia-ia.js?v=20261019-67"></script>
+    <script src="js/landing.js?v=20261019-67"></script>
 
-    <script src="apuntes-window.js?v=20261019-66"></script>
+    <script src="apuntes-window.js?v=20261019-67"></script>
 
-    <script src="v23.js?v=20261019-66"></script>
+    <script src="v23.js?v=20261019-67"></script>
 
 </body>
 </html>

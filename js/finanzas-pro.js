@@ -775,7 +775,7 @@
                 <div class="fin-graf-cifra" data-value="${total}">${financeMoney(total)}</div>
                 <div class="fin-graf-delta" data-base="${serie.length ? serie[0].v : 0}" data-texto="${periodo}">${serie.length > 1 ? `${delta(cambio)} ${periodo}.` : ''}</div>
                 ${serie.length > 1
-                    ? `<div class="fin-graf" role="img" aria-label="Evolución del patrimonio ${periodo}: de ${financeMoney(serie[0].v)} a ${financeMoney(total)}." onpointermove="financeGrafScrub(event)" onpointerdown="financeGrafScrub(event)" onpointerleave="financeGrafSoltar()"></div>`
+                    ? `<div class="fin-graf" role="img" aria-label="Evolución del patrimonio ${periodo}: de ${financeMoney(serie[0].v)} a ${financeMoney(total)}, diferencia ${cambio >= 0 ? 'positiva' : 'negativa'} de ${financeMoney(Math.abs(cambio))}." onpointermove="financeGrafScrub(event)" onpointerdown="financeGrafScrub(event)" onpointerleave="financeGrafSoltar()"></div>`
                     : `<p class="asig-vacio fin-graf-vacio">La gráfica empieza en cuanto apuntes o importes tu primer movimiento.</p>`}
                 <div class="fin-graf-pie">
                     ${tieneExtras ? `<button class="asig-enlace" onclick="alternarExtrasGrafica()">${financeGrafExtras ? 'solo las cuentas.' : 'con inversión y emergencia.'}</button>` : '<span></span>'}

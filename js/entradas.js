@@ -193,6 +193,8 @@
             setTimeout(() => {
                 if (container.contains(overlay) && overlay.dataset.cerrando) container.innerHTML = '';
                 if (repintarAlCerrar && !container.querySelector('.modal-overlay')) { repintarAlCerrar = false; render(); }
+                if (!container.querySelector('.modal-overlay') && modalAbridor?.isConnected) modalAbridor.focus({ preventScroll: true });
+                if (!container.querySelector('.modal-overlay')) modalAbridor = null;
             }, 160);
         }
 
