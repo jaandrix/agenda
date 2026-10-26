@@ -1247,8 +1247,8 @@
         .cal-month-cell {
             background: var(--bg-card);
             border-radius: 16px;
-            padding: 6px 4px 8px 4px;
-            min-height: 64px;
+            padding: 5px 4px 6px 4px;
+            min-height: 54px;
             text-align: center;
             border: 1px solid transparent;
             cursor: pointer;

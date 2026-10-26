@@ -651,7 +651,7 @@
             for (let i = 0; i < offset; i++) {
                 const day = daysInPrevMonth - offset + i + 1;
                 html +=
-                    `<div style="background:transparent;border-radius:16px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:600;opacity:0.3;color:var(--text-secondary)">${day}</span></div>`;
+                    `<div style="background:transparent;border-radius:16px;padding:5px 4px 6px 4px;min-height:54px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:600;opacity:0.3;color:var(--text-secondary)">${day}</span></div>`;
             }
 
             for (let d = 1; d <= daysInMonth; d++) {
@@ -688,7 +688,7 @@
             const remaining = (7 - (totalDays % 7)) % 7;
             for (let d = 1; d <= remaining; d++) {
                 html +=
-                    `<div style="background:transparent;border-radius:16px;padding:6px 4px 8px 4px;min-height:64px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:600;opacity:0.3;color:var(--text-secondary)">${d}</span></div>`;
+                    `<div style="background:transparent;border-radius:16px;padding:5px 4px 6px 4px;min-height:54px;text-align:center;border:1px solid transparent"><span style="font-size:13px;font-weight:600;opacity:0.3;color:var(--text-secondary)">${d}</span></div>`;
             }
 
             html += `</div>`;
