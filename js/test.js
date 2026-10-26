@@ -32,18 +32,48 @@ function datosTests() {
 }
 
 // Admite el JSON de la IA (con o sin ```), y también la lista de preguntas sola.
+// Las IAs no siempre obedecen al formato: se aceptan también comillas tipográficas o simples, claves sin comillas,
+// comas sobrantes, claves en inglés («question», «answer»), la correcta como letra («B») o como el texto de la opción,
+// y opciones como objeto ({"A": "..."}). Si llegan dos bloques, vale el primero.
+function testBloqueJson(t) {
+    const i = t.search(/[{[]/);
+    if (i < 0) return '';
+    let nivel = 0, cadena = null;
+    for (let k = i; k < t.length; k++) {
+        const ch = t[k];
+        if (cadena) { if (ch === '\\') k++; else if (ch === cadena) cadena = null; continue; }
+        if (ch === '"' || ch === "'") cadena = ch;
+        else if (ch === '{' || ch === '[') nivel++;
+        else if ((ch === '}' || ch === ']') && --nivel === 0) return t.slice(i, k + 1);
+    }
+    return t.slice(i);
+}
+function testParsear(t) {
+    try { return JSON.parse(t); } catch (_) { /* se intenta arreglar */ }
+    const arreglado = t.replace(/[“”«»]/g, '"').replace(/[‘’]/g, "'")
+        .replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, (m, s) => JSON.stringify(s.replace(/\\'/g, "'")))
+        .replace(/([{,]\s*)([A-Za-z_áéíóúñ][\wáéíóúñ]*)\s*:/g, '$1"$2":')
+        .replace(/,\s*([}\]])/g, '$1');
+    try { return JSON.parse(arreglado); } catch (_) { return null; }
+}
+function testCorrecta(q, opciones) {
+    let v = q?.correcta ?? q?.respuesta ?? q?.answer ?? q?.correct ?? q?.correctAnswer ?? q?.solucion;
+    if (typeof v === 'number' || /^\s*\d+\s*$/.test(String(v ?? ''))) return Number(v);
+    const s = String(v ?? '').trim();
+    if (/^[a-f]$/i.test(s) || /^[a-f]\)\s*/i.test(s)) return s.toLowerCase().charCodeAt(0) - 97;
+    const limpio = x => String(x).toLowerCase().replace(/^[a-f1-6][).:-]\s+/, '').trim();
+    return opciones.findIndex(o => limpio(o) === limpio(s));
+}
 function testLeer(texto) {
-    let t = String(texto || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
-    const a = t.indexOf('{'), b = t.lastIndexOf('}'), c = t.indexOf('[');
-    let obj;
-    try { obj = JSON.parse(c >= 0 && (a < 0 || c < a) ? t.slice(c, t.lastIndexOf(']') + 1) : t.slice(a, b + 1)); } catch (_) { return null; }
-    const lista = Array.isArray(obj) ? obj : obj?.preguntas;
+    const t = String(texto || '').trim().replace(/```(?:json)?/gi, '');
+    const obj = testParsear(testBloqueJson(t));
+    const lista = Array.isArray(obj) ? obj : obj?.preguntas || obj?.questions;
     if (!Array.isArray(lista)) return null;
-    const preguntas = lista.map(q => ({
-        pregunta: String(q?.pregunta || '').trim().slice(0, 500),
-        opciones: (Array.isArray(q?.opciones) ? q.opciones : []).map(o => String(o ?? '').trim().slice(0, 200)).filter(Boolean).slice(0, 6),
-        correcta: Number(q?.correcta),
-    })).filter(q => q.pregunta && q.opciones.length >= 2 && Number.isInteger(q.correcta) && q.correcta >= 0 && q.correcta < q.opciones.length).slice(0, 50);
+    const preguntas = lista.map(q => {
+        const crudas = q?.opciones ?? q?.options ?? q?.respuestas ?? [];
+        const opciones = (Array.isArray(crudas) ? crudas : crudas && typeof crudas === 'object' ? Object.values(crudas) : []).map(o => String(o ?? '').trim().slice(0, 200)).filter(Boolean).slice(0, 6);
+        return { pregunta: String(q?.pregunta ?? q?.question ?? '').trim().slice(0, 500), opciones, correcta: testCorrecta(q, opciones) };
+    }).filter(q => q.pregunta && q.opciones.length >= 2 && Number.isInteger(q.correcta) && q.correcta >= 0 && q.correcta < q.opciones.length).slice(0, 50);
     if (!preguntas.length) return null;
     return { titulo: String((Array.isArray(obj) ? '' : obj?.titulo) || 'test').trim().slice(0, 120), preguntas };
 }
