@@ -3,7 +3,7 @@
 -- sin ella puede leerlas aunque la página del panel sea pública. Ejecutar una vez en el SQL Editor.
 
 create or replace function public.panel_metricas(p_clave text)
-returns jsonb language plpgsql stable security definer set search_path = public, auth as $$
+returns jsonb language plpgsql volatile security definer set search_path = public, auth as $$
 declare r jsonb;
 begin
     if not panel_clave_ok(p_clave) then return null; end if;
