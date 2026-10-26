@@ -26,7 +26,7 @@
             --border-strong: #5a5850;
             --text-primary: #efede3;
             --text-secondary: #a9a89c;
-            --text-muted: #9b998f;
+            --text-muted: #a4a298;
             --accent: #efede3;
             --accent-contrast: #302f2c;
             --badge-pending-bg: #47453c;
@@ -72,7 +72,7 @@
             --border-strong: #B9B2A4;
             --text-primary: #161514;
             --text-secondary: #625D55;
-            --text-muted: #99938A;
+            --text-muted: #6a645b;
             --accent: #161514;
             --accent-contrast: #F2EFE9;
             --badge-pending-bg: #DDD8CE;
@@ -101,7 +101,7 @@
             --border-strong: #D8D2C4;
             --text-primary: #302f2c;
             --text-secondary: #736F63;
-            --text-muted: #A6A196;
+            --text-muted: #777267;
             --accent: #302f2c;
             --accent-contrast: #FAF8F5;
             --badge-pending-bg: #F1EEE8;
@@ -8538,7 +8538,7 @@ body.papel.pizarra {
     --border-strong: #AAB7B7;
     --text-primary: #1A2D42;
     --text-secondary: #2E4156;
-    --text-muted: #6E7D86;
+    --text-muted: #46555e;
     --accent: #1A2D42;
     --accent-contrast: #D4D8DD;
     --badge-pending-bg: #C0C8CA;
@@ -9081,7 +9081,7 @@ body.papel.oliva {
     --border-strong: #C4C9B6;
     --text-primary: #252A22;
     --text-secondary: #687064;
-    --text-muted: #8C9287;
+    --text-muted: #696f64;
     --accent: #667447;
     --accent-contrast: #FFFEFA;
     --badge-pending-bg: #EAD5DF;
