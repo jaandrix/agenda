@@ -1395,7 +1395,7 @@
             for (let dia = 1; dia <= diasMes; dia++) {
                 const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                 const ocupado = mobileOcupacionDia(iso) > 0;
-                const clases = ['m-punto', iso < hoy ? 'pasado' : 'futuro', ocupado ? 'ocupado' : '', iso === hoy ? 'hoy' : '', iso === sel ? 'sel' : '', festivoDe(iso) ? 'festivo' : ''].filter(Boolean).join(' ');
+                const clases = ['m-punto', iso < hoy ? 'pasado' : 'futuro', ocupado ? 'ocupado' : '', iso === hoy ? 'hoy' : '', iso === sel ? 'sel' : '', festivoDe(iso) ? (festivosDiscretos() ? 'festivo-punto' : 'festivo') : ''].filter(Boolean).join(' ');
                 celdas.push(`<button class="${clases}" style="--o:${huecos + dia}" onclick="mobileElegirDia('${iso}')" aria-label="${dia} de ${MOBILE_MESES[m]}${ocupado ? ', con cosas' : ''}"><span>${dia}</span></button>`);
             }
             const resto = (7 - (celdas.length % 7)) % 7;
@@ -1410,7 +1410,7 @@
             const tiraDe = k => Array.from({ length: 7 }, (_, i) => { const x = new Date(lunes); x.setDate(x.getDate() + k * 7 + i); return x; }).map((x, i) => {
                 const iso = isoLocal(x);
                 const ocupado = mobileOcupacionDia(iso) > 0;
-                return `<button class="m-dia-pill ${iso === sel ? 'sel' : ''} ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''} ${festivoDe(iso) ? 'festivo' : ''}" onclick="mobileElegirDia('${iso}')" aria-label="${MOBILE_DIAS_LARGOS[x.getDay()]} ${x.getDate()}${ocupado ? ', con cosas' : ''}" ${k ? 'tabindex="-1"' : ''}>
+                return `<button class="m-dia-pill ${iso === sel ? 'sel' : ''} ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''} ${festivoDe(iso) ? (festivosDiscretos() ? 'festivo-punto' : 'festivo') : ''}" onclick="mobileElegirDia('${iso}')" aria-label="${MOBILE_DIAS_LARGOS[x.getDay()]} ${x.getDate()}${ocupado ? ', con cosas' : ''}" ${k ? 'tabindex="-1"' : ''}>
                     <small>${['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</small><b>${x.getDate()}</b><i class="${ocupado ? 'on' : ''}"></i></button>`;
             }).join('');
             const etiqueta = mobileVerMes ? `${MOBILE_MESES[m]}${y !== new Date().getFullYear() ? ' ' + y : ''}.` : `${MOBILE_MESES[lunes.getMonth()]}${semana[6].getMonth() !== lunes.getMonth() ? ' – ' + MOBILE_MESES[semana[6].getMonth()] : ''}.`;

@@ -674,12 +674,13 @@
                     `<span style="font-size:8px;line-height:5px;color:var(--text-secondary);flex-shrink:0">+${dayEntries.length - 4}</span>` :
                     '';
 
-                const festivo = festivoDe(dateStr);
+                const festivo = festivoDe(dateStr) && !festivosDiscretos() ? festivoDe(dateStr) : null;
+                const festivoPunto = festivosDiscretos() && festivoDe(dateStr) ? `<span class="cal-punto-festivo" title="${escapeHtml(festivoDe(dateStr).nombre)}"></span>` : '';
                 html += `
                 <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''} ${festivo ? 'es-festivo' : ''}" data-cal-date="${dateStr}" onclick="showDayEntries('${dateStr}')" ${festivo ? `title="${escapeHtml(festivo.nombre)}"` : ''}>
                     <span class="cal-num" style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
                     ${festivo ? `<span class="cal-festivo">${escapeHtml(festivo.nombre)}</span>` : ''}
-                    <div style="display:flex;flex-direction:row;flex-wrap:wrap;gap:3px;align-items:center;justify-content:center">${barsHtml}${extra}</div>
+                    <div style="display:flex;flex-direction:row;flex-wrap:wrap;gap:3px;align-items:center;justify-content:center">${festivoPunto}${barsHtml}${extra}</div>
                 </div>`;
             }
 

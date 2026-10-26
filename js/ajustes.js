@@ -652,7 +652,8 @@
                                     </div>`).join('') : '<div class="ajuste-texto">Sin prompts guardados.</div>'}
                             </div>`)}
                         ${bloqueAjuste('settings-advanced-section', 'avanzado', 'modo desarrollador.', 'Enseña funciones ocultas, como Vault.', `
-                            <button class="finance-pro-switch ${devModeActive ? 'on' : ''}" onclick="toggleDeveloperMode()" aria-label="Modo desarrollador"><span class="finance-pro-switch-knob"></span></button>`)}
+                            <button class="finance-pro-switch ${devModeActive ? 'on' : ''}" onclick="toggleDeveloperMode()" aria-label="Modo desarrollador"><span class="finance-pro-switch-knob"></span></button>
+                            ${devModeActive ? `<div class="ajuste-botones" style="margin-top:12px"><button class="btn-secondary" style="width:auto" onclick="openAjustesAdmin()">más ajustes.</button></div>` : ''}`)}
                     </div>
                     </div>
                     <div class="ajustes-seccion" data-grupo="riesgo"><div class="ajustes-grupo" id="ajg-riesgo">zona de riesgo.</div>
@@ -961,3 +962,22 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); return; }
             openCalendarioFeed();
         }
+
+// Ajustes que solo se ven con el modo desarrollador: casillas que cambian cómo se comporta la app.
+// Se guardan en servicios.admin (sincronizado), así valen en todos los dispositivos.
+const AJUSTES_ADMIN = [
+    ['festivosDiscretos', 'festivos discretos.', 'Los festivos ya no se nombran ni se colorean en el calendario: el día lleva un punto amarillo, como un evento, y el nombre sale al pulsarlo.'],
+];
+function ajustesAdmin() { return (servicios && servicios.admin) || {}; }
+function festivosDiscretos() { return !!ajustesAdmin().festivosDiscretos; }
+function openAjustesAdmin() {
+    const a = ajustesAdmin();
+    showModal(`<div class="modal-title">más ajustes.</div>
+        <p class="finance-modal-note" style="margin:0 0 12px">Solo con el modo desarrollador. Se guardan en tu cuenta.</p>
+        <div class="admin-lista">${AJUSTES_ADMIN.map(([k, t, d]) => `<label class="admin-fila"><input type="checkbox" ${a[k] ? 'checked' : ''} onchange="cambiarAjusteAdmin('${k}', this.checked)"><span><b>${t}</b><small>${d}</small></span></label>`).join('')}</div>`);
+}
+async function cambiarAjusteAdmin(clave, valor) {
+    servicios.admin = { ...ajustesAdmin(), [clave]: valor };
+    repintarTrasModal();
+    try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}

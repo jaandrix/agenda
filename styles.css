@@ -9686,3 +9686,15 @@ body.mobile-standalone .anual-overlay, body.pwa .anual-overlay { transition: non
 .vengo-fila > span { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .vengo-fila small { color: var(--text-secondary); font-size: 12.5px; line-height: 1.4; }
 .vengo-fila .btn-secondary { width: auto; flex-shrink: 0; }
+
+/* Más ajustes (modo desarrollador) y festivos discretos. */
+.admin-lista { display: flex; flex-direction: column; }
+.admin-fila { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); cursor: pointer; }
+.admin-fila input { width: 18px; height: 18px; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--text-primary); }
+.admin-fila span { display: flex; flex-direction: column; gap: 3px; }
+.admin-fila small { color: var(--text-secondary); font-size: 12.5px; line-height: 1.4; }
+.cal-punto-festivo { width: 5px; height: 5px; border-radius: 50%; display: block; flex-shrink: 0; background: #e2b93b; }
+.m-punto.festivo-punto { position: relative; }
+.m-dia-pill.festivo-punto i:not(.on) { background: #e2b93b; }
+.m-dia-pill.festivo-punto i.on { box-shadow: 7px 0 0 #e2b93b; transform: translateX(-3.5px); }
+.m-punto.festivo-punto::before { content: ''; position: absolute; left: 50%; bottom: 3px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #e2b93b; }
