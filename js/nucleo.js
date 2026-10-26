@@ -318,7 +318,7 @@
                 <div id="paywall-box">
                     <h1>Confirmando tu <span class="login-brand-accent">pago</span></h1>
                     <p class="sub">Puede tardar unos segundos en reflejarse. Si no cambia, pulsa reintentar.</p>
-                    <button onclick="startApp()">Reintentar ahora</button>
+                    <button onclick="startApp()">reintentar ahora.</button>
                     <a class="login-back" onclick="handleLogout()">Cerrar sesión</a>
                 </div>
             ` : (() => {
@@ -354,14 +354,14 @@
             return `
                 <div class="paywall-plans">
                     <button class="paywall-plan ${elegido === 'mensual' ? 'paywall-plan-highlight' : ''}" onclick="${accion('mensual')}">
-                        ${elegido === 'mensual' ? '<span class="paywall-plan-badge">Tu elección</span>' : ''}
                         <span class="paywall-plan-name">Mensual</span>
                         <span class="paywall-plan-price">1,99€<span class="paywall-plan-period">/mes</span></span>
+                        ${elegido === 'mensual' ? '<span class="paywall-plan-badge">tu elección.</span>' : ''}
                     </button>
                     <button class="paywall-plan ${elegido === 'anual' || !elegido ? 'paywall-plan-highlight' : ''}" onclick="${accion('anual')}">
-                        <span class="paywall-plan-badge">${elegido === 'anual' ? 'Tu elección' : 'Ahorra ~20%'}</span>
                         <span class="paywall-plan-name">Anual</span>
                         <span class="paywall-plan-price">18,99€<span class="paywall-plan-period">/año</span></span>
+                        <span class="paywall-plan-badge">${elegido === 'anual' ? 'tu elección.' : 'sale a 1,58 € al mes.'}</span>
                     </button>
                 </div>
                 <button class="paywall-fundador" data-plazas-fundador onclick="${accion('fundador')}">
@@ -554,7 +554,7 @@
                         <div class="about-footer-desc">Funciona desde cualquier ordenador o móvil del mundo con solo iniciar sesión. Tus datos son siempre tuyos: exporta una copia completa cuando quieras, sin depender de nadie.</div>
                     </div>
                 </div>
-                <button class="btn-modal-primary" onclick="closeModal()">Entendido</button>
+                <button class="btn-modal-primary" onclick="closeModal()">entendido.</button>
             `);
         }
 
@@ -3003,8 +3003,8 @@
                 <div class="command-palette-box logout-confirm-box">
                     <div class="command-palette-prompt" style="margin-bottom:20px">¿Quieres cerrar tu <span class="cp-accent">sesión</span>?</div>
                     <div class="logout-confirm-actions">
-                        <button class="btn-secondary" onclick="closeLogoutConfirm()">No</button>
-                        <button class="btn-modal-primary" onclick="confirmLogout()">Sí</button>
+                        <button class="btn-secondary" onclick="closeLogoutConfirm()">no.</button>
+                        <button class="btn-modal-primary" onclick="confirmLogout()">sí.</button>
                     </div>
                 </div>`;
             document.body.appendChild(overlay);

@@ -223,7 +223,7 @@
                 ${renderCartaFields(null, esCategoriaCartas(collectibleCategories[0]?.id))}
                 <div class="modal-label">Valor de mercado (€)</div>
                 <input id="collectible-value" class="modal-input" type="number" min="0" step="0.01" value="0">
-                <button class="btn-modal-primary" onclick="saveNewCollectible()">Añadir</button>
+                <button class="btn-modal-primary" onclick="saveNewCollectible()">añadir.</button>
             `);
             setTimeout(() => document.getElementById('collectible-name')?.focus(), 50);
         }
@@ -259,7 +259,7 @@
                 <div class="modal-label">Valor de mercado (€)</div>
                 <input id="collectible-value" class="modal-input" type="number" min="0" step="0.01" value="${Number(item.value) || 0}">
                 ${esCategoriaCartas(item.category) ? '<div id="coll-mercado" class="coll-mercado"></div>' : ''}
-                <button class="btn-modal-primary" onclick="saveEditCollectible('${id}')">Guardar cambios</button>
+                <button class="btn-modal-primary" onclick="saveEditCollectible('${id}')">guardar cambios.</button>
             `);
             if (esCategoriaCartas(item.category)) cargarMercadoCarta(id);
         }
@@ -443,7 +443,7 @@
                 <div class="modal-title">+ Categoría de coleccionables</div>
                 <div class="modal-label">Nombre de la categoría</div>
                 <input id="collectible-category-name" class="modal-input" type="text" placeholder="Ej: Figuras, Vinilos, Cómics...">
-                <button class="btn-modal-primary" onclick="saveNewCollectibleCategory()">Añadir categoría</button>
+                <button class="btn-modal-primary" onclick="saveNewCollectibleCategory()">añadir categoría.</button>
             `);
             setTimeout(() => document.getElementById('collectible-category-name')?.focus(), 50);
         }

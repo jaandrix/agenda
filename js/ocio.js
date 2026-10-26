@@ -83,8 +83,8 @@
                         <div style="font-size:18px;font-weight:700">${escapeHtml(list.name)} (${items.length})</div>
                         <div style="display:flex;gap:8px">
                             <button class="finance-oneoff-btn" onclick="openCultureListPicker('${list.id}')">+ Añadir</button>
-                            <button class="finance-oneoff-btn" onclick="abrirCompartirListaModal('${list.id}')">Compartir</button>
-                            <button class="finance-oneoff-btn" style="color:#dc2626" onclick="deleteCultureList('${list.id}')">Eliminar lista</button>
+                            <button class="finance-oneoff-btn" onclick="abrirCompartirListaModal('${list.id}')">compartir.</button>
+                            <button class="finance-oneoff-btn" style="color:#dc2626" onclick="deleteCultureList('${list.id}')">eliminar lista.</button>
                         </div>
                     </div>
                     ${items.length ? renderMediaCardGrid(items, e => TYPE_LABELS[e.type] || '') : `
@@ -145,7 +145,7 @@
                 <div class="modal-title">Añadir a "${escapeHtml(list.name)}"</div>
                 <input id="culture-list-picker-filter" class="modal-input" placeholder="Buscar..." oninput="filterCultureListPicker(this.value)">
                 <div id="culture-list-picker-items" style="max-height:340px;overflow-y:auto;margin-top:8px">${renderCultureListPickerItems(options, '')}</div>
-                <button class="btn-modal-primary" style="margin-top:12px" onclick="confirmCultureListPicker()">Confirmar</button>
+                <button class="btn-modal-primary" style="margin-top:12px" onclick="confirmCultureListPicker()">confirmar.</button>
             `);
             setTimeout(() => document.getElementById('culture-list-picker-filter')?.focus(), 50);
         }
@@ -228,7 +228,7 @@
                 </select>
                 <div class="modal-label">Nota (opcional)</div>
                 <textarea id="compartir-lista-nota" class="modal-input" rows="3" placeholder="Algo que quieras contarle sobre la lista"></textarea>
-                <button class="btn-modal-primary" onclick="enviarListaCompartida('${listId}')">Enviar lista</button>
+                <button class="btn-modal-primary" onclick="enviarListaCompartida('${listId}')">enviar lista.</button>
             `);
         }
 
@@ -310,7 +310,7 @@
                             ${l.nota ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${linkifyText(l.nota)}</div>` : ''}
                             <div style="display:flex;gap:8px;margin-top:10px">
                                 <button class="btn-modal-primary" style="width:auto" onclick="anadirListaCompartidaAMisListas('${l.id}')">+ Añadir a mis listas</button>
-                                <button class="btn-secondary" style="width:auto" onclick="descartarListaCompartida('${l.id}')">Descartar</button>
+                                <button class="btn-secondary" style="width:auto" onclick="descartarListaCompartida('${l.id}')">descartar.</button>
                             </div>
                         </div>`;
                     }).join('')}
@@ -1253,7 +1253,7 @@
                 </select>
                 <div class="modal-label">Nota (opcional)</div>
                 <textarea id="recomendar-nota" class="modal-input" rows="3" placeholder="¿Por qué se lo recomiendas?"></textarea>
-                <button class="btn-modal-primary" onclick="enviarRecomendacion('${entryId}')">Enviar recomendación</button>
+                <button class="btn-modal-primary" onclick="enviarRecomendacion('${entryId}')">enviar recomendación.</button>
             `);
         }
 
@@ -1316,8 +1316,8 @@
                 </div>
                 <div class="entry-detail-actions">
                     <button class="btn-modal-primary" onclick="anadirRecomendacionABiblioteca('${recId}')">+ Añadir a mi biblioteca</button>
-                    <button class="btn-secondary" style="width:auto" onclick="descartarRecomendacion('${recId}')">No me interesa</button>
-                    <button class="btn-secondary" style="width:auto" onclick="closeModal()">Cerrar</button>
+                    <button class="btn-secondary" style="width:auto" onclick="descartarRecomendacion('${recId}')">no me interesa.</button>
+                    <button class="btn-secondary" style="width:auto" onclick="closeModal()">cerrar.</button>
                 </div>
             `);
         }
@@ -1408,7 +1408,7 @@
                 </select>
                 <div class="modal-label">Nota (opcional)</div>
                 <textarea id="compartir-viaje-nota" class="modal-input" rows="3" placeholder="Algo que quieras contarle sobre el viaje"></textarea>
-                <button class="btn-modal-primary" onclick="enviarViajeCompartido('${tripId}')">Enviar viaje</button>` : ''}
+                <button class="btn-modal-primary" onclick="enviarViajeCompartido('${tripId}')">enviar viaje.</button>` : ''}
             `);
         }
 
@@ -1503,7 +1503,7 @@
                             ${v.nota ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;font-style:italic">"${escapeHtml(v.nota)}"</div>` : ''}
                             <div style="display:flex;gap:8px;margin-top:10px">
                                 <button class="btn-modal-primary" style="width:auto;padding:6px 12px;font-size:12px" onclick="anadirViajeCompartidoAMisViajes('${v.id}')">+ Añadir a mis viajes</button>
-                                <button class="btn-secondary" style="width:auto;padding:6px 12px;font-size:12px" onclick="descartarViajeCompartido('${v.id}')">Descartar</button>
+                                <button class="btn-secondary" style="width:auto;padding:6px 12px;font-size:12px" onclick="descartarViajeCompartido('${v.id}')">descartar.</button>
                             </div>
                         </div>`;
                     }).join('')}

@@ -577,7 +577,7 @@
                         </div>
                         <div class="vault-input-row">
                             <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
-                            <button onclick="addVaultTask()">Añadir</button>
+                            <button onclick="addVaultTask()">añadir.</button>
                         </div>
                         <div class="empty-state">
                             
@@ -602,7 +602,7 @@
                     </div>
                     <div class="vault-input-row">
                         <input type="text" id="vault-input" placeholder="Escribe una tarea..." onkeydown="if(event.key==='Enter')addVaultTask()">
-                        <button onclick="addVaultTask()">Añadir</button>
+                        <button onclick="addVaultTask()">añadir.</button>
                     </div>
 
                     ${pending.length ? `

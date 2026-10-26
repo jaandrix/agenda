@@ -43,7 +43,7 @@
             <div class="card" style="margin-bottom:16px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                     <div class="card-title">Hoy (${doneCount}/${totalCount})</div>
-                    <button class="btn-secondary" style="width:auto;padding:2px 10px;font-size:11px" onclick="switchView('planner')">Ver planificador</button>
+                    <button class="btn-secondary" style="width:auto;padding:2px 10px;font-size:11px" onclick="switchView('planner')">ver planificador.</button>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:2px">
                     ${plannerToday.map(it => `

@@ -370,7 +370,7 @@
             showModal(`
                 <div class="modal-title">Profesor – ${escapeHtml(s.name)}</div>
                 <input id="subject-professor-input" class="modal-input" placeholder="Nombre del profesor" value="${escapeHtml(s.professor || '')}">
-                <button class="btn-modal-primary" onclick="saveSubjectProfessor('${id}')">Guardar</button>
+                <button class="btn-modal-primary" onclick="saveSubjectProfessor('${id}')">guardar.</button>
             `);
             setTimeout(() => document.getElementById('subject-professor-input')?.focus(), 50);
         }
@@ -392,7 +392,7 @@
                 <input id="subject-name" class="modal-input" placeholder="Ej: Cálculo I">
                 <div class="modal-label">Color</div>
                 <input id="subject-color" class="modal-input" type="color" value="#5b8def" style="height:40px;padding:4px">
-                <button class="btn-modal-primary" onclick="saveNewSubject()">Añadir asignatura</button>
+                <button class="btn-modal-primary" onclick="saveNewSubject()">añadir asignatura.</button>
             `);
             setTimeout(() => document.getElementById('subject-name')?.focus(), 50);
         }
@@ -879,7 +879,7 @@
                 <input id="schedule-time" class="modal-input" type="time">
                 <div class="modal-label">Asignatura / texto</div>
                 <input id="schedule-subject" class="modal-input" placeholder="Ej: Cálculo I - Aula 3">
-                <button class="btn-modal-primary" onclick="saveScheduleBlock('${dayKey}')">Añadir</button>
+                <button class="btn-modal-primary" onclick="saveScheduleBlock('${dayKey}')">añadir.</button>
             `);
         }
 
@@ -940,8 +940,8 @@
 
             const toggle = `
                 <div class="culture-tabs" style="margin-bottom:18px">
-                    <button class="culture-tab ${projectViewMode === 'list' ? 'active' : ''}" onclick="setProjectViewMode('list')">Lista</button>
-                    <button class="culture-tab ${projectViewMode === 'kanban' ? 'active' : ''}" onclick="setProjectViewMode('kanban')">Tablero</button>
+                    <button class="culture-tab ${projectViewMode === 'list' ? 'active' : ''}" onclick="setProjectViewMode('list')">lista.</button>
+                    <button class="culture-tab ${projectViewMode === 'kanban' ? 'active' : ''}" onclick="setProjectViewMode('kanban')">tablero.</button>
                 </div>`;
 
             return `<div style="max-width:980px">${toggle}<div class="cal-view-anim">${projectViewMode === 'kanban' ? renderProjectsKanban(projects) : renderProjectsList(projects)}</div></div>`;

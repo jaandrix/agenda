@@ -182,9 +182,9 @@
 
             let html = `<div style="max-width:980px">
                 <div class="culture-tabs" style="margin-bottom:18px">
-                    <button class="culture-tab ${goalViewMode === 'list' ? 'active' : ''}" onclick="setGoalViewMode('list')">Lista</button>
-                    <button class="culture-tab ${goalViewMode === 'kanban' ? 'active' : ''}" onclick="setGoalViewMode('kanban')">Tablero</button>
-                    <button class="culture-tab ${goalViewMode === 'metodo' ? 'active' : ''}" onclick="setGoalViewMode('metodo')">Método</button>
+                    <button class="culture-tab ${goalViewMode === 'list' ? 'active' : ''}" onclick="setGoalViewMode('list')">lista.</button>
+                    <button class="culture-tab ${goalViewMode === 'kanban' ? 'active' : ''}" onclick="setGoalViewMode('kanban')">tablero.</button>
+                    <button class="culture-tab ${goalViewMode === 'metodo' ? 'active' : ''}" onclick="setGoalViewMode('metodo')">método.</button>
                 </div>
                 <div class="goals-summary">
                     <div><strong>${activeCount}</strong><span>activos</span></div>

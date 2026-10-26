@@ -440,8 +440,8 @@
             showModal(`
                 <div class="modal-title">Modo privacidad</div>
                 <div class="finance-modal-note" style="margin:4px 0 18px">¿Quieres entrar a Finanzas con el modo privacidad activado (cifras ocultas)?</div>
-                <button class="btn-modal-primary" id="finance-privacy-yes-btn" onclick="answerFinancePrivacyPrompt(true)">Sí</button>
-                <button class="btn-secondary" style="margin-top:10px" onclick="answerFinancePrivacyPrompt(false)">No</button>
+                <button class="btn-modal-primary" id="finance-privacy-yes-btn" onclick="answerFinancePrivacyPrompt(true)">sí.</button>
+                <button class="btn-secondary" style="margin-top:10px" onclick="answerFinancePrivacyPrompt(false)">no.</button>
             `);
             setTimeout(() => document.getElementById('finance-privacy-yes-btn')?.focus(), 0);
         }
@@ -566,7 +566,7 @@
                 <div class="modal-title">+ Tarea semanal</div>
                 <div class="modal-label">¿Qué tienes que hacer?</div>
                 <input id="weekly-task-input" class="modal-input" maxlength="140" placeholder="Ej: Comprar comida para la semana">
-                <button class="btn-modal-primary" onclick="saveWeeklyTask()">Añadir tarea</button>
+                <button class="btn-modal-primary" onclick="saveWeeklyTask()">añadir tarea.</button>
             `);
             setTimeout(() => document.getElementById('weekly-task-input')?.focus(), 50);
         }

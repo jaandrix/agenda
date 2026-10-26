@@ -232,7 +232,7 @@
                 <input id="finance-target-emergency" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.emergencyTarget || 0)}">
                 <div class="modal-label">Fondo indexado (€)</div>
                 <input id="finance-target-invested" class="modal-input" type="number" min="0" step="0.01" value="${Number(financeProfile.investedTarget || 0)}">
-                <button class="btn-modal-primary" onclick="saveFinanceTargetEditor()">Guardar</button>
+                <button class="btn-modal-primary" onclick="saveFinanceTargetEditor()">guardar.</button>
             `);
         }
 
@@ -251,7 +251,7 @@
                     ${renderRecurringColumn('subscription','Suscripciones','↻')}
                     ${renderRecurringColumn('fixed_expense','Gastos fijos','■')}
                 </div>
-                <button class="btn-secondary" style="width:auto;margin-top:16px" onclick="closeModal()">Cerrar</button>
+                <button class="btn-secondary" style="width:auto;margin-top:16px" onclick="closeModal()">cerrar.</button>
             `);
         }
 
@@ -295,7 +295,7 @@
                 <div class="modal-title">Corregir registros</div>
                 <div class="finance-modal-note" style="margin-bottom:12px">Ajusta o rellena el saldo de cada cuenta para los 3 meses anteriores. Deja en blanco lo que no sepas. El mes actual se actualiza solo con tus cifras en vivo.</div>
                 ${rows}
-                <button class="btn-modal-primary" onclick="saveFinanceHistoryCorrection()">Guardar correcciones</button>
+                <button class="btn-modal-primary" onclick="saveFinanceHistoryCorrection()">guardar correcciones.</button>
             `);
         }
 
@@ -362,7 +362,7 @@
                 <div class="modal-label">Ahorrado hasta ahora (€)</div>
                 <input id="savings-goal-current" class="modal-input" type="number" min="0" step="0.01" value="${goal ? goal.current : '0'}" placeholder="0.00">
                 <button class="btn-modal-primary" onclick="saveFinanceSavingsGoal('${goal ? goal.id : ''}')">${goal ? 'Guardar' : 'Crear meta'}</button>
-                ${goal ? `<button class="btn-secondary" style="margin-top:8px" onclick="deleteFinanceSavingsGoal('${goal.id}')">Eliminar meta</button>` : ''}
+                ${goal ? `<button class="btn-secondary" style="margin-top:8px" onclick="deleteFinanceSavingsGoal('${goal.id}')">eliminar meta.</button>` : ''}
             `);
             setTimeout(() => document.getElementById('savings-goal-name')?.focus(), 50);
         }
@@ -464,8 +464,8 @@
                 <input id="edit-acc-name" class="modal-input" value="${escapeHtml(acc.name)}">
                 <div class="modal-label">Saldo actual (€)</div>
                 <input id="edit-acc-balance" class="modal-input" type="number" step="0.01" value="${Number(acc.balance || 0)}">
-                <button class="btn-modal-primary" onclick="saveCustomAccountEditor('${id}')">Guardar</button>
-                <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceCustomAccount('${id}')">Eliminar cuenta</button>
+                <button class="btn-modal-primary" onclick="saveCustomAccountEditor('${id}')">guardar.</button>
+                <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceCustomAccount('${id}')">eliminar cuenta.</button>
             `);
             setTimeout(() => document.getElementById('edit-acc-name')?.focus(), 50);
         }
@@ -516,7 +516,7 @@
                 <div class="modal-label" style="margin-top:8px">Vacaciones</div>
                 <input id="mfu-vacation" class="modal-input" type="number" step="0.01" value="${financeProfile.vacation || 0}">
 
-                <button class="btn-modal-primary" style="margin-top:16px" onclick="saveMonthlyFinanceUpdate('${monthKey}')">Guardar actualización</button>
+                <button class="btn-modal-primary" style="margin-top:16px" onclick="saveMonthlyFinanceUpdate('${monthKey}')">guardar actualización.</button>
             `);
         }
 
@@ -560,7 +560,7 @@
                     <div style="font-size:24px;font-weight:700;margin:8px 0">${financeMoney(before)} → ${financeMoney(after)}</div>
                     <div style="font-size:15px;font-weight:600;color:${delta >= 0 ? '#10b981' : '#dc2626'}">${delta >= 0 ? '+' : ''}${financeMoney(delta)} este mes</div>
                 </div>
-                <button class="btn-modal-primary" onclick="closeModal()">Aceptar</button>
+                <button class="btn-modal-primary" onclick="closeModal()">aceptar.</button>
             `);
         }
 
@@ -1121,7 +1121,7 @@
                 <tr class="budget-history-total-row"><td>Total</td><td>${financeMoney(totalPrevisto)}</td><td>${financeMoney(totalReal)}</td><td>${financeMoney(totalPrevisto - totalReal)}</td></tr>
             </table>
             ${h.saved ? `<div class="finance-empty-line" style="margin-top:10px">Sin asignar a ninguna casilla, ahorrado: <strong style="color:var(--text-primary)">${financeMoney(h.saved)}</strong></div>` : ''}
-            <button class="finance-oneoff-btn" style="margin-top:10px;color:#c2455c;border-color:#c2455c" onclick="deleteBudgetHistoryMonth('${h.month}')">Eliminar registro</button>`;
+            <button class="finance-oneoff-btn" style="margin-top:10px;color:#c2455c;border-color:#c2455c" onclick="deleteBudgetHistoryMonth('${h.month}')">eliminar registro.</button>`;
         }
 
         // Un mes "grabado" no es definitivo: se puede sacar de vuelta a
@@ -1174,7 +1174,7 @@
                 <input id="inv-acc-name" class="modal-input" placeholder="Ej. Fondo indexado MSCI World, MyInvestor...">
                 <div class="modal-label">Notas (opcional)</div>
                 <input id="inv-acc-notes" class="modal-input" placeholder="Ej. ISIN, bróker...">
-                <button class="btn-modal-primary" onclick="saveNewInvestmentAccount()">Crear cuenta</button>
+                <button class="btn-modal-primary" onclick="saveNewInvestmentAccount()">crear cuenta.</button>
             `);
             setTimeout(() => document.getElementById('inv-acc-name')?.focus(), 50);
         }
@@ -1218,7 +1218,7 @@
                 <input id="inv-acc-update-amount" class="modal-input" type="number" min="0" step="0.01" value="${existing ? existing.amount : ''}" placeholder="0.00">
                 <div class="modal-label">Valor total de la cuenta a fecha de hoy (€)</div>
                 <input id="inv-acc-update-value" class="modal-input" type="number" min="0" step="0.01" value="${existing && existing.value !== undefined ? existing.value : ''}" placeholder="0.00">
-                <button class="btn-modal-primary" style="margin-top:10px" onclick="saveAccountMonthlyUpdate('${accountId}','${monthKey}')">Guardar</button>
+                <button class="btn-modal-primary" style="margin-top:10px" onclick="saveAccountMonthlyUpdate('${accountId}','${monthKey}')">guardar.</button>
             `);
             setTimeout(() => document.getElementById('inv-acc-update-amount')?.focus(), 50);
         }

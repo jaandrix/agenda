@@ -252,9 +252,9 @@
                         <div class="trip-manager-sub">${escapeHtml(t.destination || '')}${t.startDate ? ', ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${financeProGastoViaje(t.id) ? `, ${financeMoney(financeProGastoViaje(t.id))} gastados` : ''}</div>
                     </div>
                     <div class="trip-manager-botones" style="display:flex;gap:8px;flex-shrink:0">
-                        <button class="btn-secondary" style="width:auto" onclick="abrirCompartirViajeModal('${t.id}')">Compartir</button>
+                        <button class="btn-secondary" style="width:auto" onclick="abrirCompartirViajeModal('${t.id}')">compartir.</button>
                         <button class="btn-secondary" style="width:auto" onclick="openEditEntry('${t.id}')"><i class='ico ico-lapiz' aria-hidden=true></i> Editar</button>
-                        <button class="btn-secondary btn-danger-pill" style="width:auto" onclick="deleteTripFromManager('${t.id}')">Eliminar</button>
+                        <button class="btn-secondary btn-danger-pill" style="width:auto" onclick="deleteTripFromManager('${t.id}')">eliminar.</button>
                     </div>
                 </div>
                 <div class="culture-tabs trip-tabs" style="margin-top:16px">
@@ -361,7 +361,7 @@
                 </div>
                 <div class="modal-label">Asiento (opcional)</div><input id="tr-asiento" class="modal-input">
                 <div class="modal-label">Notas (opcional)</div><textarea id="tr-notas" class="modal-input" rows="2" placeholder="Terminal, equipaje, puerta..."></textarea>
-                <button class="btn-modal-primary" onclick="saveTripReserva('${tripId}','transportes')">Guardar</button>
+                <button class="btn-modal-primary" onclick="saveTripReserva('${tripId}','transportes')">guardar.</button>
             `);
         }
         function openAddAlojamiento(tripId) {
@@ -375,7 +375,7 @@
                 </div>
                 <div class="modal-label">Reserva (opcional)</div><input id="al-reserva" class="modal-input" placeholder="Nº de confirmación">
                 <div class="modal-label">Notas (opcional)</div><textarea id="al-notas" class="modal-input" rows="2" placeholder="Check-in, desayuno, contacto..."></textarea>
-                <button class="btn-modal-primary" onclick="saveTripReserva('${tripId}','alojamientos')">Guardar</button>
+                <button class="btn-modal-primary" onclick="saveTripReserva('${tripId}','alojamientos')">guardar.</button>
             `);
         }
         async function saveTripReserva(tripId, lista) {
@@ -519,7 +519,7 @@
                 <div class="modal-label">Qué</div><input id="it-titulo" class="modal-input" placeholder="Visita al Coliseo">
                 <div class="modal-label">Lugar (opcional, para el mapa)</div><input id="it-lugar" class="modal-input" placeholder="Colosseo, Roma">
                 <div class="modal-label">Notas (opcional)</div><textarea id="it-notas" class="modal-input" rows="2"></textarea>
-                <button class="btn-modal-primary" onclick="saveItineraryItem('${tripId}')">Guardar</button>
+                <button class="btn-modal-primary" onclick="saveItineraryItem('${tripId}')">guardar.</button>
             `);
         }
         // Geocodifica un texto de lugar a lat/lon vía Nominatim (OpenStreetMap,
@@ -592,8 +592,8 @@
                 const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString('es-ES') : '';
                 const isHtml = /\.html?$/i.test(doc.name);
                 const openBtn = isHtml
-                    ? `<button class="doc-action-download" onclick="openEntryDocHtml('trips','${tripId}','${jsAttr(doc.name)}')">Ver</button>`
-                    : `<button class="doc-action-download" onclick="downloadTripDocument('${tripId}','${jsAttr(doc.name)}')">Descargar</button>`;
+                    ? `<button class="doc-action-download" onclick="openEntryDocHtml('trips','${tripId}','${jsAttr(doc.name)}')">ver.</button>`
+                    : `<button class="doc-action-download" onclick="downloadTripDocument('${tripId}','${jsAttr(doc.name)}')">descargar.</button>`;
                 return `<div class="doc-item">
                     <div class="doc-info"><span style="font-size:20px">${isHtml ? '▥' : '📄'}</span><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ', ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
@@ -681,7 +681,7 @@
                 return `<div class="doc-item">
                     <div class="doc-info"><div style="min-width:0"><div class="doc-name">${escapeHtml(doc.name.replace(/^\d{10,}_/, ''))}</div><div class="doc-meta">${date}${sizeKb ? ', ' + sizeKb : ''}</div></div></div>
                     <div class="doc-actions">
-                        <button class="doc-action-download" onclick="downloadWorkDocument('${workId}','${jsAttr(doc.name)}')">Descargar</button>
+                        <button class="doc-action-download" onclick="downloadWorkDocument('${workId}','${jsAttr(doc.name)}')">descargar.</button>
                         <button class="doc-action-delete-btn" title="Eliminar" onclick="deleteWorkDocument('${workId}','${jsAttr(doc.name)}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </div>
                 </div>`;
@@ -775,7 +775,7 @@
             `;
         }
         function openAddTripList(tripId) {
-            showModal(`<div class="modal-title">Nueva lista</div><div class="modal-label">Nombre</div><input id="new-list-name" class="modal-input" placeholder="Qué llevar"><button class="btn-modal-primary" onclick="saveTripList('${tripId}')">Crear</button>`);
+            showModal(`<div class="modal-title">Nueva lista</div><div class="modal-label">Nombre</div><input id="new-list-name" class="modal-input" placeholder="Qué llevar"><button class="btn-modal-primary" onclick="saveTripList('${tripId}')">crear.</button>`);
         }
         async function saveTripList(tripId) {
             const t = getTrip(tripId); if (!t) return;

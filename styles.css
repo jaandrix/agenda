@@ -3268,15 +3268,11 @@
         }
         :is(#paywall-box, #landing-screen) button.paywall-plan:hover { border-color: var(--text-primary);  }
         :is(#paywall-box, #landing-screen) button.paywall-plan-highlight { border-color: var(--text-primary); }
+        /* El ahorro y «tu elección.» van como texto bajo el precio, no como insignia encima. */
         .paywall-plan-badge {
-            position: absolute;
-            top: -10px;
-            background: var(--text-primary);
-            color: var(--accent-contrast);
-            font-size: 10px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius:10px;
+            color: var(--text-secondary);
+            font-size: 11.5px;
+            font-weight: 500;
         }
         .paywall-plan-name {
             font-size: 12.5px;
@@ -3412,7 +3408,6 @@
         .revela { opacity: 0; transform: translateY(22px); transition: opacity .8s var(--ease-out), transform .8s var(--ease-out); transition-delay: calc(var(--d, 0) * 90ms); }
         .revela.visto { opacity: 1; transform: none; }
 
-        .lp-kicker { font-size: 13px; font-weight: 700; color: var(--m-acento); margin-bottom: 14px; }
         .lp-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: clamp(32px, 5vw, 72px); align-items: center; max-width: 1180px; margin: 0 auto; padding: clamp(32px, 7vh, 80px) clamp(20px, 5vw, 48px) 20px; }
         .lp-hero-texto { max-width: 620px; }
         .lp-hero .landing-sub { margin-left: 0; }
@@ -6782,7 +6777,6 @@ body.papel { --oro: #8a6a2a; --oro-suave: rgba(138,106,42,.08); --oro-borde: rgb
 .settings-subscription-card .paywall-plans { width:100%; margin:14px 0 10px; }
 .settings-subscription-card button.paywall-plan { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:14px 10px; border-radius:14px; border:1.5px solid var(--border-strong); background:var(--bg-input); color:inherit; font-family:var(--font-family); cursor:pointer; position:relative; }
 .settings-subscription-card button.paywall-plan-highlight { border-color:var(--text-primary); }
-.settings-subscription-card .paywall-plan-badge { background:var(--text-primary); color:var(--accent-contrast); }
 .settings-subscription-card + .paywall-fundador { margin-top:10px; }
 .paywall-datos { display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border); text-align:center; }
 #paywall-box .paywall-datos button { width:auto; padding:9px 16px; border:1px solid var(--border-strong); border-radius:10px; background:none; color:var(--text-primary); font-size:13px; font-weight:600; }
@@ -9670,3 +9664,11 @@ body.mobile-standalone .anual-overlay, body.pwa .anual-overlay { transition: non
     .cal-hoy-acciones { width:100%; justify-content:flex-end; }
 }
 @media (prefers-reduced-motion:reduce) { .pano-ed-fila { transition:none; } }
+
+/* Zona táctil de 44 px en botones pequeños (auditoría M7): solo con dedo, el dibujo no cambia. */
+@media (pointer: coarse) {
+    :is(.finance-edit-btn, .finance-icon-btn, .lt-nav-btn, .link-card-icon-btn, .uni-asig-editar, .etiqueta-quitar, .lab-btn, .est-quitar, .serv-cerrar, .vista-icono-btn, .studies-row-remove, .planner-item-delete, .day-entry-delete, .pano-ed-mover button, .docs2-archivo-acciones button):not([style*="position"]) { position: relative; }
+    .coll-fila-borrar::before, :is(.finance-edit-btn, .finance-icon-btn, .lt-nav-btn, .link-card-icon-btn, .uni-asig-editar, .etiqueta-quitar, .lab-btn, .est-quitar, .serv-cerrar, .vista-icono-btn, .studies-row-remove, .planner-item-delete, .day-entry-delete, .pano-ed-mover button, .docs2-archivo-acciones button)::before {
+        content: ''; position: absolute; inset: min(0px, calc((100% - 44px) / 2));
+    }
+}

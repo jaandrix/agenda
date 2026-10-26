@@ -79,7 +79,7 @@
                         
                         <div class="empty-title">${navigator.onLine === false || redSinRespuesta ? 'sin conexión y aún sin copia en este dispositivo.' : 'no se pudieron cargar tus datos.'}</div>
                         <div class="empty-sub">${navigator.onLine === false || redSinRespuesta ? 'Ábrela una vez con internet: a partir de ahí guarda una copia y se abre también sin red.' : 'Revisa tu conexión a internet y vuelve a intentarlo. No se ha modificado nada en la nube.'}</div>
-                        <button class="btn-secondary" style="margin-top:12px" onclick="init()">Reintentar</button>
+                        <button class="btn-secondary" style="margin-top:12px" onclick="init()">reintentar.</button>
                     </div>`;
                 return;
             }

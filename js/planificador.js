@@ -249,7 +249,7 @@
                 <input id="backlog-task-title" class="modal-input" type="text" placeholder="¿Qué tienes pendiente?">
                 <div class="modal-label">Notas (opcional)</div>
                 <textarea id="backlog-task-notes" class="modal-input" rows="2" placeholder="Detalles adicionales..."></textarea>
-                <button class="btn-modal-primary" onclick="saveBacklogTask()">Añadir a pendientes</button>
+                <button class="btn-modal-primary" onclick="saveBacklogTask()">añadir a pendientes.</button>
             `);
             setTimeout(() => document.getElementById('backlog-task-title')?.focus(), 50);
         }
@@ -527,7 +527,7 @@
                     <option value="intervalo">Cada N días</option>
                 </select>
                 <div id="recurring-freq-extra"></div>
-                <button class="btn-modal-primary" onclick="saveRecurringTask()">Añadir</button>
+                <button class="btn-modal-primary" onclick="saveRecurringTask()">añadir.</button>
                 <div class="modal-label" style="margin-top:18px">Ya creadas</div>
                 <div id="recurring-tasks-list">${renderRecurringTasksManageList()}</div>
             `);

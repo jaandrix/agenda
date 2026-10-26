@@ -517,7 +517,7 @@
                     showModal(`
                         <div class="modal-title">No se ha podido leer la tabla</div>
                         <div style="font-size:13px;color:var(--text-secondary)">No he reconocido ningún periodo en este PDF. Puede que el formato de tu informe difiera del habitual: añade tu experiencia manualmente con el botón +.</div>
-                        <button class="btn-secondary" style="margin-top:12px" onclick="closeModal()">Entendido</button>
+                        <button class="btn-secondary" style="margin-top:12px" onclick="closeModal()">entendido.</button>
                     `);
                     return;
                 }
@@ -536,7 +536,7 @@
                 <div class="modal-title">Revisa antes de importar</div>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">He encontrado ${rows.length} periodo${rows.length === 1 ? '' : 's'}. Desmarca los que no quieras añadir: el texto de un PDF no siempre se lee perfecto, comprueba las fechas.</div>
                 <div id="work-import-review-list" style="max-height:380px;overflow-y:auto">${renderWorkImportRows()}</div>
-                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmWorkImport()">Importar seleccionados</button>
+                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmWorkImport()">importar seleccionados.</button>
             `);
         }
 
@@ -747,7 +747,7 @@
             showModal(`
                 <div class="modal-title">Nueva nota rápida</div>
                 <textarea id="quick-note-text" class="studies-notes-box" style="min-height:120px" placeholder="Cosas para recordar otro día..."></textarea>
-                <button class="btn-modal-primary" onclick="saveQuickNote()">Guardar</button>
+                <button class="btn-modal-primary" onclick="saveQuickNote()">guardar.</button>
             `);
             setTimeout(() => document.getElementById('quick-note-text')?.focus(), 50);
         }

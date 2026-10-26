@@ -1034,7 +1034,7 @@
                 <div class="finance-modal-note" style="margin-bottom:12px">Saldo actual: ${financeMoney(current)}. Escribe el saldo real y se creará un movimiento "Ajuste de saldo" con la diferencia para cuadrarlo, sin tocar tu histórico.</div>
                 <div class="modal-label">Saldo real (€)</div>
                 <input class="modal-input" id="pro-acc-adjust-target" type="number" step="0.01" value="${current.toFixed(2)}">
-                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProBalanceAdjust()">Guardar</button>
+                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProBalanceAdjust()">guardar.</button>
             `);
         }
 
@@ -1975,8 +1975,8 @@
                     <div class="modal-label">Saldo inicial (€)</div>
                     <input class="modal-input" id="pro-acc-balance0-${k}" type="number" step="0.01" value="${Number(financePro.accounts[k].balance0 || 0)}" style="margin-bottom:16px">
                 `).join('')}
-                <button class="btn-modal-primary" onclick="saveFinanceProAccountsSettings()">Guardar</button>
-                <button class="btn-secondary" style="margin-top:14px;color:#dc2626" onclick="resetFinancePro()">Restablecer Finanzas PRO</button>
+                <button class="btn-modal-primary" onclick="saveFinanceProAccountsSettings()">guardar.</button>
+                <button class="btn-secondary" style="margin-top:14px;color:#dc2626" onclick="resetFinancePro()">restablecer Finanzas PRO.</button>
             `);
         }
 
@@ -2032,8 +2032,8 @@
             const d = window._financeProQuickDraft;
             return `
                 <div class="finance-pro-type-tabs">
-                    <button class="${d.type === 'expense' ? 'active' : ''}" onclick="financeProQuickSet('type','expense')">Gasto</button>
-                    <button class="${d.type === 'income' ? 'active' : ''}" onclick="financeProQuickSet('type','income')">Ingreso</button>
+                    <button class="${d.type === 'expense' ? 'active' : ''}" onclick="financeProQuickSet('type','expense')">gasto.</button>
+                    <button class="${d.type === 'income' ? 'active' : ''}" onclick="financeProQuickSet('type','income')">ingreso.</button>
                 </div>
                 <input class="modal-input finance-quick-amount-input" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="${escapeHtml(String(d.amount))}" oninput="financeProQuickSet('amount', this.value)" autofocus>
                 <div class="modal-label" style="margin-top:12px">Toca la cuenta para guardar</div>
@@ -2158,9 +2158,9 @@
                     <div class="finance-kicker">Movimientos</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         <button class="finance-oneoff-btn" onclick="openFinanceProProgramadosModal()">programar gastos.${financePro.programados?.length ? ` <span class="finance-programados-count">${financePro.programados.length}</span>` : ''}</button>
-                        <button class="finance-oneoff-btn" onclick="openFinanceProDuplicatesModal()">Buscar duplicados</button>
+                        <button class="finance-oneoff-btn" onclick="openFinanceProDuplicatesModal()">buscar duplicados.</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProViajeModal()">gastos de un viaje.</button>
-                        <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">Registro rápido</button>
+                        <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">registro rápido.</button>
                         <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
                         <button class="finance-oneoff-btn" onclick="openPuedoPermitirme()">¿me lo puedo permitir?</button>
                     </div>
@@ -2206,7 +2206,7 @@
                             ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                         </select></div>
                 </div>
-                <button class="btn-modal-primary" style="margin-top:12px" onclick="saveFinanceProProgramado()">Programar gasto</button>
+                <button class="btn-modal-primary" style="margin-top:12px" onclick="saveFinanceProProgramado()">programar gasto.</button>
 
                 <div class="finance-kicker" style="margin:22px 0 8px">programados.</div>
                 ${pendientes.length ? pendientes.map(p => `
@@ -2453,9 +2453,9 @@
             const cats = financePro.categories.filter(c => c.type === d.type);
             return `
                 <div class="finance-pro-type-tabs">
-                    <button class="${d.type === 'expense' ? 'active' : ''}" onclick="financeProDraftSet('type','expense')">Gasto</button>
-                    <button class="${d.type === 'income' ? 'active' : ''}" onclick="financeProDraftSet('type','income')">Ingreso</button>
-                    <button class="${d.type === 'transfer' ? 'active' : ''}" onclick="financeProDraftSet('type','transfer')">Transferencia</button>
+                    <button class="${d.type === 'expense' ? 'active' : ''}" onclick="financeProDraftSet('type','expense')">gasto.</button>
+                    <button class="${d.type === 'income' ? 'active' : ''}" onclick="financeProDraftSet('type','income')">ingreso.</button>
+                    <button class="${d.type === 'transfer' ? 'active' : ''}" onclick="financeProDraftSet('type','transfer')">transferencia.</button>
                 </div>
                 <div class="modal-label">Fecha</div>
                 <input class="modal-input" type="date" value="${d.date}" onchange="financeProDraftSet('date',this.value)">
@@ -2482,8 +2482,8 @@
                 ${renderFinanceProMarcasTx(d)}
                 <div class="modal-label">Nota (opcional)</div>
                 <input class="modal-input" value="${escapeHtml(d.note || '')}" oninput="window._financeProTxDraft.note=this.value" placeholder="Ej. Cena con amigos">
-                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction()">Guardar</button>
-                ${window._financeProTxEditId ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceProTransaction('${window._financeProTxEditId}')">Eliminar movimiento</button>` : ''}
+                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction()">guardar.</button>
+                ${window._financeProTxEditId ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceProTransaction('${window._financeProTxEditId}')">eliminar movimiento.</button>` : ''}
             `;
         }
 
@@ -2645,8 +2645,8 @@
                     <div class="finance-dup-pair">
                         ${renderFinanceProDupItem(a, false)}${renderFinanceProDupItem(b, false)}
                         <div class="finance-dup-actions">
-                            <button class="finance-oneoff-btn" onclick="fusionarFinanceProPareja('${a.id}','${b.id}')">Fusionar</button>
-                            <button class="finance-oneoff-btn" onclick="descartarFinanceProPareja('${a.id}','${b.id}')">No es duplicado</button>
+                            <button class="finance-oneoff-btn" onclick="fusionarFinanceProPareja('${a.id}','${b.id}')">fusionar.</button>
+                            <button class="finance-oneoff-btn" onclick="descartarFinanceProPareja('${a.id}','${b.id}')">no es duplicado.</button>
                         </div>
                     </div>`).join('')}` : ''}
             `);
@@ -3091,7 +3091,7 @@
                 <select class="modal-input" onchange="financeProImportSet('amount', this.value)">${colOptions(imp.mapping.amount)}</select>`}
                 <div class="finance-modal-note" style="margin:12px 0 6px">Vista previa (${imp.rows.length - (imp.mapping.hasHeader ? 1 : 0)} filas detectadas):</div>
                 <div class="finance-import-preview">${previewRows.map(r => `<div class="finance-import-preview-row">${(r || []).slice(0, 4).map(c => `<span>${escapeHtml(String(c || '').slice(0, 20))}</span>`).join('')}</div>`).join('')}</div>
-                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmFinanceProImport()">Importar movimientos</button>
+                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmFinanceProImport()">importar movimientos.</button>
             `;
         }
 

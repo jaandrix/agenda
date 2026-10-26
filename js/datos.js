@@ -952,7 +952,7 @@
             overlay.innerHTML = `
                 <div class="centered-message-box">
                     <div class="centered-message-text">${escapeHtml(text)}</div>
-                    <button class="btn-modal-primary" onclick="closeCenteredMessage(this.closest('.centered-message-overlay'))">Entendido</button>
+                    <button class="btn-modal-primary" onclick="closeCenteredMessage(this.closest('.centered-message-overlay'))">entendido.</button>
                 </div>`;
             document.body.appendChild(overlay);
             setTimeout(() => closeCenteredMessage(overlay), 2600);

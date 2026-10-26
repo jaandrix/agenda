@@ -167,10 +167,10 @@ montarCerebro();
 // (cada carpeta redirige a /?perfil=...) cambian el titular de la portada y suben su bloque al principio.
 // El resto de la portada es la misma. Cada una se mide en el pulso por su ?ref=.
 const PORTADAS = {
-    estudiantes: { kicker: 'para quien estudia.', titulo: 'Tus estudios, <span class="login-brand-accent">sin perder el hilo.</span>', sub: 'Asignaturas, horario, exámenes y entregas en un sitio, conectados con tu calendario y tu día. Para el instituto, la carrera, la FP o las oposiciones, con pomodoro, tarjetas de repaso y tests para jugar con tus amigos.', bloque: 2 },
-    profes: { kicker: 'para quien da clase.', titulo: 'Tus clases, <span class="login-brand-accent">siempre al día.</span>', sub: 'El cuadrante de cada grupo, los días no lectivos que corren las sesiones solas, el cuaderno de notas y los deberes, junto a tu calendario y tu vida. Pásale tu programación a una IA y Bitácora la reparte por días.', bloque: 0 },
-    finanzas: { kicker: 'para quien lleva sus cuentas.', titulo: 'Tu dinero, <span class="login-brand-accent">a la vista.</span>', sub: 'Importa el extracto del banco y Bitácora lo ordena por categorías, lo cuadra con tu saldo real y te dice a qué ritmo gastas este mes. Con presupuestos, metas de ahorro, suscripciones vigiladas y los gastos de cada viaje aparte.', bloque: 1 },
-    trabajo: { kicker: 'para quien trabaja.', titulo: 'Tu trabajo y tu vida, <span class="login-brand-accent">cada uno en su sitio.</span>', sub: 'Tu horario, turnos, reuniones y plazos en una agenda propia que entra o no en tu calendario, tu vida laboral ordenada y tu CV en PDF paso a paso.', bloque: 3 },
+    estudiantes: { titulo: 'Tus estudios, <span class="login-brand-accent">sin perder el hilo.</span>', sub: 'Asignaturas, horario, exámenes y entregas en un sitio, conectados con tu calendario y tu día. Para el instituto, la carrera, la FP o las oposiciones, con pomodoro, tarjetas de repaso y tests para jugar con tus amigos.', bloque: 2 },
+    profes: { titulo: 'Tus clases, <span class="login-brand-accent">siempre al día.</span>', sub: 'El cuadrante de cada grupo, los días no lectivos que corren las sesiones solas, el cuaderno de notas y los deberes, junto a tu calendario y tu vida. Pásale tu programación a una IA y Bitácora la reparte por días.', bloque: 0 },
+    finanzas: { titulo: 'Tu dinero, <span class="login-brand-accent">a la vista.</span>', sub: 'Importa el extracto del banco y Bitácora lo ordena por categorías, lo cuadra con tu saldo real y te dice a qué ritmo gastas este mes. Con presupuestos, metas de ahorro, suscripciones vigiladas y los gastos de cada viaje aparte.', bloque: 1 },
+    trabajo: { titulo: 'Tu trabajo y tu vida, <span class="login-brand-accent">cada uno en su sitio.</span>', sub: 'Tu horario, turnos, reuniones y plazos en una agenda propia que entra o no en tu calendario, tu vida laboral ordenada y tu CV en PDF paso a paso.', bloque: 3 },
 };
 function aplicarPortadaPerfil() {
     const perfil = new URLSearchParams(location.search).get('perfil');
@@ -178,7 +178,6 @@ function aplicarPortadaPerfil() {
     if (!p) return;
     const hero = document.querySelector('#landing-screen .lp-hero-texto');
     if (!hero) return;
-    hero.querySelector('.lp-kicker').textContent = p.kicker;
     hero.querySelector('.landing-title').innerHTML = p.titulo;
     hero.querySelector('.landing-sub').textContent = p.sub;
     const bloques = document.querySelectorAll('#lp-funciones .lp-bloque');

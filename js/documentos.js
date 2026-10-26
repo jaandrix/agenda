@@ -298,8 +298,8 @@
                 const isHtml = /\.html?$/i.test(doc.name);
                 const n = escapeHtml(doc.name);
                 const openBtn = isHtml
-                    ? `<button class="doc-action-download" onclick="openEntryDocHtml('${kind}','${id}','${n}')">Ver</button>`
-                    : `<button class="doc-action-download" onclick="downloadEntryDoc('${kind}','${id}','${n}')">Descargar</button>`;
+                    ? `<button class="doc-action-download" onclick="openEntryDocHtml('${kind}','${id}','${n}')">ver.</button>`
+                    : `<button class="doc-action-download" onclick="downloadEntryDoc('${kind}','${id}','${n}')">descargar.</button>`;
                 return `
                     <div class="docs-row">
                         <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
@@ -640,7 +640,7 @@
                         <strong>⚠ El backup automático falló</strong>
                         <div class="backup-failure-banner-msg">${escapeHtml(failure.message)} (${escapeHtml(failure.date)})</div>
                     </div>
-                    <button class="btn-secondary" style="width:auto" onclick="runManualBackupNow()">Reintentar ahora</button>
+                    <button class="btn-secondary" style="width:auto" onclick="runManualBackupNow()">reintentar ahora.</button>
                 </div>`;
         }
 
@@ -653,7 +653,7 @@
                             Bitácora guarda una copia de seguridad completa la primera vez que abres la app cada día, y conserva las 7 más recientes.
                         </div>
                         <div id="backup-failure-banner"></div>
-                        <button class="btn-secondary" style="width:auto;margin-bottom:14px" onclick="runManualBackupNow()">Guardar backup ahora</button>
+                        <button class="btn-secondary" style="width:auto;margin-bottom:14px" onclick="runManualBackupNow()">guardar backup ahora.</button>
                         <div id="backups-list">Cargando backups...</div>
                     </div>
                 </div>`;
@@ -695,7 +695,7 @@
                 return `<div class="docs-row">
                     <div class="docs-row-index">${String(i + 1).padStart(2, '0')}</div>
                     <div class="docs-row-body"><div class="docs-row-name">${escapeHtml(fecha)}</div><div class="docs-row-meta">${escapeHtml(iso)}</div></div>
-                    <div class="doc-actions"><button class="doc-action-download" onclick="restoreBackupFile('${jsAttr(f.name)}')">Restaurar</button></div>
+                    <div class="doc-actions"><button class="doc-action-download" onclick="restoreBackupFile('${jsAttr(f.name)}')">restaurar.</button></div>
                 </div>`;
             }).join('')}</div>`;
         }
