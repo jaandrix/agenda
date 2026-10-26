@@ -966,6 +966,7 @@
 // Ajustes que solo se ven con el modo desarrollador: casillas que cambian cómo se comporta la app.
 // Se guardan en servicios.admin (sincronizado), así valen en todos los dispositivos.
 const AJUSTES_ADMIN = [
+    ['panoramaEditorial', 'panorama editorial.', 'Panorama como una sola superficie dividida por líneas finas, sin tarjetas redondeadas, con «ahora.» como reloj del día, «hoy.» como línea de tiempo y la semana como curva. Usa los colores de tu tema.'],
     ['festivosDiscretos', 'festivos discretos.', 'Los festivos ya no se nombran ni se colorean en el calendario: el día lleva un punto amarillo, como un evento, y el nombre sale al pulsarlo.'],
 ];
 function ajustesAdmin() { return (servicios && servicios.admin) || {}; }

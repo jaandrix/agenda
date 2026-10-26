@@ -167,9 +167,10 @@
                     </div>
                     <button class="vista-btn pano-editar" onclick="openEditarPanorama()">editar.</button>
                 </div>
-                <div class="pano">
+                <div class="pano ${panoramaEditorial() ? 'pano-editorial' : ''}">
+                    ${panoramaEditorial() ? `<div class="pano-fila1">${renderPanoramaAhora()}${renderPanoramaHoy()}</div>` : ''}
                     ${renderHomeAvisos(hallazgos)}
-                    ${renderPanoramaHoy()}
+                    ${panoramaEditorial() ? '' : renderPanoramaHoy()}
                     ${renderPanoramaTarjetas()}
                     <div class="pano-mas-cab">más.</div>
                     <div class="home-launcher-list pano-mas">${rows}</div>
@@ -214,7 +215,9 @@
             const d = panoramaDatosHoy();
             const cifra = (n, texto) => `<span class="pano-cifra"><b>${n}</b><small>${texto}</small></span>`;
             const filas = d.conHora.filter(x => x.hora >= d.horaAhora).slice(0, 4);
-            const cuerpo = filas.length
+            const cuerpo = filas.length && panoramaEditorial()
+                ? `<span class="pano-linea-tiempo">${filas.map((x, i) => `<span class="pano-lt-fila ${i ? '' : 'siguiente'}"><span class="pano-hora">${escapeHtml(x.hora)}</span><i aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(x.titulo)}</span></span>`).join('')}</span>`
+                : filas.length
                 ? `<span class="pano-dia">${filas.map(x => `<span class="pano-dia-fila"><span class="pano-hora">${escapeHtml(x.hora)}</span><i class="ev" aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(x.titulo)}</span></span>`).join('')}</span>`
                 : `<span class="pano-vacio">No tienes nada con hora.</span>`;
             const pendiente = d.sinHora.length ? `<span class="pano-vacio">Te ${d.sinHora.length === 1 ? 'queda' : 'quedan'} ${d.sinHora.length} tarea${d.sinHora.length === 1 ? '' : 's'} sin hora.</span>` : '';
@@ -270,7 +273,7 @@
             const dias = Array.from({ length: 7 }, (_, i) => { const d = new Date(lunes); d.setDate(d.getDate() + i); const iso = isoLocal(d); return { iso, ev: getDayAllEntries(iso).filter(esEvento).length, ta: mobileDiaPlanner(iso).length }; });
             const maxDia = Math.max(1, ...dias.map(d => d.ev + d.ta));
             const totEv = dias.reduce((n, d) => n + d.ev, 0), totTa = dias.reduce((n, d) => n + d.ta, 0);
-            const cSemana = `<span class="pano-semana" role="img" aria-label="${dias.map((d, i) => `${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][i]} ${d.ev + d.ta}`).join(', ')}">${dias.map((d, i) => `<span class="pano-sem-dia ${d.iso === hoy ? 'hoy' : ''}"><span class="pano-sem-barra"><i class="ta" style="height:${d.ta / maxDia * 100}%"></i><i class="ev" style="height:${d.ev / maxDia * 100}%"></i></span><small>${'LMXJVSD'[i]}</small><em>${d.ev + d.ta || ''}</em></span>`).join('')}</span>
+            const cSemana = panoramaEditorial() ? panoramaCurvaSemana(dias, hoy, totEv, totTa, cifra) : `<span class="pano-semana" role="img" aria-label="${dias.map((d, i) => `${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][i]} ${d.ev + d.ta}`).join(', ')}">${dias.map((d, i) => `<span class="pano-sem-dia ${d.iso === hoy ? 'hoy' : ''}"><span class="pano-sem-barra"><i class="ta" style="height:${d.ta / maxDia * 100}%"></i><i class="ev" style="height:${d.ev / maxDia * 100}%"></i></span><small>${'LMXJVSD'[i]}</small><em>${d.ev + d.ta || ''}</em></span>`).join('')}</span>
                 <span class="pano-cifras">${cifra(totEv, totEv === 1 ? 'evento' : 'eventos')}${cifra(totTa, totTa === 1 ? 'tarea' : 'tareas')}</span>`;
 
             // tu mes.
@@ -1088,3 +1091,81 @@
             return html;
         }
 
+
+// Panorama editorial (más ajustes. del modo desarrollador): una sola superficie dividida por reglas finas, con
+// «ahora.» como instrumento principal y la semana como curva. Solo cambia la presentación; los datos son los mismos.
+function panoramaEditorial() { return typeof ajustesAdmin === 'function' && !!ajustesAdmin().panoramaEditorial; }
+
+function panoramaAhoraDatos() {
+    const d = panoramaDatosHoy(), ahora = new Date();
+    const min = ahora.getHours() * 60 + ahora.getMinutes();
+    const sig = d.siguiente;
+    let falta = '';
+    if (sig) {
+        const [h, m] = sig.hora.split(':').map(Number);
+        const resto = h * 60 + m - min;
+        falta = resto <= 0 ? 'ahora.' : resto < 60 ? `${resto} min` : `${Math.floor(resto / 60)} h ${String(resto % 60).padStart(2, '0')} min`;
+    }
+    return { d, min, sig, falta, hora: `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}` };
+}
+
+function renderPanoramaAhora() {
+    const { d, min, sig, falta, hora } = panoramaAhoraDatos();
+    const R = 120, C = 2 * Math.PI * R, avance = min / 1440;
+    const marcas = Array.from({ length: 48 }, (_, i) => {
+        const a = i / 48 * 2 * Math.PI - Math.PI / 2, largo = i % 4 ? 6 : 12;
+        const x1 = 150 + Math.cos(a) * 138, y1 = 150 + Math.sin(a) * 138, x2 = 150 + Math.cos(a) * (138 + largo), y2 = 150 + Math.sin(a) * (138 + largo);
+        return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+    }).join('');
+    const ang = avance * 2 * Math.PI - Math.PI / 2;
+    const resumen = sig ? `${sig.titulo}, a las ${sig.hora}` : d.sinHora.length ? `te ${d.sinHora.length === 1 ? 'queda 1 tarea' : `quedan ${d.sinHora.length} tareas`} sin hora.` : 'día despejado.';
+    return `<button type="button" class="pano-ahora" onclick="openTuDia()" aria-label="ahora, ${hora}. ${escapeHtml(resumen)}">
+        <svg viewBox="0 0 300 300" aria-hidden="true">
+            <g class="pano-ahora-marcas">${marcas}</g>
+            <circle class="pano-ahora-pista" cx="150" cy="150" r="${R}"/>
+            <circle class="pano-ahora-arco" id="pano-ahora-arco" cx="150" cy="150" r="${R}" stroke-dasharray="${(C * avance).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 150 150)"/>
+            <circle class="pano-ahora-nodo" id="pano-ahora-nodo" cx="${(150 + Math.cos(ang) * R).toFixed(1)}" cy="${(150 + Math.sin(ang) * R).toFixed(1)}" r="7"/>
+            <circle class="pano-ahora-masa" cx="150" cy="150" r="104"/>
+        </svg>
+        <span class="pano-ahora-texto">
+            <small>ahora.</small>
+            <b id="pano-ahora-hora">${hora}</b>
+            ${sig ? `<span class="pano-ahora-sig">${escapeHtml(sig.titulo)}</span><small id="pano-ahora-falta">${falta}</small>` : `<span class="pano-ahora-sig">${escapeHtml(resumen)}</span>`}
+        </span>
+    </button>`;
+}
+
+// El reloj se actualiza cada minuto sin volver a pintar Panorama; en segundo plano no hace nada.
+setInterval(() => {
+    if (document.hidden || !document.getElementById('pano-ahora-hora')) return;
+    const { min, sig, falta, hora } = panoramaAhoraDatos();
+    document.getElementById('pano-ahora-hora').textContent = hora;
+    const f = document.getElementById('pano-ahora-falta'); if (f && sig) f.textContent = falta;
+    const R = 120, C = 2 * Math.PI * R, avance = min / 1440, ang = avance * 2 * Math.PI - Math.PI / 2;
+    document.getElementById('pano-ahora-arco')?.setAttribute('stroke-dasharray', `${(C * avance).toFixed(1)} ${C.toFixed(1)}`);
+    const n = document.getElementById('pano-ahora-nodo');
+    if (n) { n.setAttribute('cx', (150 + Math.cos(ang) * R).toFixed(1)); n.setAttribute('cy', (150 + Math.sin(ang) * R).toFixed(1)); }
+}, 30000);
+
+function panoramaCurvaSemana(dias, hoy, totEv, totTa, cifra) {
+    const W = 560, H = 170, izq = 26, abajo = 26, arriba = 12;
+    const vals = dias.map(d => d.ev + d.ta), max = Math.max(4, ...vals);
+    const paso = Math.ceil(max / 4), tope = paso * 4;
+    const x = i => izq + i * (W - izq - 12) / 6, y = v => arriba + (1 - v / tope) * (H - arriba - abajo);
+    const pts = vals.map((v, i) => [x(i), y(v)]);
+    let curva = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+        const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], cx = (x0 + x1) / 2;
+        curva += ` C${cx},${y0} ${cx},${y1} ${x1},${y1}`;
+    }
+    const base = y(0);
+    const reglas = [0, 1, 2, 3, 4].map(k => `<line class="regla" x1="${izq}" x2="${W - 12}" y1="${y(k * paso)}" y2="${y(k * paso)}"/><text class="eje" x="${izq - 8}" y="${y(k * paso) + 4}" text-anchor="end">${k * paso}</text>`).join('');
+    const nombres = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+    const etiquetas = dias.map((d, i) => `<text class="eje ${d.iso === hoy ? 'hoy' : ''}" x="${x(i)}" y="${H - 6}" text-anchor="middle">${nombres[i]}</text>`).join('');
+    const nodos = pts.map(([px, py], i) => `<circle class="nodo ${dias[i].iso === hoy ? 'hoy' : ''}" cx="${px}" cy="${py}" r="${dias[i].iso === hoy ? 5 : 4}"/>`).join('');
+    const etiqueta = dias.map((d, i) => `${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][i]} ${vals[i]}`).join(', ');
+    return `<svg class="pano-curva" viewBox="0 0 ${W} ${H}" role="img" aria-label="${etiqueta}">${reglas}
+        <path class="area" d="${curva} L${pts[6][0]},${base} L${pts[0][0]},${base} Z"/><path class="linea" d="${curva}"/>${nodos}${etiquetas}</svg>
+        ${vals.every(v => !v) ? '<span class="pano-vacio">semana despejada.</span>' : ''}
+        <span class="pano-cifras">${cifra(totEv, totEv === 1 ? 'evento' : 'eventos')}${cifra(totTa, totTa === 1 ? 'tarea' : 'tareas')}</span>`;
+}

@@ -9698,3 +9698,54 @@ body.mobile-standalone .anual-overlay, body.pwa .anual-overlay { transition: non
 .m-dia-pill.festivo-punto i:not(.on) { background: #e2b93b; }
 .m-dia-pill.festivo-punto i.on { box-shadow: 7px 0 0 #e2b93b; transform: translateX(-3.5px); }
 .m-punto.festivo-punto::before { content: ''; position: absolute; left: 50%; bottom: 3px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #e2b93b; }
+
+/* ============================================================
+   PANORAMA EDITORIAL (más ajustes.): una superficie con reglas finas.
+   ============================================================ */
+.pano-editorial { border: 1px solid var(--border); background: var(--bg-card); }
+.pano-editorial .pano-grid { gap: 0; margin: 0; border-top: 1px solid var(--border); }
+.pano-editorial .pano-card { border: 0; border-radius: 0; background: transparent; box-shadow: none; min-height: 0; padding: 22px 24px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.pano-editorial .pano-card:hover { background: var(--bg-card-hover); }
+.pano-editorial .pano-card-icono { display: none; }
+.pano-editorial .pano-card-tit b { font-size: 20px; letter-spacing: -.01em; }
+.pano-editorial .pano-card-tit small { font-size: 13px; }
+.pano-editorial .pano-cifra b { font-variant-numeric: tabular-nums; }
+.pano-editorial .home-aviso-block, .pano-editorial .home-pattern-line { margin: 0; border: 0; border-radius: 0; border-top: 1px solid var(--border); padding: 18px 24px; background: transparent; }
+.pano-editorial .pano-mas-cab { padding: 0 24px; }
+.pano-editorial .pano-mas { padding: 0 12px 12px; }
+.pano-fila1 { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; }
+.pano-fila1 > .pano-card { grid-column: auto; border-bottom: 0; border-right: 0; }
+.pano-ahora { position: relative; display: grid; place-items: center; padding: 22px; border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--text-primary); font-family: var(--font-family); cursor: pointer; }
+.pano-ahora svg { width: 100%; max-width: 290px; height: auto; display: block; }
+.pano-ahora-marcas line { stroke: var(--text-secondary); stroke-width: 1; }
+.pano-ahora-pista { fill: none; stroke: var(--border); stroke-width: 2; }
+.pano-ahora-arco { fill: none; stroke: var(--text-primary); stroke-width: 6; stroke-linecap: butt; transition: stroke-dasharray .24s var(--ease-in-out); }
+.pano-ahora-nodo { fill: var(--bg-card); stroke: var(--text-primary); stroke-width: 3; }
+.pano-ahora-masa { fill: var(--text-primary); }
+.pano-ahora-texto { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0 22%; text-align: center; color: var(--bg-card); pointer-events: none; }
+.pano-ahora-texto small { font-size: 13px; opacity: .85; }
+.pano-ahora-texto b { font-size: clamp(40px, 5vw, 58px); font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.pano-ahora-sig { margin-top: 8px; padding-top: 8px; border-top: 1px solid currentColor; font-size: 14px; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pano-linea-tiempo { position: relative; display: flex; flex-direction: column; }
+.pano-lt-fila { display: grid; grid-template-columns: 56px 18px 1fr; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.pano-lt-fila:last-child { border-bottom: 0; }
+.pano-lt-fila i { position: relative; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--text-primary); background: var(--bg-card); justify-self: center; z-index: 1; }
+.pano-lt-fila.siguiente i { background: var(--text-primary); }
+.pano-linea-tiempo::before { content: ''; position: absolute; left: 77px; top: 18px; bottom: 18px; width: 1px; background: var(--border-strong); }
+.pano-lt-fila .pano-hora { font-variant-numeric: tabular-nums; }
+.pano-lt-fila .pano-linea-txt { font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; }
+.pano-curva { width: 100%; height: auto; display: block; overflow: visible; }
+.pano-curva .regla { stroke: var(--border); stroke-width: 1; }
+.pano-curva .eje { fill: var(--text-secondary); font-size: 12px; font-family: var(--font-family); }
+.pano-curva .eje.hoy { fill: var(--text-primary); font-weight: 700; }
+.pano-curva .area { fill: var(--text-primary); opacity: .07; }
+.pano-curva .linea { fill: none; stroke: var(--text-primary); stroke-width: 2; }
+.pano-curva .nodo { fill: var(--bg-card); stroke: var(--text-primary); stroke-width: 1.5; }
+.pano-curva .nodo.hoy { fill: var(--text-primary); }
+@media (max-width: 760px) {
+    .pano-fila1 { grid-template-columns: 1fr; }
+    .pano-ahora { border-right: 0; border-bottom: 1px solid var(--border); }
+    .pano-ahora svg { max-width: 230px; }
+    .pano-editorial .pano-card { border-right: 0; padding: 18px 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .pano-ahora-arco { transition: none; } }
