@@ -133,6 +133,17 @@ function calcularAvisos(data: any, hoy: string, pendientesBandeja: number): Avis
     return avisos.sort((a, b) => a.prioridad - b.prioridad);
 }
 
+function avisoResumenDia(data: any, hoy: string): Aviso {
+    const eventos = (data.entries || []).filter((e: any) => e?.type === 'event' && e.date === hoy && !e.calendarLog && !/^(weekly_task_done_|planner_done_|recurring_done_)/.test(e.id || ''));
+    const tareas = (data.dayPlanner?.days?.[hoy] || []).filter((t: any) => t && !t.done);
+    const conHora = [...eventos.map((e: any) => ({ h: e.time, t: e.title })), ...tareas.map((t: any) => ({ h: t.time, t: t.title }))]
+        .filter(x => /^\d{1,2}:\d{2}$/.test(x.h || '')).sort((a, b) => a.h.padStart(5, '0').localeCompare(b.h.padStart(5, '0')));
+    const partes = [eventos.length && `${eventos.length} ${eventos.length === 1 ? 'evento' : 'eventos'}`, tareas.length && `${tareas.length} ${tareas.length === 1 ? 'tarea' : 'tareas'}`].filter(Boolean);
+    const texto = !partes.length ? 'Hoy está despejado. Si se te ocurre algo, apúntalo.'
+        : `${partes.join(' y ')}.${conHora[0] ? ` Lo primero: ${conHora[0].t} a las ${conHora[0].h}.` : ''}`;
+    return { clave: `dia:${hoy}`, tipo: 'resumen', prioridad: -1, titulo: 'hoy.', texto, url: '/' };
+}
+
 // Eventos que empiezan dentro de la próxima hora. Con pasadas cada 5
 // minutos, el aviso llega entre 55 y 60 minutos antes; la clave lleva la
 // fecha y la hora, así si el evento se mueve se vuelve a avisar.
@@ -270,6 +281,9 @@ Deno.serve(async (req) => {
             // tampoco recibe sus avisos de exámenes y entregas.
             const sinEstudios = data.apartadosConfig?.perfil === 'trabajador';
             diarios = calcularAvisos(data, hoy, count || 0).filter(a => prefs[a.tipo] !== false && !(sinEstudios && a.tipo === 'estudios'));
+            // El resumen del día llega siempre, aunque no haya nada urgente: si solo avisaba cuando había algo,
+            // los días tranquilos parecía que los avisos no funcionaban.
+            if (prefs.resumen !== false) diarios.unshift(avisoResumenDia(data, hoy));
         }
         const tarde: Aviso[] = [];
         if (tocaTarde) {
