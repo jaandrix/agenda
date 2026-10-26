@@ -131,6 +131,12 @@ function interpretarApunte(texto) {
     if (!m && (m = quitar(/\b(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cuesta|costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|ingrese|ingreso de|bizum de)\s+(\d+(?:[.,]\d{1,2})?)\b/))) {
         resto = ' ' + m[0].replace(/\s*\d+(?:[.,]\d{1,2})?\s*$/, '') + ' ' + resto;
     }
+    // «gasto 30 gasolina», «ingreso nómina 1500», «pagar alquiler 800 el 1»: la palabra de delante ya dice que
+    // el número es dinero, aunque no lleve €. Se salta el que va tras «el», «día» o «a las» (es fecha u hora).
+    if (!m && /^\s*(?:gasto|ingreso|pagar|cobrar)\b/.test(apuntarNorm(resto))) {
+        m = quitar(/(?<!\b(?:el|dia|las|del|al|y)\s)\b(\d+(?:[.,]\d{1,2})?)\b(?!\s*(?::|h\b|de\s+[a-z]+\b(?<=enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)))/);
+        if (m) quitar(/^\s*(?:gasto|ingreso)\b\s*(?:de\s+)?/);
+    }
     if (m) { r.importe = Number(m[1].replace(',', '.')); r.ingreso = /^\s*\+/.test(m[0]) || /\b(cobr|ingres|nomina|me pagan|me han pagado|me ingresan|me devolvi|devolucion)/.test(n); }
     if (r.importe != null) {
         quitar(/^\s*(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|ingrese|bizum de)\b/);
@@ -177,12 +183,22 @@ function interpretarApunte(texto) {
     else if ((m = quitar(/\besta\s+(manana|tarde|noche)\b/))) { momento = m[1]; dia(0); }
     else if (quitar(/\b(?:a|al)\s+medio\s?dia\b/)) momento = 'mediodia';
 
-    // Del 3 al 7 de noviembre / del 3/11 al 7/11: fecha y fecha de fin.
-    if ((m = quitar(new RegExp(`\\bdel?\\s+(\\d{1,2})(?:\\s*(?:\\/|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)}))?\\s+(?:al|hasta el)\\s+(\\d{1,2})\\s*(?:\\/|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)})\\b`)))) {
+    // Del 3 al 7 de noviembre / del 3/11 al 7/11: fecha y fecha de fin. Sin mes, «temas del 3 al 5» no son días.
+    const rangoSinFechas = /\b(?:temas?|capitulos?|paginas?|pags?|ejercicios?|lecciones?|unidades?|preguntas?)\s+del?\s+\d{1,2}\s+(?:al|hasta el)\s+\d{1,2}\b(?!\s*(?:\/|de\s))/.test(n);
+    if (!rangoSinFechas && (m = quitar(new RegExp(`\\bdel?\\s+(\\d{1,2})(?:\\s*(?:\\/|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)}))?\\s+(?:al|hasta el)\\s+(\\d{1,2})(?:\\s*(?:\\/|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)}))?\\b`)))) {
         const mesDe = x => /^\d+$/.test(x) ? Number(x) - 1 : APUNTAR_MESES.indexOf(x);
-        const mesFin = mesDe(m[4]);
-        const ini = fechaDe(Number(m[1]), m[2] ? mesDe(m[2]) : mesFin);
-        const fin = new Date(ini.getFullYear() + (mesFin < ini.getMonth() ? 1 : 0), mesFin, Number(m[3]), 12);
+        const d1 = Number(m[1]), d2 = Number(m[3]), cruza = d2 < d1;
+        let ini, fin;
+        if (m[4]) {
+            const mesFin = mesDe(m[4]);
+            ini = fechaDe(d1, m[2] ? mesDe(m[2]) : mesFin - (cruza && !m[2] ? 1 : 0));
+            fin = new Date(ini.getFullYear() + (mesFin < ini.getMonth() ? 1 : 0), mesFin, d2, 12);
+        } else {
+            // Sin mes («del 3 al 7», «del 28 al 2»): el próximo día de inicio, este mes o el siguiente.
+            const hoyD = new Date(todayISO() + 'T12:00:00');
+            ini = new Date(hoyD.getFullYear(), hoyD.getMonth() + (d1 < hoyD.getDate() ? 1 : 0), d1, 12);
+            fin = new Date(ini.getFullYear(), ini.getMonth() + (cruza ? 1 : 0), d2, 12);
+        }
         r.fecha = isoLocal(ini); r.fechaFin = isoLocal(fin); r.fechaDicha = true;
     }
     else if (quitar(/\banteayer\b/)) dia(-2);
