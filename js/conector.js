@@ -1006,7 +1006,7 @@
                     <ol class="bandeja-conectar-pasos">
                         <li>Crea tu enlace personal con uno de los botones de abajo.</li>
                         <li>Pégalo en Claude (Ajustes → Conectores) o en ChatGPT (Aplicaciones y conectores). Te lo explicamos paso a paso al crearlo.</li>
-                        <li>Pide lo que quieras. Los eventos y Ocio se apuntan solos; el resto espera aquí, en bandeja, a que lo valides.</li>
+                        <li>Pide lo que quieras. Los eventos y Ocio se apuntan solos; el resto espera aquí, en propuestas, a que lo valides.</li>
                     </ol>
                     <div class="bandeja-globales">
                         <button class="bandeja-btn bandeja-btn-validar" onclick="crearConector('claude').then(() => cargarEstadoConector())">+ conectar Claude.</button>
@@ -1025,7 +1025,7 @@
             <div class="bandeja">
                 <header class="bandeja-cabecera">
                     <div>
-                        <div class="bandeja-titulo">bandeja.</div>
+                        <div class="bandeja-titulo">propuestas.</div>
                         <div class="bandeja-sub">Lo que Claude o ChatGPT proponen cambiar en tu Bitácora. Hasta que lo validas, no toca nada.</div>
                     </div>
                     <div class="bandeja-contador ${n ? 'activo' : ''}"><b>${n}</b><span>${n === 1 ? 'pendiente.' : 'pendientes.'}</span></div>

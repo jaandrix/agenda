@@ -155,7 +155,7 @@
                 renderHomeLauncherRow(HOME_ICON_STATS, 'estadísticas.', 'openHomeStatsModal()'),
                 renderHomeLauncherRow(HOME_ICON_PATTERNS, 'patrones.', 'openHomePatternsModal()', hallazgos.length || ''),
                 inbox.length ? renderHomeLauncherRow(HOME_ICON_INBOX, 'inbox.', 'openHomeInboxModal()', inbox.length) : '',
-                bandejaPendiente.length ? renderHomeLauncherRow(REGISTRO_ICONO, 'bandeja.', "switchView('bandeja')", bandejaPendiente.length) : ''
+                bandejaPendiente.length ? renderHomeLauncherRow(REGISTRO_ICONO, 'propuestas.', "switchView('bandeja')", bandejaPendiente.length) : ''
             ].join('');
 
             return `

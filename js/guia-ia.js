@@ -138,7 +138,7 @@ const GUIA_IA_RECETAS = [
         'Ajustes → «claude y chatgpt.» → crea el enlace para Claude o para ChatGPT y cópialo. Solo se enseña una vez y es tu llave: no lo compartas.',
         'En Claude: Ajustes → Conectores → Añadir conector personalizado → nómbralo «Bitácora» y pega el enlace. En ChatGPT, añádelo como conector en la configuración de conectores o aplicaciones.',
         'En un chat, activa Bitácora en las herramientas y pide, por ejemplo: «¿qué tengo esta semana?» o «apunta este ticket» (con la foto).',
-        'El dinero y los borrados esperan tu visto bueno en «bandeja.»; lo demás se aplica solo y se puede deshacer desde ahí.',
+        'El dinero y los borrados esperan tu visto bueno en «propuestas.»; lo demás se aplica solo y se puede deshacer desde ahí.',
     ]],
     ['Activar las notificaciones', [
         'En el iPhone, primero instala la app (Safari → Compartir → «Añadir a pantalla de inicio») y ábrela desde su icono.',
@@ -200,7 +200,7 @@ const GUIA_IA_RECETAS = [
         'Descarga el PDF. Lo que respondes se guarda para la próxima vez.',
     ]],
     ['Recuperar algo que borraste o volver atrás', [
-        'Si lo hizo Claude, ChatGPT, Siri o Apuntar: «bandeja.» → historial → «deshacer».',
+        'Si lo hizo Claude, ChatGPT, Siri o Apuntar: «propuestas.» → historial → «deshacer».',
         'Si no: Documentos → «copias.» (o Ajustes → tus datos → «copias.») y restaura una copia. Se hace una al día y una completa cada semana.',
     ]],
     ['Cambiar el tema, la letra o el tamaño del texto', [
@@ -265,7 +265,7 @@ const GUIA_IA_PROBLEMAS = [
     ['Claude o ChatGPT no hacen lo que pido', [
         'Comprueba que Bitácora está activada en las herramientas de ese chat.',
         'Si hay funciones nuevas, abre un chat nuevo para que las vea.',
-        'Los gastos, ingresos, extractos y borrados no se aplican hasta que los valides en «bandeja.».',
+        'Los gastos, ingresos, extractos y borrados no se aplican hasta que los valides en «propuestas.».',
         'Si perdiste el enlace o crees que alguien lo tiene, revócalo en Ajustes y crea otro.',
     ]],
     ['En el iPhone, al tocar un campo no sale el teclado', [
@@ -276,7 +276,7 @@ const GUIA_IA_PROBLEMAS = [
         'Tus datos siguen guardados: al suscribirte vuelve todo como estaba.',
     ]],
     ['He borrado algo sin querer', [
-        'Si fue con Claude, ChatGPT, Siri o Apuntar: «bandeja.» → historial → «deshacer».',
+        'Si fue con Claude, ChatGPT, Siri o Apuntar: «propuestas.» → historial → «deshacer».',
         'Si no: restaura una copia en Documentos → «copias.».',
     ]],
 ];

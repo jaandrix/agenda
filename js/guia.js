@@ -74,7 +74,7 @@ const GUIA = [
             'Ábrela desde el icono. Arriba verás la fecha en grande y el tiempo de tu ciudad.',
             'Debajo, tu <b>semana</b>: toca un día para verlo; las flechas pasan de semana y <b>mes.</b> despliega el mes entero en bolitas (en color, los días con algo). <b>volver a hoy.</b> te devuelve.',
             'El día sale como un <b>horario</b>: lo que no tiene hora arriba y lo demás en una línea de tiempo, con una marca de «ahora» entre lo hecho y lo que viene. Marca las tareas sin salir de la portada; el <b>+</b> añade algo a ese día.',
-            'Más abajo, las teselas: tareas y rutinas de hoy, gasto del mes, próximo examen, bandeja, pedidos y próximo viaje. Tócalas para ir a cada apartado.',
+            'Más abajo, las teselas: tareas y rutinas de hoy, gasto del mes, próximo examen, propuestas, pedidos y próximo viaje. Tócalas para ir a cada apartado.',
             'El <b>+</b> naranja abre <b>apuntar.</b>: escribe como hablas («gimnasio mañana a las 19», «dentista el jueves a las 5 y el viernes cena con Marta en La Pepita», «examen de estadística el 20», «entregar el trabajo de psicología el 25», «cumple de Ana el 3 de mayo», «gimnasio todos los lunes a las 19», «clase de inglés los martes y jueves a las 18», «viaje a Lisboa del 3 al 7 de noviembre», «gasté 30 en gasolina en efectivo», «se ha acabado el aceite», «nota: …»). La primera palabra puede decir qué es: «evento …», «tarea …», «serie …», «peli …», «libro …» o «juego …» (estos cuatro van a Ocio). Lo que tiene hora y no empieza por un verbo («peluquería mañana a las 10»), o es con alguien («café con Marta a las 6»), va como evento. Puedes escribir varias cosas en una frase: cada una sale por separado con lo que va a crear antes de guardarla, y con un toque le cambias el tipo, y si no entiende nada te avisa. Abajo, <b>lo último que apuntaste</b>: <b>deshacer.</b> lo borra y <b>cambiar.</b> te lo deja escrito para elegir otro tipo. Debajo, accesos grandes a cada formulario.',
             'La <b>barra de abajo</b>: inicio, planificador, el <b>+</b> naranja para apuntar cualquier cosa, el último apartado que visitaste (para ir y volver) y el menú con todo. Tocar la pestaña en la que ya estás sube arriba del todo.',
         ],
@@ -96,10 +96,10 @@ const GUIA = [
         botones: [
             [guiaBoton('se aplica solo'), 'Casi todo: eventos, tareas, exámenes y trabajos, el horario, notas, rutinas y el registro del día, tareas recurrentes, viajes, suscripciones, objetivos, deseos, enlaces, cumpleaños, documentos, Ocio, tarjetas y tests, la compra, proyectos, agenda laboral y profesorado. Todo se puede deshacer desde la bandeja.'],
             [guiaBoton('ideas para pedirle'), '«Hazme tarjetas de estos apuntes» (con un PDF o una foto), «pasa los ingredientes de esta receta a la compra», «apunta este ticket en Bitácora» (con la foto), «añade estas tareas al proyecto de la web», «¿qué hora es y qué me queda hoy?». Sabe la fecha y la hora de Madrid.'],
-            [guiaBoton('pasa por la bandeja'), 'Solo el dinero (gastos e ingresos que apunta, correcciones y extractos) y los borrados esperan a que los valides en <b>bandeja.</b> Lo demás (tareas, exámenes y trabajos, viajes, suscripciones, notas...) se aplica solo.'],
+            [guiaBoton('pasa por propuestas'), 'Solo el dinero (gastos e ingresos que apunta, correcciones y extractos) y los borrados esperan a que los valides en <b>propuestas.</b> Lo demás (tareas, exámenes y trabajos, viajes, suscripciones, notas...) se aplica solo.'],
             [guiaBoton('revocar'), 'En Ajustes puedes revocar un enlace si lo pierdes o ya no lo usas.'],
         ],
-        trucos: ['Todo lo que hace Claude queda en el historial de la bandeja, con opción de deshacer.', 'Si añadimos funciones nuevas al conector, abre un chat nuevo para que Claude las vea.', 'Para ahorrar uso, desactiva el conector en los chats que no son de Bitácora.'],
+        trucos: ['Todo lo que hace Claude queda en el historial de propuestas, con opción de deshacer.', 'Si añadimos funciones nuevas al conector, abre un chat nuevo para que Claude las vea.', 'Para ahorrar uso, desactiva el conector en los chats que no son de Bitácora.'],
     },
     {
         id: 'avisos', grupo: 'empezar', titulo: 'notificaciones.',
@@ -149,7 +149,7 @@ const GUIA = [
             [guiaBoton('tu correo'), 'Vuelos, trenes y autobuses entran como evento a la hora de salida; hoteles, con la entrada y la salida; entradas y restaurantes, con su sitio; los pedidos, en Envíos. Cualquier otro correo queda como tarea pendiente.'],
             [guiaBoton('cámbialo'), 'Si pierdes el enlace o la dirección, o alguien que no debe la conoce, crea una nueva: la anterior deja de funcionar.'],
         ],
-        trucos: ['Estos enlaces solo sirven para apuntar: no dejan leer nada de tu Bitácora.', 'Lo que entra así queda en el historial de la bandeja, con deshacer.'],
+        trucos: ['Estos enlaces solo sirven para apuntar: no dejan leer nada de tu Bitácora.', 'Lo que entra así queda en el historial de propuestas, con deshacer.'],
     },
     {
         id: 'home', grupo: 'general', titulo: 'calendario.',
@@ -177,7 +177,7 @@ const GUIA = [
             [guiaBoton('tu mes.'), 'Una tarjeta vertical con tu mes (planes, viajes, lo que terminaste de leer o ver, tareas hechas, días con rutinas, exámenes aprobados) para guardarla o subirla a stories. Antes, toca lo que no quieras enseñar y desaparece; el dinero va apagado salvo que lo enciendas.'],
             [guiaBoton('revisión semanal.'), 'Repaso guiado de la semana.'],
             [guiaBoton('estadísticas. patrones.'), 'Tus cifras, tu estancia en Bitácora y patrones de gasto y rutinas.'],
-            [guiaBoton('bandeja.'), 'Solo aparece cuando hay algo pendiente de revisar. Las copias están en Ajustes.'],
+            [guiaBoton('propuestas.'), 'Solo aparece cuando hay algo pendiente de revisar. Las copias están en Ajustes.'],
         ],
     },
     {
@@ -460,7 +460,7 @@ const GUIA = [
             [guiaBoton('Gastos'), 'Lo que gastaste en el viaje, sacado de Finanzas: los movimientos marcados como «gasto de viaje.» con este viaje o dentro de sus fechas. Total, media por día, reparto por categorías y la lista día a día. «revisar qué gastos son del viaje.» abre la herramienta para marcarlos.'],
             [guiaBoton('Compartir'), 'Envía el viaje a un amigo de Bitácora.'],
         ],
-        trucos: ['Pide a Claude que lea los correos de reserva y complete el viaje: transportes, alojamientos e itinerario (pasa por la bandeja).'],
+        trucos: ['Pide a Claude que lea los correos de reserva y complete el viaje: transportes, alojamientos e itinerario (pasa por propuestas).'],
     },
     {
         id: 'actualizaciones', grupo: 'otros', titulo: 'envíos.',
@@ -523,7 +523,7 @@ const GUIA = [
         pasos: ['Elige un centro en la columna izquierda (un viaje, un equipo, una persona...).', 'Verás su constelación y, debajo, la lista. Toca cualquier punto para abrir esa entrada.'],
     },
     {
-        id: 'bandeja', grupo: 'sistema', titulo: 'bandeja.',
+        id: 'bandeja', grupo: 'sistema', titulo: 'propuestas.',
         lema: 'Lo que Claude propone, esperando tu visto bueno.',
         intro: 'Los cambios que piden Claude o ChatGPT (salvo eventos, entradas con QR, Ocio, tarjetas de estudio, tests, compra, proyectos, hitos y progreso de objetivos, agenda laboral y profesorado, que se aplican solos y se pueden deshacer aquí) no se aplican hasta que los validas. El número en granate del menú es lo que tienes pendiente.',
         botones: [

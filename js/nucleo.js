@@ -952,7 +952,7 @@
             estudiar: 'Estudios',
             links: 'Enlaces',
             actualizaciones: 'Envíos',
-            bandeja: 'Bandeja',
+            bandeja: 'Propuestas',
             suggestions: 'Sugerencias',
             settings: 'Ajustes'
         };
@@ -994,7 +994,7 @@
                 { view: 'graph', icon: '◇', text: 'Conexiones' },
             ] },
             { label: 'Sistema', items: [
-                { view: 'bandeja', icon: '▣', text: 'Bandeja' },
+                { view: 'bandeja', icon: '▣', text: 'Propuestas' },
                 { view: 'suggestions', icon: '✎', text: 'Sugerencias' },
                 { view: 'settings', icon: '⚙', text: 'Ajustes' },
             ] },
