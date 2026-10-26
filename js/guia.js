@@ -543,6 +543,7 @@ const GUIA = [
         lema: 'Cómo es y cómo se comporta tu Bitácora.',
         intro: 'Agrupados en cuenta, apartados, conexiones, apariencia, ayuda, herramientas y zona de riesgo. Arriba, un buscador y un índice para saltar a cada grupo.',
         botones: [
+            [guiaBoton('vengo de otra app.'), 'De dónde puedes traer tus cosas (Google Calendar, el banco, Goodreads, Letterboxd, IMDb, Anki, notas) y un botón que te lleva al importador de cada una.'],
             [guiaBoton('invita a un amigo.'), 'Tu código y tu enlace. Quien se da de alta con él tiene 30 días de prueba en vez de 14 y, cuando entra, los dos desbloqueáis el tema «oliva.». Si te han invitado a ti y aún estás en la prueba, escribe aquí su código.'],
             [guiaBoton('busca un ajuste.'), 'Escribe lo que buscas (tema, avisos, exportar, borrar cuenta...) y solo quedan los ajustes que tienen que ver.'],
             [guiaBoton('semana de ejemplo.'), 'En ayuda: pone una semana inventada para ver cómo se conecta todo, o la quita si ya la tienes. Solo se borra lo del ejemplo.'],

@@ -9672,3 +9672,17 @@ body.mobile-standalone .anual-overlay, body.pwa .anual-overlay { transition: non
         content: ''; position: absolute; inset: min(0px, calc((100% - 44px) / 2));
     }
 }
+
+/* Instalar en el iPhone (Safari): tarjeta abajo que señala el botón de compartir. */
+#instalar-iphone { position: fixed; left: 12px; right: 12px; bottom: 14px; z-index: 900; display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--bg-modal); color: var(--text-primary); font-family: var(--font-family); font-size: 14px; box-shadow: var(--shadow); }
+#instalar-iphone b { font-size: 16px; }
+#instalar-iphone ol { margin: 0; padding-left: 20px; color: var(--text-secondary); line-height: 1.5; }
+#instalar-iphone svg { vertical-align: -2px; color: var(--text-primary); }
+.instalar-iphone-acciones { display: flex; justify-content: flex-end; }
+.instalar-iphone-acciones button { min-height: 40px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: 10px; background: none; color: var(--text-primary); font: 600 14px var(--font-family); }
+.instalar-iphone-flecha { position: absolute; left: 50%; bottom: -9px; width: 16px; height: 16px; margin-left: -8px; background: var(--bg-modal); border-right: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); transform: rotate(45deg); }
+.vengo-lista { display: flex; flex-direction: column; }
+.vengo-fila { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--border); }
+.vengo-fila > span { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.vengo-fila small { color: var(--text-secondary); font-size: 12.5px; line-height: 1.4; }
+.vengo-fila .btn-secondary { width: auto; flex-shrink: 0; }

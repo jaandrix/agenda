@@ -569,6 +569,11 @@
                         <span><b>guía para tu ia.</b><small>Descárgala y pásasela a ChatGPT, Claude o Gemini: te enseña Bitácora paso a paso y te resuelve dudas.</small></span>
                         <span class="ajustes-guia-flecha" aria-hidden="true">→</span>
                     </button>` : ''}
+                    <button class="ajustes-guia ajustes-guia-ia" onclick="openVengoDe()">
+                        <span class="ajuste-icono"><i class='ico ico-abrir' aria-hidden=true></i></span>
+                        <span><b>vengo de otra app.</b><small>Trae tu calendario, tus libros y pelis, el extracto del banco o tus tarjetas de estudio.</small></span>
+                        <span class="ajustes-guia-flecha" aria-hidden="true">→</span>
+                    </button>
 
                     <div class="ajustes-buscador">
                         <input id="ajustes-buscar" class="modal-input" type="search" placeholder="busca un ajuste: tema, avisos, exportar..." oninput="filtrarAjustes(this.value)" autocomplete="off">

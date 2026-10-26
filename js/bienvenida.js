@@ -313,8 +313,49 @@ async function enviarPreguntaFalta() {
 }
 
 // Una sola ventana por arranque: primero la bienvenida (en su sitio), luego el fin de la prueba y, si no, la pregunta.
+// En Safari del iPhone, una tarjeta abajo con los dos pasos para instalarla; la flecha señala el botón de
+// compartir, que en el iPhone está en la barra de abajo. Una vez instalada (o descartada) no vuelve a salir.
+function avisoInstalarIphone() {
+    const ua = navigator.userAgent;
+    const enSafariIphone = /iphone|ipod/i.test(ua) && /safari/i.test(ua) && !/crios|fxios|edgios/i.test(ua);
+    if (!enSafariIphone || navigator.standalone || document.getElementById('instalar-iphone')) return;
+    try { if (localStorage.getItem('bitacora-instalar-visto')) return; } catch (_) { return; }
+    const t = document.createElement('div');
+    t.id = 'instalar-iphone';
+    t.setAttribute('role', 'dialog');
+    t.setAttribute('aria-label', 'instálala en tu iPhone.');
+    t.innerHTML = `<b>instálala en tu iPhone.</b>
+        <ol><li>Pulsa el botón de compartir <svg viewBox="0 0 100 100" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M50 4 72 26l-8 8-8-8v38H44V26l-8 8-8-8zM18 40h16v10H28v36h44V50h-6V40h16v56H18z"/></svg>, abajo.</li><li>Elige «Añadir a pantalla de inicio».</li></ol>
+        <span class="instalar-iphone-acciones"><button type="button" onclick="cerrarInstalarIphone()">ahora no.</button></span>
+        <i class="instalar-iphone-flecha" aria-hidden="true"></i>`;
+    document.body.appendChild(t);
+}
+function cerrarInstalarIphone() {
+    try { localStorage.setItem('bitacora-instalar-visto', '1'); } catch (_) { /* sin almacenamiento */ }
+    document.getElementById('instalar-iphone')?.remove();
+}
+
 async function comprobarAvisosDeArranque() {
+    avisoInstalarIphone();
     if (modalEnPantalla()) return;
     if (comprobarFinPrueba()) return;
     await comprobarPreguntaFalta();
+}
+
+// «vengo de otra app.»: una guía corta por cada sitio de donde se puede traer algo, con el importador que ya
+// existe. Cada «abrir.» lleva al apartado y abre su importador.
+const VENGO_DE = [
+    ['Google Calendar, iPhone u Outlook', 'Exporta el calendario como .ics (o copia su enlace) y súbelo en Eventos. Se añaden todos los eventos, también los que se repiten.', "switchView('events'); setTimeout(openEventsImportModal, 300)"],
+    ['El banco', 'Descarga el extracto de tu cuenta en CSV o Excel desde la web del banco y súbelo en Finanzas. Bitácora reconoce los bancos españoles y cuadra el saldo.', "switchView('finances'); setTimeout(openFinanceProImportModal, 300)"],
+    ['Goodreads', 'En Goodreads: My Books → Import and export → Export library. Sube ese CSV en Ocio.', "switchView('culture'); setTimeout(openGoodreadsImportModal, 300)"],
+    ['Letterboxd', 'En Letterboxd: Settings → Import & Export → Export your data. Sube el ZIP o el CSV en Ocio.', "switchView('culture'); setTimeout(openLetterboxdImportModal, 300)"],
+    ['IMDb (series)', 'Exporta tu lista o tus valoraciones de IMDb en CSV y súbelas en Ocio.', "switchView('culture'); setTimeout(openImdbSeriesImportModal, 300)"],
+    ['Anki', 'En Anki: Archivo → Exportar → Notas en texto plano. En Repaso, abre un mazo y pulsa «importar.».', "switchView('estudiar')"],
+    ['Notas del móvil, Notion u otra app de notas', 'Copia el texto y pégalo en «apuntar.»: cada línea se convierte en lo que sea (tarea, evento, nota). Si usas Claude o ChatGPT conectado, pásale la exportación y que lo apunte él.', 'openApuntar()'],
+    ['Una copia de Bitácora', 'Si exportaste tus datos antes, súbelos en Ajustes → tus datos. Se juntan con lo que ya tienes.', "switchView('settings')"],
+];
+function openVengoDe() {
+    showModal(`<div class="modal-title">vengo de otra app.</div>
+        <p class="finance-modal-note" style="margin:0 0 14px">Elige de dónde vienes y te llevo al sitio para traerlo.</p>
+        <div class="vengo-lista">${VENGO_DE.map(([t, texto, accion]) => `<div class="vengo-fila"><span><b>${t}</b><small>${texto}</small></span><button type="button" class="btn-secondary" onclick="closeModal(); ${accion}">abrir.</button></div>`).join('')}</div>`);
 }
