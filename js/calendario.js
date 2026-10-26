@@ -578,6 +578,7 @@
         let calAnimClave = null;
         function renderCalendar() {
             let html = `<div class="cal-home">`;
+            html += renderCalendarioHoy();
             html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
                 <div class="culture-tabs" style="margin-bottom:0">
                     ${[['day','día.'],['week','semana.'],['month','mes.']].map(([id,label]) => `

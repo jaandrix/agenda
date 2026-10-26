@@ -5794,34 +5794,7 @@ body.mobile-standalone.m-menu-abierto #mobile-shell { overflow:hidden; }
 .event-sq-day.event-sq-day-en-1 { background:#d9452f; color:#fff; border-color:#d9452f; }
 .event-sq-day.event-sq-day-en-0 { background:#a3243b; color:#fff; border-color:#a3243b; }
 
-/* Centro resumen: "tu estancia en bitácora." dentro de un botón arriba a
-   la derecha. El panel se despliega desde el botón (como "filtro.") y los
-   radios del gráfico crecen uno tras otro dando la vuelta al círculo. */
 .home-cabecera { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
-.home-estancia { position:relative; flex-shrink:0; }
-.home-estancia-btn { width:42px; height:42px; box-sizing:border-box; border-radius:50%; background:var(--bg-card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-primary); cursor:pointer; padding:0; transition:background .15s ease, border-color .15s ease, transform .3s var(--ease-out); }
-.home-estancia-btn svg { width:24px; height:24px; display:block; transition:transform .5s var(--ease-out); }
-.home-estancia-btn:hover, .home-estancia-btn.activo { background:var(--bg-card-hover); border-color:var(--border-strong); }
-.home-estancia-btn.activo svg { transform:rotate(45deg); }
-/* Gráfico flotando en el centro sobre toda la pantalla difuminada, sin
-   panel. Sale desde el botón (translate --dx/--dy + escala pequeña) y
-   vuelve a él al cerrar. */
-.estancia-overlay { position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(0,0,0,0); backdrop-filter:none; -webkit-backdrop-filter:none; transition:background .4s ease; }
-.estancia-overlay.abierto { background:rgba(0,0,0,.74); backdrop-filter:none; -webkit-backdrop-filter:none; }
-body.papel .estancia-overlay.abierto { background:rgba(255,255,255,.18); }
-.estancia-flotante { display:flex; flex-direction:column; align-items:center; gap:14px; color:var(--text-primary); transform:translate(var(--dx), var(--dy)) scale(.12); opacity:0; transition:transform .38s var(--ease-out), opacity .3s ease .08s; }
-.estancia-overlay.abierto .estancia-flotante { transform:none; opacity:1; transition:transform .6s var(--ease-out), opacity .25s ease; }
-.estancia-flotante .bitacora-activity-radial { width:min(72vmin, 440px); height:min(72vmin, 440px); flex:none; }
-.estancia-flotante-titulo { font-size:14px; font-weight:600; color:var(--text-primary); opacity:.75; }
-@keyframes radialCrecer { from { stroke-dashoffset:1; } to { stroke-dashoffset:0; } }
-@keyframes radialAparecer { from { opacity:0; } }
-.estancia-overlay.abierto .radial-barra { stroke-dasharray:1; stroke-dashoffset:1; animation:radialCrecer .5s var(--ease-out) calc(var(--i) * 7ms + 260ms) forwards; }
-.estancia-overlay.abierto .radial-guia { animation:radialAparecer .4s ease calc(var(--i) * 7ms + 200ms) both; }
-.estancia-overlay.cerrando .radial-barra { stroke-dasharray:1; stroke-dashoffset:0; }
-@media (prefers-reduced-motion: reduce) {
-    .estancia-overlay, .estancia-flotante, .home-estancia-btn svg { transition:none !important; }
-    .estancia-overlay.abierto .radial-barra, .estancia-overlay.abierto .radial-guia { animation:none; stroke-dashoffset:0; }
-}
 
 /* ============================================================
    TEMA TEJA — dónde entra el color (las variables están arriba, en
@@ -5833,7 +5806,6 @@ body.acuarela .home-launcher-row .home-launcher-icon { border-color:transparent;
 body.acuarela .home-launcher-row:nth-child(3n+1) .home-launcher-icon { background:var(--teja); color:var(--text-primary); }
 body.acuarela .home-launcher-row:nth-child(3n+2) .home-launcher-icon { background:var(--text-primary); color:var(--bg-card); }
 body.acuarela .home-launcher-row:nth-child(3n+3) .home-launcher-icon { background:var(--bg-card-hover); color:var(--text-primary); }
-body.acuarela .home-estancia-btn { background:var(--teja); border-color:transparent; color:var(--text-primary); }
 body.acuarela .planner-action-card { border-color:transparent; }
 body.acuarela .planner-action-card:nth-child(1) { background:var(--teja); }
 body.acuarela .planner-action-card:nth-child(2) { background:var(--text-primary); }
@@ -9606,10 +9578,10 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { overscroll-behavior
    anima la hoja, que sube deslizándose. */
 @media (max-width: 600px) {
     .modal-overlay, .command-palette-overlay, .centered-message-overlay { animation: none !important; }
-    .estancia-overlay, .anual-overlay { transition: none !important; }
+    .anual-overlay { transition: none !important; }
 }
 body.mobile-standalone :is(.modal-overlay, .command-palette-overlay, .centered-message-overlay), body.pwa :is(.modal-overlay, .command-palette-overlay, .centered-message-overlay) { animation: none !important; }
-body.mobile-standalone :is(.estancia-overlay, .anual-overlay), body.pwa :is(.estancia-overlay, .anual-overlay) { transition: none !important; }
+body.mobile-standalone .anual-overlay, body.pwa .anual-overlay { transition: none !important; }
 
 /* Guía descargable para una IA (guia-ia.js). */
 .guia-ia { display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 12px; flex-shrink:0; border:1px solid var(--border-strong); border-radius:10px; background:none; color:var(--text-primary); font:600 13px var(--font-family); cursor:pointer; white-space:nowrap; }
@@ -9649,7 +9621,6 @@ body.mobile-standalone :is(.estancia-overlay, .anual-overlay), body.pwa :is(.est
 @media (max-width: 560px) { .plan-dia { grid-template-columns:minmax(0, 1fr) 32px; row-gap:6px; } .plan-mas { grid-column:2; } .plan-dia-platos { grid-column:1 / -1; grid-row:2; } .plan-repetir { margin-left:0; } }
 
 /* Panorama: elegir tarjetas (26-10) */
-.home-estancia { display:flex; align-items:center; gap:10px; }
 .pano-tarea.hecha .pano-linea-txt { color:var(--text-secondary); text-decoration:line-through; }
 .pano-tarea.hecha .pano-prio { background:var(--text-secondary); border-color:var(--text-secondary); }
 .pano-ed-fila { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
@@ -9662,3 +9633,40 @@ body.mobile-standalone :is(.estancia-overlay, .anual-overlay), body.pwa :is(.est
 .pano-ed-baja { transform:rotate(90deg); }
 .pano-ed-acciones { display:flex; align-items:center; gap:12px; margin-top:18px; }
 .pano-ed-acciones .btn-modal-primary { flex:1; margin:0; }
+
+/* Panorama y franja de hoy del calendario. */
+#main-header #fab { position:static; width:auto; height:38px; padding:0 14px; gap:7px; border-radius:10px; box-shadow:none; font-size:13px; font-weight:800; flex-shrink:0; }
+#main-header #fab:hover { transform:none; box-shadow:none; }
+#main-header #fab:active { transform:scale(.97); }
+.pano > .pano-hoy-estable { width:100%; min-height:0; margin-top:14px; box-sizing:border-box; }
+.pano-card { min-height:0; padding:18px; gap:12px; }
+.pano-card.semana, .pano-card.mes { min-height:210px; }
+.pano-card-icono { width:28px; height:28px; border-radius:0; background:none; }
+.pano-card-icono svg { width:18px; height:18px; }
+.pano-card-tit b { font-size:18px; }
+.pano-card-cab { gap:10px; }
+.pano-linea-txt { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.pano-cifras { font-variant-numeric:tabular-nums; }
+.pano-ed-titulo { margin:18px 0 4px; font-size:16px; font-weight:800; }
+.pano-ed-titulo:first-child { margin-top:0; }
+.pano-ed-fila label span { display:flex; flex-direction:column; gap:2px; }
+.pano-ed-fila label b { font-size:14.5px; }
+.pano-ed-fila label small, .pano-ed-vacio { color:var(--text-secondary); font-size:12px; }
+.pano-ed-fila[draggable="true"] { cursor:grab; transition:opacity 200ms ease-in-out, transform 200ms ease-in-out; }
+.pano-ed-fila.arrastrando { opacity:.45; }
+.pano-tareas-contexto { align-self:end; color:var(--text-secondary); font-size:12px; }
+.pano-revision-accion { font-size:13px; font-weight:700; text-decoration:underline; text-underline-offset:2px; }
+.pano-sin-tarjetas { margin-top:14px; }
+.home-stats-estancia { width:min(280px, 100%); aspect-ratio:1; margin:8px auto 20px; }
+.cal-hoy { display:flex; align-items:center; gap:10px 16px; margin:0 0 16px; padding:10px 0; border-bottom:1px solid var(--border); color:var(--text-primary); font-size:13.5px; }
+.cal-hoy > b { font-size:16px; }
+.cal-hoy > span:not(.cal-hoy-acciones) { color:var(--text-secondary); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cal-hoy-acciones { display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; }
+.cal-hoy button { padding:6px 10px; border:1px solid var(--border-strong); border-radius:10px; background:none; color:var(--text-primary); font:600 12.5px var(--font-family); cursor:pointer; }
+@media (max-width:768px) {
+    #main-header #fab { display:none; }
+    .cal-hoy { flex-wrap:wrap; }
+    .cal-hoy > span:not(.cal-hoy-acciones) { flex:1; }
+    .cal-hoy-acciones { width:100%; justify-content:flex-end; }
+}
+@media (prefers-reduced-motion:reduce) { .pano-ed-fila { transition:none; } }

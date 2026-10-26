@@ -234,9 +234,9 @@ a menor resolución.
 
 ## Mapa rápido de apartados grandes ya construidos
 
-- **Calendario:** vistas día/semana/mes; en la vista mensual, los eventos se marcan
+- **Calendario (vista `calendar`, antes «Home»):** una franja compacta «hoy.» empuja a la acción sin desplazar el mes; vistas día/semana/mes; en la vista mensual, los eventos se marcan
   como puntos de color (no líneas) bajo el número de cada día.
-- **Panorama (vista `home`, antes "Centro resumen"):** dashboard de lanzadores a cada apartado + estadísticas.
+- **Panorama (vista `home`, antes "Centro resumen"):** «a tener en cuenta.» y una tarjeta ancha «hoy.» son estables; debajo, tarjetas secundarias elegibles por perfil y estadísticas con «tu estancia en bitácora.».
 - **Planificador:** timeline diaria (pestañas Hoy/Mañana/Pasado mañana, cada día
   empieza a las 4:00 am, lo no marcado se arrastra al día siguiente destacado en
   granate), tareas recurrentes, bloque "tareas pendientes." (backlog sin fecha/hora

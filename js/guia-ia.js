@@ -201,7 +201,7 @@ const GUIA_IA_RECETAS = [
     ]],
     ['Recuperar algo que borraste o volver atrás', [
         'Si lo hizo Claude, ChatGPT, Siri o Apuntar: «bandeja.» → historial → «deshacer».',
-        'Si no: Documentos → «copias.» (o Panorama → copia de seguridad) y restaura una copia. Se hace una al día y una completa cada semana.',
+        'Si no: Documentos → «copias.» (o Ajustes → tus datos → «copias.») y restaura una copia. Se hace una al día y una completa cada semana.',
     ]],
     ['Cambiar el tema, la letra o el tamaño del texto', [
         'Ajustes → apariencia: tema, tipografía y modo ancho.',
@@ -299,7 +299,8 @@ const GUIA_IA_GLOSARIO = [
     ['planificador', 'Tu día hora a hora; cada día empieza a las 4:00.'],
     ['tareas pendientes', 'Tareas sin día ni hora, para pasarlas a hoy cuando toque.'],
     ['rutinas', 'Lo que antes se llamaba hábitos: lo que haces con frecuencia, sin puntos ni medallas.'],
-    ['panorama', 'El resumen con tarjetas: tu día, hoy, entregas, tareas, la semana, el mes y lo que viene.'],
+    ['calendario', 'La primera pantalla: una franja con lo siguiente de hoy y el calendario de día, semana o mes.'],
+    ['panorama', 'El resumen con hoy siempre arriba y tarjetas editables para tareas, entregas, la semana y lo que viene.'],
     ['ritmo', 'Cómo va tu gasto del mes comparado con lo normal en ti a estas alturas.'],
     ['largo plazo', 'La planificación mensual del sueldo en casillas, con deseos e inversiones.'],
     ['ahorro (marca)', 'Movimiento que va o viene de una hucha: mueve el saldo, pero no es ingreso ni gasto.'],

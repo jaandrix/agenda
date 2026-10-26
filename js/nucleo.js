@@ -927,7 +927,7 @@
         };
 
         const VIEW_LABELS = {
-            calendar: 'Home',
+            calendar: 'Calendario',
             home: 'Panorama',
             culture: 'Ocio',
             travels: 'Viajes',
@@ -964,7 +964,7 @@
         // ============================================================
         const NAV_SECTIONS = [
             { label: 'General', items: [
-                { view: 'calendar', icon: '◷', text: 'Home' },
+                { view: 'calendar', icon: '◷', text: 'Calendario' },
                 { view: 'home', icon: '⌂', text: 'Panorama' },
                 { view: 'planner', icon: '▤', text: 'Planificador' },
                 { view: 'compra', icon: '◍', text: 'Despensa' },

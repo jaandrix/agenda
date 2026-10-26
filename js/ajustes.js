@@ -585,6 +585,7 @@
                                 <button class="btn-secondary" style="width:auto" onclick="exportData()">exportar.</button>
                                 <button class="btn-secondary" style="width:auto" onclick="document.getElementById('import-input').click()">importar.</button>
                                 <button class="btn-secondary" style="width:auto" onclick="openEventsImportModal()">importar calendario.</button>
+                                <button class="btn-secondary" style="width:auto" onclick="openHomeBackupModal()">copias.</button>
                             </div>`)}
                     </div>
 

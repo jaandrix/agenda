@@ -696,9 +696,9 @@
             const nameLink = `<a href="javascript:void(0)" class="username-link" onclick="editUserName()">${nameDisplay}</a><span class="title-period">.</span>`;
             if (currentView === 'calendar') {
                 const greeting = greetingText().replace(/\.$/, '');
-                titleEl.innerHTML = `Home - ${greeting} ${nameLink}`;
+                titleEl.innerHTML = `Calendario - ${greeting} ${nameLink}`;
             } else {
-                const baseTitle = VIEW_LABELS[currentView] || 'Home';
+                const baseTitle = VIEW_LABELS[currentView] || 'Calendario';
                 titleEl.innerHTML = `${baseTitle} de ${nameLink}`;
             }
             updateAddButton();
