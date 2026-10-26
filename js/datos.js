@@ -744,7 +744,7 @@
             if (type) openNewEntry(type);
         }
 
-        // El botón de apuntar no cambia de dibujo (está en index.html: el rayo y
+        // El botón de apuntar no cambia de dibujo (está en index.html: el + y
         // «apuntar.»); en Empleo solo añade un anillo de pulso. Antes se
         // reescribía con el rayo antiguo y la pastilla quedaba descentrada.
         function updateFabIcon() {
