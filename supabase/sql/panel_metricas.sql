@@ -31,7 +31,9 @@ begin
         'opcionales', (select coalesce(jsonb_object_agg(k, n), '{}') from (select k, count(*) n from bitacora, jsonb_each_text(coalesce(data->'apartadosConfig'->'opcionales', '{}')) as e(k, v) where v = 'true' group by 1) x),
         'con_avisos', (select count(distinct user_id) from push_subscriptions),
         'con_conector', (select count(distinct user_id) from conector_tokens where nombre not in ('siri', 'correo')),
-        'correo_domingos', (select count(*) from correo_semanal where activo)
+        'correo_domingos', (select count(*) from correo_semanal where activo),
+        -- Tamaño de los datos de cada cuenta (KB), para saber si hace falta guardar aparte lo antiguo.
+        'datos_kb', (select jsonb_build_object('media', round(avg(pg_column_size(data)) / 1024.0), 'p90', round((percentile_cont(0.9) within group (order by pg_column_size(data)) / 1024.0)::numeric), 'maxima', round(max(pg_column_size(data)) / 1024.0), 'maxima_sin_comprimir', round(max(octet_length(data::text)) / 1024.0)) from bitacora)
     ) into r;
     return r;
 end $$;
