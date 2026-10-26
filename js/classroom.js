@@ -123,7 +123,8 @@
                 },
                 error_callback: () => pintarClassroom('Se cerró la ventana de Google antes de terminar.'),
             });
-            cliente.requestAccessToken();
+            // Tras el primer permiso, Google no vuelve a enseñar la pantalla de consentimiento: basta con elegir la cuenta.
+            cliente.requestAccessToken(classroomDatos().ultima ? { prompt: '' } : {});
         }
 
         async function classroomPedir(ruta) {
@@ -181,19 +182,17 @@
                     (t.courseWork || []).forEach(cw => { const sitio = classroomBuscar(cw.id); if (sitio && classroomQuitar(sitio)) cuenta.quitadas++; });
                 } catch (e) { cuenta.fallos++; }
             }
-            for (const c of unidas) {
-                try {
-                    const [tareas, entregas] = await Promise.all([
-                        classroomPedir(`courses/${c.id}/courseWork?courseWorkStates=PUBLISHED&pageSize=100`),
-                        classroomPedir(`courses/${c.id}/courseWork/-/studentSubmissions?userId=me&pageSize=100`),
-                    ]);
-                    const porTarea = {};
-                    (entregas.studentSubmissions || []).forEach(e => { porTarea[e.courseWorkId] = e; });
-                    classroomAplicar(findSubject(datos.cursos[c.id]), c.id, tareas.courseWork || [], porTarea, cuenta);
-                } catch (e) {
-                    cuenta.fallos++;
-                    if (String(e?.message).includes('401')) { classroomToken = null; break; }
-                }
+            // Todas las clases a la vez (antes una detrás de otra); se aplican después, en orden.
+            const leidas = await Promise.all(unidas.map(c => Promise.all([
+                classroomPedir(`courses/${c.id}/courseWork?courseWorkStates=PUBLISHED&pageSize=100`),
+                classroomPedir(`courses/${c.id}/courseWork/-/studentSubmissions?userId=me&pageSize=100`),
+            ]).then(r => ({ c, r }), e => ({ c, e }))));
+            for (const { c, r, e } of leidas) {
+                if (e) { cuenta.fallos++; if (String(e?.message).includes('401')) classroomToken = null; continue; }
+                const [tareas, entregas] = r;
+                const porTarea = {};
+                (entregas.studentSubmissions || []).forEach(x => { porTarea[x.courseWorkId] = x; });
+                classroomAplicar(findSubject(datos.cursos[c.id]), c.id, tareas.courseWork || [], porTarea, cuenta);
             }
             datos.ultima = new Date().toISOString();
             render();
