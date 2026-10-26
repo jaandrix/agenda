@@ -130,7 +130,7 @@
                 ${offset === 0 ? renderPlannerStampBar(items, dueToday, today) : ''}
 
                 <div class="planner-action-row">
-                    <button class="planner-action-card" onclick="openAddPlannerItem()" title="+ evento.">
+                    <button class="planner-action-card" onclick="openAddPlannerItem()" title="+ tarea.">
                         <span class="planner-action-icon">${PLANNER_ICON_ADD}</span>
                         <span class="planner-action-count">${todayItemsCount} hoy.</span>
                     </button>
@@ -181,7 +181,7 @@
                             <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}', ${offset})"><i class='ico ico-x' aria-hidden=true></i></button>
                         </div>`;
                     }).join('') : `
-                        <div class="finance-empty-state">Aún no has añadido eventos ${emptyLabel}. Pulsa <strong>+ evento.</strong> para empezar tu planificación.</div>
+                        <div class="finance-empty-state">Aún no has añadido tareas ${emptyLabel}. Pulsa <strong>+ tarea.</strong> para empezar tu planificación.</div>
                     `}
                 </div>
             </div>`;

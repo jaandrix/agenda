@@ -439,7 +439,7 @@
             window._financePrivacyPromptCallback = afterEnter || null;
             showModal(`
                 <div class="modal-title">Modo privacidad</div>
-                <div class="finance-modal-note" style="margin:4px 0 18px">¿Quieres entrar a tu dashboard de Finanzas con el modo privacidad activado (cifras ocultas)?</div>
+                <div class="finance-modal-note" style="margin:4px 0 18px">¿Quieres entrar a Finanzas con el modo privacidad activado (cifras ocultas)?</div>
                 <button class="btn-modal-primary" id="finance-privacy-yes-btn" onclick="answerFinancePrivacyPrompt(true)">Sí</button>
                 <button class="btn-secondary" style="margin-top:10px" onclick="answerFinancePrivacyPrompt(false)">No</button>
             `);

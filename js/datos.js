@@ -844,22 +844,33 @@
         // ============================================================
         const FONT_OPTIONS = [
             { id: 'poppins', label: 'Poppins', stack: "'Poppins', -apple-system, system-ui, sans-serif" },
-            { id: 'inter', label: 'Inter', stack: "'Inter', -apple-system, system-ui, sans-serif" },
-            { id: 'space-grotesk', label: 'Space Grotesk', stack: "'Space Grotesk', -apple-system, system-ui, sans-serif" },
-            { id: 'dm-sans', label: 'DM Sans', stack: "'DM Sans', -apple-system, system-ui, sans-serif" },
-            { id: 'lora', label: 'Lora', stack: "'Lora', Georgia, serif" },
+            { id: 'inter', label: 'Inter', stack: "'Inter', -apple-system, system-ui, sans-serif", url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap' },
+            { id: 'space-grotesk', label: 'Space Grotesk', stack: "'Space Grotesk', -apple-system, system-ui, sans-serif", url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap' },
+            { id: 'dm-sans', label: 'DM Sans', stack: "'DM Sans', -apple-system, system-ui, sans-serif", url: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap' },
+            { id: 'lora', label: 'Lora', stack: "'Lora', Georgia, serif", url: 'https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap' },
             { id: 'jetbrains-mono', label: 'JetBrains Mono', stack: "'JetBrains Mono', 'Courier New', monospace" }
         ];
+
+        function cargarFuenteElegida(opt) {
+            if (!opt.url || document.querySelector(`link[href="${opt.url}"]`)) return;
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = opt.url;
+            link.crossOrigin = 'anonymous';
+            document.head.appendChild(link);
+        }
 
         function loadFontPref() {
             const id = localStorage.getItem('bitacora_font') || 'poppins';
             const opt = FONT_OPTIONS.find(f => f.id === id) || FONT_OPTIONS[0];
+            cargarFuenteElegida(opt);
             document.documentElement.style.setProperty('--font-family', opt.stack);
         }
 
         function setFontPref(id) {
             const opt = FONT_OPTIONS.find(f => f.id === id);
             if (!opt) return;
+            cargarFuenteElegida(opt);
             document.documentElement.style.setProperty('--font-family', opt.stack);
             localStorage.setItem('bitacora_font', id);
             const container = document.getElementById('font-options-container');
@@ -869,6 +880,8 @@
 
         function renderFontOptionsList() {
             const current = localStorage.getItem('bitacora_font') || 'poppins';
+            // Cada opción se enseña en su letra: al abrir el selector se cargan todas.
+            FONT_OPTIONS.forEach(cargarFuenteElegida);
             return `<div class="font-option-list">${FONT_OPTIONS.map(f => `
                 <div class="font-option-row${f.id === current ? ' font-option-row-active' : ''}" onclick="setFontPref('${f.id}')">
                     <div class="font-option-preview" style="font-family:${f.stack}">${escapeHtml(f.label)}</div>
@@ -918,7 +931,7 @@
         //  TOAST
         // ============================================================
         function showToast(msg, isError = false) {
-            if (isError) contarFallo(msg, '', 'aviso');
+            if (isError) contarFallo(null, '', 'toast');
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.className = isError ? 'error' : '';

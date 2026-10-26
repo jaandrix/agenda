@@ -20,6 +20,52 @@ function privada(host: string) {
     return /^(localhost|127\.|10\.|192\.168\.|169\.254\.|0\.|\[?::1\]?$)/i.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) || host.endsWith('.internal') || host.endsWith('.local');
 }
 
+function ipv4NoPublica(ip: string) {
+    const partes = ip.split('.').map(Number);
+    if (partes.length !== 4 || partes.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return true;
+    const [a, b, c] = partes;
+    return a === 0 || a === 10 || a === 127 || a >= 224 ||
+        (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) ||
+        (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 0 && c === 0) ||
+        (a === 192 && b === 0 && c === 2) || (a === 192 && b === 88 && c === 99) ||
+        (a === 192 && b === 168) || (a === 198 && (b === 18 || b === 19)) ||
+        (a === 198 && b === 51 && c === 100) || (a === 203 && b === 0 && c === 113);
+}
+
+function ipv6NoPublica(ip: string) {
+    const valor = ip.toLowerCase().replace(/^\[|\]$/g, '').split('%')[0];
+    const mapeada = valor.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    if (mapeada) return ipv4NoPublica(mapeada[1]);
+    const mapeadaHex = valor.match(/^(?:::ffff:|(?:0:){5}ffff:)([\da-f]{1,4}):([\da-f]{1,4})$/);
+    if (mapeadaHex) {
+        const alta = parseInt(mapeadaHex[1], 16); const baja = parseInt(mapeadaHex[2], 16);
+        return ipv4NoPublica(`${alta >> 8}.${alta & 255}.${baja >> 8}.${baja & 255}`);
+    }
+    const primerGrupo = parseInt(valor.split(':')[0] || '0', 16);
+    return valor === '::' || valor === '::1' || /^f[cd]/.test(valor) ||
+        (primerGrupo >= 0xfe80 && primerGrupo <= 0xfebf) ||
+        (primerGrupo >= 0xff00 && primerGrupo <= 0xffff) ||
+        valor.startsWith('100:') || valor.startsWith('2001:db8:') || valor.startsWith('3fff:');
+}
+
+async function destinoPublico(url: URL) {
+    const host = url.hostname.replace(/^\[|\]$/g, '');
+    if (privada(host)) return false;
+    if (/^\d+(?:\.\d+){3}$/.test(host)) return !ipv4NoPublica(host);
+    if (host.includes(':')) return !ipv6NoPublica(host);
+    // Si el entorno no deja resolver DNS, se queda la comprobación de antes en vez de bloquear todas las importaciones.
+    if (typeof Deno.resolveDns !== 'function') return true;
+    try {
+        const [a, aaaa] = await Promise.all([
+            Deno.resolveDns(host, 'A').catch(() => [] as string[]),
+            Deno.resolveDns(host, 'AAAA').catch(() => [] as string[])
+        ]);
+        return a.length + aaaa.length > 0 && a.every(ip => !ipv4NoPublica(ip)) && aaaa.every(ip => !ipv6NoPublica(ip));
+    } catch (_) {
+        return false;
+    }
+}
+
 // Límite de peticiones por minuto y por usuario. Vive en la memoria de cada
 // instancia: no es exacto, pero frena a quien bombardee la función sin coste extra.
 const ventanas = new Map<string, { inicio: number; n: number }>();
@@ -41,18 +87,19 @@ Deno.serve(async req => {
     try { cuerpo = await req.json(); } catch (_) { return json({ error: 'Petición no válida' }, 400); }
     let url: URL;
     try { url = new URL(String(cuerpo.url || '').trim().replace(/^webcals?:\/\//i, 'https://')); } catch (_) { return json({ error: 'La dirección no es válida.' }, 400); }
-    if (url.protocol !== 'https:' || privada(url.hostname)) return json({ error: 'La dirección tiene que empezar por https:// (o webcal://).' }, 400);
+    if (url.protocol !== 'https:' || !(await destinoPublico(url))) return json({ error: 'La dirección tiene que empezar por https:// (o webcal://).' }, 400);
     try {
         // Las redirecciones se siguen a mano y se vuelve a comprobar cada destino: con redirect automático,
         // una web pública podía mandar la petición a una dirección interna y saltarse privada().
         let r: Response | null = null;
         for (let salto = 0; salto < 4; salto++) {
+            if (!(await destinoPublico(url))) return json({ error: 'La dirección apunta a una red no permitida.' }, 200);
             r = await fetch(url, { redirect: 'manual', headers: { 'User-Agent': 'Bitacora/1.0 (appbitacora.es)', Accept: 'text/calendar, text/plain, */*' }, signal: AbortSignal.timeout(15000) });
             if (r.status < 300 || r.status >= 400) break;
             const destino = r.headers.get('location');
             if (!destino) break;
             url = new URL(destino, url);
-            if (url.protocol !== 'https:' || privada(url.hostname)) return json({ error: 'El calendario redirige a una dirección no permitida.' }, 200);
+            if (url.protocol !== 'https:' || !(await destinoPublico(url))) return json({ error: 'El calendario redirige a una dirección no permitida.' }, 200);
             r = null;
         }
         if (!r || !r.ok) return json({ error: `La web respondió con un error (${r ? r.status : 'demasiadas redirecciones'}).` }, 200);

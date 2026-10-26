@@ -7,22 +7,24 @@
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Fallos que ven los usuarios, contados de forma anónima con GoatCounter (se ven en el pulso, «Uso de la
-        // app»): errores sin capturar y avisos de error de la app. Del mensaje se quitan números, enlaces, correos y
-        // lo que va entre comillas, para no mandar nunca datos de nadie. Cada fallo, una vez por sesión. Va aquí,
+        // app»): errores sin capturar y avisos de error de la app. Solo se mandan el tipo, nombre, archivo, línea y
+        // vista, nunca el mensaje del error o del aviso. Cada fallo, una vez por sesión. Va aquí,
         // en el primer archivo, para enterarse también de los que rompen la carga de otro (la pantalla en blanco).
         const fallosPendientes = [], fallosVistos = new Set();
         let fallosIntentos = 0;
-        function contarFallo(mensaje, origen, tipo = 'error') {
+        function contarFallo(error, origen, tipo = 'error', linea = 0) {
             try { if (localStorage.getItem('bitacora-uso-no-contar') === '1') return; } catch (e) { /* sin almacenamiento */ }
-            const m = String(mensaje || '').replace(/https?:\/\/\S+/g, '').replace(/\S+@\S+/g, '').replace(/["'«»“”]([^"'«»“”]{0,120})["'«»“”]/g, (t, dentro) => /^[\w.$-]{1,40}$/.test(dentro) ? t : '«…»').replace(/\d+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 80);
-            if (!m || /ResizeObserver|^Script error|extension:\/\/|Load failed|NetworkError|Failed to fetch|AbortError/i.test(m + ' ' + (origen || ''))) return;
-            const archivo = (String(origen || '').match(/\/js\/([\w-]+)\.js/) || [])[1] || (tipo === 'aviso' ? 'app' : 'otro');
+            const nombre = tipo === 'toast' ? 'sin-nombre' : (/^[A-Za-z][\w.]{0,39}$/.test(error?.name || '') ? error.name : 'Error');
+            if (nombre === 'AbortError') return;
+            const ubicacion = String(origen || error?.stack || '');
+            const archivo = (ubicacion.match(/\/([\w-]+)\.js(?:[?#:]|$)/) || [])[1] || (tipo === 'toast' ? 'app' : 'otro');
+            const numeroLinea = Number(linea) || Number((ubicacion.match(/\.js:(\d+)(?::\d+)?/) || [])[1]) || 0;
             let vista = 'arranque';
             try { vista = currentView || vista; } catch (e) { /* aún no existe */ }
-            const ruta = `${tipo}/${archivo}/${m}`;
+            const ruta = `${tipo}/${archivo}/${nombre}/${numeroLinea || 'sin-linea'}`;
             if (fallosVistos.has(ruta)) return;
             fallosVistos.add(ruta);
-            fallosPendientes.push({ path: ruta, title: `${vista}: ${m}`, event: true });
+            fallosPendientes.push({ path: ruta, title: vista, event: true });
             enviarFallos();
         }
         function enviarFallos() {
@@ -30,8 +32,8 @@
             if (!gc?.count) { if (fallosIntentos++ < 20) setTimeout(enviarFallos, 3000); return; }
             while (fallosPendientes.length) gc.count(fallosPendientes.shift());
         }
-        window.addEventListener('error', e => { if (e.message) contarFallo(e.message, e.filename); });
-        window.addEventListener('unhandledrejection', e => contarFallo(e.reason?.message || e.reason, e.reason?.stack));
+        window.addEventListener('error', e => { if (e.message) contarFallo(e.error, e.filename, 'error', e.lineno); });
+        window.addEventListener('unhandledrejection', e => contarFallo(e.reason, e.reason?.stack));
 
         // Sin red, la librería de Supabase intenta renovar la sesión durante
         // unos 30 s antes de rendirse, y toda llamada que depende de ella
@@ -512,7 +514,7 @@
                         <div class="about-feature">
                             
                             <div class="about-feature-title">Trabajo y finanzas</div>
-                            <div class="about-feature-desc">Historial laboral, un dashboard financiero completo y seguimiento de tus inversiones.</div>
+                            <div class="about-feature-desc">Historial laboral, unas finanzas completas y seguimiento de tus inversiones.</div>
                         </div>
                         <div class="about-feature">
                             
@@ -908,11 +910,11 @@
             home: 'Panorama',
             culture: 'Ocio',
             travels: 'Viajes',
-            work: 'Trabajo',
+            work: 'Empleo',
             projects: 'Proyectos',
             events: 'Eventos',
             documents: 'Documentos',
-            finances: 'Dashboard',
+            finances: 'Finanzas',
             tags: 'Etiquetas',
             vault: 'Vault',
             notes: 'Notas',
