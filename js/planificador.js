@@ -170,7 +170,7 @@
                         const titulo = n === sinHora.length && sinHora.length && items.length ? '<div class="planner-sin-hora-titulo">con hora.</div>' : '';
                         if (it.esEvento) return `${titulo}
                         <div class="planner-item planner-item-evento ${isPast ? 'planner-item-past' : ''}" onclick="openEntryDetail('${jsAttr(it.id)}')">
-                            <div class="planner-item-time">${it.time ? escapeHtml(it.time) : 'todo el día'}</div>
+                            <div class="planner-item-time">${it.time ? escapeHtml(it.time) : ''}</div>
                             <i class="planner-evento-punto" style="background:${escapeHtml(it.color)}" aria-hidden="true"></i>
                             <div class="planner-item-body"><div class="planner-item-title"><span>${escapeHtml(it.title)}</span></div><div class="planner-item-notes">${escapeHtml(it.sub)}</div></div>
                         </div>`;
