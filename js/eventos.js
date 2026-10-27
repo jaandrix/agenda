@@ -628,7 +628,7 @@ Calendario:
                 if (Math.hypot(c + margen + 0.5 - centro, r + margen + 0.5 - centro) < radio + 0.9) continue;
                 d += `M${c + margen} ${r + margen}h1v1h-1z`;
             }
-            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${lado} ${lado}" data-logo="b" role="img" aria-label="Código QR de la entrada"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#111" shape-rendering="crispEdges"/><circle cx="${centro}" cy="${centro}" r="${radio.toFixed(2)}" fill="#111"/><text x="${centro}" y="${centro}" dy=".36em" text-anchor="middle" font-family="Poppins, system-ui, sans-serif" font-weight="800" font-size="${(radio * 1.1).toFixed(2)}" fill="#3b82f6">B.</text></svg>`;
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${lado} ${lado}" data-logo="b" role="img" aria-label="Código QR de la entrada"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#111" shape-rendering="crispEdges"/><rect x="${(centro - radio).toFixed(2)}" y="${(centro - radio).toFixed(2)}" width="${(radio * 2).toFixed(2)}" height="${(radio * 2).toFixed(2)}" rx="${(radio * 0.42).toFixed(2)}" fill="#302f2c"/><text x="${(centro - radio * 0.18).toFixed(2)}" y="${(centro + radio * 0.5).toFixed(2)}" text-anchor="middle" font-family="Poppins, system-ui, sans-serif" font-weight="800" font-size="${(radio * 1.45).toFixed(2)}" fill="#efede3">b</text><circle cx="${(centro + radio * 0.6).toFixed(2)}" cy="${(centro + radio * 0.38).toFixed(2)}" r="${(radio * 0.18).toFixed(2)}" fill="#e55a2b"/></svg>`;
         }
 
         async function abrirEntradas(eventId, indice = 0) {
