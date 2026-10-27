@@ -9782,3 +9782,33 @@ body:not(.papel) .beta-insignia { color: #6c9cf0; }
 @media (prefers-reduced-motion: reduce) { .beta-bocadillo { transition: none; } }
 .landing-beta { max-width: 640px; margin: 0 auto; text-align: center; color: var(--text-secondary); font-size: 16px; line-height: 1.6; }
 .landing-beta .landing-cta-row { margin-top: 18px; }
+
+/* Panorama editorial, más fiel a la referencia: paneles compactos, cuatro columnas debajo, flechas finas. */
+.pano-editorial .pano-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pano-editorial .pano-grid > .pano-card:nth-child(3n) { border-right: 1px solid var(--border); }
+.pano-editorial .pano-card.ed-doble { grid-column: span 2; }
+.pano-editorial .pano-card { padding: 16px 18px; gap: 10px; }
+.pano-editorial .pano-card-cab { align-items: flex-start; }
+.pano-editorial .pano-card-tit b { font-size: 18px; }
+.pano-editorial .pano-card-tit small { font-size: 12.5px; }
+.pano-editorial .pano-cifra b { font-size: 26px; }
+.pano-editorial .pano-linea, .pano-editorial .pano-tarea, .pano-editorial .pano-prox { font-size: 13px; }
+.pano-flecha { width: 20px; height: 20px; flex-shrink: 0; margin-left: auto; color: var(--text-primary); }
+.pano-cuenta-tit .pano-flecha { margin-left: 8px; }
+.pano-cuenta-tit { display: flex; align-items: center; justify-content: space-between; font-size: 18px; }
+.pano-fila1 { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.1fr); }
+.pano-dinero { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--text-primary); font-family: var(--font-family); text-align: left; cursor: pointer; min-width: 0; }
+.pano-dinero:hover, .pano-cuenta-fin:hover { background: var(--bg-card-hover); }
+.pano-dinero-graf { width: 100%; height: 110px; margin-top: auto; display: block; }
+.pano-dinero-graf .area { fill: var(--text-primary); opacity: .07; }
+.pano-dinero-graf .linea { fill: none; stroke: var(--text-primary); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.pano-dinero-graf line { stroke: var(--border-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.pano-dinero-graf text { fill: var(--text-secondary); font-size: 11px; font-family: var(--font-family); }
+.pano-cuenta { padding: 16px 18px; }
+.pano-cuenta-cifra { font-size: 26px; }
+.pano-hoy-totales { display: flex; gap: 14px; margin-left: auto; padding-top: 4px; font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; }
+.pano-hoy-estable .pano-hoy-totales + .pano-flecha { margin-left: 12px; }
+.pano-editorial .pano-lt-fila { padding: 9px 0; grid-template-columns: 48px 16px 1fr; }
+.pano-editorial .pano-linea-tiempo::before { left: 67px; }
+@media (max-width: 1100px) { .pano-editorial .pano-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pano-fila1 { grid-template-columns: 1fr 1fr; } .pano-cuenta { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .pano-editorial .pano-grid, .pano-fila1 { grid-template-columns: 1fr; } .pano-editorial .pano-card.ed-doble { grid-column: auto; } .pano-dinero { border-right: 0; border-bottom: 1px solid var(--border); } }

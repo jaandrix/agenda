@@ -168,7 +168,7 @@
                     <button class="vista-btn pano-editar" onclick="openEditarPanorama()">editar.</button>
                 </div>
                 <div class="pano ${panoramaEditorial() ? 'pano-editorial' : ''}">
-                    ${panoramaEditorial() ? `<div class="pano-fila1">${renderPanoramaAhora()}${renderPanoramaHoy()}${renderPanoramaCuenta(hallazgos)}</div>` : renderHomeAvisos(hallazgos)}
+                    ${panoramaEditorial() ? `<div class="pano-fila1">${renderPanoramaDinero()}${renderPanoramaHoy()}${renderPanoramaCuenta(hallazgos)}</div>` : renderHomeAvisos(hallazgos)}
                     ${panoramaEditorial() ? '' : renderPanoramaHoy()}
                     ${renderPanoramaTarjetas()}
                     <div class="pano-mas-cab">más.</div>
@@ -183,7 +183,7 @@
 
         function panoTarjeta(clase, icono, titulo, sub, accion, cuerpo) {
             return `<button type="button" class="pano-card ${clase}" onclick="${accion}">
-                <span class="pano-card-cab"><span class="pano-card-icono" aria-hidden="true">${icono}</span><span class="pano-card-tit"><b>${titulo}</b><small>${sub}</small></span></span>
+                <span class="pano-card-cab"><span class="pano-card-icono" aria-hidden="true">${icono}</span><span class="pano-card-tit"><b>${titulo}</b><small>${sub}</small></span>${panoramaEditorial() ? PANO_FLECHA : ''}</span>
                 <span class="pano-card-cuerpo">${cuerpo}</span>
             </button>`;
         }
@@ -221,6 +221,7 @@
                 : `<span class="pano-vacio">No tienes nada con hora.</span>`;
             const pendiente = d.sinHora.length ? `<span class="pano-vacio">Te ${d.sinHora.length === 1 ? 'queda' : 'quedan'} ${d.sinHora.length} tarea${d.sinHora.length === 1 ? '' : 's'} sin hora.</span>` : '';
             const despejado = !d.conHora.length && !d.sinHora.length && !d.eventos.length && d.rutinas.total === d.rutinas.hechas ? '<span class="pano-vacio">hoy está despejado.</span>' : '';
+            if (panoramaEditorial()) return `<button type="button" class="pano-card pano-hoy-estable" onclick="openTuDia()"><span class="pano-card-cab"><span class="pano-card-tit"><b>hoy.</b><small>Lo que te queda de hoy.</small></span><span class="pano-hoy-totales">${d.pendientes.length} ${d.pendientes.length === 1 ? 'tarea' : 'tareas'}<span>${d.eventos.length} ${d.eventos.length === 1 ? 'evento' : 'eventos'}</span></span>${PANO_FLECHA}</span><span class="pano-card-cuerpo">${despejado || cuerpo}${pendiente}</span></button>`;
             return panoTarjeta('pano-hoy-estable ancha', PANO_ICO_HOY, 'hoy.', 'Lo que queda de tu día.', 'openTuDia()', `${despejado || cuerpo}${pendiente}<span class="pano-cifras">${cifra(d.eventos.length, d.eventos.length === 1 ? 'evento' : 'eventos')}${cifra(d.pendientes.length, d.pendientes.length === 1 ? 'tarea para hoy' : 'tareas para hoy')}${cifra(Math.max(0, d.rutinas.total - d.rutinas.hechas), 'rutinas restantes')}</span>`);
         }
 
@@ -369,13 +370,17 @@
             };
             const ids = panoramaElegidas(!!entregas);
             if (panoramaEditorial()) ['semana', 'mes', 'entregas', 'tareas', 'revision', 'prox'].forEach(id => { if (!ids.includes(id) && (id !== 'entregas' || entregas)) ids.push(id); });
+            // Orden de la referencia: semana, mes y entregas; luego tareas, revisión y próximamente (cuatro columnas
+            // por fila, con la semana y la revisión a doble ancho). Lo demás que se elija va detrás.
+            const ORDEN_ED = ['semana', 'mes', 'entregas', 'tareas', 'revision', 'prox'];
+            if (panoramaEditorial()) ids.sort((a, b) => (ORDEN_ED.includes(a) ? ORDEN_ED.indexOf(a) : 99) - (ORDEN_ED.includes(b) ? ORDEN_ED.indexOf(b) : 99));
             if (!ids.length) return `<div class="vista-vacio pano-sin-tarjetas"><p>No has elegido más tarjetas.</p><button class="vista-btn" onclick="openEditarPanorama()">editar panorama.</button></div>`;
             return `<div class="pano-grid">${ids.map((id, n) => {
                 const [icono, sub, accion, cuerpo, clase = ''] = t[id];
                 // La revisión, si va la última, ocupa lo que quede de la fila.
                 const resto = 3 - (ids.length - 1) % 3;
                 const ancho = !panoramaEditorial() && id === 'revision' && n === ids.length - 1 ? (resto === 3 ? 'ancha' : resto === 2 ? 'doble' : '') : '';
-                return panoTarjeta(`${id} ${clase} ${ancho}`, icono, PANO_NOMBRES[id], sub, accion, cuerpo());
+                return panoTarjeta(`${id} ${clase} ${ancho} ${panoramaEditorial() && (id === 'semana' || id === 'revision') ? 'ed-doble' : ''}`, icono, PANO_NOMBRES[id], sub, accion, cuerpo());
             }).join('')}</div>`;
         }
 
@@ -1148,7 +1153,7 @@ setInterval(() => {
 }, 30000);
 
 function panoramaCurvaSemana(dias, hoy, totEv, totTa, cifra) {
-    const W = 320, H = 150, izq = 22, abajo = 22, arriba = 10;
+    const W = 620, H = 190, izq = 26, abajo = 24, arriba = 10;
     const vals = dias.map(d => d.ev + d.ta), max = Math.max(4, ...vals);
     const paso = Math.ceil(max / 4), tope = paso * 4;
     const x = i => izq + i * (W - izq - 12) / 6, y = v => arriba + (1 - v / tope) * (H - arriba - abajo);
@@ -1193,7 +1198,35 @@ function renderPanoramaCuenta(hallazgos) {
             ${dif != null ? `<span class="pano-cuenta-frase">${dif >= 0 ? `un ${dif} % más` : `un ${-dif} % menos`} que tu media de los últimos tres meses.</span>` : ''}
             <svg class="pano-barras" viewBox="0 0 ${W} ${H}" role="img" aria-label="gasto por mes: ${meses.map(m => `${m.nombre} ${Math.round(m.prevision || m.gasto)} euros`).join(', ')}">${barras}${media ? `<line x1="0" x2="${W}" y1="${yMedia}" y2="${yMedia}"/>` : ''}</svg>`;
     }
-    const lista = avisos.slice(0, fin ? 2 : 4).map(a => `<button type="button" class="pano-cuenta-aviso" onclick="${a.accion}">${a.frase}</button>`).join('');
+    const lista = avisos.slice(0, fin ? 1 : 3).map(a => `<button type="button" class="pano-cuenta-aviso" onclick="${a.accion}">${a.frase}</button>`).join('');
     if (!fin && !lista) return `<div class="pano-cuenta"><b class="pano-cuenta-tit">a tener en cuenta.</b><span class="pano-vacio">Nada que vigilar ahora mismo.</span></div>`;
-    return `<div class="pano-cuenta"><b class="pano-cuenta-tit">a tener en cuenta.</b>${fin ? `<button type="button" class="pano-cuenta-fin" onclick="switchView('finances')">${fin}</button>` : ''}${lista}</div>`;
+    return `<div class="pano-cuenta"><b class="pano-cuenta-tit">a tener en cuenta.${PANO_FLECHA}</b>${fin ? `<button type="button" class="pano-cuenta-fin" onclick="switchView('finances')">${fin}</button>` : ''}${lista}</div>`;
+}
+
+const PANO_FLECHA = '<svg class="pano-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h17M14 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+
+// «dinero.» del modo editorial: el total de tus cuentas y cómo ha ido en los últimos tres meses.
+function renderPanoramaDinero() {
+    if (!apartadoVisible('finances') || typeof financeSerieDiaria !== 'function' || !(financePro.transactions || []).length)
+        return `<button type="button" class="pano-dinero" onclick="switchView('finances')"><b class="pano-cuenta-tit">dinero.${PANO_FLECHA}</b><span class="pano-vacio">Cuando apuntes movimientos, aquí verás cómo van tus cuentas.</span></button>`;
+    const serie = financeSerieDiaria(3) || [];
+    const total = financeEfectivoActual();
+    const ini = serie.length ? serie[0].v : total;
+    const dif = total - ini;
+    const W = 300, H = 110, vs = serie.map(p => p.v), min = Math.min(...vs, total), max = Math.max(...vs, total), rango = max - min || 1;
+    const pts = serie.map((p, i) => [(i / Math.max(1, serie.length - 1) * W).toFixed(1), (8 + (1 - (p.v - min) / rango) * (H - 26)).toFixed(1)]);
+    const linea = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join(' ');
+    const meses = [2, 1, 0].map(k => { const d = new Date(); d.setMonth(d.getMonth() - k, 1); return d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', ''); });
+    const euros = v => `${Math.round(v).toLocaleString('es-ES')} €`;
+    return `<button type="button" class="pano-dinero" onclick="switchView('finances')">
+        <b class="pano-cuenta-tit">dinero.${PANO_FLECHA}</b>
+        <span class="pano-cuenta-frase">En tus cuentas.</span>
+        <b class="pano-cuenta-cifra">${euros(total)}</b>
+        <span class="pano-cuenta-frase">${dif >= 0 ? '+' : '−'}${euros(Math.abs(dif))} en tres meses.</span>
+        ${pts.length > 1 ? `<svg class="pano-dinero-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="saldo total de los últimos tres meses: de ${euros(ini)} a ${euros(total)}">
+            <path class="area" d="${linea} L${W},${H - 18} L0,${H - 18} Z"/><path class="linea" d="${linea}"/>
+            <line x1="0" x2="${W}" y1="${H - 18}" y2="${H - 18}"/>
+            ${meses.map((m, i) => `<text x="${(i * W / 3 + W / 6).toFixed(0)}" y="${H - 3}" text-anchor="middle">${m}</text>`).join('')}
+        </svg>` : ''}
+    </button>`;
 }
