@@ -220,9 +220,15 @@
                 ? `<span class="pano-dia">${filas.map(x => `<span class="pano-dia-fila"><span class="pano-hora">${escapeHtml(x.hora)}</span><i class="ev" aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(x.titulo)}</span></span>`).join('')}</span>`
                 : `<span class="pano-vacio">No tienes nada con hora.</span>`;
             const pendiente = d.sinHora.length ? `<span class="pano-vacio">Te ${d.sinHora.length === 1 ? 'queda' : 'quedan'} ${d.sinHora.length} tarea${d.sinHora.length === 1 ? '' : 's'} sin hora.</span>` : '';
+            const tareasManana = plannerItemsForOffset(1).filter(t => !t.done);
+            const deManana = [...plannerEventosDia(1, tareasManana), ...tareasManana]
+                .sort((x, y) => String(x.time || '99').padStart(5, '0').localeCompare(String(y.time || '99').padStart(5, '0')));
+            const manana = `<span class="pano-manana"><b>mañana.</b>${deManana.length
+                ? deManana.slice(0, 3).map(x => `<span class="pano-dia-fila"><span class="pano-hora">${escapeHtml(x.time || '')}</span><span class="pano-linea-txt">${escapeHtml(x.title || x.text || '')}</span></span>`).join('') + (deManana.length > 3 ? `<span class="pano-vacio">y ${deManana.length - 3} más.</span>` : '')
+                : '<span class="pano-vacio">Nada apuntado.</span>'}</span>`;
             const despejado = !d.conHora.length && !d.sinHora.length && !d.eventos.length && d.rutinas.total === d.rutinas.hechas ? '<span class="pano-vacio">hoy está despejado.</span>' : '';
-            if (panoramaEditorial()) return `<button type="button" class="pano-card pano-hoy-estable" onclick="openTuDia()"><span class="pano-card-cab"><span class="pano-card-tit"><b>hoy.</b><small>Lo que te queda de hoy.</small></span><span class="pano-hoy-totales">${d.pendientes.length} ${d.pendientes.length === 1 ? 'tarea' : 'tareas'}<span>${d.eventos.length} ${d.eventos.length === 1 ? 'evento' : 'eventos'}</span></span>${PANO_FLECHA}</span><span class="pano-card-cuerpo">${despejado || cuerpo}${pendiente}</span></button>`;
-            return panoTarjeta('pano-hoy-estable ancha', PANO_ICO_HOY, 'hoy.', 'Lo que queda de tu día.', 'openTuDia()', `${despejado || cuerpo}${pendiente}<span class="pano-cifras">${cifra(d.eventos.length, d.eventos.length === 1 ? 'evento' : 'eventos')}${cifra(d.pendientes.length, d.pendientes.length === 1 ? 'tarea para hoy' : 'tareas para hoy')}${cifra(Math.max(0, d.rutinas.total - d.rutinas.hechas), 'rutinas restantes')}</span>`);
+            if (panoramaEditorial()) return `<button type="button" class="pano-card pano-hoy-estable" onclick="openTuDia()"><span class="pano-card-cab"><span class="pano-card-tit"><b>hoy.</b><small>Lo que te queda de hoy.</small></span><span class="pano-hoy-totales">${d.pendientes.length} ${d.pendientes.length === 1 ? 'tarea' : 'tareas'}<span>${d.eventos.length} ${d.eventos.length === 1 ? 'evento' : 'eventos'}</span></span>${PANO_FLECHA}</span><span class="pano-card-cuerpo">${despejado || cuerpo}${pendiente}${manana}</span></button>`;
+            return panoTarjeta('pano-hoy-estable ancha', PANO_ICO_HOY, 'hoy.', 'Lo que queda de tu día.', 'openTuDia()', `${despejado || cuerpo}${pendiente}${manana}<span class="pano-cifras">${cifra(d.eventos.length, d.eventos.length === 1 ? 'evento' : 'eventos')}${cifra(d.pendientes.length, d.pendientes.length === 1 ? 'tarea para hoy' : 'tareas para hoy')}${cifra(Math.max(0, d.rutinas.total - d.rutinas.hechas), 'rutinas restantes')}</span>`);
         }
 
         function renderCalendarioHoy() {

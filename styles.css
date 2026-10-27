@@ -9838,3 +9838,7 @@ html:has(> body:not(.papel):not(.fundador)) { filter: grayscale(1); }
 .planner-evento-punto { width: 10px; height: 10px; margin: 0 4px; border-radius: 50%; flex-shrink: 0; align-self: center; }
 .m-fila-evento { cursor: pointer; }
 .m-fila-evento-punto { width: 10px; height: 10px; margin: 0 10px; border-radius: 50%; flex-shrink: 0; }
+
+.pano-manana { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.pano-manana > b { font-size: 13px; }
+.pano-manana .pano-dia-fila { display: grid; grid-template-columns: 48px 1fr; gap: 8px; font-size: 13px; }
