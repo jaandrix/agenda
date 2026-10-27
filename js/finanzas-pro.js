@@ -844,8 +844,8 @@
                 const lo = min - marg, hi = max + marg;
                 const x = i => (i / (n - 1)) * (iw - 6) + 3;
                 const y = v => pT + ih - ((v - lo) / (hi - lo)) * ih;
-                const linea = serie.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(d.v).toFixed(1)}`).join('');
-                const area = `${linea}L${x(n - 1).toFixed(1)},${pT + ih}L${x(0).toFixed(1)},${pT + ih}Z`;
+                const linea = financeSmoothPath(serie.map((d, i) => [x(i), y(d.v)]));
+                const area = `${linea} L${x(n - 1).toFixed(1)},${pT + ih}L${x(0).toFixed(1)},${pT + ih}Z`;
                 const inicios = serie.map((d, i) => ({ d, i })).filter(({ d, i }) => i === 0 || d.f.endsWith('-01'));
                 const cada = Math.max(1, Math.ceil(inicios.length / (movil ? 5 : 9)));
                 const meses = inicios.filter((_, j) => j % cada === 0).map(({ d, i }) => {

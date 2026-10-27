@@ -1217,7 +1217,7 @@ function renderPanoramaDinero() {
     const dif = total - ini;
     const W = 300, H = 110, vs = serie.map(p => p.v), min = Math.min(...vs, total), max = Math.max(...vs, total), rango = max - min || 1;
     const pts = serie.map((p, i) => [(i / Math.max(1, serie.length - 1) * W).toFixed(1), (8 + (1 - (p.v - min) / rango) * (H - 26)).toFixed(1)]);
-    const linea = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join(' ');
+    const linea = financeSmoothPath(pts.map(p => [Number(p[0]), Number(p[1])]));
     const meses = [2, 1, 0].map(k => { const d = new Date(); d.setMonth(d.getMonth() - k, 1); return d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', ''); });
     const euros = v => `${Math.round(v).toLocaleString('es-ES')} €`;
     return `<div class="pano-dinero" role="button" tabindex="0" onclick="switchView('finances')" onkeydown="if(event.key==='Enter')switchView('finances')">
