@@ -9812,3 +9812,10 @@ body:not(.papel) .beta-insignia { color: #6c9cf0; }
 .pano-editorial .pano-linea-tiempo::before { left: 67px; }
 @media (max-width: 1100px) { .pano-editorial .pano-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pano-fila1 { grid-template-columns: 1fr 1fr; } .pano-cuenta { grid-column: 1 / -1; } }
 @media (max-width: 760px) { .pano-editorial .pano-grid, .pano-fila1 { grid-template-columns: 1fr; } .pano-editorial .pano-card.ed-doble { grid-column: auto; } .pano-dinero { border-right: 0; border-bottom: 1px solid var(--border); } }
+
+/* Calendario del ordenador: ocupa todo el ancho y las casillas del mes crecen con la altura de la ventana,
+   para que el mes llene la pantalla sin desplazar (seis filas en el peor caso). */
+@media (min-width: 1024px) {
+    .cal-home { max-width: none; }
+    .cal-month-cell { min-height: clamp(54px, calc((100vh - 400px) / 6), 160px); }
+}
