@@ -1534,7 +1534,10 @@
             return true;
         }
         function renderMobilePendientesInicio(sigue) {
-            const lista = (dayPlanner.backlog || []).filter(it => sigue(it.done, it.hechaEn));
+            // Las sin día hechas se enseñan solo el día (del planificador, de 4:00 a 4:00) en que se marcaron:
+            // si no, «ver las hechas.» arrastraba para siempre todo lo que se había hecho alguna vez.
+            const hechaHoy = it => typeof it.hechaEn === 'number' && isoLocal(new Date(it.hechaEn - 4 * 3600e3)) === currentPlannerDayKey();
+            const lista = (dayPlanner.backlog || []).filter(it => (!it.done || hechaHoy(it)) && sigue(it.done, it.hechaEn));
             if (!lista.length) return '';
             return `<div class="m-pendientes-inicio">
                 <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir.</button></div>
