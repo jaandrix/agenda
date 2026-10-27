@@ -232,6 +232,8 @@
             suscripcionActual = sub;
             const insignia = document.getElementById('beta-insignia');
             if (insignia) insignia.hidden = !(user.created_at && new Date(user.created_at) <= new Date(BETA_FIN));
+            // Quien canjeó el código de la beta también es tester, aunque se registrara después.
+            if (insignia?.hidden) sb.rpc('soy_beta_tester').then(({ data }) => { if (data) insignia.hidden = false; }, () => {});
             cuentaDesarrollador = user.user_metadata?.desarrollador === true;
             try {
                 if (localStorage.getItem('bitacora-actividad') !== todayISO()) {

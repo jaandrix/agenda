@@ -730,6 +730,7 @@
                 body.innerHTML = `<div class="settings-subscription-card settings-subscription-card-legado">
                     <div class="settings-subscription-status">Beta abierta</div>
                     <div class="settings-subscription-note">Bitácora es gratis y completa mientras dura la beta. Si te registraste durante ella, eres beta tester: tendrás acceso ilimitado a todas las funciones, sin coste, mientras la app exista.</div>
+                    <div class="ajuste-botones" style="margin-top:12px"><input id="codigo-beta" class="modal-input" style="max-width:220px;margin:0" placeholder="código de beta tester" aria-label="código de beta tester" autocomplete="off"><button class="btn-secondary" style="width:auto" onclick="canjearCodigoBeta()">canjear.</button></div>
                 </div>`;
                 return;
             }
@@ -988,4 +989,15 @@ async function cambiarAjusteAdmin(clave, valor) {
     servicios.admin = { ...ajustesAdmin(), [clave]: valor };
     repintarTrasModal();
     try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+async function canjearCodigoBeta() {
+    const codigo = document.getElementById('codigo-beta')?.value.trim();
+    if (!codigo) return;
+    const { data, error } = await sb.rpc('canjear_codigo_beta', { p_codigo: codigo });
+    if (error) { console.error(error); showToast('No se pudo canjear el código', true); return; }
+    if (data === 'ok') {
+        const insignia = document.getElementById('beta-insignia'); if (insignia) insignia.hidden = false;
+        showCenteredMessage('Ya eres beta tester de Bitácora');
+    } else showToast(data === 'caducado' ? 'Ese código ya no se puede canjear' : 'Ese código no es válido', true);
 }
