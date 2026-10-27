@@ -233,7 +233,10 @@
             const insignia = document.getElementById('beta-insignia');
             if (insignia) insignia.hidden = !(user.created_at && new Date(user.created_at) <= new Date(BETA_FIN));
             // Quien canjeó el código de la beta también es tester, aunque se registrara después.
-            if (insignia?.hidden) sb.rpc('soy_beta_tester').then(({ data }) => { if (data) insignia.hidden = false; }, () => {});
+            const codigoBeta = user.user_metadata?.codigo_beta;
+            const comprobarTester = () => sb.rpc('soy_beta_tester').then(({ data }) => { if (data && insignia) insignia.hidden = false; }, () => {});
+            if (codigoBeta && insignia?.hidden) sb.rpc('canjear_codigo_beta', { p_codigo: codigoBeta }).then(comprobarTester, comprobarTester);
+            else if (insignia?.hidden) comprobarTester();
             cuentaDesarrollador = user.user_metadata?.desarrollador === true;
             try {
                 if (localStorage.getItem('bitacora-actividad') !== todayISO()) {
@@ -303,8 +306,8 @@
         // Beta abierta (27-10-2026): Bitácora es gratis y completa para todo el mundo, sin pagos ni fin de prueba.
         // Para volver a cobrar basta con poner PAGOS_ACTIVOS a true (y tiene_acceso en el servidor).
         const PAGOS_ACTIVOS = false;
-        // Quien se registra hasta esta fecha es beta tester: lo lleva en una insignia y lo tendrá gratis para siempre.
-        const BETA_FIN = '2026-12-31T23:59:59+01:00';
+        // Beta testers: las cuentas que ya existían al abrir la beta y quien entra con el código promocional.
+        const BETA_FIN = '2026-10-27T23:59:59+01:00';
         function hasAccess(sub) {
             if (!PAGOS_ACTIVOS) return true;
             if (['legado', 'fundador', 'prueba', 'active', 'trialing'].includes(sub.estado)) return true;
@@ -591,7 +594,9 @@
             btn.disabled = true;
             btn.textContent = 'creando...';
             const amigo = (document.getElementById('signup-amigo')?.value || '').trim().toUpperCase();
-            const { data, error } = await sb.auth.signUp({ email, password, options: amigo ? { data: { codigo_amigo: amigo } } : undefined });
+            const beta = (document.getElementById('signup-beta')?.value || '').trim().toUpperCase();
+            const meta = { ...(amigo ? { codigo_amigo: amigo } : {}), ...(beta ? { codigo_beta: beta } : {}) };
+            const { data, error } = await sb.auth.signUp({ email, password, options: Object.keys(meta).length ? { data: meta } : undefined });
             btn.disabled = false;
             btn.textContent = 'crear cuenta.';
 

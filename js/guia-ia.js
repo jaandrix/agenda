@@ -44,7 +44,7 @@ Ideas clave para entenderla:
 const GUIA_IA_CUENTA = `## Cuenta y beta abierta
 
 - **Crear cuenta:** en appbitacora.es, con correo y contraseña (mínimo 8 caracteres; Bitácora rechaza contraseñas que han aparecido en filtraciones conocidas).
-- **Beta abierta:** Bitácora es gratis y con todas las funciones, sin tarjeta. Quien se registra durante la beta (hasta el 31 de diciembre de 2026) es beta tester y la tendrá gratis y completa mientras la app exista. No hay nada que pagar ni ninguna pantalla de pago.
+- **Beta abierta:** Bitácora es gratis y con todas las funciones, sin tarjeta. Los beta testers (quien ya tenía cuenta al abrir la beta, el 27 de octubre de 2026, y quien entra con un código promocional al crear la cuenta o en Ajustes → «beta abierta.») la tendrán gratis y completa mientras la app exista. No hay nada que pagar ni ninguna pantalla de pago.
 - **Llevarse los datos:** Ajustes → «tus datos.» → «exportar.» (un archivo JSON con todo). Finanzas tiene además su propio «exportar.» en texto, pensado para pegárselo a una IA.
 - **Borrar la cuenta:** Ajustes → zona de riesgo → «eliminar mi cuenta.». Es definitivo.
 - **Cerrar sesión en todos los dispositivos:** Ajustes → «cerrar sesión en todas partes.».`;

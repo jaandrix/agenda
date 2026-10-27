@@ -729,7 +729,7 @@
             if (!PAGOS_ACTIVOS) {
                 body.innerHTML = `<div class="settings-subscription-card settings-subscription-card-legado">
                     <div class="settings-subscription-status">Beta abierta</div>
-                    <div class="settings-subscription-note">Bitácora es gratis y completa mientras dura la beta. Si te registraste durante ella, eres beta tester: tendrás acceso ilimitado a todas las funciones, sin coste, mientras la app exista.</div>
+                    <div class="settings-subscription-note">Bitácora es gratis y completa mientras dura la beta. Si eres beta tester (tenías cuenta al abrir la beta o entraste con un código), tendrás acceso ilimitado a todas las funciones, sin coste, mientras la app exista.</div>
                     <div class="ajuste-botones" style="margin-top:12px"><input id="codigo-beta" class="modal-input" style="max-width:220px;margin:0" placeholder="código de beta tester" aria-label="código de beta tester" autocomplete="off"><button class="btn-secondary" style="width:auto" onclick="canjearCodigoBeta()">canjear.</button></div>
                 </div>`;
                 return;
