@@ -9829,3 +9829,6 @@ body:not(.papel) .beta-insignia { color: #6c9cf0; }
    y oliva heredan de papel pero conservan sus colores. */
 body.papel:not(.acuarela):not(.pizarra):not(.oliva) { --m-acento: #302f2c; --m-sobre-acento: #FAF8F5; }
 html:has(> body.papel:not(.acuarela):not(.pizarra):not(.oliva)) { filter: grayscale(1); }
+/* Asfalto, igual pero al revés: el acento pasa a la tinta clara y todo en escala de grises. */
+body:not(.papel):not(.fundador) { --m-acento: #efede3; --m-sobre-acento: #302f2c; }
+html:has(> body:not(.papel):not(.fundador)) { filter: grayscale(1); }
