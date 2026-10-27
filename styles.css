@@ -9819,3 +9819,7 @@ body:not(.papel) .beta-insignia { color: #6c9cf0; }
     .cal-home { max-width: none; }
     .cal-month-cell { min-height: clamp(54px, calc((100vh - 400px) / 6), 160px); }
 }
+
+.pano-dinero-elegir { display: inline-flex; align-self: flex-start; gap: 2px; padding: 2px; margin: 2px 0 4px; border-radius: 8px; background: var(--bg-card-hover); }
+.pano-dinero-elegir button { padding: 3px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); font: 600 12px var(--font-family); cursor: pointer; }
+.pano-dinero-elegir button.activo { background: var(--text-primary); color: var(--bg-card); }

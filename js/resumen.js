@@ -1209,8 +1209,10 @@ const PANO_FLECHA = '<svg class="pano-flecha" viewBox="0 0 24 24" aria-hidden="t
 function renderPanoramaDinero() {
     if (!apartadoVisible('finances') || typeof financeSerieDiaria !== 'function' || !(financePro.transactions || []).length)
         return `<button type="button" class="pano-dinero" onclick="switchView('finances')"><b class="pano-cuenta-tit">dinero.${PANO_FLECHA}</b><span class="pano-vacio">Cuando apuntes movimientos, aquí verás cómo van tus cuentas.</span></button>`;
-    const serie = financeSerieDiaria(3) || [];
-    const total = financeEfectivoActual();
+    // Con «todo.», también la inversión y el fondo de emergencia (la misma elección que en la gráfica de Finanzas).
+    const todo = typeof financeGrafExtras !== 'undefined' && financeGrafExtras;
+    const serie = financeSerieDiaria(3, todo) || [];
+    const total = todo ? financeCorePatrimony() : financeEfectivoActual();
     const ini = serie.length ? serie[0].v : total;
     const dif = total - ini;
     const W = 300, H = 110, vs = serie.map(p => p.v), min = Math.min(...vs, total), max = Math.max(...vs, total), rango = max - min || 1;
@@ -1218,9 +1220,10 @@ function renderPanoramaDinero() {
     const linea = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join(' ');
     const meses = [2, 1, 0].map(k => { const d = new Date(); d.setMonth(d.getMonth() - k, 1); return d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', ''); });
     const euros = v => `${Math.round(v).toLocaleString('es-ES')} €`;
-    return `<button type="button" class="pano-dinero" onclick="switchView('finances')">
+    return `<div class="pano-dinero" role="button" tabindex="0" onclick="switchView('finances')" onkeydown="if(event.key==='Enter')switchView('finances')">
         <b class="pano-cuenta-tit">dinero.${PANO_FLECHA}</b>
-        <span class="pano-cuenta-frase">En tus cuentas.</span>
+        <span class="pano-dinero-elegir" role="group" aria-label="qué dinero enseñar"><button type="button" class="${todo ? '' : 'activo'}" onclick="event.stopPropagation(); panoramaDineroTodo(false)">cuentas.</button><button type="button" class="${todo ? 'activo' : ''}" onclick="event.stopPropagation(); panoramaDineroTodo(true)">todo.</button></span>
+        <span class="pano-cuenta-frase">${todo ? 'Cuentas, inversión y fondo de emergencia.' : 'En tus cuentas.'}</span>
         <b class="pano-cuenta-cifra">${euros(total)}</b>
         <span class="pano-cuenta-frase">${dif >= 0 ? '+' : '−'}${euros(Math.abs(dif))} en tres meses.</span>
         ${pts.length > 1 ? `<svg class="pano-dinero-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="saldo total de los últimos tres meses: de ${euros(ini)} a ${euros(total)}">
@@ -1228,5 +1231,11 @@ function renderPanoramaDinero() {
             <line x1="0" x2="${W}" y1="${H - 18}" y2="${H - 18}"/>
             ${meses.map((m, i) => `<text x="${(i * W / 3 + W / 6).toFixed(0)}" y="${H - 3}" text-anchor="middle">${m}</text>`).join('')}
         </svg>` : ''}
-    </button>`;
+    </div>`;
+}
+function panoramaDineroTodo(si) {
+    financeGrafExtras = si;
+    try { localStorage.setItem('bitacora-fin-extras', si ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
+    if (typeof financeSaldosCache !== 'undefined' && financeSaldosCache) financeSaldosCache.diaria = null;
+    render();
 }
