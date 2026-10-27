@@ -1695,10 +1695,11 @@
         function renderMobilePlanner() {
             resetDayPlannerIfNeeded();
             const off = plannerDayOffset;
-            const items = [...plannerItemsForOffset(off)].sort((a, b) => (a.time ? 1 : 0) - (b.time ? 1 : 0) || String(a.time).localeCompare(String(b.time)) || (PLANNER_PRIORIDAD_ORDEN[a.prioridad] ?? 3) - (PLANNER_PRIORIDAD_ORDEN[b.prioridad] ?? 3));
+            const tareasDia = plannerItemsForOffset(off);
+            const items = [...tareasDia, ...plannerEventosDia(off, tareasDia)].sort((a, b) => (a.time ? 1 : 0) - (b.time ? 1 : 0) || String(a.time).padStart(5, '0').localeCompare(String(b.time).padStart(5, '0')) || (PLANNER_PRIORIDAD_ORDEN[a.prioridad] ?? 3) - (PLANNER_PRIORIDAD_ORDEN[b.prioridad] ?? 3));
             const hoy = todayISO();
             const rec = off === 0 ? recurringTasksDueToday() : [];
-            const total = items.length + rec.length;
+            const total = items.filter(i => !i.esEvento).length + rec.length;
             const hechas = items.filter(i => i.done).length + rec.filter(t => t.completadas?.[hoy]).length;
             const backlog = backlogVisibles();
             return `${renderMobileCabecera('planificador', total ? `${hechas} de ${total} hechas.` : 'nada planeado.')}
@@ -1714,7 +1715,9 @@
                         const hecha = !!t.completadas?.[hoy];
                         return `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div><div class="m-fila-meta">recurrente</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="toggleRecurringTaskDoneToday('${t.id}')" aria-label="Marcar hecha"></button></div>`;
                     }).join('')}
-                    ${items.map(it => renderMobileFilaTarea(it, off)).join('')}
+                    ${items.map(it => it.esEvento
+                        ? `<div class="m-fila m-fila-evento" onclick="openEntryDetail('${jsAttr(it.id)}')"><span class="m-fila-hora">${escapeHtml(it.time || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div><div class="m-fila-meta">${escapeHtml(it.sub)}</div></div><i class="m-fila-evento-punto" style="background:${escapeHtml(it.color)}" aria-hidden="true"></i></div>`
+                        : renderMobileFilaTarea(it, off)).join('')}
                 </div>
                 ${!total ? '<div class="m-vacio">nada todavía. pulsa + tarea.</div>' : ''}
                 <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir.</button></div>

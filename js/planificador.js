@@ -104,8 +104,9 @@
             resetDayPlannerIfNeeded();
             const offset = plannerDayOffset;
             const todos = plannerItemsForOffset(offset);
-            const items = todos.filter(i => i.time).sort((a, b) => String(a.time).localeCompare(String(b.time)));
-            const sinHora = todos.filter(i => !i.time).sort((a, b) => (PLANNER_PRIORIDAD_ORDEN[a.prioridad] ?? 3) - (PLANNER_PRIORIDAD_ORDEN[b.prioridad] ?? 3));
+            const eventosDia = plannerEventosDia(offset, todos);
+            const items = [...todos.filter(i => i.time), ...eventosDia.filter(e => e.time)].sort((a, b) => String(a.time).padStart(5, '0').localeCompare(String(b.time).padStart(5, '0')));
+            const sinHora = [...eventosDia.filter(e => !e.time), ...todos.filter(i => !i.time).sort((a, b) => (PLANNER_PRIORIDAD_ORDEN[a.prioridad] ?? 3) - (PLANNER_PRIORIDAD_ORDEN[b.prioridad] ?? 3))];
             const now = new Date();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
             const today = todayISO();
@@ -166,7 +167,14 @@
                         const [h, m] = String(it.time || '').split(':').map(Number);
                         const itemMinutes = (h || 0) * 60 + (m || 0);
                         const isPast = offset === 0 && !!it.time && itemMinutes < nowMinutes;
-                        return `${n === sinHora.length && sinHora.length && items.length ? '<div class="planner-sin-hora-titulo">con hora.</div>' : ''}
+                        const titulo = n === sinHora.length && sinHora.length && items.length ? '<div class="planner-sin-hora-titulo">con hora.</div>' : '';
+                        if (it.esEvento) return `${titulo}
+                        <div class="planner-item planner-item-evento ${isPast ? 'planner-item-past' : ''}" onclick="openEntryDetail('${jsAttr(it.id)}')">
+                            <div class="planner-item-time">${it.time ? escapeHtml(it.time) : 'todo el día'}</div>
+                            <i class="planner-evento-punto" style="background:${escapeHtml(it.color)}" aria-hidden="true"></i>
+                            <div class="planner-item-body"><div class="planner-item-title"><span>${escapeHtml(it.title)}</span></div><div class="planner-item-notes">${escapeHtml(it.sub)}</div></div>
+                        </div>`;
+                        return `${titulo}
                         <div class="planner-item ${isPast && !it.arrastrado ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''} ${it.arrastrado ? 'planner-item-arrastrado' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}">
                             <div class="planner-item-time">${it.time ? escapeHtml(it.time) : '—'}</div>
                             <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})" aria-label="${escapeHtml(it.title)}: hecha">
@@ -922,3 +930,20 @@
             guardarRutinas();
         }
 
+
+// Lo que hay en el calendario ese día (eventos, cumpleaños, viajes, trabajo), para enseñarlo en el planificador
+// junto a las tareas y en orden de hora. No se marcan: al pulsarlos se abre su ficha. Si una tarea del día se
+// llama igual y es a la misma hora (un evento que también se apuntó como tarea), sale solo la tarea.
+function plannerEventosDia(offset, tareas) {
+    const fecha = servMasDias(currentPlannerDayKey(), offset);
+    const ya = new Set((tareas || []).map(t => `${t.time || ''}|${String(t.title || '').trim().toLowerCase()}`));
+    return getDayAllEntries(fecha)
+        .filter(e => ['event', 'birthday', 'travel', 'work'].includes(e.type) && !isCalendarLogEntry(e) && !/^(weekly_task_done_|planner_done_|recurring_done_)/.test(e.id || ''))
+        .map(e => {
+            const time = e.time || e.startTime || '';
+            const title = e.type === 'birthday' ? 'cumpleaños de ' + e.title : e.type === 'work' ? (e.company || e.title || 'trabajo') : (e.title || '');
+            const cat = categories.find(c => c.id === e.categoryId);
+            return { esEvento: true, id: e.id, time, title, color: (typeof tintaCategoria === 'function' ? tintaCategoria(cat?.color) : cat?.color) || 'var(--text-secondary)', sub: { event: 'evento', birthday: 'cumpleaños', travel: 'viaje', work: 'trabajo' }[e.type] + (e.place ? `, ${e.place}` : '') };
+        })
+        .filter(e => !ya.has(`${e.time}|${e.title.trim().toLowerCase()}`));
+}

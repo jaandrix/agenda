@@ -9832,3 +9832,9 @@ html:has(> body.papel:not(.acuarela):not(.pizarra):not(.oliva)) { filter: graysc
 /* Asfalto, igual pero al revés: el acento pasa a la tinta clara y todo en escala de grises. */
 body:not(.papel):not(.fundador) { --m-acento: #efede3; --m-sobre-acento: #302f2c; }
 html:has(> body:not(.papel):not(.fundador)) { filter: grayscale(1); }
+
+/* Eventos del calendario dentro del planificador: sin casilla, con el punto de su categoría. */
+.planner-item-evento { cursor: pointer; }
+.planner-evento-punto { width: 10px; height: 10px; margin: 0 4px; border-radius: 50%; flex-shrink: 0; align-self: center; }
+.m-fila-evento { cursor: pointer; }
+.m-fila-evento-punto { width: 10px; height: 10px; margin: 0 10px; border-radius: 50%; flex-shrink: 0; }
