@@ -26,6 +26,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const sb = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const ZONA = 'Europe/Madrid';
 const MAX_DIA = 3;
+const BETA_ABIERTA = true;
 const HORA = 9;
 // A las 19:00, el aviso de fin de la prueba (3 días antes y el último día) y el de volver (4 días sin entrar).
 const HORA_TARDE = 19;
@@ -206,6 +207,8 @@ function cuentaPropia(data: any) {
 
 // Fin de la prueba: solo cuentas en prueba (sin fila de suscripción), 3 días antes y el último día.
 async function avisoFinPrueba(userId: string, data: any): Promise<Aviso | null> {
+    // Beta abierta (27-10-2026): no hay prueba que se acabe, así que no se avisa de su fin.
+    if (BETA_ABIERTA) return null;
     const { data: u } = await sb.auth.admin.getUserById(userId);
     const alta = u?.user?.created_at;
     if (!alta || alta < CORTE_PAGO) return null;

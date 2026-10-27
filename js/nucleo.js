@@ -230,6 +230,8 @@
                 return;
             }
             suscripcionActual = sub;
+            const insignia = document.getElementById('beta-insignia');
+            if (insignia) insignia.hidden = !(user.created_at && new Date(user.created_at) <= new Date(BETA_FIN));
             cuentaDesarrollador = user.user_metadata?.desarrollador === true;
             try {
                 if (localStorage.getItem('bitacora-actividad') !== todayISO()) {
@@ -296,7 +298,13 @@
             return { estado: 'sin_suscripcion', modulos: ['base'] };
         }
 
+        // Beta abierta (27-10-2026): Bitácora es gratis y completa para todo el mundo, sin pagos ni fin de prueba.
+        // Para volver a cobrar basta con poner PAGOS_ACTIVOS a true (y tiene_acceso en el servidor).
+        const PAGOS_ACTIVOS = false;
+        // Quien se registra hasta esta fecha es beta tester: lo lleva en una insignia y lo tendrá gratis para siempre.
+        const BETA_FIN = '2026-12-31T23:59:59+01:00';
         function hasAccess(sub) {
+            if (!PAGOS_ACTIVOS) return true;
             if (['legado', 'fundador', 'prueba', 'active', 'trialing'].includes(sub.estado)) return true;
             if (sub.estado === 'regalo') return new Date(sub.periodo_fin) > new Date();
             if (sub.estado === 'past_due') {

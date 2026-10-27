@@ -26,6 +26,7 @@ function openBienvenida() {
 }
 
 function diasPrueba() {
+    if (!PAGOS_ACTIVOS) return null;
     const s = suscripcionActual;
     const fin = s?.estado === 'prueba' ? s.trial_fin : s?.estado === 'regalo' ? s.periodo_fin : null;
     return fin ? Math.max(0, Math.ceil((new Date(fin) - new Date()) / 86400000)) : null;
@@ -218,6 +219,7 @@ function openPlanesPago() {
 
 // ---------- fin de la prueba con la app abierta ----------
 function revisarFinAcceso() {
+    if (!PAGOS_ACTIVOS) return;
     const s = suscripcionActual;
     const fin = s?.estado === 'prueba' ? s.trial_fin : s?.estado === 'regalo' ? s.periodo_fin : null;
     if (fin && new Date() >= new Date(fin)) startApp();

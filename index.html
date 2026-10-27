@@ -25,7 +25,7 @@
     <meta name="twitter:image" content="https://appbitacora.es/og-image.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" crossorigin="anonymous">
-<link rel="stylesheet" href="styles.css?v=20261019-83">
+<link rel="stylesheet" href="styles.css?v=20261019-84">
     <!-- Analítica de visitas, privada (GoatCounter) — sin cookies, sin
          contador visible de cara al visitante; el panel es solo tuyo. -->
     <script data-goatcounter="https://appbitacora.goatcounter.com/count"
@@ -55,7 +55,7 @@
             <div class="landing-brand">bitácora<span>.</span></div>
             <nav class="landing-topbar-actions">
                 <a class="landing-about-link" href="#lp-funciones" onclick="return landingIr('lp-funciones')">qué hace.</a>
-                <a class="landing-about-link" href="#lp-precios" onclick="return landingIr('lp-precios')">precios.</a>
+                <a class="landing-about-link" href="#lp-precios" onclick="return landingIr('lp-precios')">beta.</a>
                 <a class="landing-about-link" href="#lp-preguntas" onclick="return landingIr('lp-preguntas')">preguntas.</a>
                 <button class="landing-about-link landing-novedades-link" onclick="openNovedades()">actualizaciones.</button>
                 <button class="landing-login-link" onclick="goToLogin()">iniciar sesión.</button>
@@ -70,7 +70,7 @@
                     <button class="landing-cta-primary" onclick="goToSignup()">empieza gratis.</button>
                     <button class="landing-cta-secondary" onclick="openPromoVideo()">▶ ver el vídeo.</button>
                 </div>
-                <div class="lp-hero-nota revela" style="--d:4">14 días gratis, sin tarjeta. Después, 1,99 € al mes.</div>
+                <div class="lp-hero-nota revela" style="--d:4">Beta abierta: gratis y con todas las funciones.</div>
             </div>
             <div class="lp-hero-visual revela" style="--d:2">
                 <div class="lp-cerebro" id="lp-cerebro" role="group" aria-label="Bitácora como un segundo cerebro: cada apartado sale de la zona del cerebro que hace esa función"></div>
@@ -147,8 +147,8 @@
             <div class="lp-tarjetas">
                 <div class="lp-tarjeta revela"><b>sin anuncios ni distracciones.</b><span>Bitácora no compite por tu atención. Entras, apuntas, consultas y te vas.</span></div>
                 <div class="lp-tarjeta revela" style="--d:1"><b>tus datos son tuyos.</b><span>No se venden ni se usan para entrenar IA. Los descargas o borras tu cuenta cuando quieras, desde Ajustes.</span></div>
-                <div class="lp-tarjeta revela" style="--d:2"><b>14 días gratis, sin tarjeta.</b><span>La pruebas entera. Si no te convence, no pagas nada y tus datos se quedan guardados.</span></div>
-                <div class="lp-tarjeta revela" style="--d:3"><b>un precio, sin micropagos.</b><span>1,99 € al mes con todo incluido. Nada de funciones sueltas de pago ni sorpresas.</span></div>
+                <div class="lp-tarjeta revela" style="--d:2"><b>beta abierta y gratis.</b><span>Ahora mismo Bitácora es gratis y completa. Quien entra durante la beta la tiene así para siempre.</span></div>
+                <div class="lp-tarjeta revela" style="--d:3"><b>lo básico, siempre gratis.</b><span>Calendario, tareas, planificador, estudios, notas y el resto seguirán siendo gratis. Lo que se pague en el futuro será opcional.</span></div>
             </div>
         </section>
 
@@ -165,25 +165,13 @@
 
         <section class="landing-pricing lp-seccion" id="lp-precios">
             <div class="lp-seccion-cab revela">
-                <h2>14 días gratis, sin tarjeta. Después, elige.</h2>
+                <h2>Beta abierta. Gratis, con todo.</h2>
             </div>
-            <div class="paywall-plans landing-plans revela">
-                <button class="paywall-plan" onclick="goToSignup('mensual')">
-                    <span class="paywall-plan-name">Mensual</span>
-                    <span class="paywall-plan-price">1,99€<span class="paywall-plan-period">/mes</span></span>
-                </button>
-                <button class="paywall-plan paywall-plan-highlight" onclick="goToSignup('anual')">
-                    <span class="paywall-plan-name">Anual</span>
-                    <span class="paywall-plan-price">18,99€<span class="paywall-plan-period">/año</span></span>
-                    <span class="paywall-plan-badge">sale a 1,58 € al mes.</span>
-                </button>
+            <div class="landing-beta revela">
+                <p>Bitácora está en beta. Si te creas una cuenta ahora, la usas entera sin pagar nada y sin tarjeta, y como beta tester la tendrás así mientras exista.</p>
+                <p>A cambio, solo te pedimos que nos cuentes qué falla y qué echas en falta, desde «sugerencias.» dentro de la app.</p>
+                <div class="landing-cta-row"><button class="landing-cta-primary" onclick="goToSignup()">crear mi cuenta.</button></div>
             </div>
-            <button class="paywall-fundador revela" data-plazas-fundador onclick="goToSignup('fundador')">
-                <span class="paywall-fundador-texto"><b>socio fundador.</b><small>Bitácora de por vida con un único pago, tu número de socio y un tema exclusivo. <span class="paywall-fundador-plazas">Solo 100 plazas.</span></small></span>
-                <span class="paywall-fundador-precio">29,99€<small>una vez</small></span>
-            </button>
-            <button class="paywall-condiciones" onclick="openCondicionesFundador()">qué significa «de por vida».</button>
-            <div class="landing-pricing-note">Precios con IVA incluido. Cancela cuando quieras. Garantía de devolución de 14 días.</div>
         </section>
 
         <section class="lp-seccion lp-faq" id="lp-preguntas">
@@ -192,20 +180,16 @@
             </div>
             <div class="lp-faq-lista revela">
                 <details><summary>¿Qué es Bitácora exactamente?</summary><div><p>Una agenda para tu vida entera: calendario, planificador del día, rutinas, notas, estudios y universidad, empleo y CV, finanzas, ocio, viajes y gastos compartidos con amigos. Todo en un mismo sitio y conectado entre sí, para que no tengas que ir saltando entre diez apps.</p></div></details>
-                <details><summary>¿Cuánto cuesta?</summary><div><p>1,99 € al mes o 18,99 € al año, con todo incluido y el IVA ya sumado. No hay funciones sueltas de pago ni compras dentro de la app. También puedes hacerte socio fundador: 29,99 € una sola vez y Bitácora para siempre (solo para 100 personas).</p></div></details>
-                <details><summary>¿Tengo que poner la tarjeta para probarla?</summary><div><p>No. Creas tu cuenta y la usas entera durante 14 días sin dar ningún dato de pago. Solo si decides quedarte eliges un plan.</p></div></details>
-                <details><summary>¿Qué pasa cuando termina la prueba?</summary><div><p>Bitácora se queda en pausa hasta que te suscribas, pero no se borra nada: todo lo que apuntaste sigue ahí. Mientras tanto puedes descargar tus datos en un archivo cuando quieras.</p></div></details>
-                <details><summary>¿Puedo cancelar cuando quiera?</summary><div><p>Sí, desde Ajustes, en un momento y sin permanencia. Sigues teniendo acceso hasta el final del periodo que ya pagaste y no se te vuelve a cobrar.</p></div></details>
-                <details><summary>¿Y si pago y no me convence?</summary><div><p>Te devolvemos el importe íntegro si nos lo pides en los 14 días siguientes al pago, sin preguntas.</p></div></details>
-                <details><summary>¿Qué es ser socio fundador?</summary><div><p>Un único pago de 29,99 € que te da Bitácora mientras exista, sin pagar nada más. Solo hay 100 plazas. Los socios tienen su número visible, un tema exclusivo y tres códigos para regalar 6 meses de Bitácora a quien quieran.</p></div></details>
+                <details><summary>¿Cuánto cuesta?</summary><div><p>Nada. Bitácora está en beta abierta: es gratis y con todas las funciones, sin tarjeta. Quien se registra durante la beta la tiene gratis y completa mientras la app exista. Cuando salga la versión oficial, lo básico seguirá siendo gratis para todo el mundo.</p></div></details>
+                <details><summary>¿Qué es ser beta tester?</summary><div><p>Usar Bitácora mientras está en beta y contarnos qué mejorarías. Te lo agradecemos dándote acceso ilimitado a todas las funciones, sin coste, mientras la app exista.</p></div></details>
                 <details><summary>¿Mis datos están seguros? ¿Quién puede verlos?</summary><div><p>Solo tú. Tus datos se guardan cifrados en servidores de la Unión Europea, cada cuenta únicamente puede leer los suyos y nadie los vende ni los usa para anuncios o para entrenar inteligencias artificiales. Lo que compartes con un amigo, lo ve ese amigo.</p></div></details>
-                <details><summary>¿Puedo llevarme mis datos o borrar mi cuenta?</summary><div><p>Sí, siempre. En Ajustes puedes descargar todo en un archivo (y volver a importarlo si algún día vuelves a suscribirte) o eliminar tu cuenta y todo lo que hay en ella para siempre.</p></div></details>
+                <details><summary>¿Puedo llevarme mis datos o borrar mi cuenta?</summary><div><p>Sí, siempre. En Ajustes puedes descargar todo en un archivo (y volver a importarlo cuando quieras) o eliminar tu cuenta y todo lo que hay en ella para siempre.</p></div></details>
                 <details><summary>¿Funciona en el móvil? ¿Hay app?</summary><div><p>Sí. En iPhone, añádela a la pantalla de inicio desde Safari y tendrás su icono, pantalla completa y avisos. En Android, instálala desde Chrome. En el ordenador, se instala desde el navegador y se abre en su propia ventana. Estamos trabajando en la app de Google Play.</p></div></details>
                 <details><summary>¿Se sincroniza entre mis dispositivos?</summary><div><p>Al momento. Lo que apuntas en el móvil aparece en el ordenador y al revés. También puedes usarla sin conexión: tus cambios se guardan en el dispositivo y se sincronizan cuando vuelves a tener internet.</p></div></details>
                 <details><summary>¿Qué es eso de conectar Claude o ChatGPT? ¿Cuesta más?</summary><div><p>Si ya usas Claude o ChatGPT, puedes conectarlos a tu Bitácora para pedirles cosas hablando: «¿qué tengo esta semana?» o «apunta este gasto». Funciona con tu propia cuenta de esos servicios y en Bitácora no cuesta nada más. Es opcional.</p></div></details>
                 <details><summary>¿Me sirve si no estudio en la universidad?</summary><div><p>Sí. Al empezar eliges si estudias, trabajas o las dos cosas, y Bitácora enseña solo lo que vas a usar. Estudios funciona para bachillerato, FP u oposiciones, y Universidad es un apartado opcional.</p></div></details>
                 <details><summary>¿Puedo compartir cosas con mis amigos?</summary><div><p>Sí: dividir gastos de viajes, cenas o el piso, compartir eventos, recomendaros libros, series o pelis y compartir listas y viajes. Os añadís con un código de amigo.</p></div></details>
-                <details><summary>¿Tiene anuncios?</summary><div><p>No, y no los tendrá. Bitácora se mantiene con las suscripciones, precisamente para no tener que vender tu atención ni tus datos.</p></div></details>
+                <details><summary>¿Tiene anuncios?</summary><div><p>No, y no los tendrá. Bitácora no vive de vender tu atención ni tus datos. Cuando haya funciones de pago, serán opcionales y para quien las quiera.</p></div></details>
                 <details><summary>¿Quién está detrás?</summary><div><p>Un estudiante al que las agendas de siempre se le quedaban cortas y que decidió hacer la suya. Bitácora es un proyecto pequeño e independiente, y se construye escuchando a quien la usa: dentro de la app hay un apartado para enviar sugerencias.</p></div></details>
             </div>
         </section>
@@ -239,7 +223,7 @@
         <div class="login-top-actions">
             <button class="pwa-install-btn about-bitacora-btn" onclick="openAboutBitacora()">qué es bitácora.</button>
         </div>
-        <script src="pwa-install.js?v=20261019-83"></script>
+        <script src="pwa-install.js?v=20261019-84"></script>
         <div class="login-tarjeta">
         <div id="login-box">
             <div id="mode-login">
@@ -257,7 +241,7 @@
 
             <div id="mode-signup" style="display:none">
                 <h1>crea tu cuenta<span class="login-punto">.</span></h1>
-                <p class="sub">14 días gratis, sin tarjeta.</p>
+                <p class="sub">Beta abierta: gratis y con todo.</p>
                 <input type="email" id="signup-email" placeholder="Email" aria-label="Email" aria-describedby="signup-error" autocomplete="email">
                 <input type="password" id="signup-password" placeholder="Contraseña (mín. 8 caracteres)" aria-label="Contraseña (mín. 8 caracteres)" aria-describedby="signup-error" autocomplete="new-password">
                 <input type="password" id="signup-password2" placeholder="Repite la contraseña" aria-label="Repite la contraseña" aria-describedby="signup-error" autocomplete="new-password">
@@ -344,6 +328,7 @@
                     <h1 id="page-title">Calendario</h1>
                 </div>
                 <div class="header-right">
+                    <span id="beta-insignia" class="beta-insignia" tabindex="0" aria-describedby="beta-bocadillo" hidden>beta tester<span id="beta-bocadillo" class="beta-bocadillo" role="tooltip">Eres beta tester de Bitácora. Te agradecemos mucho que estés aquí: tienes acceso ilimitado a todas las funciones, sin coste.</span></span>
                     <button id="fab" inert aria-hidden="true" onclick="openApuntar()" title="Apuntar algo (ESPACIO abre el buscador de tipos)">
                         <svg viewBox="0 0 100 100" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M41 10h18v31h31v18H59v31H41V59H10V41h31z"/></svg><span class="fab-texto">apuntar.</span>
                     </button>
@@ -418,57 +403,57 @@
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
-    <script src="js/nucleo.js?v=20261019-83"></script>
-    <script src="js/datos.js?v=20261019-83"></script>
-    <script src="js/interfaz.js?v=20261019-83"></script>
-    <script src="js/planificador.js?v=20261019-83"></script>
-    <script src="js/coleccionables.js?v=20261019-83"></script>
-    <script src="js/entradas.js?v=20261019-83"></script>
-    <script src="js/calendario.js?v=20261019-83"></script>
-    <script src="js/resumen.js?v=20261019-83"></script>
-    <script src="js/ocio.js?v=20261019-83"></script>
-    <script src="js/viajes.js?v=20261019-83"></script>
-    <script src="js/trabajo-estudios.js?v=20261019-83"></script>
-    <script src="js/agenda-laboral.js?v=20261019-83"></script>
-    <script src="js/enlaces-proyectos.js?v=20261019-83"></script>
-    <script src="js/eventos.js?v=20261019-83"></script>
-    <script src="js/ajustes.js?v=20261019-83"></script>
-    <script src="js/notas-objetivos.js?v=20261019-83"></script>
-    <script src="js/finanzas.js?v=20261019-83"></script>
-    <script src="js/finanzas-pro.js?v=20261019-83"></script>
-    <script src="js/documentos.js?v=20261019-83"></script>
-    <script src="js/vault.js?v=20261019-83"></script>
-    <script src="js/conector.js?v=20261019-83"></script>
-    <script src="js/inicio.js?v=20261019-83"></script>
-    <script src="js/actualizaciones.js?v=20261019-83"></script>
-    <script src="js/compra.js?v=20261019-83"></script>
-    <script src="js/estudiar.js?v=20261019-83"></script>
-    <script src="js/test.js?v=20261019-83"></script>
-    <script src="js/proyecto.js?v=20261019-83"></script>
-    <script src="js/apuntar.js?v=20261019-83"></script>
-    <script src="js/conexiones.js?v=20261019-83"></script>
-    <script src="js/metodo.js?v=20261019-83"></script>
-    <script src="js/universidad.js?v=20261019-83"></script>
-    <script src="js/classroom.js?v=20261019-83"></script>
-    <script src="js/profesorado.js?v=20261019-83"></script>
-    <script src="js/profesorado-aula.js?v=20261019-83"></script>
-    <script src="js/cv.js?v=20261019-83"></script>
-    <script src="js/social.js?v=20261019-83"></script>
-    <script src="js/perfil.js?v=20261019-83"></script>
-    <script src="js/bienvenida.js?v=20261019-83"></script>
-    <script src="js/ejemplo.js?v=20261019-83"></script>
-    <script src="js/invitar.js?v=20261019-83"></script>
-    <script src="js/asistente.js?v=20261019-83"></script>
-    <script src="js/tumes.js?v=20261019-83"></script>
-    <script src="js/servicios.js?v=20261019-83"></script>
-    <script src="js/compartir.js?v=20261019-83"></script>
-    <script src="js/guia.js?v=20261019-83"></script>
-    <script src="js/guia-ia.js?v=20261019-83"></script>
-    <script src="js/landing.js?v=20261019-83"></script>
+    <script src="js/nucleo.js?v=20261019-84"></script>
+    <script src="js/datos.js?v=20261019-84"></script>
+    <script src="js/interfaz.js?v=20261019-84"></script>
+    <script src="js/planificador.js?v=20261019-84"></script>
+    <script src="js/coleccionables.js?v=20261019-84"></script>
+    <script src="js/entradas.js?v=20261019-84"></script>
+    <script src="js/calendario.js?v=20261019-84"></script>
+    <script src="js/resumen.js?v=20261019-84"></script>
+    <script src="js/ocio.js?v=20261019-84"></script>
+    <script src="js/viajes.js?v=20261019-84"></script>
+    <script src="js/trabajo-estudios.js?v=20261019-84"></script>
+    <script src="js/agenda-laboral.js?v=20261019-84"></script>
+    <script src="js/enlaces-proyectos.js?v=20261019-84"></script>
+    <script src="js/eventos.js?v=20261019-84"></script>
+    <script src="js/ajustes.js?v=20261019-84"></script>
+    <script src="js/notas-objetivos.js?v=20261019-84"></script>
+    <script src="js/finanzas.js?v=20261019-84"></script>
+    <script src="js/finanzas-pro.js?v=20261019-84"></script>
+    <script src="js/documentos.js?v=20261019-84"></script>
+    <script src="js/vault.js?v=20261019-84"></script>
+    <script src="js/conector.js?v=20261019-84"></script>
+    <script src="js/inicio.js?v=20261019-84"></script>
+    <script src="js/actualizaciones.js?v=20261019-84"></script>
+    <script src="js/compra.js?v=20261019-84"></script>
+    <script src="js/estudiar.js?v=20261019-84"></script>
+    <script src="js/test.js?v=20261019-84"></script>
+    <script src="js/proyecto.js?v=20261019-84"></script>
+    <script src="js/apuntar.js?v=20261019-84"></script>
+    <script src="js/conexiones.js?v=20261019-84"></script>
+    <script src="js/metodo.js?v=20261019-84"></script>
+    <script src="js/universidad.js?v=20261019-84"></script>
+    <script src="js/classroom.js?v=20261019-84"></script>
+    <script src="js/profesorado.js?v=20261019-84"></script>
+    <script src="js/profesorado-aula.js?v=20261019-84"></script>
+    <script src="js/cv.js?v=20261019-84"></script>
+    <script src="js/social.js?v=20261019-84"></script>
+    <script src="js/perfil.js?v=20261019-84"></script>
+    <script src="js/bienvenida.js?v=20261019-84"></script>
+    <script src="js/ejemplo.js?v=20261019-84"></script>
+    <script src="js/invitar.js?v=20261019-84"></script>
+    <script src="js/asistente.js?v=20261019-84"></script>
+    <script src="js/tumes.js?v=20261019-84"></script>
+    <script src="js/servicios.js?v=20261019-84"></script>
+    <script src="js/compartir.js?v=20261019-84"></script>
+    <script src="js/guia.js?v=20261019-84"></script>
+    <script src="js/guia-ia.js?v=20261019-84"></script>
+    <script src="js/landing.js?v=20261019-84"></script>
 
-    <script src="apuntes-window.js?v=20261019-83"></script>
+    <script src="apuntes-window.js?v=20261019-84"></script>
 
-    <script src="v23.js?v=20261019-83"></script>
+    <script src="v23.js?v=20261019-84"></script>
 
 </body>
 </html>

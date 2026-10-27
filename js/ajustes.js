@@ -583,8 +583,8 @@
 
                     <div class="ajustes-seccion" data-grupo="cuenta"><div class="ajustes-grupo" id="ajg-cuenta">cuenta.</div>
                     <div class="ajustes-rejilla">
-                        ${bloqueAjuste('settings-subscription-section', 'suscripcion', 'suscripción.', 'Tu plan y su renovación.', `<div id="settings-subscription-body" class="ajuste-cargando">Cargando...</div>`)}
-                        ${bloqueAjuste('settings-invitar-section', 'amigos', 'invita a un amigo.', `Con tu enlace, tu amigo tiene ${DIAS_PRUEBA_AMIGO} días de prueba en vez de 14 y, cuando entre, los dos desbloqueáis el tema «oliva.».`, `<div id="settings-invitar-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${bloqueAjuste('settings-subscription-section', 'suscripcion', PAGOS_ACTIVOS ? 'suscripción.' : 'beta abierta.', PAGOS_ACTIVOS ? 'Tu plan y su renovación.' : 'Gratis y con todas las funciones.', `<div id="settings-subscription-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${bloqueAjuste('settings-invitar-section', 'amigos', 'invita a un amigo.', PAGOS_ACTIVOS ? `Con tu enlace, tu amigo tiene ${DIAS_PRUEBA_AMIGO} días de prueba en vez de 14 y, cuando entre, los dos desbloqueáis el tema «oliva.».` : 'Pásale tu enlace a quien quieras que pruebe la beta. Cuando entre, los dos desbloqueáis el tema «oliva.».', `<div id="settings-invitar-body" class="ajuste-cargando">Cargando...</div>`)}
                         ${bloqueAjuste('settings-account-section', 'datos', 'tus datos.', 'Todo lo que hay en Bitácora (entradas, notas, finanzas...) en un archivo JSON: para guardarlo aparte o traerlo de vuelta.', `
                             <div class="ajuste-botones">
                                 <button class="btn-secondary" style="width:auto" onclick="exportData()">exportar.</button>
@@ -726,6 +726,13 @@
             loadCorreoSemanalAjustes().catch(e => console.error(e));
             const body = cuerpoAjustes('settings-subscription-body');
             if (!body) return;
+            if (!PAGOS_ACTIVOS) {
+                body.innerHTML = `<div class="settings-subscription-card settings-subscription-card-legado">
+                    <div class="settings-subscription-status">Beta abierta</div>
+                    <div class="settings-subscription-note">Bitácora es gratis y completa mientras dura la beta. Si te registraste durante ella, eres beta tester: tendrás acceso ilimitado a todas las funciones, sin coste, mientras la app exista.</div>
+                </div>`;
+                return;
+            }
             const { data: { user } } = await sb.auth.getUser();
             if (!user) return;
             const sub = await getSubscriptionStatus(user, { allowRetry: false });

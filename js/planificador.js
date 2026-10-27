@@ -140,8 +140,6 @@
                     </button>
                 </div>
 
-                ${renderPlannerBacklog()}
-                ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}
 
                 <div class="culture-tabs" style="margin-bottom:18px">
                     ${PLANNER_DAY_TABS.map(t => `
@@ -184,6 +182,9 @@
                         <div class="finance-empty-state">Aún no has añadido tareas ${emptyLabel}. Pulsa <strong>+ tarea.</strong> para empezar tu planificación.</div>
                     `}
                 </div>
+
+                ${renderPlannerBacklog()}
+                ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}
             </div>`;
         }
 

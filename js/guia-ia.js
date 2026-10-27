@@ -41,16 +41,10 @@ Ideas clave para entenderla:
 - **Temas.** asfalto (oscuro), papel (claro), teja (piedra cálida con naranja) y pizarra (gris azulado). Hay dos más: «oliva.», para quien invita a un amigo o entra invitado, y «fundador.», para los socios fundadores.
 - **Privacidad.** Los datos son de cada persona; solo los ve ella (y, en Social, lo que decida compartir con sus amigos).`;
 
-const GUIA_IA_CUENTA = `## Cuenta, prueba y precios
+const GUIA_IA_CUENTA = `## Cuenta y beta abierta
 
 - **Crear cuenta:** en appbitacora.es, con correo y contraseña (mínimo 8 caracteres; Bitácora rechaza contraseñas que han aparecido en filtraciones conocidas).
-- **Prueba gratis:** 14 días desde que se crea la cuenta, sin tarjeta. Quien entra con el código de un amigo tiene 30 días.
-- **Precio:** 1,99 € al mes o 18,99 € al año, con todo incluido. Se contrata en Ajustes → «suscripción.».
-- **Socio fundador:** un único pago de 29,99 € y Bitácora de por vida, solo para 100 personas. Incluye el tema «fundador.» y tres códigos que regalan 6 meses de Bitácora.
-- **Código de regalo:** se escribe en Ajustes → «suscripción.» o en la pantalla del final de la prueba.
-- **Invitar a un amigo:** Ajustes → cuenta → «invita a un amigo.»: tu código y tu enlace. Tu amigo tiene 30 días de prueba y los dos desbloqueáis el tema «oliva.».
-- **Pagos, tarjeta y facturas, o cancelar:** Ajustes → «suscripción.» → «pagos y facturas.».
-- **Cuando termina la prueba sin suscribirse:** sale la pantalla «tu prueba gratuita ha terminado.», con la opción de suscribirse y con «descargar mis datos.» para llevarse todo. Los datos no se borran.
+- **Beta abierta:** Bitácora es gratis y con todas las funciones, sin tarjeta. Quien se registra durante la beta (hasta el 31 de diciembre de 2026) es beta tester y la tendrá gratis y completa mientras la app exista. No hay nada que pagar ni ninguna pantalla de pago.
 - **Llevarse los datos:** Ajustes → «tus datos.» → «exportar.» (un archivo JSON con todo). Finanzas tiene además su propio «exportar.» en texto, pensado para pegárselo a una IA.
 - **Borrar la cuenta:** Ajustes → zona de riesgo → «eliminar mi cuenta.». Es definitivo.
 - **Cerrar sesión en todos los dispositivos:** Ajustes → «cerrar sesión en todas partes.».`;
@@ -271,10 +265,6 @@ const GUIA_IA_PROBLEMAS = [
     ['En el iPhone, al tocar un campo no sale el teclado', [
         'Toca de nuevo dentro del campo. Si persiste, cierra la app del todo y vuelve a abrirla.',
     ]],
-    ['Se me ha acabado la prueba', [
-        'Puedes suscribirte desde la propia pantalla (1,99 € al mes, 18,99 € al año o socio fundador), canjear un código de regalo o descargar tus datos.',
-        'Tus datos siguen guardados: al suscribirte vuelve todo como estaba.',
-    ]],
     ['He borrado algo sin querer', [
         'Si fue con Claude, ChatGPT, Siri o Apuntar: «propuestas.» → historial → «deshacer».',
         'Si no: restaura una copia en Documentos → «copias.».',
@@ -350,7 +340,7 @@ function construirGuiaIA() {
         '1. Para la IA que lee este documento',
         '2. Qué es Bitácora',
         '3. Primeros pasos',
-        '4. Cuenta, prueba y precios',
+        '4. Cuenta y beta abierta',
         '5. Mapa de la app',
         '6. Cada apartado, en detalle',
         '7. Cómo hacer…, paso a paso',
