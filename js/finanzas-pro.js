@@ -3091,9 +3091,8 @@
                 </div>` : `
                 <div class="modal-label">Columna de importe (negativo = gasto)</div>
                 <select class="modal-input" onchange="financeProImportSet('amount', this.value)">${colOptions(imp.mapping.amount)}</select>`}
-                <div class="finance-modal-note" style="margin:12px 0 6px">Vista previa (${imp.rows.length - (imp.mapping.hasHeader ? 1 : 0)} filas detectadas):</div>
-                <div class="finance-import-preview">${previewRows.map(r => `<div class="finance-import-preview-row">${(r || []).slice(0, 4).map(c => `<span>${escapeHtml(String(c || '').slice(0, 20))}</span>`).join('')}</div>`).join('')}</div>
-                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmFinanceProImport()">importar movimientos.</button>
+                ${renderFinanceProImportFilas(imp, previewRows)}
+                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmFinanceProImport()">importar ${imp.excluidas?.size ? 'los marcados' : 'movimientos'}.</button>
             `;
         }
 
@@ -3101,6 +3100,7 @@
             const m = window._financeProImport.mapping;
             if (key === 'hasHeader' || key === 'splitAmount' || key === 'skipPending' || key === 'account') m[key] = value;
             else m[key] = Number(value);
+            window._financeProImport.excluidas = null;
             document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
         }
 
@@ -3356,6 +3356,7 @@
                 if (fecha && Number.isFinite(val)) pendientesEnArchivo.add(clavePendiente(r[m.description], Math.abs(val), fecha));
             });
             rows.forEach((r, fila) => {
+                if (imp.excluidas?.has(fila)) { skipped++; return; }
                 const hora = horaDe(r);
                 const marcaDia = hora ? { hora } : { orden: ordenDe(fila) };
                 const ponerMarca = t => { if (t && !t.hora && t.orden == null) Object.assign(t, marcaDia); };
@@ -3880,4 +3881,74 @@ async function financeAplicarVuelta() {
     render();
     try { await saveData(); showToast(`Finanzas está como estaba ${texto}.`); }
     catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+
+// ============================================================
+//  ELEGIR QUÉ FILAS SE IMPORTAN (28-10)
+//  Un extracto suele traer cosas que ya están apuntadas de otra forma: las cargas a Revolut desde Ibercaja salen en
+//  el banco con otra fecha (el banco cobra 2 o 3 días después) y a veces partidas (dos de 300 € frente a un traspaso
+//  de 600 €), y el importador, que reconoce por día, importe y concepto exactos, las volvía a meter. Ahora se ven
+//  todas las filas con su casilla, y las que parecen ya apuntadas salen desmarcadas.
+// ============================================================
+function financeProFilasDelExtracto(imp) {
+    const m = imp.mapping;
+    const datos = m.hasHeader ? imp.rows.slice(1) : imp.rows;
+    return datos.map((r, fila) => {
+        let val;
+        if (m.splitAmount) {
+            const ent = financeProParseEuroAmount(r[m.amountIn]), sal = financeProParseEuroAmount(r[m.amountOut]);
+            val = (Number.isFinite(ent) && ent > 0 ? ent : 0) - (Number.isFinite(sal) ? Math.abs(sal) : 0);
+        } else val = financeProParseEuroAmount(r[m.amount]);
+        const date = financeProParseDate(r[m.date]) || r.map(financeProParseDate).find(Boolean) || '';
+        return { fila, date, val: Number.isFinite(val) ? Math.round(val * 100) / 100 : NaN, desc: String(r[m.description] || '').trim() };
+    });
+}
+function financeProFilasYaApuntadas(imp) {
+    const cuenta = imp.mapping.account;
+    const filas = financeProFilasDelExtracto(imp).filter(f => f.date && Number.isFinite(f.val) && f.val);
+    const signo = t => t.type === 'transfer' ? (t.account === cuenta ? -1 : 1) : t.type === 'income' ? 1 : -1;
+    const libres = financePro.transactions.filter(t => (t.account === cuenta || t.transferTo === cuenta) && !t.pendiente)
+        .map(t => ({ t, val: Math.round(signo(t) * (Number(t.amount) || 0) * 100) / 100 }));
+    const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000);
+    const ya = new Set(), usados = new Set();
+    const tomar = (f, x) => { ya.add(f.fila); usados.add(x); };
+    // Primero lo idéntico (mismo día, importe y concepto); luego mismo importe a 4 días como mucho, el más cercano.
+    filas.forEach(f => {
+        const x = libres.find(x => !usados.has(x) && x.t.date === f.date && Math.abs(x.val - f.val) < 0.005 && financeProNormalizar(x.t.bankNote ?? x.t.note ?? '') === financeProNormalizar(f.desc));
+        if (x) tomar(f, x);
+    });
+    filas.filter(f => !ya.has(f.fila)).forEach(f => {
+        const x = libres.filter(x => !usados.has(x) && Math.abs(x.val - f.val) < 0.005 && dias(x.t.date, f.date) <= 4)
+            .sort((a, b) => dias(a.t.date, f.date) - dias(b.t.date, f.date))[0];
+        if (x) tomar(f, x);
+    });
+    // Dos filas del mismo concepto y signo, cercanas, que juntas son un movimiento ya apuntado (600 € = 300 + 300).
+    const sueltas = filas.filter(f => !ya.has(f.fila));
+    sueltas.forEach((a, i) => sueltas.slice(i + 1).forEach(b => {
+        if (ya.has(a.fila) || ya.has(b.fila) || Math.sign(a.val) !== Math.sign(b.val) || dias(a.date, b.date) > 4) return;
+        if (financeProNormalizar(a.desc) !== financeProNormalizar(b.desc)) return;
+        const x = libres.find(x => !usados.has(x) && Math.abs(x.val - (a.val + b.val)) < 0.005 && dias(x.t.date, a.date) <= 4);
+        if (x) { tomar(a, x); ya.add(b.fila); }
+    }));
+    return ya;
+}
+function renderFinanceProImportFilas(imp) {
+    if (!imp.excluidas) { imp.yaApuntadas = financeProFilasYaApuntadas(imp); imp.excluidas = new Set(imp.yaApuntadas); }
+    const filas = financeProFilasDelExtracto(imp);
+    const n = filas.length - imp.excluidas.size;
+    return `<div class="modal-label" style="margin-top:12px">qué se importa.</div>
+        <div class="finance-modal-note" style="margin:0 0 6px">${filas.length} filas en el extracto. Las que parecen ya apuntadas en ${escapeHtml(financePro.accounts[imp.mapping.account]?.name || imp.mapping.account)} (mismo importe en 4 días, o dos que suman uno) salen desmarcadas. Se importan ${n}.</div>
+        <div class="fin-imp-filas">${filas.map(f => `<label class="fin-imp-fila ${imp.yaApuntadas.has(f.fila) ? 'ya' : ''}">
+            <input type="checkbox" ${imp.excluidas.has(f.fila) ? '' : 'checked'} onchange="financeProImportFila(${f.fila}, this.checked)">
+            <span>${f.date ? financeDateLabelShort(f.date) : 'sin fecha'}</span>
+            <b>${escapeHtml(f.desc.slice(0, 60) || 'sin concepto')}${imp.yaApuntadas.has(f.fila) ? '<small>parece que ya está.</small>' : ''}</b>
+            <i class="${f.val > 0 ? 'positiva' : ''}">${Number.isFinite(f.val) ? (f.val > 0 ? '+' : '') + financeMoney(f.val) : ''}</i>
+        </label>`).join('')}</div>`;
+}
+function financeProImportFila(fila, marcada) {
+    const imp = window._financeProImport;
+    imp.excluidas = new Set(imp.excluidas);
+    if (marcada) imp.excluidas.delete(fila); else imp.excluidas.add(fila);
+    document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
 }

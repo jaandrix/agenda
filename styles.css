@@ -9863,3 +9863,11 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { max-height:calc((10
     .ent-puntos { display:flex; justify-content:center; }
     .ent-lista { display:block; }
 }
+
+.fin-imp-filas { display:grid; max-height:none; }
+.fin-imp-fila { display:grid; grid-template-columns:22px 64px minmax(0, 1fr) auto; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; cursor:pointer; }
+.fin-imp-fila span { color:var(--text-secondary); }
+.fin-imp-fila b { font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.fin-imp-fila b small { display:block; font-weight:500; font-size:12px; color:var(--text-secondary); }
+.fin-imp-fila i { font-style:normal; font-weight:600; white-space:nowrap; }
+.fin-imp-fila.ya b { color:var(--text-secondary); }
