@@ -557,6 +557,7 @@
                 const antes = new Map(financePro.transactions.map(t => [t.id, JSON.stringify(t)]));
                 const imp = financeProPrepararImport(op.csv, op.cuenta);
                 if (!imp) return linea('importar', 'extracto recibido pero no se ha podido leer.', null);
+                financeImportGuardarAntes(`importación de ${financeProCuentaNombre(imp.mapping.account)} desde la ia`);
                 const r = financeProEjecutarImport(imp);
                 financeProResolverDuplicados(financeProCuadreExtracto(imp));
                 const despues = new Map(financePro.transactions.map(t => [t.id, JSON.stringify(t)]));

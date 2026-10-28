@@ -1950,6 +1950,7 @@
                         <button onclick="openFinanceProAccountsSettings()"><i class='ico ico-lapiz' aria-hidden=true></i> nombres y saldo inicial.</button>
                         <button onclick="openFinanceProCategoriesModal()">categorías.</button>
                         <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} importar.</button>
+                        <button onclick="openDeshacerImportacion()"><i class='ico ico-repetir' aria-hidden=true></i> deshacer importación.</button>
                         <button onclick="exportFinanceMarkdown()"><i class='ico ico-bajar' aria-hidden=true></i> exportar.</button>
                         <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} reglas.</button>
                     </div>
@@ -2847,6 +2848,7 @@
                 <div class="finance-modal-note" style="margin-bottom:12px">Sube el Excel o el CSV que exporta tu banco o tu app de finanzas, o pega su contenido si lo has copiado desde el botón de compartir. En el siguiente paso indicas qué columna es cada dato.</div>
                 <input type="file" id="finance-pro-import-file" accept=".csv,.xlsx,.xls,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="modal-input" onchange="handleFinanceProImportFile(event)">
                 <button class="finance-oneoff-btn finance-import-pegar" onclick="pegarExtractoBancario()">pegar extracto.</button>
+                <button class="m-enlace" style="display:block;margin:10px auto 0" onclick="openDeshacerImportacion()">deshacer una importación.</button>
                 <div id="finance-pro-import-body"></div>
             `);
         }
@@ -3130,6 +3132,7 @@
 
         async function confirmFinanceProImport() {
             const imp = window._financeProImport;
+            await financeImportGuardarAntes(`importación de ${financeProCuentaNombre(imp.mapping.account)}`);
             const r = financeProEjecutarImport(imp);
             closeModal();
             render();
@@ -3772,3 +3775,109 @@
             try { await saveData(); showToast(`${marcados} ${marcados === 1 ? 'gasto marcado' : 'gastos marcados'} como viaje`); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+
+
+// ============================================================
+//  DESHACER IMPORTACIONES (28-10)
+//  Importar toca mucho más que añadir filas: concilia lo grabado a mano, completa pendientes, funde gemelos, empareja
+//  traspasos, quita duplicados y puede cambiar la cuenta o el concepto de una suscripción. Por eso no se deshace
+//  quitando lo añadido, sino volviendo a cómo estaba Finanzas justo antes. Esa foto se guarda en este dispositivo
+//  (IndexedDB, las ocho últimas); para lo importado antes de esto, o desde otro dispositivo, están las copias
+//  semanales de la nube (bitacora_snapshots).
+// ============================================================
+const financeClaveImportaciones = () => 'importaciones-' + (copiaUid || '');
+function financeProCuentaNombre(id) {
+    return financePro.accounts?.[id]?.name || id || 'una cuenta';
+}
+function financeFotoFinanzas() {
+    const recurrentes = {};
+    entries.forEach(e => { if (e.proAccount !== undefined || e.conceptoBanco !== undefined) recurrentes[e.id] = { proAccount: e.proAccount, conceptoBanco: e.conceptoBanco }; });
+    return { financePro: JSON.parse(JSON.stringify(financePro)), recurrentes };
+}
+async function financeLeerImportaciones() {
+    try {
+        const db = await copiaDb();
+        return await new Promise((ok, mal) => {
+            const r = db.transaction('copias').objectStore('copias').get(financeClaveImportaciones());
+            r.onsuccess = () => ok(Array.isArray(r.result) ? r.result : []);
+            r.onerror = () => mal(r.error);
+        });
+    } catch (e) { console.error(e); return []; }
+}
+async function financeEscribirImportaciones(lista) {
+    const db = await copiaDb();
+    await new Promise((ok, mal) => {
+        const t = db.transaction('copias', 'readwrite');
+        t.objectStore('copias').put(lista.slice(0, 8), financeClaveImportaciones());
+        t.oncomplete = ok;
+        t.onerror = () => mal(t.error);
+    });
+}
+// La foto se saca al momento (la importación del conector no espera) y se escribe después.
+function financeImportGuardarAntes(texto) {
+    const foto = { id: 'imp_' + Date.now(), cuando: Date.now(), texto, movimientos: financePro.transactions.length, ...financeFotoFinanzas() };
+    return financeLeerImportaciones().then(lista => financeEscribirImportaciones([foto, ...lista]))
+        .catch(e => console.error('No se pudo guardar la foto antes de importar:', e));
+}
+
+async function openDeshacerImportacion() {
+    showModal(`<div class="modal-title">deshacer importación.<button class="modal-close" aria-label="cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
+        <p class="finance-modal-note" style="margin-top:0">Finanzas vuelve a como estaba en ese momento. Lo que cambiaste en Finanzas después también se pierde; el resto de Bitácora no se toca. Antes de deshacer se guarda cómo está ahora, por si quieres volver.</p>
+        <div id="deshacer-import-cuerpo"><p class="finance-modal-note">Buscando…</p></div>`);
+    const [locales, nube] = await Promise.all([
+        financeLeerImportaciones(),
+        sb.from('bitacora_snapshots').select('id, created_at, week_key').order('created_at', { ascending: false }).limit(12).then(r => r.data || [], () => []),
+    ]);
+    const caja = document.getElementById('deshacer-import-cuerpo');
+    if (!caja) return;
+    const fecha = t => new Date(t).toLocaleString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const fila = (titulo, detalle, accion) => `<div class="deshacer-fila"><span><b>${titulo}</b><small>${detalle}</small></span><button class="btn-secondary" onclick="${accion}">volver aquí.</button></div>`;
+    caja.innerHTML = `
+        <div class="modal-label">en este dispositivo.</div>
+        ${locales.length ? locales.map(l => fila(escapeHtml(fecha(l.cuando)), `antes de la ${escapeHtml(l.texto)}, ${l.movimientos} movimientos`, `financeConfirmarVuelta('local', '${l.id}')`)).join('') : '<p class="finance-modal-note">Aún no hay ninguna: se guarda una cada vez que importas a partir de ahora.</p>'}
+        <div class="modal-label" style="margin-top:16px">copias de la nube.</div>
+        <p class="finance-modal-note" style="margin:0 0 6px">Una por semana, del primer guardado de cada semana. Sirve para lo que importaste antes o desde otro dispositivo.</p>
+        ${nube.length ? nube.map(c => fila(escapeHtml(fecha(c.created_at)), `semana ${escapeHtml(c.week_key)}`, `financeConfirmarVuelta('nube', '${jsAttr(c.id)}')`)).join('') : '<p class="finance-modal-note">No hay copias en la nube.</p>'}`;
+}
+
+async function financeConfirmarVuelta(origen, id) {
+    let foto, texto;
+    if (origen === 'local') {
+        const l = (await financeLeerImportaciones()).find(x => x.id === id);
+        if (!l) return showToast('Esa copia ya no está', true);
+        foto = l; texto = `antes de la ${l.texto}`;
+    } else {
+        const { data, error } = await sb.from('bitacora_snapshots').select('created_at, fp:data->financePro, ent:data->entries').eq('id', id).maybeSingle();
+        if (error || !data?.fp) return showToast('No se pudo leer esa copia de la nube', true);
+        const recurrentes = {};
+        (Array.isArray(data.ent) ? data.ent : []).forEach(e => { if (e?.id) recurrentes[e.id] = { proAccount: e.proAccount, conceptoBanco: e.conceptoBanco }; });
+        foto = { financePro: data.fp, recurrentes };
+        texto = `el ${new Date(data.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} (copia de la nube)`;
+    }
+    const ahora = financePro.transactions.length, antes = (foto.financePro.transactions || []).length;
+    window._financeVuelta = { ...foto, texto };
+    showModal(`<div class="modal-title">¿volver a como estaba ${escapeHtml(texto)}?</div>
+        <p class="finance-modal-note" style="margin-top:0">Ahora tienes ${ahora} movimientos; en esa copia hay ${antes}. Lo que hiciste en Finanzas después se pierde, pero la situación de ahora se guarda en «deshacer importación.» por si quieres volver.</p>
+        <button class="btn-modal-primary" onclick="financeAplicarVuelta()">volver a esa copia.</button>
+        <button class="btn-secondary" style="width:100%;margin-top:8px" onclick="openDeshacerImportacion()">cancelar.</button>`);
+}
+
+async function financeAplicarVuelta() {
+    const foto = window._financeVuelta;
+    if (!foto?.financePro) return;
+    const texto = foto.texto;
+    await financeImportGuardarAntes(`vuelta atrás a como estaba ${texto}`);
+    financePro = JSON.parse(JSON.stringify(foto.financePro));
+    entries.forEach(e => {
+        const r = foto.recurrentes?.[e.id];
+        if (!r) return;
+        ['proAccount', 'conceptoBanco'].forEach(k => { if (r[k] === undefined) delete e[k]; else e[k] = r[k]; });
+    });
+    window._financeVuelta = null;
+    financeSaldosCache = null;
+    invalidarCachesDerivadas();
+    closeModal();
+    render();
+    try { await saveData(); showToast(`Finanzas está como estaba ${texto}.`); }
+    catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
