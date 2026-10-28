@@ -136,7 +136,7 @@ function textoSaldo(c) {
 function setSocialTab(t) {
     grupoAbierto = null;
     pintarSocial();
-    setTimeout(() => document.getElementById('social-' + t)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+    setTimeout(() => document.getElementById('social-' + t)?.scrollIntoView({ behavior: vtReducido() ? 'auto' : 'smooth', block: 'start' }), 30);
 }
 
 const SOCIAL_ICONOS = {

@@ -648,8 +648,8 @@ function centrarIndiceGuia() {
     const indice = btn?.parentElement;
     if (!btn || !indice) return;
     if (indice.scrollWidth > indice.clientWidth) {
-        indice.scrollTo({ left: btn.offsetLeft - (indice.clientWidth - btn.offsetWidth) / 2, behavior: 'smooth' });
+        indice.scrollTo({ left: btn.offsetLeft - (indice.clientWidth - btn.offsetWidth) / 2, behavior: vtReducido() ? 'auto' : 'smooth' });
     } else if (btn.offsetTop < indice.scrollTop || btn.offsetTop + btn.offsetHeight > indice.scrollTop + indice.clientHeight) {
-        indice.scrollTo({ top: btn.offsetTop - indice.clientHeight / 2, behavior: 'smooth' });
+        indice.scrollTo({ top: btn.offsetTop - indice.clientHeight / 2, behavior: vtReducido() ? 'auto' : 'smooth' });
     }
 }

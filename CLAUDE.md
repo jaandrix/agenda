@@ -100,6 +100,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   después. El móvil se pinta por zonas (`.m-zona`, `display: contents`; `mobileZonas` guarda el HTML de cada una) y solo
   se reescribe la que cambia: quien cambie a mano el menú o la barra debe vaciar su entrada en `mobileZonas`. Chart.js
   ya no se carga (no se usaba) y Leaflet se baja al abrir un mapa (`initTripMap`).
+- **Diseño móvil (28-10, UXV de ChatGPT):** la barra de abajo tiene una sola regla por selector (no añadir capas «v10»: cambiar la regla). Estado de la nube con `ponerEstadoSync` (datos.js; `.estado-sync` en la barra de arriba del móvil y junto al reloj en escritorio). «apuntar.» guarda borrador en localStorage (`bitacora-apuntar-borrador-<uid>`, 3 días). Letra del móvil en `--m-fs-titulo` / `--m-fs-sub` / `--m-fs-fecha`. Con teclado, `--teclado` levanta la hoja. Sin «‹ inicio.» arriba en los apartados del móvil. Texto que informa en `--text-secondary`; `--text-muted` solo para lo desactivado o decorativo.
 - **Sin conexión (datos.js, «SIN CONEXIÓN»):** copia por usuario en IndexedDB (`bitacora-copia`: `base` = datosBase y
   `local` = lo de la app, `pendiente`). `loadData` arranca con ella si no hay red (`modoSinConexion`) o si quedó algo
   pendiente; `saveData` sin red guarda la copia con `pendiente` en vez de fallar, y al volver la red (`online`,

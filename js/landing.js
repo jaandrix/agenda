@@ -11,7 +11,7 @@ function landingArriba() {
 }
 
 function landingIr(id) {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(id)?.scrollIntoView({ behavior: vtReducido() ? 'auto' : 'smooth', block: 'start' });
     return false;
 }
 

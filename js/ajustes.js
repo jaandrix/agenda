@@ -577,7 +577,7 @@
 
                     <div class="ajustes-buscador">
                         <input id="ajustes-buscar" class="modal-input" type="search" placeholder="busca un ajuste: tema, avisos, exportar..." oninput="filtrarAjustes(this.value)" autocomplete="off">
-                        <nav class="ajustes-indice" aria-label="Grupos de ajustes">${AJUSTES_GRUPOS.map(([k, t]) => `<button type="button" onclick="document.getElementById('ajg-${k}')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">${t}</button>`).join('')}</nav>
+                        <nav class="ajustes-indice" aria-label="Grupos de ajustes">${AJUSTES_GRUPOS.map(([k, t]) => `<button type="button" onclick="document.getElementById('ajg-${k}')?.scrollIntoView({ behavior: vtReducido() ? 'auto' : 'smooth', block: 'start' })">${t}</button>`).join('')}</nav>
                         <div class="ajustes-sin-resultados" id="ajustes-sin-resultados" hidden></div>
                     </div>
 

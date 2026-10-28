@@ -213,6 +213,21 @@
         // Además, el teclado que salía solo cambiaba la altura de la pantalla mientras la hoja aún subía (tirones). Es la
         // única política de foco: los apartados piden el foco con enfocarSiTeclado y en el móvil el teclado sale al tocar.
         const ES_TACTIL = window.matchMedia?.('(hover: none) and (pointer: coarse)').matches;
+        // Con el teclado abierto, lo visible encoge pero la página no: la hoja, pegada abajo, dejaba guardar detrás
+        // del teclado. --teclado es lo que tapa; la hoja se levanta eso. Y el campo que se toca se deja a la vista.
+        if (window.visualViewport) {
+            const ajustarTeclado = () => {
+                const tapa = Math.max(0, innerHeight - visualViewport.height - visualViewport.offsetTop);
+                document.documentElement.style.setProperty('--teclado', tapa > 80 ? Math.round(tapa) + 'px' : '0px');
+            };
+            visualViewport.addEventListener('resize', ajustarTeclado);
+            visualViewport.addEventListener('scroll', ajustarTeclado);
+        }
+        document.addEventListener('focusin', e => {
+            const campo = e.target;
+            if (!ES_TACTIL || !campo.matches?.('input, textarea') || !campo.closest('.modal-sheet')) return;
+            setTimeout(() => campo.isConnected && campo.scrollIntoView({ block: 'nearest' }), 350);
+        });
         function enfocarSiTeclado(buscar) {
             if (ES_TACTIL) return;
             setTimeout(() => buscar()?.focus({ preventScroll: true }), 0);

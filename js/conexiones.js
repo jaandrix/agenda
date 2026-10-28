@@ -93,7 +93,7 @@ function elegirConexion(id) {
     conexionSeleccionada = id;
     conexionAnimar = true;
     render();
-    document.querySelector('.conexiones-mapa')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    document.querySelector('.conexiones-mapa')?.scrollIntoView({ block: 'nearest', behavior: vtReducido() ? 'auto' : 'smooth' });
 }
 
 function renderGraph() {

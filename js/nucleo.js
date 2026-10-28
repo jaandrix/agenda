@@ -1097,7 +1097,7 @@
         function mobileIr(view, tipo) {
             const shellActual = document.getElementById('mobile-shell');
             // Tocar la pestaña en la que ya estás sube arriba del todo.
-            if (view === currentView && !mobileMenuAbierto && shellActual) { shellActual.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+            if (view === currentView && !mobileMenuAbierto && shellActual) { shellActual.scrollTo({ top: 0, behavior: vtReducido() ? 'auto' : 'smooth' }); return; }
             if (view !== 'calendar' && view !== 'planner' && NAV_VIEW_LABELS[view]) {
                 mobileReciente = view;
                 try { localStorage.setItem('bitacora_m_reciente', view); } catch (_) { /* sin almacenamiento */ }
@@ -1207,16 +1207,16 @@
             </nav>`;
         }
 
-        // En la portada, la marca; en cualquier apartado, el mismo hueco es
-        // un "‹ inicio." bien visible para volver sin abrir el menú.
+        // En la portada, la marca; en un apartado, solo su nombre (aparece al bajar). El «‹ inicio.» que había aquí
+        // repetía la pestaña de inicio de la barra de abajo y quitaba altura.
         function renderMobileTopbar(view) {
             const avisos = bandejaPendiente.length;
             return `
             <div class="m-topbar">
                 ${view === 'calendar'
                     ? `<span class="m-marca-fila"><button class="mi-avatar" onclick="openMiPerfil()" aria-label="Mi perfil">${avatarHtml(miPerfil.foto, miNombreVisible(), 'avatar-cabecera')}</button><span class="m-marca">bitácora.</span></span>`
-                    : `<button class="m-inicio" onclick="mobileIr('calendar')"><svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M70 10L58 0 8 50l50 50 12-10-40-40z"/></svg>inicio.</button><span class="m-topbar-titulo" aria-hidden="true">${escapeHtml((NAV_VIEW_LABELS[view] || '').toLowerCase())}.</span>`}
-                ${modoSinConexion ? '<span class="m-sin-red">sin conexión.</span>' : ''}
+                    : `<span class="m-topbar-titulo" aria-hidden="true">${escapeHtml((NAV_VIEW_LABELS[view] || '').toLowerCase())}.</span>`}
+                <span class="estado-sync m-sin-red" data-estado="${estadoSync}" role="status">${ESTADO_SYNC_TEXTO[estadoSync] || ''}</span>
                 <button class="m-menu-btn" onclick="toggleMenuMovil()" aria-label="Abrir el menú">
                     <span></span><span></span>
                     ${avisos ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}
@@ -1738,12 +1738,6 @@
             const backlog = backlogVisibles();
             return `${renderMobileCabecera('planificador', total ? `${hechas} de ${total} hechas.` : 'nada planeado.')}
                 <div class="m-pestanas">${['hoy', 'mañana', 'pasado'].map((l, i) => `<button class="${off === i ? 'activa' : ''}" onclick="setPlannerDayOffset(${i})">${l}.</button>`).join('')}</div>
-                ${total ? `<div class="m-sellos" aria-label="${hechas} de ${total} hechas">${Array.from({ length: Math.min(total, 24) }, (_, k) => `<i class="${k < hechas ? 'on' : ''}"></i>`).join('')}<span>${hechas} de ${total}, hecho.</span></div>` : ''}
-                ${off <= 1 ? renderLuzDia(servMasDias(currentPlannerDayKey(), off)) : ''}
-                <div class="m-acciones">
-                    <button class="m-boton m-boton-acento" onclick="openAddPlannerItem()">+ tarea.</button>
-                    <button class="m-boton" onclick="openManageRecurringTasks()">recurrentes.</button>
-                </div>
                 <div class="m-lista">
                     ${rec.map(t => {
                         const hecha = !!t.completadas?.[hoy];
@@ -1753,7 +1747,12 @@
                         ? `<div class="m-fila m-fila-evento" onclick="openEntryDetail('${jsAttr(it.id)}')"><span class="m-fila-hora">${escapeHtml(it.time || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div><div class="m-fila-meta">${escapeHtml(it.sub)}</div></div><i class="m-fila-evento-punto" style="background:${escapeHtml(it.color)}" aria-hidden="true"></i></div>`
                         : renderMobileFilaTarea(it, off)).join('')}
                 </div>
-                ${!total ? '<div class="m-vacio">nada todavía. pulsa + tarea.</div>' : ''}
+                ${!total ? '<div class="m-vacio">nada todavía.</div>' : ''}
+                <div class="m-acciones m-acciones-tras-lista">
+                    <button class="m-boton m-boton-acento" onclick="openAddPlannerItem()">+ tarea.</button>
+                    <button class="m-boton" onclick="openManageRecurringTasks()">recurrentes.</button>
+                </div>
+                ${off <= 1 ? renderLuzDia(servMasDias(currentPlannerDayKey(), off)) : ''}
                 <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir.</button></div>
                 ${backlog.length ? `<div class="m-lista">${backlog.map(it => `
                     <div class="m-fila ${it.done ? 'hecha' : ''}">
@@ -3032,7 +3031,7 @@
                     requestAnimationFrame(() => requestAnimationFrame(() => {
                         const el = document.getElementById(item.anchor);
                         if (!el) return;
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        el.scrollIntoView({ behavior: vtReducido() ? 'auto' : 'smooth', block: 'start' });
                         el.classList.add('nav-subsection-flash');
                         setTimeout(() => el.classList.remove('nav-subsection-flash'), 1400);
                     }));

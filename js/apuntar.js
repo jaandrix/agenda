@@ -449,8 +449,40 @@ function pintarVistaApunteYa() {
 
 const APUNTAR_ICONO_DE = { tarea: 'tarea', evento: 'evento', gasto: 'gasto', compra: 'compra', nota: 'nota', cumple: 'cumple', examen: 'examen', trabajo: 'tarea', recurrente: 'rutina', clase: 'ocio', viaje: 'viaje', libro: 'ocio', serie: 'ocio', peli: 'ocio', juego: 'ocio' };
 
+// Lo que se escribe en «apuntar.» se guarda en el dispositivo hasta apuntarlo: si iOS cierra la app o se toca
+// fuera, al volver sigue ahí. Solo en este dispositivo, nunca en la nube, y caduca a los tres días.
+const apuntarClaveBorrador = () => 'bitacora-apuntar-borrador-' + (copiaUid || '');
+let apuntarBorradorTemporizador = null;
+function apuntarGuardarBorrador(texto) {
+    clearTimeout(apuntarBorradorTemporizador);
+    apuntarBorradorTemporizador = setTimeout(() => {
+        try {
+            if (texto.trim()) localStorage.setItem(apuntarClaveBorrador(), JSON.stringify({ texto, actualizado: Date.now() }));
+            else localStorage.removeItem(apuntarClaveBorrador());
+        } catch (_) { /* sin almacenamiento */ }
+    }, 200);
+}
+function apuntarLeerBorrador() {
+    try {
+        const b = JSON.parse(localStorage.getItem(apuntarClaveBorrador()) || 'null');
+        if (b?.texto && Date.now() - b.actualizado < 3 * 864e5) return b.texto;
+        localStorage.removeItem(apuntarClaveBorrador());
+    } catch (_) { /* sin almacenamiento */ }
+    return '';
+}
+function apuntarDescartarBorrador() {
+    clearTimeout(apuntarBorradorTemporizador);
+    try { localStorage.removeItem(apuntarClaveBorrador()); } catch (_) { /* sin almacenamiento */ }
+    const t = document.getElementById('apuntar-texto');
+    if (t) t.value = '';
+    document.querySelector('.apuntar-borrador')?.remove();
+    apuntarElegidos = {};
+    pintarVistaApunteYa();
+}
+
 function openApuntar(fecha) {
     apuntarFechaBase = fecha || null;
+    const borrador = apuntarLeerBorrador();
     apuntarElegidos = {};
     apuntarItems = [];
     const accesos = [
@@ -465,7 +497,8 @@ function openApuntar(fecha) {
     ];
     showModal(`
         <div class="modal-title">apuntar${fecha && fecha !== todayISO() ? ` para ${apuntarFechaTexto(fecha)}` : ''}.</div>
-        <textarea id="apuntar-texto" class="modal-input apuntar-texto" rows="2" placeholder="dentista mañana a las 5 y comprar pan..." oninput="apuntarElegidos={};pintarVistaApunte()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();guardarApunte()}"></textarea>
+        <textarea id="apuntar-texto" class="modal-input apuntar-texto" rows="2" placeholder="dentista mañana a las 5 y comprar pan..." oninput="apuntarElegidos={};pintarVistaApunte();apuntarGuardarBorrador(this.value)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();guardarApunte()}">${escapeHtml(borrador)}</textarea>
+        ${borrador ? '<div class="apuntar-borrador">Lo que dejaste a medias. <button class="m-enlace" onclick="apuntarDescartarBorrador()">descartar.</button></div>' : ''}
         <div id="apuntar-vista" class="apuntar-vista"></div>
         <button class="btn-modal-primary" onclick="guardarApunte()">apuntar.</button>
         <div class="apuntar-o">o elige qué quieres apuntar</div>
@@ -599,6 +632,8 @@ async function guardarApunte() {
         hechos.push({ tipo, aviso: res.aviso });
     });
     if (!hechos.length) { showToast(fallos[0] ? fallos[0].charAt(0).toUpperCase() + fallos[0].slice(1) : 'No he podido apuntarlo', true); return; }
+    clearTimeout(apuntarBorradorTemporizador);
+    try { localStorage.removeItem(apuntarClaveBorrador()); } catch (_) { /* sin almacenamiento */ }
     closeModal();
     invalidarCachesDerivadas();
     render();

@@ -19,9 +19,25 @@
 
         // Cambia el modo y su aviso fijo («sin conexión.» en la barra de
         // arriba del móvil y junto al reloj en el ordenador).
+        // Dónde están los datos, en una palabra: solo se queda a la vista lo que no va bien («sin conexión.», «sin
+        // guardar.»); «guardando.» sale si tarda y «al día.» un momento al terminar.
+        const ESTADO_SYNC_TEXTO = { guardando: 'guardando.', offline: 'sin conexión, guardado aquí.', error: 'sin guardar.', aldia: 'al día.' };
+        let estadoSync = '';
+        let estadoSyncTemporizador = null;
+        function ponerEstadoSync(estado) {
+            estadoSync = estado;
+            clearTimeout(estadoSyncTemporizador);
+            const reloj = document.getElementById('header-clock');
+            if (reloj && !document.querySelector('.estado-sync-escritorio')) reloj.insertAdjacentHTML('beforebegin', '<span class="estado-sync estado-sync-escritorio" role="status"></span>');
+            document.querySelectorAll('.estado-sync').forEach(el => { el.dataset.estado = estado; el.textContent = ESTADO_SYNC_TEXTO[estado] || ''; });
+            if (estado === 'aldia') estadoSyncTemporizador = setTimeout(() => { if (estadoSync === 'aldia') ponerEstadoSync(''); }, 2000);
+        }
+
         function marcarConexion(sinRed) {
             sinRed = !!sinRed;
             document.body.classList.toggle('sin-red', sinRed);
+            if (sinRed) ponerEstadoSync('offline');
+            else if (estadoSync === 'offline') ponerEstadoSync('aldia');
             if (sinRed === modoSinConexion) return;
             modoSinConexion = sinRed;
             if (appInitialized) repintarTrasModal();
@@ -486,6 +502,11 @@
                 }
             });
             saveChain = attempt.catch(() => {});
+            const avisoGuardando = setTimeout(() => ponerEstadoSync('guardando'), 700);
+            attempt.then(() => {
+                clearTimeout(avisoGuardando);
+                ponerEstadoSync(modoSinConexion ? 'offline' : ['guardando', 'error'].includes(estadoSync) ? 'aldia' : estadoSync === 'aldia' ? 'aldia' : '');
+            }, () => { clearTimeout(avisoGuardando); ponerEstadoSync(modoSinConexion ? 'offline' : 'error'); });
             // doSaveData mezcla con lo último de Supabase (otra pestaña u
             // otro dispositivo), así que al terminar los datos pueden haber
             // cambiado otra vez.
