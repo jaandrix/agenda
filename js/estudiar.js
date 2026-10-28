@@ -323,7 +323,11 @@ function pomoPintar(todo) {
     pastilla.innerHTML = `<i></i><b>${pomoReloj(pomoResta(p))}</b><span>${p.fin ? POMO_FASES[p.fase] : 'en pausa.'}</span>`;
 }
 
-setInterval(pomoTick, 1000);
+// Sin pomodoro guardado ni nada suyo en pantalla, no hay nada que actualizar cada segundo.
+setInterval(() => {
+    if (!localStorage.getItem('bitacora-pomodoro') && !document.querySelector('.pomo-reloj, #pomo-pastilla, #pomo-foco')) return;
+    pomoTick();
+}, 1000);
 
 function estPintarPomodoro() {
     const caja = document.querySelector('#mobile-shell .est-pomo, #content .est-pomo');

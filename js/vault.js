@@ -103,6 +103,7 @@
             const previo = container.querySelector('.modal-overlay');
             if (previo) {
                 delete previo.dataset.cerrando;
+                quitarSalidaVelo(previo);
                 previo.style.animation = 'none';
                 const hoja = document.createElement('div');
                 hoja.className = 'modal-sheet modal-sheet-cambio';
@@ -153,6 +154,7 @@
             container.innerHTML = html;
             const overlay = habia && container.querySelector('.modal-overlay');
             if (overlay) {
+                quitarSalidaVelo(overlay);
                 overlay.style.animation = 'none';
                 overlay.querySelector('.modal-sheet')?.classList.add('modal-sheet-cambio');
             }
@@ -167,16 +169,30 @@
             let hecho = false;
             const una = () => { if (!hecho) { hecho = true; fn(); } };
             if (!sheet || vtReducido()) { una(); return; }
-            sheet.addEventListener('animationend', e => { if (e.target === sheet) una(); }, { once: true });
+            // Sin once: la animación de un hijo de la hoja también llega aquí y se llevaba el escuchador.
+            sheet.addEventListener('animationend', e => { if (e.target === sheet) una(); });
             setTimeout(una, 400);
+        }
+
+        // Si se abre otro modal mientras el velo se aclaraba, el overlay que se reutiliza no puede quedarse transparente.
+        function quitarSalidaVelo(overlay) {
+            if (!overlay.classList.contains('modal-overlay-saliendo')) return;
+            overlay.style.transition = 'none';
+            overlay.classList.remove('modal-overlay-saliendo');
+            requestAnimationFrame(() => { if (overlay.isConnected) overlay.style.removeProperty('transition'); });
         }
 
         // Con un modal abierto, lo de detrás no se alcanza con el teclado ni con el lector de pantalla, y el botón atrás
         // (Android, el gesto de la PWA) cierra el modal o el menú en vez de salir de la app.
         let capaEnHistorial = false;
         function abrirCapa() {
-            document.querySelectorAll('#app, #mobile-shell').forEach(el => { el.inert = true; });
+            const raiz = raizInteractiva();
+            if (raiz && !raiz.inert) raiz.inert = true;
             anotarCapa();
+        }
+        // Solo una de las dos está a la vista: marcar también la oculta era recorrer otro árbol entero para nada.
+        function raizInteractiva() {
+            return document.getElementById(mobileStandaloneActive ? 'mobile-shell' : 'app');
         }
         function anotarCapa() {
             if (capaEnHistorial) return;
@@ -189,7 +205,8 @@
             try { if (history.state?.bitacoraCapa) history.back(); } catch (_) { /* sin historial */ }
         }
         function cerrarCapa() {
-            document.querySelectorAll('#app, #mobile-shell').forEach(el => { el.inert = false; });
+            const raiz = raizInteractiva();
+            if (raiz?.inert) raiz.inert = false;
             if (!mobileMenuAbierto) soltarCapa();
         }
         window.addEventListener('popstate', () => {
@@ -199,13 +216,26 @@
             else if (mobileMenuAbierto) toggleMenuMovil();
         });
 
-        // Lo que tarda un modal desde que se pide hasta que está pintado (window.tiemposModal, en milisegundos).
+        // Lo que tarda un modal, solo en este dispositivo (window.metricasModal; no se envía a ningún sitio). «preparar»
+        // es lo que tardó en construirse antes de llegar aquí (desde el último toque), «pintado» hasta el primer
+        // fotograma y «estable» hasta que la hoja termina de entrar. window.tiemposModal sigue con el pintado.
+        let ultimoToque = 0;
+        document.addEventListener('pointerdown', () => { ultimoToque = performance.now(); }, { capture: true, passive: true });
         function medirModal() {
             const t0 = performance.now();
+            const desdeToque = ultimoToque && t0 - ultimoToque < 2000 ? ultimoToque : t0;
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                const t = Math.round(performance.now() - t0);
-                (window.tiemposModal ||= []).push(t);
+                const pintado = performance.now();
+                (window.tiemposModal ||= []).push(Math.round(pintado - t0));
                 if (window.tiemposModal.length > 30) window.tiemposModal.shift();
+                const container = document.getElementById('modal-container');
+                const nombre = (container.querySelector('.modal-title')?.textContent || '').trim().slice(0, 40) || 'modal';
+                const nodos = container.getElementsByTagName('*').length;
+                trasAbrirModal(() => {
+                    const m = { nombre, preparar: Math.round(t0 - desdeToque), pintado: Math.round(pintado - desdeToque), estable: Math.round(performance.now() - desdeToque), nodos };
+                    (window.metricasModal ||= []).push(m);
+                    if (window.metricasModal.length > 50) window.metricasModal.shift();
+                });
             }));
         }
 
@@ -215,18 +245,37 @@
         const ES_TACTIL = window.matchMedia?.('(hover: none) and (pointer: coarse)').matches;
         // Con el teclado abierto, lo visible encoge pero la página no: la hoja, pegada abajo, dejaba guardar detrás
         // del teclado. --teclado es lo que tapa; la hoja se levanta eso. Y el campo que se toca se deja a la vista.
+        // Mientras sale el teclado llegan muchos eventos: se escribe como mucho una vez por fotograma y solo si cambia.
         if (window.visualViewport) {
+            let frameTeclado = 0, ultimoTeclado = -1;
             const ajustarTeclado = () => {
-                const tapa = Math.max(0, innerHeight - visualViewport.height - visualViewport.offsetTop);
-                document.documentElement.style.setProperty('--teclado', tapa > 80 ? Math.round(tapa) + 'px' : '0px');
+                if (frameTeclado) return;
+                frameTeclado = requestAnimationFrame(() => {
+                    frameTeclado = 0;
+                    const tapa = Math.max(0, innerHeight - visualViewport.height - visualViewport.offsetTop);
+                    const px = tapa > 80 ? Math.round(tapa) : 0;
+                    if (px === ultimoTeclado) return;
+                    ultimoTeclado = px;
+                    document.documentElement.style.setProperty('--teclado', px + 'px');
+                });
             };
-            visualViewport.addEventListener('resize', ajustarTeclado);
-            visualViewport.addEventListener('scroll', ajustarTeclado);
+            visualViewport.addEventListener('resize', ajustarTeclado, { passive: true });
+            visualViewport.addEventListener('scroll', ajustarTeclado, { passive: true });
+        }
+        // Antes se desplazaba siempre 350 ms después (un segundo salto cuando el teclado ya había colocado el campo):
+        // ahora solo si, cuando el teclado ha terminado de moverse, el campo sigue tapado.
+        function asegurarCampoVisible(campo) {
+            if (!campo.isConnected) return;
+            const vv = window.visualViewport, r = campo.getBoundingClientRect();
+            const arriba = vv?.offsetTop || 0, abajo = arriba + (vv?.height || innerHeight);
+            if (r.top < arriba + 12 || r.bottom > abajo - 12) campo.scrollIntoView({ block: 'nearest' });
         }
         document.addEventListener('focusin', e => {
             const campo = e.target;
             if (!ES_TACTIL || !campo.matches?.('input, textarea') || !campo.closest('.modal-sheet')) return;
-            setTimeout(() => campo.isConnected && campo.scrollIntoView({ block: 'nearest' }), 350);
+            const vv = window.visualViewport;
+            if (vv && 'onscrollend' in vv) vv.addEventListener('scrollend', () => asegurarCampoVisible(campo), { once: true });
+            setTimeout(() => requestAnimationFrame(() => asegurarCampoVisible(campo)), 400);
         });
         function enfocarSiTeclado(buscar) {
             if (ES_TACTIL) return;

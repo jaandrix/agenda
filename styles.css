@@ -9871,3 +9871,10 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { max-height:calc((10
 .fin-imp-fila b small { display:block; font-weight:500; font-size:12px; color:var(--text-secondary); }
 .fin-imp-fila i { font-style:normal; font-weight:600; white-space:nowrap; }
 .fin-imp-fila.ya b { color:var(--text-secondary); }
+
+/* Cierre del modal en el móvil: la hoja baja con el velo quieto y después el velo se aclara (ver closeModal). */
+@media (max-width: 600px) {
+    .modal-overlay.modal-overlay-saliendo { background-color: transparent !important; transition: background-color .12s linear; }
+}
+body.mobile-standalone .modal-overlay.modal-overlay-saliendo, body.pwa .modal-overlay.modal-overlay-saliendo { background-color: transparent !important; transition: background-color .12s linear; }
+@media (prefers-reduced-motion: reduce) { .modal-overlay.modal-overlay-saliendo { transition: none; } }

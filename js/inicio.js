@@ -2,6 +2,12 @@
         //  INIT
         // ============================================================
         let appInitialized = false;
+        let cicloAppIniciado = false;
+        function cuandoEsteOcioso(fn, tope = 5000) {
+            const hacer = () => { try { const r = fn(); if (r?.catch) r.catch(e => console.error(e)); } catch (e) { console.error(e); } };
+            if ('requestIdleCallback' in window) requestIdleCallback(hacer, { timeout: tope });
+            else setTimeout(hacer, 800);
+        }
 
         async function init() {
             loadTheme();
@@ -19,14 +25,21 @@
                 if (modoSinConexion) setTimeout(() => showToast('Sin conexión: estás viendo la copia guardada en este dispositivo.'), 900);
                 else if (copiaPendiente) saveData().catch(e => console.error(e));
                 ensureRecurringProCharges();
+                // Pasar los ajustes de saldo antiguos a la marca se hacía al pintar Finanzas (y guardaba desde el pintado).
+                if (financeProUnificarAjustes()) saveData().catch(e => console.error(e));
                 convertirCinesEnPeliculas();
-                setInterval(convertirCinesEnPeliculas, 5 * 60000);
-                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { refrescarAlVolver(); sincronizarDesdeNube(); convertirCinesEnPeliculas(); aplicarBandejaConector(); actualizarAnalisisIA(); } else ocultoDesde = { hora: Date.now(), dia: todayISO() }; });
-                window.addEventListener('pageshow', e => { if (e.persisted) refrescarAlVolver(true); });
-                window.addEventListener('focus', sincronizarDesdeNube);
-                aplicarBandejaConector();
-                setTimeout(actualizarAnalisisIA, 1500);
-                setTimeout(revisarCumplesRegalo, 2500);
+                // «reintentar.» vuelve a llamar a init: los escuchadores y el intervalo, una sola vez.
+                if (!cicloAppIniciado) {
+                    cicloAppIniciado = true;
+                    setInterval(convertirCinesEnPeliculas, 5 * 60000);
+                    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { refrescarAlVolver(); sincronizarDesdeNube(); convertirCinesEnPeliculas(); aplicarBandejaConector(); actualizarAnalisisIA(); } else ocultoDesde = { hora: Date.now(), dia: todayISO() }; });
+                    window.addEventListener('pageshow', e => { if (e.persisted) refrescarAlVolver(true); });
+                    window.addEventListener('focus', sincronizarDesdeNube);
+                }
+                // Lo de fondo, cuando el móvil está libre (antes a 1,5 y 2,5 s fijos, justo cuando se empieza a tocar).
+                cuandoEsteOcioso(aplicarBandejaConector, 4000);
+                cuandoEsteOcioso(actualizarAnalisisIA, 7000);
+                cuandoEsteOcioso(revisarCumplesRegalo, 9000);
                 compartidoDesdeUrl();
                 if (/[?&]semana\b/.test(location.search)) {
                     history.replaceState(null, '', location.pathname);
@@ -88,7 +101,8 @@
                 render();
                 updateHeaderClock();
                 updateSidebarProgress();
-                if (!window._headerClockTimer) window._headerClockTimer = setInterval(() => { updateHeaderClock(); updateSidebarProgress(); }, 1000);
+                // La PWA no enseña el reloj con segundos: allí basta con una vez por minuto.
+                if (!window._headerClockTimer) window._headerClockTimer = setInterval(() => { updateHeaderClock(); updateSidebarProgress(); }, mobileStandaloneActive ? 60000 : 1000);
                 updatePageTitle();
                 updateAddButton();
                 maybeShowDailyAlert();

@@ -185,6 +185,7 @@
             const container = document.getElementById('modal-container');
             const overlay = container.querySelector('.modal-overlay');
             if (!overlay) { container.innerHTML = ''; return; }
+            if (overlay.dataset.cerrando) return;
             const sheet = overlay.querySelector('.modal-sheet');
             overlay.dataset.cerrando = '1';
             // Se quita cuando acaba la animación de salida (antes, a los 160 ms fijos, y en el móvil dura 200: se
@@ -201,6 +202,25 @@
                 modalAbridor = null;
             };
             if (vtReducido()) { terminar(); return; }
+            // En el móvil el velo no se anima a la vez que la hoja (Safari pintaba dos veces el oscurecido), y al quitar el
+            // overlay pasaba del 55 % a nada en un fotograma. Ahora, en dos fases: baja la hoja con el velo quieto y
+            // después el velo se aclara en 120 ms; solo entonces se quita.
+            if (mobileStandaloneActive || matchMedia('(max-width: 600px)').matches) {
+                let velo = false;
+                const salirVelo = () => {
+                    if (velo || hecho || !overlay.dataset.cerrando) return;
+                    velo = true;
+                    overlay.classList.add('modal-overlay-saliendo');
+                    overlay.addEventListener('transitionend', e => { if (e.target === overlay && e.propertyName === 'background-color') terminar(); }, { once: true });
+                    setTimeout(terminar, 200);
+                };
+                if (sheet) {
+                    sheet.style.animation = 'modalSheetBajar var(--modal-cerrar) var(--ease-out) both';
+                    sheet.addEventListener('animationend', e => { if (e.target === sheet) salirVelo(); });
+                }
+                setTimeout(salirVelo, 260);
+                return;
+            }
             overlay.style.animation = 'modalOverlayOut 0.16s ease-out both';
             if (sheet) {
                 sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.16s var(--ease-out) both`;

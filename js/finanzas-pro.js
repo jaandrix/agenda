@@ -1940,8 +1940,7 @@
 
         function renderFinanceProDashboard() {
             ensureCurrentMonthHistory();
-            const unificados = financeProUnificarAjustes();
-            if (actualizarHistorialPresupuestos() || unificados) setTimeout(() => saveData().catch(e => console.error(e)), 0);
+            if (actualizarHistorialPresupuestos()) setTimeout(() => saveData().catch(e => console.error(e)), 0);
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">

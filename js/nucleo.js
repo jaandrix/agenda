@@ -1387,19 +1387,25 @@
             if (!tira || (e.pointerType === 'mouse' && e.button !== 0)) return;
             const x0 = e.clientX, y0 = e.clientY, t0 = performance.now();
             const ancho = tira.offsetWidth || 300;
-            let dx = 0, horizontal = null;
+            let dx = 0, horizontal = null, frame = 0;
             const mover = ev => {
                 dx = ev.clientX - x0;
                 if (horizontal === null && Math.abs(dx) + Math.abs(ev.clientY - y0) > 8) {
                     horizontal = Math.abs(dx) > Math.abs(ev.clientY - y0);
                     if (horizontal) try { tira.setPointerCapture(ev.pointerId); } catch (_) { /* el puntero ya se soltó */ }
                 }
-                if (!horizontal) return;
-                tira.style.transition = 'none';
-                tira.style.transform = `translateX(${dx}px)`;
-                tira.style.opacity = String(1 - Math.min(Math.abs(dx) / ancho, 1) * .5);
+                if (!horizontal || frame) return;
+                // En pantallas de 120 Hz llegan más movimientos que fotogramas: se pinta el último, una vez por fotograma.
+                frame = requestAnimationFrame(() => {
+                    frame = 0;
+                    tira.style.transition = 'none';
+                    tira.style.transform = `translateX(${dx}px)`;
+                    tira.style.opacity = String(1 - Math.min(Math.abs(dx) / ancho, 1) * .5);
+                });
             };
             const soltar = ev => {
+                cancelAnimationFrame(frame);
+                frame = 0;
                 tira.removeEventListener('pointermove', mover);
                 tira.removeEventListener('pointerup', soltar);
                 tira.removeEventListener('pointercancel', soltar);
@@ -1858,7 +1864,6 @@
             const mesB = renderMobileFinanzasMes();
             const ultimos = [...financePro.transactions].sort((a, b) => financeProCompararMov(b, a)).slice(0, 12);
             requestAnimationFrame(() => requestAnimationFrame(animateFinanceProChartPanel));
-            if (financeProUnificarAjustes()) setTimeout(() => saveData().catch(e => console.error(e)), 0);
             return `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}
                 ${renderFinanzasGrafica(true)}
                 <div class="m-acciones">
