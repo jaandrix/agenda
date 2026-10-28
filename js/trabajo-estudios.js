@@ -749,7 +749,7 @@
                 <textarea id="quick-note-text" class="studies-notes-box" style="min-height:120px" placeholder="Cosas para recordar otro día..."></textarea>
                 <button class="btn-modal-primary" onclick="saveQuickNote()">guardar.</button>
             `);
-            setTimeout(() => document.getElementById('quick-note-text')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('quick-note-text'));
         }
 
         async function saveQuickNote() {

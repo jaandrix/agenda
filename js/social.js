@@ -389,7 +389,7 @@ function openGrupoGastos(id) {
         ${g ? `<button class="btn-secondary" style="width:100%;margin-top:10px" onclick="salirGrupoGastos('${g.id}')">salir del grupo.</button>` : ''}
         ${g && g.creador_id === socialYo ? `<button class="btn-secondary btn-danger-pill" style="width:100%;margin-top:10px" onclick="borrarGrupoGastos('${g.id}')">borrar grupo para todos.</button>` : ''}
     `);
-    if (!g) setTimeout(() => document.getElementById('gg-nombre')?.focus(), 50);
+    if (!g) enfocarSiTeclado(() => document.getElementById('gg-nombre'));
 }
 
 function anadirInvitadoGrupo() {
@@ -486,7 +486,7 @@ function openGastoCompartido(grupoId, gastoId) {
         ${x ? `<button class="btn-secondary btn-danger-pill" style="width:100%;margin-top:10px" onclick="borrarGastoCompartido('${g.id}', '${x.id}')">borrar.</button>` : ''}
     `);
     refrescarGastoModal();
-    if (!x) setTimeout(() => document.getElementById('gc-titulo')?.focus(), 50);
+    if (!x) enfocarSiTeclado(() => document.getElementById('gc-titulo'));
 }
 
 // Reparte `centimos` según el modo: a partes iguales entre los marcados,

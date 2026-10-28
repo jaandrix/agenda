@@ -855,7 +855,7 @@ function openEditarReceta(id) {
         <textarea id="receta-notas" class="modal-input" rows="2" placeholder="De dónde es, trucos...">${escapeHtml(r?.notas || '')}</textarea>
         <button class="btn-modal-primary" style="margin-top:14px" onclick="guardarReceta(${r ? `'${r.id}'` : ''})">guardar.</button>
     `);
-    setTimeout(() => document.getElementById('receta-nombre')?.focus(), 60);
+    enfocarSiTeclado(() => document.getElementById('receta-nombre'));
 }
 
 function recetaAnadirIngrediente(texto) {
@@ -1066,7 +1066,7 @@ function openPlato(fecha, id) {
         <button class="btn-modal-primary" style="margin-top:14px" onclick="guardarPlato('${fecha}'${p ? `,'${jsAttr(p.id)}'` : ''})">guardar.</button>
         ${p ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarPlato('${fecha}','${jsAttr(p.id)}')">quitar el plato.</button>` : ''}
     `);
-    if (!p) setTimeout(() => document.getElementById('plato-nombre')?.focus(), 60);
+    if (!p) enfocarSiTeclado(() => document.getElementById('plato-nombre'));
 }
 
 function platoElegirReceta(id, boton) {

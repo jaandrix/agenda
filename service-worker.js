@@ -2,9 +2,16 @@ const CACHE_NAME = 'bitacora-shell-v2';
 const SHELL_URLS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_URLS))
-    );
+    // Además del cascarón, los archivos que carga index.html con su ?v= (la lista sale del propio index publicado),
+    // para que instalar la app y abrirla enseguida sin red no la deje sin estilos ni JavaScript.
+    event.waitUntil(caches.open(CACHE_NAME).then(async (cache) => {
+        await cache.addAll(SHELL_URLS);
+        try {
+            const html = await (await fetch('./index.html', { cache: 'no-store' })).text();
+            const propios = [...html.matchAll(/(?:src|href)="([^"]+\?v=[^"]+)"/g)].map(m => m[1]).filter(u => !/^https?:/.test(u));
+            await cache.addAll(propios);
+        } catch (e) { /* sin red al instalar: se guardan al pedirse */ }
+    }));
     self.skipWaiting();
 });
 
@@ -49,7 +56,7 @@ async function guardarCopia(request, response, url, propio) {
     if (propio && url.searchParams.has('v')) {
         for (const vieja of await cache.keys()) {
             const u = new URL(vieja.url);
-            if (u.pathname === url.pathname && u.origin === url.origin && u.searchParams.get('v') !== url.searchParams.get('v')) cache.delete(vieja);
+            if (u.pathname === url.pathname && u.origin === url.origin && u.searchParams.get('v') !== url.searchParams.get('v')) await cache.delete(vieja);
         }
     }
 }
@@ -62,7 +69,7 @@ self.addEventListener('fetch', (event) => {
 
     if (fijo(url, propio)) {
         event.respondWith(caches.match(event.request).then(guardada => guardada || fetch(event.request).then((response) => {
-            if (response.ok) guardarCopia(event.request, response.clone(), url, propio);
+            if (response.ok) event.waitUntil(guardarCopia(event.request, response.clone(), url, propio));
             return response;
         })));
         return;
@@ -70,7 +77,7 @@ self.addEventListener('fetch', (event) => {
 
     event.respondWith(
         fetch(event.request, propio ? { cache: 'no-store' } : undefined).then((response) => {
-            if (response.ok) guardarCopia(event.request, response.clone(), url, propio);
+            if (response.ok) event.waitUntil(guardarCopia(event.request, response.clone(), url, propio));
             return response;
         }).catch(async () => {
             const guardada = await caches.match(event.request);

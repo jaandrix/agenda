@@ -147,7 +147,7 @@ function openCitaLaboral(id, fecha) {
         <button class="btn-modal-primary" onclick="guardarCitaLaboral('${c?.id || ''}')">guardar.</button>
         ${c ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarCitaLaboral('${c.id}')">eliminar cita.</button>` : ''}
     `);
-    setTimeout(() => document.getElementById('lab-titulo')?.focus(), 50);
+    enfocarSiTeclado(() => document.getElementById('lab-titulo'));
 }
 
 function guardarCitaLaboral(id) {

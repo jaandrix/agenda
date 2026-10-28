@@ -64,7 +64,7 @@ function openNuevaQuedada() {
         <button class="btn-modal-primary" style="margin-top:14px" onclick="crearQuedada(this)">crear el enlace.</button>
     `);
     pintarQuedadaOpciones();
-    setTimeout(() => document.getElementById('qd-titulo')?.focus(), 60);
+    enfocarSiTeclado(() => document.getElementById('qd-titulo'));
 }
 
 function pintarQuedadaOpciones() {

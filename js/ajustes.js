@@ -983,7 +983,14 @@ function openAjustesAdmin() {
     const a = ajustesAdmin();
     showModal(`<div class="modal-title">más ajustes.</div>
         <p class="finance-modal-note" style="margin:0 0 12px">Solo con el modo desarrollador. Se guardan en tu cuenta.</p>
-        <div class="admin-lista">${AJUSTES_ADMIN.map(([k, t, d]) => `<label class="admin-fila"><input type="checkbox" ${a[k] ? 'checked' : ''} onchange="cambiarAjusteAdmin('${k}', this.checked)"><span><b>${t}</b><small>${d}</small></span></label>`).join('')}</div>`);
+        <div class="admin-lista">${AJUSTES_ADMIN.map(([k, t, d]) => `<label class="admin-fila"><input type="checkbox" ${a[k] ? 'checked' : ''} onchange="cambiarAjusteAdmin('${k}', this.checked)"><span><b>${t}</b><small>${d}</small></span></label>`).join('')}</div>
+        <div class="modal-label" style="margin-top:16px">tamaño de tus datos.</div>
+        <p class="finance-modal-note" style="margin:0 0 8px">Lo que viaja en cada arranque y en cada guardado. Sirve para decidir qué separar primero.</p>
+        <div class="admin-tamanos">${tamanosDatos().map(([k, b], i, l) => `<span><b>${escapeHtml(k)}</b><small>${b < 1024 ? b + ' B' : (b / 1024).toFixed(1) + ' KB'}${i ? '' : `, de ${(l.reduce((s, x) => s + x[1], 0) / 1024).toFixed(0)} KB en total`}</small></span>`).join('')}</div>`);
+}
+function tamanosDatos() {
+    return Object.entries(DATOS_SINCRONIZADOS).map(([k, [leer]]) => { let b = 0; try { b = new Blob([JSON.stringify(leer()) || '']).size; } catch (_) { /* sin datos */ } return [k, b]; })
+        .filter(([, b]) => b > 4).sort((a, b) => b[1] - a[1]).slice(0, 12);
 }
 async function cambiarAjusteAdmin(clave, valor) {
     servicios.admin = { ...ajustesAdmin(), [clave]: valor };

@@ -113,6 +113,7 @@
                 return;
             }
             modalAbridor = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            medirModal();
             container.innerHTML = `
                 <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
                     <div class="modal-sheet">
@@ -121,11 +122,13 @@
                 </div>
             `;
             prepararModalAccesible(container);
+            abrirCapa();
             // El modal nace del punto que se pulsó (un botón, un día del
             // calendario...) en vez de aparecer siempre en el centro. Se
             // usan offsetLeft/Top porque no les afecta la escala con la que
             // arranca la animación; abierto con teclado, sale del centro.
-            const punto = vtPunteroReciente();
+            // En el móvil la hoja sube desde abajo: medir el punto obligaba a calcular la página antes del primer fotograma.
+            const punto = !ES_TACTIL && innerWidth > 600 && vtPunteroReciente();
             const sheet = container.querySelector('.modal-sheet');
             if (punto && sheet && !vtReducido()) {
                 sheet.style.transformOrigin = `${Math.round(punto.x - sheet.offsetLeft)}px ${Math.round(punto.y - sheet.offsetTop)}px`;
@@ -146,7 +149,7 @@
             vtCortar();
             const container = document.getElementById('modal-container');
             const habia = !!container.querySelector('.modal-overlay');
-            if (!habia) modalAbridor = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            if (!habia) { modalAbridor = document.activeElement instanceof HTMLElement ? document.activeElement : null; medirModal(); }
             container.innerHTML = html;
             const overlay = habia && container.querySelector('.modal-overlay');
             if (overlay) {
@@ -154,11 +157,66 @@
                 overlay.querySelector('.modal-sheet')?.classList.add('modal-sheet-cambio');
             }
             prepararModalAccesible(container);
+            if (!habia) abrirCapa();
             enfocarPrimerCampo(container);
         }
 
+        // Para lo que puede esperar a que la hoja termine de entrar.
+        function trasAbrirModal(fn) {
+            const sheet = document.querySelector('#modal-container .modal-sheet');
+            let hecho = false;
+            const una = () => { if (!hecho) { hecho = true; fn(); } };
+            if (!sheet || vtReducido()) { una(); return; }
+            sheet.addEventListener('animationend', e => { if (e.target === sheet) una(); }, { once: true });
+            setTimeout(una, 400);
+        }
+
+        // Con un modal abierto, lo de detrás no se alcanza con el teclado ni con el lector de pantalla, y el botón atrás
+        // (Android, el gesto de la PWA) cierra el modal o el menú en vez de salir de la app.
+        let capaEnHistorial = false;
+        function abrirCapa() {
+            document.querySelectorAll('#app, #mobile-shell').forEach(el => { el.inert = true; });
+            anotarCapa();
+        }
+        function anotarCapa() {
+            if (capaEnHistorial) return;
+            capaEnHistorial = true;
+            try { history.pushState({ bitacoraCapa: 1 }, ''); } catch (_) { /* sin historial */ }
+        }
+        function soltarCapa() {
+            if (!capaEnHistorial) return;
+            capaEnHistorial = false;
+            try { if (history.state?.bitacoraCapa) history.back(); } catch (_) { /* sin historial */ }
+        }
+        function cerrarCapa() {
+            document.querySelectorAll('#app, #mobile-shell').forEach(el => { el.inert = false; });
+            if (!mobileMenuAbierto) soltarCapa();
+        }
+        window.addEventListener('popstate', () => {
+            if (!capaEnHistorial) return;
+            capaEnHistorial = false;
+            if (modalEnPantalla()) closeModal();
+            else if (mobileMenuAbierto) toggleMenuMovil();
+        });
+
+        // Lo que tarda un modal desde que se pide hasta que está pintado (window.tiemposModal, en milisegundos).
+        function medirModal() {
+            const t0 = performance.now();
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                const t = Math.round(performance.now() - t0);
+                (window.tiemposModal ||= []).push(t);
+                if (window.tiemposModal.length > 30) window.tiemposModal.shift();
+            }));
+        }
+
         // En pantallas táctiles no se enfocan campos: el iPhone los dejaba enfocados sin teclado y después no lo abría.
+        // Además, el teclado que salía solo cambiaba la altura de la pantalla mientras la hoja aún subía (tirones). Es la
+        // única política de foco: los apartados piden el foco con enfocarSiTeclado y en el móvil el teclado sale al tocar.
         const ES_TACTIL = window.matchMedia?.('(hover: none) and (pointer: coarse)').matches;
+        function enfocarSiTeclado(buscar) {
+            if (ES_TACTIL) return;
+            setTimeout(() => buscar()?.focus({ preventScroll: true }), 0);
+        }
         function enfocarPrimerCampo(container) {
             setTimeout(() => {
                 const sheet = container.querySelector('.modal-sheet');
@@ -178,9 +236,13 @@
             if (e.key === 'Escape') {
                 e.preventDefault();
                 closeModal();
-            } else if (e.key === 'Tab' && !sheet.contains(document.activeElement)) {
-                e.preventDefault();
-                sheet.querySelector('button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')?.focus();
+            } else if (e.key === 'Tab') {
+                const enfocables = [...sheet.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]):not([type=hidden]), textarea:not([disabled]), select:not([disabled]):not(.selector-nativo), [tabindex]:not([tabindex="-1"])')].filter(el => el.offsetParent || el === document.activeElement);
+                if (!enfocables.length) return;
+                const primero = enfocables[0], ultimo = enfocables[enfocables.length - 1];
+                if (!sheet.contains(document.activeElement)) { e.preventDefault(); primero.focus(); }
+                else if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+                else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
             }
         });
 

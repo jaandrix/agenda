@@ -173,7 +173,7 @@ function openPedido(id) {
         <button class="btn-modal-primary" onclick="guardarPedido(${p ? `'${p.id}'` : ''})">guardar.</button>
         ${p ? `<button class="btn-secondary btn-danger-pill" style="width:100%;margin-top:10px" onclick="borrarPedido('${p.id}')">borrar pedido.</button>` : ''}
     `);
-    if (!p) setTimeout(() => document.getElementById('ped-titulo')?.focus(), 50);
+    if (!p) enfocarSiTeclado(() => document.getElementById('ped-titulo'));
 }
 
 async function guardarPedido(id) {

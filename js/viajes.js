@@ -486,7 +486,13 @@
         let _tripMapInstance = null;
         function initTripMap(t) {
             const container = document.getElementById('trip-map');
-            if (!container || typeof L === 'undefined') return;
+            if (!container) return;
+            // Leaflet solo se descarga al abrir un mapa, no en cada arranque.
+            if (typeof L === 'undefined') {
+                if (!document.querySelector('link[href*="leaflet.css"]')) document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">');
+                cargarScript('https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js').then(() => initTripMap(t), e => console.error(e));
+                return;
+            }
             if (_tripMapInstance) { _tripMapInstance.remove(); _tripMapInstance = null; }
             const withCoords = [...t.itinerario].filter(i => i.lat && i.lon)
                 .sort((a, b) => (a.dia || '').localeCompare(b.dia || '') || (a.hora || '').localeCompare(b.hora || ''));

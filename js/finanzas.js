@@ -364,7 +364,7 @@
                 <button class="btn-modal-primary" onclick="saveFinanceSavingsGoal('${goal ? goal.id : ''}')">${goal ? 'Guardar' : 'Crear meta'}</button>
                 ${goal ? `<button class="btn-secondary" style="margin-top:8px" onclick="deleteFinanceSavingsGoal('${goal.id}')">eliminar meta.</button>` : ''}
             `);
-            setTimeout(() => document.getElementById('savings-goal-name')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('savings-goal-name'));
         }
 
         async function saveFinanceSavingsGoal(id) {
@@ -467,7 +467,7 @@
                 <button class="btn-modal-primary" onclick="saveCustomAccountEditor('${id}')">guardar.</button>
                 <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceCustomAccount('${id}')">eliminar cuenta.</button>
             `);
-            setTimeout(() => document.getElementById('edit-acc-name')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('edit-acc-name'));
         }
 
         async function saveCustomAccountEditor(id) {
@@ -1176,7 +1176,7 @@
                 <input id="inv-acc-notes" class="modal-input" placeholder="Ej. ISIN, bróker...">
                 <button class="btn-modal-primary" onclick="saveNewInvestmentAccount()">crear cuenta.</button>
             `);
-            setTimeout(() => document.getElementById('inv-acc-name')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('inv-acc-name'));
         }
 
         async function saveNewInvestmentAccount() {
@@ -1220,7 +1220,7 @@
                 <input id="inv-acc-update-value" class="modal-input" type="number" min="0" step="0.01" value="${existing && existing.value !== undefined ? existing.value : ''}" placeholder="0.00">
                 <button class="btn-modal-primary" style="margin-top:10px" onclick="saveAccountMonthlyUpdate('${accountId}','${monthKey}')">guardar.</button>
             `);
-            setTimeout(() => document.getElementById('inv-acc-update-amount')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('inv-acc-update-amount'));
         }
 
         async function saveAccountMonthlyUpdate(accountId, monthKey) {

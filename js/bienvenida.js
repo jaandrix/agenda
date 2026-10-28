@@ -148,7 +148,7 @@ function bienvenidaIr(delta) {
     bienvenidaLeer();
     bienvenidaPaso = Math.max(0, Math.min(BIENVENIDA_PASOS.length - 1, bienvenidaPaso + delta));
     bienvenidaRepintar();
-    setTimeout(() => document.querySelector('#bienvenida input')?.focus(), 50);
+    enfocarSiTeclado(() => document.querySelector('#bienvenida input'));
 }
 
 async function terminarBienvenida(abrirGuia) {

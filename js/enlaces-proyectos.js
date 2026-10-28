@@ -372,7 +372,7 @@
                 <input id="subject-professor-input" class="modal-input" placeholder="Nombre del profesor" value="${escapeHtml(s.professor || '')}">
                 <button class="btn-modal-primary" onclick="saveSubjectProfessor('${id}')">guardar.</button>
             `);
-            setTimeout(() => document.getElementById('subject-professor-input')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('subject-professor-input'));
         }
 
         async function saveSubjectProfessor(id) {
@@ -394,7 +394,7 @@
                 <input id="subject-color" class="modal-input" type="color" value="#5b8def" style="height:40px;padding:4px">
                 <button class="btn-modal-primary" onclick="saveNewSubject()">añadir asignatura.</button>
             `);
-            setTimeout(() => document.getElementById('subject-name')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('subject-name'));
         }
 
         async function saveNewSubject() {
@@ -425,7 +425,7 @@
             showModal(renderSubjectDetailModal(s));
             document.querySelector('#modal-container .modal-sheet')?.classList.add('asignatura-sheet');
             // El foco va al nombre de la asignatura, no al primer campo (seleccionaba el título del primer examen).
-            setTimeout(() => document.getElementById('asig-titulo')?.focus({ preventScroll: true }), 30);
+            enfocarSiTeclado(() => document.getElementById('asig-titulo'));
             loadEntryDocs('studies', s.id);
         }
 

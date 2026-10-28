@@ -89,6 +89,17 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   Con un modal abierto no se llama a `render()`: `repintarTrasModal()` lo deja para cuando se cierre (se veía a
   través del fondo como un destello, sobre todo en el móvil). Lo usan también los repintados que llegan solos
   (sincronizar con la nube, volver a la app, la bandeja) y `pintarSocial` (mira `modalEnPantalla()`).
+  Ciclo del modal (28-10, auditoría de rendimiento móvil): `closeModal` quita el DOM al acabar la animación
+  (`animationend` con respaldo; con movimiento reducido, al momento); al abrir, `abrirCapa()` deja inerte `#app` y
+  `#mobile-shell` y anota la capa en el historial (atrás cierra modal o menú: `anotarCapa` / `soltarCapa`); lo que puede
+  esperar a que la hoja suba va en `trasAbrirModal(fn)`. **El foco al abrir se pide solo con `enfocarSiTeclado(() => el)`**
+  (en táctil no enfoca: el teclado que salía solo daba tirones). Duraciones de la hoja móvil en `--modal-abrir` /
+  `--modal-cerrar`. `window.tiemposModal` guarda lo que tarda cada apertura.
+- **Arranque rápido (28-10):** `startApp(session.user)` pasa el usuario a `loadData` (`usuarioArranque`); sin pagos, la
+  suscripción se lee de fondo. Con copia en IndexedDB sin pendientes se pinta con ella y `sincronizarDesdeNube` la funde
+  después. El móvil se pinta por zonas (`.m-zona`, `display: contents`; `mobileZonas` guarda el HTML de cada una) y solo
+  se reescribe la que cambia: quien cambie a mano el menú o la barra debe vaciar su entrada en `mobileZonas`. Chart.js
+  ya no se carga (no se usaba) y Leaflet se baja al abrir un mapa (`initTripMap`).
 - **Sin conexión (datos.js, «SIN CONEXIÓN»):** copia por usuario en IndexedDB (`bitacora-copia`: `base` = datosBase y
   `local` = lo de la app, `pendiente`). `loadData` arranca con ella si no hay red (`modoSinConexion`) o si quedó algo
   pendiente; `saveData` sin red guarda la copia con `pendiente` en vez de fallar, y al volver la red (`online`,

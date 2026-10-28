@@ -263,8 +263,13 @@
             ultimo.textContent = ultimo.textContent.replace(/\s*$/, '.');
         }
 
-        new MutationObserver(cambios => cambios.forEach(c => c.addedNodes.forEach(mejorarSelectsEn)))
-            .observe(document.body, { childList: true, subtree: true });
+        // Antes se recorría cada nodo añadido por separado (al abrir un modal o repintar el móvil, cientos): ahora
+        // solo los elementos que no están ya dentro de otro de la misma tanda.
+        new MutationObserver(cambios => {
+            const raices = [];
+            cambios.forEach(c => c.addedNodes.forEach(n => { if (n.nodeType === 1 && n.isConnected) raices.push(n); }));
+            raices.filter(n => !raices.some(o => o !== n && o.contains(n))).forEach(mejorarSelectsEn);
+        }).observe(document.body, { childList: true, subtree: true });
 
         function cerrarSelector() {
             if (!selectorAbierto) return;
@@ -443,7 +448,7 @@
                 <button class="btn-modal-primary" id="finance-privacy-yes-btn" onclick="answerFinancePrivacyPrompt(true)">sí.</button>
                 <button class="btn-secondary" style="margin-top:10px" onclick="answerFinancePrivacyPrompt(false)">no.</button>
             `);
-            setTimeout(() => document.getElementById('finance-privacy-yes-btn')?.focus(), 0);
+            enfocarSiTeclado(() => document.getElementById('finance-privacy-yes-btn'));
         }
 
         function answerFinancePrivacyPrompt(wantsPrivacy) {
@@ -568,7 +573,7 @@
                 <input id="weekly-task-input" class="modal-input" maxlength="140" placeholder="Ej: Comprar comida para la semana">
                 <button class="btn-modal-primary" onclick="saveWeeklyTask()">añadir tarea.</button>
             `);
-            setTimeout(() => document.getElementById('weekly-task-input')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('weekly-task-input'));
         }
 
         async function saveWeeklyTask() {

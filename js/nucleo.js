@@ -214,15 +214,34 @@
             return '';
         }
 
-        async function startApp() {
+        // El usuario de la sesión se pide una vez y se pasa a loadData (antes se pedía tres veces, una tras otra).
+        let usuarioArranque = null;
+        async function startApp(usuarioSesion) {
             const boot = document.getElementById('boot-loading');
             if (boot) boot.style.display = 'none';
 
-            let { data: { user }, error: errorUsuario } = await authConRed(() => sb.auth.getUser());
-            if (!user && esErrorDeRed(errorUsuario)) user = usuarioGuardado();
+            let user = usuarioSesion || null;
+            if (!user) {
+                const { data, error: errorUsuario } = await authConRed(() => sb.auth.getUser());
+                user = data?.user || null;
+                if (!user && esErrorDeRed(errorUsuario)) user = usuarioGuardado();
+            }
             if (!user) { document.body.classList.remove('pwa'); goToLogin(); return; }
+            usuarioArranque = user;
             const veniaDeCheckout = new URLSearchParams(window.location.search).get('checkout') === 'success';
-            const sub = await getSubscriptionStatus(user, { allowRetry: veniaDeCheckout });
+            // Sin pagos, la suscripción no decide el acceso: se usa la última leída y se consulta de fondo (para la
+            // insignia de socio y el tema dorado), sin hacer esperar a la primera pantalla.
+            let sub;
+            if (PAGOS_ACTIVOS || veniaDeCheckout) sub = await getSubscriptionStatus(user, { allowRetry: veniaDeCheckout });
+            else {
+                try { sub = JSON.parse(localStorage.getItem('bitacora-sub-' + user.id) || 'null'); } catch (_) { sub = null; }
+                sub ||= { estado: 'active', modulos: ['base'] };
+                getSubscriptionStatus(user).then(s => {
+                    suscripcionActual = s;
+                    if (!temasDisponibles().includes('fundador') && temaActual() === 'fundador') aplicarClasesTema('asfalto');
+                    if (appInitialized && s.socio_numero) repintarTrasModal();
+                }).catch(e => console.error(e));
+            }
 
             if (!hasAccess(sub)) {
                 document.body.classList.remove('pwa');
@@ -689,7 +708,7 @@
             // Sin red, la sesión caducada no se puede renovar, pero sigue en
             // el dispositivo: se entra con la copia local de los datos.
             if (session || ((navigator.onLine === false || esErrorDeRed(errorSesion)) && usuarioGuardado())) {
-                await startApp();
+                await startApp(session?.user);
             } else {
                 document.body.classList.remove('pwa');
                 // Quien abre la app desde la pantalla de inicio viene a
@@ -1052,12 +1071,13 @@
         // busca primero dentro de #mobile-shell.
         const getElementByIdOriginal = Document.prototype.getElementById;
         document.getElementById = function (id) {
-            if (mobileStandaloneActive) {
-                const shell = getElementByIdOriginal.call(document, 'mobile-shell');
-                const enMovil = shell && id !== 'mobile-shell' ? shell.querySelector(`[id="${CSS.escape(id)}"]`) : null;
-                if (enMovil) return enMovil;
-            }
-            return getElementByIdOriginal.call(document, id);
+            const el = getElementByIdOriginal.call(document, id);
+            // Ya casi no hay ids repetidos (el escritorio no se pinta en el móvil): solo se busca dentro del móvil si
+            // lo encontrado está fuera de él y fuera del modal (lo fijo de index.html que el móvil también pinta).
+            if (!mobileStandaloneActive || id === 'mobile-shell' || !el) return el;
+            const shell = getElementByIdOriginal.call(document, 'mobile-shell');
+            if (!shell || shell.contains(el) || el.closest('#modal-container')) return el;
+            return shell.querySelector(`[id="${CSS.escape(id)}"]`) || el;
         };
 
         function initMobileShell() {
@@ -1082,6 +1102,7 @@
                 mobileReciente = view;
                 try { localStorage.setItem('bitacora_m_reciente', view); } catch (_) { /* sin almacenamiento */ }
             }
+            if (mobileMenuAbierto) soltarCapa();
             mobileMenuAbierto = false;
             if (view !== 'travels') window._openTripId = null;
             if (view !== 'notes') window.openNoteId = null;
@@ -1096,6 +1117,9 @@
 
         function toggleMenuMovil() {
             mobileMenuAbierto = !mobileMenuAbierto;
+            // Lo cambia aquí a mano: el siguiente repintado tiene que reescribir el menú y la barra sí o sí.
+            mobileZonas.menu = mobileZonas.tab = null;
+            if (mobileMenuAbierto) anotarCapa(); else if (!modalEnPantalla()) soltarCapa();
             if (mobileMenuAbierto) { const cuerpo = document.querySelector('#m-menu .m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = 0; }
             document.getElementById('m-menu')?.classList.toggle('abierto', mobileMenuAbierto);
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
@@ -1105,6 +1129,7 @@
         }
 
         let mobileLastEffectView = null;
+        let mobileZonas = {};
         function renderMobileShell() {
             if (!mobileStandaloneActive) return;
             const shell = document.getElementById('mobile-shell');
@@ -1116,13 +1141,22 @@
             // un ajuste (tema, letra, un interruptor) te devolvía arriba.
             const scrollMenu = shell.querySelector('.m-menu-cuerpo')?.scrollTop || 0;
             const scrollPagina = entra ? 0 : shell.scrollTop;
-            shell.innerHTML = `
-                <div class="m-app">
-                    ${renderMobileTopbar(view)}
-                    <main class="m-pagina">${view === 'calendar' ? renderAvisoPrueba(true) + renderMobileInicio(entra) : renderMobileSeccion(view)}</main>
-                </div>
-                ${renderMobileTabbar(view)}
-                ${renderMobileMenu(view)}`;
+            // Antes se sustituía todo el móvil en cada repintado (barras y menú incluidos). Ahora cada zona vive en su
+            // envoltorio (display: contents, no cambia el diseño) y solo se reescribe si su HTML ha cambiado.
+            const partes = {
+                top: renderMobileTopbar(view),
+                pagina: `<main class="m-pagina">${view === 'calendar' ? renderAvisoPrueba(true) + renderMobileInicio(entra) : renderMobileSeccion(view)}</main>`,
+                tab: renderMobileTabbar(view),
+                menu: renderMobileMenu(view),
+            };
+            const zonas = shell.querySelectorAll('.m-zona[data-z]');
+            if (zonas.length !== 4) {
+                shell.innerHTML = `<div class="m-app"><div class="m-zona" data-z="top">${partes.top}</div><div class="m-zona" data-z="pagina">${partes.pagina}</div></div><div class="m-zona" data-z="tab">${partes.tab}</div><div class="m-zona" data-z="menu">${partes.menu}</div>`;
+                mobileZonas = { ...partes };
+            } else zonas.forEach(z => {
+                const k = z.dataset.z;
+                if (mobileZonas[k] !== partes[k]) { z.innerHTML = partes[k]; mobileZonas[k] = partes[k]; }
+            });
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
             if (scrollMenu) { const cuerpo = shell.querySelector('.m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = scrollMenu; }
             if (scrollPagina) shell.scrollTop = scrollPagina;

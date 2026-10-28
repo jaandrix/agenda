@@ -5770,14 +5770,12 @@ body.mobile-standalone.m-menu-abierto #mobile-shell { overflow:hidden; }
 .modal-sheet > .modal-title:first-child { position: sticky; top: -28px; z-index: 3; margin: -28px -28px 16px; padding: 24px 28px 12px; background: var(--bg-modal); }
 .modal-sheet > .modal-title:first-child::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 14px; background: linear-gradient(var(--bg-modal), transparent); pointer-events: none; }
 .modal-sheet > .btn-modal-primary:nth-last-child(-n+2) { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -10px 0 2px var(--bg-modal), 0 -24px 16px -6px var(--bg-modal); }
-@keyframes modalSheetSubir { from { opacity: 0; transform: translateY(48px); } to { opacity: 1; transform: none; } }
-@keyframes modalSheetBajar { to { opacity: 0; transform: translateY(40px); } }
 @media (max-width: 600px) {
     .modal-overlay { align-items: flex-end; padding: 0; }
     .modal-sheet { max-width: 100%; max-height: 92dvh; border-radius: 22px 22px 0 0; border-bottom: none; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
     .modal-sheet::before { content: ''; display: block; width: 38px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: -12px auto 10px; }
-    .modal-sheet, .modal-sheet.modal-sheet-desde-punto { animation: modalSheetSubir .34s var(--ease-out) both; }
-    .modal-sheet[style*="modalSheet"] { animation: modalSheetBajar .2s var(--ease-out) both !important; }
+    .modal-sheet, .modal-sheet.modal-sheet-desde-punto { animation: modalSheetSubir var(--modal-abrir) var(--ease-out) both; }
+    .modal-sheet[style*="modalSheet"] { animation: modalSheetBajar var(--modal-cerrar) var(--ease-out) both !important; }
 }
 @media (max-width: 768px) {
     .modal-sheet > .modal-title:first-child { top: -20px; margin: -20px -16px 14px; padding: 18px 16px 10px; }
@@ -7798,7 +7796,7 @@ button.landing-about-link { border:0; background:none; font-family:inherit; curs
 @media (max-width:720px) { .landing-topbar .landing-novedades-link { display:inline-block; } }
 .landing-novedades-link { position:relative; }
 .landing-novedades-link::after { content:''; position:absolute; top:-2px; right:-8px; width:6px; height:6px; border-radius:50%; background:var(--m-acento, #e8572a); }
-.novedades { display:flex; flex-direction:column; max-height:62vh; overflow:auto; margin:0 -4px; padding:0 4px; }
+.novedades { display:flex; flex-direction:column; margin:0 -4px; padding:0 4px; }
 .novedades-mes { position:sticky; top:0; z-index:1; padding:10px 0 6px; background:var(--bg-card); font-size:12px; font-weight:800; color:var(--m-acento, #e8572a); }
 .novedad { padding:12px 0 14px; border-top:1px solid var(--border); }
 .novedad-cab { display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:11px; color:var(--text-secondary); }
@@ -9507,8 +9505,17 @@ body.papel .asig-estado.vencido { color:#a3243b; }
    la animación (se veía muy oscuro y luego bajaba de golpe). En pantallas estrechas la hoja solo se desliza. */
 @keyframes modalSheetSubir { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes modalSheetBajar { to { transform: translateY(100%); } }
+/* Duraciones de la hoja del móvil en un solo sitio. Subir era 340 ms: se notaba lento en «apuntar.», que se abre muchas
+   veces al día. */
+:root { --modal-abrir: .24s; --modal-cerrar: .2s; }
+@keyframes modalCuerpoFunde { from { opacity: 0; } }
 @media (max-width: 600px) {
+    /* Pasar de un modal a otro: la hoja se queda quieta y solo funde lo de dentro (la hoja entera parpadeaba en iOS). */
     .modal-sheet.modal-sheet-cambio { animation: none; }
+    .modal-sheet.modal-sheet-cambio > * { animation: modalCuerpoFunde .12s ease-out both; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .modal-overlay, .modal-sheet, .modal-sheet > *, .modal-sheet[style*="modalSheet"] { animation: none !important; }
 }
 
 /* Finanzas: pestañas y, en el móvil, la barra fina de lo gastado (en lugar del círculo). */
@@ -9842,3 +9849,9 @@ html:has(> body:not(.papel):not(.fundador)) { filter: grayscale(1); }
 .pano-manana { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 .pano-manana > b { font-size: 13px; }
 
+
+.m-zona { display: contents; }
+.admin-tamanos { display: grid; gap: 4px; }
+.novedades-mas { width: 100%; margin-top: 12px; }
+.admin-tamanos span { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.admin-tamanos small { color: var(--text-secondary); }

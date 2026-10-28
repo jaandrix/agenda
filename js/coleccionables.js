@@ -225,7 +225,7 @@
                 <input id="collectible-value" class="modal-input" type="number" min="0" step="0.01" value="0">
                 <button class="btn-modal-primary" onclick="saveNewCollectible()">añadir.</button>
             `);
-            setTimeout(() => document.getElementById('collectible-name')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('collectible-name'));
         }
 
         async function saveNewCollectible() {
@@ -445,7 +445,7 @@
                 <input id="collectible-category-name" class="modal-input" type="text" placeholder="Ej: Figuras, Vinilos, Cómics...">
                 <button class="btn-modal-primary" onclick="saveNewCollectibleCategory()">añadir categoría.</button>
             `);
-            setTimeout(() => document.getElementById('collectible-category-name')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('collectible-category-name'));
         }
 
         async function saveNewCollectibleCategory() {

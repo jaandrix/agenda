@@ -260,7 +260,7 @@
                 <textarea id="backlog-task-notes" class="modal-input" rows="2" placeholder="Detalles adicionales..."></textarea>
                 <button class="btn-modal-primary" onclick="saveBacklogTask()">añadir a pendientes.</button>
             `);
-            setTimeout(() => document.getElementById('backlog-task-title')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('backlog-task-title'));
         }
 
         async function saveBacklogTask() {
@@ -373,7 +373,7 @@
                 <button class="btn-modal-primary" onclick="savePlannerItem(${offset}, '${it?.id || ''}')">${it ? 'guardar.' : 'añadir.'}</button>
                 ${it ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="closeModal();deletePlannerItem('${it.id}', ${offset})">eliminar tarea.</button>` : ''}
             `);
-            setTimeout(() => { if (!it && !ES_TACTIL) document.getElementById('planner-item-title')?.focus(); }, 50);
+            if (!it) enfocarSiTeclado(() => document.getElementById('planner-item-title'));
         }
 
         function plannerSinHora(btn) {
@@ -880,7 +880,7 @@
                 ${h ? `<button class="btn-secondary" style="margin-top:8px" onclick="toggleHabitActiveState('${h.id}')">${h.activo === false ? 'reactivar.' : 'poner en pausa.'}</button>
                 <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteHabit('${h.id}')">eliminar rutina.</button>` : ''}
             `);
-            setTimeout(() => { if (!h) document.getElementById('rutina-texto')?.focus(); }, 50);
+            if (!h) enfocarSiTeclado(() => document.getElementById('rutina-texto'));
         }
 
         function rutinaElegir(grupo, valor, btn) {

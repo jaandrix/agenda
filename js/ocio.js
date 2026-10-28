@@ -147,7 +147,7 @@
                 <div id="culture-list-picker-items" style="max-height:340px;overflow-y:auto;margin-top:8px">${renderCultureListPickerItems(options, '')}</div>
                 <button class="btn-modal-primary" style="margin-top:12px" onclick="confirmCultureListPicker()">confirmar.</button>
             `);
-            setTimeout(() => document.getElementById('culture-list-picker-filter')?.focus(), 50);
+            enfocarSiTeclado(() => document.getElementById('culture-list-picker-filter'));
         }
 
         function renderCultureListPickerItems(options, q) {

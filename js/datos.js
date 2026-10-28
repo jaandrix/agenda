@@ -74,11 +74,14 @@
             try {
                 const local = {};
                 Object.entries(DATOS_SINCRONIZADOS).forEach(([k, [leer]]) => { local[k] = leer(); });
-                const copia = JSON.parse(JSON.stringify({ uid: copiaUid, cuando: Date.now(), base: datosBase, local, apuntes, pendiente: copiaPendiente }));
+                // IndexedDB ya copia lo que guarda: pasarlo antes por JSON era copiarlo todo dos veces. Solo si algo no
+                // se puede copiar así (un valor raro dentro de los datos) se vuelve al JSON.
+                let copia = { uid: copiaUid, cuando: Date.now(), base: datosBase, local, apuntes, pendiente: copiaPendiente };
                 const db = await copiaDb();
                 await new Promise((ok, mal) => {
                     const t = db.transaction('copias', 'readwrite');
-                    t.objectStore('copias').put(copia, copiaUid);
+                    try { t.objectStore('copias').put(copia, copiaUid); }
+                    catch (e) { copia = JSON.parse(JSON.stringify(copia)); t.objectStore('copias').put(copia, copiaUid); }
                     t.oncomplete = ok;
                     t.onerror = () => mal(t.error);
                 });
@@ -88,7 +91,7 @@
         // Escribir la copia entera en cada guardado sería caro: se agrupa.
         function programarCopiaLocal(espera = 1500) {
             clearTimeout(copiaTemporizador);
-            copiaTemporizador = setTimeout(guardarCopiaLocal, espera);
+            copiaTemporizador = setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 0)))(guardarCopiaLocal, { timeout: 3000 }), espera);
         }
 
         async function volverAConectar() {
@@ -106,8 +109,13 @@
 
         async function loadData() {
             try {
-                let { data: { user }, error: errorUsuario } = await authConRed(() => sb.auth.getUser());
-                if (!user && esErrorDeRed(errorUsuario)) user = usuarioGuardado();
+                let user = usuarioArranque;
+                usuarioArranque = null;
+                if (!user) {
+                    const { data: u, error: errorUsuario } = await authConRed(() => sb.auth.getUser());
+                    user = u?.user || null;
+                    if (!user && esErrorDeRed(errorUsuario)) user = usuarioGuardado();
+                }
                 if (!user) {
                     entries = [];
                     categories = getDefaultCategories();
@@ -121,9 +129,18 @@
                 copiaUid = user.id;
                 let saved;
                 const copia = await leerCopiaLocal(user.id);
-                const { data, error } = await consultaConRed(() => sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle());
+                // Con copia en el dispositivo se pinta ya con ella y la nube llega después (sincronizarDesdeNube la
+                // funde a tres bandas, como cualquier otro dispositivo): la primera pantalla no espera a la red.
+                const deCopia = !!(copia && !copia.pendiente && copia.base && copia.local);
+                const { data, error } = deCopia ? { data: null, error: null } : await consultaConRed(() => sb.from('bitacora').select('data').eq('user_id', user.id).maybeSingle());
                 if (error && !(esErrorDeRed(error) && copia)) throw error;
-                if (copia?.pendiente || error) {
+                if (deCopia) {
+                    datosBase = copia.base;
+                    saved = { ...copia.local, apuntes: copia.apuntes };
+                    copiaPendiente = false;
+                    marcarConexion(false);
+                    setTimeout(() => { ultimaSincronizacion = 0; sincronizarDesdeNube(); }, 0);
+                } else if (copia?.pendiente || error) {
                     // Sin red, o con cambios hechos sin conexión que aún no
                     // llegaron a la nube: se arranca con la copia. Si hay red,
                     // el saveData de init los fusiona con la nube.

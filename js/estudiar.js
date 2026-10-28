@@ -614,7 +614,7 @@ function openEstMazo(id) {
         <button class="btn-modal-primary" onclick="guardarEstMazo('${id || ''}')">${m ? 'guardar.' : 'crear.'}</button>
         ${m ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarEstMazo('${m.id}')">eliminar el mazo y sus tarjetas.</button>` : ''}
     `);
-    setTimeout(() => { if (!m) document.getElementById('est-mazo-nombre')?.focus(); }, 50);
+    if (!m) enfocarSiTeclado(() => document.getElementById('est-mazo-nombre'));
 }
 
 function guardarEstMazo(id) {
@@ -663,7 +663,7 @@ function openEstTarjeta(mazoId, id, tipo) {
             : `<button class="btn-secondary" style="margin-top:8px" onclick="guardarEstTarjeta('${mazoId}','','${tp}',true)">guardar y añadir otra.</button>`}
     `);
     window._estBorrador = null;
-    setTimeout(() => document.getElementById('est-t-frente')?.focus(), 50);
+    enfocarSiTeclado(() => document.getElementById('est-t-frente'));
 }
 
 function estCambiarTipo(mazoId, id, tipo) {

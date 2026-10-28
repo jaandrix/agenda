@@ -471,17 +471,22 @@ function openApuntar(fecha) {
         <div class="apuntar-o">o elige qué quieres apuntar</div>
         <div class="apuntar-rejilla">${accesos.map(([t, icono, accion]) => `<button onclick="${accion}"><i>${APUNTAR_ICONOS[icono]}</i><span>${t}</span></button>`).join('')}</div>
         <button class="m-enlace apuntar-todos" onclick="closeModal();window._dayPrefillDate=apuntarFechaBase;openCommandPalette('create');window._dayPrefillDate=apuntarFechaBase">todos los tipos.</button>
-        ${apuntesRecientes.length ? `<div class="apuntar-recientes"><div class="apuntar-o">lo último que apuntaste</div>${apuntesRecientes.slice(0, 3).map(apuntarFilaRegistro).join('')}${apuntesRecientes.length > 3 ? `<button class="m-enlace apuntar-todos" onclick="openApuntesRecientes()">ver todo (${apuntesRecientes.length}).</button>` : ''}</div>` : ''}
+        ${apuntesRecientes.length ? `<div class="apuntar-recientes" hidden><div class="apuntar-o">lo último que apuntaste</div>${apuntesRecientes.slice(0, 3).map(apuntarFilaRegistro).join('')}${apuntesRecientes.length > 3 ? `<button class="m-enlace apuntar-todos" onclick="openApuntesRecientes()">ver todo (${apuntesRecientes.length}).</button>` : ''}</div>` : ''}
     `);
     pintarVistaApunteYa();
-    setTimeout(() => document.getElementById('apuntar-texto')?.focus(), 60);
+    enfocarSiTeclado(() => document.getElementById('apuntar-texto'));
+    // Lo último apuntado aparece cuando la hoja ya ha subido: medirla y cambiarle la altura mientras se movía daba tirones.
+    trasAbrirModal(() => {
+        const recientes = document.querySelector('#modal-container .apuntar-recientes');
+        if (recientes) { recientes.hidden = false; apuntarAjustarHoja(); }
+    });
 }
 
 // Lo último que se apuntó queda por debajo del borde de la hoja, asomando
 // solo su título: se ve deslizando dentro del modal, que no se mueve.
 function apuntarAjustarHoja() {
     const hoja = document.querySelector('#modal-container .modal-sheet');
-    const recientes = hoja?.querySelector('.apuntar-recientes');
+    const recientes = hoja?.querySelector('.apuntar-recientes:not([hidden])');
     if (!hoja || !recientes) return;
     hoja.style.maxHeight = '';
     // Con el tamaño de letra del móvil la hoja lleva zoom: lo medido en

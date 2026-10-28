@@ -209,7 +209,7 @@
                 <div id="asist-permitir-res"></div>
             `);
             pintarPuedoPermitirme();
-            setTimeout(() => document.getElementById('asist-permitir')?.focus(), 60);
+            enfocarSiTeclado(() => document.getElementById('asist-permitir'));
         }
 
         function pintarPuedoPermitirme() {

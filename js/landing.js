@@ -252,10 +252,11 @@ const NOVEDADES = [
     { fecha: '2026-07-28', rama: 'todos', nombre: 'bitácora', para: 'todos.', texto: 'El comienzo: calendario, planificador, eventos, ocio y notas, en un solo sitio.' },
 ];
 
-function openNovedades() {
+// Se pintan las primeras y el resto al pedirlas: pintar todo el histórico de una vez hacía lenta la apertura.
+function novedadesFilas(desde, hasta) {
     const mes = f => new Date(f + 'T12:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    let ultimoMes = '';
-    const filas = NOVEDADES.map(n => {
+    let ultimoMes = desde ? mes(NOVEDADES[desde - 1].fecha) : '';
+    return NOVEDADES.slice(desde, hasta).map(n => {
         const m = mes(n.fecha);
         const cab = m !== ultimoMes ? `<div class="novedades-mes">${m}.</div>` : '';
         ultimoMes = m;
@@ -266,7 +267,16 @@ function openNovedades() {
             <div class="novedad-para">para ${n.para}</div>
         </article>`;
     }).join('');
+}
+function openNovedades() {
     showModal(`<div class="modal-title">actualizaciones.<button class="modal-close" aria-label="cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
         <p class="finance-modal-note" style="margin-top:0">Todo lo que ha ido llegando a Bitácora, lo último primero.</p>
-        <div class="novedades">${filas}</div>`);
+        <div class="novedades">${novedadesFilas(0, 12)}</div>
+        ${NOVEDADES.length > 12 ? '<button class="btn-secondary novedades-mas" onclick="novedadesMas(this)">ver anteriores.</button>' : ''}`);
+}
+function novedadesMas(btn) {
+    const caja = btn.previousElementSibling;
+    const n = caja.querySelectorAll('.novedad').length;
+    caja.insertAdjacentHTML('beforeend', novedadesFilas(n, n + 20));
+    if (n + 20 >= NOVEDADES.length) btn.remove();
 }

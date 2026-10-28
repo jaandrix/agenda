@@ -187,15 +187,26 @@
             if (!overlay) { container.innerHTML = ''; return; }
             const sheet = overlay.querySelector('.modal-sheet');
             overlay.dataset.cerrando = '1';
-            overlay.style.animation = 'modalOverlayOut 0.16s ease-out both';
-            if (sheet) sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.16s var(--ease-out) both`;
-            // Si entretanto se abrió otro modal, reutiliza este overlay y quita la marca.
-            setTimeout(() => {
+            // Se quita cuando acaba la animación de salida (antes, a los 160 ms fijos, y en el móvil dura 200: se
+            // cortaba el final). Si entretanto se abrió otro modal, reutiliza este overlay y quita la marca.
+            let hecho = false;
+            const terminar = () => {
+                if (hecho) return;
+                hecho = true;
                 if (container.contains(overlay) && overlay.dataset.cerrando) container.innerHTML = '';
-                if (repintarAlCerrar && !container.querySelector('.modal-overlay')) { repintarAlCerrar = false; render(); }
-                if (!container.querySelector('.modal-overlay') && modalAbridor?.isConnected) modalAbridor.focus({ preventScroll: true });
-                if (!container.querySelector('.modal-overlay')) modalAbridor = null;
-            }, 160);
+                if (container.querySelector('.modal-overlay')) return;
+                cerrarCapa();
+                if (repintarAlCerrar) { repintarAlCerrar = false; render(); }
+                if (modalAbridor?.isConnected) modalAbridor.focus({ preventScroll: true });
+                modalAbridor = null;
+            };
+            if (vtReducido()) { terminar(); return; }
+            overlay.style.animation = 'modalOverlayOut 0.16s ease-out both';
+            if (sheet) {
+                sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.16s var(--ease-out) both`;
+                sheet.addEventListener('animationend', e => { if (e.target === sheet) terminar(); });
+            }
+            setTimeout(terminar, 280);
         }
 
         // ============================================================

@@ -223,7 +223,7 @@ function openAlumnosProfe() {
         <textarea id="profe-alumnos" class="modal-input" rows="10" placeholder="Apellidos Nombre&#10;Apellidos Nombre"></textarea>
         <button class="btn-modal-primary" onclick="guardarAlumnosProfe()">añadir.</button>
         <button class="btn-secondary" style="margin-top:8px" onclick="repintarFichaProfe()">volver.</button>`;
-    setTimeout(() => document.getElementById('profe-alumnos')?.focus(), 50);
+    enfocarSiTeclado(() => document.getElementById('profe-alumnos'));
 }
 
 function guardarAlumnosProfe() {
@@ -259,7 +259,7 @@ function openColumnaProfe(id) {
         <button class="btn-modal-primary" onclick="guardarColumnaProfe('${e?.id || ''}')">guardar.</button>
         ${e ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarColumnaProfe('${e.id}')">eliminar columna y sus notas.</button>` : ''}
         <button class="btn-secondary" style="margin-top:8px" onclick="repintarFichaProfe()">volver.</button>`;
-    setTimeout(() => document.getElementById('profe-col-nombre')?.focus(), 50);
+    enfocarSiTeclado(() => document.getElementById('profe-col-nombre'));
 }
 
 function guardarColumnaProfe(id) {
@@ -506,7 +506,7 @@ function openNotaDiaProfe(claseId, fecha) {
         <textarea id="profe-nota-dia" class="modal-input" rows="5" placeholder="Cómo fue la clase, qué repetir, quién faltó, qué quedó a medias...">${escapeHtml(texto)}</textarea>
         <button class="btn-modal-primary" onclick="guardarNotaDiaProfe('${claseId}','${fecha}')">guardar.</button>
     `);
-    setTimeout(() => document.getElementById('profe-nota-dia')?.focus(), 50);
+    enfocarSiTeclado(() => document.getElementById('profe-nota-dia'));
 }
 
 function guardarNotaDiaProfe(claseId, fecha) {

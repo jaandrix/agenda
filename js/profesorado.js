@@ -863,7 +863,7 @@ function openClaseProfe(id) {
         <button class="btn-modal-primary" onclick="guardarClaseProfe('${c?.id || ''}')">guardar.</button>
         ${c ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarClaseProfe('${c.id}')">eliminar clase.</button>` : ''}
     `);
-    setTimeout(() => document.getElementById('profe-nombre')?.focus(), 50);
+    enfocarSiTeclado(() => document.getElementById('profe-nombre'));
 }
 
 function profeDiaElegir(d, btn) {
