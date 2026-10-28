@@ -9830,3 +9830,36 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { max-height:calc((10
 .deshacer-fila span { display:flex; flex-direction:column; min-width:0; }
 .deshacer-fila small { font-size:12.5px; color:var(--text-secondary); }
 .deshacer-fila .btn-secondary { width:auto; flex-shrink:0; padding:8px 12px; }
+
+/* Calendario de entregas de Estudios. */
+.modal-sheet.ent-hoja { max-width:880px; }
+.ent-cab { display:flex; align-items:center; justify-content:space-between; margin:0 0 10px; }
+.ent-cab b { font-size:17px; }
+.ent-semana, .ent-rejilla { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:4px; }
+.ent-semana span { padding:0 4px 4px; font-size:12px; font-weight:600; color:var(--text-secondary); }
+.ent-dia { min-height:84px; padding:6px; border-radius:10px; background:var(--bg-card); display:flex; flex-direction:column; gap:3px; min-width:0; }
+.ent-dia.vacio { background:none; }
+.ent-dia > b { font-size:12.5px; font-weight:600; color:var(--text-secondary); }
+.ent-dia.hoy > b { color:var(--accent); }
+.ent-dia.hoy { box-shadow:inset 0 0 0 1.5px var(--accent); }
+.ent-dia.pasado:not(.con) { opacity:.55; }
+.ent-chip { display:flex; align-items:center; gap:5px; width:100%; min-width:0; padding:3px 5px; border:0; border-radius:6px; background:var(--bg-card-hover); color:var(--text-primary); font:600 11.5px var(--font-family); text-align:left; cursor:pointer; }
+.ent-chip i, .ent-fila > i, .ent-puntos i { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.ent-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ent-chip.hecho span, .ent-chip.nota span, .ent-chip.pasado span { text-decoration:line-through; color:var(--text-secondary); }
+.ent-chip.vencido { color:var(--accent); }
+.ent-puntos { display:none; gap:3px; flex-wrap:wrap; }
+.ent-lista { display:none; margin-top:14px; }
+.ent-fila { display:flex; align-items:center; gap:10px; width:100%; padding:10px 0; border:0; border-bottom:1px solid var(--border); background:none; color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; }
+.ent-fila-dia { display:flex; flex-direction:column; align-items:center; width:36px; flex-shrink:0; font-size:11.5px; color:var(--text-secondary); }
+.ent-fila-dia b { font-size:17px; color:var(--text-primary); }
+.ent-fila-txt { display:flex; flex-direction:column; min-width:0; }
+.ent-fila-txt small { font-size:12.5px; color:var(--text-secondary); }
+.ent-fila.hecho .ent-fila-txt b, .ent-fila.nota .ent-fila-txt b, .ent-fila.pasado .ent-fila-txt b { text-decoration:line-through; color:var(--text-secondary); }
+.ent-fila.vencido small { color:var(--accent); }
+@media (max-width: 700px) {
+    .ent-dia { min-height:44px; padding:5px; align-items:center; }
+    .ent-dia .ent-chip { display:none; }
+    .ent-puntos { display:flex; justify-content:center; }
+    .ent-lista { display:block; }
+}

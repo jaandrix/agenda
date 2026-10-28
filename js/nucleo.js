@@ -1938,6 +1938,7 @@
             const fechaCorta = iso => { const d = new Date(iso + 'T12:00:00'); return `${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}`; };
             const subEstudios = clasesHoy.length ? `${clasesHoy.length === 1 ? 'una clase' : `${clasesHoy.length} clases`} hoy.` : entregas.length ? `${entregas.length === 1 ? 'una entrega' : `${entregas.length} entregas`} por delante.` : ex ? `examen ${eventCountdownLabel(ex.date).toLowerCase()}.` : 'sin exámenes a la vista.';
             return `${renderMobileCabecera('estudios', subEstudios)}
+                <button class="m-boton m-boton-ancho" onclick="openCalendarioEntregas()">calendario de entregas.</button>
                 ${pestanasEstudios('studies')}
                 ${ex ? `
                 <div class="m-destacado">

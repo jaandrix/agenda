@@ -729,6 +729,7 @@
                         <button class="btn-modal-primary studies-inline-add-btn btn-accent-blue" onclick="openAddSubject()">+ asignatura</button>
                         <button class="btn-modal-primary studies-inline-add-btn" onclick="openAddQuickNote()">+ nota rápida</button>
                         <button class="btn-modal-primary studies-inline-add-btn" onclick="openQuickNotesList()">notas rápidas${(studies.quickNotes || []).length ? ` (${studies.quickNotes.length})` : ''}</button>
+                        <button class="btn-modal-primary studies-inline-add-btn" onclick="openCalendarioEntregas()">calendario de entregas.</button>
                         ${classroomDisponible() ? `<button class="btn-modal-primary studies-inline-add-btn" onclick="openClassroom()">classroom.</button>` : ''}
                     </div>
                 </div>
@@ -787,3 +788,50 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+
+
+// ============================================================
+//  CALENDARIO DE ENTREGAS (28-10)
+//  Trabajos y exámenes de las asignaturas en curso en un mes, con el color de cada asignatura. Tocar uno abre su
+//  asignatura. En el móvil la rejilla solo marca los días y debajo va la lista del mes.
+// ============================================================
+let entregasMes = null;
+function entregasDelCurso() {
+    const asignaturas = typeof asignaturasEnCurso === 'function' ? asignaturasEnCurso() : (studies.subjects || []);
+    return asignaturas.flatMap(s => [
+        ...(s.assignments || []).map(x => ({ s, x, tipo: 'trabajo', clave: 'assignments' })),
+        ...(s.exams || []).map(x => ({ s, x, tipo: 'examen', clave: 'exams' })),
+    ]).filter(({ x }) => x.date).sort((a, b) => (a.x.date + (a.x.time || '99:99')).localeCompare(b.x.date + (b.x.time || '99:99')));
+}
+function openCalendarioEntregas(paso) {
+    const hoy = todayISO();
+    if (!entregasMes || !paso) entregasMes = hoy.slice(0, 7);
+    if (paso) { const d = new Date(entregasMes + '-01T12:00:00'); d.setMonth(d.getMonth() + paso); entregasMes = isoLocal(d).slice(0, 7); }
+    const [anio, mes] = entregasMes.split('-').map(Number);
+    const primero = new Date(anio, mes - 1, 1), diasMes = new Date(anio, mes, 0).getDate();
+    const hueco = (primero.getDay() + 6) % 7;
+    const delMes = entregasDelCurso().filter(({ x }) => x.date.startsWith(entregasMes));
+    const porDia = {};
+    delMes.forEach(e => { (porDia[e.x.date] ||= []).push(e); });
+    const color = s => escapeHtml(s.color || 'var(--text-secondary)');
+    const estado = e => estadoItemAsignatura(e.clave, e.x).clave;
+    const chip = e => `<button class="ent-chip ${estado(e)}" onclick="closeModal();openSubjectDetail('${jsAttr(e.s.id)}')" title="${escapeHtml(e.s.name)}: ${escapeHtml(e.x.title || e.tipo)}"><i style="background:${color(e.s)}" aria-hidden="true"></i><span>${e.tipo === 'examen' ? 'examen. ' : ''}${escapeHtml(e.x.title || e.tipo)}</span></button>`;
+    const celdas = [];
+    for (let i = 0; i < hueco; i++) celdas.push('<div class="ent-dia vacio"></div>');
+    for (let d = 1; d <= diasMes; d++) {
+        const iso = `${entregasMes}-${String(d).padStart(2, '0')}`;
+        const l = porDia[iso] || [];
+        celdas.push(`<div class="ent-dia ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''} ${l.length ? 'con' : ''}"><b>${d}</b>${l.map(chip).join('')}<span class="ent-puntos">${l.map(e => `<i style="background:${color(e.s)}"></i>`).join('')}</span></div>`);
+    }
+    const nombreMes = primero.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    const lista = delMes.length ? delMes.map(e => {
+        const f = new Date(e.x.date + 'T12:00:00');
+        return `<button class="ent-fila ${estado(e)}" onclick="closeModal();openSubjectDetail('${jsAttr(e.s.id)}')"><span class="ent-fila-dia"><b>${f.getDate()}</b>${f.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')}</span><i style="background:${color(e.s)}" aria-hidden="true"></i><span class="ent-fila-txt"><b>${escapeHtml(e.x.title || e.tipo)}</b><small>${e.tipo}, ${escapeHtml(e.s.name)}${e.x.time ? `, ${escapeHtml(e.x.time)}` : ''}, ${estadoItemAsignatura(e.clave, e.x).texto}</small></span></button>`;
+    }).join('') : '<p class="finance-modal-note">Nada este mes.</p>';
+    showModal(`<div class="modal-title">calendario de entregas.<button class="modal-close" aria-label="cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
+        <div class="ent-cab"><button class="vista-icono-btn" onclick="openCalendarioEntregas(-1)" aria-label="mes anterior"><i class='ico ico-izq' aria-hidden=true></i></button><b>${nombreMes}.</b><button class="vista-icono-btn" onclick="openCalendarioEntregas(1)" aria-label="mes siguiente"><i class='ico ico-der' aria-hidden=true></i></button></div>
+        <div class="ent-semana">${['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].map(d => `<span>${d}.</span>`).join('')}</div>
+        <div class="ent-rejilla">${celdas.join('')}</div>
+        <div class="ent-lista">${lista}</div>`);
+    document.querySelector('#modal-container .modal-sheet')?.classList.add('ent-hoja');
+}
