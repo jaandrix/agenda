@@ -488,11 +488,16 @@
 
         let saveChain = Promise.resolve();
 
+        // Si ya hay un guardado esperando turno (sin empezar), el cambio nuevo viaja en ese: doSaveData lee los datos
+        // al empezar, así que lleva los dos. Antes, diez toques seguidos eran diez guardados completos en cola.
+        let saveEnCola = null;
         function saveData() {
             invalidarCachesDerivadas();
+            if (saveEnCola) return saveEnCola;
+            const empezar = () => { saveEnCola = null; return doSaveData(); };
             // Sin red, el cambio se queda en la copia del dispositivo y se
             // da por guardado: se subirá al volver la conexión.
-            const attempt = saveChain.then(doSaveData, doSaveData).catch(async e => {
+            const attempt = saveChain.then(empezar, empezar).catch(async e => {
                 if (!copiaUid || !datosBase || !esErrorDeRed(e)) throw e;
                 marcarConexion(true);
                 copiaPendiente = true;
@@ -503,6 +508,7 @@
                 }
             });
             saveChain = attempt.catch(() => {});
+            saveEnCola = attempt;
             const avisoGuardando = setTimeout(() => ponerEstadoSync('guardando'), 700);
             attempt.then(() => {
                 clearTimeout(avisoGuardando);

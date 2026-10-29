@@ -1118,6 +1118,13 @@
         }
 
         function toggleMenuMovil() {
+            // Cerrado, el menú no se rehace en cada repintado (renderMobileShell reutiliza el último): se pone al día
+            // aquí, aún cerrado, para que la animación de abrir salga desde su sitio.
+            if (!mobileMenuAbierto) {
+                const zona = document.querySelector('#mobile-shell .m-zona[data-z="menu"]');
+                const nuevo = renderMobileMenu(NAV_VIEW_LABELS[currentView] ? currentView : 'calendar');
+                if (zona && nuevo !== mobileZonas.menu) { zona.innerHTML = nuevo; void zona.querySelector('#m-menu')?.offsetWidth; }
+            }
             mobileMenuAbierto = !mobileMenuAbierto;
             // Lo cambia aquí a mano: el siguiente repintado tiene que reescribir el menú y la barra sí o sí.
             mobileZonas.menu = mobileZonas.tab = null;
@@ -1166,7 +1173,7 @@
                 top: renderMobileTopbar(view),
                 pagina: `<main class="m-pagina">${view === 'calendar' ? renderAvisoPrueba(true) + renderMobileInicio(entra) : renderMobileSeccion(view)}</main>`,
                 tab: renderMobileTabbar(view),
-                menu: renderMobileMenu(view),
+                menu: mobileMenuAbierto || !mobileZonas.menu ? renderMobileMenu(view) : mobileZonas.menu,
             };
             const zonas = shell.querySelectorAll('.m-zona[data-z]');
             if (zonas.length !== 4) {
