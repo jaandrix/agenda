@@ -1715,6 +1715,7 @@
                 <button class="btn-secondary" style="margin-top:8px" onclick="closeModal();addPlannerSubtask('${it.id}',${offset}).then(renderMobileShell)">+ subtarea.</button>
                 <button class="btn-secondary btn-danger-pill" style="width:100%;margin-top:10px" onclick="closeModal();deletePlannerItem('${it.id}',${offset}).then(renderMobileShell)">borrar tarea.</button>
             `);
+            modoCapa('detalle');
         }
 
         function renderMobileTeselas() {

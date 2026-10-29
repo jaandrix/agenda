@@ -99,6 +99,11 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   esperar a que la hoja suba va en `trasAbrirModal(fn)`. **El foco al abrir se pide solo con `enfocarSiTeclado(() => el)`**
   (en táctil no enfoca: el teclado que salía solo daba tirones). Duraciones de la hoja móvil en `--modal-abrir` /
   `--modal-cerrar`. `window.tiemposModal` guarda lo que tarda cada apertura.
+  **Capas del móvil (29-10, plan de la PWA):** tras `showModal`/`ponerModal`, `modoCapa('compacta' | 'detalle' | 'editor')`
+  (vault.js). Editor = formulario a pantalla completa con «cancelar.» arriba (`cancelarEditor`, pregunta si hay cambios),
+  la acción principal pegada abajo y sin cerrar tocando fuera: crear/editar evento, movimiento, tarea y rutina. Detalle =
+  hoja de consulta con filas (ficha de evento, acciones de una tarea). Compacta = registro rápido. Solo cambia en la PWA.
+  Un formulario nuevo con más de tres campos va como editor. Medir con `py pruebas/medir_movil.py` (presupuestos del plan).
 - **Arranque rápido (28-10):** `startApp(session.user)` pasa el usuario a `loadData` (`usuarioArranque`); sin pagos, la
   suscripción se lee de fondo. Con copia en IndexedDB sin pendientes se pinta con ella y `sincronizarDesdeNube` la funde
   después. El móvil se pinta por zonas (`.m-zona`, `display: contents`; `mobileZonas` guarda el HTML de cada una) y solo

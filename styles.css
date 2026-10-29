@@ -10120,3 +10120,9 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 :is(body.mobile-standalone, body.pwa) .modal-m-detalle .entry-detail-value { flex:1; min-width:0; font-size:15px; }
 :is(body.mobile-standalone, body.pwa) .modal-m-detalle .entry-detail-actions button[onclick="closeModal()"] { display:none; }
 :is(body.mobile-standalone, body.pwa) .modal-overlay.modal-m-compacta .modal-sheet { max-height:calc(56dvh / var(--m-zoom, 1)); }
+
+/* Tocar dentro de una capa: sin destello gris ni espera del doble toque, y los botones ceden un poco al pulsarlos. */
+:is(body.mobile-standalone, body.pwa) #modal-container :is(button, [onclick], label, select) { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+:is(body.mobile-standalone, body.pwa) #modal-container button { transition:transform .1s var(--ease-out); }
+:is(body.mobile-standalone, body.pwa) #modal-container button:active { transform:scale(.97); }
+@media (prefers-reduced-motion: reduce) { :is(body.mobile-standalone, body.pwa) #modal-container button:active { transform:none; } }

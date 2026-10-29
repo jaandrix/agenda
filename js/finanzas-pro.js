@@ -2029,6 +2029,7 @@
                 <div class="finance-modal-note" style="margin-bottom:10px">Escribe el importe y toca la cuenta: se guarda al instante sin categoría. Lo ajustas luego desde "Ajustar movimientos".</div>
                 <div id="finance-quick-capture-body">${renderFinanceProQuickCaptureBody()}</div>
             `);
+            modoCapa('compacta');
         }
 
         function renderFinanceProQuickCaptureBody() {

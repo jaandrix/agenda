@@ -378,6 +378,7 @@
                 <button class="btn-modal-primary" onclick="savePlannerItem(${offset}, '${it?.id || ''}')">${it ? 'guardar.' : 'añadir.'}</button>
                 ${it ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="closeModal();deletePlannerItem('${it.id}', ${offset})">eliminar tarea.</button>` : ''}
             `);
+            modoCapa('editor');
             if (!it) enfocarSiTeclado(() => document.getElementById('planner-item-title'));
         }
 
@@ -885,6 +886,7 @@
                 ${h ? `<button class="btn-secondary" style="margin-top:8px" onclick="toggleHabitActiveState('${h.id}')">${h.activo === false ? 'reactivar.' : 'poner en pausa.'}</button>
                 <button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="deleteHabit('${h.id}')">eliminar rutina.</button>` : ''}
             `);
+            modoCapa('editor');
             if (!h) enfocarSiTeclado(() => document.getElementById('rutina-texto'));
         }
 
