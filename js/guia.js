@@ -268,7 +268,7 @@ const GUIA = [
             [guiaBoton('⭳ Exportar'), 'Un resumen en texto pensado para pegarlo en una IA y pedirle consejo.'],
             [guiaBoton('patrimonio.'), 'Tu saldo día a día. Arriba, cuánto ha cambiado en el periodo; la raya discontinua es donde empezaste. Pasa el dedo o el ratón por la gráfica para ver el saldo de cualquier día.'],
             [guiaBoton('1 mes. 3 meses. 6 meses. 1 año. todo.'), 'El periodo de la gráfica.'],
-            [guiaBoton('con inversión y emergencia.'), 'Suma a la gráfica lo que tienes invertido y el fondo de emergencia.'],
+            [guiaBoton('con inversión y emergencia.'), 'Suma a la gráfica lo que tienes invertido y el fondo de emergencia. Con «inversión desde.» pones el día que abriste la inversión: antes no aparece, y desde ese día crece poco a poco hasta el primer mes que Bitácora tiene registrado.'],
             [guiaBoton('presupuestos.'), 'Cuánto presupuestaste y cuánto gastaste en cada categoría, mes a mes. Se guarda solo al entrar en Finanzas y va también en el Markdown de exportar.'],
             [guiaBoton('Patrimonio → %, Objetivo. saldos.'), 'En la tarjeta de Patrimonio: el porcentaje (o «Variación») abre cómo ha cambiado mes a mes; <b>Objetivo.</b> fija una meta y te dice cuánto falta; <b>saldos.</b> muestra el saldo de cada mes.'],
             [guiaBoton('ritmo.'), 'Cómo va tu gasto del mes comparado con lo normal en ti a estas alturas.'],

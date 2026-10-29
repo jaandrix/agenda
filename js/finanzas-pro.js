@@ -724,12 +724,7 @@
             const keys = FINANCE_PRO_ACCOUNT_KEYS;
             const hoy = todayISO();
             const fin = ord[ord.length - 1].date > hoy ? ord[ord.length - 1].date : hoy;
-            const historia = [...(financeProfile.history || [])].sort((a, b) => String(a.month).localeCompare(String(b.month)));
-            const extraDe = mes => {
-                let snap = null;
-                for (const h of historia) { if (h.month <= mes) snap = h; else break; }
-                return snap ? Number(snap.emergency || 0) + Number(snap.invested || 0) : Number(financeProfile.emergency || 0) + Number(financeProfile.invested || 0);
-            };
+            const extraDe = financeExtrasPorDia();
             let bal = keys.reduce((n, k) => n + Number(financePro.accounts[k]?.balance0 || 0), 0);
             const serie = [];
             let idx = 0;
@@ -746,7 +741,7 @@
                     } else if (keys.includes(t.account)) delta += (t.type === 'income' ? 1 : -1) * imp;
                 }
                 bal += delta;
-                serie.push({ f, v: bal + (conExtras ? extraDe(f.slice(0, 7)) : 0), delta });
+                serie.push({ f, v: bal + (conExtras ? extraDe(f) : 0), delta });
             }
             let res = serie;
             if (meses) {
@@ -778,7 +773,7 @@
                     ? `<div class="fin-graf" role="img" aria-label="Evolución del patrimonio ${periodo}: de ${financeMoney(serie[0].v)} a ${financeMoney(total)}, diferencia ${cambio >= 0 ? 'positiva' : 'negativa'} de ${financeMoney(Math.abs(cambio))}." onpointermove="financeGrafScrub(event)" onpointerdown="financeGrafScrub(event)" onpointerleave="financeGrafSoltar()"></div>`
                     : `<p class="asig-vacio fin-graf-vacio">La gráfica empieza en cuanto apuntes o importes tu primer movimiento.</p>`}
                 <div class="fin-graf-pie">
-                    ${tieneExtras ? `<button class="asig-enlace" onclick="alternarExtrasGrafica()">${financeGrafExtras ? 'solo las cuentas.' : 'con inversión y emergencia.'}</button>` : '<span></span>'}
+                    ${tieneExtras ? `<span class="fin-graf-extras"><button class="asig-enlace" onclick="alternarExtrasGrafica()">${financeGrafExtras ? 'solo las cuentas.' : 'con inversión y emergencia.'}</button>${financeGrafExtras ? `<label class="fin-graf-desde">inversión desde. <input type="date" value="${escapeHtml(financeProfile.inversionDesde || '')}" onchange="ponerInversionDesde(this.value)"></label>` : ''}</span>` : '<span></span>'}
                     ${movil ? '' : `<span class="fin-graf-acciones"><button class="vista-btn" onclick="openHistorialPresupuestos()">presupuestos.</button><button class="vista-btn" onclick="openFinanceProStatsModal()">estadísticas.</button></span>`}
                 </div>
             </section>`;
@@ -4438,4 +4433,43 @@ async function aplicarImportarCategorias() {
     render();
     try { await saveData(); showToast(`${marcadas.length} movimientos categorizados. Los saldos no cambian.`); }
     catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+
+// Inversión y fondo de emergencia día a día para la gráfica de patrimonio. Antes, en los meses sin foto en el histórico
+// mensual se usaba el valor de hoy, y la gráfica enseñaba 1.500 € de inversión meses antes de abrir el fondo. Ahora:
+// antes de «inversión desde.» no existe; desde ese día crece en línea recta hasta el primer mes del histórico con
+// inversión; y desde ahí, la foto de cada mes (o lo de hoy, después de la última). El fondo de emergencia aparece el
+// primer mes del histórico en que está.
+function financeExtrasPorDia() {
+    const historia = [...(financeProfile.history || [])].sort((a, b) => String(a.month).localeCompare(String(b.month)));
+    const desde = financeProfile.inversionDesde || null;
+    const primeraInv = historia.find(h => Number(h.invested) > 0);
+    const primeraEmer = historia.find(h => Number(h.emergency) > 0);
+    const ultimo = historia[historia.length - 1];
+    const fotoDe = (mes, campo) => {
+        let v = null;
+        for (const h of historia) { if (h.month <= mes) v = Number(h[campo] || 0); else break; }
+        return v;
+    };
+    return f => {
+        const mes = f.slice(0, 7);
+        let inv = 0, emer = 0;
+        if (primeraInv && mes >= primeraInv.month) inv = fotoDe(mes, 'invested') || 0;
+        else if (desde && f >= desde && primeraInv) {
+            const ini = new Date(desde + 'T12:00:00'), fin = new Date(primeraInv.month + '-01T12:00:00');
+            const total = Math.max(1, (fin - ini) / 86400000);
+            inv = Number(primeraInv.invested) * Math.min(1, Math.max(0, (new Date(f + 'T12:00:00') - ini) / 86400000 / total));
+        } else if (!primeraInv && desde && f >= desde) inv = Number(financeProfile.invested || 0);
+        if (primeraEmer && mes >= primeraEmer.month) emer = fotoDe(mes, 'emergency') || 0;
+        // Después del último mes del histórico, lo de hoy.
+        if (ultimo && mes > ultimo.month) { inv = Number(financeProfile.invested || 0); emer = Number(financeProfile.emergency || 0); }
+        return inv + emer;
+    };
+}
+async function ponerInversionDesde(fecha) {
+    financeProfile.inversionDesde = fecha || null;
+    financeSaldosCache = null;
+    render();
+    try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
 }

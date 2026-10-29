@@ -9887,3 +9887,7 @@ body.mobile-standalone .modal-overlay.modal-overlay-saliendo, body.pwa .modal-ov
 .fin-imp-avanzado { margin-top:14px; }
 
 .fin-imp-aviso { color: var(--accent); }
+
+.fin-graf-extras { display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; }
+.fin-graf-desde { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-secondary); }
+.fin-graf-desde input { padding:3px 6px; border:1px solid var(--border); border-radius:8px; background:transparent; color:var(--text-primary); font:inherit; }
