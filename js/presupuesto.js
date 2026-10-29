@@ -16,7 +16,12 @@ const presRedondo = v => Math.round((Number(v) || 0) * 100) / 100;
 function financeBudgetUnifiedModel(month, plan, recorded) {
     const allocations = (plan?.allocations || []);
     const salary = Number(plan?.salary) || 0;
-    const contributions = Number(plan?.contributions) || 0;
+    const contributionsPlanned = Number(plan?.contributions) || 0;
+    // Lo que de verdad ha entrado como aportación este mes (regalos, Bizum de la familia...): si es más de lo previsto,
+    // manda, que es dinero que tienes para repartir.
+    const contributionsReal = presRedondo((financePro.transactions || []).filter(t => t.type === 'income' && t.date?.startsWith(month) && !financeProNeutro(t)
+        && /aportaci/i.test(financeProCategoryById(t.category)?.name || '')).reduce((s, t) => s + (Number(t.amount) || 0), 0));
+    const contributions = Math.max(contributionsPlanned, contributionsReal);
     const income = presRedondo(salary + contributions);
     const normales = allocations.filter(a => !a.auto);
     const autos = allocations.filter(a => a.auto);
@@ -44,7 +49,7 @@ function financeBudgetUnifiedModel(month, plan, recorded) {
         const confirmados = lista.filter(e => recurrenteEstadoMes(e, month) === 'banco').length;
         return { allocation: a, tipo, nombre: a.label || BUDGET_CASILLAS_AUTO[tipo], planned: presRedondo(a.amount), charged: presRedondo(budgetAutoGastado(tipo, month)), n: lista.length, confirmados, manual: !!a.limiteManual };
     });
-    return { month, salary, contributions, income, manualAssigned, commitmentsAssigned, totalAssigned, remaining: presRedondo(income - totalAssigned), categories, unlinkedAllocations, commitments, recorded: !!recorded };
+    return { month, salary, contributions, contributionsPlanned, contributionsReal, income, manualAssigned, commitmentsAssigned, totalAssigned, remaining: presRedondo(income - totalAssigned), categories, unlinkedAllocations, commitments, recorded: !!recorded };
 }
 
 function presupuestoPlanDe(month) {
@@ -63,19 +68,21 @@ function renderFinanceBudgetUnifiedPanel() {
     const vacio = !editando && !recorded && !m.salary && !m.contributions && !plan.allocations.some(a => !a.auto);
     const acciones = editando ? '' : recorded
         ? `<button class="vista-btn" onclick="presupuestoReabrir()">reabrir mes.</button>`
-        : vacio ? `<button class="vista-btn" onclick="enterFinanceBudgetEdit()">crear planificación.</button>`
-        : `<button class="vista-btn" onclick="enterFinanceBudgetEdit()">editar planificación.</button><button class="vista-btn" onclick="presupuestoCerrarMes()">cerrar mes.</button>`;
+        : vacio ? `<button class="vista-btn" onclick="enterFinanceBudgetEdit()"><i class='ico ico-lapiz' aria-hidden=true></i> crear planificación.</button>`
+        : `<button class="vista-btn" onclick="enterFinanceBudgetEdit()"><i class='ico ico-lapiz' aria-hidden=true></i> editar planificación.</button><button class="vista-btn" onclick="presupuestoCerrarMes()">cerrar mes.</button>`;
     return `<section class="finance-panel pres" id="pres-panel" aria-label="presupuesto del mes">
         <div class="pres-cab">
-            <div class="pres-mes">
-                <button class="vista-icono-btn" onclick="presupuestoCambiarMes(-1)" aria-label="mes anterior" ${editando ? 'disabled' : ''}><i class='ico ico-izq' aria-hidden=true></i></button>
-                <span>${escapeHtml(financeMonthLabel(month))}.</span>
-                <button class="vista-icono-btn" onclick="presupuestoCambiarMes(1)" aria-label="mes siguiente" ${editando ? 'disabled' : ''}><i class='ico ico-der' aria-hidden=true></i></button>
+            <div>
+                <div class="pres-mes">
+                    <button class="pres-flecha" onclick="presupuestoCambiarMes(-1)" aria-label="mes anterior" ${editando ? 'disabled' : ''}><i class='ico ico-izq' aria-hidden=true></i></button>
+                    <span>${escapeHtml(financeMonthLabel(month))}</span>
+                    <button class="pres-flecha" onclick="presupuestoCambiarMes(1)" aria-label="mes siguiente" ${editando ? 'disabled' : ''}><i class='ico ico-der' aria-hidden=true></i></button>
+                </div>
+                <h3 class="pres-titulo">presupuesto del mes.</h3>
+                <p class="pres-explica">${recorded ? 'Mes cerrado: lo que planificaste frente a lo que gastaste.' : vacio ? 'Reparte lo que entra este mes entre lo que vas a gastar.' : 'Lo que entra, lo que reservas y lo que puedes gastar.'}</p>
             </div>
             <div class="pres-acciones">${acciones}</div>
         </div>
-        <h3 class="pres-titulo">presupuesto del mes.</h3>
-        <p class="pres-explica">${recorded ? 'Mes cerrado: lo que planificaste frente a lo que has gastado. Reábrelo para cambiarlo.' : vacio ? 'Reparte el sueldo y las aportaciones del mes entre lo que vas a gastar. Lo que no repartas queda sin asignar.' : 'Lo que entra este mes, cómo lo has repartido y cómo va cada categoría. Lo que te devuelven amplía lo disponible de su categoría.'}</p>
         <div id="pres-resumen">${renderFinanceBudgetSummary(m, editando)}</div>
         ${editando ? renderFinanceBudgetEditor(m) : `${renderFinanceBudgetRows(m)}${renderFinanceBudgetCommitments(m)}`}
     </section>`;
@@ -83,43 +90,54 @@ function renderFinanceBudgetUnifiedPanel() {
 
 function renderFinanceBudgetSummary(m, editando) {
     const pct = v => m.income > 0 ? Math.max(0, Math.min(100, v / m.income * 100)) : 0;
-    const fila = (t, v, extra = '') => `<div class="pres-cifra ${extra}"><span>${t}</span><b>${financeMoney(v)}</b></div>`;
+    const aport = m.contributionsReal > m.contributionsPlanned ? `${financeMoney(m.contributions)} de aportaciones (${financeMoney(m.contributionsPlanned)} previstas)` : `${financeMoney(m.contributions)} de aportaciones`;
     return `<div class="pres-resumen">
-        ${editando ? `<label class="pres-cifra pres-editable"><span>sueldo.</span><input type="number" inputmode="decimal" min="0" step="0.01" value="${m.salary || ''}" placeholder="0,00" oninput="updateFinanceBudgetDraft('salary', this.value)" aria-label="sueldo del mes"></label>
-            <label class="pres-cifra pres-editable"><span>aportaciones.</span><input type="number" inputmode="decimal" min="0" step="0.01" value="${m.contributions || ''}" placeholder="0,00" oninput="updateFinanceBudgetDraft('contributions', this.value)" aria-label="aportaciones del mes"></label>` : ''}
-        ${fila('ingresos del mes.', m.income)}
-        ${fila('presupuestos.', m.manualAssigned)}
-        ${fila('compromisos.', m.commitmentsAssigned)}
-        <div class="pres-cifra pres-sin ${m.remaining < 0 ? 'superado' : ''}" aria-live="polite"><span>sin asignar.</span><b>${financeMoney(m.remaining)}</b>${m.remaining < 0 ? '<small>has repartido más de lo que entra.</small>' : ''}</div>
-    </div>
-    <div class="pres-reparto" role="img" aria-label="repartido ${Math.round(pct(m.totalAssigned))} % de los ingresos"><i class="pres-reparto-pres" style="width:${pct(m.manualAssigned)}%"></i><i class="pres-reparto-comp" style="width:${pct(m.commitmentsAssigned)}%"></i></div>`;
+        ${editando ? `<div class="pres-editar-ingresos">
+            <label class="pres-campo"><span>sueldo.</span><input type="number" inputmode="decimal" min="0" step="0.01" value="${m.salary || ''}" placeholder="0,00" oninput="updateFinanceBudgetDraft('salary', this.value)"></label>
+            <label class="pres-campo"><span>aportaciones previstas.</span><input type="number" inputmode="decimal" min="0" step="0.01" value="${m.contributionsPlanned || ''}" placeholder="0,00" oninput="updateFinanceBudgetDraft('contributions', this.value)">${m.contributionsReal ? `<small>Este mes han entrado ${financeMoney(m.contributionsReal)}.</small>` : ''}</label>
+        </div>` : ''}
+        <div class="pres-cifras">
+            <div class="pres-cifra pres-cifra-ing"><span>ingresos del mes.</span><b>${financeMoney(m.income)}</b><small>${financeMoney(m.salary)} de sueldo y ${aport}.</small></div>
+            <div class="pres-cifra"><span>presupuestos.</span><b>${financeMoney(m.manualAssigned)}</b></div>
+            <div class="pres-cifra"><span>compromisos.</span><b>${financeMoney(m.commitmentsAssigned)}</b></div>
+            <div class="pres-cifra pres-sin ${m.remaining < 0 ? 'superado' : ''}" aria-live="polite"><span>sin asignar.</span><b>${financeMoney(m.remaining)}</b>${m.remaining < 0 ? '<small>Has repartido más de lo que entra.</small>' : ''}</div>
+        </div>
+        <div class="pres-reparto" role="img" aria-label="repartido el ${Math.round(pct(m.totalAssigned))} % de lo que entra"><i class="pres-reparto-pres" style="width:${pct(m.manualAssigned)}%"></i><i class="pres-reparto-comp" style="width:${pct(m.commitmentsAssigned)}%"></i></div>
+    </div>`;
 }
 
 function presupuestoEstadoTexto(c) {
-    return c.remaining < 0 ? `${financeMoney(-c.remaining)} por encima.` : `quedan ${financeMoney(c.remaining)}.`;
+    return c.remaining < 0 ? `${financeMoney(-c.remaining)} por encima` : `quedan ${financeMoney(c.remaining)}`;
 }
 
 function renderFinanceBudgetRows(m) {
     if (!m.categories.length && !m.unlinkedAllocations.length) return m.income ? '<p class="pres-nada">Todo está sin asignar: todavía no has puesto presupuestos.</p>' : '';
-    return `<div class="pres-bloque">
-        <div class="pres-bloque-tit">presupuestos.</div>
-        ${m.categories.map(c => `<div class="pres-fila ${c.status}">
-            <div class="pres-fila-cab"><b>${escapeHtml(c.name)}</b><span class="pres-estado">${presupuestoEstadoTexto(c)}</span></div>
-            <div class="pres-fila-datos"><span>${financeMoney(c.planned)} planificados${c.allocations.length > 1 ? ` en ${c.allocations.length} casillas` : ''}</span>${c.refunded > 0 ? `<span>+${financeMoney(c.refunded)} devueltos, ${financeMoney(c.available)} disponibles</span>` : ''}<span>${financeMoney(c.spent)} gastados</span></div>
-            <div class="pres-barra" role="img" aria-label="${Math.round(c.percentage)} % gastado"><i style="width:${Math.min(100, c.percentage)}%"></i></div>
-        </div>`).join('')}
-        ${m.unlinkedAllocations.length ? `<div class="pres-otros"><span>otros destinos.</span>${m.unlinkedAllocations.map(a => `<span>${escapeHtml(a.label || 'sin nombre')}, ${financeMoney(a.amount)}</span>`).join('')}<small>Cuentan como repartido; al no tener categoría no se puede seguir el gasto.</small></div>` : ''}
+    return `<div class="pres-tabla">
+        <div class="pres-tabla-cab" aria-hidden="true"><span>categoría.</span><span>plan.</span><span>este mes.</span><span></span><span>estado.</span></div>
+        ${m.categories.map(c => {
+            const cat = financeProCategoryById(c.categoryId);
+            const sub = [c.refunded > 0 ? `${financeMoney(c.refunded)} devueltos` : '', c.allocations.length > 1 ? `${c.allocations.length} casillas` : ''].filter(Boolean).join(', ');
+            return `<div class="pres-fila ${c.status}">
+                <div class="pres-fila-cat">${financeProCategoryBadge(cat, 'pres-icono')}<span><b>${escapeHtml(c.name)}</b>${sub ? `<small>${sub}.</small>` : ''}</span></div>
+                <div class="pres-fila-plan"><small>plan. </small>${financeMoney(c.planned)}</div>
+                <div class="pres-fila-gasto"><b>${financeMoney(c.spent)}</b> <small>de ${financeMoney(c.available)}</small></div>
+                <div class="pres-barra" role="img" aria-label="${Math.round(c.percentage)} % gastado"><i class="estado-color" style="width:${Math.min(100, Math.max(2, c.percentage))}%"></i></div>
+                <div class="pres-estado estado-color">${presupuestoEstadoTexto(c)}</div>
+            </div>`;
+        }).join('')}
+        ${m.unlinkedAllocations.length ? `<div class="pres-otros"><b>otros destinos.</b>${m.unlinkedAllocations.map(a => `<span>${escapeHtml(a.label || 'sin nombre')} ${financeMoney(a.amount)}</span>`).join('')}<small>Cuentan como repartido; sin categoría no se puede seguir su gasto.</small></div>` : ''}
     </div>`;
 }
 
 function renderFinanceBudgetCommitments(m) {
     if (!m.commitments.length) return '';
-    return `<div class="pres-bloque">
-        <div class="pres-bloque-tit">compromisos.<button class="asig-enlace" onclick="openRecurringExpensesModal()">ver compromisos.</button></div>
-        ${m.commitments.map(c => `<div class="pres-fila ${c.planned > 0 && c.charged > c.planned ? 'superado' : ''}">
-            <div class="pres-fila-cab"><b>${escapeHtml(c.nombre)}</b><span class="pres-estado">${c.confirmados} de ${c.n} confirmados por el banco.</span></div>
-            <div class="pres-fila-datos"><span>${financeMoney(c.planned)} previstos${c.manual ? ', límite tuyo' : ''}</span><span>${financeMoney(c.charged)} cargados</span></div>
+    const icono = tipo => financeProCategoryIconSvg(tipo === 'subscription' ? 'subscriptions' : 'home');
+    return `<div class="pres-compromisos">
+        ${m.commitments.map(c => `<div class="pres-compromiso ${c.planned > 0 && c.charged > c.planned ? 'superado' : ''}">
+            <span class="pres-compromiso-icono" aria-hidden="true">${icono(c.tipo)}</span>
+            <span><small>${escapeHtml(c.nombre)}.</small><b>${financeMoney(c.planned)}</b><small>${c.n} ${c.n === 1 ? 'cargo previsto' : 'cargos previstos'}, ${financeMoney(c.charged)} cargados, ${c.confirmados} confirmados por el banco.</small></span>
         </div>`).join('')}
+        <button class="asig-enlace" onclick="openRecurringExpensesModal()">ver compromisos.</button>
     </div>`;
 }
 
