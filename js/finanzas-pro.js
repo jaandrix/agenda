@@ -1405,7 +1405,16 @@
             else if (llevas > hoyFranja.alto + 10) nivel = 'alto';
             const mismoMes = todos.filter(m => m.slice(5) === actual.slice(5));
             const otrosAnios = mismoMes.length ? { n: mismoMes.length, valor: ritmoCuantil(mismoMes.map(m => acumulado(m, dia)), 0.5) } : null;
-            return { suficiente: true, meses: meses.length, dia, diasMes, llevas, hoyFranja, totalNormal, proyeccion, franja, recorrido, categorias, nivel, otrosAnios, mesNombre: FINANCE_PRO_MONTH_NAMES[hoy.getMonth()].toLowerCase() };
+            // Lo que este mes no cuenta en el ritmo, para que la cifra se entienda frente al gasto total de otras pantallas.
+            const fueraMes = { viaje: 0, fijos: 0, otros: 0 };
+            financePro.transactions.forEach(t => {
+                if (t.type !== 'expense' || !t.date?.startsWith(actual) || Number(t.date.slice(8, 10)) > dia || financeProNeutro(t)) return;
+                const v = Number(t.amount) || 0;
+                if (t.viaje) fueraMes.viaje += v;
+                else if (t.recurringEntryId) fueraMes.fijos += v;
+                else if (RITMO_FUERA.includes(t.category)) fueraMes.otros += v;
+            });
+            return { suficiente: true, fueraMes, meses: meses.length, dia, diasMes, llevas, hoyFranja, totalNormal, proyeccion, franja, recorrido, categorias, nivel, otrosAnios, mesNombre: FINANCE_PRO_MONTH_NAMES[hoy.getMonth()].toLowerCase() };
         }
 
         function renderRitmoGrafica(r) {
@@ -1462,6 +1471,7 @@
             return `
                 <div class="ritmo-veredicto ${r.nivel}">${veredictos[r.nivel]}</div>
                 <div class="ritmo-frase">A día ${r.dia} sueles llevar <b>${financeMoney(r.hoyFranja.medio)}</b> de gasto del día a día. Este mes llevas <b>${financeMoney(r.llevas)}</b>.</div>
+                ${r.fueraMes && (r.fueraMes.viaje || r.fueraMes.fijos || r.fueraMes.otros) ? `<div class="ritmo-frase ritmo-fuera">El día a día no cuenta ${[r.fueraMes.viaje && `<b>${financeMoney(r.fueraMes.viaje)}</b> de viajes`, r.fueraMes.fijos && `<b>${financeMoney(r.fueraMes.fijos)}</b> de suscripciones y gastos fijos`, r.fueraMes.otros && `<b>${financeMoney(r.fueraMes.otros)}</b> de inversión y coleccionables`].filter(Boolean).join(", ")}, ni los traspasos entre tus cuentas. Por eso es menos que el gasto total del mes.</div>` : ""}
                 ${renderRitmoGrafica(r)}
                 <div class="ritmo-leyenda"><span><i class="ritmo-l-actual"></i>este mes.</span><span><i class="ritmo-l-medio"></i>lo normal.</span><span><i class="ritmo-l-franja"></i>tus meses habituales.</span></div>
                 <div class="ritmo-cifras">
