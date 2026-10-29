@@ -265,9 +265,28 @@ async function saveFinanceBudgetDraft() {
     }
 }
 
+// Al cambiar de mes, el contenido entra de lado (del mes siguiente, por la derecha) y el panel pasa de su alto al nuevo
+// en vez de saltar. Con movimiento reducido, cambio directo.
 function presupuestoCambiarMes(delta) {
     presupuestoMes = longtermMonthOffset(presupuestoMes || financeMonthKey(), delta);
+    const antes = document.getElementById('pres-panel');
+    const alto = antes?.offsetHeight;
     presupuestoRepintar();
+    const panel = document.getElementById('pres-panel');
+    if (!panel || vtReducido()) return;
+    panel.classList.add(delta > 0 ? 'pres-entra-der' : 'pres-entra-izq');
+    if (!alto) return;
+    const nuevo = panel.offsetHeight;
+    if (Math.abs(nuevo - alto) < 2) return;
+    panel.style.height = alto + 'px';
+    panel.style.overflow = 'hidden';
+    requestAnimationFrame(() => {
+        panel.style.transition = 'height .22s var(--ease-out)';
+        panel.style.height = nuevo + 'px';
+        const fin = () => { panel.style.height = ''; panel.style.overflow = ''; panel.style.transition = ''; };
+        panel.addEventListener('transitionend', e => { if (e.target === panel) fin(); }, { once: true });
+        setTimeout(fin, 320);
+    });
 }
 async function presupuestoCerrarMes() {
     longtermViewMonth = presupuestoMes || financeMonthKey();

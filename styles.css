@@ -10011,3 +10011,10 @@ body.mobile-standalone .pres-guardar, body.pwa .pres-guardar { bottom:calc(112px
     .pres-editar-fila .pres-casilla { align-items:center; }
     .pres-editar-ingresos .pres-campo input { min-height:34px; padding:5px 9px; font-size:14px; }
 }
+
+/* Cambio de mes en el presupuesto: lo de dentro entra de lado, solo con transform y opacidad. */
+@keyframes presEntraDer { from { opacity: 0; transform: translateX(14px); } }
+@keyframes presEntraIzq { from { opacity: 0; transform: translateX(-14px); } }
+.pres-entra-der > :not(.pres-cab) { animation: presEntraDer .2s var(--ease-out) both; }
+.pres-entra-izq > :not(.pres-cab) { animation: presEntraIzq .2s var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) { .pres-entra-der > *, .pres-entra-izq > * { animation: none; } }
