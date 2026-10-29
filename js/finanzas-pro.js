@@ -2848,6 +2848,7 @@
                 <input type="file" id="finance-pro-import-file" accept=".csv,.xlsx,.xls,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="modal-input" onchange="handleFinanceProImportFile(event)">
                 <button class="finance-oneoff-btn finance-import-pegar" onclick="pegarExtractoBancario()">pegar extracto.</button>
                 <button class="m-enlace" style="display:block;margin:10px auto 0" onclick="openDeshacerImportacion()">deshacer una importación.</button>
+                <button class="m-enlace" style="display:block;margin:6px auto 0" onclick="openBorrarHistorial()">borrar un historial antiguo.</button>
                 <div id="finance-pro-import-body"></div>
             `);
         }
@@ -3023,7 +3024,9 @@
         // usada al importar). También la usa el conector, sin ventana.
         function financeProPrepararImport(texto, cuentaPedida) {
             const todas = Array.isArray(texto) ? texto : financeProParseCSV(String(texto || '').replace(/^\uFEFF/, '').trim());
-            const rows = todas.slice(financeProFilaCabecera(todas));
+            const filaCab = financeProFilaCabecera(todas);
+            const rows = todas.slice(filaCab);
+            const cuentaDetectada = financeProDetectarCuenta(rows[0] || [], todas.slice(0, filaCab).flat().join(' '));
             if (rows.length < 2 || rows[0].length < 3) return null;
             const header = rows[0];
             // La fecha que cuenta es la de la compra, no la de cuando el
@@ -3044,8 +3047,8 @@
             const separado = iCargo >= 0 && iAbono >= 0 && !cabMin.some(h => /^(importe|amount|cantidad|neto)/.test(h));
             const category = financeProGuessColumn(header, ['category', 'categoría', 'categoria'], -1);
             const status = financeProGuessColumn(header, ['state', 'estado'], -1);
-            const account = FINANCE_PRO_ACCOUNT_KEYS.includes(cuentaPedida) ? cuentaPedida : FINANCE_PRO_ACCOUNT_KEYS.includes(financePro.cuentaImport) ? financePro.cuentaImport : FINANCE_PRO_ACCOUNT_KEYS[0];
-            return { rows, mapping: { hasHeader: true, date, amount, description, category, amountOut: separado ? iCargo : 0, amountIn: separado ? iAbono : 1, splitAmount: separado, account, status, skipPending: false } };
+            const account = FINANCE_PRO_ACCOUNT_KEYS.includes(cuentaPedida) ? cuentaPedida : cuentaDetectada || (FINANCE_PRO_ACCOUNT_KEYS.includes(financePro.cuentaImport) ? financePro.cuentaImport : FINANCE_PRO_ACCOUNT_KEYS[0]);
+            return { rows, cuentaDetectada: !!cuentaDetectada && !cuentaPedida, mapping: { hasHeader: true, date, amount, description, category, amountOut: separado ? iCargo : 0, amountIn: separado ? iAbono : 1, splitAmount: separado, account, status, skipPending: false } };
         }
 
         function renderFinanceProImportMapping() {
@@ -3053,14 +3056,19 @@
             const headerRow = imp.rows[0];
             const previewRows = imp.rows.slice(imp.mapping.hasHeader ? 1 : 0, imp.mapping.hasHeader ? 4 : 3);
             const colOptions = (selected) => headerRow.map((h, i) => `<option value="${i}" ${Number(selected) === i ? 'selected' : ''}>${imp.mapping.hasHeader ? escapeHtml(String(h).slice(0, 24)) : 'Columna ' + (i + 1)}</option>`).join('');
+            // Lo normal es no tocar nada: la cuenta sale del propio archivo y las columnas se adivinan. Todo eso queda
+            // plegado en «columnas y opciones.»; a la vista, la cuenta, qué se importa y el botón.
             return `
-                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-primary);margin:14px 0 10px">
-                    <input type="checkbox" ${imp.mapping.hasHeader ? 'checked' : ''} onchange="financeProImportSet('hasHeader', this.checked)"> La primera fila es cabecera
-                </label>
-                <div class="modal-label">Cuenta destino</div>
+                <div class="modal-label" style="margin-top:14px">cuenta.${imp.cuentaDetectada ? ' <span class="fin-imp-detectada">la he sacado del archivo.</span>' : ''}</div>
                 <select class="modal-input" onchange="financeProImportSet('account', this.value)">
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${imp.mapping.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
                 </select>
+                ${renderFinanceProImportFilas(imp, previewRows)}
+                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmFinanceProImport()">${financeProTextoBotonImport(imp)}</button>
+                <details class="fin-imp-avanzado"><summary>columnas y opciones.</summary>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-primary);margin:14px 0 10px">
+                    <input type="checkbox" ${imp.mapping.hasHeader ? 'checked' : ''} onchange="financeProImportSet('hasHeader', this.checked)"> La primera fila es cabecera
+                </label>
                 <div class="finance-correction-inputs">
                     <div><div class="modal-label">Columna de fecha</div><select class="modal-input" onchange="financeProImportSet('date', this.value)">${colOptions(imp.mapping.date)}</select></div>
                     <div><div class="modal-label">Columna de concepto</div><select class="modal-input" onchange="financeProImportSet('description', this.value)">${colOptions(imp.mapping.description)}</select></div>
@@ -3090,8 +3098,7 @@
                 </div>` : `
                 <div class="modal-label">Columna de importe (negativo = gasto)</div>
                 <select class="modal-input" onchange="financeProImportSet('amount', this.value)">${colOptions(imp.mapping.amount)}</select>`}
-                ${renderFinanceProImportFilas(imp, previewRows)}
-                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmFinanceProImport()">importar ${imp.excluidas?.size ? 'los marcados' : 'movimientos'}.</button>
+                </details>
             `;
         }
 
@@ -3163,9 +3170,12 @@
             const iSaldo = cab.findIndex(h => /^(balance|saldo|disponible)\b/.test(h));
             if (iSaldo < 0) return null;
             const filas = [];
+            const iProd = cab.indexOf('product');
             imp.rows.slice(1).forEach((r, orden) => {
                 const st = m.status >= 0 ? String(r[m.status] || '').toLowerCase() : '';
                 if (/revert|declin|fail|cancel|rechaz|anulad|fallid/.test(st)) return;
+                // Las huchas de Revolut (Savings) llevan su propio saldo: no son de la cuenta.
+                if (iProd >= 0 && String(r[iProd] || '').trim().toLowerCase() !== 'current') return;
                 const fechas = r.map(financeProParseDate).filter(Boolean);
                 let val;
                 if (m.splitAmount) {
@@ -3217,6 +3227,15 @@
             // Un sobrante con su gemelo en el extracto (mismo importe, ±3 días)
             // es un duplicado de un movimiento que sí está: el apunte a mano o
             // renombrado que no se fundió con el del banco.
+            // Lo de Bitácora posterior al final del extracto (el CSV acaba el 30 a mediodía y el café del 30 se completó el 1)
+            // no entra en el saldo que da el extracto: se aparta antes de comparar.
+            // El extracto se corta por la fecha de completado: lo del último día que no está en él se completó después.
+            const posteriores = [...libres].filter(x => x.t.date >= hasta);
+            if (posteriores.length) {
+                posteriores.forEach(x => libres.delete(x));
+                actual = Math.round((actual - posteriores.reduce((a, x) => a + x.val, 0)) * 100) / 100;
+                if (Math.abs(esperado - actual) < 0.005) return { cuadra: true, esperado, actual, cuenta };
+            }
             const gemelo = x => movs.find(o => o !== x && !libres.has(o) && Math.abs(o.val - x.val) < 0.005 && Math.abs((new Date(o.t.date) - new Date(x.t.date)) / 86400000) <= 3);
             return { cuadra: false, esperado, actual, diff: Math.round((esperado - actual) * 100) / 100, cuenta, desde: lleno, hasta,
                 sobran: [...libres].map(x => x.t), faltan: [...libresFilas],
@@ -3262,6 +3281,8 @@
                 <div class="finance-viaje-lista">${c.faltan.map(f => `<div class="finance-viaje-fila"><span></span><span>${financeDateLabelShort(f.fechas[0])}</span><b>${escapeHtml(f.desc)}</b><i>${f.val > 0 ? '+' : ''}${financeMoney(f.val)}</i></div>`).join('')}</div>` : ''}
                 ${c.sobran.length ? `<button class="btn-modal-primary" onclick="financeProQuitarSobrantes()">quitar los marcados.</button>` : ''}
                 <button class="btn-secondary" style="margin-top:8px" onclick="financeProAjustarAlExtracto()">ajustar el saldo a ${financeMoney(c.esperado)}.</button>
+                <button class="btn-secondary" style="margin-top:8px" onclick="financeProFijarSaldoInicial()">fijar el saldo de partida.</button>
+                <div class="finance-modal-note">Fijar el saldo de partida no añade ningún movimiento: cambia con cuánto empezaba la cuenta para que coincida con el extracto. Es lo que toca al importar el historial de meses atrás. Antes, quita lo que sobra si son ajustes de saldo antiguos.</div>
                 <div class="finance-modal-note">${c.sobran.length && Math.abs(sobranSuma - Math.abs(c.diff)) < 0.005 ? 'Lo que sobra explica justo la diferencia: quitándolo, cuadra.' : c.sobran.length || c.faltan.length ? 'Revisa la lista: si la diferencia viene de antes de estas fechas, el ajuste la deja a cero sin tocar nada más.' : 'Los movimientos de estas fechas coinciden: la diferencia viene de antes. El ajuste la deja a cero sin tocar tu histórico.'}</div>
             `);
         }
@@ -3479,6 +3500,17 @@
                     return;
                 }
                 registrar(dedupeKey);
+                // La otra mitad ya puede estar en la otra cuenta como gasto o ingreso suelto (un historial traído de otra
+                // app con «Transferir, retirar»): se convierte en este traspaso en vez de crear otro, o se restaba dos veces.
+                const mitad = rule && financeProMitadSuelta(rule.otherAccount, type === 'income' ? 'expense' : 'income', amount, [date, ...altDates], reclamados);
+                if (mitad) {
+                    reclamados.add(mitad);
+                    if (!mitad.bankNote && mitad.note) mitad.bankNote = mitad.note;
+                    Object.assign(mitad, { type: 'transfer', account: effectiveAccount, transferTo: type === 'income' ? m.account : rule.otherAccount, category: undefined, needsReview: false, categoriaAuto: undefined, conciliado: true });
+                    if (!mitad.claveImport) mitad.claveImport = dedupeKey; else mitad.claveImport2 = dedupeKey;
+                    conciliados++;
+                    return;
+                }
                 if (rule) {
                     financePro.transactions.push({
                         id: 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
@@ -3915,6 +3947,7 @@ async function financeAplicarVuelta() {
 function financeProFilasDelExtracto(imp) {
     const m = imp.mapping;
     const datos = m.hasHeader ? imp.rows.slice(1) : imp.rows;
+    const iProducto = m.hasHeader ? imp.rows[0].findIndex(h => String(h || '').trim().toLowerCase() === 'product') : -1;
     return datos.map((r, fila) => {
         let val;
         if (m.splitAmount) {
@@ -3922,21 +3955,34 @@ function financeProFilasDelExtracto(imp) {
             val = (Number.isFinite(ent) && ent > 0 ? ent : 0) - (Number.isFinite(sal) ? Math.abs(sal) : 0);
         } else val = financeProParseEuroAmount(r[m.amount]);
         const date = financeProParseDate(r[m.date]) || r.map(financeProParseDate).find(Boolean) || '';
-        return { fila, date, val: Number.isFinite(val) ? Math.round(val * 100) / 100 : NaN, desc: String(r[m.description] || '').trim() };
+        // Revolut trae la fecha de inicio y la de completado: Bitácora puede tener cualquiera de las dos.
+        const fechas = [...new Set(r.map(financeProParseDate).filter(Boolean))];
+        const estado = m.status >= 0 ? String(r[m.status] || '').toLowerCase() : '';
+        const producto = iProducto >= 0 ? String(r[iProducto] || '').trim().toLowerCase() : '';
+        const fuera = /revert|declin|fail|cancel|rechaz|anulad|fallid/.test(estado) ? 'anulado en el banco.' : producto && producto !== 'current' ? 'es de una hucha, no de esta cuenta.' : '';
+        return { fila, date, fechas: fechas.length ? fechas : [date], val: Number.isFinite(val) ? Math.round(val * 100) / 100 : NaN, desc: String(r[m.description] || '').trim(), fuera };
     });
 }
 function financeProFilasYaApuntadas(imp) {
     const cuenta = imp.mapping.account;
-    const filas = financeProFilasDelExtracto(imp).filter(f => f.date && Number.isFinite(f.val) && f.val);
+    const filas = financeProFilasDelExtracto(imp).filter(f => f.date && Number.isFinite(f.val) && f.val && !f.fuera);
     const signo = t => t.type === 'transfer' ? (t.account === cuenta ? -1 : 1) : t.type === 'income' ? 1 : -1;
     const libres = financePro.transactions.filter(t => (t.account === cuenta || t.transferTo === cuenta) && !t.pendiente)
         .map(t => ({ t, val: Math.round(signo(t) * (Number(t.amount) || 0) * 100) / 100 }));
     const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000);
+    const cerca = (t, f) => Math.min(...f.fechas.map(d => dias(t.date, d)));
+    const mismoConcepto = (x, f) => financeProNormalizar(x.t.bankNote ?? x.t.note ?? '') === financeProNormalizar(f.desc);
     const ya = new Set(), usados = new Set();
     const tomar = (f, x) => { ya.add(f.fila); usados.add(x); };
     // Primero lo idéntico (mismo día, importe y concepto); luego mismo importe a 4 días como mucho, el más cercano.
     filas.forEach(f => {
-        const x = libres.find(x => !usados.has(x) && x.t.date === f.date && Math.abs(x.val - f.val) < 0.005 && financeProNormalizar(x.t.bankNote ?? x.t.note ?? '') === financeProNormalizar(f.desc));
+        const x = libres.find(x => !usados.has(x) && f.fechas.includes(x.t.date) && Math.abs(x.val - f.val) < 0.005 && mismoConcepto(x, f));
+        if (x) tomar(f, x);
+    });
+    // Mismo concepto e importe con otra fecha cercana (la de completado frente a la de inicio).
+    filas.filter(f => !ya.has(f.fila)).forEach(f => {
+        const x = libres.filter(x => !usados.has(x) && Math.abs(x.val - f.val) < 0.005 && mismoConcepto(x, f) && cerca(x.t, f) <= 4)
+            .sort((a, b) => cerca(a.t, f) - cerca(b.t, f))[0];
         if (x) tomar(f, x);
     });
     // Por importe y fecha cercana no vale un movimiento que es la pareja de otra fila de este mismo extracto (el café
@@ -3944,8 +3990,8 @@ function financeProFilasYaApuntadas(imp) {
     const conceptos = new Set(filas.map(f => financeProNormalizar(f.desc)));
     const parecido = x => x.t.type === 'transfer' || !conceptos.has(financeProNormalizar(x.t.bankNote ?? x.t.note ?? ''));
     filas.filter(f => !ya.has(f.fila)).forEach(f => {
-        const x = libres.filter(x => !usados.has(x) && parecido(x) && Math.abs(x.val - f.val) < 0.005 && dias(x.t.date, f.date) <= 4)
-            .sort((a, b) => dias(a.t.date, f.date) - dias(b.t.date, f.date))[0];
+        const x = libres.filter(x => !usados.has(x) && parecido(x) && Math.abs(x.val - f.val) < 0.005 && cerca(x.t, f) <= 4)
+            .sort((a, b) => cerca(a.t, f) - cerca(b.t, f))[0];
         if (x) tomar(f, x);
     });
     // Dos filas del mismo concepto y signo, cercanas, que juntas son un movimiento ya apuntado (600 € = 300 + 300).
@@ -3959,17 +4005,25 @@ function financeProFilasYaApuntadas(imp) {
     return ya;
 }
 function renderFinanceProImportFilas(imp) {
-    if (!imp.excluidas) { imp.yaApuntadas = financeProFilasYaApuntadas(imp); imp.excluidas = new Set(imp.yaApuntadas); }
     const filas = financeProFilasDelExtracto(imp);
+    if (!imp.excluidas) { imp.yaApuntadas = financeProFilasYaApuntadas(imp); imp.excluidas = new Set([...imp.yaApuntadas, ...filas.filter(f => f.fuera).map(f => f.fila)]); }
     const n = filas.length - imp.excluidas.size;
-    return `<div class="modal-label" style="margin-top:12px">qué se importa.</div>
-        <div class="finance-modal-note" style="margin:0 0 6px">${filas.length} filas en el extracto. Las que parecen ya apuntadas en ${escapeHtml(financePro.accounts[imp.mapping.account]?.name || imp.mapping.account)} (mismo importe en 4 días, o dos que suman uno) salen desmarcadas. Se importan ${n}.</div>
+    const nFuera = filas.filter(f => f.fuera).length;
+    const nYa = filas.length - n - nFuera;
+    return `<div class="fin-imp-resumen"><b>${n ? `${n} ${n === 1 ? 'nueva' : 'nuevas'}` : 'nada nuevo'}</b><span>${nYa > 0 ? `${nYa} ya ${nYa === 1 ? 'estaba' : 'estaban'} en ${escapeHtml(financePro.accounts[imp.mapping.account]?.name || imp.mapping.account)}` : 'ninguna estaba ya'}${nFuera ? `, ${nFuera} ${nFuera === 1 ? 'no cuenta' : 'no cuentan'} (anuladas o de una hucha)` : ''}, de ${filas.length} filas.</span></div>
+        <details class="fin-imp-lista" ${filas.length <= 25 ? 'open' : ''}><summary>ver las filas.</summary>
+        <div class="finance-modal-note" style="margin:6px 0">Las que parecen ya apuntadas (mismo importe en 4 días, o dos que suman uno) salen desmarcadas. Puedes cambiar cualquiera.</div>
         <div class="fin-imp-filas">${filas.map(f => `<label class="fin-imp-fila ${imp.yaApuntadas.has(f.fila) ? 'ya' : ''}">
             <input type="checkbox" ${imp.excluidas.has(f.fila) ? '' : 'checked'} onchange="financeProImportFila(${f.fila}, this.checked)">
             <span>${f.date ? financeDateLabelShort(f.date) : 'sin fecha'}</span>
-            <b>${escapeHtml(f.desc.slice(0, 60) || 'sin concepto')}${imp.yaApuntadas.has(f.fila) ? '<small>parece que ya está.</small>' : ''}</b>
+            <b>${escapeHtml(f.desc.slice(0, 60) || 'sin concepto')}${f.fuera ? `<small>${f.fuera}</small>` : imp.yaApuntadas.has(f.fila) ? '<small>parece que ya está.</small>' : ''}</b>
             <i class="${f.val > 0 ? 'positiva' : ''}">${Number.isFinite(f.val) ? (f.val > 0 ? '+' : '') + financeMoney(f.val) : ''}</i>
-        </label>`).join('')}</div>`;
+        </label>`).join('')}</div></details>`;
+}
+function financeProTextoBotonImport(imp) {
+    const n = financeProFilasDelExtracto(imp).length - (imp.excluidas?.size || 0);
+
+    return n ? `importar ${n === 1 ? 'la nueva' : `las ${n} nuevas`}.` : 'comprobar el saldo con el extracto.';
 }
 function financeProImportFila(fila, marcada) {
     const imp = window._financeProImport;
@@ -4004,6 +4058,119 @@ function financeProTraspasoCercano(cuenta, type, importe, fechas, reclamados) {
         if (type === 'income' ? t.transferTo !== cuenta : t.account !== cuenta) return;
         // Ya conciliada por este lado: su concepto de este banco ya está guardado.
         if (t.conciliado && [t.claveImport, t.claveImport2].some(k => k && k.startsWith(cuenta + '|'))) return;
+        const d = Math.min(...fechas.map(f => dias(t.date, f)));
+        if (d <= 4 && d < mejorDias) { mejor = t; mejorDias = d; }
+    });
+    return mejor;
+}
+
+
+// La cuenta a la que va el extracto sale del propio archivo: la cabecera de Revolut, o el número de cuenta que los
+// bancos ponen encima de los movimientos (Ibercaja: «20850136******608462»; 2085 es Ibercaja). Se busca la cuenta
+// tuya cuyo nombre lleva el del banco.
+const FINANCE_BANCOS_CODIGO = { '2085': 'ibercaja', '0049': 'santander', '0182': 'bbva', '2100': 'caixa', '0081': 'sabadell', '1465': 'ing', '0073': 'openbank', '0128': 'bankinter', '2080': 'abanca', '3058': 'cajamar', '2095': 'kutxa', '0239': 'evo', '0487': 'mare nostrum', '2103': 'unicaja', '3035': 'laboral' };
+function financeProDetectarCuenta(cabecera, antes) {
+    const cab = cabecera.map(h => String(h || '').trim().toLowerCase());
+    const pistas = [];
+    if (cab.includes('product') && cab.includes('started date')) pistas.push('revolut');
+    if (cab.includes('payee') || /n26/i.test(antes)) pistas.push('n26');
+    const codigo = String(antes || '').replace(/\s/g, '').match(/(?:ES\d{2})?(\d{4})\d{4}[\d*]{10,}/i);
+    if (codigo && FINANCE_BANCOS_CODIGO[codigo[1]]) pistas.push(FINANCE_BANCOS_CODIGO[codigo[1]]);
+    Object.values(FINANCE_BANCOS_CODIGO).forEach(n => { if (new RegExp(`\\b${n}\\b`, 'i').test(antes)) pistas.push(n); });
+    for (const p of pistas) {
+        const k = FINANCE_PRO_ACCOUNT_KEYS.find(k => financeProNormalizar(financePro.accounts[k]?.name || '').includes(p));
+        if (k) return k;
+    }
+    return null;
+}
+
+// Fijar el saldo de partida con el extracto: en vez de un movimiento de ajuste, cambia con cuánto empezaba la cuenta.
+async function financeProFijarSaldoInicial() {
+    const c = window._financeProCuadre;
+    const diff = Math.round((c.esperado - c.actual) * 100) / 100;
+    closeModal();
+    if (Math.abs(diff) < 0.005) return;
+    await financeImportGuardarAntes(`saldo de partida de ${financeProCuentaNombre(c.cuenta)}`);
+    financePro.accounts[c.cuenta].balance0 = Math.round((Number(financePro.accounts[c.cuenta].balance0 || 0) + diff) * 100) / 100;
+    financeSaldosCache = null;
+    render();
+    try { await saveData(); showToast(`${financeProCuentaNombre(c.cuenta)} empieza ahora con ${financeMoney(financePro.accounts[c.cuenta].balance0)} y cuadra con el extracto: ${financeMoney(c.esperado)}`); }
+    catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+// ============================================================
+//  BORRAR UN HISTORIAL ANTIGUO (29-10)
+//  Para quitar lo que se metió a mano o desde otra app cuando ya está el de los bancos. Antes de borrar, cada
+//  categoría pasa al movimiento del banco que coincide (mismo tipo e importe, a 3 días como mucho, de cualquier
+//  cuenta) para no perder lo aprendido; y el saldo de partida de cada cuenta se corrige para que el saldo de hoy no
+//  cambie. Se guarda una foto antes, en «deshacer importación.».
+// ============================================================
+function financeHistorialABorrar(cuenta, desde, hasta) {
+    return financePro.transactions.filter(t => t.date >= desde && t.date <= hasta && (cuenta === 'todas' || t.account === cuenta || t.transferTo === cuenta));
+}
+function openBorrarHistorial() {
+    const ant = window._financeHistorial || { cuenta: FINANCE_PRO_ACCOUNT_KEYS[0], desde: '2000-01-01', hasta: financeProSumarDias(todayISO(), -60), pasar: true };
+    window._financeHistorial = ant;
+    const l = financeHistorialABorrar(ant.cuenta, ant.desde, ant.hasta).sort((a, b) => a.date.localeCompare(b.date));
+    const conCat = l.filter(t => t.category && !t.categoriaAuto).length;
+    const fila = t => `<div class="fin-imp-fila"><span></span><span>${financeDateLabelShort(t.date)}</span><b>${escapeHtml(t.note || t.bankNote || financeProCategoryById(t.category)?.name || 'movimiento')}</b><i>${t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''}${financeMoney(t.amount)}</i></div>`;
+    showModal(`<div class="modal-title">borrar un historial antiguo.<button class="modal-close" aria-label="cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
+        <p class="finance-modal-note" style="margin-top:0">Para quitar lo que metiste a mano o desde otra app, cuando ya tienes el de los bancos. El saldo de hoy de cada cuenta no cambia, y antes de borrar se guarda una foto en «deshacer importación.».</p>
+        <div class="modal-label">cuenta.</div>
+        <select class="modal-input" onchange="window._financeHistorial.cuenta=this.value;openBorrarHistorial()"><option value="todas" ${ant.cuenta === 'todas' ? 'selected' : ''}>todas</option>${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${ant.cuenta === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}</select>
+        <div class="finance-correction-inputs">
+            <div><div class="modal-label">desde.</div><input type="date" class="modal-input" value="${ant.desde === '2000-01-01' ? '' : ant.desde}" onchange="window._financeHistorial.desde=this.value||'2000-01-01';openBorrarHistorial()"></div>
+            <div><div class="modal-label">hasta.</div><input type="date" class="modal-input" value="${ant.hasta}" onchange="window._financeHistorial.hasta=this.value;openBorrarHistorial()"></div>
+        </div>
+        <label class="admin-fila"><input type="checkbox" ${ant.pasar ? 'checked' : ''} onchange="window._financeHistorial.pasar=this.checked"><span><b>pasar sus categorías a los movimientos del banco.</b><small>${conCat} con categoría puesta por ti. Cada una va al movimiento del banco que coincide (mismo importe, a 3 días), para seguir aprendiendo de ellas.</small></span></label>
+        <div class="fin-imp-resumen"><b>${l.length} ${l.length === 1 ? 'movimiento' : 'movimientos'}</b><span>${l.length ? `del ${financeDateLabelShort(l[0].date)} al ${financeDateLabelShort(l[l.length - 1].date)}` : 'en esas fechas'}.</span></div>
+        ${l.length ? `<details class="fin-imp-lista"><summary>ver los primeros y los últimos.</summary><div class="fin-imp-filas">${[...l.slice(0, 5), ...l.slice(-5)].filter((t, i, a) => a.indexOf(t) === i).map(fila).join('')}</div></details>
+        <button class="btn-modal-primary" style="margin-top:14px;background:#b3261e;border-color:#b3261e" onclick="borrarHistorialAntiguo()">borrar ${l.length} ${l.length === 1 ? 'movimiento' : 'movimientos'}.</button>` : ''}`);
+}
+async function borrarHistorialAntiguo() {
+    const h = window._financeHistorial;
+    const fuera = new Set(financeHistorialABorrar(h.cuenta, h.desde, h.hasta));
+    if (!fuera.size) return;
+    await financeImportGuardarAntes(`borrado del historial antiguo (${fuera.size} movimientos)`);
+    let pasadas = 0;
+    if (h.pasar) {
+        const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000);
+        const libres = financePro.transactions.filter(t => !fuera.has(t) && (t.type === 'expense' || t.type === 'income') && (!t.category || t.categoriaAuto));
+        const usadas = new Set();
+        [...fuera].filter(t => t.category && !t.categoriaAuto && (t.type === 'expense' || t.type === 'income')).forEach(t => {
+            const x = libres.filter(y => !usadas.has(y) && y.type === t.type && Math.abs(Number(y.amount) - Number(t.amount)) < 0.005 && dias(y.date, t.date) <= 3)
+                .sort((a, b) => dias(a.date, t.date) - dias(b.date, t.date))[0];
+            if (!x) return;
+            usadas.add(x);
+            x.category = t.category; x.needsReview = false; delete x.categoriaAuto;
+            pasadas++;
+        });
+    }
+    // Quitar un movimiento cambia el saldo de su cuenta: el saldo de partida lo compensa y el de hoy sigue igual.
+    fuera.forEach(t => {
+        const efecto = (k, signo) => { if (financePro.accounts[k]) financePro.accounts[k].balance0 = Math.round((Number(financePro.accounts[k].balance0 || 0) + signo * Number(t.amount || 0)) * 100) / 100; };
+        if (t.type === 'transfer') { efecto(t.account, -1); efecto(t.transferTo, 1); }
+        else efecto(t.account, t.type === 'income' ? 1 : -1);
+    });
+    financePro.transactions = financePro.transactions.filter(t => !fuera.has(t));
+    window._financeHistorial = null;
+    financeSaldosCache = null;
+    invalidarCachesDerivadas();
+    closeModal();
+    render();
+    try { await saveData(); showToast(`${fuera.size} movimientos borrados${pasadas ? `, ${pasadas} categorías pasadas a los del banco` : ''}. Los saldos de hoy no cambian.`); }
+    catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+
+function financeProMitadSuelta(cuenta, type, importe, fechas, reclamados) {
+    const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000);
+    let mejor = null, mejorDias = Infinity;
+    financePro.transactions.forEach(t => {
+        if (t.account !== cuenta || t.type !== type || reclamados.has(t) || t.recurringEntryId || financeProNeutro(t)) return;
+        if (Math.abs(Number(t.amount) - importe) >= 0.005) return;
+        const nota = `${t.bankNote ?? ''} ${t.note ?? ''}`;
+        if (!TRASPASO_CONCEPTO.test(nota) && !/revolut|top.?up|retirar|recarga/i.test(nota)) return;
         const d = Math.min(...fechas.map(f => dias(t.date, f)));
         if (d <= 4 && d < mejorDias) { mejor = t; mejorDias = d; }
     });

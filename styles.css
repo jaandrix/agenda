@@ -9878,3 +9878,10 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { max-height:calc((10
 }
 body.mobile-standalone .modal-overlay.modal-overlay-saliendo, body.pwa .modal-overlay.modal-overlay-saliendo { background-color: transparent !important; transition: background-color .12s linear; }
 @media (prefers-reduced-motion: reduce) { .modal-overlay.modal-overlay-saliendo { transition: none; } }
+
+.fin-imp-detectada { font-weight:500; color:var(--text-secondary); }
+.fin-imp-resumen { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px; margin:14px 0 4px; font-size:14px; }
+.fin-imp-resumen b { font-size:17px; }
+.fin-imp-resumen span { color:var(--text-secondary); }
+.fin-imp-lista summary, .fin-imp-avanzado summary { cursor:pointer; font-size:13px; font-weight:600; color:var(--text-secondary); padding:6px 0; }
+.fin-imp-avanzado { margin-top:14px; }
