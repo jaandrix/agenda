@@ -9903,8 +9903,9 @@ body.mobile-standalone .modal-overlay.modal-overlay-saliendo, body.pwa .modal-ov
 
 /* Presupuesto del mes: planificación del sueldo y presupuestos en una sola vista. Estados con color propio en todos los
    temas (también en papel y asfalto, que son en blanco y negro): bien, aviso desde el 80 % y por encima. */
-:root { --estado-bien: var(--text-primary); --estado-aviso: #c27a12; --estado-mal: #d23b2f; }
-body.papel { --estado-aviso: #b26b0a; --estado-mal: #c2271c; }
+/* En el body y no en :root: un var() dentro de una variable se resuelve donde se declara, y en :root la tinta es la del tema oscuro (salía casi blanca en papel). */
+body { --estado-bien: #6fbf8a; --estado-aviso: #e0a03a; --estado-mal: #ef5a4c; }
+body.papel { --estado-bien: #2f7a4b; --estado-aviso: #b26b0a; --estado-mal: #c2271c; }
 .pres { display:flex; flex-direction:column; gap:14px; padding:16px 18px; margin-bottom:28px; }
 .pres-cab { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px; }
 .pres-mes { display:flex; align-items:center; gap:2px; margin-left:-8px; font-size:12.5px; font-weight:600; color:var(--text-secondary); }
@@ -9947,6 +9948,7 @@ body.papel { --estado-aviso: #b26b0a; --estado-mal: #c2271c; }
 .pres-fila.superado .pres-barra i { background:var(--estado-mal); }
 .pres-estado { font-size:13.5px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .pres-fila.aviso .pres-estado { color:var(--estado-aviso); }
+.pres-fila.normal .pres-estado { color:var(--estado-bien); }
 .pres-fila.superado .pres-estado { color:var(--estado-mal); }
 .pres-otros { display:flex; flex-wrap:wrap; gap:4px 14px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
 .pres-otros small, .pres-casilla-gasto { flex-basis:100%; font-size:12.5px; color:var(--text-secondary); }
