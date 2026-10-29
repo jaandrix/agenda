@@ -1183,6 +1183,19 @@
             boot.onpointerdown = salir;
         }
 
+        // Un fallo al pintar una página (unos datos raros, por ejemplo) dejaba el móvil entero en negro: ahora esa página
+        // enseña el error y deja recargar, y el resto de la app sigue funcionando.
+        function mobilePaginaSegura(view, entra) {
+            try {
+                return `<main class="m-pagina">${view === 'calendar' ? renderAvisoPrueba(true) + renderMobileInicio(entra) : renderMobileSeccion(view)}</main>`;
+            } catch (e) {
+                console.error(e);
+                try { contarFallo(e, e?.stack); } catch (_) { /* sin contador */ }
+                return `<main class="m-pagina"><div class="m-vacio" style="padding-top:40px">algo ha fallado al pintar esta página.<br><button class="m-enlace" onclick="location.reload()">recargar.</button><pre style="white-space:pre-wrap;font-size:11px;margin-top:14px">${escapeHtml(String(e?.message || e))}
+${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></div></main>`;
+            }
+        }
+
         let mobileLastEffectView = null;
         let mobileZonas = {};
         function renderMobileShell() {
@@ -1200,7 +1213,7 @@
             // envoltorio (display: contents, no cambia el diseño) y solo se reescribe si su HTML ha cambiado.
             const partes = {
                 top: renderMobileTopbar(view),
-                pagina: `<main class="m-pagina">${view === 'calendar' ? renderAvisoPrueba(true) + renderMobileInicio(entra) : renderMobileSeccion(view)}</main>`,
+                pagina: mobilePaginaSegura(view, entra),
                 tab: renderMobileTabbar(view),
                 menu: mobileMenuAbierto || !mobileZonas.menu ? renderMobileMenu(view) : mobileZonas.menu,
             };
