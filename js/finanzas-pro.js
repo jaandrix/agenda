@@ -1933,12 +1933,12 @@
                 </div>`;
             return `
                 ${renderFinanceProChartPanel()}
+                <div class="finance-section-head" style="margin-top:20px"><div class="finance-kicker">cuentas.</div></div>
+                <div class="finance-pro-accounts-grid">${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}</div>
                 ${renderFinanceProReviewBanner()}
                 ${renderAvisoPresupuestos()}
                 ${renderSuscripcionesDetectadas()}
-                ${renderFinanceNetworthCard()}
-                <div class="finance-section-head" style="margin-top:20px"><div class="finance-kicker">cuentas.</div></div>
-                <div class="finance-pro-accounts-grid">${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}</div>`;
+                ${renderFinanceNetworthCard()}`;
         }
 
         function renderFinanceProDashboard() {
