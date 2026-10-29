@@ -103,6 +103,9 @@
             const previo = container.querySelector('.modal-overlay');
             if (previo) {
                 delete previo.dataset.cerrando;
+                // Lo nuevo vuelve a ser una capa normal (si lo de antes era un editor, cerraba distinto).
+                previo.classList.remove('modal-m-compacta', 'modal-m-detalle', 'modal-m-editor');
+                previo.setAttribute('onclick', 'if(event.target===this) closeModal()');
                 quitarSalidaVelo(previo);
                 previo.style.animation = 'none';
                 const hoja = document.createElement('div');
@@ -161,6 +164,29 @@
             prepararModalAccesible(container);
             if (!habia) abrirCapa();
             enfocarPrimerCampo(container);
+        }
+
+        // Capas del móvil (PWA): «compacta» (confirmar, elegir), «detalle» (consultar una ficha) o «editor» (un formulario
+        // a pantalla completa, con «cancelar.» arriba y la acción principal abajo). En el escritorio no cambian nada.
+        // El editor no se cierra tocando fuera, y si se ha escrito algo pregunta antes de descartarlo.
+        function modoCapa(modo) {
+            const overlay = document.querySelector('#modal-container .modal-overlay');
+            if (!overlay) return;
+            overlay.classList.remove('modal-m-compacta', 'modal-m-detalle', 'modal-m-editor');
+            overlay.classList.add('modal-m-' + modo);
+            if (modo !== 'editor' || !mobileStandaloneActive) return;
+            overlay.removeAttribute('onclick');
+            const hoja = overlay.querySelector('.modal-sheet');
+            if (!hoja || hoja.querySelector('.m-editor-barra')) return;
+            hoja.insertAdjacentHTML('afterbegin', '<div class="m-editor-barra"><button type="button" class="m-editor-cancelar" onclick="cancelarEditor()">cancelar.</button></div>');
+            const sucio = e => { if (e.isTrusted) hoja.dataset.sucio = '1'; };
+            hoja.addEventListener('input', sucio);
+            hoja.addEventListener('change', sucio);
+        }
+        function cancelarEditor() {
+            const hoja = document.querySelector('#modal-container .modal-sheet');
+            if (hoja?.dataset.sucio && !confirm('¿Descartar los cambios?')) return;
+            closeModal();
         }
 
         // Para lo que puede esperar a que la hoja termine de entrar.

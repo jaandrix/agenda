@@ -2449,6 +2449,7 @@
                 <div class="modal-title">${existing ? 'Editar movimiento' : '+ Movimiento'}</div>
                 <div id="finance-pro-tx-modal-body">${renderFinanceProTxModalBody()}</div>
             `);
+            modoCapa('editor');
         }
 
         function renderFinanceProTxModalBody() {

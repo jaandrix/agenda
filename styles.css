@@ -10098,3 +10098,25 @@ body.mobile-standalone .pres-guardar, body.pwa .pres-guardar { bottom:calc(112px
 body.borde-a-borde { background:var(--bg-app); }
 body.borde-a-borde #landing-screen, body.borde-a-borde #login-screen { padding-top:env(safe-area-inset-top, 0px); box-sizing:border-box; }
 body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+
+/* CAPAS DEL MÓVIL (29-10, plan de la PWA): modoCapa('compacta' | 'detalle' | 'editor') en vault.js. Solo en la app
+   instalada. Las tres suben con la misma animación de la hoja; el editor ocupa toda la pantalla. */
+:root { --safe-top:env(safe-area-inset-top, 0px); --safe-bottom:env(safe-area-inset-bottom, 0px); }
+:is(body.mobile-standalone, body.pwa) .modal-overlay.modal-m-editor { padding:0 0 var(--teclado, 0px); align-items:stretch; }
+:is(body.mobile-standalone, body.pwa) .modal-overlay.modal-m-editor .modal-sheet { width:100%; max-width:none; height:calc((100dvh - var(--teclado, 0px)) / var(--m-zoom, 1)); max-height:none; box-sizing:border-box; padding:0 20px calc(var(--safe-bottom) + 18px) !important; border:0; border-radius:0; overflow-y:auto; overscroll-behavior:contain; }
+:is(body.mobile-standalone, body.pwa) .modal-m-editor .m-editor-barra { position:sticky; top:0; z-index:3; display:flex; align-items:center; min-height:52px; margin:0 -20px 4px; padding:var(--safe-top) 12px 0; background:var(--bg-modal); border-bottom:1px solid var(--border); }
+:is(body.mobile-standalone, body.pwa) .modal-m-editor .m-editor-cancelar { min-height:44px; padding:0 8px; border:0; background:none; font-family:var(--font-family); font-size:16px; font-weight:500; color:var(--text-primary); }
+:is(body.mobile-standalone, body.pwa) .modal-m-editor .modal-close { display:none; }
+:is(body.mobile-standalone, body.pwa) .modal-m-editor .modal-title { margin:14px 0 10px; font-size:28px; letter-spacing:-.03em; }
+:is(body.mobile-standalone, body.pwa) .modal-m-editor .modal-label { margin:16px 0 6px; font-size:13px; }
+:is(body.mobile-standalone, body.pwa) .modal-m-editor .modal-input { min-height:50px; box-sizing:border-box; font-size:16px; }
+:is(body.mobile-standalone, body.pwa) .modal-m-editor textarea.modal-input { min-height:96px; }
+/* La acción principal, siempre al alcance del pulgar: se queda pegada abajo mientras se baja por el formulario. */
+:is(body.mobile-standalone, body.pwa) .modal-m-editor .btn-modal-primary { position:sticky; bottom:12px; z-index:2; min-height:52px; margin-top:18px; box-shadow:0 0 0 12px var(--bg-modal), 0 -10px 0 12px var(--bg-modal); }
+:is(body.mobile-standalone, body.pwa) .modal-overlay.modal-m-detalle .modal-sheet { max-height:calc(78dvh / var(--m-zoom, 1)); }
+:is(body.mobile-standalone, body.pwa) .modal-m-detalle .entry-detail-grid { grid-template-columns:1fr; gap:0; margin-top:14px; border-top:1px solid var(--border); }
+:is(body.mobile-standalone, body.pwa) .modal-m-detalle .entry-detail-field { display:flex; align-items:baseline; gap:14px; padding:12px 0; border:0; border-bottom:1px solid var(--border); border-radius:0; background:none; }
+:is(body.mobile-standalone, body.pwa) .modal-m-detalle .entry-detail-label { flex:0 0 30%; margin:0; font-size:13px; color:var(--text-secondary); }
+:is(body.mobile-standalone, body.pwa) .modal-m-detalle .entry-detail-value { flex:1; min-width:0; font-size:15px; }
+:is(body.mobile-standalone, body.pwa) .modal-m-detalle .entry-detail-actions button[onclick="closeModal()"] { display:none; }
+:is(body.mobile-standalone, body.pwa) .modal-overlay.modal-m-compacta .modal-sheet { max-height:calc(56dvh / var(--m-zoom, 1)); }

@@ -8,6 +8,7 @@
             editId = null;
             editType = type;
             ponerModal(renderEntryModal(type, null));
+            modoCapa('editor');
         }
 
         // ============================================================
@@ -140,7 +141,7 @@
                 : '';
             return `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet entry-detail-card">${detailExternalBtn}<div class="modal-title modal-title-contenido${detailExternalUrl ? ' entry-detail-title-with-external' : ''}">${escapeHtml(entry.title||label)}</div><div style="font-size:11px;color:var(--text-secondary)">${label}</div><div class="entry-detail-grid">${fields||detailField('Información','Sin información adicional')}</div>${renderBacklinksBlock(entry.id, entry.type==='goal' ? ['project'] : null)}${entry.portada ? `<div class="entry-detail-portada"><img src="${escapeHtml(entry.portada)}" alt=""></div>` : ''}<div class="entry-detail-actions"><button class="btn-modal-primary" onclick="openEditEntry('${entry.id}')">editar.</button>${['book', 'movie', 'series', 'game'].includes(entry.type) ? `<button class="btn-secondary" style="width:auto" onclick="openElegirPortada('${entry.id}')">portada.</button>` : ''}<button class="btn-secondary" style="width:auto" onclick="deleteEntry('${entry.id}')">eliminar.</button><button class="btn-secondary" style="width:auto" onclick="closeModal()">cerrar.</button>${recomendarBtn}${entry.type==='event' && entry.date >= todayISO() && amigos.length ? `<button class="btn-secondary" style="width:auto" onclick="openCompartirEvento('${entry.id}')">compartir.</button>` : ''}</div></div></div>`;
         }
-        function openEntryDetail(id){if(String(id).startsWith('lab_')){openCitaLaboral(id);return;}if(String(id).startsWith('srv_')){openServicioDetalle(id);return;}const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}ponerModal(renderEntryDetailModal(entry));if(entry.type==='work')loadWorkDocuments(entry.id);if(['project','goal','event'].includes(entry.type))loadEntryDocs(entry.type==='project'?'projects':entry.type==='goal'?'goals':'events',entry.id);}
+        function openEntryDetail(id){if(String(id).startsWith('lab_')){openCitaLaboral(id);return;}if(String(id).startsWith('srv_')){openServicioDetalle(id);return;}const entry=entries.find(e=>e.id===id);if(!entry)return;if(entry.type==='travel'){switchView('travels');openTripManager(id);return;}ponerModal(renderEntryDetailModal(entry));modoCapa('detalle');if(entry.type==='work')loadWorkDocuments(entry.id);if(['project','goal','event'].includes(entry.type))loadEntryDocs(entry.type==='project'?'projects':entry.type==='goal'?'goals':'events',entry.id);}
         async function toggleProjectTask(projectId,taskIndex){
             const project=entries.find(e=>e.id===projectId); if(!project||!Array.isArray(project.tasks)||!project.tasks[taskIndex])return;
             project.tasks[taskIndex].done=!project.tasks[taskIndex].done;
@@ -162,6 +163,7 @@
             editId = id;
             editType = entry.type;
             ponerModal(renderEntryModal(entry.type, entry));
+            modoCapa('editor');
         }
 
         // ============================================================
