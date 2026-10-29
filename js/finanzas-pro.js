@@ -2849,6 +2849,7 @@
                 <button class="finance-oneoff-btn finance-import-pegar" onclick="pegarExtractoBancario()">pegar extracto.</button>
                 <button class="m-enlace" style="display:block;margin:10px auto 0" onclick="openDeshacerImportacion()">deshacer una importación.</button>
                 <button class="m-enlace" style="display:block;margin:6px auto 0" onclick="openBorrarHistorial()">borrar un historial antiguo.</button>
+                <button class="m-enlace" style="display:block;margin:6px auto 0" onclick="openFinanceProRulesModal()">reglas de traspaso.</button>
                 <div id="finance-pro-import-body"></div>
             `);
         }
