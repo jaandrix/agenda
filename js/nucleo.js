@@ -1882,7 +1882,7 @@
                 </div>
                 ${income || expense ? `<div class="m-gastado"><i class="m-gastado-barra"><i style="width:${Math.min(100, Math.round(ratio * 100))}%"></i></i><span>${income > 0 ? `${Math.round(ratio * 100)} % de lo que ha entrado, ya gastado.` : 'Este mes todavía no ha entrado nada.'}</span></div>` : ''}
                 ${mesB.ritmo}
-                ${mesB.categorias}
+                
                 ${mesB.proximos}
                 ${mesB.permitir}
                 <div class="m-bloque-cab"><div class="m-etiqueta">cuentas.</div></div>

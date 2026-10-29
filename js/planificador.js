@@ -207,12 +207,17 @@
         let backlogVerHechas = false;
         try { backlogVerHechas = localStorage.getItem('bitacora_backlog_hechas') === '1'; } catch (_) { /* sin almacenamiento */ }
 
+        // «mostrar completadas» enseña solo las completadas hoy (día de 4:00 a 4:00). Antes enseñaba todas, de cualquier
+        // día, y como la elección se recuerda en el dispositivo, las de hace días se quedaban siempre a la vista.
+        function backlogHechaHoy(it) {
+            return !!it.done && typeof it.hechaEn === 'number' && isoLocal(new Date(it.hechaEn - 4 * 3600e3)) === currentPlannerDayKey();
+        }
         function backlogVisibles() {
-            return backlogVerHechas ? dayPlanner.backlog : dayPlanner.backlog.filter(it => !it.done);
+            return dayPlanner.backlog.filter(it => !it.done || (backlogVerHechas && backlogHechaHoy(it)));
         }
 
         function backlogBotonHechas(clase) {
-            const n = dayPlanner.backlog.filter(it => it.done).length;
+            const n = dayPlanner.backlog.filter(backlogHechaHoy).length;
             if (!n) return '';
             return `<button class="${clase}" onclick="alternarBacklogHechas()">${backlogVerHechas ? 'ocultar completadas.' : `mostrar completadas (${n}).`}</button>`;
         }
