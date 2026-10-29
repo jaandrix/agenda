@@ -9885,3 +9885,5 @@ body.mobile-standalone .modal-overlay.modal-overlay-saliendo, body.pwa .modal-ov
 .fin-imp-resumen span { color:var(--text-secondary); }
 .fin-imp-lista summary, .fin-imp-avanzado summary { cursor:pointer; font-size:13px; font-weight:600; color:var(--text-secondary); padding:6px 0; }
 .fin-imp-avanzado { margin-top:14px; }
+
+.fin-imp-aviso { color: var(--accent); }

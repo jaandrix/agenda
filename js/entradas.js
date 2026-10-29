@@ -944,7 +944,7 @@
             if (data.links) links = data.links;
             if (data.linkCategories) linkCategories = data.linkCategories;
             if (typeof data.blurFinances === 'boolean') blurFinances = data.blurFinances;
-            if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; }
+            if (data.apuntes) { apuntes = data.apuntes; apuntesDirty = true; apuntesRevision++; }
             // El resto de claves sincronizadas (pedidos, hansei, perfilLaboral...)
             // que no tienen tratamiento propio arriba.
             Object.entries(DATOS_SINCRONIZADOS).forEach(([k, [leer, escribir]]) => {

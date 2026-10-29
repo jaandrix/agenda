@@ -351,6 +351,7 @@
         // de una importación explícita. En el resto de guardados conservamos
         // siempre la versión más reciente que haya en Supabase.
         let apuntesDirty = false;
+        let apuntesRevision = 0;
         // ============================================================
         //  FUSIÓN CON LA NUBE
         //  Cada dispositivo guarda en datosBase cómo estaban sus datos en
@@ -535,6 +536,9 @@
         }
 
         async function doSaveData() {
+            // Si se importan apuntes mientras este guardado espera a la red, no se puede dar por enviado lo nuevo.
+            const revisionApuntes = apuntesRevision;
+            const enviarApuntes = apuntesDirty;
             const { data: { user }, error: errorUsuario } = await authConRed(() => sb.auth.getUser());
             if (!user) throw (errorUsuario && esErrorDeRed(errorUsuario)) ? errorUsuario : new Error('No hay sesión activa');
 
@@ -565,7 +569,7 @@
                 ...fusion,
                 // Solo sustituir los apuntes remotos cuando el usuario ha
                 // importado deliberadamente un archivo que los contiene.
-                apuntes: apuntesDirty ? apuntes : latestApuntes,
+                apuntes: enviarApuntes ? apuntes : latestApuntes,
                 _meta: { ...(latestData._meta || {}), lastSnapshotWeek: needsSnapshot ? currentWeek : lastSnapshotWeek }
             };
 
@@ -584,13 +588,18 @@
             });
 
             if (Object.keys(patch).length > 0) {
-                const { error: patchError } = await sb.rpc('merge_bitacora_data', { p_patch: patch });
+                // Con tiempo máximo: una red que no acaba de fallar dejaba la cola de guardado parada para siempre.
+                const { error: patchError } = await consultaConRed(() => sb.rpc('merge_bitacora_data', { p_patch: patch }));
                 if (patchError) {
-                    const { error: fallbackError } = await sb.from('bitacora').upsert({
+                    // El guardado completo solo si la función no existe: ante un fallo de red o del servidor, escribir el
+                    // bloque entero con la lectura de antes podía pisar lo que otro dispositivo guardó entretanto.
+                    const noExiste = patchError.code === 'PGRST202' || patchError.code === '42883' || /could not find the function|does not exist/i.test(patchError.message || '');
+                    if (!noExiste) throw patchError;
+                    const { error: fallbackError } = await consultaConRed(() => sb.from('bitacora').upsert({
                         user_id: user.id,
                         data: mergedData,
                         updated_at: new Date().toISOString()
-                    });
+                    }));
                     if (fallbackError) throw fallbackError;
                 }
             }
@@ -603,15 +612,18 @@
 
             // Mantener la memoria local sincronizada con lo que realmente
             // quedó almacenado.
-            if (!apuntesDirty) apuntes = latestApuntes;
-            apuntesDirty = false;
+            if (apuntesRevision === revisionApuntes) {
+                if (!enviarApuntes) apuntes = latestApuntes;
+                apuntesDirty = false;
+            }
 
             // Snapshot semanal de seguridad: como mucho una escritura extra
             // por semana (no en cada guardado), y solo se conservan las
             // últimas 12. Si la tabla bitacora_snapshots no existe todavía
             // en Supabase, esto falla en silencio sin romper el guardado
             // normal — ver nota de configuración.
-            if (needsSnapshot) {
+            // Sin esperarla: subir la copia entera retenía el siguiente guardado (una vez por semana, justo al tocar algo).
+            if (needsSnapshot) (async () => {
                 try {
                     await sb.from('bitacora_snapshots').insert({ user_id: user.id, week_key: currentWeek, data: mergedData });
                     const { data: oldSnapshots } = await sb.from('bitacora_snapshots')
@@ -623,7 +635,7 @@
                 } catch (snapErr) {
                     console.error('No se pudo guardar el snapshot semanal:', snapErr);
                 }
-            }
+            })();
 
             bitacoraNativeSyncSnapshot();
         }

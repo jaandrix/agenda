@@ -2862,7 +2862,9 @@
             // primera: hay bancos que ponen antes el nombre de la cuenta, y lo
             // copiado de una hoja de cálculo llega separado por tabuladores.
             const inicio = text.split(/\r?\n/).slice(0, 12).join('\n');
-            const veces = c => inicio.split(c).length - 1;
+            // Se cuenta fuera de las comillas: un concepto «Compra, tienda, Madrid» hacía elegir la coma en un CSV con «;».
+            const fuera = inicio.replace(/"(?:[^"]|"")*"/g, '');
+            const veces = c => fuera.split(c).length - 1;
             const sep = veces('\t') > Math.max(veces(';'), veces(',')) ? '\t' : veces(';') >= veces(',') ? ';' : ',';
             const rows = [];
             let row = [], field = '', inQuotes = false;
@@ -2990,7 +2992,11 @@
             try {
                 const buf = await file.arrayBuffer();
                 let texto;
-                try { texto = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+                const b = new Uint8Array(buf.slice(0, 4));
+                // UTF-16 (con su marca, o un archivo lleno de ceros entre letras) salía lleno de caracteres nulos.
+                const u16 = (b[0] === 0xFF && b[1] === 0xFE) ? 'utf-16le' : (b[0] === 0xFE && b[1] === 0xFF) ? 'utf-16be' : (b[1] === 0 && b[3] === 0 && b[0] && b[2]) ? 'utf-16le' : null;
+                if (u16) texto = new TextDecoder(u16).decode(buf);
+                else try { texto = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
                 catch (e) { texto = new TextDecoder('windows-1252').decode(buf); }
                 financeProCargarTextoImport(texto);
             } catch (e) { console.error(e); showToast('No se pudo leer el archivo', true); }
@@ -3027,8 +3033,10 @@
             const todas = Array.isArray(texto) ? texto : financeProParseCSV(String(texto || '').replace(/^\uFEFF/, '').trim());
             const filaCab = financeProFilaCabecera(todas);
             const rows = todas.slice(filaCab);
+            const primera = rows[0] || [];
+            const sinCabecera = primera.some(c => financeProParseDate(c)) && primera.some(c => !financeProParseDate(c) && Number.isFinite(financeProParseEuroAmount(c)));
             const cuentaDetectada = financeProDetectarCuenta(rows[0] || [], todas.slice(0, filaCab).flat().join(' '));
-            if (rows.length < 2 || rows[0].length < 3) return null;
+            if (rows.length < 1 || rows[0].length < 2) return null;
             const header = rows[0];
             // La fecha que cuenta es la de la compra, no la de cuando el
             // banco la liquida: una compra del 30 de septiembre que
@@ -3049,7 +3057,14 @@
             const category = financeProGuessColumn(header, ['category', 'categoría', 'categoria'], -1);
             const status = financeProGuessColumn(header, ['state', 'estado'], -1);
             const account = FINANCE_PRO_ACCOUNT_KEYS.includes(cuentaPedida) ? cuentaPedida : cuentaDetectada || (FINANCE_PRO_ACCOUNT_KEYS.includes(financePro.cuentaImport) ? financePro.cuentaImport : FINANCE_PRO_ACCOUNT_KEYS[0]);
-            return { rows, cuentaDetectada: !!cuentaDetectada && !cuentaPedida, mapping: { hasHeader: true, date, amount, description, category, amountOut: separado ? iCargo : 0, amountIn: separado ? iAbono : 1, splitAmount: separado, account, status, skipPending: false } };
+            if (sinCabecera) {
+                // Sin cabecera, las columnas se deducen de la primera fila: la de la fecha, la del importe y el texto más largo.
+                const iFecha = primera.findIndex(c => financeProParseDate(c));
+                const iImporte = primera.findIndex((c, i) => i !== iFecha && !financeProParseDate(c) && Number.isFinite(financeProParseEuroAmount(c)));
+                const iTexto = primera.map((c, i) => [i, String(c || '').length]).filter(([i]) => i !== iFecha && i !== iImporte).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0;
+                return { rows, cuentaDetectada: !!cuentaDetectada && !cuentaPedida, cuentaPedida: !!cuentaPedida, mapping: { hasHeader: false, date: iFecha, amount: iImporte, description: iTexto, category: -1, amountOut: 0, amountIn: 1, splitAmount: false, account, status: -1, skipPending: false } };
+            }
+            return { rows, cuentaDetectada: !!cuentaDetectada && !cuentaPedida, cuentaPedida: !!cuentaPedida, mapping: { hasHeader: true, date, amount, description, category, amountOut: separado ? iCargo : 0, amountIn: separado ? iAbono : 1, splitAmount: separado, account, status, skipPending: false } };
         }
 
         function renderFinanceProImportMapping() {
@@ -3060,12 +3075,13 @@
             // Lo normal es no tocar nada: la cuenta sale del propio archivo y las columnas se adivinan. Todo eso queda
             // plegado en «columnas y opciones.»; a la vista, la cuenta, qué se importa y el botón.
             return `
-                <div class="modal-label" style="margin-top:14px">cuenta.${imp.cuentaDetectada ? ' <span class="fin-imp-detectada">la he sacado del archivo.</span>' : ''}</div>
+                <div class="modal-label" style="margin-top:14px">cuenta.${imp.cuentaDetectada ? ' <span class="fin-imp-detectada">la he sacado del archivo.</span>' : financeProCuentaConfirmada(imp) ? '' : ' <span class="fin-imp-detectada fin-imp-aviso">no la he podido sacar del archivo: elígela o confírmala.</span>'}</div>
                 <select class="modal-input" onchange="financeProImportSet('account', this.value)">
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${imp.mapping.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
                 </select>
+                ${financeProCuentaConfirmada(imp) ? '' : `<button class="btn-secondary" style="width:100%;margin-top:8px" onclick="window._financeProImport.cuentaConfirmada=true;document.getElementById('finance-pro-import-body').innerHTML=renderFinanceProImportMapping()">es ${escapeHtml(financeProCuentaNombre(imp.mapping.account))}.</button>`}
                 ${renderFinanceProImportFilas(imp, previewRows)}
-                <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmFinanceProImport()">${financeProTextoBotonImport(imp)}</button>
+                <button class="btn-modal-primary" style="margin-top:14px" ${financeProCuentaConfirmada(imp) ? '' : 'disabled'} onclick="confirmFinanceProImport()">${financeProCuentaConfirmada(imp) ? financeProTextoBotonImport(imp) : 'elige la cuenta primero.'}</button>
                 ${financeProTieneSaldo(imp) ? `<button class="m-enlace" style="display:block;margin:10px auto 0" onclick="openRehacerCuenta()">rehacer la cuenta con este extracto.</button>` : ''}
                 <details class="fin-imp-avanzado"><summary>columnas y opciones.</summary>
                 <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-primary);margin:14px 0 10px">
@@ -3109,6 +3125,7 @@
             if (key === 'hasHeader' || key === 'splitAmount' || key === 'skipPending' || key === 'account') m[key] = value;
             else m[key] = Number(value);
             window._financeProImport.excluidas = null;
+            if (key === 'account') window._financeProImport.cuentaConfirmada = true;
             document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
         }
 
@@ -3120,6 +3137,9 @@
             let negativo = false;
             if (/^\(.*\)$/.test(s)) { negativo = true; s = s.slice(1, -1); }
             if (/-$/.test(s)) { negativo = true; s = s.slice(0, -1); }
+            // Algunos bancos marcan el signo con DR/CR (débito y crédito) o D/H al final.
+            const marca = s.match(/(DR|CR|D|H)$/i);
+            if (marca) { negativo = /^(DR|D)$/i.test(marca[1]); s = s.slice(0, -marca[1].length); }
             if (s.includes(',') && s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
             else if (/^[-+]?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
             else s = s.replace(/,/g, '');
@@ -3127,7 +3147,18 @@
             return negativo ? -Math.abs(n) : n;
         }
 
+        // Solo fechas que existen: «31/02/2026» o «10/29/2026» (formato de EE. UU.) daban fechas imposibles que
+        // descolocaban orden, presupuestos y duplicados. Si el día es mayor que 12 y el mes no, se da la vuelta.
         function financeProParseDate(str) {
+            const iso = financeProParseDateCruda(str);
+            if (!iso) return null;
+            let [y, mo, d] = iso.split('-').map(Number);
+            if (mo > 12 && d <= 12) [mo, d] = [d, mo];
+            const f = new Date(y, mo - 1, d);
+            if (f.getFullYear() !== y || f.getMonth() !== mo - 1 || f.getDate() !== d) return null;
+            return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        }
+        function financeProParseDateCruda(str) {
             const s = String(str || '').trim();
             let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
             if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
@@ -4264,4 +4295,11 @@ async function rehacerCuenta() {
     render();
     try { await saveData(); showToast(`${financeProCuentaNombre(p.cuenta)} rehecha con el extracto: ${p.quitar.length} fuera, ${r.added} del banco, ${pasadas} con tu categoría o nota. Saldo: ${financeMoney(financeProAccountBalance(p.cuenta))}.`); }
     catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+
+// Un extracto solo se importa en una cuenta que ha salido del archivo o que has elegido tú: antes iba en silencio a la
+// última usada, y un extracto de Ibercaja podía acabar en Revolut.
+function financeProCuentaConfirmada(imp) {
+    return !!(imp?.cuentaDetectada || imp?.cuentaPedida || imp?.cuentaConfirmada);
 }

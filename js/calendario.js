@@ -27,6 +27,9 @@
         }
 
         function render() {
+            // Repintar mientras la hoja baja y el velo se aclara cambiaba lo de detrás en mitad del cierre (95 sitios
+            // hacen closeModal() y luego render()): se deja para cuando el modal ha desaparecido del todo.
+            if (document.querySelector('#modal-container .modal-overlay[data-cerrando]')) { repintarAlCerrar = true; return; }
             invalidateLinkableIndex();
             financeSaldosCache = null;
             if (currentView === 'studies' && !apartadoVisible('studies')) currentView = estudiosVistaInicial() || 'calendar';
