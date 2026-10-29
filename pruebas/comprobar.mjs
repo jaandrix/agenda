@@ -4,7 +4,9 @@ import { spawnSync } from 'node:child_process';
 
 const raiz = new URL('..', import.meta.url).pathname.replace(/^\/(?:([A-Za-z]:))/, '$1');
 const carpetaJs = join(raiz, 'js');
-const archivosJs = readdirSync(carpetaJs).filter(f => f.endsWith('.js')).sort();
+// Los de js/bajo-demanda no van en index.html (se cargan al abrirlos, cargarBajoDemanda en nucleo.js), pero se
+// revisan igual: sintaxis y nombres repetidos con el resto.
+const archivosJs = [...readdirSync(carpetaJs).filter(f => f.endsWith('.js')), ...readdirSync(join(carpetaJs, 'bajo-demanda')).filter(f => f.endsWith('.js')).map(f => 'bajo-demanda/' + f)].sort();
 const fallos = [];
 
 for (const archivo of archivosJs) {
@@ -101,7 +103,7 @@ if (new Set(versiones).size > 1) fallos.push(`valores ?v= distintos en index.htm
 const enlazados = [...html.matchAll(/<script\b[^>]*\bsrc=["'](js\/[^"'?]+\.js)(?:\?[^"']*)?["'][^>]*>/gi)].map(m => m[1].replaceAll('/', '\\'));
 for (const src of enlazados) if (!existsSync(join(raiz, src))) fallos.push(`script enlazado inexistente: ${src.replaceAll('\\', '/')}`);
 const conjuntoEnlazados = new Set(enlazados.map(src => src.toLowerCase()));
-for (const archivo of archivosJs) if (!conjuntoEnlazados.has(`js\\${archivo}`.toLowerCase())) fallos.push(`js/${archivo} no está enlazado en index.html`);
+for (const archivo of archivosJs) if (!archivo.startsWith('bajo-demanda/') && !conjuntoEnlazados.has(`js\\${archivo}`.toLowerCase())) fallos.push(`js/${archivo} no está enlazado en index.html`);
 
 if (fallos.length) {
     console.error(`Comprobación fallida: ${fallos.length} problema(s).`);

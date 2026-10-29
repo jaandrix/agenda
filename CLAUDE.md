@@ -66,6 +66,10 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
     posterior** (el hoisting no cruza archivos): en objetos que mapean vistas a funciones
     se usan flechas (`home: () => renderHome()`), y el arranque espera a
     `DOMContentLoaded`. Al añadir un archivo nuevo: en `js/` y su `<script>` en `index.html`.
+  - **Bajo demanda (29-10):** `js/bajo-demanda/` (guía, guía para tu IA, Tu mes y CV) no va en `index.html`: `BAJO_DEMANDA` /
+    `cargarBajoDemanda` en nucleo.js, y un sustituto de su función de entrada (`openGuia`, `descargarGuiaIA`, `openTuMes`, `openCv`) que
+    baja el archivo y la llama. Solo sirve para archivos a los que nadie llama al pintar ni desde el conector (Test,
+    Classroom y Profesorado no). `pruebas/comprobar.mjs` los revisa igual.
   - `styles.css` — **~6.500 líneas**. `index.html` — el shell HTML (contenedores vacíos:
     `#content`, `#modal-container`, `#mobile-shell`...). `v23.js`, `pwa-install.js`,
     `service-worker.js` — utilidades/PWA.

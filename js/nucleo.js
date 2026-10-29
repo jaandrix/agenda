@@ -6,6 +6,28 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2ZHF0bnVrZ2Jlam9yaWV1dW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMjcyOTUsImV4cCI6MjEwMDkwMzI5NX0.sq1cepXuBaNT6qygyxKEAhVHJh7G9LZyzaeJBhc7s7s';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Apartados que no hacen falta al arrancar (js/bajo-demanda): se bajan la primera vez que se abren. Su función
+        // de entrada empieza siendo un sustituto que carga el archivo y la llama; al cargarse, la de verdad lo
+        // reemplaza. Solo vale para archivos a los que nadie más llama al pintar ni desde el conector.
+        const VERSION_JS = (document.currentScript?.src.match(/[?&]v=([^&]+)/) || [])[1] || '';
+        const BAJO_DEMANDA = { guia: ['guia', 'guia-ia'], tumes: ['tumes'], cv: ['cv'] };
+        const bajoDemandaCargado = {};
+        function cargarBajoDemanda(grupo) {
+            return bajoDemandaCargado[grupo] || (bajoDemandaCargado[grupo] = BAJO_DEMANDA[grupo].reduce((cadena, archivo) => cadena.then(() => new Promise((ok, mal) => {
+                const sc = document.createElement('script');
+                sc.src = `js/bajo-demanda/${archivo}.js?v=${VERSION_JS}`;
+                sc.onload = ok;
+                sc.onerror = () => mal(new Error('No se pudo cargar ' + archivo));
+                document.head.appendChild(sc);
+            })), Promise.resolve()).catch(e => { delete bajoDemandaCargado[grupo]; throw e; }));
+        }
+        [['openGuia', 'guia'], ['descargarGuiaIA', 'guia'], ['openTuMes', 'tumes'], ['openCv', 'cv']].forEach(([nombre, grupo]) => {
+            const sustituto = (...args) => cargarBajoDemanda(grupo).then(() => {
+                if (window[nombre] !== sustituto) return window[nombre](...args);
+            }, () => showToast(navigator.onLine === false ? 'Sin conexión: esto aún no está guardado en el dispositivo.' : 'No se pudo abrir. Inténtalo otra vez.', true));
+            window[nombre] = sustituto;
+        });
+
         // Fallos que ven los usuarios, contados de forma anónima con GoatCounter (se ven en el pulso, «Uso de la
         // app»): errores sin capturar y avisos de error de la app. Solo se mandan el tipo, nombre, archivo, línea y
         // vista, nunca el mensaje del error o del aviso. Cada fallo, una vez por sesión. Va aquí,
