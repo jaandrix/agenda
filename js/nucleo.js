@@ -1138,12 +1138,12 @@
             try { performance.measure('bitacora-arranque-visible', 'bitacora-arranque'); } catch (_) {}
             if (matchMedia('(prefers-reduced-motion: reduce)').matches) { boot.style.display = 'none'; return; }
             boot.style.display = 'flex';
-            // Con la copia local la app se pinta tan rápido que el logo no llegaba a verse: se queda al menos 2 s
+            // Con la copia local la app se pinta tan rápido que el logo no llegaba a verse: se queda al menos 3 s
             // desde que se abrió (el móvil ya está pintado debajo, así que no retrasa nada que se pueda usar antes).
-            const espera = Math.max(0, 2000 - performance.now());
+            const espera = Math.max(0, 3000 - performance.now());
             setTimeout(() => {
                 boot.classList.add('boot-saliendo');
-                setTimeout(() => { boot.style.display = 'none'; boot.classList.remove('boot-saliendo'); }, 580);
+                setTimeout(() => { boot.style.display = 'none'; boot.classList.remove('boot-saliendo'); }, 750);
             }, espera);
         }
 
