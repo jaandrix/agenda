@@ -62,7 +62,8 @@ def main():
         pg.evaluate(MEDIDOR)
         # demo.html apaga las animaciones para las capturas: aquí se quieren las de verdad.
         pg.evaluate("document.querySelectorAll('style').forEach(s => { if (/animation-duration\\s*:\\s*0s/.test(s.textContent)) s.remove(); })")
-        pg.evaluate("closeModal(); mobileIr('calendar')")
+        # Una tarea propia para medir marcar siempre igual (el ejemplo no tiene tareas todos los días).
+        pg.evaluate("closeModal(); (dayPlanner.days[isoLocal(new Date())] ||= []).push({ id: 'medir_tarea', title: 'medir.', time: '', done: false }); mobileIr('calendar'); mobileZonas = {}; renderMobileShell()")
         pg.wait_for_timeout(500)
         cdp.send('Emulation.setCPUThrottlingRate', {'rate': 4})
         mov = pg.evaluate("financePro.transactions[0]?.id")
@@ -81,9 +82,9 @@ def main():
                 pg.evaluate("__medir.cerrar()")
             datos['menú, primer fotograma'].append(pg.evaluate("(async () => { const t = performance.now(); toggleMenuMovil(); await __medir.fotograma(); const d = performance.now() - t; toggleMenuMovil(); await new Promise(r => setTimeout(r, 350)); return d; })()"))
             datos['marcar tarea'].append(pg.evaluate("""(async () => {
-                const b = document.querySelector('#mobile-shell .m-check'); if (!b) return 0;
+                const sel = '#mobile-shell .m-check[onclick*="medir_tarea"]'; const b = document.querySelector(sel); if (!b) return 0;
                 const t = performance.now(); b.click(); await __medir.fotograma(); const d = performance.now() - t;
-                document.querySelector('#mobile-shell .m-check')?.click(); await __medir.fotograma(); return d; })()"""))
+                document.querySelector(sel)?.click(); await new Promise(r => setTimeout(r, 300)); return d; })()"""))
         cdp.send('Emulation.setCPUThrottlingRate', {'rate': 1})
         nav.close()
     srv.shutdown()
