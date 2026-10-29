@@ -76,12 +76,11 @@
         //  PRESUPUESTO SUAVE: una línea, sin notificación, cuando una
         //  categoría pasa del 80 % de su presupuesto del mes. El límite es el
         //  de las casillas de Largo plazo de este mes vinculadas a esa
-        //  categoría (lo planificado para este mes manda) y, si no tiene
-        //  casilla, el presupuesto mensual de la categoría.
+        //  categoría. Es el único límite: el de «categorías.» se quitó el 29-10
+        //  porque convivir con dos confundía.
         // ------------------------------------------------------------
         function asistLimitesDelMes(mes) {
             const limites = {};
-            Object.entries(financePro.categoryBudgets || {}).forEach(([id, v]) => { if (Number(v) > 0) limites[id] = { limite: Number(v), nombre: '' }; });
             const casillas = (financeProfile?.budgetPlans?.[mes]?.allocations || []).filter(a => a.categoryId && !a.auto && Number(a.amount) > 0);
             const porCat = {};
             casillas.forEach(a => { (porCat[a.categoryId] = porCat[a.categoryId] || []).push(a); });

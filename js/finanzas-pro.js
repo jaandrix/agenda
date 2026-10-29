@@ -789,7 +789,6 @@
             const hist = financePro.historialPresupuestos || (financePro.historialPresupuestos = {});
             const actual = financeMonthKey();
             const meses = new Set([actual, ...Object.keys(financeProfile?.budgetPlans || {}).filter(m => m <= actual)]);
-            if (Object.keys(financePro.categoryBudgets || {}).length) financePro.transactions.forEach(t => { const m = t.date.slice(0, 7); if (m <= actual) meses.add(m); });
             let cambio = false;
             meses.forEach(mes => {
                 const cats = {};
@@ -1099,18 +1098,17 @@
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
-        // Solo se muestran las categorías de gasto con presupuesto puesto
-        // (Categorías → presupuesto mensual). Sin ninguna, el panel entero
-        // desaparece en vez de quedar vacío ocupando sitio.
+        // Las categorías con límite este mes: las casillas de largo plazo vinculadas a ellas (el único límite que hay).
+        // Sin ninguna, el panel entero desaparece en vez de quedar vacío ocupando sitio.
         function renderFinanceProBudgetsPanel() {
-            const budgets = financePro.categoryBudgets || {};
+            const monthKey = financeMonthKey();
+            const limitesMes = typeof asistLimitesDelMes === 'function' ? asistLimitesDelMes(monthKey) : {};
+            const budgets = Object.fromEntries(Object.entries(limitesMes).map(([id, l]) => [id, l.limite]));
             const ids = Object.keys(budgets).filter(id => budgets[id] > 0 && financeProCategoryById(id));
             if (!ids.length) return '';
-            const monthKey = financeMonthKey();
             return `<section class="finance-panel" style="margin-top:16px">
                 <div class="finance-panel-head">
                     ${financePanelHeadIcon(FINANCE_ICON_TARGET, 'fin-pink', financeMonthLabel(monthKey), 'Presupuestos')}
-                    <button class="finance-icon-btn" title="Editar presupuestos" onclick="openFinanceProCategoriesModal()"><i class='ico ico-lapiz' aria-hidden=true></i></button>
                 </div>
                 ${ids.map(id => {
                     const cat = financeProCategoryById(id);
@@ -1802,7 +1800,7 @@
             lines.push('## Categorías');
             const cats = financePro.categories || [];
             lines.push('### Gasto');
-            lines.push(mdTable(['Nombre', 'Presupuesto mensual'], cats.filter(c => c.type === 'expense').map(c => [c.name, financePro.categoryBudgets[c.id] ? financeMoney(financePro.categoryBudgets[c.id]) : '—'])));
+            lines.push(mdTable(['Nombre'], cats.filter(c => c.type === 'expense').map(c => [c.name])));
             lines.push('### Ingreso');
             lines.push(mdTable(['Nombre'], cats.filter(c => c.type === 'income').map(c => [c.name])));
             lines.push('');
@@ -2706,7 +2704,7 @@
             financeProNewCatColor = FINANCE_PRO_PALETTE[0];
             showModal(`
                 <div class="modal-title">Categorías</div>
-                <div class="finance-modal-note" style="margin-bottom:10px">En las de gasto puedes poner un presupuesto mensual: cuando te acerques o te pases, se avisa en Movimientos.</div>
+                <div class="finance-modal-note" style="margin-bottom:10px">Los límites de gasto se ponen en la planificación de largo plazo, vinculando una casilla a la categoría.</div>
                 <div id="finance-pro-cat-list">${renderFinanceProCategoryList()}</div>
                 <div class="modal-label" style="margin-top:14px">Nueva categoría</div>
                 <input id="new-cat-name" class="modal-input" placeholder="Nombre">
@@ -2742,23 +2740,11 @@
                     <span style="display:flex;align-items:center;gap:8px;color:var(--text-primary)">${financeProCategoryBadge(c)}${escapeHtml(c.name)}</span>
                     <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceProCategory('${c.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>
-                ${c.type === 'expense' ? `
-                <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
-                    <span style="font-size:10px;color:var(--text-secondary)">Presupuesto mensual (€)</span>
-                    <input class="modal-input" style="margin:0;width:90px;padding:5px 8px;font-size:11px" type="number" min="0" step="1" value="${financePro.categoryBudgets[c.id] || ''}" placeholder="Sin límite" onchange="setFinanceProCategoryBudget('${c.id}', this.value)">
-                </div>` : ''}
             </div>`;
             const expense = financePro.categories.filter(c => c.type === 'expense');
             const income = financePro.categories.filter(c => c.type === 'income');
             return `<div class="finance-kicker" style="margin:8px 0 4px">Gastos</div>${expense.map(row).join('') || '<div class="finance-empty-line">Ninguna</div>'}
                 <div class="finance-kicker" style="margin:14px 0 4px">Ingresos</div>${income.map(row).join('') || '<div class="finance-empty-line">Ninguna</div>'}`;
-        }
-
-        async function setFinanceProCategoryBudget(id, value) {
-            const amount = Math.max(0, Number(value) || 0);
-            financePro.categoryBudgets = financePro.categoryBudgets || {};
-            if (amount > 0) financePro.categoryBudgets[id] = amount; else delete financePro.categoryBudgets[id];
-            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         async function addFinanceProCategory() {
