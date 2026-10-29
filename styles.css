@@ -9905,60 +9905,60 @@ body.mobile-standalone .modal-overlay.modal-overlay-saliendo, body.pwa .modal-ov
    temas (también en papel y asfalto, que son en blanco y negro): bien, aviso desde el 80 % y por encima. */
 :root { --estado-bien: var(--text-primary); --estado-aviso: #c27a12; --estado-mal: #d23b2f; }
 body.papel { --estado-aviso: #b26b0a; --estado-mal: #c2271c; }
-.pres { display:flex; flex-direction:column; gap:20px; padding:24px 28px; }
+.pres { display:flex; flex-direction:column; gap:14px; padding:16px 18px; margin-bottom:28px; }
 .pres-cab { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px; }
-.pres-mes { display:flex; align-items:center; gap:4px; margin-left:-8px; font-size:14px; font-weight:600; color:var(--text-secondary); }
-.pres-flecha { width:30px; height:30px; display:grid; place-items:center; border:0; border-radius:10px; background:none; color:var(--text-secondary); cursor:pointer; }
+.pres-mes { display:flex; align-items:center; gap:2px; margin-left:-8px; font-size:12.5px; font-weight:600; color:var(--text-secondary); }
+.pres-flecha { width:26px; height:26px; display:grid; place-items:center; border:0; border-radius:10px; background:none; color:var(--text-secondary); cursor:pointer; }
 .pres-flecha:hover { background:var(--bg-card-hover); }
-.pres .pres-titulo { margin:2px 0 4px; font-size:28px; font-weight:700; letter-spacing:-.02em; text-transform:none; }
-.pres-explica { margin:0; font-size:14.5px; color:var(--text-secondary); }
+.pres .pres-titulo { margin:0 0 2px; font-size:20px; font-weight:700; letter-spacing:-.01em; text-transform:none; }
+.pres-explica { margin:0; font-size:13px; color:var(--text-secondary); }
 .pres-acciones { display:flex; flex-wrap:wrap; gap:8px; }
-.pres-resumen { display:flex; flex-direction:column; gap:16px; padding:20px 22px; border-radius:16px; background:var(--bg-card-hover); }
+.pres-resumen { display:flex; flex-direction:column; gap:10px; padding:12px 16px; border-radius:12px; background:var(--bg-card-hover); }
 .pres-cifras { display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; }
-.pres-cifra { display:flex; flex-direction:column; gap:4px; padding:0 22px; }
+.pres-cifra { display:flex; flex-direction:column; gap:1px; padding:0 16px; }
 .pres-cifra:first-child { padding-left:0; }
 .pres-cifra + .pres-cifra { border-left:1px solid var(--border); }
-.pres-cifra span { font-size:13.5px; color:var(--text-secondary); }
-.pres-cifra b { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
-.pres-cifra small { font-size:12.5px; color:var(--text-secondary); }
+.pres-cifra span { font-size:12px; color:var(--text-secondary); }
+.pres-cifra b { font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; }
+.pres-cifra small { font-size:11.5px; color:var(--text-secondary); }
 .pres-sin.superado b, .pres-sin.superado small { color:var(--estado-mal); }
-.pres-reparto { display:flex; height:10px; border-radius:5px; background:var(--border); overflow:hidden; }
+.pres-reparto { display:flex; height:7px; border-radius:4px; background:var(--border); overflow:hidden; }
 .pres-reparto i { display:block; height:100%; transition:width .18s ease-out; }
 .pres-reparto-pres { background:var(--text-primary); }
 .pres-reparto-comp { background:var(--text-secondary); }
 .pres-editar-ingresos { display:grid; grid-template-columns:repeat(2, minmax(0, 240px)); gap:12px; }
 .pres-tabla { display:flex; flex-direction:column; }
-.pres-tabla-cab, .pres-fila { display:grid; grid-template-columns:minmax(180px, 1.6fr) 90px minmax(150px, 1.1fr) minmax(120px, 2fr) 150px; align-items:center; column-gap:20px; }
-.pres-tabla-cab { padding:0 0 8px; border-bottom:1px solid var(--border); font-size:13px; font-weight:600; color:var(--text-secondary); }
+.pres-tabla-cab, .pres-fila { display:grid; grid-template-columns:minmax(200px, 1.8fr) 80px minmax(140px, 1fr) minmax(120px, 2fr) 140px; align-items:center; column-gap:16px; }
+.pres-tabla-cab { padding:0 0 6px; border-bottom:1px solid var(--border); font-size:11.5px; font-weight:600; color:var(--text-secondary); }
 .pres-tabla-cab span:last-child, .pres-estado { text-align:right; }
-.pres-fila { padding:14px 0; border-bottom:1px solid var(--border); }
-.pres-fila-cat { display:flex; align-items:center; gap:14px; min-width:0; }
+.pres-fila { padding:8px 0; border-bottom:1px solid var(--border); }
+.pres-fila-cat { display:flex; align-items:center; gap:10px; min-width:0; }
 .pres-fila-cat > span { display:flex; flex-direction:column; min-width:0; }
-.pres-fila-cat b { font-size:16px; font-weight:600; }
-.pres-fila-cat small, .pres-fila-gasto small { font-size:13px; color:var(--text-secondary); font-weight:400; }
-.pres-icono { width:40px !important; height:40px !important; flex-shrink:0; border-radius:50%; }
-.pres-fila-plan { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
+.pres-fila-cat b { font-size:14px; font-weight:600; }
+.pres-fila-cat small, .pres-fila-gasto small { font-size:11.5px; color:var(--text-secondary); font-weight:400; }
+.pres-icono { width:30px !important; height:30px !important; flex-shrink:0; border-radius:50%; }
+.pres-fila-plan { font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums; }
 .pres-fila-plan small { display:none; }
-.pres-fila-gasto { font-size:15px; font-variant-numeric:tabular-nums; }
+.pres-fila-gasto { font-size:13.5px; font-variant-numeric:tabular-nums; }
 .pres-fila-gasto b { font-weight:700; }
-.pres-barra { height:10px; border-radius:5px; background:var(--border); overflow:hidden; }
-.pres-barra i { display:block; height:100%; border-radius:5px; background:var(--estado-bien); }
+.pres-barra { height:8px; border-radius:4px; background:var(--border); overflow:hidden; }
+.pres-barra i { display:block; height:100%; border-radius:4px; background:var(--estado-bien); }
 .pres-fila.aviso .pres-barra i { background:var(--estado-aviso); }
 .pres-fila.superado .pres-barra i { background:var(--estado-mal); }
-.pres-estado { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pres-estado { font-size:13.5px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .pres-fila.aviso .pres-estado { color:var(--estado-aviso); }
 .pres-fila.superado .pres-estado { color:var(--estado-mal); }
-.pres-otros { display:flex; flex-wrap:wrap; gap:4px 16px; padding:14px 0; border-bottom:1px solid var(--border); font-size:14px; }
+.pres-otros { display:flex; flex-wrap:wrap; gap:4px 14px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
 .pres-otros small, .pres-casilla-gasto { flex-basis:100%; font-size:12.5px; color:var(--text-secondary); }
 .pres-nada { margin:0; font-size:14px; color:var(--text-secondary); }
 .pres-compromisos { display:flex; flex-wrap:wrap; align-items:center; gap:16px 40px; }
 .pres-compromiso { display:flex; align-items:center; gap:14px; }
 .pres-compromiso > span:last-child { display:flex; flex-direction:column; }
-.pres-compromiso b { font-size:20px; font-variant-numeric:tabular-nums; }
-.pres-compromiso small { font-size:12.5px; color:var(--text-secondary); }
+.pres-compromiso b { font-size:16px; font-variant-numeric:tabular-nums; }
+.pres-compromiso small { font-size:11.5px; color:var(--text-secondary); }
 .pres-compromiso.superado b { color:var(--estado-mal); }
-.pres-compromiso-icono { width:40px; height:40px; display:grid; place-items:center; border-radius:50%; background:var(--bg-card-hover); color:var(--text-primary); }
-.pres-compromiso-icono svg { width:20px; height:20px; }
+.pres-compromiso-icono { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:var(--bg-card-hover); color:var(--text-primary); }
+.pres-compromiso-icono svg { width:16px; height:16px; }
 .pres-compromisos > .asig-enlace { margin-left:auto; }
 .pres-bloque { display:flex; flex-direction:column; }
 .pres-bloque-tit { display:flex; justify-content:space-between; align-items:baseline; font-weight:700; font-size:15px; padding:8px 0; }
@@ -9967,7 +9967,7 @@ body.papel { --estado-aviso: #b26b0a; --estado-mal: #c2271c; }
 .pres-campo { display:flex; flex-direction:column; gap:4px; min-width:0; font-size:12.5px; color:var(--text-secondary); }
 .pres-campo small { font-size:12px; }
 .pres-campo input, .pres-campo select { width:100%; box-sizing:border-box; font:500 16px var(--font-family); padding:8px 10px; border:1px solid var(--border-strong, var(--border)); border-radius:10px; background:var(--bg-card); color:var(--text-primary); min-height:42px; }
-.pres-guardar { position:sticky; bottom:0; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; padding:12px 0 4px; background:var(--bg-card); border-top:1px solid var(--border); }
+.pres-guardar { position:static; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; padding:12px 0 4px; background:var(--bg-card); border-top:1px solid var(--border); }
 .pres-guardar-der { display:flex; gap:8px; margin-left:auto; }
 .pres-guardar .btn-modal-primary { width:auto; margin:0; padding:10px 16px; }
 @media (max-width: 900px) {
@@ -9995,3 +9995,16 @@ body.papel { --estado-aviso: #b26b0a; --estado-mal: #c2271c; }
 
 /* En la PWA la barra de pestañas tapa el borde de abajo: guardar y cancelar se quedan justo encima. */
 body.mobile-standalone .pres-guardar, body.pwa .pres-guardar { bottom:calc(112px / var(--m-zoom, 1)); }
+
+.pres-editar-fila { display:flex; flex-direction:column; gap:4px; padding:10px 0; border-top:1px solid var(--border); }
+.pres-anadir { align-self:flex-start; margin-top:8px; }
+/* En el móvil, guardar y cancelar fijos abajo, por encima de la barra de pestañas y con fondo opaco. */
+@media (max-width: 900px) { .pres-guardar { position:sticky; bottom:0; z-index:2; } }
+.pres, .pres-guardar { background-color: var(--bg-card); }
+@media (min-width: 901px) {
+    .pres-editar-fila .pres-campo > span:first-child { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+    .pres-editar-fila .pres-campo input, .pres-editar-fila .pres-campo select { min-height:34px; padding:5px 9px; font-size:14px; }
+    .pres-editar-fila { padding:7px 0; gap:3px; }
+    .pres-editar-fila .pres-casilla { align-items:center; }
+    .pres-editar-ingresos .pres-campo input { min-height:34px; padding:5px 9px; font-size:14px; }
+}

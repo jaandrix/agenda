@@ -40,7 +40,8 @@ function financeBudgetUnifiedModel(month, plan, recorded) {
         const remaining = presRedondo(available - spent);
         const percentage = available > 0 ? spent / available * 100 : spent > 0 ? 100 : 0;
         const status = remaining < 0 ? 'superado' : percentage >= 80 ? 'aviso' : 'normal';
-        return { categoryId, name: cat?.name || l[0].label || 'categoría', allocations: l, planned, refunded, available, spent, remaining, percentage, status };
+        const lastMonth = presRedondo(financeProCategoryExpense(categoryId, longtermMonthOffset(month, -1)));
+        return { categoryId, name: cat?.name || l[0].label || 'categoría', allocations: l, planned, refunded, available, spent, remaining, percentage, status, lastMonth };
     }).sort((a, b) => b.planned - a.planned);
     const unlinkedAllocations = normales.filter(a => !a.categoryId);
     const commitments = autos.map(a => {
@@ -116,7 +117,7 @@ function renderFinanceBudgetRows(m) {
         <div class="pres-tabla-cab" aria-hidden="true"><span>categoría.</span><span>plan.</span><span>este mes.</span><span></span><span>estado.</span></div>
         ${m.categories.map(c => {
             const cat = financeProCategoryById(c.categoryId);
-            const sub = [c.refunded > 0 ? `${financeMoney(c.refunded)} devueltos` : '', c.allocations.length > 1 ? `${c.allocations.length} casillas` : ''].filter(Boolean).join(', ');
+            const sub = [c.refunded > 0 ? `${financeMoney(c.refunded)} devueltos` : '', `el mes pasado gastaste ${financeMoney(c.lastMonth)}`, c.allocations.length > 1 ? `${c.allocations.length} casillas` : ''].filter(Boolean).join(', ');
             return `<div class="pres-fila ${c.status}">
                 <div class="pres-fila-cat">${financeProCategoryBadge(cat, 'pres-icono')}<span><b>${escapeHtml(c.name)}</b>${sub ? `<small>${sub}.</small>` : ''}</span></div>
                 <div class="pres-fila-plan"><small>plan. </small>${financeMoney(c.planned)}</div>
@@ -150,12 +151,17 @@ function renderFinanceBudgetEditor(m) {
         <label class="pres-campo"><span>categoría.</span><select onchange="updateFinanceBudgetDraft('categoryId', this.value, '${a.id}')"><option value="">otros destinos</option>${cats.map(c => `<option value="${c.id}" ${a.categoryId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}</select></label>
         <button class="vista-icono-btn" onclick="presupuestoQuitarCasilla('${a.id}')" aria-label="quitar ${escapeHtml(a.label || 'casilla')}"><i class='ico ico-x' aria-hidden=true></i></button>
     </div>`;
-    const gastoDe = c => `<small class="pres-casilla-gasto">${financeMoney(c.spent)} gastados${c.refunded > 0 ? `, +${financeMoney(c.refunded)} devueltos` : ''}, ${presupuestoEstadoTexto(c)}</small>`;
+    const deCat = id => m.categories.find(c => c.categoryId === id);
+    const comoVa = a => {
+        const c = deCat(a.categoryId);
+        if (!c) return '<small class="pres-casilla-gasto">sin categoría: cuenta como repartido.</small>';
+        return `<small class="pres-casilla-gasto">${escapeHtml(c.name)}: ${financeMoney(c.spent)} gastados${c.refunded > 0 ? `, +${financeMoney(c.refunded)} devueltos` : ''}, ${presupuestoEstadoTexto(c)}; el mes pasado gastaste ${financeMoney(c.lastMonth)}.</small>`;
+    };
+    const normales = presupuestoBorrador.plan.allocations.filter(a => !a.auto);
     return `<div class="pres-bloque">
         <div class="pres-bloque-tit">presupuestos.</div>
-        ${m.categories.map(c => `<div class="pres-grupo"><b>${escapeHtml(c.name)}</b>${gastoDe(c)}${c.allocations.map(casilla).join('')}</div>`).join('')}
-        ${m.unlinkedAllocations.length ? `<div class="pres-grupo"><b>otros destinos.</b><small class="pres-casilla-gasto">Cuentan como repartido; sin categoría no se sigue el gasto.</small>${m.unlinkedAllocations.map(casilla).join('')}</div>` : ''}
-        <button class="vista-btn" onclick="presupuestoAnadirCasilla()">+ casilla.</button>
+        ${normales.map(a => `<div class="pres-editar-fila">${casilla(a)}${comoVa(a)}</div>`).join('')}
+        <button class="vista-btn pres-anadir" onclick="presupuestoAnadirCasilla()">+ casilla.</button>
     </div>
     ${m.commitments.length ? `<div class="pres-bloque">
         <div class="pres-bloque-tit">compromisos.</div>
