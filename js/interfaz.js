@@ -367,6 +367,8 @@
         }
 
         function animateContentSwitch() {
+            // Con View Transitions esta animación está apagada en el CSS: sin salir antes, se forzaba un layout para nada.
+            if (VT_DISPONIBLE && !vtReducido()) return;
             const el = document.getElementById('content');
             if (!el) return;
             el.classList.remove('view-fade-in');

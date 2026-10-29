@@ -102,7 +102,9 @@
                 updateHeaderClock();
                 updateSidebarProgress();
                 // La PWA no enseña el reloj con segundos: allí basta con una vez por minuto.
-                if (!window._headerClockTimer) window._headerClockTimer = setInterval(() => { updateHeaderClock(); updateSidebarProgress(); }, mobileStandaloneActive ? 60000 : 1000);
+                // El reloj, cada segundo; el progreso del día (y el cambio de día), cada minuto. Con la pestaña oculta, nada.
+                if (!window._headerClockTimer) window._headerClockTimer = setInterval(() => { if (!document.hidden) updateHeaderClock(); }, mobileStandaloneActive ? 60000 : 1000);
+                if (!window._sidebarProgressTimer) window._sidebarProgressTimer = setInterval(() => { if (!document.hidden) updateSidebarProgress(); }, 60000);
                 updatePageTitle();
                 updateAddButton();
                 maybeShowDailyAlert();
