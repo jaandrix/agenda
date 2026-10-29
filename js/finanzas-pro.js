@@ -1907,7 +1907,7 @@
 
         // Finanzas en tres pestañas. Al cambiar se repinta solo el panel (no la vista entera) y se conserva el sitio
         // de la barra de pestañas en pantalla, para que no salte el scroll al pasar a una más corta o más larga.
-        let financeTab = (() => { try { return ['resumen', 'movimientos', 'planificacion'].includes(localStorage.getItem('bitacora-fin-pestana')) ? localStorage.getItem('bitacora-fin-pestana') : 'resumen'; } catch (e) { return 'resumen'; } })();
+        let financeTab = 'resumen';
         function cambiarPestanaFinanzas(tab) {
             if (tab === financeTab) return;
             financeTab = tab;
