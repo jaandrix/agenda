@@ -3145,7 +3145,7 @@
                 try { await saveData(); } catch (e) { console.error(e); }
             }
             if (cuadre && !cuadre.cuadra) openFinanceProCuadre(cuadre);
-            else if (cuadre) showToast(`${financeProResumenImport(r)}${quitados ? `, ${quitados} ${quitados === 1 ? 'duplicado quitado' : 'duplicados quitados'}` : ''}, saldo cuadrado con el extracto: ${financeMoney(cuadre.esperado)}`);
+            else if (cuadre) showToast(`${financeProResumenImport(r)}${quitados ? `, ${quitados} ${quitados === 1 ? 'duplicado quitado' : 'duplicados quitados'}` : ''}, saldo cuadrado con el extracto: ${cuadre.retenido ? `${financeMoney(cuadre.saldoBanco)} en el banco menos ${financeMoney(cuadre.retenido)} retenidos que aún no enseña, ${financeMoney(cuadre.esperado)}` : financeMoney(cuadre.esperado)}`);
         }
 
         // ============================================================
@@ -3209,6 +3209,11 @@
             });
             emparejar(true);
             emparejar(false);
+            // Lo que pasaste a otra cuenta en los últimos días y el banco aún no enseña (Ibercaja retiene la recarga de
+            // Revolut hasta que se completa) está retenido: con eso, si cuadra, no es un descuadre ni hay que ajustar.
+            const retenidos = [...libres].filter(x => x.val < 0 && x.t.type === 'transfer' && x.t.account === cuenta && x.t.date >= financeProSumarDias(hasta, -4));
+            const retenido = Math.round(-retenidos.reduce((a, x) => a + x.val, 0) * 100) / 100;
+            if (retenido && Math.abs(esperado - retenido - actual) < 0.005) return { cuadra: true, esperado: actual, actual, cuenta, retenido, saldoBanco: esperado };
             // Un sobrante con su gemelo en el extracto (mismo importe, ±3 días)
             // es un duplicado de un movimiento que sí está: el apunte a mano o
             // renombrado que no se fundió con el del banco.
@@ -3403,7 +3408,8 @@
                 // como movimiento entre m.account y la otra cuenta de la
                 // regla — restando de un lado y sumando en el otro, sin
                 // contar como ingreso o gasto real en las estadísticas.
-                const rule = activeRules.find(rl => description.toLowerCase().includes(rl.matchText.toLowerCase()) && rl.otherAccount !== m.account);
+                const rule = activeRules.find(rl => description.toLowerCase().includes(rl.matchText.toLowerCase()) && rl.otherAccount !== m.account)
+                    || financeProTraspasoAprendido(m.account, type, description);
                 const effectiveAccount = rule ? (type === 'income' ? rule.otherAccount : m.account) : m.account;
                 const dedupeKey = `${effectiveAccount}|${date}|${amount}|${description}`;
                 // Primero, lo que ya existe tal cual (misma cuenta, día, importe
@@ -3950,4 +3956,21 @@ function financeProImportFila(fila, marcada) {
     imp.excluidas = new Set(imp.excluidas);
     if (marcada) imp.excluidas.delete(fila); else imp.excluidas.add(fila);
     document.getElementById('finance-pro-import-body').innerHTML = renderFinanceProImportMapping();
+}
+
+
+// Un concepto que ya fue un traspaso entre tus cuentas vuelve a serlo al importar, aunque el otro banco todavía no
+// enseñe su mitad: la recarga de Revolut con la tarjeta de Ibercaja («Top-up by *1185») entraba como ingreso en
+// Revolut mientras Ibercaja la tenía retenida, y el dinero salía contado dos veces. Nunca para un Bizum.
+function financeProTraspasoAprendido(cuenta, type, descripcion) {
+    const n = financeProNormalizar(descripcion || '').trim();
+    if (n.length < 4 || /bizum/i.test(descripcion)) return null;
+    let t = null;
+    for (let i = financePro.transactions.length - 1; i >= 0; i--) {
+        const x = financePro.transactions[i];
+        if (x.type !== 'transfer' || financeProNormalizar(x.bankNote ?? x.note ?? '').trim() !== n) continue;
+        if (type === 'income' && x.transferTo === cuenta && x.account !== cuenta) { t = { otherAccount: x.account }; break; }
+        if (type === 'expense' && x.account === cuenta && x.transferTo && x.transferTo !== cuenta) { t = { otherAccount: x.transferTo }; break; }
+    }
+    return t;
 }
