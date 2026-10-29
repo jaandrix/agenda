@@ -10079,3 +10079,13 @@ body.mobile-standalone .pres-guardar, body.pwa .pres-guardar { bottom:calc(112px
 #mobile-shell .m-home-editorial .m-pendiente-dia .m-fila-hora { display:none; }
 #mobile-shell .m-home-editorial .m-pendientes-inicio { margin-top:26px; }
 #mobile-shell .m-home-editorial .m-pendiente-dia .m-lista { padding:0; border:0; border-radius:0; background:none; }
+/* Como la imagen de referencia: la marca en el centro de la barra (avatar a la izquierda y el tiempo a la derecha),
+   la cabecera de la semana más callada y, en lo pendiente, el círculo de marcar delante del texto. */
+#mobile-shell .m-topbar:has(.m-topbar-tiempo) .m-marca { position:absolute; left:50%; transform:translateX(-50%); font-size:19px; }
+#mobile-shell .m-home-editorial .m-mes-cab .m-etiqueta { color:var(--text-secondary); font-weight:500; }
+#mobile-shell .m-home-editorial .m-dia-pill small { font-weight:500; }
+#mobile-shell .m-home-editorial .m-ahora-hora { font-size:64px; }
+#mobile-shell .m-home-editorial .m-pendiente-dia .m-fila, #mobile-shell .m-home-editorial .m-pendientes-inicio .m-fila { gap:14px; }
+#mobile-shell .m-home-editorial .m-pendiente-dia .m-check, #mobile-shell .m-home-editorial .m-pendientes-inicio .m-check { order:-1; width:28px; height:28px; }
+#mobile-shell .m-home-editorial .m-pendientes-inicio .m-lista { padding:0; border:0; border-radius:0; background:none; }
+#mobile-shell .m-home-editorial .m-pendientes-inicio .m-fila { padding:10px 0; background:none; border:0; }
