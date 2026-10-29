@@ -171,7 +171,7 @@
                         if (it.esEvento) return `${titulo}
                         <div class="planner-item planner-item-evento ${isPast ? 'planner-item-past' : ''}" onclick="openEntryDetail('${jsAttr(it.id)}')">
                             <div class="planner-item-time">${it.time ? escapeHtml(it.time) : ''}</div>
-                            <i class="planner-evento-punto" style="background:${escapeHtml(it.color)}" aria-hidden="true"></i>
+                            <i class="planner-evento-punto" style="background:${escapeHtml(colorTema(it.color))}" aria-hidden="true"></i>
                             <div class="planner-item-body"><div class="planner-item-title"><span>${escapeHtml(it.title)}</span></div><div class="planner-item-notes">${escapeHtml(it.sub)}</div></div>
                         </div>`;
                         return `${titulo}
@@ -376,7 +376,7 @@
                 <div class="modal-label">Notas (opcional)</div>
                 <textarea id="planner-item-notes" class="modal-input" rows="2" placeholder="Detalles adicionales...">${escapeHtml(it?.notes || '')}</textarea>
                 <button class="btn-modal-primary" onclick="savePlannerItem(${offset}, '${it?.id || ''}')">${it ? 'guardar.' : 'añadir.'}</button>
-                ${it ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="closeModal();deletePlannerItem('${it.id}', ${offset})">eliminar tarea.</button>` : ''}
+                ${it ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="closeModal();deletePlannerItem('${it.id}', ${offset})">eliminar tarea.</button>` : ''}
             `);
             if (!it) enfocarSiTeclado(() => document.getElementById('planner-item-title'));
         }
@@ -883,7 +883,7 @@
                 <textarea id="rutina-pasos" class="modal-input" rows="3" placeholder="Beber agua&#10;Estirar 5 minutos&#10;Hacer la cama">${escapeHtml((h?.pasos || []).join('\n'))}</textarea>
                 <button class="btn-modal-primary" onclick="guardarRutina('${h?.id || ''}')">guardar.</button>
                 ${h ? `<button class="btn-secondary" style="margin-top:8px" onclick="toggleHabitActiveState('${h.id}')">${h.activo === false ? 'reactivar.' : 'poner en pausa.'}</button>
-                <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteHabit('${h.id}')">eliminar rutina.</button>` : ''}
+                <button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="deleteHabit('${h.id}')">eliminar rutina.</button>` : ''}
             `);
             if (!h) enfocarSiTeclado(() => document.getElementById('rutina-texto'));
         }

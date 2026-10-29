@@ -1815,7 +1815,7 @@
                         return `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div><div class="m-fila-meta">recurrente</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="toggleRecurringTaskDoneToday('${t.id}')" aria-label="Marcar hecha"></button></div>`;
                     }).join('')}
                     ${items.map(it => it.esEvento
-                        ? `<div class="m-fila m-fila-evento" onclick="openEntryDetail('${jsAttr(it.id)}')"><span class="m-fila-hora">${escapeHtml(it.time || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div><div class="m-fila-meta">${escapeHtml(it.sub)}</div></div><i class="m-fila-evento-punto" style="background:${escapeHtml(it.color)}" aria-hidden="true"></i></div>`
+                        ? `<div class="m-fila m-fila-evento" onclick="openEntryDetail('${jsAttr(it.id)}')"><span class="m-fila-hora">${escapeHtml(it.time || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div><div class="m-fila-meta">${escapeHtml(it.sub)}</div></div><i class="m-fila-evento-punto" style="background:${escapeHtml(colorTema(it.color))}" aria-hidden="true"></i></div>`
                         : renderMobileFilaTarea(it, off)).join('')}
                 </div>
                 ${!total ? '<div class="m-vacio">nada todavía.</div>' : ''}
@@ -1993,7 +1993,7 @@
                 }).join('')}</div>
                 ${grupos.length ? `<div class="m-horario-lista">${grupos.map(g => {
                     const color = colorDe(g.subject);
-                    return `<div class="m-horario-fila"><span class="m-horario-hora">${escapeHtml(g.time || '')}</span><i class="m-horario-punto" ${color ? `style="background:${escapeHtml(color)}"` : ''}></i><span class="m-horario-asig">${escapeHtml(g.subject || '')}</span>${g.n > 1 ? `<small>${g.n} sesiones</small>` : ''}</div>`;
+                    return `<div class="m-horario-fila"><span class="m-horario-hora">${escapeHtml(g.time || '')}</span><i class="m-horario-punto" ${color ? `style="background:${escapeHtml(colorTema(color))}"` : ''}></i><span class="m-horario-asig">${escapeHtml(g.subject || '')}</span>${g.n > 1 ? `<small>${g.n} sesiones</small>` : ''}</div>`;
                 }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin clases este día.</div>'}`;
         }
 
@@ -2704,7 +2704,7 @@
                     const prog = projectTaskProgress(p);
                     return `<div class="review-item" data-open-entry="${p.id}">
                         <span class="review-item-text">${escapeHtml(p.title)}</span>
-                        ${prog.total ? `<div class="progress-bar-bg" style="margin:4px 0 0"><div class="progress-bar-fill" style="width:${prog.pct}%;background:#2563eb"></div></div>` : ''}
+                        ${prog.total ? `<div class="progress-bar-bg" style="margin:4px 0 0"><div class="progress-bar-fill" style="width:${prog.pct}%;background:var(--c-2563eb)"></div></div>` : ''}
                     </div>`;
                 }).join('')}
             </div>`;

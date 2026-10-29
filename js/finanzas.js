@@ -432,7 +432,7 @@
                     <span style="display:flex;gap:8px;align-items:center">
                         <strong style="font-variant-numeric:tabular-nums">${financeMoney(a.balance)}</strong>
                         <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px" onclick="openCustomAccountEditor('${a.id}', true)"><i class='ico ico-lapiz' aria-hidden=true></i></button>
-                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceCustomAccount('${a.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
+                        <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:var(--c-dc2626)" onclick="deleteFinanceCustomAccount('${a.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                     </span>
                 </div>`).join('');
         }
@@ -465,7 +465,7 @@
                 <div class="modal-label">Saldo actual (€)</div>
                 <input id="edit-acc-balance" class="modal-input" type="number" step="0.01" value="${Number(acc.balance || 0)}">
                 <button class="btn-modal-primary" onclick="saveCustomAccountEditor('${id}')">guardar.</button>
-                <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceCustomAccount('${id}')">eliminar cuenta.</button>
+                <button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="deleteFinanceCustomAccount('${id}')">eliminar cuenta.</button>
             `);
             enfocarSiTeclado(() => document.getElementById('edit-acc-name'));
         }
@@ -558,7 +558,7 @@
                 <div style="text-align:center;padding:12px 0">
                     <div style="font-size:12px;color:var(--text-secondary)">Patrimonio operativo</div>
                     <div style="font-size:24px;font-weight:700;margin:8px 0">${financeMoney(before)} → ${financeMoney(after)}</div>
-                    <div style="font-size:15px;font-weight:600;color:${delta >= 0 ? '#10b981' : '#dc2626'}">${delta >= 0 ? '+' : ''}${financeMoney(delta)} este mes</div>
+                    <div style="font-size:15px;font-weight:600;color:${delta >= 0 ? 'var(--c-10b981)' : 'var(--c-dc2626)'}">${delta >= 0 ? '+' : ''}${financeMoney(delta)} este mes</div>
                 </div>
                 <button class="btn-modal-primary" onclick="closeModal()">aceptar.</button>
             `);
@@ -1125,7 +1125,7 @@
                 <tr class="budget-history-total-row"><td>Total</td><td>${financeMoney(totalPrevisto)}</td><td>${financeMoney(totalReal)}</td><td>${financeMoney(totalPrevisto - totalReal)}</td></tr>
             </table>
             ${h.saved ? `<div class="finance-empty-line" style="margin-top:10px">Sin asignar a ninguna casilla, ahorrado: <strong style="color:var(--text-primary)">${financeMoney(h.saved)}</strong></div>` : ''}
-            <button class="finance-oneoff-btn" style="margin-top:10px;color:#c2455c;border-color:#c2455c" onclick="deleteBudgetHistoryMonth('${h.month}')">eliminar registro.</button>`;
+            <button class="finance-oneoff-btn" style="margin-top:10px;color:var(--c-c2455c);border-color:var(--c-c2455c)" onclick="deleteBudgetHistoryMonth('${h.month}')">eliminar registro.</button>`;
         }
 
         // Un mes "grabado" no es definitivo: se puede sacar de vuelta a

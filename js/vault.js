@@ -360,7 +360,7 @@
                             <label class="modal-label">Repetir contraseña</label>
                             <input type="password" id="pw-new2" class="modal-input" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')createPassword('${type}')">
                         </div>
-                        <div id="pw-create-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                        <div id="pw-create-error" style="color:var(--c-dc2626);font-size:12px;margin-bottom:8px;min-height:16px"></div>
                         <button class="btn-modal-primary" onclick="createPassword('${type}')" style="background:var(--vault-accent)">
                             🔐 Crear contraseña
                         </button>
@@ -383,7 +383,7 @@
                         <label class="modal-label">Contraseña</label>
                         <input type="password" id="pw-input" class="modal-input" placeholder="Tu contraseña" onkeydown="if(event.key==='Enter')verifyPassword('${type}')">
                     </div>
-                    <div id="pw-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                    <div id="pw-error" style="color:var(--c-dc2626);font-size:12px;margin-bottom:8px;min-height:16px"></div>
                     <button class="btn-modal-primary" onclick="verifyPassword('${type}')" style="background:var(--vault-accent)">
                         Verificar
                     </button>
@@ -481,7 +481,7 @@
                     <label class="modal-label">Repetir contraseña</label>
                     <input type="password" id="dev-pw-new2" class="modal-input" placeholder="Repite la contraseña" onkeydown="if(event.key==='Enter')confirmCreateDevPassword()">
                 </div>
-                <div id="dev-pw-create-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                <div id="dev-pw-create-error" style="color:var(--c-dc2626);font-size:12px;margin-bottom:8px;min-height:16px"></div>
                 <button class="btn-modal-primary" onclick="confirmCreateDevPassword()" style="background:var(--accent-purple)">
                     🔐 Establecer contraseña
                 </button>
@@ -554,7 +554,7 @@
                         <label class="modal-label">Contraseña</label>
                         <input type="password" id="pw-dev-input" class="modal-input" placeholder="Contraseña global" onkeydown="if(event.key==='Enter')verifyDevPassword()">
                     </div>
-                    <div id="pw-dev-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                    <div id="pw-dev-error" style="color:var(--c-dc2626);font-size:12px;margin-bottom:8px;min-height:16px"></div>
                     <button class="btn-modal-primary" onclick="verifyDevPassword()" style="background:var(--accent-purple)">🔓 Activar</button>
                 `);
 
@@ -642,7 +642,7 @@
                 <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
                     <button class="btn-modal-primary" style="width:auto;background:var(--accent-purple)" onclick="savePrompt()">💾 Guardar</button>
                     <button class="btn-secondary" style="width:auto" onclick="copyPromptToClipboard()">📋 Copiar</button>
-                    ${p ? `<button class="btn-secondary" style="width:auto;color:#dc2626" onclick="deletePrompt('${p.id}')">🗑 Eliminar</button>` : ''}
+                    ${p ? `<button class="btn-secondary" style="width:auto;color:var(--c-dc2626)" onclick="deletePrompt('${p.id}')">🗑 Eliminar</button>` : ''}
                 </div>
             `;
         }
@@ -832,7 +832,7 @@
                     <label class="modal-label">Repetir nueva contraseña</label>
                     <input type="password" id="pw-new2-v" class="modal-input" placeholder="Repite la contraseña">
                 </div>
-                <div id="pw-change-error-v" style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px"></div>
+                <div id="pw-change-error-v" style="color:var(--c-dc2626);font-size:12px;margin-bottom:8px;min-height:16px"></div>
                 <button class="btn-modal-primary" onclick="updateVaultPassword()" style="background:var(--vault-accent)">🔐 Cambiar contraseña</button>
             `);
         }

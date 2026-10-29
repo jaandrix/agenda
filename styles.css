@@ -9794,7 +9794,10 @@ body:not(.papel) .beta-insignia { color: #6c9cf0; }
 body.papel:not(.acuarela):not(.pizarra):not(.oliva) { --m-acento: #302f2c; --m-sobre-acento: #FAF8F5; }
 /* Asfalto, igual pero al revés: el acento pasa a la tinta clara. */
 body:not(.papel):not(.fundador) { --m-acento: #efede3; --m-sobre-acento: #302f2c; }
-:is(body.papel:not(.acuarela):not(.pizarra):not(.oliva), body:not(.papel):not(.fundador)) :is(img, video, canvas, [style*="background"], [style*="color:"], [style*="fill"], [style*="stroke"]):not(.estado-color) { filter: grayscale(1); }
+:is(body.papel:not(.acuarela):not(.pizarra):not(.oliva), body:not(.papel):not(.fundador)) :is(img, video) { filter: grayscale(1); }
+/* Colores fijos de los estilos en línea, como variables: en los temas en blanco y negro, su gris (antes, el filtro). */
+:root { --c-10b981:#10b981; --c-16a34a:#16a34a; --c-2563eb:#2563eb; --c-3b82f6:#3b82f6; --c-5b8def:#5b8def; --c-7f1d1d:#7f1d1d; --c-b3261e:#b3261e; --c-c2455c:#c2455c; --c-d97706:#d97706; --c-dc2626:#dc2626; --c-e17055:#e17055; --c-ec4899:#ec4899; --c-ffffff:#ffffff; }
+:is(body.papel:not(.acuarela):not(.pizarra):not(.oliva), body:not(.papel):not(.fundador)) { --c-10b981:#919191; --c-16a34a:#7f7f7f; --c-2563eb:#606060; --c-3b82f6:#7b7b7b; --c-5b8def:#898989; --c-7f1d1d:#323232; --c-b3261e:#434343; --c-c2455c:#616161; --c-d97706:#848484; --c-dc2626:#4d4d4d; --c-e17055:#868686; --c-ec4899:#717171; --c-ffffff:#ffffff; }
 
 /* Eventos del calendario dentro del planificador: sin casilla, con el punto de su categoría. */
 .planner-item-evento { cursor: pointer; }

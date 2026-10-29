@@ -670,7 +670,7 @@
                 const barsHtml = dayEntries.slice(0, 4).map(e => {
                     const cat = categories.find(c => c.id === e.categoryId);
                     const color = cat ? tintaCategoria(cat.color) : 'var(--text-muted)';
-                    return `<span style="width:5px;height:5px;border-radius:50%;display:block;background:${color};flex-shrink:0"></span>`;
+                    return `<span style="width:5px;height:5px;border-radius:50%;display:block;background:${colorTema(color)};flex-shrink:0"></span>`;
                 }).join('');
 
                 const extra = dayEntries.length > 4 ?
@@ -744,7 +744,7 @@
                         ${dayEntries.slice(0, 4).map(e => {
                             const cat = categories.find(c => c.id === e.categoryId);
                             const color = tintaCategoria(cat?.color) || 'var(--text-secondary)';
-                            return `<div class="cal-week-item" style="border-left-color:${color}">${escapeHtml(e.title || '')}</div>`;
+                            return `<div class="cal-week-item" style="border-left-color:${colorTema(color)}">${escapeHtml(e.title || '')}</div>`;
                         }).join('') || '<div class="cal-week-empty">—</div>'}
                         ${dayEntries.length > 4 ? `<div class="cal-week-more">+${dayEntries.length - 4} más</div>` : ''}
                     </div>
@@ -884,7 +884,7 @@
 
                 return `
                 <div class="entry-item" data-open-entry="${escapeHtml(e.id)}">
-                    <div class="entry-color-dot" style="background:${escapeHtml(color)}"></div>
+                    <div class="entry-color-dot" style="background:${escapeHtml(colorTema(color))}"></div>
                     <div class="entry-info">
                         <div class="entry-title">${titleHtml}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
                         <div class="entry-meta">${metaHtml}</div>
@@ -932,7 +932,7 @@
 
                 return `
                 <div class="day-entry-card" data-open-entry="${escapeHtml(e.id)}">
-                    <div class="day-entry-dot" style="background:${escapeHtml(color)}"></div>
+                    <div class="day-entry-dot" style="background:${escapeHtml(colorTema(color))}"></div>
                     <div class="day-entry-body">
                         <div class="day-entry-title">${titleHtml}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
                         <div class="day-entry-meta">${metaHtml}</div>

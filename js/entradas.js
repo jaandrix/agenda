@@ -50,7 +50,7 @@
                 const pPriority = entry.priority || 'media';
                 fields+=detailField('Descripción',escapeHtml(entry.description||''));
                 fields+=detailField('Estado',pBucket);
-                fields+=detailField('Prioridad',`<span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[pPriority]}"></span> ${PROJECT_PRIORITY_LABEL[pPriority]}`);
+                fields+=detailField('Prioridad',`<span class="project-priority-dot" style="background:${colorTema(PROJECT_PRIORITY_COLOR[pPriority])}"></span> ${PROJECT_PRIORITY_LABEL[pPriority]}`);
                 if(entry.endDate){
                     const overdue = entry.endDate < todayISO() && pBucket !== 'Completado';
                     fields+=detailField('Fecha límite', overdue ? `<span class="project-overdue">${escapeHtml(fechaLegible(entry.endDate))} (vencido)</span>` : escapeHtml(fechaLegible(entry.endDate)));
@@ -59,7 +59,7 @@
                 const doneCount = tasks.filter(t=>t.done).length;
                 const pct = tasks.length ? Math.round(doneCount/tasks.length*100) : 0;
                 fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Ruta de hitos${tasks.length?`, ${doneCount}/${tasks.length}, ${pct}%`:''}</div>
-                    ${tasks.length?`<div class="progress-bar-bg" style="margin-bottom:4px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>`:''}
+                    ${tasks.length?`<div class="progress-bar-bg" style="margin-bottom:4px"><div class="progress-bar-fill" style="width:${pct}%;background:var(--c-2563eb)"></div></div>`:''}
                     ${tasks.length?`<div class="project-roadmap">${tasks.map((task,i)=>`
                         <label class="project-roadmap-item" onclick="event.stopPropagation()">
                             <input type="checkbox" class="project-roadmap-checkbox" ${task.done?'checked':''} onchange="toggleProjectTask('${entry.id}',${i})">
@@ -80,7 +80,7 @@
                 const gPct = goalProgressPct(entry);
                 if(gPct!==null){
                     fields+=`<div class="entry-detail-field" style="grid-column:1/-1"><div class="entry-detail-label">Progreso</div>
-                        <div class="progress-bar-bg" style="margin-bottom:6px"><div class="progress-bar-fill" style="width:${gPct}%;background:#2563eb"></div></div>
+                        <div class="progress-bar-bg" style="margin-bottom:6px"><div class="progress-bar-fill" style="width:${gPct}%;background:var(--c-2563eb)"></div></div>
                         <div class="entry-detail-value">${goalNumber(entry.currentValue)} / ${goalNumber(entry.targetValue)} ${escapeHtml(entry.unit||'')}, ${gPct}%</div></div>`;
                 }
                 const milestones=Array.isArray(entry.milestones)?entry.milestones:[];
@@ -857,7 +857,7 @@
                 <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
                     <input class="modal-input" style="flex:2" value="${exp.description || ''}" placeholder="Concepto" onchange="updateExpense(${index}, 'description', this.value)">
                     <input class="modal-input" style="flex:1" type="number" value="${exp.amount || ''}" placeholder="€" onchange="updateExpense(${index}, 'amount', this.value)">
-                    <button onclick="removeExpense(${index})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px"><i class='ico ico-x' aria-hidden=true></i></button>
+                    <button onclick="removeExpense(${index})" style="background:none;border:none;color:var(--c-dc2626);cursor:pointer;font-size:18px"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>`;
         }
 

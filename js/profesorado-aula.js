@@ -257,7 +257,7 @@ function openColumnaProfe(id) {
         <div class="profe-dias-elegir">${[['', 'ninguna'], ['1', '1ª'], ['2', '2ª'], ['3', '3ª']].map(([k, t]) => `<button type="button" class="profe-chip ${window._profePeriodo === k ? 'activa' : ''}" onclick="window._profePeriodo='${k}';this.parentNode.querySelectorAll('.profe-chip').forEach(b=>b.classList.toggle('activa',b===this))">${t}</button>`).join('')}</div>
         <div class="finance-modal-note">El peso cuenta cuánto vale esta columna en la media frente a las demás: un examen con peso 3 vale el triple que unos deberes con peso 1.</div>
         <button class="btn-modal-primary" onclick="guardarColumnaProfe('${e?.id || ''}')">guardar.</button>
-        ${e ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarColumnaProfe('${e.id}')">eliminar columna y sus notas.</button>` : ''}
+        ${e ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="borrarColumnaProfe('${e.id}')">eliminar columna y sus notas.</button>` : ''}
         <button class="btn-secondary" style="margin-top:8px" onclick="repintarFichaProfe()">volver.</button>`;
     enfocarSiTeclado(() => document.getElementById('profe-col-nombre'));
 }
@@ -310,7 +310,7 @@ function renderAlumnoProfe(c) {
         </div>
         <div class="profe-botones">
             <button class="pedido-btn" onclick="profeRenombrarAlumno('${a.id}')">cambiar nombre.</button>
-            <button class="pedido-btn" style="color:#dc2626" onclick="profeBorrarAlumno('${a.id}')">quitar de la clase.</button>
+            <button class="pedido-btn" style="color:var(--c-dc2626)" onclick="profeBorrarAlumno('${a.id}')">quitar de la clase.</button>
         </div>`;
 }
 
@@ -360,7 +360,7 @@ function renderDeberesProfe(c) {
                 ${c.alumnos.length ? `<div class="profe-deber-alumnos">${[...c.alumnos].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map(a => `<label class="profe-check-linea"><input type="checkbox" ${d.entregados?.[a.id] ? 'checked' : ''} onchange="profeEntregado('${d.id}','${a.id}',this.checked)"> ${escapeHtml(a.nombre)}</label>`).join('')}</div>` : '<div class="profe-ficha-vacio">Añade alumnos en el cuaderno para marcar quién lo entrega.</div>'}
                 <div class="profe-botones">
                     ${d.evaluacionId ? `<button class="pedido-btn" onclick="profeIrPestana('cuaderno')">ver sus notas.</button>` : `<button class="pedido-btn" onclick="profeCalificarDeber('${d.id}')">calificar en el cuaderno.</button>`}
-                    <button class="pedido-btn" style="color:#dc2626" onclick="profeBorrarDeber('${d.id}')">eliminar.</button>
+                    <button class="pedido-btn" style="color:var(--c-dc2626)" onclick="profeBorrarDeber('${d.id}')">eliminar.</button>
                 </div>
             </div>
         </details>`;
@@ -489,7 +489,7 @@ function renderHorarioSemanalProfe() {
         <div class="profe-semana-cab"><span></span>${dias.map(d => `<span class="${d === hoyDia ? 'hoy' : ''}">${PROFE_DIAS[d]}</span>`).join('')}</div>
         <div class="profe-semana-cuerpo" style="height:${alto}px">
             <div class="profe-semana-horas">${horas.map(m => `<span style="top:${(m - desde) * 1.1}px">${String(m / 60).padStart(2, '0')}:00</span>`).join('')}</div>
-            ${dias.map(d => `<div class="profe-semana-dia ${d === hoyDia ? 'hoy' : ''}">${horas.map(m => `<i style="top:${(m - desde) * 1.1}px"></i>`).join('')}${franjas.filter(f => Number(f.dia) === d).map(f => `<button class="profe-bloque" style="--c:${f.c.color};top:${(min(f.inicio) - desde) * 1.1}px;height:${(min(f.fin) - min(f.inicio)) * 1.1 - 3}px" onclick="openFichaClaseProfe('${f.c.id}','horario')"><b>${escapeHtml(f.c.nombre)}</b><small>${f.inicio}–${f.fin}${f.aula ? `, ${escapeHtml(f.aula)}` : ''}</small></button>`).join('')}</div>`).join('')}
+            ${dias.map(d => `<div class="profe-semana-dia ${d === hoyDia ? 'hoy' : ''}">${horas.map(m => `<i style="top:${(m - desde) * 1.1}px"></i>`).join('')}${franjas.filter(f => Number(f.dia) === d).map(f => `<button class="profe-bloque" style="--c:${colorTema(f.c.color)};top:${(min(f.inicio) - desde) * 1.1}px;height:${(min(f.fin) - min(f.inicio)) * 1.1 - 3}px" onclick="openFichaClaseProfe('${f.c.id}','horario')"><b>${escapeHtml(f.c.nombre)}</b><small>${f.inicio}–${f.fin}${f.aula ? `, ${escapeHtml(f.aula)}` : ''}</small></button>`).join('')}</div>`).join('')}
         </div>
     </div>`;
 }

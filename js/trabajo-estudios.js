@@ -649,7 +649,7 @@
                         <div class="card bone-surface" style="margin:0">
                             <div class="label" style="font-size:12px;color:var(--bone-muted);font-weight:600">asignaturas.</div>
                             <div style="font-size:13px;color:var(--bone-text);margin-top:6px">
-                                <strong style="color:#16a34a">${ex.aprobadas}</strong> aprobadas, <strong style="color:#dc2626">${ex.suspensas}</strong> suspensas, <strong>${ex.pendientes}</strong> pendientes
+                                <strong style="color:var(--c-16a34a)">${ex.aprobadas}</strong> aprobadas, <strong style="color:var(--c-dc2626)">${ex.suspensas}</strong> suspensas, <strong>${ex.pendientes}</strong> pendientes
                             </div>
                             ${ex.hasCreditos ? `<div style="font-size:11px;color:var(--bone-muted);margin-top:6px">${ex.creditosSuperados} / ${ex.creditosTotales} créditos superados</div>` : ''}
                         </div>
@@ -711,9 +711,9 @@
             <div class="studies-view">
                 ${pestanasEstudios('studies')}
                 ${nextExam ? `
-                <div class="event-hero" style="border-color:${(nextExam.subjectColor || '#3b82f6')}66;margin-bottom:18px">
+                <div class="event-hero" style="border-color:${colorTema(nextExam.subjectColor || '#3b82f6')}66;margin-bottom:18px">
                     <div class="event-hero-body">
-                        <div class="event-hero-kicker" style="color:${nextExam.subjectColor || '#3b82f6'}">Próximo examen, ${eventCountdownLabel(nextExam.date)}</div>
+                        <div class="event-hero-kicker" style="color:${colorTema(nextExam.subjectColor || '#3b82f6')}">Próximo examen, ${eventCountdownLabel(nextExam.date)}</div>
                         <div class="event-hero-title">${escapeHtml(nextExam.title || 'Examen')} – ${escapeHtml(nextExam.subjectName)}</div>
                         <div class="event-hero-meta">${escapeHtml(nextExam.date)}</div>
                     </div>
@@ -815,18 +815,18 @@ function openCalendarioEntregas(paso) {
     delMes.forEach(e => { (porDia[e.x.date] ||= []).push(e); });
     const color = s => escapeHtml(s.color || 'var(--text-secondary)');
     const estado = e => estadoItemAsignatura(e.clave, e.x).clave;
-    const chip = e => `<button class="ent-chip ${estado(e)}" onclick="closeModal();openSubjectDetail('${jsAttr(e.s.id)}')" title="${escapeHtml(e.s.name)}: ${escapeHtml(e.x.title || e.tipo)}"><i style="background:${color(e.s)}" aria-hidden="true"></i><span>${e.tipo === 'examen' ? 'examen. ' : ''}${escapeHtml(e.x.title || e.tipo)}</span></button>`;
+    const chip = e => `<button class="ent-chip ${estado(e)}" onclick="closeModal();openSubjectDetail('${jsAttr(e.s.id)}')" title="${escapeHtml(e.s.name)}: ${escapeHtml(e.x.title || e.tipo)}"><i style="background:${colorTema(color(e.s))}" aria-hidden="true"></i><span>${e.tipo === 'examen' ? 'examen. ' : ''}${escapeHtml(e.x.title || e.tipo)}</span></button>`;
     const celdas = [];
     for (let i = 0; i < hueco; i++) celdas.push('<div class="ent-dia vacio"></div>');
     for (let d = 1; d <= diasMes; d++) {
         const iso = `${entregasMes}-${String(d).padStart(2, '0')}`;
         const l = porDia[iso] || [];
-        celdas.push(`<div class="ent-dia ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''} ${l.length ? 'con' : ''}"><b>${d}</b>${l.map(chip).join('')}<span class="ent-puntos">${l.map(e => `<i style="background:${color(e.s)}"></i>`).join('')}</span></div>`);
+        celdas.push(`<div class="ent-dia ${iso === hoy ? 'hoy' : ''} ${iso < hoy ? 'pasado' : ''} ${l.length ? 'con' : ''}"><b>${d}</b>${l.map(chip).join('')}<span class="ent-puntos">${l.map(e => `<i style="background:${colorTema(color(e.s))}"></i>`).join('')}</span></div>`);
     }
     const nombreMes = primero.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
     const lista = delMes.length ? delMes.map(e => {
         const f = new Date(e.x.date + 'T12:00:00');
-        return `<button class="ent-fila ${estado(e)}" onclick="closeModal();openSubjectDetail('${jsAttr(e.s.id)}')"><span class="ent-fila-dia"><b>${f.getDate()}</b>${f.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')}</span><i style="background:${color(e.s)}" aria-hidden="true"></i><span class="ent-fila-txt"><b>${escapeHtml(e.x.title || e.tipo)}</b><small>${e.tipo}, ${escapeHtml(e.s.name)}${e.x.time ? `, ${escapeHtml(e.x.time)}` : ''}, ${estadoItemAsignatura(e.clave, e.x).texto}</small></span></button>`;
+        return `<button class="ent-fila ${estado(e)}" onclick="closeModal();openSubjectDetail('${jsAttr(e.s.id)}')"><span class="ent-fila-dia"><b>${f.getDate()}</b>${f.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')}</span><i style="background:${colorTema(color(e.s))}" aria-hidden="true"></i><span class="ent-fila-txt"><b>${escapeHtml(e.x.title || e.tipo)}</b><small>${e.tipo}, ${escapeHtml(e.s.name)}${e.x.time ? `, ${escapeHtml(e.x.time)}` : ''}, ${estadoItemAsignatura(e.clave, e.x).texto}</small></span></button>`;
     }).join('') : '<p class="finance-modal-note">Nada este mes.</p>';
     showModal(`<div class="modal-title">calendario de entregas.<button class="modal-close" aria-label="cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
         <div class="ent-cab"><button class="vista-icono-btn" onclick="openCalendarioEntregas(-1)" aria-label="mes anterior"><i class='ico ico-izq' aria-hidden=true></i></button><b>${nombreMes}.</b><button class="vista-icono-btn" onclick="openCalendarioEntregas(1)" aria-label="mes siguiente"><i class='ico ico-der' aria-hidden=true></i></button></div>

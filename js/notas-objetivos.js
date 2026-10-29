@@ -225,12 +225,12 @@
 
                     html += `
                         <div class="entry-item" style="align-items:flex-start" data-open-entry="${e.id}">
-                            <div class="entry-color-dot" style="background:${color};margin-top:6px"></div>
+                            <div class="entry-color-dot" style="background:${colorTema(color)};margin-top:6px"></div>
                             <div class="entry-info">
                                 <div class="entry-title">${escapeHtml(e.title)}</div>
                                 <div class="entry-meta">${tags} ${e.notes ? ', ' + linkifyText(e.notes) : ''}</div>
                                 ${pct !== null ? `
-                                    <div class="progress-bar-bg" style="margin-top:8px;max-width:260px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>
+                                    <div class="progress-bar-bg" style="margin-top:8px;max-width:260px"><div class="progress-bar-fill" style="width:${pct}%;background:var(--c-2563eb)"></div></div>
                                     <div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${goalNumber(e.currentValue)} / ${goalNumber(e.targetValue)} ${escapeHtml(e.unit || '')}, ${pct}%</div>
                                 ` : ''}
                                 ${milestones.length ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${msDone}/${milestones.length} hitos</div>` : ''}
@@ -265,7 +265,7 @@
                             return `
                             <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${g.id}')" data-open-entry="${g.id}" data-color="${color}" style="--c:${color}">
                                 <div class="kanban-card-title">${escapeHtml(g.title)}</div>
-                                ${pct !== null ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>` : ''}
+                                ${pct !== null ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:var(--c-2563eb)"></div></div>` : ''}
                             </div>`;
                         }).join('')}
                     </div>`;

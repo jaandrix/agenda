@@ -145,7 +145,7 @@ function openCitaLaboral(id, fecha) {
         <div class="modal-label">notas</div>
         <textarea id="lab-notas" class="modal-input" rows="2">${escapeHtml(c?.notas || '')}</textarea>
         <button class="btn-modal-primary" onclick="guardarCitaLaboral('${c?.id || ''}')">guardar.</button>
-        ${c ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarCitaLaboral('${c.id}')">eliminar cita.</button>` : ''}
+        ${c ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="borrarCitaLaboral('${c.id}')">eliminar cita.</button>` : ''}
     `);
     enfocarSiTeclado(() => document.getElementById('lab-titulo'));
 }

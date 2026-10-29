@@ -506,7 +506,7 @@
                     <div style="font-weight:600;font-size:13px;margin:4px 0 8px 0;color:var(--text-primary)">Cumpleaños</div>
                     ${rangeBirthdays.map(b => `
                         <div class="entry-item">
-                            <div class="entry-color-dot" style="background:#ec4899"></div>
+                            <div class="entry-color-dot" style="background:var(--c-ec4899)"></div>
                             <div class="entry-info">
                                 <div class="entry-title">cumpleaños de ${escapeHtml(b.title)}</div>
                                 <div class="entry-meta">${b.birthDate.slice(8,10)}/${b.birthDate.slice(5,7)}</div>
@@ -521,7 +521,7 @@
                         const dateInfo = e.startDate || e.endDate || e.date || '';
                         return `
                             <div class="entry-item" onclick="closeModal();switchView('calendar');showDayEntries('${dateInfo}')">
-                                <div class="entry-color-dot" style="background:${color}"></div>
+                                <div class="entry-color-dot" style="background:${colorTema(color)}"></div>
                                 <div class="entry-info">
                                     <div class="entry-title">${escapeHtml(e.title)}</div>
                                     <div class="entry-meta">${dateInfo}</div>

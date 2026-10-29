@@ -166,7 +166,7 @@ function openProyectoTarea(tid) {
         <textarea id="pt-notas" class="modal-input" rows="3">${escapeHtml(t.notas || '')}</textarea>
         <button class="btn-modal-primary" onclick="guardarProyectoTarea('${tid}')">guardar.</button>
         <button class="btn-secondary" style="margin-top:8px" onclick="closeModal();proyectoAHoy('${p.id}','${tid}')">→ hoy.</button>
-        <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarProyectoTarea('${tid}')">eliminar tarea.</button>
+        <button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="borrarProyectoTarea('${tid}')">eliminar tarea.</button>
     `);
 }
 

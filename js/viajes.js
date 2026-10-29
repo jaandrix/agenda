@@ -247,7 +247,7 @@
                 <button class="btn-secondary" style="width:auto;margin-bottom:14px" onclick="closeTripManager()">← Volver a Viajes</button>
                 <div class="trip-manager-header">
                     <div>
-                        <span class="trip-status-badge" style="--badge-color:${status.color}">${status.label}</span>
+                        <span class="trip-status-badge" style="--badge-color:${colorTema(status.color)}">${status.label}</span>
                         <div class="trip-manager-title">${escapeHtml(t.title)}</div>
                         <div class="trip-manager-sub">${escapeHtml(t.destination || '')}${t.startDate ? ', ' + escapeHtml(formatTravelRange(t.startDate, t.endDate)) : ''}${financeProGastoViaje(t.id) ? `, ${financeMoney(financeProGastoViaje(t.id))} gastados` : ''}</div>
                     </div>

@@ -812,7 +812,7 @@ function openSesionProfe(id) {
         <input id="profe-ses-fecha" class="modal-input" type="date" value="${s.fecha}">
         <div class="profe-dias-elegir">${chipsDiasProfe(c, profeSumar(isoLocal(new Date()) > s.fecha ? isoLocal(new Date()) : s.fecha, 1), "document.getElementById('profe-ses-fecha').value='$D'")}</div>
         <button class="btn-modal-primary" onclick="guardarSesionProfe('${s.id}')">guardar.</button>
-        <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarSesionProfe('${s.id}')">eliminar tarea.</button>
+        <button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="borrarSesionProfe('${s.id}')">eliminar tarea.</button>
     `);
 }
 
@@ -861,7 +861,7 @@ function openClaseProfe(id) {
         <div class="profe-dias-elegir">${[1, 2, 3, 4, 5, 6].map(d => `<button type="button" class="profe-chip ${window._profeDias.includes(d) ? 'activa' : ''}" onclick="profeDiaElegir(${d},this)">${PROFE_DIAS[d]}</button>`).join('')}</div>
         <div class="finance-modal-note">Si no marcas ninguno, cuenta de lunes a viernes. Con los días, el cuadrante apaga los demás y "asignar al día…", "repartir temario." y "correr el temario." saben dónde van las tareas. Si pones su horario (ficha de la clase → horario.), los días se toman de ahí.</div>
         <button class="btn-modal-primary" onclick="guardarClaseProfe('${c?.id || ''}')">guardar.</button>
-        ${c ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarClaseProfe('${c.id}')">eliminar clase.</button>` : ''}
+        ${c ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="borrarClaseProfe('${c.id}')">eliminar clase.</button>` : ''}
     `);
     enfocarSiTeclado(() => document.getElementById('profe-nombre'));
 }

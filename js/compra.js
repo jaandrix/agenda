@@ -413,7 +413,7 @@ function openCompraHistorial(id) {
             ${extras.length ? `<div class="compra-seccion-titulo" style="margin-top:16px">añadido en la tienda. <span>${financeMoney(suma(extras))}</span></div>${extras.map(linea).join('')}` : ''}
             ${(c.sinComprar || []).length ? `<div class="compra-seccion-titulo" style="margin-top:16px">de la lista, sin comprar.</div>${c.sinComprar.map(t => `<div class="compra-hist-linea"><span>${escapeHtml(t)}</span></div>`).join('')}` : ''}`
             : `${(c.items || []).map(linea).join('')}<p class="finance-modal-note">Pásale la foto del ticket a Claude o ChatGPT con el conector y se unirá a esta compra con sus precios.</p>`}
-        <button class="btn-secondary" style="margin-top:16px;color:#dc2626" onclick="borrarCompraHistorial('${c.id}')">quitar del historial.</button>
+        <button class="btn-secondary" style="margin-top:16px;color:var(--c-dc2626)" onclick="borrarCompraHistorial('${c.id}')">quitar del historial.</button>
     `);
 }
 
@@ -481,7 +481,7 @@ function openCompraItem(id) {
         <div class="finance-modal-note" style="margin-top:4px">Si la cambias, Bitácora lo recuerda para la próxima vez.</div>
         ${precios.length ? `<div class="modal-label" style="margin-top:12px">lo que te ha costado.</div>${precios.map(p => `<div class="compra-hist-linea"><span>${new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}${p.tienda ? `, ${escapeHtml(p.tienda)}` : ''}</span><i>${financeMoney(p.precio)}</i></div>`).join('')}` : ''}
         <button class="btn-modal-primary" style="margin-top:14px" onclick="guardarCompraItem('${id}')">guardar.</button>
-        <button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarCompraItem('${id}')">quitar de la lista.</button>
+        <button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="borrarCompraItem('${id}')">quitar de la lista.</button>
     `);
 }
 
@@ -515,7 +515,7 @@ function openCompraListas() {
         ${d.listas.map(l => `<div class="compra-lista-fila"><b>${escapeHtml(l.nombre)}</b><span>${l.items.length} productos</span>
             <button class="pedido-btn" onclick="compartirListaCompra('${l.id}')">compartir.</button>
             <button class="pedido-btn" onclick="compraRenombrarLista('${l.id}')">renombrar.</button>
-            ${d.listas.length > 1 ? `<button class="pedido-btn" style="color:#dc2626" onclick="compraBorrarLista('${l.id}')">eliminar.</button>` : ''}</div>`).join('')}
+            ${d.listas.length > 1 ? `<button class="pedido-btn" style="color:var(--c-dc2626)" onclick="compraBorrarLista('${l.id}')">eliminar.</button>` : ''}</div>`).join('')}
         <div class="compra-anadir" style="margin-top:12px">
             <input id="compra-lista-nueva" class="modal-input" placeholder="Nombre de la lista nueva">
             <button class="btn-modal-primary" onclick="compraNuevaLista()">crear.</button>
@@ -829,7 +829,7 @@ function openReceta(id) {
         <button class="btn-modal-primary" style="margin-top:16px" onclick="recetaALaLista('${r.id}');closeModal()">añadir a la lista lo que falte.</button>
         <div class="compra-receta-acciones">
             <button class="btn-secondary" onclick="openEditarReceta('${r.id}')">editar.</button>
-            <button class="btn-secondary" style="color:#dc2626" onclick="borrarReceta('${r.id}')">borrar.</button>
+            <button class="btn-secondary" style="color:var(--c-dc2626)" onclick="borrarReceta('${r.id}')">borrar.</button>
         </div>
     `);
 }
@@ -1064,7 +1064,7 @@ function openPlato(fecha, id) {
         <textarea id="plato-ingredientes" class="modal-input" rows="5" placeholder="lentejas\nchorizo\n2 zanahorias">${escapeHtml(p ? compraIngredientesTexto({ ingredientes: compraIngredientesPlato(p) }) : '')}</textarea>
         ${habituales.length ? `<div class="compra-receta-sugeridas"><span>de tus compras:</span>${habituales.map(t => `<button type="button" class="profe-chip" onclick="platoAnadirIngrediente('${jsAttr(t)}')">+ ${escapeHtml(t)}</button>`).join('')}</div>` : ''}
         <button class="btn-modal-primary" style="margin-top:14px" onclick="guardarPlato('${fecha}'${p ? `,'${jsAttr(p.id)}'` : ''})">guardar.</button>
-        ${p ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarPlato('${fecha}','${jsAttr(p.id)}')">quitar el plato.</button>` : ''}
+        ${p ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="borrarPlato('${fecha}','${jsAttr(p.id)}')">quitar el plato.</button>` : ''}
     `);
     if (!p) enfocarSiTeclado(() => document.getElementById('plato-nombre'));
 }

@@ -57,7 +57,7 @@
             return `
                 <section class="enlaces-categoria" data-cat="${id}">
                     <div class="enlaces-bloque-cab">
-                        <span class="enlaces-cat-punto" style="${c?.color ? `background:${escapeHtml(c.color)}` : ''}" aria-hidden="true"></span>
+                        <span class="enlaces-cat-punto" style="${c?.color ? `background:${escapeHtml(colorTema(c.color))}` : ''}" aria-hidden="true"></span>
                         <span class="enlaces-bloque-titulo">${escapeHtml(c ? c.name : 'sin categoría')}.</span>
                         <span class="vista-contador">${items.length}</span>
                         ${c ? `<button class="vista-icono-btn enlaces-cat-menu" aria-label="Opciones de ${escapeHtml(c.name)}" aria-haspopup="menu" onclick="menuCategoriaEnlace(this,'${jsAttr(c.id)}')"><i class="ico ico-puntos" aria-hidden="true"></i></button>` : ''}
@@ -179,7 +179,7 @@
                 <div class="modal-label">nombre.</div>
                 <input id="link-cat-name" class="modal-input" value="${escapeHtml(c.name)}">
                 <div class="modal-label">color.</div>
-                <div class="link-color-picker">${LINK_CATEGORY_COLORS.map(col => `<button type="button" class="link-color-swatch ${col === c.color ? 'selected' : ''}" style="background:${col}" data-color="${col}" aria-label="Color ${col}" onclick="selectLinkColor(this)"></button>`).join('')}</div>
+                <div class="link-color-picker">${LINK_CATEGORY_COLORS.map(col => `<button type="button" class="link-color-swatch ${col === c.color ? 'selected' : ''}" style="background:${colorTema(col)}" data-color="${col}" aria-label="Color ${col}" onclick="selectLinkColor(this)"></button>`).join('')}</div>
                 <input type="hidden" id="link-cat-color" value="${escapeHtml(c.color || LINK_CATEGORY_COLORS[0])}">
                 <button class="btn-modal-primary" onclick="guardarCategoriaEnlace('${jsAttr(id)}')">guardar.</button>`);
         }
@@ -306,7 +306,7 @@
                 <input id="link-cat-name" class="modal-input" placeholder="Ej: universidad">
                 <div class="modal-label">color.</div>
                 <div class="link-color-picker">
-                    ${LINK_CATEGORY_COLORS.map((c, i) => `<button type="button" class="link-color-swatch ${i === 0 ? 'selected' : ''}" style="background:${c}" data-color="${c}" onclick="selectLinkColor(this)"></button>`).join('')}
+                    ${LINK_CATEGORY_COLORS.map((c, i) => `<button type="button" class="link-color-swatch ${i === 0 ? 'selected' : ''}" style="background:${colorTema(c)}" data-color="${c}" onclick="selectLinkColor(this)"></button>`).join('')}
                 </div>
                 <input type="hidden" id="link-cat-color" value="${LINK_CATEGORY_COLORS[0]}">
                 <button class="btn-modal-primary" onclick="saveNewLinkCategory()">crear categoría.</button>
@@ -976,7 +976,7 @@
                         </div>
                         <div class="line-row-icon">${PROJECT_ICON_FLAG}</div>
                         <div class="line-row-body">
-                            <div class="line-row-title"><span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span><span class="line-row-title-text">${escapeHtml(p.title)}</span></div>
+                            <div class="line-row-title"><span class="project-priority-dot" style="background:${colorTema(PROJECT_PRIORITY_COLOR[priority])}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span><span class="line-row-title-text">${escapeHtml(p.title)}</span></div>
                             <div class="line-row-meta">${(() => { const sig = proyectoSiguiente(p); return sig && bucket !== 'Completado' ? `siguiente: ${escapeHtml(sig.texto)}` : escapeHtml(p.projectCategory || 'Sin categoría'); })()}${total > 0 ? `, ${done}/${total}, ${pct}%` : ''}</div>
                         </div>
                         <div class="line-row-side"><span class="badge ${statusClass}">${bucket}</span></div>
@@ -1002,9 +1002,9 @@
                             return `
                             <div class="kanban-card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${p.id}')" onclick="abrirProyecto('${p.id}')" data-color="${color}" style="--c:${color}">
                                 <div class="kanban-card-title">${escapeHtml(p.title)}</div>
-                                ${total > 0 ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:#2563eb"></div></div>` : ''}
+                                ${total > 0 ? `<div class="progress-bar-bg" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%;background:var(--c-2563eb)"></div></div>` : ''}
                                 <div class="kanban-card-foot">
-                                    <span class="project-priority-dot" style="background:${PROJECT_PRIORITY_COLOR[priority]}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span>
+                                    <span class="project-priority-dot" style="background:${colorTema(PROJECT_PRIORITY_COLOR[priority])}" title="Prioridad ${PROJECT_PRIORITY_LABEL[priority]}"></span>
                                     ${p.endDate ? `<span class="${overdue ? 'project-overdue' : ''}">${escapeHtml(p.endDate)}</span>` : '<span></span>'}
                                 </div>
                             </div>`;

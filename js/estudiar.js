@@ -524,7 +524,7 @@ function renderEstHoy() {
         return `<div class="est-plan-item ${it.hecho ? 'hecho' : ''} ${pomo?.itemId === it.id && pomo.fase === 'trabajo' && pomo.fin ? 'activo' : ''}">
             <button class="compra-check ${it.hecho ? 'on' : ''}" onclick="estPlanMarcar('${it.id}')" aria-label="Marcar como estudiado"></button>
             <div class="est-plan-txt">
-                <b>${a?.color ? `<i style="background:${escapeHtml(a.color)}"></i>` : ''}${escapeHtml(it.texto)}</b>
+                <b>${a?.color ? `<i style="background:${escapeHtml(colorTema(a.color))}"></i>` : ''}${escapeHtml(it.texto)}</b>
                 <span>${f && !it.hecho ? `${estHora(f[0])}–${estHora(f[1])}, ` : ''}${Array.from({ length: it.pomodoros || 1 }, (_, i) => `<em class="${i < (it.hechos || 0) ? 'on' : ''}"></em>`).join('')}</span>
             </div>
             <div class="est-plan-acciones">
@@ -587,7 +587,7 @@ function renderEstTemario() {
         if (!g.id && !temas.length && estAsignaturas().length) return '';
         const hechos = temas.filter(t => t.hecho).length;
         return `<div class="est-bloque">
-            <div class="est-bloque-cab"><b>${g.color ? `<i style="background:${escapeHtml(g.color)}"></i>` : ''}${escapeHtml(g.nombre.toLowerCase())}.</b>${temas.length ? `<span>${hechos}/${temas.length} estudiados.</span>` : ''}</div>
+            <div class="est-bloque-cab"><b>${g.color ? `<i style="background:${escapeHtml(colorTema(g.color))}"></i>` : ''}${escapeHtml(g.nombre.toLowerCase())}.</b>${temas.length ? `<span>${hechos}/${temas.length} estudiados.</span>` : ''}</div>
             ${temas.length ? `<div class="est-barra"><i style="width:${hechos / temas.length * 100}%"></i></div>` : ''}
             ${temas.map(t => `<div class="est-tema ${t.hecho ? 'hecho' : ''}">
                 <button class="compra-check ${t.hecho ? 'on' : ''}" onclick="estTemaMarcar('${t.id}')" aria-label="Estudiado"></button>
@@ -616,7 +616,7 @@ function openEstMazo(id) {
         <div class="modal-label">Asignatura</div>
         <select id="est-mazo-asig" class="modal-input"><option value="">ninguna.</option>${(studies.subjects || []).map(s => `<option value="${s.id}" ${m?.asignaturaId === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select>
         <button class="btn-modal-primary" onclick="guardarEstMazo('${id || ''}')">${m ? 'guardar.' : 'crear.'}</button>
-        ${m ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarEstMazo('${m.id}')">eliminar el mazo y sus tarjetas.</button>` : ''}
+        ${m ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="borrarEstMazo('${m.id}')">eliminar el mazo y sus tarjetas.</button>` : ''}
     `);
     if (!m) enfocarSiTeclado(() => document.getElementById('est-mazo-nombre'));
 }
@@ -663,7 +663,7 @@ function openEstTarjeta(mazoId, id, tipo) {
         <div class="modal-label">${tp === 'huecos' ? 'Nota extra (opcional)' : 'Reverso'}</div>
         <textarea id="est-t-reverso" class="modal-input" rows="3" placeholder="${tp === 'huecos' ? 'Se enseña al ver la respuesta.' : 'Respuesta'}">${escapeHtml(t?.reverso || window._estBorrador?.reverso || '')}</textarea>
         <button class="btn-modal-primary" onclick="guardarEstTarjeta('${mazoId}','${id || ''}','${tp}')">guardar.</button>
-        ${t ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="borrarEstTarjeta('${t.id}')">eliminar tarjeta.</button>`
+        ${t ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="borrarEstTarjeta('${t.id}')">eliminar tarjeta.</button>`
             : `<button class="btn-secondary" style="margin-top:8px" onclick="guardarEstTarjeta('${mazoId}','','${tp}',true)">guardar y añadir otra.</button>`}
     `);
     window._estBorrador = null;
@@ -806,7 +806,7 @@ function renderEstTarjetas() {
             const a = estAsignatura(m.asignaturaId);
             return `<div class="est-mazo">
                 <button class="est-mazo-info" onclick="openEstVerMazo('${m.id}')">
-                    <b>${a?.color ? `<i style="background:${escapeHtml(a.color)}"></i>` : ''}${escapeHtml(m.nombre)}</b>
+                    <b>${a?.color ? `<i style="background:${escapeHtml(colorTema(a.color))}"></i>` : ''}${escapeHtml(m.nombre)}</b>
                     <span>${c.total} ${c.total === 1 ? 'tarjeta' : 'tarjetas'}${a ? `, ${escapeHtml(a.name)}` : ''}</span>
                 </button>
                 <div class="est-mazo-cifras"><span class="nuevas" title="Nuevas para hoy">${c.nuevasHoy}</span><span class="toca" title="Por repasar">${c.toca}</span></div>

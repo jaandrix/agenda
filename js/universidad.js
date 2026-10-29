@@ -257,7 +257,7 @@ function renderAsignaturaUni(s) {
     const necesita = estado === 'en curso' ? textoNotaNecesaria(s) : '';
     return `
         <div class="uni-asig uni-${estado.replace(' ', '-')}">
-            <span class="uni-asig-color" style="background:${escapeHtml(s.color || '#5b8def')}"></span>
+            <span class="uni-asig-color" style="background:${escapeHtml(colorTema(s.color || '#5b8def'))}"></span>
             <button class="uni-asig-cuerpo" onclick="openSubjectDetail('${s.id}')">
                 <span class="uni-asig-nombre">${escapeHtml(s.name)}</span>
                 <span class="uni-asig-meta">${s.creditos ? `${s.creditos} créditos, ` : ''}${s.anual ? 'anual, ' : ''}${estado}.${necesita ? ` ${necesita}` : ''}</span>

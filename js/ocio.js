@@ -84,7 +84,7 @@
                         <div style="display:flex;gap:8px">
                             <button class="finance-oneoff-btn" onclick="openCultureListPicker('${list.id}')">+ Añadir</button>
                             <button class="finance-oneoff-btn" onclick="abrirCompartirListaModal('${list.id}')">compartir.</button>
-                            <button class="finance-oneoff-btn" style="color:#dc2626" onclick="deleteCultureList('${list.id}')">eliminar lista.</button>
+                            <button class="finance-oneoff-btn" style="color:var(--c-dc2626)" onclick="deleteCultureList('${list.id}')">eliminar lista.</button>
                         </div>
                     </div>
                     ${items.length ? renderMediaCardGrid(items, e => TYPE_LABELS[e.type] || '') : `

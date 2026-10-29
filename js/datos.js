@@ -868,8 +868,25 @@
             return THEMES.includes(guardado) ? guardado : 'asfalto';
         }
 
+        // Asfalto y papel son en blanco y negro: los colores que vienen de los datos (categorías, asignaturas, proyectos)
+        // salen en el gris de su mismo brillo. Antes lo hacía un filter: grayscale sobre todo lo que llevaba color en
+        // línea, que obligaba al móvil a componer capas aparte y encarecía el movimiento.
+        function temaEnGrises() {
+            const b = document.body.classList;
+            return b.contains('papel') ? !b.contains('acuarela') && !b.contains('pizarra') && !b.contains('oliva') : !b.contains('fundador');
+        }
+        function colorTema(c) {
+            const m = typeof c === 'string' && c.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+            if (!m || !temaEnGrises()) return c;
+            const h = m[1].length === 3 ? m[1].replace(/./g, x => x + x) : m[1];
+            const y = Math.round(.2126 * parseInt(h.slice(0, 2), 16) + .7152 * parseInt(h.slice(2, 4), 16) + .0722 * parseInt(h.slice(4, 6), 16));
+            return '#' + y.toString(16).padStart(2, '0').repeat(3);
+        }
+
         function setTheme(tema) {
+            const enGrisesAntes = temaEnGrises();
             aplicarClasesTema(tema);
+            if (enGrisesAntes !== temaEnGrises() && typeof appInitialized !== 'undefined' && appInitialized) repintarTrasModal();
             localStorage.setItem('bitacora_theme', tema);
             document.querySelectorAll('.tema-opcion').forEach(b => b.classList.toggle('active', b.dataset.tema === tema));
             showToast('Tema cambiado a ' + THEME_LABELS[tema]);
@@ -892,7 +909,7 @@
             const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F', '#161514'], pizarra: ['#C0C8CA', '#2E4156', '#1A2D42'], oliva: ['#F7F5EE', '#667447', '#8B4F70'], fundador: ['#1a1916', '#d4b06a', '#f1ead8'] };
             return `<div class="tema-selector">${temasDisponibles().map(t => `
                 <button class="tema-opcion ${t === actual ? 'active' : ''}" data-tema="${t}" onclick="setTheme('${t}')">
-                    <span class="tema-muestra">${muestras[t].map(c => `<span style="background:${c}"></span>`).join('')}</span>
+                    <span class="tema-muestra">${muestras[t].map(c => `<span style="background:${colorTema(c)}"></span>`).join('')}</span>
                     <span>${THEME_LABELS[t]}.</span>
                 </button>`).join('')}</div>`;
         }

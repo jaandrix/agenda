@@ -436,7 +436,7 @@ Calendario:
                     <div class="event-sq-icon">${icon}</div>
                     <div class="event-sq-body">
                         <div class="event-sq-title">${escapeHtml(e.title)}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
-                        <div class="event-sq-meta"><span class="event-sq-dot" style="background:${color}"></span>${escapeHtml(typeLabel || e.place || 'Evento')}${e.time ? `,&nbsp;<em>${escapeHtml(e.time)}.</em>` : ''}</div>
+                        <div class="event-sq-meta"><span class="event-sq-dot" style="background:${colorTema(color)}"></span>${escapeHtml(typeLabel || e.place || 'Evento')}${e.time ? `,&nbsp;<em>${escapeHtml(e.time)}.</em>` : ''}</div>
                     </div>
                     ${e.entradas?.length && !isPast ? `<button class="event-sq-entrada" title="Ver entrada" onclick="event.stopPropagation();abrirEntradas('${e.id}')">${ENTRADA_ICONO}</button>` : ''}
                     <div class="event-sq-day${cercania}" ${cercania ? `title="${diasHasta === 0 ? 'Hoy' : diasHasta === 1 ? 'Mañana' : 'En ' + diasHasta + ' días'}"` : ''}>${day}</div>
@@ -784,7 +784,7 @@ Calendario:
                 const color = cat?.color || 'var(--text-secondary)';
                 html += `
                     <div class="entry-item" data-open-entry="${p.id}">
-                        <div class="entry-color-dot" style="background:${color}"></div>
+                        <div class="entry-color-dot" style="background:${colorTema(color)}"></div>
                         <div class="entry-info">
                             <div class="entry-title">${p.title}</div>
                             <div class="entry-meta">${p.date || 'Sin fecha'}${p.notes ? ', ' + linkifyText(p.notes) : ''}</div>

@@ -463,7 +463,7 @@
         function financeProCategoryBadge(cat, extraClass) {
             const color = financeProCategoryColor(cat);
             const icon = financeProCategoryIconSvg(cat ? cat.icon : 'other');
-            return `<div class="finance-metric-icon finance-pro-tx-icon ${extraClass || ''}" style="background:${color}22;color:${color}">${icon}</div>`;
+            return `<div class="finance-metric-icon finance-pro-tx-icon ${extraClass || ''}" style="background:${colorTema(color)}22;color:${colorTema(color)}">${icon}</div>`;
         }
 
         // ============================================================
@@ -586,8 +586,8 @@
             }).join('');
             return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:${compact ? 140 : 280}px;display:block">
                 <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" style="stop-color:${color};stop-opacity:0.25"/>
-                    <stop offset="100%" style="stop-color:${color};stop-opacity:0"/>
+                    <stop offset="0%" style="stop-color:${colorTema(color)};stop-opacity:0.25"/>
+                    <stop offset="100%" style="stop-color:${colorTema(color)};stop-opacity:0"/>
                 </linearGradient></defs>
                 ${gridLines}
                 <path d="${area}" fill="url(#${gradId})" stroke="none"/>
@@ -1117,9 +1117,9 @@
                             <span style="display:flex;align-items:center;gap:8px;color:var(--text-primary)">${financeProCategoryBadge(cat)}${escapeHtml(cat.name)}</span>
                             <span class="${over ? 'finance-negative' : ''}">${financeMoney(spent)} / ${financeMoney(budget)}</span>
                         </div>
-                        <div class="finance-progress"><span style="width:${pct}%;background:${barColor}"></span></div>
+                        <div class="finance-progress"><span style="width:${pct}%;background:${colorTema(barColor)}"></span></div>
                         ${devuelto > 0 ? `<div class="finance-devuelto">+${financeMoney(devuelto)} devuelto este mes.</div>` : ''}
-                        ${over ? `<div class="finance-metric-note" style="color:#dc2626;margin-top:4px">Presupuesto superado en ${financeMoney(spent - budget)}</div>` : near ? `<div class="finance-metric-note" style="color:#d97706;margin-top:4px">Cerca del límite</div>` : ''}
+                        ${over ? `<div class="finance-metric-note" style="color:var(--c-dc2626);margin-top:4px">Presupuesto superado en ${financeMoney(spent - budget)}</div>` : near ? `<div class="finance-metric-note" style="color:var(--c-d97706);margin-top:4px">Cerca del límite</div>` : ''}
                     </div>`;
                 }).join('')}
             </section>`;
@@ -1979,7 +1979,7 @@
                     <input class="modal-input" id="pro-acc-balance0-${k}" type="number" step="0.01" value="${Number(financePro.accounts[k].balance0 || 0)}" style="margin-bottom:16px">
                 `).join('')}
                 <button class="btn-modal-primary" onclick="saveFinanceProAccountsSettings()">guardar.</button>
-                <button class="btn-secondary" style="margin-top:14px;color:#dc2626" onclick="resetFinancePro()">restablecer Finanzas PRO.</button>
+                <button class="btn-secondary" style="margin-top:14px;color:var(--c-dc2626)" onclick="resetFinancePro()">restablecer Finanzas PRO.</button>
             `);
         }
 
@@ -2486,7 +2486,7 @@
                 <div class="modal-label">Nota (opcional)</div>
                 <input class="modal-input" value="${escapeHtml(d.note || '')}" oninput="window._financeProTxDraft.note=this.value" placeholder="Ej. Cena con amigos">
                 <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction()">guardar.</button>
-                ${window._financeProTxEditId ? `<button class="btn-secondary" style="margin-top:8px;color:#dc2626" onclick="deleteFinanceProTransaction('${window._financeProTxEditId}')">eliminar movimiento.</button>` : ''}
+                ${window._financeProTxEditId ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="deleteFinanceProTransaction('${window._financeProTxEditId}')">eliminar movimiento.</button>` : ''}
             `;
         }
 
@@ -2725,7 +2725,7 @@
 
         function renderFinanceProColorPicker() {
             return `<div class="finance-pro-icon-picker">
-                ${FINANCE_PRO_PALETTE.map(c => `<button type="button" class="finance-pro-color-choice ${financeProNewCatColor === c ? 'selected' : ''}" style="background:${c}" title="${c}" onclick="financeProNewCatColor='${c}';document.getElementById('new-cat-color-picker').innerHTML=renderFinanceProColorPicker()"></button>`).join('')}
+                ${FINANCE_PRO_PALETTE.map(c => `<button type="button" class="finance-pro-color-choice ${financeProNewCatColor === c ? 'selected' : ''}" style="background:${colorTema(c)}" title="${c}" onclick="financeProNewCatColor='${c}';document.getElementById('new-cat-color-picker').innerHTML=renderFinanceProColorPicker()"></button>`).join('')}
             </div>`;
         }
 
@@ -2733,7 +2733,7 @@
             const row = c => `<div class="finance-budget-row" style="cursor:default">
                 <div class="finance-budget-row-head" style="align-items:center">
                     <span style="display:flex;align-items:center;gap:8px;color:var(--text-primary)">${financeProCategoryBadge(c)}${escapeHtml(c.name)}</span>
-                    <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:#dc2626" onclick="deleteFinanceProCategory('${c.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
+                    <button class="btn-secondary" style="width:auto;padding:2px 8px;font-size:11px;color:var(--c-dc2626)" onclick="deleteFinanceProCategory('${c.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>
             </div>`;
             const expense = financePro.categories.filter(c => c.type === 'expense');
@@ -3659,7 +3659,7 @@
                     const daysUntil = s.renewalDay >= todayDay ? s.renewalDay - todayDay : s.renewalDay + 31 - todayDay;
                     return `
                     <div class="entry-item" data-open-entry="${s.id}">
-                        <div class="entry-color-dot" style="background:${daysUntil <= 3 ? '#e17055' : 'var(--text-secondary)'}"></div>
+                        <div class="entry-color-dot" style="background:${daysUntil <= 3 ? 'var(--c-e17055)' : 'var(--text-secondary)'}"></div>
                         <div class="entry-info">
                             <div class="entry-title">${escapeHtml(s.title)}</div>
                             <div class="entry-meta">Día ${s.renewalDay}, en ${daysUntil} días</div>
@@ -4161,7 +4161,7 @@ function openBorrarHistorial() {
         <label class="admin-fila"><input type="checkbox" ${ant.pasar ? 'checked' : ''} onchange="window._financeHistorial.pasar=this.checked"><span><b>pasar sus categorías a los movimientos del banco.</b><small>${conCat} con categoría puesta por ti. Cada una va al movimiento del banco que coincide (mismo importe, a 3 días), para seguir aprendiendo de ellas.</small></span></label>
         <div class="fin-imp-resumen"><b>${l.length} ${l.length === 1 ? 'movimiento' : 'movimientos'}</b><span>${l.length ? `del ${financeDateLabelShort(l[0].date)} al ${financeDateLabelShort(l[l.length - 1].date)}` : 'en esas fechas'}.</span></div>
         ${l.length ? `<details class="fin-imp-lista"><summary>ver los primeros y los últimos.</summary><div class="fin-imp-filas">${[...l.slice(0, 5), ...l.slice(-5)].filter((t, i, a) => a.indexOf(t) === i).map(fila).join('')}</div></details>
-        <button class="btn-modal-primary" style="margin-top:14px;background:#b3261e;border-color:#b3261e" onclick="borrarHistorialAntiguo()">borrar ${l.length} ${l.length === 1 ? 'movimiento' : 'movimientos'}.</button>` : ''}`);
+        <button class="btn-modal-primary" style="margin-top:14px;background:var(--c-b3261e);border-color:var(--c-b3261e)" onclick="borrarHistorialAntiguo()">borrar ${l.length} ${l.length === 1 ? 'movimiento' : 'movimientos'}.</button>` : ''}`);
 }
 async function borrarHistorialAntiguo() {
     const h = window._financeHistorial;

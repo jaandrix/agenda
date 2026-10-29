@@ -820,7 +820,7 @@
                     <div class="settings-subscription-status">Suscripción ${planLabel}${sub.estado === 'trialing' ? ' (en prueba)' : ''}, se renueva${fecha ? ' el ' + fecha : ''}</div>
                     <div class="ajuste-botones">
                         ${botonPortal}
-                        <button class="btn-secondary" style="width:auto;margin-top:10px;color:#7f1d1d" onclick="confirmCancelSubscription()">cancelar suscripción.</button>
+                        <button class="btn-secondary" style="width:auto;margin-top:10px;color:var(--c-7f1d1d)" onclick="confirmCancelSubscription()">cancelar suscripción.</button>
                     </div>
                 </div>
                 <button class="paywall-fundador" data-plazas-fundador onclick="startStripeCheckout('fundador')">
@@ -906,7 +906,7 @@
                 </p>
                 <div style="display:flex;gap:8px">
                     <button class="btn-secondary" style="width:auto;flex:1" onclick="closeModal()">seguir suscrito.</button>
-                    <button class="btn-secondary" style="width:auto;flex:1;background:#7f1d1d;color:#fff;border-color:#7f1d1d" onclick="closeModal();executeCancelSubscription()">Sí, cancelar</button>
+                    <button class="btn-secondary" style="width:auto;flex:1;background:var(--c-7f1d1d);color:var(--c-ffffff);border-color:var(--c-7f1d1d)" onclick="closeModal();executeCancelSubscription()">Sí, cancelar</button>
                 </div>
             `);
         }
