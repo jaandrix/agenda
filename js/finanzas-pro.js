@@ -3477,7 +3477,9 @@
                 // que ya se importó pendiente con otra fecha.
                 const repetida = [dedupeKey, ...altDates.map(d => `${effectiveAccount}|${d}|${amount}|${description}`)].find(yaEsta);
                 if (repetida) { consumir(repetida); skipped++; return; }
-                const editado = !esPendiente && buscarEditado(effectiveAccount, [date, ...altDates], amount);
+                // En la cuenta del extracto: con una regla de traspaso, effectiveAccount es la otra (Ibercaja), y allí encontraba
+                // cualquier movimiento del mismo día e importe (el historial antiguo) y daba la recarga por ya apuntada.
+                const editado = !esPendiente && buscarEditado(m.account, [date, ...altDates], amount);
                 if (editado) {
                     reclamados.add(editado);
                     if (!editado.bankNote && description) editado.bankNote = description;
