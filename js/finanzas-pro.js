@@ -3066,6 +3066,7 @@
                 </select>
                 ${renderFinanceProImportFilas(imp, previewRows)}
                 <button class="btn-modal-primary" style="margin-top:14px" onclick="confirmFinanceProImport()">${financeProTextoBotonImport(imp)}</button>
+                ${financeProTieneSaldo(imp) ? `<button class="m-enlace" style="display:block;margin:10px auto 0" onclick="openRehacerCuenta()">rehacer la cuenta con este extracto.</button>` : ''}
                 <details class="fin-imp-avanzado"><summary>columnas y opciones.</summary>
                 <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-primary);margin:14px 0 10px">
                     <input type="checkbox" ${imp.mapping.hasHeader ? 'checked' : ''} onchange="financeProImportSet('hasHeader', this.checked)"> La primera fila es cabecera
@@ -4112,7 +4113,9 @@ async function financeProFijarSaldoInicial() {
 //  cambie. Se guarda una foto antes, en «deshacer importación.».
 // ============================================================
 function financeHistorialABorrar(cuenta, desde, hasta) {
-    return financePro.transactions.filter(t => t.date >= desde && t.date <= hasta && (cuenta === 'todas' || t.account === cuenta || t.transferTo === cuenta));
+    // Los traspasos con otra cuenta no se tocan: la otra (Revolut) los tiene de su propio extracto, y borrarlos dejaba
+    // sus meses de atrás falseados aunque el saldo de hoy cuadrara.
+    return financePro.transactions.filter(t => t.date >= desde && t.date <= hasta && (cuenta === 'todas' || (t.account === cuenta && t.type !== 'transfer')));
 }
 function openBorrarHistorial() {
     const ant = window._financeHistorial || { cuenta: FINANCE_PRO_ACCOUNT_KEYS[0], desde: '2000-01-01', hasta: financeProSumarDias(todayISO(), -60), pasar: true };
@@ -4181,4 +4184,81 @@ function financeProMitadSuelta(cuenta, type, importe, fechas, reclamados) {
         if (d <= 4 && d < mejorDias) { mejor = t; mejorDias = d; }
     });
     return mejor;
+}
+
+
+// ============================================================
+//  REHACER UNA CUENTA CON SU EXTRACTO (29-10)
+//  Cuando una cuenta arrastra un historial que no es el del banco (traído de otra app, ajustes, importaciones a
+//  medias), ir cuadrando a mano no acaba nunca. Esto la deja como dice el banco en las fechas del extracto: quita lo
+//  que tenía en esas fechas, mete las filas del extracto y fija el saldo de partida con la columna de saldo.
+//  Se conservan: tus categorías y notas (pasan al movimiento del banco que coincide), los traspasos con otras cuentas
+//  que el extracto confirma (son la otra mitad de otro banco) y los que el banco aún retiene (de los últimos días).
+// ============================================================
+function financeProTieneSaldo(imp) {
+    return imp?.mapping?.hasHeader && imp.rows[0].some(h => /^(balance|saldo|disponible)\b/i.test(String(h || '').trim()));
+}
+function financeRehacerPlan(imp) {
+    const cuenta = imp.mapping.account;
+    const filas = financeProFilasDelExtracto(imp).filter(f => f.date && Number.isFinite(f.val) && f.val && !f.fuera);
+    const todas = filas.flatMap(f => f.fechas);
+    const desde = todas.reduce((a, b) => a < b ? a : b), hasta = todas.reduce((a, b) => a > b ? a : b);
+    const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000);
+    const cerca = (t, f) => Math.min(...f.fechas.map(d => dias(t.date, d)));
+    const signo = t => t.type === 'transfer' ? (t.account === cuenta ? -1 : 1) : t.type === 'income' ? 1 : -1;
+    const enRango = t => t.date >= desde && t.date <= hasta && (t.account === cuenta || t.transferTo === cuenta);
+    // Todo lo de la cuenta en esas fechas sale, traspasos incluidos, y vuelve desde el extracto: las recargas a Revolut
+    // las rehace la regla de traspaso y se unen con su mitad de Ibercaja. Decidir qué traspasos antiguos se quedaban
+    // fallaba con historiales mezclados.
+    const quitar = financePro.transactions.filter(enRango);
+    const filasConTraspaso = new Set();
+    return { cuenta, desde, hasta, filas, quitar, filasConTraspaso, quedan: 0 };
+}
+function openRehacerCuenta() {
+    const imp = window._financeProImport;
+    const p = financeRehacerPlan(imp);
+    const nombre = escapeHtml(financeProCuentaNombre(p.cuenta));
+    showModal(`<div class="modal-title">rehacer ${nombre} con este extracto.</div>
+        <p class="finance-modal-note" style="margin-top:0">Del ${financeDateLabelShort(p.desde)} al ${financeDateLabelShort(p.hasta)}, ${nombre} quedará exactamente como dice el banco, día a día.</p>
+        <div class="fin-imp-resumen"><b>${p.quitar.length} fuera</b><span>lo que tiene ahora ${nombre} en esas fechas.</span></div>
+        <div class="fin-imp-resumen"><b>${p.filas.length - p.filasConTraspaso.size} del extracto</b><span>entran en su lugar.</span></div>
+        <p class="finance-modal-note">Tus categorías y notas pasan al movimiento del banco que coincide (mismo importe, a 3 días). El resto de cuentas y fechas no se tocan. Antes se guarda una foto en «deshacer importación.».</p>
+        <button class="btn-modal-primary" onclick="rehacerCuenta()">rehacer ${nombre}.</button>
+        <button class="btn-secondary" style="width:100%;margin-top:8px" onclick="closeModal()">cancelar.</button>`);
+}
+async function rehacerCuenta() {
+    const imp = window._financeProImport;
+    const p = financeRehacerPlan(imp);
+    await financeImportGuardarAntes(`rehacer ${financeProCuentaNombre(p.cuenta)} con su extracto`);
+    const fuera = new Set(p.quitar);
+    const recuerdos = p.quitar.filter(t => t.type !== 'transfer' && ((t.category && !t.categoriaAuto) || t.viaje || (t.note && t.bankNote && t.note !== t.bankNote)));
+    financePro.transactions = financePro.transactions.filter(t => !fuera.has(t));
+    imp.excluidas = new Set([...p.filasConTraspaso, ...financeProFilasDelExtracto(imp).filter(f => f.fuera).map(f => f.fila)]);
+    const antes = new Set(financePro.transactions);
+    const r = financeProEjecutarImport(imp);
+    const nuevos = financePro.transactions.filter(t => !antes.has(t));
+    const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000);
+    const usados = new Set();
+    let pasadas = 0;
+    recuerdos.forEach(v => {
+        const x = nuevos.filter(n => !usados.has(n) && n.type === v.type && Math.abs(Number(n.amount) - Number(v.amount)) < 0.005 && dias(n.date, v.date) <= 3).sort((a, b) => dias(a.date, v.date) - dias(b.date, v.date))[0];
+        if (!x) return;
+        usados.add(x);
+        if (v.category && !v.categoriaAuto) { x.category = v.category; x.needsReview = false; delete x.categoriaAuto; }
+        if (v.viaje) x.viaje = v.viaje;
+        if (v.note && v.bankNote && v.note !== v.bankNote) { x.bankNote = x.note; x.note = v.note; }
+        pasadas++;
+    });
+    financeSaldosCache = null;
+    const c = financeProCuadreExtracto(imp);
+    if (c && !c.cuadra) {
+        const diff = Math.round((c.esperado - (c.retenido || 0) - c.actual) * 100) / 100;
+        financePro.accounts[p.cuenta].balance0 = Math.round((Number(financePro.accounts[p.cuenta].balance0 || 0) + diff) * 100) / 100;
+    }
+    financeSaldosCache = null;
+    invalidarCachesDerivadas();
+    closeModal();
+    render();
+    try { await saveData(); showToast(`${financeProCuentaNombre(p.cuenta)} rehecha con el extracto: ${p.quitar.length} fuera, ${r.added} del banco, ${pasadas} con tu categoría o nota. Saldo: ${financeMoney(financeProAccountBalance(p.cuenta))}.`); }
+    catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
 }
