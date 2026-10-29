@@ -130,7 +130,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `body.m-plegada` recoge el título en la barra de arriba). En `.m-generico`, una sola acción naranja (`btn-modal-primary`) y
   el resto de botones con tinte translúcido. Barra de pestañas abajo (`renderMobileTabbar`: inicio, plan, + captura, el último
   apartado visitado `mobileReciente` y menú; el botón de menú de arriba está oculto). El inicio enseña la
-  semana del día elegido (o el mes en bolitas, `mobileVerMes`) y el día como horario (`.m-tl`, con marca de
+  semana del día elegido (o el mes en bolitas, `mobileVerMes`); desde el 29-10 es «editorial» (`.m-home-editorial`: temperatura arriba a la derecha en la barra, semana plana, `renderMobileAhora` con «ahora.»/«lo próximo.» a partir de `mobileDiaConHora`, línea de tiempo sin tarjetas y «pendiente para hoy.»; el de antes está en la etiqueta git `antes-home-editorial`) y el día como horario (`.m-tl`, con marca de
   "ahora"; la semana va en un carrusel nativo de tres semanas con encaje por semana, `mobileCentrarCarrusel` / `mobileCarruselPaso`; el mes en bolitas se desliza con `mobileDeslizarFranja`). Hoy, el inicio enseña también las tareas sin día (`renderMobilePendientesInicio`) y lo hecho se queda 30 minutos (`hechaEn`, que guardan las tareas, las sin día y las recurrentes al marcarse; `mobileHechaReciente` repinta al cumplirse) y luego se va, salvo con «ver las hechas.» (`mobileVerHechas`). Al volver de segundo plano
   más de 30 s se repinta sola (`refrescarAlVolver`, inicio.js) y si cambió el día vuelve a hoy. Estudios en el móvil enseña el horario
   un día cada vez (`renderMobileHorario`). Paleta propia del móvil (`body.mobile-standalone` / `body.pwa` + tema) con `--m-superficie`
