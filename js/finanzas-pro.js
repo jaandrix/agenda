@@ -3997,7 +3997,7 @@ function financeProFilasYaApuntadas(imp) {
     const conceptos = new Set(filas.map(f => financeProNormalizar(f.desc)));
     const parecido = x => x.t.type === 'transfer' || !conceptos.has(financeProNormalizar(x.t.bankNote ?? x.t.note ?? ''));
     filas.filter(f => !ya.has(f.fila)).forEach(f => {
-        const x = libres.filter(x => !usados.has(x) && parecido(x) && Math.abs(x.val - f.val) < 0.005 && cerca(x.t, f) <= 4)
+        const x = libres.filter(x => !usados.has(x) && parecido(x) && Math.abs(x.val - f.val) < 0.005 && cerca(x.t, f) <= (x.t.type === 'transfer' && f.fechas.some(d => d >= x.t.date) ? 10 : 4))
             .sort((a, b) => cerca(a.t, f) - cerca(b.t, f))[0];
         if (x) tomar(f, x);
     });
@@ -4065,8 +4065,11 @@ function financeProTraspasoCercano(cuenta, type, importe, fechas, reclamados) {
         if (type === 'income' ? t.transferTo !== cuenta : t.account !== cuenta) return;
         // Ya conciliada por este lado: su concepto de este banco ya está guardado.
         if (t.conciliado && [t.claveImport, t.claveImport2].some(k => k && k.startsWith(cuenta + '|'))) return;
+        // El banco puede completar un traspaso ya apuntado bastantes días después (una retención), nunca antes: hacia
+        // delante se espera hasta 10 días.
         const d = Math.min(...fechas.map(f => dias(t.date, f)));
-        if (d <= 4 && d < mejorDias) { mejor = t; mejorDias = d; }
+        const tope = fechas.some(f => f >= t.date) ? 10 : 4;
+        if (d <= tope && d < mejorDias) { mejor = t; mejorDias = d; }
     });
     return mejor;
 }
