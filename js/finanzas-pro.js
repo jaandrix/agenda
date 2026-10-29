@@ -2709,6 +2709,7 @@
                 <div class="modal-label">Color</div>
                 <div id="new-cat-color-picker">${renderFinanceProColorPicker()}</div>
                 <button class="btn-modal-primary" style="margin-top:10px" onclick="addFinanceProCategory()">+ Añadir categoría</button>
+                <button class="m-enlace" style="display:block;margin:12px auto 0" onclick="openDividirCategoria()">dividir una categoría.</button>
             `);
         }
 
@@ -4302,4 +4303,68 @@ async function rehacerCuenta() {
 // última usada, y un extracto de Ibercaja podía acabar en Revolut.
 function financeProCuentaConfirmada(imp) {
     return !!(imp?.cuentaDetectada || imp?.cuentaPedida || imp?.cuentaConfirmada);
+}
+
+
+// ============================================================
+//  DIVIDIR UNA CATEGORÍA (29-10)
+//  Sacar de una categoría los movimientos de un tipo (de «Comida y bebida», los de «Bar») a una nueva o existente.
+//  Se eligen por palabras del concepto; con «*» al final, también las que empiezan así («cafeter*»). Antes de mover
+//  se ve la lista con casillas. Al moverlos a mano, Bitácora aprende y los siguientes caen solos en la nueva.
+// ============================================================
+let dividirCat = null;
+function openDividirCategoria() {
+    const gastos = financePro.categories.filter(c => c.type === 'expense');
+    const origen = gastos.find(c => /comida/i.test(c.name)) || gastos[0];
+    dividirCat = { origen: origen?.id, nombre: 'Bar', palabras: 'bar, bares, cafe*, cafeter*, menfis, estoril, tabern*, cervec*, pub, tasca, copas', fuera: new Set() };
+    pintarDividirCategoria();
+}
+function dividirCategoriaCandidatos() {
+    const d = dividirCat;
+    const palabras = d.palabras.split(',').map(p => financeProNormalizar(p.trim())).filter(Boolean);
+    const exp = palabras.map(p => p.endsWith('*') ? new RegExp(`\\b${p.slice(0, -1).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) : new RegExp(`\\b${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`));
+    return financePro.transactions.filter(t => t.category === d.origen && exp.some(r => r.test(financeProNormalizar(`${t.note || ''} ${t.bankNote || ''}`))))
+        .sort((a, b) => b.date.localeCompare(a.date));
+}
+function pintarDividirCategoria() {
+    const d = dividirCat;
+    const gastos = financePro.categories.filter(c => c.type === 'expense');
+    const lista = dividirCategoriaCandidatos();
+    const marcados = lista.filter(t => !d.fuera.has(t.id));
+    const total = marcados.reduce((a, t) => a + Number(t.amount || 0), 0);
+    const html = `<div class="modal-title">dividir una categoría.<button class="modal-close" aria-label="cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
+        <p class="finance-modal-note" style="margin-top:0">Saca de una categoría los movimientos cuyo concepto lleva alguna de estas palabras. Con «*» al final cuentan también las que empiezan así. Después Bitácora aprende y los nuevos caen solos.</p>
+        <div class="finance-correction-inputs">
+            <div><div class="modal-label">de.</div><select class="modal-input" onchange="dividirCat.origen=this.value;dividirCat.fuera=new Set();pintarDividirCategoria()">${gastos.map(c => `<option value="${c.id}" ${c.id === d.origen ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}</select></div>
+            <div><div class="modal-label">a.</div><input class="modal-input" value="${escapeHtml(d.nombre)}" onchange="dividirCat.nombre=this.value.trim();pintarDividirCategoria()" placeholder="nombre de la categoría"></div>
+        </div>
+        <div class="modal-label">palabras del concepto.</div>
+        <input class="modal-input" value="${escapeHtml(d.palabras)}" onchange="dividirCat.palabras=this.value;dividirCat.fuera=new Set();pintarDividirCategoria()">
+        <div class="fin-imp-resumen"><b>${marcados.length} ${marcados.length === 1 ? 'movimiento' : 'movimientos'}</b><span>pasan a «${escapeHtml(d.nombre || '…')}», ${financeMoney(total)} en total.</span></div>
+        <details class="fin-imp-lista" ${lista.length <= 40 ? 'open' : ''}><summary>ver cuáles.</summary>
+        <div class="fin-imp-filas">${lista.map(t => `<label class="fin-imp-fila"><input type="checkbox" ${d.fuera.has(t.id) ? '' : 'checked'} onchange="dividirCat.fuera[this.checked ? 'delete' : 'add']('${t.id}');pintarDividirCategoria()"><span>${financeDateLabelShort(t.date)}</span><b>${escapeHtml(t.note || t.bankNote || 'movimiento')}</b><i>-${financeMoney(t.amount)}</i></label>`).join('') || '<p class="finance-modal-note">Ninguno con esas palabras.</p>'}</div></details>
+        <button class="btn-modal-primary" style="margin-top:14px" ${marcados.length && d.nombre ? '' : 'disabled'} onclick="aplicarDividirCategoria()">mover ${marcados.length} a «${escapeHtml(d.nombre || '…')}».</button>`;
+    const hoja = document.querySelector('#modal-container .modal-sheet');
+    if (hoja && hoja.querySelector('.fin-imp-resumen')) { const y = hoja.scrollTop; hoja.innerHTML = html; hoja.scrollTop = y; }
+    else showModal(html);
+}
+async function aplicarDividirCategoria() {
+    const d = dividirCat;
+    const mover = dividirCategoriaCandidatos().filter(t => !d.fuera.has(t.id));
+    if (!mover.length || !d.nombre) return;
+    const origen = financeProCategoryById(d.origen);
+    let destino = financePro.categories.find(c => c.type === 'expense' && financeProNormalizar(c.name) === financeProNormalizar(d.nombre));
+    if (!destino) {
+        const usados = new Set(financePro.categories.map(c => c.color));
+        destino = { id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: d.nombre, icon: origen?.icon || 'other', color: FINANCE_PRO_PALETTE.find(c => !usados.has(c)) || FINANCE_PRO_PALETTE[0], type: 'expense' };
+        financePro.categories.push(destino);
+    }
+    mover.forEach(t => { t.category = destino.id; t.needsReview = false; delete t.categoriaAuto; });
+    dividirCat = null;
+    financeSaldosCache = null;
+    invalidarCachesDerivadas();
+    closeModal();
+    render();
+    try { await saveData(); showToast(`${mover.length} movimientos pasan de «${origen?.name || 'la categoría'}» a «${destino.name}».`); }
+    catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
 }
