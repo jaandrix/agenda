@@ -9727,6 +9727,14 @@ body.mobile-standalone .anual-overlay, body.pwa .anual-overlay { transition: non
 
 /* Insignia «beta tester» en la cabecera del ordenador, con su bocadillo al pasar el ratón o con el foco. */
 .beta-insignia { position: relative; align-self: center; margin-right: 6px; color: #2f6fe0; font-size: 12.5px; font-style: italic; font-weight: 600; letter-spacing: .01em; white-space: nowrap; cursor: default; outline: none; }
+/* En el centro de la barra de arriba, con un reborde azul fino que no compite con el título. */
+#main-header { position: relative; }
+#main-header .beta-insignia { position: absolute; left: 50%; top: calc(50% + 3px); transform: translate(-50%, -50%); margin: 0; padding: 3px 12px; border: 1px solid rgba(47, 111, 224, .35); border-radius: 10px; }
+body:not(.papel) #main-header .beta-insignia { border-color: rgba(108, 156, 240, .35); }
+#main-header .beta-insignia:focus-visible { border-color: currentColor; }
+#main-header .beta-bocadillo { right: auto; left: 50%; margin-left: -130px; }
+#main-header .beta-bocadillo::before { right: auto; left: 125px; }
+@media (max-width: 1150px) { #main-header .beta-insignia { position: relative; left: auto; top: auto; transform: none; margin-right: 6px; } #main-header .beta-bocadillo { left: auto; right: -8px; margin-left: 0; } #main-header .beta-bocadillo::before { left: auto; right: 22px; } }
 body:not(.papel) .beta-insignia { color: #6c9cf0; }
 .beta-insignia[hidden] { display: none; }
 .beta-bocadillo { position: absolute; top: calc(100% + 10px); right: -8px; z-index: 60; width: 260px; padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg-modal); color: var(--text-primary); font-size: 13px; font-style: normal; font-weight: 500; line-height: 1.45; white-space: normal; box-shadow: var(--shadow); opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity .15s ease, transform .15s var(--ease-out); }
