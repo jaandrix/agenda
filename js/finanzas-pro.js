@@ -3231,14 +3231,17 @@
             // Lo de Bitácora posterior al final del extracto (el CSV acaba el 30 a mediodía y el café del 30 se completó el 1)
             // no entra en el saldo que da el extracto: se aparta antes de comparar.
             // El extracto se corta por la fecha de completado: lo del último día que no está en él se completó después.
-            const posteriores = [...libres].filter(x => x.t.date >= hasta);
+            const posteriores = [...libres].filter(x => x.t.date >= hasta && !retenidos.includes(x));
             if (posteriores.length) {
                 posteriores.forEach(x => libres.delete(x));
                 actual = Math.round((actual - posteriores.reduce((a, x) => a + x.val, 0)) * 100) / 100;
                 if (Math.abs(esperado - actual) < 0.005) return { cuadra: true, esperado, actual, cuenta };
             }
             const gemelo = x => movs.find(o => o !== x && !libres.has(o) && Math.abs(o.val - x.val) < 0.005 && Math.abs((new Date(o.t.date) - new Date(x.t.date)) / 86400000) <= 3);
-            return { cuadra: false, esperado, actual, diff: Math.round((esperado - actual) * 100) / 100, cuenta, desde: lleno, hasta,
+            // Lo retenido (salidas recientes a otra cuenta que el banco aún no enseña) no es un sobrante: al fijar el saldo
+            // de partida se descuenta, o Ibercaja quedaba con la transferencia a Revolut contada como si no hubiera salido.
+            retenidos.forEach(x => libres.delete(x));
+            return { cuadra: false, esperado, actual, diff: Math.round((esperado - retenido - actual) * 100) / 100, retenido, cuenta, desde: lleno, hasta,
                 sobran: [...libres].map(x => x.t), faltan: [...libresFilas],
                 duplicados: [...libres].map(x => ({ t: x.t, val: x.val, gemelo: gemelo(x)?.t })) };
         }
@@ -4090,7 +4093,7 @@ function financeProDetectarCuenta(cabecera, antes) {
 // Fijar el saldo de partida con el extracto: en vez de un movimiento de ajuste, cambia con cuánto empezaba la cuenta.
 async function financeProFijarSaldoInicial() {
     const c = window._financeProCuadre;
-    const diff = Math.round((c.esperado - c.actual) * 100) / 100;
+    const diff = Math.round((c.esperado - (c.retenido || 0) - c.actual) * 100) / 100;
     closeModal();
     if (Math.abs(diff) < 0.005) return;
     await financeImportGuardarAntes(`saldo de partida de ${financeProCuentaNombre(c.cuenta)}`);
