@@ -1609,7 +1609,7 @@
                 recurringTasksDueToday().forEach(t => {
                     const hecha = !!t.completadas?.[hoy];
                     if (!sigue(hecha, t.hechaEn?.dia === hoy ? t.hechaEn.cuando : 0)) return;
-                    filas.push({ hora: '', html: `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="mobileMarcarRecurrente('${t.id}')" aria-label="Marcar hecha"></button></div>` });
+                    filas.push({ hora: '', html: `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="mobileMarcarRecurrente('${t.id}', this)" aria-label="Marcar hecha"></button></div>` });
                 });
             }
             filas.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
@@ -1671,13 +1671,15 @@
                     <div class="m-fila ${it.done ? 'hecha' : ''}">
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
                         ${it.done ? '' : `<button class="m-mini" onclick="scheduleBacklogTaskToday('${it.id}').then(renderMobileShell)">→ hoy</button>`}
-                        <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarPendiente('${it.id}')" aria-label="Marcar hecha"></button>
+                        <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarPendiente('${it.id}', this)" aria-label="Marcar hecha"></button>
                     </div>`).join('')}</div>
             </div>`;
         }
-        function mobileMarcarPendiente(id) {
+        function mobileMarcarPendiente(id, boton) {
+            mobileMarcarAlMomento(boton);
             toggleBacklogTaskDone(id);
-            renderMobileShell();
+            mobileMarcarRapido = false;
+            if (currentView !== 'planner') repintarTrasPintar();
         }
 
         function renderMobileFilaTarea(it, offset) {
@@ -1686,19 +1688,38 @@
             return `<div class="m-fila ${it.done ? 'hecha' : ''} ${it.arrastrado && !it.done ? 'arrastrada' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}">
                 <span class="m-fila-hora">${escapeHtml(it.time || '—')}</span>
                 <div class="m-fila-cuerpo" onclick="mobileTareaAcciones('${it.id}', ${offset})"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}${it.done ? '' : luzAviso(it.title, servMasDias(currentPlannerDayKey(), offset), it.time)}</div>
-                <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarTarea('${it.id}', ${offset})" aria-label="Marcar hecha"></button>
+                <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarTarea('${it.id}', ${offset}, this)" aria-label="Marcar hecha"></button>
             </div>`;
         }
 
         // Las funciones de escritorio solo repintan si se está en el
         // Planificador; desde el inicio hay que repintar a mano.
         // Marcar ya repinta en planificador, calendario y panorama: repintar otra vez aquí era rehacerlo todo dos veces.
-        function mobileMarcarTarea(id, offset) {
+        // Marcar rehacía el inicio entero antes de que se viera el círculo (40-80 ms con la CPU lenta): ahora la fila
+        // cambia en el acto y el resto (contadores, «ahora.», lo hecho que se va a los 30 minutos) se pone al día justo
+        // después de pintarse, con un solo repintado aunque se marquen varias seguidas.
+        function mobileMarcarAlMomento(boton) {
+            if (!boton) return;
+            const on = boton.classList.toggle('on');
+            boton.closest('.m-fila')?.classList.toggle('hecha', on);
+            mobileMarcarRapido = true;
+        }
+        let repintarTrasPintarPendiente = false;
+        function repintarTrasPintar() {
+            if (repintarTrasPintarPendiente) return;
+            repintarTrasPintarPendiente = true;
+            requestAnimationFrame(() => setTimeout(() => { repintarTrasPintarPendiente = false; repintarTrasModal(); }, 0));
+        }
+        function mobileMarcarTarea(id, offset, boton) {
+            mobileMarcarAlMomento(boton);
             togglePlannerItemDone(id, offset);
+            mobileMarcarRapido = false;
             if (!['planner', 'calendar', 'home'].includes(currentView)) renderMobileShell();
         }
-        function mobileMarcarRecurrente(id) {
+        function mobileMarcarRecurrente(id, boton) {
+            mobileMarcarAlMomento(boton);
             toggleRecurringTaskDoneToday(id);
+            mobileMarcarRapido = false;
             if (!['planner', 'calendar', 'home'].includes(currentView)) renderMobileShell();
         }
 

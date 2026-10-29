@@ -424,6 +424,15 @@
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+        // Al marcar desde el móvil la fila ya cambió al momento (mobileMarcarAlMomento): lo demás se rehace después de pintar.
+        let mobileMarcarRapido = false;
+        function repintarMarcar() {
+            if (!['planner', 'calendar', 'home'].includes(currentView)) return;
+            if (!mobileMarcarRapido) { render(); return; }
+            mobileMarcarRapido = false;
+            repintarTrasPintar();
+        }
+
         async function togglePlannerItemDone(id, offset = plannerDayOffset) {
             const item = plannerItemsForOffset(offset).find(it => it.id === id);
             if (!item) return;
@@ -461,8 +470,7 @@
             }
             filteredEntries = [...entries];
 
-            if (currentView === 'planner') render();
-            else if (currentView === 'calendar' || currentView === 'home') render();
+            repintarMarcar();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -523,8 +531,7 @@
             }
             filteredEntries = [...entries];
 
-            if (currentView === 'planner') render();
-            else if (currentView === 'calendar' || currentView === 'home') render();
+            repintarMarcar();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
