@@ -214,13 +214,13 @@
                     velo = true;
                     overlay.classList.add('modal-overlay-saliendo');
                     overlay.addEventListener('transitionend', e => { if (e.target === overlay && e.propertyName === 'background-color') terminar(); }, { once: true });
-                    setTimeout(terminar, 140);
+                    setTimeout(terminar, 120);
                 };
                 if (sheet) {
                     sheet.style.animation = 'modalSheetBajar var(--modal-cerrar) var(--ease-out) both';
                     sheet.addEventListener('animationend', e => { if (e.target === sheet) salirVelo(); });
                 }
-                setTimeout(salirVelo, 210);
+                setTimeout(salirVelo, 190);
                 return;
             }
             overlay.style.animation = 'modalOverlayOut 0.16s ease-out both';
