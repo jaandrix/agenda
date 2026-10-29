@@ -1,16 +1,18 @@
-const CACHE_NAME = 'bitacora-shell-v3';
+const CACHE_NAME = 'bitacora-shell-v4';
 // El logo va aparte: lo pide la pantalla de carga desde styles.css y sin él, sin red, salía vacía.
 const SHELL_URLS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './img/marca/logo-claro.png'];
 
 self.addEventListener('install', (event) => {
     // Además del cascarón, los archivos que carga index.html con su ?v= (la lista sale del propio index publicado),
     // para que instalar la app y abrirla enseguida sin red no la deje sin estilos ni JavaScript.
+    // Cada archivo por separado: con addAll, uno que fallara dejaba sin instalar el service worker nuevo y la PWA se
+    // quedaba con el viejo.
     event.waitUntil(caches.open(CACHE_NAME).then(async (cache) => {
-        await cache.addAll(SHELL_URLS);
+        await Promise.all(SHELL_URLS.map(u => cache.add(u).catch(() => {})));
         try {
             const html = await (await fetch('./index.html', { cache: 'no-store' })).text();
             const propios = [...html.matchAll(/(?:src|href)="([^"]+\?v=[^"]+)"/g)].map(m => m[1]).filter(u => !/^https?:/.test(u));
-            await cache.addAll(propios);
+            await Promise.all(propios.map(u => cache.add(u).catch(() => {})));
         } catch (e) { /* sin red al instalar: se guardan al pedirse */ }
     }));
     self.skipWaiting();
@@ -76,18 +78,29 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    event.respondWith(
-        fetch(event.request, propio ? { cache: 'no-store' } : undefined).then((response) => {
-            if (response.ok) event.waitUntil(guardarCopia(event.request, response.clone(), url, propio));
-            return response;
-        }).catch(async () => {
-            const guardada = await caches.match(event.request);
+    // La página (30-10, la PWA del iPhone se quedaba en negro y luego en blanco mientras Safari iba bien): antes se pedía
+    // copiando la petición de navegación con otra opción, que WebKit puede rechazar, y sin límite de tiempo, así que una
+    // red colgada dejaba la app esperando 20-30 s. Ahora va con su dirección limpia y, si en 4 s no ha llegado, se sirve
+    // la copia guardada mientras la red la sigue poniendo al día para la próxima vez.
+    const navegacion = event.request.mode === 'navigate';
+    const red = fetch(propio ? url.href : event.request, propio ? { cache: 'no-store', credentials: 'same-origin' } : undefined).then((response) => {
+        if (response.ok) guardarCopia(navegacion ? './index.html' : event.request, response.clone(), url, propio).catch(() => {});
+        return response;
+    });
+    const copia = () => caches.match(event.request).then(g => g || (navegacion ? caches.match('./index.html', { ignoreSearch: true }) : null));
+    event.respondWith((async () => {
+        if (navegacion) {
+            const tarde = new Promise(r => setTimeout(r, 4000, 'tarde'));
+            const primero = await Promise.race([red.catch(() => 'fallo'), tarde]);
+            if (primero instanceof Response) return primero;
+            const guardada = await copia();
             if (guardada) return guardada;
-            // Abrir la app desde un aviso (/?semana, /?compartido=...) sin red.
-            if (event.request.mode === 'navigate') return caches.match('./index.html', { ignoreSearch: true });
-            return Response.error();
-        })
-    );
+        }
+        try { return await red; } catch (e) {
+            const guardada = await copia();
+            return guardada || Response.error();
+        }
+    })());
 });
 
 // ============================================================

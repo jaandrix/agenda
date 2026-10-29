@@ -65,13 +65,29 @@
             return null;
         }
 
+        // En la PWA del iPhone, abrir IndexedDB a veces no responde nunca (ni éxito ni error): el arranque se quedaba
+        // esperando para siempre, en negro (30-10). Ahora tiene 2,5 s y, si no, se sigue sin copia (los datos vienen de
+        // la nube). Una sola conexión para toda la sesión: abrir una por guardado era lo que más fácil la bloqueaba.
+        let copiaDbAbierta = null;
         function copiaDb() {
-            return new Promise((ok, mal) => {
-                const r = indexedDB.open('bitacora-copia', 1);
+            if (copiaDbAbierta) return copiaDbAbierta;
+            copiaDbAbierta = new Promise((ok, mal) => {
+                const tope = setTimeout(() => mal(new Error('IndexedDB no responde')), 2500);
+                let r;
+                try { r = indexedDB.open('bitacora-copia', 1); } catch (e) { clearTimeout(tope); mal(e); return; }
                 r.onupgradeneeded = () => r.result.createObjectStore('copias');
-                r.onsuccess = () => ok(r.result);
-                r.onerror = () => mal(r.error);
+                r.onsuccess = () => {
+                    clearTimeout(tope);
+                    const db = r.result;
+                    db.onversionchange = () => { db.close(); copiaDbAbierta = null; };
+                    db.onclose = () => { copiaDbAbierta = null; };
+                    ok(db);
+                };
+                r.onerror = () => { clearTimeout(tope); mal(r.error); };
+                r.onblocked = () => { clearTimeout(tope); mal(new Error('IndexedDB bloqueada')); };
             });
+            copiaDbAbierta.catch(() => { copiaDbAbierta = null; });
+            return copiaDbAbierta;
         }
 
         async function leerCopiaLocal(uid) {
