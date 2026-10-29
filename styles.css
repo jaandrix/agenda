@@ -10089,3 +10089,9 @@ body.mobile-standalone .pres-guardar, body.pwa .pres-guardar { bottom:calc(112px
 #mobile-shell .m-home-editorial .m-pendiente-dia .m-check, #mobile-shell .m-home-editorial .m-pendientes-inicio .m-check { order:-1; width:28px; height:28px; }
 #mobile-shell .m-home-editorial .m-pendientes-inicio .m-lista { padding:0; border:0; border-radius:0; background:none; }
 #mobile-shell .m-home-editorial .m-pendientes-inicio .m-fila { padding:10px 0; background:none; border:0; }
+
+/* Prueba de pantalla completa en el iPhone (Ajustes, modo desarrollador): con viewport-fit=cover la web llega hasta
+   arriba y abajo del todo; lo que no tenía en cuenta las zonas seguras se separa aquí. */
+body.borde-a-borde { background:var(--bg-app); }
+body.borde-a-borde #landing-screen, body.borde-a-borde #login-screen { padding-top:env(safe-area-inset-top, 0px); box-sizing:border-box; }
+body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }

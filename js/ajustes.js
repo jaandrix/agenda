@@ -653,7 +653,7 @@
                             </div>`)}
                         ${bloqueAjuste('settings-advanced-section', 'avanzado', 'modo desarrollador.', 'Enseña funciones ocultas, como Vault.', `
                             <button class="finance-pro-switch ${devModeActive ? 'on' : ''}" onclick="toggleDeveloperMode()" aria-label="Modo desarrollador"><span class="finance-pro-switch-knob"></span></button>
-                            ${devModeActive ? `<div class="ajuste-botones" style="margin-top:12px"><button class="btn-secondary" style="width:auto" onclick="openAjustesAdmin()">más ajustes.</button></div>` : ''}`)}
+                            ${devModeActive ? `<div class="ajuste-botones" style="margin-top:12px"><button class="btn-secondary" style="width:auto" onclick="openAjustesAdmin()">más ajustes.</button><button class="btn-secondary" style="width:auto" onclick="alternarBordeABorde()">${bordeABordeActivo() ? 'quitar la prueba de pantalla completa.' : 'probar pantalla completa en el iPhone.'}</button></div>` : ''}`)}
                     </div>
                     </div>
                     <div class="ajustes-seccion" data-grupo="riesgo"><div class="ajustes-grupo" id="ajg-riesgo">zona de riesgo.</div>
@@ -1008,3 +1008,17 @@ async function canjearCodigoBeta() {
         showCenteredMessage('Ya eres beta tester de Bitácora');
     } else showToast(data === 'caducado' ? 'Ese código ya no se puede canjear' : 'Ese código no es válido', true);
 }
+
+        // Prueba de pantalla completa en el iPhone (viewport-fit=cover), solo en este dispositivo: la franja de arriba solo
+        // la puede cubrir la web así, pero en su día dejó un hueco bajo la barra de abajo. index.html la aplica antes de
+        // pintar; se prueba en la PWA y se quita aquí mismo si algo se ve mal.
+        function bordeABordeActivo() {
+            try { return localStorage.getItem('bitacora-borde-a-borde') === '1'; } catch (_) { return false; }
+        }
+        function alternarBordeABorde() {
+            try {
+                if (bordeABordeActivo()) localStorage.removeItem('bitacora-borde-a-borde');
+                else localStorage.setItem('bitacora-borde-a-borde', '1');
+            } catch (_) { showToast('No se pudo guardar en este dispositivo.', true); return; }
+            location.reload();
+        }
