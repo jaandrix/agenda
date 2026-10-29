@@ -9452,7 +9452,7 @@ body.papel .asig-estado.vencido { color:#a3243b; }
 @keyframes modalSheetBajar { to { transform: translateY(100%); } }
 /* Duraciones de la hoja del móvil en un solo sitio. Subir era 340 ms: se notaba lento en «apuntar.», que se abre muchas
    veces al día. */
-:root { --modal-abrir: .24s; --modal-cerrar: .2s; }
+:root { --modal-abrir: .24s; --modal-cerrar: .16s; }
 @keyframes modalCuerpoFunde { from { opacity: 0; } }
 @media (max-width: 600px) {
     /* Pasar de un modal a otro: la hoja se queda quieta y solo funde lo de dentro (la hoja entera parpadeaba en iOS). */
@@ -9883,9 +9883,9 @@ body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { max-height:calc((10
 
 /* Cierre del modal en el móvil: la hoja baja con el velo quieto y después el velo se aclara (ver closeModal). */
 @media (max-width: 600px) {
-    .modal-overlay.modal-overlay-saliendo { background-color: transparent !important; transition: background-color .12s linear; }
+    .modal-overlay.modal-overlay-saliendo { background-color: transparent !important; transition: background-color .08s linear; }
 }
-body.mobile-standalone .modal-overlay.modal-overlay-saliendo, body.pwa .modal-overlay.modal-overlay-saliendo { background-color: transparent !important; transition: background-color .12s linear; }
+body.mobile-standalone .modal-overlay.modal-overlay-saliendo, body.pwa .modal-overlay.modal-overlay-saliendo { background-color: transparent !important; transition: background-color .08s linear; }
 @media (prefers-reduced-motion: reduce) { .modal-overlay.modal-overlay-saliendo { transition: none; } }
 
 .fin-imp-detectada { font-weight:500; color:var(--text-secondary); }

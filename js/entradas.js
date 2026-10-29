@@ -204,7 +204,7 @@
             if (vtReducido()) { terminar(); return; }
             // En el móvil el velo no se anima a la vez que la hoja (Safari pintaba dos veces el oscurecido), y al quitar el
             // overlay pasaba del 55 % a nada en un fotograma. Ahora, en dos fases: baja la hoja con el velo quieto y
-            // después el velo se aclara en 120 ms; solo entonces se quita.
+            // después el velo se aclara en 80 ms; solo entonces se quita (29-10: hoja de 200 a 160 ms y velo de 120 a 80, el cierre tardaba unos 440 ms).
             if (mobileStandaloneActive || matchMedia('(max-width: 600px)').matches) {
                 let velo = false;
                 const salirVelo = () => {
@@ -212,13 +212,13 @@
                     velo = true;
                     overlay.classList.add('modal-overlay-saliendo');
                     overlay.addEventListener('transitionend', e => { if (e.target === overlay && e.propertyName === 'background-color') terminar(); }, { once: true });
-                    setTimeout(terminar, 200);
+                    setTimeout(terminar, 140);
                 };
                 if (sheet) {
                     sheet.style.animation = 'modalSheetBajar var(--modal-cerrar) var(--ease-out) both';
                     sheet.addEventListener('animationend', e => { if (e.target === sheet) salirVelo(); });
                 }
-                setTimeout(salirVelo, 260);
+                setTimeout(salirVelo, 210);
                 return;
             }
             overlay.style.animation = 'modalOverlayOut 0.16s ease-out both';

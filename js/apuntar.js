@@ -426,9 +426,8 @@ function pintarVistaApunteYa() {
     const caja = document.getElementById('apuntar-vista');
     if (!caja) return;
     apuntarAnalizar();
-    requestAnimationFrame(apuntarAjustarHoja);
     if (!apuntarItems.length) {
-        caja.innerHTML = '<span class="apuntar-pista">Escribe como hablas: «cena con Marta el viernes a las 9», «serie Los hombres de Paco», «gasté 12 en gasolina».</span>';
+        caja.innerHTML = APUNTAR_PISTA;
         return;
     }
     const tipos = APUNTAR_TIPOS.filter(([k]) => (k !== 'compra' || apartadoVisible('compra')) && (!['examen', 'trabajo', 'clase'].includes(k) || apartadoVisible('studies')) && (!APUNTAR_OCIO[k] || apartadoVisible('culture')));
@@ -447,6 +446,7 @@ function pintarVistaApunteYa() {
     }).join('')}`;
 }
 
+const APUNTAR_PISTA = '<span class="apuntar-pista">Escribe como hablas: «cena con Marta el viernes a las 9», «serie Los hombres de Paco», «gasté 12 en gasolina».</span>';
 const APUNTAR_ICONO_DE = { tarea: 'tarea', evento: 'evento', gasto: 'gasto', compra: 'compra', nota: 'nota', cumple: 'cumple', examen: 'examen', trabajo: 'tarea', recurrente: 'rutina', clase: 'ocio', viaje: 'viaje', libro: 'ocio', serie: 'ocio', peli: 'ocio', juego: 'ocio' };
 
 // Lo que se escribe en «apuntar.» se guarda en el dispositivo hasta apuntarlo: si iOS cierra la app o se toca
@@ -499,34 +499,17 @@ function openApuntar(fecha) {
         <div class="modal-title">apuntar${fecha && fecha !== todayISO() ? ` para ${apuntarFechaTexto(fecha)}` : ''}.</div>
         <textarea id="apuntar-texto" class="modal-input apuntar-texto" rows="2" placeholder="dentista mañana a las 5 y comprar pan..." oninput="apuntarElegidos={};pintarVistaApunte();apuntarGuardarBorrador(this.value)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();guardarApunte()}">${escapeHtml(borrador)}</textarea>
         ${borrador ? '<div class="apuntar-borrador">Lo que dejaste a medias. <button class="m-enlace" onclick="apuntarDescartarBorrador()">descartar.</button></div>' : ''}
-        <div id="apuntar-vista" class="apuntar-vista"></div>
+        <div id="apuntar-vista" class="apuntar-vista">${borrador ? '' : APUNTAR_PISTA}</div>
         <button class="btn-modal-primary" onclick="guardarApunte()">apuntar.</button>
         <div class="apuntar-o">o elige qué quieres apuntar</div>
         <div class="apuntar-rejilla">${accesos.map(([t, icono, accion]) => `<button onclick="${accion}"><i>${APUNTAR_ICONOS[icono]}</i><span>${t}</span></button>`).join('')}</div>
         <button class="m-enlace apuntar-todos" onclick="closeModal();window._dayPrefillDate=apuntarFechaBase;openCommandPalette('create');window._dayPrefillDate=apuntarFechaBase">todos los tipos.</button>
-        ${apuntesRecientes.length ? `<div class="apuntar-recientes" hidden><div class="apuntar-o">lo último que apuntaste</div>${apuntesRecientes.slice(0, 3).map(apuntarFilaRegistro).join('')}${apuntesRecientes.length > 3 ? `<button class="m-enlace apuntar-todos" onclick="openApuntesRecientes()">ver todo (${apuntesRecientes.length}).</button>` : ''}</div>` : ''}
+        ${apuntesRecientes.length ? `<button class="m-enlace apuntar-todos" onclick="openApuntesRecientes()">lo último que apuntaste.</button>` : ''}
     `);
-    pintarVistaApunteYa();
+    // Lo último apuntado ya no se enseña solo al acabar de subir la hoja: al aparecer, la hoja crecía y se recortaba
+    // (un tirón en cada apertura). Ahora es un enlace, y la hoja tiene su altura desde el primer fotograma.
+    if (borrador) pintarVistaApunteYa();
     enfocarSiTeclado(() => document.getElementById('apuntar-texto'));
-    // Lo último apuntado aparece cuando la hoja ya ha subido: medirla y cambiarle la altura mientras se movía daba tirones.
-    trasAbrirModal(() => {
-        const recientes = document.querySelector('#modal-container .apuntar-recientes');
-        if (recientes) { recientes.hidden = false; apuntarAjustarHoja(); }
-    });
-}
-
-// Lo último que se apuntó queda por debajo del borde de la hoja, asomando
-// solo su título: se ve deslizando dentro del modal, que no se mueve.
-function apuntarAjustarHoja() {
-    const hoja = document.querySelector('#modal-container .modal-sheet');
-    const recientes = hoja?.querySelector('.apuntar-recientes:not([hidden])');
-    if (!hoja || !recientes) return;
-    hoja.style.maxHeight = '';
-    // Con el tamaño de letra del móvil la hoja lleva zoom: lo medido en
-    // pantalla se pasa a medidas de CSS.
-    const escala = hoja.getBoundingClientRect().height / (hoja.offsetHeight || 1) || 1;
-    const corte = (recientes.getBoundingClientRect().top - hoja.getBoundingClientRect().top) / escala + hoja.scrollTop + 30;
-    if (corte < hoja.offsetHeight) hoja.style.maxHeight = corte + 'px';
 }
 
 // Crea una cosa. Devuelve { aviso, hecho } o { error }.
