@@ -1233,7 +1233,7 @@
             return `
             <div class="m-topbar">
                 ${view === 'calendar'
-                    ? `<span class="m-marca-fila"><button class="mi-avatar" onclick="openMiPerfil()" aria-label="Mi perfil">${avatarHtml(miPerfil.foto, miNombreVisible(), 'avatar-cabecera')}</button><span class="m-marca">bitácora.</span></span><span class="m-topbar-tiempo">${renderTiempoWidget()}</span>`
+                    ? `<span class="m-marca-fila"><button class="mi-avatar" onclick="openMiPerfil()" aria-label="Mi perfil">${avatarHtml(miPerfil.foto, miNombreVisible(), 'avatar-cabecera')}</button><span class="m-marca">bitácora.</span></span>`
                     : `<span class="m-topbar-titulo" aria-hidden="true">${escapeHtml((NAV_VIEW_LABELS[view] || '').toLowerCase())}.</span>`}
                 <span class="estado-sync m-sin-red" data-estado="${estadoSync}" role="status">${ESTADO_SYNC_TEXTO[estadoSync] || ''}</span>
                 <button class="m-menu-btn" onclick="toggleMenuMovil()" aria-label="Abrir el menú">
@@ -1338,7 +1338,7 @@
             if (date === antes) return;
             pagina.style.setProperty('--m-dx', date > antes ? '18px' : '-18px');
             const lunes = iso => { const x = new Date(iso + 'T12:00:00'); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return isoLocal(x); };
-            const piezas = ['.m-ahora', '.m-dia'];
+            const piezas = ['.m-hero-num', '.m-hero-mes', '.m-dia'];
             if (lunes(date) !== lunes(antes) && !mobileCarruselGesto) piezas.push('.m-semana-carrusel');
             piezas.forEach(sel => pagina.querySelector(sel)?.classList.add('m-cambia-dia'));
             mobileCentrarCarrusel();
@@ -1489,13 +1489,20 @@
             }).join('');
             const etiqueta = mobileVerMes ? `${MOBILE_MESES[m]}${y !== new Date().getFullYear() ? ' ' + y : ''}.` : `${MOBILE_MESES[lunes.getMonth()]}${semana[6].getMonth() !== lunes.getMonth() ? ' – ' + MOBILE_MESES[semana[6].getMonth()] : ''}.`;
 
-            // El panel del día se calcula antes que «ahora.»: deja apuntado lo que tiene hora (mobileDiaConHora).
-            const panel = renderMobileDiaPanel(sel, hoy);
-            return `<div class="m-home-editorial">
-            <section class="m-mes">
+            return `
+            <section class="m-hero">
+                <div class="m-hero-fila">
+                    <div class="m-hero-num">${d.getDate()}</div>
+                    <div class="m-hero-lado">
+                        <div class="m-hero-tiempo">${renderTiempoWidget()}</div>
+                        ${sel !== hoy ? `<button class="m-hoy-link" onclick="mobileElegirDia('${hoy}')">volver a hoy.</button>` : ''}
+                    </div>
+                </div>
+                <div class="m-hero-mes"><span>${MOBILE_MESES[d.getMonth()]}${d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''}.</span><span class="m-hero-dia">${MOBILE_DIAS[d.getDay()]}.</span></div>
+            </section>
+            <section class="m-mes m-superficie">
                 <div class="m-mes-cab">
                     <span class="m-etiqueta">${etiqueta}</span>
-                    ${sel !== hoy ? `<button class="m-hoy-link" onclick="mobileElegirDia('${hoy}')">volver a hoy.</button>` : ''}
                     <div class="m-mes-flechas">
                         <button onclick="${mobileVerMes ? 'mobileCambiarMes(-1)' : 'mobileCarruselPaso(-1)'}" aria-label="${mobileVerMes ? 'Mes anterior' : 'Semana anterior'}"><i class='ico ico-izq' aria-hidden=true></i></button>
                         <button class="m-mes-modo" onclick="mobileAlternarMes()">${mobileVerMes ? 'semana.' : 'mes.'}</button>
@@ -1506,31 +1513,9 @@
                 <div class="m-mes-letras">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => `<span class="${i === letraHoy && y === new Date().getFullYear() && m === new Date().getMonth() ? 'hoy' : ''}">${l}</span>`).join('')}</div>
                 <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>` : `<div class="m-semana-carrusel">${[-1, 0, 1].map(k => `<div class="m-semana-tira">${tiraDe(k)}</div>`).join('')}</div>`}
             </section>
-            ${renderMobileAhora(sel, hoy)}
-            ${panel}
             ${renderLineaFestivos('m-serv-linea', true)}
-            ${renderMobileTeselas()}
-            </div>`;
-        }
-
-        // «ahora.»: hoy, la hora y lo siguiente con hora; otro día por venir, «lo próximo.»; un día pasado, nada.
-        let mobileDiaConHora = [];
-        function renderMobileAhora(sel, hoy) {
-            if (sel < hoy) return '';
-            const pendientes = mobileDiaConHora.filter(f => !f.hecha);
-            if (sel !== hoy) {
-                const p = pendientes[0];
-                return `<section class="m-ahora"><div class="m-ahora-tit">lo próximo.</div>${p ? `<div class="m-ahora-hora">${escapeHtml(p.hora)}</div><div class="m-ahora-que">${escapeHtml(p.nombre)}</div>` : '<div class="m-ahora-que m-ahora-nada">nada con hora.</div>'}</section>`;
-            }
-            const ya = new Date(), horaAhora = `${String(ya.getHours()).padStart(2, '0')}:${String(ya.getMinutes()).padStart(2, '0')}`;
-            const p = pendientes.find(f => f.hora > horaAhora);
-            let falta = '';
-            if (p) {
-                const [h, m] = p.hora.split(':').map(Number);
-                const min = h * 60 + m - (ya.getHours() * 60 + ya.getMinutes());
-                falta = min < 60 ? `faltan ${min} min.` : `faltan ${Math.floor(min / 60)} h${min % 60 ? ` y ${min % 60} min` : ''}.`;
-            }
-            return `<section class="m-ahora"><div class="m-ahora-tit">ahora.</div><div class="m-ahora-hora">${horaAhora}</div>${p ? `<div class="m-ahora-que">${escapeHtml(p.nombre)}</div><div class="m-ahora-falta">${falta}</div>` : '<div class="m-ahora-que m-ahora-nada">nada más con hora.</div>'}</section>`;
+            ${renderMobileDiaPanel(sel, hoy)}
+            ${renderMobileTeselas()}`;
         }
 
         function renderMobileDiaPanel(sel, hoy) {
@@ -1548,7 +1533,7 @@
                 if (e.type === 'work') {
                     const horario = (e.startTime || e.endTime) ? `de ${e.startTime || '--'} a ${e.endTime || '--'}` : '';
                     const meta = [horario, e.position].filter(Boolean).map(escapeHtml).join(', ');
-                    filas.push({ hora, nombre: `trabajando en ${e.company || 'tu empresa'}`, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(e.startTime || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">trabajando en ${escapeHtml(e.company || 'tu empresa')}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div></div>` });
+                    filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(e.startTime || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">trabajando en ${escapeHtml(e.company || 'tu empresa')}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div></div>` });
                     return;
                 }
                 if (e._recurringPayment) {
@@ -1558,7 +1543,7 @@
                 const titulo = e.type === 'birthday' ? `cumpleaños de ${escapeHtml(e.title)}` : escapeHtml(e.title || '');
                 const cat = categories.find(c => c.id === e.categoryId);
                 const meta = (esPartidoAuto(e) ? [e._datos?.competicion || EVENT_TYPE_LABELS[e.eventType], e.place] : [e.place, cat?.name]).filter(Boolean).map(escapeHtml).join(', ');
-                filas.push({ hora, nombre: e.type === 'birthday' ? `cumpleaños de ${e.title}` : e.title || '', html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(hora) || '—'}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${titulo}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div>${(e.entradas || []).length ? `<button class="m-mini m-fila-qr" onclick="event.stopPropagation();abrirEntradas('${e.id}',0)" aria-label="Ver la entrada">${ENTRADA_ICONO}<span>qr.</span></button>` : esPartidoAuto(e) ? ETIQUETA_AUTO : '<span class="m-fila-bola" aria-hidden="true"></span>'}</div>` });
+                filas.push({ hora, html: `<div class="m-fila" data-open-entry="${e.id}"><span class="m-fila-hora">${escapeHtml(hora) || '—'}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${titulo}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}</div>${(e.entradas || []).length ? `<button class="m-mini m-fila-qr" onclick="event.stopPropagation();abrirEntradas('${e.id}',0)" aria-label="Ver la entrada">${ENTRADA_ICONO}<span>qr.</span></button>` : esPartidoAuto(e) ? ETIQUETA_AUTO : '<span class="m-fila-bola" aria-hidden="true"></span>'}</div>` });
             });
             // Hoy, lo hecho se queda a la vista 30 minutos (por si se marcó sin querer) y luego se va; con
             // «ver las hechas.» vuelven todas.
@@ -1567,7 +1552,7 @@
             const sigue = (hecha, cuando) => !esHoy || !hecha || mobileVerHechas || mobileHechaReciente(cuando) || !(ocultas += 1);
             tareasDia.forEach(it => {
                 if (!sigue(it.done, it.hechaEn)) return;
-                filas.push({ hora: it.time || '', nombre: it.title, hecha: !!it.done, html: renderMobileFilaTarea(it, offset) });
+                filas.push({ hora: it.time || '', html: renderMobileFilaTarea(it, offset) });
             });
             if (sel === hoy) {
                 recurringTasksDueToday().forEach(t => {
@@ -1583,7 +1568,6 @@
             // tiempo con la hora a la izquierda y, si es hoy, una marca de
             // "ahora" entre lo pasado y lo que viene.
             const sinHora = filas.filter(f => !f.hora), conHora = filas.filter(f => f.hora);
-            mobileDiaConHora = conHora;
             const ahora = new Date(), horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
             let marcaPuesta = sel !== hoy;
             const linea = conHora.map(f => {
@@ -1598,8 +1582,8 @@
                     <div><div class="m-dia-titulo">${titulo}</div><div class="m-dia-sub">${festivoDe(sel) ? `festivo, ${escapeHtml(festivoDe(sel).nombre.toLowerCase())}. ` : ''}${filas.length ? `${filas.length} ${filas.length === 1 ? 'cosa' : 'cosas'}.` : 'libre.'}</div></div>
                     <button class="m-mas" onclick="openNewEntryForDay('${sel}')" aria-label="Añadir algo este día">+</button>
                 </div>
+                ${sinHora.length ? `<div class="m-lista m-tl-sinhora">${sinHora.map(f => f.html).join('')}</div>` : ''}
                 ${conHora.length ? `<div class="m-tl">${linea}</div>` : ''}
-                ${sinHora.length ? `<div class="m-pendiente-dia"><div class="m-bloque-tit">pendiente para ${sel === hoy ? 'hoy' : 'este día'}.</div><div class="m-lista m-tl-sinhora">${sinHora.map(f => f.html).join('')}</div></div>` : ''}
                 ${!filas.length ? `<div class="m-vacio">${ocultas ? 'todo hecho.' : 'nada este día.'}</div>` : ''}
                 ${esHoy ? renderMobilePendientesInicio(sigue) : ''}
                 ${ocultas || (esHoy && mobileVerHechas) ? `<button class="m-enlace m-ver-hechas" onclick="mobileVerHechas=!mobileVerHechas;renderMobileShell()">${mobileVerHechas ? 'ocultar las hechas.' : `ver ${ocultas === 1 ? 'la hecha' : `las ${ocultas} hechas`}.`}</button>` : ''}
