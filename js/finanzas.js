@@ -784,7 +784,11 @@
                     ${renderLongTermYearDots()}
                 </div>
 
-                <div id="longterm-planning-section">${renderBudgetPlanningSection()}</div>
+                <div class="lt-card" id="longterm-planning-section">
+                    <div class="longterm-section-head"><div class="longterm-section-title">planificación del sueldo.</div></div>
+                    <div class="finance-empty-line" style="margin:8px 0">Ahora está junto a los presupuestos, en Finanzas: el sueldo, cómo lo repartes y cómo va cada categoría, en una sola vista.</div>
+                    <button class="longterm-cta" onclick="presupuestoAbrir()">abrir la planificación.</button>
+                </div>
 
                 <div class="lt-card">
                     <div class="longterm-section-head">

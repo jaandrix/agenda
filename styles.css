@@ -9891,3 +9891,58 @@ body.mobile-standalone .modal-overlay.modal-overlay-saliendo, body.pwa .modal-ov
 .fin-graf-extras { display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; }
 .fin-graf-desde { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-secondary); }
 .fin-graf-desde input { padding:3px 6px; border:1px solid var(--border); border-radius:8px; background:transparent; color:var(--text-primary); font:inherit; }
+
+/* Presupuesto del mes: planificación del sueldo y presupuestos en una sola vista. Filas separadas por líneas. */
+.pres { display:flex; flex-direction:column; gap:12px; }
+.pres-cab { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
+.pres-mes { display:flex; align-items:center; gap:6px; font-weight:600; }
+.pres-acciones { display:flex; flex-wrap:wrap; gap:8px; }
+.pres-titulo { margin:0; font-size:20px; }
+.pres-explica { margin:0; font-size:13.5px; color:var(--text-secondary); }
+.pres-resumen { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+.pres-cifra { display:flex; flex-direction:column; gap:2px; padding:12px 12px 12px 0; }
+.pres-cifra + .pres-cifra { padding-left:12px; border-left:1px solid var(--border); }
+.pres-cifra span { font-size:12.5px; color:var(--text-secondary); }
+.pres-cifra b { font-size:19px; font-variant-numeric:tabular-nums; }
+.pres-cifra small { font-size:12px; color:var(--accent); }
+.pres-sin.superado b { color:var(--accent); }
+.pres-editable input { width:100%; box-sizing:border-box; font:600 16px var(--font-family); padding:6px 8px; border:1px solid var(--border-strong, var(--border)); border-radius:10px; background:transparent; color:var(--text-primary); }
+.pres-reparto { display:flex; height:6px; border-radius:3px; background:var(--bg-card-hover); overflow:hidden; }
+.pres-reparto i { display:block; height:100%; transition:width .18s ease-out; }
+.pres-reparto-pres { background:var(--text-primary); }
+.pres-reparto-comp { background:var(--text-secondary); }
+.pres-bloque { display:flex; flex-direction:column; }
+.pres-bloque-tit { display:flex; justify-content:space-between; align-items:baseline; font-weight:700; font-size:14px; padding:8px 0; }
+.pres-fila { display:flex; flex-direction:column; gap:5px; padding:10px 0; border-top:1px solid var(--border); }
+.pres-fila-cab { display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+.pres-estado { font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pres-fila.aviso .pres-estado { color:var(--text-primary); text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:3px; }
+.pres-fila.superado .pres-estado { color:var(--accent); }
+.pres-fila-datos { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12.5px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.pres-barra { height:5px; border-radius:3px; background:var(--bg-card-hover); overflow:hidden; }
+.pres-barra i { display:block; height:100%; background:var(--text-primary); }
+.pres-fila.aviso .pres-barra i { background:var(--text-secondary); }
+.pres-fila.superado .pres-barra i { background:var(--accent); }
+.pres-otros { display:flex; flex-wrap:wrap; gap:4px 14px; padding:10px 0; border-top:1px solid var(--border); font-size:13px; }
+.pres-otros > span:first-child { font-weight:600; }
+.pres-otros small, .pres-casilla-gasto { flex-basis:100%; font-size:12px; color:var(--text-secondary); }
+.pres-nada { margin:0; font-size:13.5px; color:var(--text-secondary); }
+.pres-grupo { display:flex; flex-direction:column; gap:6px; padding:10px 0; border-top:1px solid var(--border); }
+.pres-casilla { display:grid; grid-template-columns:minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr) 36px; gap:8px; align-items:end; }
+.pres-campo { display:flex; flex-direction:column; gap:3px; min-width:0; font-size:12px; color:var(--text-secondary); }
+.pres-campo small { font-size:12px; }
+.pres-campo input, .pres-campo select { width:100%; box-sizing:border-box; font:500 16px var(--font-family); padding:7px 8px; border:1px solid var(--border-strong, var(--border)); border-radius:10px; background:transparent; color:var(--text-primary); min-height:40px; }
+.pres-guardar { position:sticky; bottom:0; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; padding:12px 0 4px; background:var(--bg-card); border-top:1px solid var(--border); }
+.pres-guardar-der { display:flex; gap:8px; margin-left:auto; }
+.pres-guardar .btn-modal-primary { width:auto; margin:0; padding:10px 16px; }
+@media (max-width: 700px) {
+    .pres-resumen { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .pres-cifra:nth-child(odd) { padding-left:0; border-left:0; }
+    .pres-cifra:nth-child(n+3) { border-top:1px solid var(--border); }
+    .pres-casilla { grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) 36px; }
+    .pres-casilla .pres-campo-nombre { grid-column:1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .pres-reparto i { transition:none; } }
+
+/* En la PWA la barra de pestañas tapa el borde de abajo: guardar y cancelar se quedan justo encima. */
+body.mobile-standalone .pres-guardar, body.pwa .pres-guardar { bottom:calc(112px / var(--m-zoom, 1)); }

@@ -1874,6 +1874,7 @@
                     <button class="m-boton" onclick="pegarExtractoBancario()">importar extracto.</button>
                 </div>
                 ${mesB.avisos}
+                ${renderFinanceBudgetUnifiedPanel()}
                 <div class="m-bloque-cab"><div class="m-etiqueta">este mes.</div></div>
                 <div class="m-dos">
                     <div><div class="m-etiqueta">entra.</div><div class="m-cifra-media">${financeMoney(income)}</div></div>

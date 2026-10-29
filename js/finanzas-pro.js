@@ -1926,7 +1926,7 @@
         function renderFinanceTabCuerpo() {
             if (financeTab === 'movimientos') return renderFinanceProTxSection();
             if (financeTab === 'planificacion') return `
-                ${renderFinanceProBudgetsPanel()}
+                ${renderFinanceBudgetUnifiedPanel()}
                 ${renderFinancePlanRow()}
                 <div class="finance-dashboard-foot-actions" style="margin-top:20px">
                     <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()"><i class='ico ico-lapiz' aria-hidden=true></i> corregir registros.</button>
