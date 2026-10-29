@@ -2710,6 +2710,7 @@
                 <div id="new-cat-color-picker">${renderFinanceProColorPicker()}</div>
                 <button class="btn-modal-primary" style="margin-top:10px" onclick="addFinanceProCategory()">+ Añadir categoría</button>
                 <button class="m-enlace" style="display:block;margin:12px auto 0" onclick="openDividirCategoria()">dividir una categoría.</button>
+                <button class="m-enlace" style="display:block;margin:6px auto 0" onclick="openImportarCategorias()">importar categorías.</button>
             `);
         }
 
@@ -4366,5 +4367,79 @@ async function aplicarDividirCategoria() {
     closeModal();
     render();
     try { await saveData(); showToast(`${mover.length} movimientos pasan de «${origen?.name || 'la categoría'}» a «${destino.name}».`); }
+    catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+
+// ============================================================
+//  IMPORTAR CATEGORÍAS (29-10)
+//  Un archivo «fecha;cuenta;tipo;importe;concepto;categoria» (el que prepara Claude a partir del .md) rellena la
+//  categoría de los movimientos que no tienen ninguna. Solo rellena: nunca cambia una categoría puesta, ni importes,
+//  fechas o cuentas. Cada fila busca su movimiento exacto (misma fecha, cuenta, tipo, importe y concepto); si hay
+//  dos iguales, cada fila se queda con uno. Las categorías que no existan (Bar) se crean.
+// ============================================================
+let importarCats = null;
+function openImportarCategorias() {
+    showModal(`<div class="modal-title">importar categorías.<button class="modal-close" aria-label="cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
+        <p class="finance-modal-note" style="margin-top:0">Sube el archivo de categorías. Solo se rellenan movimientos sin categoría; los saldos no cambian. Antes se guarda una foto en «deshacer importación.».</p>
+        <input type="file" class="modal-input" accept=".csv,.txt,text/csv,text/plain" onchange="leerArchivoCategorias(event)">
+        <div id="importar-cats-cuerpo"></div>`);
+}
+async function leerArchivoCategorias(ev) {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const filas = financeProParseCSV((await file.text()).replace(/^﻿/, '').trim());
+    const cab = (filas[0] || []).map(h => String(h || '').trim().toLowerCase());
+    const col = n => cab.indexOf(n);
+    if (['fecha', 'cuenta', 'tipo', 'importe', 'concepto', 'categoria'].some(n => col(n) < 0)) return showToast('El archivo no tiene las columnas fecha, cuenta, tipo, importe, concepto y categoria', true);
+    const usados = new Set();
+    const cuentaDe = nombre => FINANCE_PRO_ACCOUNT_KEYS.find(k => financeProNormalizar(financePro.accounts[k]?.name || '') === financeProNormalizar(nombre));
+    importarCats = { filas: filas.slice(1).map((r, i) => {
+        const f = { i, fecha: financeProParseDate(r[col('fecha')]), cuenta: cuentaDe(r[col('cuenta')]), tipo: /^ing/i.test(r[col('tipo')]) ? 'income' : 'expense',
+            importe: Math.abs(financeProParseEuroAmount(r[col('importe')])), concepto: String(r[col('concepto')] || '').trim(), categoria: String(r[col('categoria')] || '').trim() };
+        const libres = financePro.transactions.filter(t => !usados.has(t) && t.date === f.fecha && t.account === f.cuenta && t.type === f.tipo && Math.abs(Number(t.amount) - f.importe) < 0.005 && String(t.note || '').trim() === f.concepto);
+        const t = libres.find(t => !t.category) || null;
+        f.estado = t ? 'ok' : libres.length ? 'ya' : 'no';
+        if (t) { usados.add(t); f.t = t; }
+        return f;
+    }), fuera: new Set() };
+    pintarImportarCategorias();
+}
+function pintarImportarCategorias() {
+    const d = importarCats;
+    const ok = d.filas.filter(f => f.estado === 'ok'), ya = d.filas.filter(f => f.estado === 'ya'), no = d.filas.filter(f => f.estado === 'no');
+    const marcadas = ok.filter(f => !d.fuera.has(f.i));
+    const nuevas = [...new Set(marcadas.map(f => f.categoria))].filter(n => !financePro.categories.some(c => financeProNormalizar(c.name) === financeProNormalizar(n)));
+    const grupos = {};
+    ok.forEach(f => { (grupos[f.categoria] ||= []).push(f); });
+    document.getElementById('importar-cats-cuerpo').innerHTML = `
+        <div class="fin-imp-resumen"><b>${marcadas.length} se categorizan</b><span>${ya.length ? `${ya.length} ya tenían categoría y no se tocan, ` : ''}${no.length ? `${no.length} no encuentran su movimiento, ` : ''}de ${d.filas.length} filas.</span></div>
+        ${nuevas.length ? `<p class="finance-modal-note">Se crean ${nuevas.length === 1 ? 'la categoría' : 'las categorías'} ${nuevas.map(n => `«${escapeHtml(n)}»`).join(', ')}.</p>` : ''}
+        ${Object.entries(grupos).sort((a, b) => b[1].length - a[1].length).map(([cat, l]) => `<details class="fin-imp-lista"><summary>${escapeHtml(cat)}: ${l.filter(f => !d.fuera.has(f.i)).length}.</summary><div class="fin-imp-filas">${l.map(f => `<label class="fin-imp-fila"><input type="checkbox" ${d.fuera.has(f.i) ? '' : 'checked'} onchange="importarCats.fuera[this.checked ? 'delete' : 'add'](${f.i});pintarImportarCategorias()"><span>${financeDateLabelShort(f.fecha)}</span><b>${escapeHtml(f.concepto || 'sin concepto')}</b><i>${f.tipo === 'income' ? '+' : '-'}${financeMoney(f.importe)}</i></label>`).join('')}</div></details>`).join('')}
+        ${no.length ? `<details class="fin-imp-lista"><summary>no encuentran su movimiento: ${no.length}.</summary><div class="fin-imp-filas">${no.map(f => `<div class="fin-imp-fila"><span></span><span>${f.fecha ? financeDateLabelShort(f.fecha) : '?'}</span><b>${escapeHtml(f.concepto)}</b><i>${financeMoney(f.importe)}</i></div>`).join('')}</div></details>` : ''}
+        <button class="btn-modal-primary" style="margin-top:14px" ${marcadas.length ? '' : 'disabled'} onclick="aplicarImportarCategorias()">categorizar ${marcadas.length}.</button>`;
+}
+async function aplicarImportarCategorias() {
+    const d = importarCats;
+    const marcadas = d.filas.filter(f => f.estado === 'ok' && !d.fuera.has(f.i) && !f.t.category);
+    if (!marcadas.length) return;
+    await financeImportGuardarAntes(`importar categorías (${marcadas.length})`);
+    const usadosColor = new Set(financePro.categories.map(c => c.color));
+    marcadas.forEach(f => {
+        let c = financePro.categories.find(c => c.type === f.tipo && financeProNormalizar(c.name) === financeProNormalizar(f.categoria));
+        if (!c) {
+            const color = FINANCE_PRO_PALETTE.find(x => !usadosColor.has(x)) || FINANCE_PRO_PALETTE[0];
+            usadosColor.add(color);
+            c = { id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: f.categoria, icon: 'other', color, type: f.tipo };
+            financePro.categories.push(c);
+        }
+        f.t.category = c.id; f.t.needsReview = false; delete f.t.categoriaAuto;
+    });
+    importarCats = null;
+    financeSaldosCache = null;
+    invalidarCachesDerivadas();
+    closeModal();
+    render();
+    try { await saveData(); showToast(`${marcadas.length} movimientos categorizados. Los saldos no cambian.`); }
     catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
 }
