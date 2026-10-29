@@ -143,6 +143,7 @@
                 mobileDiaSel = null;
                 mobileMes = null;
                 plannerDayOffset = 0;
+                mobileVerHechas = false;
             }
             repintarTrasModal();
         }

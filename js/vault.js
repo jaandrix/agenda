@@ -185,7 +185,28 @@
         // Con un modal abierto, lo de detrás no se alcanza con el teclado ni con el lector de pantalla, y el botón atrás
         // (Android, el gesto de la PWA) cierra el modal o el menú en vez de salir de la app.
         let capaEnHistorial = false;
+        // Sin viewport-fit=cover (dio problemas en iOS), el velo no llega a la franja de la hora: allí manda theme-color
+        // y el fondo de html. Al abrir un modal en la PWA se ponen del color del fondo con el velo encima.
+        let fondoTemaCapa = null;
+        function pintarFranjaConCapa(abierta) {
+            if (!mobileStandaloneActive) return;
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (abierta) {
+                if (fondoTemaCapa) return;
+                fondoTemaCapa = { meta: meta?.content || '', html: document.documentElement.style.backgroundColor };
+                const m = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g);
+                if (!m) return;
+                const velado = `rgb(${m.slice(0, 3).map(v => Math.round(Number(v) * 0.45)).join(', ')})`;
+                document.documentElement.style.backgroundColor = velado;
+                if (meta) meta.content = velado;
+            } else if (fondoTemaCapa) {
+                document.documentElement.style.backgroundColor = fondoTemaCapa.html;
+                if (meta) meta.content = fondoTemaCapa.meta;
+                fondoTemaCapa = null;
+            }
+        }
         function abrirCapa() {
+            pintarFranjaConCapa(true);
             const raiz = raizInteractiva();
             if (raiz && !raiz.inert) raiz.inert = true;
             anotarCapa();
@@ -205,6 +226,7 @@
             try { if (history.state?.bitacoraCapa) history.back(); } catch (_) { /* sin historial */ }
         }
         function cerrarCapa() {
+            pintarFranjaConCapa(false);
             const raiz = raizInteractiva();
             if (raiz?.inert) raiz.inert = false;
             if (!mobileMenuAbierto) soltarCapa();

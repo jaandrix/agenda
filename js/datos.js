@@ -555,7 +555,11 @@
             const lastSnapshotWeek = latestData._meta?.lastSnapshotWeek || '';
             const needsSnapshot = lastSnapshotWeek !== currentWeek;
 
-            const { fusion, cambiado } = aplicarFusionConNube(latestData);
+            const { fusion: fusionViva, cambiado } = aplicarFusionConNube(latestData);
+            // La fusión devuelve los mismos objetos que la app sigue tocando: si mientras se escribía se marcaba otra
+            // tarea, esa marca acababa en datosBase sin haberse enviado, y el guardado siguiente la deshacía (tareas y
+            // compra que se desmarcaban solas). Lo enviado y la nueva base salen de una copia hecha aquí.
+            const fusion = clonarDatos(fusionViva);
             const mergedData = {
                 ...latestData,
                 ...fusion,
@@ -592,7 +596,7 @@
             }
 
             datosBase = clonarDatos(fusion);
-            if (cambiado) setTimeout(() => { invalidarCachesDerivadas(); render(); }, 0);
+            if (cambiado) setTimeout(() => { invalidarCachesDerivadas(); repintarTrasModal(); }, 0);
             if (copiaPendiente) { copiaPendiente = false; avisoGuardadoSinConexion = false; showToast('Conectado de nuevo: lo que apuntaste sin red ya está en la nube.'); }
             marcarConexion(false);
             programarCopiaLocal();

@@ -1045,6 +1045,8 @@
         //  La vista móvil sigue siempre a currentView, así que switchView,
         //  openEntryDetail y compañía funcionan igual que en escritorio.
         // ============================================================
+        // Qué versión ejecuta este dispositivo (la de index.html, que sube con cada publicación).
+        window.BITACORA_BUILD = document.querySelector('meta[name="bitacora-build"]')?.content || 'sin versión';
         function isMobileStandaloneMode() {
             try {
                 return (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
@@ -1621,13 +1623,14 @@
 
         // Las funciones de escritorio solo repintan si se está en el
         // Planificador; desde el inicio hay que repintar a mano.
+        // Marcar ya repinta en planificador, calendario y panorama: repintar otra vez aquí era rehacerlo todo dos veces.
         function mobileMarcarTarea(id, offset) {
             togglePlannerItemDone(id, offset);
-            if (currentView !== 'planner') renderMobileShell();
+            if (!['planner', 'calendar', 'home'].includes(currentView)) renderMobileShell();
         }
         function mobileMarcarRecurrente(id) {
             toggleRecurringTaskDoneToday(id);
-            if (currentView !== 'planner') renderMobileShell();
+            if (!['planner', 'calendar', 'home'].includes(currentView)) renderMobileShell();
         }
 
         function mobileTareaAcciones(id, offset) {
