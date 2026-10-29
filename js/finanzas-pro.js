@@ -3322,7 +3322,7 @@
             const sumarClave = k => existentes.set(k, (existentes.get(k) || 0) + 1);
             financePro.transactions.forEach(t => {
                 const nota = t.bankNote ?? t.note ?? '';
-                [`${t.account}|${t.date}|${t.amount}|${nota}`, t.transferTo && `${t.transferTo}|${t.date}|${t.amount}|${nota}`, t.claveImport].filter(Boolean).forEach(sumarClave);
+                [`${t.account}|${t.date}|${t.amount}|${nota}`, t.transferTo && `${t.transferTo}|${t.date}|${t.amount}|${nota}`, t.claveImport, t.claveImport2].filter(Boolean).forEach(sumarClave);
             });
             const vistas = new Map();
             const yaEsta = k => (vistas.get(k) || 0) < (existentes.get(k) || 0);
@@ -3460,6 +3460,22 @@
                     reclamados.add(editado);
                     if (!editado.bankNote && description) editado.bankNote = description;
                     skipped++;
+                    return;
+                }
+                // Una transferencia entre tus cuentas grabada a mano (o ya traída del otro banco) es esta fila si va en el
+                // mismo sentido, por el mismo importe y a 4 días como mucho: se concilia y guarda el concepto del banco
+                // para reconocerla al reimportar. Así puedes apuntar el traspaso a Revolut el día que lo haces y, cuando
+                // Ibercaja lo enseñe (y Revolut), no se duplica.
+                const traspaso = !esPendiente && financeProTraspasoCercano(m.account, type, amount, [date, ...altDates], reclamados);
+                if (traspaso) {
+                    reclamados.add(traspaso);
+                    const clave = `${m.account}|${date}|${amount}|${description}`;
+                    if (!traspaso.claveImport) traspaso.claveImport = clave;
+                    else if (traspaso.claveImport !== clave) traspaso.claveImport2 = clave;
+                    traspaso.conciliado = true;
+                    ponerMarca(traspaso);
+                    registrar(dedupeKey);
+                    conciliados++;
                     return;
                 }
                 registrar(dedupeKey);
@@ -3923,8 +3939,12 @@ function financeProFilasYaApuntadas(imp) {
         const x = libres.find(x => !usados.has(x) && x.t.date === f.date && Math.abs(x.val - f.val) < 0.005 && financeProNormalizar(x.t.bankNote ?? x.t.note ?? '') === financeProNormalizar(f.desc));
         if (x) tomar(f, x);
     });
+    // Por importe y fecha cercana no vale un movimiento que es la pareja de otra fila de este mismo extracto (el café
+    // de 1,60 € del día 2 no es el del día 1, aunque estén a un día).
+    const conceptos = new Set(filas.map(f => financeProNormalizar(f.desc)));
+    const parecido = x => x.t.type === 'transfer' || !conceptos.has(financeProNormalizar(x.t.bankNote ?? x.t.note ?? ''));
     filas.filter(f => !ya.has(f.fila)).forEach(f => {
-        const x = libres.filter(x => !usados.has(x) && Math.abs(x.val - f.val) < 0.005 && dias(x.t.date, f.date) <= 4)
+        const x = libres.filter(x => !usados.has(x) && parecido(x) && Math.abs(x.val - f.val) < 0.005 && dias(x.t.date, f.date) <= 4)
             .sort((a, b) => dias(a.t.date, f.date) - dias(b.t.date, f.date))[0];
         if (x) tomar(f, x);
     });
@@ -3973,4 +3993,19 @@ function financeProTraspasoAprendido(cuenta, type, descripcion) {
         if (type === 'expense' && x.account === cuenta && x.transferTo && x.transferTo !== cuenta) { t = { otherAccount: x.transferTo }; break; }
     }
     return t;
+}
+
+
+function financeProTraspasoCercano(cuenta, type, importe, fechas, reclamados) {
+    const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 86400000);
+    let mejor = null, mejorDias = Infinity;
+    financePro.transactions.forEach(t => {
+        if (t.type !== 'transfer' || reclamados.has(t) || Math.abs(Number(t.amount) - importe) >= 0.005) return;
+        if (type === 'income' ? t.transferTo !== cuenta : t.account !== cuenta) return;
+        // Ya conciliada por este lado: su concepto de este banco ya está guardado.
+        if (t.conciliado && [t.claveImport, t.claveImport2].some(k => k && k.startsWith(cuenta + '|'))) return;
+        const d = Math.min(...fechas.map(f => dias(t.date, f)));
+        if (d <= 4 && d < mejorDias) { mejor = t; mejorDias = d; }
+    });
+    return mejor;
 }
