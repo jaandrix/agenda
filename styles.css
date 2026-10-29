@@ -3056,9 +3056,7 @@
             justify-content: center;
             background: var(--bg-app);
             z-index: 1001;
-            font-size: 13px;
-            color: var(--text-secondary);
-            letter-spacing: 0.5px;
+            color: var(--text-primary);
         }
         #login-box {
             width: 100%;
@@ -10020,3 +10018,12 @@ body.mobile-standalone .pres-guardar, body.pwa .pres-guardar { bottom:calc(112px
 .pres-entra-der > :not(.pres-cab) { animation: presEntraDer .2s var(--ease-out) both; }
 .pres-entra-izq > :not(.pres-cab) { animation: presEntraIzq .2s var(--ease-out) both; }
 @media (prefers-reduced-motion: reduce) { .pres-entra-der > *, .pres-entra-izq > * { animation: none; } }
+
+/* Pantalla de carga: el logo como máscara (monocromo, del color del tema) y un punto que respira mientras carga. */
+#boot-loading { flex-direction:column; gap:22px; }
+.boot-logo { width:clamp(142px, 43vw, 172px); aspect-ratio:893 / 223; background:currentColor; -webkit-mask:url('img/marca/logo-claro.png') center / contain no-repeat; mask:url('img/marca/logo-claro.png') center / contain no-repeat; animation:bootMarcaEntra .36s cubic-bezier(.23, 1, .32, 1) both; }
+.boot-punto { width:5px; height:5px; border-radius:50%; background:currentColor; opacity:0; animation:bootPunto .9s ease-in-out .34s infinite alternate; }
+#boot-loading.boot-saliendo { opacity:0; transition:opacity .18s ease-out; pointer-events:none; }
+@keyframes bootMarcaEntra { from { opacity:0; transform:translateY(7px) scale(.985); } to { opacity:1; transform:none; } }
+@keyframes bootPunto { from { opacity:.25; transform:scale(.82); } to { opacity:.8; transform:none; } }
+@media (prefers-reduced-motion: reduce) { .boot-logo, .boot-punto { animation:none; } .boot-punto { opacity:.5; } }

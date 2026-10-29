@@ -1130,6 +1130,18 @@
             document.querySelectorAll('.m-tabbar .m-tab').forEach(b => b.classList.toggle('activa', b.classList.contains('m-tab-menu') ? mobileMenuAbierto : !mobileMenuAbierto && b.dataset.vista === vista));
         }
 
+        // La pantalla de carga se va con un fundido cuando el móvil ya está pintado debajo (antes desaparecía de golpe).
+        function cerrarPantallaArranque() {
+            const boot = document.getElementById('boot-loading');
+            document.body.classList.remove('pwa');
+            if (!boot) return;
+            try { performance.measure('bitacora-arranque-visible', 'bitacora-arranque'); } catch (_) {}
+            if (matchMedia('(prefers-reduced-motion: reduce)').matches) { boot.style.display = 'none'; return; }
+            boot.style.display = 'flex';
+            boot.classList.add('boot-saliendo');
+            setTimeout(() => { boot.style.display = 'none'; boot.classList.remove('boot-saliendo'); }, 200);
+        }
+
         let mobileLastEffectView = null;
         let mobileZonas = {};
         function renderMobileShell() {
@@ -1138,7 +1150,7 @@
             if (!shell) return;
             const view = NAV_VIEW_LABELS[currentView] ? currentView : 'calendar';
             const entra = mobileLastEffectView !== view;
-            requestAnimationFrame(() => document.body.classList.remove('pwa'));
+            if (document.body.classList.contains('pwa')) requestAnimationFrame(cerrarPantallaArranque);
             // Repintar sustituye todo el móvil, menú incluido: sin esto, tocar
             // un ajuste (tema, letra, un interruptor) te devolvía arriba.
             const scrollMenu = shell.querySelector('.m-menu-cuerpo')?.scrollTop || 0;

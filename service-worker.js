@@ -1,5 +1,6 @@
-const CACHE_NAME = 'bitacora-shell-v2';
-const SHELL_URLS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'bitacora-shell-v3';
+// El logo va aparte: lo pide la pantalla de carga desde styles.css y sin él, sin red, salía vacía.
+const SHELL_URLS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './img/marca/logo-claro.png'];
 
 self.addEventListener('install', (event) => {
     // Además del cascarón, los archivos que carga index.html con su ?v= (la lista sale del propio index publicado),
