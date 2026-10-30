@@ -899,6 +899,19 @@
             return '#' + y.toString(16).padStart(2, '0').repeat(3);
         }
 
+        // Los puntos de lo que no tiene color propio (o lo tiene negro o gris, que es lo habitual) salían todos oscuros aunque
+        // el tema fuera de color: en esos temas toman uno de su paleta, siempre el mismo para cada clase de cosa.
+        const PUNTO_POR_TIPO = { event: 1, assignment: 3, exam: 6, subscription: 2, fixed_expense: 2, work: 4, birthday: 5, travel: 2 };
+        function colorPunto(color, clave) {
+            if (temaEnGrises()) return colorTema(color);
+            const h = String(color || '').trim().match(/^#([0-9a-f]{6})$/i)?.[1];
+            const canales = h ? [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)) : null;
+            if (canales && Math.max(...canales) - Math.min(...canales) > 40) return color;
+            let n = PUNTO_POR_TIPO[clave];
+            if (!n) { n = 0; for (const c of String(clave || '')) n = (n * 31 + c.charCodeAt(0)) % 6; n += 1; }
+            return `var(--punto-${n})`;
+        }
+
         function setTheme(tema) {
             const enGrisesAntes = temaEnGrises();
             aplicarClasesTema(tema);

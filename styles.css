@@ -1832,9 +1832,8 @@
             font-weight: 700;
             cursor: pointer;
             transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
-            box-shadow: 0 4px 12px color-mix(in srgb, var(--m-acento) 35.0%, transparent);
         }
-        @media (hover: hover) and (pointer: fine) { .day-modal-add-btn:hover { background: color-mix(in srgb, var(--text-primary) 85%, var(--bg-app));  box-shadow: 0 6px 16px color-mix(in srgb, var(--m-acento) 40.0%, transparent); } }
+        @media (hover: hover) and (pointer: fine) { .day-modal-add-btn:hover { background: color-mix(in srgb, var(--text-primary) 85%, var(--bg-app)); } }
         .day-modal-add-btn:active { transform: translateY(0); }
 
         /* Formularios: etiquetas en minúscula con punto ("título.") como el
@@ -9604,7 +9603,7 @@ body.mobile-standalone .anual-overlay, body.pwa .anual-overlay { transition: non
 .pano-revision-accion { font-size:13px; font-weight:700; text-decoration:underline; text-underline-offset:2px; }
 .pano-sin-tarjetas { margin-top:14px; }
 .home-stats-estancia { width:min(280px, 100%); aspect-ratio:1; margin:8px auto 20px; }
-.cal-hoy { display:flex; align-items:center; gap:10px 16px; margin:0 0 16px; padding:10px 0; border-bottom:1px solid var(--border); color:var(--text-primary); font-size:13.5px; }
+.cal-hoy { display:flex; align-items:center; gap:10px 16px; margin:0 0 12px; padding:10px 0 0; color:var(--text-primary); font-size:13.5px; }
 .cal-hoy > b { font-size:16px; }
 .cal-hoy > span:not(.cal-hoy-acciones) { color:var(--text-secondary); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cal-hoy-acciones { display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; }
@@ -10138,3 +10137,15 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 @media (prefers-reduced-motion: reduce) { .modal-sheet { transition:none; } }
 .medida-modal { display:flex; flex-direction:column; gap:2px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; font-variant-numeric:tabular-nums; }
 .medida-modal span { color:var(--text-secondary); }
+
+/* Modal de un día, como un papel: lo que hay ese día seguido, sin rayas ni cajas de por medio. */
+.modal-sheet .day-modal-list { gap:12px; }
+.modal-sheet .day-modal-list .entry-item { padding:0; border:0; border-radius:0; background:none; box-shadow:none; }
+.modal-sheet .day-modal-list .entry-item:hover { background:none; }
+.modal-sheet .day-modal-list .entry-item:hover .entry-title { color:var(--m-acento); }
+.modal-sheet .tudia-entrada { margin-top:18px; padding:0; border:0; border-radius:0; background:none; }
+/* Paleta de los puntos en los temas de color (colorPunto, datos.js). */
+:root { --punto-1:#E5532B; --punto-2:#2F6F8F; --punto-3:#C98A12; --punto-4:#5E7F3B; --punto-5:#8E4A72; --punto-6:#3E8E7E; }
+/* La insignia de beta solo en Calendario; sin ella, «+ apuntar.» sigue a la derecha. */
+#main-header .header-right { justify-content:flex-end; }
+#main-header:not(.en-calendario) .beta-insignia { visibility:hidden; }

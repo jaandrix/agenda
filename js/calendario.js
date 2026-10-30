@@ -31,6 +31,7 @@
             // hacen closeModal() y luego render()): se deja para cuando el modal ha desaparecido del todo.
             if (document.querySelector('#modal-container .modal-overlay[data-cerrando]')) { repintarAlCerrar = true; return; }
             invalidateLinkableIndex();
+            document.getElementById('main-header')?.classList.toggle('en-calendario', currentView === 'calendar');
             financeSaldosCache = null;
             if (currentView === 'studies' && !apartadoVisible('studies')) currentView = estudiosVistaInicial() || 'calendar';
             if (!apartadoVisible(currentView)) currentView = 'calendar';
@@ -405,6 +406,8 @@
             else if (kind === 'note' && typeof openReadNote === 'function') openReadNote(id);
         }
 
+        // Sin usar desde el 30-10: a Alejandro le molestaba en el calendario. La idea es llamarla desde un botón pequeño en el
+        // planificador.
         function renderOnThisDayCard() {
             const items = buildOnThisDayItems();
             if (!items.length) return '';
@@ -602,7 +605,6 @@
             calAnimClave = clave;
             html += `<div class="${animar ? 'cal-view-anim' : ''}">${body}</div>`;
 
-            html += renderOnThisDayCard();
             html += `</div>`;
             return html;
         }
@@ -670,7 +672,7 @@
                 const barsHtml = dayEntries.slice(0, 4).map(e => {
                     const cat = categories.find(c => c.id === e.categoryId);
                     const color = cat ? tintaCategoria(cat.color) : 'var(--text-muted)';
-                    return `<span style="width:5px;height:5px;border-radius:50%;display:block;background:${colorTema(color)};flex-shrink:0"></span>`;
+                    return `<span style="width:5px;height:5px;border-radius:50%;display:block;background:${colorPunto(color, e.eventType || e.type)};flex-shrink:0"></span>`;
                 }).join('');
 
                 const extra = dayEntries.length > 4 ?
@@ -884,7 +886,7 @@
 
                 return `
                 <div class="entry-item" data-open-entry="${escapeHtml(e.id)}">
-                    <div class="entry-color-dot" style="background:${escapeHtml(colorTema(color))}"></div>
+                    <div class="entry-color-dot" style="background:${escapeHtml(colorPunto(color, e.eventType || e.type))}"></div>
                     <div class="entry-info">
                         <div class="entry-title">${titleHtml}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
                         <div class="entry-meta">${metaHtml}</div>

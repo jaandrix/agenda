@@ -257,7 +257,7 @@ a menor resolución.
 ## Mapa rápido de apartados grandes ya construidos
 
 - **Calendario (vista `calendar`, antes «Home»):** una franja compacta «hoy.» empuja a la acción sin desplazar el mes; vistas día/semana/mes; en la vista mensual, los eventos se marcan
-  como puntos de color (no líneas) bajo el número de cada día.
+  como puntos de color (no líneas) bajo el número de cada día. Los puntos usan `colorPunto(color, clave)` (datos.js): en los temas de color, lo negro, gris o sin color toma la paleta `--punto-1..6`; en asfalto y papel, su gris. El modal de un día va como papel, sin rayas ni cajas. La insignia de beta solo se ve aquí (`#main-header.en-calendario`).
 - **Panorama (vista `home`, antes "Centro resumen"):** «a tener en cuenta.» y una tarjeta ancha «hoy.» son estables; debajo, tarjetas secundarias elegibles por perfil y estadísticas con «tu estancia en bitácora.».
 - **Planificador:** timeline diaria (pestañas Hoy/Mañana/Pasado mañana, cada día
   empieza a las 4:00 am, lo no marcado se arrastra al día siguiente destacado en
