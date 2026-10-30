@@ -31,7 +31,6 @@
             // hacen closeModal() y luego render()): se deja para cuando el modal ha desaparecido del todo.
             if (document.querySelector('#modal-container .modal-overlay[data-cerrando]')) { repintarAlCerrar = true; return; }
             invalidateLinkableIndex();
-            document.getElementById('main-header')?.classList.toggle('en-calendario', currentView === 'calendar');
             financeSaldosCache = null;
             if (currentView === 'studies' && !apartadoVisible('studies')) currentView = estudiosVistaInicial() || 'calendar';
             if (!apartadoVisible(currentView)) currentView = 'calendar';

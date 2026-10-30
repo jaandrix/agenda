@@ -430,7 +430,8 @@
                 const field = !ES_TACTIL && sheet?.querySelector(
                     'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]):not([disabled]), textarea:not([disabled]), select:not([disabled]):not(.selector-nativo)'
                 );
-                const primero = field || sheet?.querySelector('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])');
+                // El modal de un día no tiene campos: el foco va a la hoja, para que la X no salga marcada nada más abrir.
+                const primero = field || (sheet?.classList.contains('hoja-dia') ? null : sheet?.querySelector('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'));
                 if (!primero && sheet) sheet.tabIndex = -1;
                 (primero || sheet)?.focus({ preventScroll: true });
                 if (field?.tagName === 'INPUT' && (field.type === 'text' || field.type === '')) field.select?.();

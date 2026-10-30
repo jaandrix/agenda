@@ -9700,16 +9700,6 @@ body.mobile-standalone .anual-overlay, body.pwa .anual-overlay { transition: non
 
 /* Insignia «beta tester» en la cabecera del ordenador, con su bocadillo al pasar el ratón o con el foco. */
 .beta-insignia { position: relative; align-self: center; margin-right: 6px; color: #2f6fe0; font-size: 12.5px; font-style: italic; font-weight: 600; letter-spacing: .01em; white-space: nowrap; cursor: default; outline: none; }
-/* En el centro de la barra de arriba, con un reborde azul fino que no compite con el título. */
-#main-header { position: relative; }
-/* Centrada en el hueco entre el final del título y «+ apuntar.»: la parte derecha ocupa el resto y la insignia lleva márgenes automáticos. */
-#main-header .header-right { flex: 1; min-width: 0; }
-#main-header .beta-insignia { position: relative; top: 3px; left: 4px; margin: 0 auto; padding: 3px 12px; border: 1px solid rgba(47, 111, 224, .35); border-radius: 10px; }
-body:not(.papel) #main-header .beta-insignia { border-color: rgba(108, 156, 240, .35); }
-#main-header .beta-insignia:focus-visible { border-color: currentColor; }
-#main-header .beta-bocadillo { right: auto; left: 50%; margin-left: -130px; }
-#main-header .beta-bocadillo::before { right: auto; left: 125px; }
-@media (max-width: 1150px) { #main-header .beta-insignia { margin: 0 6px 0 auto; } #main-header .beta-bocadillo { left: auto; right: -8px; margin-left: 0; } #main-header .beta-bocadillo::before { left: auto; right: 22px; } }
 body:not(.papel) .beta-insignia { color: #6c9cf0; }
 .beta-insignia[hidden] { display: none; }
 .beta-bocadillo { position: absolute; top: calc(100% + 10px); right: -8px; z-index: 60; width: 260px; padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg-modal); color: var(--text-primary); font-size: 13px; font-style: normal; font-weight: 500; line-height: 1.45; white-space: normal; box-shadow: var(--shadow); opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity .15s ease, transform .15s var(--ease-out); }
@@ -10116,15 +10106,14 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 
 /* Paleta de los puntos en los temas de color (colorPunto, datos.js). */
 :root { --punto-1:#E5532B; --punto-2:#2F6F8F; --punto-3:#C98A12; --punto-4:#5E7F3B; --punto-5:#8E4A72; --punto-6:#3E8E7E; }
-/* La insignia de beta solo en Calendario; sin ella, «+ apuntar.» sigue a la derecha. */
-#main-header .header-right { justify-content:flex-end; }
-#main-header:not(.en-calendario) .beta-insignia { visibility:hidden; }
-
 /* Modal de un día: una página de agenda. Título, lo que hay en orden, y nada más que estorbe. */
-.modal-sheet.hoja-dia { max-width:440px; }
+.modal-sheet.hoja-dia { max-width:600px; }
 .hoja-dia .day-modal-title { align-items:baseline; margin-bottom:18px; font-size:26px; font-weight:800; letter-spacing:-.03em; line-height:1.15; }
-.hoja-dia .modal-close { width:32px; height:32px; border:0; background:none; }
+.hoja-dia .modal-close { width:34px; height:34px; border:0; background:none; color:var(--text-primary); outline:none; }
 .hoja-dia .modal-close:hover { background:none; color:var(--text-primary); }
+.hoja-dia .modal-close:focus-visible { border-radius:10px; background:var(--bg-card-hover); }
+.modal-sheet.hoja-dia:focus { outline:none; }
+.hoja-dia .modal-close .ico { width:17px; height:17px; --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M26 8 50 32 74 8 92 26 68 50 92 74 74 92 50 68 26 92 8 74 32 50 8 26z'/%3E%3C/svg%3E"); }
 .hoja-dia .day-modal-festivo { margin:-10px 0 16px; }
 .dia-filas { display:flex; flex-direction:column; gap:14px; }
 .dia-fila { display:grid; grid-template-columns:8px minmax(0, 1fr) 24px; align-items:baseline; column-gap:12px; cursor:pointer; }
@@ -10143,3 +10132,10 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 .hoja-dia .tudia-entrada { margin-top:20px; padding:0; border:0; border-radius:0; background:none; font-size:13px; }
 .dia-anadir { display:block; margin-top:20px; padding:6px 0; border:0; background:none; color:var(--text-primary); font:600 14px var(--font-family); cursor:pointer; }
 .dia-anadir:hover { color:var(--m-acento); }
+
+/* Insignia de beta en la barra lateral: un círculo con BT junto al nombre; el mensaje sale al pasar el ratón. */
+.sidebar-brand { position:relative; }
+.sidebar-brand .beta-insignia { display:inline-grid; place-items:center; align-self:center; flex-shrink:0; width:24px; height:24px; margin:0 0 0 8px; box-sizing:border-box; border:1.5px solid currentColor; border-radius:50%; font-size:9.5px; font-style:normal; font-weight:800; letter-spacing:0; line-height:1; }
+.sidebar-brand .beta-insignia[hidden] { display:none; }
+.sidebar-brand .beta-bocadillo { top:calc(100% + 10px); right:auto; left:-136px; width:190px; box-sizing:border-box; }
+.sidebar-brand .beta-bocadillo::before { right:auto; left:142px; }
