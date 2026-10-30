@@ -182,6 +182,31 @@
             const sucio = e => { if (e.isTrusted) hoja.dataset.sucio = '1'; };
             hoja.addEventListener('input', sucio);
             hoja.addEventListener('change', sucio);
+            // «guardar.» va pegado abajo, encima de los campos. En el iPhone, el toque podía ir al campo de debajo (se abría el
+            // teclado de «nota» y había que volver a pulsar) o el teclado al irse movía el botón. Lo que manda es dónde empieza el
+            // toque: si empieza sobre el botón y el dedo no se mueve, es pulsar el botón.
+            let toqueBoton = null;
+            hoja.addEventListener('touchstart', e => {
+                toqueBoton = null;
+                if (e.touches.length !== 1) return;
+                const { clientX: x, clientY: y } = e.touches[0];
+                const boton = [...hoja.querySelectorAll('.btn-modal-primary')].reverse().find(b => {
+                    const r = b.getBoundingClientRect();
+                    return !b.disabled && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+                });
+                if (boton) toqueBoton = { boton, x, y };
+            }, { passive: true });
+            hoja.addEventListener('touchmove', e => {
+                if (toqueBoton && Math.hypot(e.touches[0].clientX - toqueBoton.x, e.touches[0].clientY - toqueBoton.y) > 10) toqueBoton = null;
+            }, { passive: true });
+            hoja.addEventListener('touchend', e => {
+                if (!toqueBoton) return;
+                const { boton } = toqueBoton;
+                toqueBoton = null;
+                if (!e.cancelable) return;
+                e.preventDefault();
+                boton.click();
+            });
         }
         function cancelarEditor() {
             const hoja = document.querySelector('#modal-container .modal-sheet');
