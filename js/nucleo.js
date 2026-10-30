@@ -1219,13 +1219,17 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 menu: mobileMenuAbierto || !mobileZonas.menu ? renderMobileMenu(view) : mobileZonas.menu,
             };
             const zonas = shell.querySelectorAll('.m-zona[data-z]');
+            let paginaNueva = zonas.length !== 4;
             if (zonas.length !== 4) {
                 shell.innerHTML = `<div class="m-app"><div class="m-zona" data-z="top">${partes.top}</div><div class="m-zona" data-z="pagina">${partes.pagina}</div></div><div class="m-zona" data-z="tab">${partes.tab}</div><div class="m-zona" data-z="menu">${partes.menu}</div>`;
                 mobileZonas = { ...partes };
             } else zonas.forEach(z => {
                 const k = z.dataset.z;
-                if (mobileZonas[k] !== partes[k]) { z.innerHTML = partes[k]; mobileZonas[k] = partes[k]; }
+                if (mobileZonas[k] !== partes[k]) { z.innerHTML = partes[k]; mobileZonas[k] = partes[k]; if (k === 'pagina') paginaNueva = true; }
             });
+            // La gráfica se dibuja sobre lo pintado: solo si la página ha cambiado. Antes se programaba en cada repintado,
+            // aunque no cambiara nada, y volvía a medirla y animarla.
+            if (paginaNueva && view === 'finances') requestAnimationFrame(animateFinanceProChartPanel);
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
             if (scrollMenu) { const cuerpo = shell.querySelector('.m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = scrollMenu; }
             if (scrollPagina) shell.scrollTop = scrollPagina;
@@ -1971,7 +1975,6 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const ratio = income > 0 ? expense / income : (expense > 0 ? 1 : 0);
             const mesB = renderMobileFinanzasMes();
             const ultimos = [...financePro.transactions].sort((a, b) => financeProCompararMov(b, a)).slice(0, 12);
-            requestAnimationFrame(() => requestAnimationFrame(animateFinanceProChartPanel));
             return `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}
                 ${renderFinanzasGrafica(true)}
                 <div class="m-acciones">

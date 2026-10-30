@@ -279,7 +279,7 @@
         // y el fondo de html. Al abrir un modal en la PWA se ponen del color del fondo con el velo encima.
         let fondoTemaCapa = null, veladoPorTema = null;
         function pintarFranjaConCapa(abierta) {
-            if (!mobileStandaloneActive) return;
+            if (!mobileStandaloneActive || franjaEstable()) return;
             const meta = document.querySelector('meta[name="theme-color"]');
             if (abierta) {
                 if (fondoTemaCapa) return;
@@ -310,6 +310,18 @@
             anotarCapa();
         }
         // Solo una de las dos está a la vista: marcar también la oculta era recorrer otro árbol entero para nada.
+        // Prueba en el iPhone: si no se toca el color de la franja al abrir un modal, ¿desaparece el destello de arriba?
+        function franjaEstable() {
+            try { return localStorage.getItem('bitacora-franja-estable') === '1'; } catch (_) { return false; }
+        }
+        function alternarFranjaEstable() {
+            try {
+                if (franjaEstable()) localStorage.removeItem('bitacora-franja-estable');
+                else localStorage.setItem('bitacora-franja-estable', '1');
+            } catch (_) { return; }
+            showToast(franjaEstable() ? 'Franja estable: encendida.' : 'Franja estable: apagada.');
+            repintarTrasModal();
+        }
         function capaSinInert() { return mobileStandaloneActive || ES_TACTIL; }
         function raizInteractiva() {
             return document.getElementById(mobileStandaloneActive ? 'mobile-shell' : 'app');

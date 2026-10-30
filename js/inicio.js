@@ -32,7 +32,7 @@
                 if (!cicloAppIniciado) {
                     cicloAppIniciado = true;
                     setInterval(convertirCinesEnPeliculas, 5 * 60000);
-                    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { refrescarAlVolver(); sincronizarDesdeNube(); convertirCinesEnPeliculas(); aplicarBandejaConector(); actualizarAnalisisIA(); } else ocultoDesde = { hora: Date.now(), dia: todayISO() }; });
+                    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { refrescarAlVolver(); alVolverEscalonado(); } else ocultoDesde = { hora: Date.now(), dia: todayISO() }; });
                     window.addEventListener('pageshow', e => { if (e.persisted) refrescarAlVolver(true); });
                     window.addEventListener('focus', sincronizarDesdeNube);
                 }
@@ -135,6 +135,18 @@
         // un rato se repinta, y si ya es otro día se vuelve a hoy. No se toca si se
         // está escribiendo en un campo de la página, para no perder lo escrito.
         let ocultoDesde = null;
+        // Todo a la vez competía con el primer fotograma al volver. Si la app se vuelve a ocultar, lo que falte se cancela.
+        let temporizadoresVolver = [];
+        function alVolverEscalonado() {
+            temporizadoresVolver.forEach(clearTimeout);
+            const siVisible = fn => () => { if (document.visibilityState === 'visible') fn(); };
+            temporizadoresVolver = [
+                setTimeout(siVisible(sincronizarDesdeNube), 120),
+                setTimeout(siVisible(() => { aplicarBandejaConector(); }), 600),
+                setTimeout(siVisible(() => { convertirCinesEnPeliculas(); actualizarAnalisisIA(); }), 1500),
+            ];
+        }
+
         function refrescarAlVolver(forzar) {
             const fuera = ocultoDesde;
             ocultoDesde = null;

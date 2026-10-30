@@ -462,7 +462,15 @@
             saveData().catch(e => console.error(e));
         }
 
+        // Fotografiar y animar una página densa entera multiplicaba su coste (Finanzas a Panorama, 480 ms frente a 123, CPU 4x):
+        // en estas vistas, o en un dispositivo con poca memoria, solo funde el contenido.
+        const VISTAS_PESADAS = new Set(['home', 'finances', 'profesorado']);
         function performSwitchView(view) {
+            if (VISTAS_PESADAS.has(view) || VISTAS_PESADAS.has(currentView) || (navigator.deviceMemory || 8) <= 4) {
+                aplicarSwitchView(view);
+                if (!vtReducido()) document.getElementById('content')?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
+                return null;
+            }
             return conTransicion(vtDireccionSidebar(currentView, view), () => aplicarSwitchView(view));
         }
 

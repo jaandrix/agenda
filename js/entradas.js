@@ -244,7 +244,7 @@
                 sheet.style.animation = `${sheet.classList.contains('modal-sheet-desde-punto') ? 'modalSheetHaciaPunto' : 'modalSheetOut'} 0.16s var(--ease-out) both`;
                 sheet.addEventListener('animationend', e => { if (e.target === sheet) terminar(); });
             }
-            setTimeout(terminar, 280);
+            setTimeout(terminar, 220);
         }
 
         // ============================================================
