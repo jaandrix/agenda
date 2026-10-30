@@ -10126,3 +10126,8 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 :is(body.mobile-standalone, body.pwa) #modal-container button { transition:transform .1s var(--ease-out); }
 :is(body.mobile-standalone, body.pwa) #modal-container button:active { transform:scale(.97); }
 @media (prefers-reduced-motion: reduce) { :is(body.mobile-standalone, body.pwa) #modal-container button:active { transform:none; } }
+
+/* «apuntar.» en la PWA: media pantalla y siempre el mismo alto, con el teclado abierto o escribiendo; lo demás (accesos,
+   lo último apuntado) se desliza por dentro. Sin esto la hoja medía casi toda la pantalla y con el teclado llegaba arriba. */
+:is(body.mobile-standalone, body.pwa) .modal-sheet.hoja-apuntar { box-sizing:border-box; height:calc(min(46dvh, 100dvh - var(--safe-top) - 24px - var(--teclado, 0px)) / var(--m-zoom, 1)); max-height:none; overflow-y:auto; overscroll-behavior:contain; }
+:is(body.mobile-standalone, body.pwa) .hoja-apuntar .apuntar-vista + .btn-modal-primary { position:sticky; bottom:0; z-index:2; box-shadow:0 0 0 8px var(--bg-modal); }

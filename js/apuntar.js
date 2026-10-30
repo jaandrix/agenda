@@ -506,6 +506,7 @@ function openApuntar(fecha) {
         <button class="m-enlace apuntar-todos" onclick="closeModal();window._dayPrefillDate=apuntarFechaBase;openCommandPalette('create');window._dayPrefillDate=apuntarFechaBase">todos los tipos.</button>
         ${apuntesRecientes.length ? `<button class="m-enlace apuntar-todos" onclick="openApuntesRecientes()">lo último que apuntaste.</button>` : ''}
     `);
+    document.querySelector('#modal-container .modal-sheet')?.classList.add('hoja-apuntar');
     // Lo último apuntado ya no se enseña solo al acabar de subir la hoja: al aparecer, la hoja crecía y se recortaba
     // (un tirón en cada apertura). Ahora es un enlace, y la hoja tiene su altura desde el primer fotograma.
     if (borrador) pintarVistaApunteYa();
