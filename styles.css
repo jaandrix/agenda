@@ -10133,7 +10133,7 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 
 /* Insignia de beta en la barra lateral: un círculo con BT junto al nombre; el mensaje sale al pasar el ratón. */
 .sidebar-brand { position:relative; }
-.sidebar-brand .beta-insignia, body:not(.papel) .sidebar-brand .beta-insignia { display:inline-grid; place-items:center; align-self:center; flex-shrink:0; width:24px; height:24px; margin:0 0 0 8px; border-radius:50%; background:#2f6fe0; color:#fff; font-size:10px; font-style:normal; font-weight:900; letter-spacing:0; line-height:1; }
+.sidebar-brand .beta-insignia, body:not(.papel) .sidebar-brand .beta-insignia { display:inline-grid; place-items:center; align-self:center; flex-shrink:0; top:2px; width:24px; height:24px; margin:0 0 0 14px; border-radius:50%; background:#2f6fe0; color:#fff; font-size:10px; font-style:normal; font-weight:900; letter-spacing:0; line-height:1; }
 .sidebar-brand .beta-insignia[hidden] { display:none; }
 .sidebar-brand .beta-bocadillo { top:calc(100% + 10px); right:auto; left:-136px; width:190px; box-sizing:border-box; }
 .sidebar-brand .beta-bocadillo::before { right:auto; left:142px; }
