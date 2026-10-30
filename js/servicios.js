@@ -424,7 +424,8 @@
 
         function renderTuDia(fecha) {
             const d = tuDiaDatos(fecha);
-            const tiempo = tuDiaTiempo(fecha);
+            // Hoy el tiempo ya se ve en la app; en un día pasado sí cuenta como recuerdo de cómo fue.
+            const tiempo = fecha === todayISO() ? null : tuDiaTiempo(fecha);
             const total = d.gastos.reduce((s, t) => s + Number(t.amount), 0);
             const tipoT = tiempo ? tiempoTipo(tiempo.code, true) : null;
             const bloque = (titulo, filas) => filas.length ? `<div class="tudia-bloque"><div class="tudia-bloque-titulo">${titulo}</div>${filas.map(f => `<div class="tudia-fila">${f}</div>`).join('')}</div>` : '';
