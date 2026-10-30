@@ -213,16 +213,21 @@
         let capaEnHistorial = false;
         // Sin viewport-fit=cover (dio problemas en iOS), el velo no llega a la franja de la hora: allí manda theme-color
         // y el fondo de html. Al abrir un modal en la PWA se ponen del color del fondo con el velo encima.
-        let fondoTemaCapa = null;
+        let fondoTemaCapa = null, veladoPorTema = null;
         function pintarFranjaConCapa(abierta) {
             if (!mobileStandaloneActive) return;
             const meta = document.querySelector('meta[name="theme-color"]');
             if (abierta) {
                 if (fondoTemaCapa) return;
                 fondoTemaCapa = { meta: meta?.content || '', html: document.documentElement.style.backgroundColor };
-                const m = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g);
-                if (!m) return;
-                const velado = `rgb(${m.slice(0, 3).map(v => Math.round(Number(v) * 0.45)).join(', ')})`;
+                // Leer el color obligaba a resolver los estilos justo antes del primer fotograma: se lee una vez por tema.
+                const tema = document.body.className;
+                if (veladoPorTema?.tema !== tema) {
+                    const m = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g);
+                    if (!m) return;
+                    veladoPorTema = { tema, color: `rgb(${m.slice(0, 3).map(v => Math.round(Number(v) * 0.45)).join(', ')})` };
+                }
+                const velado = veladoPorTema.color;
                 document.documentElement.style.backgroundColor = velado;
                 if (meta) meta.content = velado;
             } else if (fondoTemaCapa) {
@@ -234,10 +239,14 @@
         function abrirCapa() {
             pintarFranjaConCapa(true);
             const raiz = raizInteractiva();
-            if (raiz && !raiz.inert) raiz.inert = true;
+            // inert obliga a recalcular los estilos de toda la app, al abrir y al cerrar: medido, el peor fotograma pasaba de
+            // 67 a 150 ms al abrir y de 17 a 117 al cerrar (CPU 4x). En táctil no hay tabulador y el velo ya impide tocar lo
+            // de detrás: con aria-hidden basta para el lector de pantalla y no recalcula nada.
+            if (raiz) { if (capaSinInert()) raiz.setAttribute('aria-hidden', 'true'); else if (!raiz.inert) raiz.inert = true; }
             anotarCapa();
         }
         // Solo una de las dos está a la vista: marcar también la oculta era recorrer otro árbol entero para nada.
+        function capaSinInert() { return mobileStandaloneActive || ES_TACTIL; }
         function raizInteractiva() {
             return document.getElementById(mobileStandaloneActive ? 'mobile-shell' : 'app');
         }
@@ -254,7 +263,7 @@
         function cerrarCapa() {
             pintarFranjaConCapa(false);
             const raiz = raizInteractiva();
-            if (raiz?.inert) raiz.inert = false;
+            if (raiz) { raiz.removeAttribute('aria-hidden'); if (raiz.inert) raiz.inert = false; }
             if (!mobileMenuAbierto) soltarCapa();
         }
         window.addEventListener('popstate', () => {
@@ -304,7 +313,8 @@
                     const px = tapa > 80 ? Math.round(tapa) : 0;
                     if (px === ultimoTeclado) return;
                     ultimoTeclado = px;
-                    document.documentElement.style.setProperty('--teclado', px + 'px');
+                    // En el contenedor, no en la raíz: una variable en la raíz invalida los estilos de toda la página.
+                    document.getElementById('modal-container')?.style.setProperty('--teclado', px + 'px');
                 });
             };
             visualViewport.addEventListener('resize', ajustarTeclado, { passive: true });

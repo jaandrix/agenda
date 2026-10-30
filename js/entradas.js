@@ -190,6 +190,8 @@
             if (overlay.dataset.cerrando) return;
             const sheet = overlay.querySelector('.modal-sheet');
             overlay.dataset.cerrando = '1';
+            // El teclado baja a la vez que la hoja: si no, se iba al quitar el campo, con la hoja ya abajo (un segundo salto).
+            if (capaSinInert() && document.activeElement?.matches?.('input, textarea, select')) document.activeElement.blur();
             // Se quita cuando acaba la animación de salida (antes, a los 160 ms fijos, y en el móvil dura 200: se
             // cortaba el final). Si entretanto se abrió otro modal, reutiliza este overlay y quita la marca.
             let hecho = false;
@@ -200,7 +202,7 @@
                 if (container.querySelector('.modal-overlay')) return;
                 cerrarCapa();
                 if (repintarAlCerrar) { repintarAlCerrar = false; render(); }
-                if (modalAbridor?.isConnected) modalAbridor.focus({ preventScroll: true });
+                if (!capaSinInert() && modalAbridor?.isConnected) modalAbridor.focus({ preventScroll: true });
                 modalAbridor = null;
             };
             if (vtReducido()) { terminar(); return; }
@@ -212,11 +214,16 @@
                 const salirVelo = () => {
                     if (velo || hecho || !overlay.dataset.cerrando) return;
                     velo = true;
+                    // La hoja ya ha bajado y aún no se aclara el velo: es el momento en que nada se mueve, y un repintado
+                    // largo no se nota como tirón. Antes iba al final, justo cuando se esperaba poder tocar la página.
+                    if (repintarAlCerrar) { repintarAlCerrar = false; render(); }
                     overlay.classList.add('modal-overlay-saliendo');
                     overlay.addEventListener('transitionend', e => { if (e.target === overlay && e.propertyName === 'background-color') terminar(); }, { once: true });
                     setTimeout(terminar, 120);
                 };
                 if (sheet) {
+                    // Si aún estaba subiendo, baja desde donde esté en vez de saltar arriba.
+                    if (sheet.getAnimations().some(a => a.playState === 'running' && a.animationName)) sheet.style.transform = `translateY(${new DOMMatrix(getComputedStyle(sheet).transform).m42}px)`;
                     sheet.style.animation = 'modalSheetBajar var(--modal-cerrar) var(--ease-out) both';
                     sheet.addEventListener('animationend', e => { if (e.target === sheet) salirVelo(); });
                 }

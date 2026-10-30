@@ -9824,7 +9824,8 @@ body:not(.papel):not(.fundador) { --m-acento: #efede3; --m-sobre-acento: #302f2c
 
 /* El teclado no tapa la hoja (UXV-023): se levanta lo que tapa el teclado. */
 @media (max-width: 600px) {
-    .modal-overlay { padding-bottom: var(--teclado, 0px); }
+    /* translate y no padding en el velo: sube con la tarjeta gráfica, sin recalcular la maquetación. */
+    .modal-sheet { translate: 0 calc(var(--teclado, 0px) * -1 / var(--m-zoom, 1)); transition: translate .22s var(--ease-out); }
     .modal-sheet { max-height: calc(92dvh - var(--teclado, 0px)); }
 }
 body.mobile-standalone .modal-sheet, body.pwa .modal-sheet { max-height:calc((100dvh - env(safe-area-inset-top, 0px) - 24px - var(--teclado, 0px)) / var(--m-zoom, 1)); }
@@ -10102,8 +10103,8 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 /* CAPAS DEL MÓVIL (29-10, plan de la PWA): modoCapa('compacta' | 'detalle' | 'editor') en vault.js. Solo en la app
    instalada. Las tres suben con la misma animación de la hoja; el editor ocupa toda la pantalla. */
 :root { --safe-top:env(safe-area-inset-top, 0px); --safe-bottom:env(safe-area-inset-bottom, 0px); }
-:is(body.mobile-standalone, body.pwa) .modal-overlay.modal-m-editor { padding:0 0 var(--teclado, 0px); align-items:stretch; }
-:is(body.mobile-standalone, body.pwa) .modal-overlay.modal-m-editor .modal-sheet { width:100%; max-width:none; height:calc((100dvh - var(--teclado, 0px)) / var(--m-zoom, 1)); max-height:none; box-sizing:border-box; padding:0 20px calc(var(--safe-bottom) + 18px) !important; border:0; border-radius:0; overflow-y:auto; overscroll-behavior:contain; }
+:is(body.mobile-standalone, body.pwa) .modal-overlay.modal-m-editor { padding:0; align-items:flex-start; }
+:is(body.mobile-standalone, body.pwa) .modal-overlay.modal-m-editor .modal-sheet { width:100%; max-width:none; height:calc((100dvh - var(--teclado, 0px)) / var(--m-zoom, 1)); max-height:none; box-sizing:border-box; padding:0 20px calc(var(--safe-bottom) + 18px) !important; border:0; border-radius:0; overflow-y:auto; overscroll-behavior:contain; translate:none; transition:none; }
 :is(body.mobile-standalone, body.pwa) .modal-m-editor .m-editor-barra { position:sticky; top:0; z-index:3; display:flex; align-items:center; min-height:52px; margin:0 -20px 4px; padding:var(--safe-top) 12px 0; background:var(--bg-modal); border-bottom:1px solid var(--border); }
 :is(body.mobile-standalone, body.pwa) .modal-m-editor .m-editor-cancelar { min-height:44px; padding:0 8px; border:0; background:none; font-family:var(--font-family); font-size:16px; font-weight:500; color:var(--text-primary); }
 :is(body.mobile-standalone, body.pwa) .modal-m-editor .modal-close { display:none; }
@@ -10131,3 +10132,7 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
    lo último apuntado) se desliza por dentro. Sin esto la hoja medía casi toda la pantalla y con el teclado llegaba arriba. */
 :is(body.mobile-standalone, body.pwa) .modal-sheet.hoja-apuntar { box-sizing:border-box; height:calc(min(46dvh, 100dvh - var(--safe-top) - 24px - var(--teclado, 0px)) / var(--m-zoom, 1)); max-height:none; overflow-y:auto; overscroll-behavior:contain; }
 :is(body.mobile-standalone, body.pwa) .hoja-apuntar .apuntar-vista + .btn-modal-primary { position:sticky; bottom:0; z-index:2; box-shadow:0 0 0 8px var(--bg-modal); }
+
+/* La hoja no afecta a lo de fuera ni al revés, y sin sombra: sobre el velo no se ve y cuesta durante el movimiento. */
+:is(body.mobile-standalone, body.pwa) .modal-sheet { contain:layout paint; box-shadow:none; }
+@media (prefers-reduced-motion: reduce) { .modal-sheet { transition:none; } }
