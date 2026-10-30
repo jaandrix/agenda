@@ -10161,3 +10161,6 @@ body.acuarela .event-hero-flat .event-hero-multi-icon, body.acuarela .event-hero
 .subs-anadir:hover { color:var(--m-acento); }
 .subs-seccion { margin:22px 0 4px; font-size:15px; font-weight:800; letter-spacing:-.01em; }
 @media (max-width:600px) { .subs-fila { grid-template-columns:minmax(0, 1fr) auto; row-gap:2px; } .subs-fila-botones { grid-column:1 / -1; justify-content:flex-start; gap:14px; } }
+/* Al pasar el ratón la fila se pone clara: su texto vuelve a ser oscuro. */
+body.acuarela .event-hero-flat .event-hero-multi-row:hover, body.acuarela .event-hero-flat .event-hero-multi-row:hover .event-hero-multi-title { color:var(--text-primary); }
+body.acuarela .event-hero-flat .event-hero-multi-row:hover .event-hero-multi-meta { color:var(--text-secondary); }
