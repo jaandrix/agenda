@@ -19,6 +19,7 @@
             // profesorado...) no aparecían hasta tocar su interruptor.
             renderAllNavs();
             if (loaded) {
+                try { if (localStorage.getItem('bitacora-pomodoro')) cargarBajoDemanda('repaso').catch(() => {}); } catch (_) { /* sin almacenamiento */ }
                 setTimeout(comprobarBienvenida, 700);
                 setTimeout(() => comprobarAvisosDeArranque().catch(e => console.error(e)), 2500);
                 if (/[?&]finprueba\b/.test(location.search)) { history.replaceState(null, '', location.pathname); setTimeout(openFinPrueba, 900); }

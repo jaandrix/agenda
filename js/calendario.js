@@ -34,6 +34,9 @@
             financeSaldosCache = null;
             if (currentView === 'studies' && !apartadoVisible('studies')) currentView = estudiosVistaInicial() || 'calendar';
             if (!apartadoVisible(currentView)) currentView = 'calendar';
+            // Lo que hay en pantalla se queda hasta que llega el archivo de la vista (suele ser cuestión de milisegundos).
+            const grupoPorCargar = vistaPorCargar(currentView);
+            if (grupoPorCargar) { cargarVistaYPintar(grupoPorCargar); return; }
             contarApartado(currentView);
             actualizarFranjaEjemplo();
             const socio = document.getElementById('socio-badge');

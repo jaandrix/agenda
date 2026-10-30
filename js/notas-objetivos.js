@@ -193,7 +193,7 @@
                 </div>`;
 
             if (goalViewMode === 'metodo') {
-                html += renderMetodo();
+                if (typeof renderMetodo === 'function') html += renderMetodo();
                 html += `</div>`;
                 return html;
             }

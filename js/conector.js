@@ -569,11 +569,17 @@
             return null;
         }
 
+        const GRUPO_DE_OP = { tarjetas: 'repaso', test: 'repaso', profe: 'profe' };
+        const GRUPO_DE_DESHACER = { tarjetas: 'repaso', test_quitar: 'repaso', profe: 'profe' };
         async function deshacerConector(id, sinPreguntar) {
             const l = registroConector.find(x => x.id === id);
             if (!l || l.deshecho || !l.deshacer) return;
             if (!sinPreguntar && !confirm(`¿Deshacer esto?\n\n${l.resumen}`)) return;
             const d = l.deshacer;
+            if (GRUPO_DE_DESHACER[d.accion]) {
+                try { await cargarBajoDemanda(GRUPO_DE_DESHACER[d.accion]); }
+                catch (_) { showToast('No se pudo deshacer sin conexión. Inténtalo con red.', true); return; }
+            }
             if (d.accion === 'quitar') {
                 const loc = localizarConector(d.coleccion, d.id);
                 if (loc) { const it = loc.lista.splice(loc.i, 1)[0]; if (d.coleccion === 'tarea' && it?.done && loc.dia) marcarTareaConector({ ...it }, true, false); }
@@ -742,7 +748,10 @@
                 const enServidor = new Set((leidas || []).map(f => f.id));
                 [...bandejaResueltas].forEach(id => { if (!enServidor.has(id)) bandejaResueltas.delete(id); });
                 const filas = (leidas || []).filter(f => !bandejaResueltas.has(f.id));
-                const automaticas = (filas || []).filter(f => OPS_AUTOMATICAS.includes(f.op?.tipo));
+                // Lo que necesita un archivo bajo demanda se aplica con él cargado; si no llega, se queda en el servidor para la próxima.
+                const sinGrupo = new Set();
+                for (const g of new Set(filas.map(f => GRUPO_DE_OP[f.op?.tipo]).filter(Boolean))) await cargarBajoDemanda(g).catch(() => sinGrupo.add(g));
+                const automaticas = (filas || []).filter(f => OPS_AUTOMATICAS.includes(f.op?.tipo) && !sinGrupo.has(GRUPO_DE_OP[f.op?.tipo]));
                 bandejaPendiente = (filas || []).filter(f => !OPS_AUTOMATICAS.includes(f.op?.tipo));
                 automaticas.forEach(f => { const l = aplicarOpConector(f.op || {}, 'ia_' + f.id); if (l) { registrarLineaConector(l, 'auto'); cambios++; } });
                 // El QR se deja ya dibujado, igual que al subirlo desde el

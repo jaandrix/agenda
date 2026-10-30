@@ -1,6 +1,13 @@
-const CACHE_NAME = 'bitacora-shell-v4';
+const CACHE_NAME = 'bitacora-shell-v5';
 // El logo va aparte: lo pide la pantalla de carga desde styles.css y sin él, sin red, salía vacía.
 const SHELL_URLS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './img/marca/logo-claro.png'];
+
+// Lo que se carga al abrirlo también se guarda al instalar, para que funcione sin conexión aunque no se haya abierto nunca.
+const BAJO_DEMANDA = ['guia', 'guia-ia', 'tumes', 'cv', 'profesorado', 'profesorado-aula', 'estudiar', 'test', 'coleccionables', 'classroom', 'actualizaciones', 'conexiones', 'metodo'];
+async function guardarEnCola(cache, urls, aLaVez = 5) {
+    let i = 0;
+    await Promise.all(Array.from({ length: aLaVez }, async () => { while (i < urls.length) await cache.add(urls[i++]).catch(() => {}); }));
+}
 
 self.addEventListener('install', (event) => {
     // Además del cascarón, los archivos que carga index.html con su ?v= (la lista sale del propio index publicado),
@@ -8,11 +15,12 @@ self.addEventListener('install', (event) => {
     // Cada archivo por separado: con addAll, uno que fallara dejaba sin instalar el service worker nuevo y la PWA se
     // quedaba con el viejo.
     event.waitUntil(caches.open(CACHE_NAME).then(async (cache) => {
-        await Promise.all(SHELL_URLS.map(u => cache.add(u).catch(() => {})));
+        await guardarEnCola(cache, SHELL_URLS);
         try {
             const html = await (await fetch('./index.html', { cache: 'no-store' })).text();
             const propios = [...html.matchAll(/(?:src|href)="([^"]+\?v=[^"]+)"/g)].map(m => m[1]).filter(u => !/^https?:/.test(u));
-            await Promise.all(propios.map(u => cache.add(u).catch(() => {})));
+            const version = (html.match(/js\/nucleo\.js\?v=([^"]+)/) || [])[1];
+            await guardarEnCola(cache, [...propios, ...BAJO_DEMANDA.map(a => `js/bajo-demanda/${a}.js?v=${version}`)]);
         } catch (e) { /* sin red al instalar: se guardan al pedirse */ }
     }));
     self.skipWaiting();

@@ -111,7 +111,7 @@
                 const tagEsc = jsAttr(tag);
                 const porTipo = {};
                 items.forEach(e => { (porTipo[e.type] = porTipo[e.type] || []).push(e); });
-                const hayConexion = typeof construirConexiones === 'function' && items.length > 0;
+                const hayConexion = items.length > 0;
                 return `
                 <div class="etiquetas-vista">
                     <button class="etiquetas-volver" onclick="window._selectedTag=null;render()">← etiquetas.</button>
@@ -121,7 +121,7 @@
                             <div class="etiquetas-sub">${items.length} ${items.length === 1 ? 'entrada' : 'entradas'}, ${desgloseTipos(items)}</div>
                         </div>
                         <div class="etiqueta-acciones">
-                            ${hayConexion ? `<button class="finance-oneoff-btn" onclick="conexionSeleccionada='etiqueta:${tagEsc}';conexionAnimar=true;switchView('graph')">ver conexiones.</button>` : ''}
+                            ${hayConexion ? `<button class="finance-oneoff-btn" onclick="cargarBajoDemanda('conexiones').then(()=>{conexionSeleccionada='etiqueta:${tagEsc}';conexionAnimar=true;switchView('graph')})">ver conexiones.</button>` : ''}
                             <button class="finance-oneoff-btn" onclick="renameTag('${tagEsc}')">renombrar.</button>
                             <button class="finance-oneoff-btn etiqueta-borrar" onclick="deleteTagEverywhere('${tagEsc}')">eliminar.</button>
                         </div>

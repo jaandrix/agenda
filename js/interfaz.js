@@ -466,7 +466,7 @@
         // en estas vistas, o en un dispositivo con poca memoria, solo funde el contenido.
         const VISTAS_PESADAS = new Set(['home', 'finances', 'profesorado']);
         function performSwitchView(view) {
-            if (VISTAS_PESADAS.has(view) || VISTAS_PESADAS.has(currentView) || (navigator.deviceMemory || 8) <= 4) {
+            if (VISTAS_PESADAS.has(view) || VISTAS_PESADAS.has(currentView) || vistaPorCargar(view) || (navigator.deviceMemory || 8) <= 4) {
                 aplicarSwitchView(view);
                 if (!vtReducido()) document.getElementById('content')?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
                 return null;

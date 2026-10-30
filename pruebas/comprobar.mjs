@@ -103,6 +103,13 @@ if (new Set(versiones).size > 1) fallos.push(`valores ?v= distintos en index.htm
 const enlazados = [...html.matchAll(/<script\b[^>]*\bsrc=["'](js\/[^"'?]+\.js)(?:\?[^"']*)?["'][^>]*>/gi)].map(m => m[1].replaceAll('/', '\\'));
 for (const src of enlazados) if (!existsSync(join(raiz, src))) fallos.push(`script enlazado inexistente: ${src.replaceAll('\\', '/')}`);
 const conjuntoEnlazados = new Set(enlazados.map(src => src.toLowerCase()));
+const swTexto = readFileSync(join(raiz, 'service-worker.js'), 'utf8');
+const nucleoTexto = readFileSync(join(carpetaJs, 'nucleo.js'), 'utf8');
+for (const archivo of archivosJs.filter(a => a.startsWith('bajo-demanda/'))) {
+    const nombre = archivo.slice(13, -3);
+    if (!swTexto.includes(`'${nombre}'`)) fallos.push(`js/${archivo} no está en BAJO_DEMANDA de service-worker.js (sin conexión fallaría)`);
+    if (!nucleoTexto.includes(`'${nombre}'`)) fallos.push(`js/${archivo} no está en BAJO_DEMANDA de nucleo.js`);
+}
 for (const archivo of archivosJs) if (!archivo.startsWith('bajo-demanda/') && !conjuntoEnlazados.has(`js\\${archivo}`.toLowerCase())) fallos.push(`js/${archivo} no está enlazado en index.html`);
 
 if (fallos.length) {

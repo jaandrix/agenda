@@ -1022,7 +1022,7 @@
                     onClick: () => { closeNotifPanel(); switchView('friends'); }
                 });
             });
-            const sinDar = apartadoVisible('profesorado') ? profePendientes().length : 0;
+            const sinDar = apartadoVisible('profesorado') && typeof profePendientes === 'function' ? profePendientes().length : 0;
             if (sinDar) items.push({
                 icon: NOTIF_ICON_EVENT,
                 iconClass: 'icon-event',

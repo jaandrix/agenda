@@ -10,8 +10,21 @@
         // de entrada empieza siendo un sustituto que carga el archivo y la llama; al cargarse, la de verdad lo
         // reemplaza. Solo vale para archivos a los que nadie más llama al pintar ni desde el conector.
         const VERSION_JS = (document.currentScript?.src.match(/[?&]v=([^&]+)/) || [])[1] || '';
-        const BAJO_DEMANDA = { guia: ['guia', 'guia-ia'], tumes: ['tumes'], cv: ['cv'] };
-        const bajoDemandaCargado = {};
+        const BAJO_DEMANDA = { guia: ['guia', 'guia-ia'], tumes: ['tumes'], cv: ['cv'], profe: ['profesorado', 'profesorado-aula'], repaso: ['estudiar', 'test'], coleccionables: ['coleccionables'], classroom: ['classroom'], envios: ['actualizaciones'], conexiones: ['conexiones'], metodo: ['metodo'] };
+        // Las vistas que los necesitan: render() y la página del móvil los bajan antes de pintar (cargarVistaYPintar). Una
+        // operación del conector de estos grupos los carga antes de aplicarse (GRUPO_DE_OP, GRUPO_DE_DESHACER en conector.js).
+        const VISTA_GRUPO = { profesorado: 'profe', estudiar: 'repaso', collectibles: 'coleccionables', actualizaciones: 'envios', graph: 'conexiones', goals: 'metodo' };
+        const bajoDemandaCargado = {}, bajoDemandaHecho = {}, vistaCargando = {};
+        const vistaPorCargar = vista => { const g = VISTA_GRUPO[vista]; return g && !bajoDemandaHecho[g] ? g : null; };
+        function cargarVistaYPintar(grupo) {
+            if (vistaCargando[grupo]) return;
+            vistaCargando[grupo] = true;
+            cargarBajoDemanda(grupo).then(() => { delete vistaCargando[grupo]; repintarTrasModal(); }, () => {
+                delete vistaCargando[grupo];
+                showToast(navigator.onLine === false ? 'Sin conexión: esto aún no está guardado en el dispositivo.' : 'No se pudo abrir. Inténtalo otra vez.', true);
+                if (VISTA_GRUPO[currentView] === grupo) { currentView = 'calendar'; repintarTrasModal(); }
+            });
+        }
         function cargarBajoDemanda(grupo) {
             return bajoDemandaCargado[grupo] || (bajoDemandaCargado[grupo] = BAJO_DEMANDA[grupo].reduce((cadena, archivo) => cadena.then(() => new Promise((ok, mal) => {
                 const sc = document.createElement('script');
@@ -19,9 +32,9 @@
                 sc.onload = ok;
                 sc.onerror = () => mal(new Error('No se pudo cargar ' + archivo));
                 document.head.appendChild(sc);
-            })), Promise.resolve()).catch(e => { delete bajoDemandaCargado[grupo]; throw e; }));
+            })), Promise.resolve()).then(() => { bajoDemandaHecho[grupo] = true; }, e => { delete bajoDemandaCargado[grupo]; throw e; }));
         }
-        [['openGuia', 'guia'], ['descargarGuiaIA', 'guia'], ['openTuMes', 'tumes'], ['openCv', 'cv']].forEach(([nombre, grupo]) => {
+        [['openGuia', 'guia'], ['descargarGuiaIA', 'guia'], ['openTuMes', 'tumes'], ['openCv', 'cv'], ['openClaseProfe', 'profe'], ['openEditCollectible', 'coleccionables'], ['openClassroom', 'classroom']].forEach(([nombre, grupo]) => {
             const sustituto = (...args) => cargarBajoDemanda(grupo).then(() => {
                 if (window[nombre] !== sustituto) return window[nombre](...args);
             }, () => showToast(navigator.onLine === false ? 'Sin conexión: esto aún no está guardado en el dispositivo.' : 'No se pudo abrir. Inténtalo otra vez.', true));
@@ -1187,6 +1200,8 @@
         // Un fallo al pintar una página (unos datos raros, por ejemplo) dejaba el móvil entero en negro: ahora esa página
         // enseña el error y deja recargar, y el resto de la app sigue funcionando.
         function mobilePaginaSegura(view, entra) {
+            const grupo = vistaPorCargar(view);
+            if (grupo) { cargarVistaYPintar(grupo); return mobileZonas.pagina || '<main class="m-pagina"></main>'; }
             try {
                 return `<main class="m-pagina">${view === 'calendar' ? renderAvisoPrueba(true) + renderMobileInicio(entra) : renderMobileSeccion(view)}</main>`;
             } catch (e) {
@@ -3229,7 +3244,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || document.activeElement?.isContentEditable) return false;
             if (document.getElementById('command-palette-overlay')) return false;
             if (document.getElementById('logout-confirm-overlay')) return false;
-            if (currentView === 'estudiar' && estRepaso?.cola?.length) return false;
+            if (currentView === 'estudiar' && typeof estRepaso !== 'undefined' && estRepaso?.cola?.length) return false;
             if (document.querySelector('.centered-message-overlay')) return false;
             if (document.getElementById('modal-container')?.innerHTML.trim()) return false;
             if (document.getElementById('login-screen')?.style.display !== 'none') return false;
