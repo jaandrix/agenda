@@ -219,8 +219,13 @@
                     velo = true;
                     // La hoja ya ha bajado y aún no se aclara el velo: es el momento en que nada se mueve, y un repintado
                     // largo no se nota como tirón. Antes iba al final, justo cuando se esperaba poder tocar la página.
-                    // Lo que el propio repintado pida ahora (el modal aún cuenta como abierto) ya está hecho: repetirlo sobraba.
-                    if (repintarAlCerrar) { render(); repintarAlCerrar = false; }
+                    // render() no pinta mientras el modal se cierra (solo deja la marca): aquí sí debe, así que se le quita un momento.
+                    if (repintarAlCerrar) {
+                        repintarAlCerrar = false;
+                        delete overlay.dataset.cerrando;
+                        render();
+                        overlay.dataset.cerrando = '1';
+                    }
                     overlay.classList.add('modal-overlay-saliendo');
                     overlay.addEventListener('transitionend', e => { if (e.target === overlay && e.propertyName === 'background-color') terminar(); }, { once: true });
                     setTimeout(terminar, 120);
