@@ -5783,7 +5783,8 @@ body.acuarela .planner-stamp-dot { border-color:rgba(242,239,233,.4); }
 body.acuarela .planner-stamp-dot.filled { background:var(--teja); border-color:var(--teja); }
 body.acuarela .sidebar-nav button.active { background:var(--text-primary); color:var(--bg-card); }
 body.acuarela .event-sq-icon { background:var(--bg-card-hover); color:var(--text-primary); }
-body.acuarela .event-hero-flat { background:var(--teja); }
+/* El banner de Eventos conserva su naranja con texto oscuro: Alejandro lo prefiere así al granate del resto de teja. */
+body.acuarela .event-hero-flat { background:#DF7356; }
 body.acuarela .event-hero-flat .event-hero-kicker, body.acuarela .event-hero-flat .event-hero-meta { color:rgba(22,21,20,.72); }
 body.acuarela .event-hero-icon { background:rgba(255,255,255,.4); }
 body.acuarela .habit-dot.on, body.acuarela .pattern-bar-fill.on { background:var(--teja); }
@@ -10139,10 +10140,9 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 .sidebar-brand .beta-bocadillo { top:calc(100% + 10px); right:auto; left:-136px; width:190px; box-sizing:border-box; }
 .sidebar-brand .beta-bocadillo::before { right:auto; left:142px; }
 /* Teja en granate: sobre su color, el texto va en blanco (sobre el naranja de antes se leía en negro). */
-body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-card:nth-child(1), body.acuarela .planner-action-card:nth-child(1) *:not(button), body.acuarela .event-hero-flat, body.acuarela .event-hero-flat *:not(button), body.acuarela .guia-indice button.activo, body.acuarela .guia-nav button.sig, body.acuarela .home-launcher-row:nth-child(3n+1) .home-launcher-icon, body.acuarela .ajuste-icono, body.acuarela .ajustes-guia .ajuste-icono, body.acuarela .mandala-centro, body.acuarela .pilar-centro, body.acuarela .guia-pasos li::before, body.acuarela .guia-trucos li::before { color:#fff; }
+body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-card:nth-child(1), body.acuarela .planner-action-card:nth-child(1) *:not(button), body.acuarela .guia-indice button.activo, body.acuarela .guia-nav button.sig, body.acuarela .home-launcher-row:nth-child(3n+1) .home-launcher-icon, body.acuarela .ajuste-icono, body.acuarela .ajustes-guia .ajuste-icono, body.acuarela .mandala-centro, body.acuarela .pilar-centro, body.acuarela .guia-pasos li::before, body.acuarela .guia-trucos li::before { color:#fff; }
 body.acuarela .cal-month-cell.is-today span[style*="border-radius:50%"] { background:#fff !important; }
-body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-card:nth-child(1) .planner-action-count, body.acuarela .event-hero-flat .event-hero-kicker { color:#fff !important; }
-body.acuarela .event-hero-flat .event-hero-multi-icon, body.acuarela .event-hero-flat .event-hero-multi-icon * { color:var(--text-primary); }
+body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-card:nth-child(1) .planner-action-count { color:#fff !important; }
 
 /* Gestor de suscripciones (Finanzas, planificación): como el modal de un día, sin cajas ni rayas. */
 .subs-resumen { margin:0 0 16px; font-size:14px; color:var(--text-secondary); }
