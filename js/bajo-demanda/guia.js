@@ -63,7 +63,7 @@ const GUIA = [
             [guiaBoton('+ Añadir'), 'Lo mismo que el rayo, desde la cabecera.'],
             [guiaBoton('campana'), 'Tus notificaciones dentro de la app: solicitudes de amistad, recomendaciones y avisos.'],
         ],
-        trucos: ['Pulsar un día del calendario y luego «+ Añadir entrada este día» crea la entrada con esa fecha ya puesta.', 'Dentro de cualquier nota o descripción, escribe [[ y el nombre de otra entrada para enlazarlas.'],
+        trucos: ['Pulsar un día del calendario y luego «+ añadir.» crea la entrada con esa fecha ya puesta.', 'Dentro de cualquier nota o descripción, escribe [[ y el nombre de otra entrada para enlazarlas.'],
     },
     {
         id: 'movil', grupo: 'empezar', titulo: 'versión móvil.',

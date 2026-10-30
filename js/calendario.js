@@ -801,21 +801,20 @@
             } else render();
 
             const dateObj = new Date(date + 'T12:00:00');
-            const weekday = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
-            const restDate = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+            const fechaLarga = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '');
             const all = getDayAllEntries(date);
-            const rows = all.length ? renderDayEntryRows(all) : `<div class="empty-state"><div class="empty-title">nada por aquí todavía.</div><div class="empty-sub">No hay nada registrado este día.</div></div>`;
 
             showModalDesde(`.cal-month-cell[data-cal-date="${date}"]`, `
                 <div class="modal-title day-modal-title">
-                    <span><span class="day-modal-weekday">${weekday}</span>, ${restDate}:</span>
+                    <span>${fechaLarga}.</span>
                     <button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>
                 ${festivoDe(date) ? `<div class="day-modal-festivo">festivo, ${escapeHtml(festivoDe(date).nombre)}.</div>` : ''}
-                <div class="day-modal-list">${rows}</div>
+                ${all.length ? renderDayEntryRows(all) : '<p class="dia-vacio">nada este día.</p>'}
                 ${renderEntradaTuDia(date)}
-                <button class="day-modal-add-btn" style="margin-top:14px" onclick="openNewEntryForDay('${date}')">+ Añadir entrada este día</button>
+                <button class="dia-anadir" onclick="openNewEntryForDay('${date}')">+ añadir.</button>
             `);
+            document.querySelector('#modal-container .modal-sheet')?.classList.add('hoja-dia');
         }
 
         // Deja elegir el tipo con el mismo buscador de captura rápida,
@@ -858,44 +857,36 @@
             return [...dayEntries, ...activeJobs, ...recurringEntries];
         }
 
+        // El modal de un día, como la página de una agenda: lo que hay ese día en orden, con la hora delante y solo los datos
+        // que dicen algo (lugar, importe); el «Sin categoría» o «Evento» de cada fila no aportaba nada.
         function renderDayEntryRows(all) {
-            return all.map(e => {
+            const horaDe = e => e.time || e.startTime || '';
+            const orden = [...all].sort((a, b) => horaDe(a).localeCompare(horaDe(b)));
+            const conHoras = orden.some(horaDe);
+            return `<div class="dia-filas ${conHoras ? 'con-horas' : ''}">${orden.map(e => {
                 const cat = categories.find(c => c.id === e.categoryId);
                 const color = tintaCategoria(cat?.color) || 'var(--text-secondary)';
-                const catName = cat?.name || 'Sin categoría';
-
-                let titleHtml, metaHtml;
-
+                let titulo, meta = '';
                 if (e._recurringPayment) {
-                    titleHtml = `Pago: ${escapeHtml(e.title)}`;
-                    metaHtml = `${e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'}, ${financeMoney(e.amount)}`;
+                    titulo = `Pago: ${escapeHtml(e.title)}`;
+                    meta = financeMoney(e.amount);
                 } else if (e.type === 'work') {
-                    const start = e.startTime || '';
-                    const end = e.endTime || '';
-                    const scheduleText = (start || end) ? ` de ${start || '--'} a ${end || '--'}` : '';
-                    titleHtml = `Trabajando en ${escapeHtml(e.company || 'empresa sin nombre')}${escapeHtml(scheduleText)}`;
-                    metaHtml = escapeHtml(e.position || catName);
+                    titulo = `Trabajando en ${escapeHtml(e.company || 'empresa sin nombre')}`;
+                    meta = [e.endTime ? `hasta las ${escapeHtml(e.endTime)}` : '', escapeHtml(e.position || '')].filter(Boolean).join(', ');
                 } else if (e.type === 'birthday') {
-                    const years = e.birthDate && !e.sinAnio ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : '?';
-                    titleHtml = `cumpleaños de ${escapeHtml(e.title)}${years === '?' ? '' : ` (${years} años)`}`;
-                    metaHtml = 'Cumpleaños';
+                    const anios = e.birthDate && !e.sinAnio ? new Date().getFullYear() - parseInt(e.birthDate.split('-')[0]) : null;
+                    titulo = `cumpleaños de ${escapeHtml(e.title)}${anios === null ? '' : ` (${anios} años)`}`;
                 } else {
-                    titleHtml = escapeHtml(e.title);
-                    metaHtml = `${escapeHtml(catName)}${e.notes ? ', ' + linkifyText(e.notes) : ''}`;
+                    titulo = escapeHtml(e.title);
+                    meta = [escapeHtml(e.place || ''), e.notes ? linkifyText(e.notes) : ''].filter(Boolean).join(', ');
                 }
-
-                return `
-                <div class="entry-item" data-open-entry="${escapeHtml(e.id)}">
-                    <div class="entry-color-dot" style="background:${escapeHtml(colorPunto(color, e.eventType || e.type))}"></div>
-                    <div class="entry-info">
-                        <div class="entry-title">${titleHtml}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>
-                        <div class="entry-meta">${metaHtml}</div>
-                    </div>
-                    <div class="entry-actions">
-                        <button class="delete" onclick="event.stopPropagation();deleteEntry('${jsAttr(e.id)}')"><i class='ico ico-x' aria-hidden=true></i></button>
-                    </div>
+                return `<div class="dia-fila" data-open-entry="${escapeHtml(e.id)}">
+                    <i class="dia-punto" style="background:${escapeHtml(colorPunto(color, e.eventType || e.type))}"></i>
+                    ${conHoras ? `<span class="dia-hora">${escapeHtml(horaDe(e))}</span>` : ''}
+                    <div class="dia-texto"><div class="dia-titulo">${titulo}${esPartidoAuto(e) ? ETIQUETA_AUTO : ''}</div>${meta ? `<div class="dia-meta">${meta}</div>` : ''}</div>
+                    <button class="dia-quitar" aria-label="Eliminar" onclick="event.stopPropagation();deleteEntry('${jsAttr(e.id)}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>`;
-            }).join('');
+            }).join('')}</div>`;
         }
 
         function renderDayEntries(date) {

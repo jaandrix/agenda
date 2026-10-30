@@ -1811,30 +1811,6 @@
         .modal-close:hover { background: var(--bg-card-hover); color: var(--text-primary); border-color: var(--border-strong); }
         .modal-close svg { width: 13px; height: 13px; }
 
-        .day-modal-title { align-items: baseline; }
-        .day-modal-weekday {
-            color: var(--m-acento);
-            text-decoration: underline;
-            text-underline-offset: 2px;
-            font-weight: 700;
-        }
-        .day-modal-list { display: flex; flex-direction: column; gap: 2px; }
-        .day-modal-list .empty-state { padding: 30px 8px; }
-        .day-modal-add-btn {
-            width: 100%;
-            padding: 13px 16px;
-            border: 0;
-            border-radius:10px;
-            background: var(--text-primary);
-            color: var(--accent-contrast);
-            font-family: var(--font-family);
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
-        }
-        @media (hover: hover) and (pointer: fine) { .day-modal-add-btn:hover { background: color-mix(in srgb, var(--text-primary) 85%, var(--bg-app)); } }
-        .day-modal-add-btn:active { transform: translateY(0); }
 
         /* Formularios: etiquetas en minúscula con punto ("título.") como el
            resto de la app, campos con borde fino y un anillo suave al
@@ -10138,14 +10114,32 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 .medida-modal { display:flex; flex-direction:column; gap:2px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; font-variant-numeric:tabular-nums; }
 .medida-modal span { color:var(--text-secondary); }
 
-/* Modal de un día, como un papel: lo que hay ese día seguido, sin rayas ni cajas de por medio. */
-.modal-sheet .day-modal-list { gap:12px; }
-.modal-sheet .day-modal-list .entry-item { padding:0; border:0; border-radius:0; background:none; box-shadow:none; }
-.modal-sheet .day-modal-list .entry-item:hover { background:none; }
-.modal-sheet .day-modal-list .entry-item:hover .entry-title { color:var(--m-acento); }
-.modal-sheet .tudia-entrada { margin-top:18px; padding:0; border:0; border-radius:0; background:none; }
 /* Paleta de los puntos en los temas de color (colorPunto, datos.js). */
 :root { --punto-1:#E5532B; --punto-2:#2F6F8F; --punto-3:#C98A12; --punto-4:#5E7F3B; --punto-5:#8E4A72; --punto-6:#3E8E7E; }
 /* La insignia de beta solo en Calendario; sin ella, «+ apuntar.» sigue a la derecha. */
 #main-header .header-right { justify-content:flex-end; }
 #main-header:not(.en-calendario) .beta-insignia { visibility:hidden; }
+
+/* Modal de un día: una página de agenda. Título, lo que hay en orden, y nada más que estorbe. */
+.modal-sheet.hoja-dia { max-width:440px; }
+.hoja-dia .day-modal-title { align-items:baseline; margin-bottom:18px; font-size:26px; font-weight:800; letter-spacing:-.03em; line-height:1.15; }
+.hoja-dia .modal-close { width:32px; height:32px; border:0; background:none; }
+.hoja-dia .modal-close:hover { background:none; color:var(--text-primary); }
+.hoja-dia .day-modal-festivo { margin:-10px 0 16px; }
+.dia-filas { display:flex; flex-direction:column; gap:14px; }
+.dia-fila { display:grid; grid-template-columns:8px minmax(0, 1fr) 24px; align-items:baseline; column-gap:12px; cursor:pointer; }
+.dia-filas.con-horas .dia-fila { grid-template-columns:8px 42px minmax(0, 1fr) 24px; }
+.dia-punto { width:8px; height:8px; border-radius:50%; align-self:start; margin-top:7px; }
+.dia-hora { font-size:14px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.dia-titulo { font-size:15px; font-weight:500; line-height:1.35; color:var(--text-primary); overflow-wrap:anywhere; }
+.dia-fila:hover .dia-titulo { color:var(--m-acento); }
+.dia-meta { margin-top:1px; font-size:13px; line-height:1.35; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dia-quitar { display:grid; place-items:center; width:24px; height:24px; padding:0; border:0; background:none; color:var(--text-secondary); cursor:pointer; opacity:0; align-self:start; }
+.dia-quitar .ico { width:10px; height:10px; }
+.dia-fila:hover .dia-quitar, .dia-quitar:focus-visible { opacity:1; }
+.dia-quitar:hover { color:var(--c-dc2626); }
+@media (hover: none) { .dia-quitar { opacity:.55; } .dia-fila { min-height:32px; } }
+.dia-vacio { margin:0; font-size:15px; color:var(--text-secondary); }
+.hoja-dia .tudia-entrada { margin-top:20px; padding:0; border:0; border-radius:0; background:none; font-size:13px; }
+.dia-anadir { display:block; margin-top:20px; padding:6px 0; border:0; background:none; color:var(--text-primary); font:600 14px var(--font-family); cursor:pointer; }
+.dia-anadir:hover { color:var(--m-acento); }
