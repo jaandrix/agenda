@@ -10143,3 +10143,21 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 body.acuarela .cal-month-cell.is-today span[style*="border-radius:50%"] { background:#fff !important; }
 body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-card:nth-child(1) .planner-action-count, body.acuarela .event-hero-flat .event-hero-kicker { color:#fff !important; }
 body.acuarela .event-hero-flat .event-hero-multi-icon, body.acuarela .event-hero-flat .event-hero-multi-icon * { color:var(--text-primary); }
+
+/* Gestor de suscripciones (Finanzas, planificación): como el modal de un día, sin cajas ni rayas. */
+.subs-resumen { margin:0 0 16px; font-size:14px; color:var(--text-secondary); }
+.subs-fila { display:grid; grid-template-columns:minmax(0, 1fr) auto auto; align-items:center; column-gap:14px; padding:9px 0; }
+.subs-fila-texto { display:flex; flex-direction:column; gap:1px; min-width:0; cursor:pointer; }
+.subs-fila-texto b { font-size:15px; font-weight:600; overflow-wrap:anywhere; }
+.subs-fila-texto:hover b { color:var(--m-acento); }
+.subs-fila-texto span { font-size:13px; color:var(--text-secondary); }
+.subs-fila-texto em { font-style:normal; font-weight:600; color:var(--m-acento); }
+.subs-fila-importe { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.subs-fila-botones { display:flex; justify-content:flex-end; gap:10px; }
+.subs-btn { min-height:32px; padding:0 2px; border:0; background:none; color:var(--text-secondary); font:600 13px var(--font-family); white-space:nowrap; cursor:pointer; }
+.subs-btn:hover { color:var(--text-primary); }
+.subs-btn-borrar:hover { color:var(--c-dc2626); }
+.subs-anadir { display:block; margin-top:10px; padding:6px 0; border:0; background:none; color:var(--text-primary); font:600 14px var(--font-family); cursor:pointer; }
+.subs-anadir:hover { color:var(--m-acento); }
+.subs-seccion { margin:22px 0 4px; font-size:15px; font-weight:800; letter-spacing:-.01em; }
+@media (max-width:600px) { .subs-fila { grid-template-columns:minmax(0, 1fr) auto; row-gap:2px; } .subs-fila-botones { grid-column:1 / -1; justify-content:flex-start; gap:14px; } }

@@ -276,6 +276,7 @@ const GUIA = [
             [guiaBoton('largo plazo.'), 'Planifica cada mes tu sueldo y aportaciones, con historial, lista de deseos con semáforo e inversiones.'],
             [guiaBoton('metas.'), 'Huchas para objetivos de ahorro (fondo de emergencia, vacaciones...).'],
             [guiaBoton('recurrentes.'), 'Suscripciones y gastos fijos. Con «avisarme si no aparece en el banco» te avisa si un cargo no llega.'],
+            [guiaBoton('suscripciones.'), 'En la pestaña planificación: todas tus suscripciones, con «dar de baja.» y «dar de alta.». Las dadas de baja se quedan en la lista hasta que las borres, y los meses que pagaste siguen en el calendario y en tus gastos. Si el banco sigue cobrando una que diste de baja, te avisa.'],
             [guiaBoton('programar gastos. Buscar duplicados, Corregir registros'), 'Gastos futuros, limpieza de duplicados y ajuste a mano del histórico.'],
             [guiaBoton('gasto de viaje.'), 'Al editar un gasto. Sigue contando como gasto, pero no entra en los presupuestos ni en el ritmo del mes, para que un viaje no te descuadre las categorías. Puedes asociarlo a un viaje de Viajes, que mostrará cuánto gastaste en él.'],
             [guiaBoton('gastos de un viaje.'), 'Marca de una vez todo lo de un viaje: eliges el viaje (o las fechas) y salen los gastos de esos días ya marcados, salvo suscripciones y gastos fijos. Desmarca lo que no fuera del viaje. Si el viaje no está en Viajes, escribe su nombre y se crea con esas fechas, con sus gastos dentro.'],

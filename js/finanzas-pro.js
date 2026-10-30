@@ -347,6 +347,8 @@
                     const daysInMonth = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate();
                     const chargeDay = Math.min(Number(e.renewalDay) || 1, daysInMonth);
                     if (ref === today && today.getDate() < chargeDay) return;
+                    // Antes apuntaba un gasto de días anteriores al dar de alta, y el mes de baja al reactivar.
+                    if (!suscripcionVigente(e, monthKey + '-' + String(chargeDay).padStart(2, '0'))) return;
                     financeProRegistrarAuto({
                         id: 'ptx_rec_' + e.id + '_' + monthKey,
                         date: monthKey + '-' + String(chargeDay).padStart(2, '0'),
@@ -1929,6 +1931,7 @@
                 ${renderFinanceBudgetUnifiedPanel()}
                 ${renderFinancePlanRow()}
                 <div class="finance-dashboard-foot-actions" style="margin-top:20px">
+                    <button class="finance-oneoff-btn" onclick="openGestorSuscripciones()">suscripciones.</button>
                     <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()"><i class='ico ico-lapiz' aria-hidden=true></i> corregir registros.</button>
                 </div>`;
             return `
@@ -3650,7 +3653,7 @@
             <div style="flex:1;min-width:260px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                     <div style="font-weight:700;font-size:14px">${icon} ${label}</div>
-                    <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:12px" onclick="openNewEntry('${type}')">+ Añadir</button>
+                    ${type === 'subscription' ? `<button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:12px" onclick="openGestorSuscripciones()">gestionar.</button>` : `<button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:12px" onclick="openNewEntry('${type}')">+ Añadir</button>`}
                 </div>
                 <div class="card" style="margin-bottom:12px">
                     <div class="card-title">Total mensual</div>

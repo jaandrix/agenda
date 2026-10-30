@@ -129,7 +129,7 @@
             const month = Number(String(dateStr).slice(5, 7));
             const daysInMonth = new Date(year, month, 0).getDate();
             return entries.filter(e => {
-                if (!((e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false)) return false;
+                if (!(e.type === 'subscription' || e.type === 'fixed_expense') || !suscripcionVigente(e, dateStr)) return false;
                 const renewalDay = Number(e.renewalDay);
                 if (!renewalDay) return false;
                 return Math.min(renewalDay, daysInMonth) === day;

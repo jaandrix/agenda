@@ -156,8 +156,9 @@
 
         function renderSuscripcionesDetectadas() {
             const lista = asistSuscripcionesDetectadas();
-            if (!lista.length) return '';
-            return `<div class="asist-suscripciones">${lista.slice(0, 3).map(s => `
+            const siguenCobrando = renderAvisosCobroTrasBaja();
+            if (!lista.length && !siguenCobrando) return '';
+            return `<div class="asist-suscripciones">${siguenCobrando}${lista.slice(0, 3).map(s => `
                 <div class="asist-suscripcion">
                     <div><b>¿${escapeHtml(s.nombre)} es una suscripción?</b><span>unos ${financeMoney(s.importe)} cada mes, hacia el día ${s.dia} (${s.meses} meses seguidos).</span></div>
                     <div class="asist-suscripcion-botones"><button class="pedido-btn" onclick="asistAnadirSuscripcion('${jsAttr(s.clave)}')">añadir.</button><button class="pedido-btn" onclick="asistIgnorarSuscripcion('${jsAttr(s.clave)}')">no es.</button></div>

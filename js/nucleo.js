@@ -1995,6 +1995,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 <div class="m-acciones">
                     <button class="m-boton m-boton-acento" onclick="openFinanceProTransactionModal()">+ movimiento.</button>
                     <button class="m-boton" onclick="pegarExtractoBancario()">importar extracto.</button>
+                    <button class="m-boton" onclick="openGestorSuscripciones()">suscripciones.</button>
                 </div>
                 ${mesB.avisos}
                 ${renderFinanceBudgetUnifiedPanel()}

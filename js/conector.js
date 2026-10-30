@@ -386,6 +386,7 @@
                 if (entries.some(e => e.id === ref)) return null;
                 const datos = { ...(op.datos || {}) };
                 delete datos.sinValidar;
+                if ((op.entryType === 'subscription' || op.entryType === 'fixed_expense') && !datos.altaDesde) datos.altaDesde = todayISO();
                 entries.push({ id: ref, type: op.entryType, categoryId: getCategoryIdForType(op.entryType), tags: [], ...datos });
                 filteredEntries = [...entries];
                 if (op.entryType === 'travel') geocodificarItinerarioViaje(entries[entries.length - 1]);
@@ -396,7 +397,11 @@
                 if (!e) return null;
                 const antes = {};
                 Object.keys(op.datos || {}).forEach(k => { antes[k] = e[k]; });
-                Object.assign(e, op.datos || {});
+                const cambiaEstado = (e.type === 'subscription' || e.type === 'fixed_expense') && 'active' in (op.datos || {}) && (e.active !== false) !== (op.datos.active !== false);
+                if (cambiaEstado) antes.bajas = e.bajas;
+                const { active: nuevoEstado, ...restoDatos } = op.datos || {};
+                Object.assign(e, cambiaEstado ? restoDatos : op.datos || {});
+                if (cambiaEstado) suscripcionCambiarEstado(e, nuevoEstado !== false);
                 filteredEntries = [...entries];
                 if (op.entryType === 'travel') geocodificarItinerarioViaje(e);
                 const d = op.datos || {};

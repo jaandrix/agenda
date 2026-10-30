@@ -804,8 +804,17 @@
                 // todos los campos (concepto del banco aprendido de una
                 // suscripción, enlace y tipo de una ficha de documento,
                 // marcas internas...) y reemplazarla entera los borraba.
-                if (idx >= 0) entries[idx] = { ...entries[idx], ...entry };
+                if (idx >= 0) {
+                    const antes = entries[idx];
+                    entries[idx] = { ...antes, ...entry };
+                    // El desplegable «Estado» del formulario también deja fecha.
+                    if ((type === 'subscription' || type === 'fixed_expense') && (antes.active !== false) !== (entry.active !== false)) {
+                        entries[idx].active = antes.active;
+                        suscripcionCambiarEstado(entries[idx], entry.active !== false);
+                    }
+                }
             } else {
+                if (type === 'subscription' || type === 'fixed_expense') entry.altaDesde = todayISO();
                 entries.push(entry);
             }
 
