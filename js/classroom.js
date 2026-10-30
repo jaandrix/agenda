@@ -17,7 +17,8 @@
         let classroomCursos = null;
 
         function classroomDisponible() {
-            return !!CLASSROOM_CLIENT_ID && (CLASSROOM_PARA_TODOS || cuentaDesarrollador);
+            // Oculto desde el 30-10 a petición de Alejandro: por ahora no le aporta. Lo ya importado sigue en Estudios y Panorama.
+            return false;
         }
 
         function classroomDatos() {

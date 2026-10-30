@@ -189,6 +189,70 @@
             closeModal();
         }
 
+        // Arrastrar la hoja hacia abajo desde su parte de arriba la cierra, como una hoja nativa: sigue al dedo y, al soltar,
+        // baja desde donde esté o vuelve a su sitio. Solo con la hoja arriba del todo, para no pelear con su scroll, y nunca
+        // en un editor, que se cierra con «cancelar.» para no perder lo escrito.
+        let arrastreHoja = null;
+        const modalContenedor = document.getElementById('modal-container');
+        modalContenedor?.addEventListener('touchstart', e => {
+            arrastreHoja = null;
+            const hoja = e.target.closest?.('.modal-sheet');
+            if (!hoja || !capaSinInert() || e.touches.length !== 1 || hoja.scrollTop > 0 || e.target.closest('input, textarea, select')) return;
+            const velo = hoja.parentElement;
+            if (velo.dataset.cerrando || velo.classList.contains('modal-m-editor') || hoja.getAnimations().some(a => a.playState === 'running')) return;
+            const r = hoja.getBoundingClientRect(), y = e.touches[0].clientY;
+            if (y - r.top > 72) return;
+            arrastreHoja = { hoja, y0: y, y, t: e.timeStamp, v: 0, dy: 0, activo: false, alto: r.height, escala: r.height / (hoja.offsetHeight || 1) || 1 };
+        }, { passive: true });
+        modalContenedor?.addEventListener('touchmove', e => {
+            const a = arrastreHoja;
+            if (!a) return;
+            const y = e.touches[0].clientY;
+            a.dy = y - a.y0;
+            // Desde el primer movimiento hacia abajo: si iOS empieza su rebote, ya no deja cancelarlo.
+            if (a.dy >= 0 && e.cancelable) e.preventDefault();
+            if (!a.activo) {
+                if (a.dy < -8) { arrastreHoja = null; return; }
+                if (a.dy < 8) return;
+                a.activo = true;
+                a.hoja.style.animation = 'none';
+                a.hoja.style.transition = 'none';
+            }
+            a.v =(y - a.y) / Math.max(1, e.timeStamp - a.t);
+            a.y = y;
+            a.t = e.timeStamp;
+            a.hoja.style.transform = `translateY(${Math.max(0, a.dy) / a.escala}px)`;
+        }, { passive: false });
+        const soltarHoja = () => {
+            const a = arrastreHoja;
+            arrastreHoja = null;
+            if (!a?.activo) return;
+            if (a.dy > a.alto * 0.28 || a.v > 0.6) { a.hoja.style.removeProperty('transition'); closeModal(); return; }
+            a.hoja.style.transition = 'transform .2s var(--ease-out)';
+            a.hoja.style.transform = '';
+            setTimeout(() => { if (!a.hoja.style.transform) a.hoja.style.removeProperty('transition'); }, 220);
+        };
+        modalContenedor?.addEventListener('touchend', soltarHoja, { passive: true });
+        modalContenedor?.addEventListener('touchcancel', soltarHoja, { passive: true });
+
+        // El + del móvil abre al apoyar el dedo, sin esperar a levantarlo (no está sobre nada que se desplace). El clic de ese
+        // mismo toque llega después, con la hoja ya debajo del dedo: se ignora para que no la cierre ni pulse lo que haya ahí.
+        let clicDelToque = false;
+        function apuntarAlToque(e) {
+            if (e.button) return;
+            clicDelToque = true;
+            const soltar = () => setTimeout(() => { clicDelToque = false; }, 350);
+            window.addEventListener('pointerup', soltar, { once: true });
+            window.addEventListener('pointercancel', soltar, { once: true });
+            openApuntar();
+        }
+        modalContenedor?.addEventListener('click', e => {
+            if (!clicDelToque) return;
+            clicDelToque = false;
+            e.stopPropagation();
+            e.preventDefault();
+        }, true);
+
         // Para lo que puede esperar a que la hoja termine de entrar.
         function trasAbrirModal(fn) {
             const sheet = document.querySelector('#modal-container .modal-sheet');
@@ -278,9 +342,29 @@
         // fotograma y «estable» hasta que la hoja termina de entrar. window.tiemposModal sigue con el pintado.
         let ultimoToque = 0;
         document.addEventListener('pointerdown', () => { ultimoToque = performance.now(); }, { capture: true, passive: true });
+        function vigilarFotogramas(ms, fin) {
+            const pasos = [];
+            let antes = performance.now();
+            const t0 = antes;
+            const paso = ahora => {
+                pasos.push(ahora - antes);
+                antes = ahora;
+                if (ahora - t0 < ms) requestAnimationFrame(paso);
+                else fin({ perdidos: pasos.filter(p => p > 25).length, peor: Math.round(Math.max(0, ...pasos)) });
+            };
+            requestAnimationFrame(paso);
+        }
+        function openMedidasModales() {
+            const filas = (window.metricasModal || []).slice(-12).reverse();
+            showModal(`
+                <div class="modal-title">medidas de los modales.</div>
+                <div class="finance-modal-note">En este dispositivo, desde esta apertura de la app. Tiempos en milisegundos: abrir hasta verse, y peor fotograma y fotogramas perdidos al abrir y al cerrar. Un fotograma perdido es uno de más de 25 ms.</div>
+                ${filas.length ? filas.map(m => `<div class="medida-modal"><b>${escapeHtml(m.nombre)}</b><span>abrir ${m.pintado}, peor ${m.peor ?? '?'}, perdidos ${m.perdidos ?? '?'}</span><span>cerrar ${m.cierre ?? '?'}, peor ${m.peorCierre ?? '?'}, perdidos ${m.perdidosCierre ?? '?'}</span></div>`).join('') : '<div class="finance-modal-note">Abre y cierra algunos modales y vuelve aquí.</div>'}
+            `);
+        }
         function medirModal() {
             const t0 = performance.now();
-            const desdeToque = ultimoToque && t0 - ultimoToque < 2000 ? ultimoToque : t0;
+            const desdeToque = ultimoToque && t0 - ultimoToque < 600 ? ultimoToque : t0;
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 const pintado = performance.now();
                 (window.tiemposModal ||= []).push(Math.round(pintado - t0));
@@ -288,6 +372,7 @@
                 const container = document.getElementById('modal-container');
                 const nombre = (container.querySelector('.modal-title')?.textContent || '').trim().slice(0, 40) || 'modal';
                 const nodos = container.getElementsByTagName('*').length;
+                if (devModeActive) vigilarFotogramas(300, r => { const u = window.metricasModal?.at(-1); if (u?.nombre === nombre) Object.assign(u, r); });
                 trasAbrirModal(() => {
                     const m = { nombre, preparar: Math.round(t0 - desdeToque), pintado: Math.round(pintado - desdeToque), estable: Math.round(performance.now() - desdeToque), nodos };
                     (window.metricasModal ||= []).push(m);

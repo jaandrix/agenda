@@ -10136,3 +10136,5 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 /* La hoja no afecta a lo de fuera ni al revés, y sin sombra: sobre el velo no se ve y cuesta durante el movimiento. */
 :is(body.mobile-standalone, body.pwa) .modal-sheet { contain:layout paint; box-shadow:none; }
 @media (prefers-reduced-motion: reduce) { .modal-sheet { transition:none; } }
+.medida-modal { display:flex; flex-direction:column; gap:2px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; font-variant-numeric:tabular-nums; }
+.medida-modal span { color:var(--text-secondary); }

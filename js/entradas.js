@@ -190,6 +190,8 @@
             if (overlay.dataset.cerrando) return;
             const sheet = overlay.querySelector('.modal-sheet');
             overlay.dataset.cerrando = '1';
+            const medida = window.metricasModal?.at(-1), tCierre = performance.now();
+            if (devModeActive && medida) vigilarFotogramas(260, r => { medida.peorCierre = r.peor; medida.perdidosCierre = r.perdidos; });
             // El teclado baja a la vez que la hoja: si no, se iba al quitar el campo, con la hoja ya abajo (un segundo salto).
             if (capaSinInert() && document.activeElement?.matches?.('input, textarea, select')) document.activeElement.blur();
             // Se quita cuando acaba la animación de salida (antes, a los 160 ms fijos, y en el móvil dura 200: se
@@ -198,6 +200,7 @@
             const terminar = () => {
                 if (hecho) return;
                 hecho = true;
+                if (medida) medida.cierre = Math.round(performance.now() - tCierre);
                 if (container.contains(overlay) && overlay.dataset.cerrando) container.innerHTML = '';
                 if (container.querySelector('.modal-overlay')) return;
                 cerrarCapa();

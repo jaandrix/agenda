@@ -150,12 +150,6 @@ const GUIA_IA_RECETAS = [
         'Los exámenes salen en el calendario y los trabajos en el planificador el día de entrega.',
         'Al final de Estudios, «entregas.» los ordena todos por fecha.',
     ]],
-    ['Traer las tareas de Google Classroom', [
-        'Estudios → «classroom.» → «conectar con google.» (en el iPhone, hazlo desde Safari o el ordenador).',
-        'Elige la cuenta de Google con la que entras en Classroom y da permiso (solo lectura).',
-        'Une cada clase con su asignatura (o «no traer esta clase.») y pulsa «traer tareas.».',
-        'Para actualizar, vuelve a conectar: si todas las clases ya están unidas, trae las tareas solo.',
-    ]],
     ['Estudiar con tarjetas (tipo Anki)', [
         'Estudios → pestaña «repaso.».',
         'Crea tarjetas a mano, impórtalas («frente;reverso» o TSV) o pídeselas a Claude con tus apuntes («hazme tarjetas de este PDF»).',
@@ -249,12 +243,6 @@ const GUIA_IA_PROBLEMAS = [
     ['Un presupuesto sale en rojo y no debería', [
         'Las devoluciones (un ingreso con la misma categoría que el gasto, por ejemplo «Coleccionables») amplían el límite del mes. Comprueba que el reembolso tenga esa categoría.',
         'Los gastos marcados como «gasto de viaje.» no cuentan en los presupuestos.',
-    ]],
-    ['No me funciona Classroom', [
-        'En el iPhone con la app instalada, la ventana de Google no vuelve a la app: hazlo desde Safari o desde el ordenador.',
-        'Si Google dice que la app no está verificada, pulsa «Continuar» (o «Configuración avanzada» → «Ir a Bitácora»).',
-        'Si dice que tu organización lo bloquea, es el administrador de tu centro: pídele que permita la app.',
-        'Si una nota sale vacía aunque esté calificada, es que el profesor aún no ha devuelto la tarea: Classroom no da la nota hasta entonces.',
     ]],
     ['Claude o ChatGPT no hacen lo que pido', [
         'Comprueba que Bitácora está activada en las herramientas de ese chat.',

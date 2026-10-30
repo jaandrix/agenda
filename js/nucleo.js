@@ -1163,6 +1163,7 @@
         function cerrarPantallaArranque() {
             const boot = document.getElementById('boot-loading');
             document.body.classList.remove('pwa');
+            setTimeout(calentarApuntar, 0);
             if (!boot) return;
             try { performance.measure('bitacora-arranque-visible', 'bitacora-arranque'); } catch (_) {}
             if (matchMedia('(prefers-reduced-motion: reduce)').matches) { boot.style.display = 'none'; return; }
@@ -1269,7 +1270,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             return `<nav class="m-tabbar" aria-label="Apartados">
                 ${pestana('calendar', M_ICONOS.inicio, 'inicio.')}
                 ${pestana('planner', M_ICONOS.plan, 'plan.')}
-                <button class="m-tab-mas" onclick="openApuntar()" aria-label="Apuntar algo">${M_ICONOS.mas}</button>
+                <button class="m-tab-mas" onpointerdown="apuntarAlToque(event)" onclick="if(!event.detail)openApuntar()" aria-label="Apuntar algo">${M_ICONOS.mas}</button>
                 ${pestana(reciente, `<i class="m-tab-letra">${escapeHtml(nombre.charAt(0))}</i>`, escapeHtml(mobileAbreviatura(nombre)) + '.', `aria-label="${escapeHtml(nombre)}"`)}
                 <button class="m-tab m-tab-menu ${mobileMenuAbierto ? 'activa' : ''}" onclick="toggleMenuMovil()">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
             </nav>`;

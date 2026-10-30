@@ -480,11 +480,25 @@ function apuntarDescartarBorrador() {
     pintarVistaApunteYa();
 }
 
-function openApuntar(fecha) {
-    apuntarFechaBase = fecha || null;
-    const borrador = apuntarLeerBorrador();
-    apuntarElegidos = {};
-    apuntarItems = [];
+// La primera apertura de la sesión era con diferencia la peor (medido con la CPU 4x: 317 ms de peor fotograma frente a 17
+// de las siguientes): compilar el código, resolver los estilos y dibujar las letras por primera vez. Se hace una vez, sin
+// verse, mientras aún está la pantalla de carga. Prefabricar la hoja no compensa: crear su HTML cuesta unos 5 ms.
+function calentarApuntar() {
+    if (modalEnPantalla() || document.getElementById('apuntar-texto')) return;
+    try {
+        const caja = document.createElement('div');
+        caja.id = 'calentar-apuntar';
+        caja.setAttribute('aria-hidden', 'true');
+        caja.style.cssText = 'position:fixed;inset:0;opacity:0;pointer-events:none;z-index:-1;overflow:hidden';
+        caja.innerHTML = `<div class="modal-overlay"><div class="modal-sheet hoja-apuntar">${apuntarHtml(null, '')}<div class="apuntar-vista"></div></div></div>`;
+        document.body.appendChild(caja);
+        void caja.offsetHeight;
+        apuntarTrocear('cena con marta mañana a las 9 y gasté 12 en gasolina').forEach(interpretarApunte);
+        setTimeout(() => caja.remove(), 350);
+    } catch (e) { console.error(e); }
+}
+
+function apuntarHtml(fecha, borrador) {
     const accesos = [
         ['tarea.', 'tarea', `closeModal();plannerDayOffset=${Math.min(2, Math.max(0, Math.round((new Date((fecha || todayISO()) + 'T12:00:00') - new Date(currentPlannerDayKey() + 'T12:00:00')) / 864e5)))};openAddPlannerItem()`],
         ['evento.', 'evento', `closeModal();openNewEntry('event');${fecha ? `setTimeout(()=>{const f=document.getElementById('modal-date');if(f)f.value='${fecha}'},60)` : ''}`],
@@ -495,7 +509,7 @@ function openApuntar(fecha) {
         ['ocio.', 'ocio', "closeModal();openNewEntry('book')"],
         ['viaje.', 'viaje', "closeModal();openNewEntry('travel')"],
     ];
-    showModal(`
+    return `
         <div class="modal-title">apuntar${fecha && fecha !== todayISO() ? ` para ${apuntarFechaTexto(fecha)}` : ''}.</div>
         <textarea id="apuntar-texto" class="modal-input apuntar-texto" rows="2" placeholder="dentista mañana a las 5 y comprar pan..." oninput="apuntarElegidos={};pintarVistaApunte();apuntarGuardarBorrador(this.value)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();guardarApunte()}">${escapeHtml(borrador)}</textarea>
         ${borrador ? '<div class="apuntar-borrador">Lo que dejaste a medias. <button class="m-enlace" onclick="apuntarDescartarBorrador()">descartar.</button></div>' : ''}
@@ -505,7 +519,16 @@ function openApuntar(fecha) {
         <div class="apuntar-rejilla">${accesos.map(([t, icono, accion]) => `<button onclick="${accion}"><i>${APUNTAR_ICONOS[icono]}</i><span>${t}</span></button>`).join('')}</div>
         <button class="m-enlace apuntar-todos" onclick="closeModal();window._dayPrefillDate=apuntarFechaBase;openCommandPalette('create');window._dayPrefillDate=apuntarFechaBase">todos los tipos.</button>
         ${apuntesRecientes.length ? `<button class="m-enlace apuntar-todos" onclick="openApuntesRecientes()">lo último que apuntaste.</button>` : ''}
-    `);
+    `;
+}
+
+function openApuntar(fecha) {
+    apuntarFechaBase = fecha || null;
+    const borrador = apuntarLeerBorrador();
+    apuntarElegidos = {};
+    apuntarItems = [];
+    document.getElementById('calentar-apuntar')?.remove();
+    showModal(apuntarHtml(fecha, borrador));
     document.querySelector('#modal-container .modal-sheet')?.classList.add('hoja-apuntar');
     // Lo último apuntado ya no se enseña solo al acabar de subir la hoja: al aparecer, la hoja crecía y se recortaba
     // (un tirón en cada apertura). Ahora es un enlace, y la hoja tiene su altura desde el primer fotograma.
