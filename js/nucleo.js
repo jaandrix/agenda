@@ -1310,7 +1310,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
         // Menú del móvil: una hoja con los apartados agrupados en tarjetas
         // (como los ajustes de iOS) y, al final, tema, letra y guía.
         function renderMobileMenu(view) {
-            const muestras = { asfalto: ['#302f2c', '#efede3'], papel: ['#FAF8F5', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F'], pizarra: ['#C0C8CA', '#1A2D42'], oliva: ['#F7F5EE', '#667447'], fundador: ['#1a1916', '#d4b06a'] };
+            const muestras = { asfalto: ['#302f2c', '#efede3'], papel: ['#FAF8F5', '#302f2c'], acuarela: ['#E7E2D9', '#8A2233'], pizarra: ['#C0C8CA', '#1A2D42'], oliva: ['#F7F5EE', '#667447'], fundador: ['#1a1916', '#d4b06a'] };
             const tema = temaActual();
             const flecha = '<svg class="m-mfila-flecha" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M30 10l12-10 50 50-50 50-12-10 40-40z"/></svg>';
             return `

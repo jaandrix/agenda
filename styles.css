@@ -67,7 +67,7 @@
             --bg-card-hover: #DDD8CE;
             --bg-input: #E2DDD3;
             --bg-modal: #F2EFE9;
-            --bg-fab: #DF7356;
+            --bg-fab: #8A2233;
             --border: #D5CFC3;
             --border-strong: #B9B2A4;
             --text-primary: #161514;
@@ -82,10 +82,11 @@
             --shadow: 0 6px 24px rgba(22,21,20,0.08);
             /* En escritorio, un teja más apagado que el de la versión
                móvil (--m-acento): en pantallas grandes, el vivo cansaba. */
-            --teja: #DF7356;
+            --teja: #8A2233;
             --teja-honda: #B4502F;
             --teja-suave: #EFCDBE;
-            --m-acento: #EE4B1F;
+            --m-acento: #8A2233;
+            --m-sobre-acento: #FFFFFF;
             --m-punto: #D2CCC1;
         }
 
@@ -1256,7 +1257,6 @@
         }
         .cal-month-cell:hover { background: var(--bg-card-hover); }
         .cal-month-cell.is-today { border-color: var(--text-primary); }
-        .cal-month-cell.is-selected { border-color: var(--accent); background: var(--bg-card-hover); }
 
         .cal-week-grid {
             display: grid;
@@ -8304,6 +8304,7 @@ body.acuarela #fab { color:var(--m-sobre-acento); }
 /* Botón de apuntar: el rayo en blanco sobre un naranja un tono más apagado
    que el de acento. */
 #fab, body.acuarela #fab { background:color-mix(in srgb, var(--m-acento) 78%, #8f857e); color:#fff; }
+body.acuarela #fab { background:var(--m-acento); }
 #fab.fab-pulse::after { border-color:color-mix(in srgb, var(--m-acento) 78%, #8f857e); }
 
 /* Compras: «lo de siempre.» en un modal. */
@@ -8924,7 +8925,7 @@ body.mobile-standalone .modal-sheet.entry-detail-card, body.pwa .modal-sheet.ent
 /* Semana de ejemplo (js/ejemplo.js): franja fija mientras haya datos de ejemplo. */
 #ejemplo-franja { position:fixed; z-index:900; left:50%; bottom:24px; transform:translateX(-50%); width:min(720px, calc(100vw - 32px)); box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 12px 12px 18px; border-radius:14px; background:var(--text-primary); color:var(--bg-app, #111); font-family:var(--font-family); font-size:13.5px; line-height:1.35; box-shadow:0 10px 30px rgba(0,0,0,.25); animation:ejemploEntra .3s cubic-bezier(.2,.8,.2,1); }
 #ejemplo-franja b { font-weight:700; }
-#ejemplo-franja button { flex-shrink:0; padding:10px 16px; border:0; border-radius:10px; background:var(--m-acento, #EE4B1F); color:var(--m-sobre-acento, #fff); font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+#ejemplo-franja button { flex-shrink:0; padding:10px 16px; border:0; border-radius:10px; background:var(--m-acento, #8A2233); color:var(--m-sobre-acento, #fff); font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; }
 body.mobile-standalone #ejemplo-franja { bottom:calc(env(safe-area-inset-bottom, 0px) + 104px); flex-direction:column; align-items:stretch; gap:10px; }
 body.mobile-standalone #ejemplo-franja button { padding:12px; font-size:15px; }
 @keyframes ejemploEntra { from { opacity:0; transform:translate(-50%, 12px); } }
@@ -10105,7 +10106,7 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 .medida-modal span { color:var(--text-secondary); }
 
 /* Paleta de los puntos en los temas de color (colorPunto, datos.js). */
-:root { --punto-1:#E5532B; --punto-2:#2F6F8F; --punto-3:#C98A12; --punto-4:#5E7F3B; --punto-5:#8E4A72; --punto-6:#3E8E7E; }
+:root { --punto-1:#8A2233; --punto-2:#2F6F8F; --punto-3:#C98A12; --punto-4:#5E7F3B; --punto-5:#8E4A72; --punto-6:#3E8E7E; }
 /* Modal de un día: una página de agenda. Título, lo que hay en orden, y nada más que estorbe. */
 .modal-sheet.hoja-dia { max-width:600px; }
 .hoja-dia .day-modal-title { align-items:baseline; margin-bottom:18px; font-size:26px; font-weight:800; letter-spacing:-.03em; line-height:1.15; }
@@ -10139,3 +10140,8 @@ body.borde-a-borde #boot-loading { padding:env(safe-area-inset-top, 0px) 0 env(s
 .sidebar-brand .beta-insignia[hidden] { display:none; }
 .sidebar-brand .beta-bocadillo { top:calc(100% + 10px); right:auto; left:-136px; width:190px; box-sizing:border-box; }
 .sidebar-brand .beta-bocadillo::before { right:auto; left:142px; }
+/* Teja en granate: sobre su color, el texto va en blanco (sobre el naranja de antes se leía en negro). */
+body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-card:nth-child(1), body.acuarela .planner-action-card:nth-child(1) *:not(button), body.acuarela .event-hero-flat, body.acuarela .event-hero-flat *:not(button), body.acuarela .guia-indice button.activo, body.acuarela .guia-nav button.sig, body.acuarela .home-launcher-row:nth-child(3n+1) .home-launcher-icon, body.acuarela .ajuste-icono, body.acuarela .ajustes-guia .ajuste-icono, body.acuarela .mandala-centro, body.acuarela .pilar-centro, body.acuarela .guia-pasos li::before, body.acuarela .guia-trucos li::before { color:#fff; }
+body.acuarela .cal-month-cell.is-today span[style*="border-radius:50%"] { background:#fff !important; }
+body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-card:nth-child(1) .planner-action-count, body.acuarela .event-hero-flat .event-hero-kicker { color:#fff !important; }
+body.acuarela .event-hero-flat .event-hero-multi-icon, body.acuarela .event-hero-flat .event-hero-multi-icon * { color:var(--text-primary); }

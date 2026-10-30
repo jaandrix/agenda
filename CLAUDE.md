@@ -150,7 +150,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   usuario en rejilla de 48 (`FINANCE_PRO_CATEGORY_ICON_SET`), no rehacerlos.
 - **Temas:** "pizarra" (gris azulado con tinta azul marino, clase `body.papel.pizarra`, sus colores al final de
   `styles.css` en "TEMA PIZARRA"; barra lateral y barra de abajo en `#1A2D42`). Y los de siempre: "asfalto" (oscuro, por defecto, sin clase), "papel" (claro, clase
-  `body.papel`) y "teja" (piedra cálida, negro y naranja teja a lo cartel suizo; por
+  `body.papel`) y "teja" (piedra cálida, negro y granate `#8A2233` desde el 30-10, antes naranja, con texto blanco encima; por
   compatibilidad conserva la clave `acuarela` y las clases `body.papel.acuarela`:
   hereda todo lo de papel y añade su paleta). Variables CSS en `:root`, `body.papel` y
   `body.papel.acuarela`; los colores por elemento de teja están al final de

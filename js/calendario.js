@@ -662,7 +662,6 @@
                 const dateStr =
                     `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const isToday = dateStr === today;
-                const isSelected = dateStr === window._selectedDate;
                 const dayEntries = entriesByDate[dateStr] || [];
 
                 // Un punto por evento (no uno por color distinto) para que
@@ -681,7 +680,7 @@
                 const festivo = festivoDe(dateStr) && !festivosDiscretos() ? festivoDe(dateStr) : null;
                 const festivoPunto = festivosDiscretos() && festivoDe(dateStr) ? `<span class="cal-punto-festivo" title="${escapeHtml(festivoDe(dateStr).nombre)}"></span>` : '';
                 html += `
-                <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''} ${festivo ? 'es-festivo' : ''}" data-cal-date="${dateStr}" onclick="showDayEntries('${dateStr}')" ${festivo ? `title="${escapeHtml(festivo.nombre)}"` : ''}>
+                <div class="cal-month-cell ${isToday ? 'is-today' : ''} ${festivo ? 'es-festivo' : ''}" data-cal-date="${dateStr}" onclick="showDayEntries('${dateStr}')" ${festivo ? `title="${escapeHtml(festivo.nombre)}"` : ''}>
                     <span class="cal-num" style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;color:var(--text-primary)">${d}</span>
                     ${festivo ? `<span class="cal-festivo">${escapeHtml(festivo.nombre)}</span>` : ''}
                     <div style="display:flex;flex-direction:row;flex-wrap:wrap;gap:3px;align-items:center;justify-content:center">${festivoPunto}${barsHtml}${extra}</div>
@@ -790,15 +789,6 @@
         function showDayEntries(date) {
             window._selectedDate = date;
             calSelectedDate = date;
-            // Solo se cambia la casilla marcada: repintar todo el calendario
-            // relanzaba la animación de entrada de la rejilla a la vez que el
-            // modal salía de la casilla, y se notaba como un tirón.
-            const celda = document.querySelector(`.cal-month-cell[data-cal-date="${date}"]`);
-            if (celda) {
-                document.querySelectorAll('.cal-month-cell.is-selected').forEach(c => c.classList.remove('is-selected'));
-                celda.classList.add('is-selected');
-            } else render();
-
             const dateObj = new Date(date + 'T12:00:00');
             const fechaLarga = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '');
             const all = getDayAllEntries(date);
@@ -877,7 +867,7 @@
                     titulo = `cumpleaños de ${escapeHtml(e.title)}${anios === null ? '' : ` (${anios} años)`}`;
                 } else {
                     titulo = escapeHtml(e.title);
-                    meta = [escapeHtml(e.place || ''), e.notes ? linkifyText(e.notes) : ''].filter(Boolean).join(', ');
+                    meta = [escapeHtml(e.place || ''), e.notes ? linkifyText(String(e.notes).split('\n')[0]) : ''].filter(Boolean).join(', ');
                 }
                 return `<div class="dia-fila" data-open-entry="${escapeHtml(e.id)}">
                     <i class="dia-punto" style="background:${escapeHtml(colorPunto(color, e.eventType || e.type))}"></i>

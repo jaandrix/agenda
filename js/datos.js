@@ -935,7 +935,7 @@
 
         function renderSelectorTema() {
             const actual = temaActual();
-            const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#E7E2D9', '#EE4B1F', '#161514'], pizarra: ['#C0C8CA', '#2E4156', '#1A2D42'], oliva: ['#F7F5EE', '#667447', '#8B4F70'], fundador: ['#1a1916', '#d4b06a', '#f1ead8'] };
+            const muestras = { asfalto: ['#302f2c', '#3a3934', '#efede3'], papel: ['#FAF8F5', '#ffffff', '#302f2c'], acuarela: ['#E7E2D9', '#8A2233', '#161514'], pizarra: ['#C0C8CA', '#2E4156', '#1A2D42'], oliva: ['#F7F5EE', '#667447', '#8B4F70'], fundador: ['#1a1916', '#d4b06a', '#f1ead8'] };
             return `<div class="tema-selector">${temasDisponibles().map(t => `
                 <button class="tema-opcion ${t === actual ? 'active' : ''}" data-tema="${t}" onclick="setTheme('${t}')">
                     <span class="tema-muestra">${muestras[t].map(c => `<span style="background:${colorTema(c)}"></span>`).join('')}</span>
