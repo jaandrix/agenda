@@ -238,7 +238,7 @@
             if (d.pendientes.length) partes.push(`${d.pendientes.length} tarea${d.pendientes.length === 1 ? '' : 's'} pendiente${d.pendientes.length === 1 ? '' : 's'}`);
             if (d.entrega) partes.push(`${escapeHtml(d.entrega.titulo)}, ${new Date(d.entrega.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day:'numeric', month:'short' }).replace('.', '')}`);
             const texto = partes.length ? partes.join(', ') + '.' : 'hoy está despejado.';
-            return `<section class="cal-hoy"><b>hoy.</b><span>${texto}</span><span class="cal-hoy-acciones">${partes.length ? `<button onclick="showDayEntries('${d.hoy}')">ver el día.</button>` : ''}</span></section>`;
+            return `<section class="cal-hoy"><b>hoy.</b><span>${texto}</span></section>`;
         }
 
         function renderPanoramaTarjetas() {
