@@ -100,6 +100,12 @@ const html = readFileSync(join(raiz, 'index.html'), 'utf8');
 const versiones = [...html.matchAll(/(?:src|href)="(?:js\/[^"?]+\.js|styles\.css)\?v=([^"'&\s>]+)/g)].map(m => m[1]);
 if (new Set(versiones).size > 1) fallos.push(`valores ?v= distintos en index.html: ${[...new Set(versiones)].join(', ')}`);
 
+// El service worker sirve su copia de cada ?v=: sin subirlo, lo nuevo no llega a quien ya tiene la app (pasó con cuatro commits seguidos).
+const git = (...args) => spawnSync('git', ['-C', raiz, ...args], { encoding: 'utf8' });
+const cambiados = git('diff', '--name-only', 'origin/main', '--', 'js', 'styles.css').stdout.trim();
+const versionSubida = git('show', 'origin/main:index.html').stdout.match(/styles\.css\?v=([^"'&\s>]+)/)?.[1];
+if (cambiados && versionSubida === versiones[0]) fallos.push(`hay cambios en js/ o styles.css sin subir ?v= en index.html (sigue en ${versionSubida})`);
+
 const enlazados = [...html.matchAll(/<script\b[^>]*\bsrc=["'](js\/[^"'?]+\.js)(?:\?[^"']*)?["'][^>]*>/gi)].map(m => m[1].replaceAll('/', '\\'));
 for (const src of enlazados) if (!existsSync(join(raiz, src))) fallos.push(`script enlazado inexistente: ${src.replaceAll('\\', '/')}`);
 const conjuntoEnlazados = new Set(enlazados.map(src => src.toLowerCase()));
