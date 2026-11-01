@@ -226,7 +226,9 @@ Lo que más cupo ahorra no es el explorador sino las conversaciones cortas: una 
 nueva por tema (CLAUDE.md y la memoria ya llevan el contexto) y capturas de pantalla
 a menor resolución.
 
-## Cómo se prueba un cambio (no hay suite de tests)
+## Cómo se prueba un cambio (no hay suite de tests, salvo la del dinero)
+
+**Pruebas de Finanzas (`pruebas/finanzas.mjs`, 01-11):** `node --test pruebas/finanzas.mjs`; las lanza también `comprobar.mjs`. Ejecutan el importador real en Node, sin navegador, contra `pruebas/extractos/`. Esa carpeta se publica en GitHub Pages: solo extractos pasados por `pruebas/anonimizar_extractos.mjs`, nunca los reales. Las marcadas `todo` son errores conocidos: al arreglar uno se quita la marca.
 
 1. Editar los archivos de `js/` y `styles.css` en el repo real.
 2. Copiar los archivos tocados a `C:\Users\jandr\Downloads\bitacora-mirror\`.

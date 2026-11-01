@@ -118,6 +118,9 @@ for (const archivo of archivosJs.filter(a => a.startsWith('bajo-demanda/'))) {
 }
 for (const archivo of archivosJs) if (!archivo.startsWith('bajo-demanda/') && !conjuntoEnlazados.has(`js\\${archivo}`.toLowerCase())) fallos.push(`js/${archivo} no está enlazado en index.html`);
 
+const pruebasDinero = spawnSync(process.execPath, ['--test', join(raiz, 'pruebas', 'finanzas.mjs')], { encoding: 'utf8' });
+if (pruebasDinero.status !== 0) fallos.push(`las pruebas de Finanzas no pasan (node --test pruebas/finanzas.mjs):\n${(pruebasDinero.stdout || pruebasDinero.stderr).trim().slice(-1500)}`);
+
 if (fallos.length) {
     console.error(`Comprobación fallida: ${fallos.length} problema(s).`);
     fallos.forEach(f => console.error(`- ${f}`));

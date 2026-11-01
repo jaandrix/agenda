@@ -1,0 +1,5 @@
+Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
+Card Payment,Current,2023-09-30 18:59:02,2023-10-01 03:29:41,Comercio 27,-70.28,0.00,EUR,COMPLETED,868.02
+Card Payment,Current,2023-10-01 11:33:34,,Comercio 17,-15.16,0.00,EUR,PENDING,
+Card Refund,Current,2023-10-01 12:35:41,,Comercio 28,186.49,0.00,EUR,PENDING,
+Card Payment,Current,2023-10-01 13:34:39,,Comercio 29,-7.49,0.00,EUR,PENDING,
