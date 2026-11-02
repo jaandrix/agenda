@@ -174,6 +174,7 @@
             if (!overlay) return;
             overlay.classList.remove('modal-m-compacta', 'modal-m-detalle', 'modal-m-editor');
             overlay.classList.add('modal-m-' + modo);
+            pintarFranjaModo(modo, overlay.querySelector('.modal-sheet'));
             if (modo !== 'editor' || !mobileStandaloneActive) return;
             overlay.removeAttribute('onclick');
             const hoja = overlay.querySelector('.modal-sheet');
@@ -324,6 +325,21 @@
                 if (meta) meta.content = fondoTemaCapa.meta;
                 fondoTemaCapa = null;
             }
+        }
+        // Un editor ocupa toda la pantalla con el fondo del modal: la franja de la hora sigue ese color, no el del velo
+        // (quedaba una banda de otro tono arriba). Las hojas que dejan ver el fondo vuelven al velado.
+        let editorPorTema = null;
+        function pintarFranjaModo(modo, hoja) {
+            if (!mobileStandaloneActive || !fondoTemaCapa || !veladoPorTema || franjaEstable()) return;
+            let color = veladoPorTema.color;
+            if (modo === 'editor' && hoja) {
+                const tema = document.body.className;
+                if (editorPorTema?.tema !== tema) editorPorTema = { tema, color: getComputedStyle(hoja).backgroundColor };
+                if (!/^rgba?\(0, 0, 0, 0\)$|transparent/.test(editorPorTema.color)) color = editorPorTema.color;
+            }
+            document.documentElement.style.backgroundColor = color;
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.content = color;
         }
         function abrirCapa() {
             pintarFranjaConCapa(true);

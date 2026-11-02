@@ -445,6 +445,13 @@
             return saldos;
         }
 
+        // El orden de la lista y el saldo tras cada movimiento viven con los saldos del pintado (se vacían en render() y
+        // al cambiar datos): para enseñar cinco filas se ordenaba y recorría el historial entero dos veces.
+        function financeProOrdenados() {
+            financeProSaldos();
+            return financeSaldosCache.recientes || (financeSaldosCache.recientes = [...financePro.transactions].sort((a, b) => financeProCompararMov(b, a)));
+        }
+
         function financeProAccountBalance(key) {
             const saldos = financeProSaldos();
             return key in saldos ? saldos[key] : 0;
@@ -550,64 +557,6 @@
         // Líneas guía horizontales de fondo con su valor a la izquierda —
         // igual que el eje Y discreto de Stoic, en vez de solo la línea de
         // referencia en 0€.
-        function financeChartGridLines(minVal, maxVal, padX, padT, innerW, innerH, W, count) {
-            const lines = [];
-            for (let i = 0; i <= count; i++) {
-                const v = minVal + (maxVal - minVal) * (i / count);
-                const yPos = padT + innerH - ((v - minVal) / (maxVal - minVal || 1)) * innerH;
-                lines.push(`<line x1="${padX}" y1="${yPos.toFixed(1)}" x2="${W - padX}" y2="${yPos.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`);
-                lines.push(`<text x="2" y="${(yPos - 3).toFixed(1)}" font-size="8" fill="var(--text-muted)">${financeMoney(v).replace(',00', '')}</text>`);
-            }
-            return lines.join('');
-        }
-
-        function renderFinanceProLineChart(dataPoints, color, idSuffix, compact) {
-            if (dataPoints.length < 2) {
-                return `<div class="finance-empty-state" style="padding:${compact ? '10px 0' : '30px 0'}">Sin histórico suficiente todavía: necesitas movimientos en al menos 2 meses distintos.</div>`;
-            }
-            const W = compact ? 320 : 900, H = compact ? 90 : 200, padX = compact ? 8 : 28, padT = 8, padB = compact ? 16 : 22;
-            const innerW = W - padX * 2, innerH = H - padT - padB;
-            const values = dataPoints.map(d => d.balance);
-            const minVal = Math.min(0, ...values);
-            const maxVal = Math.max(1, ...values) * 1.08;
-            const range = (maxVal - minVal) || 1;
-            const x = i => dataPoints.length === 1 ? padX + innerW / 2 : padX + innerW * i / (dataPoints.length - 1);
-            const y = v => padT + innerH - ((v - minVal) / range) * innerH;
-            const pts = dataPoints.map((d, i) => [x(i), y(d.balance)]);
-            const path = financeSmoothPath(pts);
-            const area = `${path} L${x(dataPoints.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L${x(0).toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
-            const step = Math.max(1, Math.ceil(dataPoints.length / (compact ? 3 : 6)));
-            const gradId = 'fpGrad_' + idSuffix;
-            const labels = compact ? '' : dataPoints.map((d, i) => (i % step === 0 || i === dataPoints.length - 1)
-                ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${escapeHtml(financeMonthLabel(d.month).split(' de ')[0])}</text>` : '').join('');
-            const gridLines = compact ? '' : financeChartGridLines(minVal, maxVal, padX, padT, innerW, innerH, W, 3);
-            // Puntos: uno visible pequeño + uno invisible más grande encima
-            // para ampliar el área donde el hover muestra el valor exacto,
-            // sin que el punto dibujado se vea desproporcionado.
-            const points = compact ? '' : dataPoints.map((d, i) => {
-                const tip = escapeHtml(`${financeMonthLabel(d.month)}: ${financeMoney(d.balance)}`).replace(/"/g, '&quot;');
-                return `<circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="10" fill="transparent" onmousemove="financeProChartTooltipShow(event,'${idSuffix}-${i}',&quot;${tip}&quot;)" onmouseleave="financeProChartTooltipHide('${idSuffix}-${i}')" onclick="financeProChartTooltipShow(event,'${idSuffix}-${i}',&quot;${tip}&quot;)"/>
-                <circle cx="${x(i).toFixed(1)}" cy="${y(d.balance).toFixed(1)}" r="3.5" fill="${color}" style="pointer-events:none"/>`;
-            }).join('');
-            return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:${compact ? 140 : 280}px;display:block">
-                <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" style="stop-color:${colorTema(color)};stop-opacity:0.25"/>
-                    <stop offset="100%" style="stop-color:${colorTema(color)};stop-opacity:0"/>
-                </linearGradient></defs>
-                ${gridLines}
-                <path d="${area}" fill="url(#${gradId})" stroke="none"/>
-                <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                ${points}
-                ${labels}
-            </svg>`;
-        }
-
-        // ============================================================
-        //  MICRO-ANIMACIONES: cifra que cuenta hacia arriba + gráfica de
-        //  líneas que se dibuja al aparecer, inspirado en el vídeo de
-        //  referencia de Pinterest (Lift, app de gimnasio). Genéricas a
-        //  propósito para poder reutilizarlas en cualquier cifra/gráfica.
-        // ============================================================
         function bitacoraAnimateNumber(el, endValue, formatFn, duration) {
             if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 if (el) el.textContent = formatFn(endValue);
@@ -709,8 +658,13 @@
             requestAnimationFrame(animateFinanceProChartPanel);
         }
 
+        // Solo la primera vez al entrar en Finanzas: después de guardar o cerrar un modal la cifra volvía a contar desde
+        // cero y la página entraba otra vez desde abajo. Se pone a false al llegar desde otro apartado.
+        let financeYaAnimado = false;
         function animateFinanceProChartPanel() {
             financeDibujarGrafica();
+            if (financeYaAnimado) return;
+            financeYaAnimado = true;
             document.querySelectorAll('.fin-graf-cifra').forEach(el => { if (el.offsetWidth) bitacoraAnimateNumber(el, Number(el.dataset.value || 0), financeMoney); });
             document.querySelectorAll('.fin-graf').forEach(el => { if (el.offsetWidth) bitacoraAnimateChart(el); });
         }
@@ -992,32 +946,24 @@
             `);
         }
 
-        const FINANCE_PRO_ACCOUNT_META = {
-            efectivo: { icon: FINANCE_ICON_CASH, badge: 'fin-teal', color: '#0d9488' },
-            bancos: { icon: FINANCE_ICON_CARD, badge: 'fin-blue', color: '#3b82f6' },
-            online: { icon: FINANCE_ICON_GLOBE, badge: 'fin-purple', color: '#8b5cf6' }
-        };
+        const FINANCE_PRO_ACCOUNT_ICONO = { efectivo: FINANCE_ICON_CASH, bancos: FINANCE_ICON_CARD, online: FINANCE_ICON_GLOBE };
 
         // ============================================================
         //  FINANZAS PRO — panel principal
         // ============================================================
-        function renderFinanceProAccountCard(key) {
-            const meta = FINANCE_PRO_ACCOUNT_META[key];
-            const acc = financePro.accounts[key];
-            const balance = financeProAccountBalance(key);
-            const series = financeProMonthlyBalances(key);
-            return `
-            <div class="finance-panel finance-pro-account-card">
-                <div class="finance-panel-head">
-                    ${financePanelHeadIcon(meta.icon, meta.badge, 'Cuenta', acc.name)}
-                    <div style="display:flex;gap:6px">
-                        <button class="finance-icon-btn" title="Modificar saldo de ${escapeHtml(acc.name)}" onclick="openFinanceProBalanceAdjustModal('${key}')">${FINANCE_ICON_SCALE}</button>
-                        <button class="finance-icon-btn" title="Movimiento en ${escapeHtml(acc.name)}" onclick="openFinanceProTransactionModal(null,'${key}')">+</button>
-                    </div>
-                </div>
-                <div class="finance-networth-value finance-networth-value-compact" style="margin:4px 0 10px">${financeMoney(balance)}</div>
-                <div class="finance-pro-mini-chart">${renderFinanceProLineChart(series, meta.color, key, true)}</div>
-            </div>`;
+        // Las cuentas en filas: antes eran tres tarjetas con su minigráfica en verde azulado, azul y morado fijos, que
+        // repetían lo que ya cuenta la gráfica de arriba y no salían del tema.
+        function renderFinanceProCuentasFilas() {
+            return `<div class="finance-panel fin-cuentas">${FINANCE_PRO_ACCOUNT_KEYS.map(k => {
+                const nombre = financePro.accounts[k]?.name || k;
+                return `<div class="fin-cuenta">
+                    <span class="fin-cuenta-icono" aria-hidden="true">${FINANCE_PRO_ACCOUNT_ICONO[k] || ''}</span>
+                    <span class="fin-cuenta-nombre">${escapeHtml(nombre.toLowerCase())}.</span>
+                    <span class="fin-cuenta-saldo">${financeMoney(financeProAccountBalance(k))}</span>
+                    <button class="vista-icono-btn" title="ajustar el saldo de ${escapeHtml(nombre)}" aria-label="ajustar el saldo de ${escapeHtml(nombre)}" onclick="openFinanceProBalanceAdjustModal('${k}')"><i class='ico ico-lapiz' aria-hidden=true></i></button>
+                    <button class="vista-icono-btn" title="movimiento en ${escapeHtml(nombre)}" aria-label="movimiento en ${escapeHtml(nombre)}" onclick="openFinanceProTransactionModal(null,'${k}')"><i class='ico ico-mas' aria-hidden=true></i></button>
+                </div>`;
+            }).join('')}</div>`;
         }
 
         // Modificar saldo: el usuario pone el saldo real de la cuenta y se
@@ -1916,7 +1862,6 @@
         function cambiarPestanaFinanzas(tab) {
             if (tab === financeTab) return;
             financeTab = tab;
-            try { localStorage.setItem('bitacora-fin-pestana', tab); } catch (e) {}
             const barra = document.querySelector('.finance-dashboard .fin-pestanas');
             const antes = barra ? barra.getBoundingClientRect().top : null;
             const cuerpo = document.getElementById('finance-tab-cuerpo');
@@ -1940,11 +1885,33 @@
             return `
                 ${renderFinanceProChartPanel()}
                 <div class="finance-section-head" style="margin-top:20px"><div class="finance-kicker">cuentas.</div></div>
-                <div class="finance-pro-accounts-grid">${FINANCE_PRO_ACCOUNT_KEYS.map(k => renderFinanceProAccountCard(k)).join('')}</div>
+                ${renderFinanceProCuentasFilas()}
                 ${renderFinanceProReviewBanner()}
                 ${renderAvisoPresupuestos()}
                 ${renderSuscripcionesDetectadas()}
                 ${renderFinanceNetworthCard()}`;
+        }
+
+        // Lo que se usa de vez en cuando, en un menú: seis botones iguales delante de las pestañas hacían que Finanzas
+        // pareciera un panel de administración. Importar está a la vista en movimientos.
+        function finAccionesMenu(boton) {
+            abrirMenuAcciones(boton, [
+                ['cuentas y saldos iniciales.', openFinanceProAccountsSettings],
+                ['categorías.', openFinanceProCategoriesModal],
+                ['reglas de importación.', openFinanceProRulesModal],
+                ['corregir registros.', openFinanceHistoryCorrectionModal],
+                ['exportar para tu ia.', exportFinanceMarkdown],
+                ['deshacer importación.', openDeshacerImportacion],
+            ]);
+        }
+
+        function finMovimientosMenu(boton) {
+            abrirMenuAcciones(boton, [
+                ['registro rápido.', openFinanceProQuickCaptureModal],
+                ['buscar duplicados.', openFinanceProDuplicatesModal],
+                ['gastos de un viaje.', openFinanceProViajeModal],
+                ['¿me lo puedo permitir?', openPuedoPermitirme],
+            ]);
         }
 
         function renderFinanceProDashboard() {
@@ -1952,16 +1919,9 @@
             if (actualizarHistorialPresupuestos()) setTimeout(() => saveData().catch(e => console.error(e)), 0);
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
             return `
-            <div class="finance-dashboard ${blurFinances ? 'blurred' : ''}">
+            <div class="finance-dashboard ${blurFinances ? 'blurred' : ''} ${financeYaAnimado ? '' : 'entrando'}">
                 <div class="finance-toolbar-row">
-                    <div class="finance-pro-settings-links">
-                        <button onclick="openFinanceProAccountsSettings()"><i class='ico ico-lapiz' aria-hidden=true></i> nombres y saldo inicial.</button>
-                        <button onclick="openFinanceProCategoriesModal()">categorías.</button>
-                        <button onclick="openFinanceProImportModal()">${FINANCE_ICON_UPLOAD} importar.</button>
-                        <button onclick="openDeshacerImportacion()"><i class='ico ico-repetir' aria-hidden=true></i> deshacer importación.</button>
-                        <button onclick="exportFinanceMarkdown()"><i class='ico ico-bajar' aria-hidden=true></i> exportar.</button>
-                        <button onclick="openFinanceProRulesModal()">${FINANCE_ICON_REPEAT} reglas.</button>
-                    </div>
+                    <button class="vista-btn" onclick="finAccionesMenu(this)"><i class='ico ico-puntos' aria-hidden=true></i> acciones.</button>
                     ${blurToggleBtn}
                 </div>
                 <div class="vista-seg fin-pestanas" role="tablist" aria-label="Finanzas">
@@ -2165,18 +2125,16 @@
         function renderFinanceProTxSection() {
             return `<div id="finance-pro-tx-section">
                 <div class="finance-section-head" style="margin-top:24px">
-                    <div class="finance-kicker">Movimientos</div>
+                    <div class="finance-kicker">movimientos.</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="finance-oneoff-btn" onclick="openFinanceProImportModal()">importar extracto.</button>
                         <button class="finance-oneoff-btn" onclick="openFinanceProProgramadosModal()">programar gastos.${financePro.programados?.length ? ` <span class="finance-programados-count">${financePro.programados.length}</span>` : ''}</button>
-                        <button class="finance-oneoff-btn" onclick="openFinanceProDuplicatesModal()">buscar duplicados.</button>
-                        <button class="finance-oneoff-btn" onclick="openFinanceProViajeModal()">gastos de un viaje.</button>
-                        <button class="finance-oneoff-btn" onclick="openFinanceProQuickCaptureModal()">registro rápido.</button>
-                        <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">+ Movimiento</button>
-                        <button class="finance-oneoff-btn" onclick="openPuedoPermitirme()">¿me lo puedo permitir?</button>
+                        <button class="finance-oneoff-btn finance-chart-config-btn" onclick="openFinanceProTransactionModal()">nuevo movimiento.</button>
+                        <button class="vista-icono-btn" onclick="finMovimientosMenu(this)" aria-label="más acciones" title="más acciones"><i class='ico ico-puntos' aria-hidden=true></i></button>
                     </div>
                 </div>
                 <div id="finance-pro-tx-list">${renderFinanceProTransactionList(false)}</div>
-                <button class="finance-oneoff-btn finance-pro-tx-expand-btn" onclick="openFinanceProAllTxModal()">▾ Ver todos los movimientos</button>
+                <button class="finance-oneoff-btn finance-pro-tx-expand-btn" onclick="openFinanceProAllTxModal()">ver todos los movimientos.</button>
             </div>`;
         }
 
@@ -2312,7 +2270,7 @@
         }
 
         function renderFinanceProTransactionList(full) {
-            let txs = [...financePro.transactions];
+            let txs = financeProOrdenados();
             // Vista plegada del panel principal: sin filtros, se recortan
             // directamente los 5 movimientos más recientes.
             if (full) {
@@ -2336,7 +2294,6 @@
                 }
             }
             if (!txs.length) return `<div class="finance-empty-state">${financePro.transactions.length ? 'Ningún movimiento coincide con este filtro.' : 'Todavía no hay movimientos. Añade uno o importa un extracto bancario.'}</div>`;
-            txs.sort((a, b) => financeProCompararMov(b, a));
             if (!full) txs = txs.slice(0, 5);
             const saldos = financeProSaldosTrasMovimiento();
             const groups = {};
@@ -2383,6 +2340,8 @@
         // saldo de cada fila es coherente con la de debajo aunque haya
         // varios movimientos el mismo día.
         function financeProSaldosTrasMovimiento() {
+            financeProSaldos();
+            if (financeSaldosCache.trasMov) return financeSaldosCache.trasMov;
             const saldo = {};
             FINANCE_PRO_ACCOUNT_KEYS.forEach(k => { saldo[k] = Number(financePro.accounts[k]?.balance0 || 0); });
             const porId = {};
@@ -2399,7 +2358,7 @@
                         porId[t.id] = { [t.account]: saldo[t.account] };
                     }
                 });
-            return porId;
+            return (financeSaldosCache.trasMov = porId);
         }
 
         function renderFinanceProTxSaldo(t, saldos) {
@@ -2416,10 +2375,10 @@
 
         function renderFinanceProTxRow(t, saldos) {
             if (t.type === 'transfer') {
-                return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
+                return `<div class="finance-pro-tx-row" role="button" tabindex="0" onclick="openFinanceProTransactionModal('${t.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
                     <div class="finance-metric-icon fin-slate finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>
                     <div class="finance-pro-tx-main">
-                        <div class="finance-pro-tx-title">${escapeHtml(financePro.accounts[t.account]?.name || t.account)} → ${escapeHtml(financePro.accounts[t.transferTo]?.name || t.transferTo)}</div>
+                        <div class="finance-pro-tx-title">de ${escapeHtml(financePro.accounts[t.account]?.name || t.account)} a ${escapeHtml(financePro.accounts[t.transferTo]?.name || t.transferTo)}</div>
                         <div class="finance-pro-tx-sub">${t.note ? escapeHtml(t.note) + ', ' : ''}${financeDateLabelShort(t.date)}${t.pendiente ? ', pendiente.' : ''}</div>
                     </div>
                     <div class="finance-pro-tx-amount">${financeMoney(t.amount)}${renderFinanceProTxSaldo(t, saldos)}</div>
@@ -2427,7 +2386,7 @@
             }
             const neutro = financeProNeutro(t);
             const cat = neutro ? null : financeProCategoryById(t.category);
-            return `<div class="finance-pro-tx-row" onclick="openFinanceProTransactionModal('${t.id}')">
+            return `<div class="finance-pro-tx-row" role="button" tabindex="0" onclick="openFinanceProTransactionModal('${t.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
                 ${neutro ? `<div class="finance-metric-icon fin-slate finance-pro-tx-icon">${FINANCE_ICON_SWAP}</div>` : financeProCategoryBadge(cat)}
                 <div class="finance-pro-tx-main">
                     <div class="finance-pro-tx-title">${neutro ? financeProEtiquetaNeutro(t) : escapeHtml(cat ? cat.name : 'Sin categoría')}${!neutro && cat && t.categoriaAuto ? '<span class="finance-cat-auto" title="Puesta por bitácora a partir de movimientos parecidos. Ábrelo y guarda para confirmarla.">auto.</span>' : ''}</div>
@@ -2453,7 +2412,7 @@
                 ? { ...existing, category: existing.category || '', transferTo: existing.transferTo || '', note: existing.note || '' }
                 : { type: 'expense', account: presetAccount || FINANCE_PRO_ACCOUNT_KEYS[0], date: todayISO(), amount: '', category: '', note: '', transferTo: '' };
             showModal(`
-                <div class="modal-title">${existing ? 'Editar movimiento' : '+ Movimiento'}</div>
+                <div class="modal-title">${existing ? 'editar movimiento.' : 'nuevo movimiento.'}</div>
                 <div id="finance-pro-tx-modal-body">${renderFinanceProTxModalBody()}</div>
             `);
             modoCapa('editor');
@@ -2468,31 +2427,31 @@
                     <button class="${d.type === 'income' ? 'active' : ''}" onclick="financeProDraftSet('type','income')">ingreso.</button>
                     <button class="${d.type === 'transfer' ? 'active' : ''}" onclick="financeProDraftSet('type','transfer')">transferencia.</button>
                 </div>
-                <div class="modal-label">Fecha</div>
+                <div class="modal-label">fecha</div>
                 <input class="modal-input" type="date" value="${d.date}" onchange="financeProDraftSet('date',this.value)">
-                <div class="modal-label">Importe (€)</div>
+                <div class="modal-label">importe en euros</div>
                 <input class="modal-input" type="text" inputmode="decimal" autocomplete="off" value="${escapeHtml(String(d.amount ?? ''))}" oninput="window._financeProTxDraft.amount=this.value" placeholder="0,00">
-                <div class="modal-label">${d.type === 'transfer' ? 'Cuenta origen' : 'Cuenta'}</div>
+                <div class="modal-label">${d.type === 'transfer' ? 'de qué cuenta' : 'cuenta'}</div>
                 <select class="modal-input" onchange="financeProDraftSet('account',this.value)">
                     ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<option value="${k}" ${d.account === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
                 </select>
                 ${d.type === 'transfer' ? `
-                <div class="modal-label">Cuenta destino</div>
+                <div class="modal-label">a qué cuenta</div>
                 <select class="modal-input" onchange="financeProDraftSet('transferTo',this.value)">
-                    <option value="">Elige una cuenta</option>
+                    <option value="">elige una cuenta.</option>
                     ${FINANCE_PRO_ACCOUNT_KEYS.filter(k => k !== d.account).map(k => `<option value="${k}" ${d.transferTo === k ? 'selected' : ''}>${escapeHtml(financePro.accounts[k].name)}</option>`).join('')}
                 </select>` : `
                 <div id="finance-tx-categoria" ${d.ahorro || financeProEsAjuste(d) ? 'hidden' : ''}>
-                <div class="modal-label">Categoría</div>
+                <div class="modal-label">categoría</div>
                 <select class="modal-input" onchange="financeProDraftSet('category',this.value)">
-                    <option value="">Sin categoría</option>
+                    <option value="">sin categoría.</option>
                     ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
                 ${d.categoriaAuto && d.category ? '<div class="finance-modal-note" style="margin:-4px 0 8px">Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.</div>' : ''}
                 </div>`}
                 ${renderFinanceProMarcasTx(d)}
-                <div class="modal-label">Nota (opcional)</div>
-                <input class="modal-input" value="${escapeHtml(d.note || '')}" oninput="window._financeProTxDraft.note=this.value" placeholder="Ej. Cena con amigos">
+                <div class="modal-label">nota, si quieres</div>
+                <input class="modal-input" value="${escapeHtml(d.note || '')}" oninput="window._financeProTxDraft.note=this.value" placeholder="Cena con amigos">
                 <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction()">guardar.</button>
                 ${window._financeProTxEditId ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="deleteFinanceProTransaction('${window._financeProTxEditId}')">eliminar movimiento.</button>` : ''}
             `;

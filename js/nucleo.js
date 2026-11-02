@@ -1244,7 +1244,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             });
             // La gráfica se dibuja sobre lo pintado: solo si la página ha cambiado. Antes se programaba en cada repintado,
             // aunque no cambiara nada, y volvía a medirla y animarla.
-            if (paginaNueva && view === 'finances') requestAnimationFrame(animateFinanceProChartPanel);
+            if (paginaNueva && view === 'finances') { financeYaAnimado = false; requestAnimationFrame(animateFinanceProChartPanel); }
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
             if (scrollMenu) { const cuerpo = shell.querySelector('.m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = scrollMenu; }
             if (scrollPagina) shell.scrollTop = scrollPagina;
@@ -1904,99 +1904,66 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 <div class="rutinas rutinas-en-movil">${renderRutinasCuerpo(true)}</div>`;
         }
 
-        // Lo que el móvil añade a Finanzas: el ritmo del mes frente al anterior,
-        // en qué se va el dinero, los próximos cargos y lo que queda por ajustar.
-        function renderMobileFinanzasMes() {
+        // Las piezas del mes en el móvil: cada pestaña pide solo las suyas. Antes se calculaban todas (y una lista por
+        // categorías que ya no se enseñaba) en las tres pestañas: con 5.000 movimientos, unos 80 ms por pintado.
+        function mobileFinRitmo() {
             const ahora = new Date();
             const mes = financeMonthKey();
             const pasado = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
             const mesPasado = `${pasado.getFullYear()}-${String(pasado.getMonth() + 1).padStart(2, '0')}`;
             const dia = ahora.getDate();
             const diasMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0).getDate();
-            const gasto = (clave, hastaDia) => financePro.transactions.reduce((t, x) => x.type === 'expense' && !financeProNeutro(x) && !x.viaje && x.date.slice(0, 7) === clave && (!hastaDia || Number(x.date.slice(8)) <= hastaDia) ? t + (Number(x.amount) || 0) : t, 0);
-            const ahoraGasto = gasto(mes);
-            const antes = gasto(mesPasado, dia);
+            let ahoraGasto = 0, antes = 0;
+            financePro.transactions.forEach(x => {
+                if (x.type !== 'expense' || financeProNeutro(x) || x.viaje) return;
+                const clave = x.date.slice(0, 7);
+                if (clave === mes) ahoraGasto += Number(x.amount) || 0;
+                else if (clave === mesPasado && Number(x.date.slice(8)) <= dia) antes += Number(x.amount) || 0;
+            });
+            if (!ahoraGasto && !antes) return '';
             const previsto = dia >= 5 ? ahoraGasto / dia * diasMes : null;
             const dif = ahoraGasto - antes;
-            const ritmo = ahoraGasto || antes ? `
+            return `
                 <div class="m-bloque-cab"><div class="m-etiqueta">ritmo.</div></div>
                 <div class="m-finanzas-ritmo m-superficie">
                     <div><b>${financeMoney(ahoraGasto)}</b> gastados hasta hoy${antes ? `, <span class="${dif > 0 ? 'negativa' : 'positiva'}">${financeMoney(Math.abs(dif))} ${dif > 0 ? 'más' : 'menos'}</span> que a día ${dia} de ${MOBILE_MESES[pasado.getMonth()]}` : ''}.</div>
                     ${previsto ? `<small>A este ritmo, unos ${financeMoney(Math.round(previsto))} a final de mes.</small>` : ''}
-                </div>` : '';
-            const conViajes = mobileGastoConViajes();
-            const porCat = {};
-            let enViajes = 0;
-            financePro.transactions.forEach(x => {
-                if (x.type !== 'expense' || financeProNeutro(x) || x.date.slice(0, 7) !== mes) return;
-                if (x.viaje && !conViajes) { enViajes += Number(x.amount) || 0; return; }
-                porCat[x.category || ''] = (porCat[x.category || ''] || 0) + (Number(x.amount) || 0);
-            });
-            const orden = Object.entries(porCat).filter(([, t]) => t > 0).sort((a, b) => b[1] - a[1]);
-            const totalCat = orden.reduce((t, [, v]) => t + v, 0);
-            // Cinco categorías y el resto juntas; los tonos salen de la tinta del tema, sin colores por categoría.
-            const top = orden.slice(0, 5);
-            const resto = orden.slice(5).reduce((t, [, v]) => t + v, 0);
-            const filas = top.map(([id, total], k) => ({ id, nombre: (financeProCategoryById(id)?.name || 'sin categoría').toLowerCase(), total, tono: k }));
-            // Presupuesto consumido por categoría (sin viajes ni ahorro, como los presupuestos), con una marca de
-            // dónde «tocaría» ir a día de hoy si se gastara al mismo ritmo todo el mes.
-            const limites = typeof asistLimitesDelMes === 'function' ? asistLimitesDelMes(mes) : {};
-            const hoyPct = Math.round(dia / diasMes * 100);
-            // Lo devuelto amplía el límite del mes (un reembolso en coleccionables), igual que en el escritorio.
-            const barraPresu = f => {
-                if (!limites[f.id]?.limite) return '';
-                const { gastado: g, limite: l } = financeProPresupuestoConDevoluciones(f.id, mes, limites[f.id].limite);
-                if (!l) return '';
-                const p = g / l;
-                return `<div class="m-encqsv-presu ${p > 1 ? 'pasado' : p * 100 > hoyPct + 10 ? 'rapido' : ''}"><i class="m-encqsv-presu-barra"><i style="width:${Math.min(100, Math.round(p * 100))}%"></i><b style="left:${hoyPct}%" aria-hidden="true"></b></i><span>${p > 1 ? `+${financeMoney(g - l)} sobre ${financeMoney(l)}` : `${Math.round(p * 100)} % de ${financeMoney(l)}`}</span></div>`;
-            };
-            if (resto > 0) filas.push({ nombre: `otras ${orden.length - 5}`, total: resto, tono: 5 });
-            const pct = v => totalCat ? Math.round(v / totalCat * 100) : 0;
-            const hayViajes = financePro.transactions.some(x => x.type === 'expense' && x.viaje && x.date.slice(0, 7) === mes);
-            const categorias = filas.length || enViajes ? `
-                <div class="m-bloque-cab"><div class="m-etiqueta">en qué se va.</div>${hayViajes ? `<button class="m-mini" onclick="mobileAlternarGastoViajes()" aria-pressed="${conViajes}">${conViajes ? 'con viajes.' : 'sin viajes.'}</button>` : ''}</div>
-                <div class="m-encqsv">
-                    ${filas.length ? `<div class="m-encqsv-total"><b>${financeMoney(totalCat)}</b><span>${conViajes || !enViajes ? 'este mes.' : `este mes, sin ${financeMoney(enViajes)} de viajes.`}</span></div>
-                    <div class="m-encqsv-filas">${filas.map(f => `
-                        <div class="m-encqsv-fila"><span class="m-encqsv-nombre">${escapeHtml(f.nombre)}.</span><span class="m-encqsv-pct">${pct(f.total)} %</span><span class="m-fila-cifra">${financeMoney(f.total)}</span>${f.id !== undefined ? barraPresu(f) : ''}</div>`).join('')}
-                    </div>` : `<div class="m-vacio m-vacio-peque">este mes solo hay gastos de viaje.</div>`}
-                </div>` : '';
+                </div>`;
+        }
+
+        function mobileFinCargos(max, conTotal) {
+            const ahora = new Date();
+            const dia = ahora.getDate();
             const cargos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0).map(e => {
                 const diaCobro = Number(e.renewalDay) || 1;
                 const fecha = new Date(ahora.getFullYear(), ahora.getMonth() + (diaCobro < dia ? 1 : 0), 1);
                 fecha.setDate(Math.min(diaCobro, new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate()));
                 return { e, fecha, faltan: Math.round((fecha - new Date(ahora.getFullYear(), ahora.getMonth(), dia)) / 864e5) };
             }).filter(x => x.faltan <= 14).sort((a, b) => a.faltan - b.faltan);
-            const filaCargo = x => `<div class="m-fila"><span class="m-fila-hora">${x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : `${x.fecha.getDate()} ${MOBILE_MESES[x.fecha.getMonth()].slice(0, 3)}`}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(x.e.title || '')}</div></div><span class="m-fila-cifra">${financeMoney(Number(x.e.amount))}</span></div>`;
-            const proximos = cargos.length ? `
-                <div class="m-bloque-cab"><div class="m-etiqueta">próximos cargos.</div><span class="m-fila-meta">${financeMoney(cargos.reduce((t, x) => t + Number(x.e.amount), 0))} en 14 días.</span></div>
-                <div class="m-lista">${cargos.slice(0, 5).map(filaCargo).join('')}</div>` : '';
-            // En el resumen, solo los tres primeros; la lista entera está en planificación.
-            const proximos3 = cargos.length ? `
-                <div class="m-bloque-cab"><div class="m-etiqueta">próximos cargos.</div></div>
-                <div class="m-lista">${cargos.slice(0, 3).map(filaCargo).join('')}</div>` : '';
-            const porAjustar = financeProPendingReviewCount();
-            const aviso = porAjustar ? `<button class="m-finanzas-aviso" onclick="openFinanceProReviewModal()"><b>${porAjustar} ${porAjustar === 1 ? 'movimiento' : 'movimientos'} por ajustar.</b><span>ponles categoría y revisa la cuenta.</span></button>` : '';
-            const permitir = '<button class="m-enlace asist-permitir-enlace" onclick="openPuedoPermitirme()">¿me lo puedo permitir?</button>';
-            return { avisos: aviso + renderAvisoPresupuestos() + renderSuscripcionesDetectadas(), ritmo, categorias, proximos, proximos3, permitir };
+            if (!cargos.length) return '';
+            return `
+                <div class="m-bloque-cab"><div class="m-etiqueta">próximos cargos.</div>${conTotal ? `<span class="m-fila-meta">${financeMoney(cargos.reduce((t, x) => t + Number(x.e.amount), 0))} en 14 días.</span>` : ''}</div>
+                <div class="m-lista">${cargos.slice(0, max).map(x => `<div class="m-fila"><span class="m-fila-hora">${x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : `${x.fecha.getDate()} ${MOBILE_MESES[x.fecha.getMonth()].slice(0, 3)}`}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(x.e.title || '')}</div></div><span class="m-fila-cifra">${financeMoney(Number(x.e.amount))}</span></div>`).join('')}</div>`;
         }
 
-        function mobileGastoConViajes() {
-            try { return localStorage.getItem('bitacora-encqsv-viajes') === '1'; } catch (e) { return false; }
-        }
-        function mobileAlternarGastoViajes() {
-            try { localStorage.setItem('bitacora-encqsv-viajes', mobileGastoConViajes() ? '0' : '1'); } catch (e) {}
-            render();
+        function mobileFinPorAjustar() {
+            const n = financeProPendingReviewCount();
+            return n ? `<button class="m-finanzas-aviso" onclick="openFinanceProReviewModal()"><b>${n} ${n === 1 ? 'movimiento' : 'movimientos'} por ajustar.</b><span>ponles categoría y revisa la cuenta.</span></button>` : '';
         }
 
         // Las mismas tres pestañas que en el ordenador, y solo se pinta la que se ve: cada botón vive donde se usa
         // (apuntar en el resumen, importar en movimientos, suscripciones en planificación) y la página ya no es interminable.
+        let mobileFinMovN = 30;
         function mobileFinPestana(tab) {
             if (tab === financeTab) return;
             financeTab = tab;
-            try { localStorage.setItem('bitacora-fin-pestana', tab); } catch (e) {}
+            mobileFinMovN = 30;
             render();
             document.getElementById('mobile-shell')?.scrollTo({ top: 0 });
+        }
+        function mobileFinMasMovimientos() {
+            mobileFinMovN += 30;
+            render();
         }
 
         function mobileFinMenu(boton) {
@@ -2014,7 +1981,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const cat = financeProNeutro(t) ? { name: financeProEtiquetaNeutro(t).replace(/\.$/, '') } : financeProCategoryById(t.category);
             const d = new Date((t.date || todayISO()) + 'T12:00:00');
             const signo = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '<i class="ico ico-cambio" aria-hidden="true"></i>';
-            return `<div class="m-fila m-fila-toque ${t.type === 'income' ? 'positiva' : t.type === 'expense' ? 'negativa' : ''}" role="button" tabindex="0" onclick="openFinanceProTransactionModal('${jsAttr(t.id)}')">
+            return `<div class="m-fila m-fila-toque ${t.type === 'income' ? 'positiva' : t.type === 'expense' ? 'negativa' : ''}" role="button" tabindex="0" onclick="openFinanceProTransactionModal('${jsAttr(t.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
                         <span class="m-fila-hora">${d.getDate()} ${MOBILE_MESES[d.getMonth()].slice(0, 3)}</span>
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.note || t.bankNote || cat?.name || 'movimiento')}${t.pendiente ? ' <small>pendiente.</small>' : ''}</div><div class="m-fila-meta">${escapeHtml([cat?.name, financePro.accounts[t.account]?.name].filter(Boolean).join(', ').toLowerCase())}</div></div>
                         <span class="m-fila-cifra">${signo}${financeMoney(t.amount)}</span>
@@ -2026,24 +1993,23 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const tab = ['resumen', 'movimientos', 'planificacion'].includes(financeTab) ? financeTab : 'resumen';
             const pestanas = `<div class="m-pestanas m-pestanas-fin" role="tablist">${[['resumen', 'resumen.'], ['movimientos', 'movimientos.'], ['planificacion', 'planificación.']].map(([k, t]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'activa' : ''}" onclick="mobileFinPestana('${k}')">${t}</button>`).join('')}</div>`;
             const cab = `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}${pestanas}`;
-            const ordenados = () => [...financePro.transactions].sort((a, b) => financeProCompararMov(b, a));
-            const mesB = renderMobileFinanzasMes();
 
             if (tab === 'movimientos') {
-                const lista = ordenados().slice(0, 60);
+                const todos = financeProOrdenados();
+                const lista = todos.slice(0, mobileFinMovN);
                 const meses = [];
                 lista.forEach(t => { const m = (t.date || '').slice(0, 7); if (!meses.length || meses[meses.length - 1].m !== m) meses.push({ m, l: [] }); meses[meses.length - 1].l.push(t); });
-                const porAjustar = financeProPendingReviewCount();
                 return `${cab}
                 <div class="m-acciones">
                     <button class="m-boton" onclick="pegarExtractoBancario()">importar extracto.</button>
                     <button class="m-boton m-boton-acento" onclick="openFinanceProTransactionModal()">+ movimiento.</button>
                 </div>
-                ${porAjustar ? `<button class="m-finanzas-aviso" onclick="openFinanceProReviewModal()"><b>${porAjustar} ${porAjustar === 1 ? 'movimiento' : 'movimientos'} por ajustar.</b><span>ponles categoría y revisa la cuenta.</span></button>` : ''}
+                ${todos.length ? `<button class="m-fin-buscar" onclick="openFinanceProAllTxModal()"><i class="ico ico-buscar" aria-hidden="true"></i>buscar un movimiento.</button>` : ''}
+                ${mobileFinPorAjustar()}
                 ${lista.length ? meses.map(g => `<div class="m-bloque-cab"><div class="m-etiqueta">${g.m ? `${MOBILE_MESES[Number(g.m.slice(5)) - 1]}${g.m.slice(0, 4) !== String(ahora.getFullYear()) ? ` ${g.m.slice(0, 4)}` : ''}.` : 'sin fecha.'}</div></div><div class="m-lista">${g.l.map(mobileFinFilaMov).join('')}</div>`).join('')
                     : '<div class="m-vacio m-vacio-peque">todavía no hay movimientos. Añade uno o importa un extracto para empezar a ver tus cuentas.</div>'}
                 <div class="m-fin-pie">
-                    ${lista.length ? '<button class="m-enlace" onclick="openFinanceProAllTxModal()">buscar en todos.</button>' : ''}
+                    ${todos.length > lista.length ? `<button class="m-enlace" onclick="mobileFinMasMovimientos()">ver ${Math.min(30, todos.length - lista.length)} más.</button>` : ''}
                     <button class="m-enlace" onclick="mobileFinMenu(this)">más opciones.</button>
                 </div>`;
             }
@@ -2051,34 +2017,34 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             if (tab === 'planificacion') {
                 return `${cab}
                 ${renderPresupuestoMovil() || '<div class="m-vacio m-vacio-peque">este mes no tienes presupuestos. Se reparten desde el ordenador, en Finanzas, planificación.</div>'}
-                ${mesB.proximos}
+                ${mobileFinCargos(5, true)}
                 <div class="m-acciones m-acciones-uno">
                     <button class="m-boton" onclick="openGestorSuscripciones()">suscripciones.</button>
                 </div>
-                ${mesB.permitir}`;
+                <button class="m-enlace asist-permitir-enlace" onclick="openPuedoPermitirme()">¿me lo puedo permitir?</button>`;
             }
 
             const { income, expense } = financeProMonthTotals(financeMonthKey());
             const ratio = income > 0 ? expense / income : (expense > 0 ? 1 : 0);
-            const ultimos = ordenados().slice(0, 5);
+            const ultimos = financeProOrdenados().slice(0, 5);
             return `${cab}
                 ${renderFinanzasGrafica(true)}
                 <div class="m-acciones m-acciones-uno">
                     <button class="m-boton m-boton-acento" onclick="openFinanceProTransactionModal()">+ movimiento.</button>
                 </div>
-                ${mesB.avisos}
+                ${mobileFinPorAjustar()}${renderAvisoPresupuestos()}${renderSuscripcionesDetectadas()}
                 <div class="m-bloque-cab"><div class="m-etiqueta">este mes.</div></div>
                 <div class="m-dos">
                     <div><div class="m-etiqueta">entra.</div><div class="m-cifra-media">${financeMoney(income)}</div></div>
                     <div><div class="m-etiqueta">sale.</div><div class="m-cifra-media">${financeMoney(expense)}</div></div>
                 </div>
                 ${income || expense ? `<div class="m-gastado"><i class="m-gastado-barra"><i style="width:${Math.min(100, Math.round(ratio * 100))}%"></i></i><span>${income > 0 ? `${Math.round(ratio * 100)} % de lo que ha entrado, ya gastado.` : 'Este mes todavía no ha entrado nada.'}</span></div>` : ''}
-                ${mesB.ritmo}
+                ${mobileFinRitmo()}
                 <div class="m-bloque-cab"><div class="m-etiqueta">cuentas.</div></div>
                 <div class="m-lista">${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
                     <div class="m-fila"><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml((financePro.accounts[k]?.name || k).toLowerCase())}.</div></div><span class="m-fila-cifra">${financeMoney(financeProAccountBalance(k))}</span></div>`).join('')}
                 </div>
-                ${mesB.proximos3}
+                ${mobileFinCargos(3, false)}
                 <div class="m-bloque-cab"><div class="m-etiqueta">últimos movimientos.</div></div>
                 ${ultimos.length ? `<div class="m-lista">${ultimos.map(mobileFinFilaMov).join('')}</div>
                 <button class="m-enlace" onclick="mobileFinPestana('movimientos')">ver todos.</button>` : '<div class="m-vacio m-vacio-peque">todavía no hay movimientos. Añade uno o importa un extracto.</div>'}`;

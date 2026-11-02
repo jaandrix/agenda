@@ -3895,9 +3895,10 @@ body.papel {
 /* ============================================================
    FINANZAS v0.30 — DASHBOARD ECONÓMICO
    ============================================================ */
-.finance-dashboard { position: relative; max-width: 980px; padding-bottom: 30px; animation: financeDashboardIn .32s var(--ease-out) both; }
+.finance-dashboard { position: relative; max-width: 980px; padding-bottom: 30px; }
+.finance-dashboard.entrando { animation: financeDashboardIn .32s var(--ease-out) both; }
 @keyframes financeDashboardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) { .finance-dashboard { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .finance-dashboard.entrando { animation: none; } }
 .finance-toolbar-row { display: flex; justify-content: space-between; align-items: center; gap: 8px 14px; flex-wrap: wrap; margin-bottom: 10px; }
 .finance-blur-toggle {
     width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
@@ -3940,8 +3941,11 @@ body.papel {
 .finance-dashboard.blurred .finance-pro-tx-month-summary-legend span,
 .finance-dashboard.blurred .finance-networth-compact-value,
 .finance-dashboard.blurred .finance-networth-compact-note,
-.finance-dashboard.blurred .finance-networth-pct-btn {
-    filter: blur(8px);
+.finance-dashboard.blurred .finance-networth-pct-btn,
+.finance-dashboard.blurred .fin-cuenta-saldo {
+    color: transparent !important;
+    background: var(--border);
+    border-radius: 6px;
     user-select: none;
 }
 .finance-dashboard-head { display:flex; justify-content:space-between; gap:24px; align-items:flex-end; margin-bottom:28px; }
@@ -4131,8 +4135,6 @@ body.papel {
 /* Botones de la cabecera de cada cuenta PRO (ajustar saldo / + movimiento):
    chip cuadrado negro para que destaquen sobre la tarjeta en vez de
    confundirse con el resto de iconos secundarios de Finanzas. */
-.finance-pro-account-card .finance-icon-btn { width:30px; height:30px; border-radius:10px; background:var(--bg-fab); color:var(--accent-contrast); border:1px solid var(--border-strong); font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:center; }
-.finance-pro-account-card .finance-icon-btn:hover { opacity:.85; }
 .finance-metric-value { order:2; font-size:18px; font-weight:700; }
 .finance-metric-meta { order:4; display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:6px; font-size:8.5px; color:var(--text-secondary); width:100%; }
 .finance-metric-note { order:6; font-size:8.5px; color:var(--text-secondary); margin-top:5px; line-height:1.35; }
@@ -4587,10 +4589,13 @@ body.papel {
 .finance-review-row:last-child { border-bottom:none; }
 .finance-review-row-head { display:flex; justify-content:space-between; align-items:center; }
 
-.finance-pro-accounts-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
-.finance-pro-account-card { padding:16px; }
-.finance-pro-mini-chart { margin-top:2px; }
-@media(max-width:850px){ .finance-pro-accounts-grid{grid-template-columns:1fr} }
+.fin-cuentas { padding:6px 16px; }
+.fin-cuenta { display:grid; grid-template-columns:28px minmax(0, 1fr) auto 36px 36px; align-items:center; gap:10px; min-height:52px; border-bottom:1px solid var(--border); }
+.fin-cuenta:last-child { border-bottom:0; }
+.fin-cuenta-icono { display:grid; place-items:center; color:var(--text-secondary); }
+.fin-cuenta-icono svg { width:18px; height:18px; }
+.fin-cuenta-nombre { font-size:14.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fin-cuenta-saldo { font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; }
 
 .finance-pro-type-tabs { display:flex; gap:4px; background:var(--bg-input); padding:4px; border-radius:10px; margin-bottom:16px; }
 .finance-pro-type-tabs button { flex:1; border:0; background:none; color:var(--text-secondary); border-radius:10px; padding:8px 10px; font-size:11.5px; font-weight:600; cursor:pointer; transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease, opacity .15s ease; }
@@ -4651,11 +4656,6 @@ body.papel {
 
 /* Ahora vive en la fila de arriba, junto al icono del ojo de "ocultar
    cifras" — ya no al pie del panel, así que sin borde/margen superior. */
-.finance-pro-settings-links { display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:0; }
-.finance-pro-settings-links button { display:inline-flex; align-items:center; gap:4px; background:none; border:0; color:var(--text-secondary); font-size:10.5px; font-weight:500; cursor:pointer; padding:4px; white-space:nowrap; }
-.finance-pro-settings-links button svg { width:12px; height:12px; flex-shrink:0; display:block; }
-.finance-pro-settings-links button:hover { color:var(--text-primary); }
-.finance-pro-settings-links span { color:var(--border-strong); font-size:11px; }
 
 .finance-import-preview { border:1px solid var(--border); border-radius:12px; overflow:hidden; }
 .finance-import-preview-row { display:flex; gap:10px; padding:7px 10px; font-size:10.5px; border-bottom:1px solid var(--border); }
@@ -8242,11 +8242,6 @@ body.est-foco-abierto #fab, body.est-foco-abierto .pomo-pastilla { display:none 
 .apuntar-todos { min-height:44px; font-size:14.5px; }
 
 /* Finanzas: los accesos de arriba con su burbuja, para que se vean como botones. */
-.finance-pro-settings-links { gap:8px; }
-.finance-pro-settings-links > span { display:none; }
-.finance-pro-settings-links button { gap:6px; padding:7px 13px; border-radius:10px; background:color-mix(in srgb, var(--text-primary) 7%, transparent); color:var(--text-primary); font-size:12px; font-weight:600; transition:background-color .15s ease, transform .12s var(--ease-out); }
-.finance-pro-settings-links button:hover { background:color-mix(in srgb, var(--text-primary) 13%, transparent); }
-.finance-pro-settings-links button:active { transform:scale(.96); }
 
 /* Compras: historial, precios y cómo te ciñes a la lista. */
 .compra-titulo { text-transform:none; }
@@ -8543,6 +8538,8 @@ body.pizarra .planner-stamp-dot.filled { background:#D4D8DD; border-color:#D4D8D
 .m-pestanas-fin { gap:12px; }
 .m-pestanas-fin button { font-size:16px; }
 .m-fin-pie { display:flex; flex-wrap:wrap; gap:4px 20px; }
+.m-fin-buscar { display:flex; align-items:center; gap:10px; width:100%; min-height:46px; margin:4px 0 8px; padding:0 14px; box-sizing:border-box; border:1px solid var(--border); border-radius:10px; background:var(--bg-input); color:var(--text-secondary); font:500 15px var(--font-family); text-align:left; cursor:pointer; }
+.m-fin-buscar .ico { width:15px; height:15px; }
 /* El tiempo del inicio, con sitio para el dedo. */
 #mobile-shell .m-hero-tiempo .tiempo-widget { min-height:44px; min-width:44px; display:inline-flex; align-items:center; justify-content:flex-end; }
 
@@ -9404,7 +9401,7 @@ body.papel .asig-estado.vencido { color:#a3243b; }
 .fin-grafica.movil { margin:8px 0 26px; }
 .fin-grafica.movil .fin-graf-cifra { font-size:30px; }
 @media (max-width: 700px) { .fin-graf-rango { width:100%; } .fin-graf-rango button { flex:1; padding:0 4px; } .fin-graf-rango .largo { display:none; } .fin-graf-rango .corto { display:inline; } }
-.finance-dashboard.blurred .fin-graf-cifra, .finance-dashboard.blurred .fin-graf-delta b { filter:blur(8px); user-select:none; }
+.finance-dashboard.blurred .fin-graf-cifra, .finance-dashboard.blurred .fin-graf-delta b { color:transparent !important; background:var(--border); border-radius:8px; user-select:none; }
 
 .fin-graf-acciones { display:flex; gap:8px; margin-left:auto; }
 .presu-mes { border-top:1px solid var(--border); padding:12px 0; }

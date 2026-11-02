@@ -477,7 +477,7 @@
         function aplicarSwitchView(view) {
             try {
                 // Entrar en Finanzas desde otro apartado abre siempre su inicio, no la última pestaña que se dejó.
-                if (view === 'finances' && currentView !== 'finances' && typeof financeTab !== 'undefined') financeTab = 'resumen';
+                if (view === 'finances' && currentView !== 'finances' && typeof financeTab !== 'undefined') { financeTab = 'resumen'; financeYaAnimado = false; }
                 currentView = view;
                 if (view === 'planner') plannerDayOffset = 0;
 
