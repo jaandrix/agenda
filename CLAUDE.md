@@ -229,6 +229,7 @@ a menor resolución.
 ## Cómo se prueba un cambio (no hay suite de tests, salvo la del dinero)
 
 **Pruebas de Finanzas (`pruebas/finanzas.mjs`, 01-11):** `node --test pruebas/finanzas.mjs`; las lanza también `comprobar.mjs`. Ejecutan el importador real en Node, sin navegador, contra `pruebas/extractos/`. Esa carpeta se publica en GitHub Pages: solo extractos pasados por `pruebas/anonimizar_extractos.mjs`, nunca los reales. Las marcadas `todo` son errores conocidos: al arreglar uno se quita la marca.
+**Pruebas de sincronizar (`pruebas/sincronizar.mjs`, 02-11):** la fusión a tres bandas entre dispositivos con la app real (tareas marcadas en un dispositivo mientras el otro arrastra a hoy). `PREPARAR_FUSION` (datos.js) arrastra el planificador en base, local y nube antes de comparar.
 
 1. Editar los archivos de `js/` y `styles.css` en el repo real.
 2. Copiar los archivos tocados a `C:\Users\jandr\Downloads\bitacora-mirror\`.

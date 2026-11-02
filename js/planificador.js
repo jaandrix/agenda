@@ -38,26 +38,30 @@
 
         function resetDayPlannerIfNeeded() {
             if (!dayPlanner || typeof dayPlanner !== 'object') dayPlanner = { days: {} };
-            if (!dayPlanner.days || typeof dayPlanner.days !== 'object') dayPlanner.days = {};
-            if (!Array.isArray(dayPlanner.backlog)) dayPlanner.backlog = [];
+            arrastrarPlanner(dayPlanner);
+        }
 
-            // Lo que quedó sin marcar como hecho en un día ya pasado se
-            // arrastra a hoy en vez de perderse (se detecta en cuanto
-            // cambia la fecha — ver plannerLastTodayKey en
-            // updateSidebarProgress), marcado como "arrastrado" para
-            // poder destacarlo como prioritario.
+        // Lo que quedó sin marcar como hecho en un día ya pasado se
+        // arrastra a hoy en vez de perderse (se detecta en cuanto
+        // cambia la fecha — ver plannerLastTodayKey en
+        // updateSidebarProgress), marcado como "arrastrado" para
+        // poder destacarlo como prioritario. La fusión con la nube lo aplica también a la base y a la nube (datos.js).
+        function arrastrarPlanner(p) {
+            if (!p.days || typeof p.days !== 'object') p.days = {};
+            if (!Array.isArray(p.backlog)) p.backlog = [];
             const todayKey = currentPlannerDayKey();
-            if (!Array.isArray(dayPlanner.days[todayKey])) dayPlanner.days[todayKey] = [];
-            Object.keys(dayPlanner.days).forEach(k => {
+            if (!Array.isArray(p.days[todayKey])) p.days[todayKey] = [];
+            Object.keys(p.days).forEach(k => {
                 if (k >= todayKey) return;
-                (dayPlanner.days[k] || []).forEach(it => {
+                (p.days[k] || []).forEach(it => {
                     if (!it.done) {
                         it.arrastrado = true;
-                        dayPlanner.days[todayKey].push(it);
+                        p.days[todayKey].push(it);
                     }
                 });
-                delete dayPlanner.days[k];
+                delete p.days[k];
             });
+            return p;
         }
 
         function plannerItemsForOffset(offset) {

@@ -467,13 +467,21 @@
             return local;
         }
 
+        // A las 4:00 cada dispositivo arrastra a hoy las tareas sin hacer de días pasados. Si solo lo había hecho uno de los
+        // tres lados, la misma tarea estaba en otro día en cada uno y la marca hecha en el ordenador se perdía: el móvil,
+        // con su copia de ayer, la volvía a dejar sin marcar. Se arrastran los tres antes de comparar.
+        const PREPARAR_FUSION = {
+            dayPlanner: v => esObjetoPlano(v) && typeof arrastrarPlanner === 'function' ? arrastrarPlanner(clonarDatos(v)) : v
+        };
+
         // Fusiona la nube con la memoria y deja la memoria con el resultado.
         function aplicarFusionConNube(nube) {
             const fusion = {};
             let cambiado = false;
             Object.entries(DATOS_SINCRONIZADOS).forEach(([k, [leer, escribir]]) => {
                 const local = leer();
-                let v = datosBase ? fusionarTresBandas(datosBase[k], local, nube[k]) : local;
+                const preparar = PREPARAR_FUSION[k] || (x => x);
+                let v = datosBase ? fusionarTresBandas(preparar(datosBase[k]), preparar(local), preparar(nube[k])) : local;
                 if (v === undefined) v = local;
                 fusion[k] = v;
                 if (v !== local && !mismoValor(v, local)) { escribir(v); cambiado = true; if (k === 'apartadosConfig') renderAllNavs(); }
