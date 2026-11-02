@@ -2008,7 +2008,7 @@
                 <input class="modal-input finance-quick-amount-input" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="${escapeHtml(String(d.amount))}" oninput="financeProQuickSet('amount', this.value)" autofocus>
                 <div class="modal-label" style="margin-top:12px">Toca la cuenta para guardar</div>
                 <div class="finance-quick-account-row">
-                    ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<button class="finance-quick-account-btn" onclick="financeProQuickSave('${k}')">${FINANCE_PRO_ACCOUNT_META[k].icon}<span>${escapeHtml(financePro.accounts[k].name)}</span></button>`).join('')}
+                    ${FINANCE_PRO_ACCOUNT_KEYS.map(k => `<button class="finance-quick-account-btn" onclick="financeProQuickSave('${k}')">${FINANCE_PRO_ACCOUNT_ICONO[k] || ''}<span>${escapeHtml(financePro.accounts[k].name)}</span></button>`).join('')}
                 </div>
             `;
         }
@@ -3164,6 +3164,7 @@
             if (iSaldo < 0) return null;
             const filas = [];
             const iProd = cab.indexOf('product');
+            const iFee = cab.findIndex(h => h === 'fee' || h === 'comisión' || h === 'comision');
             imp.rows.slice(1).forEach((r, orden) => {
                 const st = m.status >= 0 ? String(r[m.status] || '').toLowerCase() : '';
                 if (/revert|declin|fail|cancel|rechaz|anulad|fallid/.test(st)) return;
@@ -3176,7 +3177,10 @@
                     val = (Number.isFinite(ent) ? Math.abs(ent) : 0) - (Number.isFinite(sal) ? Math.abs(sal) : 0);
                 } else val = financeProParseEuroAmount(r[m.amount]);
                 if (!Number.isFinite(val) || !val || !fechas.length) return;
-                filas.push({ orden, fechas, val: Math.round(val * 100) / 100, desc: (r[m.description] || '').trim(), pend: /pending|pendiente|processing|procesando/.test(st), saldo: financeProParseEuroAmount(r[iSaldo]) });
+                const pend = /pending|pendiente|processing|procesando/.test(st);
+                const fee = iFee >= 0 && !pend ? Math.round(Math.abs(financeProParseEuroAmount(r[iFee]) || 0) * 100) / 100 : 0;
+                filas.push({ orden, fechas, val: Math.round(val * 100) / 100, fee, desc: (r[m.description] || '').trim(), pend, saldo: financeProParseEuroAmount(r[iSaldo]) });
+                if (fee >= 0.01) filas.push({ orden, fechas, val: -fee, desc: 'Comisión', pend: false, saldo: NaN });
             });
             const completas = filas.filter(f => !f.pend && Number.isFinite(f.saldo));
             if (!completas.length) return null;
@@ -3185,7 +3189,7 @@
             // Dentro de un mismo día Ibercaja no ordena las filas por hora: la última es la que deja un saldo del que no
             // parte ninguna otra (en el extracto real, la primera fila daba 200,29 y el día acababa en 155,39).
             const fin = f => f.fechas.reduce((a, b) => a > b ? a : b);
-            const previo = new Set(completas.map(f => Math.round((f.saldo - f.val) * 100)));
+            const previo = new Set(completas.map(f => Math.round((f.saldo - f.val + (f.fee || 0)) * 100)));
             let finales = completas.filter(f => !previo.has(Math.round(f.saldo * 100)));
             if (finales.length > 1) { const dia = completas.map(fin).reduce((a, b) => a > b ? a : b); finales = finales.filter(f => fin(f) === dia); }
             const ultima = finales.length === 1 ? finales[0] : asc ? completas[completas.length - 1] : completas[0];
@@ -3604,6 +3608,32 @@
                 pendientesUsados.add(financePro.transactions[financePro.transactions.length - 1]);
                 added++;
             });
+            // Revolut descuenta algunas comisiones del saldo en su propia columna (Fee), no en el importe: el saldo se quedaba
+            // alto (6,15 € en todo el historial). Van como un gasto aparte con concepto del banco «Comisión», que no parece un
+            // traspaso, y con su propia clave: reimportar las reconoce y el importe de la fila no cambia.
+            const colComision = cabecera.findIndex(h => h === 'fee' || h === 'comisión' || h === 'comision');
+            if (colComision >= 0) {
+                const catComision = financePro.categories.find(c => c.type === 'expense' && /comisi/i.test(c.name))?.id;
+                rows.forEach((r, fila) => {
+                    if (imp.excluidas?.has(fila)) return;
+                    const estado = m.status >= 0 ? String(r[m.status] || '').toLowerCase() : '';
+                    if (/pending|pendiente|processing|procesando|revert|declin|fail|cancel|rechaz|anulad|fallid/.test(estado)) return;
+                    const fee = Math.round(Math.abs(financeProParseEuroAmount(r[colComision])) * 100) / 100;
+                    const date = fechaInicio(r) || financeProParseDate(r[m.date]);
+                    if (!Number.isFinite(fee) || fee < 0.01 || !date) return;
+                    const clave = `${m.account}|${date}|${fee}|Comisión`;
+                    if (yaEsta(clave)) { consumir(clave); return; }
+                    const hora = horaDe(r);
+                    financePro.transactions.push({
+                        id: 'ptx_fee_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + added,
+                        date, account: m.account, type: 'expense', amount: fee, category: catComision, comision: true,
+                        bankNote: 'Comisión', note: `Comisión: ${(r[m.description] || '').trim()}`.slice(0, 200),
+                        ...(hora ? { hora } : { orden: ordenDe(fila) })
+                    });
+                    registrar(clave);
+                    added++;
+                });
+            }
             conciliados += financeProFusionarManuales(m.account, fechasArchivo);
             const traspasos = financeProEmparejarTraspasos(fechasArchivo);
             const categorizados = financeProAutoCategorizar();

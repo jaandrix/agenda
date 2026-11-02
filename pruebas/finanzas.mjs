@@ -159,10 +159,28 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         assert.equal(r.cuadre.cuadra, true);
     });
 
-    test('la comisión de Revolut descuenta del saldo', { todo: 'financeProEjecutarImport ignora la columna Fee: el saldo se queda alto por lo que sumen las comisiones' }, () => {
+    test('la comisión de Revolut descuenta del saldo y reimportar no la repite', () => {
         vaciar({ online: 100 });
-        const r = importar([cabRevolut, 'Transfer,Current,2023-10-01 10:00:00,2023-10-01 10:00:01,To Persona,-10.00,1.50,EUR,COMPLETED,88.50'].join('\n'), 'online');
+        const csv = [cabRevolut, 'Transfer,Current,2023-10-01 10:00:00,2023-10-01 10:00:01,To Persona,-10.00,1.50,EUR,COMPLETED,88.50'].join('\n');
+        const r = importar(csv, 'online');
         assert.equal(r.cuadre.cuadra, true);
+        assert.equal(saldo('online'), 88.5);
+        assert.equal(run(`financePro.transactions.filter(t => t.comision).length`), 1);
+        assert.equal(importar(csv, 'online').nuevos, 0);
+        assert.equal(saldo('online'), 88.5);
+    });
+
+    test('cada pantalla de Finanzas se abre sin errores', () => {
+        vaciar({ bancos: 100 });
+        run(`financePro.categories = [{ id: 'c1', name: 'Super', type: 'expense' }]; financePro.transactions = [{ id: 't1', date: '2023-10-01', account: 'bancos', type: 'expense', amount: 5, category: 'c1', note: 'x' }];`);
+        run(`showModal = h => { globalThis.__modal = String(h); }; ponerModal = showModal; modoCapa = () => {};`);
+        const pantallas = ['openFinanceProTransactionModal()', "openFinanceProTransactionModal('t1')", 'openFinanceProQuickCaptureModal()', 'openFinanceProAccountsSettings()', "openFinanceProBalanceAdjustModal('bancos')",
+            'openFinanceProCategoriesModal()', 'openFinanceProRulesModal()', 'openFinanceProDuplicatesModal()', 'openFinanceProAllTxModal()', 'openFinanceProProgramadosModal()', 'openFinanceProViajeModal()',
+            'openFinanceProImportModal()', 'openDeshacerImportacion()', 'openFinanceProReviewModal()', 'openGestorSuscripciones()', 'openPuedoPermitirme()', 'openFinanceHistoryCorrectionModal()',
+            "financeTab = 'resumen'; renderFinanceProDashboard()", "financeTab = 'movimientos'; renderFinanceProDashboard()", "financeTab = 'planificacion'; renderFinanceProDashboard()",
+            "financeTab = 'resumen'; renderMobileFinances()", "financeTab = 'movimientos'; renderMobileFinances()", "financeTab = 'planificacion'; renderMobileFinances()"];
+        const fallos = pantallas.flatMap(p => { try { run(p); return []; } catch (e) { return [`${p}: ${e.message}`]; } });
+        assert.deepEqual(fallos, []);
     });
 
     test('el cuadre encuentra el saldo final aunque las filas de un día estén desordenadas', () => {

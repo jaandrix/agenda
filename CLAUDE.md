@@ -228,7 +228,7 @@ a menor resolución.
 
 ## Cómo se prueba un cambio (no hay suite de tests, salvo la del dinero)
 
-**Pruebas de Finanzas (`pruebas/finanzas.mjs`, 01-11):** `node --test pruebas/finanzas.mjs`; las lanza también `comprobar.mjs`. Ejecutan el importador real en Node, sin navegador, contra `pruebas/extractos/`. Esa carpeta se publica en GitHub Pages: solo extractos pasados por `pruebas/anonimizar_extractos.mjs`, nunca los reales. Las marcadas `todo` son errores conocidos: al arreglar uno se quita la marca.
+**Pruebas de Finanzas (`pruebas/finanzas.mjs`, 01-11):** `node --test pruebas/finanzas.mjs`; las lanza también `comprobar.mjs`. Ejecutan el importador real en Node, sin navegador, contra `pruebas/extractos/`. Esa carpeta se publica en GitHub Pages: solo extractos pasados por `pruebas/anonimizar_extractos.mjs`, nunca los reales. Las marcadas `todo` son errores conocidos: al arreglar uno se quita la marca. Una de ellas abre cada pantalla de Finanzas (escritorio y móvil) y falla si alguna da error: la sintaxis no ve un nombre borrado que solo se usa al abrir algo (pasó con el registro rápido el 02-11). Las comisiones de Revolut (columna Fee) entran como gasto aparte con `comision: true` y concepto del banco «Comisión»; el cuadre las descuenta del saldo de su fila.
 **Pruebas de sincronizar (`pruebas/sincronizar.mjs`, 02-11):** la fusión a tres bandas entre dispositivos con la app real (tareas marcadas en un dispositivo mientras el otro arrastra a hoy). `PREPARAR_FUSION` (datos.js) arrastra el planificador en base, local y nube antes de comparar.
 
 1. Editar los archivos de `js/` y `styles.css` en el repo real.
