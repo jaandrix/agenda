@@ -319,7 +319,7 @@ const GUIA = [
             [guiaBoton('+ asignatura'), 'Crea una asignatura (con créditos, para la nota media ponderada).'],
             [guiaBoton('+ (en la asignatura)'), 'Añade un examen o un trabajo.'],
             [guiaBoton('+ nota rápida, notas rápidas'), 'Apuntes sueltos, a mano.'],
-            [guiaBoton('Horario semanal'), 'Tus clases por día y hora.'],
+            [guiaBoton('horario semanal.'), 'Tus clases en una línea de tiempo: un renglón por día y la hora de verdad de izquierda a derecha, con una raya en la hora de ahora. Con hora de fin, cada clase es una barra de lo que dura; sin ella, un punto en su hora. «añadir clase.» pide el día, cuándo empieza, cuándo termina (si quieres) y la asignatura. Toca una clase para cambiarla o eliminarla. Con «editar horario.», tocar el hueco de un día pone una clase a esa hora. En el móvil, el horario va día a día y cada clase se toca para editarla.'],
         ],
         trucos: ['Los exámenes salen en el calendario y los trabajos en el planificador el día de entrega.', 'Pide a Claude «añade el examen de X el día Y» y lo pondrá en su asignatura.'],
     },

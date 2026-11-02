@@ -720,8 +720,7 @@
                 </div>` : ''}
 
                 <section class="studies-section" id="studies-schedule-section">
-                    <h3>horario semanal.</h3>
-                    ${renderScheduleGrid()}
+                    ${renderHorarioLinea()}
                 </section>
 
                 <div class="studies-actions-row studies-actions-row-center">

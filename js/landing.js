@@ -196,6 +196,7 @@ aplicarPortadaPerfil();
 //  grande, se apunta aquí arriba del todo.
 // ------------------------------------------------------------
 const NOVEDADES = [
+    { fecha: '2026-11-02', rama: 'school', nombre: 'horario en línea de tiempo', para: 'quien estudia.', texto: 'El horario semanal de Estudios es ahora una línea de tiempo por días, con la hora real. Las clases pueden llevar hora de fin y se ven como barras de lo que duran, y ya se pueden editar tocándolas.' },
     { fecha: '2026-11-02', rama: 'home', nombre: 'comparte tu despensa', para: 'quien planifica las comidas con alguien.', texto: 'En Despensa, «compartir.»: un enlace con tu lista de la compra, tus platos de la semana o las dos cosas. Quien lo abre lo mete en su Bitácora con un toque. Y los platos ya se arrastran de un día a otro.' },
     { fecha: '2026-10-30', rama: 'todos', nombre: 'gestor de suscripciones', para: 'quien usa Finanzas.', texto: 'En Finanzas, planificación: da de baja o de alta tus suscripciones sin perder su historial, y te avisa si el banco sigue cobrando una que cancelaste.' },
     { fecha: '2026-10-26', rama: 'todos', nombre: 'panorama más claro y calendario más útil', para: 'todo el mundo.', texto: 'Panorama reúne tu día en «hoy.» y deja las demás tarjetas a tu gusto. Calendario estrena una franja compacta con lo siguiente, las tareas pendientes y accesos para ver el día o apuntar.' },

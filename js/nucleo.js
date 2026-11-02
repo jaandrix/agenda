@@ -2057,7 +2057,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
         function renderMobileHorario() {
             const claveHoy = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'][new Date().getDay()];
             const dias = STUDIES_DAYS.filter(d => !['sab', 'dom'].includes(d.key) || (studies.schedule[d.key] || []).length);
-            if (!dias.some(d => (studies.schedule[d.key] || []).length)) return '<div class="m-vacio m-vacio-peque">sin horario todavía.</div>';
+            if (!dias.some(d => (studies.schedule[d.key] || []).length)) return '<div class="m-vacio m-vacio-peque">sin horario todavía.</div><button class="m-enlace" onclick="openClase()">añadir clase.</button>';
             const elegido = dias.some(d => d.key === mobileHorarioDia) ? mobileHorarioDia : dias.some(d => d.key === claveHoy) ? claveHoy : dias[0].key;
             const norm = t => stripAccents(String(t || '').toLowerCase()).replace(/[^a-z0-9ñ ]/g, '').trim();
             const colorDe = nombre => {
@@ -2065,21 +2065,16 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 const s = studies.subjects.find(x => norm(x.name) === n) || studies.subjects.find(x => n && (norm(x.name).startsWith(n.split(' ')[0]) || n.startsWith(norm(x.name).split(' ')[0])));
                 return s?.color || '';
             };
-            const bloques = (studies.schedule[elegido] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-            const grupos = [];
-            bloques.forEach(b => {
-                const ultimo = grupos[grupos.length - 1];
-                if (ultimo && norm(ultimo.subject) === norm(b.subject)) ultimo.n++;
-                else grupos.push({ time: b.time, subject: b.subject, n: 1 });
-            });
+            const bloques = (studies.schedule[elegido] || []).map((b, i) => ({ ...b, i })).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
             return `<div class="m-horario-dias">${dias.map(d => {
                     const n = (studies.schedule[d.key] || []).length;
                     return `<button class="${d.key === elegido ? 'activo' : ''} ${d.key === claveHoy ? 'hoy' : ''}" onclick="mobileHorarioDia='${d.key}';document.getElementById('m-horario').innerHTML=renderMobileHorario()"><span>${escapeHtml(d.label.slice(0, 3).toLowerCase())}.</span><small>${n || ''}</small></button>`;
                 }).join('')}</div>
-                ${grupos.length ? `<div class="m-horario-lista">${grupos.map(g => {
+                ${bloques.length ? `<div class="m-horario-lista">${bloques.map(g => {
                     const color = colorDe(g.subject);
-                    return `<div class="m-horario-fila"><span class="m-horario-hora">${escapeHtml(g.time || '')}</span><i class="m-horario-punto" ${color ? `style="background:${escapeHtml(colorTema(color))}"` : ''}></i><span class="m-horario-asig">${escapeHtml(g.subject || '')}</span>${g.n > 1 ? `<small>${g.n} sesiones</small>` : ''}</div>`;
-                }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin clases este día.</div>'}`;
+                    return `<button class="m-horario-fila" onclick="openClase('${elegido}',${g.i})"><span class="m-horario-hora">${escapeHtml(g.time || '')}</span><i class="m-horario-punto" ${color ? `style="background:${escapeHtml(colorTema(color))}"` : ''}></i><span class="m-horario-asig">${escapeHtml(g.subject || '')}</span>${g.endTime ? `<small>hasta las ${escapeHtml(g.endTime)}</small>` : ''}</button>`;
+                }).join('')}</div>` : '<div class="m-vacio m-vacio-peque">sin clases este día.</div>'}
+                <button class="m-enlace" onclick="openClase('${elegido}')">añadir clase.</button>`;
         }
 
         function renderMobileStudies() {

@@ -764,141 +764,194 @@
             });
         }
 
-        // Resalta el bloque de "ahora mismo": el de hora de inicio más
-        // reciente que ya haya pasado, dentro del día de hoy. Al no haber
-        // hora de fin, se asume que sigue siendo la clase actual hasta que
-        // empiece la siguiente (o hasta medianoche si es la última).
+        // ============================================================
+        //  HORARIO SEMANAL, en línea temporal (02-11, propuesta de Codex adaptada)
+        //  Una fila por día y la hora real en horizontal, monocromo y con guías discontinuas. Cada clase guarda
+        //  { time, subject, endTime? }: con hora de fin es una barra de su duración; las antiguas, sin ella, son un
+        //  punto en su hora, sin inventarles duración. Antes se quitaban las franjas vacías y las 12:00 y las 15:00
+        //  parecían seguidas.
+        // ============================================================
         const STUDIES_DAY_KEYS_BY_JS_DAY = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'];
         function todayScheduleKey() { return STUDIES_DAY_KEYS_BY_JS_DAY[new Date().getDay()]; }
+        let horarioEditando = false;
+        const HORARIO_LINEA_PX = 36;
 
-        function currentScheduleBlockIndex(dayKey) {
-            if (dayKey !== todayScheduleKey()) return -1;
-            const blocks = studies.schedule[dayKey] || [];
-            const nowHM = new Date().toTimeString().slice(0, 5);
-            let idx = -1;
-            blocks.forEach((b, i) => { if (b.time && b.time <= nowHM) idx = i; });
-            return idx;
+        function horarioMin(hhmm) {
+            const m = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
+            return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+        }
+        function horarioHHMM(min) { return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`; }
+        function horarioDias() { return STUDIES_DAYS.filter(d => !['sab', 'dom'].includes(d.key) || (studies.schedule[d.key] || []).some(b => horarioMin(b.time) != null)); }
+        function horarioAhoraMin() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+
+        // Una hora antes de la primera clase y una después de la última; sin hora de fin, una clase cuenta 45 minutos.
+        function horarioRango() {
+            let ini = Infinity, fin = -Infinity;
+            STUDIES_DAYS.forEach(d => (studies.schedule[d.key] || []).forEach(b => {
+                const a = horarioMin(b.time);
+                if (a == null) return;
+                const z = horarioMin(b.endTime);
+                ini = Math.min(ini, a);
+                fin = Math.max(fin, z != null && z > a ? z : a + 45);
+            }));
+            if (!Number.isFinite(ini)) return null;
+            return { ini: Math.max(0, Math.floor(ini / 60) * 60 - 60), fin: Math.min(1440, Math.ceil(fin / 60) * 60 + 60) };
         }
 
-        function refreshScheduleHighlight() {
+        // Las clases de un día en líneas: la siguiente baja de línea si se monta sobre otra o sobre el rótulo de un
+        // punto (que ocupa más que su hora: unos 7 px por letra, contados sobre una pista de unos 720 px).
+        function horarioColocar(dia, rango) {
+            const span = rango.fin - rango.ini;
+            const lineas = [];
+            const items = (studies.schedule[dia] || []).map((b, i) => ({ b, i, a: horarioMin(b.time) })).filter(x => x.a != null).sort((x, y) => x.a - y.a);
+            return items.map((x, k) => {
+                const z = horarioMin(x.b.endTime);
+                const barra = z != null && z > x.a;
+                const ocupa = barra ? z : x.a + Math.ceil((22 + String(x.b.subject || '').length * 7) / 720 * span);
+                let linea = lineas.findIndex(f => f <= x.a);
+                if (linea < 0) { linea = lineas.length; lineas.push(0); }
+                lineas[linea] = ocupa;
+                // Sin hora de fin, una clase sigue «en curso» hasta que empieza la siguiente (como antes), con un tope de hora y media.
+                const hasta = barra ? z : Math.min(items[k + 1]?.a ?? Infinity, x.a + 90);
+                return { ...x, z: barra ? z : null, hasta, linea };
+            });
+        }
+
+        function renderHorarioLinea() {
+            const dias = horarioDias();
+            const rango = horarioRango();
+            const hoy = todayScheduleKey();
+            const ahora = horarioAhoraMin();
+            const sinHora = STUDIES_DAYS.flatMap(d => (studies.schedule[d.key] || []).map((b, i) => ({ d, b, i })).filter(x => horarioMin(x.b.time) == null));
+            const cab = `<div class="horario-cab">
+                    <h3>horario semanal.</h3>
+                    <div class="horario-acciones">
+                        ${rango ? `<button class="horario-btn texto ${horarioEditando ? 'activo' : ''}" aria-pressed="${horarioEditando}" onclick="horarioAlternarEdicion()">${horarioEditando ? 'listo.' : 'editar horario.'}</button>` : ''}
+                        <button class="horario-btn" onclick="openClase()"><i class='ico ico-mas' aria-hidden=true></i>añadir clase.</button>
+                    </div>
+                </div>`;
+            if (!rango && !sinHora.length) return `<div id="studies-schedule-grid">${cab}<div class="horario-vacio">sin horario todavía.</div></div>`;
+            const p = m => (m - rango.ini) / (rango.fin - rango.ini) * 100;
+            const paso = rango.fin - rango.ini > 600 ? 120 : 60;
+            const horas = [];
+            for (let h = rango.ini; h <= rango.fin; h += 60) horas.push(h);
+            const guias = horas.map(h => `<i class="horario-guia" style="left:${p(h).toFixed(3)}%"></i>`).join('');
+            const eje = horas.filter(h => (h - rango.ini) % paso === 0).map(h => `<span style="left:${p(h).toFixed(3)}%">${horarioHHMM(h)}</span>`).join('');
+            const filas = rango ? dias.map(d => {
+                const items = horarioColocar(d.key, rango);
+                const esHoy = d.key === hoy;
+                const dia = d.label.toLowerCase();
+                return `<div class="horario-fila ${esHoy ? 'hoy' : ''}" role="listitem">
+                    <div class="horario-dia">${escapeHtml(dia)}.</div>
+                    <div class="horario-pista" data-dia="${d.key}" style="--lineas:${Math.max(1, ...items.map(x => x.linea + 1))}" ${horarioEditando ? `onclick="horarioTocarHueco(event,'${d.key}')"` : ''}>
+                        ${guias}
+                        ${esHoy ? `<i class="horario-ahora" aria-hidden="true" style="left:${p(ahora).toFixed(3)}%" ${ahora < rango.ini || ahora > rango.fin ? 'hidden' : ''}></i>` : ''}
+                        ${items.map(x => {
+                            const cuando = x.z != null ? `de ${x.b.time} a ${x.b.endTime}` : `a las ${x.b.time}`;
+                            const nombre = escapeHtml(`${x.b.subject || 'clase'}, ${dia} ${cuando}`);
+                            const curso = esHoy && x.a <= ahora && ahora < x.hasta ? 'en-curso' : '';
+                            const comun = `data-ini="${x.a}" data-hasta="${x.hasta}" onclick="event.stopPropagation();openClase('${d.key}',${x.i})" aria-label="${nombre}" title="${nombre}"`;
+                            return x.z != null
+                                ? `<button class="horario-clase ${curso}" style="left:${p(x.a).toFixed(3)}%;width:calc(${(p(x.z) - p(x.a)).toFixed(3)}% - 2px);--linea:${x.linea}" ${comun}>${escapeHtml(x.b.subject || 'clase')}</button>`
+                                : `<button class="horario-punto ${curso}" style="left:${p(x.a).toFixed(3)}%;--linea:${x.linea}" ${comun}><i aria-hidden="true"></i>${escapeHtml(x.b.subject || 'clase')}</button>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+            }).join('') : '';
+            return `<div id="studies-schedule-grid">${cab}
+                ${rango ? `<div class="horario ${horarioEditando ? 'editando' : ''}" role="list" aria-label="horario semanal" data-ini="${rango.ini}" data-fin="${rango.fin}" data-hoy="${hoy}">
+                    <div class="horario-eje" aria-hidden="true"><div></div><div class="horario-eje-pista">${eje}</div></div>
+                    ${filas}
+                </div>` : ''}
+                ${horarioEditando ? '<p class="horario-ayuda">Toca el hueco de un día para poner una clase a esa hora, o una clase para cambiarla.</p>' : ''}
+                ${sinHora.length ? `<div class="horario-sinhora"><span>sin hora.</span>${sinHora.map(x => `<button class="horario-btn texto" onclick="openClase('${x.d.key}',${x.i})">${escapeHtml(x.d.label.toLowerCase())}, ${escapeHtml(x.b.subject || 'clase')}</button>`).join('')}</div>` : ''}
+            </div>`;
+        }
+
+        function horarioRepintar() {
+            const w = document.getElementById('studies-schedule-grid');
+            if (w) w.outerHTML = renderHorarioLinea(); else render();
+        }
+
+        // Cada minuto solo se mueve la raya de ahora y la marca de la clase en curso (antes se rehacía todo el horario).
+        function horarioMoverAhora() {
             if (currentView !== 'studies') return;
-            const wrap = document.getElementById('studies-schedule-grid');
-            if (wrap) wrap.outerHTML = renderScheduleGrid();
+            const h = document.querySelector('#studies-schedule-grid .horario');
+            if (!h) return;
+            if (h.dataset.hoy !== todayScheduleKey()) { horarioRepintar(); return; }
+            const ini = Number(h.dataset.ini), fin = Number(h.dataset.fin), m = horarioAhoraMin();
+            const fila = h.querySelector('.horario-fila.hoy');
+            const raya = fila?.querySelector('.horario-ahora');
+            if (raya) {
+                raya.hidden = m < ini || m > fin;
+                raya.style.left = ((m - ini) / (fin - ini) * 100).toFixed(3) + '%';
+            }
+            fila?.querySelectorAll('[data-ini]').forEach(e => e.classList.toggle('en-curso', Number(e.dataset.ini) <= m && m < Number(e.dataset.hasta)));
         }
-        if (!window._scheduleHighlightTimer) window._scheduleHighlightTimer = setInterval(refreshScheduleHighlight, 60000);
+        if (!window._horarioAhoraTimer) window._horarioAhoraTimer = setInterval(horarioMoverAhora, 60000);
 
-        // Cuadrícula estilo Google Calendar, en franjas de 30 minutos: solo
-        // se pintan las franjas en las que hay alguna clase esa semana (en
-        // cualquier día) — así no queda un hueco enorme en blanco entre,
-        // por ejemplo, las 8:00 y las 15:00 si no hay nada a esas horas.
-        // Se usan franjas de 30 min (no de 1 hora completa) porque es muy
-        // habitual tener dos clases seguidas dentro de la misma hora (p.ej.
-        // 15:00 y 15:55): con franjas de 1h esas dos clases tenían que
-        // apretarse o desbordar su celda; con 30 min casi siempre caen cada
-        // una en su propia franja. Si no hay ninguna clase todavía, se cae
-        // a un rango por defecto (8:00-21:30) para poder añadir la primera.
-        const SCHEDULE_ROW_PX = 40;
-        const SCHEDULE_ADD_ROW_PX = 24;
-        function scheduleTimeToBucket(time) {
-            const h = parseInt(String(time || '0').slice(0, 2), 10) || 0;
-            const m = parseInt(String(time || '0').slice(3, 5), 10) || 0;
-            return h * 2 + (m >= 30 ? 1 : 0);
-        }
-        function scheduleBucketLabel(bucket) {
-            return `${String(Math.floor(bucket / 2)).padStart(2, '0')}:${bucket % 2 === 0 ? '00' : '30'}`;
-        }
-        function scheduleActiveBuckets() {
-            const set = new Set();
-            STUDIES_SCHEDULE_DISPLAY_DAYS.forEach(d => {
-                (studies.schedule[d.key] || []).forEach(b => { if (b.time) set.add(scheduleTimeToBucket(b.time)); });
-            });
-            if (!set.size) { for (let bk = 16; bk <= 43; bk++) set.add(bk); }
-            return [...set].sort((a, b) => a - b);
+        function horarioAlternarEdicion() {
+            horarioEditando = !horarioEditando;
+            horarioRepintar();
         }
 
-        function renderScheduleGrid() {
-            const buckets = scheduleActiveBuckets();
-            const bucketRow = new Map(buckets.map((bk, i) => [bk, i]));
-            const contentHeight = buckets.length * SCHEDULE_ROW_PX;
-            const totalHeight = contentHeight + SCHEDULE_ADD_ROW_PX;
-
-            return `
-                <div class="studies-schedule-grid" id="studies-schedule-grid">
-                    <div class="studies-schedule-headrow">
-                        <div class="studies-schedule-head-gutter"></div>
-                        ${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => `<div class="studies-day-head">${escapeHtml(d.label)}</div>`).join('')}
-                    </div>
-                    <div class="studies-schedule-body" style="height:${totalHeight}px">
-                        <div class="studies-schedule-hours">
-                            ${buckets.map(bk => `<div class="studies-hour-label" style="height:${SCHEDULE_ROW_PX}px">${scheduleBucketLabel(bk)}</div>`).join('')}
-                        </div>
-                        <div class="studies-schedule-days">
-                            ${buckets.map((bk, i) => `<div class="studies-hour-line" style="top:${i * SCHEDULE_ROW_PX}px"></div>`).join('')}
-                            ${STUDIES_SCHEDULE_DISPLAY_DAYS.map(d => renderScheduleDayColumn(d, bucketRow, contentHeight)).join('')}
-                        </div>
-                    </div>
-                </div>`;
+        function horarioTocarHueco(e, dia) {
+            const h = document.querySelector('#studies-schedule-grid .horario');
+            if (!h || e.target.closest('button')) return;
+            const r = e.currentTarget.getBoundingClientRect();
+            const ini = Number(h.dataset.ini), fin = Number(h.dataset.fin);
+            const m = Math.round((ini + (e.clientX - r.left) / r.width * (fin - ini)) / 5) * 5;
+            openClase(dia, null, horarioHHMM(Math.max(0, Math.min(1435, m))));
         }
 
-        function renderScheduleDayColumn(d, bucketRow, contentHeight) {
-            const blocks = studies.schedule[d.key] || [];
-            const nowIdx = currentScheduleBlockIndex(d.key);
-            // Cada bloque ocupa directamente la franja entera de sus 30
-            // minutos. Si, aun así, dos clases cayeran en la misma franja
-            // (raro), se apilan dentro de esa misma celda en vez de
-            // solaparse.
-            const byBucket = new Map();
-            blocks.forEach((b, i) => {
-                const bk = scheduleTimeToBucket(b.time);
-                if (!byBucket.has(bk)) byBucket.set(bk, []);
-                byBucket.get(bk).push({ b, i });
-            });
-            let cellsHtml = '';
-            byBucket.forEach((items, bk) => {
-                const rowIdx = bucketRow.has(bk) ? bucketRow.get(bk) : 0;
-                const top = rowIdx * SCHEDULE_ROW_PX;
-                cellsHtml += `<div class="studies-hour-cell" style="top:${top}px;height:${SCHEDULE_ROW_PX}px">`;
-                cellsHtml += items.map(({ b, i }) => `
-                    <div class="studies-block ${i === nowIdx ? 'studies-block-now' : ''}">
-                        <span>${escapeHtml(b.time || '')} ${escapeHtml(b.subject || '')}</span>
-                        <button title="Eliminar" onclick="removeScheduleBlock('${d.key}',${i})"><i class='ico ico-x' aria-hidden=true></i></button>
-                    </div>`).join('');
-                cellsHtml += `</div>`;
-            });
-            return `
-                <div class="studies-day-col">
-                    ${cellsHtml}
-                    <button class="studies-day-add" style="top:${contentHeight}px" title="Añadir clase" onclick="openAddScheduleBlock('${d.key}')">+</button>
-                </div>`;
-        }
-
-        function openAddScheduleBlock(dayKey) {
+        function openClase(dia, i, hora) {
+            const b = dia && i != null ? (studies.schedule[dia] || [])[i] : null;
+            const hoy = todayScheduleKey();
+            const diaSel = dia || (['sab', 'dom'].includes(hoy) ? 'lun' : hoy);
+            const nombres = [...new Set(studies.subjects.map(s => s.name).filter(Boolean))];
             showModal(`
-                <div class="modal-title">Añadir clase</div>
-                <div class="modal-label">Hora</div>
-                <input id="schedule-time" class="modal-input" type="time">
-                <div class="modal-label">Asignatura / texto</div>
-                <input id="schedule-subject" class="modal-input" placeholder="Ej: Cálculo I - Aula 3">
-                <button class="btn-modal-primary" onclick="saveScheduleBlock('${dayKey}')">añadir.</button>
+                <div class="modal-title">${b ? 'la clase.' : 'clase nueva.'}</div>
+                <div class="modal-label">día</div>
+                <select id="clase-dia" class="modal-input">${STUDIES_DAYS.map(d => `<option value="${d.key}" ${d.key === diaSel ? 'selected' : ''}>${escapeHtml(d.label.toLowerCase())}</option>`).join('')}</select>
+                <div class="horario-form-horas">
+                    <label><span class="modal-label">empieza</span><input id="clase-ini" class="modal-input" type="time" value="${escapeHtml(b?.time || hora || '')}"></label>
+                    <label><span class="modal-label">termina, si quieres</span><input id="clase-fin" class="modal-input" type="time" value="${escapeHtml(b?.endTime || '')}"></label>
+                </div>
+                <div class="modal-label">asignatura</div>
+                <input id="clase-asig" class="modal-input" list="clase-asigs" maxlength="80" value="${escapeHtml(b?.subject || '')}" placeholder="Cálculo I, aula 3">
+                <datalist id="clase-asigs">${nombres.map(n => `<option value="${escapeHtml(n)}"></option>`).join('')}</datalist>
+                <button class="btn-modal-primary" style="margin-top:14px" onclick="guardarClase(${b ? `'${dia}',${i}` : ''})">guardar.</button>
+                ${b ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="removeScheduleBlock('${dia}',${i})">eliminar clase.</button>` : ''}
             `);
+            modoCapa('editor');
+            enfocarSiTeclado(() => document.getElementById(b || hora ? 'clase-asig' : 'clase-ini'));
         }
 
-        async function saveScheduleBlock(dayKey) {
-            const time = document.getElementById('schedule-time')?.value || '';
-            const subject = document.getElementById('schedule-subject')?.value.trim();
-            if (!subject) { showToast('Indica el nombre de la clase', true); return; }
-            studies.schedule[dayKey] = studies.schedule[dayKey] || [];
-            studies.schedule[dayKey].push({ time, subject });
-            studies.schedule[dayKey].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+        async function guardarClase(diaAntes, iAntes) {
+            const dia = document.getElementById('clase-dia')?.value;
+            const time = document.getElementById('clase-ini')?.value || '';
+            const endTime = document.getElementById('clase-fin')?.value || '';
+            const subject = document.getElementById('clase-asig')?.value.trim();
+            if (!dia || !subject) { showToast('Escribe la asignatura o la clase', true); return; }
+            if (endTime && (!time || endTime <= time)) { showToast('La hora de fin tiene que ser después de la de inicio', true); return; }
+            let bloque = { time, subject };
+            if (diaAntes != null && studies.schedule[diaAntes]?.[iAntes]) {
+                bloque = studies.schedule[diaAntes].splice(iAntes, 1)[0];
+                Object.assign(bloque, { time, subject });
+            }
+            if (endTime) bloque.endTime = endTime; else delete bloque.endTime;
+            (studies.schedule[dia] = studies.schedule[dia] || []).push(bloque);
+            studies.schedule[dia].sort((a, b) => String(a.time).localeCompare(String(b.time)));
             closeModal();
             render();
-            try { await saveData(); showToast('Clase añadida'); }
+            try { await saveData(); showToast(diaAntes != null ? 'Clase guardada' : 'Clase añadida'); }
             catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         async function removeScheduleBlock(dayKey, index) {
             if (!studies.schedule[dayKey]) return;
             studies.schedule[dayKey].splice(index, 1);
+            closeModal();
             render();
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
