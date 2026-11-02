@@ -4589,7 +4589,7 @@ body.papel {
 .finance-review-row:last-child { border-bottom:none; }
 .finance-review-row-head { display:flex; justify-content:space-between; align-items:center; }
 
-.fin-cuentas { padding:6px 16px; }
+.fin-cuentas { padding:6px 16px; margin-bottom:16px; }
 .fin-cuenta { display:grid; grid-template-columns:28px minmax(0, 1fr) auto 36px 36px; align-items:center; gap:10px; min-height:52px; border-bottom:1px solid var(--border); }
 .fin-cuenta:last-child { border-bottom:0; }
 .fin-cuenta-icono { display:grid; place-items:center; color:var(--text-secondary); }
