@@ -148,11 +148,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         assert.equal(r.cuadre.cuadra, true);
     });
 
-    test('el cuadre encuentra el saldo final aunque las filas de un día estén desordenadas', { todo: 'financeProCuadreExtracto toma la primera fila como la última: en Ibercaja avisa de un descuadre que no existe' }, () => {
+    test('el cuadre encuentra el saldo final aunque las filas de un día estén desordenadas', () => {
         const cab = ['Nº Orden', 'Fecha Operacion', 'Fecha Valor', 'Concepto', 'Descripción', 'Referencia', 'Importe', 'Saldo'];
         const filas = [cab,
             ['2', '02/10/2023', '02/10/2023', 'TARJETA VISA', 'Comercio B', '2', '-30,00', '70,00'],
-            ['1', '02/10/2023', '02/10/2023', 'TARJETA VISA', 'Comercio A', '1', '-20,00', '40,00'],
+            ['1', '02/10/2023', '02/10/2023', 'TARJETA VISA', 'Comercio A', '1', '-20,00', '50,00'],
             ['3', '01/10/2023', '01/10/2023', 'NOMINA', 'Empresa', '3', '100,00', '100,00']];
         vaciar();
         assert.equal(importar(filas, 'bancos').cuadre.cuadra, true);

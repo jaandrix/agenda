@@ -3220,7 +3220,13 @@
             if (!completas.length) return null;
             // El extracto puede venir de más antiguo a más nuevo o al revés.
             const asc = completas[0].fechas[completas[0].fechas.length - 1] <= completas[completas.length - 1].fechas[completas[completas.length - 1].fechas.length - 1];
-            const ultima = asc ? completas[completas.length - 1] : completas[0];
+            // Dentro de un mismo día Ibercaja no ordena las filas por hora: la última es la que deja un saldo del que no
+            // parte ninguna otra (en el extracto real, la primera fila daba 200,29 y el día acababa en 155,39).
+            const fin = f => f.fechas.reduce((a, b) => a > b ? a : b);
+            const previo = new Set(completas.map(f => Math.round((f.saldo - f.val) * 100)));
+            let finales = completas.filter(f => !previo.has(Math.round(f.saldo * 100)));
+            if (finales.length > 1) { const dia = completas.map(fin).reduce((a, b) => a > b ? a : b); finales = finales.filter(f => fin(f) === dia); }
+            const ultima = finales.length === 1 ? finales[0] : asc ? completas[completas.length - 1] : completas[0];
             const esperado = Math.round((ultima.saldo + filas.filter(f => f.pend && f.val < 0).reduce((x, f) => x + f.val, 0)) * 100) / 100;
             const todas = filas.flatMap(f => f.fechas);
             const desde = todas.reduce((a, b) => a < b ? a : b), hasta = todas.reduce((a, b) => a > b ? a : b);
