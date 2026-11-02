@@ -134,12 +134,29 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         assert.equal(run('JSON.stringify(financePro)'), antes);
     });
 
-    test('dos compras iguales en días cercanos de extractos distintos son dos compras', { todo: 'financeProFilasYaApuntadas desmarca la segunda como «parece que ya está»: quedan fuera y el saldo descuadra' }, () => {
+    test('dos compras iguales en días cercanos de extractos distintos son dos compras', () => {
         vaciar();
         const fila = (ini, fin, sal) => `Card Payment,Current,${ini},${fin},Cafe,-1.60,0.00,EUR,COMPLETED,${sal}`;
         importar([cabRevolut, fila('2023-09-29 18:00:00', '2023-09-30 04:00:00', '98.40')].join('\n'), 'online');
         const r = importar([cabRevolut, fila('2023-10-01 18:00:00', '2023-10-02 04:00:00', '96.80')].join('\n'), 'online');
         assert.equal(r.nuevos, 1);
+    });
+
+    test('un pendiente que se completa con otro nombre de comercio no se duplica', () => {
+        vaciar({ online: 100 });
+        importar([cabRevolut, 'Card Payment,Current,2023-10-14 18:40:53,,Peaje,-8.42,0.00,EUR,PENDING,'].join('\n'), 'online');
+        const r = importar([cabRevolut, 'Card Payment,Current,2023-10-14 18:40:53,2023-10-18 09:35:45,Autopista,-8.42,0.00,EUR,COMPLETED,91.58'].join('\n'), 'online');
+        assert.equal(run('financePro.transactions.length'), 1);
+        assert.equal(run('financePro.transactions.filter(t => t.pendiente).length'), 0);
+        assert.equal(r.cuadre.cuadra, true);
+    });
+
+    test('un cargo pendiente de antes del extracto no lo descuadra', () => {
+        vaciar({ online: 100 });
+        importar([cabRevolut, 'Card Payment,Current,2023-09-29 10:00:00,2023-09-29 10:00:01,Tienda,-10.00,0.00,EUR,COMPLETED,90.00',
+            'Card Payment,Current,2023-09-30 12:00:00,,Bar,-5.00,0.00,EUR,PENDING,'].join('\n'), 'online');
+        const r = importar([cabRevolut, 'Card Payment,Current,2023-10-01 09:00:00,2023-10-01 09:00:01,Super,-20.00,0.00,EUR,COMPLETED,70.00'].join('\n'), 'online');
+        assert.equal(r.cuadre.cuadra, true);
     });
 
     test('la comisión de Revolut descuenta del saldo', { todo: 'financeProEjecutarImport ignora la columna Fee: el saldo se queda alto por lo que sumen las comisiones' }, () => {

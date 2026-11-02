@@ -289,7 +289,10 @@
             let mejor = null, mejorNota = Infinity;
             financePro.transactions.forEach(t => {
                 if (!t.pendiente || t.account !== f.account || t.type !== f.type || usados?.has(t)) return;
-                if (financeProNormalizar(t.bankNote ?? t.note) !== texto) return;
+                // Revolut cambia a veces el nombre del comercio al completar (los dos peajes del 14-10 volvieron con otro): con
+                // la misma hora de inicio, el mismo día y el mismo importe es la misma operación aunque el nombre no coincida.
+                const mismaOperacion = f.hora && t.hora === f.hora && t.date === f.date && Math.abs(Number(t.amount) - Number(f.amount)) < 0.005;
+                if (financeProNormalizar(t.bankNote ?? t.note) !== texto && !mismaOperacion) return;
                 const dias = Math.min(...fechas.map(d => Math.abs((new Date(t.date) - new Date(d)) / 86400000)));
                 const diff = Math.abs(Number(t.amount) - Number(f.amount));
                 const margen = dias === 0 ? 0.5 : 0.15;
@@ -3227,7 +3230,13 @@
             let finales = completas.filter(f => !previo.has(Math.round(f.saldo * 100)));
             if (finales.length > 1) { const dia = completas.map(fin).reduce((a, b) => a > b ? a : b); finales = finales.filter(f => fin(f) === dia); }
             const ultima = finales.length === 1 ? finales[0] : asc ? completas[completas.length - 1] : completas[0];
-            const esperado = Math.round((ultima.saldo + filas.filter(f => f.pend && f.val < 0).reduce((x, f) => x + f.val, 0)) * 100) / 100;
+            // Un cargo que sigue pendiente desde antes del extracto no sale en él (Revolut lista por fecha de inicio) ni en
+            // su saldo: se descuenta como los pendientes del archivo. El de un día del 1-10 daba 9,44 € de más por eso.
+            const primerDia = completas.map(fin).reduce((a, b) => a < b ? a : b);
+            const pendientesDeAntes = financePro.transactions.filter(t => t.pendiente && t.account === m.account && t.type === 'expense' && t.date < primerDia
+                && !filas.some(f => Math.abs(Math.abs(f.val) - Number(t.amount)) < 0.005 && f.fechas.includes(t.date)));
+            const esperado = Math.round((ultima.saldo + filas.filter(f => f.pend && f.val < 0).reduce((x, f) => x + f.val, 0)
+                - pendientesDeAntes.reduce((x, t) => x + Number(t.amount), 0)) * 100) / 100;
             const todas = filas.flatMap(f => f.fechas);
             const desde = todas.reduce((a, b) => a < b ? a : b), hasta = todas.reduce((a, b) => a > b ? a : b);
             const cuenta = m.account;
@@ -3493,7 +3502,7 @@
                 // de hotel) en vez de entrar otra vez como movimiento nuevo.
                 // Dos pendientes solo son el mismo si comparten fecha de
                 // inicio exacta: si no, serían dos compras en el mismo sitio.
-                const candidato = financeProBuscarPendiente({ account: effectiveAccount, type: rule ? 'transfer' : type, amount, date, altDates, note: description }, pendientesUsados);
+                const candidato = financeProBuscarPendiente({ account: effectiveAccount, type: rule ? 'transfer' : type, amount, date, altDates, note: description, hora }, pendientesUsados);
                 if (candidato) pendientesUsados.add(candidato);
                 const pendiente = candidato && esPendiente && candidato.date !== date ? null : candidato;
                 if (esAnulado) {
@@ -4021,9 +4030,12 @@ function financeProFilasYaApuntadas(imp) {
         const x = libres.find(x => !usados.has(x) && f.fechas.includes(x.t.date) && Math.abs(x.val - f.val) < 0.005 && mismoConcepto(x, f));
         if (x) tomar(f, x);
     });
-    // Mismo concepto e importe con otra fecha cercana (la de completado frente a la de inicio).
+    // Mismo concepto e importe con otra fecha cercana (la de completado frente a la de inicio). Solo dentro de las fechas
+    // del extracto: lo de antes es de otro extracto, y el café de 1,60 € del 29 de septiembre se llevaba el del 1 de octubre.
+    const fechasExtracto = filas.flatMap(f => f.fechas);
+    const desde = fechasExtracto.reduce((a, b) => a < b ? a : b, '9999'), hasta = fechasExtracto.reduce((a, b) => a > b ? a : b, '');
     filas.filter(f => !ya.has(f.fila)).forEach(f => {
-        const x = libres.filter(x => !usados.has(x) && Math.abs(x.val - f.val) < 0.005 && mismoConcepto(x, f) && cerca(x.t, f) <= 4)
+        const x = libres.filter(x => !usados.has(x) && x.t.date >= desde && x.t.date <= hasta && Math.abs(x.val - f.val) < 0.005 && mismoConcepto(x, f) && cerca(x.t, f) <= 4)
             .sort((a, b) => cerca(a.t, f) - cerca(b.t, f))[0];
         if (x) tomar(f, x);
     });
