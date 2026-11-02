@@ -17,7 +17,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const sb = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const BUCKET = 'compartidos';
-const TIPOS = ['quedada', 'invitacion', 'lista', 'viaje'];
+// despensa: la lista de la compra y/o los platos planificados, de solo lectura; quien la abre la puede meter en su Bitácora.
+const TIPOS = ['quedada', 'invitacion', 'lista', 'viaje', 'despensa'];
 const MAX_EVENTOS = 400;
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });

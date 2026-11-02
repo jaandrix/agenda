@@ -6,7 +6,7 @@
 //  (servicios.compartidos); las respuestas viven en el servidor.
 // ============================================================
 const COMPARTIR_WEB = 'https://appbitacora.es/c/#';
-const COMPARTIR_TIPOS = { quedada: 'quedada.', invitacion: 'invitación.', lista: 'lista.', viaje: 'viaje.' };
+const COMPARTIR_TIPOS = { quedada: 'quedada.', invitacion: 'invitación.', lista: 'lista.', viaje: 'viaje.', despensa: 'despensa.' };
 const compartidoCache = {};
 let quedadaOpciones = [];
 SOCIAL_ICONOS.enlace = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M4 44 96 6 72 94 50 62 82 20 40 56z"/></svg>';
@@ -39,7 +39,7 @@ async function compartirCrear(tipo, datos, ref) {
 async function compartirEnviar(id) {
     const c = compartidosLista().find(x => x.id === id);
     const url = COMPARTIR_WEB + id;
-    const texto = { quedada: `¿Cuándo os va? Marcad las fechas que podéis para «${c?.titulo}»:`, invitacion: `Te invito a «${c?.titulo}». ¿Vienes?`, lista: `Lista compartida «${c?.titulo}»:`, viaje: `El plan de «${c?.titulo}»:` }[c?.tipo] || '';
+    const texto = { quedada: `¿Cuándo os va? Marcad las fechas que podéis para «${c?.titulo}»:`, invitacion: `Te invito a «${c?.titulo}». ¿Vienes?`, lista: `Lista compartida «${c?.titulo}»:`, viaje: `El plan de «${c?.titulo}»:`, despensa: `Te paso ${c?.ref === 'lista' ? 'la lista de la compra' : c?.ref === 'plan' ? 'lo que vamos a comer' : 'la lista de la compra y lo que vamos a comer'}. Si usas Bitácora, la añades a la tuya desde el enlace:` }[c?.tipo] || '';
     if (navigator.share) { try { await navigator.share({ title: c?.titulo || 'Bitácora', text: texto, url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
     navigator.clipboard.writeText(`${texto} ${url}`).then(() => showToast('Enlace copiado, listo para pegar')).catch(() => showToast('No se ha podido copiar', true));
 }
@@ -219,6 +219,10 @@ function pintarCompartido(id, recien) {
             const it = compartidoItems(c);
             cuerpo = `<div class="cmpt-lista">${it.map(i => `<div class="cmpt-item ${i.hecho ? 'hecho' : ''}"><button class="compra-check ${i.hecho ? 'on' : ''}" onclick="compartidoMarcar('${id}', '${jsAttr(i.id)}', ${!i.hecho})" aria-label="${i.hecho ? 'Desmarcar' : 'Marcar'}"></button><span><b>${escapeHtml(i.texto)}</b>${i.quien ? `<small>lo añadió ${escapeHtml(i.quien)}</small>` : ''}</span></div>`).join('') || '<div class="finance-modal-note">La lista está vacía.</div>'}</div>
             ${it.some(i => !i.hecho) && typeof datosCompra === 'function' ? `<button class="btn-secondary" style="width:auto;margin-top:10px" onclick="compartidoADespensa('${id}')">pasar lo pendiente a mi despensa.</button>` : ''}`;
+        } else if (c.tipo === 'despensa') {
+            const n = (c.datos?.lista?.items || []).length, p = (c.datos?.plan || []).length;
+            cuerpo = `<p class="finance-modal-note" style="margin-top:0">${[n ? `${n} ${n === 1 ? 'cosa de la lista' : 'cosas de la lista'}` : '', p ? `${p} ${p === 1 ? 'plato' : 'platos'}` : ''].filter(Boolean).join(' y ')}, tal como estaban el ${new Date(c.actualizado || c.creado).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}. Quien abra el enlace lo ve y, si usa Bitácora, lo añade a la suya.</p>
+            <button class="btn-secondary" style="width:auto" onclick="compartidoActualizar('${id}')">actualizar con lo último.</button>`;
         } else if (c.tipo === 'viaje') {
             cuerpo = `<p class="finance-modal-note" style="margin-top:0">Quien abra el enlace ve el plan tal como estaba el ${new Date(c.actualizado || c.creado).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}: transportes, alojamientos y el día a día. Los números de reserva no se comparten.</p>
             ${fila.ref && getTrip(fila.ref) ? `<button class="btn-secondary" style="width:auto" onclick="compartidoActualizar('${id}')">actualizar con lo último.</button>` : ''}`;
@@ -272,7 +276,7 @@ async function compartidoActualizar(id) {
     const fila = compartidosLista().find(x => x.id === id);
     const c = compartidoCache[id];
     if (!fila || !c) return;
-    const datos = fila.tipo === 'viaje' ? viajeDatos(getTrip(fila.ref)) : invitacionDatos(fila.ref, c.datos?.nota);
+    const datos = fila.tipo === 'viaje' ? viajeDatos(getTrip(fila.ref)) : fila.tipo === 'despensa' ? despensaDatos(fila.ref) : invitacionDatos(fila.ref, c.datos?.nota);
     try { compartidoCache[id] = await compartirPedir({ accion: 'actualizar', id, datos }); }
     catch (e) { showToast('No se ha podido actualizar', true); return; }
     fila.titulo = datos.titulo;

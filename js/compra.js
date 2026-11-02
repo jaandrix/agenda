@@ -192,7 +192,7 @@ function renderCompraCabecera(sub, conListas, enCarro) {
             <div class="compra-titulo">despensa.</div>
             <div class="compra-sub">${sub}</div>
         </div>
-        ${conListas ? `<div class="compra-cab-botones">${enCarro ? `<button class="btn-modal-primary compra-terminar-arriba" onclick="openCompraTerminar()">terminar la compra. <small>${enCarro}</small></button>` : ''}${Object.keys(datosCompra().frecuentes).length ? '<button class="pedido-btn" onclick="openCompraFrecuentes()">lo de siempre.</button>' : ''}<button class="pedido-btn" onclick="openCompraListas()">listas.</button></div>` : ''}
+        <div class="compra-cab-botones">${conListas ? `${enCarro ? `<button class="btn-modal-primary compra-terminar-arriba" onclick="openCompraTerminar()">terminar la compra. <small>${enCarro}</small></button>` : ''}${Object.keys(datosCompra().frecuentes).length ? '<button class="pedido-btn" onclick="openCompraFrecuentes()">lo de siempre.</button>' : ''}<button class="pedido-btn" onclick="openCompraListas()">listas.</button>` : ''}<button class="pedido-btn" onclick="openCompartirDespensa()">compartir.</button></div>
     </div>`;
 }
 
@@ -1024,9 +1024,9 @@ function renderCompraPlan() {
         ${vacia && !hayPasada ? `<div class="compra-vacio"><b>planifica lo que vas a comer.</b>Pon en cada día sus platos (de tus recetas o escritos a mano, con sus ingredientes). Abajo se junta todo lo que hace falta, sin repetir, y con un toque pasa a la lista de la compra lo que te falte.</div>` : ''}
         <div class="plan-dias">${dias.map((f, i) => {
             const platos = [...(d.plan[f] || [])].sort((a, b) => PLAN_MOMENTOS.findIndex(m => m[0] === a.momento) - PLAN_MOMENTOS.findIndex(m => m[0] === b.momento));
-            return `<div class="plan-dia ${f === hoy ? 'hoy' : ''} ${f < hoy ? 'pasado' : ''}">
+            return `<div class="plan-dia ${f === hoy ? 'hoy' : ''} ${f < hoy ? 'pasado' : ''}" data-fecha="${f}">
                 <div class="plan-dia-cab"><b>${PLAN_DIAS[i]}.</b><small>${fmt(f)}</small><button class="plan-mas" onclick="openPlato('${f}')" aria-label="Añadir un plato el ${PLAN_DIAS[i]}"><i class='ico ico-mas' aria-hidden=true></i></button></div>
-                <div class="plan-dia-platos">${platos.length ? platos.map(p => `<button class="plan-plato" onclick="openPlato('${f}','${jsAttr(p.id)}')"><small>${escapeHtml((PLAN_MOMENTOS.find(m => m[0] === p.momento) || ['', ''])[1])}</small><b>${escapeHtml(p.nombre)}</b></button>`).join('') : `<button class="plan-hueco" onclick="openPlato('${f}')">+ plato.</button>`}</div>
+                <div class="plan-dia-platos">${platos.length ? platos.map(p => `<button class="plan-plato" onclick="if(!platoRecienMovido())openPlato('${f}','${jsAttr(p.id)}')"><span class="plan-asa" onpointerdown="platoArrastrar(event,'${f}','${jsAttr(p.id)}')" aria-hidden="true"></span><span class="plan-plato-txt"><small>${escapeHtml((PLAN_MOMENTOS.find(m => m[0] === p.momento) || ['', ''])[1])}</small><b>${escapeHtml(p.nombre)}</b></span></button>`).join('') : `<button class="plan-hueco" onclick="openPlato('${f}')">+ plato.</button>`}</div>
             </div>`;
         }).join('')}</div>
         ${necesario.length ? `
@@ -1054,6 +1054,8 @@ function openPlato(fecha, id) {
     showModal(`
         <div class="modal-title">${p ? 'el plato.' : 'plato nuevo.'}</div>
         <p class="finance-modal-note" style="margin-top:0">${escapeHtml(dia)}.</p>
+        <div class="modal-label">día</div>
+        <input id="plato-fecha" class="modal-input" type="date" value="${fecha}">
         <div class="modal-label">cuándo</div>
         <div class="plan-momentos">${PLAN_MOMENTOS.map(([k, t]) => `<button type="button" class="profe-chip ${k === momento ? 'activa' : ''}" data-momento="${k}" onclick="document.querySelectorAll('.plan-momentos .profe-chip').forEach(b => b.classList.toggle('activa', b === this))">${t}</button>`).join('')}</div>
         ${recetas.length ? `<div class="modal-label">de tus recetas</div>
@@ -1100,10 +1102,13 @@ function guardarPlato(fecha, id) {
         recetaId: igualQueReceta ? receta.id : undefined,
         ingredientes,
     };
-    const lista = d.plan[fecha] = d.plan[fecha] || [];
-    const p = id ? lista.find(x => x.id === id) : null;
-    if (p) Object.assign(p, datos);
-    else lista.push({ id: 'plato_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), ...datos });
+    const elegida = document.getElementById('plato-fecha')?.value;
+    const destino = /^\d{4}-\d{2}-\d{2}$/.test(elegida || '') ? elegida : fecha;
+    const p = id ? (d.plan[fecha] || []).find(x => x.id === id) : null;
+    if (p) {
+        Object.assign(p, datos);
+        if (destino !== fecha) compraMoverPlato(fecha, id, destino);
+    } else (d.plan[destino] = d.plan[destino] || []).push({ id: 'plato_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), ...datos });
     closeModal();
     render();
     guardarCompra();
@@ -1148,4 +1153,219 @@ function compraPlanALaLista() {
     render();
     guardarCompra();
     showToast(n ? `${n} ${n === 1 ? 'ingrediente' : 'ingredientes'} a la lista «${l.nombre}»` : 'Ya tenías todo en la lista');
+}
+
+// ---- mover un plato de día ----
+function compraMoverPlato(desde, id, hasta) {
+    const d = datosCompra();
+    const p = (d.plan[desde] || []).find(x => x.id === id);
+    if (!p || desde === hasta) return false;
+    d.plan[desde] = d.plan[desde].filter(x => x !== p);
+    if (!d.plan[desde].length) delete d.plan[desde];
+    (d.plan[hasta] = d.plan[hasta] || []).push(p);
+    return true;
+}
+
+// Al soltar sobre el mismo plato, el navegador manda también un clic: sin esto se abría el plato.
+let platoMovidoEn = 0;
+function platoRecienMovido() { return Date.now() - platoMovidoEn < 400; }
+
+// Como en Profesorado: del asa a otro día de la semana, con el dedo o el ratón.
+function platoArrastrar(e, fecha, id) {
+    const boton = e.currentTarget.closest('.plan-plato');
+    if (!boton) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const r = boton.getBoundingClientRect();
+    const fantasma = boton.cloneNode(true);
+    fantasma.classList.add('plan-fantasma');
+    fantasma.style.width = r.width + 'px';
+    document.body.appendChild(fantasma);
+    boton.classList.add('arrastrando');
+    let pagina = boton.parentElement;
+    while (pagina && pagina !== document.body && !(pagina.scrollHeight > pagina.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(pagina).overflowY))) pagina = pagina.parentElement;
+    if (!pagina || pagina === document.body) pagina = document.scrollingElement;
+    const dx = e.clientX - r.left, dy = e.clientY - r.top;
+    let destino = null, x = e.clientX, y = e.clientY, vivo = true, movido = false;
+    const colocar = () => { fantasma.style.transform = `translate(${x - dx}px, ${y - dy}px) rotate(-1.5deg)`; };
+    colocar();
+    const marcar = () => {
+        const dia = document.elementFromPoint(x, y)?.closest('.plan-dia[data-fecha]');
+        if (dia === destino) return;
+        destino?.classList.remove('destino');
+        destino = dia || null;
+        destino?.classList.add('destino');
+    };
+    const bucle = () => {
+        if (!vivo) return;
+        if (y > innerHeight - 56) pagina.scrollTop += 12;
+        else if (y < 72) pagina.scrollTop -= 12;
+        marcar();
+        requestAnimationFrame(bucle);
+    };
+    requestAnimationFrame(bucle);
+    const mover = ev => { x = ev.clientX; y = ev.clientY; movido = true; colocar(); marcar(); };
+    const soltar = () => {
+        vivo = false;
+        window.removeEventListener('pointermove', mover);
+        window.removeEventListener('pointerup', soltar);
+        window.removeEventListener('pointercancel', soltar);
+        fantasma.remove();
+        boton.classList.remove('arrastrando');
+        destino?.classList.remove('destino');
+        if (movido) platoMovidoEn = Date.now();
+        const hasta = destino?.dataset.fecha;
+        if (!hasta || !compraMoverPlato(fecha, id, hasta)) return;
+        render();
+        guardarCompra();
+        showToast(`Movido al ${new Date(hasta + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}`);
+    };
+    window.addEventListener('pointermove', mover);
+    window.addEventListener('pointerup', soltar);
+    window.addEventListener('pointercancel', soltar);
+}
+
+// ---- compartir la despensa con un enlace ----
+// La lista, la planificación o las dos, como foto de cómo están ahora (tipo «despensa» de la función compartir). Quien lo
+// abre lo ve sin cuenta y, si usa Bitácora, lo mete en la suya (?despensa=ID o pegando el enlace aquí).
+function despensaPlanDesde() { return compraLunesDe(todayISO()); }
+
+function despensaDatos(que) {
+    const d = datosCompra(), l = compraListaActual();
+    const lista = que !== 'plan' ? { nombre: l.nombre, items: l.items.filter(i => !i.hecho).slice(0, 200).map(i => ({ texto: i.texto, cantidad: i.cantidad || '' })) } : null;
+    const plan = que !== 'lista' ? Object.keys(d.plan).filter(f => f >= despensaPlanDesde()).sort().flatMap(f => d.plan[f].map(p => ({
+        fecha: f, momento: p.momento, nombre: p.nombre,
+        ingredientes: compraIngredientesPlato(p).slice(0, 30).map(x => ({ texto: x.texto, cantidad: x.cantidad || '' })),
+    }))).slice(0, 80) : null;
+    return { titulo: que === 'lista' ? `Lista ${l.nombre}` : que === 'plan' ? 'Planificación de comidas' : 'Despensa', que, lista, plan };
+}
+
+function openCompartirDespensa() {
+    const d = datosCompra(), l = compraListaActual();
+    const nLista = l.items.filter(i => !i.hecho).length;
+    const nPlan = Object.keys(d.plan).filter(f => f >= despensaPlanDesde()).reduce((s, f) => s + d.plan[f].length, 0);
+    const op = (que, titulo, texto, vacio) => `<button class="cmpt-nuevo" ${vacio ? 'disabled' : ''} onclick="this.disabled=true;compartirCrear('despensa', despensaDatos('${que}'), '${que}')"><b>${titulo}</b><span>${texto}</span></button>`;
+    showModal(`
+        <div class="modal-title">compartir.</div>
+        <p class="finance-modal-note" style="margin-top:0">Crea un enlace para tu pareja o tus amigos. Lo ven sin cuenta ni app y, si usan Bitácora, lo añaden a la suya con un toque. Es una foto de cómo está ahora: si cambias algo, ábrelo en Social y pulsa «actualizar con lo último.».</p>
+        <div class="cmpt-nuevos">
+            ${op('lista', 'solo la lista de la compra.', nLista ? `${nLista} ${nLista === 1 ? 'cosa pendiente' : 'cosas pendientes'} de «${escapeHtml(l.nombre)}».` : 'La lista está vacía.', !nLista)}
+            ${op('plan', 'solo la planificación.', nPlan ? `${nPlan} ${nPlan === 1 ? 'plato' : 'platos'} desde esta semana, con sus ingredientes.` : 'No hay platos desde esta semana.', !nPlan)}
+            ${op('ambas', 'las dos.', 'La lista y los platos en el mismo enlace.', !nLista || !nPlan)}
+        </div>
+        <div class="modal-label" style="margin-top:18px">¿te han pasado un enlace?</div>
+        <div class="compra-anadir">
+            <input id="despensa-enlace" class="modal-input" placeholder="Pega aquí el enlace" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();despensaAbrirEnlace(this.value)}">
+            <button class="btn-modal-primary" onclick="despensaAbrirEnlace(document.getElementById('despensa-enlace').value)">abrir.</button>
+        </div>
+    `);
+}
+
+// Lo que llega de otra persona: solo lo que se entiende, con la longitud acotada (se pinta y se guarda en tus datos).
+function despensaLimpiar(datos) {
+    const t = (v, n) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n);
+    const momentos = PLAN_MOMENTOS.map(m => m[0]);
+    const cosas = l => (Array.isArray(l) ? l : []).slice(0, 200).map(i => ({ texto: t(i?.texto, 80), cantidad: t(i?.cantidad, 30) })).filter(i => i.texto);
+    return {
+        titulo: t(datos?.titulo, 80),
+        listaNombre: t(datos?.lista?.nombre, 60),
+        items: cosas(datos?.lista?.items),
+        platos: (Array.isArray(datos?.plan) ? datos.plan : []).slice(0, 80).map(p => ({
+            fecha: /^\d{4}-\d{2}-\d{2}$/.test(p?.fecha || '') ? p.fecha : '',
+            momento: momentos.includes(p?.momento) ? p.momento : 'comida',
+            nombre: t(p?.nombre, 80),
+            ingredientes: cosas(p?.ingredientes).slice(0, 30),
+        })).filter(p => p.fecha && p.nombre),
+    };
+}
+
+let despensaRecibida = null;
+async function despensaAbrirEnlace(texto) {
+    const id = String(texto || '').trim().match(/([A-Za-z0-9_-]{16})\/?$/)?.[1];
+    if (!id) { showToast('Ese enlace no está completo', true); return; }
+    let c;
+    try { c = await compartirPedir({ accion: 'ver', id }); }
+    catch (e) { showToast(e.status === 404 ? 'Ese enlace ya no existe' : 'No se ha podido abrir el enlace', true); return; }
+    const autor = String(c.autor || '').slice(0, 40);
+    if (c.tipo === 'despensa') despensaRecibida = { id, autor, ...despensaLimpiar(c.datos) };
+    else if (c.tipo === 'lista') despensaRecibida = { id, autor, ...despensaLimpiar({ titulo: c.datos?.titulo, lista: { nombre: c.datos?.titulo, items: compartidoItems(c).filter(i => !i.hecho) } }) };
+    else { showToast('Ese enlace no es de una despensa', true); return; }
+    pintarDespensaRecibida();
+}
+
+function pintarDespensaRecibida() {
+    const r = despensaRecibida;
+    if (!r) return;
+    const d = datosCompra();
+    const fechas = r.platos.map(p => p.fecha).sort();
+    const fmt = f => new Date(f + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    showModal(`
+        <div class="modal-title">añadir a tu despensa.</div>
+        <p class="finance-modal-note" style="margin-top:0">${escapeHtml(r.autor || 'Alguien')} te pasa ${r.items.length && r.platos.length ? 'su lista de la compra y lo que va a comer' : r.items.length ? 'su lista de la compra' : 'lo que va a comer'}. Elige qué quieres meter en tu Bitácora.</p>
+        ${!r.items.length && !r.platos.length ? '<div class="finance-modal-note">El enlace está vacío.</div>' : ''}
+        ${r.items.length ? `<label class="desp-opcion"><input type="checkbox" id="desp-lista" checked><span><b>${r.items.length} ${r.items.length === 1 ? 'cosa de la lista' : 'cosas de la lista'}.</b><small>${escapeHtml(r.items.slice(0, 6).map(i => i.texto).join(', '))}${r.items.length > 6 ? '...' : ''}</small></span></label>
+        <div class="modal-label">a qué lista</div>
+        <select id="desp-destino" class="modal-input">${d.listas.map(l => `<option value="${escapeHtml(l.id)}" ${l.id === d.actual ? 'selected' : ''}>${escapeHtml(l.nombre)}</option>`).join('')}<option value="nueva">una lista nueva: ${escapeHtml(r.listaNombre || 'Compartida')}</option></select>` : ''}
+        ${r.platos.length ? `<label class="desp-opcion"><input type="checkbox" id="desp-plan" checked><span><b>${r.platos.length} ${r.platos.length === 1 ? 'plato' : 'platos'} de la planificación.</b><small>${escapeHtml(fechas[0] === fechas[fechas.length - 1] ? `El ${fmt(fechas[0])}.` : `Del ${fmt(fechas[0])} al ${fmt(fechas[fechas.length - 1])}.`)} Los que ya tengas ese día no se repiten.</small></span></label>` : ''}
+        ${r.items.length || r.platos.length ? '<button class="btn-modal-primary" style="margin-top:16px" onclick="despensaImportar()">añadir a mi despensa.</button>' : ''}
+    `);
+}
+
+function despensaImportar() {
+    const r = despensaRecibida;
+    if (!r) return;
+    const d = datosCompra();
+    const nuevoId = p => p + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    let cosas = 0, platos = 0, listaNombre = '';
+    if (r.items.length && document.getElementById('desp-lista')?.checked) {
+        const destino = document.getElementById('desp-destino')?.value;
+        let l = d.listas.find(x => x.id === destino);
+        if (!l) { l = { id: nuevoId('lista_'), nombre: r.listaNombre || 'Compartida', items: [] }; d.listas.push(l); }
+        d.actual = l.id;
+        listaNombre = l.nombre;
+        r.items.forEach(i => {
+            if (l.items.some(x => !x.hecho && compraClave(x.texto) === compraClave(i.texto))) return;
+            l.items.push({ id: nuevoId('cmp_'), texto: i.texto, cantidad: i.cantidad, precio: null, hecho: false });
+            cosas++;
+        });
+    }
+    if (r.platos.length && document.getElementById('desp-plan')?.checked) {
+        r.platos.forEach(p => {
+            const dia = d.plan[p.fecha] = d.plan[p.fecha] || [];
+            if (dia.some(x => x.momento === p.momento && compraClave(x.nombre) === compraClave(p.nombre))) return;
+            dia.push({ id: nuevoId('plato_'), momento: p.momento, nombre: p.nombre, ingredientes: p.ingredientes });
+            platos++;
+        });
+    }
+    if (!cosas && !platos) { closeModal(); showToast('Ya lo tenías todo'); return; }
+    // Si Despensa estaba apagada, lo recibido no se vería: se enciende.
+    if (!apartadoVisible('compra')) { apartadosConfig = { ...(apartadosConfig || {}), opcionales: { ...((apartadosConfig || {}).opcionales || {}), compra: true } }; renderAllNavs(); }
+    despensaRecibida = null;
+    compraPestana = platos ? 'plan' : 'lista';
+    if (platos) compraPlanLunes = compraLunesDe(r.platos.map(p => p.fecha).sort()[0]);
+    closeModal();
+    if (currentView !== 'compra') { if (mobileStandaloneActive) mobileIr('compra'); else switchView('compra'); }
+    else render();
+    guardarCompra();
+    showToast([cosas ? `${cosas} ${cosas === 1 ? 'cosa' : 'cosas'} en «${listaNombre}»` : '', platos ? `${platos} ${platos === 1 ? 'plato' : 'platos'} en tu planificación` : ''].filter(Boolean).join(' y '));
+}
+
+// El botón «añadir a mi bitácora.» de la página pública trae ?despensa=ID: se guarda por si antes hay que entrar o
+// crear la cuenta, y se abre en cuanto la app ha arrancado y no hay otra ventana delante.
+(function leerDespensaDeLaUrl() {
+    const p = new URLSearchParams(location.search);
+    const id = p.get('despensa');
+    if (!id || !/^[A-Za-z0-9_-]{16}$/.test(id)) return;
+    try { localStorage.setItem('bitacora-despensa-pendiente', id); } catch (e) { /* sin almacenamiento */ }
+    p.delete('despensa');
+    history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : '') + location.hash);
+})();
+
+function despensaDesdeUrl(intentos = 0) {
+    let id = '';
+    try { id = localStorage.getItem('bitacora-despensa-pendiente') || ''; } catch (e) { return; }
+    if (!id) return;
+    if (modalEnPantalla() && intentos < 120) { setTimeout(() => despensaDesdeUrl(intentos + 1), 1000); return; }
+    try { localStorage.removeItem('bitacora-despensa-pendiente'); } catch (e) { /* sin almacenamiento */ }
+    despensaAbrirEnlace(id);
 }

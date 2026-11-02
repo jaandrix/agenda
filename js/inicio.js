@@ -42,6 +42,7 @@
                 cuandoEsteOcioso(actualizarAnalisisIA, 7000);
                 cuandoEsteOcioso(revisarCumplesRegalo, 9000);
                 compartidoDesdeUrl();
+                setTimeout(despensaDesdeUrl, 1200);
                 if (/[?&]semana\b/.test(location.search)) {
                     history.replaceState(null, '', location.pathname);
                     setTimeout(openResumenSemana, 900);

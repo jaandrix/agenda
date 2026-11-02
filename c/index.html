@@ -7,7 +7,7 @@
 <title>Bitácora</title>
 <meta name="description" content="Te han compartido algo desde Bitácora. Ábrelo sin cuenta ni app.">
 <meta property="og:title" content="Te han compartido algo desde Bitácora">
-<meta property="og:description" content="Una quedada, una invitación, una lista o un viaje. Se abre sin cuenta ni app.">
+<meta property="og:description" content="Una quedada, una invitación, una lista, la despensa o un viaje. Se abre sin cuenta ni app.">
 <meta property="og:image" content="https://appbitacora.es/og-image.png">
 <meta name="theme-color" content="#E7E2D9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#2B2A27" media="(prefers-color-scheme: dark)">
@@ -126,6 +126,9 @@ h1 { font-size: clamp(30px, 8.5vw, 42px); line-height: 1.05; letter-spacing: -.0
 .hora > span { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13.5px; color: var(--suave); }
 .hora b { font-weight: 600; display: block; }
 .hora small { display: block; color: var(--suave); font-size: 12.5px; }
+.hora-ancha { grid-template-columns: 78px 1fr; }
+.btn.centrado { display: block; text-align: center; }
+.enlace { border: 0; background: none; padding: 0; font-weight: 600; color: var(--tinta); text-decoration: underline; text-underline-offset: 3px; font-size: inherit; }
 /* Comunes */
 .campo { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borde); background: var(--tarjeta); font-size: 15px; outline: none; transition: border-color .15s ease; }
 .campo:focus { border-color: var(--tinta); }
@@ -421,7 +424,31 @@ footer a { color: var(--suave); font-weight: 600; }
             <p class="ayuda" style="margin-top:22px">Actualizado el ${esc(new Date(S.actualizado || S.creado).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }))}.</p>`;
     }
 
-    const PINTAR = { quedada: [pintarQuedada, enlazarQuedada], invitacion: [pintarInvitacion, enlazarInvitacion], lista: [pintarLista, enlazarLista], viaje: [pintarViaje, () => {}] };
+    // Despensa: la lista de la compra y lo que se va a comer, para verlo o meterlo en tu Bitácora.
+    function pintarDespensa(d) {
+        const items = (d.lista && d.lista.items) || [], platos = d.plan || [];
+        const MOMENTOS = ['desayuno', 'comida', 'merienda', 'cena'];
+        const dias = {};
+        platos.forEach(p => { (dias[p.fecha] = dias[p.fecha] || []).push(p); });
+        const que = items.length && platos.length ? 'su lista de la compra y lo que va a comer' : items.length ? 'su lista de la compra' : 'lo que va a comer';
+        return `
+            <p class="quien">${esc(S.autor || 'Alguien')} te pasa ${que}.</p>
+            <h1>${esc(d.titulo || 'Despensa')}</h1>
+            <a class="btn grande centrado" href="https://appbitacora.es/?despensa=${encodeURIComponent(id)}">añadir a mi bitácora.</a>
+            <p class="ayuda">Se abre Bitácora: entra con tu cuenta (o créala) y te pregunta qué quieres añadir. Si la usas instalada en el móvil, <button class="enlace" id="copiar">copia este enlace</button> y pégalo en Despensa, compartir.</p>
+            <div class="aviso" id="aviso" role="status"></div>
+            ${platos.length ? `<div class="seccion"><div class="seccion-tit">lo que se come.<small>${platos.length} ${platos.length === 1 ? 'plato' : 'platos'}</small></div><div class="tarjeta" style="padding:16px">${Object.keys(dias).sort().map(f => `<div class="dia-tit">${esc(fechaLarga(f).replace(/^\w/, c => c.toUpperCase()))}</div>${dias[f].sort((a, b) => MOMENTOS.indexOf(a.momento) - MOMENTOS.indexOf(b.momento)).map(p => `<div class="hora hora-ancha"><span>${esc(p.momento || '')}.</span><div><b>${esc(p.nombre)}</b>${(p.ingredientes || []).length ? `<small>${esc(p.ingredientes.map(x => [x.cantidad, x.texto].filter(Boolean).join(' ')).join(', '))}</small>` : ''}</div></div>`).join('')}`).join('')}</div></div>` : ''}
+            ${items.length ? `<div class="seccion"><div class="seccion-tit">la lista.<small>${items.length} ${items.length === 1 ? 'cosa' : 'cosas'}</small></div><div class="items tarjeta">${items.map(i => `<div class="item"><span class="item-txt"><b>${esc(i.texto)}</b>${i.cantidad ? `<small>${esc(i.cantidad)}</small>` : ''}</span></div>`).join('')}</div></div>` : ''}
+            <p class="ayuda" style="margin-top:22px">Actualizado el ${esc(new Date(S.actualizado || S.creado).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }))}.</p>`;
+    }
+    function enlazarDespensa() {
+        document.getElementById('copiar')?.addEventListener('click', () => {
+            const url = 'https://appbitacora.es/c/#' + id;
+            (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => aviso('Copiado. Abre Bitácora, entra en Despensa, compartir, y pégalo.'), () => aviso(url));
+        });
+    }
+
+    const PINTAR = { quedada: [pintarQuedada, enlazarQuedada], invitacion: [pintarInvitacion, enlazarInvitacion], lista: [pintarLista, enlazarLista], viaje: [pintarViaje, () => {}], despensa: [pintarDespensa, enlazarDespensa] };
     function pintar(primera) {
         const p = PINTAR[S.tipo];
         if (!p) { pantalla('no sé abrir esto.', 'Quizá haga falta una versión más nueva de esta página. Recárgala.'); return; }
@@ -431,7 +458,7 @@ footer a { color: var(--suave); font-weight: 600; }
         if (foco && !primera) document.getElementById(foco)?.focus();
         document.title = S.datos?.titulo ? `${S.datos.titulo}, en Bitácora` : 'Bitácora';
         clearInterval(sondeo);
-        if (S.tipo !== 'viaje') sondeo = setInterval(refrescar, S.tipo === 'lista' ? 8000 : 20000);
+        if (S.tipo !== 'viaje' && S.tipo !== 'despensa') sondeo =setInterval(refrescar, S.tipo === 'lista' ? 8000 : 20000);
     }
     app.addEventListener('input', e => { if (e.target.id === 'nombre') nombreBorrador = e.target.value; });
     document.addEventListener('visibilitychange', refrescar);
