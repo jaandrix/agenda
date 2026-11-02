@@ -1993,12 +1993,12 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             return `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}
                 ${renderFinanzasGrafica(true)}
                 <div class="m-acciones">
-                    <button class="m-boton m-boton-acento" onclick="openFinanceProTransactionModal()">+ movimiento.</button>
                     <button class="m-boton" onclick="pegarExtractoBancario()">importar extracto.</button>
                     <button class="m-boton" onclick="openGestorSuscripciones()">suscripciones.</button>
+                    <button class="m-boton m-boton-acento m-boton-centro" onclick="openFinanceProTransactionModal()">+ movimiento.</button>
                 </div>
                 ${mesB.avisos}
-                ${renderFinanceBudgetUnifiedPanel()}
+                ${renderPresupuestoMovil()}
                 <div class="m-bloque-cab"><div class="m-etiqueta">este mes.</div></div>
                 <div class="m-dos">
                     <div><div class="m-etiqueta">entra.</div><div class="m-cifra-media">${financeMoney(income)}</div></div>

@@ -89,6 +89,18 @@ function renderFinanceBudgetUnifiedPanel() {
     </section>`;
 }
 
+// En el móvil solo el estado de cada presupuesto del mes en curso: los ingresos, el reparto, editar y cerrar el mes se
+// hacen en el ordenador.
+function renderPresupuestoMovil() {
+    ensureLongTermData();
+    const month = financeMonthKey();
+    const { plan, recorded } = presupuestoPlanDe(month);
+    const m = financeBudgetUnifiedModel(month, plan, recorded);
+    if (!m.categories.length) return '';
+    return `<div class="m-bloque-cab"><div class="m-etiqueta">presupuestos.</div></div>
+        <section class="finance-panel pres pres-movil" aria-label="presupuestos del mes">${renderFinanceBudgetRows(m)}</section>`;
+}
+
 function renderFinanceBudgetSummary(m, editando) {
     const pct = v => m.income > 0 ? Math.max(0, Math.min(100, v / m.income * 100)) : 0;
     const aport = m.contributionsReal > m.contributionsPlanned ? `${financeMoney(m.contributions)} de aportaciones (${financeMoney(m.contributionsPlanned)} previstas)` : `${financeMoney(m.contributions)} de aportaciones`;

@@ -8538,6 +8538,7 @@ body.pizarra .planner-stamp-dot.filled { background:#D4D8DD; border-color:#D4D8D
 .m-generico .culture-barra > button { white-space:normal !important; line-height:1.2; text-overflow:clip; }
 /* Finanzas: «pegar extracto.» en una línea. */
 .m-acciones .m-boton { white-space:nowrap; font-size:15px; padding-left:8px; padding-right:8px; }
+.m-acciones .m-boton-centro { grid-column:1 / -1; justify-self:center; width:calc(50% - 5px); }
 /* El tiempo del inicio, con sitio para el dedo. */
 #mobile-shell .m-hero-tiempo .tiempo-widget { min-height:44px; min-width:44px; display:inline-flex; align-items:center; justify-content:flex-end; }
 
