@@ -77,6 +77,8 @@ self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
     const propio = url.origin === self.location.origin;
     if (!propio && !CDN_GUARDADOS.includes(url.hostname)) return;
+    // La edición editorial (/editorial/) es otra página: si pasara por aquí, su HTML se guardaría como la portada de la app.
+    if (propio && /^\/editorial(\/|$)/.test(url.pathname)) return;
 
     if (fijo(url, propio)) {
         event.respondWith(caches.match(event.request).then(guardada => guardada || fetch(event.request).then((response) => {
