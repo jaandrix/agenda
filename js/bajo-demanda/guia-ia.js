@@ -113,10 +113,20 @@ const GUIA_IA_RECETAS = [
         'También puedes pulsar el ojo de arriba a la derecha en Finanzas.',
     ]],
     ['Dar de alta una suscripción o un gasto fijo', [
-        'Finanzas → «planificación.» → «recurrentes.».',
+        'Finanzas → «planificación.» → «recurrentes.», o Finanzas → «resumen.» → «gestionar suscripciones.» → «+ añadir.».',
         'Añádela con su importe, su día de cobro y la cuenta en la que se cobra.',
         'Activa «avisarme si no aparece en el banco» si quieres que te avise cuando un cargo no llegue.',
         'Si Bitácora detecta un cargo que se repite y no lo tienes dado de alta, te lo propone con «añadir.».',
+        'El logo se busca solo. Si no aparece o es otro, edítala y escribe su web en «Web, para el logo».',
+        'Para darla de baja sin perder los meses pagados: «gestionar suscripciones.» → «dar de baja.».',
+    ]],
+    ['Llevar una cuenta de inversión mes a mes (un fondo indexado, por ejemplo)', [
+        'En Finanzas → «planificación.» → «largo plazo.», crea la cuenta de inversión si no la tienes.',
+        'Los traspasos a esa cuenta deben tener la categoría «Inversiones» (en la lista salen como «a tu inversión.»). Con una regla, se ponen solos al importar el extracto.',
+        'Abre la ficha tocando la cuenta (también desde Finanzas → «resumen.» → «tus activos»). La aportación de cada mes sale sola de esos traspasos: si haces dos en un mes, se suman.',
+        'Cada mes, pon en «valor de la cuenta» tu saldo total en el banco de inversión (lo invertido más lo que espera a invertirse) y pulsa «guardar.».',
+        'La ficha calcula la ganancia, la rentabilidad de cada mes, la media y la acumulada, y una proyección a 25 años que puedes ajustar cambiando la rentabilidad supuesta.',
+        'Con el conector, Claude puede leer el resumen mensual que te manda tu banco y rellenar los meses que falten (botón «revisar con claude.» de la ficha). Nunca pisa lo que guardaste tú.',
     ]],
     ['Ver tu calendario de Bitácora en Google Calendar, iPhone u Outlook', [
         'Ajustes → «tu calendario en otras apps.» → copia tu enlace personal.',
@@ -240,6 +250,12 @@ const GUIA_IA_PROBLEMAS = [
         'Si es una aportación a tu inversión, ponle la categoría «Inversiones».',
         'Si es una transferencia entre tus cuentas, cámbialo a traspaso. Para que no vuelva a pasar al importar, crea una regla en Finanzas → «reglas.».',
     ]],
+    ['La ganancia de mi inversión sale muy negativa', [
+        'Abre la ficha de la cuenta y mira la columna «aportación.» del histórico: si un mes sale en rojo, lo que guardaste no cuadra con tus traspasos de ese mes.',
+        'Toca ese mes y pulsa «usar …» en el aviso para quedarte con la suma de tus traspasos.',
+        'Un error típico es escribir en la aportación del mes el total aportado desde el principio.',
+        'Comprueba también que los traspasos tengan la categoría «Inversiones»: si no, no cuentan como aportación.',
+    ]],
     ['Un presupuesto sale en rojo y no debería', [
         'Las devoluciones (un ingreso con la misma categoría que el gasto, por ejemplo «Coleccionables») amplían el límite del mes. Comprueba que el reembolso tenga esa categoría.',
         'Los gastos marcados como «gasto de viaje.» no cuentan en los presupuestos.',
@@ -281,6 +297,8 @@ const GUIA_IA_GLOSARIO = [
     ['panorama', 'El resumen con hoy siempre arriba y tarjetas editables para tareas, entregas, la semana y lo que viene.'],
     ['ritmo', 'Cómo va tu gasto del mes comparado con lo normal en ti a estas alturas.'],
     ['largo plazo', 'La planificación mensual del sueldo en casillas, con deseos e inversiones.'],
+    ['ficha de inversión', 'La página de una cuenta de inversión: aportaciones sacadas de tus traspasos, valor de cada mes, rentabilidades y proyección.'],
+    ['saldo total', 'Lo que tienes en tu banco de inversión: lo invertido más el dinero enviado que aún espera a invertirse.'],
     ['ahorro (marca)', 'Movimiento que va o viene de una hucha: mueve el saldo, pero no es ingreso ni gasto.'],
     ['ajuste de saldo', 'Corrección del saldo de una cuenta para que cuadre con el banco; no es ingreso ni gasto.'],
     ['gasto de viaje', 'Gasto que cuenta, pero queda fuera de los presupuestos y del ritmo del mes.'],
