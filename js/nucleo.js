@@ -1578,10 +1578,49 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>` : `<div class="m-semana-carrusel">${[-1, 0, 1].map(k => `<div class="m-semana-tira">${tiraDe(k)}</div>`).join('')}</div>`}
             </section>
             ${renderMobileAhora(sel, hoy)}
+            ${sel === hoy ? renderMobileBus() : ''}
             ${panel}
             ${renderLineaFestivos('m-serv-linea', true)}
             ${renderMobileTeselas()}
             </div>`;
+        }
+
+        // «tu bus.» (05-11): el próximo bus de tu primera parada guardada en transporte. Va aquí y no en el archivo de
+        // transporte (que se carga al abrirlo) para no bajarlo en cada arranque; pide la función transporte como mucho
+        // cada 30 s y se vuelve a pedir sola mientras la línea está a la vista.
+        let mobileBus = null, mobileBusPidiendo = false, mobileBusReloj = null;
+        function mobileBusPoste() {
+            const fav = (servicios?.transporte?.favoritos || []).find(c => String(c).startsWith('bus:'));
+            return fav && apartadoVisible('transporte') ? fav.slice(4) : null;
+        }
+        function renderMobileBus() {
+            const poste = mobileBusPoste();
+            if (!poste) return '';
+            if (!mobileBus || mobileBus.poste !== poste || Date.now() - mobileBus.hora > 30000) setTimeout(mobileBusActualizar, 0);
+            return `<button class="m-bus" onclick="mobileIr('transporte')"><span class="m-bus-tit">tu bus.</span><span class="m-bus-txt" id="m-bus-txt">${mobileBus?.poste === poste ? mobileBus.html : 'mirando el próximo…'}</span></button>`;
+        }
+        async function mobileBusActualizar() {
+            const poste = mobileBusPoste();
+            if (!poste || mobileBusPidiendo || document.hidden) return;
+            if (mobileBus?.poste === poste && Date.now() - mobileBus.hora < 25000) return;
+            mobileBusPidiendo = true;
+            let html = 'sin datos ahora.';
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                if (session && navigator.onLine !== false) {
+                    const r = await fetch(`${SUPABASE_URL}/functions/v1/transporte`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ poste }) });
+                    const d = r.ok ? await r.json() : null;
+                    const t = (d?.tiempos || []).filter(x => x.minutos !== null).sort((a, b) => a.minutos - b.minutos)[0];
+                    if (d) html = t ? `el <b>${escapeHtml(t.linea)}</b> a ${escapeHtml(String(t.destino || '').toLowerCase())}, ${t.minutos === 0 ? '<b>ya en la parada</b>' : `en <b>${t.minutos} min</b>`}.` : 'sin buses previstos ahora.';
+                }
+            } catch (e) { /* se queda en «sin datos ahora.» */ }
+            mobileBusPidiendo = false;
+            mobileBus = { poste, html, hora: Date.now() };
+            const el = document.getElementById('m-bus-txt');
+            if (!el) return;
+            el.innerHTML = html;
+            clearTimeout(mobileBusReloj);
+            mobileBusReloj = setTimeout(() => { if (document.getElementById('m-bus-txt')) mobileBusActualizar(); }, 30000);
         }
 
         // «ahora.»: hoy, la hora y lo siguiente con hora; otro día por venir, «lo próximo.»; un día pasado, nada.
