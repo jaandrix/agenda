@@ -3635,6 +3635,7 @@
             conciliados += financeProFusionarManuales(m.account, fechasArchivo);
             const traspasos = financeProEmparejarTraspasos(fechasArchivo);
             const categorizados = financeProAutoCategorizar();
+            if (typeof invSincronizarMovimientos === 'function' && invSincronizarMovimientos()) syncInvestedTotal();
             return { added, skipped, conciliados, completados, anulados, categorizados, traspasos };
         }
 

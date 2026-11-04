@@ -579,7 +579,9 @@
             const withValue = (acc.contributions || []).filter(c => c.value !== undefined && c.value !== null && c.value !== '');
             if (!withValue.length) return 0;
             withValue.sort((a, b) => a.month.localeCompare(b.month));
-            return Number(withValue[withValue.length - 1].value) || 0;
+            const ultimo = withValue[withValue.length - 1];
+            const despues = (acc.contributions || []).filter(c => c.month > ultimo.month).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+            return (Number(ultimo.value) || 0) + despues;
         }
         // financeProfile.invested sigue siendo la cifra que usan el resto de
         // cálculos de patrimonio (financeCorePatrimony, historial...) — se
@@ -1242,6 +1244,7 @@
         }
 
         function renderFinances() {
+            if (typeof invSincronizarMovimientos === 'function' && invSincronizarMovimientos()) syncInvestedTotal();
             migrateInvestmentData();
             migrateToInvestmentAccounts();
             // Finanzas PRO (cuentas reales + movimientos) es ahora el único

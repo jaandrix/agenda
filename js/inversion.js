@@ -9,6 +9,62 @@
         const INV_HORIZONTES = [5, 10, 15, 20, 25];
         const INV_EXTRA = 50;
 
+        // Las aportaciones salen de los movimientos: lo que va a «a tu inversión» menos lo que vuelve de ella, sumado por
+        // mes (dos traspasos en un mes son una aportación de su suma). Con varias cuentas de inversión, cada una se queda
+        // los movimientos cuyo concepto lleva su texto (traspasoTexto). Menos de 1 € no cuenta: son las transferencias de
+        // prueba al abrir la cuenta.
+        function invTraspasos(acc) {
+            const cuentas = financeProfile.investmentAccounts || [];
+            const clave = financeProNormalizar(acc.traspasoTexto || '').trim();
+            if (cuentas.length > 1 && !clave) return [];
+            return (financePro.transactions || []).filter(t => financeProEsInversion(t) && Math.abs(Number(t.amount) || 0) >= 1 && /^\d{4}-\d{2}/.test(t.date || '')
+                && (!clave || financeProNormalizar(`${t.note || ''} ${t.bankNote || ''}`).includes(clave)))
+                .sort((a, b) => a.date.localeCompare(b.date));
+        }
+        function invTraspasosPorMes(acc) {
+            const porMes = {};
+            invTraspasos(acc).forEach(t => {
+                const m = t.date.slice(0, 7);
+                (porMes[m] = porMes[m] || { suma: 0, lista: [] }).lista.push(t);
+                porMes[m].suma = Math.round((porMes[m].suma + (t.type === 'income' ? -1 : 1) * Math.abs(Number(t.amount) || 0)) * 100) / 100;
+            });
+            return porMes;
+        }
+
+        // Pone en cada mes la aportación de sus movimientos (salvo en los guardados a mano, que solo se avisan) y pasa los
+        // meses del correo a saldo total: el correo da la cartera y lo invertido, no el dinero enviado que espera a
+        // invertirse, así que el saldo total es lo enviado hasta ese mes más la ganancia desde el inicio que da el correo.
+        // Devuelve si ha cambiado algo.
+        function invSincronizarMovimientos() {
+            let cambio = false;
+            (financeProfile.investmentAccounts || []).forEach(acc => {
+                const antes = JSON.stringify(acc.contributions || []);
+                const porMes = invTraspasosPorMes(acc);
+                acc.contributions = acc.contributions || [];
+                const meses = new Set([...Object.keys(porMes), ...acc.contributions.filter(c => c.deMovimientos).map(c => c.month)]);
+                meses.forEach(m => {
+                    const suma = porMes[m]?.suma || 0;
+                    const c = acc.contributions.find(x => x.month === m);
+                    if (!c) { if (suma) acc.contributions.push({ month: m, amount: suma, deMovimientos: true }); return; }
+                    if (c.guardado) return;
+                    c.amount = suma;
+                    c.deMovimientos = true;
+                });
+                acc.contributions = acc.contributions.filter(c => !(c.deMovimientos && !c.guardado && !c.amount && !c.correo && (c.value === undefined || c.value === null || c.value === '')));
+                let enviado = 0;
+                [...acc.contributions].sort((a, b) => a.month.localeCompare(b.month)).forEach(c => {
+                    enviado = Math.round((enviado + (Number(c.amount) || 0)) * 100) / 100;
+                    if (c.guardado || !c.correo) return;
+                    const g = Number(c.correo.gananciasInicio);
+                    c.value = isFinite(g) && c.correo.gananciasInicio !== null && c.correo.gananciasInicio !== '' ? Math.round((enviado + g) * 100) / 100 : Number(c.correo.valor);
+                });
+                if (JSON.stringify(acc.contributions) !== antes) cambio = true;
+            });
+            return cambio;
+        }
+
+        function invFechaCorta(iso) { return new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', ''); }
+
         function invCuenta(id) { return (financeProfile.investmentAccounts || []).find(a => a.id === id) || null; }
         function invRentabilidadSupuesta() { const v = Number(financeProfile.inversionRentabilidad); return isFinite(v) && v > -50 && v < 50 && financeProfile.inversionRentabilidad !== undefined ? v : 6; }
         function invPct(v, dec = 1) { return v === null || !isFinite(v) ? 'sin datos' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(dec).replace('.', ',')} %`; }
@@ -35,7 +91,9 @@
             const encadenado = conRent.reduce((p, m) => p * (1 + m.rent / 100), 1);
             const anual = conRent.length ? (Math.pow(encadenado, 12 / conRent.length) - 1) * 100 : null;
             const ultimo = [...meses].reverse().find(m => m.value !== null) || null;
-            const valor = ultimo ? ultimo.value : 0;
+            // Lo enviado después del último valor apuntado (el mes en curso, aún sin valor) ya está en la cuenta: cuenta
+            // por lo que es hasta que pongas el valor, para que la ganancia no baje de golpe a principio de mes.
+            const valor = ultimo ? ultimo.value + (aportado - ultimo.aportado) : 0;
             const acumulada = aportado > 0 && ultimo ? (valor - aportado) / aportado * 100 : null;
             const ultimaAportacion = meses.length ? meses[meses.length - 1].amount : 0;
             return { meses, aportado, valor, ganancia: valor - aportado, acumulada, media, anual, ultimaAportacion };
@@ -86,10 +144,14 @@
             const existe = (acc.contributions || []).find(c => c.month === mes);
             const anterior = [...(acc.contributions || [])].filter(c => c.month < mes).sort((a, b) => b.month.localeCompare(a.month))[0];
             const heredado = !existe && anterior;
-            const aportacion = existe ? Number(existe.amount) || 0 : anterior ? Number(anterior.amount) || 0 : '';
+            const porMes = invTraspasosPorMes(acc);
+            const movMes = porMes[mes];
+            const aportacion = movMes ? movMes.suma : existe ? Number(existe.amount) || 0 : anterior ? Number(anterior.amount) || 0 : '';
+            const distinto = movMes && existe?.guardado && Math.abs((Number(existe.amount) || 0) - movMes.suma) > 0.005;
             const valor = existe && existe.value !== undefined ? existe.value : anterior && anterior.value !== undefined ? anterior.value : '';
             const estado = existe?.guardado ? `guardado${existe.guardadoEn ? ' el ' + new Date(existe.guardadoEn + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : ''}.`
-                : existe?.desdeCorreo ? 'rellenado con el correo del banco: revísalo y guárdalo.'
+                : existe?.desdeCorreo ? 'rellenado con el correo del banco y tus movimientos: revísalo y guárdalo.'
+                : existe?.deMovimientos ? 'aportación de tus movimientos: falta el valor de la cuenta.'
                 : existe ? 'apuntado.' : heredado ? `sin guardar: trae lo de ${financeMonthLabel(anterior.month).toLowerCase()}.` : 'sin guardar.';
             const meses = [...d.meses].reverse();
             const opcionesMes = [...new Set([hoy, ...meses.map(m => m.c.month)])].sort().reverse();
@@ -114,11 +176,13 @@
                         <select class="inv-mes-sel" onchange="invFichaMes=this.value;invRepintar()" aria-label="Mes">${opcionesMes.map(m => `<option value="${m}" ${m === mes ? 'selected' : ''}>${escapeHtml(financeMonthLabel(m).toLowerCase())}</option>`).join('')}</select>
                     </div>
                     <div class="inv-mes-campos">
-                        <label><span>aportación del mes.</span><input id="inv-aportacion" class="modal-input" type="number" min="0" step="0.01" value="${aportacion}" placeholder="0,00"></label>
+                        <label><span>aportación del mes.</span><input id="inv-aportacion" class="modal-input" type="number" min="0" step="0.01" value="${aportacion}" placeholder="0,00" ${movMes ? 'readonly title="Sale de tus movimientos de este mes"' : ''}></label>
                         <label><span>valor de la cuenta.</span><input id="inv-valor" class="modal-input" type="number" min="0" step="0.01" value="${valor}" placeholder="0,00"></label>
                         <button class="btn-modal-primary" onclick="invGuardarMes()">guardar.</button>
                     </div>
-                    <div class="inv-estado ${existe?.guardado ? 'ok' : ''}">${escapeHtml(estado)}${existe?.correo ? ` Según el correo, la cartera valía ${financeMoney(existe.correo.valor)}${existe.value !== undefined && Number(existe.value) - Number(existe.correo.valor) > 0.5 ? `: ${financeMoney(Number(existe.value) - Number(existe.correo.valor))} esperan a invertirse` : ''}.` : ''}</div>
+                    ${movMes ? `<div class="inv-traspasos"><span>de tus movimientos.</span>${movMes.lista.map(t => `<span>${invFechaCorta(t.date)} ${t.type === 'income' ? '−' : ''}${financeMoney(Math.abs(Number(t.amount) || 0))}</span>`).join('')}${movMes.lista.length > 1 ? `<b>${financeMoney(movMes.suma)} en total.</b>` : ''}</div>` : ''}
+                    ${distinto ? `<div class="inv-aviso">Guardaste ${financeMoney(Number(existe.amount) || 0)} de aportación, pero tus movimientos de este mes suman ${financeMoney(movMes.suma)}. <button class="vista-btn" onclick="invUsarMovimientos('${mes}')">usar ${financeMoney(movMes.suma)}.</button></div>` : ''}
+                    <div class="inv-estado ${existe?.guardado && !distinto ? 'ok' : ''}">${escapeHtml(estado)}${existe?.correo ? ` Según el correo, la cartera valía ${financeMoney(existe.correo.valor)}${existe.value !== undefined && Number(existe.value) - Number(existe.correo.valor) > 0.5 ? `: ${financeMoney(Number(existe.value) - Number(existe.correo.valor))} esperan a invertirse` : ''}.` : ''}</div>
                 </section>
 
                 <section class="inv-bloque">
@@ -132,13 +196,13 @@
                         <thead><tr><th>mes.</th><th>aportación.</th><th>aportado.</th><th>valor.</th><th>ganancia.</th><th>mes.</th><th>cartera.</th><th></th></tr></thead>
                         <tbody>${meses.map(m => `<tr class="${m.c.month === mes ? 'actual' : ''}" onclick="invFichaMes='${m.c.month}';invRepintar()" title="Editar ${escapeHtml(financeMonthLabel(m.c.month).toLowerCase())}">
                             <td>${escapeHtml(financeMonthLabel(m.c.month).toLowerCase())}</td>
-                            <td>${financeMoney(m.amount)}</td>
+                            <td class="${porMes[m.c.month] && Math.abs(porMes[m.c.month].suma - m.amount) > 0.005 ? 'finance-negative' : ''}" title="${porMes[m.c.month] ? escapeHtml(porMes[m.c.month].lista.map(t => invFechaCorta(t.date) + ' ' + financeMoney(Math.abs(Number(t.amount) || 0))).join(', ')) : ''}">${financeMoney(m.amount)}${porMes[m.c.month] && porMes[m.c.month].lista.length > 1 ? `<small class="inv-veces">${porMes[m.c.month].lista.length} traspasos</small>` : ''}</td>
                             <td>${financeMoney(m.aportado)}</td>
                             <td><b>${m.value === null ? '' : financeMoney(m.value)}</b></td>
                             <td class="${m.ganancia < 0 ? 'finance-negative' : ''}">${m.ganancia === null ? '' : (m.ganancia >= 0 ? '+' : '−') + financeMoney(Math.abs(m.ganancia))}</td>
                             <td>${m.rent === null || m === d.meses[0] ? '' : invPct(m.rent, 2)}</td>
                             <td>${m.c.correo ? financeMoney(m.c.correo.valor) : ''}</td>
-                            <td class="inv-origen">${m.c.guardado ? 'guardado.' : m.c.desdeCorreo ? 'del correo.' : 'a mano.'}</td>
+                            <td class="inv-origen">${m.c.guardado ? 'guardado.' : m.c.desdeCorreo ? 'del correo.' : m.c.deMovimientos ? 'de movimientos.' : 'a mano.'}</td>
                         </tr>`).join('')}</tbody>
                     </table></div>` : '<div class="finance-empty-line">Todavía no hay meses. Apunta el primero arriba.</div>'}
                 </section>
@@ -150,6 +214,7 @@
             if (!acc) return;
             invFichaCuenta = id;
             invFichaMes = financeMonthKey();
+            if (invSincronizarMovimientos()) { syncInvestedTotal(); invalidarCachesDerivadas(); saveData().catch(e => console.error(e)); }
             showModal(invFichaHtml(acc));
             if (typeof modoCapa === 'function') modoCapa('detalle');
         }
@@ -176,7 +241,8 @@
             const acc = invCuenta(invFichaCuenta);
             if (!acc) return;
             const mes = invFichaMes || financeMonthKey();
-            const aportacion = Number(document.getElementById('inv-aportacion')?.value);
+            const movMes = invTraspasosPorMes(acc)[mes];
+            const aportacion = movMes ? movMes.suma : Number(document.getElementById('inv-aportacion')?.value);
             const valorTxt = document.getElementById('inv-valor')?.value;
             if (!isFinite(aportacion) || aportacion < 0) { showToast('Pon la aportación del mes', true); return; }
             if (valorTxt === '' || !isFinite(Number(valorTxt))) { showToast('Pon el valor de la cuenta', true); return; }
@@ -184,12 +250,27 @@
             const previo = acc.contributions.find(c => c.month === mes);
             const fila = { ...(previo || {}), month: mes, amount: Math.round(aportacion * 100) / 100, value: Math.round(Number(valorTxt) * 100) / 100, guardado: true, guardadoEn: todayISO() };
             delete fila.desdeCorreo;
+            if (movMes) fila.deMovimientos = true; else delete fila.deMovimientos;
             acc.contributions = acc.contributions.filter(c => c.month !== mes).concat(fila);
             syncInvestedTotal();
             if (mes === financeMonthKey() && typeof refreshCurrentMonthSnapshot === 'function') refreshCurrentMonthSnapshot();
             invRepintar();
             invalidarCachesDerivadas();
             try { await saveData(); showToast(`${financeMonthLabel(mes)} guardado`); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        async function invUsarMovimientos(mes) {
+            const acc = invCuenta(invFichaCuenta);
+            const movMes = acc && invTraspasosPorMes(acc)[mes];
+            const c = movMes && (acc.contributions || []).find(x => x.month === mes);
+            if (!c) return;
+            c.amount = movMes.suma;
+            c.deMovimientos = true;
+            invSincronizarMovimientos();
+            syncInvestedTotal();
+            invalidarCachesDerivadas();
+            invRepintar();
+            try { await saveData(); showToast(`Aportación de ${financeMonthLabel(mes).toLowerCase()}: ${financeMoney(movMes.suma)}`); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         // Un botón que pone a Claude a trabajar: abre claude.ai con la tarea ya escrita. Claude usa tus conectores (Gmail y

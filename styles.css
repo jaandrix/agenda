@@ -10401,3 +10401,10 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .pano.pano-res .pano-mas-cab { margin:22px 0 6px; font-size:15px; font-weight:800; color:var(--text-primary); }
 @media (max-width: 1100px) { .pano.pano-res .pano-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .pano.pano-res .pano-grid { grid-template-columns:minmax(0, 1fr); } .pano.pano-res .pano-card.doble, .pano.pano-res .pano-card.ed-doble, .pano.pano-res .pano-card.ancha { grid-column:auto; } }
+
+/* 04-11: aportaciones de inversión sacadas de los movimientos */
+.inv-traspasos { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-top:10px; font-size:12px; color:var(--text-secondary); }
+.inv-traspasos span:first-child { color:var(--text-primary); font-weight:600; }
+.inv-traspasos b { color:var(--text-primary); }
+.inv-aviso { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-top:10px; font-size:12px; color:#c2455c; }
+.inv-veces { display:block; font-size:10px; color:var(--text-secondary); }
