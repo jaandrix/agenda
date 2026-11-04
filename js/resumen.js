@@ -167,12 +167,12 @@
                     </div>
                     <button class="vista-btn pano-editar" onclick="openEditarPanorama()">editar.</button>
                 </div>
-                <div class="pano pano-res ${panoramaEditorial() ? 'pano-editorial' : ''}">
-                    ${panoramaEditorial() ? `<div class="pano-fila1">${renderPanoramaDinero()}${renderPanoramaHoy()}${renderPanoramaCuenta(hallazgos)}</div>` : renderHomeAvisos(hallazgos)}
-                    ${panoramaEditorial() ? '' : renderPanoramaHoy()}
+                <div class="pano pano-res">
+                    ${renderHomeAvisos(hallazgos)}
+                    ${renderPanoramaHoy()}
                     ${renderPanoramaTarjetas()}
-                    <div class="pano-mas-cab">más.</div>
-                    <div class="home-launcher-list pano-mas">${rows}</div>
+                    <section class="pano-mas-panel"><div class="pano-mas-cab">más.</div>
+                    <div class="home-launcher-list pano-mas">${rows}</div></section>
                 </div>
             </div>`;
         }
@@ -183,7 +183,7 @@
 
         function panoTarjeta(clase, icono, titulo, sub, accion, cuerpo) {
             return `<button type="button" class="pano-card ${clase}" onclick="${accion}">
-                <span class="pano-card-cab"><span class="pano-card-icono" aria-hidden="true">${icono}</span><span class="pano-card-tit"><b>${titulo}</b><small>${sub}</small></span>${panoramaEditorial() ? PANO_FLECHA : ''}</span>
+                <span class="pano-card-cab"><span class="pano-card-icono" aria-hidden="true">${icono}</span><span class="pano-card-tit"><b>${titulo}</b><small>${sub}</small></span></span>
                 <span class="pano-card-cuerpo">${cuerpo}</span>
             </button>`;
         }
@@ -214,9 +214,7 @@
             const d = panoramaDatosHoy();
             const cifra = (n, texto) => `<span class="pano-cifra"><b>${n}</b><small>${texto}</small></span>`;
             const filas = d.conHora.filter(x => x.hora >= d.horaAhora).slice(0, 4);
-            const cuerpo = filas.length && panoramaEditorial()
-                ? `<span class="pano-linea-tiempo">${filas.map((x, i) => `<span class="pano-lt-fila ${i ? '' : 'siguiente'}"><span class="pano-hora">${escapeHtml(x.hora)}</span><i aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(x.titulo)}</span></span>`).join('')}</span>`
-                : filas.length
+            const cuerpo = filas.length
                 ? `<span class="pano-dia">${filas.map(x => `<span class="pano-dia-fila"><span class="pano-hora">${escapeHtml(x.hora)}</span><i class="ev" aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(x.titulo)}</span></span>`).join('')}</span>`
                 : `<span class="pano-vacio">No tienes nada con hora.</span>`;
             const pendiente = d.sinHora.length ? `<span class="pano-vacio">Te ${d.sinHora.length === 1 ? 'queda' : 'quedan'} ${d.sinHora.length} tarea${d.sinHora.length === 1 ? '' : 's'} sin hora.</span>` : '';
@@ -227,7 +225,6 @@
                 ? `<span class="pano-linea-tiempo">${deManana.slice(0, 3).map(x => `<span class="pano-lt-fila"><span class="pano-hora">${escapeHtml(x.time || '')}</span><i aria-hidden="true"></i><span class="pano-linea-txt">${escapeHtml(x.title || x.text || '')}</span></span>`).join('')}</span>` + (deManana.length > 3 ? `<span class="pano-vacio">y ${deManana.length - 3} más.</span>` : '')
                 : '<span class="pano-vacio">Nada apuntado.</span>'}</span>`;
             const despejado = !d.conHora.length && !d.sinHora.length && !d.eventos.length && d.rutinas.total === d.rutinas.hechas ? '<span class="pano-vacio">hoy está despejado.</span>' : '';
-            if (panoramaEditorial()) return `<button type="button" class="pano-card pano-hoy-estable" onclick="openTuDia()"><span class="pano-card-cab"><span class="pano-card-tit"><b>hoy.</b><small>Lo que te queda de hoy.</small></span><span class="pano-hoy-totales">${d.pendientes.length} ${d.pendientes.length === 1 ? 'tarea' : 'tareas'}<span>${d.eventos.length} ${d.eventos.length === 1 ? 'evento' : 'eventos'}</span></span>${PANO_FLECHA}</span><span class="pano-card-cuerpo">${despejado || cuerpo}${pendiente}${manana}</span></button>`;
             return panoTarjeta('pano-hoy-estable ancha', PANO_ICO_HOY, 'hoy.', 'Lo que queda de tu día.', 'openTuDia()', `${despejado || cuerpo}${pendiente}${manana}<span class="pano-cifras">${cifra(d.eventos.length, d.eventos.length === 1 ? 'evento' : 'eventos')}${cifra(d.pendientes.length, d.pendientes.length === 1 ? 'tarea para hoy' : 'tareas para hoy')}${cifra(Math.max(0, d.rutinas.total - d.rutinas.hechas), 'rutinas restantes')}</span>`);
         }
 
@@ -279,7 +276,7 @@
             const dias = Array.from({ length: 7 }, (_, i) => { const d = new Date(lunes); d.setDate(d.getDate() + i); const iso = isoLocal(d); return { iso, ev: getDayAllEntries(iso).filter(esEvento).length, ta: mobileDiaPlanner(iso).length }; });
             const maxDia = Math.max(1, ...dias.map(d => d.ev + d.ta));
             const totEv = dias.reduce((n, d) => n + d.ev, 0), totTa = dias.reduce((n, d) => n + d.ta, 0);
-            const cSemana = panoramaEditorial() ? panoramaCurvaSemana(dias, hoy, totEv, totTa, cifra) : `<span class="pano-semana" role="img" aria-label="${dias.map((d, i) => `${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][i]} ${d.ev + d.ta}`).join(', ')}">${dias.map((d, i) => `<span class="pano-sem-dia ${d.iso === hoy ? 'hoy' : ''}"><span class="pano-sem-barra"><i class="ta" style="height:${d.ta / maxDia * 100}%"></i><i class="ev" style="height:${d.ev / maxDia * 100}%"></i></span><small>${'LMXJVSD'[i]}</small><em>${d.ev + d.ta || ''}</em></span>`).join('')}</span>
+            const cSemana = `<span class="pano-semana" role="img" aria-label="${dias.map((d, i) => `${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][i]} ${d.ev + d.ta}`).join(', ')}">${dias.map((d, i) => `<span class="pano-sem-dia ${d.iso === hoy ? 'hoy' : ''}"><span class="pano-sem-barra"><i class="ta" style="height:${d.ta / maxDia * 100}%"></i><i class="ev" style="height:${d.ev / maxDia * 100}%"></i></span><small>${'LMXJVSD'[i]}</small><em>${d.ev + d.ta || ''}</em></span>`).join('')}</span>
                 <span class="pano-cifras">${cifra(totEv, totEv === 1 ? 'evento' : 'eventos')}${cifra(totTa, totTa === 1 ? 'tarea' : 'tareas')}</span>`;
 
             // tu mes.
@@ -375,18 +372,13 @@
                 revision: [HOME_ICON_REVIEW, 'Cierra la semana y prepara la siguiente.', 'openHomeReviewModal()', () => cRev],
             };
             const ids = panoramaElegidas(!!entregas);
-            if (panoramaEditorial()) ['semana', 'mes', 'entregas', 'tareas', 'revision', 'prox'].forEach(id => { if (!ids.includes(id) && (id !== 'entregas' || entregas)) ids.push(id); });
-            // Orden de la referencia: semana, mes y entregas; luego tareas, revisión y próximamente (cuatro columnas
-            // por fila, con la semana y la revisión a doble ancho). Lo demás que se elija va detrás.
-            const ORDEN_ED = ['semana', 'mes', 'entregas', 'tareas', 'revision', 'prox'];
-            if (panoramaEditorial()) ids.sort((a, b) => (ORDEN_ED.includes(a) ? ORDEN_ED.indexOf(a) : 99) - (ORDEN_ED.includes(b) ? ORDEN_ED.indexOf(b) : 99));
             if (!ids.length) return `<div class="vista-vacio pano-sin-tarjetas"><p>No has elegido más tarjetas.</p><button class="vista-btn" onclick="openEditarPanorama()">editar panorama.</button></div>`;
             return `<div class="pano-grid">${ids.map((id, n) => {
                 const [icono, sub, accion, cuerpo, clase = ''] = t[id];
                 // La revisión, si va la última, ocupa lo que quede de la fila.
                 const resto = 3 - (ids.length - 1) % 3;
-                const ancho = !panoramaEditorial() && id === 'revision' && n === ids.length - 1 ? (resto === 3 ? 'ancha' : resto === 2 ? 'doble' : '') : '';
-                return panoTarjeta(`${id} ${clase} ${ancho} ${panoramaEditorial() && (id === 'semana' || id === 'revision') ? 'ed-doble' : ''}`, icono, PANO_NOMBRES[id], sub, accion, cuerpo());
+                const ancho = id === 'revision' && n === ids.length - 1 ? (resto === 3 ? 'ancha' : resto === 2 ? 'doble' : '') : '';
+                return panoTarjeta(`${id} ${clase} ${ancho}`, icono, PANO_NOMBRES[id], sub, accion, cuerpo());
             }).join('')}</div>`;
         }
 
@@ -1101,147 +1093,3 @@
             html += `</div>`;
             return html;
         }
-
-
-// Panorama editorial (más ajustes. del modo desarrollador): una sola superficie dividida por reglas finas, con
-// «ahora.» como instrumento principal y la semana como curva. Solo cambia la presentación; los datos son los mismos.
-function panoramaEditorial() { return typeof ajustesAdmin === 'function' && !!ajustesAdmin().panoramaEditorial; }
-
-function panoramaAhoraDatos() {
-    const d = panoramaDatosHoy(), ahora = new Date();
-    const min = ahora.getHours() * 60 + ahora.getMinutes();
-    const sig = d.siguiente;
-    let falta = '';
-    if (sig) {
-        const [h, m] = sig.hora.split(':').map(Number);
-        const resto = h * 60 + m - min;
-        falta = resto <= 0 ? 'ahora.' : resto < 60 ? `${resto} min` : `${Math.floor(resto / 60)} h ${String(resto % 60).padStart(2, '0')} min`;
-    }
-    return { d, min, sig, falta, hora: `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}` };
-}
-
-function renderPanoramaAhora() {
-    const { d, min, sig, falta, hora } = panoramaAhoraDatos();
-    const R = 120, C = 2 * Math.PI * R, avance = min / 1440;
-    const marcas = Array.from({ length: 48 }, (_, i) => {
-        const a = i / 48 * 2 * Math.PI - Math.PI / 2, largo = i % 4 ? 6 : 12;
-        const x1 = 150 + Math.cos(a) * 138, y1 = 150 + Math.sin(a) * 138, x2 = 150 + Math.cos(a) * (138 + largo), y2 = 150 + Math.sin(a) * (138 + largo);
-        return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
-    }).join('');
-    const ang = avance * 2 * Math.PI - Math.PI / 2;
-    const resumen = sig ? `${sig.titulo}, a las ${sig.hora}` : d.sinHora.length ? `te ${d.sinHora.length === 1 ? 'queda 1 tarea' : `quedan ${d.sinHora.length} tareas`} sin hora.` : 'día despejado.';
-    return `<button type="button" class="pano-ahora" onclick="openTuDia()" aria-label="ahora, ${hora}. ${escapeHtml(resumen)}">
-        <svg viewBox="0 0 300 300" aria-hidden="true">
-            <g class="pano-ahora-marcas">${marcas}</g>
-            <circle class="pano-ahora-pista" cx="150" cy="150" r="${R}"/>
-            <circle class="pano-ahora-arco" id="pano-ahora-arco" cx="150" cy="150" r="${R}" stroke-dasharray="${(C * avance).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 150 150)"/>
-            <circle class="pano-ahora-nodo" id="pano-ahora-nodo" cx="${(150 + Math.cos(ang) * R).toFixed(1)}" cy="${(150 + Math.sin(ang) * R).toFixed(1)}" r="7"/>
-            <circle class="pano-ahora-masa" cx="150" cy="150" r="104"/>
-        </svg>
-        <span class="pano-ahora-texto">
-            <small>ahora.</small>
-            <b id="pano-ahora-hora">${hora}</b>
-            ${sig ? `<span class="pano-ahora-sig">${escapeHtml(sig.titulo)}</span><small id="pano-ahora-falta">${falta}</small>` : `<span class="pano-ahora-sig">${escapeHtml(resumen)}</span>`}
-        </span>
-    </button>`;
-}
-
-// El reloj se actualiza cada minuto sin volver a pintar Panorama; en segundo plano no hace nada.
-setInterval(() => {
-    if (document.hidden || !document.getElementById('pano-ahora-hora')) return;
-    const { min, sig, falta, hora } = panoramaAhoraDatos();
-    document.getElementById('pano-ahora-hora').textContent = hora;
-    const f = document.getElementById('pano-ahora-falta'); if (f && sig) f.textContent = falta;
-    const R = 120, C = 2 * Math.PI * R, avance = min / 1440, ang = avance * 2 * Math.PI - Math.PI / 2;
-    document.getElementById('pano-ahora-arco')?.setAttribute('stroke-dasharray', `${(C * avance).toFixed(1)} ${C.toFixed(1)}`);
-    const n = document.getElementById('pano-ahora-nodo');
-    if (n) { n.setAttribute('cx', (150 + Math.cos(ang) * R).toFixed(1)); n.setAttribute('cy', (150 + Math.sin(ang) * R).toFixed(1)); }
-}, 30000);
-
-function panoramaCurvaSemana(dias, hoy, totEv, totTa, cifra) {
-    const W = 620, H = 190, izq = 26, abajo = 24, arriba = 10;
-    const vals = dias.map(d => d.ev + d.ta), max = Math.max(4, ...vals);
-    const paso = Math.ceil(max / 4), tope = paso * 4;
-    const x = i => izq + i * (W - izq - 12) / 6, y = v => arriba + (1 - v / tope) * (H - arriba - abajo);
-    const pts = vals.map((v, i) => [x(i), y(v)]);
-    let curva = `M${pts[0][0]},${pts[0][1]}`;
-    for (let i = 1; i < pts.length; i++) {
-        const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], cx = (x0 + x1) / 2;
-        curva += ` C${cx},${y0} ${cx},${y1} ${x1},${y1}`;
-    }
-    const base = y(0);
-    const reglas = [0, 1, 2, 3, 4].map(k => `<line class="regla" x1="${izq}" x2="${W - 12}" y1="${y(k * paso)}" y2="${y(k * paso)}"/><text class="eje" x="${izq - 8}" y="${y(k * paso) + 4}" text-anchor="end">${k * paso}</text>`).join('');
-    const nombres = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
-    const etiquetas = dias.map((d, i) => `<text class="eje ${d.iso === hoy ? 'hoy' : ''}" x="${x(i)}" y="${H - 6}" text-anchor="middle">${nombres[i]}</text>`).join('');
-    const nodos = pts.map(([px, py], i) => `<circle class="nodo ${dias[i].iso === hoy ? 'hoy' : ''}" cx="${px}" cy="${py}" r="${dias[i].iso === hoy ? 5 : 4}"/>`).join('');
-    const etiqueta = dias.map((d, i) => `${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][i]} ${vals[i]}`).join(', ');
-    return `<svg class="pano-curva" viewBox="0 0 ${W} ${H}" role="img" aria-label="${etiqueta}">${reglas}
-        <path class="area" d="${curva} L${pts[6][0]},${base} L${pts[0][0]},${base} Z"/><path class="linea" d="${curva}"/>${nodos}${etiquetas}</svg>
-        ${vals.every(v => !v) ? '<span class="pano-vacio">semana despejada.</span>' : ''}
-        <span class="pano-cifras">${cifra(totEv, totEv === 1 ? 'evento' : 'eventos')}${cifra(totTa, totTa === 1 ? 'tarea' : 'tareas')}</span>`;
-}
-
-// «a tener en cuenta.» del modo editorial: los avisos de siempre y, si hay movimientos, la previsión de gasto del
-// mes frente a la media de los tres anteriores, con barras de los últimos meses (la del mes en curso, prevista).
-function renderPanoramaCuenta(hallazgos) {
-    const avisos = avisosProximos(hallazgos);
-    let fin = '';
-    if (apartadoVisible('finances') && (financePro.transactions || []).length && typeof financeProMonthTotals === 'function') {
-        const hoy = new Date(), dia = hoy.getDate(), diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
-        const meses = Array.from({ length: 7 }, (_, i) => { const d = new Date(hoy.getFullYear(), hoy.getMonth() - 6 + i, 1); return { clave: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, nombre: d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '') }; });
-        meses.forEach(m => { m.gasto = financeProMonthTotals(m.clave).expense; });
-        const actual = meses[6];
-        actual.prevision = dia >= 3 ? actual.gasto / dia * diasMes : actual.gasto;
-        const previos = meses.slice(3, 6).map(m => m.gasto).filter(v => v > 0);
-        const media = previos.length ? previos.reduce((a, b) => a + b, 0) / previos.length : 0;
-        const dif = media ? Math.round((actual.prevision / media - 1) * 100) : null;
-        const max = Math.max(1, media, ...meses.map(m => m.prevision || m.gasto));
-        const W = 300, H = 110, ancho = W / 7;
-        const barras = meses.map((m, i) => { const v = m.prevision || m.gasto, h = v / max * (H - 18); return `<rect class="${i === 6 ? 'actual' : ''}" x="${(i * ancho + ancho * .28).toFixed(1)}" y="${(H - 18 - h).toFixed(1)}" width="${(ancho * .44).toFixed(1)}" height="${h.toFixed(1)}"/><text x="${(i * ancho + ancho / 2).toFixed(1)}" y="${H - 3}" text-anchor="middle">${m.nombre}</text>`; }).join('');
-        const yMedia = (H - 18 - media / max * (H - 18)).toFixed(1);
-        fin = `<span class="pano-cuenta-frase">A este ritmo terminarás el mes gastando unos</span>
-            <b class="pano-cuenta-cifra">${Math.round(actual.prevision).toLocaleString('es-ES')} €</b>
-            ${dif != null ? `<span class="pano-cuenta-frase">${dif >= 0 ? `un ${dif} % más` : `un ${-dif} % menos`} que tu media de los últimos tres meses.</span>` : ''}
-            <svg class="pano-barras" viewBox="0 0 ${W} ${H}" role="img" aria-label="gasto por mes: ${meses.map(m => `${m.nombre} ${Math.round(m.prevision || m.gasto)} euros`).join(', ')}">${barras}${media ? `<line x1="0" x2="${W}" y1="${yMedia}" y2="${yMedia}"/>` : ''}</svg>`;
-    }
-    const lista = avisos.slice(0, fin ? 1 : 3).map(a => `<button type="button" class="pano-cuenta-aviso" onclick="${a.accion}">${a.frase}</button>`).join('');
-    if (!fin && !lista) return `<div class="pano-cuenta"><b class="pano-cuenta-tit">a tener en cuenta.</b><span class="pano-vacio">Nada que vigilar ahora mismo.</span></div>`;
-    return `<div class="pano-cuenta"><b class="pano-cuenta-tit">a tener en cuenta.${PANO_FLECHA}</b>${fin ? `<button type="button" class="pano-cuenta-fin" onclick="switchView('finances')">${fin}</button>` : ''}${lista}</div>`;
-}
-
-const PANO_FLECHA = '<svg class="pano-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h17M14 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
-
-// «dinero.» del modo editorial: el total de tus cuentas y cómo ha ido en los últimos tres meses.
-function renderPanoramaDinero() {
-    if (!apartadoVisible('finances') || typeof financeSerieDiaria !== 'function' || !(financePro.transactions || []).length)
-        return `<button type="button" class="pano-dinero" onclick="switchView('finances')"><b class="pano-cuenta-tit">dinero.${PANO_FLECHA}</b><span class="pano-vacio">Cuando apuntes movimientos, aquí verás cómo van tus cuentas.</span></button>`;
-    // Con «todo.», también la inversión y el fondo de emergencia (la misma elección que en la gráfica de Finanzas).
-    const todo = typeof financeGrafExtras !== 'undefined' && financeGrafExtras;
-    const serie = financeSerieDiaria(3, todo) || [];
-    const total = todo ? financeCorePatrimony() : financeEfectivoActual();
-    const ini = serie.length ? serie[0].v : total;
-    const dif = total - ini;
-    const W = 300, H = 110, vs = serie.map(p => p.v), min = Math.min(...vs, total), max = Math.max(...vs, total), rango = max - min || 1;
-    const pts = serie.map((p, i) => [(i / Math.max(1, serie.length - 1) * W).toFixed(1), (8 + (1 - (p.v - min) / rango) * (H - 26)).toFixed(1)]);
-    const linea = financeSmoothPath(pts.map(p => [Number(p[0]), Number(p[1])]));
-    const meses = [2, 1, 0].map(k => { const d = new Date(); d.setMonth(d.getMonth() - k, 1); return d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', ''); });
-    const euros = v => `${Math.round(v).toLocaleString('es-ES')} €`;
-    return `<div class="pano-dinero" role="button" tabindex="0" onclick="switchView('finances')" onkeydown="if(event.key==='Enter')switchView('finances')">
-        <b class="pano-cuenta-tit">dinero.${PANO_FLECHA}</b>
-        <span class="pano-dinero-elegir" role="group" aria-label="qué dinero enseñar"><button type="button" class="${todo ? '' : 'activo'}" onclick="event.stopPropagation(); panoramaDineroTodo(false)">cuentas.</button><button type="button" class="${todo ? 'activo' : ''}" onclick="event.stopPropagation(); panoramaDineroTodo(true)">todo.</button></span>
-        <span class="pano-cuenta-frase">${todo ? 'Cuentas, inversión y fondo de emergencia.' : 'En tus cuentas.'}</span>
-        <b class="pano-cuenta-cifra">${euros(total)}</b>
-        <span class="pano-cuenta-frase">${dif >= 0 ? '+' : '−'}${euros(Math.abs(dif))} en tres meses.</span>
-        ${pts.length > 1 ? `<svg class="pano-dinero-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="saldo total de los últimos tres meses: de ${euros(ini)} a ${euros(total)}">
-            <path class="area" d="${linea} L${W},${H - 18} L0,${H - 18} Z"/><path class="linea" d="${linea}"/>
-            <line x1="0" x2="${W}" y1="${H - 18}" y2="${H - 18}"/>
-            ${meses.map((m, i) => `<text x="${(i * W / 3 + W / 6).toFixed(0)}" y="${H - 3}" text-anchor="middle">${m}</text>`).join('')}
-        </svg>` : ''}
-    </div>`;
-}
-function panoramaDineroTodo(si) {
-    financeGrafExtras = si;
-    try { localStorage.setItem('bitacora-fin-extras', si ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
-    if (typeof financeSaldosCache !== 'undefined' && financeSaldosCache) financeSaldosCache.diaria = null;
-    render();
-}

@@ -9656,77 +9656,6 @@ body.mobile-standalone .anual-overlay, body.pwa .anual-overlay { transition: non
 .m-dia-pill.festivo-punto i.on { box-shadow: 7px 0 0 #e2b93b; transform: translateX(-3.5px); }
 .m-punto.festivo-punto::before { content: ''; position: absolute; left: 50%; bottom: 3px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #e2b93b; }
 
-/* ============================================================
-   PANORAMA EDITORIAL (más ajustes.): una superficie con reglas finas.
-   ============================================================ */
-.pano-editorial { border: 1px solid var(--border); background: var(--bg-card); }
-.pano-editorial .pano-grid { gap: 0; margin: 0; border-top: 1px solid var(--border); }
-.pano-editorial .pano-card { border: 0; border-radius: 0; background: transparent; box-shadow: none; min-height: 0; padding: 22px 24px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-.pano-editorial .pano-card:hover { background: var(--bg-card-hover); }
-.pano-editorial .pano-card-icono { display: none; }
-.pano-editorial .pano-card-tit b { font-size: 20px; letter-spacing: -.01em; }
-.pano-editorial .pano-card-tit small { font-size: 13px; }
-.pano-editorial .pano-cifra b { font-variant-numeric: tabular-nums; }
-.pano-editorial .home-aviso-block, .pano-editorial .home-pattern-line { margin: 0; border: 0; border-radius: 0; border-top: 1px solid var(--border); padding: 18px 24px; background: transparent; }
-.pano-editorial .pano-mas-cab { padding: 0 24px; }
-.pano-editorial .pano-mas { padding: 0 12px 12px; }
-.pano-fila1 { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; }
-.pano-fila1 > .pano-card { grid-column: auto; border-bottom: 0; border-right: 0; }
-.pano-ahora { position: relative; display: grid; place-items: center; padding: 22px; border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--text-primary); font-family: var(--font-family); cursor: pointer; }
-.pano-ahora svg { width: 100%; max-width: 290px; height: auto; display: block; }
-.pano-ahora-marcas line { stroke: var(--text-secondary); stroke-width: 1; }
-.pano-ahora-pista { fill: none; stroke: var(--border); stroke-width: 2; }
-.pano-ahora-arco { fill: none; stroke: var(--text-primary); stroke-width: 6; stroke-linecap: butt; transition: stroke-dasharray .24s var(--ease-in-out); }
-.pano-ahora-nodo { fill: var(--bg-card); stroke: var(--text-primary); stroke-width: 3; }
-.pano-ahora-masa { fill: var(--text-primary); }
-.pano-ahora-texto { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0 22%; text-align: center; color: var(--bg-card); pointer-events: none; }
-.pano-ahora-texto small { font-size: 13px; opacity: .85; }
-.pano-ahora-texto b { font-size: clamp(40px, 5vw, 58px); font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.pano-ahora-sig { margin-top: 8px; padding-top: 8px; border-top: 1px solid currentColor; font-size: 14px; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.pano-linea-tiempo { position: relative; display: flex; flex-direction: column; }
-.pano-lt-fila { display: grid; grid-template-columns: 56px 18px 1fr; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-.pano-lt-fila:last-child { border-bottom: 0; }
-.pano-lt-fila i { position: relative; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--text-primary); background: var(--bg-card); justify-self: center; z-index: 1; }
-.pano-lt-fila.siguiente i { background: var(--text-primary); }
-.pano-linea-tiempo::before { content: ''; position: absolute; left: 77px; top: 18px; bottom: 18px; width: 1px; background: var(--border-strong); }
-.pano-lt-fila .pano-hora { font-variant-numeric: tabular-nums; }
-.pano-lt-fila .pano-linea-txt { font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; }
-.pano-curva { width: 100%; height: auto; display: block; overflow: visible; }
-.pano-curva .regla { stroke: var(--border); stroke-width: 1; }
-.pano-curva .eje { fill: var(--text-secondary); font-size: 12px; font-family: var(--font-family); }
-.pano-curva .eje.hoy { fill: var(--text-primary); font-weight: 700; }
-.pano-curva .area { fill: var(--text-primary); opacity: .07; }
-.pano-curva .linea { fill: none; stroke: var(--text-primary); stroke-width: 2; }
-.pano-curva .nodo { fill: var(--bg-card); stroke: var(--text-primary); stroke-width: 1.5; }
-.pano-curva .nodo.hoy { fill: var(--text-primary); }
-@media (max-width: 760px) {
-    .pano-fila1 { grid-template-columns: 1fr; }
-    .pano-ahora { border-right: 0; border-bottom: 1px solid var(--border); }
-    .pano-ahora svg { max-width: 230px; }
-    .pano-editorial .pano-card { border-right: 0; padding: 18px 16px; }
-}
-@media (prefers-reduced-motion: reduce) { .pano-ahora-arco { transition: none; } }
-
-/* Panorama editorial: nueve paneles, tres por fila. */
-.pano-fila1 { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(0, 1fr); }
-.pano-fila1 > .pano-card { border-right: 1px solid var(--border); }
-.pano-editorial .pano-card { min-height: 0; }
-.pano-editorial .pano-card.ancha, .pano-editorial .pano-card.doble { grid-column: auto; }
-.pano-editorial .pano-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.pano-editorial .pano-grid > .pano-card:nth-child(3n) { border-right: 0; }
-.pano-cuenta { display: flex; flex-direction: column; gap: 6px; padding: 22px 24px; min-width: 0; }
-.pano-cuenta-tit { font-size: 20px; letter-spacing: -.01em; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
-.pano-cuenta-fin { display: flex; flex-direction: column; gap: 4px; padding: 0; border: 0; background: none; color: var(--text-primary); font-family: var(--font-family); text-align: left; cursor: pointer; }
-.pano-cuenta-frase { font-size: 13px; color: var(--text-secondary); }
-.pano-cuenta-cifra { font-size: 30px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.pano-barras { width: 100%; height: auto; margin-top: 8px; display: block; }
-.pano-barras rect { fill: var(--text-muted); opacity: .55; }
-.pano-barras rect.actual { fill: var(--text-primary); opacity: 1; }
-.pano-barras line { stroke: var(--text-primary); stroke-width: 1; stroke-dasharray: 4 3; }
-.pano-barras text { fill: var(--text-secondary); font-size: 11px; font-family: var(--font-family); }
-.pano-cuenta-aviso { padding: 8px 0; border: 0; border-top: 1px solid var(--border); background: none; color: var(--text-primary); font: 500 13px/1.4 var(--font-family); text-align: left; cursor: pointer; }
-@media (max-width: 1100px) { .pano-fila1 { grid-template-columns: minmax(220px, 280px) 1fr; } .pano-cuenta { grid-column: 1 / -1; border-top: 1px solid var(--border); } .pano-editorial .pano-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 760px) { .pano-fila1 { grid-template-columns: 1fr; } .pano-editorial .pano-grid { grid-template-columns: 1fr; } }
 
 /* Insignia «beta tester» en la cabecera del ordenador, con su bocadillo al pasar el ratón o con el foco. */
 .beta-insignia { position: relative; align-self: center; margin-right: 6px; color: #2f6fe0; font-size: 12.5px; font-style: italic; font-weight: 600; letter-spacing: .01em; white-space: nowrap; cursor: default; outline: none; }
@@ -9740,36 +9669,6 @@ body:not(.papel) .beta-insignia { color: #6c9cf0; }
 .landing-beta { max-width: 640px; margin: 0 auto; text-align: center; color: var(--text-secondary); font-size: 16px; line-height: 1.6; }
 .landing-beta .landing-cta-row { margin-top: 18px; }
 
-/* Panorama editorial, más fiel a la referencia: paneles compactos, cuatro columnas debajo, flechas finas. */
-.pano-editorial .pano-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.pano-editorial .pano-grid > .pano-card:nth-child(3n) { border-right: 1px solid var(--border); }
-.pano-editorial .pano-card.ed-doble { grid-column: span 2; }
-.pano-editorial .pano-card { padding: 16px 18px; gap: 10px; }
-.pano-editorial .pano-card-cab { align-items: flex-start; }
-.pano-editorial .pano-card-tit b { font-size: 18px; }
-.pano-editorial .pano-card-tit small { font-size: 12.5px; }
-.pano-editorial .pano-cifra b { font-size: 26px; }
-.pano-editorial .pano-linea, .pano-editorial .pano-tarea, .pano-editorial .pano-prox { font-size: 13px; }
-.pano-flecha { width: 20px; height: 20px; flex-shrink: 0; margin-left: auto; color: var(--text-primary); }
-.pano-cuenta-tit .pano-flecha { margin-left: 8px; }
-.pano-cuenta-tit { display: flex; align-items: center; justify-content: space-between; font-size: 18px; }
-.pano-fila1 { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.1fr); }
-.pano-dinero { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--text-primary); font-family: var(--font-family); text-align: left; cursor: pointer; min-width: 0; }
-.pano-dinero:hover, .pano-cuenta-fin:hover { background: var(--bg-card-hover); }
-.pano-dinero-graf { width: 100%; height: 110px; margin-top: auto; display: block; }
-.pano-dinero-graf .area { fill: var(--text-primary); opacity: .07; }
-.pano-dinero-graf .linea { fill: none; stroke: var(--text-primary); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.pano-dinero-graf line { stroke: var(--border-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.pano-dinero-graf text { fill: var(--text-secondary); font-size: 11px; font-family: var(--font-family); }
-.pano-cuenta { padding: 16px 18px; }
-.pano-cuenta-cifra { font-size: 26px; }
-.pano-hoy-totales { display: flex; gap: 14px; margin-left: auto; padding-top: 4px; font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; }
-.pano-hoy-estable .pano-hoy-totales + .pano-flecha { margin-left: 12px; }
-.pano-editorial .pano-lt-fila { padding: 9px 0; grid-template-columns: 48px 16px 1fr; }
-.pano-editorial .pano-linea-tiempo::before { left: 67px; }
-@media (max-width: 1100px) { .pano-editorial .pano-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pano-fila1 { grid-template-columns: 1fr 1fr; } .pano-cuenta { grid-column: 1 / -1; } }
-@media (max-width: 760px) { .pano-editorial .pano-grid, .pano-fila1 { grid-template-columns: 1fr; } .pano-editorial .pano-card.ed-doble { grid-column: auto; } .pano-dinero { border-right: 0; border-bottom: 1px solid var(--border); } }
-
 /* Calendario del ordenador: ocupa todo el ancho y las casillas del mes crecen con la altura de la ventana,
    para que el mes llene la pantalla sin desplazar (seis filas en el peor caso). */
 @media (min-width: 1024px) {
@@ -9777,9 +9676,6 @@ body:not(.papel) .beta-insignia { color: #6c9cf0; }
     .cal-month-cell { min-height: clamp(54px, calc((100vh - 400px) / 6), 160px); }
 }
 
-.pano-dinero-elegir { display: inline-flex; align-self: flex-start; gap: 2px; padding: 2px; margin: 2px 0 4px; border-radius: 8px; background: var(--bg-card-hover); }
-.pano-dinero-elegir button { padding: 3px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); font: 600 12px var(--font-family); cursor: pointer; }
-.pano-dinero-elegir button.activo { background: var(--text-primary); color: var(--bg-card); }
 
 /* Tema papel en blanco y negro (27-10): nada de naranja ni de color. El acento pasa a tinta y lo que trae color
    propio (iconos y puntos de categoría, imágenes, gráficas) se pinta en escala de grises. Solo papel: teja, pizarra
@@ -10352,7 +10248,7 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
    .pano-res para mandar sobre las dos maquetas (normal y editorial) sin tocar sus datos.
    ============================================================ */
 .pano.pano-res { max-width:1240px; }
-.pano.pano-res .pano-grid, .pano.pano-res .pano-fila1 { gap:14px; }
+.pano.pano-res .pano-grid { gap:14px; }
 .pano.pano-res .pano-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); margin-top:14px; }
 .pano.pano-res .pano-card { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:18px; gap:10px; min-height:0; text-align:left; color:var(--text-primary); box-shadow:none; }
 .pano.pano-res .pano-card:hover { border-color:var(--text-primary); transform:none; }
@@ -10400,7 +10296,7 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .pano.pano-res .pano-revision-accion { font-size:12px; font-weight:700; text-decoration:underline; text-underline-offset:3px; }
 .pano.pano-res .pano-mas-cab { margin:22px 0 6px; font-size:15px; font-weight:800; color:var(--text-primary); }
 @media (max-width: 1100px) { .pano.pano-res .pano-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 700px) { .pano.pano-res .pano-grid { grid-template-columns:minmax(0, 1fr); } .pano.pano-res .pano-card.doble, .pano.pano-res .pano-card.ed-doble, .pano.pano-res .pano-card.ancha { grid-column:auto; } }
+@media (max-width: 700px) { .pano.pano-res .pano-grid { grid-template-columns:minmax(0, 1fr); } .pano.pano-res .pano-card.doble, .pano.pano-res .pano-card.ancha { grid-column:auto; } }
 
 /* 04-11: aportaciones de inversión sacadas de los movimientos */
 .inv-traspasos { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-top:10px; font-size:12px; color:var(--text-secondary); }
@@ -10419,3 +10315,33 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .entry-item .entry-logo { width:26px; height:26px; border-radius:8px; font-size:12px; margin-right:10px; }
 .sub-logo-campo { display:flex; align-items:center; gap:10px; }
 .sub-logo-campo .modal-input { flex:1; }
+
+/* Panorama igual que el resumen de Finanzas (04-11, segunda vuelta): también «a tener en cuenta.», «mañana.» y «más.»
+   van en paneles de 20 px con reglas finas; nada de la variante editorial (superficie única, reloj, curva, flechas). */
+.pano.pano-res > .home-aviso-block, .pano.pano-res > .home-pattern-line { display:flex; flex-direction:column; gap:0; margin:0 0 14px; padding:18px; border:1px solid var(--border); border-radius:20px; background:var(--bg-card); color:var(--text-secondary); }
+.pano.pano-res > .home-pattern-line:hover { border-color:var(--text-primary); }
+.pano.pano-res .home-pattern-kicker { margin:0 0 6px; font-size:15px; font-weight:800; color:var(--text-primary); }
+.pano.pano-res .home-aviso-item { margin:0; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.pano.pano-res .home-aviso-item:last-child { border-bottom:0; }
+.pano.pano-res .pano-card.ancha { grid-column:1 / -1; }
+.pano.pano-res > .pano-card.pano-hoy-estable { width:100%; box-sizing:border-box; }
+.pano.pano-res .pano-manana { display:flex; flex-direction:column; gap:0; margin-top:4px; padding-top:10px; border-top:1px solid var(--border); }
+.pano.pano-res .pano-manana > b { font-size:13px; font-weight:800; color:var(--text-primary); margin-bottom:2px; }
+.pano.pano-res .pano-linea-tiempo { display:flex; flex-direction:column; }
+.pano.pano-res .pano-linea-tiempo::before { display:none; }
+.pano.pano-res .pano-lt-fila { display:grid; grid-template-columns:46px 8px minmax(0, 1fr); align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.pano.pano-res .pano-lt-fila:last-child { border-bottom:0; }
+.pano.pano-res .pano-lt-fila i { width:8px; height:8px; border:0; border-radius:50%; background:var(--text-primary); opacity:.35; }
+.pano.pano-res .pano-lt-fila .pano-linea-txt { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pano.pano-res .pano-prox { padding:6px 0; border-bottom:1px solid var(--border); }
+.pano.pano-res .pano-prox:last-child { border-bottom:0; }
+.pano.pano-res .pano-tipo { border-radius:8px; font-size:11px; color:var(--text-secondary); }
+.pano.pano-res .pano-prio { width:9px; height:9px; }
+.pano.pano-res .pano-mas-panel { margin-top:14px; padding:18px; border:1px solid var(--border); border-radius:20px; background:var(--bg-card); }
+.pano.pano-res .pano-mas-panel .pano-mas-cab { margin:0 0 4px; }
+.pano.pano-res .home-launcher-row { gap:12px; padding:9px 0; font-size:13px; }
+.pano.pano-res .home-launcher-icon { width:30px; height:30px; border-radius:9px; border:0; background:var(--text-primary) !important; color:var(--bg-card) !important; }
+.pano.pano-res .home-launcher-icon svg { width:15px; height:15px; }
+.pano.pano-res .home-launcher-row:hover .home-launcher-icon { background:var(--text-primary); opacity:.85; }
+.pano.pano-res .pano-sin-tarjetas { margin-top:14px; padding:18px; border:1px solid var(--border); border-radius:20px; background:var(--bg-card); }
+.pano.pano-res .pano-dia-fila { background:none; border-radius:0; padding:6px 0; }
