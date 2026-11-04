@@ -3,7 +3,7 @@ const CACHE_NAME = 'bitacora-shell-v5';
 const SHELL_URLS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './img/marca/logo-claro.png'];
 
 // Lo que se carga al abrirlo también se guarda al instalar, para que funcione sin conexión aunque no se haya abierto nunca.
-const BAJO_DEMANDA = ['guia', 'guia-ia', 'tumes', 'cv', 'profesorado', 'profesorado-aula', 'estudiar', 'test', 'coleccionables', 'classroom', 'actualizaciones', 'conexiones', 'metodo'];
+const BAJO_DEMANDA = ['guia', 'guia-ia', 'tumes', 'cv', 'profesorado', 'profesorado-aula', 'estudiar', 'test', 'coleccionables', 'classroom', 'actualizaciones', 'conexiones', 'metodo', 'transporte'];
 async function guardarEnCola(cache, urls, aLaVez = 5) {
     let i = 0;
     await Promise.all(Array.from({ length: aLaVez }, async () => { while (i < urls.length) await cache.add(urls[i++]).catch(() => {}); }));

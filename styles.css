@@ -10345,3 +10345,45 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .pano.pano-res .home-launcher-row:hover .home-launcher-icon { background:var(--text-primary); opacity:.85; }
 .pano.pano-res .pano-sin-tarjetas { margin-top:14px; padding:18px; border:1px solid var(--border); border-radius:20px; background:var(--bg-card); }
 .pano.pano-res .pano-dia-fila { background:none; border-radius:0; padding:6px 0; }
+
+/* 05-11: transporte. Paneles de 20 px como el resumen de Finanzas; el icono del bus o del tranvía en la tinta. */
+.tr-vista { max-width:760px; }
+.tr-favoritas { display:flex; flex-direction:column; gap:12px; margin-bottom:18px; }
+.tr-parada, .tr-buscar { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:16px 18px; }
+.tr-parada-cab { display:flex; align-items:center; gap:12px; min-width:0; }
+.tr-resultado .tr-parada-cab { cursor:pointer; padding:10px 0; }
+.tr-resultado { border-bottom:1px solid var(--border); }
+.tr-resultado:last-child { border-bottom:0; }
+.tr-icono { flex:none; width:32px; height:32px; border-radius:9px; display:grid; place-items:center; background:var(--text-primary); color:var(--bg-card); }
+.tr-icono svg { width:18px; height:18px; display:block; }
+.tr-nombre { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.tr-nombre b { font-size:15px; font-weight:700; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tr-nombre small { font-size:12px; color:var(--text-secondary); }
+.tr-estrella .ico { width:17px; height:17px; }
+.tr-cuerpo { margin-top:10px; }
+.tr-resultado .tr-cuerpo { margin:0 0 12px 44px; }
+.tr-tiempos { display:flex; flex-direction:column; }
+.tr-llegada { display:grid; grid-template-columns:auto minmax(0, 1fr) auto; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
+.tr-llegada:last-child { border-bottom:0; }
+.tr-linea { min-width:34px; height:26px; padding:0 6px; border-radius:8px; display:grid; place-items:center; box-sizing:border-box; border:1.5px solid var(--text-primary); font-size:13px; font-weight:800; color:var(--text-primary); }
+.tr-destino { min-width:0; display:flex; flex-direction:column; font-size:13.5px; font-weight:600; color:var(--text-primary); }
+.tr-destino small { font-size:11.5px; font-weight:500; color:var(--text-secondary); }
+.tr-min { display:flex; flex-direction:column; align-items:flex-end; font-size:22px; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:var(--text-primary); line-height:1.05; }
+.tr-min.ya { color:var(--m-acento); }
+.tr-llegas { font-size:11px; font-weight:700; letter-spacing:0; }
+.tr-llegas.si { color:var(--text-secondary); }
+.tr-llegas.justo { color:#c08a1e; }
+.tr-llegas.no { color:#c2455c; }
+.tr-hora, .tr-tiempos-vacio, .tr-ayuda, .tr-sub, .tr-pie { font-size:12px; color:var(--text-secondary); }
+.tr-hora { margin-top:6px; }
+.tr-tiempos-vacio { padding:6px 0; }
+.tr-ayuda { margin:12px 0 2px; line-height:1.5; }
+.tr-sub { margin:12px 0 0; font-weight:600; }
+.tr-pie { margin:14px 4px 0; }
+.tr-buscar-fila { display:flex; gap:8px; }
+.tr-buscar-fila .modal-input { flex:1; margin:0; }
+.tr-buscar-fila .vista-btn { flex:none; }
+.vista-btn.activo { background:var(--text-primary); color:var(--bg-card); border-color:var(--text-primary); }
+@media (max-width: 600px) { .tr-parada, .tr-buscar { padding:14px; } .tr-resultado .tr-cuerpo { margin-left:0; } .tr-min { font-size:20px; } }
+.tr-estrella:not(.on) .ico { opacity:.3; }
+.tr-estrella.on { color:var(--text-primary); }

@@ -10,10 +10,10 @@
         // de entrada empieza siendo un sustituto que carga el archivo y la llama; al cargarse, la de verdad lo
         // reemplaza. Solo vale para archivos a los que nadie más llama al pintar ni desde el conector.
         const VERSION_JS = (document.currentScript?.src.match(/[?&]v=([^&]+)/) || [])[1] || '';
-        const BAJO_DEMANDA = { guia: ['guia', 'guia-ia'], tumes: ['tumes'], cv: ['cv'], profe: ['profesorado', 'profesorado-aula'], repaso: ['estudiar', 'test'], coleccionables: ['coleccionables'], classroom: ['classroom'], envios: ['actualizaciones'], conexiones: ['conexiones'], metodo: ['metodo'] };
+        const BAJO_DEMANDA = { guia: ['guia', 'guia-ia'], tumes: ['tumes'], cv: ['cv'], profe: ['profesorado', 'profesorado-aula'], repaso: ['estudiar', 'test'], coleccionables: ['coleccionables'], classroom: ['classroom'], envios: ['actualizaciones'], conexiones: ['conexiones'], metodo: ['metodo'], transporte: ['transporte'] };
         // Las vistas que los necesitan: render() y la página del móvil los bajan antes de pintar (cargarVistaYPintar). Una
         // operación del conector de estos grupos los carga antes de aplicarse (GRUPO_DE_OP, GRUPO_DE_DESHACER en conector.js).
-        const VISTA_GRUPO = { profesorado: 'profe', estudiar: 'repaso', collectibles: 'coleccionables', actualizaciones: 'envios', graph: 'conexiones', goals: 'metodo' };
+        const VISTA_GRUPO = { profesorado: 'profe', estudiar: 'repaso', collectibles: 'coleccionables', actualizaciones: 'envios', graph: 'conexiones', goals: 'metodo', transporte: 'transporte' };
         const bajoDemandaCargado = {}, bajoDemandaHecho = {}, vistaCargando = {};
         const vistaPorCargar = vista => { const g = VISTA_GRUPO[vista]; return g && !bajoDemandaHecho[g] ? g : null; };
         function cargarVistaYPintar(grupo) {
@@ -1021,6 +1021,7 @@
             estudiar: 'Estudios',
             links: 'Enlaces',
             actualizaciones: 'Envíos',
+            transporte: 'Transporte',
             bandeja: 'Propuestas',
             suggestions: 'Sugerencias',
             settings: 'Ajustes'
@@ -1058,6 +1059,7 @@
                 { view: 'friends', icon: '◕', text: 'Social' },
                 { view: 'travels', icon: '⌂', text: 'Viajes' },
                 { view: 'actualizaciones', icon: '▣', text: 'Envíos' },
+                { view: 'transporte', icon: '▭', text: 'Transporte' },
                 { view: 'collectibles', icon: '◆', text: 'Coleccionables' },
                 { view: 'tags', icon: '#', text: 'Etiquetas' },
                 { view: 'graph', icon: '◇', text: 'Conexiones' },
@@ -1826,7 +1828,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             friends: () => renderFriendsView(), tags: () => renderTagsView(), graph: () => renderGraph(),
             bandeja: () => renderBandeja(), suggestions: () => renderSuggestions(), settings: () => renderSettings(),
             actualizaciones: () => renderActualizaciones(), universidad: () => renderUniversidad(), profesorado: () => renderProfesorado(), compra: () => renderCompra(),
-            estudiar: () => renderEstudiar(),
+            estudiar: () => renderEstudiar(), transporte: () => renderTransporte(),
         };
 
         // Efectos que en escritorio se disparan tras pintar ciertas vistas
@@ -1837,6 +1839,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             friends: () => loadFriendsViewData(),
             suggestions: () => loadMySuggestions(),
             bandeja: () => aplicarBandejaConector(),
+            transporte: () => { if (typeof transporteTrasPintar === 'function') transporteTrasPintar(); },
             settings: () => {
                 if (typeof pwaSyncInstallButton === 'function') pwaSyncInstallButton();
                 loadSettingsSubscriptionInfo();
@@ -2212,6 +2215,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             { view: 'profesorado', titulo: 'profesorado.', texto: 'Si das clase: el cuadrante del curso con todas tus clases, y lo que no das en su día pasa a pendientes.', porDefecto: () => (profesorado?.clases || []).length > 0 },
             { view: 'compra', titulo: 'despensa.', texto: 'La lista de la compra por secciones del súper, tus compras con los tickets y lo que te cuesta cada cosa, y tus recetas.', porDefecto: () => (listaCompra?.listas || []).some(l => (l.items || []).length) },
             { view: 'actualizaciones', titulo: 'envíos.', texto: 'Tus pedidos por internet y por dónde van.', porDefecto: () => pedidos.length > 0 },
+            { view: 'transporte', titulo: 'transporte.', texto: 'Tus paradas de bus de Zaragoza con los minutos que faltan para cada bus, en directo, y si llegas andando.', porDefecto: () => !!(servicios?.transporte?.favoritos || []).length },
             { view: 'projects', titulo: 'proyectos.', texto: 'Proyectos con fases, lista o tablero.', porDefecto: () => entries.some(e => e.type === 'project') },
             { view: 'links', titulo: 'enlaces.', texto: 'Webs y recursos guardados por carpetas.', porDefecto: () => links.length > 0 },
             { view: 'tags', titulo: 'etiquetas.', texto: 'Todo lo que lleva la misma etiqueta, junto.', porDefecto: () => entries.some(e => (e.tags || []).length) },

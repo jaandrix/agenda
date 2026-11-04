@@ -470,6 +470,19 @@ const GUIA = [
         trucos: ['Pide a Claude que lea los correos de reserva y complete el viaje: transportes, alojamientos e itinerario (pasa por propuestas).'],
     },
     {
+        id: 'transporte', grupo: 'otros', titulo: 'transporte.',
+        lema: 'El bus de Zaragoza, en directo.',
+        intro: 'Tus paradas de bus con los minutos que faltan para cada uno. Se enciende en Ajustes → apartados. Las paradas salen de los datos abiertos del Ayuntamiento y los tiempos, de Avanza (los mismos que en los postes).',
+        botones: [
+            [guiaBoton('número, calle o línea'), 'Busca la parada: el número del poste (está en la propia parada), el nombre de la calle o una línea («35»). Tócala para ver sus tiempos.'],
+            [guiaBoton('cerca de ti.'), 'Las ocho paradas más cercanas a donde estás, con los minutos andando. Tu ubicación no se guarda en ningún sitio.'],
+            [guiaBoton('estrella'), 'Guarda la parada en «tus paradas.»: salen arriba, con sus tiempos cargados al entrar.'],
+            [guiaBoton('recargar.'), 'Vuelve a pedir los tiempos. También se recargan solos cada 30 segundos mientras miras el apartado.'],
+            [guiaBoton('llegas. justo. no llegas.'), 'Si Bitácora sabe dónde estás, compara lo que tardas andando con lo que le falta al bus.'],
+        ],
+        trucos: ['El tiempo andando es una estimación por la distancia, a paso normal.', 'El tranvía no publica sus tiempos ahora mismo; en cuanto vuelva, sus paradas saldrán en la búsqueda.'],
+    },
+    {
         id: 'actualizaciones', grupo: 'otros', titulo: 'envíos.',
         lema: 'Tus pedidos por internet, bajo control.',
         intro: 'Lo que compras en AliExpress, Vinted, Amazon, Zara... con su estado en cinco pasos: pedido, enviado, en camino, en reparto y entregado. Con número de seguimiento, Bitácora consulta el transportista cada 2 horas y lo avanza sola (y te avisa). Es un apartado opcional: actívalo en Ajustes → apartados.',

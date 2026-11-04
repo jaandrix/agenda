@@ -92,6 +92,7 @@
             else if (currentView === 'studies') content.innerHTML = renderStudies();
             else if (currentView === 'links') content.innerHTML = renderLinks();
             else if (currentView === 'actualizaciones') content.innerHTML = renderActualizaciones();
+            else if (currentView === 'transporte') { content.innerHTML = renderTransporte(); transporteTrasPintar(); }
             else if (currentView === 'universidad') content.innerHTML = renderUniversidad();
             else if (currentView === 'profesorado') content.innerHTML = renderProfesorado();
             else if (currentView === 'compra') content.innerHTML = renderCompra();

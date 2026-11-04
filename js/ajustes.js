@@ -488,7 +488,7 @@
         // queda sin poder activarse.
         const RAMAS_APARTADOS = [
             { id: 'school', texto: 'Para quien estudia o da clase.', apartados: ['studies', 'estudiar', 'universidad', 'profesorado'] },
-            { id: 'home', texto: 'El día a día de casa.', apartados: ['compra', 'actualizaciones', 'collectibles'] },
+            { id: 'home', texto: 'El día a día de casa.', apartados: ['compra', 'actualizaciones', 'transporte', 'collectibles'] },
             { id: 'work', texto: 'Tu trabajo, proyectos y recursos.', apartados: ['work', 'projects', 'links'] },
             { id: 'mind', texto: 'Tu segundo cerebro: cómo se relaciona todo.', apartados: ['tags', 'graph'] },
         ];
