@@ -563,6 +563,8 @@
                 extraFields = `
                     <div class="modal-label">Importe mensual (€)</div>
                     <input type="number" id="modal-recurring-amount" class="modal-input" step="0.01" value="${isEdit ? entry.amount || '' : ''}" placeholder="0.00">
+                    <div class="modal-label">Web, para el logo (opcional)</div>
+                    <div class="sub-logo-campo">${isEdit ? logoSuscripcionHtml(entry, 'subs-logo') : ''}<input type="text" id="modal-recurring-web" class="modal-input" value="${isEdit ? escapeHtml(entry.logoDominio || '') : ''}" placeholder="netflix.com" autocomplete="off" inputmode="url"></div>
                     <div class="modal-label">Día de cargo (1-31)</div>
                     <input type="number" id="modal-recurring-day" class="modal-input" min="1" max="31" value="${isEdit ? entry.renewalDay || '' : ''}" placeholder="1">
                     <div class="modal-label">Estado</div>
@@ -788,6 +790,10 @@
                 if (financePro.enabled) entry.proAccount = document.getElementById('modal-recurring-account')?.value || '';
                 entry.vigilar = !!document.getElementById('modal-recurring-vigilar')?.checked;
                 entry.date = entry.date || todayISO();
+                const web = (document.getElementById('modal-recurring-web')?.value || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split(/[/?#]/)[0];
+                const previa = editId ? entries.find(e => e.id === editId) : null;
+                if (!previa || previa.title !== entry.title || (previa.logoDominio || '') !== web) { entry.logo = undefined; entry.logoIntento = undefined; }
+                entry.logoDominio = web || undefined;
             } else if (type === 'birthday') {
                 entry.firstName = document.getElementById('modal-bday-name')?.value?.trim() || '';
                 entry.lastName = document.getElementById('modal-bday-lastname')?.value?.trim() || '';

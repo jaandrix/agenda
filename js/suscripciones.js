@@ -72,7 +72,9 @@ function renderGestorSuscripciones() {
     const total = activas.reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const hoyDia = new Date().getDate();
     const faltan = e => { const d = Number(e.renewalDay) || 1; return d >= hoyDia ? d - hoyDia : d + 31 - hoyDia; };
+    suscripcionesPedirLogos();
     const fila = (e, cuerpo, botones) => `<div class="subs-fila">
+        ${logoSuscripcionHtml(e, 'subs-logo')}
         <div class="subs-fila-texto" onclick="openEditEntry('${jsAttr(e.id)}')"><b>${escapeHtml(e.title)}</b><span>${cuerpo}</span></div>
         <div class="subs-fila-importe">${financeMoney(Number(e.amount) || 0)}</div>
         <div class="subs-fila-botones">${botones}</div>
@@ -137,4 +139,80 @@ function suscripcionBorrar(id) {
     if (!e || !confirm(`¿Borrar ${e.title} de la lista? Los gastos ya apuntados se quedan.`)) return;
     entries = entries.filter(x => x.id !== id);
     suscripcionGuardar();
+}
+
+// Logos de suscripciones y gastos fijos (04-11). Se buscan solos una vez (función portadas, tipo logo) y la imagen se
+// guarda en la propia entrada como data URL: viaja con tus datos y no se vuelve a descargar. logo === false es «no se
+// encontró», y se reintenta pasado un mes. Con «web.» en el formulario se fuerza la web de la que sacarlo.
+const LOGOS_CONOCIDOS = [
+    ['netflix', 'netflix.com'], ['spotify', 'spotify.com'], ['hbo', 'max.com'], ['disney', 'disneyplus.com'],
+    ['prime video', 'primevideo.com'], ['amazon', 'amazon.es'], ['kindle', 'amazon.es'], ['audible', 'audible.es'],
+    ['apple music', 'music.apple.com'], ['apple tv', 'tv.apple.com'], ['icloud', 'icloud.com'], ['apple', 'apple.com'],
+    ['youtube', 'youtube.com'], ['chatgpt', 'chatgpt.com'], ['openai', 'openai.com'], ['claude', 'claude.ai'], ['anthropic', 'claude.ai'],
+    ['google one', 'one.google.com'], ['google', 'google.com'], ['microsoft', 'microsoft.com'], ['office', 'microsoft.com'],
+    ['xbox', 'xbox.com'], ['game pass', 'xbox.com'], ['playstation', 'playstation.com'], ['ps plus', 'playstation.com'],
+    ['nintendo', 'nintendo.com'], ['adobe', 'adobe.com'], ['dropbox', 'dropbox.com'], ['filmin', 'filmin.es'],
+    ['movistar', 'movistar.es'], ['dazn', 'dazn.com'], ['crunchyroll', 'crunchyroll.com'], ['twitch', 'twitch.tv'],
+    ['notion', 'notion.so'], ['duolingo', 'duolingo.com'], ['strava', 'strava.com'], ['skyshowtime', 'skyshowtime.com'],
+    ['atresplayer', 'atresplayer.com'], ['mitele', 'mitele.es'], ['tidal', 'tidal.com'], ['deezer', 'deezer.com'],
+    ['canva', 'canva.com'], ['github', 'github.com'], ['figma', 'figma.com'], ['linkedin', 'linkedin.com'], ['patreon', 'patreon.com'],
+    ['vodafone', 'vodafone.es'], ['orange', 'orange.es'], ['digi', 'digimobil.es'], ['jazztel', 'jazztel.com'], ['o2', 'o2online.es'],
+    ['lowi', 'lowi.es'], ['pepephone', 'pepephone.com'], ['masmovil', 'masmovil.es'], ['yoigo', 'yoigo.com'], ['simyo', 'simyo.es'],
+    ['iberdrola', 'iberdrola.es'], ['endesa', 'endesa.com'], ['naturgy', 'naturgy.es'], ['holaluz', 'holaluz.com'], ['repsol', 'repsol.es'],
+    ['basic-fit', 'basic-fit.com'], ['basic fit', 'basic-fit.com'], ['revolut', 'revolut.com'], ['myinvestor', 'myinvestor.es'],
+    ['mapfre', 'mapfre.es'], ['mutua', 'mutua.es'], ['sanitas', 'sanitas.es'], ['adeslas', 'segurcaixaadeslas.es'], ['dkv', 'dkv.es'],
+    ['glovo', 'glovoapp.com'], ['uber', 'uber.com'], ['bitwarden', 'bitwarden.com'], ['1password', '1password.com'], ['nordvpn', 'nordvpn.com'],
+];
+
+function logoDominioConocido(titulo) {
+    const t = ' ' + stripAccents(String(titulo || '').toLowerCase()).replace(/[^a-z0-9+ -]/g, ' ') + ' ';
+    const hit = LOGOS_CONOCIDOS.find(([k]) => k.length <= 3 ? new RegExp(`[^a-z0-9]${k}[^a-z0-9]`).test(t) : t.includes(k));
+    return hit ? hit[1] : '';
+}
+
+function logoSuscripcionHtml(e, clase = '') {
+    const img = typeof e.logo === 'string' && e.logo.startsWith('data:image/') ? e.logo : '';
+    return `<span class="sub-logo ${clase} ${img ? 'con-imagen' : ''}" data-logo-id="${escapeHtml(e.id)}" aria-hidden="true">${img ? `<img src="${escapeHtml(img)}" alt="" decoding="async">` : escapeHtml((e.title || '?').trim().charAt(0).toUpperCase())}</span>`;
+}
+
+let logosBuscando = false, logosProgramado = false;
+function suscripcionesPedirLogos() {
+    if (logosProgramado || logosBuscando) return;
+    logosProgramado = true;
+    setTimeout(() => { logosProgramado = false; suscripcionesBuscarLogos().catch(e => console.error(e)); }, 600);
+}
+
+async function suscripcionesBuscarLogos() {
+    if (logosBuscando || typeof navigator !== 'undefined' && navigator.onLine === false) return;
+    const mes = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    const pendientes = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && (e.title || '').trim()
+        && (e.logo === undefined || (e.logo === false && (e.logoIntento || '') < mes))).slice(0, 8);
+    if (!pendientes.length) return;
+    logosBuscando = true;
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return;
+        let cambio = false;
+        for (const e of pendientes) {
+            const dominio = e.logoDominio || logoDominioConocido(e.title);
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/portadas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                body: JSON.stringify({ tipo: 'logo', q: e.title.trim(), dominio: dominio || undefined, adivinar: e.type === 'subscription' }),
+            }).then(r => r.ok ? r.json() : null).catch(() => null);
+            // Sin respuesta, o un servidor sin el tipo logo (no trae «imagen»): se deja para otro día sin marcar nada.
+            if (!res || !('imagen' in res)) break;
+            const viva = entries.find(x => x.id === e.id);
+            if (!viva) continue;
+            viva.logo = typeof res.imagen === 'string' && res.imagen.startsWith('data:image/') ? res.imagen : false;
+            if (res.dominio && !viva.logoDominio) viva.logoDominio = res.dominio;
+            viva.logoIntento = todayISO();
+            cambio = true;
+            document.querySelectorAll(`.sub-logo[data-logo-id="${CSS.escape(viva.id)}"]`).forEach(el => {
+                const clase = [...el.classList].filter(c => c !== 'sub-logo' && c !== 'con-imagen').join(' ');
+                el.outerHTML = logoSuscripcionHtml(viva, clase);
+            });
+        }
+        if (cambio) await saveData();
+    } finally { logosBuscando = false; }
 }

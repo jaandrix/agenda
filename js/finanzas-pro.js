@@ -658,15 +658,12 @@
             requestAnimationFrame(animateFinanceProChartPanel);
         }
 
-        // Solo la primera vez al entrar en Finanzas: después de guardar o cerrar un modal la cifra volvía a contar desde
-        // cero y la página entraba otra vez desde abajo. Se pone a false al llegar desde otro apartado.
-        let financeYaAnimado = false;
+        // Sin animación (04-11): la cifra que contaba desde cero, la línea que se dibujaba y la página que subía se
+        // repetían cada vez que entrabas en Finanzas o volvías a «cuentas.», y en el ordenador daban tirones. Ahora la
+        // gráfica se dibuja quieta y en el mismo momento que la página.
+        let financeYaAnimado = true;
         function animateFinanceProChartPanel() {
             financeDibujarGrafica();
-            if (financeYaAnimado) return;
-            financeYaAnimado = true;
-            document.querySelectorAll('.fin-graf-cifra').forEach(el => { if (el.offsetWidth) bitacoraAnimateNumber(el, Number(el.dataset.value || 0), financeMoney); });
-            document.querySelectorAll('.fin-graf').forEach(el => { if (el.offsetWidth) bitacoraAnimateChart(el); });
         }
 
         // Lo que dicen las cuentas sin las transferencias entre ellas, con el resto del patrimonio (inversión y
@@ -1868,7 +1865,7 @@
             document.querySelectorAll('.finance-dashboard .fin-pestanas button').forEach(b => { b.classList.toggle('active', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
             const ahora = document.querySelector('.finance-dashboard .fin-pestanas')?.getBoundingClientRect().top;
             if (antes != null && ahora != null && Math.abs(ahora - antes) > 1) (document.getElementById('content') || document.scrollingElement).scrollBy?.(0, ahora - antes);
-            if (tab === 'cuentas') requestAnimationFrame(animateFinanceProChartPanel);
+            if (tab === 'cuentas') financeDibujarGrafica();
         }
 
         function renderFinanceTabCuerpo() {
@@ -3647,6 +3644,7 @@
             const active = items.filter(i => i.active !== false);
             const total = active.reduce((s, e) => s + (e.amount || 0), 0);
             const todayDay = new Date().getDate();
+            if (active.length) suscripcionesPedirLogos();
             const sorted = [...active].sort((a, b) => {
                 const da = a.renewalDay < todayDay ? a.renewalDay + 31 : a.renewalDay;
                 const db = b.renewalDay < todayDay ? b.renewalDay + 31 : b.renewalDay;
@@ -3667,7 +3665,7 @@
                     const daysUntil = s.renewalDay >= todayDay ? s.renewalDay - todayDay : s.renewalDay + 31 - todayDay;
                     return `
                     <div class="entry-item" data-open-entry="${s.id}">
-                        <div class="entry-color-dot" style="background:${daysUntil <= 3 ? 'var(--c-e17055)' : 'var(--text-secondary)'}"></div>
+                        ${logoSuscripcionHtml(s, 'entry-logo')}
                         <div class="entry-info">
                             <div class="entry-title">${escapeHtml(s.title)}</div>
                             <div class="entry-meta">Día ${s.renewalDay}, en ${daysUntil} días</div>

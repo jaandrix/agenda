@@ -78,7 +78,7 @@
             else if (currentView === 'documents') { content.innerHTML = renderDocuments();
                 loadDocuments(); loadViewerFiles(); }
             else if (currentView === 'finances') { content.innerHTML = renderFinances();
-                requestAnimationFrame(animateFinanceProChartPanel); }
+                financeDibujarGrafica(); }
             else if (currentView === 'tags') content.innerHTML = renderTagsView();
             else if (currentView === 'graph') content.innerHTML = renderGraph();
             else if (currentView === 'vault') content.innerHTML = renderVault();

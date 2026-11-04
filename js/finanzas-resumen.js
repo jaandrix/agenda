@@ -206,11 +206,12 @@
                 })
                 .sort((a, b) => a.faltan - b.faltan);
             const mes = lista.reduce((s, x) => s + Number(x.e.amount), 0);
+            if (lista.length) suscripcionesPedirLogos();
             return `<section class="finance-panel fin-res-panel fin-res-ancho">
                 <div class="fin-res-cab"><h3>suscripciones y fijos.</h3><span class="fin-res-sub">${financeMoney(mes)} al mes, ${financeMoney(mes * 12)} al año.</span></div>
                 ${lista.length ? `<div class="fin-res-subs">${lista.map(x => `
                     <div class="fin-res-sub-tesela ${x.faltan <= 3 ? 'pronto' : ''}" role="button" tabindex="0" title="Gestionar ${escapeHtml(x.e.title || '')}" onclick="openGestorSuscripciones()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.click()}">
-                        <span class="fin-res-inicial" aria-hidden="true">${escapeHtml((x.e.title || '?').trim().charAt(0).toUpperCase())}</span>
+                        ${logoSuscripcionHtml(x.e, 'fin-res-inicial')}
                         <span class="fin-res-sub-nombre">${escapeHtml(x.e.title || 'sin nombre')}</span>
                         <b>${financeMoney(Number(x.e.amount))}</b>
                         <span class="fin-res-sub-dia">${x.faltan === 0 ? 'hoy.' : x.faltan === 1 ? 'mañana.' : `día ${x.d}, en ${x.faltan} días.`}</span>

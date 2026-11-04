@@ -3896,7 +3896,6 @@ body.papel {
    FINANZAS v0.30 — DASHBOARD ECONÓMICO
    ============================================================ */
 .finance-dashboard { position: relative; max-width: 980px; padding-bottom: 30px; }
-.finance-dashboard.entrando { animation: financeDashboardIn .32s var(--ease-out) both; }
 @keyframes financeDashboardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .finance-dashboard.entrando { animation: none; } }
 .finance-toolbar-row { display: flex; justify-content: space-between; align-items: center; gap: 8px 14px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -9405,7 +9404,8 @@ body.papel .asig-estado.vencido { color:#a3243b; }
 .fin-graf-delta { min-height:20px; font-size:13.5px; color:var(--text-secondary); }
 .fin-graf-delta b { color:var(--text-primary); font-weight:700; }
 .fin-graf-delta b.neg { color:var(--m-acento); }
-.fin-graf { position:relative; margin-top:14px; touch-action:pan-y; cursor:crosshair; color:var(--text-primary); }
+.fin-graf { position:relative; margin-top:14px; touch-action:pan-y; cursor:crosshair; color:var(--text-primary); min-height:190px; }
+.finance-panel .fin-graf { min-height:220px; }
 .fin-graf svg { display:block; overflow:visible; }
 .fin-graf text { font-family:var(--font-family); font-size:11px; fill:var(--text-secondary); }
 .fin-raya { stroke:var(--text-primary); stroke-width:1; opacity:.3; }
@@ -10408,3 +10408,14 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .inv-traspasos b { color:var(--text-primary); }
 .inv-aviso { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-top:10px; font-size:12px; color:#c2455c; }
 .inv-veces { display:block; font-size:10px; color:var(--text-secondary); }
+
+/* 04-11: logos de suscripciones. La imagen va sobre blanco y con su esquina, como un icono de app; sin logo, la inicial. */
+.sub-logo { flex:none; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; overflow:hidden; background:var(--text-primary); color:var(--bg-card); font-weight:800; font-size:14px; line-height:1; }
+.sub-logo.con-imagen { background:#fff; box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text-primary) 12%, transparent); }
+.sub-logo img { width:72%; height:72%; object-fit:contain; display:block; }
+.fin-res-inicial.sub-logo { width:34px; height:34px; border-radius:10px; font-size:15px; }
+.subs-fila:has(.subs-logo) { grid-template-columns:auto minmax(0, 1fr) auto auto; }
+@media (max-width:600px) { .subs-fila:has(.subs-logo) { grid-template-columns:auto minmax(0, 1fr) auto; } .subs-fila:has(.subs-logo) .subs-fila-botones { grid-column:2 / -1; } }
+.entry-item .entry-logo { width:26px; height:26px; border-radius:8px; font-size:12px; margin-right:10px; }
+.sub-logo-campo { display:flex; align-items:center; gap:10px; }
+.sub-logo-campo .modal-input { flex:1; }

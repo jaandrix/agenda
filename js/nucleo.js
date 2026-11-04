@@ -1244,7 +1244,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             });
             // La gráfica se dibuja sobre lo pintado: solo si la página ha cambiado. Antes se programaba en cada repintado,
             // aunque no cambiara nada, y volvía a medirla y animarla.
-            if (paginaNueva && view === 'finances') { financeYaAnimado = false; requestAnimationFrame(animateFinanceProChartPanel); }
+            if (paginaNueva && view === 'finances') financeDibujarGrafica();
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
             if (scrollMenu) { const cuerpo = shell.querySelector('.m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = scrollMenu; }
             if (scrollPagina) shell.scrollTop = scrollPagina;
