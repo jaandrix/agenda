@@ -10344,3 +10344,60 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .fin-res-sub-tesela[role="button"] { cursor:pointer; }
 .fin-res-sub-tesela[role="button"]:hover { border-color:var(--text-primary); }
 .inv-cab-acciones { display:flex; align-items:center; gap:8px; }
+
+
+/* ============================================================
+   PANORAMA con la dirección del resumen de Finanzas (04-11): tarjetas de esquina amplia, título con su nota a la
+   derecha, una cifra grande, filas separadas por reglas finas y gráficos en la tinta del texto. Va al final y con
+   .pano-res para mandar sobre las dos maquetas (normal y editorial) sin tocar sus datos.
+   ============================================================ */
+.pano.pano-res { max-width:1240px; }
+.pano.pano-res .pano-grid, .pano.pano-res .pano-fila1 { gap:14px; }
+.pano.pano-res .pano-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); margin-top:14px; }
+.pano.pano-res .pano-card { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:18px; gap:10px; min-height:0; text-align:left; color:var(--text-primary); box-shadow:none; }
+.pano.pano-res .pano-card:hover { border-color:var(--text-primary); transform:none; }
+.pano.pano-res .pano-card-cab { display:flex; align-items:baseline; gap:10px; }
+.pano.pano-res .pano-card-icono, .pano.pano-res .pano-card-ir { display:none; }
+.pano.pano-res .pano-card-tit { flex-direction:row; justify-content:space-between; align-items:baseline; gap:8px 12px; flex-wrap:wrap; }
+.pano.pano-res .pano-card-tit b { font-size:15px; font-weight:800; letter-spacing:0; }
+.pano.pano-res .pano-card-tit small { font-size:11px; color:var(--text-secondary); text-align:right; }
+.pano.pano-res .pano-card-cuerpo { gap:8px; }
+/* Las cifras: la primera grande, como la cifra de cada panel del resumen; el resto en su fila */
+.pano.pano-res .pano-cifras { display:flex; flex-wrap:wrap; align-items:flex-end; gap:6px 18px; margin-top:auto; padding-top:10px; border-top:1px solid var(--border); }
+.pano.pano-res .pano-cifra { padding:0; border:0; gap:2px; }
+.pano.pano-res .pano-cifra b { font-size:18px; font-weight:800; letter-spacing:-.02em; color:var(--text-primary); }
+.pano.pano-res .pano-cifra:first-child b { font-size:28px; line-height:1.05; }
+.pano.pano-res .pano-cifra small { font-size:11px; color:var(--text-secondary); }
+.pano.pano-res .pano-cifra.alerta b, .pano.pano-res .pano-cifra.alerta small { color:#c2455c; }
+/* Listas: filas con regla fina, como las líneas de «fin de mes» */
+.pano.pano-res .pano-linea, .pano.pano-res .pano-dia-fila, .pano.pano-res .pano-tl-fila, .pano.pano-res .pano-tarea, .pano.pano-res .pano-lt-fila { padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.pano.pano-res .pano-linea:last-child, .pano.pano-res .pano-dia-fila:last-child, .pano.pano-res .pano-tl-fila:last-child, .pano.pano-res .pano-tarea:last-child, .pano.pano-res .pano-lt-fila:last-child { border-bottom:0; }
+.pano.pano-res .pano-dia, .pano.pano-res .pano-tl, .pano.pano-res .pano-tareas, .pano.pano-res .pano-linea-tiempo { gap:0; }
+.pano.pano-res .pano-tl::before { display:none; }
+.pano.pano-res .pano-tl-fila { grid-template-columns:46px 8px minmax(0, 1fr); gap:10px; }
+.pano.pano-res .pano-tl-fila i, .pano.pano-res .pano-dia-fila i, .pano.pano-res .pano-dia-fila i.ev { width:8px; height:8px; box-shadow:none; background:var(--text-primary); opacity:.35; }
+.pano.pano-res .pano-tl-fila:first-child i, .pano.pano-res .pano-lt-fila.siguiente i { background:#c2455c; opacity:1; }
+.pano.pano-res .pano-hora { font-size:11px; color:var(--text-secondary); }
+.pano.pano-res .pano-linea-txt { font-weight:600; }
+.pano.pano-res .pano-linea.tarde .pano-hora { color:#c2455c; }
+.pano.pano-res .pano-vacio, .pano.pano-res .pano-resto { font-size:12px; color:var(--text-secondary); }
+/* Semana: columnas como la tasa de ahorro, en la tinta del texto, con hoy destacado */
+.pano.pano-res .pano-semana { height:74px; gap:6px; }
+.pano.pano-res .pano-sem-barra { width:100%; max-width:26px; border-radius:6px; background:color-mix(in srgb, var(--text-primary) 8%, transparent); }
+.pano.pano-res .pano-sem-barra i.ta { background:var(--text-primary); opacity:.4; }
+.pano.pano-res .pano-sem-barra i.ev { background:var(--text-primary); opacity:.75; }
+.pano.pano-res .pano-sem-dia.hoy .pano-sem-barra i { opacity:1; }
+.pano.pano-res .pano-sem-dia small { font-size:10px; text-transform:lowercase; }
+/* Mes: puntos en tinta del texto, hoy con el aro rojo de las cosas que piden atención */
+.pano.pano-res .pano-mes-puntos i.algo, .pano.pano-res .pano-mes-ley i.algo { background:color-mix(in srgb, var(--text-primary) 35%, transparent); }
+.pano.pano-res .pano-mes-puntos i.mucho, .pano.pano-res .pano-mes-ley i.mucho { background:var(--text-primary); }
+.pano.pano-res .pano-mes-puntos i.hoy { box-shadow:0 0 0 2px var(--bg-card), 0 0 0 3px #c2455c; }
+.pano.pano-res .pano-mes-ley { font-size:11px; }
+/* Barras de progreso como las del resumen */
+.pano.pano-res .pano-barra { display:block; height:8px; border-radius:8px; background:color-mix(in srgb, var(--text-primary) 10%, transparent); overflow:hidden; margin-top:4px; }
+.pano.pano-res .pano-barra i { display:block; height:100%; background:var(--text-primary); }
+.pano.pano-res .pano-prioridades { font-size:11px; }
+.pano.pano-res .pano-revision-accion { font-size:12px; font-weight:700; text-decoration:underline; text-underline-offset:3px; }
+.pano.pano-res .pano-mas-cab { margin:22px 0 6px; font-size:15px; font-weight:800; color:var(--text-primary); }
+@media (max-width: 1100px) { .pano.pano-res .pano-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .pano.pano-res .pano-grid { grid-template-columns:minmax(0, 1fr); } .pano.pano-res .pano-card.doble, .pano.pano-res .pano-card.ed-doble, .pano.pano-res .pano-card.ancha { grid-column:auto; } }

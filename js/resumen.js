@@ -167,7 +167,7 @@
                     </div>
                     <button class="vista-btn pano-editar" onclick="openEditarPanorama()">editar.</button>
                 </div>
-                <div class="pano ${panoramaEditorial() ? 'pano-editorial' : ''}">
+                <div class="pano pano-res ${panoramaEditorial() ? 'pano-editorial' : ''}">
                     ${panoramaEditorial() ? `<div class="pano-fila1">${renderPanoramaDinero()}${renderPanoramaHoy()}${renderPanoramaCuenta(hallazgos)}</div>` : renderHomeAvisos(hallazgos)}
                     ${panoramaEditorial() ? '' : renderPanoramaHoy()}
                     ${renderPanoramaTarjetas()}
