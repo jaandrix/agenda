@@ -504,9 +504,21 @@ Calendario:
         const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
         const cargarJsPDF = () => cargarScript(JSPDF_URL);
 
+        // Huella de cada librería externa (integridad de subrecursos): si el CDN sirviera otro archivo, el navegador no lo
+        // ejecuta. Al cambiar de versión, recalcular con: curl -sL URL | openssl dgst -sha384 -binary | openssl base64 -A
+        const INTEGRIDAD_SCRIPTS = {
+            'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js': 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk',
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js': 'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e',
+            'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js': 'sha384-b5Ya4Bq3qCyz39m2ISh+4DxjAIljdeFwK/BsXLuj9gugaNwAcj/ia15fxNZL9Nlx',
+            'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js': 'sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k',
+            'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js': 'sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH',
+            'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js': 'sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3',
+            'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js': 'sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz'
+        };
         function cargarScript(url) {
             if (!SCRIPTS_CARGADOS[url]) SCRIPTS_CARGADOS[url] = new Promise((resolve, reject) => {
                 const sc = document.createElement('script');
+                if (INTEGRIDAD_SCRIPTS[url]) sc.integrity = INTEGRIDAD_SCRIPTS[url];
                 sc.src = url; sc.crossOrigin = 'anonymous'; sc.onload = resolve;
                 sc.onerror = () => { delete SCRIPTS_CARGADOS[url]; reject(new Error('No se pudo cargar ' + url)); };
                 document.head.appendChild(sc);

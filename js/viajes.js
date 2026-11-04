@@ -489,7 +489,7 @@
             if (!container) return;
             // Leaflet solo se descarga al abrir un mapa, no en cada arranque.
             if (typeof L === 'undefined') {
-                if (!document.querySelector('link[href*="leaflet.css"]')) document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">');
+                if (!document.querySelector('link[href*="leaflet.css"]')) document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">');
                 cargarScript('https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js').then(() => initTripMap(t), e => console.error(e));
                 return;
             }
