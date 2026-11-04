@@ -24,10 +24,12 @@ let trReloj = null;
 function trDatos() {
     if (!servicios.transporte || typeof servicios.transporte !== 'object') servicios.transporte = { favoritos: [] };
     if (!Array.isArray(servicios.transporte.favoritos)) servicios.transporte.favoritos = [];
+    if (!Array.isArray(servicios.transporte.plegadas)) servicios.transporte.plegadas = [];
     return servicios.transporte;
 }
 const trClave = p => `${p.tipo}:${p.numero}`;
 function trEsFavorita(p) { return trDatos().favoritos.includes(trClave(p)); }
+const trPlegada = clave => trDatos().plegadas.includes(clave);
 function trBuscarPorClave(clave) {
     const [tipo, numero] = clave.split(':');
     return (trParadas?.[tipo] || []).find(p => String(p.numero) === numero) || null;
@@ -119,7 +121,7 @@ function trLlegas(minBus, andando) {
     return '<span class="tr-llegas no">no llegas.</span>';
 }
 
-function trTiemposHtml(p) {
+function trTiemposHtml(p, compacto) {
     const t = trTiempos[trClave(p)];
     if (!t || (t.cargando && !t.tiempos)) return '<div class="tr-tiempos-vacio">Mirando los tiempos…</div>';
     if (!t.tiempos.length) return `<div class="tr-tiempos-vacio">${escapeHtml(t.error || 'Ahora no hay buses previstos en esta parada.')}</div>`;
@@ -132,6 +134,12 @@ function trTiemposHtml(p) {
     });
     grupos.sort((a, b) => (a.min[0] ?? 999) - (b.min[0] ?? 999));
     const minTxt = m => m === null ? 'sin hora' : m === 0 ? 'ya' : `${m} min`;
+    if (compacto) return `<div class="tr-tiempos">${grupos.map(g => `<div class="tr-llegada">
+        <span class="tr-linea">${escapeHtml(g.linea)}</span>
+        <span class="tr-destino" title="${escapeHtml(g.destino.toLowerCase())}">${escapeHtml(g.destino.toLowerCase())}</span>
+        <span class="tr-min ${g.min[0] === 0 ? 'ya' : ''}">${minTxt(g.min[0])}${trLlegas(g.min[0], andando)}${g.min[1] !== undefined ? `<small>luego ${minTxt(g.min[1])}</small>` : ''}</span>
+    </div>`).join('')}</div>
+    <div class="tr-hora">${t.cargando ? 'actualizando…' : `a las ${new Date(t.hora).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.`}</div>`;
     return `<div class="tr-tiempos">${grupos.map(g => `<div class="tr-llegada">
         <span class="tr-linea">${escapeHtml(g.linea)}</span>
         <span class="tr-destino">${escapeHtml(g.destino.toLowerCase())}${g.min[1] !== undefined ? `<small>luego, ${minTxt(g.min[1])}</small>` : ''}</span>
@@ -148,10 +156,27 @@ function trCabParada(p, favorita) {
 }
 
 function trFavoritaHtml(p) {
-    return `<section class="tr-parada tr-fav" data-tr="${escapeHtml(trClave(p))}">
-        <div class="tr-parada-cab">${trCabParada(p, true)}</div>
-        <div class="tr-cuerpo">${trTiemposHtml(p)}</div>
+    const clave = trClave(p), plegada = trPlegada(clave), andando = trMinutosAndando(p);
+    return `<section class="tr-parada tr-fav ${plegada ? 'plegada' : ''}" data-tr="${escapeHtml(clave)}">
+        <div class="tr-fav-cab" role="button" tabindex="0" aria-expanded="${!plegada}" title="${plegada ? 'Ver los tiempos' : 'Plegar'}" onclick="trPlegar('${jsAttr(clave)}')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.click()}">
+            <span class="tr-icono ${p.tipo}">${p.tipo === 'tram' ? TR_ICONO_TRAM : TR_ICONO_BUS}</span>
+            <span class="tr-nombre"><b>${escapeHtml(p.nombre || 'parada')}</b><small>${p.tipo === 'tram' ? 'tranvía' : 'poste'} ${escapeHtml(p.numero)}${andando !== null ? `, a ${andando} min` : ''}</small></span>
+            <i class="ico ico-der tr-pliegue" aria-hidden="true"></i>
+        </div>
+        ${plegada ? '' : `<div class="tr-cuerpo">${trTiemposHtml(p, true)}</div>
+        <button type="button" class="tr-quitar" onclick="trAlternarFavorita('${jsAttr(clave)}')">quitar.</button>`}
     </section>`;
+}
+
+async function trPlegar(clave) {
+    const d = trDatos();
+    const plegar = !d.plegadas.includes(clave);
+    d.plegadas = plegar ? [...d.plegadas, clave] : d.plegadas.filter(c => c !== clave);
+    const p = trBuscarPorClave(clave);
+    const caja = document.querySelector(`.tr-fav[data-tr="${CSS.escape(clave)}"]`);
+    if (p && caja) caja.outerHTML = trFavoritaHtml(p);
+    if (p && !plegar && (!trTiempos[clave] || Date.now() - (trTiempos[clave].hora || 0) > 25000)) trCargarTiempos(p);
+    try { await saveData(); } catch (e) { console.error(e); }
 }
 
 function trResultadoHtml(p) {
@@ -214,7 +239,7 @@ function trRepintarTodo() {
 function trRepintarLista() { const l = document.getElementById('tr-lista'); if (l) l.innerHTML = trListaHtml(); }
 function trPintarParada(p) {
     const clave = trClave(p);
-    document.querySelectorAll(`[data-tr="${CSS.escape(clave)}"] .tr-cuerpo`).forEach(el => { el.innerHTML = trTiemposHtml(p); });
+    document.querySelectorAll(`[data-tr="${CSS.escape(clave)}"] .tr-cuerpo`).forEach(el => { el.innerHTML = trTiemposHtml(p, !!el.closest('.tr-fav')); });
 }
 
 // Tras pintar la vista: paradas, tiempos de las favoritas y recarga cada 30 s mientras se ve.
@@ -228,7 +253,7 @@ async function transporteTrasPintar() {
     }
     await trCargarParadas();
     if (primera) trRepintarTodo();
-    trDatos().favoritos.map(trBuscarPorClave).filter(Boolean).forEach(p => { if (!trTiempos[trClave(p)] || Date.now() - (trTiempos[trClave(p)].hora || 0) > 25000) trCargarTiempos(p); });
+    trDatos().favoritos.filter(c => !trPlegada(c)).map(trBuscarPorClave).filter(Boolean).forEach(p => { if (!trTiempos[trClave(p)] || Date.now() - (trTiempos[trClave(p)].hora || 0) > 25000) trCargarTiempos(p); });
     clearInterval(trReloj);
     trReloj = setInterval(() => {
         if (currentView !== 'transporte' || !document.querySelector('.tr-vista')) { clearInterval(trReloj); trReloj = null; return; }
@@ -238,7 +263,7 @@ async function transporteTrasPintar() {
 }
 
 function trRecargar(callado) {
-    const visibles = new Set([...trDatos().favoritos, ...(trAbierta ? [trAbierta] : [])]);
+    const visibles = new Set([...trDatos().favoritos.filter(c => !trPlegada(c)), ...(trAbierta ? [trAbierta] : [])]);
     visibles.forEach(clave => { const p = trBuscarPorClave(clave); if (p) trCargarTiempos(p); });
     if (!callado && !visibles.size) showToast('Guarda una parada para ver sus tiempos');
 }

@@ -60,7 +60,12 @@ Deno.serve(async req => {
             signal: AbortSignal.timeout(8000),
         });
         if (!r.ok) return json({ tiempos: [], error: 'El servicio de Avanza no responde' });
-        return json({ tiempos: leerTiempos(await r.text()), fuente: 'Avanza' });
+        // Avanza sirve ISO-8859-1 (lo dice su cabecera) y r.text() siempre lee UTF-8: «JESÚS» llegaba como «JES�S».
+        // Se prueba UTF-8 estricto por si algún día cambia y, si no cuadra, Windows-1252.
+        const bytes = new Uint8Array(await r.arrayBuffer());
+        let html: string;
+        try { html = new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch (_) { html = new TextDecoder('windows-1252').decode(bytes); }
+        return json({ tiempos: leerTiempos(html), fuente: 'Avanza' });
     } catch (e) {
         console.error(e);
         return json({ tiempos: [], error: 'El servicio de Avanza no responde' });
