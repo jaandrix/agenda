@@ -10334,3 +10334,13 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
   .inv-tabla-proy th:nth-child(2), .inv-tabla-proy td:nth-child(2) { display:none; }
 }
 .inv-graf { margin-bottom:30px; }
+
+/* 04-11: la gráfica principal con el estilo de «camino al objetivo»; lo que se puede pulsar va subrayado */
+.fin-area { opacity:.07; }
+.fin-linea { stroke-width:2; }
+.fin-base { stroke-dasharray:2 4; opacity:.8; }
+.fin-res-activo.con-ficha .fin-res-activo-nombre { color:var(--text-primary); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+.investment-account-main[role="button"] .investment-account-name { text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+.fin-res-sub-tesela[role="button"] { cursor:pointer; }
+.fin-res-sub-tesela[role="button"]:hover { border-color:var(--text-primary); }
+.inv-cab-acciones { display:flex; align-items:center; gap:8px; }

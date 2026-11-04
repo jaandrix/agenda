@@ -17,6 +17,16 @@
             try { return Number(presupuestoPlanDe(mes).plan?.salary) || 0; } catch (e) { return 0; }
         }
 
+        // Lo que falta del sueldo: el presupuestado menos lo que ya ha entrado este mes como sueldo (categoría Sueldo o
+        // concepto de nómina). Otros ingresos (un Bizum, una devolución) no lo descuentan.
+        function finResSueldoPorEntrar(mes) {
+            const previsto = finResSueldoPrevisto(mes);
+            if (!previsto) return 0;
+            const esSueldo = t => /sueldo|n[oó]mina|salario/i.test(financeProCategoryById(t.category)?.name || '') || /n[oó]mina|salario/i.test(t.note || '');
+            const cobrado = financePro.transactions.filter(t => t.type === 'income' && t.date?.startsWith(mes) && !financeProNeutro(t) && esSueldo(t)).reduce((s, t) => s + (Number(t.amount) || 0), 0);
+            return Math.max(0, previsto - cobrado);
+        }
+
         function finResPct(v) {
             return `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1).replace('.', ',')} %`;
         }
@@ -117,9 +127,9 @@
             <div class="fin-res-ejes"><span>${etiquetas[0]}</span><span>${etiquetas[1]}</span><span>${c.mesesHasta && c.mesesHasta <= 36 ? fecha : `dentro de ${horizonte} meses`}</span></div>`;
         }
 
-        function finResBarras(entra, sale, previsto) {
-            const max = Math.max(entra, sale, previsto, 1);
-            const falta = Math.max(0, previsto - entra);
+        function finResBarras(entra, sale, previsto, falta) {
+            falta = falta || 0;
+            const max = Math.max(entra + falta, sale, previsto, 1);
             return `<div class="fin-res-barras">
                 <div class="fin-res-barra"><span class="fin-res-barra-nombre">entra.</span><span class="fin-res-barra-pista"><i class="entra" style="width:${(entra / max * 100).toFixed(1)}%"></i>${falta ? `<i class="falta" style="width:${(falta / max * 100).toFixed(1)}%"></i>` : ''}</span><b>${financeMoney(entra)}</b></div>
                 <div class="fin-res-barra"><span class="fin-res-barra-nombre">sale.</span><span class="fin-res-barra-pista"><i class="sale" style="width:${(sale / max * 100).toFixed(1)}%"></i></span><b>${financeMoney(sale)}</b></div>
@@ -129,13 +139,13 @@
         function finResPanelMes(titulo, mes, conSueldo) {
             const { income, expense } = financeProMonthTotals(mes.clave);
             const sueldo = conSueldo ? finResSueldoPrevisto(mes.clave) : 0;
-            const falta = Math.max(0, sueldo - income);
+            const falta = conSueldo ? finResSueldoPorEntrar(mes.clave) : 0;
             const neto = income - expense;
             return `<section class="finance-panel fin-res-panel">
                 <div class="fin-res-cab"><h3>${titulo}</h3><span class="fin-res-sub">${mes.nombre}.</span></div>
                 <div class="fin-res-cifra ${neto < 0 ? 'finance-negative' : ''}">${neto >= 0 ? '+' : '−'}${financeMoney(Math.abs(neto))}</div>
                 <div class="fin-res-nota">${neto >= 0 ? 'te queda' : 'has gastado más de lo que ha entrado'}${falta ? `, y aún falta por entrar ${financeMoney(falta)} del sueldo previsto` : ''}.</div>
-                ${finResBarras(income, expense, sueldo)}
+                ${finResBarras(income, expense, sueldo, falta)}
                 ${conSueldo && sueldo ? `<div class="fin-res-pie"><span>sueldo previsto.</span><b>${financeMoney(sueldo)}</b></div>` : ''}
             </section>`;
         }
@@ -199,7 +209,7 @@
             return `<section class="finance-panel fin-res-panel fin-res-ancho">
                 <div class="fin-res-cab"><h3>suscripciones y fijos.</h3><span class="fin-res-sub">${financeMoney(mes)} al mes, ${financeMoney(mes * 12)} al año.</span></div>
                 ${lista.length ? `<div class="fin-res-subs">${lista.map(x => `
-                    <div class="fin-res-sub-tesela ${x.faltan <= 3 ? 'pronto' : ''}">
+                    <div class="fin-res-sub-tesela ${x.faltan <= 3 ? 'pronto' : ''}" role="button" tabindex="0" title="Gestionar ${escapeHtml(x.e.title || '')}" onclick="openGestorSuscripciones()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.click()}">
                         <span class="fin-res-inicial" aria-hidden="true">${escapeHtml((x.e.title || '?').trim().charAt(0).toUpperCase())}</span>
                         <span class="fin-res-sub-nombre">${escapeHtml(x.e.title || 'sin nombre')}</span>
                         <b>${financeMoney(Number(x.e.amount))}</b>
@@ -217,7 +227,7 @@
                 && (e.type !== 'subscription' || typeof suscripcionVigente !== 'function' || suscripcionVigente(e, todayISO()))).reduce((s, e) => s + Number(e.amount), 0);
             let variable = 0;
             try { const r = financeRitmoDatos(); if (r.suficiente) variable = Math.max(0, r.proyeccion - r.llevas); } catch (e) { /* sin ritmo: solo los fijos */ }
-            const porEntrar = Math.max(0, finResSueldoPrevisto(mes) - financeProMonthTotals(mes).income);
+            const porEntrar = finResSueldoPorEntrar(mes);
             const fin = saldo - fijos - variable + porEntrar;
             const gastos = [1, 2, 3].map(i => financeProMonthTotals(finResMes(-i).clave).expense).filter(v => v > 0);
             const medio = gastos.length ? gastos.reduce((s, v) => s + v, 0) / gastos.length : 0;

@@ -96,7 +96,10 @@
             return `<div class="inv-ficha">
                 <div class="inv-cab">
                     <div class="modal-title">${escapeHtml(acc.name)}.</div>
-                    <button class="lt-icon-circle" title="Cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
+                    <div class="inv-cab-acciones">
+                        <button class="vista-btn" title="Abre Claude con la tarea escrita: revisa los correos del banco y apunta los meses que falten" onclick="abrirTareaClaude('inversion')">revisar con claude.</button>
+                        <button class="lt-icon-circle" title="Cerrar" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button>
+                    </div>
                 </div>
                 <div class="inv-cifras">
                     <div><span>vale hoy.</span><b>${financeMoney(d.valor)}</b></div>
@@ -187,4 +190,15 @@
             invRepintar();
             invalidarCachesDerivadas();
             try { await saveData(); showToast(`${financeMonthLabel(mes)} guardado`); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        // Un botón que pone a Claude a trabajar: abre claude.ai con la tarea ya escrita. Claude usa tus conectores (Gmail y
+        // Bitácora), comprueba qué falta y lo hace; tú solo tienes que enviar el mensaje.
+        const TAREAS_CLAUDE = {
+            inversion: 'Revisa en mi Gmail los correos de MyInvestor con el asunto «Rentabilidad de tu cartera» (de comunicaciones@myinvestor.es). Cada correo es de un mes (el que dice el asunto, no el día en que llega). Para cada uno, saca el valor de la cartera, las aportaciones del mes y del año, las ganancias y la rentabilidad del mes, del año y desde el inicio, y apúntalo con la herramienta «inversion» del conector de Bitácora (cuenta MyInvestor, mes AAAA-MM), del más antiguo al más reciente. La herramienta no toca lo que yo guardé a mano. No escribas en Gmail. Al acabar, dime en una tabla qué meses has apuntado.'
+        };
+        function abrirTareaClaude(clave) {
+            const texto = TAREAS_CLAUDE[clave];
+            if (!texto) return;
+            window.open('https://claude.ai/new?q=' + encodeURIComponent(texto), '_blank', 'noopener');
         }

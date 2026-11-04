@@ -805,11 +805,9 @@
                     const cx = x(i) + (i === 0 ? 0 : 0);
                     return cx > 14 && cx < iw - 14 ? `<text x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${MESES[Number(d.f.slice(5, 7)) - 1]}</text>` : '';
                 }).join('');
-                const id = 'fin-raya-' + (el.closest('.movil') ? 'm' : 'd');
                 el.innerHTML = `<svg width="${W}" height="${H}" aria-hidden="true">
-                    <defs><pattern id="${id}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" class="fin-raya"/></pattern></defs>
                     <line x1="0" x2="${iw}" y1="${y(serie[0].v).toFixed(1)}" y2="${y(serie[0].v).toFixed(1)}" class="fin-base"/>
-                    <path d="${area}" fill="url(#${id})" stroke="none" class="fin-area"/>
+                    <path d="${area}" fill="currentColor" stroke="none" class="fin-area"/>
                     <path d="${linea}" fill="none" stroke="currentColor" class="fin-linea"/>
                     ${meses}
                     <line class="fin-cursor" x1="0" x2="0" y1="${pT - 8}" y2="${pT + ih}" style="display:none"/>
@@ -1858,7 +1856,7 @@
 
         // Finanzas en tres pestañas. Al cambiar se repinta solo el panel (no la vista entera) y se conserva el sitio
         // de la barra de pestañas en pantalla, para que no salte el scroll al pasar a una más corta o más larga.
-        let financeTab = 'resumen';
+        let financeTab = 'cuentas';
         function cambiarPestanaFinanzas(tab) {
             if (tab === financeTab) return;
             financeTab = tab;
@@ -1880,7 +1878,6 @@
                 ${renderFinanceBudgetUnifiedPanel()}
                 ${renderFinancePlanRow()}
                 <div class="finance-dashboard-foot-actions" style="margin-top:20px">
-                    <button class="finance-oneoff-btn" onclick="openGestorSuscripciones()">suscripciones.</button>
                     <button class="finance-oneoff-btn" onclick="openFinanceHistoryCorrectionModal()"><i class='ico ico-lapiz' aria-hidden=true></i> corregir registros.</button>
                 </div>`;
             return `
@@ -1926,7 +1923,7 @@
                     ${blurToggleBtn}
                 </div>
                 <div class="vista-seg fin-pestanas" role="tablist" aria-label="Finanzas">
-                    ${[['resumen', 'resumen.'], ['cuentas', 'cuentas.'], ['movimientos', 'movimientos.'], ['planificacion', 'planificación.']].map(([k, t]) => `<button role="tab" data-tab="${k}" class="${financeTab === k ? 'active' : ''}" aria-selected="${financeTab === k}" onclick="cambiarPestanaFinanzas('${k}')">${t}</button>`).join('')}
+                    ${[['cuentas', 'cuentas.'], ['planificacion', 'planificación.'], ['movimientos', 'movimientos.'], ['resumen', 'resumen.']].map(([k, t]) => `<button role="tab" data-tab="${k}" class="${financeTab === k ? 'active' : ''}" aria-selected="${financeTab === k}" onclick="cambiarPestanaFinanzas('${k}')">${t}</button>`).join('')}
                 </div>
                 <div id="finance-tab-cuerpo">${renderFinanceTabCuerpo()}</div>
             </div>`;

@@ -1990,8 +1990,8 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
 
         function renderMobileFinances() {
             const ahora = new Date();
-            const tab = ['resumen', 'cuentas', 'movimientos', 'planificacion'].includes(financeTab) ? financeTab : 'resumen';
-            const pestanas = `<div class="m-pestanas m-pestanas-fin" role="tablist">${[['resumen', 'resumen.'], ['cuentas', 'cuentas.'], ['movimientos', 'movimientos.'], ['planificacion', 'planificación.']].map(([k, t]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'activa' : ''}" onclick="mobileFinPestana('${k}')">${t}</button>`).join('')}</div>`;
+            const tab = ['resumen', 'cuentas', 'movimientos', 'planificacion'].includes(financeTab) ? financeTab : 'cuentas';
+            const pestanas = `<div class="m-pestanas m-pestanas-fin" role="tablist">${[['cuentas', 'cuentas.'], ['planificacion', 'planificación.'], ['movimientos', 'movimientos.'], ['resumen', 'resumen.']].map(([k, t]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'activa' : ''}" onclick="mobileFinPestana('${k}')">${t}</button>`).join('')}</div>`;
             const cab = `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}${pestanas}`;
 
             if (tab === 'movimientos') {
@@ -2019,10 +2019,6 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             if (tab === 'planificacion') {
                 return `${cab}
                 ${renderPresupuestoMovil() || '<div class="m-vacio m-vacio-peque">este mes no tienes presupuestos. Se reparten desde el ordenador, en Finanzas, planificación.</div>'}
-                ${mobileFinCargos(5, true)}
-                <div class="m-acciones m-acciones-uno">
-                    <button class="m-boton" onclick="openGestorSuscripciones()">suscripciones.</button>
-                </div>
                 <button class="m-enlace asist-permitir-enlace" onclick="openPuedoPermitirme()">¿me lo puedo permitir?</button>`;
             }
 

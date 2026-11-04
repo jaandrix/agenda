@@ -602,6 +602,7 @@
                     <div class="ajustes-seccion" data-grupo="conexiones"><div class="ajustes-grupo" id="ajg-conexiones">conexiones.</div>
                     <div class="ajustes-rejilla">
                         ${bloqueAjuste('settings-conector-section', 'conector', 'claude y chatgpt.', '', `<div id="settings-conector-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${bloqueAjuste('settings-claude-section', 'conector', 'tareas con claude.', 'Un botón y Claude se pone a ello: abre claude.ai con la tarea escrita, revisa lo que falta con tus conectores y lo hace. Solo tienes que enviar el mensaje.', `<div class="ajuste-acciones"><button class="finance-oneoff-btn" onclick="abrirTareaClaude('inversion')">revisar el correo de myinvestor.</button></div>`)}
                         ${bloqueAjuste('settings-atajos-section', 'atajos', 'siri y tu correo.', 'Apunta cosas sin abrir Bitácora: dictándolas o reenviando un correo.', renderAjustesAtajos())}
                         ${bloqueAjuste('settings-servicios-section', 'lugar', 'lo que bitácora sabe sola.', 'Festivos, puentes, la luz, tus equipos y los estrenos de tus series, sin apuntar nada.', renderAjustesServicios())}
                         ${bloqueAjuste('', 'calendario', 'tu calendario en otras apps.', 'Suscríbete a Bitácora desde Google Calendar, el Calendario del iPhone u Outlook: tus eventos, cumpleaños, viajes y fechas límite, siempre al día.', `<button class="btn-secondary" style="width:auto" onclick="openCalendarioFeed()">obtener enlace.</button>`)}
