@@ -10419,3 +10419,9 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .tr-fav .tr-linea { grid-area:linea; }
 .tr-fav .tr-min { grid-area:min; }
 .tr-fav .tr-destino { grid-area:dest; -webkit-line-clamp:1; overflow-wrap:normal; }
+
+/* 05-11: tus líneas dentro de cada parada guardada. La elegida, rellena con la tinta. */
+.tr-fav button.tr-linea { background:none; font-family:var(--font-family); cursor:pointer; }
+.tr-fav button.tr-linea.fav { background:var(--text-primary); color:var(--bg-card); }
+.tr-mas { margin-top:4px; padding:0; border:0; background:none; font:600 11px var(--font-family); color:var(--text-primary); text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.tr-pista { margin-top:4px; font-size:10.5px; color:var(--text-secondary); }

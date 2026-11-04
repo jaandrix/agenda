@@ -1610,8 +1610,14 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 if (session && navigator.onLine !== false) {
                     const r = await fetch(`${SUPABASE_URL}/functions/v1/transporte`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ poste }) });
                     const d = r.ok ? await r.json() : null;
-                    const t = (d?.tiempos || []).filter(x => x.minutos !== null).sort((a, b) => a.minutos - b.minutos)[0];
-                    if (d) html = t ? `el <b>${escapeHtml(t.linea)}</b> a ${escapeHtml(String(t.destino || '').toLowerCase())}, ${t.minutos === 0 ? '<b>ya en la parada</b>' : `en <b>${t.minutos} min</b>`}.` : 'sin buses previstos ahora.';
+                    // Si en esa parada elegiste tus líneas (transporte.), solo cuentan esas.
+                    const mias = servicios?.transporte?.lineas?.['bus:' + poste] || [];
+                    // El próximo de cada línea, del que llega antes al que más tarda (cuatro como mucho).
+                    const porLinea = new Map();
+                    (d?.tiempos || []).filter(x => x.minutos !== null && (!mias.length || mias.includes(x.linea))).sort((a, b) => a.minutos - b.minutos)
+                        .forEach(x => { if (!porLinea.has(x.linea)) porLinea.set(x.linea, x.minutos); });
+                    const lista = [...porLinea].slice(0, 4).map(([l, m]) => `el <b>${escapeHtml(l)}</b> ${m === 0 ? '<b>ya</b>' : `en <b>${m} min</b>`}`);
+                    if (d) html = lista.length ? lista.join(', ') + '.' : mias.length ? `el ${escapeHtml(mias.join(', '))}, sin buses previstos ahora.` : 'sin buses previstos ahora.';
                 }
             } catch (e) { /* se queda en «sin datos ahora.» */ }
             mobileBusPidiendo = false;

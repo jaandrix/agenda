@@ -476,7 +476,8 @@ const GUIA = [
         botones: [
             [guiaBoton('número, calle o línea'), 'Busca la parada: el número del poste (está en la propia parada), el nombre de la calle o una línea («35»). Tócala para ver sus tiempos.'],
             [guiaBoton('cerca de ti.'), 'Las ocho paradas más cercanas a donde estás, con los minutos andando. Tu ubicación no se guarda en ningún sitio.'],
-            [guiaBoton('estrella'), 'Guarda la parada en «tus paradas.»: salen arriba, con sus tiempos cargados al entrar.'],
+            [guiaBoton('estrella'), 'Guarda la parada en «tus paradas.»: salen arriba, con sus tiempos cargados al entrar. Toca su cabecera para plegarla.'],
+            [guiaBoton('número de línea'), 'En una parada guardada, toca el número de la línea que coges (por ejemplo, el 30) y la tarjeta enseñará solo esa; las demás quedan tras «+ n más.». «tu bus.», en el inicio del móvil, también usa solo tus líneas. Vuelve a tocarlo para quitarla.'],
             [guiaBoton('recargar.'), 'Vuelve a pedir los tiempos. También se recargan solos cada 30 segundos mientras miras el apartado.'],
             [guiaBoton('llegas. justo. no llegas.'), 'Si Bitácora sabe dónde estás, compara lo que tardas andando con lo que le falta al bus.'],
         ],

@@ -25,11 +25,16 @@ function trDatos() {
     if (!servicios.transporte || typeof servicios.transporte !== 'object') servicios.transporte = { favoritos: [] };
     if (!Array.isArray(servicios.transporte.favoritos)) servicios.transporte.favoritos = [];
     if (!Array.isArray(servicios.transporte.plegadas)) servicios.transporte.plegadas = [];
+    if (!servicios.transporte.lineas || typeof servicios.transporte.lineas !== 'object') servicios.transporte.lineas = {};
     return servicios.transporte;
 }
 const trClave = p => `${p.tipo}:${p.numero}`;
 function trEsFavorita(p) { return trDatos().favoritos.includes(trClave(p)); }
 const trPlegada = clave => trDatos().plegadas.includes(clave);
+// Las líneas que te interesan de cada parada guardada ({ 'bus:532': ['30'] }): la tarjeta y «tu bus.» enseñan solo
+// esas; las demás quedan tras «+ n más.». Sin ninguna elegida, salen todas.
+const trLineasFav = clave => trDatos().lineas[clave] || [];
+let trVerTodas = {};
 function trBuscarPorClave(clave) {
     const [tipo, numero] = clave.split(':');
     return (trParadas?.[tipo] || []).find(p => String(p.numero) === numero) || null;
@@ -134,12 +139,21 @@ function trTiemposHtml(p, compacto) {
     });
     grupos.sort((a, b) => (a.min[0] ?? 999) - (b.min[0] ?? 999));
     const minTxt = m => m === null ? 'sin hora' : m === 0 ? 'ya' : `${m} min`;
-    if (compacto) return `<div class="tr-tiempos">${grupos.map(g => `<div class="tr-llegada">
-        <span class="tr-linea">${escapeHtml(g.linea)}</span>
+    if (compacto) {
+        const clave = trClave(p), favs = trLineasFav(clave), todas = !favs.length || trVerTodas[clave];
+        const vis = todas ? grupos : grupos.filter(g => favs.includes(g.linea));
+        const ocultas = grupos.length - vis.length;
+        const pie = ocultas ? `<button type="button" class="tr-mas" onclick="trVerTodasLineas('${jsAttr(clave)}')">+ ${ocultas} ${ocultas === 1 ? 'línea' : 'líneas'} más.</button>`
+            : favs.length && trVerTodas[clave] ? `<button type="button" class="tr-mas" onclick="trVerTodasLineas('${jsAttr(clave)}')">solo las tuyas.</button>`
+            : !favs.length && grupos.length > 1 ? '<div class="tr-pista">toca una línea para ver solo esa.</div>' : '';
+        return `${vis.length ? `<div class="tr-tiempos">${vis.map(g => `<div class="tr-llegada">
+        <button type="button" class="tr-linea ${favs.includes(g.linea) ? 'fav' : ''}" title="${favs.includes(g.linea) ? 'Dejar de destacar' : 'Ver solo esta línea'}" aria-pressed="${favs.includes(g.linea)}" onclick="trAlternarLinea('${jsAttr(clave)}', '${jsAttr(g.linea)}')">${escapeHtml(g.linea)}</button>
         <span class="tr-destino" title="${escapeHtml(g.destino.toLowerCase())}">${escapeHtml(g.destino.toLowerCase())}</span>
         <span class="tr-min ${g.min[0] === 0 ? 'ya' : ''}">${minTxt(g.min[0])}${trLlegas(g.min[0], andando)}${g.min[1] !== undefined ? `<small>luego ${minTxt(g.min[1])}</small>` : ''}</span>
-    </div>`).join('')}</div>
+    </div>`).join('')}</div>` : `<div class="tr-tiempos-vacio">${favs.length === 1 ? 'El' : 'Las líneas'} ${escapeHtml(favs.join(', '))} sin buses previstos ahora.</div>`}
+    ${pie}
     <div class="tr-hora">${t.cargando ? 'actualizando…' : `a las ${new Date(t.hora).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.`}</div>`;
+    }
     return `<div class="tr-tiempos">${grupos.map(g => `<div class="tr-llegada">
         <span class="tr-linea">${escapeHtml(g.linea)}</span>
         <span class="tr-destino">${escapeHtml(g.destino.toLowerCase())}${g.min[1] !== undefined ? `<small>luego, ${minTxt(g.min[1])}</small>` : ''}</span>
@@ -302,4 +316,21 @@ async function trAlternarFavorita(clave) {
     const p = trBuscarPorClave(clave);
     if (p && d.favoritos.includes(clave) && !trTiempos[clave]?.tiempos) trCargarTiempos(p);
     try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+}
+
+async function trAlternarLinea(clave, linea) {
+    const d = trDatos();
+    const actuales = d.lineas[clave] || [];
+    const nuevas = actuales.includes(linea) ? actuales.filter(l => l !== linea) : [...actuales, linea];
+    if (nuevas.length) d.lineas[clave] = nuevas; else delete d.lineas[clave];
+    trVerTodas[clave] = false;
+    const p = trBuscarPorClave(clave);
+    if (p) trPintarParada(p);
+    if (typeof mobileBus !== 'undefined') mobileBus = null;
+    try { await saveData(); } catch (e) { console.error(e); }
+}
+function trVerTodasLineas(clave) {
+    trVerTodas[clave] = !trVerTodas[clave];
+    const p = trBuscarPorClave(clave);
+    if (p) trPintarParada(p);
 }
