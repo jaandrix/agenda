@@ -535,6 +535,23 @@
                 const que = [c.hecha === true ? 'hecha' : c.hecha === false ? 'pendiente otra vez' : '', c.sinFecha ? 'a tareas pendientes' : (c.fecha || c.hora) ? `al ${c.fecha || antes.dia || 'mismo día'}${c.hora ? ' a las ' + c.hora : ''}` : '', c.titulo ? 'nuevo título' : ''].filter(Boolean).join(', ');
                 return linea('cambio', `tarea «${corto(op.resumen)}»: ${que || 'cambiada'}.`, { accion: 'tarea', id: op.id, antes });
             }
+            // La foto mensual de una cuenta de inversión que llega del correo del banco. Lo guardado a mano manda: el
+            // correo solo rellena sus columnas (correo) y los meses vacíos, que quedan como «del correo» hasta revisarlos.
+            if (op.tipo === 'inversion') {
+                if (!/^\d{4}-\d{2}$/.test(String(op.mes || '')) || !op.correo || !isFinite(Number(op.correo.valor))) return null;
+                financeProfile.investmentAccounts = financeProfile.investmentAccounts || [];
+                let acc = financeProfile.investmentAccounts.find(c => c.id === op.cuentaId)
+                    || financeProfile.investmentAccounts.find(c => stripAccents(String(c.name || '').toLowerCase()).includes(stripAccents(String(op.cuenta || '').toLowerCase())));
+                let creada = false;
+                if (!acc) { acc = { id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: op.cuenta || 'MyInvestor', notes: '', contributions: [] }; financeProfile.investmentAccounts.push(acc); creada = true; }
+                acc.contributions = acc.contributions || [];
+                const i = acc.contributions.findIndex(c => c.month === op.mes);
+                const antes = i >= 0 ? JSON.parse(JSON.stringify(acc.contributions[i])) : null;
+                if (i >= 0) acc.contributions[i].correo = { ...op.correo };
+                else acc.contributions.push({ month: op.mes, amount: Number(op.correo.aportadoMes) || 0, value: Number(op.correo.valor), correo: { ...op.correo }, desdeCorreo: true });
+                if (typeof syncInvestedTotal === 'function') syncInvestedTotal();
+                return linea('inversion', `${acc.name}, ${op.mes}: cartera ${financeMoney(Number(op.correo.valor))}${i >= 0 && antes?.guardado ? ' (lo tuyo se queda)' : ''}.`, { accion: 'inversion', cuentaId: acc.id, mes: op.mes, antes, creada });
+            }
             if (op.tipo === 'borrar') {
                 const loc = localizarConector(op.coleccion, op.id);
                 if (!loc) return null;
@@ -596,6 +613,14 @@
             } else if (d.accion === 'entrada') {
                 const ev = entries.find(e => e.id === d.eventoId);
                 if (ev?.entradas) ev.entradas = ev.entradas.filter(x => x.id !== d.id);
+            } else if (d.accion === 'inversion') {
+                const acc = (financeProfile.investmentAccounts || []).find(c => c.id === d.cuentaId);
+                if (acc) {
+                    acc.contributions = (acc.contributions || []).filter(c => c.month !== d.mes);
+                    if (d.antes) acc.contributions.push(d.antes);
+                    if (d.creada && !acc.contributions.length) financeProfile.investmentAccounts = financeProfile.investmentAccounts.filter(c => c.id !== acc.id);
+                    if (typeof syncInvestedTotal === 'function') syncInvestedTotal();
+                }
             } else if (d.accion === 'restaurar') {
                 const ev = entries.find(e => e.id === d.id);
                 if (ev) Object.assign(ev, d.antes);
@@ -720,7 +745,7 @@
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
         // Desde el 23-10 casi todo se aplica solo (con deshacer en el historial). En la bandeja quedan el dinero
         // (movimientos, correcciones, extractos) y los borrados, donde un error de la IA cuesta más.
-        const OPS_AUTOMATICAS = ['evento', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto', 'apuntar', 'correo', 'pedido', 'objetivo', 'laboral', 'profe', 'test',
+        const OPS_AUTOMATICAS = ['evento', 'inversion', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto', 'apuntar', 'correo', 'pedido', 'objetivo', 'laboral', 'profe', 'test',
             'tarea', 'editar_tarea', 'tarea_recurrente', 'estudio_crear', 'estudio_editar', 'clase', 'nota', 'habito', 'dia', 'enlace', 'deseo', 'entrada_crear', 'entrada_editar'];
         // Filas ya validadas o descartadas aquí que el servidor quizá aún no
         // ha borrado (se borran después de guardar): sin esto, una lectura
@@ -809,6 +834,7 @@
             if (op.tipo === 'enlace') return 'enlaces';
             if (op.tipo === 'clase') return 'estudios';
             if (op.tipo === 'objetivo') return 'objetivos';
+            if (op.tipo === 'inversion') return 'finanzas';
             if (op.tipo === 'laboral') return 'empleo';
             if (op.tipo === 'profe') return 'profesorado';
             if (op.tipo === 'test') return 'estudios';
@@ -865,6 +891,7 @@
                 case 'receta': return { tipo: 'receta', texto: `«${op.nombre || ''}»`, meta: `${(op.ingredientes || []).length} ingredientes` };
                 case 'ticket': return { tipo: 'ticket de la compra', texto: op.tienda || '', meta: [op.total ? financeMoney(Number(op.total)) : '', `${(op.lineas || []).length} productos`].filter(Boolean).join(', ') };
                 case 'proyecto': return { tipo: 'proyecto', texto: op.accion === 'crear' ? op.titulo : op.accion === 'tareas' ? (op.tareas || []).join(', ') : op.tarea || op.fase || op.texto || '', meta: op.accion };
+                case 'inversion': return { tipo: 'foto de inversión', texto: `${op.cuenta || 'cuenta'}, ${op.mes}`, meta: op.correo ? `cartera ${financeMoney(Number(op.correo.valor))}` : '' };
                 case 'objetivo': return { tipo: 'objetivo', texto: op.hito || (op.hitos || []).join(', ') || (op.actual ?? ''), meta: op.accion };
                 case 'laboral': return { tipo: 'agenda laboral', texto: op.cita?.titulo || op.accion, meta: op.cita?.fecha ? fecha(op.cita.fecha) : '' };
                 case 'profe': return { tipo: 'profesorado', texto: op.titulo || op.accion, meta: op.fecha ? fecha(op.fecha) : '' };

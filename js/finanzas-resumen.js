@@ -53,7 +53,7 @@
                 const aportado = (a.contributions || []).reduce((s, c) => s + (Number(c.amount) || 0), 0);
                 const prev = conValor.length > 1 ? Number(conValor[conValor.length - 2].value) || 0 : null;
                 const pct = aportado > 0 ? (valor - aportado) / aportado * 100 : (prev ? (valor - prev) / prev * 100 : null);
-                filas.push({ nombre: a.name || 'inversión', valor, pct, nota: aportado > 0 ? 'rentabilidad' : 'último mes' });
+                filas.push({ nombre: a.name || 'inversión', valor, pct, nota: aportado > 0 ? 'rentabilidad' : 'último mes', ficha: a.id });
             });
             if (!(financeProfile.investmentAccounts || []).length && Number(financeProfile.invested || 0)) filas.push({ nombre: 'inversión', valor: Number(financeProfile.invested), pct: null, nota: '' });
             const emergencia = Number(financeProfile.emergency || 0);
@@ -180,7 +180,7 @@
             return `<section class="finance-panel fin-res-panel">
                 <div class="fin-res-cab"><h3>tus activos.</h3><span class="fin-res-sub">en directo.</span></div>
                 <div class="fin-res-activos">${filas.map(f => `
-                    <div class="fin-res-activo"><span class="fin-res-activo-nombre">${escapeHtml(f.nombre.toLowerCase())}.</span><b>${financeMoney(f.valor)}</b>${finResVariacion(f.pct)}</div>`).join('')}
+                    <div class="fin-res-activo${f.ficha ? ' con-ficha' : ''}"${f.ficha ? ` role="button" tabindex="0" title="Abrir la ficha de ${escapeHtml(f.nombre)}" onclick="openFichaInversion('${f.ficha}')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.click()}"` : ''}><span class="fin-res-activo-nombre">${escapeHtml(f.nombre.toLowerCase())}.</span><b>${financeMoney(f.valor)}</b>${finResVariacion(f.pct)}</div>`).join('')}
                 </div>
                 <div class="fin-res-pie"><span>total.</span><b>${financeMoney(total)}</b></div>
             </section>`;

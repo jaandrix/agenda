@@ -1158,12 +1158,12 @@
             return `
             <div class="investment-account-row">
                 <span class="lt-dot ${updatedThisMonth ? 'lt-dot-today' : ''}" title="${updatedThisMonth ? 'Actualizada este mes' : 'Sin actualizar este mes'}"></span>
-                <div class="investment-account-main">
+                <div class="investment-account-main" role="button" tabindex="0" onclick="openFichaInversion('${acc.id}')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.click()}" style="cursor:pointer">
                     <div class="investment-account-name">${escapeHtml(acc.name)}</div>
                     <div class="investment-account-meta">${financeMoney(invested)} aportado${gain !== 0 ? `, ${gain >= 0 ? '+' : ''}${financeMoney(gain)}` : ''}</div>
                 </div>
                 <div class="investment-account-value">${financeMoney(value)}</div>
-                <button class="finance-oneoff-btn" style="width:auto" onclick="openAccountMonthlyUpdate('${acc.id}')">+ mes</button>
+                <button class="finance-oneoff-btn" style="width:auto" onclick="openFichaInversion('${acc.id}')">abrir.</button>
                 <button class="doc-action-delete-btn" title="Eliminar cuenta" onclick="deleteInvestmentAccount('${acc.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
             </div>`;
         }

@@ -183,6 +183,25 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         assert.deepEqual(fallos, []);
     });
 
+    test('el correo de inversión rellena huecos, no pisa lo guardado a mano y se deshace', () => {
+        vaciar();
+        run(`showModal = h => { globalThis.__modal = String(h); }; modoCapa = () => {}; registroConector = [];
+            financeProfile.investmentAccounts = [{ id: 'i1', name: 'MyInvestor', contributions: [{ month: '2026-09', amount: 200, value: 1000, guardado: true }] }];`);
+        run(`registrarLineaConector(aplicarOpConector({ tipo: 'inversion', cuentaId: 'i1', cuenta: 'MyInvestor', mes: '2026-09', correo: { valor: 950, aportadoMes: 198 } }, 'r1'), 'auto')`);
+        assert.equal(run(`financeProfile.investmentAccounts[0].contributions.find(c => c.month === '2026-09').value`), 1000);
+        assert.equal(run(`financeProfile.investmentAccounts[0].contributions.find(c => c.month === '2026-09').correo.valor`), 950);
+        run(`registrarLineaConector(aplicarOpConector({ tipo: 'inversion', cuenta: 'myinvestor', mes: '2026-10', correo: { valor: 1189, aportadoMes: 198 } }, 'r2'), 'auto')`);
+        assert.equal(run(`financeProfile.investmentAccounts.length`), 1);
+        assert.equal(run(`financeProfile.investmentAccounts[0].contributions.find(c => c.month === '2026-10').value`), 1189);
+        assert.equal(run(`financeProfile.investmentAccounts[0].contributions.find(c => c.month === '2026-10').desdeCorreo`), true);
+        run(`deshacerConector('r2', true)`);
+        assert.equal(run(`financeProfile.investmentAccounts[0].contributions.some(c => c.month === '2026-10')`), false);
+        run(`deshacerConector('r1', true)`);
+        assert.equal(run(`'correo' in financeProfile.investmentAccounts[0].contributions.find(c => c.month === '2026-09')`), false);
+        run(`openFichaInversion('i1')`);
+        assert.match(run(`__modal`), /si mantienes el ritmo/);
+    });
+
     test('el cuadre encuentra el saldo final aunque las filas de un día estén desordenadas', () => {
         const cab = ['Nº Orden', 'Fecha Operacion', 'Fecha Valor', 'Concepto', 'Descripción', 'Referencia', 'Importe', 'Saldo'];
         const filas = [cab,

@@ -884,6 +884,22 @@ const HERRAMIENTAS = [
         },
     },
     {
+        name: 'inversion',
+        description: 'Apunta en Finanzas la foto mensual de una cuenta de inversión (por ejemplo la cartera de MyInvestor) a partir del correo «Rentabilidad de tu cartera en <mes>»: valor de la cartera, aportaciones, ganancias y rentabilidad del mes, del año y desde el inicio. Se aplica solo y se puede deshacer. Nunca cambia lo que el usuario guardó a mano: solo rellena las columnas del correo y los meses que estén vacíos. Usa un mes por llamada (el mes al que se refiere el correo, no el mes en que llega).',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                cuenta: { type: 'string', description: 'Nombre de la cuenta de inversión en Bitácora (por defecto MyInvestor)' },
+                mes: { type: 'string', description: 'Mes al que se refieren los datos, AAAA-MM' },
+                valor_cartera: { type: 'number', description: 'VALOR DE TU CARTERA, en euros' },
+                aportado_mes: { type: 'number' }, aportado_anio: { type: 'number' },
+                ganancias_mes: { type: 'number' }, ganancias_anio: { type: 'number' }, ganancias_inicio: { type: 'number' },
+                rentabilidad_mes: { type: 'number', description: 'En %, por ejemplo 1.2' }, rentabilidad_anio: { type: 'number' }, rentabilidad_inicio: { type: 'number' },
+            },
+            required: ['mes', 'valor_cartera'],
+        },
+    },
+    {
         name: 'analisis',
         description: 'Lo que la propia Bitácora calcula sobre el usuario: ritmo de gasto del mes frente a lo normal en él (veredicto, proyección a fin de mes, categorías que se desvían), patrones entre apartados (gasto, hábitos, esfuerzo, planes, exámenes) y los avisos que le está mostrando. Úsalo para preguntas de cómo va y por qué.',
         inputSchema: { type: 'object', properties: {} },
@@ -1382,6 +1398,21 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (r.sent) return `Aviso enviado a ${r.sent} dispositivo${r.sent === 1 ? '' : 's'}.${r.errores?.length ? ` Falló en ${r.errores.length}: ${r.errores.map((e: any) => `${e.servicio} (${e.estado || 'error'}: ${e.mensaje})`).join('; ')}` : ''}`;
             if (r.errores?.length) throw new Error('No se pudo entregar el aviso: ' + r.errores.map((e: any) => `${e.servicio} (${e.estado || 'error'}: ${e.mensaje})`).join('; '));
             return 'El usuario no tiene las notificaciones activadas en ningún dispositivo (Ajustes de Bitácora → Notificaciones).';
+        }
+        case 'inversion': {
+            const mes = String(a.mes || '').trim();
+            if (!/^\d{4}-\d{2}$/.test(mes)) throw new Error('El mes va como AAAA-MM');
+            const valor = Number(a.valor_cartera);
+            if (!isFinite(valor) || valor < 0) throw new Error('Falta el valor de la cartera');
+            const cuentas = (data.financeProfile?.investmentAccounts || []);
+            const buscada = String(a.cuenta || 'MyInvestor');
+            const acc = cuentas.find((c: any) => norm(c.name).includes(norm(buscada).trim())) || (cuentas.length === 1 ? cuentas[0] : null);
+            const num = (v: any) => (v === undefined || v === null || v === '' || !isFinite(Number(v))) ? undefined : Number(v);
+            const correo: any = { valor, aportadoMes: num(a.aportado_mes), aportadoAnio: num(a.aportado_anio), gananciasMes: num(a.ganancias_mes), gananciasAnio: num(a.ganancias_anio), gananciasInicio: num(a.ganancias_inicio), rentMes: num(a.rentabilidad_mes), rentAnio: num(a.rentabilidad_anio), rentInicio: num(a.rentabilidad_inicio) };
+            Object.keys(correo).forEach(k => correo[k] === undefined && delete correo[k]);
+            await encolar(userId, { tipo: 'inversion', cuentaId: acc?.id || null, cuenta: acc?.name || buscada, mes, correo });
+            const ya = acc && (acc.contributions || []).find((c: any) => c.month === mes);
+            return `${acc ? `«${acc.name}»` : `Cuenta nueva «${buscada}»`}, ${mes}: cartera ${valor} €${ya && ya.guardado ? ' (el mes ya estaba guardado a mano: solo se añaden los datos del correo)' : ''}.${SOLO}`;
         }
         case 'objetivo': {
             const plazos: Record<string, string> = { corto: 'short', medio: 'medium', largo: 'long' };
