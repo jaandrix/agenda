@@ -28,6 +28,15 @@
                 (porMes[m] = porMes[m] || { suma: 0, lista: [] }).lista.push(t);
                 porMes[m].suma = Math.round((porMes[m].suma + (t.type === 'income' ? -1 : 1) * Math.abs(Number(t.amount) || 0)) * 100) / 100;
             });
+            // De una cuenta no se saca antes de haber puesto: los meses del principio que solo restan son de otra
+            // inversión anterior (pasó con tres rescates de enero, antes de abrir la cuenta en mayo) y no cuentan.
+            let acumulado = 0;
+            for (const m of Object.keys(porMes).sort()) {
+                acumulado += porMes[m].suma;
+                if (acumulado > 0) break;
+                delete porMes[m];
+                acumulado = 0;
+            }
             return porMes;
         }
 
@@ -54,7 +63,9 @@
                 let enviado = 0;
                 [...acc.contributions].sort((a, b) => a.month.localeCompare(b.month)).forEach(c => {
                     enviado = Math.round((enviado + (Number(c.amount) || 0)) * 100) / 100;
-                    if (c.guardado || !c.correo) return;
+                    // Solo los meses rellenados por el correo: un valor apuntado a mano (aunque no se pulsara «guardar.»)
+                    // no se toca nunca.
+                    if (c.guardado || !c.desdeCorreo || !c.correo) return;
                     const g = Number(c.correo.gananciasInicio);
                     c.value = isFinite(g) && c.correo.gananciasInicio !== null && c.correo.gananciasInicio !== '' ? Math.round((enviado + g) * 100) / 100 : Number(c.correo.valor);
                 });
