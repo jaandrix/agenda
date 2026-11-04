@@ -1990,8 +1990,8 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
 
         function renderMobileFinances() {
             const ahora = new Date();
-            const tab = ['resumen', 'movimientos', 'planificacion'].includes(financeTab) ? financeTab : 'resumen';
-            const pestanas = `<div class="m-pestanas m-pestanas-fin" role="tablist">${[['resumen', 'resumen.'], ['movimientos', 'movimientos.'], ['planificacion', 'planificación.']].map(([k, t]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'activa' : ''}" onclick="mobileFinPestana('${k}')">${t}</button>`).join('')}</div>`;
+            const tab = ['resumen', 'cuentas', 'movimientos', 'planificacion'].includes(financeTab) ? financeTab : 'resumen';
+            const pestanas = `<div class="m-pestanas m-pestanas-fin" role="tablist">${[['resumen', 'resumen.'], ['cuentas', 'cuentas.'], ['movimientos', 'movimientos.'], ['planificacion', 'planificación.']].map(([k, t]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'activa' : ''}" onclick="mobileFinPestana('${k}')">${t}</button>`).join('')}</div>`;
             const cab = `${renderMobileCabecera('finanzas', `${MOBILE_MESES[ahora.getMonth()]}.`)}${pestanas}`;
 
             if (tab === 'movimientos') {
@@ -2013,6 +2013,8 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                     <button class="m-enlace" onclick="mobileFinMenu(this)">más opciones.</button>
                 </div>`;
             }
+
+            if (tab === 'resumen') return `${cab}<div class="m-fin-resumen">${renderFinanzasResumen()}</div>`;
 
             if (tab === 'planificacion') {
                 return `${cab}

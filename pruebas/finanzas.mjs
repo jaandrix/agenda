@@ -177,8 +177,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         const pantallas = ['openFinanceProTransactionModal()', "openFinanceProTransactionModal('t1')", 'openFinanceProQuickCaptureModal()', 'openFinanceProAccountsSettings()', "openFinanceProBalanceAdjustModal('bancos')",
             'openFinanceProCategoriesModal()', 'openFinanceProRulesModal()', 'openFinanceProDuplicatesModal()', 'openFinanceProAllTxModal()', 'openFinanceProProgramadosModal()', 'openFinanceProViajeModal()',
             'openFinanceProImportModal()', 'openDeshacerImportacion()', 'openFinanceProReviewModal()', 'openGestorSuscripciones()', 'openPuedoPermitirme()', 'openFinanceHistoryCorrectionModal()',
-            "financeTab = 'resumen'; renderFinanceProDashboard()", "financeTab = 'movimientos'; renderFinanceProDashboard()", "financeTab = 'planificacion'; renderFinanceProDashboard()",
-            "financeTab = 'resumen'; renderMobileFinances()", "financeTab = 'movimientos'; renderMobileFinances()", "financeTab = 'planificacion'; renderMobileFinances()"];
+            "financeTab = 'resumen'; renderFinanceProDashboard()", "financeTab = 'cuentas'; renderFinanceProDashboard()", "financeTab = 'movimientos'; renderFinanceProDashboard()", "financeTab = 'planificacion'; renderFinanceProDashboard()",
+            "financeTab = 'resumen'; renderMobileFinances()", "financeTab = 'cuentas'; renderMobileFinances()", "financeTab = 'movimientos'; renderMobileFinances()", "financeTab = 'planificacion'; renderMobileFinances()"];
         const fallos = pantallas.flatMap(p => { try { run(p); return []; } catch (e) { return [`${p}: ${e.message}`]; } });
         assert.deepEqual(fallos, []);
     });

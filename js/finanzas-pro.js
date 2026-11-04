@@ -1870,10 +1870,11 @@
             document.querySelectorAll('.finance-dashboard .fin-pestanas button').forEach(b => { b.classList.toggle('active', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
             const ahora = document.querySelector('.finance-dashboard .fin-pestanas')?.getBoundingClientRect().top;
             if (antes != null && ahora != null && Math.abs(ahora - antes) > 1) (document.getElementById('content') || document.scrollingElement).scrollBy?.(0, ahora - antes);
-            if (tab === 'resumen') requestAnimationFrame(animateFinanceProChartPanel);
+            if (tab === 'cuentas') requestAnimationFrame(animateFinanceProChartPanel);
         }
 
         function renderFinanceTabCuerpo() {
+            if (financeTab === 'resumen') return renderFinanzasResumen();
             if (financeTab === 'movimientos') return renderFinanceProTxSection();
             if (financeTab === 'planificacion') return `
                 ${renderFinanceBudgetUnifiedPanel()}
@@ -1925,7 +1926,7 @@
                     ${blurToggleBtn}
                 </div>
                 <div class="vista-seg fin-pestanas" role="tablist" aria-label="Finanzas">
-                    ${[['resumen', 'resumen.'], ['movimientos', 'movimientos.'], ['planificacion', 'planificación.']].map(([k, t]) => `<button role="tab" data-tab="${k}" class="${financeTab === k ? 'active' : ''}" aria-selected="${financeTab === k}" onclick="cambiarPestanaFinanzas('${k}')">${t}</button>`).join('')}
+                    ${[['resumen', 'resumen.'], ['cuentas', 'cuentas.'], ['movimientos', 'movimientos.'], ['planificacion', 'planificación.']].map(([k, t]) => `<button role="tab" data-tab="${k}" class="${financeTab === k ? 'active' : ''}" aria-selected="${financeTab === k}" onclick="cambiarPestanaFinanzas('${k}')">${t}</button>`).join('')}
                 </div>
                 <div id="finance-tab-cuerpo">${renderFinanceTabCuerpo()}</div>
             </div>`;
