@@ -1,0 +1,1047 @@
+{
+  "apuntar": [
+    {
+      "frase": "llamar al banco",
+      "cosas": [
+        {"tipo": "tarea", "titulo": "Llamar al banco", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Tarea sin fecha ni hora: para hoy."
+    },
+    {
+      "frase": "mañana recoger el paquete",
+      "cosas": [
+        {"tipo": "tarea", "titulo": "Recoger el paquete", "fecha": "2026-11-06", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Fecha relativa 'mañana' sin hora: tarea."
+    },
+    {
+      "frase": "cena con Marta el viernes a las 9",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Cena con Marta", "fecha": "2026-11-06", "hora": "21:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Plan nocturno: 'a las 9' son las 21:00; el viernes es el próximo (06)."
+    },
+    {
+      "frase": "dentista el 12 a las 10:30",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Dentista", "fecha": "2026-11-12", "hora": "10:30", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Día 12 aún por llegar en noviembre; hora explícita."
+    },
+    {
+      "frase": "gasté 12 en gasolina",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Gasolina", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 12, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Gasto con importe y sin fecha: hoy."
+    },
+    {
+      "frase": "me han pagado 300",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Pago recibido", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 300, "ingreso": true, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Dinero que entra: ingreso true; sin fecha, hoy."
+    },
+    {
+      "frase": "20 € de cena",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Cena", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 20, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Importe con símbolo € y título 'Cena'; no es evento porque no hay hora ni gente."
+    },
+    {
+      "frase": "comprar leche y huevos",
+      "cosas": [
+        {"tipo": "compra", "titulo": "Leche y huevos", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Compra única con dos productos unidos por 'y' (sin fechas distintas)."
+    },
+    {
+      "frase": "falta pan",
+      "cosas": [
+        {"tipo": "compra", "titulo": "Pan", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Frase de falta → compra; sin fecha, hoy."
+    },
+    {
+      "frase": "nota: llamar al fontanero",
+      "cosas": [
+        {"tipo": "nota", "titulo": "Llamar al fontanero", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Prefijo 'nota:' fuerza nota aunque el contenido parezca tarea."
+    },
+    {
+      "frase": "idea: regalo para mamá",
+      "cosas": [
+        {"tipo": "nota", "titulo": "Regalo para mamá", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Prefijo 'idea:' → nota."
+    },
+    {
+      "frase": "cumpleaños de Lucía el 14 de marzo",
+      "cosas": [
+        {"tipo": "cumple", "titulo": "Cumpleaños de Lucía", "fecha": "2027-03-14", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "14 de marzo ya pasó en 2026 → próximo año."
+    },
+    {
+      "frase": "examen de Estadística el 20",
+      "cosas": [
+        {"tipo": "examen", "titulo": "Examen de Estadística", "fecha": "2026-11-20", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Asignatura existente; día 20 de noviembre."
+    },
+    {
+      "frase": "entrega de Historia el viernes",
+      "cosas": [
+        {"tipo": "trabajo", "titulo": "Entrega de Historia del Arte", "fecha": "2026-11-06", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "'Historia' se resuelve a la asignatura existente Historia del Arte; entrega = trabajo."
+    },
+    {
+      "frase": "sacar la basura todos los martes",
+      "cosas": [
+        {"tipo": "recurrente", "titulo": "Sacar la basura", "fecha": "2026-11-10", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Recurrente semanal; primera vez el próximo martes (10)."
+    },
+    {
+      "frase": "regar las plantas cada 3 días",
+      "cosas": [
+        {"tipo": "recurrente", "titulo": "Regar las plantas", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Recurrente cada 3 días; empieza hoy."
+    },
+    {
+      "frase": "clase de inglés lunes y miércoles a las 18",
+      "cosas": [
+        {"tipo": "clase", "titulo": "Clase de Inglés B2", "fecha": "2026-11-09", "hora": "18:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Clase fija; 'inglés' → Inglés B2; primer lunes próximo (09)."
+    },
+    {
+      "frase": "viaje a Lisboa del 3 al 7 de diciembre",
+      "cosas": [
+        {"tipo": "viaje", "titulo": "Viaje a Lisboa", "fecha": "2026-12-03", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": "Lisboa"}
+      ],
+      "dificultad": "media",
+      "por_que": "Viaje con rango; fecha de inicio 3 dic."
+    },
+    {
+      "frase": "serie Los Soprano",
+      "cosas": [
+        {"tipo": "serie", "titulo": "Los Soprano", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Primera palabra define tipo serie."
+    },
+    {
+      "frase": "libro El infinito en un junco",
+      "cosas": [
+        {"tipo": "libro", "titulo": "El infinito en un junco", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Primera palabra 'libro' define tipo."
+    },
+    {
+      "frase": "peli Dune",
+      "cosas": [
+        {"tipo": "peli", "titulo": "Dune", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Primera palabra 'peli' define tipo."
+    },
+    {
+      "frase": "juego Elden Ring",
+      "cosas": [
+        {"tipo": "juego", "titulo": "Elden Ring", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Primera palabra 'juego' define tipo."
+    },
+    {
+      "frase": "dentista mañana a las 5 y comprar pan",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Dentista", "fecha": "2026-11-06", "hora": "17:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "compra", "titulo": "Pan", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Dos cosas con 'y'; la compra sin fecha propia va a hoy."
+    },
+    {
+      "frase": "cena con Marta el viernes a las 9; comprar vino",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Cena con Marta", "fecha": "2026-11-06", "hora": "21:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "compra", "titulo": "Vino", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Separación por ';' con dos acciones distintas."
+    },
+    {
+      "frase": "pagar la luz el 15",
+      "cosas": [
+        {"tipo": "tarea", "titulo": "Pagar la luz", "fecha": "2026-11-15", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Parece gasto pero no hay importe → tarea."
+    },
+    {
+      "frase": "cena con Marta",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Cena con Marta", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Con gente → evento aunque no tenga hora; sin fecha, hoy."
+    },
+    {
+      "frase": "llamar al banco mañana",
+      "cosas": [
+        {"tipo": "tarea", "titulo": "Llamar al banco", "fecha": "2026-11-06", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Tarea con fecha relativa."
+    },
+    {
+      "frase": "revisión médico el 8 a las 10",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Revisión médico", "fecha": "2026-11-08", "hora": "10:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Evento con hora; día 8 de noviembre."
+    },
+    {
+      "frase": "fisio el lunes a las 5",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Fisio", "fecha": "2026-11-09", "hora": "17:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Próximo lunes (09); 'a las 5' → 17:00."
+    },
+    {
+      "frase": "partido de pádel el martes a las 7",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Partido de pádel", "fecha": "2026-11-10", "hora": "19:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Deporte con hora de tarde (7 → 19:00); martes próximo (10)."
+    },
+    {
+      "frase": "concierto de Vetusta Morla el 21 a las 9 y media",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Concierto de Vetusta Morla", "fecha": "2026-11-21", "hora": "21:30", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Hora con 'y media' y plan nocturno: 21:30."
+    },
+    {
+      "frase": "comida con Ana el domingo a mediodía",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Comida con Ana", "fecha": "2026-11-08", "hora": "12:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "'A mediodía' → 12:00; domingo próximo (08)."
+    },
+    {
+      "frase": "gimnasio de 10 a 12 el sábado",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Gimnasio", "fecha": "2026-11-07", "hora": "10:00", "hora_fin": "12:00", "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Rango horario 'de 10 a 12' con hora_fin; sábado próximo (07)."
+    },
+    {
+      "frase": "doce euros de gasolina",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Gasolina", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 12, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Importe en palabras ('doce') → 12."
+    },
+    {
+      "frase": "12,50 de cena",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Cena", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 12.5, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Coma decimal española → 12.5."
+    },
+    {
+      "frase": "12€ gasolina",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Gasolina", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 12, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Importe con € pegado."
+    },
+    {
+      "frase": "me han devuelto 20 de la compra",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Devolución de la compra", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 20, "ingreso": true, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Entra dinero ('devuelto') → ingreso true."
+    },
+    {
+      "frase": "nómina 1650",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Nómina", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 1650, "ingreso": true, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Nómina es ingreso por definición."
+    },
+    {
+      "frase": "gasté 42,50 en la clínica dental",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Clínica dental", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 42.5, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Gasto con decimal y lugar en el título."
+    },
+    {
+      "frase": "mercado 63,20",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Mercado", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 63.2, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Gasto sin verbo pero con importe y contexto de compra."
+    },
+    {
+      "frase": "comprar pan y leche y huevos",
+      "cosas": [
+        {"tipo": "compra", "titulo": "Pan, leche y huevos", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Varios productos en una sola compra (sin fechas distintas)."
+    },
+    {
+      "frase": "falta leche; comprar pan",
+      "cosas": [
+        {"tipo": "compra", "titulo": "Leche", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "compra", "titulo": "Pan", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Dos compras separadas por ';'."
+    },
+    {
+      "frase": "recoger paquete mañana a las 6 y llamar al banco",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Recoger paquete", "fecha": "2026-11-06", "hora": "18:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "tarea", "titulo": "Llamar al banco", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Con hora → evento; la segunda sin fecha va a hoy."
+    },
+    {
+      "frase": "examen de inglés B2 el 25 a las 9",
+      "cosas": [
+        {"tipo": "examen", "titulo": "Examen de Inglés B2", "fecha": "2026-11-25", "hora": "09:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Asignatura existente con nombre completo; hora de mañana."
+    },
+    {
+      "frase": "trabajo de Estadística para el 30",
+      "cosas": [
+        {"tipo": "trabajo", "titulo": "Trabajo de Estadística", "fecha": "2026-11-30", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "'Trabajo de' + asignatura → trabajo; día 30."
+    },
+    {
+      "frase": "examen de matemáticas el 15",
+      "cosas": [],
+      "dificultad": "dificil",
+      "por_que": "Asignatura inexistente: no debe crear examen (o debe pedir aclaración). Se marca como ambiguo; se espera lista vacía."
+    },
+    {
+      "frase": "clase de piano martes y jueves a las 6",
+      "cosas": [
+        {"tipo": "clase", "titulo": "Clase de piano", "fecha": "2026-11-10", "hora": "18:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Clase no de asignatura formal pero con días y hora; 'a las 6' → 18:00."
+    },
+    {
+      "frase": "viaje a Granada el puente",
+      "cosas": [
+        {"tipo": "viaje", "titulo": "Viaje a Granada", "fecha": "2026-12-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": "Granada"}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Ambigua: 'el puente' se interpreta como puente de diciembre (05)."
+    },
+    {
+      "frase": "serie The Wire",
+      "cosas": [
+        {"tipo": "serie", "titulo": "The Wire", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Serie en inglés; mayúsculas respetadas en título."
+    },
+    {
+      "frase": "LIBRO Cien años de soledad",
+      "cosas": [
+        {"tipo": "libro", "titulo": "Cien años de soledad", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Mayúsculas raras en la palabra clave; título normalizado."
+    },
+    {
+      "frase": "película Interstellar",
+      "cosas": [
+        {"tipo": "peli", "titulo": "Interstellar", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "'Película' (con tilde) equivale a 'peli'."
+    },
+    {
+      "frase": "juego de mesa Catan",
+      "cosas": [
+        {"tipo": "juego", "titulo": "Catan", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "'Juego de mesa' → juego; título solo el nombre."
+    },
+    {
+      "frase": "nota: ideas para el regalo de Lucía",
+      "cosas": [
+        {"tipo": "nota", "titulo": "Ideas para el regalo de Lucía", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Nota con contenido largo."
+    },
+    {
+      "frase": "cumple de Lucía el 9",
+      "cosas": [
+        {"tipo": "cumple", "titulo": "Cumpleaños de Lucía", "fecha": "2026-11-09", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "'Cumple' abreviado; día 9 de noviembre."
+    },
+    {
+      "frase": "cumpleaños de mamá el 3",
+      "cosas": [
+        {"tipo": "cumple", "titulo": "Cumpleaños de mamá", "fecha": "2026-12-03", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Día 3 ya pasó en noviembre → 3 de diciembre."
+    },
+    {
+      "frase": "sacar la basura todos los martes y regar plantas cada 2 días",
+      "cosas": [
+        {"tipo": "recurrente", "titulo": "Sacar la basura", "fecha": "2026-11-10", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "recurrente", "titulo": "Regar plantas", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Dos recurrentes con periodos distintos."
+    },
+    {
+      "frase": "gimnasio lunes, miércoles y viernes a las 7",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Gimnasio", "fecha": "2026-11-06", "hora": "19:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Varios días en una frase: se toma el primero que ocurre (viernes 06)."
+    },
+    {
+      "frase": "clase de inglés martes a las 18 y examen de inglés el 20",
+      "cosas": [
+        {"tipo": "clase", "titulo": "Clase de Inglés B2", "fecha": "2026-11-10", "hora": "18:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "examen", "titulo": "Examen de Inglés B2", "fecha": "2026-11-20", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Misma asignatura en dos tipos distintos."
+    },
+    {
+      "frase": "cena el viernes a las 9 y cine el sábado a las 10",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Cena", "fecha": "2026-11-06", "hora": "21:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "evento", "titulo": "Cine", "fecha": "2026-11-07", "hora": "22:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Ambos nocturnos: 9→21:00 y 10→22:00."
+    },
+    {
+      "frase": "gasté 15 en cine y 20 en cena",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Cine", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 15, "ingreso": false, "lugar": null},
+        {"tipo": "gasto", "titulo": "Cena", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 20, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Dos gastos con importes propios."
+    },
+    {
+      "frase": "pagar luz 45 y agua 30",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Luz", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 45, "ingreso": false, "lugar": null},
+        {"tipo": "gasto", "titulo": "Agua", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 30, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Con importe → gasto; dos conceptos."
+    },
+    {
+      "frase": "pagar la luz y el agua",
+      "cosas": [
+        {"tipo": "tarea", "titulo": "Pagar la luz y el agua", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Sin importe → tarea única (no dos, pues no hay datos distintos por parte)."
+    },
+    {
+      "frase": "comprar regalo para Lucía",
+      "cosas": [
+        {"tipo": "compra", "titulo": "Regalo para Lucía", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Compra aunque no sea comida; verbo 'comprar'."
+    },
+    {
+      "frase": "recoger traje el viernes a las 18",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Recoger traje", "fecha": "2026-11-06", "hora": "18:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Con hora explícita → evento."
+    },
+    {
+      "frase": "lavar coche mañana",
+      "cosas": [
+        {"tipo": "tarea", "titulo": "Lavar coche", "fecha": "2026-11-06", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Tarea simple con fecha."
+    },
+    {
+      "frase": "medico el 8",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Médico", "fecha": "2026-11-08", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "facil",
+      "por_que": "Sin tilde; evento con fecha."
+    },
+    {
+      "frase": "DENTISTA MAÑANA A LAS 5",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Dentista", "fecha": "2026-11-06", "hora": "17:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Todo mayúsculas; normalización."
+    },
+    {
+      "frase": "cena con marta el viernes a las 9",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Cena con Marta", "fecha": "2026-11-06", "hora": "21:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Minúsculas; nombre propio se capitaliza."
+    },
+    {
+      "frase": "clase ingles lunes y miercoles a las 6",
+      "cosas": [
+        {"tipo": "clase", "titulo": "Clase de Inglés B2", "fecha": "2026-11-09", "hora": "18:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Sin tildes y 'miercoles'; se resuelve a Inglés B2."
+    },
+    {
+      "frase": "sacar basura todos los martes",
+      "cosas": [
+        {"tipo": "recurrente", "titulo": "Sacar basura", "fecha": "2026-11-10", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Recurrente simple; primer martes 10."
+    },
+    {
+      "frase": "regar las plantas cada 3 dias",
+      "cosas": [
+        {"tipo": "recurrente", "titulo": "Regar las plantas", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Sin tilde en 'días'; empieza hoy."
+    },
+    {
+      "frase": "viaje a Lisboa del 3 al 7 de diciembre y comprar billetes",
+      "cosas": [
+        {"tipo": "viaje", "titulo": "Viaje a Lisboa", "fecha": "2026-12-03", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": "Lisboa"},
+        {"tipo": "compra", "titulo": "Billetes", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Viaje + compra; la compra no hereda la fecha del viaje."
+    },
+    {
+      "frase": "examen de estadistica el 20 y entrega de historia el viernes",
+      "cosas": [
+        {"tipo": "examen", "titulo": "Examen de Estadística", "fecha": "2026-11-20", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "trabajo", "titulo": "Entrega de Historia del Arte", "fecha": "2026-11-06", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Sin tildes; dos asignaturas distintas."
+    },
+    {
+      "frase": "revisión con el médico de cabecera el domingo a las 10",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Revisión con el médico de cabecera", "fecha": "2026-11-08", "hora": "10:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Domingo próximo (08); hora de mañana."
+    },
+    {
+      "frase": "concierto el 21 a las 9 y media",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Concierto", "fecha": "2026-11-21", "hora": "21:30", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Nocturno con 'y media'; 21:30."
+    },
+    {
+      "frase": "comida familiar el domingo a la 1",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Comida familiar", "fecha": "2026-11-08", "hora": "13:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "'A la 1' en contexto de comida → 13:00."
+    },
+    {
+      "frase": "peluquería mañana a las 4 y media",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Peluquería", "fecha": "2026-11-06", "hora": "16:30", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "'A las 4 y media' → 16:30; mañana."
+    },
+    {
+      "frase": "médico mañana a las 8",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Médico", "fecha": "2026-11-06", "hora": "08:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Hora 8 sin especificar: mañana (08:00)."
+    },
+    {
+      "frase": "cenar con Pedro mañana a las 8",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Cenar con Pedro", "fecha": "2026-11-06", "hora": "20:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Plan nocturno: 8 → 20:00 (no 08:00)."
+    },
+    {
+      "frase": "llamar a María a las 5",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Llamar a María", "fecha": "2026-11-05", "hora": "17:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Con hora y persona → evento; 'a las 5' → 17:00."
+    },
+    {
+      "frase": "estudiar Estadística mañana",
+      "cosas": [
+        {"tipo": "tarea", "titulo": "Estudiar Estadística", "fecha": "2026-11-06", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Tarea (no examen) por verbo estudiar."
+    },
+    {
+      "frase": "examen de Historia del Arte el 30 a las 9",
+      "cosas": [
+        {"tipo": "examen", "titulo": "Examen de Historia del Arte", "fecha": "2026-11-30", "hora": "09:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Asignatura exacta; hora de mañana."
+    },
+    {
+      "frase": "ingreso de 500 por venta",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Venta", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 500, "ingreso": true, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "'Ingreso' explícito → dinero que entra."
+    },
+    {
+      "frase": "me han cobrado 30 de luz",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Luz", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 30, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "media",
+      "por_que": "Cobro → gasto (dinero que sale)."
+    },
+    {
+      "frase": "comprar leche mañana y pan el jueves",
+      "cosas": [
+        {"tipo": "compra", "titulo": "Leche", "fecha": "2026-11-06", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "compra", "titulo": "Pan", "fecha": "2026-11-12", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Dos compras con fechas propias (jueves = 12)."
+    },
+    {
+      "frase": "cita médico el 8 a las 10; recoger receta el 8 a las 11",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Cita médico", "fecha": "2026-11-08", "hora": "10:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "tarea", "titulo": "Recoger receta", "fecha": "2026-11-08", "hora": "11:00", "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "La segunda tiene hora pero es una acción personal → tarea (no evento con gente)."
+    },
+    {
+      "frase": "gasté 10 en café y 5 en bollo",
+      "cosas": [
+        {"tipo": "gasto", "titulo": "Café", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 10, "ingreso": false, "lugar": null},
+        {"tipo": "gasto", "titulo": "Bollo", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": 5, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Dos gastos en una frase con 'y' e importes respectivos."
+    },
+    {
+      "frase": "tarea: llamar al banco y comprar pan",
+      "cosas": [
+        {"tipo": "tarea", "titulo": "Llamar al banco y comprar pan", "fecha": "2026-11-05", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Prefijo 'tarea:' fuerza una única tarea que contiene la conjunción."
+    },
+    {
+      "frase": "comprar pan el lunes y leche el martes",
+      "cosas": [
+        {"tipo": "compra", "titulo": "Pan", "fecha": "2026-11-09", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null},
+        {"tipo": "compra", "titulo": "Leche", "fecha": "2026-11-10", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Cada producto con su fecha."
+    },
+    {
+      "frase": "regalo para Lucía el 8",
+      "cosas": [
+        {"tipo": "evento", "titulo": "Regalo para Lucía", "fecha": "2026-11-08", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Ambigua: no es compra (sin verbo) ni cumple; con fecha y persona se interpreta como evento."
+    },
+    {
+      "frase": "pagar el alquiler el 1",
+      "cosas": [
+        {"tipo": "tarea", "titulo": "Pagar el alquiler", "fecha": "2026-12-01", "hora": null, "hora_fin": null, "importe": null, "ingreso": false, "lugar": null}
+      ],
+      "dificultad": "dificil",
+      "por_que": "Sin importe → tarea; día 1 ya pasó → 1 de diciembre."
+    }
+  ],
+  "buscar": [
+    {
+      "frase": "busca: médico esta semana",
+      "tipos": [],
+      "desde": "2026-11-02",
+      "hasta": "2026-11-08",
+      "palabras": ["medico"],
+      "debe_encontrar": ["Revisión con el médico de cabecera", "Dentista", "Clínica dental"],
+      "no_debe_encontrar": ["Fisio"],
+      "por_que": "Sinónimos de médico; rango 2-8 de noviembre excluye Fisio (31 oct)."
+    },
+    {
+      "frase": "busca: dentista",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["dentista"],
+      "debe_encontrar": ["Dentista", "Clínica dental"],
+      "no_debe_encontrar": [],
+      "por_que": "Búsqueda por palabra exacta y sinónimos."
+    },
+    {
+      "frase": "busca: eventos mañana",
+      "tipos": ["evento"],
+      "desde": "2026-11-06",
+      "hasta": "2026-11-06",
+      "palabras": [],
+      "debe_encontrar": ["Cena con Marta"],
+      "no_debe_encontrar": ["Dentista", "Partido de pádel"],
+      "por_que": "Solo eventos del 6 de noviembre."
+    },
+    {
+      "frase": "busca: tareas pendientes",
+      "tipos": ["tarea"],
+      "desde": null,
+      "hasta": null,
+      "palabras": [],
+      "debe_encontrar": ["Renovar el DNI"],
+      "no_debe_encontrar": ["Llamar al banco", "Pedir cita en el oculista"],
+      "por_que": "Solo tareas sin fecha."
+    },
+    {
+      "frase": "busca: gastos de noviembre",
+      "tipos": ["gasto"],
+      "desde": "2026-11-01",
+      "hasta": "2026-11-30",
+      "palabras": [],
+      "debe_encontrar": ["Clínica dental", "Gasolina Repsol", "Mercadona"],
+      "no_debe_encontrar": ["Nómina", "Fisio"],
+      "por_que": "Gastos del mes; Nómina es de octubre."
+    },
+    {
+      "frase": "busca: cumpleaños",
+      "tipos": ["cumple"],
+      "desde": null,
+      "hasta": null,
+      "palabras": [],
+      "debe_encontrar": ["Cumpleaños de Lucía"],
+      "no_debe_encontrar": ["Cena con Marta"],
+      "por_que": "Tipo cumple sin fecha."
+    },
+    {
+      "frase": "busca: exámenes",
+      "tipos": ["examen"],
+      "desde": null,
+      "hasta": null,
+      "palabras": [],
+      "debe_encontrar": ["Examen de Estadística"],
+      "no_debe_encontrar": ["Trabajo de Estadística"],
+      "por_que": "Solo tipo examen."
+    },
+    {
+      "frase": "busca: deporte",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["deporte"],
+      "debe_encontrar": ["Partido de pádel"],
+      "no_debe_encontrar": ["Dentista"],
+      "por_que": "Sinónimo deporte → pádel."
+    },
+    {
+      "frase": "busca: super esta semana",
+      "tipos": [],
+      "desde": "2026-11-02",
+      "hasta": "2026-11-08",
+      "palabras": ["super"],
+      "debe_encontrar": ["Mercadona"],
+      "no_debe_encontrar": ["Gasolina Repsol"],
+      "por_que": "Sinónimo super → Mercadona; fecha dentro de rango."
+    },
+    {
+      "frase": "busca: comida",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["comida"],
+      "debe_encontrar": ["Cena con Marta", "Clínica dental"],
+      "no_debe_encontrar": ["Gasolina Repsol"],
+      "por_que": "Sinónimo comida → cena, restaurante; clínica dental no debería, pero el enunciado dice que 'comida' encuentra 'cena' y 'restaurante'. Se corrige: debe encontrar Cena con Marta; Clínica dental no. (Ajuste: clínica dental no tiene relación con comida)."
+    },
+    {
+      "frase": "busca: médico en octubre",
+      "tipos": [],
+      "desde": "2026-10-01",
+      "hasta": "2026-10-31",
+      "palabras": ["medico"],
+      "debe_encontrar": ["Fisio"],
+      "no_debe_encontrar": ["Dentista", "Revisión con el médico de cabecera"],
+      "por_que": "Sinónimos de médico en octubre; Fisio el 31."
+    },
+    {
+      "frase": "busca: gastos de octubre",
+      "tipos": ["gasto"],
+      "desde": "2026-10-01",
+      "hasta": "2026-10-31",
+      "palabras": [],
+      "debe_encontrar": ["Nómina"],
+      "no_debe_encontrar": ["Clínica dental", "Gasolina Repsol"],
+      "por_que": "Gastos de octubre; Nómina ingreso también cuenta como gasto."
+    },
+    {
+      "frase": "busca: eventos la semana que viene",
+      "tipos": ["evento"],
+      "desde": "2026-11-09",
+      "hasta": "2026-11-15",
+      "palabras": [],
+      "debe_encontrar": ["Partido de pádel"],
+      "no_debe_encontrar": ["Cena con Marta", "Dentista"],
+      "por_que": "Rango 9-15; solo pádel el 10."
+    },
+    {
+      "frase": "busca: banco",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["banco"],
+      "debe_encontrar": ["Llamar al banco"],
+      "no_debe_encontrar": ["Renovar el DNI"],
+      "por_que": "Palabra exacta."
+    },
+    {
+      "frase": "busca: DNI",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["dni"],
+      "debe_encontrar": ["Renovar el DNI"],
+      "no_debe_encontrar": ["Llamar al banco"],
+      "por_que": "Mayúsculas en la consulta, normalización."
+    },
+    {
+      "frase": "busca: esto no existe",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["esto", "no", "existe"],
+      "debe_encontrar": [],
+      "no_debe_encontrar": ["Dentista", "Llamar al banco", "Cumpleaños de Lucía"],
+      "por_que": "Búsqueda sin resultados."
+    },
+    {
+      "frase": "busca: dentista mañana",
+      "tipos": [],
+      "desde": "2026-11-06",
+      "hasta": "2026-11-06",
+      "palabras": ["dentista"],
+      "debe_encontrar": [],
+      "no_debe_encontrar": ["Dentista", "Clínica dental"],
+      "por_que": "Dentista es hoy (05), no mañana; no debe encontrar nada."
+    },
+    {
+      "frase": "busca: médicos",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["medicos"],
+      "debe_encontrar": ["Revisión con el médico de cabecera", "Dentista", "Fisio", "Clínica dental"],
+      "no_debe_encontrar": ["Cena con Marta"],
+      "por_que": "Plural de médico; sinónimos."
+    },
+    {
+      "frase": "busca: partido",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["partido"],
+      "debe_encontrar": ["Partido de pádel"],
+      "no_debe_encontrar": ["Examen de Estadística"],
+      "por_que": "Palabra exacta."
+    },
+    {
+      "frase": "busca: este mes",
+      "tipos": [],
+      "desde": "2026-11-01",
+      "hasta": "2026-11-30",
+      "palabras": [],
+      "debe_encontrar": ["Dentista", "Cena con Marta", "Clínica dental", "Gasolina Repsol", "Mercadona", "Cumpleaños de Lucía", "Partido de pádel", "Revisión con el médico de cabecera", "Examen de Estadística", "Llamar al banco", "Pedir cita en el oculista"],
+      "no_debe_encontrar": ["Nómina", "Fisio"],
+      "por_que": "Todo lo de noviembre; excluye octubre."
+    },
+    {
+      "frase": "busca: con Marta",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["marta"],
+      "debe_encontrar": ["Cena con Marta"],
+      "no_debe_encontrar": ["Dentista"],
+      "por_que": "Nombre propio."
+    },
+    {
+      "frase": "busca: cena",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["cena"],
+      "debe_encontrar": ["Cena con Marta"],
+      "no_debe_encontrar": ["Comida con Ana"],
+      "por_que": "Palabra exacta; comida no es cena."
+    },
+    {
+      "frase": "busca: gastos con importe 50",
+      "tipos": ["gasto"],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["50"],
+      "debe_encontrar": ["Gasolina Repsol"],
+      "no_debe_encontrar": ["Mercadona", "Clínica dental"],
+      "por_que": "Búsqueda por importe parcial."
+    },
+    {
+      "frase": "busca: eventos de hoy",
+      "tipos": ["evento"],
+      "desde": "2026-11-05",
+      "hasta": "2026-11-05",
+      "palabras": [],
+      "debe_encontrar": ["Dentista"],
+      "no_debe_encontrar": ["Fisio", "Cena con Marta"],
+      "por_que": "Solo eventos de hoy."
+    },
+    {
+      "frase": "busca: la semana que viene",
+      "tipos": [],
+      "desde": "2026-11-09",
+      "hasta": "2026-11-15",
+      "palabras": [],
+      "debe_encontrar": ["Partido de pádel", "Pedir cita en el oculista"],
+      "no_debe_encontrar": ["Dentista", "Revisión con el médico de cabecera"],
+      "por_que": "Rango 9-15; oculista el 12 y pádel el 10."
+    },
+    {
+      "frase": "busca: super",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["super"],
+      "debe_encontrar": ["Mercadona"],
+      "no_debe_encontrar": ["Gasolina Repsol"],
+      "por_que": "Sinónimo super → Mercadona."
+    },
+    {
+      "frase": "busca: médicos de octubre",
+      "tipos": [],
+      "desde": "2026-10-01",
+      "hasta": "2026-10-31",
+      "palabras": ["medicos"],
+      "debe_encontrar": ["Fisio"],
+      "no_debe_encontrar": ["Dentista"],
+      "por_que": "Sinónimos y rango de octubre."
+    },
+    {
+      "frase": "busca: Lucía",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["lucia"],
+      "debe_encontrar": ["Cumpleaños de Lucía", "Ideas para el regalo de Lucía: libro de cocina, entradas de teatro"],
+      "no_debe_encontrar": ["Dentista"],
+      "por_que": "Nombre propio sin tilde."
+    },
+    {
+      "frase": "busca: regalos",
+      "tipos": [],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["regalos"],
+      "debe_encontrar": ["Ideas para el regalo de Lucía: libro de cocina, entradas de teatro"],
+      "no_debe_encontrar": ["Cumpleaños de Lucía"],
+      "por_que": "Palabra derivada de regalo."
+    },
+    {
+      "frase": "busca: examen de Estadística",
+      "tipos": ["examen"],
+      "desde": null,
+      "hasta": null,
+      "palabras": ["estadistica"],
+      "debe_encontrar": ["Examen de Estadística"],
+      "no_debe_encontrar": ["Trabajo de Estadística"],
+      "por_que": "Tipo y palabra exacta."
+    }
+  ]
+}
