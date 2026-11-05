@@ -423,6 +423,12 @@
         }
 
         function switchView(view, afterEnter) {
+            // En el móvil, cualquier salto de apartado (buscador, enlaces dentro de una página) es una pantalla más del
+            // historial, como las del menú: atrás vuelve.
+            if (mobileStandaloneActive && view !== currentView) {
+                if (!afterEnter) { mobileIr(view); return; }
+                mobileAnotarVista(view);
+            }
             // Al entrar en Finanzas (desde otra sección) se pregunta si
             // activar el modo privacidad (cifras ocultas) antes de mostrar
             // el panel — con Intro se responde "Sí" (botón enfocado de

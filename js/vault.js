@@ -370,12 +370,17 @@
         function anotarCapa() {
             if (capaEnHistorial) return;
             capaEnHistorial = true;
+            mobileEstadoBajoCapa = history.state;
             try { history.pushState({ bitacoraCapa: 1 }, ''); } catch (_) { /* sin historial */ }
         }
+        // history.back() no es inmediato: si mientras tanto se navega a otra pantalla, esa entrada se anota al llegar el
+        // popstate (si no, el back pendiente se comía la pantalla recién anotada).
+        let capaAtrasPendiente = false;
+        let vistaTrasAtras = null;
         function soltarCapa() {
             if (!capaEnHistorial) return;
             capaEnHistorial = false;
-            try { if (history.state?.bitacoraCapa) history.back(); } catch (_) { /* sin historial */ }
+            try { if (history.state?.bitacoraCapa) { capaAtrasPendiente = true; history.back(); } } catch (_) { /* sin historial */ }
         }
         function cerrarCapa() {
             pintarFranjaConCapa(false);
@@ -383,11 +388,21 @@
             if (raiz) { raiz.removeAttribute('aria-hidden'); if (raiz.inert) raiz.inert = false; }
             if (!mobileMenuAbierto) soltarCapa();
         }
-        window.addEventListener('popstate', () => {
-            if (!capaEnHistorial) return;
-            capaEnHistorial = false;
-            if (modalEnPantalla()) closeModal();
-            else if (mobileMenuAbierto) toggleMenuMovil();
+        window.addEventListener('popstate', e => {
+            if (capaAtrasPendiente) {
+                capaAtrasPendiente = false;
+                const v = vistaTrasAtras;
+                vistaTrasAtras = null;
+                if (v) mobileAnotarVista(v);
+                return;
+            }
+            if (capaEnHistorial) {
+                capaEnHistorial = false;
+                if (modalEnPantalla()) closeModal();
+                else if (mobileMenuAbierto) toggleMenuMovil();
+                return;
+            }
+            mobileVolverA(e.state);
         });
 
         // Lo que tarda un modal, solo en este dispositivo (window.metricasModal; no se envía a ningún sitio). «preparar»

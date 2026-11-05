@@ -1158,15 +1158,44 @@
         // desde la derecha, volver al inicio la devuelve y cambiar de
         // pestaña solo funde. Sin View Transitions: en iOS la foto de la
         // página entera parpadeaba, se superponía y se quedaba transparente.
+        // Fase 2 del plan de sensación nativa (05-11): cada pantalla es una entrada del historial ({ bitacoraVista, n }),
+        // así que el atrás del sistema, el gesto del borde de la envoltura iOS y el deslizamiento del borde de la PWA
+        // vuelven a la pantalla anterior con su scroll. Las capas (modal, menú) siguen con su propia entrada encima.
+        const mobileScrolls = {};
+        function mobileAnotarVista(view) {
+            if (capaAtrasPendiente) { vistaTrasAtras = view; return; }
+            try {
+                // Con una capa abierta (el menú, o un modal que aún se está cerrando), su entrada pasa a ser la de la
+                // pantalla nueva: atrás vuelve a donde estabas y no queda una entrada repetida.
+                if (capaEnHistorial && history.state?.bitacoraCapa) {
+                    capaEnHistorial = false;
+                    history.replaceState({ bitacoraVista: view, n: (mobileEstadoBajoCapa?.n || 0) + 1 }, '');
+                    return;
+                }
+                const n = history.state?.bitacoraVista ? history.state.n || 0 : 0;
+                if (!history.state?.bitacoraVista) history.replaceState({ bitacoraVista: currentView, n: 0 }, '');
+                history.pushState({ bitacoraVista: view, n: n + 1 }, '');
+            } catch (_) { /* sin historial */ }
+        }
+        function mobileVolverA(estado) {
+            if (!mobileStandaloneActive) return;
+            const view = estado?.bitacoraVista || 'calendar';
+            if (modalEnPantalla()) closeModal();
+            if (view !== currentView || mobileMenuAbierto) mobileIr(view, 'historial');
+        }
         function mobileIr(view, tipo) {
             const shellActual = document.getElementById('mobile-shell');
+            const desdeHistorial = tipo === 'historial';
             // Tocar la pestaña en la que ya estás sube arriba del todo.
-            if (view === currentView && !mobileMenuAbierto && shellActual) { shellActual.scrollTo({ top: 0, behavior: vtReducido() ? 'auto' : 'smooth' }); return; }
+            if (view === currentView && !mobileMenuAbierto && shellActual) { if (!desdeHistorial) shellActual.scrollTo({ top: 0, behavior: vtReducido() ? 'auto' : 'smooth' }); return; }
+            if (shellActual) mobileScrolls[currentView] = shellActual.scrollTop;
             if (view !== 'calendar' && view !== 'planner' && NAV_VIEW_LABELS[view]) {
                 mobileReciente = view;
                 try { localStorage.setItem('bitacora_m_reciente', view); } catch (_) { /* sin almacenamiento */ }
             }
-            if (mobileMenuAbierto) soltarCapa();
+            const anotada = desdeHistorial || view === currentView;
+            if (mobileMenuAbierto && anotada && !desdeHistorial) soltarCapa();
+            if (!anotada) mobileAnotarVista(view);
             mobileMenuAbierto = false;
             if (view !== 'travels') window._openTripId = null;
             if (view !== 'notes') window.openNoteId = null;
@@ -1174,11 +1203,13 @@
             const shell = document.getElementById('mobile-shell');
             vtCortar();
             aplicarSwitchView(view);
-            if (shell) shell.scrollTop = 0;
-            const anim = tipo === 'm-pestana' ? 'm-pag-funde' : view === 'calendar' ? 'm-pag-atras' : 'm-pag-adelante';
+            // Volver y cambiar de pestaña dejan la página donde la dejaste; entrar desde el menú empieza arriba.
+            if (shell) shell.scrollTop = desdeHistorial || tipo === 'm-pestana' ? mobileScrolls[view] || 0 : 0;
+            const anim = desdeHistorial ? 'm-pag-atras' : tipo === 'm-pestana' ? 'm-pag-funde' : view === 'calendar' ? 'm-pag-atras' : 'm-pag-adelante';
             document.querySelector('#mobile-shell .m-pagina')?.classList.add(anim);
         }
 
+        let mobileEstadoBajoCapa = null;
         function toggleMenuMovil() {
             // Cerrado, el menú no se rehace en cada repintado (renderMobileShell reutiliza el último): se pone al día
             // aquí, aún cerrado, para que la animación de abrir salga desde su sitio.
@@ -1189,14 +1220,19 @@
             }
             mobileMenuAbierto = !mobileMenuAbierto;
             // Lo cambia aquí a mano: el siguiente repintado tiene que reescribir el menú y la barra sí o sí.
-            mobileZonas.menu = mobileZonas.tab = null;
+            mobileZonas.menu = null;
             if (mobileMenuAbierto) anotarCapa(); else if (!modalEnPantalla()) soltarCapa();
             if (mobileMenuAbierto) { const cuerpo = document.querySelector('#m-menu .m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = 0; }
             document.getElementById('m-menu')?.classList.toggle('abierto', mobileMenuAbierto);
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
             // Con el menú abierto la pestaña encendida es la del menú, no la del apartado de debajo.
-            const vista = NAV_VIEW_LABELS[currentView] ? currentView : 'calendar';
-            document.querySelectorAll('.m-tabbar .m-tab').forEach(b => b.classList.toggle('activa', b.classList.contains('m-tab-menu') ? mobileMenuAbierto : !mobileMenuAbierto && b.dataset.vista === vista));
+            mobileMarcarPestana(NAV_VIEW_LABELS[currentView] ? currentView : 'calendar');
+        }
+        function mobileMarcarPestana(vista) {
+            document.querySelectorAll('#mobile-shell .m-tabbar .m-tab').forEach(b => {
+                const activa = b.classList.contains('m-tab-menu') ? mobileMenuAbierto : !mobileMenuAbierto && b.dataset.vista === vista;
+                if (b.classList.contains('activa') !== activa) b.classList.toggle('activa', activa);
+            });
         }
 
         // La pantalla de carga se va con un fundido cuando el móvil ya está pintado debajo (antes desaparecía de golpe).
@@ -1273,6 +1309,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             // aunque no cambiara nada, y volvía a medirla y animarla.
             if (paginaNueva && view === 'finances') financeDibujarGrafica();
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
+            mobileMarcarPestana(view);
             if (scrollMenu) { const cuerpo = shell.querySelector('.m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = scrollMenu; }
             if (scrollPagina) shell.scrollTop = scrollPagina;
             mobilePlegarTitulo(shell);
@@ -1281,12 +1318,43 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 shell.dataset.plegado = '1';
                 shell.addEventListener('scroll', () => mobilePlegarTitulo(shell), { passive: true });
                 shell.addEventListener('pointerdown', mobileDeslizarFranja);
+                if (appEntorno.modo === 'pwa') shell.addEventListener('touchstart', mobileBordeAtras, { passive: true });
             }
             if (mobileLastEffectView !== view) {
                 mobileLastEffectView = view;
                 const effect = MOBILE_SECTION_EFFECTS[view];
                 if (effect) setTimeout(effect, 0);
             }
+        }
+
+        // La PWA de iOS no tiene gesto de volver (la envoltura usa el de WKWebView): arrastrar desde el borde izquierdo
+        // lleva la página con el dedo y, pasado un tercio o con un tirón, vuelve atrás.
+        function mobileBordeAtras(e) {
+            const p0 = e.touches[0];
+            if (e.touches.length !== 1 || p0.clientX > 24 || !(history.state?.n > 0) || modalEnPantalla() || mobileMenuAbierto) return;
+            const pagina = document.querySelector('#mobile-shell .m-pagina');
+            if (!pagina) return;
+            const x0 = p0.clientX, y0 = p0.clientY, t0 = performance.now();
+            let dx = 0, siguiendo = null;
+            const mover = ev => {
+                const p = ev.touches[0]; if (!p) return;
+                dx = Math.max(0, p.clientX - x0);
+                if (siguiendo === null && (dx > 8 || Math.abs(p.clientY - y0) > 8)) siguiendo = dx > Math.abs(p.clientY - y0);
+                if (siguiendo) { ev.preventDefault(); pagina.style.transition = 'none'; pagina.style.transform = `translateX(${dx}px)`; }
+            };
+            const soltar = () => {
+                removeEventListener('touchmove', mover);
+                removeEventListener('touchend', soltar);
+                removeEventListener('touchcancel', soltar);
+                if (!siguiendo) return;
+                const vuelve = dx > innerWidth / 3 || (dx > 40 && dx / (performance.now() - t0) > 0.5);
+                pagina.style.transition = 'transform .2s var(--ease-out)';
+                pagina.style.transform = vuelve ? `translateX(${innerWidth}px)` : '';
+                setTimeout(() => { if (vuelve) history.back(); else pagina.style.transition = ''; }, 200);
+            };
+            addEventListener('touchmove', mover, { passive: false });
+            addEventListener('touchend', soltar);
+            addEventListener('touchcancel', soltar);
         }
 
         // Al bajar, el título grande se recoge en la barra de arriba, como
@@ -1312,13 +1380,14 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
         function renderMobileTabbar(view) {
             const reciente = NAV_VIEW_LABELS[mobileReciente] && apartadoVisible(mobileReciente) ? mobileReciente : 'finances';
             const nombre = (NAV_VIEW_LABELS[reciente] || '').toLowerCase();
-            const pestana = (v, icono, texto, extra = '') => `<button class="m-tab ${view === v && !mobileMenuAbierto ? 'activa' : ''}" data-vista="${v}" onclick="mobileIr('${v}', 'm-pestana')" ${extra}>${icono}<span>${texto}</span></button>`;
+            // Sin la pestaña encendida en el HTML: así la barra no se rehace al navegar (la marca mobileMarcarPestana).
+            const pestana = (v, icono, texto, extra = '') => `<button class="m-tab" data-vista="${v}" onclick="mobileIr('${v}', 'm-pestana')" ${extra}>${icono}<span>${texto}</span></button>`;
             return `<nav class="m-tabbar" aria-label="Apartados">
                 ${pestana('calendar', M_ICONOS.inicio, 'inicio.')}
                 ${pestana('planner', M_ICONOS.plan, 'plan.')}
                 <button class="m-tab-mas" onpointerdown="apuntarAlToque(event)" onclick="if(!event.detail)openApuntar()" aria-label="Apuntar algo">${M_ICONOS.mas}</button>
                 ${pestana(reciente, `<i class="m-tab-letra">${escapeHtml(nombre.charAt(0))}</i>`, escapeHtml(mobileAbreviatura(nombre)) + '.', `aria-label="${escapeHtml(nombre)}"`)}
-                <button class="m-tab m-tab-menu ${mobileMenuAbierto ? 'activa' : ''}" onclick="toggleMenuMovil()">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
+                <button class="m-tab m-tab-menu" onclick="toggleMenuMovil()">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
             </nav>`;
         }
 
