@@ -577,7 +577,9 @@
         }
         function investmentAccountValue(acc) {
             const withValue = (acc.contributions || []).filter(c => c.value !== undefined && c.value !== null && c.value !== '');
-            if (!withValue.length) return 0;
+            // Sin ninguna valoración todavía, lo enviado ya está en la cuenta (auditoría F-03: valía 0 € y el patrimonio
+            // caía lo aportado hasta escribir el primer valor).
+            if (!withValue.length) return (acc.contributions || []).reduce((s, c) => s + (Number(c.amount) || 0), 0);
             withValue.sort((a, b) => a.month.localeCompare(b.month));
             const ultimo = withValue[withValue.length - 1];
             const despues = (acc.contributions || []).filter(c => c.month > ultimo.month).reduce((s, c) => s + (Number(c.amount) || 0), 0);
@@ -1088,11 +1090,14 @@
             // El sueldo + aportaciones sin asignar a ninguna casilla se
             // archiva como ahorro de ese mes, en vez de perderse sin más al
             // reiniciar la planificación.
+            // Lo mismo que enseña el presupuesto (financeBudgetUnifiedModel), no una cuenta aparte: con aportaciones reales
+            // mayores que las previstas, la pantalla decía 500 € sin asignar y se archivaban 200 (auditoría F-04).
+            const modelo = typeof financeBudgetUnifiedModel === 'function' ? financeBudgetUnifiedModel(month, plan) : null;
             const assigned = plan.allocations.reduce((s, a) => s + (Number(a.amount) || 0), 0);
-            const saved = Math.max(0, (Number(plan.salary) || 0) + (Number(plan.contributions) || 0) - assigned);
+            const saved = modelo ? Math.max(0, modelo.remaining) : Math.max(0, (Number(plan.salary) || 0) + (Number(plan.contributions) || 0) - assigned);
             financeProfile.budgetHistory = (financeProfile.budgetHistory || []).filter(h => h.month !== month);
             financeProfile.budgetHistory.push({
-                month, salary: plan.salary, contributions: plan.contributions,
+                month, salary: plan.salary, contributions: modelo ? modelo.contributions : plan.contributions,
                 allocations: plan.allocations.map(a => ({ ...a })),
                 actuals, saved, recordedAt: new Date().toISOString()
             });

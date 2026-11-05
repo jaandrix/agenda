@@ -218,3 +218,29 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         assert.equal(run(`financePro.transactions.filter(t => t.type === 'income' && /Top-up/.test(t.note || '')).length`), 0);
     });
 }
+
+
+// ---- Invariantes de la auditoría del 05-11 ----
+test('un movimiento con fecha futura no cuenta en el saldo de hoy (F-01)', () => {
+    const { run } = cargarApp();
+    run(`__vaciar(); financePro.transactions.push({ id: 'fut', date: '2099-01-01', type: 'income', amount: 1000, account: 'bancos', manual: true });`);
+    assert.equal(run('financeProTotalBalance()'), 0);
+});
+
+test('una inversión con aportaciones y sin valoración vale lo aportado (F-03)', () => {
+    const { run } = cargarApp();
+    assert.equal(run(`investmentAccountValue({ contributions: [{ month: '2026-05', amount: 500 }] })`), 500);
+    assert.equal(run(`investmentAccountValue({ contributions: [{ month: '2026-05', amount: 500, value: 510 }, { month: '2026-06', amount: 100 }] })`), 610);
+});
+
+test('el correo rellena el valor de un mes que ya existía sin valor, sin tocar lo apuntado a mano (F-09)', () => {
+    const { run } = cargarApp();
+    run(`__vaciar();
+        financePro.transactions.push({ id: 'a1', date: '2026-05-10', type: 'expense', amount: 500, category: 'cat_inversion_gasto', account: 'online' });
+        financeProfile.investmentAccounts = [{ id: 'i1', name: 'fondo', contributions: [
+            { month: '2026-05', amount: 500, deMovimientos: true, correo: { valor: 495, gananciasInicio: 2 } },
+            { month: '2026-06', amount: 0, value: 777, correo: { valor: 600, gananciasInicio: 5 } } ] }];
+        invSincronizarMovimientos();`);
+    assert.equal(run(`financeProfile.investmentAccounts[0].contributions.find(c => c.month === '2026-05').value`), 502);
+    assert.equal(run(`financeProfile.investmentAccounts[0].contributions.find(c => c.month === '2026-06').value`), 777);
+});

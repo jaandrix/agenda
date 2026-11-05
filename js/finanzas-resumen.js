@@ -55,7 +55,10 @@
         function finResActivos() {
             const filas = FINANCE_PRO_ACCOUNT_KEYS.map(k => {
                 const ahora = financeProAccountBalance(k), antes = finResSaldoHace(k, 30);
-                return { nombre: financePro.accounts[k]?.name || k, valor: ahora, pct: Math.abs(antes) > 0.5 ? (ahora - antes) / Math.abs(antes) * 100 : null, nota: '30 días' };
+                // Con una base pequeña o negativa el porcentaje no dice nada (de −3,30 € a 37,85 € salía +1.247 %): se da el
+                // cambio en euros.
+                const util = antes >= 50;
+                return { nombre: financePro.accounts[k]?.name || k, valor: ahora, pct: util ? (ahora - antes) / antes * 100 : null, cambio: util ? null : ahora - antes, nota: '30 días' };
             });
             (financeProfile.investmentAccounts || []).forEach(a => {
                 const conValor = (a.contributions || []).filter(c => c.value !== undefined && c.value !== null && c.value !== '').sort((x, y) => x.month.localeCompare(y.month));
@@ -190,7 +193,7 @@
             return `<section class="finance-panel fin-res-panel">
                 <div class="fin-res-cab"><h3>tus activos.</h3><span class="fin-res-sub">en directo.</span></div>
                 <div class="fin-res-activos">${filas.map(f => `
-                    <div class="fin-res-activo${f.ficha ? ' con-ficha' : ''}"${f.ficha ? ` role="button" tabindex="0" title="Abrir la ficha de ${escapeHtml(f.nombre)}" onclick="openFichaInversion('${f.ficha}')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.click()}"` : ''}><span class="fin-res-activo-nombre">${escapeHtml(f.nombre.toLowerCase())}.</span><b>${financeMoney(f.valor)}</b>${finResVariacion(f.pct)}</div>`).join('')}
+                    <div class="fin-res-activo${f.ficha ? ' con-ficha' : ''}"${f.ficha ? ` role="button" tabindex="0" title="Abrir la ficha de ${escapeHtml(f.nombre)}" onclick="openFichaInversion('${f.ficha}')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.click()}"` : ''}><span class="fin-res-activo-nombre">${escapeHtml(f.nombre.toLowerCase())}.</span><b>${financeMoney(f.valor)}</b>${f.pct === null && f.cambio != null && Math.abs(f.cambio) >= 0.5 ? `<span class="fin-res-var ${f.cambio < 0 ? 'baja' : 'sube'}">${f.cambio >= 0 ? '+' : '−'}${financeMoney(Math.abs(f.cambio))}</span>` : finResVariacion(f.pct)}</div>`).join('')}
                 </div>
                 <div class="fin-res-pie"><span>total.</span><b>${financeMoney(total)}</b></div>
             </section>`;
@@ -224,7 +227,9 @@
         function finResPanelPrevision() {
             const hoy = new Date(), dia = hoy.getDate(), mes = financeMonthKey();
             const saldo = financeProTotalBalance();
-            const fijos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0 && (Number(e.renewalDay) || 1) > dia
+            const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+            // El día efectivo del cargo (un 31 cae el 30 en un mes de 30 días, como en ensureRecurringProCharges).
+            const fijos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0 && Math.min(Number(e.renewalDay) || 1, diasMes) > dia
                 && (e.type !== 'subscription' || typeof suscripcionVigente !== 'function' || suscripcionVigente(e, todayISO()))).reduce((s, e) => s + Number(e.amount), 0);
             let variable = 0;
             try { const r = financeRitmoDatos(); if (r.suficiente) variable = Math.max(0, r.proyeccion - r.llevas); } catch (e) { /* sin ritmo: solo los fijos */ }

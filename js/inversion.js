@@ -65,7 +65,10 @@
                     enviado = Math.round((enviado + (Number(c.amount) || 0)) * 100) / 100;
                     // Solo los meses rellenados por el correo: un valor apuntado a mano (aunque no se pulsara «guardar.»)
                     // no se toca nunca.
-                    if (c.guardado || !c.desdeCorreo || !c.correo) return;
+                    // Solo donde no hay valor tuyo: los meses rellenados por el correo y los que existían sin valor (la fila la
+                    // creó antes un traspaso y el correo llegó después: auditoría F-09). Un valor apuntado a mano no se toca.
+                    const sinValor = c.value === undefined || c.value === null || c.value === '';
+                    if (c.guardado || !c.correo || (!c.desdeCorreo && !sinValor)) return;
                     const g = Number(c.correo.gananciasInicio);
                     c.value = isFinite(g) && c.correo.gananciasInicio !== null && c.correo.gananciasInicio !== '' ? Math.round((enviado + g) * 100) / 100 : Number(c.correo.valor);
                 });
@@ -104,7 +107,7 @@
             const ultimo = [...meses].reverse().find(m => m.value !== null) || null;
             // Lo enviado después del último valor apuntado (el mes en curso, aún sin valor) ya está en la cuenta: cuenta
             // por lo que es hasta que pongas el valor, para que la ganancia no baje de golpe a principio de mes.
-            const valor = ultimo ? ultimo.value + (aportado - ultimo.aportado) : 0;
+            const valor = ultimo ? ultimo.value + (aportado - ultimo.aportado) : aportado;
             const acumulada = aportado > 0 && ultimo ? (valor - aportado) / aportado * 100 : null;
             const ultimaAportacion = meses.length ? meses[meses.length - 1].amount : 0;
             return { meses, aportado, valor, ganancia: valor - aportado, acumulada, media, anual, ultimaAportacion };
@@ -180,8 +183,8 @@
                 <div class="inv-cifras">
                     <div><span>vale hoy.</span><b>${financeMoney(d.valor)}</b></div>
                     <div><span>has aportado.</span><b>${financeMoney(d.aportado)}</b></div>
-                    <div><span>ganancia.</span><b class="${d.ganancia < 0 ? 'finance-negative' : ''}">${d.ganancia >= 0 ? '+' : '−'}${financeMoney(Math.abs(d.ganancia))}</b></div>
-                    <div><span>acumulada.</span><b>${invPct(d.acumulada)}</b></div>
+                    <div><span>ganancia acumulada.</span><b class="${d.ganancia < 0 ? 'finance-negative' : ''}">${d.ganancia >= 0 ? '+' : '−'}${financeMoney(Math.abs(d.ganancia))}</b><small>lo que ha puesto el fondo, no tú.</small></div>
+                    <div><span>rentabilidad acumulada.</span><b class="${d.acumulada < 0 ? 'finance-negative' : ''}">${invPct(d.acumulada, 2)}</b><small>sobre todo lo aportado.</small></div>
                     <div><span>media al mes.</span><b>${invPct(d.media, 2)}</b><small>${d.anual === null ? '' : `${invPct(d.anual)} al año`}</small></div>
                 </div>
 

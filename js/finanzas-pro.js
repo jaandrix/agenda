@@ -371,7 +371,10 @@
         // Un ingreso pendiente (un reembolso que Revolut todavía no ha
         // abonado) no está en el saldo del banco; un cargo pendiente sí, el
         // banco ya lo retiene.
+        // Un movimiento con fecha futura todavía no ha pasado: no cuenta en el saldo de hoy ni en lo que se pinta como
+        // «lo que tienes» (auditoría F-01: un ingreso de 1.000 € con fecha de 2099 ya subía el saldo de hoy).
         function financeProCuentaEnSaldo(t) {
+            if (t.date && t.date > todayISO()) return false;
             return !(t.pendiente && t.type === 'income');
         }
 
@@ -679,7 +682,7 @@
             const ord = financeSaldosCache.ordenados;
             const keys = FINANCE_PRO_ACCOUNT_KEYS;
             const hoy = todayISO();
-            const fin = ord[ord.length - 1].date > hoy ? ord[ord.length - 1].date : hoy;
+            const fin = hoy;
             const extraDe = financeExtrasPorDia();
             let bal = keys.reduce((n, k) => n + Number(financePro.accounts[k]?.balance0 || 0), 0);
             const serie = [];
@@ -2499,9 +2502,10 @@
             if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
             const categorizados = entry.category ? financeProAutoCategorizar() : 0;
             window._financeProTxEditId = null; window._financeProTxDraft = null;
-            render();
             if (window._financeProTxReturnToAll) openFinanceProAllTxModal(); else closeModal();
             window._financeProTxReturnToAll = false;
+            invalidarCachesDerivadas();
+            repintarTrasModal();
             try { await saveData(); showToast(categorizados ? `Movimiento guardado, ${categorizados} parecido${categorizados === 1 ? '' : 's'} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : 'Movimiento guardado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
@@ -2509,9 +2513,10 @@
             if (!confirm('¿Eliminar este movimiento?')) return;
             financePro.transactions = financePro.transactions.filter(t => t.id !== id);
             window._financeProTxEditId = null; window._financeProTxDraft = null;
-            render();
             if (window._financeProTxReturnToAll) openFinanceProAllTxModal(); else closeModal();
             window._financeProTxReturnToAll = false;
+            invalidarCachesDerivadas();
+            repintarTrasModal();
             try { await saveData(); showToast('Movimiento eliminado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 

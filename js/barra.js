@@ -388,7 +388,9 @@ function barraLimpiar(salir) {
     if (panel && salir) panel.hidden = true;
 }
 
+let barraGuardando = false;
 async function barraEnviar() {
+    if (barraGuardando) return;
     const e = barraEntrada();
     const texto = e?.value.trim() || '';
     if (!texto) { e?.focus(); return; }
@@ -399,6 +401,7 @@ async function barraEnviar() {
     barraItems = apuntarTrocear(texto).map(t => ({ texto: t, r: interpretarApunte(t) }));
     const malos = barraItems.map((it, k) => apuntarDescribir(it.r, apuntarTipo(it.r, barraElegidos[k])).falta).filter(Boolean);
     if (malos.length) { barraPintarApunte(); document.getElementById('barra-apuntar')?.classList.add('aviso'); setTimeout(() => document.getElementById('barra-apuntar')?.classList.remove('aviso'), 400); return; }
+    barraGuardando = true;
     const hechos = [];
     barraItems.forEach((it, k) => {
         const tipo = apuntarTipo(it.r, barraElegidos[k]);
@@ -407,9 +410,8 @@ async function barraEnviar() {
         apuntarRegistrar(it.texto, tipo, res.aviso, res.hecho);
         hechos.push({ aviso: res.aviso, id: apuntesRecientes[0]?.id });
     });
-    if (!hechos.length) { showToast('No he podido apuntarlo', true); return; }
+    if (!hechos.length) { barraGuardando = false; showToast('No he podido apuntarlo', true); return; }
     barraLimpiar(false);
-    barraBorrarBorrador();
     barraCache = null;
     invalidarCachesDerivadas();
     render();
@@ -418,7 +420,9 @@ async function barraEnviar() {
     barraPintar();
     clearTimeout(window._barraHechoTemp);
     window._barraHechoTemp = setTimeout(() => { barraHecho = null; barraPintar(); }, 5000);
-    try { await saveData(); } catch (err) { console.error(err); showToast('No se pudo guardar en la nube', true); }
+    try { await saveData(); barraBorrarBorrador(); }
+    catch (err) { console.error(err); showToast('No se pudo guardar en la nube', true); }
+    finally { barraGuardando = false; }
 }
 
 async function barraDeshacer() {
@@ -442,6 +446,9 @@ function barraTecla(ev) {
 }
 
 function barraSalir() {
+    // Al salir de la barra se olvidan los candidatos: lo que se edite fuera (un título, una fecha, un importe) estará al
+    // volver. Antes valían 60 s si no cambiaba el número de cosas (auditoría F-14).
+    barraCache = null;
     setTimeout(() => {
         const caja = document.getElementById('barra-apuntar');
         if (caja && caja.contains(document.activeElement)) return;

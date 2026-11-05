@@ -510,7 +510,7 @@ function apuntarHtml(fecha, borrador) {
         ['viaje.', 'viaje', "closeModal();openNewEntry('travel')"],
     ];
     return `
-        <div class="modal-title">apuntar${fecha && fecha !== todayISO() ? ` para ${apuntarFechaTexto(fecha)}` : ''}.</div>
+        <div class="modal-title">apuntar${fecha && fecha !== todayISO() ? ` para ${apuntarFechaTexto(fecha)}` : ''}.<button class="modal-close" onclick="closeModal()" aria-label="Cerrar"><i class='ico ico-x' aria-hidden=true></i></button></div>
         <textarea id="apuntar-texto" class="modal-input apuntar-texto" rows="2" placeholder="dentista mañana a las 5 y comprar pan..." oninput="apuntarElegidos={};pintarVistaApunte();apuntarGuardarBorrador(this.value)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();guardarApunte()}">${escapeHtml(borrador)}</textarea>
         ${borrador ? '<div class="apuntar-borrador">Lo que dejaste a medias. <button class="m-enlace" onclick="apuntarDescartarBorrador()">descartar.</button></div>' : ''}
         <div id="apuntar-vista" class="apuntar-vista">${borrador ? '' : APUNTAR_PISTA}</div>
@@ -626,9 +626,16 @@ function apuntarCrear(texto, r, tipo) {
     return { aviso: `Evento ${/^(hoy|mañana|pasado mañana|ayer)$/.test(cuandoTxt) ? '' : 'el '}${cuandoTxt}${r.hora ? ' a las ' + r.hora : ''}`, hecho: { tipo: 'evento', eventoId } };
 }
 
+let apuntarGuardando = false;
 async function guardarApunte() {
+    // Dos toques o dos intro seguidos creaban dos copias antes de terminar el primer guardado (auditoría M-01).
+    if (apuntarGuardando) return;
     const textoEl = document.getElementById('apuntar-texto');
     if (!textoEl?.value.trim()) { showToast('Escribe qué quieres apuntar', true); return; }
+    apuntarGuardando = true;
+    try { await guardarApunteYa(textoEl); } finally { apuntarGuardando = false; }
+}
+async function guardarApunteYa(textoEl) {
     apuntarAnalizar();
     const hechos = [], fallos = [];
     apuntarItems.forEach((it, k) => {
@@ -640,13 +647,17 @@ async function guardarApunte() {
     });
     if (!hechos.length) { showToast(fallos[0] ? fallos[0].charAt(0).toUpperCase() + fallos[0].slice(1) : 'No he podido apuntarlo', true); return; }
     clearTimeout(apuntarBorradorTemporizador);
-    try { localStorage.removeItem(apuntarClaveBorrador()); } catch (_) { /* sin almacenamiento */ }
     closeModal();
     invalidarCachesDerivadas();
-    render();
+    // Repinta al acabar de cerrarse la hoja, no durante la animación (auditoría M-03).
+    repintarTrasModal();
     if (hechos.length === 1 && !fallos.length) showToast(hechos[0].aviso);
     else showToast(`${hechos.length} ${hechos.length === 1 ? 'cosa apuntada' : 'cosas apuntadas'}: ${hechos.map(h => (APUNTAR_TIPO_NOMBRE[h.tipo] || h.tipo)).join(', ')}${fallos.length ? `. Sin apuntar: ${fallos.join('; ')}` : '.'}`, !!fallos.length);
-    try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+    // El borrador se quita cuando el guardado ha ido bien: si falla, sigue para recuperarlo (auditoría M-02).
+    try {
+        await saveData();
+        try { localStorage.removeItem(apuntarClaveBorrador()); } catch (_) { /* sin almacenamiento */ }
+    } catch (e) { console.error(e); showToast('No se pudo guardar en la nube: lo escrito sigue en apuntar.', true); }
 }
 
 // ---- registro de lo apuntado: revisar, deshacer o cambiar de tipo ----
