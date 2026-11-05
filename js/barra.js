@@ -386,6 +386,7 @@ function barraLimpiar(salir) {
     barraSel = 0;
     document.getElementById('barra-apuntar')?.classList.remove('escribiendo');
     if (panel && salir) panel.hidden = true;
+    if (salir) document.getElementById('barra-apuntar')?.classList.remove('invocada');
 }
 
 let barraGuardando = false;
@@ -408,18 +409,19 @@ async function barraEnviar() {
         const res = apuntarCrear(it.texto, it.r, tipo);
         if (res.error) return;
         apuntarRegistrar(it.texto, tipo, res.aviso, res.hecho);
-        hechos.push({ aviso: res.aviso, id: apuntesRecientes[0]?.id });
+        hechos.push({ aviso: res.aviso, id: apuntesRecientes[0]?.id, ver: barraComoVer(tipo, it.r, res.hecho) });
     });
     if (!hechos.length) { barraGuardando = false; showToast('No he podido apuntarlo', true); return; }
     barraLimpiar(false);
     barraCache = null;
     invalidarCachesDerivadas();
     render();
-    barraHecho = `<div class="barra-cab"><b>apuntado.</b><span><button type="button" class="barra-enlace" onmousedown="event.preventDefault()" onclick="barraDeshacer()">deshacer.</button></span></div>${hechos.map(h => `<div class="barra-hecho">${escapeHtml(h.aviso)}.</div>`).join('')}`;
+    barraHecho = `<div class="barra-cab"><b>apuntado.</b><span><button type="button" class="barra-enlace" onmousedown="event.preventDefault()" onclick="barraDeshacer()">deshacer.</button></span></div>${hechos.map((h, i) => `<div class="barra-hecho"><span>${escapeHtml(h.aviso)}.</span>${h.ver ? `<button type="button" class="barra-enlace" onmousedown="event.preventDefault()" onclick="barraVer(${i})">ver.</button>` : ''}</div>`).join('')}`;
+    window._barraVer = hechos.map(h => h.ver);
     window._barraDeshacer = hechos.map(h => h.id).filter(Boolean);
     barraPintar();
     clearTimeout(window._barraHechoTemp);
-    window._barraHechoTemp = setTimeout(() => { barraHecho = null; barraPintar(); }, 5000);
+    window._barraHechoTemp = setTimeout(() => { barraHecho = null; barraPintar(); barraSalir(); }, 5000);
     try { await saveData(); barraBorrarBorrador(); }
     catch (err) { console.error(err); showToast('No se pudo guardar en la nube', true); }
     finally { barraGuardando = false; }
@@ -445,6 +447,46 @@ function barraTecla(ev) {
     }
 }
 
+// Fija abajo solo en el calendario; en los demás apartados está escondida y la saca la tecla espacio (barraEnfocar),
+// flotando sobre el contenido, hasta que sales de ella.
+function barraSegunVista() {
+    const caja = document.getElementById('barra-apuntar');
+    if (!caja) return;
+    const fija = typeof currentView !== 'undefined' && currentView === 'calendar';
+    caja.classList.toggle('fija', fija);
+    if (fija) caja.classList.remove('invocada');
+}
+(function vigilarVista() {
+    const empezar = () => {
+        const contenido = document.getElementById('content');
+        if (!contenido) return;
+        barraSegunVista();
+        new MutationObserver(barraSegunVista).observe(contenido, { childList: true });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', empezar); else empezar();
+})();
+
+// Qué abrir con «ver.» después de apuntar: la cosa creada, o su apartado si se creó por el conector.
+function barraComoVer(tipo, r, hecho) {
+    if (!hecho) return null;
+    if (hecho.tipo === 'evento') return () => barraAbrirEntrada(hecho.eventoId, r.fecha);
+    if (hecho.tipo === 'tarea') return () => barraAbrirTarea(hecho.tareaId, r.fecha);
+    if (hecho.tipo === 'gasto') return () => typeof openFinanceProTransactionModal === 'function' ? openFinanceProTransactionModal(hecho.txId) : switchView('finances');
+    if (hecho.tipo === 'nota') return () => { switchView('notes'); if (typeof openReadNote === 'function') openReadNote(hecho.notaId); };
+    if (hecho.tipo === 'compra') return () => switchView('compra');
+    const vista = { cumple: 'calendar', examen: 'studies', trabajo: 'studies', clase: 'studies', recurrente: 'planner', viaje: 'travels', libro: 'culture', serie: 'culture', peli: 'culture', juego: 'culture' }[tipo];
+    if (tipo === 'cumple') return () => showDayEntries(r.fecha);
+    return vista ? () => switchView(vista) : null;
+}
+function barraVer(i) {
+    const ver = (window._barraVer || [])[i];
+    if (!ver) return;
+    barraHecho = null;
+    clearTimeout(window._barraHechoTemp);
+    barraLimpiar(true);
+    try { ver(); } catch (e) { console.error(e); }
+}
+
 function barraSalir() {
     // Al salir de la barra se olvidan los candidatos: lo que se edite fuera (un título, una fecha, un importe) estará al
     // volver. Antes valían 60 s si no cambiaba el número de cosas (auditoría F-14).
@@ -454,12 +496,14 @@ function barraSalir() {
         if (caja && caja.contains(document.activeElement)) return;
         const panel = document.getElementById('barra-panel');
         if (panel && !barraHecho) panel.hidden = true;
+        if (caja && !barraHecho) caja.classList.remove('invocada');
     }, 150);
 }
 
 function barraEnfocar() {
-    const e = barraEntrada();
-    if (!e) return false;
+    const e = barraEntrada(), caja = document.getElementById('barra-apuntar');
+    if (!e || !caja) return false;
+    if (!caja.classList.contains('fija')) caja.classList.add('invocada');
     e.focus();
     return true;
 }
