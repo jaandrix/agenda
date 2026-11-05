@@ -2056,9 +2056,9 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const s = mobileSello;
             if (!s) return;
             const pasado = performance.now() - s.t;
-            if (pasado > 220) { mobileSello = null; return; }
+            if (pasado > 450) { mobileSello = null; return; }
             const b = [...shell.querySelectorAll('.m-check.on')].find(x => x.getAttribute('onclick') === s.onclick);
-            if (b && !b.classList.contains('m-check-sella')) { b.style.animationDelay = `-${Math.round(pasado)}ms`; b.classList.add('m-check-sella'); }
+            if (b && !b.classList.contains('m-check-sella')) { b.style.setProperty('--sello-retraso', `-${Math.round(pasado)}ms`); b.classList.add('m-check-sella'); }
         }
         let repintarTrasPintarPendiente = false;
         function repintarTrasPintar() {

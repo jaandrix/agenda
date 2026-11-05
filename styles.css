@@ -5556,12 +5556,20 @@ body.mobile-standalone.m-menu-abierto #mobile-shell { overflow:hidden; }
 .m-check.on { background:var(--m-acento); border-color:var(--m-acento); }
 /* Fase 4: el círculo se sella al marcar (una vez, corto); y el estado pulsado llega al apoyar el dedo (clase .pulsado,
    nucleo.js), sin esperar al :active tardío de iOS. */
-@keyframes mCheckSella { 40% { transform:scale(1.14); } }
-.m-check.m-check-sella { animation:mCheckSella .22s var(--ease-out); }
+/* Al marcar, el color crece desde el centro con un pequeño rebote y una onda fina se abre y se apaga alrededor; el
+   círculo entero late una vez. --sello-retraso lo pone mobileSeguirSello para que el círculo repintado siga donde iba. */
+@keyframes mCheckSella { 0% { transform:scale(.86); } 45% { transform:scale(1.1); } 100% { transform:scale(1); } }
+@keyframes mCheckLlena { 0% { transform:scale(0); } 70% { transform:scale(1.08); } 100% { transform:scale(1); } }
+@keyframes mCheckOnda { 0% { transform:scale(1); opacity:.55; } 100% { transform:scale(1.9); opacity:0; } }
+.m-check { position:relative; }
+.m-check.m-check-sella { background:none; animation:mCheckSella .34s var(--ease-out) var(--sello-retraso, 0ms) both; }
+.m-check.m-check-sella::before, .m-check.m-check-sella::after { content:''; position:absolute; inset:-2px; border-radius:50%; pointer-events:none; }
+.m-check.m-check-sella::before { background:var(--m-acento); animation:mCheckLlena .3s cubic-bezier(.2,.9,.3,1) var(--sello-retraso, 0ms) both; }
+.m-check.m-check-sella::after { border:2px solid var(--m-acento); animation:mCheckOnda .45s cubic-bezier(.2,.8,.3,1) var(--sello-retraso, 0ms) both; }
 body.mobile-standalone .m-check.pulsado { transform:scale(.88); }
 body.mobile-standalone .m-tab.pulsado, body.mobile-standalone .m-tab-mas.pulsado { transform:scale(.92); }
 body.mobile-standalone :is(#mobile-shell, #modal-container) .pulsado:not(.m-check):not(.m-tab):not(.m-tab-mas) { opacity:.6; }
-@media (prefers-reduced-motion: reduce) { .m-check.m-check-sella { animation:none; } }
+@media (prefers-reduced-motion: reduce) { .m-check.m-check-sella { animation:none; background:var(--m-acento); } .m-check.m-check-sella::before, .m-check.m-check-sella::after { display:none; } }
 .m-check-grande { width:52px; height:52px; border-width:2.5px; }
 .m-vacio { padding:18px 0; font-size:22px; font-weight:700; letter-spacing:-.025em; color:var(--text-secondary); }
 .m-vacio-peque { padding:12px 0; font-size:14px; font-weight:500; letter-spacing:0; }
@@ -9993,6 +10001,11 @@ body.mobile-standalone .pres-guardar, body.pwa .pres-guardar { bottom:calc(112px
 /* Como la imagen de referencia: la marca en el centro de la barra (avatar a la izquierda y el tiempo a la derecha),
    la cabecera de la semana más callada y, en lo pendiente, el círculo de marcar delante del texto. */
 #mobile-shell .m-topbar:has(.m-topbar-tiempo) .m-marca { position:absolute; left:50%; transform:translateX(-50%); font-size:19px; }
+/* En el inicio, «al día.» (y «sin conexión.», «guardando…») empujaba el tiempo hacia el centro, encima de «bitácora.»
+   (visto en el iPhone el 05-11): el aviso va en la esquina del tiempo, sin ocupar sitio, y el tiempo se funde mientras. */
+#mobile-shell .m-topbar:has(.m-topbar-tiempo) .estado-sync { position:absolute; right:20px; bottom:0; height:60px; margin:0; }
+#mobile-shell .m-topbar-tiempo { transition:opacity .18s ease; }
+#mobile-shell .m-topbar:has(.estado-sync:not(:empty)) .m-topbar-tiempo { opacity:0; pointer-events:none; }
 #mobile-shell .m-home-editorial .m-mes-cab .m-etiqueta { color:var(--text-secondary); font-weight:500; }
 #mobile-shell .m-home-editorial .m-dia-pill small { font-weight:500; }
 #mobile-shell .m-home-editorial .m-ahora-hora { font-size:64px; }
