@@ -10517,3 +10517,6 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .inv-referencia { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-top:10px; font-size:12.5px; line-height:1.45; color:var(--text-secondary); }
 .inv-referencia b { color:var(--text-primary); }
 .inv-referencia .vista-btn { height:30px; padding:0 10px; font-size:12px; }
+
+.barra-anuncio { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.barra-detalle { display:inline-block; margin:6px 2px 2px; font-size:13px; }

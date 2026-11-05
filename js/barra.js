@@ -14,6 +14,7 @@ let barraModo = 'vacio';
 let barraResultados = [];
 let barraSel = 0;
 let barraHecho = null;
+let barraRespuesta = null;
 
 const BARRA_BUSCAR_RE = /^\s*(?:busca(?:r|me)?|encuentra|d[oó]nde\s+(?:est[aá]|tengo))\s*:?\s+/i;
 const BARRA_PISTA = [
@@ -99,11 +100,14 @@ function barraPuntos(texto, w) {
 function barraCandidatos(rango) {
     const out = [];
     const norm = s => apuntarNorm(s || '');
-    // Con un rango corto se recorre día a día: así salen también los cumpleaños, las recurrentes y lo virtual.
+    // Hasta una semana se recorre día a día (getDayAllEntries): así salen también lo recurrente y lo virtual (partidos,
+    // citas del trabajo). Más largo, recorrer cada día rehacía todo el calendario cada vez (737 ms un mes con 1.000
+    // eventos y la CPU a 4x) y además se cortaba a los 120 días: se filtran las entradas por fecha y los cumpleaños se
+    // calculan para los años del rango.
     const dias = [];
     if (rango) {
         const d = new Date(rango.desde + 'T12:00:00'), fin = new Date(rango.hasta + 'T12:00:00');
-        for (let n = 0; d <= fin && n < 120; n++, d.setDate(d.getDate() + 1)) dias.push(isoLocal(d));
+        if ((fin - d) / 864e5 <= 7) for (; d <= fin; d.setDate(d.getDate() + 1)) dias.push(isoLocal(d));
     }
     const vistos = new Set();
     const anadir = c => { const k = `${c.tipo}|${c.fecha}|${c.titulo}`; if (!vistos.has(k)) { vistos.add(k); out.push(c); } };
@@ -117,10 +121,23 @@ function barraCandidatos(rango) {
             mobileDiaPlanner(iso).forEach(t => anadir({ tipo: 'tarea', fecha: iso, hora: t.time || '', titulo: t.title || t.text || '', texto: norm([t.title, t.text, t.notes].join(' ')), hecha: !!t.done, abrir: () => showDayEntries(iso) }));
         });
     } else {
+        const hoy = todayISO();
         entries.forEach(e => {
             if (isCalendarLogEntry(e) || NON_CALENDAR_TYPES.includes(e.type)) return;
+            if (e.type === 'birthday') {
+                const md = String(e.birthDate || e.date || '').slice(5, 10);
+                if (!/^\d{2}-\d{2}$/.test(md)) return;
+                const desde = rango ? rango.desde : hoy, hasta = rango ? rango.hasta : `${Number(hoy.slice(0, 4)) + 1}-${hoy.slice(5)}`;
+                for (let y = Number(desde.slice(0, 4)); y <= Number(hasta.slice(0, 4)); y++) {
+                    const iso = `${y}-${md}`;
+                    if (iso < desde || iso > hasta) continue;
+                    anadir({ tipo: 'cumple', fecha: iso, hora: '', titulo: `cumpleaños de ${e.title}`, texto: norm(`${e.title} cumpleanos`), abrir: () => showDayEntries(iso) });
+                    if (!rango) break;
+                }
+                return;
+            }
             const fecha = e.date || e.startDate;
-            if (fecha) anadir({ tipo: tipoEntrada(e), fecha, hora: e.time || '', titulo: e.type === 'birthday' ? `cumpleaños de ${e.title}` : e.title || '', texto: norm([e.title, e.place, e.notes, e.eventType, e.type === 'birthday' ? 'cumpleanos' : ''].join(' ')), abrir: () => showDayEntries(fecha) });
+            if (fecha) anadir({ tipo: tipoEntrada(e), fecha, hora: e.time || '', titulo: e.title || '', texto: norm([e.title, e.place, e.notes, e.eventType].join(' ')), abrir: () => showDayEntries(fecha) });
         });
         Object.entries(dayPlanner.days || {}).forEach(([iso, lista]) => (lista || []).forEach(t => anadir({ tipo: 'tarea', fecha: iso, hora: t.time || '', titulo: t.title || t.text || '', texto: norm([t.title, t.text, t.notes].join(' ')), hecha: !!t.done, abrir: () => showDayEntries(iso) })));
     }
@@ -134,6 +151,16 @@ function barraCandidatos(rango) {
     return out;
 }
 
+// Los candidatos se guardan mientras no cambien los datos ni el rango: al teclear «busca: médico este mes» letra a letra
+// se reconstruían en cada pulsación.
+let barraCache = null;
+function barraCandidatosGuardados(rango) {
+    const clave = [rango?.desde, rango?.hasta, entries.length, financePro.transactions.length, (notes || []).length, (dayPlanner.backlog || []).length, Object.values(dayPlanner.days || {}).reduce((n, l) => n + (l?.length || 0), 0), todayISO()].join('|');
+    if (barraCache?.clave === clave && Date.now() - barraCache.hora < 60000) return barraCache.lista;
+    barraCache = { clave, hora: Date.now(), lista: barraCandidatos(rango) };
+    return barraCache.lista;
+}
+
 function barraBuscar(consulta) {
     const q = apuntarNorm(consulta).replace(/[¿?¡!.,;:]/g, ' ').replace(/\s+/g, ' ').trim();
     const rango = barraRango(q);
@@ -141,7 +168,7 @@ function barraBuscar(consulta) {
     const palabras = barraPalabras(q);
     if (!palabras.length && !tipos.length && !rango) return { rango, tipos, palabras, lista: [] };
     const hoy = todayISO();
-    const lista = barraCandidatos(rango)
+    const lista = barraCandidatosGuardados(rango)
         .filter(c => (!tipos.length || tipos.includes(c.tipo)) && (!rango || (c.fecha >= rango.desde && c.fecha <= rango.hasta)))
         .map(c => ({ ...c, puntos: palabras.reduce((s, w) => { const p = barraPuntos(c.texto, w); return s === null || !p ? null : s + p; }, 0) }))
         .filter(c => c.puntos !== null);
@@ -156,15 +183,72 @@ function barraBuscar(consulta) {
 }
 
 // ---- panel ----
+let barraEspera = null;
+const BARRA_PREGUNTA_RE = /^\s*(¿|cu[aá]ndo\b|cu[aá]nt[oa]s?\b|qu[eé]\b|puedo\b|me puedo\b|[uú]ltima vez\b)/i;
 function barraEscribir() {
     barraHecho = null;
     barraElegidos = {};
-    barraPintar();
+    barraGuardarBorrador();
+    clearTimeout(barraEspera);
+    const t = barraEntrada()?.value || '';
+    // Buscar y responder recorren todos tus datos: se hace al dejar de teclear, no en cada letra.
+    if (BARRA_BUSCAR_RE.test(t) || BARRA_PREGUNTA_RE.test(t) || /\?\s*$/.test(t)) barraEspera = setTimeout(barraPintar, 220);
+    else barraPintar();
+}
+
+// Lo escrito en la barra se guarda en el dispositivo (como el borrador de Apuntar) hasta apuntarlo o borrarlo con ESC.
+const barraClaveBorrador = () => 'bitacora-barra-borrador-' + (typeof copiaUid !== 'undefined' ? copiaUid || '' : '');
+let barraBorradorTemp = null, barraBorradorMirado = false;
+function barraGuardarBorrador() {
+    clearTimeout(barraBorradorTemp);
+    barraBorradorTemp = setTimeout(() => {
+        try {
+            const t = barraEntrada()?.value || '';
+            if (t.trim()) localStorage.setItem(barraClaveBorrador(), JSON.stringify({ texto: t, actualizado: Date.now() }));
+            else localStorage.removeItem(barraClaveBorrador());
+        } catch (_) { /* sin almacenamiento */ }
+    }, 250);
+}
+function barraRecuperarBorrador() {
+    if (barraBorradorMirado) return;
+    barraBorradorMirado = true;
+    try {
+        const b = JSON.parse(localStorage.getItem(barraClaveBorrador()) || 'null');
+        const e = barraEntrada();
+        if (b?.texto && Date.now() - b.actualizado < 3 * 864e5 && e && !e.value) e.value = b.texto;
+    } catch (_) { /* sin almacenamiento */ }
+}
+// Al entrar en la app (con la sesión ya cargada, que da el usuario del borrador), lo que quedó escrito vuelve a la barra.
+function barraVigilarBorrador() {
+    let intentos = 0;
+    const mirar = setInterval(() => {
+        intentos++;
+        const listo = document.getElementById('app')?.classList.contains('ready') && typeof copiaUid !== 'undefined' && copiaUid;
+        if (!listo && intentos < 120) return;
+        clearInterval(mirar);
+        if (!listo || !barraVisible()) return;
+        barraRecuperarBorrador();
+        if (barraEntrada()?.value) document.getElementById('barra-apuntar')?.classList.add('escribiendo');
+    }, 500);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', barraVigilarBorrador); else barraVigilarBorrador();
+
+function barraBorrarBorrador() {
+    clearTimeout(barraBorradorTemp);
+    try { localStorage.removeItem(barraClaveBorrador()); } catch (_) { /* sin almacenamiento */ }
+}
+
+// El lector de pantalla oye un resumen corto cuando dejas de teclear, no el panel entero en cada letra.
+let barraAnuncioTemp = null;
+function barraAnunciar(texto) {
+    clearTimeout(barraAnuncioTemp);
+    barraAnuncioTemp = setTimeout(() => { const a = document.getElementById('barra-anuncio'); if (a) a.textContent = texto; }, 700);
 }
 
 function barraPintar() {
     const panel = document.getElementById('barra-panel'), entrada = barraEntrada();
     if (!panel || !entrada) return;
+    barraRecuperarBorrador();
     const texto = entrada.value;
     const enfocada = document.activeElement === entrada;
     document.getElementById('barra-apuntar')?.classList.toggle('escribiendo', !!texto.trim());
@@ -177,13 +261,18 @@ function barraPintar() {
     }
     panel.hidden = false;
     if (BARRA_BUSCAR_RE.test(texto)) return barraPintarBusqueda(texto.replace(BARRA_BUSCAR_RE, ''));
-    const respuesta = typeof responderPregunta === 'function' ? responderPregunta(texto) : null;
+    const respuesta = (BARRA_PREGUNTA_RE.test(texto) || /\?\s*$/.test(texto)) && typeof responderPregunta === 'function' ? responderPregunta(texto) : null;
     if (respuesta) {
         barraModo = 'pregunta';
-        panel.innerHTML = `<div class="barra-cab"><b>respuesta.</b><span>con tus datos, en este dispositivo.</span></div><div class="barra-respuesta">${escapeHtml(respuesta.texto)}</div>`;
+        barraRespuesta = respuesta;
+        const detalle = respuesta.accion || respuesta.fecha || respuesta.vista;
+        panel.innerHTML = `<div class="barra-cab"><b>respuesta.</b><span>${detalle ? 'intro para ver el detalle.' : 'con tus datos, en este dispositivo.'}</span></div><div class="barra-respuesta">${escapeHtml(respuesta.texto.replace(/\s*Toca para ver el detalle\.?/i, ''))}</div>${detalle ? '<button type="button" class="barra-enlace barra-detalle" onmousedown="event.preventDefault()" onclick="barraVerDetalle()">ver el detalle.</button>' : ''}`;
+        barraAnunciar(respuesta.texto);
         return;
     }
     barraModo = 'apuntar';
+    // Siempre desde hoy: apuntarFechaBase es de la hoja de Apuntar abierta desde un día y podía quedarse puesta.
+    apuntarFechaBase = null;
     barraItems = apuntarTrocear(texto).map(t => ({ texto: t, r: interpretarApunte(t) }));
     barraPintarApunte();
 }
@@ -203,6 +292,7 @@ function barraPintarApunte() {
             <select class="barra-item-tipo" aria-label="Cambiar el tipo" onblur="barraSalir()" onkeydown="if(event.key==='Escape'){event.preventDefault();event.stopPropagation();barraEntrada().focus()}" onchange="barraElegidos[${k}]=this.value;barraPintarApunte();barraEntrada().focus()">${tipos.map(([v, t]) => `<option value="${v}" ${v === tipo ? 'selected' : ''}>${t}</option>`).join('')}</select>
         </div>`;
     }).join('');
+    barraAnunciar(`${barraItems.length > 1 ? barraItems.length + ' cosas' : 'Se apuntará'}${faltan ? ', falta algo' : ''}`);
     panel.innerHTML = `<div class="barra-cab"><b>${barraItems.length > 1 ? `${barraItems.length} cosas.` : 'se apuntará.'}</b><span>${faltan ? `completa lo que falta o <button type="button" class="barra-enlace" onmousedown="event.preventDefault()" onclick="barraAbrirEnApuntar()">ábrelo en apuntar.</button>` : 'intro para apuntar.'}</span></div>${filas}`;
 }
 
@@ -216,6 +306,7 @@ function barraPintarBusqueda(consulta) {
     if (!que) { panel.innerHTML = '<div class="barra-cab"><b>buscar.</b><span>escribe qué buscas: «busca: dentista», «busca: eventos la semana que viene».</span></div>'; return; }
     const fechaTxt = c => !c.fecha ? 'sin fecha' : apuntarFechaTexto(c.fecha) + (c.hora ? ' ' + c.hora : '');
     const visibles = barraResultados.slice(0, 8);
+    barraAnunciar(barraResultados.length ? `${barraResultados.length} resultados` : 'Sin resultados');
     panel.innerHTML = `<div class="barra-cab"><b>${barraResultados.length ? `${barraResultados.length} ${barraResultados.length === 1 ? 'resultado' : 'resultados'}.` : 'nada.'}</b><span>${escapeHtml(que)}${barraResultados.length ? ', intro abre el marcado.' : ''}</span></div>
         ${visibles.map((c, i) => `<button type="button" class="barra-res ${i === barraSel ? 'sel' : ''} ${c.hecha ? 'hecha' : ''}" onmousedown="event.preventDefault()" onclick="barraSel=${i};barraAbrirResultado()">
             <i class="barra-item-ico">${APUNTAR_ICONOS[APUNTAR_ICONO_DE[c.tipo === 'examen' ? 'examen' : c.tipo] || 'tarea']}</i>
@@ -225,6 +316,16 @@ function barraPintarBusqueda(consulta) {
         </button>`).join('')}
         ${barraResultados.length > 8 ? `<div class="barra-mas">y ${barraResultados.length - 8} más: afina la búsqueda con una fecha o un tipo.</div>` : ''}
         ${!barraResultados.length ? '<div class="barra-mas">Prueba con otra palabra o sin fecha.</div>' : ''}`;
+}
+
+function barraVerDetalle() {
+    const r = barraRespuesta;
+    if (!r) return;
+    barraLimpiar(true);
+    barraBorrarBorrador();
+    if (r.accion) r.accion();
+    else if (r.fecha) goToCalendarDate(r.fecha);
+    else if (r.vista) switchView(r.vista);
 }
 
 function barraProbar(texto) {
@@ -264,8 +365,10 @@ async function barraEnviar() {
     const e = barraEntrada();
     const texto = e?.value.trim() || '';
     if (!texto) { e?.focus(); return; }
+    if (barraEspera) { clearTimeout(barraEspera); barraEspera = null; barraPintar(); }
     if (barraModo === 'buscar') { barraAbrirResultado(); return; }
-    if (barraModo === 'pregunta') return;
+    if (barraModo === 'pregunta') { barraVerDetalle(); return; }
+    apuntarFechaBase = null;
     barraItems = apuntarTrocear(texto).map(t => ({ texto: t, r: interpretarApunte(t) }));
     const malos = barraItems.map((it, k) => apuntarDescribir(it.r, apuntarTipo(it.r, barraElegidos[k])).falta).filter(Boolean);
     if (malos.length) { barraPintarApunte(); document.getElementById('barra-apuntar')?.classList.add('aviso'); setTimeout(() => document.getElementById('barra-apuntar')?.classList.remove('aviso'), 400); return; }
@@ -279,6 +382,8 @@ async function barraEnviar() {
     });
     if (!hechos.length) { showToast('No he podido apuntarlo', true); return; }
     barraLimpiar(false);
+    barraBorrarBorrador();
+    barraCache = null;
     invalidarCachesDerivadas();
     render();
     barraHecho = `<div class="barra-cab"><b>apuntado.</b><span><button type="button" class="barra-enlace" onmousedown="event.preventDefault()" onclick="barraDeshacer()">deshacer.</button></span></div>${hechos.map(h => `<div class="barra-hecho">${escapeHtml(h.aviso)}.</div>`).join('')}`;
@@ -299,7 +404,7 @@ async function barraDeshacer() {
 
 function barraTecla(ev) {
     if (ev.key === 'Enter' && !ev.isComposing) { ev.preventDefault(); barraEnviar(); return; }
-    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); barraLimpiar(true); return; }
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); barraLimpiar(true); barraBorrarBorrador(); return; }
     if (barraModo === 'buscar' && (ev.key === 'ArrowDown' || ev.key === 'ArrowUp')) {
         ev.preventDefault();
         const n = Math.min(8, barraResultados.length);
