@@ -100,7 +100,7 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
     static func marcaNativa() -> WKUserScript {
         let info = Bundle.main.infoDictionary
         let version = (info?["CFBundleShortVersionString"] as? String ?? "0") + "-" + (info?["CFBundleVersion"] as? String ?? "0")
-        let capacidades = ["widgets", "quickEntry"]
+        let capacidades = ["widgets", "quickEntry", "haptics"]
         let json = (try? JSONSerialization.data(withJSONObject: ["platform": "ios", "version": version, "capabilities": capacidades]))
             .flatMap { String(data: $0, encoding: .utf8) } ?? "{\"platform\":\"ios\"}"
         let source = "window.__BITACORA_NATIVE__ = Object.freeze(\(json));"
@@ -122,7 +122,17 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
     /// BitacoraSnapshot ya calculado — aquí solo se guarda y se pide a
     /// WidgetKit que refresque.
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == "bitacoraNative", let body = message.body as? String else { return }
+        guard message.name == "bitacoraNative" else { return }
+        // Un toque háptico pedido por la web (haptico() en js/nucleo.js): al marcar una tarea, al apuntar...
+        if let peticion = message.body as? [String: Any], let tipo = peticion["haptic"] as? String {
+            switch tipo {
+            case "exito": UINotificationFeedbackGenerator().notificationOccurred(.success)
+            case "aviso": UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            default: UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+            return
+        }
+        guard let body = message.body as? String else { return }
         guard let defaults = UserDefaults(suiteName: BitacoraSnapshot.appGroupID) else { return }
         defaults.set(body.data(using: .utf8), forKey: BitacoraSnapshot.defaultsKey)
         WidgetCenter.shared.reloadAllTimelines()

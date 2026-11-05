@@ -650,6 +650,7 @@ async function guardarApunteYa(textoEl) {
     invalidarCachesDerivadas();
     // Repinta al acabar de cerrarse la hoja, no durante la animación (auditoría M-03).
     repintarTrasModal();
+    haptico(fallos.length ? 'aviso' : 'exito');
     if (hechos.length === 1 && !fallos.length) showToast(hechos[0].aviso);
     else showToast(`${hechos.length} ${hechos.length === 1 ? 'cosa apuntada' : 'cosas apuntadas'}: ${hechos.map(h => (APUNTAR_TIPO_NOMBRE[h.tipo] || h.tipo)).join(', ')}${fallos.length ? `. Sin apuntar: ${fallos.join('; ')}` : '.'}`, !!fallos.length);
     // El borrador se quita cuando el guardado ha ido bien: si falla, sigue para recuperarlo (auditoría M-02).

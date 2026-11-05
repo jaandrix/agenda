@@ -5554,6 +5554,14 @@ body.mobile-standalone.m-menu-abierto #mobile-shell { overflow:hidden; }
 .m-check { width:30px; height:30px; box-sizing:border-box; flex-shrink:0; padding:0; border:2px solid var(--border-strong); border-radius:50%; background:none; cursor:pointer; transition:background-color .15s ease, border-color .15s ease, transform .15s var(--ease-out); }
 .m-check:active { transform:scale(.88); }
 .m-check.on { background:var(--m-acento); border-color:var(--m-acento); }
+/* Fase 4: el círculo se sella al marcar (una vez, corto); y el estado pulsado llega al apoyar el dedo (clase .pulsado,
+   nucleo.js), sin esperar al :active tardío de iOS. */
+@keyframes mCheckSella { 40% { transform:scale(1.14); } }
+.m-check.m-check-sella { animation:mCheckSella .22s var(--ease-out); }
+body.mobile-standalone .m-check.pulsado { transform:scale(.88); }
+body.mobile-standalone .m-tab.pulsado, body.mobile-standalone .m-tab-mas.pulsado { transform:scale(.92); }
+body.mobile-standalone :is(#mobile-shell, #modal-container) .pulsado:not(.m-check):not(.m-tab):not(.m-tab-mas) { opacity:.6; }
+@media (prefers-reduced-motion: reduce) { .m-check.m-check-sella { animation:none; } }
 .m-check-grande { width:52px; height:52px; border-width:2.5px; }
 .m-vacio { padding:18px 0; font-size:22px; font-weight:700; letter-spacing:-.025em; color:var(--text-secondary); }
 .m-vacio-peque { padding:12px 0; font-size:14px; font-weight:500; letter-spacing:0; }

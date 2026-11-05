@@ -828,6 +828,7 @@
             h.completadas = h.completadas || {};
             h.completadas[today] = !h.completadas[today];
             if (!h.completadas[today]) delete h.completadas[today];
+            else haptico('suave');
             if ((h.pasos || []).length) {
                 h.pasosHechos = h.pasosHechos || {};
                 if (h.completadas[today]) h.pasosHechos[today] = h.pasos.map((_, i) => i); else delete h.pasosHechos[today];

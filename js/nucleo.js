@@ -1113,6 +1113,33 @@
             document.documentElement.classList.toggle('app-mobile', modo !== 'browser');
             return Object.freeze({ modo, plataforma: nativo?.platform || null, versionNativa: nativo?.version || null, puede: c => capacidades.has(c) });
         })();
+        // Fase 4 (05-11): un toque suave en la app nativa (puente bitacoraNative, sin compilar aún en Xcode). En la PWA no hay:
+        // el iPhone no deja vibrar desde una web, y no se depende de ello.
+        function haptico(tipo = 'suave') {
+            if (!appEntorno.puede('haptics')) return;
+            try { window.webkit?.messageHandlers?.bitacoraNative?.postMessage({ haptic: tipo }); } catch (_) { /* sin puente */ }
+        }
+
+        // Estado pulsado al apoyar el dedo: en el iPhone, :active dentro de algo que hace scroll llega tarde (espera a saber
+        // si vas a desplazarte), y los botones parecían no responder. Se marca en el pointerdown y se quita al levantar, al
+        // cancelar o en cuanto el dedo se mueve (es un scroll, no un toque).
+        (() => {
+            const PULSABLE = 'button, a[href], [onclick], [role="button"], label, summary, .m-libro-fila';
+            let pulsado = null, x0 = 0, y0 = 0;
+            const soltar = () => { if (pulsado) { pulsado.classList.remove('pulsado'); pulsado = null; } };
+            document.addEventListener('pointerdown', e => {
+                soltar();
+                if (!mobileStandaloneActive || e.pointerType === 'mouse') return;
+                const el = e.target.closest?.(PULSABLE);
+                if (!el || el.disabled || !el.closest('#mobile-shell, #modal-container')) return;
+                pulsado = el; x0 = e.clientX; y0 = e.clientY;
+                el.classList.add('pulsado');
+            }, { capture: true, passive: true });
+            document.addEventListener('pointermove', e => { if (pulsado && Math.abs(e.clientX - x0) + Math.abs(e.clientY - y0) > 10) soltar(); }, { capture: true, passive: true });
+            document.addEventListener('pointerup', () => setTimeout(soltar, 60), { capture: true, passive: true });
+            document.addEventListener('pointercancel', soltar, { capture: true, passive: true });
+        })();
+
         function isMobileStandaloneMode() { return appEntorno.modo !== 'browser'; }
         let mobileStandaloneActive = false;
         let mobileMenuAbierto = false;
@@ -1341,6 +1368,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             if (scrollMenu) { const cuerpo = shell.querySelector('.m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = scrollMenu; }
             if (scrollPagina) shell.scrollTop = scrollPagina;
             mobilePlegarTitulo(shell);
+            if (paginaNueva) mobileSeguirSello(shell);
             mobileCentrarCarrusel();
             if (!shell.dataset.plegado) {
                 shell.dataset.plegado = '1';
@@ -2013,7 +2041,24 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             if (!boton) return;
             const on = boton.classList.toggle('on');
             boton.closest('.m-fila')?.classList.toggle('hecha', on);
+            if (on) {
+                boton.classList.remove('m-check-sella');
+                void boton.offsetWidth;
+                boton.classList.add('m-check-sella');
+                mobileSello = { onclick: boton.getAttribute('onclick'), t: performance.now() };
+                haptico('suave');
+            }
             mobileMarcarRapido = true;
+        }
+        // El repintado que llega justo después cambia el círculo por uno nuevo: ese sigue el sello donde iba.
+        let mobileSello = null;
+        function mobileSeguirSello(shell) {
+            const s = mobileSello;
+            if (!s) return;
+            const pasado = performance.now() - s.t;
+            if (pasado > 220) { mobileSello = null; return; }
+            const b = [...shell.querySelectorAll('.m-check.on')].find(x => x.getAttribute('onclick') === s.onclick);
+            if (b && !b.classList.contains('m-check-sella')) { b.style.animationDelay = `-${Math.round(pasado)}ms`; b.classList.add('m-check-sella'); }
         }
         let repintarTrasPintarPendiente = false;
         function repintarTrasPintar() {
