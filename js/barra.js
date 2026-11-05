@@ -200,7 +200,7 @@ function barraPintarApunte() {
         return `<div class="barra-item ${d.falta ? 'incompleto' : ''}">
             <i class="barra-item-ico">${APUNTAR_ICONOS[APUNTAR_ICONO_DE[tipo] || 'tarea']}</i>
             <div class="barra-item-cuerpo"><div class="barra-item-txt">${d.texto}</div>${d.falta ? `<small class="barra-falta">${d.falta}.</small>` : nada ? '<small class="barra-nota">sin fecha ni hora: irá como tarea para hoy.</small>' : ''}</div>
-            <select class="barra-item-tipo" aria-label="Cambiar el tipo" onmousedown="event.stopPropagation()" onchange="barraElegidos[${k}]=this.value;barraPintarApunte()">${tipos.map(([v, t]) => `<option value="${v}" ${v === tipo ? 'selected' : ''}>${t}</option>`).join('')}</select>
+            <select class="barra-item-tipo" aria-label="Cambiar el tipo" onblur="barraSalir()" onkeydown="if(event.key==='Escape'){event.preventDefault();event.stopPropagation();barraEntrada().focus()}" onchange="barraElegidos[${k}]=this.value;barraPintarApunte();barraEntrada().focus()">${tipos.map(([v, t]) => `<option value="${v}" ${v === tipo ? 'selected' : ''}>${t}</option>`).join('')}</select>
         </div>`;
     }).join('');
     panel.innerHTML = `<div class="barra-cab"><b>${barraItems.length > 1 ? `${barraItems.length} cosas.` : 'se apuntará.'}</b><span>${faltan ? `completa lo que falta o <button type="button" class="barra-enlace" onmousedown="event.preventDefault()" onclick="barraAbrirEnApuntar()">ábrelo en apuntar.</button>` : 'intro para apuntar.'}</span></div>${filas}`;
@@ -299,7 +299,7 @@ async function barraDeshacer() {
 
 function barraTecla(ev) {
     if (ev.key === 'Enter' && !ev.isComposing) { ev.preventDefault(); barraEnviar(); return; }
-    if (ev.key === 'Escape') { ev.preventDefault(); barraLimpiar(true); return; }
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); barraLimpiar(true); return; }
     if (barraModo === 'buscar' && (ev.key === 'ArrowDown' || ev.key === 'ArrowUp')) {
         ev.preventDefault();
         const n = Math.min(8, barraResultados.length);
@@ -311,16 +311,16 @@ function barraTecla(ev) {
 
 function barraSalir() {
     setTimeout(() => {
-        if (document.activeElement === barraEntrada()) return;
+        const caja = document.getElementById('barra-apuntar');
+        if (caja && caja.contains(document.activeElement)) return;
         const panel = document.getElementById('barra-panel');
         if (panel && !barraHecho) panel.hidden = true;
-    }, 120);
+    }, 150);
 }
 
 function barraEnfocar() {
     const e = barraEntrada();
     if (!e) return false;
     e.focus();
-    barraEscribir();
     return true;
 }

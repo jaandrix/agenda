@@ -3298,6 +3298,9 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             if (document.getElementById('command-palette-overlay')) { closeCommandPalette(); return; }
             const modalContainer = document.getElementById('modal-container');
             if (modalContainer && modalContainer.innerHTML.trim() !== '') { closeModal(); return; }
+            // Si el ESC ya lo usó algo (cerrar la barra de apuntar, un desplegable, un menú) o nació en un campo de texto,
+            // no se pregunta por la sesión: la barra se vaciaba, perdía el foco y acto seguido salía «¿cerrar sesión?».
+            if (e.defaultPrevented || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName) || e.target?.isContentEditable) return;
             if (!canUseGlobalShortcut()) return;
             openLogoutConfirm();
         });
