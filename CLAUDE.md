@@ -123,6 +123,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   (si no, quedaban debajo, tapadas por el contenido). **Cualquier capa nueva que se abra encima debe
   llamar a `vtCortar()`.** Finanzas cachea los saldos por pintado (`financeSaldosCache`, se vacía en
   `render()` e `invalidarCachesDerivadas()`).
+- **Entorno y arranque (05-11, fase 1 del plan de sensación nativa):** `appEntorno` (nucleo.js) decide una vez `browser` / `pwa` / `ios-wrapper` (clases `app-pwa`, `app-ios-wrapper`, `app-mobile` en `<html>`, `appEntorno.puede('haptics')`...); la envoltura iOS inyecta `window.__BITACORA_NATIVE__` al empezar el documento (`marcaNativa` en ContentView.swift) y `isMobileStandaloneMode()` la reconoce: no añadir comprobaciones nuevas de `display-mode`. Con sesión de Supabase guardada (`sesionGuardadaLocal`) y copia local lista (`copiaLocalLista`), el arranque entra ya y comprueba la sesión a la vez; solo un «no» claro del servidor saca al acceso. El logo se queda 400 ms como mucho. Medir con `py pruebas/medir_arranque.py` (y `--cpu 1`).
 - **PWA / versión móvil:** cuando la app se abre en modo standalone (añadida a
   pantalla de inicio en iOS/Android), se oculta la interfaz de escritorio y se
   muestra un `#mobile-shell` aparte que sigue siempre a `currentView`: inicio con el

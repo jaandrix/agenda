@@ -65,6 +65,28 @@
             return null;
         }
 
+        // Solo la sesión que Supabase guarda en el dispositivo (sin «bitacora-ultimo-usuario», que sobrevive a cerrar
+        // sesión): es la que permite entrar ya con la copia local y comprobar la sesión después.
+        function sesionGuardadaLocal() {
+            try {
+                for (const k of Object.keys(localStorage)) {
+                    if (!/^sb-.+-auth-token$/.test(k)) continue;
+                    const s = JSON.parse(localStorage.getItem(k) || 'null');
+                    const u = s?.user || s?.currentSession?.user;
+                    if (u?.id) return u;
+                }
+            } catch (_) { /* sin almacenamiento */ }
+            return null;
+        }
+
+        // La copia leída para decidir el arranque se guarda para loadData: leerla dos veces era copiar los datos dos veces.
+        let copiaArranque = null;
+        async function copiaLocalLista(uid) {
+            const copia = await leerCopiaLocal(uid);
+            copiaArranque = copia;
+            return !!(copia?.base && copia.local);
+        }
+
         // En la PWA del iPhone, abrir IndexedDB a veces no responde nunca (ni éxito ni error): el arranque se quedaba
         // esperando para siempre, en negro (30-10). Ahora tiene 2,5 s y, si no, se sigue sin copia (los datos vienen de
         // la nube). Una sola conexión para toda la sesión: abrir una por guardado era lo que más fácil la bloqueaba.
@@ -160,7 +182,8 @@
                 }
                 copiaUid = user.id;
                 let saved;
-                const copia = await leerCopiaLocal(user.id);
+                const copia = copiaArranque?.uid === user.id ? copiaArranque : await leerCopiaLocal(user.id);
+                copiaArranque = null;
                 // Con copia en el dispositivo se pinta ya con ella y la nube llega después (sincronizarDesdeNube la
                 // funde a tres bandas, como cualquier otro dispositivo): la primera pantalla no espera a la red.
                 const deCopia = !!(copia && !copia.pendiente && copia.base && copia.local);

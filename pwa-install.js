@@ -9,7 +9,7 @@
                 // Ajustes se renderiza, sin depender de cuándo llegó el evento.
                 var pwaCurrentMode = null;
                 var pwaIsStandalone = function () {
-                    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                    return !!window.__BITACORA_NATIVE__ || window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
                 };
                 function showPwaInstallButton(mode) {
                     pwaCurrentMode = mode;

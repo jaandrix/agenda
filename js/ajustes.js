@@ -380,7 +380,7 @@
 
         function renderPushSettingsBody(status) {
             if (status === 'unsupported') {
-                const iosSinInstalar = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone;
+                const iosSinInstalar = /iPhone|iPad|iPod/.test(navigator.userAgent) && !isMobileStandaloneMode();
                 return `<div style="font-size:12.5px;color:var(--text-secondary)">${iosSinInstalar ? 'En el iPhone, las notificaciones solo funcionan con Bitácora añadida a la pantalla de inicio: Compartir → «Añadir a pantalla de inicio», y ábrela desde ese icono.' : 'Este navegador no soporta notificaciones push.'}</div>`;
             }
             if (status === 'denied') {

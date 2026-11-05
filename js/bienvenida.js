@@ -77,7 +77,7 @@ function renderBienvenidaPaso() {
             <div class="bienvenida-pista">Más tarde, <b>apuntar</b> (el botón «+ apuntar.», el + del móvil o la tecla espacio en el ordenador) te deja apuntar cualquier cosa desde cualquier sitio.</div>`;
     } else if (paso === 'contigo') {
         const disp = esDispositivo();
-        const instalada = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+        const instalada = isMobileStandaloneMode();
         const instrucciones = {
             ios: 'En Safari, pulsa <b>Compartir</b> (el cuadrado con la flecha) y elige <b>Añadir a pantalla de inicio</b>. Ábrela desde ese icono: tendrás Bitácora como una app más y podrás recibir avisos.',
             android: 'En Chrome, abre el menú <b>⋮</b> y elige <b>Instalar aplicación</b> (o «Añadir a pantalla de inicio»).',
@@ -320,7 +320,7 @@ async function enviarPreguntaFalta() {
 function avisoInstalarIphone() {
     const ua = navigator.userAgent;
     const enSafariIphone = /iphone|ipod/i.test(ua) && /safari/i.test(ua) && !/crios|fxios|edgios/i.test(ua);
-    if (!enSafariIphone || navigator.standalone || document.getElementById('instalar-iphone')) return;
+    if (!enSafariIphone || isMobileStandaloneMode() || document.getElementById('instalar-iphone')) return;
     try { if (localStorage.getItem('bitacora-instalar-visto')) return; } catch (_) { return; }
     const t = document.createElement('div');
     t.id = 'instalar-iphone';

@@ -18,25 +18,8 @@ struct ContentView: View {
                 .ignoresSafeArea()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if model.isLoading {
-                ProgressView()
-                    .progressViewStyle(.circular)
-            }
-
-            // Marca de diagnóstico temporal — si NO ves esta franja amarilla
-            // al abrir la app, el .ipa instalado no es este build, por
-            // mucho que hayas repetido el proceso de instalación.
-            VStack {
-                Text("BUILD v4 — fix zoom/viewport")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.black)
-                    .padding(4)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.yellow)
-                Spacer()
-            }
-            .ignoresSafeArea(edges: .top)
-
+            // Sin indicador de carga nativo ni franja de diagnóstico: la propia web
+            // enseña su pantalla de arranque, y un spinner encima la hacía parecer una web.
             if let message = model.errorMessage {
                 VStack(spacing: 14) {
                     Text("No se ha podido cargar Bitácora")
@@ -97,8 +80,29 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
         // viewport visual de otra forma. Desactivarlo dejaselo a la propia
         // web, que ya maneja su layout sin depender de ese ajuste nativo.
         webView.scrollView.contentInsetAdjustmentBehavior = .never
+        // Fondo del color de la pantalla de lanzamiento: sin esto, entre ella y
+        // el primer pintado de la web salía un destello blanco.
+        let fondo = UIColor(named: "LaunchBackground") ?? .black
+        webView.isOpaque = false
+        webView.backgroundColor = fondo
+        webView.scrollView.backgroundColor = fondo
         super.init()
         config.userContentController.add(self, name: "bitacoraNative")
+        config.userContentController.addUserScript(Self.marcaNativa())
+    }
+
+    /// Antes de que cargue la página, la web recibe window.__BITACORA_NATIVE__:
+    /// dentro de una WKWebView ni navigator.standalone ni display-mode:
+    /// standalone dicen la verdad, y sin esta marca se veía la versión de
+    /// escritorio (appEntorno en js/nucleo.js).
+    static func marcaNativa() -> WKUserScript {
+        let info = Bundle.main.infoDictionary
+        let version = (info?["CFBundleShortVersionString"] as? String ?? "0") + "-" + (info?["CFBundleVersion"] as? String ?? "0")
+        let capacidades = ["widgets", "quickEntry"]
+        let json = (try? JSONSerialization.data(withJSONObject: ["platform": "ios", "version": version, "capabilities": capacidades]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "{\"platform\":\"ios\"}"
+        let source = "window.__BITACORA_NATIVE__ = Object.freeze(\(json));"
+        return WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
     }
 
     func load() {

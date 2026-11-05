@@ -738,6 +738,18 @@
         // startApp acaba llamando a funciones de los últimos (init, en
         // inicio.js), y la sesión puede resolverse antes de que lleguen.
         document.addEventListener('DOMContentLoaded', async () => {
+            // Arranque inmediato: con la sesión guardada en el dispositivo y la copia local lista se entra ya, y la
+            // sesión se comprueba a la vez. Renovarla tras horas sin abrir pide la red y el logo esperaba hasta 6 s.
+            const guardado = sesionGuardadaLocal();
+            if (guardado && await copiaLocalLista(guardado.id)) {
+                const comprobacion = authConRed(() => sb.auth.getSession());
+                document.getElementById('boot-loading').style.display = 'none';
+                await startApp(guardado);
+                const { data: { session }, error } = await comprobacion;
+                // Solo una respuesta clara del servidor (sesión revocada o caducada del todo) saca de la app; sin red, se sigue.
+                if (!session && !(navigator.onLine === false || esErrorDeRed(error))) resetToLoginScreen();
+                return;
+            }
             const { data: { session }, error: errorSesion } = await authConRed(() => sb.auth.getSession());
             document.getElementById('boot-loading').style.display = 'none';
             // Sin red, la sesión caducada no se puede renovar, pero sigue en
@@ -1084,11 +1096,24 @@
         // ============================================================
         // Qué versión ejecuta este dispositivo (la de index.html, que sube con cada publicación).
         window.BITACORA_BUILD = document.querySelector('meta[name="bitacora-build"]')?.content || 'sin versión';
-        function isMobileStandaloneMode() {
-            try {
-                return (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
-            } catch (e) { return false; }
-        }
+        // Dónde se ejecuta la app, decidido una vez: la envoltura de iOS (una WKWebView) se anuncia con
+        // window.__BITACORA_NATIVE__, que inyecta antes de cargar la página, porque dentro de ella ni
+        // navigator.standalone ni display-mode: standalone dicen la verdad y se veía la versión de escritorio.
+        const appEntorno = (() => {
+            const nativo = window.__BITACORA_NATIVE__ || null;
+            let instalada = false;
+            try { instalada = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (_) { /* sin matchMedia */ }
+            const modo = nativo ? 'ios-wrapper' : instalada ? 'pwa' : 'browser';
+            const capacidades = new Set(nativo?.capabilities || []);
+            if ('share' in navigator) capacidades.add('nativeShare');
+            if ('serviceWorker' in navigator) capacidades.add('offlineShell');
+            if ('PushManager' in window) capacidades.add('push');
+            document.documentElement.classList.toggle('app-pwa', modo === 'pwa');
+            document.documentElement.classList.toggle('app-ios-wrapper', modo === 'ios-wrapper');
+            document.documentElement.classList.toggle('app-mobile', modo !== 'browser');
+            return Object.freeze({ modo, plataforma: nativo?.platform || null, versionNativa: nativo?.version || null, puede: c => capacidades.has(c) });
+        })();
+        function isMobileStandaloneMode() { return appEntorno.modo !== 'browser'; }
         let mobileStandaloneActive = false;
         let mobileMenuAbierto = false;
         let mobileDiaSel = null;
@@ -1183,9 +1208,9 @@
             try { performance.measure('bitacora-arranque-visible', 'bitacora-arranque'); } catch (_) {}
             if (matchMedia('(prefers-reduced-motion: reduce)').matches) { boot.style.display = 'none'; return; }
             boot.style.display = 'flex';
-            // Con la copia local la app se pinta tan rápido que el logo no llegaba a verse: se queda al menos 3 s
-            // desde que se abrió (el móvil ya está pintado debajo, así que no retrasa nada que se pueda usar antes).
-            // Con la app ya lista, un toque la quita al momento: el logo no retiene a quien tiene prisa.
+            // El logo se queda lo justo para no ser un destello (400 ms desde que se abrió) y nunca retiene una app ya
+            // pintada: antes eran 3 s fijos y abrir parecía cargar una web (fase 1 del plan de sensación nativa, 05-11).
+            // Un toque lo quita al momento.
             let fuera = false;
             const salir = () => {
                 if (fuera) return;
@@ -1193,9 +1218,9 @@
                 clearTimeout(espera);
                 boot.onpointerdown = null;
                 boot.classList.add('boot-saliendo');
-                setTimeout(() => { boot.style.display = 'none'; boot.classList.remove('boot-saliendo'); }, 750);
+                setTimeout(() => { boot.style.display = 'none'; boot.classList.remove('boot-saliendo'); }, 260);
             };
-            const espera = setTimeout(salir, Math.max(0, 3000 - performance.now()));
+            const espera = setTimeout(salir, Math.max(0, 400 - performance.now()));
             boot.onpointerdown = salir;
         }
 
