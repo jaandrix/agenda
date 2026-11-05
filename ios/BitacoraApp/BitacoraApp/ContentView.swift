@@ -71,7 +71,9 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
         // escala equivocado) — se le da directamente el tamaño real de la
         // pantalla para que ese primer cálculo ya sea correcto.
         webView = WKWebView(frame: UIScreen.main.bounds, configuration: config)
-        webView.allowsBackForwardNavigationGestures = true
+        // Sin el gesto nativo de volver: arrastraba la web entera (barra de abajo incluida) con una foto gris debajo. La web
+        // tiene el suyo, que solo mueve la página y en las pestañas de la barra cambia de pestaña (05-11).
+        webView.allowsBackForwardNavigationGestures = false
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         // Un WKWebView desnudo recalcula solo los "content insets" de su
         // scroll view interno cuando aparece el teclado — con `position:

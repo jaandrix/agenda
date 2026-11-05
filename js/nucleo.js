@@ -1161,8 +1161,26 @@
         // Fase 2 del plan de sensación nativa (05-11): cada pantalla es una entrada del historial ({ bitacoraVista, n }),
         // así que el atrás del sistema, el gesto del borde de la envoltura iOS y el deslizamiento del borde de la PWA
         // vuelven a la pantalla anterior con su scroll. Las capas (modal, menú) siguen con su propia entrada encima.
+        //
+        // En iOS (PWA y envoltura) las pantallas NO van al historial: Safari y WKWebView tienen su propio gesto de volver
+        // sobre esas entradas, que arrastraba la web entera como una tarjeta (barra de abajo incluida) con una foto gris
+        // debajo (visto en el iPhone el 05-11). Allí manda la pila en memoria (mobilePila) y el gesto propio del borde.
+        // La pila también decide qué es raíz: las pestañas de la barra (y el inicio) la vacían; lo demás se apila.
         const mobileScrolls = {};
+        const mobileFotos = {};
+        let mobilePila = [];
+        let mobileSinAnimar = false;
+        // Tampoco las capas (menú, modales): una entrada sobrante dejaba el gesto de «adelante» del borde derecho, que
+        // llevaba a otra pantalla. Solo instalada: en Safari normal la flecha atrás sigue cerrando el modal.
+        const mobileSinHistorial = appEntorno.modo !== 'browser' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+        function mobileAtras() {
+            if (mobilePila.length < 2) return false;
+            if (mobileSinHistorial) mobileIr(mobilePila[mobilePila.length - 2], 'historial');
+            else history.back();
+            return true;
+        }
         function mobileAnotarVista(view) {
+            if (mobileSinHistorial) { soltarCapa(); return; }
             if (capaAtrasPendiente) { vistaTrasAtras = view; return; }
             try {
                 // Con una capa abierta (el menú, o un modal que aún se está cerrando), su entrada pasa a ser la de la
@@ -1178,7 +1196,9 @@
             } catch (_) { /* sin historial */ }
         }
         function mobileVolverA(estado) {
-            if (!mobileStandaloneActive) return;
+            if (!mobileStandaloneActive || mobileSinHistorial) return;
+            // Una entrada sin pantalla (una capa que ya se cerró, al ir «adelante») no lleva a ningún sitio.
+            if (!estado?.bitacoraVista && estado?.bitacoraCapa) return;
             const view = estado?.bitacoraVista || 'calendar';
             if (modalEnPantalla()) closeModal();
             if (view !== currentView || mobileMenuAbierto) mobileIr(view, 'historial');
@@ -1189,6 +1209,12 @@
             // Tocar la pestaña en la que ya estás sube arriba del todo.
             if (view === currentView && !mobileMenuAbierto && shellActual) { if (!desdeHistorial) shellActual.scrollTo({ top: 0, behavior: vtReducido() ? 'auto' : 'smooth' }); return; }
             if (shellActual) mobileScrolls[currentView] = shellActual.scrollTop;
+            // Lo que se deja, tal cual se ve: el gesto del borde lo enseña debajo al volver o al cambiar de pestaña.
+            if (mobileZonas.pagina) mobileFotos[currentView] = { html: mobileZonas.pagina, scroll: shellActual?.scrollTop || 0 };
+            if (!mobilePila.length) mobilePila = [NAV_VIEW_LABELS[currentView] ? currentView : 'calendar'];
+            if (desdeHistorial) { mobilePila.pop(); if (mobilePila[mobilePila.length - 1] !== view) mobilePila = [view]; }
+            else if (tipo === 'm-pestana' || view === 'calendar') mobilePila = [view];
+            else if (mobilePila[mobilePila.length - 1] !== view) mobilePila.push(view);
             if (view !== 'calendar' && view !== 'planner' && NAV_VIEW_LABELS[view]) {
                 mobileReciente = view;
                 try { localStorage.setItem('bitacora_m_reciente', view); } catch (_) { /* sin almacenamiento */ }
@@ -1206,7 +1232,9 @@
             // Volver y cambiar de pestaña dejan la página donde la dejaste; entrar desde el menú empieza arriba.
             if (shell) shell.scrollTop = desdeHistorial || tipo === 'm-pestana' ? mobileScrolls[view] || 0 : 0;
             const anim = desdeHistorial ? 'm-pag-atras' : tipo === 'm-pestana' ? 'm-pag-funde' : view === 'calendar' ? 'm-pag-atras' : 'm-pag-adelante';
-            document.querySelector('#mobile-shell .m-pagina')?.classList.add(anim);
+            // Tras el gesto del borde la pantalla nueva ya estaba a la vista debajo: entra sin animación.
+            if (!mobileSinAnimar) document.querySelector('#mobile-shell .m-pagina')?.classList.add(anim);
+            mobileSinAnimar = false;
         }
 
         let mobileEstadoBajoCapa = null;
@@ -1318,7 +1346,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 shell.dataset.plegado = '1';
                 shell.addEventListener('scroll', () => mobilePlegarTitulo(shell), { passive: true });
                 shell.addEventListener('pointerdown', mobileDeslizarFranja);
-                if (appEntorno.modo === 'pwa') shell.addEventListener('touchstart', mobileBordeAtras, { passive: true });
+                if (appEntorno.modo !== 'browser') shell.addEventListener('touchstart', mobileBordeAtras, { passive: true });
             }
             if (mobileLastEffectView !== view) {
                 mobileLastEffectView = view;
@@ -1327,32 +1355,94 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             }
         }
 
-        // La PWA de iOS no tiene gesto de volver (la envoltura usa el de WKWebView): arrastrar desde el borde izquierdo
-        // lleva la página con el dedo y, pasado un tercio o con un tirón, vuelve atrás.
+        // Gesto del borde (05-11, tras probarlo en el iPhone): en una pantalla abierta desde otra, arrastrar desde el borde
+        // izquierdo vuelve atrás; en las raíces de la barra (inicio, plan, el apartado reciente) cambia de pestaña: desde
+        // el borde izquierdo a la anterior y desde el derecho a la siguiente. Solo se mueve el contenido de la página (la
+        // barra de abajo y la de arriba se quedan quietas) y debajo se ve la pantalla de destino tal como se dejó.
+        function mobilePestanasBarra() {
+            return [...document.querySelectorAll('#mobile-shell .m-tabbar .m-tab[data-vista]')].map(b => b.dataset.vista);
+        }
+        function mobileEnCarrusel(el) {
+            for (; el && el.id !== 'mobile-shell'; el = el.parentElement) {
+                if (el.classList?.contains('m-mes-puntos')) return true;
+                if (el.scrollWidth > el.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(el).overflowX)) return true;
+            }
+            return false;
+        }
         function mobileBordeAtras(e) {
             const p0 = e.touches[0];
-            if (e.touches.length !== 1 || p0.clientX > 24 || !(history.state?.n > 0) || modalEnPantalla() || mobileMenuAbierto) return;
+            if (e.touches.length !== 1 || modalEnPantalla() || mobileMenuAbierto || e.target.closest?.('.m-tabbar')) return;
+            const izquierda = p0.clientX <= 24, derecha = p0.clientX >= innerWidth - 24;
+            if (!izquierda && !derecha) return;
+            const vista = NAV_VIEW_LABELS[currentView] ? currentView : 'calendar';
+            if (!mobilePila.length) mobilePila = [vista];
+            let destino = null, accion = null;
+            if (mobilePila.length > 1) {
+                if (!izquierda) return;
+                destino = mobilePila[mobilePila.length - 2];
+                accion = () => mobileAtras();
+            } else {
+                const barra = mobilePestanasBarra(), k = barra.indexOf(vista);
+                if (k < 0) return;
+                destino = barra[k + (izquierda ? -1 : 1)];
+                if (!destino) return;
+                accion = () => mobileIr(destino, 'm-pestana');
+            }
+            if (mobileEnCarrusel(e.target)) return;
             const pagina = document.querySelector('#mobile-shell .m-pagina');
-            if (!pagina) return;
+            const shell = document.getElementById('mobile-shell');
+            if (!pagina || !shell) return;
+            const signo = izquierda ? 1 : -1;
             const x0 = p0.clientX, y0 = p0.clientY, t0 = performance.now();
-            let dx = 0, siguiendo = null;
+            let dx = 0, siguiendo = null, fondo = null;
+            const ponerFondo = () => {
+                const foto = mobileFotos[destino];
+                if (!foto) return;
+                fondo = document.createElement('div');
+                fondo.className = 'm-gesto-fondo';
+                fondo.setAttribute('aria-hidden', 'true');
+                fondo.inert = true;
+                fondo.innerHTML = foto.html;
+                fondo.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+                fondo.style.cssText = `position:absolute;pointer-events:none;left:${pagina.offsetLeft}px;width:${pagina.offsetWidth}px;top:${pagina.offsetTop}px;transform:translateY(${shell.scrollTop - foto.scroll}px)`;
+                pagina.after(fondo);
+            };
+            const fondoPagina = getComputedStyle(document.body).backgroundColor;
             const mover = ev => {
                 const p = ev.touches[0]; if (!p) return;
-                dx = Math.max(0, p.clientX - x0);
-                if (siguiendo === null && (dx > 8 || Math.abs(p.clientY - y0) > 8)) siguiendo = dx > Math.abs(p.clientY - y0);
-                if (siguiendo) { ev.preventDefault(); pagina.style.transition = 'none'; pagina.style.transform = `translateX(${dx}px)`; }
+                const mx = (p.clientX - x0) * signo, my = Math.abs(p.clientY - y0);
+                if (siguiendo === null && (Math.abs(mx) > 10 || my > 10)) {
+                    siguiendo = mx > 10 && mx > my * 1.5;
+                    if (siguiendo) {
+                        ponerFondo();
+                        Object.assign(pagina.style, { position: 'relative', zIndex: '1', background: fondoPagina, minHeight: innerHeight + 'px', transition: 'none', willChange: 'transform' });
+                    }
+                }
+                if (!siguiendo) return;
+                ev.preventDefault();
+                dx = Math.max(0, mx);
+                pagina.style.transform = `translateX(${dx * signo}px)`;
+            };
+            const limpiar = () => {
+                fondo?.remove();
+                for (const k of ['position', 'zIndex', 'background', 'minHeight', 'transition', 'willChange', 'transform']) pagina.style[k] = '';
             };
             const soltar = () => {
                 removeEventListener('touchmove', mover);
                 removeEventListener('touchend', soltar);
                 removeEventListener('touchcancel', soltar);
                 if (!siguiendo) return;
-                const vuelve = dx > innerWidth / 3 || (dx > 40 && dx / (performance.now() - t0) > 0.5);
+                const vale = dx > innerWidth / 3 || (dx > 40 && dx / (performance.now() - t0) > 0.5);
                 pagina.style.transition = 'transform .2s var(--ease-out)';
-                pagina.style.transform = vuelve ? `translateX(${innerWidth}px)` : '';
-                setTimeout(() => { if (vuelve) history.back(); else pagina.style.transition = ''; }, 200);
-                // Si al volver la página no cambia (otra capa se comió el popstate), no puede quedarse fuera de la pantalla.
-                if (vuelve) setTimeout(() => { if (pagina.isConnected) { pagina.style.transition = ''; pagina.style.transform = ''; } }, 700);
+                pagina.style.transform = vale ? `translateX(${innerWidth * signo}px)` : '';
+                setTimeout(() => {
+                    if (!vale) { limpiar(); return; }
+                    mobileSinAnimar = !!fondo;
+                    accion();
+                    mobileSinAnimar = false;
+                    // Si la página no ha cambiado (otra capa se comió el popstate), no puede quedarse fuera de la pantalla.
+                    setTimeout(() => { if (pagina.isConnected) limpiar(); }, 500);
+                }, 200);
             };
             addEventListener('touchmove', mover, { passive: false });
             addEventListener('touchend', soltar);

@@ -397,7 +397,7 @@
             return document.getElementById(mobileStandaloneActive ? 'mobile-shell' : 'app');
         }
         function anotarCapa() {
-            if (capaEnHistorial) return;
+            if (capaEnHistorial || mobileSinHistorial) return;
             capaEnHistorial = true;
             mobileEstadoBajoCapa = history.state;
             try { history.pushState({ bitacoraCapa: 1 }, ''); } catch (_) { /* sin historial */ }
