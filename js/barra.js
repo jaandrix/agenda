@@ -97,6 +97,15 @@ function barraPuntos(texto, w) {
     return 0;
 }
 
+// Abrir cada resultado en lo suyo, no en el día del calendario.
+function barraAbrirEntrada(id, fecha) { if (id && typeof openEntryDetail === 'function') openEntryDetail(id); else showDayEntries(fecha); }
+function barraAbrirTarea(id, fecha) {
+    const k = fecha ? Math.round((new Date(fecha + 'T12:00:00') - new Date(currentPlannerDayKey() + 'T12:00:00')) / 864e5) : null;
+    if (k !== null && k >= 0 && k <= 2) { plannerDayOffset = k; openAddPlannerItem(id); }
+    else if (fecha) showDayEntries(fecha);
+    else switchView('planner');
+}
+
 function barraCandidatos(rango) {
     const out = [];
     const norm = s => apuntarNorm(s || '');
@@ -116,9 +125,9 @@ function barraCandidatos(rango) {
         dias.forEach(iso => {
             getDayAllEntries(iso).forEach(e => {
                 if (e.type === 'work') return;
-                anadir({ tipo: tipoEntrada(e), fecha: iso, hora: e.time || e.startTime || '', titulo: e.type === 'birthday' ? `cumpleaños de ${e.title}` : e.title || '', texto: norm([e.title, e.place, e.notes, e.eventType, e.type === 'birthday' ? 'cumpleanos' : ''].join(' ')), abrir: () => showDayEntries(iso) });
+                anadir({ tipo: tipoEntrada(e), fecha: iso, hora: e.time || e.startTime || '', titulo: e.type === 'birthday' ? `cumpleaños de ${e.title}` : e.title || '', texto: norm([e.title, e.place, e.notes, e.eventType, e.type === 'birthday' ? 'cumpleanos' : '', e._datos?.equipo?.nombre, e._datos?.competicion].join(' ')), abrir: () => barraAbrirEntrada(e.id, iso) });
             });
-            mobileDiaPlanner(iso).forEach(t => anadir({ tipo: 'tarea', fecha: iso, hora: t.time || '', titulo: t.title || t.text || '', texto: norm([t.title, t.text, t.notes].join(' ')), hecha: !!t.done, abrir: () => showDayEntries(iso) }));
+            mobileDiaPlanner(iso).forEach(t => anadir({ tipo: 'tarea', fecha: iso, hora: t.time || '', titulo: t.title || t.text || '', texto: norm([t.title, t.text, t.notes].join(' ')), hecha: !!t.done, abrir: () => barraAbrirTarea(t.id, iso) }));
         });
     } else {
         const hoy = todayISO();
@@ -131,23 +140,35 @@ function barraCandidatos(rango) {
                 for (let y = Number(desde.slice(0, 4)); y <= Number(hasta.slice(0, 4)); y++) {
                     const iso = `${y}-${md}`;
                     if (iso < desde || iso > hasta) continue;
-                    anadir({ tipo: 'cumple', fecha: iso, hora: '', titulo: `cumpleaños de ${e.title}`, texto: norm(`${e.title} cumpleanos`), abrir: () => showDayEntries(iso) });
+                    anadir({ tipo: 'cumple', fecha: iso, hora: '', titulo: `cumpleaños de ${e.title}`, texto: norm(`${e.title} cumpleanos`), abrir: () => barraAbrirEntrada(e.id, iso) });
                     if (!rango) break;
                 }
                 return;
             }
             const fecha = e.date || e.startDate;
-            if (fecha) anadir({ tipo: tipoEntrada(e), fecha, hora: e.time || '', titulo: e.title || '', texto: norm([e.title, e.place, e.notes, e.eventType].join(' ')), abrir: () => showDayEntries(fecha) });
+            if (fecha) anadir({ tipo: tipoEntrada(e), fecha, hora: e.time || '', titulo: e.title || '', texto: norm([e.title, e.place, e.notes, e.eventType].join(' ')), abrir: () => barraAbrirEntrada(e.id, fecha) });
         });
-        Object.entries(dayPlanner.days || {}).forEach(([iso, lista]) => (lista || []).forEach(t => anadir({ tipo: 'tarea', fecha: iso, hora: t.time || '', titulo: t.title || t.text || '', texto: norm([t.title, t.text, t.notes].join(' ')), hecha: !!t.done, abrir: () => showDayEntries(iso) })));
+        // Los partidos de tus equipos no son entradas guardadas (los pone Bitácora): se buscan aparte, con el nombre
+        // completo del equipo, el rival y la competición.
+        if (typeof partidosDe === 'function' && typeof servDiaLocal === 'function') {
+            const ocultos = new Set(servicios.ocultos || []), apuntados = new Set(entries.map(e => e.servicioId).filter(Boolean));
+            (servicios.equipos || []).forEach(eq => partidosDe(eq).forEach(p => {
+                const id = 'srv_p_' + p.id;
+                if (ocultos.has(id) || apuntados.has(id)) return;
+                const { fecha, hora } = servDiaLocal(p.fecha);
+                if (!fecha || (rango && (fecha < rango.desde || fecha > rango.hasta))) return;
+                anadir({ tipo: 'evento', fecha, hora: p.horaConfirmada ? hora : '', titulo: p.local ? `${eq.corto} - ${p.rival}` : `${p.rival} - ${eq.corto}`, texto: norm([eq.nombre, eq.corto, p.rival, p.competicion, p.estadio, eq.deporte === 'basketball' ? 'baloncesto partido' : 'futbol partido'].join(' ')), abrir: () => barraAbrirEntrada(id, fecha) });
+            }));
+        }
+        Object.entries(dayPlanner.days || {}).forEach(([iso, lista]) => (lista || []).forEach(t => anadir({ tipo: 'tarea', fecha: iso, hora: t.time || '', titulo: t.title || t.text || '', texto: norm([t.title, t.text, t.notes].join(' ')), hecha: !!t.done, abrir: () => barraAbrirTarea(t.id, iso) })));
     }
-    (dayPlanner.backlog || []).filter(t => !t.done).forEach(t => anadir({ tipo: 'tarea', fecha: '', hora: '', titulo: t.title || t.text || '', texto: norm([t.title, t.text, t.notes].join(' ')), abrir: () => switchView('planner') }));
+    (dayPlanner.backlog || []).filter(t => !t.done).forEach(t => anadir({ tipo: 'tarea', fecha: '', hora: '', titulo: t.title || t.text || '', texto: norm([t.title, t.text, t.notes].join(' ')), abrir: () => barraAbrirTarea(t.id, '') }));
     (studies?.subjects || []).forEach(s => {
-        (s.exams || []).forEach(x => x.date && anadir({ tipo: 'examen', fecha: x.date, hora: x.time || '', titulo: `${x.title || 'examen'} de ${s.name}`, texto: norm(`examen ${x.title} ${s.name}`), abrir: () => switchView('studies') }));
-        (s.assignments || []).forEach(x => x.date && anadir({ tipo: 'examen', fecha: x.date, hora: x.time || '', titulo: `entrega: ${x.title || 'trabajo'} (${s.name})`, texto: norm(`entrega trabajo ${x.title} ${s.name}`), abrir: () => switchView('studies') }));
+        (s.exams || []).forEach(x => x.date && anadir({ tipo: 'examen', fecha: x.date, hora: x.time || '', titulo: `${x.title || 'examen'} de ${s.name}`, texto: norm(`examen ${x.title} ${s.name}`), abrir: () => typeof openSubjectDetail === 'function' ? openSubjectDetail(s.id) : switchView('studies') }));
+        (s.assignments || []).forEach(x => x.date && anadir({ tipo: 'examen', fecha: x.date, hora: x.time || '', titulo: `entrega: ${x.title || 'trabajo'} (${s.name})`, texto: norm(`entrega trabajo ${x.title} ${s.name}`), abrir: () => typeof openSubjectDetail === 'function' ? openSubjectDetail(s.id) : switchView('studies') }));
     });
-    (financePro.transactions || []).forEach(t => t.date && t.type !== 'transfer' && anadir({ tipo: 'gasto', fecha: t.date, hora: t.hora || '', titulo: t.note || t.bankNote || 'movimiento', importe: (t.type === 'income' ? 1 : -1) * (Number(t.amount) || 0), texto: norm([t.note, t.bankNote, financeProCategoryById(t.category)?.name].join(' ')), abrir: () => switchView('finances') }));
-    (notes || []).forEach(n => n.content && anadir({ tipo: 'nota', fecha: n.date || '', hora: '', titulo: n.content.split('\n').find(l => l.trim()) || 'nota', texto: norm(n.content), abrir: () => switchView('notes') }));
+    (financePro.transactions || []).forEach(t => t.date && t.type !== 'transfer' && anadir({ tipo: 'gasto', fecha: t.date, hora: t.hora || '', titulo: t.note || t.bankNote || 'movimiento', importe: (t.type === 'income' ? 1 : -1) * (Number(t.amount) || 0), texto: norm([t.note, t.bankNote, financeProCategoryById(t.category)?.name].join(' ')), abrir: () => typeof openFinanceProTransactionModal === 'function' ? openFinanceProTransactionModal(t.id) : switchView('finances') }));
+    (notes || []).forEach(n => n.content && anadir({ tipo: 'nota', fecha: n.date || '', hora: '', titulo: n.content.split('\n').find(l => l.trim()) || 'nota', texto: norm(n.content), abrir: () => { switchView('notes'); if (typeof openReadNote === 'function') openReadNote(n.id); } }));
     return out;
 }
 
@@ -170,7 +191,13 @@ function barraBuscar(consulta) {
     const hoy = todayISO();
     const lista = barraCandidatosGuardados(rango)
         .filter(c => (!tipos.length || tipos.includes(c.tipo)) && (!rango || (c.fecha >= rango.desde && c.fecha <= rango.hasta)))
-        .map(c => ({ ...c, puntos: palabras.reduce((s, w) => { const p = barraPuntos(c.texto, w); return s === null || !p ? null : s + p; }, 0) }))
+        .map(c => {
+            const p = palabras.map(w => barraPuntos(c.texto, w));
+            const aciertos = p.filter(Boolean).length;
+            // Hasta dos palabras, todas; con más, la mayoría (60 %). Antes de los puntos va cuántas acierta.
+            const minimo = palabras.length <= 2 ? palabras.length : Math.ceil(palabras.length * 0.6);
+            return { ...c, puntos: aciertos >= minimo ? aciertos * 10 + p.reduce((s, x) => s + x, 0) : null };
+        })
         .filter(c => c.puntos !== null);
     // Primero lo que mejor cuadra; a igualdad, lo que viene (de antes a después) y luego lo pasado (lo más reciente antes).
     lista.sort((a, b) => {
