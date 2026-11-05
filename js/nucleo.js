@@ -1392,57 +1392,102 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const pagina = document.querySelector('#mobile-shell .m-pagina');
             const shell = document.getElementById('mobile-shell');
             if (!pagina || !shell) return;
+            // Como en iOS (05-11, tras la prueba en el iPhone): lo que va encima sigue al dedo 1:1, opaco y con sombra en su
+            // borde izquierdo; lo de debajo va al 30 % y se oscurece con un velo que solo cambia de opacidad. Desde el borde
+            // izquierdo, encima va la página actual (se aparta hacia la derecha); desde el derecho, encima entra la pantalla
+            // siguiente. Durante el gesto solo se tocan transform y opacity.
             const signo = izquierda ? 1 : -1;
-            const x0 = p0.clientX, y0 = p0.clientY, t0 = performance.now();
-            let dx = 0, siguiendo = null, fondo = null;
-            const ponerFondo = () => {
-                const foto = mobileFotos[destino];
-                if (!foto) return;
-                fondo = document.createElement('div');
-                fondo.className = 'm-gesto-fondo';
-                fondo.setAttribute('aria-hidden', 'true');
-                fondo.inert = true;
-                fondo.innerHTML = foto.html;
-                fondo.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-                fondo.style.cssText = `position:absolute;pointer-events:none;left:${pagina.offsetLeft}px;width:${pagina.offsetWidth}px;top:${pagina.offsetTop}px;transform:translateY(${shell.scrollTop - foto.scroll}px)`;
-                pagina.after(fondo);
+            const ancho = innerWidth;
+            const reducido = vtReducido();
+            const x0 = p0.clientX, y0 = p0.clientY;
+            let dx = 0, siguiendo = null, otra = null, velo = null, frame = 0;
+            let muestras = [];
+            const crearOtra = () => {
+                let foto = mobileFotos[destino];
+                // Una pestaña sin visitar aún: se pinta su página para el gesto (si no hay que bajar archivos).
+                if (!foto && !vistaPorCargar(destino)) try { foto = { html: mobilePaginaSegura(destino, false), scroll: mobileScrolls[destino] || 0 }; } catch (_) { foto = null; }
+                const el = document.createElement('div');
+                el.className = 'm-gesto-capa';
+                el.setAttribute('aria-hidden', 'true');
+                el.inert = true;
+                if (foto) {
+                    el.innerHTML = foto.html;
+                    el.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+                }
+                const dy = shell.scrollTop - (foto?.scroll || 0);
+                el.style.cssText = `padding:0 ${pagina.offsetLeft}px;top:${pagina.offsetTop + dy}px;min-height:${innerHeight + Math.abs(dy)}px`;
+                return el;
             };
-            const fondoPagina = getComputedStyle(document.body).backgroundColor;
+            const empezar = () => {
+                otra = crearOtra();
+                velo = document.createElement('div');
+                velo.className = 'm-gesto-velo';
+                velo.style.cssText = `top:${shell.scrollTop}px;height:${innerHeight}px`;
+                // La sombra de color de fondo tapa los márgenes de .m-app sin tocar el diseño (sin reflujo).
+                pagina.style.setProperty('--m-gesto-margen', pagina.offsetLeft + 'px');
+                pagina.classList.add('m-gesto-pagina', signo > 0 ? 'm-gesto-encima' : 'm-gesto-debajo');
+                otra.classList.add(signo > 0 ? 'm-gesto-debajo' : 'm-gesto-encima');
+                velo.style.zIndex = '2';
+                pagina.style.zIndex = signo > 0 ? '3' : '1';
+                otra.style.zIndex = signo > 0 ? '1' : '3';
+                pagina.after(otra, velo);
+            };
+            // p: 0 = nada recorrido, 1 = la pantalla de destino entera a la vista.
+            const pintar = p => {
+                const x = Math.round(p * ancho);
+                const lejos = reducido ? 0 : 0.3;
+                if (signo > 0) {
+                    pagina.style.transform = `translate3d(${x}px,0,0)`;
+                    otra.style.transform = `translate3d(${Math.round(-(1 - p) * ancho * lejos)}px,0,0)`;
+                    velo.style.opacity = String((1 - p) * 0.14);
+                } else {
+                    otra.style.transform = `translate3d(${ancho - x}px,0,0)`;
+                    pagina.style.transform = `translate3d(${Math.round(-p * ancho * lejos)}px,0,0)`;
+                    velo.style.opacity = String(p * 0.14);
+                }
+            };
             const mover = ev => {
-                const p = ev.touches[0]; if (!p) return;
-                const mx = (p.clientX - x0) * signo, my = Math.abs(p.clientY - y0);
+                const t = ev.touches[0]; if (!t) return;
+                const mx = (t.clientX - x0) * signo, my = Math.abs(t.clientY - y0);
                 if (siguiendo === null && (Math.abs(mx) > 10 || my > 10)) {
                     siguiendo = mx > 10 && mx > my * 1.5;
-                    if (siguiendo) {
-                        ponerFondo();
-                        Object.assign(pagina.style, { position: 'relative', zIndex: '1', background: fondoPagina, minHeight: innerHeight + 'px', transition: 'none', willChange: 'transform' });
-                    }
+                    if (siguiendo) empezar();
                 }
                 if (!siguiendo) return;
                 ev.preventDefault();
-                dx = Math.max(0, mx);
-                pagina.style.transform = `translateX(${dx * signo}px)`;
+                dx = Math.min(ancho, Math.max(0, mx));
+                muestras.push([ev.timeStamp, dx]);
+                if (muestras.length > 6) muestras.shift();
+                if (!frame) frame = requestAnimationFrame(() => { frame = 0; pintar(dx / ancho); });
             };
             const limpiar = () => {
-                fondo?.remove();
-                for (const k of ['position', 'zIndex', 'background', 'minHeight', 'transition', 'willChange', 'transform']) pagina.style[k] = '';
+                otra?.remove(); velo?.remove();
+                pagina.classList.remove('m-gesto-pagina', 'm-gesto-soltando', 'm-gesto-encima', 'm-gesto-debajo');
+                for (const k of ['transform', 'transition', 'zIndex']) pagina.style[k] = '';
             };
             const soltar = () => {
                 removeEventListener('touchmove', mover);
                 removeEventListener('touchend', soltar);
                 removeEventListener('touchcancel', soltar);
                 if (!siguiendo) return;
-                const vale = dx > innerWidth / 3 || (dx > 40 && dx / (performance.now() - t0) > 0.5);
-                pagina.style.transition = 'transform .2s var(--ease-out)';
-                pagina.style.transform = vale ? `translateX(${innerWidth * signo}px)` : '';
+                cancelAnimationFrame(frame); frame = 0;
+                // Velocidad de los últimos ~80 ms: un tirón corto completa; soltar despacio antes de la mitad vuelve.
+                const ult = muestras[muestras.length - 1], pri = muestras.find(m => ult[0] - m[0] <= 80) || muestras[0];
+                const v = ult && pri && ult[0] > pri[0] ? (ult[1] - pri[1]) / (ult[0] - pri[0]) : 0;
+                const vale = v > 0.35 || (v > -0.2 && dx + v * 120 > ancho / 2);
+                const resto = vale ? ancho - dx : dx;
+                const ms = reducido ? 0 : Math.round(Math.min(340, Math.max(220, resto / Math.max(Math.abs(v), 1.4))));
+                [pagina, otra, velo].forEach(el => { el.style.transition = ms ? `transform ${ms}ms cubic-bezier(.2,.9,.25,1), opacity ${ms}ms cubic-bezier(.2,.9,.25,1)` : 'none'; });
+                pagina.classList.add('m-gesto-soltando');
+                pintar(vale ? 1 : 0);
                 setTimeout(() => {
-                    if (!vale) { limpiar(); return; }
-                    mobileSinAnimar = !!fondo;
+                    if (!vale) { [pagina, otra, velo].forEach(el => { el.style.transition = ''; }); limpiar(); return; }
+                    mobileSinAnimar = true;
                     accion();
                     mobileSinAnimar = false;
-                    // Si la página no ha cambiado (otra capa se comió el popstate), no puede quedarse fuera de la pantalla.
-                    setTimeout(() => { if (pagina.isConnected) limpiar(); }, 500);
-                }, 200);
+                    // Si la página no ha cambiado (otra capa se comió la navegación), no puede quedarse fuera de la pantalla.
+                    setTimeout(() => { if (pagina.isConnected) limpiar(); }, 400);
+                }, ms + 16);
             };
             addEventListener('touchmove', mover, { passive: false });
             addEventListener('touchend', soltar);

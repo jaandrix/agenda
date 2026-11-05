@@ -8151,7 +8151,14 @@ body.m-plegada .m-cab { opacity:.25; }
 @keyframes mPagFunde { from { opacity:0; } }
 .m-pagina.m-pag-adelante { animation:mPagAdelante .3s var(--ease-out) both; }
 .m-pagina.m-pag-atras { animation:mPagAtras .3s var(--ease-out) both; }
-.m-pagina.m-pag-funde { animation:mPagFunde .18s ease-out both; }
+.m-pagina.m-pag-funde { animation:mPagFunde .15s ease-out both; }
+/* Gesto del borde (mobileBordeAtras): dos capas en composición solo mientras dura; la de encima con sombra en su borde
+   izquierdo, la de debajo oscurecida por un velo que solo cambia de opacidad. */
+.m-pagina.m-gesto-pagina { position:relative; background:var(--bg-app); min-height:100dvh; will-change:transform; }
+.m-gesto-capa { position:absolute; left:0; right:0; box-sizing:border-box; background:var(--bg-app); pointer-events:none; will-change:transform; }
+.m-gesto-velo { position:absolute; left:0; right:0; background:#000; opacity:0; pointer-events:none; will-change:opacity; }
+.m-pagina.m-gesto-encima { box-shadow:0 0 0 var(--m-gesto-margen, 20px) var(--bg-app), calc(-1 * var(--m-gesto-margen, 20px) - 2px) 0 26px rgba(0,0,0,.26); }
+.m-gesto-capa.m-gesto-encima { box-shadow:-2px 0 26px rgba(0,0,0,.26); }
 @keyframes mCambiaDia { from { opacity:0; transform:translateX(var(--m-dx, 18px)); } }
 .m-cambia-dia { animation:mCambiaDia .26s var(--ease-out) both; }
 @media (prefers-reduced-motion: reduce) { .m-pagina[class*="m-pag-"], .m-cambia-dia { animation:none; } }
