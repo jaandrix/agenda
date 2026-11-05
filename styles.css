@@ -10513,3 +10513,7 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .pano.pano-res .pano-barra i { background:var(--pano-tono); }
 .pano.pano-res .pano-tl-fila i, .pano.pano-res .pano-dia-fila i, .pano.pano-res .pano-lt-fila i { background:var(--pano-tono); opacity:.55; }
 .pano.pano-res .home-pattern-kicker::before { content:''; display:inline-block; width:9px; height:9px; margin-right:8px; border-radius:3px; background:#c08a1e; vertical-align:1px; }
+
+.inv-referencia { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-top:10px; font-size:12.5px; line-height:1.45; color:var(--text-secondary); }
+.inv-referencia b { color:var(--text-primary); }
+.inv-referencia .vista-btn { height:30px; padding:0 10px; font-size:12px; }

@@ -159,7 +159,10 @@
             const movMes = porMes[mes];
             const aportacion = movMes ? movMes.suma : existe ? Number(existe.amount) || 0 : anterior ? Number(anterior.amount) || 0 : '';
             const distinto = movMes && existe?.guardado && Math.abs((Number(existe.amount) || 0) - movMes.suma) > 0.005;
-            const valor = existe && existe.value !== undefined ? existe.value : anterior && anterior.value !== undefined ? anterior.value : '';
+            // El valor no se hereda: traer el del mes anterior ya escrito hacía que se guardara sin cambiarlo (pasó en
+            // noviembre: salió una pérdida de 453 € que no existía). Se enseña al lado como referencia, con lo esperable.
+            const valor = existe && existe.value !== undefined && existe.value !== null && existe.value !== '' ? existe.value : '';
+            const ref = invReferencia(acc, d, mes, aportacion);
             const estado = existe?.guardado ? `guardado${existe.guardadoEn ? ' el ' + new Date(existe.guardadoEn + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : ''}.`
                 : existe?.desdeCorreo ? 'rellenado con el correo del banco y tus movimientos: revísalo y guárdalo.'
                 : existe?.deMovimientos ? 'aportación de tus movimientos: falta el valor de la cuenta.'
@@ -188,11 +191,12 @@
                     </div>
                     <div class="inv-mes-campos">
                         <label><span>aportación del mes.</span><input id="inv-aportacion" class="modal-input" type="number" min="0" step="0.01" value="${aportacion}" placeholder="0,00" ${movMes ? 'readonly title="Sale de tus movimientos de este mes"' : ''}></label>
-                        <label><span>valor de la cuenta.</span><input id="inv-valor" class="modal-input" type="number" min="0" step="0.01" value="${valor}" placeholder="0,00"></label>
+                        <label><span>valor de la cuenta.</span><input id="inv-valor" class="modal-input" type="number" min="0" step="0.01" value="${valor}" placeholder="tu saldo total hoy"></label>
                         <button class="btn-modal-primary" onclick="invGuardarMes()">guardar.</button>
                     </div>
                     ${movMes ? `<div class="inv-traspasos"><span>de tus movimientos.</span>${movMes.lista.map(t => `<span>${invFechaCorta(t.date)} ${t.type === 'income' ? '−' : ''}${financeMoney(Math.abs(Number(t.amount) || 0))}</span>`).join('')}${movMes.lista.length > 1 ? `<b>${financeMoney(movMes.suma)} en total.</b>` : ''}</div>` : ''}
                     ${distinto ? `<div class="inv-aviso">Guardaste ${financeMoney(Number(existe.amount) || 0)} de aportación, pero tus movimientos de este mes suman ${financeMoney(movMes.suma)}. <button class="vista-btn" onclick="invUsarMovimientos('${mes}')">usar ${financeMoney(movMes.suma)}.</button></div>` : ''}
+                    ${ref ? `<div class="inv-referencia">${ref.texto}${ref.valor !== null && Math.abs(ref.valor - Number(valor || 0)) > 0.5 ? ` <button class="vista-btn" onclick="document.getElementById('inv-valor').value='${ref.valor.toFixed(2)}'">usar ${financeMoney(ref.valor)}.</button>` : ''}</div>` : ''}
                     <div class="inv-estado ${existe?.guardado && !distinto ? 'ok' : ''}">${escapeHtml(estado)}${existe?.correo ? ` Según el correo, la cartera valía ${financeMoney(existe.correo.valor)}${existe.value !== undefined && Number(existe.value) - Number(existe.correo.valor) > 0.5 ? `: ${financeMoney(Number(existe.value) - Number(existe.correo.valor))} esperan a invertirse` : ''}.` : ''}</div>
                 </section>
 
@@ -248,6 +252,22 @@
             invTasaTemporizador = setTimeout(() => saveData().catch(e => console.error(e)), 800);
         }
 
+        // Lo esperable para el valor de un mes: con el correo, lo enviado hasta ese mes más la ganancia desde el inicio que
+        // da el banco; sin correo, el valor del último mes apuntado más lo aportado desde entonces.
+        function invReferencia(acc, d, mes, aportacion) {
+            const fila = d.meses.find(m => m.c.month === mes);
+            const g = Number(fila?.c.correo?.gananciasInicio);
+            if (fila && fila.c.correo && Number.isFinite(g) && fila.c.correo.gananciasInicio !== null) {
+                const v = Math.round((fila.aportado + g) * 100) / 100;
+                return { valor: v, texto: `Según el correo, tu saldo total era de unos <b>${financeMoney(v)}</b>: la cartera (${financeMoney(Number(fila.c.correo.valor) || 0)}) más lo que esperaba a invertirse.` };
+            }
+            const previo = [...d.meses].reverse().find(m => m.c.month < mes && m.value !== null);
+            if (!previo) return null;
+            const sumado = (Number(aportacion) || 0) + d.meses.filter(m => m.c.month > previo.c.month && m.c.month < mes).reduce((s, m) => s + m.amount, 0);
+            const v = Math.round((previo.value + sumado) * 100) / 100;
+            return { valor: v, texto: `Como referencia: en ${escapeHtml(financeMonthLabel(previo.c.month).toLowerCase())} valía ${financeMoney(previo.value)}; con lo aportado desde entonces, unos <b>${financeMoney(v)}</b> si el fondo no se ha movido. Pon el saldo total que te dé tu banco.` };
+        }
+
         async function invGuardarMes() {
             const acc = invCuenta(invFichaCuenta);
             if (!acc) return;
@@ -257,6 +277,10 @@
             const valorTxt = document.getElementById('inv-valor')?.value;
             if (!isFinite(aportacion) || aportacion < 0) { showToast('Pon la aportación del mes', true); return; }
             if (valorTxt === '' || !isFinite(Number(valorTxt))) { showToast('Pon el valor de la cuenta', true); return; }
+            // Un valor muy lejos de lo esperable suele ser un error al teclear o el del mes anterior: se pregunta antes.
+            const ref = invReferencia(acc, invDatos(acc), mes, aportacion);
+            if (ref && ref.valor > 0 && Math.abs(Number(valorTxt) - ref.valor) / ref.valor > 0.1
+                && !confirm(`Lo esperable este mes es unos ${financeMoney(ref.valor)} y has puesto ${financeMoney(Number(valorTxt))} (${Number(valorTxt) < ref.valor ? 'una pérdida' : 'una subida'} de más del 10 %). ¿Lo guardo así?`)) return;
             acc.contributions = acc.contributions || [];
             const previo = acc.contributions.find(c => c.month === mes);
             const fila = { ...(previo || {}), month: mes, amount: Math.round(aportacion * 100) / 100, value: Math.round(Number(valorTxt) * 100) / 100, guardado: true, guardadoEn: todayISO() };
