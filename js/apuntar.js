@@ -528,8 +528,7 @@ function openApuntar(fecha) {
     apuntarElegidos = {};
     apuntarItems = [];
     document.getElementById('calentar-apuntar')?.remove();
-    showModal(apuntarHtml(fecha, borrador));
-    document.querySelector('#modal-container .modal-sheet')?.classList.add('hoja-apuntar');
+    openSheet({ content: apuntarHtml(fecha, borrador), mode: 'apuntar' });
     // Lo último apuntado ya no se enseña solo al acabar de subir la hoja: al aparecer, la hoja crecía y se recortaba
     // (un tirón en cada apertura). Ahora es un enlace, y la hoja tiene su altura desde el primer fotograma.
     if (borrador) pintarVistaApunteYa();

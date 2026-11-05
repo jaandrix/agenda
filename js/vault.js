@@ -93,9 +93,28 @@
             sheet.querySelectorAll('.modal-close').forEach(b => b.setAttribute('aria-label', 'cerrar'));
         }
 
+        // Hojas (fase 3 del plan de sensación nativa, 05-11): una sola entrada para abrir una capa con su modo y saber
+        // cuándo se ha cerrado del todo. Por debajo siguen showModal / ponerModal / modoCapa, con su historial (atrás
+        // cierra), su teclado y su arrastre. mode: 'compacta' | 'detalle' | 'editor' (en el móvil) o 'apuntar'.
+        // propia: el contenido trae su propio .modal-overlay (va por ponerModal). dismissible: false no cierra al tocar fuera.
+        let hojaAlCerrar = null;
+        function openSheet({ content, mode, propia = false, clase, dismissible = true, onClosed } = {}) {
+            if (propia) ponerModal(content); else showModal(content);
+            const velo = document.querySelector('#modal-container .modal-overlay');
+            const hoja = velo?.querySelector('.modal-sheet');
+            if (mode === 'apuntar') hoja?.classList.add('hoja-apuntar');
+            else if (mode) modoCapa(mode);
+            if (clase) hoja?.classList.add(clase);
+            if (!dismissible) velo?.removeAttribute('onclick');
+            hojaAlCerrar = onClosed || null;
+            return hoja;
+        }
+        function closeSheet() { closeModal(); }
+
         function showModal(htmlContent) {
             vtCortar();
             vtFichaOrigen = null;
+            hojaAlCerrar = null;
             const container = document.getElementById('modal-container');
             // Con un modal ya en pantalla (o cerrándose porque se pasa de uno
             // a otro), se cambia su contenido sin volver a animarlo: tirarlo y
@@ -151,6 +170,7 @@
         // vuelve a fundir el fondo desde cero, que se veía como un parpadeo.
         function ponerModal(html) {
             vtCortar();
+            hojaAlCerrar = null;
             const container = document.getElementById('modal-container');
             const habia = !!container.querySelector('.modal-overlay');
             if (!habia) { modalAbridor = document.activeElement instanceof HTMLElement ? document.activeElement : null; medirModal(); }
@@ -272,6 +292,15 @@
             window.addEventListener('pointercancel', soltar, { once: true });
             openApuntar();
         }
+        // Un doble toque en la acción principal de una hoja («guardar.», «apuntar.») creaba dos cosas: el segundo toque
+        // que llega antes de 600 ms sobre el mismo botón no hace nada.
+        modalContenedor?.addEventListener('click', e => {
+            const boton = e.target.closest?.('.btn-modal-primary');
+            if (!boton) return;
+            const ahora = performance.now();
+            if (ahora - (Number(boton.dataset.pulsado) || -1e9) < 600) { e.stopPropagation(); e.preventDefault(); return; }
+            boton.dataset.pulsado = String(ahora);
+        }, true);
         modalContenedor?.addEventListener('click', e => {
             if (!clicDelToque) return;
             clicDelToque = false;
@@ -398,6 +427,10 @@
             }
             if (capaEnHistorial) {
                 capaEnHistorial = false;
+                // Atrás (o el gesto del borde de la envoltura) en un editor con cambios pregunta, como «cancelar.»: antes
+                // los tiraba sin avisar. Si no se descarta, la capa vuelve a tener su entrada en el historial.
+                const hoja = document.querySelector('#modal-container .modal-overlay:not([data-cerrando]) .modal-sheet');
+                if (hoja?.dataset.sucio && !confirm('¿Descartar los cambios?')) { anotarCapa(); return; }
                 if (modalEnPantalla()) closeModal();
                 else if (mobileMenuAbierto) toggleMenuMovil();
                 return;

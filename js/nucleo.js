@@ -1351,6 +1351,8 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 pagina.style.transition = 'transform .2s var(--ease-out)';
                 pagina.style.transform = vuelve ? `translateX(${innerWidth}px)` : '';
                 setTimeout(() => { if (vuelve) history.back(); else pagina.style.transition = ''; }, 200);
+                // Si al volver la página no cambia (otra capa se comió el popstate), no puede quedarse fuera de la pantalla.
+                if (vuelve) setTimeout(() => { if (pagina.isConnected) { pagina.style.transition = ''; pagina.style.transform = ''; } }, 700);
             };
             addEventListener('touchmove', mover, { passive: false });
             addEventListener('touchend', soltar);
