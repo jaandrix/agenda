@@ -3349,7 +3349,8 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             } else if (e.key === ' ') {
                 if (!canUseGlobalShortcut()) return;
                 e.preventDefault();
-                openApuntar();
+                // En el ordenador, la barra de abajo (barra.js); sin ella, la hoja de Apuntar de siempre.
+                if (!(typeof barraVisible === 'function' && barraVisible() && barraEnfocar())) openApuntar();
             }
         });
 

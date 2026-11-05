@@ -10425,3 +10425,91 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .tr-fav button.tr-linea.fav { background:var(--text-primary); color:var(--bg-card); }
 .tr-mas { margin-top:4px; padding:0; border:0; background:none; font:600 11px var(--font-family); color:var(--text-primary); text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
 .tr-pista { margin-top:4px; font-size:10.5px; color:var(--text-secondary); }
+
+/* ============================================================
+   BARRA DE APUNTAR (05-11, barra.js): fija bajo el contenido del ordenador, en el flujo de #main (el contenido se
+   encoge y nada queda tapado). Encima, el panel en directo. Sustituye al «+ apuntar.» flotante, que solo queda
+   en ventanas estrechas.
+   ============================================================ */
+.barra-apuntar { position:relative; flex:none; width:100%; max-width:1600px; margin:0 auto; padding:10px 32px 16px; box-sizing:border-box; }
+.barra-caja { display:flex; align-items:center; gap:10px; max-width:860px; margin:0 auto; height:50px; padding:0 8px 0 16px; box-sizing:border-box; border:1px solid var(--border-strong); border-radius:12px; background:var(--bg-card); color:var(--text-primary); transition:border-color .15s ease-out; }
+.barra-apuntar:focus-within .barra-caja, .barra-apuntar.escribiendo .barra-caja { border-color:var(--text-primary); }
+.barra-mas-ico { flex:none; color:var(--text-secondary); }
+.barra-caja input { flex:1; min-width:0; height:100%; border:0; outline:none; background:none; color:var(--text-primary); font:500 15px var(--font-family); }
+.barra-caja input::placeholder { color:var(--text-secondary); font-weight:400; }
+.barra-tecla { flex:none; padding:2px 7px; border:1px solid var(--border); border-radius:6px; font:500 11px var(--font-family); color:var(--text-secondary); background:none; }
+.barra-apuntar:focus-within .barra-tecla, .barra-apuntar.escribiendo .barra-tecla { display:none; }
+.barra-ir { flex:none; width:36px; height:36px; display:grid; place-items:center; border:0; border-radius:9px; background:var(--text-primary); color:var(--bg-card); cursor:pointer; opacity:.35; transition:opacity .15s ease-out, transform .1s ease-out; }
+.barra-apuntar.escribiendo .barra-ir { opacity:1; }
+.barra-ir:active { transform:scale(.94); }
+.barra-ir .ico { width:13px; height:13px; }
+.barra-apuntar.aviso .barra-caja { animation:barraAviso .32s ease-out; }
+@keyframes barraAviso { 0%, 100% { transform:none; } 30% { transform:translateX(-5px); } 65% { transform:translateX(4px); } }
+.barra-panel { position:absolute; left:50%; bottom:calc(100% - 6px); transform:translateX(-50%); width:calc(100% - 64px); max-width:860px; max-height:min(52vh, 460px); overflow-y:auto; box-sizing:border-box; padding:12px 14px; border:1px solid var(--border-strong); border-radius:14px; background:var(--bg-card); color:var(--text-primary); box-shadow:0 18px 40px -24px rgba(0,0,0,.45); z-index:40; animation:barraPanel .16s ease-out; }
+@keyframes barraPanel { from { opacity:0; transform:translate(-50%, 6px); } to { opacity:1; transform:translate(-50%, 0); } }
+.barra-cab { display:flex; align-items:baseline; justify-content:space-between; gap:6px 14px; flex-wrap:wrap; padding-bottom:8px; margin-bottom:2px; border-bottom:1px solid var(--border); }
+.barra-cab b { font-size:14px; font-weight:800; }
+.barra-cab span { font-size:12px; color:var(--text-secondary); }
+.barra-enlace { padding:0; border:0; background:none; font:inherit; color:var(--text-primary); font-weight:700; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+.barra-item, .barra-res { display:flex; align-items:center; gap:12px; width:100%; padding:9px 4px; border:0; border-bottom:1px solid var(--border); background:none; color:var(--text-primary); text-align:left; font-family:var(--font-family); box-sizing:border-box; }
+.barra-item:last-child, .barra-res:last-of-type { border-bottom:0; }
+.barra-item-ico { flex:none; width:28px; height:28px; display:grid; place-items:center; border-radius:8px; background:color-mix(in srgb, var(--text-primary) 7%, transparent); color:var(--text-primary); font-style:normal; }
+.barra-item-ico svg { width:15px; height:15px; }
+.barra-item-cuerpo { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.barra-item-txt { font-size:14px; font-weight:600; line-height:1.35; }
+.barra-falta { font-size:12px; font-weight:600; color:#c2455c; }
+.barra-nota { font-size:12px; color:var(--text-secondary); }
+.barra-item.incompleto .barra-item-ico { background:color-mix(in srgb, #c2455c 14%, transparent); color:#c2455c; }
+.barra-item-tipo { flex:none; height:34px; padding:0 10px; border:1px solid var(--border); border-radius:10px; background:var(--bg-card); color:var(--text-primary); font:500 13px var(--font-family); cursor:pointer; }
+.barra-res { cursor:pointer; border-radius:10px; }
+.barra-res.sel, .barra-res:hover { background:color-mix(in srgb, var(--text-primary) 6%, transparent); }
+.barra-res.hecha .barra-res-tit { text-decoration:line-through; color:var(--text-secondary); }
+.barra-res-tit { flex:1; min-width:0; font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.barra-res-imp { flex:none; font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; }
+.barra-res-imp.ingreso { color:#3f8a5a; }
+.barra-res-fecha { flex:none; font-size:12px; color:var(--text-secondary); }
+.barra-respuesta { padding:10px 2px 4px; font-size:15px; font-weight:600; line-height:1.5; }
+.barra-hecho { padding:7px 2px; font-size:14px; font-weight:600; border-bottom:1px solid var(--border); }
+.barra-hecho:last-child { border-bottom:0; }
+.barra-mas { padding:8px 4px 2px; font-size:12px; color:var(--text-secondary); }
+.barra-pista { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px; }
+.barra-pista button { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:9px 11px; border:1px solid var(--border); border-radius:10px; background:none; color:var(--text-primary); font-family:var(--font-family); text-align:left; cursor:pointer; }
+.barra-pista button:hover { border-color:var(--text-primary); }
+.barra-pista span { font-size:13px; font-weight:600; }
+.barra-pista small { font-size:11.5px; color:var(--text-secondary); }
+#app:not(.ready) .barra-apuntar, body.mobile-standalone .barra-apuntar { display:none; }
+@media (min-width: 769px) { #fab { display:none !important; } }
+@media (max-width: 768px) { .barra-apuntar { display:none; } }
+@media (prefers-reduced-motion: reduce) { .barra-panel, .barra-apuntar.aviso .barra-caja { animation:none; } }
+/* El mes del calendario descuenta la barra para seguir cabiendo sin desplazar */
+@media (min-width: 1024px) { .cal-month-cell { min-height: clamp(54px, calc((100vh - 470px) / 6), 150px); } }
+/* El tiempo, al final de la franja «hoy.» */
+.cal-hoy .tiempo-widget { top:0; min-height:0; margin-left:auto; flex:none; }
+.cal-hoy > span { flex:1; }
+
+/* ============================================================
+   PANORAMA CON COLOR (05-11): cada tarjeta lleva su tono (un punto junto al título y la cifra grande), apagado
+   para que conviva con los temas. Hoy, en un naranja cálido.
+   ============================================================ */
+.pano.pano-res .pano-card { --pano-tono:var(--text-primary); }
+.pano.pano-res .pano-card.hoy, .pano.pano-res .pano-card.pano-hoy-estable { --pano-tono:#c8642d; }
+.pano.pano-res .pano-card.tareas { --pano-tono:#c2455c; }
+.pano.pano-res .pano-card.entregas { --pano-tono:#b8792a; }
+.pano.pano-res .pano-card.prox { --pano-tono:#3f7f8c; }
+.pano.pano-res .pano-card.semana { --pano-tono:#6b5fa8; }
+.pano.pano-res .pano-card.mes { --pano-tono:#4f7fae; }
+.pano.pano-res .pano-card.dinero { --pano-tono:#3f8a5a; }
+.pano.pano-res .pano-card.rutinas { --pano-tono:#a0558c; }
+.pano.pano-res .pano-card.viaje { --pano-tono:#2f86a6; }
+.pano.pano-res .pano-card.despensa { --pano-tono:#8a7a2e; }
+.pano.pano-res .pano-card.revision { --pano-tono:#5c6b7a; }
+.pano.pano-res .pano-card-tit b::before { content:''; display:inline-block; width:9px; height:9px; margin-right:8px; border-radius:3px; background:var(--pano-tono); vertical-align:1px; }
+.pano.pano-res .pano-cifra:first-child b { color:var(--pano-tono); }
+.pano.pano-res .pano-sem-barra i.ev { background:#6b5fa8; opacity:.85; }
+.pano.pano-res .pano-sem-barra i.ta { background:#6b5fa8; opacity:.4; }
+.pano.pano-res .pano-sem-dia.hoy small { color:#6b5fa8; font-weight:800; }
+.pano.pano-res .pano-mes-puntos i.algo, .pano.pano-res .pano-mes-ley i.algo { background:color-mix(in srgb, #4f7fae 40%, transparent); }
+.pano.pano-res .pano-mes-puntos i.mucho, .pano.pano-res .pano-mes-ley i.mucho { background:#4f7fae; }
+.pano.pano-res .pano-barra i { background:var(--pano-tono); }
+.pano.pano-res .pano-tl-fila i, .pano.pano-res .pano-dia-fila i, .pano.pano-res .pano-lt-fila i { background:var(--pano-tono); opacity:.55; }
+.pano.pano-res .home-pattern-kicker::before { content:''; display:inline-block; width:9px; height:9px; margin-right:8px; border-radius:3px; background:#c08a1e; vertical-align:1px; }

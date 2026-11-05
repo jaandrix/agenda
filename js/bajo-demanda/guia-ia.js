@@ -278,7 +278,7 @@ const GUIA_IA_PROBLEMAS = [
 const GUIA_IA_ATAJOS = `## Atajos de teclado (ordenador)
 
 - **Enter:** buscador universal («¿dónde quieres ir?»). También responde preguntas sobre tus datos («¿cuánto gasté en gasolina en septiembre?»).
-- **Espacio:** abre Apuntar.
+- **Espacio:** en el ordenador, va a la barra de apuntar de abajo (escribe y pulsa intro; «busca: …» para buscar, o una pregunta). En ventanas estrechas, abre Apuntar.
 - **Esc:** cierra lo que esté abierto.
 - **Ctrl + ↑ / ↓:** apartado anterior o siguiente.
 - **«/» en el buscador:** comandos (/año, /tema, /backup, /exportar).

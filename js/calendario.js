@@ -587,7 +587,7 @@
         let calAnimClave = null;
         function renderCalendar() {
             let html = `<div class="cal-home">`;
-            html += renderCalendarioHoy();
+            html += renderCalendarioHoy().replace(/<\/section>$/, `${renderTiempoWidget()}</section>`);
             html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
                 <div class="culture-tabs" style="margin-bottom:0">
                     ${[['day','día.'],['week','semana.'],['month','mes.']].map(([id,label]) => `
@@ -597,7 +597,6 @@
                 <button class="year-cal-btn" onclick="abrirCalendarioAnual()" title="Esfuerzo" aria-label="Esfuerzo">
                     <svg width="16" height="16" viewBox="0 0 100 100" fill="currentColor"><circle cx="20" cy="20" r="11"/><circle cx="50" cy="20" r="11"/><circle cx="80" cy="20" r="11"/><circle cx="20" cy="50" r="11"/><circle cx="50" cy="50" r="11"/><circle cx="80" cy="50" r="11"/><circle cx="20" cy="80" r="11"/><circle cx="50" cy="80" r="11"/><circle cx="80" cy="80" r="11"/></svg>
                 </button>
-                ${renderTiempoWidget()}
             </div>`;
 
             const body = calViewMode === 'month' ? renderCalMonth() : calViewMode === 'week' ? renderCalWeek() : renderCalDay();

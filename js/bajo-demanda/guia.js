@@ -53,7 +53,8 @@ const GUIA = [
         lema: 'Un solo gesto para apuntar cualquier cosa.',
         intro: 'Casi todo en Bitácora es una «entrada»: un evento, un libro, un viaje, un objetivo, un cumpleaños, un documento... Se crean todas igual.',
         pasos: [
-            'Lo más rápido: <b>+ apuntar.</b> (abajo a la derecha) o la tecla <b>Espacio</b>, y escribe como hablas. Bitácora decide si es un evento, una tarea, un gasto...',
+            'Lo más rápido, en el ordenador: la <b>barra de abajo</b> (o la tecla <b>Espacio</b>, que te lleva a ella). Escribe como hablas y, mientras escribes, el panel de encima enseña lo que se va a apuntar: un evento, una tarea, un gasto... Si algo no es lo que querías, cambia su tipo ahí mismo; intro lo apunta y «deshacer.» lo quita. En el móvil, el <b>+</b> de la barra de abajo.',
+            'La misma barra busca: empieza por <b>busca:</b> («busca: médico esta semana», «busca: gastos de gasolina en octubre») y salen tus eventos, tareas, cumpleaños, exámenes, movimientos y notas que cuadran, también por palabras parecidas (médico encuentra el dentista o el fisio). Con flechas eliges y con intro lo abres. Y si preguntas («¿cuánto gasté en comida este mes?»), responde con tus datos.',
             'Para elegir tú el tipo, pulsa <b>+ añadir.</b> (arriba). Elige el tipo: escribe sus primeras letras («ev» para evento, «li» para libro...) y pulsa Enter.',
             'Rellena el formulario. Los campos cambian según el tipo: un evento pide fecha, hora, lugar y aviso; un libro, autor y valoración.',
             'Pulsa <b>Guardar</b>. Aparecerá en su apartado y, si tiene fecha, en el calendario.',
