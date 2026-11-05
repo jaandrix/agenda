@@ -56,12 +56,10 @@ function financeBudgetUnifiedModel(month, plan, recorded) {
 function presupuestoPlanDe(month) {
     const recorded = (financeProfile.budgetHistory || []).find(h => h.month === month) || null;
     if (recorded) return { plan: recorded, recorded };
-    ensureLongTermData();
-    return { plan: getBudgetPlanForMonth(month), recorded: null };
+    return { plan: budgetPlanParaVer(month), recorded: null };
 }
 
 function renderFinanceBudgetUnifiedPanel() {
-    ensureLongTermData();
     const month = presupuestoMes || financeMonthKey();
     const editando = presupuestoBorrador?.month === month;
     const { plan, recorded } = editando ? { plan: presupuestoBorrador.plan, recorded: null } : presupuestoPlanDe(month);
@@ -92,7 +90,6 @@ function renderFinanceBudgetUnifiedPanel() {
 // En el móvil solo el estado de cada presupuesto del mes en curso: los ingresos, el reparto, editar y cerrar el mes se
 // hacen en el ordenador.
 function renderPresupuestoMovil() {
-    ensureLongTermData();
     const month = financeMonthKey();
     const { plan, recorded } = presupuestoPlanDe(month);
     const m = financeBudgetUnifiedModel(month, plan, recorded);

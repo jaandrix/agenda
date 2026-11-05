@@ -53,7 +53,7 @@
         }
 
         function finResActivos() {
-            const filas = FINANCE_PRO_ACCOUNT_KEYS.map(k => {
+            const filas = financeProCuentas().map(k => {
                 const ahora = financeProAccountBalance(k), antes = finResSaldoHace(k, 30);
                 // Con una base pequeña o negativa el porcentaje no dice nada (de −3,30 € a 37,85 € salía +1.247 %): se da el
                 // cambio en euros.
@@ -85,7 +85,7 @@
             serie.forEach(p => { porMes[p.f.slice(0, 7)] = p.v; });
             const meses = Object.keys(porMes).sort();
             const puntos = meses.map(m => ({ m, v: porMes[m] }));
-            const actual = puntos.length ? puntos[puntos.length - 1].v : financeUnifiedPatrimony();
+            const actual = puntos.length ? puntos[puntos.length - 1].v : patrimonioOperativo();
             const base = puntos.length > 6 ? puntos[puntos.length - 7] : puntos[0];
             const n = base ? puntos.length - 1 - puntos.indexOf(base) : 0;
             const ritmo = n > 0 ? (actual - base.v) / n : 0;
@@ -226,7 +226,7 @@
         // Fin de mes: saldo de hoy, menos los fijos que quedan, menos el gasto normal que falta (ritmo), más el sueldo por entrar
         function finResPanelPrevision() {
             const hoy = new Date(), dia = hoy.getDate(), mes = financeMonthKey();
-            const saldo = financeProTotalBalance();
+            const saldo = saldoLiquido();
             const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
             // El día efectivo del cargo (un 31 cae el 30 en un mes de 30 días, como en ensureRecurringProCharges).
             const fijos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0 && Math.min(Number(e.renewalDay) || 1, diasMes) > dia

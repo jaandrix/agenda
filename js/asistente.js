@@ -188,7 +188,7 @@
         function asistPermitir(precio) {
             const hoy = todayISO();
             const fin = isoLocal(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 12));
-            const saldo = financeProTotalBalance();
+            const saldo = saldoLiquido();
             const r = financeRitmoDatos();
             const diasMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
             const resto = r.suficiente ? Math.max(0, r.proyeccion - r.llevas) : (r.dia ? r.llevas / r.dia * (diasMes - r.dia) : 0);
@@ -343,7 +343,7 @@
             }
 
             if (/^cuanto\s+(tengo|me queda|dinero tengo)\b/.test(q)) {
-                return { texto: `Tienes ${financeMoney(financeProTotalBalance())} entre tus cuentas.`, vista: 'finances' };
+                return { texto: `Tienes ${financeMoney(saldoLiquido())} entre tus cuentas.`, vista: 'finances' };
             }
             return null;
         }

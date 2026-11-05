@@ -104,41 +104,34 @@ function openGestorSuscripciones() {
 }
 
 // Repinta el gestor si está abierto, y lo de detrás cuando se cierre (o ya, si el aviso se pulsó desde Finanzas).
-async function suscripcionGuardar() {
-    filteredEntries = [...entries];
-    invalidarCachesDerivadas();
+// El cambio solo se queda si se guarda (commitFinanceChange, auditoría F-07).
+async function suscripcionGuardar(id, mutar) {
+    const hecho = await commitFinanceChange(() => {
+        const e = entries.find(x => x.id === id);
+        return e ? mutar(e) : false;
+    });
+    if (!hecho) return;
     const caja = document.getElementById('gestor-suscripciones');
     if (caja) caja.innerHTML = renderGestorSuscripciones();
     repintarTrasModal();
-    try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
 }
 
 function suscripcionDarDeBaja(id) {
-    const e = entries.find(x => x.id === id);
-    if (!e) return;
-    suscripcionCambiarEstado(e, false);
-    suscripcionGuardar();
+    return suscripcionGuardar(id, e => { suscripcionCambiarEstado(e, false); });
 }
 
 function suscripcionDarDeAlta(id) {
-    const e = entries.find(x => x.id === id);
-    if (!e) return;
-    suscripcionCambiarEstado(e, true);
-    suscripcionGuardar();
+    return suscripcionGuardar(id, e => { suscripcionCambiarEstado(e, true); });
 }
 
 function suscripcionCobroVisto(id) {
-    const e = entries.find(x => x.id === id);
-    if (!e) return;
-    e.cobrosVistos = [...new Set([...(e.cobrosVistos || []), ...suscripcionCobrosTrasBaja(e).map(t => t.id)])];
-    suscripcionGuardar();
+    return suscripcionGuardar(id, e => { e.cobrosVistos = [...new Set([...(e.cobrosVistos || []), ...suscripcionCobrosTrasBaja(e).map(t => t.id)])]; });
 }
 
 function suscripcionBorrar(id) {
     const e = entries.find(x => x.id === id);
     if (!e || !confirm(`¿Borrar ${e.title} de la lista? Los gastos ya apuntados se quedan.`)) return;
-    entries = entries.filter(x => x.id !== id);
-    suscripcionGuardar();
+    return suscripcionGuardar(id, () => { entries = entries.filter(x => x.id !== id); });
 }
 
 // Logos de suscripciones y gastos fijos (04-11). Se buscan solos una vez (función portadas, tipo logo) y la imagen se

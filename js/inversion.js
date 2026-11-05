@@ -9,16 +9,25 @@
         const INV_HORIZONTES = [5, 10, 15, 20, 25];
         const INV_EXTRA = 50;
 
-        // Las aportaciones salen de los movimientos: lo que va a «a tu inversión» menos lo que vuelve de ella, sumado por
-        // mes (dos traspasos en un mes son una aportación de su suma). Con varias cuentas de inversión, cada una se queda
-        // los movimientos cuyo concepto lleva su texto (traspasoTexto). Menos de 1 € no cuenta: son las transferencias de
-        // prueba al abrir la cuenta.
-        function invTraspasos(acc) {
+        // A qué cuenta de inversión va un movimiento (auditoría F-12): la que diga el propio movimiento
+        // (investmentAccountId, se elige al editarlo) y, si no dice ninguna, la única cuyo texto (traspasoTexto) sale en
+        // el concepto o la única cuenta que haya. Si encajan dos no se adivina: antes el mismo traspaso contaba en las dos.
+        function invCuentaDeMovimiento(t) {
             const cuentas = financeProfile.investmentAccounts || [];
-            const clave = financeProNormalizar(acc.traspasoTexto || '').trim();
-            if (cuentas.length > 1 && !clave) return [];
+            if (t.investmentAccountId && cuentas.some(a => a.id === t.investmentAccountId)) return t.investmentAccountId;
+            const clave = a => financeProNormalizar(a.traspasoTexto || '').trim();
+            const texto = financeProNormalizar(`${t.note || ''} ${t.bankNote || ''}`);
+            const coinciden = cuentas.filter(a => clave(a) && texto.includes(clave(a)));
+            if (coinciden.length) return coinciden.length === 1 ? coinciden[0].id : null;
+            return cuentas.length === 1 && !clave(cuentas[0]) ? cuentas[0].id : null;
+        }
+
+        // Las aportaciones salen de los movimientos: lo que va a «a tu inversión» menos lo que vuelve de ella, sumado por
+        // mes (dos traspasos en un mes son una aportación de su suma). Cada movimiento cuenta en una sola cuenta
+        // (invCuentaDeMovimiento). Menos de 1 € no cuenta: son las transferencias de prueba al abrir la cuenta.
+        function invTraspasos(acc) {
             return (financePro.transactions || []).filter(t => financeProEsInversion(t) && Math.abs(Number(t.amount) || 0) >= 1 && /^\d{4}-\d{2}/.test(t.date || '')
-                && (!clave || financeProNormalizar(`${t.note || ''} ${t.bankNote || ''}`).includes(clave)))
+                && invCuentaDeMovimiento(t) === acc.id)
                 .sort((a, b) => a.date.localeCompare(b.date));
         }
         function invTraspasosPorMes(acc) {

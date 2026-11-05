@@ -25,7 +25,7 @@
                 if (/[?&]finprueba\b/.test(location.search)) { history.replaceState(null, '', location.pathname); setTimeout(openFinPrueba, 900); }
                 if (modoSinConexion) setTimeout(() => showToast('Sin conexión: estás viendo la copia guardada en este dispositivo.'), 900);
                 else if (copiaPendiente) saveData().catch(e => console.error(e));
-                ensureRecurringProCharges();
+                prepararFinanzasYGuardar();
                 // Pasar los ajustes de saldo antiguos a la marca se hacía al pintar Finanzas (y guardaba desde el pintado).
                 if (financeProUnificarAjustes()) saveData().catch(e => console.error(e));
                 convertirCinesEnPeliculas();

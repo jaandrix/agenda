@@ -365,7 +365,7 @@
                     changed = true;
                 });
             });
-            if (changed) saveData().catch(err => console.error(err));
+            return changed;
         }
 
         // Un ingreso pendiente (un reembolso que Revolut todavía no ha
@@ -433,7 +433,7 @@
         function financeProSaldos() {
             if (financeSaldosVigente(financeSaldosCache)) return financeSaldosCache.saldos;
             const saldos = {};
-            new Set([...FINANCE_PRO_ACCOUNT_KEYS, ...Object.keys(financePro.accounts || {})]).forEach(k => { saldos[k] = Number(financePro.accounts[k]?.balance0 || 0); });
+            financeProCuentas().forEach(k => { saldos[k] = Number(financePro.accounts[k]?.balance0 || 0); });
             financePro.transactions.forEach(t => {
                 if (!financeProCuentaEnSaldo(t)) return;
                 const importe = Number(t.amount) || 0;
@@ -460,8 +460,10 @@
             return key in saldos ? saldos[key] : 0;
         }
 
-        function financeProTotalBalance() {
-            return FINANCE_PRO_ACCOUNT_KEYS.reduce((s, k) => s + financeProAccountBalance(k), 0);
+        // Las tres de siempre más cualquier otra que haya en financePro.accounts (auditoría F-10: el total solo sumaba
+        // las tres fijas y una cuarta, o una clave antigua, se quedaba fuera sin avisar).
+        function financeProCuentas() {
+            return [...new Set([...FINANCE_PRO_ACCOUNT_KEYS, ...Object.keys(financePro.accounts || {})])];
         }
 
         function financeProCategoryById(id) {
@@ -506,7 +508,7 @@
             const lastTxMonth = sorted[sorted.length - 1].date.slice(0, 7);
             const todayMonth = financeMonthKey();
             const endMonth = lastTxMonth > todayMonth ? lastTxMonth : todayMonth;
-            const keys = key ? [key] : FINANCE_PRO_ACCOUNT_KEYS;
+            const keys = key ? [key] : financeProCuentas();
             const months = [];
             let cursor = new Date(Number(startMonth.slice(0, 4)), Number(startMonth.slice(5, 7)) - 1, 1);
             const end = new Date(Number(endMonth.slice(0, 4)), Number(endMonth.slice(5, 7)) - 1, 1);
@@ -680,7 +682,7 @@
             const clave = `${meses || ''}|${conExtras ? 1 : 0}`;
             if (memo[clave]) return memo[clave];
             const ord = financeSaldosCache.ordenados;
-            const keys = FINANCE_PRO_ACCOUNT_KEYS;
+            const keys = financeProCuentas();
             const hoy = todayISO();
             const fin = hoy;
             const extraDe = financeExtrasPorDia();
@@ -715,7 +717,7 @@
         function renderFinanzasGrafica(movil) {
             const rango = FINANCE_PRO_CHART_RANGES.find(r => r.key === financeProChartRange) || FINANCE_PRO_CHART_RANGES[2];
             const serie = financeSerieDiaria(rango.months, financeGrafExtras);
-            const total = serie.length ? serie[serie.length - 1].v : financeProTotalBalance();
+            const total = serie.length ? serie[serie.length - 1].v : saldoLiquido();
             const cambio = serie.length > 1 ? total - serie[0].v : 0;
             const tieneExtras = Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0) > 0 || (financeProfile.history || []).some(h => Number(h.invested || 0) + Number(h.emergency || 0) > 0);
             window._finGraf = { serie, rango };
@@ -889,7 +891,7 @@
             const avgIncome = avgData.reduce((s, t) => s + t.income, 0) / avgMonths.length;
             const series = financeProMonthlyBalances(null);
             const firstBal = series.length ? series[0].balance : 0;
-            const lastBal = series.length ? series[series.length - 1].balance : financeProTotalBalance();
+            const lastBal = series.length ? series[series.length - 1].balance : saldoLiquido();
             const prevBal = series.length >= 2 ? series[series.length - 2].balance : null;
             const pctSinceStart = firstBal ? ((lastBal - firstBal) / Math.abs(firstBal)) * 100 : null;
             const pctVsPrevMonth = (prevBal !== null && prevBal !== 0) ? ((lastBal - prevBal) / Math.abs(prevBal)) * 100 : null;
@@ -952,14 +954,16 @@
         // Las cuentas en filas: antes eran tres tarjetas con su minigráfica en verde azulado, azul y morado fijos, que
         // repetían lo que ya cuenta la gráfica de arriba y no salían del tema.
         function renderFinanceProCuentasFilas() {
-            return `<div class="finance-panel fin-cuentas">${FINANCE_PRO_ACCOUNT_KEYS.map(k => {
+            // También las cuentas que no son de las tres fijas: cuentan en el total y tienen que verse (F-10). Los
+            // formularios de movimientos solo ofrecen las tres fijas, así que a esas no se les ofrece el «+».
+            return `<div class="finance-panel fin-cuentas">${financeProCuentas().map(k => {
                 const nombre = financePro.accounts[k]?.name || k;
                 return `<div class="fin-cuenta">
                     <span class="fin-cuenta-icono" aria-hidden="true">${FINANCE_PRO_ACCOUNT_ICONO[k] || ''}</span>
                     <span class="fin-cuenta-nombre">${escapeHtml(nombre.toLowerCase())}.</span>
                     <span class="fin-cuenta-saldo">${financeMoney(financeProAccountBalance(k))}</span>
-                    <button class="vista-icono-btn" title="ajustar el saldo de ${escapeHtml(nombre)}" aria-label="ajustar el saldo de ${escapeHtml(nombre)}" onclick="openFinanceProBalanceAdjustModal('${k}')"><i class='ico ico-lapiz' aria-hidden=true></i></button>
-                    <button class="vista-icono-btn" title="movimiento en ${escapeHtml(nombre)}" aria-label="movimiento en ${escapeHtml(nombre)}" onclick="openFinanceProTransactionModal(null,'${k}')"><i class='ico ico-mas' aria-hidden=true></i></button>
+                    <button class="vista-icono-btn" title="ajustar el saldo de ${escapeHtml(nombre)}" aria-label="ajustar el saldo de ${escapeHtml(nombre)}" onclick="openFinanceProBalanceAdjustModal('${jsAttr(k)}')"><i class='ico ico-lapiz' aria-hidden=true></i></button>
+                    ${FINANCE_PRO_ACCOUNT_KEYS.includes(k) ? `<button class="vista-icono-btn" title="movimiento en ${escapeHtml(nombre)}" aria-label="movimiento en ${escapeHtml(nombre)}" onclick="openFinanceProTransactionModal(null,'${k}')"><i class='ico ico-mas' aria-hidden=true></i></button>` : ''}
                 </div>`;
             }).join('')}</div>`;
         }
@@ -977,19 +981,19 @@
                 <div class="finance-modal-note" style="margin-bottom:12px">Saldo actual: ${financeMoney(current)}. Escribe el saldo real y se creará un movimiento "Ajuste de saldo" con la diferencia para cuadrarlo, sin tocar tu histórico.</div>
                 <div class="modal-label">Saldo real (€)</div>
                 <input class="modal-input" id="pro-acc-adjust-target" type="number" step="0.01" value="${current.toFixed(2)}">
-                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProBalanceAdjust()">guardar.</button>
+                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProBalanceAdjust(this)">guardar.</button>
             `);
         }
 
-        async function saveFinanceProBalanceAdjust() {
+        async function saveFinanceProBalanceAdjust(boton) {
+            if (financeGuardando) return;
             const key = window._financeProAdjustKey;
             const target = Number(document.getElementById('pro-acc-adjust-target')?.value);
             if (!Number.isFinite(target)) { showToast('Introduce un importe válido', true); return; }
             const current = financeProAccountBalance(key);
             const diff = Math.round((target - current) * 100) / 100;
-            closeModal();
-            if (Math.abs(diff) < 0.01) { showToast('El saldo ya coincidía'); return; }
-            financePro.transactions.push({
+            if (Math.abs(diff) < 0.01) { closeModal(); showToast('El saldo ya coincidía'); return; }
+            const hecho = await commitFinanceChange(() => financePro.transactions.push({
                 id: 'ptx_adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
                 date: todayISO(),
                 account: key,
@@ -997,10 +1001,10 @@
                 amount: Math.abs(diff),
                 note: 'Ajuste de saldo',
                 ajuste: true
-            });
-            render();
-            try { await saveData(); showToast(`Saldo ajustado, ${diff > 0 ? '+' : '-'}${financeMoney(Math.abs(diff))}`); }
-            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            }), { boton, ok: `Saldo ajustado, ${diff > 0 ? '+' : '-'}${financeMoney(Math.abs(diff))}` });
+            if (!hecho) return;
+            closeModal();
+            repintarTrasModal();
         }
 
         // Gasto neto de una categoría: al gasto real se le restan los
@@ -1074,16 +1078,8 @@
             </section>`;
         }
 
-        // Patrimonio operativo unificado: efectivo+bancos+online reales de
-        // PRO (ya no la cifra manual financeProfile.cash del extinto
-        // Resumen clásico) + emergencia/inversión, que se siguen llevando a
-        // mano vía "Actualizar este mes" porque no son cuentas transaccionales.
-        function financeUnifiedPatrimony() {
-            return financeProTotalBalance() + Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0);
-        }
-
         function financeUnifiedPatrimonyChange() {
-            const total = financeUnifiedPatrimony();
+            const total = patrimonioOperativo();
             const now = financeMonthKey();
             const [y, m] = now.split('-').map(Number);
             const prevMonthKey = financeMonthKey(new Date(y, m - 2, 1));
@@ -1109,7 +1105,7 @@
             const avgDelta = deltas.reduce((s, d) => s + d, 0) / deltas.length;
             const target = financeTargetTotal();
             if (target <= 0) return { text: 'Define un objetivo (botón "✎ Objetivo") para ver tu previsión automática.' };
-            const remaining = target - financeUnifiedPatrimony();
+            const remaining = target - patrimonioOperativo();
             if (remaining <= 0) return { text: 'Objetivo alcanzado.' };
             if (avgDelta <= 0) return { text: `A tu ritmo actual (${financeMoney(avgDelta)}/mes de media) no te acercas al objetivo: te faltan ${financeMoney(remaining)}.` };
             const monthsToGo = Math.ceil(remaining / avgDelta);
@@ -1718,20 +1714,21 @@
 
             lines.push('## Patrimonio operativo');
             lines.push(mdTable(['Cuenta', 'Saldo', 'Objetivo'], [
-                ['Tus cuentas', financeMoney(financeProTotalBalance()), financeMoney(financeProfile.cashTarget || 0)],
+                ['Tus cuentas', financeMoney(saldoLiquido()), financeMoney(financeProfile.cashTarget || 0)],
                 ['Fondo de emergencia', financeMoney(financeProfile.emergency || 0), financeMoney(financeProfile.emergencyTarget || 0)],
                 ['Reserva de vacaciones (fuera del patrimonio operativo)', financeMoney(financeProfile.vacation || 0), '—'],
                 ['Inversión a largo plazo', financeMoney(financeProfile.invested || 0), financeMoney(financeProfile.investedTarget || 0)],
                 ...(financeProfile.customAccounts || []).map(a => [mdEscape(a.name), financeMoney(a.balance || 0), '—'])
             ]));
-            lines.push(`**Patrimonio operativo total**: ${financeMoney(financeCorePatrimony())}, **Objetivo total**: ${financeMoney(financeTargetTotal())}`);
+            lines.push(`**Patrimonio operativo total** (tus cuentas, emergencia e inversión): ${financeMoney(patrimonioOperativo())}, **Objetivo total**: ${financeMoney(financeTargetTotal())}`);
+            lines.push(`**Activos totales** (también vacaciones y cuentas a mano): ${financeMoney(activosTotales())}`);
             lines.push('');
 
             lines.push('## Cuentas (Finanzas PRO)');
             lines.push(mdTable(['Cuenta', 'Saldo inicial', 'Saldo actual'],
-                FINANCE_PRO_ACCOUNT_KEYS.map(k => [financePro.accounts[k]?.name || k, financeMoney(financePro.accounts[k]?.balance0 || 0), financeMoney(financeProAccountBalance(k))])
+                financeProCuentas().map(k => [financePro.accounts[k]?.name || k, financeMoney(financePro.accounts[k]?.balance0 || 0), financeMoney(financeProAccountBalance(k))])
             ));
-            lines.push(`**Total cuentas PRO**: ${financeMoney(financeProTotalBalance())}`);
+            lines.push(`**Total cuentas PRO**: ${financeMoney(saldoLiquido())}`);
             lines.push('');
 
             const histP = financePro.historialPresupuestos || {};
@@ -1788,7 +1785,7 @@
             const hist = (financeProfile.history || []).slice().sort((a, b) => a.month.localeCompare(b.month));
             if (hist.length) {
                 lines.push('## Histórico mensual de patrimonio');
-                lines.push(mdTable(['Mes', 'Efectivo', 'Emergencia', 'Inversión', 'Total'], hist.map(h => [financeMonthLabel(h.month), financeMoney(h.cash || 0), financeMoney(h.emergency || 0), financeMoney(h.invested || 0), financeMoney(h.total || 0)])));
+                lines.push(mdTable(['Mes', 'Efectivo', 'Emergencia', 'Inversión', 'Patrimonio operativo', 'Activos totales'], hist.map(h => [financeMonthLabel(h.month), financeMoney(h.cash || 0), financeMoney(h.emergency || 0), financeMoney(h.invested || 0), financeMoney(h.total || 0), h.activos === undefined ? '—' : financeMoney(h.activos)])));
                 lines.push('');
             }
 
@@ -1871,9 +1868,42 @@
             if (tab === 'cuentas') financeDibujarGrafica();
         }
 
+        // Se valida una vez al preparar Finanzas y no en cada cálculo (auditoría F-16): un movimiento sin fecha rompía
+        // todas las pantallas (t.date.slice) y un importe corrupto desaparecía de las cifras sin avisar. El importe
+        // escrito como texto («12,50») se pasa a número; lo que no tiene arreglo se aparta a financePro.incidencias, no
+        // cuenta en nada y se avisa en movimientos. No se borra: se puede recuperar a mano desde los datos.
+        function financeProValidarMovimientos() {
+            let cambio = false;
+            const validos = [], apartados = [];
+            (financePro.transactions || []).forEach(t => {
+                if (!t || typeof t !== 'object') { cambio = true; return; }
+                if (typeof t.amount === 'string' && Number.isFinite(financeProParseEuroAmount(t.amount))) { t.amount = Math.abs(financeProParseEuroAmount(t.amount)); cambio = true; }
+                const motivo = !/^\d{4}-\d{2}-\d{2}/.test(typeof t.date === 'string' ? t.date : '') ? 'sin fecha válida'
+                    : typeof t.amount !== 'number' || !Number.isFinite(t.amount) ? 'importe no válido' : null;
+                (motivo ? apartados : validos).push(motivo ? { ...t, motivoIncidencia: motivo } : t);
+            });
+            if (apartados.length) {
+                financePro.transactions = validos;
+                financePro.incidencias = [...(financePro.incidencias || []), ...apartados];
+                cambio = true;
+            }
+            return cambio;
+        }
+
+        function financeProIncidencias() {
+            return (financePro.incidencias || []).map(t => ({ id: t.id, motivo: t.motivoIncidencia, nota: t.note || t.bankNote || '' }));
+        }
+
+        function renderFinanceProIncidencias() {
+            const lista = financeProIncidencias();
+            if (!lista.length) return '';
+            return `<details class="finance-modal-note fin-incidencias"><summary>${lista.length} ${lista.length === 1 ? 'movimiento tiene' : 'movimientos tienen'} la fecha o el importe mal y no cuentan en los saldos.</summary>
+                ${lista.map(i => `<div>${escapeHtml(i.nota || i.id || 'sin nombre')}: ${escapeHtml(i.motivo || '')}.</div>`).join('')}</details>`;
+        }
+
         function renderFinanceTabCuerpo() {
             if (financeTab === 'resumen') return renderFinanzasResumen();
-            if (financeTab === 'movimientos') return renderFinanceProTxSection();
+            if (financeTab === 'movimientos') return renderFinanceProIncidencias() + renderFinanceProTxSection();
             if (financeTab === 'planificacion') return `
                 ${renderFinanceBudgetUnifiedPanel()}
                 ${renderFinancePlanRow()}
@@ -1913,8 +1943,6 @@
         }
 
         function renderFinanceProDashboard() {
-            ensureCurrentMonthHistory();
-            if (actualizarHistorialPresupuestos()) setTimeout(() => saveData().catch(e => console.error(e)), 0);
             const blurToggleBtn = `<button class="finance-blur-toggle" title="${blurFinances ? 'Mostrar cifras' : 'Ocultar cifras'}" onclick="toggleBlurFinances()">${blurFinances ? FINANCE_EYE_OFF_ICON : FINANCE_EYE_ICON}</button>`;
             return `
             <div class="finance-dashboard ${blurFinances ? 'blurred' : ''} ${financeYaAnimado ? '' : 'entrando'}">
@@ -1943,28 +1971,56 @@
                     <input class="modal-input" id="pro-acc-balance0-${k}" type="number" step="0.01" value="${Number(financePro.accounts[k].balance0 || 0)}" style="margin-bottom:16px">
                 `).join('')}
                 <button class="btn-modal-primary" onclick="saveFinanceProAccountsSettings()">guardar.</button>
-                <button class="btn-secondary" style="margin-top:14px;color:var(--c-dc2626)" onclick="resetFinancePro()">restablecer Finanzas PRO.</button>
+                <button class="btn-secondary" style="margin-top:14px;color:var(--c-dc2626)" onclick="openRestablecerFinanzas()">restablecer finanzas.</button>
             `);
         }
 
         // Borra todo el histórico de Finanzas PRO (cuentas, movimientos,
         // categorías personalizadas y presupuestos) y vuelve a los valores
         // de fábrica — para empezar de cero sin desactivar el modo PRO.
-        async function resetFinancePro() {
-            if (!confirm('¿Restablecer Finanzas PRO?\n\nSe borrarán todos los movimientos, las categorías personalizadas, los presupuestos, las reglas de traspaso y los saldos de las 3 cuentas. Esta acción no se puede deshacer.')) return;
-            financePro.accounts = {
-                efectivo: { name: 'Efectivo', balance0: 0 },
-                bancos: { name: 'Bancos', balance0: 0 },
-                online: { name: 'Online', balance0: 0 }
+        // Dos alcances (auditoría F-11): antes solo se vaciaba financePro y se quedaban la inversión, la emergencia, las
+        // cuentas a mano, la planificación y un histórico de patrimonio que ya no cuadraba con ningún movimiento.
+        function openRestablecerFinanzas() {
+            showModal(`
+                <div class="modal-title">restablecer finanzas.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">No se puede deshacer. Antes puedes descargar tus datos desde Ajustes.</div>
+                <button class="btn-secondary" style="color:var(--c-dc2626)" onclick="resetFinancePro('movimientos')">solo movimientos y cuentas.</button>
+                <div class="finance-modal-note" style="margin:6px 0 14px">Borra los movimientos, los saldos de las cuentas, las categorías propias, las reglas, los gastos programados y los presupuestos por categoría. Se quedan la inversión, la emergencia, las cuentas a mano, la planificación y el histórico de patrimonio, que dejará de cuadrar con los movimientos.</div>
+                <button class="btn-secondary" style="color:var(--c-dc2626)" onclick="resetFinancePro('todo')">todas las finanzas.</button>
+                <div class="finance-modal-note" style="margin-top:6px">Lo anterior y además la inversión, la emergencia, las vacaciones, las cuentas a mano, la planificación del sueldo, los objetivos y todo el histórico.</div>
+            `);
+        }
+
+        function financeProfileVacio() {
+            return {
+                cash: 0, cashTarget: 0, invested: 0, investedTarget: 0, emergency: 0, emergencyTarget: 0, vacation: 0, vacationTarget: 0,
+                salaryForecast: {}, history: [], oneOffIncome: [], movements: [], chartHistory: [],
+                forecastProfile: { salary: 0, contractMonths: 0, emergencyMonthlyPlan: 0, vacationMonthlyPlan: 0, investMonthlyPlan: 0 },
+                customAccounts: [], salaryReal: {}, investmentContributions: [], chartSeries: [], budgets: {}, savingsGoals: [],
+                recordatorioDia: null, ultimoCierreMensual: null, investmentAccounts: [], budgetPlans: {}, budgetHistory: [], wishlist: []
             };
-            financePro.categories = financeProDefaultCategories();
-            financePro.transactions = [];
-            financePro.categoryBudgets = {};
-            financePro.rules = [];
+        }
+
+        async function resetFinancePro(alcance) {
+            const todo = alcance === 'todo';
+            if (!confirm(todo ? '¿Borrar todas tus finanzas? No se puede deshacer.' : '¿Borrar los movimientos y las cuentas? No se puede deshacer.')) return;
+            const hecho = await commitFinanceChange(() => {
+                financePro.accounts = {
+                    efectivo: { name: 'Efectivo', balance0: 0 },
+                    bancos: { name: 'Bancos', balance0: 0 },
+                    online: { name: 'Online', balance0: 0 }
+                };
+                financePro.categories = financeProDefaultCategories();
+                financePro.transactions = [];
+                financePro.categoryBudgets = {};
+                financePro.rules = [];
+                financePro.programados = [];
+                financePro.historialPresupuestos = {};
+                if (todo) financeProfile = financeProfileVacio();
+            }, { ok: todo ? 'Finanzas restablecidas' : 'Movimientos y cuentas restablecidos' });
+            if (!hecho) return;
             closeModal();
-            render();
-            try { await saveData(); showToast('Finanzas PRO restablecido'); }
-            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            repintarTrasModal();
         }
 
         async function saveFinanceProAccountsSettings() {
@@ -2172,7 +2228,7 @@
                             ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                         </select></div>
                 </div>
-                <button class="btn-modal-primary" style="margin-top:12px" onclick="saveFinanceProProgramado()">programar gasto.</button>
+                <button class="btn-modal-primary" style="margin-top:12px" onclick="saveFinanceProProgramado(this)">programar gasto.</button>
 
                 <div class="finance-kicker" style="margin:22px 0 8px">programados.</div>
                 ${pendientes.length ? pendientes.map(p => `
@@ -2203,29 +2259,32 @@
             window._financeProgramadoDraft[key] = value;
         }
 
-        async function saveFinanceProProgramado() {
+        async function saveFinanceProProgramado(boton) {
+            if (financeGuardando) return;
             const d = window._financeProgramadoDraft;
             const amount = Math.abs(financeProParseEuroAmount(d.amount));
             if (!(amount > 0)) { showToast('Introduce un importe válido', true); return; }
             if (!d.date) { showToast('Elige una fecha', true); return; }
-            financePro.programados.push({
-                id: 'prog_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                date: d.date, account: d.account, amount, category: d.category || undefined, note: d.note.trim() || undefined
-            });
             const esHoyOAntes = d.date <= todayISO();
-            if (esHoyOAntes) financeProAplicarProgramados();
+            const hecho = await commitFinanceChange(() => {
+                financePro.programados.push({
+                    id: 'prog_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    date: d.date, account: d.account, amount, category: d.category || undefined, note: (d.note || '').trim() || undefined
+                });
+                if (esHoyOAntes) financeProAplicarProgramados();
+            }, { boton, ok: esHoyOAntes ? 'Añadido a tus movimientos' : 'Gasto programado' });
+            if (!hecho) return;
             window._financeProgramadoDraft = { ...d, amount: '', note: '' };
-            document.getElementById('finance-programados-body').innerHTML = renderFinanceProProgramadosBody();
-            render();
-            try { await saveData(); showToast(esHoyOAntes ? 'Añadido a tus movimientos' : 'Gasto programado'); }
-            catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            const cuerpo = document.getElementById('finance-programados-body');
+            if (cuerpo) cuerpo.innerHTML = renderFinanceProProgramadosBody();
+            repintarTrasModal();
         }
 
         async function deleteFinanceProProgramado(id) {
-            financePro.programados = financePro.programados.filter(p => p.id !== id);
-            document.getElementById('finance-programados-body').innerHTML = renderFinanceProProgramadosBody();
-            render();
-            try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            if (!await commitFinanceChange(() => { financePro.programados = financePro.programados.filter(p => p.id !== id); })) return;
+            const cuerpo = document.getElementById('finance-programados-body');
+            if (cuerpo) cuerpo.innerHTML = renderFinanceProProgramadosBody();
+            repintarTrasModal();
         }
 
         function openFinanceProAllTxModal() {
@@ -2446,23 +2505,30 @@
                     ${cats.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                 </select>
                 ${d.categoriaAuto && d.category ? '<div class="finance-modal-note" style="margin:-4px 0 8px">Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.</div>' : ''}
+                ${financeProEsInversion(d) && (financeProfile.investmentAccounts || []).length > 1 ? `
+                <div class="modal-label">a qué inversión</div>
+                <select class="modal-input" onchange="window._financeProTxDraft.investmentAccountId=this.value">
+                    <option value="">sin elegir.</option>
+                    ${financeProfile.investmentAccounts.map(a => `<option value="${escapeHtml(a.id)}" ${d.investmentAccountId === a.id ? 'selected' : ''}>${escapeHtml(a.name || 'inversión')}</option>`).join('')}
+                </select>` : ''}
                 </div>`}
                 ${renderFinanceProMarcasTx(d)}
                 <div class="modal-label">nota, si quieres</div>
                 <input class="modal-input" value="${escapeHtml(d.note || '')}" oninput="window._financeProTxDraft.note=this.value" placeholder="Cena con amigos">
-                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction()">guardar.</button>
+                <button class="btn-modal-primary" style="margin-top:6px" onclick="saveFinanceProTransaction(this)">guardar.</button>
                 ${window._financeProTxEditId ? `<button class="btn-secondary" style="margin-top:8px;color:var(--c-dc2626)" onclick="deleteFinanceProTransaction('${window._financeProTxEditId}')">eliminar movimiento.</button>` : ''}
             `;
         }
 
         function financeProDraftSet(key, value) {
             window._financeProTxDraft[key] = value;
-            if (key === 'type' || key === 'account') {
+            if (key === 'type' || key === 'account' || (key === 'category' && (financeProfile.investmentAccounts || []).length > 1)) {
                 document.getElementById('finance-pro-tx-modal-body').innerHTML = renderFinanceProTxModalBody();
             }
         }
 
-        async function saveFinanceProTransaction() {
+        async function saveFinanceProTransaction(boton) {
+            if (financeGuardando) return;
             const d = window._financeProTxDraft;
             // El importe se escribe como texto (en el iPhone, el campo numérico
             // con teclado en español dejaba vacío «12,50» y daba error).
@@ -2476,6 +2542,7 @@
                 type: d.type,
                 amount,
                 category: d.type === 'transfer' ? undefined : (d.category || undefined),
+                investmentAccountId: d.investmentAccountId && financeProEsInversion(d) ? d.investmentAccountId : undefined,
                 transferTo: d.type === 'transfer' ? d.transferTo : undefined,
                 note: (d.note || '').trim() || undefined,
                 viaje: d.type === 'expense' && d.viaje ? true : undefined,
@@ -2498,26 +2565,27 @@
                 const clave = `${prev.account}|${prev.date}|${prev.amount}|${prev.bankNote ?? prev.note ?? ''}`;
                 if (clave !== `${entry.account}|${entry.date}|${entry.amount}|${entry.bankNote ?? entry.note ?? ''}`) entry.claveImport = clave;
             }
-            const idx = financePro.transactions.findIndex(t => t.id === entry.id);
-            if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
-            const categorizados = entry.category ? financeProAutoCategorizar() : 0;
+            // Si no se puede guardar, el editor sigue abierto con lo escrito para reintentar (auditoría F-07).
+            const hecho = await commitFinanceChange(() => {
+                const idx = financePro.transactions.findIndex(t => t.id === entry.id);
+                if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
+                return entry.category ? financeProAutoCategorizar() : 0;
+            }, { boton, ok: categorizados => categorizados ? `Movimiento guardado, ${categorizados} parecido${categorizados === 1 ? '' : 's'} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : 'Movimiento guardado' });
+            if (!hecho) return;
+            financeProCerrarEditorMovimiento();
+        }
+
+        function financeProCerrarEditorMovimiento() {
             window._financeProTxEditId = null; window._financeProTxDraft = null;
             if (window._financeProTxReturnToAll) openFinanceProAllTxModal(); else closeModal();
             window._financeProTxReturnToAll = false;
-            invalidarCachesDerivadas();
             repintarTrasModal();
-            try { await saveData(); showToast(categorizados ? `Movimiento guardado, ${categorizados} parecido${categorizados === 1 ? '' : 's'} categorizado${categorizados === 1 ? '' : 's'} solo${categorizados === 1 ? '' : 's'}` : 'Movimiento guardado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
         async function deleteFinanceProTransaction(id) {
-            if (!confirm('¿Eliminar este movimiento?')) return;
-            financePro.transactions = financePro.transactions.filter(t => t.id !== id);
-            window._financeProTxEditId = null; window._financeProTxDraft = null;
-            if (window._financeProTxReturnToAll) openFinanceProAllTxModal(); else closeModal();
-            window._financeProTxReturnToAll = false;
-            invalidarCachesDerivadas();
-            repintarTrasModal();
-            try { await saveData(); showToast('Movimiento eliminado'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            if (financeGuardando || !confirm('¿Eliminar este movimiento?')) return;
+            if (!await commitFinanceChange(() => { financePro.transactions = financePro.transactions.filter(t => t.id !== id); }, { ok: 'Movimiento eliminado' })) return;
+            financeProCerrarEditorMovimiento();
         }
 
         // Detector de posibles duplicados: casos típicos de importar dos

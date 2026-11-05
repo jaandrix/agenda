@@ -334,7 +334,7 @@
                 if (!(financePro.transactions || []).length) return vacio('Aún no hay movimientos.');
                 const mes = financeProMonthTotals(hoy.slice(0, 7));
                 const dinero = n => `${Math.round(n).toLocaleString('es-ES')} €`;
-                return `<span class="pano-cifras">${cifra(dinero(mes.expense), 'gastado este mes')}${cifra(dinero(mes.income), 'ingresado')}${cifra(dinero(financeEfectivoActual()), 'en tus cuentas')}</span>`;
+                return `<span class="pano-cifras">${cifra(dinero(mes.expense), 'gastado este mes')}${cifra(dinero(mes.income), 'ingresado')}${cifra(dinero(saldoLiquido()), 'en tus cuentas')}</span>`;
             };
             const cRutinas = () => {
                 const deHoy = habits.filter(h => h.activo !== false && rutinaToca(h, hoy));

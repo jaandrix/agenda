@@ -1996,7 +1996,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
 
         function mobileFinPorAjustar() {
             const n = financeProPendingReviewCount();
-            return n ? `<button class="m-finanzas-aviso" onclick="openFinanceProReviewModal()"><b>${n} ${n === 1 ? 'movimiento' : 'movimientos'} por ajustar.</b><span>ponles categoría y revisa la cuenta.</span></button>` : '';
+            return renderFinanceProIncidencias() + (n ? `<button class="m-finanzas-aviso" onclick="openFinanceProReviewModal()"><b>${n} ${n === 1 ? 'movimiento' : 'movimientos'} por ajustar.</b><span>ponles categoría y revisa la cuenta.</span></button>` : '');
         }
 
         // Las mismas tres pestañas que en el ordenador, y solo se pinta la que se ve: cada botón vive donde se usa
@@ -2087,7 +2087,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 ${income || expense ? `<div class="m-gastado"><i class="m-gastado-barra"><i style="width:${Math.min(100, Math.round(ratio * 100))}%"></i></i><span>${income > 0 ? `${Math.round(ratio * 100)} % de lo que ha entrado, ya gastado.` : 'Este mes todavía no ha entrado nada.'}</span></div>` : ''}
                 ${mobileFinRitmo()}
                 <div class="m-bloque-cab"><div class="m-etiqueta">cuentas.</div></div>
-                <div class="m-lista">${FINANCE_PRO_ACCOUNT_KEYS.map(k => `
+                <div class="m-lista">${financeProCuentas().map(k => `
                     <div class="m-fila"><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml((financePro.accounts[k]?.name || k).toLowerCase())}.</div></div><span class="m-fila-cifra">${financeMoney(financeProAccountBalance(k))}</span></div>`).join('')}
                 </div>
                 ${mobileFinCargos(3, false)}

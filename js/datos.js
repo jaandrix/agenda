@@ -720,7 +720,7 @@
             return {
                 streakDays: bitacoraUpdateStreak(),
                 tasksToday,
-                balance: (financePro && financePro.enabled) ? financeProTotalBalance() : 0,
+                balance: (financePro && financePro.enabled) ? saldoLiquido() : 0,
                 balancePct,
                 events: todaysEvents,
                 updatedAtISO: new Date().toISOString()

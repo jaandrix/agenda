@@ -51,6 +51,7 @@
             // construir aquí también la versión de escritorio era trabajo
             // doble (y dejaba ids repetidos). Solo se lanzan las cargas de
             // datos que rellenan esos apartados, como antes.
+            if (currentView === 'finances') prepararFinanzasYGuardar();
             if (mobileStandaloneActive) {
                 if (content.firstChild) content.innerHTML = '';
                 ({

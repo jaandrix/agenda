@@ -224,7 +224,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 test('un movimiento con fecha futura no cuenta en el saldo de hoy (F-01)', () => {
     const { run } = cargarApp();
     run(`__vaciar(); financePro.transactions.push({ id: 'fut', date: '2099-01-01', type: 'income', amount: 1000, account: 'bancos', manual: true });`);
-    assert.equal(run('financeProTotalBalance()'), 0);
+    assert.equal(run('saldoLiquido()'), 0);
 });
 
 test('una inversión con aportaciones y sin valoración vale lo aportado (F-03)', () => {
@@ -243,4 +243,188 @@ test('el correo rellena el valor de un mes que ya existía sin valor, sin tocar 
         invSincronizarMovimientos();`);
     assert.equal(run(`financeProfile.investmentAccounts[0].contributions.find(c => c.month === '2026-05').value`), 502);
     assert.equal(run(`financeProfile.investmentAccounts[0].contributions.find(c => c.month === '2026-06').value`), 777);
+});
+
+// Prepara una cuenta con todo lo que Finanzas materializaba al pintarse: una suscripción por cobrar, un gasto programado
+// vencido, una aportación sin sincronizar y un mes sin punto en el histórico.
+const PREPARAR_PINTADO = `__vaciar({ bancos: 100 });
+    entries = [{ id: 's1', type: 'subscription', title: 'Netflix', amount: 10, renewalDay: 1, active: true, proAccount: 'bancos' }];
+    financePro.programados = [{ id: 'p1', date: '2000-01-01', account: 'bancos', amount: 5 }];
+    financePro.transactions.push({ id: 'a1', date: '2000-01-02', type: 'expense', amount: 50, category: 'cat_inversion_gasto', account: 'bancos' });
+    financeProfile.investmentAccounts = [{ id: 'i1', name: 'fondo', contributions: [] }];
+    financeProfile.history = [];
+    globalThis.__guardados = 0; saveData = () => { __guardados++; return Promise.resolve(); };
+    setTimeout = f => { f(); return 0; };
+    showModal = () => {}; modoCapa = () => {};`;
+
+test('pintar Finanzas no cambia los datos ni guarda (F-05)', () => {
+    const { run } = cargarApp();
+    run(PREPARAR_PINTADO);
+    const antes = run('JSON.stringify([financePro, financeProfile, entries])');
+    for (const tab of ['resumen', 'cuentas', 'movimientos', 'planificacion']) {
+        run(`financeTab = '${tab}'; renderFinances(); renderFinanceProDashboard(); renderMobileFinances(); renderFinances();`);
+    }
+    assert.equal(run('JSON.stringify([financePro, financeProfile, entries])'), antes);
+    assert.equal(run('__guardados'), 0);
+});
+
+test('preparar Finanzas es un paso aparte, idempotente y que no guarda solo (F-05)', () => {
+    const { run } = cargarApp();
+    run(PREPARAR_PINTADO);
+    assert.equal(run('prepararFinanzas()'), true);
+    assert.equal(run(`financePro.transactions.filter(t => t.id === 'ptx_prog_p1' || t.recurringEntryId === 's1').length`), 2);
+    assert.equal(run(`financeProfile.history.length`), 1);
+    assert.equal(run(`financeProfile.investmentAccounts[0].contributions.length`), 1);
+    const despues = run('JSON.stringify([financePro, financeProfile.investmentAccounts, entries])');
+    assert.equal(run('prepararFinanzas()'), false);
+    assert.equal(run('JSON.stringify([financePro, financeProfile.investmentAccounts, entries])'), despues);
+    assert.equal(run('__guardados'), 0);
+});
+
+// Cada escritura de Finanzas, con un guardado que falla y con uno que funciona.
+async function escribirFinanzas(accion, falla) {
+    const { run } = cargarApp();
+    run(`__vaciar({ bancos: 100 });
+        financePro.transactions.push({ id: 't1', date: '2026-01-10', type: 'expense', amount: 5, account: 'bancos', manual: true });
+        financePro.programados = [{ id: 'p1', date: '2099-01-01', account: 'bancos', amount: 5 }];
+        entries = [{ id: 's1', type: 'subscription', title: 'Netflix', amount: 10, renewalDay: 1, active: true }];
+        globalThis.__guardados = 0;
+        saveData = () => { __guardados++; return ${falla} ? Promise.reject(new Error('servidor')) : Promise.resolve(); };
+        showModal = () => {}; ponerModal = showModal; modoCapa = () => {}; confirm = () => true; render = () => {};
+        window._financeProTxEditId = null;
+        window._financeProTxDraft = { date: '2026-01-11', amount: '12,50', account: 'bancos', type: 'expense', note: 'nuevo' };
+        window._financeProAdjustKey = 'bancos';
+        window._financeProgramadoDraft = { date: '2099-02-01', amount: '7', account: 'bancos', category: '', note: 'seguro' };`);
+    const antes = run('JSON.stringify([financePro, entries])');
+    await run(accion);
+    return { run, antes, ahora: run('JSON.stringify([financePro, entries])') };
+}
+
+const ESCRITURAS = {
+    'crear un movimiento': 'saveFinanceProTransaction()',
+    'editar un movimiento': `(window._financeProTxEditId = 't1', saveFinanceProTransaction())`,
+    'borrar un movimiento': `deleteFinanceProTransaction('t1')`,
+    'ajustar el saldo': 'saveFinanceProBalanceAdjust()',
+    'programar un gasto': 'saveFinanceProProgramado()',
+    'quitar un programado': `deleteFinanceProProgramado('p1')`,
+    'dar de baja una suscripción': `suscripcionDarDeBaja('s1')`,
+    'borrar una suscripción': `suscripcionBorrar('s1')`,
+};
+
+for (const [nombre, accion] of Object.entries(ESCRITURAS)) {
+    test(`${nombre}: si el guardado falla, todo queda como estaba; si funciona, se queda (F-07)`, async () => {
+        const mal = await escribirFinanzas(accion, true);
+        assert.equal(mal.ahora, mal.antes);
+        assert.equal(mal.run('__guardados'), 1);
+        const bien = await escribirFinanzas(accion, false);
+        assert.notEqual(bien.ahora, bien.antes);
+        assert.equal(bien.run('__guardados'), 1);
+    });
+}
+
+test('un movimiento que no se pudo guardar conserva lo escrito para reintentar (F-07)', async () => {
+    const { run } = await escribirFinanzas('saveFinanceProTransaction()', true);
+    assert.equal(run('window._financeProTxDraft?.note'), 'nuevo');
+});
+
+test('dos toques seguidos en guardar crean un solo movimiento (F-07)', async () => {
+    const { run } = cargarApp();
+    run(`__vaciar(); let soltar; saveData = () => new Promise(r => { soltar = r; }); globalThis.__soltar = () => soltar();
+        showModal = () => {}; modoCapa = () => {}; render = () => {}; window._financeProTxEditId = null;
+        window._financeProTxDraft = { date: '2026-01-11', amount: '3', account: 'bancos', type: 'expense' };
+        globalThis.__p1 = saveFinanceProTransaction(); globalThis.__p2 = saveFinanceProTransaction();`);
+    run('__soltar()');
+    await run('Promise.all([__p1, __p2])');
+    assert.equal(run('financePro.transactions.length'), 1);
+});
+
+// Una cuenta con todo: tres cuentas de Finanzas y una cuarta (F-10), inversión, emergencia, vacaciones y una cuenta a mano.
+const PATRIMONIO = `__vaciar({ bancos: 1000, efectivo: 20.1, online: 0.2 });
+    financePro.accounts.cuarta = { name: 'Cuarta', balance0: 50 };
+    financePro.transactions.push({ id: 'g', date: '2026-01-05', type: 'expense', amount: 10.05, account: 'bancos' },
+        { id: 'tr', date: '2026-01-06', type: 'transfer', amount: 5, account: 'bancos', transferTo: 'cuarta' });
+    financeProfile.investmentAccounts = []; financeProfile.invested = 300.1; financeProfile.emergency = 100.2;
+    financeProfile.vacation = 200; financeProfile.customAccounts = [{ id: 'ca1', name: 'Hucha', balance: 500 }];
+    financeProfile.history = [];`;
+
+test('saldo líquido, patrimonio operativo y activos totales: cada uno suma lo suyo (F-02, F-10)', () => {
+    const { run } = cargarApp();
+    run(PATRIMONIO);
+    assert.equal(run('saldoLiquido()'), 1060.25);
+    assert.equal(run('patrimonioOperativo()'), 1460.55);
+    assert.equal(run('activosTotales()'), 2160.55);
+});
+
+test('en el snapshot, las piezas suman su total (F-02)', () => {
+    const { run } = cargarApp();
+    run(PATRIMONIO);
+    const s = JSON.parse(run('JSON.stringify(financeSnapshot())'));
+    const suma = (...v) => Math.round(v.reduce((a, b) => a + b, 0) * 100) / 100;
+    assert.equal(s.cash, run('saldoLiquido()'));
+    assert.equal(s.total, suma(s.cash, s.invested, s.emergency));
+    assert.equal(s.total, run('patrimonioOperativo()'));
+    assert.equal(s.activos, suma(...Object.values(s.accounts)));
+    assert.equal(s.activos, run('activosTotales()'));
+});
+
+test('la gráfica, el objetivo y la exportación usan las mismas cifras (F-02)', () => {
+    const { run } = cargarApp();
+    run(PATRIMONIO + 'prepararFinanzas();');
+    const serie = JSON.parse(run('JSON.stringify(financeSerieDiaria(null, false))'));
+    assert.equal(Math.round(serie[serie.length - 1].v * 100) / 100, run('saldoLiquido()'));
+    const conExtras = JSON.parse(run('JSON.stringify(financeSerieDiaria(null, true))'));
+    assert.equal(Math.round(conExtras[conExtras.length - 1].v * 100) / 100, run('patrimonioOperativo()'));
+    assert.equal(run('finRedondo(finResCaminoObjetivo().actual)'), run('patrimonioOperativo()'));
+    const md = run('buildFinanceExportMarkdown()');
+    assert.ok(md.includes(run('financeMoney(patrimonioOperativo())')), 'el Markdown lleva el patrimonio operativo');
+    assert.ok(md.includes(run('financeMoney(activosTotales())')), 'el Markdown lleva los activos totales');
+});
+
+test('un traspaso cuenta en una sola cuenta de inversión (F-12)', () => {
+    const { run } = cargarApp();
+    run(`__vaciar();
+        financePro.transactions.push({ id: 'a', date: '2026-05-10', type: 'expense', amount: 100, category: 'cat_inversion_gasto', account: 'bancos', note: 'traspaso fondo indexado' },
+            { id: 'b', date: '2026-05-12', type: 'expense', amount: 40, category: 'cat_inversion_gasto', account: 'bancos', note: 'otro', investmentAccountId: 'i1' });
+        financeProfile.investmentAccounts = [{ id: 'i1', name: 'fondo', traspasoTexto: 'fondo', contributions: [] }, { id: 'i2', name: 'indexado', traspasoTexto: 'indexado', contributions: [] }];`);
+    const aportado = id => run(`invTraspasos(financeProfile.investmentAccounts.find(a => a.id === '${id}')).reduce((s, t) => s + t.amount, 0)`);
+    assert.equal(aportado('i1') + aportado('i2'), 40, 'el que encaja con las dos no se reparte a ciegas');
+    run(`financePro.transactions[0].investmentAccountId = 'i2'`);
+    assert.equal(aportado('i1'), 40);
+    assert.equal(aportado('i2'), 100);
+});
+
+test('con una sola cuenta de inversión, todo lo invertido es suyo (F-12)', () => {
+    const { run } = cargarApp();
+    run(`__vaciar(); financePro.transactions.push({ id: 'a', date: '2026-05-10', type: 'expense', amount: 100, category: 'cat_inversion_gasto', account: 'bancos', note: 'x' });
+        financeProfile.investmentAccounts = [{ id: 'i1', name: 'fondo', contributions: [] }];`);
+    assert.equal(run(`invTraspasos(financeProfile.investmentAccounts[0]).length`), 1);
+});
+
+test('restablecer tiene dos alcances: movimientos y cuentas, o todas las finanzas (F-11)', async () => {
+    for (const alcance of ['movimientos', 'todo']) {
+        const { run } = cargarApp();
+        run(PATRIMONIO + `prepararFinanzas(); financePro.programados = [{ id: 'p1', date: '2099-01-01', account: 'bancos', amount: 5 }];
+            saveData = () => Promise.resolve(); showModal = () => {}; confirm = () => true; render = () => {};`);
+        await run(`resetFinancePro('${alcance}')`);
+        assert.equal(run('financePro.transactions.length + financePro.programados.length'), 0);
+        assert.equal(run('saldoLiquido()'), 0);
+        assert.equal(run('financeProfile.history.length + financeProfile.customAccounts.length + Number(financeProfile.invested)') > 0, alcance === 'movimientos');
+    }
+});
+
+test('importes y fechas no válidos: se corrigen si se puede, se avisan si no y no rompen nada (F-16)', () => {
+    const { run } = cargarApp();
+    run(`__vaciar({ bancos: 100 }); showModal = () => {}; ponerModal = showModal; modoCapa = () => {};
+        financePro.transactions.push({ id: 'texto', date: '2026-01-05', type: 'expense', amount: '12,50', account: 'bancos' },
+            { id: 'sinfecha', type: 'expense', amount: 5, account: 'bancos' },
+            { id: 'basura', date: '2026-01-06', type: 'income', amount: 'abc', account: 'bancos' });
+        prepararFinanzas();`);
+    assert.equal(run(`financePro.transactions.find(t => t.id === 'texto').amount`), 12.5);
+    assert.deepEqual(JSON.parse(run('JSON.stringify(financeProIncidencias().map(i => i.id).sort())')), ['basura', 'sinfecha']);
+    assert.equal(run('saldoLiquido()'), 87.5);
+    const pantallas = ["financeTab = 'resumen'; renderFinanceProDashboard()", "financeTab = 'cuentas'; renderFinanceProDashboard()", "financeTab = 'movimientos'; renderFinanceProDashboard()", "financeTab = 'planificacion'; renderFinanceProDashboard()",
+        "financeTab = 'resumen'; renderMobileFinances()", "financeTab = 'cuentas'; renderMobileFinances()", "financeTab = 'movimientos'; renderMobileFinances()", 'openFinanceProAllTxModal()', 'openFinanceProStatsModal()'];
+    const fallos = pantallas.flatMap(p => { try { run(p); return []; } catch (e) { return [`${p}: ${e.message}`]; } });
+    assert.deepEqual(fallos, []);
+    assert.match(run(`financeTab = 'movimientos'; renderFinanceProDashboard()`), /no cuentan en los saldos/);
 });

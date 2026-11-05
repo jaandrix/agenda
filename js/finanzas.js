@@ -24,14 +24,27 @@
             return FMT_MES_ANIO.format(new Date(y, m - 1, 1));
         }
 
-        // El efectivo y los bancos salen siempre de las cuentas de Finanzas (el saldo que se escribía a mano del
-        // sistema antiguo, financeProfile.cash, ya no se usa).
-        function financeEfectivoActual() {
-            return typeof financeProTotalBalance === 'function' ? financeProTotalBalance() : 0;
+        // Tres cifras con nombre fijo (auditoría F-02): antes cada pantalla sumaba su propio trozo de financePro y
+        // financeProfile, y el total de un snapshot no cuadraba con sus cuentas.
+        //   saldoLiquido: lo que hay hoy en todas las cuentas de Finanzas (financePro.accounts), solo lo ya contabilizado.
+        //     El saldo que se escribía a mano en el sistema antiguo (financeProfile.cash) ya no se usa.
+        //   patrimonioOperativo: saldo líquido + inversión + fondo de emergencia. Es «el patrimonio» y su objetivo.
+        //   activosTotales: patrimonio operativo + reserva de vacaciones + cuentas a mano (customAccounts).
+        // Todas a céntimos, para que las piezas sumen exactamente su total.
+        function finRedondo(n) {
+            return Math.round((Number(n) || 0) * 100) / 100;
         }
 
-        function financeCorePatrimony() {
-            return financeEfectivoActual() + Number(financeProfile.invested || 0) + Number(financeProfile.emergency || 0);
+        function saldoLiquido() {
+            return typeof financeProSaldos === 'function' ? finRedondo(Object.values(financeProSaldos()).reduce((s, v) => s + v, 0)) : 0;
+        }
+
+        function patrimonioOperativo() {
+            return finRedondo(saldoLiquido() + finRedondo(financeProfile.invested) + finRedondo(financeProfile.emergency));
+        }
+
+        function activosTotales() {
+            return finRedondo(getAllAccounts().reduce((s, a) => s + a.balance, 0));
         }
 
         function financeTargetTotal() {
@@ -48,26 +61,27 @@
         // financeSnapshot y en las líneas configurables de la gráfica.
         function getAllAccounts() {
             return [
-                { key: 'cash', label: 'Tus cuentas', balance: Math.round(financeEfectivoActual() * 100) / 100 },
-                { key: 'emergency', label: 'Fondo de emergencia', balance: Number(financeProfile.emergency || 0) },
-                { key: 'vacation', label: 'Reserva de vacaciones', balance: Number(financeProfile.vacation || 0) },
-                { key: 'invested', label: 'Inversiones', balance: Number(financeProfile.invested || 0) },
-                ...(financeProfile.customAccounts || []).map(a => ({ key: a.id, label: a.name, balance: Number(a.balance || 0) }))
+                { key: 'cash', label: 'Tus cuentas', balance: saldoLiquido() },
+                { key: 'emergency', label: 'Fondo de emergencia', balance: finRedondo(financeProfile.emergency) },
+                { key: 'vacation', label: 'Reserva de vacaciones', balance: finRedondo(financeProfile.vacation) },
+                { key: 'invested', label: 'Inversiones', balance: finRedondo(financeProfile.invested) },
+                ...(financeProfile.customAccounts || []).map(a => ({ key: a.id, label: a.name, balance: finRedondo(a.balance) }))
             ];
         }
 
+        // total es el patrimonio operativo (cash + invested + emergency) y activos, la suma de accounts.
         function financeSnapshot() {
             const accounts = {};
             getAllAccounts().forEach(a => { accounts[a.key] = a.balance; });
+            const cash = accounts.cash, invested = accounts.invested, emergency = accounts.emergency;
             return {
                 month: financeMonthKey(),
                 date: new Date().toISOString(),
-                cash: Math.round(financeEfectivoActual() * 100) / 100,
-                invested: Number(financeProfile.invested || 0),
-                emergency: Number(financeProfile.emergency || 0),
-                vacation: Number(financeProfile.vacation || 0),
-                safe: financeEfectivoActual() + Number(financeProfile.emergency || 0),
-                total: financeCorePatrimony(),
+                cash, invested, emergency,
+                vacation: accounts.vacation,
+                safe: finRedondo(cash + emergency),
+                total: finRedondo(cash + invested + emergency),
+                activos: finRedondo(Object.values(accounts).reduce((s, v) => s + v, 0)),
                 accounts
             };
         }
@@ -82,15 +96,14 @@
             const i = history.findIndex(h => h.month === month);
             if (i >= 0) {
                 const nueva = financeSnapshot(), vieja = history[i];
-                if (['cash', 'invested', 'emergency', 'vacation'].every(k => Math.abs(Number(vieja[k] || 0) - Number(nueva[k] || 0)) < 0.005)) return;
+                if (['cash', 'invested', 'emergency', 'vacation', 'activos'].every(k => Math.abs(Number(vieja[k] || 0) - Number(nueva[k] || 0)) < 0.005)) return false;
                 history[i] = { ...vieja, ...nueva };
-                saveData().catch(e => console.error(e));
-                return;
+                return true;
             }
             financeProfile.history = [...history, financeSnapshot()]
                 .sort((a, b) => String(a.month).localeCompare(String(b.month)))
                 .slice(-36);
-            saveData().catch(e => console.error(e));
+            return true;
         }
 
         function financePctChange(current, previous) {
@@ -499,7 +512,7 @@
             const fc = financeProfile.forecastProfile || {};
             const forecast = Number(financeProfile.salaryForecast?.[monthKey] || fc.salary || 0);
             const existingSalary = financeProfile.salaryReal?.[monthKey];
-            window._financeUpdateBefore = financeCorePatrimony();
+            window._financeUpdateBefore = patrimonioOperativo();
 
             showModal(`
                 <div class="modal-title">Actualizar ${escapeHtml(financeMonthLabel(monthKey))}</div>
@@ -521,7 +534,7 @@
             const salario = Number(document.getElementById('mfu-salario')?.value);
             const emergency = Number(document.getElementById('mfu-emergency')?.value);
             const vacation = Number(document.getElementById('mfu-vacation')?.value);
-            const before = window._financeUpdateBefore ?? financeCorePatrimony();
+            const before = window._financeUpdateBefore ?? patrimonioOperativo();
 
             // El sueldo real de cada mes se guarda aparte de la previsión,
             // para poder comparar "lo previsto" con "lo que de verdad cobré"
@@ -543,7 +556,7 @@
             financeProfile.history.sort((a, b) => String(a.month).localeCompare(String(b.month)));
 
             financeProfile.ultimoCierreMensual = monthKey;
-            const after = financeCorePatrimony();
+            const after = patrimonioOperativo();
 
             closeModal();
             render();
@@ -586,7 +599,7 @@
             return (Number(ultimo.value) || 0) + despues;
         }
         // financeProfile.invested sigue siendo la cifra que usan el resto de
-        // cálculos de patrimonio (financeCorePatrimony, historial...) — se
+        // cálculos de patrimonio (patrimonioOperativo, historial...) — se
         // recalcula aquí después de cualquier cambio en las cuentas, en vez
         // de tocar los ~15 sitios que ya la leen.
         function syncInvestedTotal() {
@@ -654,8 +667,19 @@
             }
             if (!Array.isArray(financeProfile.budgetPlans[month].allocations)) financeProfile.budgetPlans[month].allocations = [];
             if (!Number.isFinite(financeProfile.budgetPlans[month].contributions)) financeProfile.budgetPlans[month].contributions = 0;
-            asegurarCasillasAutomaticas(financeProfile.budgetPlans[month]);
+            asegurarCasillasAutomaticas(financeProfile.budgetPlans[month], month);
             return financeProfile.budgetPlans[month];
+        }
+
+        // Lo mismo para pintar, sin crear ni tocar nada guardado (auditoría F-05: pintar Finanzas creaba el plan del
+        // mes y sus casillas automáticas). Se crea de verdad al editarlo.
+        function budgetPlanParaVer(month) {
+            const guardado = financeProfile.budgetPlans?.[month];
+            const plan = guardado && typeof guardado === 'object' ? JSON.parse(JSON.stringify(guardado)) : { salary: 0, contributions: 0, allocations: [] };
+            if (!Array.isArray(plan.allocations)) plan.allocations = [];
+            if (!Number.isFinite(plan.contributions)) plan.contributions = 0;
+            asegurarCasillasAutomaticas(plan, month);
+            return plan;
         }
 
         // Suscripciones y gastos fijos entran solos en el presupuesto de cada
@@ -694,12 +718,13 @@
             return new Date() >= limite ? 'falta' : 'pronto';
         }
 
-        function asegurarCasillasAutomaticas(plan) {
+        // El id sale del mes y no de la hora: dos dispositivos (o pintar y luego editar) crean la misma casilla.
+        function asegurarCasillasAutomaticas(plan, month) {
             Object.keys(BUDGET_CASILLAS_AUTO).forEach(tipo => {
                 if (plan.autoQuitadas?.[tipo] || plan.allocations.some(a => a.auto === tipo)) return;
                 const r = budgetAutoResumen(tipo);
                 if (!r.n) return;
-                plan.allocations.push({ id: 'ba_auto_' + tipo + '_' + Date.now(), label: BUDGET_CASILLAS_AUTO[tipo], amount: r.total, categoryId: '', auto: tipo });
+                plan.allocations.push({ id: 'ba_auto_' + tipo + '_' + (month || Date.now()), label: BUDGET_CASILLAS_AUTO[tipo], amount: r.total, categoryId: '', auto: tipo });
             });
             plan.allocations.forEach(a => { if (a.auto && !a.limiteManual) a.amount = budgetAutoResumen(a.auto).total; });
         }
@@ -1248,17 +1273,60 @@
             try { await saveData(); showToast('Aportación guardada'); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
         }
 
+        // Lo que antes hacía el pintado de Finanzas (auditoría F-05: abrir la pantalla cambiaba datos y guardaba, y el
+        // resultado dependía de qué dispositivo la abría primero). Es un paso aparte, antes de pintar y al arrancar, y
+        // se puede repetir: la segunda vez no cambia nada. No guarda: devuelve si hay algo que guardar.
+        function prepararFinanzas() {
+            let cambio = false;
+            if (!financePro.enabled) { financePro.enabled = true; cambio = true; }
+            if (financeProValidarMovimientos()) cambio = true;
+            if (!Array.isArray(financeProfile.investmentAccounts) || !financeProfile.budgetPlans || !Array.isArray(financeProfile.budgetHistory) || !Array.isArray(financeProfile.wishlist)) { ensureLongTermData(); cambio = true; }
+            if (typeof invSincronizarMovimientos === 'function' && invSincronizarMovimientos()) { syncInvestedTotal(); cambio = true; }
+            if (ensureRecurringProCharges()) cambio = true;
+            if (ensureCurrentMonthHistory()) cambio = true;
+            if (actualizarHistorialPresupuestos()) cambio = true;
+            if (cambio && typeof invalidarCachesDerivadas === 'function') invalidarCachesDerivadas();
+            return cambio;
+        }
+
+        // Escrituras de Finanzas: o se guardan enteras o no se quedan (auditoría F-07; mismo patrón que
+        // saveFinanceBudgetDraft). Antes se cambiaba la memoria y se repintaba sin esperar: si el servidor fallaba, el
+        // cambio seguía a la vista, viajaba en el siguiente guardado y reintentar podía duplicarlo. mutar() devuelve
+        // false para no seguir (dato no válido); si lanza o falla saveData(), Finanzas y entries vuelven a la foto de
+        // antes. Sin red no falla: saveData deja la copia pendiente. Una escritura a la vez (dos toques seguidos, una).
+        let financeGuardando = false;
+        async function commitFinanceChange(mutar, { ok, error = 'No se pudo guardar. Todo sigue como estaba.', boton } = {}) {
+            if (financeGuardando) return false;
+            const foto = { financePro: structuredClone(financePro), financeProfile: structuredClone(financeProfile), entries: structuredClone(entries) };
+            financeGuardando = true;
+            if (boton) boton.disabled = true;
+            let resultado;
+            try {
+                resultado = mutar();
+                if (resultado === false) return false;
+                if (typeof filteredEntries !== 'undefined') filteredEntries = [...entries];
+                invalidarCachesDerivadas();
+                await saveData();
+            } catch (e) {
+                console.error(e);
+                financePro = foto.financePro; financeProfile = foto.financeProfile; entries = foto.entries;
+                if (typeof filteredEntries !== 'undefined') filteredEntries = [...entries];
+                invalidarCachesDerivadas();
+                showToast(error, true);
+                return false;
+            } finally {
+                financeGuardando = false;
+                if (boton) boton.disabled = false;
+            }
+            if (ok) showToast(typeof ok === 'function' ? ok(resultado) : ok);
+            return true;
+        }
+
+        function prepararFinanzasYGuardar() {
+            if (prepararFinanzas()) saveData().catch(e => console.error(e));
+        }
+
         function renderFinances() {
-            if (typeof invSincronizarMovimientos === 'function' && invSincronizarMovimientos()) syncInvestedTotal();
-            migrateInvestmentData();
-            migrateToInvestmentAccounts();
-            // Finanzas PRO (cuentas reales + movimientos) es ahora el único
-            // panel: el "Resumen" clásico, que llevaba sus propias cifras
-            // manuales desincronizadas de PRO, queda fusionado dentro de
-            // renderFinanceProDashboard(). Se fuerza aquí por si alguna
-            // cuenta antigua todavía tiene financePro.enabled=false guardado.
-            financePro.enabled = true;
-            ensureRecurringProCharges();
             return renderFinanceProDashboard();
         }
 
