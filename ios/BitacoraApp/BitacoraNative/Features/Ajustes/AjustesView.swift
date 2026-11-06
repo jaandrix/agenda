@@ -4,6 +4,7 @@ struct AjustesView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.openURL) private var abrir
     @State private var confirmarSalida = false
+    @State private var avisos = AvisosLocales.activos
 
     var body: some View {
         List {
@@ -22,10 +23,12 @@ struct AjustesView: View {
                 Toggle("pedir \(Biometria.nombre) al abrir.", isOn: Binding(get: { c.bloqueoActivo }, set: { v in Task { await c.activarBloqueo(v) } }))
                     .disabled(!Biometria.disponible)
                     .listRowBackground(Paleta.superficie)
+                Toggle("avisos de eventos.", isOn: Binding(get: { avisos }, set: { v in Task { avisos = await AvisosLocales.activar(v); if avisos { c.reconciliarAvisos() } } }))
+                    .listRowBackground(Paleta.superficie)
             } header: {
                 Text("en este iPhone.")
             } footer: {
-                Text("el bloqueo solo protege la app en este iPhone; tu cuenta sigue con su contraseña.")
+                Text("el bloqueo solo protege la app en este iPhone; tu cuenta sigue con su contraseña. los avisos llegan una hora antes de cada evento con hora; si ya te llegan los de la web, no los actives.")
             }
             Section {
                 Button("abrir la web.") { abrir(Config.webURL) }

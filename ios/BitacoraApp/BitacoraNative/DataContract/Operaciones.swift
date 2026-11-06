@@ -12,10 +12,13 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case moverTarea(id: String, dia: String?)
     case borrarTarea(id: String)
     case marcarRecurrente(id: String, dia: String, hecha: Bool, momentoMs: Int64)
+    case guardarEvento(id: String, fecha: String, hora: String?, titulo: String, lugar: String, notas: String)
+    case borrarEntrada(id: String)
 
     var claves: [String] {
         switch self {
         case .marcarRecurrente: return ["recurringTasks", "entries"]
+        case .guardarEvento, .borrarEntrada: return ["entries"]
         default: return ["dayPlanner"]
         }
     }
@@ -24,6 +27,11 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     static func nuevoIdTarea(sinDia: Bool = false, ahora: Date = Date()) -> String {
         let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
         return (sinDia ? "backlog_" : "planner_") + "\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<5).map { _ in letras.randomElement()! })
+    }
+
+    static func nuevoIdEntrada(ahora: Date = Date()) -> String {
+        let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
+        return "entry_\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<6).map { _ in letras.randomElement()! })
     }
 }
 
@@ -68,6 +76,8 @@ enum AplicarOperaciones {
             let (rec, ent) = marcarRecurrente(id: id, dia: dia, hecha: hecha, momento: momento, recurrentes: valores["recurringTasks"] ?? nil, entradas: valores["entries"] ?? nil)
             r["recurringTasks"] = .some(rec)
             r["entries"] = .some(ent)
+        case .guardarEvento, .borrarEntrada:
+            r["entries"] = .some(entradas(op, valores["entries"] ?? nil))
         default:
             r["dayPlanner"] = .some(aplicar(op, a: valores["dayPlanner"] ?? nil))
         }
@@ -135,9 +145,38 @@ enum AplicarOperaciones {
             _ = quitar(sitio, de: &p)
             return .object(p)
 
-        case .marcarRecurrente:
+        case .marcarRecurrente, .guardarEvento, .borrarEntrada:
             return valor ?? .object(p)
         }
+    }
+
+    // Crear o editar un evento cambia solo sus campos de formulario: lo demás (entradas con QR, personas, aviso...) se
+    // conserva. Borrar quita la entrada por id, como deleteEntry en la web.
+    static func entradas(_ op: OperacionBitacora, _ valor: JSONValue?) -> JSONValue? {
+        var lista = valor?.lista ?? []
+        switch op {
+        case let .guardarEvento(id, fecha, hora, titulo, lugar, notas):
+            let campos: [String: JSONValue] = ["date": .string(fecha), "time": .string(hora ?? ""), "title": .string(titulo),
+                                               "place": .string(lugar), "notes": .string(notas)]
+            if let n = lista.firstIndex(where: { $0["id"]?.comoId == id }) {
+                guard var e = lista[n].objeto else { return valor }
+                campos.forEach { e[$0.key] = $0.value }
+                lista[n] = .object(e)
+            } else {
+                var e = campos
+                e["id"] = .string(id)
+                e["type"] = .string("event")
+                e["eventType"] = .string("otro")
+                e["categoryId"] = .string("cat_evento")
+                lista.append(.object(e))
+            }
+        case let .borrarEntrada(id):
+            guard lista.contains(where: { $0["id"]?.comoId == id }) else { return valor }
+            lista.removeAll { $0["id"]?.comoId == id }
+        default:
+            return valor
+        }
+        return .array(lista)
     }
 
     // toggleRecurringTaskDoneToday (js/planificador.js): `completadas[dia]`, `hechaEn` y la entrada de calendario

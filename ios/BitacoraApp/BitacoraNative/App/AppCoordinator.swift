@@ -2,15 +2,17 @@ import SwiftUI
 import Network
 
 enum Pestana: Hashable {
-    case plan, estado, ajustes
+    case plan, calendario, estado, ajustes
 }
 
 // Una sola hoja a la vez: el enum impide dos modales simultáneos.
 enum Modal: Identifiable, Equatable {
     case intencion(IntencionEntrante)
     case tarea(EditorTarea)
+    case evento(EditorEvento)
     var id: String {
         switch self {
+        case .evento(let e): return "evento:\(e.id)"
         case .intencion(let i): return "intencion:\(i.id)"
         case .tarea(let t): return "tarea:\(t.id)"
         }
@@ -109,6 +111,7 @@ final class AppCoordinator {
         let uid = sesion?.userId
         await entorno.sync.detener(borrandoUsuario: uid)
         await entorno.auth.salir()
+        await AvisosLocales.quitarTodos()
         sesion = nil
         bloqueada = false
         modal = nil
@@ -123,13 +126,25 @@ final class AppCoordinator {
 
     func comprobarConservacion() async -> Bool? { await entorno.sync.comprobarConservacion() }
 
+    @ObservationIgnored private var tareaAvisos: Task<Void, Never>?
+    func reconciliarAvisos() {
+        tareaAvisos?.cancel()
+        tareaAvisos = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, !Task.isCancelled, let doc = await self.documentoVisible() else { return }
+            await AvisosLocales.reconciliar(doc)
+        }
+    }
+
     private func escucharSync() {
         guard escuchaSync == nil else { return }
         let flujo = entorno.sync.informes
         escuchaSync = Task { [weak self] in
             for await i in flujo {
                 guard let self else { return }
+                let revisionAntes = self.informe.revision
                 self.informe = i
+                if i.revision != revisionAntes, AvisosLocales.activos { self.reconciliarAvisos() }
                 if i.sesionRevocada, self.sesion != nil {
                     let uid = self.sesion?.userId
                     self.sesion = nil

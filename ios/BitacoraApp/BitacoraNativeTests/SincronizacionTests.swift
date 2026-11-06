@@ -441,6 +441,23 @@ final class OperacionesTests: XCTestCase {
         XCTAssertFalse(LecturaPlanificador.tocaHoy(t(#"{"activo":false,"frecuencia":"diaria"}"#), jueves))
     }
 
+    func testEventosConservanSusCamposYSeLeenEnElMes() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"entries": [{"id": "e1", "type": "event", "title": "cine", "date": "2026-11-12", "time": "20:00", "entradas": [{"qr": "x"}]}, {"id": "c1", "type": "birthday", "title": "ana", "birthDate": "1990-11-20"}, {"id": "recurring_done_r_2026-11-12", "type": "event", "date": "2026-11-12", "calendarLog": true}, {"id": "d1", "type": "document", "date": "2026-11-12"}]}"#.utf8))
+        let editar = OperacionBitacora.guardarEvento(id: "e1", fecha: "2026-11-13", hora: "21:00", titulo: "cine.", lugar: "centro", notas: "")
+        let crear = OperacionBitacora.guardarEvento(id: "e2", fecha: "2026-11-12", hora: nil, titulo: "cena", lugar: "", notas: "")
+        let (r, _) = AplicarOperaciones.sobre(doc, [editar, crear, crear])
+        let lista = try XCTUnwrap(try r.valor(de: "entries")?.lista)
+        XCTAssertEqual(lista.count, 5)
+        XCTAssertEqual(lista[0]["entradas"]?.lista?.count, 1)
+        XCTAssertEqual(lista[0]["date"], .string("2026-11-13"))
+        let mes = LecturaCalendario.mes(r, YearMonth(year: 2026, month: 11)!)
+        XCTAssertEqual(mes.porDia[LocalDay(iso: "2026-11-12")!]?.map(\.id), ["e2"])
+        XCTAssertEqual(mes.porDia[LocalDay(iso: "2026-11-20")!]?.first?.titulo, "cumpleaños de ana (36 años)")
+        let (borrado, parche) = AplicarOperaciones.sobre(r, [.borrarEntrada(id: "e2"), .borrarEntrada(id: "e2")])
+        XCTAssertEqual(try borrado.valor(de: "entries")?.lista?.count, 4)
+        XCTAssertEqual(Array(parche.keys), ["entries"])
+    }
+
     func testIdsConElFormatoDeLaWeb() {
         let id = OperacionBitacora.nuevoIdTarea()
         XCTAssertTrue(id.hasPrefix("planner_"))
