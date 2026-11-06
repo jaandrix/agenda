@@ -407,7 +407,7 @@ function apuntarDescribir(r, tipo) {
         case 'viaje': return { texto: `viaje a ${tit}, ${apuntarFechaTexto(r.fecha)}${r.fechaFin ? ' → ' + apuntarFechaTexto(r.fechaFin) : ''}`, falta: r.titulo ? '' : 'falta el destino' };
         case 'libro': case 'serie': case 'peli': case 'juego': return { texto: `${{ libro: 'libro', serie: 'serie', peli: 'película', juego: 'videojuego' }[tipo]} para ocio: ${tit}`, falta: r.titulo ? '' : 'falta el título' };
         case 'evento': return { texto: `evento, ${cuando}${r.lugar ? ', ' + escapeHtml(r.lugar) : ''}, ${tit}`, falta: r.titulo ? '' : 'falta qué es' };
-        default: return { texto: `tarea, ${cuando}${r.hora ? '' : ', sin hora'}, ${tit}`, falta: r.titulo ? '' : 'falta qué es' };
+        default: return { texto: `tarea, ${cuando}${r.hora ? '' : ', sin hora'}, ${tit}${r.lugar ? ' en ' + escapeHtml(r.lugar) : ''}`, falta: r.titulo ? '' : 'falta qué es' };
     }
 }
 
@@ -614,7 +614,8 @@ function apuntarCrear(texto, r, tipo) {
     const dias = Math.round((new Date(r.fecha + 'T12:00:00') - new Date(currentPlannerDayKey() + 'T12:00:00')) / 864e5);
     if (tipo === 'tarea' && dias >= 0 && dias <= 2) {
         const tareaId = id('planner');
-        plannerItemsForOffset(dias).push({ id: tareaId, time: r.hora, title: r.titulo, notes: '', done: false });
+        // La tarea no tiene campo de lugar: va en el título («Echar gasolina en PV»). Antes se perdía (05-11).
+        plannerItemsForOffset(dias).push({ id: tareaId, time: r.hora, title: r.lugar ? `${r.titulo} en ${r.lugar}` : r.titulo, notes: '', done: false });
         return { aviso: `Tarea para ${apuntarFechaTexto(r.fecha)}${r.hora ? ' a las ' + r.hora : ''}`, hecho: { tipo: 'tarea', tareaId } };
     }
     const eventoId = id('evt');
