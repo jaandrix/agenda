@@ -36,6 +36,11 @@ en el dispositivo y medir el arranque en Release.
 - La prueba del contrato con la web corre en CI, que salta también con `js/datos.js` y `js/nucleo.js`.
 - `PrivacyInfo.xcprivacy` (UserDefaults CA92.1; correo y contenido ligados a la cuenta, sin rastreo).
 
+**0.3.0 y 0.4.0 (06-11-2026): fases 2 y 3.** Planificador entero (hoy, mañana, pasado, sin día, recurrentes; crear,
+editar, mover, borrar; apuntar crea tareas) y calendario (mes con puntos, agenda del día, cumpleaños, viajes; crear,
+editar y borrar eventos; avisos locales opcionales). Falta en el calendario lo de otros apartados: horario laboral,
+pagos recurrentes, servicios y entregas de Estudios.
+
 ## Escrituras
 
 - `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en
