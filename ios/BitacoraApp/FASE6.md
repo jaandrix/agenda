@@ -31,6 +31,7 @@ iPhone, no en la nube.
 
 1. Tras el push, abre GitHub → `jaandrix/agenda` → Actions → «iOS - Build Bitácora (sin firmar)» y comprueba que la
    última ejecución sale en verde. Si sale en rojo, el error de Swift está en el paso «Compilar»: pásamelo.
+   Si sale cancelada con «not acquired by Runner» es que GitHub no tenía un Mac libre: «Re-run jobs» y listo.
 2. Descarga el artefacto `BitacoraApp-unsigned-ipa` y descomprímelo para tener `BitacoraApp.ipa`.
 3. Instálalo con SideStore (o AltStore): «+» → elige el `.ipa`. Antes, borra la versión vieja si SideStore se queja.
 4. En Ajustes del iPhone → General → VPN y gestión de dispositivos, la versión debe ser **1.1.0 (7)**.
