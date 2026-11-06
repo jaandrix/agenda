@@ -1,9 +1,42 @@
 import SwiftUI
+import UIKit
 
 @main
 struct BitacoraNativeApp: App {
     @State private var coordinador = AppCoordinator()
     @Environment(\.scenePhase) private var fase
+
+    // Los títulos de navegación y las pestañas los dibuja UIKit, que no ve el `.font` de SwiftUI: sin esto salían
+    // con la letra del sistema aunque Poppins estuviera cargada.
+    init() {
+        func poppins(_ nombre: String, _ tamano: CGFloat, _ estilo: UIFont.TextStyle) -> UIFont {
+            UIFontMetrics(forTextStyle: estilo).scaledFont(for: UIFont(name: nombre, size: tamano) ?? .systemFont(ofSize: tamano))
+        }
+        let barra = UINavigationBarAppearance()
+        barra.configureWithTransparentBackground()
+        barra.largeTitleTextAttributes = [.font: poppins("Poppins-Bold", 34, .largeTitle)]
+        barra.titleTextAttributes = [.font: poppins("Poppins-SemiBold", 17, .headline)]
+        let conFondo = UINavigationBarAppearance()
+        conFondo.configureWithDefaultBackground()
+        conFondo.largeTitleTextAttributes = barra.largeTitleTextAttributes
+        conFondo.titleTextAttributes = barra.titleTextAttributes
+        let boton = UIBarButtonItemAppearance()
+        boton.normal.titleTextAttributes = [.font: poppins("Poppins-Medium", 17, .body)]
+        conFondo.buttonAppearance = boton
+        barra.buttonAppearance = boton
+        UINavigationBar.appearance().scrollEdgeAppearance = barra
+        UINavigationBar.appearance().standardAppearance = conFondo
+        UINavigationBar.appearance().compactAppearance = conFondo
+        let pestanas = UITabBarAppearance()
+        pestanas.configureWithDefaultBackground()
+        let pie = [NSAttributedString.Key.font: poppins("Poppins-Medium", 10, .caption2)]
+        for estilo in [pestanas.stackedLayoutAppearance, pestanas.inlineLayoutAppearance, pestanas.compactInlineLayoutAppearance] {
+            estilo.normal.titleTextAttributes = pie
+            estilo.selected.titleTextAttributes = pie
+        }
+        UITabBar.appearance().standardAppearance = pestanas
+        UITabBar.appearance().scrollEdgeAppearance = pestanas
+    }
 
     var body: some Scene {
         WindowGroup {
