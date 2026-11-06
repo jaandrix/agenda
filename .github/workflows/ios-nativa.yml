@@ -91,6 +91,12 @@ jobs:
           path: ios/BitacoraApp/BitacoraNativa-unsigned.ipa
           retention-days: 30
 
+      # Los errores como anotaciones: se leen sin descargar el registro entero.
+      - name: Resumir los errores
+        if: failure()
+        run: |
+          cat tests.log analyze.log build.log 2>/dev/null | grep -E "error:|failed \(|XCTAssert" | sort -u | head -40 | while IFS= read -r l; do echo "::error::${l:0:900}"; done
+
       - name: Subir los registros si algo falla
         if: failure()
         uses: actions/upload-artifact@v4
