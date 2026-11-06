@@ -491,7 +491,7 @@ function detectarSuscripciones(data: any) {
     const yaDadas = (k: string) => recurrentes.some((e: any) => (e.conceptoBanco && k.includes(e.conceptoBanco.split(' ')[0])) || norm(e.title).split(/[^a-z0-9]+/).some((w: string) => w.length >= 4 && k.includes(w)));
     const grupos: Record<string, any[]> = {};
     (data.financePro?.transactions || []).forEach((t: any) => {
-        if (t?.type !== 'expense' || !t.date || t.date < desde || t.recurringEntryId) return;
+        if (t?.type !== 'expense' || !t.date || t.date < desde || t.recurringEntryId || neutro(t, data)) return;
         const k = clave(t);
         if (k.length >= 3) (grupos[k] = grupos[k] || []).push(t);
     });

@@ -689,7 +689,7 @@
                 if (!t || !t.date) return;
                 const d = String(t.date).slice(0, 10);
                 if (!primerMovimiento || d < primerMovimiento) primerMovimiento = d;
-                if (t.type !== 'expense' || PATRONES_GASTO_EXCLUIDO.includes(t.category)) return;
+                if (t.type !== 'expense' || financeProNeutro(t) || PATRONES_GASTO_EXCLUIDO.includes(t.category)) return;
                 gasto[d] = (gasto[d] || 0) + (Number(t.amount) || 0);
             });
             const gastoDia = iso => (primerMovimiento && iso >= primerMovimiento) ? (gasto[iso] || 0) : null;

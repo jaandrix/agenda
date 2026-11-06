@@ -30,6 +30,11 @@ const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
 const diaSemana = (iso: string) => DIAS[new Date(iso + 'T12:00:00Z').getUTCDay()];
 const esLog = (e: any) => e?.calendarLog || /^(weekly_task_done_|planner_done_|recurring_done_)/.test(e?.id || '');
 const propio = (x: any) => !(x?.ejemplo === true || String(x?.id || '').includes('ejemplo_'));
+// Lo que va o viene de los ahorros, los ajustes de saldo y la categoría «Inversiones» (también una creada a mano con ese
+// nombre) no son gasto, como en la app (financeProNeutro).
+const normCat = (t: string) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const neutro = (t: any, data: any) => !!(t?.ahorro || t?.ajuste || String(t?.id || '').startsWith('ptx_adj_') || ['cat_inversion_gasto', 'cat_inversion_ing'].includes(t?.category)
+    || normCat((data.financePro?.categories || []).find((c: any) => c.id === t?.category)?.name) === 'inversiones');
 
 async function firma(userId: string) {
     const clave = await crypto.subtle.importKey('raw', new TextEncoder().encode(Deno.env.get('CORREO_SECRET') || ''), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -54,7 +59,7 @@ function contenido(data: any, hoy: string) {
     const hechas = entries.filter((e: any) => /^(planner_done_|recurring_done_)/.test(e.id || '') && e.date >= antes && e.date <= hoy).length;
     const diasRutina = new Set<string>();
     (data.habits || []).filter(propio).forEach((h: any) => Object.keys(h.completadas || {}).forEach(d => { if (d >= antes && d <= hoy && h.completadas[d]) diasRutina.add(d); }));
-    const gasto = (data.financePro?.transactions || []).filter((t: any) => propio(t) && t.type === 'expense' && !t.viaje && !t.ahorro && !t.ajuste && !String(t.id || '').startsWith('ptx_adj_') && !['cat_inversion_gasto', 'cat_inversion_ing'].includes(t.category) && t.date >= antes && t.date <= hoy).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
+    const gasto = (data.financePro?.transactions || []).filter((t: any) => propio(t) && t.type === 'expense' && !t.viaje && !neutro(t, data) && t.date >= antes && t.date <= hoy).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
     return { viene, estudios, cumples, hechas, diasRutina: diasRutina.size, gasto };
 }
 

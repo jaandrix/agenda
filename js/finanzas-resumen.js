@@ -153,23 +153,57 @@
             </section>`;
         }
 
-        function finResPanelAhorro() {
+        // Tasa de un mes: (ingresos − gastos) / ingresos, con las reglas de financeProMonthTotals (sin traspasos, ahorros,
+        // ajustes ni inversión). null si no entró nada.
+        function finResTasaAhorro(clave) {
+            const { income, expense } = financeProMonthTotals(clave);
+            return income > 0 ? (income - expense) / income * 100 : null;
+        }
+
+        // La del mes en curso no dice nada hasta cobrar el sueldo: la cifra es la del mes anterior, ya cerrado, y debajo
+        // cada mes desde el primero con movimientos en Bitácora.
+        function finResHistoricoAhorro() {
+            const actual = financeMonthKey();
+            const primero = financePro.transactions.reduce((min, t) => {
+                const m = typeof t.date === 'string' ? t.date.slice(0, 7) : '';
+                return /^\d{4}-\d{2}$/.test(m) && m < min ? m : min;
+            }, actual);
             const meses = [];
-            for (let i = 5; i >= 0; i--) {
-                const m = finResMes(-i), { income, expense } = financeProMonthTotals(m.clave);
-                meses.push({ m, tasa: income > 0 ? (income - expense) / income * 100 : null });
+            const d = new Date(Number(primero.slice(0, 4)), Number(primero.slice(5)) - 1, 1);
+            while (financeMonthKey(d) < actual) {
+                const clave = financeMonthKey(d);
+                meses.push({ clave, nombre: FIN_RES_MESES[d.getMonth()], anio: d.getFullYear(), tasa: finResTasaAhorro(clave) });
+                d.setMonth(d.getMonth() + 1);
             }
-            const actual = meses[meses.length - 1].tasa;
-            const pasados = meses.slice(0, -1).filter(x => x.tasa !== null);
-            const media = pasados.length ? pasados.reduce((s, x) => s + x.tasa, 0) / pasados.length : null;
+            return meses;
+        }
+
+        function finResFilaAhorro(x, conAnio, enCurso) {
+            const ancho = x.tasa === null ? 0 : Math.max(2, Math.min(100, Math.abs(x.tasa)));
+            return `<div class="fin-res-ahorro-fila${enCurso ? ' en-curso' : ''}${x.tasa !== null && x.tasa < 0 ? ' negativa' : ''}">
+                <span class="fin-res-ahorro-mes">${x.nombre}${conAnio ? ` ${x.anio}` : ''}${enCurso ? ', en curso' : ''}.</span>
+                <span class="fin-res-barra-pista"><i style="width:${ancho.toFixed(1)}%"></i></span>
+                <b>${x.tasa === null ? 'sin ingresos' : finResPct(x.tasa).replace('+', '')}</b>
+            </div>`;
+        }
+
+        function finResPanelAhorro() {
+            const meses = finResHistoricoAhorro();
+            const anterior = meses.length ? meses[meses.length - 1] : null;
+            const conTasa = meses.filter(x => x.tasa !== null);
+            const media = conTasa.length > 1 ? conTasa.reduce((s, x) => s + x.tasa, 0) / conTasa.length : null;
+            const conAnio = meses.length && meses[0].anio !== new Date().getFullYear();
+            const hoy = new Date();
+            const enCurso = { nombre: FIN_RES_MESES[hoy.getMonth()], anio: hoy.getFullYear(), tasa: finResTasaAhorro(financeMonthKey()) };
+            const desde = meses.length ? `${meses[0].nombre}${conAnio ? ` de ${meses[0].anio}` : ''}` : '';
             return `<section class="finance-panel fin-res-panel">
-                <div class="fin-res-cab"><h3>tasa de ahorro.</h3><span class="fin-res-sub">de lo que entra.</span></div>
-                <div class="fin-res-cifra">${actual === null ? 'sin ingresos' : finResPct(actual).replace('+', '')}</div>
-                <div class="fin-res-nota">${media === null ? 'este mes.' : `este mes, frente a un ${finResPct(media).replace('+', '')} de media.`}</div>
-                <div class="fin-res-columnas">${meses.map(x => {
-                    const alto = x.tasa === null ? 0 : Math.max(2, Math.min(100, Math.abs(x.tasa)));
-                    return `<div class="fin-res-col ${x.tasa !== null && x.tasa < 0 ? 'negativa' : ''}" title="${x.m.nombre}: ${x.tasa === null ? 'sin ingresos' : finResPct(x.tasa)}"><i style="height:${alto}%"></i><span>${x.m.nombre.slice(0, 1)}</span></div>`;
-                }).join('')}</div>
+                <div class="fin-res-cab"><h3>tasa de ahorro.</h3><span class="fin-res-sub">${anterior ? `${anterior.nombre}.` : 'de lo que entra.'}</span></div>
+                <div class="fin-res-cifra ${anterior?.tasa < 0 ? 'finance-negative' : ''}">${!anterior ? 'sin datos' : anterior.tasa === null ? 'sin ingresos' : finResPct(anterior.tasa).replace('+', '')}</div>
+                <div class="fin-res-nota">${!anterior ? 'Aparece al cerrar el primer mes con movimientos.' : `de lo que entró en ${anterior.nombre}, el último mes cerrado${media === null ? '' : `, frente a un ${finResPct(media).replace('+', '')} de media desde ${desde}`}.`}</div>
+                <div class="fin-res-ahorro">
+                    ${meses.slice().reverse().map(x => finResFilaAhorro(x, conAnio, false)).join('')}
+                    ${finResFilaAhorro(enCurso, conAnio, true)}
+                </div>
             </section>`;
         }
 

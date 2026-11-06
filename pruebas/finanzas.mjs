@@ -428,3 +428,37 @@ test('importes y fechas no válidos: se corrigen si se puede, se avisan si no y 
     assert.deepEqual(fallos, []);
     assert.match(run(`financeTab = 'movimientos'; renderFinanceProDashboard()`), /no cuentan en los saldos/);
 });
+
+// Un traspaso entre tus cuentas, lo que va o vuelve de la inversión (por su categoría o una creada a mano con ese
+// nombre), los ahorros y los ajustes mueven dinero tuyo de sitio: ni ingreso, ni gasto, ni cambian la tasa de ahorro.
+test('traspasos e inversión no cambian ingresos, gastos ni tasa de ahorro', () => {
+    const { run } = cargarApp();
+    run(`__vaciar({ bancos: 1000 });
+        financePro.categories = [{ id: 'sueldo', name: 'Sueldo', type: 'income' }, { id: 'super', name: 'Supermercado', type: 'expense' },
+            { id: 'cat_inversion_gasto', name: 'Inversiones', type: 'expense' }, { id: 'inv_mano', name: 'Inversiones', type: 'expense' }, { id: 'inv_vuelve', name: 'inversiones', type: 'income' }];
+        globalThis.__meses = [finResMes(-2).clave, finResMes(-1).clave, finResMes(0).clave];
+        __meses.forEach((m, i) => financePro.transactions.push(
+            { id: 'n' + i, date: m + '-01', type: 'income', amount: 2000, category: 'sueldo', account: 'bancos' },
+            { id: 'g' + i, date: m + '-01', type: 'expense', amount: 500 + i * 100, category: 'super', account: 'bancos' }));
+        globalThis.__cifras = () => JSON.stringify({
+            totales: __meses.map(m => financeProMonthTotals(m)),
+            tasas: __meses.map(m => finResTasaAhorro(m)),
+            historico: finResHistoricoAhorro().map(x => [x.clave, x.tasa]),
+            stats: (({ curTotals, prevTotals, avgExpense, avgIncome, savingsRate }) => ({ curTotals, prevTotals, avgExpense, avgIncome, savingsRate }))(financeProStatsData()),
+            gasto: asistGasto(__meses[0] + '-01', __meses[2] + '-31').reduce((s, t) => s + t.amount, 0),
+            ritmo: ritmoMovimientos().length,
+        });`);
+    const antes = JSON.parse(run('__cifras()'));
+    assert.deepEqual(antes.tasas, [75, 70, 65]);
+    assert.deepEqual(antes.historico.map(x => x[1]), [75, 70], 'el histórico va del primer mes con movimientos al anterior, sin el de ahora');
+    run(`__meses.forEach((m, i) => financePro.transactions.push(
+            { id: 'tr' + i, date: m + '-05', type: 'transfer', amount: 300, account: 'bancos', transferTo: 'online' },
+            { id: 'inv' + i, date: m + '-06', type: 'expense', amount: 250, category: 'cat_inversion_gasto', account: 'online' },
+            { id: 'invm' + i, date: m + '-07', type: 'expense', amount: 50, category: 'inv_mano', account: 'online' },
+            { id: 'invv' + i, date: m + '-08', type: 'income', amount: 80, category: 'inv_vuelve', account: 'online' },
+            { id: 'ah' + i, date: m + '-09', type: 'expense', amount: 20, ahorro: true, account: 'online' },
+            { id: 'ptx_adj_' + i, date: m + '-10', type: 'income', amount: 15, account: 'efectivo' }));
+        financeSaldosCache = null;`);
+    assert.deepEqual(JSON.parse(run('__cifras()')), antes);
+    assert.match(run('finResPanelAhorro()'), /fin-res-cifra ">70,0 %[\s\S]*, en curso\./, 'la cifra grande es la del mes anterior y el de ahora va marcado');
+});
