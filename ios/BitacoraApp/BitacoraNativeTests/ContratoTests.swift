@@ -79,6 +79,8 @@ final class DocumentoTests: XCTestCase {
         XCTAssertEqual(Set(ContratoDatos.sincronizadas).count, ContratoDatos.sincronizadas.count)
         XCTAssertTrue(ContratoDatos.todas.contains("apuntes"))
         XCTAssertTrue(ContratoDatos.todas.contains("_meta"))
+        XCTAssertTrue(ContratoDatos.conocida("diasFiesta"))
+        XCTAssertFalse(ContratoDatos.conocida("claveDelFuturo"))
     }
 }
 

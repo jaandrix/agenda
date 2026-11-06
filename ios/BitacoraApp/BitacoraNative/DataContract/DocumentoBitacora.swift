@@ -32,7 +32,7 @@ struct DocumentoBitacora: Sendable, Equatable {
         return try LectorJSON.valor(d)
     }
 
-    var clavesDesconocidas: [String] { claves.filter { !ContratoDatos.todas.contains($0) } }
+    var clavesDesconocidas: [String] { claves.filter { !ContratoDatos.conocida($0) } }
     var clavesAusentes: [String] { ContratoDatos.sincronizadas.filter { fragmentos[$0] == nil } }
 
     func serializado() -> Data {

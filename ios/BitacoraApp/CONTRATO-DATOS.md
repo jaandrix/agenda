@@ -31,6 +31,13 @@ La lista de claves la vigila `node --test pruebas/contrato-ios.mjs` contra `Bita
 | `apuntes` | notas de la página independiente `estudios-apuntes.html` | la web solo la sustituye al importar (`apuntesDirty`); en cualquier otro guardado conserva la de la nube. **La nativa nunca la escribe.** |
 | `_meta` | `{ lastSnapshotWeek: "AAAA-Www" }` | la web la actualiza para el snapshot semanal en `bitacora_snapshots`. **La nativa nunca la escribe.** |
 
+## Claves heredadas
+
+`diasFiesta`, `fantasyData` y `wishlistItems` (vistas en la cuenta de Alejandro el 06-11-2026) son de las primeras
+versiones de la web, cuando todo vivía en un solo `index.html`; ningún código actual las lee ni las escribe. La web las
+conserva porque al guardar copia de la nube todo lo que no está en `DATOS_SINCRONIZADOS`. La nativa las marca como
+conocidas (`ContratoDatos.heredadas`) y también las conserva. Borrarlas sería una decisión de Alejandro, nunca automática.
+
 ## Bloques sincronizados
 
 Tipo y valor por defecto según `loadData`. «id» = sus listas se fusionan elemento a elemento.

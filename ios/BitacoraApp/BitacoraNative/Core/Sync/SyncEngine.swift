@@ -37,7 +37,7 @@ struct ResumenDocumento: Sendable, Equatable {
                 case nil: return ("ilegible", nil)
                 }
             }()
-            return ResumenBloque(id: k, tipo: tipo, elementos: n, bytes: doc.bytes(de: k)?.count ?? 0, conocida: ContratoDatos.todas.contains(k))
+            return ResumenBloque(id: k, tipo: tipo, elementos: n, bytes: doc.bytes(de: k)?.count ?? 0, conocida: ContratoDatos.conocida(k))
         }
         desconocidas = doc.clavesDesconocidas
         ausentes = doc.clavesAusentes

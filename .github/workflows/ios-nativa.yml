@@ -76,6 +76,10 @@ jobs:
           test -f "$APP/Assets.car" || { echo "Faltan los recursos"; exit 1; }
           for f in Regular Medium SemiBold Bold; do test -f "$APP/Poppins-$f.ttf" || { echo "Falta Poppins-$f"; exit 1; }; done
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")" = "com.bitacora.nativa.dev"
+          # Sin UILaunchScreen iOS la abre en modo compatibilidad (franjas negras); sin los demás, no hay enlaces, Face ID ni Poppins.
+          for clave in UILaunchScreen NSFaceIDUsageDescription CFBundleURLTypes:0:CFBundleURLSchemes:0 UIAppFonts:0 CFBundleDocumentTypes:0; do
+            /usr/libexec/PlistBuddy -c "Print $clave" "$APP/Info.plist" >/dev/null || { echo "Falta $clave en el Info.plist"; exit 1; }
+          done
           echo "Build: $(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
           if [ -d "$APP/PlugIns" ]; then echo "La app no debe llevar extensiones (SideStore no las instala)"; exit 1; fi
           mkdir -p Payload
