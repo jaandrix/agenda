@@ -10565,3 +10565,103 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .prio-etq.prio-media { color:#d98a0b; }
 .prio-etq.prio-baja { color:#4c8df6; }
 .planner-item-done .prio-etq, .m-fila.hecha .prio-etq { color:inherit; opacity:.6; }
+
+/* 06-11: planificador de escritorio a dos columnas (propuesta de ChatGPT). Todo cuelga de .pl-ed para no tocar el móvil,
+   que comparte .planner-backlog en «siguientes pasos.». */
+.pl-ed { --pl-granate:#c4606c; --pl-regla:color-mix(in srgb, var(--text-primary) 11%, transparent); max-width:1240px; }
+body.papel .pl-ed { --pl-granate:#a3243b; }
+.pl-cab { margin:0 0 30px; }
+.pl-titulo { margin:0; font-size:46px; font-weight:800; letter-spacing:-.02em; line-height:1.05; color:var(--text-primary); }
+.pl-sub { display:flex; flex-wrap:wrap; align-items:center; gap:6px 22px; margin-top:12px; font-size:16px; color:var(--text-secondary); }
+.pl-sub > span:first-child { color:var(--text-primary); opacity:.85; }
+.pl-marcas { display:inline-flex; gap:6px; }
+.pl-marcas i { display:block; width:22px; height:3px; border-radius:2px; background:color-mix(in srgb, var(--text-primary) 20%, transparent); }
+.pl-marcas i.on { background:var(--text-primary); }
+.pl-cuerpo { display:grid; grid-template-columns:minmax(0, 68fr) minmax(260px, 32fr); align-items:start; }
+.pl-agenda { padding-right:30px; min-width:0; }
+.pl-lado { border-left:1px solid var(--pl-regla); padding-left:30px; min-height:100%; align-self:stretch; display:flex; flex-direction:column; gap:30px; }
+
+.pl-control { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding-bottom:28px; border-bottom:1px solid var(--pl-regla); }
+.pl-dias { display:inline-flex; gap:2px; padding:4px; border:1px solid var(--pl-regla); border-radius:12px; background:color-mix(in srgb, var(--text-primary) 4%, transparent); }
+.pl-dias button { border:0; background:none; border-radius:8px; padding:8px 18px; font-family:var(--font-family); font-size:14px; font-weight:500; color:var(--text-secondary); cursor:pointer; transition:color .15s ease, background-color .15s ease; }
+.pl-dias button:hover { color:var(--text-primary); }
+.pl-dias button.activa { background:var(--text-primary); color:var(--bg-app); font-weight:600; }
+.pl-acciones { display:flex; gap:14px; }
+.pl-btn { border:1px solid color-mix(in srgb, var(--text-primary) 32%, transparent); background:none; border-radius:10px; padding:10px 20px; font-family:var(--font-family); font-size:13.5px; font-weight:600; color:var(--text-primary); cursor:pointer; transition:background-color .15s ease, border-color .15s ease; }
+.pl-btn:hover { border-color:var(--text-primary); }
+.pl-btn-primario { background:var(--text-primary); border-color:var(--text-primary); color:var(--bg-app); }
+.pl-btn-primario:hover { background:color-mix(in srgb, var(--text-primary) 88%, var(--bg-app)); }
+.pl-btn:active, .pl-dias button:active { transform:scale(.97); }
+.pl-dia { margin:30px 0 14px; font-size:30px; font-weight:800; letter-spacing:-.01em; color:var(--text-primary); }
+.pl-ed .luz-dia { background:none; border:0; border-bottom:1px solid var(--pl-regla); border-radius:0; padding:0 0 14px 8px; margin:0 0 4px; }
+
+/* Línea de tiempo: hora | punto sobre la línea | círculo | texto | quitar. La línea es el ::before de cada fila. */
+.pl-ed .planner-timeline { --pl-linea:94px; }
+.pl-ed .planner-item { grid-template-columns:62px 20px 22px minmax(0, 1fr) 24px; gap:0 14px; padding:19px 0 19px 8px; border-bottom:1px solid var(--pl-regla); box-shadow:none; cursor:pointer; }
+.pl-ed .planner-item:last-child { border-bottom:0; }
+.pl-ed .planner-item::before { width:1px; margin-left:0; background:color-mix(in srgb, var(--text-primary) 24%, transparent); border-radius:0; }
+.pl-ed .planner-item:first-child::before { top:31px; }
+.pl-ed .planner-item:last-child::before { height:31px; }
+.pl-ed .planner-item:only-child::before { display:none; }
+.pl-ed .planner-item-time { font-size:16px; font-weight:500; text-align:left; padding-top:1px; color:var(--text-primary); opacity:.85; }
+.pl-punto { position:relative; z-index:1; justify-self:center; width:7px; height:7px; margin-top:8px; border-radius:50%; background:var(--text-secondary); box-shadow:0 0 0 4px var(--bg-app); }
+.pl-punto-evento { width:11px; height:11px; margin-top:6px; }
+.pl-ed .planner-item-check { width:22px; height:22px; margin:0; border-width:1.5px; border-color:var(--text-secondary); background:var(--bg-app); }
+.pl-ed .planner-item-check:hover { border-color:var(--text-primary); }
+.pl-ed .planner-item-check:checked { background:var(--text-primary); border-color:var(--text-primary); }
+.pl-ed .planner-item-check:checked::after { content:''; position:absolute; box-sizing:content-box; left:6.5px; top:3px; width:4px; height:9px; border:solid var(--bg-app); border-width:0 2px 2px 0; transform:rotate(45deg); }
+.pl-ed .planner-item-title { display:block; font-size:17px; font-weight:600; line-height:1.35; }
+.pl-ed .planner-item-notes { font-size:13.5px; margin-top:6px; line-height:1.45; }
+.pl-ed .planner-item-subtasks { margin-top:8px; }
+.pl-ed .planner-subtask-row { font-size:13px; color:var(--text-secondary); }
+.pl-ed .planner-subtask-row input { accent-color:var(--text-primary); }
+.pl-ed .planner-item-subtasks:not(:has(.planner-subtask-row)) { margin:0; }
+.pl-ed .planner-subtask-add { position:absolute; top:21px; right:44px; font-size:12.5px; }
+.pl-ed .planner-item-editar:hover { text-decoration:none; }
+.pl-ed .planner-item:hover .planner-item-editar { text-decoration:underline; text-decoration-color:var(--border-strong); text-underline-offset:4px; }
+.pl-ed .planner-item-done .planner-item-title { color:var(--text-secondary); text-decoration:line-through; text-decoration-thickness:1.5px; }
+.pl-ed .planner-item-done .planner-item-time, .pl-ed .planner-item-done .planner-item-notes { opacity:.55; }
+.pl-ed .planner-item-delete { align-self:start; margin-top:2px; }
+.pl-ed .planner-item-evento .planner-item-title { font-weight:500; }
+/* En curso o pendiente de ayer: la hora y el punto en granate, nada más. */
+.pl-ed .pl-granate .planner-item-time { color:var(--pl-granate); opacity:1; }
+.pl-ed .pl-granate .pl-punto:not(.pl-punto-evento) { background:var(--pl-granate); }
+.pl-ed .planner-item-arrastrado .planner-item-check { border-color:var(--pl-granate); }
+.pl-ed .planner-item-arrastrado .planner-item-check:checked { background:var(--pl-granate); border-color:var(--pl-granate); }
+.pl-ed .planner-item-arrastrado:not(.planner-item-done) .planner-item-title span { text-decoration:none; }
+.pl-ed .planner-item.prioridad-baja .planner-item-check { border-color:var(--text-secondary); }
+.pl-ed .planner-item.prioridad-alta .planner-item-check { box-shadow:inset 0 0 0 1.5px var(--m-acento); }
+.pl-ed .planner-item.prioridad-alta:not(.planner-item-done) .planner-item-title { font-weight:700; }
+.pl-vacio { padding:30px 0 30px 8px; font-size:15px; color:var(--text-secondary); }
+.pl-enlace { border:0; background:none; padding:0; margin-left:6px; font:inherit; font-weight:700; color:var(--text-primary); cursor:pointer; }
+.pl-enlace:hover { text-decoration:underline; text-underline-offset:3px; }
+
+/* Columna de la derecha: listas planas con reglas, sin tarjeta. */
+.pl-lado .planner-backlog { background:none; border:0; border-radius:0; padding:0; margin:0; }
+.pl-lado .planner-backlog-head { margin-bottom:10px; align-items:baseline; }
+.pl-lado .planner-backlog-title { font-size:24px; font-weight:800; letter-spacing:-.01em; color:var(--text-primary); }
+.pl-lado .planner-backlog-add { font-size:13px; font-weight:600; color:var(--text-secondary); font-family:var(--font-family); }
+.pl-lado .planner-backlog-add:hover { color:var(--text-primary); }
+.pl-lado .planner-backlog-row { align-items:center; gap:14px; padding:15px 0 15px 4px; border-top:0; border-bottom:1px solid var(--pl-regla); }
+.pl-lado .planner-backlog-row input { margin:0; }
+.pl-lado .planner-backlog-row-title { font-size:15px; font-weight:500; line-height:1.35; }
+.pl-lado .planner-backlog-row-notes { font-size:12.5px; }
+.pl-lado .planner-backlog-schedule, .pl-lado .proy-hoy { border:0; background:none; padding:2px 0; font-family:var(--font-family); font-size:14px; font-weight:500; color:var(--text-secondary); cursor:pointer; }
+.pl-lado .planner-backlog-schedule:hover, .pl-lado .proy-hoy:hover { color:var(--text-primary); }
+.pl-lado .planner-backlog-hechas { margin-top:12px; }
+.pl-vacio-linea { padding:12px 0 14px 4px; font-size:13.5px; color:var(--text-secondary); border-bottom:1px solid var(--pl-regla); }
+@media (hover:hover) {
+    .pl-lado .planner-backlog-row .planner-item-delete { opacity:0; }
+    .pl-lado .planner-backlog-row:hover .planner-item-delete, .pl-ed .planner-item-delete:focus-visible { opacity:.55; }
+}
+@media (max-width:1050px) {
+    .pl-cuerpo { grid-template-columns:1fr; }
+    .pl-agenda { padding-right:0; }
+    .pl-lado { border-left:0; border-top:1px solid var(--pl-regla); padding:30px 0 0; margin-top:20px; }
+}
+@media (max-width:640px) {
+    .pl-titulo { font-size:34px; }
+    .pl-ed .planner-timeline { --pl-linea:72px; }
+    .pl-ed .planner-item { grid-template-columns:48px 16px 22px minmax(0, 1fr) 24px; gap:0 10px; }
+    .pl-ed .planner-item-time { font-size:14px; }
+}

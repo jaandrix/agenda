@@ -71,37 +71,30 @@
             return dayPlanner.days[key];
         }
 
-        // Rediseño visual del planificador inspirado en una app de tarjeta
-        // de fidelización (tarjetas de acción cuadradas arriba, franja de
-        // sellos con el progreso del día) — mismo blanco/negro/gris de
-        // siempre, solo que con más aire y más peso visual que la lista
-        // plana de antes.
-        const PLANNER_ICON_ADD = '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="42" y="8" width="16" height="84" rx="7"/><rect x="8" y="42" width="84" height="16" rx="7"/></svg>';
-        const PLANNER_ICON_REPEAT = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 45a32 32 0 0 1 58-17"/><path d="M82 55a32 32 0 0 1-58 17"/><path d="M64 13l14 15-14 15"/><path d="M36 87l-14-15 14-15"/></svg>';
-
-        // Franja de "sellos" con el progreso del día — un punto por tarea
-        // (eventos + recurrentes de hoy), relleno si ya está hecha. Solo
-        // se muestra en la pestaña "Hoy": en mañana/pasado mañana no hay
-        // nada que "progresar" todavía.
-        function renderPlannerStampBar(items, dueToday, today) {
-            const total = items.length + dueToday.length;
-            if (!total) return '';
-            const done = items.filter(i => i.done).length + dueToday.filter(t => t.completadas?.[today]).length;
-            const dots = Array.from({ length: total }, (_, i) => `<span class="planner-stamp-dot ${i < done ? 'filled' : ''}"></span>`).join('');
-            return `
-            <div class="planner-stamp-bar">
-                <div class="planner-stamp-label">progreso de hoy.</div>
-                <div class="planner-stamp-dots">${dots}</div>
-                <div class="planner-stamp-count">${done}/${total}</div>
-            </div>`;
+        // Escritorio (06-11, propuesta de ChatGPT): agenda editorial a dos columnas, sin tarjetas. Cabecera con la fecha y
+        // una raya por tarea; a la izquierda la línea de tiempo del día elegido y a la derecha lo que no pertenece a un día
+        // (pendientes sin día, recurrentes de hoy, siguientes pasos), que no se mueve al cambiar de pestaña.
+        function plannerProgreso(todos, dueToday, today) {
+            const total = todos.length + dueToday.length;
+            const hechas = todos.filter(i => i.done).length + dueToday.filter(t => t.completadas?.[today]).length;
+            const n = Math.min(total, 24);
+            const llenas = total ? Math.round(hechas * n / total) : 0;
+            const marcas = Array.from({ length: n }, (_, i) => `<i class="${i < llenas ? 'on' : ''}"></i>`).join('');
+            return { total, hechas, marcas };
         }
 
         function setPlannerDayOffset(offset) {
-            const tipo = offset > plannerDayOffset ? 'adelante' : offset < plannerDayOffset ? 'atras' : 'fundido';
+            const tipo = !isMobileStandaloneMode() ? 'fundido' : offset > plannerDayOffset ? 'adelante' : offset < plannerDayOffset ? 'atras' : 'fundido';
             conTransicion(tipo, () => {
                 plannerDayOffset = offset;
                 if (currentView === 'planner') render();
             });
+        }
+
+        // La fila entera abre la tarea; el círculo, las subtareas y los botones hacen lo suyo.
+        function plannerFilaClic(ev, id) {
+            if (ev.target.closest('input, button, label, a, .planner-item-enlace')) return;
+            openAddPlannerItem(id);
         }
 
         function renderPlanner() {
@@ -114,89 +107,83 @@
             const now = new Date();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
             const today = todayISO();
-            const dueToday = offset === 0 ? recurringTasksDueToday() : [];
-            // Las tarjetas de acción siempre reflejan lo de HOY, aunque se
-            // esté mirando la pestaña de mañana/pasado mañana.
-            const todayItemsCount = offset === 0 ? items.length : plannerItemsForOffset(0).length;
-            const todayDueCount = offset === 0 ? dueToday.length : recurringTasksDueToday().length;
-            const emptyLabel = offset === 0 ? 'para hoy' : (offset === 1 ? 'para mañana' : 'para pasado mañana');
+            const dueToday = recurringTasksDueToday();
+            const prog = plannerProgreso(todos, offset === 0 ? dueToday : [], today);
+            const fecha = new Date(currentPlannerDayKey(now, offset) + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+            const etiquetaDia = PLANNER_DAY_TABS.find(t => t.offset === offset)?.label || 'hoy.';
+            const minutos = it => { const [h, m] = String(it.time || '').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+            // Lo que está en curso (la última cosa con hora que ya empezó y sigue sin hacer) lleva la hora en granate.
+            const enCurso = offset === 0 ? [...items].reverse().find(it => !it.done && minutos(it) <= nowMinutes) : null;
+            const filas = [...sinHora, ...items];
 
             return `
-            <div class="planner-view">
-                <div class="planner-head">
-                    <div>
-                        <h3 style="margin:0">planificador.</h3>
-                        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">
-                            Cada día empieza de cero a las 4:00 am: lo que no marques como hecho se arrastra a hoy, destacado en granate. Puedes ir dejando planificados los próximos dos días.
-                        </p>
+            <div class="planner-view pl-ed">
+                <header class="pl-cab">
+                    <h2 class="pl-titulo">planificador.</h2>
+                    <div class="pl-sub" title="Cada día empieza a las 4:00. Lo que no marques se arrastra a hoy, en granate.">
+                        <span>${escapeHtml(fecha)}</span>
+                        ${prog.total ? `<span>${prog.hechas} de ${prog.total} hechas.</span><span class="pl-marcas" aria-hidden="true">${prog.marcas}</span>` : '<span>nada apuntado todavía.</span>'}
                     </div>
-                </div>
-
-                ${offset === 0 ? renderPlannerStampBar(items, dueToday, today) : ''}
-
-                <div class="planner-action-row">
-                    <button class="planner-action-card" onclick="openAddPlannerItem()" title="+ tarea.">
-                        <span class="planner-action-icon">${PLANNER_ICON_ADD}</span>
-                        <span class="planner-action-count">${todayItemsCount} hoy.</span>
-                    </button>
-                    <button class="planner-action-card" onclick="openManageRecurringTasks()" title="recurrentes.">
-                        <span class="planner-action-icon">${PLANNER_ICON_REPEAT}</span>
-                        <span class="planner-action-count">${todayDueCount} hoy.</span>
-                    </button>
-                </div>
-
-
-                <div class="culture-tabs" style="margin-bottom:18px">
-                    ${PLANNER_DAY_TABS.map(t => `
-                        <button class="culture-tab ${offset === t.offset ? 'active' : ''}" onclick="setPlannerDayOffset(${t.offset})">${t.label}</button>
-                    `).join('')}
-                </div>
-
-                ${dueToday.length ? `
-                    <div class="planner-recurring-block">
-                        <div class="planner-recurring-title">Recurrentes de hoy</div>
-                        ${dueToday.map(t => `
-                            <label class="planner-recurring-row">
-                                <input type="checkbox" ${t.completadas?.[today] ? 'checked' : ''} onchange="toggleRecurringTaskDoneToday('${t.id}')">
-                                <span class="${t.completadas?.[today] ? 'done' : ''}">${escapeHtml(t.texto)}</span>
-                            </label>
-                        `).join('')}
-                    </div>
-                ` : ''}
-
-                ${plannerDayOffset <= 1 ? renderLuzDia(servMasDias(currentPlannerDayKey(), plannerDayOffset)) : ''}
-                <div class="planner-timeline vt-interior">
-                    ${sinHora.length ? `<div class="planner-sin-hora-titulo">sin hora.</div>` : ''}
-                    ${[...sinHora, ...items].length ? [...sinHora, ...items].map((it, n) => {
-                        const [h, m] = String(it.time || '').split(':').map(Number);
-                        const itemMinutes = (h || 0) * 60 + (m || 0);
-                        const isPast = offset === 0 && !!it.time && itemMinutes < nowMinutes;
-                        const titulo = n === sinHora.length && sinHora.length && items.length ? '<div class="planner-sin-hora-titulo">con hora.</div>' : '';
-                        if (it.esEvento) return `${titulo}
-                        <div class="planner-item planner-item-evento ${isPast ? 'planner-item-past' : ''}" onclick="openEntryDetail('${jsAttr(it.id)}')">
-                            <div class="planner-item-time">${it.time ? escapeHtml(it.time) : ''}</div>
-                            <i class="planner-evento-punto" style="background:${escapeHtml(colorTema(it.color))}" aria-hidden="true"></i>
-                            <div class="planner-item-body"><div class="planner-item-title"><span>${escapeHtml(it.title)}</span></div><div class="planner-item-notes">${escapeHtml(it.sub)}</div></div>
-                        </div>`;
-                        return `${titulo}
-                        <div class="planner-item ${isPast && !it.arrastrado ? 'planner-item-past' : ''} ${it.done ? 'planner-item-done' : ''} ${it.arrastrado ? 'planner-item-arrastrado' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}">
-                            <div class="planner-item-time">${it.time ? escapeHtml(it.time) : '—'}</div>
-                            <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})" aria-label="${escapeHtml(it.title)}: hecha">
-                            <div class="planner-item-body">
-                                <div class="planner-item-title"><span ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''} ${it.valorarPeliculaId ? `class="planner-item-enlace" onclick="openEditEntry('${it.valorarPeliculaId}')" title="Abrir la película para valorarla"` : `class="planner-item-editar" onclick="openAddPlannerItem('${it.id}')" title="Editar"`}>${prioEtiqueta(it.prioridad)}${escapeHtml(it.title)}</span>${it.prioridad ? `<i class="planner-prioridad">${PLANNER_PRIORIDADES[it.prioridad]}</i>` : ''}</div>
-                                ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
-                                ${it.done ? '' : luzAviso(it.title, servMasDias(currentPlannerDayKey(), offset), it.time)}
-                                ${renderPlannerSubtasks(it, offset)}
+                </header>
+                <div class="pl-cuerpo">
+                    <section class="pl-agenda">
+                        <div class="pl-control">
+                            <div class="pl-dias" role="tablist" aria-label="Día">
+                                ${PLANNER_DAY_TABS.map(t => `<button role="tab" aria-selected="${offset === t.offset}" class="${offset === t.offset ? 'activa' : ''}" onclick="setPlannerDayOffset(${t.offset})">${t.label}</button>`).join('')}
                             </div>
-                            <button class="planner-item-delete" title="Eliminar" onclick="deletePlannerItem('${it.id}', ${offset})"><i class='ico ico-x' aria-hidden=true></i></button>
-                        </div>`;
-                    }).join('') : `
-                        <div class="finance-empty-state">Aún no has añadido tareas ${emptyLabel}. Pulsa <strong>+ tarea.</strong> para empezar tu planificación.</div>
-                    `}
+                            <div class="pl-acciones">
+                                <button class="pl-btn pl-btn-primario" onclick="openAddPlannerItem()">+ tarea.</button>
+                                <button class="pl-btn" onclick="openManageRecurringTasks()">recurrentes.</button>
+                            </div>
+                        </div>
+                        <h3 class="pl-dia">${etiquetaDia}</h3>
+                        ${offset <= 1 ? renderLuzDia(servMasDias(currentPlannerDayKey(), offset)) : ''}
+                        <div class="planner-timeline pl-linea vt-interior">
+                            ${filas.length ? filas.map(it => {
+                                const isPast = offset === 0 && !!it.time && minutos(it) < nowMinutes;
+                                const granate = it === enCurso || (it.arrastrado && !it.done);
+                                if (it.esEvento) return `
+                                <div class="planner-item planner-item-evento ${isPast ? 'pl-pasada' : ''} ${granate ? 'pl-granate' : ''}" onclick="openEntryDetail('${jsAttr(it.id)}')">
+                                    <div class="planner-item-time">${it.time ? escapeHtml(it.time) : '—'}</div>
+                                    <i class="pl-punto pl-punto-evento" style="background:${escapeHtml(colorTema(it.color))}" aria-hidden="true"></i>
+                                    <span aria-hidden="true"></span>
+                                    <div class="planner-item-body"><div class="planner-item-title"><span>${escapeHtml(it.title)}</span></div>${it.sub ? `<div class="planner-item-notes">${escapeHtml(it.sub)}</div>` : ''}</div>
+                                    <span></span>
+                                </div>`;
+                                const titulo = it.valorarPeliculaId
+                                    ? `<span class="planner-item-enlace" onclick="openEditEntry('${it.valorarPeliculaId}')" title="Abrir la película para valorarla">${prioEtiqueta(it.prioridad)}${escapeHtml(it.title)}</span>`
+                                    : `<span class="planner-item-editar" tabindex="0" role="button" onkeydown="if(event.key==='Enter'){event.preventDefault();openAddPlannerItem('${it.id}')}" ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''}>${prioEtiqueta(it.prioridad)}${escapeHtml(it.title)}</span>`;
+                                return `
+                                <div class="planner-item ${isPast ? 'pl-pasada' : ''} ${granate ? 'pl-granate' : ''} ${it.done ? 'planner-item-done' : ''} ${it.arrastrado ? 'planner-item-arrastrado' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}" onclick="plannerFilaClic(event, '${it.id}')">
+                                    <div class="planner-item-time">${it.time ? escapeHtml(it.time) : '—'}</div>
+                                    <i class="pl-punto" aria-hidden="true"></i>
+                                    <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})" aria-label="${escapeHtml(it.title)}: hecha">
+                                    <div class="planner-item-body">
+                                        <div class="planner-item-title">${titulo}</div>
+                                        ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
+                                        ${it.done ? '' : luzAviso(it.title, servMasDias(currentPlannerDayKey(), offset), it.time)}
+                                        ${renderPlannerSubtasks(it, offset)}
+                                    </div>
+                                    <button class="planner-item-delete" title="Eliminar" aria-label="Eliminar ${escapeHtml(it.title)}" onclick="deletePlannerItem('${it.id}', ${offset})"><i class='ico ico-x' aria-hidden=true></i></button>
+                                </div>`;
+                            }).join('') : `
+                                <div class="pl-vacio">nada ${offset === 0 ? 'para hoy' : (offset === 1 ? 'para mañana' : 'para pasado mañana')} todavía. <button class="pl-enlace" onclick="openAddPlannerItem()">+ tarea.</button></div>
+                            `}
+                        </div>
+                    </section>
+                    <aside class="pl-lado">
+                        ${renderPlannerBacklog()}
+                        <div class="planner-backlog pl-recurrentes">
+                            <div class="planner-backlog-head"><div class="planner-backlog-title">recurrentes de hoy.</div></div>
+                            ${dueToday.length ? dueToday.map(t => `
+                                <div class="planner-backlog-row ${t.completadas?.[today] ? 'done' : ''}">
+                                    <input type="checkbox" class="planner-item-check" ${t.completadas?.[today] ? 'checked' : ''} onchange="toggleRecurringTaskDoneToday('${t.id}')" aria-label="${escapeHtml(t.texto)}: hecha">
+                                    <div class="planner-backlog-row-body"><div class="planner-backlog-row-title">${escapeHtml(t.texto)}</div></div>
+                                </div>`).join('') : `<div class="pl-vacio-linea">nada que se repita hoy.</div>`}
+                        </div>
+                        ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}
+                    </aside>
                 </div>
-
-                ${renderPlannerBacklog()}
-                ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}
             </div>`;
         }
 
@@ -239,10 +226,10 @@
             return `
             <div class="planner-backlog">
                 <div class="planner-backlog-head">
-                    <div class="planner-backlog-title">tareas pendientes.</div>
-                    <button class="planner-backlog-add" onclick="openAddBacklogTask()">+ tarea</button>
+                    <div class="planner-backlog-title">pendientes sin día.</div>
+                    <button class="planner-backlog-add" onclick="openAddBacklogTask()">+ añadir.</button>
                 </div>
-                ${items.length ? items.map(it => renderBacklogRow(it)).join('') : `<div class="finance-empty-line" style="margin:6px 0 4px">${quedan ? 'Todo hecho por aquí.' : 'Sin tareas pendientes: apunta aquí lo que quieras hacer sin ponerle día todavía.'}</div>`}
+                ${items.length ? items.map(it => renderBacklogRow(it)).join('') : `<div class="pl-vacio-linea">${quedan ? 'todo hecho por aquí.' : 'apunta aquí lo que quieras hacer sin ponerle día todavía.'}</div>`}
                 ${backlogBotonHechas('planner-backlog-hechas')}
             </div>`;
         }
@@ -255,8 +242,8 @@
                         <div class="planner-backlog-row-title">${escapeHtml(it.title)}</div>
                         ${it.notes ? `<div class="planner-backlog-row-notes">${escapeHtml(it.notes)}</div>` : ''}
                     </div>
-                    <button class="planner-backlog-schedule" title="Asignar a hoy" onclick="scheduleBacklogTaskToday('${it.id}')">→ hoy</button>
-                    <button class="planner-item-delete" title="Eliminar" onclick="deleteBacklogTask('${it.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
+                    ${it.done ? '' : `<button class="planner-backlog-schedule" title="Asignar a hoy" onclick="scheduleBacklogTaskToday('${it.id}')">→ hoy</button>`}
+                    <button class="planner-item-delete" title="Eliminar" aria-label="Eliminar ${escapeHtml(it.title)}" onclick="deleteBacklogTask('${it.id}')"><i class='ico ico-x' aria-hidden=true></i></button>
                 </div>`;
         }
 

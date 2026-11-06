@@ -81,7 +81,7 @@ const GUIA_IA_RECETAS = [
     ['Planificar el día y pasar tareas a hoy', [
         'Entra en «planificador.».',
         'Añade tareas con el «+» de la tarjeta (con hora o «sin hora.») y su prioridad.',
-        'Las tareas sin día están en «tareas pendientes.»: «→ hoy» las pasa a la línea de tiempo de hoy.',
+        'Las tareas sin día están en «pendientes sin día.», a la derecha: «→ hoy» las pasa a la línea de tiempo de hoy.',
         'Marca el círculo al terminar cada una. Lo que no marques pasa al día siguiente, destacado.',
     ]],
     ['Hacer que una tarea se repita', [
