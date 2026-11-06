@@ -1194,18 +1194,10 @@
         // debajo (visto en el iPhone el 05-11). Allí manda la pila en memoria (mobilePila) y el gesto propio del borde.
         // La pila también decide qué es raíz: las pestañas de la barra (y el inicio) la vacían; lo demás se apila.
         const mobileScrolls = {};
-        const mobileFotos = {};
         let mobilePila = [];
-        let mobileSinAnimar = false;
         // Tampoco las capas (menú, modales): una entrada sobrante dejaba el gesto de «adelante» del borde derecho, que
         // llevaba a otra pantalla. Solo instalada: en Safari normal la flecha atrás sigue cerrando el modal.
         const mobileSinHistorial = appEntorno.modo !== 'browser' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
-        function mobileAtras() {
-            if (mobilePila.length < 2) return false;
-            if (mobileSinHistorial) mobileIr(mobilePila[mobilePila.length - 2], 'historial');
-            else history.back();
-            return true;
-        }
         function mobileAnotarVista(view) {
             if (mobileSinHistorial) { soltarCapa(); return; }
             if (capaAtrasPendiente) { vistaTrasAtras = view; return; }
@@ -1236,8 +1228,6 @@
             // Tocar la pestaña en la que ya estás sube arriba del todo.
             if (view === currentView && !mobileMenuAbierto && shellActual) { if (!desdeHistorial) shellActual.scrollTo({ top: 0, behavior: vtReducido() ? 'auto' : 'smooth' }); return; }
             if (shellActual) mobileScrolls[currentView] = shellActual.scrollTop;
-            // Lo que se deja, tal cual se ve: el gesto del borde lo enseña debajo al volver o al cambiar de pestaña.
-            if (mobileZonas.pagina) mobileFotos[currentView] = { html: mobileZonas.pagina, scroll: shellActual?.scrollTop || 0 };
             if (!mobilePila.length) mobilePila = [NAV_VIEW_LABELS[currentView] ? currentView : 'calendar'];
             if (desdeHistorial) { mobilePila.pop(); if (mobilePila[mobilePila.length - 1] !== view) mobilePila = [view]; }
             else if (tipo === 'm-pestana' || view === 'calendar') mobilePila = [view];
@@ -1259,9 +1249,7 @@
             // Volver y cambiar de pestaña dejan la página donde la dejaste; entrar desde el menú empieza arriba.
             if (shell) shell.scrollTop = desdeHistorial || tipo === 'm-pestana' ? mobileScrolls[view] || 0 : 0;
             const anim = desdeHistorial ? 'm-pag-atras' : tipo === 'm-pestana' ? 'm-pag-funde' : view === 'calendar' ? 'm-pag-atras' : 'm-pag-adelante';
-            // Tras el gesto del borde la pantalla nueva ya estaba a la vista debajo: entra sin animación.
-            if (!mobileSinAnimar) document.querySelector('#mobile-shell .m-pagina')?.classList.add(anim);
-            mobileSinAnimar = false;
+            document.querySelector('#mobile-shell .m-pagina')?.classList.add(anim);
             mobileContarVisita(view);
             if (typeof afterEnter === 'function') afterEnter();
         }
@@ -1419,152 +1407,12 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 shell.dataset.plegado = '1';
                 shell.addEventListener('scroll', () => mobilePlegarTitulo(shell), { passive: true });
                 shell.addEventListener('pointerdown', mobileDeslizarFranja);
-                if (appEntorno.modo !== 'browser') shell.addEventListener('touchstart', mobileBordeAtras, { passive: true });
             }
             if (mobileLastEffectView !== view) {
                 mobileLastEffectView = view;
                 const effect = MOBILE_SECTION_EFFECTS[view];
                 if (effect) setTimeout(effect, 0);
             }
-        }
-
-        // Gesto del borde (05-11, tras probarlo en el iPhone): en una pantalla abierta desde otra, arrastrar desde el borde
-        // izquierdo vuelve atrás; en las raíces de la barra (inicio, plan, el apartado reciente) cambia de pestaña: desde
-        // el borde izquierdo a la anterior y desde el derecho a la siguiente. Solo se mueve el contenido de la página (la
-        // barra de abajo y la de arriba se quedan quietas) y debajo se ve la pantalla de destino tal como se dejó.
-        function mobilePestanasBarra() {
-            return [...document.querySelectorAll('#mobile-shell .m-tabbar .m-tab[data-vista]')].map(b => b.dataset.vista);
-        }
-        function mobileEnCarrusel(el) {
-            for (; el && el.id !== 'mobile-shell'; el = el.parentElement) {
-                if (el.classList?.contains('m-mes-puntos')) return true;
-                if (el.scrollWidth > el.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(el).overflowX)) return true;
-            }
-            return false;
-        }
-        function mobileBordeAtras(e) {
-            const p0 = e.touches[0];
-            if (e.touches.length !== 1 || modalEnPantalla() || mobileMenuAbierto || e.target.closest?.('.m-tabbar')) return;
-            const izquierda = p0.clientX <= 24, derecha = p0.clientX >= innerWidth - 24;
-            if (!izquierda && !derecha) return;
-            const vista = NAV_VIEW_LABELS[currentView] ? currentView : 'calendar';
-            if (!mobilePila.length) mobilePila = [vista];
-            let destino = null, accion = null;
-            if (mobilePila.length > 1) {
-                if (!izquierda) return;
-                destino = mobilePila[mobilePila.length - 2];
-                accion = () => mobileAtras();
-            } else {
-                const barra = mobilePestanasBarra(), k = barra.indexOf(vista);
-                if (k < 0) return;
-                destino = barra[k + (izquierda ? -1 : 1)];
-                if (!destino) return;
-                accion = () => mobileIr(destino, 'm-pestana');
-            }
-            if (mobileEnCarrusel(e.target)) return;
-            const pagina = document.querySelector('#mobile-shell .m-pagina');
-            const shell = document.getElementById('mobile-shell');
-            if (!pagina || !shell) return;
-            // Como en iOS (05-11, tras la prueba en el iPhone): lo que va encima sigue al dedo 1:1, opaco y con sombra en su
-            // borde izquierdo; lo de debajo va al 30 % y se oscurece con un velo que solo cambia de opacidad. Desde el borde
-            // izquierdo, encima va la página actual (se aparta hacia la derecha); desde el derecho, encima entra la pantalla
-            // siguiente. Durante el gesto solo se tocan transform y opacity.
-            const signo = izquierda ? 1 : -1;
-            const ancho = innerWidth;
-            const reducido = vtReducido();
-            const x0 = p0.clientX, y0 = p0.clientY;
-            let dx = 0, siguiendo = null, otra = null, velo = null, frame = 0;
-            let muestras = [];
-            const crearOtra = () => {
-                let foto = mobileFotos[destino];
-                // Una pestaña sin visitar aún: se pinta su página para el gesto (si no hay que bajar archivos).
-                if (!foto && !vistaPorCargar(destino)) try { foto = { html: mobilePaginaSegura(destino, false), scroll: mobileScrolls[destino] || 0 }; } catch (_) { foto = null; }
-                const el = document.createElement('div');
-                el.className = 'm-gesto-capa';
-                el.setAttribute('aria-hidden', 'true');
-                el.inert = true;
-                if (foto) {
-                    el.innerHTML = foto.html;
-                    el.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
-                }
-                const dy = shell.scrollTop - (foto?.scroll || 0);
-                el.style.cssText = `padding:0 ${pagina.offsetLeft}px;top:${pagina.offsetTop + dy}px;min-height:${innerHeight + Math.abs(dy)}px`;
-                return el;
-            };
-            const empezar = () => {
-                otra = crearOtra();
-                velo = document.createElement('div');
-                velo.className = 'm-gesto-velo';
-                velo.style.cssText = `top:${shell.scrollTop}px;height:${innerHeight}px`;
-                // La sombra de color de fondo tapa los márgenes de .m-app sin tocar el diseño (sin reflujo).
-                pagina.style.setProperty('--m-gesto-margen', pagina.offsetLeft + 'px');
-                pagina.classList.add('m-gesto-pagina', signo > 0 ? 'm-gesto-encima' : 'm-gesto-debajo');
-                otra.classList.add(signo > 0 ? 'm-gesto-debajo' : 'm-gesto-encima');
-                velo.style.zIndex = '2';
-                pagina.style.zIndex = signo > 0 ? '3' : '1';
-                otra.style.zIndex = signo > 0 ? '1' : '3';
-                pagina.after(otra, velo);
-            };
-            // p: 0 = nada recorrido, 1 = la pantalla de destino entera a la vista.
-            const pintar = p => {
-                const x = Math.round(p * ancho);
-                const lejos = reducido ? 0 : 0.3;
-                if (signo > 0) {
-                    pagina.style.transform = `translate3d(${x}px,0,0)`;
-                    otra.style.transform = `translate3d(${Math.round(-(1 - p) * ancho * lejos)}px,0,0)`;
-                    velo.style.opacity = String((1 - p) * 0.14);
-                } else {
-                    otra.style.transform = `translate3d(${ancho - x}px,0,0)`;
-                    pagina.style.transform = `translate3d(${Math.round(-p * ancho * lejos)}px,0,0)`;
-                    velo.style.opacity = String(p * 0.14);
-                }
-            };
-            const mover = ev => {
-                const t = ev.touches[0]; if (!t) return;
-                const mx = (t.clientX - x0) * signo, my = Math.abs(t.clientY - y0);
-                if (siguiendo === null && (Math.abs(mx) > 10 || my > 10)) {
-                    siguiendo = mx > 10 && mx > my * 1.5;
-                    if (siguiendo) empezar();
-                }
-                if (!siguiendo) return;
-                ev.preventDefault();
-                dx = Math.min(ancho, Math.max(0, mx));
-                muestras.push([ev.timeStamp, dx]);
-                if (muestras.length > 6) muestras.shift();
-                if (!frame) frame = requestAnimationFrame(() => { frame = 0; pintar(dx / ancho); });
-            };
-            const limpiar = () => {
-                otra?.remove(); velo?.remove();
-                pagina.classList.remove('m-gesto-pagina', 'm-gesto-soltando', 'm-gesto-encima', 'm-gesto-debajo');
-                for (const k of ['transform', 'transition', 'zIndex']) pagina.style[k] = '';
-            };
-            const soltar = () => {
-                removeEventListener('touchmove', mover);
-                removeEventListener('touchend', soltar);
-                removeEventListener('touchcancel', soltar);
-                if (!siguiendo) return;
-                cancelAnimationFrame(frame); frame = 0;
-                // Velocidad de los últimos ~80 ms: un tirón corto completa; soltar despacio antes de la mitad vuelve.
-                const ult = muestras[muestras.length - 1], pri = muestras.find(m => ult[0] - m[0] <= 80) || muestras[0];
-                const v = ult && pri && ult[0] > pri[0] ? (ult[1] - pri[1]) / (ult[0] - pri[0]) : 0;
-                const vale = v > 0.35 || (v > -0.2 && dx + v * 120 > ancho / 2);
-                const resto = vale ? ancho - dx : dx;
-                const ms = reducido ? 0 : Math.round(Math.min(340, Math.max(220, resto / Math.max(Math.abs(v), 1.4))));
-                [pagina, otra, velo].forEach(el => { el.style.transition = ms ? `transform ${ms}ms cubic-bezier(.2,.9,.25,1), opacity ${ms}ms cubic-bezier(.2,.9,.25,1)` : 'none'; });
-                pagina.classList.add('m-gesto-soltando');
-                pintar(vale ? 1 : 0);
-                setTimeout(() => {
-                    if (!vale) { [pagina, otra, velo].forEach(el => { el.style.transition = ''; }); limpiar(); return; }
-                    mobileSinAnimar = true;
-                    accion();
-                    mobileSinAnimar = false;
-                    // Si la página no ha cambiado (otra capa se comió la navegación), no puede quedarse fuera de la pantalla.
-                    setTimeout(() => { if (pagina.isConnected) limpiar(); }, 400);
-                }, ms + 16);
-            };
-            addEventListener('touchmove', mover, { passive: false });
-            addEventListener('touchend', soltar);
-            addEventListener('touchcancel', soltar);
         }
 
         // Al bajar, el título grande se recoge en la barra de arriba, como
@@ -1881,8 +1729,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 <div class="m-mes-letras">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => `<span class="${i === letraHoy && y === new Date().getFullYear() && m === new Date().getMonth() ? 'hoy' : ''}">${l}</span>`).join('')}</div>
                 <div class="m-mes-puntos ${entra ? 'm-entra' : ''}">${celdas.join('')}</div>` : `<div class="m-semana-carrusel">${[-1, 0, 1].map(k => `<div class="m-semana-tira">${tiraDe(k)}</div>`).join('')}</div>`}
             </section>
-            ${renderMobileAhora(sel, hoy)}
-            ${sel === hoy ? renderMobileBus() : ''}
+            ${renderMobileAhora(sel, hoy, sel === hoy ? renderMobileBus() : '')}
             ${panel}
             ${renderLineaFestivos('m-serv-linea', true)}
             ${renderMobileTeselas()}
@@ -1893,6 +1740,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
         // transporte (que se carga al abrirlo) para no bajarlo en cada arranque; pide la función transporte como mucho
         // cada 30 s y se vuelve a pedir sola mientras la línea está a la vista.
         let mobileBus = null, mobileBusPidiendo = false, mobileBusReloj = null;
+        const M_BUS_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M24 10h52c8 0 14 6 14 14v50c0 4-2 7-5 9v7a5 5 0 0 1-10 0v-6H25v6a5 5 0 0 1-10 0v-7c-3-2-5-5-5-9V24c0-8 6-14 14-14zm-2 16v22h56V26zm4 36a6 6 0 1 0 0 12a6 6 0 1 0 0-12zm48 0a6 6 0 1 0 0 12a6 6 0 1 0 0-12z"/></svg>';
         function mobileBusPoste() {
             const fav = (servicios?.transporte?.favoritos || []).find(c => String(c).startsWith('bus:'));
             return fav && apartadoVisible('transporte') ? fav.slice(4) : null;
@@ -1901,7 +1749,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const poste = mobileBusPoste();
             if (!poste) return '';
             if (!mobileBus || mobileBus.poste !== poste || Date.now() - mobileBus.hora > 30000) setTimeout(mobileBusActualizar, 0);
-            return `<button class="m-bus" onclick="mobileIr('transporte')"><span class="m-bus-tit">tu bus.</span><span class="m-bus-txt" id="m-bus-txt">${mobileBus?.poste === poste ? mobileBus.html : 'mirando el próximo…'}</span></button>`;
+            return `<button class="m-bus" onclick="mobileIr('transporte')" aria-label="Tu bus">${M_BUS_ICONO}<span class="m-bus-txt" id="m-bus-txt">${mobileBus?.poste === poste ? mobileBus.html : 'mirando el próximo…'}</span></button>`;
         }
         async function mobileBusActualizar() {
             const poste = mobileBusPoste();
@@ -1920,8 +1768,8 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                     const porLinea = new Map();
                     (d?.tiempos || []).filter(x => x.minutos !== null && (!mias.length || mias.includes(x.linea))).sort((a, b) => a.minutos - b.minutos)
                         .forEach(x => { if (!porLinea.has(x.linea)) porLinea.set(x.linea, x.minutos); });
-                    const lista = [...porLinea].slice(0, 4).map(([l, m]) => `el <b>${escapeHtml(l)}</b> ${m === 0 ? '<b>ya</b>' : `en <b>${m} min</b>`}`);
-                    if (d) html = lista.length ? lista.join(', ') + '.' : mias.length ? `el ${escapeHtml(mias.join(', '))}, sin buses previstos ahora.` : 'sin buses previstos ahora.';
+                    const lista = [...porLinea].slice(0, 4).map(([l, m]) => `<span class="m-bus-linea">bus <b>${escapeHtml(l)}</b>, ${m === 0 ? '<b>ya</b>' : `en <b>${m} min</b>`}</span>`);
+                    if (d) html = lista.length ? lista.join('; ') + '.' : mias.length ? `bus ${escapeHtml(mias.join(', '))}, sin buses previstos ahora.` : 'sin buses previstos ahora.';
                 }
             } catch (e) { /* se queda en «sin datos ahora.» */ }
             mobileBusPidiendo = false;
@@ -1935,22 +1783,17 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
 
         // «ahora.»: hoy, la hora y lo siguiente con hora; otro día por venir, «lo próximo.»; un día pasado, nada.
         let mobileDiaConHora = [];
-        function renderMobileAhora(sel, hoy) {
+        // Desde el 06-11 (captura de Alejandro) es un bloque: la hora, lo siguiente con hora y, si hay parada guardada, el bus.
+        function renderMobileAhora(sel, hoy, bus = '') {
             if (sel < hoy) return '';
             const pendientes = mobileDiaConHora.filter(f => !f.hecha);
             if (sel !== hoy) {
                 const p = pendientes[0];
-                return `<section class="m-ahora"><div class="m-ahora-tit">lo próximo.</div>${p ? `<div class="m-ahora-hora">${escapeHtml(p.hora)}</div><div class="m-ahora-que">${escapeHtml(p.nombre)}</div>` : '<div class="m-ahora-que m-ahora-nada">nada con hora.</div>'}</section>`;
+                return `<section class="m-ahora m-ahora-bloque"><div class="m-ahora-tit">lo próximo.</div>${p ? `<div class="m-ahora-hora">${escapeHtml(p.hora)}</div><div class="m-ahora-sig">${escapeHtml(p.nombre)}</div>` : '<div class="m-ahora-sig m-ahora-nada">nada con hora.</div>'}</section>`;
             }
             const ya = new Date(), horaAhora = `${String(ya.getHours()).padStart(2, '0')}:${String(ya.getMinutes()).padStart(2, '0')}`;
             const p = pendientes.find(f => f.hora > horaAhora);
-            let falta = '';
-            if (p) {
-                const [h, m] = p.hora.split(':').map(Number);
-                const min = h * 60 + m - (ya.getHours() * 60 + ya.getMinutes());
-                falta = min < 60 ? `faltan ${min} min.` : `faltan ${Math.floor(min / 60)} h${min % 60 ? ` y ${min % 60} min` : ''}.`;
-            }
-            return `<section class="m-ahora"><div class="m-ahora-tit">ahora.</div><div class="m-ahora-hora">${horaAhora}</div>${p ? `<div class="m-ahora-que">${escapeHtml(p.nombre)}</div><div class="m-ahora-falta">${falta}</div>` : '<div class="m-ahora-que m-ahora-nada">nada más con hora.</div>'}</section>`;
+            return `<section class="m-ahora m-ahora-bloque"><div class="m-ahora-tit">ahora.</div><div class="m-ahora-hora">${horaAhora}</div>${p ? `<div class="m-ahora-sig"><span>siguiente,</span> <b>${escapeHtml(p.hora)}</b> ${escapeHtml(p.nombre)}</div>` : '<div class="m-ahora-sig m-ahora-nada">nada más con hora.</div>'}${bus ? `<div class="m-ahora-regla"></div>${bus}` : ''}</section>`;
         }
 
         function renderMobileDiaPanel(sel, hoy) {
@@ -1993,7 +1836,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 recurringTasksDueToday().forEach(t => {
                     const hecha = !!t.completadas?.[hoy];
                     if (!sigue(hecha, t.hechaEn?.dia === hoy ? t.hechaEn.cuando : 0)) return;
-                    filas.push({ hora: '', html: `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="mobileMarcarRecurrente('${t.id}', this)" aria-label="Marcar hecha"></button></div>` });
+                    filas.push({ hora: '', hecha, html: `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="mobileMarcarRecurrente('${t.id}', this)" aria-label="Marcar hecha"></button></div>` });
                 });
             }
             filas.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
@@ -2005,18 +1848,19 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const sinHora = filas.filter(f => !f.hora), conHora = filas.filter(f => f.hora);
             mobileDiaConHora = conHora;
             const ahora = new Date(), horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
-            let marcaPuesta = sel !== hoy;
+            // Lista continua (06-11): sin la marca de «ahora» (la hora ya va arriba, en «ahora.»); lo que está en curso, la
+            // última cosa sin hacer cuya hora ya ha llegado, va en el color del tema, como lo arrastrado de ayer.
+            const enCurso = sel === hoy ? conHora.filter(f => !f.hecha && f.hora <= horaAhora).pop() : null;
             const linea = conHora.map(f => {
-                let marca = '';
-                if (!marcaPuesta && f.hora > horaAhora) { marca = `<div class="m-tl-ahora"><span>ahora, ${horaAhora}.</span></div>`; marcaPuesta = true; }
                 const pasada = sel < hoy || (sel === hoy && f.hora < horaAhora);
-                return `${marca}<div class="m-tl-item ${pasada ? 'pasada' : ''}"><div class="m-tl-hora">${escapeHtml(f.hora)}</div><div class="m-tl-eje"><i></i></div><div class="m-tl-carta">${f.html}</div></div>`;
-            }).join('') + (!marcaPuesta && conHora.length ? `<div class="m-tl-ahora"><span>ahora, ${horaAhora}.</span></div>` : '');
+                return `<div class="m-tl-item ${pasada ? 'pasada' : ''} ${f === enCurso ? 'en-curso' : ''}"><div class="m-tl-hora">${escapeHtml(f.hora)}</div><div class="m-tl-eje"><i></i></div><div class="m-tl-carta">${f.html}</div></div>`;
+            }).join('');
+            const nPend = filas.filter(f => f.hecha === false).length, nHechas = filas.filter(f => f.hecha).length + ocultas;
+            const cuenta = [nPend ? `${nPend} ${nPend === 1 ? 'pendiente' : 'pendientes'}` : '', nHechas ? `${nHechas} ${nHechas === 1 ? 'hecha' : 'hechas'}` : ''].filter(Boolean).join(', ');
             return `
             <section class="m-dia">
                 <div class="m-dia-cab">
-                    <div><div class="m-dia-titulo">${titulo}</div><div class="m-dia-sub">${festivoDe(sel) ? `festivo, ${escapeHtml(festivoDe(sel).nombre.toLowerCase())}. ` : ''}${filas.length ? `${filas.length} ${filas.length === 1 ? 'cosa' : 'cosas'}.` : 'libre.'}</div></div>
-                    <button class="m-mas" onclick="openNewEntryForDay('${sel}')" aria-label="Añadir algo este día">+</button>
+                    <div><div class="m-dia-titulo">${titulo}</div><div class="m-dia-sub">${festivoDe(sel) ? `festivo, ${escapeHtml(festivoDe(sel).nombre.toLowerCase())}. ` : ''}${cuenta || 'libre.'}</div><i class="m-dia-raya" aria-hidden="true"></i></div>
                 </div>
                 ${conHora.length ? `<div class="m-tl">${linea}</div>` : ''}
                 ${sinHora.length ? `<div class="m-pendiente-dia"><div class="m-bloque-tit">pendiente para ${sel === hoy ? 'hoy' : 'este día'}.</div><div class="m-lista m-tl-sinhora">${sinHora.map(f => f.html).join('')}</div></div>` : ''}
@@ -2029,6 +1873,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
 
         // Inicio del móvil: las tareas sin día también, para no tener que ir al Planificador a verlas o marcarlas.
         let mobileVerHechas = false;
+        let mobilePendientesTodas = false;
         let mobileHechasTemporizador = null, mobileHechasVence = 0;
         const MOBILE_HECHA_A_LA_VISTA = 30 * 60000;
         function mobileHechaReciente(cuando) {
@@ -2049,12 +1894,15 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const hechaHoy = it => typeof it.hechaEn === 'number' && isoLocal(new Date(it.hechaEn - 4 * 3600e3)) === currentPlannerDayKey();
             const lista = (dayPlanner.backlog || []).filter(it => (!it.done || hechaHoy(it)) && sigue(it.done, it.hechaEn));
             if (!lista.length) return '';
-            return `<div class="m-pendientes-inicio">
-                <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir.</button></div>
-                <div class="m-lista">${lista.map(it => `
+            // Reducido (06-11): el contador, «ver todas» y solo la primera; abierto, todas con «→ hoy» y «+ añadir.».
+            const todas = mobilePendientesTodas, sinHacer = lista.filter(it => !it.done).length;
+            return `<div class="m-pendientes-inicio ${todas ? 'abierto' : ''}">
+                <div class="m-pend-cab"><span class="m-pend-tit">pendientes sin día.</span>${sinHacer ? `<span class="m-pend-num">${sinHacer}</span>` : ''}<button class="m-pend-ver" onclick="mobilePendientesTodas = !mobilePendientesTodas; renderMobileShell()">${todas ? 'ver menos' : 'ver todas'}<i class='ico ico-der' aria-hidden=true></i></button></div>
+                ${todas ? `<button class="m-mini m-pend-anadir" onclick="openAddBacklogTask()">+ añadir.</button>` : ''}
+                <div class="m-lista">${(todas ? lista : lista.slice(0, 1)).map(it => `
                     <div class="m-fila ${it.done ? 'hecha' : ''}">
                         <div class="m-fila-cuerpo"><div class="m-fila-titulo">${typeof prioEtiqueta === 'function' ? prioEtiqueta(it.prioridad) : ''}${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
-                        ${it.done ? '' : `<button class="m-mini" onclick="scheduleBacklogTaskToday('${it.id}').then(renderMobileShell)">→ hoy</button>`}
+                        ${it.done || !todas ? '' : `<button class="m-mini" onclick="scheduleBacklogTaskToday('${it.id}').then(renderMobileShell)">→ hoy</button>`}
                         <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarPendiente('${it.id}', this)" aria-label="Marcar hecha"></button>
                     </div>`).join('')}</div>
             </div>`;

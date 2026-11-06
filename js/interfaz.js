@@ -668,7 +668,8 @@
             if (!grupo || boton.matches('.active, .activa, .activo') || vtReducido()) return;
             const botones = [...grupo.querySelectorAll('button')];
             const nueva = botones.indexOf(boton), actual = botones.findIndex(b => b.matches('.active, .activa, .activo'));
-            const dx = actual >= 0 && nueva < actual ? '-18px' : '18px';
+            // En el móvil, sin desplazamiento lateral: solo funde (06-11, a petición tras probarlo en el iPhone).
+            const dx = mobileStandaloneActive ? '0px' : actual >= 0 && nueva < actual ? '-18px' : '18px';
             const clase = [...grupo.classList].find(c => PESTANAS_ANIMADAS.split(', ').includes('.' + c));
             const animar = () => document.querySelectorAll('.' + clase).forEach(g => {
                 if (!g.offsetParent) return;

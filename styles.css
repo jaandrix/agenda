@@ -8167,19 +8167,13 @@ body.m-plegada .m-cab { opacity:.25; }
    páginas que entran sin View Transitions, cambio de día suave, barra
    de abajo más alta y botones de semana de tamaño de dedo.
    ============================================================ */
-@keyframes mPagAdelante { from { opacity:0; transform:translateX(28px); } }
-@keyframes mPagAtras { from { opacity:0; transform:translateX(-28px); } }
+/* Sin desplazamiento lateral entre pantallas (06-11, a petición tras probar el gesto en el iPhone): solo funden. */
+@keyframes mPagAdelante { from { opacity:0; } }
+@keyframes mPagAtras { from { opacity:0; } }
 @keyframes mPagFunde { from { opacity:0; } }
-.m-pagina.m-pag-adelante { animation:mPagAdelante .3s var(--ease-out) both; }
-.m-pagina.m-pag-atras { animation:mPagAtras .3s var(--ease-out) both; }
+.m-pagina.m-pag-adelante { animation:mPagAdelante .18s ease-out both; }
+.m-pagina.m-pag-atras { animation:mPagAtras .18s ease-out both; }
 .m-pagina.m-pag-funde { animation:mPagFunde .15s ease-out both; }
-/* Gesto del borde (mobileBordeAtras): dos capas en composición solo mientras dura; la de encima con sombra en su borde
-   izquierdo, la de debajo oscurecida por un velo que solo cambia de opacidad. */
-.m-pagina.m-gesto-pagina { position:relative; background:var(--bg-app); min-height:100dvh; will-change:transform; }
-.m-gesto-capa { position:absolute; left:0; right:0; box-sizing:border-box; background:var(--bg-app); pointer-events:none; will-change:transform; }
-.m-gesto-velo { position:absolute; left:0; right:0; background:#000; opacity:0; pointer-events:none; will-change:opacity; }
-.m-pagina.m-gesto-encima { box-shadow:0 0 0 var(--m-gesto-margen, 20px) var(--bg-app), calc(-1 * var(--m-gesto-margen, 20px) - 2px) 0 26px rgba(0,0,0,.26); }
-.m-gesto-capa.m-gesto-encima { box-shadow:-2px 0 26px rgba(0,0,0,.26); }
 @keyframes mCambiaDia { from { opacity:0; transform:translateX(var(--m-dx, 18px)); } }
 .m-cambia-dia { animation:mCambiaDia .26s var(--ease-out) both; }
 @media (prefers-reduced-motion: reduce) { .m-pagina[class*="m-pag-"], .m-cambia-dia { animation:none; } }
@@ -10018,6 +10012,45 @@ body.mobile-standalone .pres-guardar, body.pwa .pres-guardar { bottom:calc(112px
 #mobile-shell .m-home-editorial .m-pendiente-dia .m-check, #mobile-shell .m-home-editorial .m-pendientes-inicio .m-check { order:-1; width:28px; height:28px; }
 #mobile-shell .m-home-editorial .m-pendientes-inicio .m-lista { padding:0; border:0; border-radius:0; background:none; }
 #mobile-shell .m-home-editorial .m-pendientes-inicio .m-fila { padding:10px 0; background:none; border:0; }
+/* INICIO DEL MÓVIL (06-11, captura de Alejandro): el día elegido en el color del tema; «ahora.» en un bloque con un
+   tinte muy suave del acento (hora, lo siguiente y el bus); «hoy.» con la cuenta y una rayita; la agenda en lista
+   continua con separadores; las pendientes sin día reducidas. Sin sombras ni degradados: tinte y filete de 1 px. */
+#mobile-shell .m-home-editorial .m-dia-pill.sel b { background:var(--m-acento); color:var(--m-sobre-acento); }
+#mobile-shell .m-home-editorial .m-ahora.m-ahora-bloque { margin:22px 0 6px; padding:18px 18px 16px; border-radius:20px; background:color-mix(in srgb, var(--m-acento) 7%, var(--bg-app)); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--m-acento) 16%, transparent); }
+#mobile-shell .m-home-editorial .m-ahora-bloque .m-ahora-hora { margin:4px 0 10px; }
+#mobile-shell .m-home-editorial .m-ahora-sig { font-size:17px; line-height:1.35; font-weight:500; color:var(--text-primary); }
+#mobile-shell .m-home-editorial .m-ahora-sig span { font-weight:600; color:var(--text-secondary); }
+#mobile-shell .m-home-editorial .m-ahora-sig b { font-weight:700; margin-right:4px; font-variant-numeric:tabular-nums; }
+#mobile-shell .m-home-editorial .m-ahora-regla { height:1px; margin:14px 0 2px; background:color-mix(in srgb, var(--m-acento) 18%, transparent); }
+#mobile-shell .m-home-editorial .m-ahora-bloque .m-bus { display:flex; align-items:center; gap:12px; margin:0; padding:10px 0 0; border:0; background:none; font-family:var(--font-family); font-size:17px; text-align:left; color:var(--text-secondary); cursor:pointer; }
+#mobile-shell .m-home-editorial .m-ahora-bloque .m-bus svg { flex:none; width:24px; height:24px; color:var(--text-primary); }
+#mobile-shell .m-home-editorial .m-ahora-bloque .m-bus-txt b { font-weight:700; color:var(--text-primary); }
+#mobile-shell .m-home-editorial .m-dia { margin-top:30px; }
+#mobile-shell .m-home-editorial .m-dia-titulo { font-size:34px; line-height:1.1; }
+#mobile-shell .m-home-editorial .m-dia-sub { margin-top:2px; font-size:16px; }
+#mobile-shell .m-home-editorial .m-dia-raya { display:block; width:28px; height:3px; margin-top:12px; border-radius:2px; background:var(--m-acento); }
+#mobile-shell .m-home-editorial .m-tl { margin-top:8px; }
+#mobile-shell .m-home-editorial .m-tl-item { border-bottom:1px solid var(--border); }
+#mobile-shell .m-home-editorial .m-tl-hora, #mobile-shell .m-home-editorial .m-tl-item.pasada .m-tl-hora { padding-top:16px; font-size:16px; font-weight:700; color:var(--text-primary); }
+#mobile-shell .m-home-editorial .m-tl-eje i, #mobile-shell .m-home-editorial .m-tl-item:not(.pasada) .m-tl-eje i, #mobile-shell .m-home-editorial .m-tl-item:not(.pasada) ~ .m-tl-item .m-tl-eje i { margin-top:22px; background:var(--text-secondary); }
+#mobile-shell .m-home-editorial .m-tl-item.en-curso .m-tl-eje i, #mobile-shell .m-home-editorial .m-tl-item:has(.m-fila.arrastrada) .m-tl-eje i { background:var(--m-acento); }
+#mobile-shell .m-home-editorial .m-tl-carta .m-fila { padding:12px 0; }
+#mobile-shell .m-home-editorial .m-tl-carta .m-fila-titulo { font-size:17px; font-weight:500; }
+#mobile-shell .m-home-editorial .m-tl-item.en-curso .m-fila-titulo, #mobile-shell .m-home-editorial .m-tl-carta .m-fila.arrastrada .m-fila-titulo { color:var(--m-acento); }
+#mobile-shell .m-home-editorial .m-tl-item.en-curso .m-check:not(.on), #mobile-shell .m-home-editorial .m-tl-carta .m-fila.arrastrada .m-check:not(.on) { border-color:var(--m-acento); }
+#mobile-shell .m-home-editorial .m-tl-carta .m-check, #mobile-shell .m-home-editorial .m-tl-carta .m-fila-bola { width:28px; height:28px; }
+#mobile-shell .m-home-editorial .m-tl-carta .m-fila-bola { box-sizing:border-box; border:2px solid var(--border-strong); background:none; }
+#mobile-shell .m-home-editorial .m-pendientes-inicio { margin-top:26px; padding:12px 14px 4px; border-radius:18px; background:var(--m-superficie); box-shadow:inset 0 0 0 1px var(--border); }
+#mobile-shell .m-home-editorial .m-pend-cab { display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; min-height:36px; }
+#mobile-shell .m-home-editorial .m-pend-tit { font-size:17px; font-weight:800; letter-spacing:-.03em; white-space:nowrap; }
+#mobile-shell .m-home-editorial .m-pend-num { min-width:26px; height:24px; padding:0 8px; box-sizing:border-box; display:inline-grid; place-items:center; border-radius:999px; background:color-mix(in srgb, var(--text-primary) 9%, transparent); font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; }
+#mobile-shell .m-home-editorial .m-pend-ver { display:inline-flex; align-items:center; gap:3px; margin-left:auto; min-height:40px; padding:0 2px; border:0; background:none; font-family:var(--font-family); font-size:14px; white-space:nowrap; font-weight:500; color:var(--text-secondary); cursor:pointer; }
+#mobile-shell .m-home-editorial .m-pend-anadir { margin:2px 0 4px; }
+#mobile-shell .m-home-editorial .m-pendientes-inicio .m-fila-titulo { font-size:17px; font-weight:500; }
+/* La pestaña encendida de la barra de abajo, con el tinte del acento y un punto bajo el nombre. */
+#mobile-shell .m-tab.activa svg { background:color-mix(in srgb, var(--m-acento) 16%, transparent); color:var(--m-acento); }
+#mobile-shell .m-tab.activa > span { position:relative; overflow:visible; }
+#mobile-shell .m-tab.activa > span::after { content:''; position:absolute; left:50%; bottom:-8px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:var(--m-acento); }
 
 /* Prueba de pantalla completa en el iPhone (Ajustes, modo desarrollador): con viewport-fit=cover la web llega hasta
    arriba y abajo del todo; lo que no tenía en cuenta las zonas seguras se separa aquí. */
