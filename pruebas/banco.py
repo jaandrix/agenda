@@ -50,7 +50,8 @@ def mediana(v):
 
 class Banco:
     def __enter__(self):
-        html = io.open(os.path.join(RAIZ, 'index.html'), encoding='utf-8').read()
+        # BITACORA_INDEX: medir con el index.html de otro commit (para buscar qué commit empeoró algo).
+        html = io.open(os.environ.get('BITACORA_INDEX') or os.path.join(RAIZ, 'index.html'), encoding='utf-8').read()
         html = re.sub(r'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js[^>]*></script>', '<script src="demo-datos.js?v=5"></script><script src="stub-sesion.js?v=5"></script>', html)
         io.open(os.path.join(ESPEJO, 'real.html'), 'w', encoding='utf-8').write(html)
         # Con la cola por defecto (5) rechazaba conexiones y dejaba scripts sin cargar, como si fallara la app.

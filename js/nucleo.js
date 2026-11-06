@@ -1267,6 +1267,7 @@
         }
 
         let mobileEstadoBajoCapa = null;
+        let mobileMenuDormir = 0;
         // Mantener pulsado «menú.» abre tus apartados más usados (fase 4 / auditoría del 05-11): los cuenta mobileIr, en
         // este dispositivo. Un toque normal sigue abriendo el menú entero.
         function mobileContarVisita(view) {
@@ -1316,7 +1317,13 @@
             mobileZonas.menu = null;
             if (mobileMenuAbierto) anotarCapa(); else if (!modalEnPantalla()) soltarCapa();
             if (mobileMenuAbierto) { const cuerpo = document.querySelector('#m-menu .m-menu-cuerpo'); if (cuerpo) cuerpo.scrollTop = 0; }
-            document.getElementById('m-menu')?.classList.toggle('abierto', mobileMenuAbierto);
+            // Cerrado, el menú duerme (sin calcular su contenido): oculto con visibility seguía costando unos 11 ms de diseño en
+            // cada repintado del móvil (fase 5, 06-11). Se despierta antes de abrir y vuelve a dormir al acabar de cerrarse.
+            const menuEl = document.getElementById('m-menu');
+            clearTimeout(mobileMenuDormir);
+            if (menuEl && mobileMenuAbierto && menuEl.classList.contains('m-menu-dormido')) { menuEl.classList.remove('m-menu-dormido'); void menuEl.offsetWidth; }
+            menuEl?.classList.toggle('abierto', mobileMenuAbierto);
+            if (menuEl && !mobileMenuAbierto) mobileMenuDormir = setTimeout(() => { if (!mobileMenuAbierto) menuEl.classList.add('m-menu-dormido'); }, 340);
             document.body.classList.toggle('m-menu-abierto', mobileMenuAbierto);
             // Con el menú abierto la pestaña encendida es la del menú, no la del apartado de debajo.
             mobileMarcarPestana(NAV_VIEW_LABELS[currentView] ? currentView : 'calendar');
@@ -1632,7 +1639,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const tema = temaActual();
             const flecha = '<svg class="m-mfila-flecha" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M30 10l12-10 50 50-50 50-12-10 40-40z"/></svg>';
             return `
-            <div class="m-menu ${mobileMenuAbierto ? 'abierto' : ''}" id="m-menu">
+            <div class="m-menu ${mobileMenuAbierto ? 'abierto' : 'm-menu-dormido'}" id="m-menu">
                 <div class="m-menu-top">
                     <span class="m-menu-titulo">menú.</span>
                     <button class="m-menu-x" onclick="toggleMenuMovil()" aria-label="Cerrar el menú"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M22 12l28 28 28-28 10 10-28 28 28 28-10 10-28-28-28 28-10-10 28-28-28-28z"/></svg></button>
@@ -2098,11 +2105,16 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const b = [...shell.querySelectorAll('.m-check.on')].find(x => x.getAttribute('onclick') === s.onclick);
             if (b && !b.classList.contains('m-check-sella')) { b.style.setProperty('--sello-retraso', `-${Math.round(pasado)}ms`); b.classList.add('m-check-sella'); }
         }
+        // Con un sello en marcha, el repintado (50-100 ms con la CPU lenta) espera a que acabe: si no, caía en mitad de la
+        // animación y un segundo toque seguido tenía que esperarlo. Marcar varias seguidas deja un solo repintado al final.
         let repintarTrasPintarPendiente = false;
+        let repintarTrasPintarTimer = 0;
         function repintarTrasPintar() {
-            if (repintarTrasPintarPendiente) return;
+            const falta = mobileSello ? Math.max(0, 460 - (performance.now() - mobileSello.t)) : 0;
+            if (repintarTrasPintarPendiente && !falta) return;
             repintarTrasPintarPendiente = true;
-            requestAnimationFrame(() => setTimeout(() => { repintarTrasPintarPendiente = false; repintarTrasModal(); }, 0));
+            clearTimeout(repintarTrasPintarTimer);
+            requestAnimationFrame(() => { clearTimeout(repintarTrasPintarTimer); repintarTrasPintarTimer = setTimeout(() => { repintarTrasPintarPendiente = false; repintarTrasModal(); }, falta); });
         }
         function mobileMarcarTarea(id, offset, boton) {
             mobileMarcarAlMomento(boton);
