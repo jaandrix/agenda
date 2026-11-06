@@ -266,11 +266,13 @@ a menor resolución.
 - **Panorama (vista `home`, antes "Centro resumen"):** «a tener en cuenta.» y una tarjeta ancha «hoy.» son estables; debajo, tarjetas secundarias elegibles por perfil y estadísticas con «tu estancia en bitácora.».
 - **Planificador:** timeline diaria (pestañas Hoy/Mañana/Pasado mañana, cada día
   empieza a las 4:00 am, lo no marcado se arrastra al día siguiente destacado en
-  granate), tareas recurrentes, bloque "tareas pendientes." (backlog sin fecha/hora
-  fija, con botón "→ hoy" para pasarlas a la timeline), tarjetas de acción "+ evento."
-  / "recurrentes." (muestran siempre la cifra de HOY), franja "progreso de hoy." tipo
-  tarjeta de sellos, tarjetas de evento con checkbox circular propio (sin tick, solo
-  se rellena) y píldora de hora.
+  granate), tareas recurrentes y backlog sin día («pendientes sin día.», «→ hoy» lo pasa a la timeline).
+  Escritorio desde el 06-11 (`renderPlanner`, estilos colgados de `.pl-ed` al final de styles.css): agenda
+  editorial a dos columnas sin tarjetas: cabecera con fecha, «x de y hechas.» y una raya por tarea
+  (`plannerProgreso`); pestañas, «+ tarea.» y «recurrentes.» en una barra; filas con hora mono, punto sobre la
+  línea, círculo con check y nota, la hora en curso y lo arrastrado en granate; la fila abre la tarea
+  (`plannerFilaClic`) y el círculo solo marca. A la derecha, «pendientes sin día.», «recurrentes de hoy.» y
+  «siguientes pasos.»; se apila por debajo de 1.050 px. El móvil tiene su propia vista (nucleo.js).
 - **Finanzas:** dos sistemas conviven — "Finanzas PRO" (cuentas Efectivo/Bancos/Online
   + transacciones + categorías + reglas de importación + registro rápido) y un
   sistema "simple" más antiguo (patrimonio operativo/emergencia/inversión). "Largo
