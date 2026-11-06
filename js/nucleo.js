@@ -2247,7 +2247,6 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                     <button class="m-boton m-boton-acento" onclick="openAddPlannerItem()">+ tarea.</button>
                     <button class="m-boton" onclick="openManageRecurringTasks()">recurrentes.</button>
                 </div>
-                ${off <= 1 ? renderLuzDia(servMasDias(currentPlannerDayKey(), off)) : ''}
                 <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir.</button></div>
                 ${backlog.length ? `<div class="m-lista">${backlog.map(it => `
                     <div class="m-fila ${it.done ? 'hecha' : ''}">
@@ -2256,7 +2255,8 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                         <button class="m-check ${it.done ? 'on' : ''}" onclick="toggleBacklogTaskDone('${it.id}')" aria-label="Marcar hecha"></button>
                     </div>`).join('')}</div>` : `<div class="m-vacio m-vacio-peque">${dayPlanner.backlog.length ? 'todo hecho.' : 'sin pendientes.'}</div>`}
                 ${backlogBotonHechas('m-mini m-backlog-hechas')}
-                ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}`;
+                ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}
+                ${off <= 1 && typeof renderLuzBoton === 'function' ? renderLuzBoton(servMasDias(currentPlannerDayKey(), off)) : ''}`;
         }
 
         function renderMobileHabits() {

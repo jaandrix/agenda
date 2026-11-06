@@ -270,6 +270,16 @@
         }
 
         // El día en barras: la franja barata resaltada y la hora actual.
+        // La luz ya no se enseña siempre en el planificador: es lo que menos le interesa al usuario (06-11). Va en un
+        // botón al final y se abre en una hoja.
+        function renderLuzBoton(fecha) {
+            if (!luzActiva()) return '';
+            return `<button class="luz-boton" onclick="openLuzDia('${jsAttr(fecha)}')">el precio de la luz.</button>`;
+        }
+        function openLuzDia(fecha) {
+            openSheet({ content: `<div class="modal-title">la luz.<button class="modal-close" onclick="closeModal()" aria-label="Cerrar"><i class='ico ico-x' aria-hidden=true></i></button></div>${renderLuzDia(fecha) || '<p class="finance-modal-note">Todavía no hay precios para ese día.</p>'}`, mode: 'detalle' });
+        }
+
         function renderLuzDia(fecha) {
             if (!luzActiva()) return '';
             // De noche, lo barato de hoy ya pasó: si ya están, los de mañana.

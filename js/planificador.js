@@ -137,7 +137,6 @@
                             </div>
                         </div>
                         <h3 class="pl-dia">${etiquetaDia}</h3>
-                        ${offset <= 1 ? renderLuzDia(servMasDias(currentPlannerDayKey(), offset)) : ''}
                         <div class="planner-timeline pl-linea vt-interior">
                             ${filas.length ? filas.map(it => {
                                 const isPast = offset === 0 && !!it.time && minutos(it) < nowMinutes;
@@ -182,6 +181,7 @@
                                 </div>`).join('') : `<div class="pl-vacio-linea">nada que se repita hoy.</div>`}
                         </div>
                         ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}
+                        ${offset <= 1 ? renderLuzBoton(servMasDias(currentPlannerDayKey(), offset)) : ''}
                     </aside>
                 </div>
             </div>`;

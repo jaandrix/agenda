@@ -10669,3 +10669,7 @@ body.papel .pl-ed { --pl-granate:#a3243b; }
     .pl-ed .planner-item { grid-template-columns:48px 16px 22px minmax(0, 1fr) 24px; gap:0 10px; }
     .pl-ed .planner-item-time { font-size:14px; }
 }
+
+/* 06-11: la luz, en un botón discreto al final del planificador */
+.luz-boton { display:block; margin:18px 0 6px; padding:0; border:0; background:none; font:600 12.5px var(--font-family); color:var(--text-secondary); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.luz-boton:hover { color:var(--text-primary); }
