@@ -379,6 +379,7 @@
         }
 
         function renderPushSettingsBody(status) {
+            if (appEntorno.modo === 'ios-wrapper') return `<div style="font-size:12.5px;color:var(--text-secondary)">Dentro de la app, los avisos se encienden en «app del iphone.», justo encima.</div>`;
             if (status === 'unsupported') {
                 const iosSinInstalar = /iPhone|iPad|iPod/.test(navigator.userAgent) && !isMobileStandaloneMode();
                 return `<div style="font-size:12.5px;color:var(--text-secondary)">${iosSinInstalar ? 'En el iPhone, las notificaciones solo funcionan con Bitácora añadida a la pantalla de inicio: Compartir → «Añadir a pantalla de inicio», y ábrela desde ese icono.' : 'Este navegador no soporta notificaciones push.'}</div>`;
@@ -607,6 +608,7 @@
                         ${bloqueAjuste('settings-servicios-section', 'lugar', 'lo que bitácora sabe sola.', 'Festivos, puentes, la luz, tus equipos y los estrenos de tus series, sin apuntar nada.', renderAjustesServicios())}
                         ${bloqueAjuste('', 'calendario', 'tu calendario en otras apps.', 'Suscríbete a Bitácora desde Google Calendar, el Calendario del iPhone u Outlook: tus eventos, cumpleaños, viajes y fechas límite, siempre al día.', `<button class="btn-secondary" style="width:auto" onclick="openCalendarioFeed()">obtener enlace.</button>`)}
                         ${bloqueAjuste('settings-correo-section', 'avisos', 'correo de los domingos.', 'A las 18:00 de cada domingo, a tu correo: lo que tienes la semana que viene y cómo ha ido esta. Se apaga aquí o desde el propio correo.', `<div id="settings-correo-body" class="ajuste-cargando">Cargando...</div>`)}
+                        ${typeof renderAjustesNativo === 'function' ? renderAjustesNativo() : ''}
                         ${bloqueAjuste('settings-push-section', 'avisos', 'notificaciones.', 'Avisos en este dispositivo: el resumen de la mañana y una hora antes de cada evento.', `<div id="settings-push-body">${renderPushSettingsBody('cargando')}</div>`)}
                     </div>
 

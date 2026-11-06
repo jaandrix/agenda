@@ -9,8 +9,11 @@ import WidgetKit
 //    app.js) y lo deja en el App Group para que los widgets lo lean.
 // 2. bitacora://quick?type=expense|income, que los widgets de Registro
 //    rápido abren para saltar directos al registro rápido de Finanzas PRO.
+// Lo de la fase 6 (compartir, Face ID, enlaces fuera, avisos, descargas, alertas)
+// está en Nativo.swift.
 struct ContentView: View {
     @StateObject private var model = WebViewModel()
+    @Environment(\.scenePhase) private var fase
 
     var body: some View {
         ZStack {
@@ -38,9 +41,20 @@ struct ContentView: View {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                 .padding(24)
             }
+
+            // Fase 6: con el bloqueo encendido, el velo tapa Bitácora en el selector de apps y hasta pasar Face ID.
+            if model.velo || model.bloqueada {
+                VeloBloqueo(bloqueada: model.bloqueada) { model.desbloquear() }
+            }
         }
         .onOpenURL { url in
             model.handleIncomingURL(url)
+        }
+        .onChange(of: fase) { _, nueva in
+            model.cambioDeFase(nueva)
+        }
+        .onAppear {
+            if model.bloqueada { model.desbloquear() }
         }
     }
 }
@@ -49,6 +63,12 @@ struct ContentView: View {
 final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
     @Published var isLoading = true
     @Published var errorMessage: String?
+    @Published var bloqueada = NativoAjustes.bloqueo
+    @Published var velo = false
+    var salidaEn: Date?
+    var autenticando = false
+    var recibidos: [[String: Any]] = []
+    lazy var delegado = DelegadoUI(model: self)
     let webView: WKWebView
 
     // La URL apunta al sitio en producción: la app nativa no aloja ningún
@@ -93,6 +113,7 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
         // controlador). El puente necesita self, así que va después de super.init, pero antes de load(): el marcador
         // sigue entrando al empezar el documento.
         webView.configuration.userContentController.add(self, name: "bitacoraNative")
+        webView.configuration.userContentController.addScriptMessageHandler(self, contentWorld: .page, name: "bitacoraNativa")
         webView.configuration.userContentController.addUserScript(Self.marcaNativa())
     }
 
@@ -103,8 +124,12 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
     static func marcaNativa() -> WKUserScript {
         let info = Bundle.main.infoDictionary
         let version = (info?["CFBundleShortVersionString"] as? String ?? "0") + "-" + (info?["CFBundleVersion"] as? String ?? "0")
-        let capacidades = ["widgets", "quickEntry", "haptics"]
-        let json = (try? JSONSerialization.data(withJSONObject: ["platform": "ios", "version": version, "capabilities": capacidades]))
+        let capacidades = ["widgets", "quickEntry", "haptics", "nativeShare", "externalLinks", "biometrics", "localNotifications", "badge", "shareImport", "downloads"]
+        let marca: [String: Any] = [
+            "platform": "ios", "version": version, "capabilities": capacidades,
+            "biometria": Biometria.tipo(), "bloqueo": NativoAjustes.bloqueo, "bloqueoFinanzas": NativoAjustes.bloqueoFinanzas, "avisos": NativoAjustes.avisos,
+        ]
+        let json = (try? JSONSerialization.data(withJSONObject: marca))
             .flatMap { String(data: $0, encoding: .utf8) } ?? "{\"platform\":\"ios\"}"
         let source = "window.__BITACORA_NATIVE__ = Object.freeze(\(json));"
         return WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
@@ -131,6 +156,8 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
             switch tipo {
             case "exito": UINotificationFeedbackGenerator().notificationOccurred(.success)
             case "aviso": UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            case "error": UINotificationFeedbackGenerator().notificationOccurred(.error)
+            case "seleccion": UISelectionFeedbackGenerator().selectionChanged()
             default: UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
             return
@@ -146,6 +173,16 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
     /// handleWidgetDeepLink() en app.js detecta y usa para abrir el
     /// registro rápido ya preparado en ese tipo.
     func handleIncomingURL(_ url: URL) {
+        // «Abrir en Bitácora» desde Archivos o desde la hoja de compartir de un .txt.
+        if url.isFileURL { recibirArchivo(url); return }
+        // bitacora://apuntar?texto=... (el atajo «Mandar a Bitácora» de la hoja de compartir, ver FASE6.md).
+        if url.scheme == "bitacora", url.host == "apuntar" {
+            let q = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            let texto = [q.first(where: { $0.name == "texto" })?.value, q.first(where: { $0.name == "url" })?.value]
+                .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }.joined(separator: "\n")
+            if !texto.isEmpty { recibir(["tipo": "texto", "texto": texto]) }
+            return
+        }
         guard url.scheme == "bitacora", url.host == "quick" else { return }
         guard let type = URLComponents(url: url, resolvingAgainstBaseURL: false)?
             .queryItems?.first(where: { $0.name == "type" })?.value,
@@ -162,12 +199,9 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
 struct WebView: UIViewRepresentable {
     @ObservedObject var model: WebViewModel
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(model: model)
-    }
-
     func makeUIView(context: Context) -> WKWebView {
-        model.webView.navigationDelegate = context.coordinator
+        model.webView.navigationDelegate = model.delegado
+        model.webView.uiDelegate = model.delegado
         model.load()
         return model.webView
     }
@@ -175,28 +209,6 @@ struct WebView: UIViewRepresentable {
     func updateUIView(_ uiView: WKWebView, context: Context) {
         // La propia web gestiona su estado tras la carga inicial; no hace
         // falta reaccionar aquí a cambios de @State.
-    }
-
-    final class Coordinator: NSObject, WKNavigationDelegate {
-        let model: WebViewModel
-
-        init(model: WebViewModel) {
-            self.model = model
-        }
-
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            model.isLoading = false
-        }
-
-        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            model.isLoading = false
-            model.errorMessage = error.localizedDescription
-        }
-
-        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-            model.isLoading = false
-            model.errorMessage = error.localizedDescription
-        }
     }
 }
 
