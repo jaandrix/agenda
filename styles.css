@@ -10558,3 +10558,10 @@ body.acuarela .cal-month-cell.is-today .cal-num, body.acuarela .planner-action-c
 .barra-apuntar.invocada:not(.fija) .barra-caja { box-shadow:0 18px 40px -20px rgba(0,0,0,.5); }
 .barra-hecho { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
 @media (prefers-reduced-motion: reduce) { .barra-apuntar.invocada:not(.fija) { animation:none; } }
+
+/* 06-11: la prioridad escrita delante del nombre de la tarea, en su color */
+.prio-etq { font-weight:800; }
+.prio-etq.prio-alta { color:#e5484d; }
+.prio-etq.prio-media { color:#d98a0b; }
+.prio-etq.prio-baja { color:#4c8df6; }
+.planner-item-done .prio-etq, .m-fila.hecha .prio-etq { color:inherit; opacity:.6; }

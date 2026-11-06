@@ -183,7 +183,7 @@
                             <div class="planner-item-time">${it.time ? escapeHtml(it.time) : '—'}</div>
                             <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})" aria-label="${escapeHtml(it.title)}: hecha">
                             <div class="planner-item-body">
-                                <div class="planner-item-title"><span ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''} ${it.valorarPeliculaId ? `class="planner-item-enlace" onclick="openEditEntry('${it.valorarPeliculaId}')" title="Abrir la película para valorarla"` : `class="planner-item-editar" onclick="openAddPlannerItem('${it.id}')" title="Editar"`}>${escapeHtml(it.title)}</span>${it.prioridad ? `<i class="planner-prioridad">${PLANNER_PRIORIDADES[it.prioridad]}</i>` : ''}</div>
+                                <div class="planner-item-title"><span ${it.arrastrado && !it.done ? 'title="Pendiente de ayer"' : ''} ${it.valorarPeliculaId ? `class="planner-item-enlace" onclick="openEditEntry('${it.valorarPeliculaId}')" title="Abrir la película para valorarla"` : `class="planner-item-editar" onclick="openAddPlannerItem('${it.id}')" title="Editar"`}>${prioEtiqueta(it.prioridad)}${escapeHtml(it.title)}</span>${it.prioridad ? `<i class="planner-prioridad">${PLANNER_PRIORIDADES[it.prioridad]}</i>` : ''}</div>
                                 ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
                                 ${it.done ? '' : luzAviso(it.title, servMasDias(currentPlannerDayKey(), offset), it.time)}
                                 ${renderPlannerSubtasks(it, offset)}
@@ -356,6 +356,12 @@
 
         // Crear y editar comparten modal. La hora es opcional: sin hora, la
         // tarea va al bloque "sin hora." del día, ordenada por prioridad.
+        // La prioridad, escrita delante del nombre y en su color (el usuario la quería a la vista, 05-11).
+        function prioEtiqueta(p) {
+            const nombre = { alta: 'Alta', media: 'Media', baja: 'Baja' }[p];
+            return nombre ? `<span class="prio-etq prio-${p}">${nombre}</span> ` : '';
+        }
+
         function openAddPlannerItem(id) {
             const offset = plannerDayOffset;
             const it = id ? plannerItemsForOffset(offset).find(x => x.id === id) : null;

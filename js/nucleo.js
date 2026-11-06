@@ -2008,7 +2008,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir.</button></div>
                 <div class="m-lista">${lista.map(it => `
                     <div class="m-fila ${it.done ? 'hecha' : ''}">
-                        <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
+                        <div class="m-fila-cuerpo"><div class="m-fila-titulo">${typeof prioEtiqueta === 'function' ? prioEtiqueta(it.prioridad) : ''}${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
                         ${it.done ? '' : `<button class="m-mini" onclick="scheduleBacklogTaskToday('${it.id}').then(renderMobileShell)">→ hoy</button>`}
                         <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarPendiente('${it.id}', this)" aria-label="Marcar hecha"></button>
                     </div>`).join('')}</div>
@@ -2026,7 +2026,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
             const meta = [it.arrastrado && !it.done ? 'de ayer' : '', subs.length ? `${subs.filter(s => s.done).length}/${subs.length} subtareas` : '', it.notes || ''].filter(Boolean).map(escapeHtml).join(', ');
             return `<div class="m-fila ${it.done ? 'hecha' : ''} ${it.arrastrado && !it.done ? 'arrastrada' : ''} ${it.prioridad ? `prioridad-${it.prioridad}` : ''}">
                 <span class="m-fila-hora">${escapeHtml(it.time || '—')}</span>
-                <div class="m-fila-cuerpo" onclick="mobileTareaAcciones('${it.id}', ${offset})"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}${it.done ? '' : luzAviso(it.title, servMasDias(currentPlannerDayKey(), offset), it.time)}</div>
+                <div class="m-fila-cuerpo" onclick="mobileTareaAcciones('${it.id}', ${offset})"><div class="m-fila-titulo">${typeof prioEtiqueta === 'function' ? prioEtiqueta(it.prioridad) : ''}${escapeHtml(it.title)}</div>${meta ? `<div class="m-fila-meta">${meta}</div>` : ''}${it.done ? '' : luzAviso(it.title, servMasDias(currentPlannerDayKey(), offset), it.time)}</div>
                 <button class="m-check ${it.done ? 'on' : ''}" onclick="mobileMarcarTarea('${it.id}', ${offset}, this)" aria-label="Marcar hecha"></button>
             </div>`;
         }
@@ -2201,7 +2201,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                         return `<div class="m-fila ${hecha ? 'hecha' : ''}"><span class="m-fila-hora"><i class='ico ico-repetir' aria-hidden=true></i></span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(t.texto)}</div><div class="m-fila-meta">recurrente</div></div><button class="m-check ${hecha ? 'on' : ''}" onclick="toggleRecurringTaskDoneToday('${t.id}')" aria-label="Marcar hecha"></button></div>`;
                     }).join('')}
                     ${items.map(it => it.esEvento
-                        ? `<div class="m-fila m-fila-evento" onclick="openEntryDetail('${jsAttr(it.id)}')"><span class="m-fila-hora">${escapeHtml(it.time || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div><div class="m-fila-meta">${escapeHtml(it.sub)}</div></div><i class="m-fila-evento-punto" style="background:${escapeHtml(colorTema(it.color))}" aria-hidden="true"></i></div>`
+                        ? `<div class="m-fila m-fila-evento" onclick="openEntryDetail('${jsAttr(it.id)}')"><span class="m-fila-hora">${escapeHtml(it.time || '—')}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${typeof prioEtiqueta === 'function' ? prioEtiqueta(it.prioridad) : ''}${escapeHtml(it.title)}</div><div class="m-fila-meta">${escapeHtml(it.sub)}</div></div><i class="m-fila-evento-punto" style="background:${escapeHtml(colorTema(it.color))}" aria-hidden="true"></i></div>`
                         : renderMobileFilaTarea(it, off)).join('')}
                 </div>
                 ${!total ? '<div class="m-vacio">nada todavía.</div>' : ''}
@@ -2213,7 +2213,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 <div class="m-bloque-cab"><div class="m-etiqueta">pendientes sin día.</div><button class="m-mini" onclick="openAddBacklogTask()">+ añadir.</button></div>
                 ${backlog.length ? `<div class="m-lista">${backlog.map(it => `
                     <div class="m-fila ${it.done ? 'hecha' : ''}">
-                        <div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
+                        <div class="m-fila-cuerpo"><div class="m-fila-titulo">${typeof prioEtiqueta === 'function' ? prioEtiqueta(it.prioridad) : ''}${escapeHtml(it.title)}</div>${it.notes ? `<div class="m-fila-meta">${escapeHtml(it.notes)}</div>` : ''}</div>
                         <button class="m-mini" onclick="scheduleBacklogTaskToday('${it.id}')">→ hoy</button>
                         <button class="m-check ${it.done ? 'on' : ''}" onclick="toggleBacklogTaskDone('${it.id}')" aria-label="Marcar hecha"></button>
                     </div>`).join('')}</div>` : `<div class="m-vacio m-vacio-peque">${dayPlanner.backlog.length ? 'todo hecho.' : 'sin pendientes.'}</div>`}
