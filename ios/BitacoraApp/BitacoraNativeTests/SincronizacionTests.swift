@@ -397,6 +397,50 @@ final class OperacionesTests: XCTestCase {
         for k in ["entries", "claveDelFuturo", "apuntes"] { XCTAssertEqual(nuevo.bytes(de: k), doc.bytes(de: k)) }
     }
 
+    func testEditarMoverYBorrarSonIdempotentes() {
+        let nube = v(#"{"days":{"2026-11-12":[{"id":"p1","title":"a","time":"09:00","done":false,"arrastrado":true}]},"backlog":[]}"#)
+        let ops: [OperacionBitacora] = [.editarTarea(id: "p1", titulo: "b", hora: "10:00", notas: "n"), .moverTarea(id: "p1", dia: nil),
+                                        .moverTarea(id: "p1", dia: "2026-11-13"), .borrarTarea(id: "p1")]
+        var actual: JSONValue? = nube
+        for op in ops {
+            let una = AplicarOperaciones.aplicar(op, a: actual)
+            XCTAssertEqual(AplicarOperaciones.aplicar(op, a: una), una, "\(op)")
+            actual = una
+            switch op {
+            case .editarTarea: XCTAssertEqual(una["days"]?["2026-11-12"]?.lista?.first?["notes"], .string("n"))
+            case .moverTarea(_, nil):
+                XCTAssertEqual(una["backlog"]?.lista?.first?["title"], .string("b"))
+                XCTAssertNil(una["backlog"]?.lista?.first?["time"])
+            case .moverTarea:
+                XCTAssertEqual(una["days"]?["2026-11-13"]?.lista?.first?["time"], .string(""))
+                XCTAssertNil(una["days"]?["2026-11-13"]?.lista?.first?["arrastrado"])
+            default: XCTAssertEqual(una["days"]?["2026-11-13"]?.lista?.count, 0)
+            }
+        }
+    }
+
+    func testMarcarRecurrenteYSuEntrada() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"recurringTasks": [{"id": "r1", "texto": "regar", "activo": true, "frecuencia": "diaria", "completadas": {}}], "entries": [{"id": "e1"}]}"#.utf8))
+        let op = OperacionBitacora.marcarRecurrente(id: "r1", dia: "2026-11-12", hecha: true, momentoMs: momento)
+        let (hecho, parche) = AplicarOperaciones.sobre(doc, [op])
+        XCTAssertEqual(Set(parche.keys), ["recurringTasks", "entries"])
+        XCTAssertEqual(AplicarOperaciones.sobre(hecho, [op]).1.count, 0)
+        XCTAssertEqual(try hecho.valor(de: "entries")?.lista?.last?["title"], .string("Completado: regar"))
+        let (deshecho, _) = AplicarOperaciones.sobre(hecho, [.marcarRecurrente(id: "r1", dia: "2026-11-12", hecha: false, momentoMs: momento)])
+        XCTAssertEqual(try deshecho.valor(de: "entries")?.lista?.count, 1)
+        XCTAssertEqual(try deshecho.valor(de: "recurringTasks")?.lista?.first?["completadas"]?["2026-11-12"], .bool(false))
+    }
+
+    func testRecurrentesQueTocan() {
+        let jueves = LocalDay(iso: "2026-11-12")!
+        func t(_ s: String) -> [String: JSONValue] { try! LectorJSON.valor(Data(s.utf8)).objeto! }
+        XCTAssertTrue(LecturaPlanificador.tocaHoy(t(#"{"activo":true,"frecuencia":"semanal","diasSemana":[4]}"#), jueves))
+        XCTAssertFalse(LecturaPlanificador.tocaHoy(t(#"{"activo":true,"frecuencia":"semanal","diaSemana":1}"#), jueves))
+        XCTAssertTrue(LecturaPlanificador.tocaHoy(t(#"{"activo":true,"frecuencia":"mensual","diaMes":12}"#), jueves))
+        XCTAssertTrue(LecturaPlanificador.tocaHoy(t(#"{"activo":true,"frecuencia":"intervalo","intervaloInicio":"2026-11-02","intervaloDias":5}"#), jueves))
+        XCTAssertFalse(LecturaPlanificador.tocaHoy(t(#"{"activo":false,"frecuencia":"diaria"}"#), jueves))
+    }
+
     func testIdsConElFormatoDeLaWeb() {
         let id = OperacionBitacora.nuevoIdTarea()
         XCTAssertTrue(id.hasPrefix("planner_"))

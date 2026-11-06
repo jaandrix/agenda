@@ -229,11 +229,12 @@ final class PlanificadorTests: XCTestCase {
         }, "backlog": [{"id": "b1", "title": "x"}, {"id": "b2", "title": "y", "done": true}]}}
         """#.utf8))
         let ahora = ISO8601DateFormatter().date(from: "2026-11-06T12:00:00+01:00")!
-        let v = LecturaPlanificador.hoy(doc, ahora: ahora)
+        let v = LecturaPlanificador.vista(doc, ahora: ahora)
         XCTAssertEqual(v.dia.iso, "2026-11-06")
         XCTAssertEqual(v.tareas.map(\.id), ["v2", "h2", "h1"])
         XCTAssertTrue(v.tareas[0].arrastrada)
-        XCTAssertEqual(v.sinDia, 1)
+        XCTAssertEqual(v.sinDia.map(\.id), ["b1"])
+        XCTAssertEqual(LecturaPlanificador.vista(doc, desplazamiento: 1, ahora: ahora).tareas.map(\.id), ["m1"])
     }
 }
 

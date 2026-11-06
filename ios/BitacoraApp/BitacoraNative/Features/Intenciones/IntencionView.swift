@@ -1,12 +1,30 @@
 import SwiftUI
 import UIKit
 
-// Lo que llega por bitacora://apuntar, bitacora://quick o «Abrir en». Mientras la app no escriba, se ofrece copiarlo
-// o abrir la web; no se pierde hasta que se elige algo.
+// Lo que llega por bitacora://apuntar, bitacora://quick o «Abrir en». Apuntar crea una tarea; los movimientos aún van a
+// la web. No se pierde hasta que se elige algo.
 struct IntencionView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.openURL) private var abrir
     let intencion: IntencionEntrante
+    @State private var id = OperacionBitacora.nuevoIdTarea()
+    @State private var guardando = false
+
+    // La tarea lleva el texto; si solo llegó un enlace, el enlace es el título. Con los dos, el enlace va en las notas.
+    private func apuntar(texto: String, url: String?, hoy: Bool) async {
+        guard !guardando else { return }
+        guardando = true
+        defer { guardando = false }
+        let titulo = String((texto.isEmpty ? (url ?? "") : texto).prefix(500))
+        let dia = hoy ? CalendarioBitacora.madrid.diaLogico(Date()).iso : nil
+        do {
+            try await c.encolar(.crearTarea(id: id, dia: dia, titulo: titulo, hora: nil))
+            if let url, !texto.isEmpty { try await c.encolar(.editarTarea(id: id, titulo: titulo, hora: nil, notas: url)) }
+            c.resolverIntencion(intencion)
+        } catch {
+            UIPasteboard.general.string = titulo
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -21,12 +39,12 @@ struct IntencionView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control))
                     .textSelection(.enabled)
-                    Button("copiar y abrir la web.") {
-                        UIPasteboard.general.string = [texto, url].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: "\n")
-                        abrir(Config.webURL)
-                        c.resolverIntencion(intencion)
-                    }
-                    .buttonStyle(BotonPrincipal())
+                    Button("apuntar para hoy.") { Task { await apuntar(texto: texto, url: url, hoy: true) } }
+                        .buttonStyle(BotonPrincipal())
+                        .disabled(guardando)
+                    Button("apuntar sin día.") { Task { await apuntar(texto: texto, url: url, hoy: false) } }
+                        .buttonStyle(BotonSecundario())
+                        .disabled(guardando)
                 } else {
                     Button("abrir la web.") {
                         abrir(Config.webURL)
@@ -56,7 +74,7 @@ struct IntencionView: View {
 
     private var explicacion: String {
         switch intencion {
-        case .apuntar: return "esta versión aún no apunta por sí sola. cópialo y pégalo en «apuntar.» de la web."
+        case .apuntar: return "se guarda como tarea. sin red, se sube en cuanto vuelva."
         case .rapido: return "los movimientos llegarán a la app nativa más adelante. de momento, en la web."
         }
     }

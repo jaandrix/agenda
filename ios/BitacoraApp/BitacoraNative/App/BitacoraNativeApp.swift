@@ -89,9 +89,9 @@ struct PrincipalView: View {
     var body: some View {
         @Bindable var c = c
         TabView(selection: $c.pestana) {
-            NavigationStack { HoyView() }
-                .tabItem { Label("hoy.", systemImage: "sun.max") }
-                .tag(Pestana.hoy)
+            NavigationStack { PlanView() }
+                .tabItem { Label("plan.", systemImage: "checklist") }
+                .tag(Pestana.plan)
             NavigationStack { EstadoView() }
                 .tabItem { Label("estado.", systemImage: "arrow.triangle.2.circlepath") }
                 .tag(Pestana.estado)
@@ -102,7 +102,7 @@ struct PrincipalView: View {
         .sheet(item: $c.modal) { m in
             switch m {
             case .intencion(let i): IntencionView(intencion: i)
-            case .nuevaTarea(let d): NuevaTareaView(dia: d)
+            case .tarea(let t): EditorTareaView(inicial: t)
             }
         }
     }

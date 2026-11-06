@@ -2,19 +2,29 @@ import SwiftUI
 import Network
 
 enum Pestana: Hashable {
-    case hoy, estado, ajustes
+    case plan, estado, ajustes
 }
 
 // Una sola hoja a la vez: el enum impide dos modales simultáneos.
 enum Modal: Identifiable, Equatable {
     case intencion(IntencionEntrante)
-    case nuevaTarea(dia: LocalDay)
+    case tarea(EditorTarea)
     var id: String {
         switch self {
         case .intencion(let i): return "intencion:\(i.id)"
-        case .nuevaTarea(let d): return "tarea:\(d.iso)"
+        case .tarea(let t): return "tarea:\(t.id)"
         }
     }
+}
+
+struct EditorTarea: Identifiable, Equatable {
+    let id: String
+    let nueva: Bool
+    let dia: LocalDay?
+    var titulo = ""
+    var hora: String?
+    var notas = ""
+    var deTrabajo = false
 }
 
 enum FaseApp: Equatable {
@@ -45,7 +55,7 @@ final class AppCoordinator {
     let entorno: AppEnvironment
     private(set) var fase: FaseApp = .arrancando
     private(set) var sesion: Sesion?
-    var pestana: Pestana = .hoy
+    var pestana: Pestana = .plan
     var modal: Modal?
     private(set) var bloqueada = false
     private(set) var velo = false
@@ -90,7 +100,7 @@ final class AppCoordinator {
         sesion = s
         await entorno.sync.iniciar(uid: s.userId)
         fase = .lista
-        pestana = .hoy
+        pestana = .plan
         Task { await entorno.sync.sincronizar() }
         atenderIntenciones()
     }
