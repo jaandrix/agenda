@@ -94,13 +94,11 @@ function renderGestorSuscripciones() {
 }
 
 function openGestorSuscripciones() {
-    showModal(`
+    // Mismo aspecto que el modal de un día (hoja-dia): X gruesa y sin marcar al abrir.
+    openSheet({ mode: 'detalle', clase: 'hoja-dia', content: `
         <div class="modal-title">suscripciones.<button class="modal-close" onclick="closeModal()"><i class='ico ico-x' aria-hidden=true></i></button></div>
         <div id="gestor-suscripciones">${renderGestorSuscripciones()}</div>
-    `);
-    // Mismo aspecto que el modal de un día: X gruesa y sin marcar al abrir.
-    document.querySelector('#modal-container .modal-sheet')?.classList.add('hoja-dia');
-    modoCapa('detalle');
+    ` });
 }
 
 // Repinta el gestor si está abierto, y lo de detrás cuando se cierre (o ya, si el aviso se pulsó desde Finanzas).

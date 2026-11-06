@@ -9,6 +9,7 @@ sin abrir) y reapertura sin red. Dos cifras por caso: cuándo se ve la app pinta
 tocar (el logo empieza a irse). Usa el index.html actual y el espejo, como el resto de bancos (ver banco.py).
 """
 import sys
+import banco
 from banco import Banco, PWA, mediana
 
 UID = '32c660f0-97b7-4cd9-8ed0-00ca44a055dc'
@@ -45,15 +46,15 @@ def abrir(b, ctx):
     return pg, r
 
 
-def contexto(b, extra=''):
-    ctx = b.nav.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, has_touch=True, service_workers='block')
+def contexto(b, extra='', sw=False):
+    ctx = b.nav.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, has_touch=True, service_workers='allow' if sw else 'block')
     ctx.add_init_script(PWA + SESION + MIRAR)
     ctx.route('**/*', lambda r: r.abort() if any(h in r.request.url for h in ('goatcounter', 'open-meteo', 'jspdf', 'pdf.min')) else r.continue_())
     return ctx
 
 
 with Banco() as b:
-    casos = {'primera vez, sin copia': [], 'reapertura con copia': [], 'con copia y red lenta': [], 'sin red, con copia': []}
+    casos = {'primera vez, sin copia': [], 'reapertura con copia': [], 'con copia y red lenta': [], 'sin red, con copia': [], 'service worker, página lenta': []}
     capturas = '--capturas' in sys.argv
     for i in range(3):
         ctx = contexto(b)
@@ -69,6 +70,17 @@ with Banco() as b:
             # Cada init script se queda en el contexto: el de red lenta no debe sumarse al de sin red.
             if nombre == 'con copia y red lenta':
                 ctx.close(); ctx = contexto(b); pg, _ = abrir(b, ctx); pg.wait_for_timeout(4000); pg.close()
+        ctx.close()
+        # Con el service worker activo (el resto lo bloquea) y la página tardando 3 s en llegar por la red: con su copia
+        # guardada no debe esperarla (auditoría del 05-11: esperaba hasta 4 s).
+        ctx = contexto(b, sw=True)
+        pg, _ = abrir(b, ctx)
+        pg.wait_for_function('navigator.serviceWorker.controller || navigator.serviceWorker.ready.then(() => true)', timeout=20000)
+        pg.wait_for_timeout(5000); pg.close()
+        pg, _ = abrir(b, ctx); pg.wait_for_timeout(3000); pg.close()
+        banco._Servidor.retrasos['real.html'] = 3
+        pg, r = abrir(b, ctx); casos['service worker, página lenta'].append(r); pg.close()
+        banco._Servidor.retrasos.clear()
         ctx.close()
     print(f'ARRANQUE DEL MÓVIL, CPU {CPU}x (ms desde que se abre):')
     print(f'  {"":30} {"app pintada":>12} {"se puede tocar":>15}')

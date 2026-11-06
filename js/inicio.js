@@ -149,7 +149,16 @@
             ];
         }
 
+        // Una versión nueva bajada de fondo por el service worker se aplica al volver a la app tras un rato fuera (como el
+        // repintado de abajo), nunca mientras se está usando ni con algo abierto.
+        let versionNuevaLista = false;
+        navigator.serviceWorker?.addEventListener('message', e => {
+            if (e.data?.tipo !== 'version-nueva' || versionNuevaLista) return;
+            versionNuevaLista = true;
+            showToast('Hay una versión nueva: se pondrá al volver a la app.');
+        });
         function refrescarAlVolver(forzar) {
+            if (versionNuevaLista && ocultoDesde && Date.now() - ocultoDesde.hora >= 30000 && !modalEnPantalla()) { location.reload(); return; }
             const fuera = ocultoDesde;
             ocultoDesde = null;
             if (!forzar && (!fuera || Date.now() - fuera.hora < 30000)) return;

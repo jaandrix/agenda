@@ -72,6 +72,26 @@ async function guardarCopia(request, response, url, propio) {
     }
 }
 
+// La página nueva que llega de fondo: si es de otra versión, antes de guardarla se bajan sus archivos (si no, sin red la
+// página nueva pediría archivos que no están) y después se avisa a la app, que la aplica al volver a ella.
+const VERSION_DE = html => (html.match(/js\/nucleo\.js\?v=([^"]+)/) || [])[1] || null;
+async function actualizarPagina(response) {
+    const html = await response.clone().text();
+    const cache = await caches.open(CACHE_NAME);
+    const vieja = await cache.match('./index.html');
+    const vNueva = VERSION_DE(html), vVieja = vieja ? VERSION_DE(await vieja.text()) : null;
+    const cambia = vNueva && vNueva !== vVieja;
+    if (cambia) {
+        const propios = [...html.matchAll(/(?:src|href)="([^"]+\?v=[^"]+)"/g)].map(m => m[1]).filter(u => !/^https?:/.test(u));
+        await Promise.all(propios.map(u => {
+            const dir = new URL(u, self.registration.scope);
+            return fetch(dir.href, { cache: 'no-store' }).then(r => r.ok ? guardarCopia(new Request(dir.href), r, dir, true) : null).catch(() => {});
+        }));
+    }
+    await cache.put('./index.html', response);
+    if (cambia && vVieja) (await self.clients.matchAll({ type: 'window' })).forEach(c => c.postMessage({ tipo: 'version-nueva', version: vNueva }));
+}
+
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     if (event.request.method !== 'GET') return;
@@ -88,21 +108,19 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // La página (30-10, la PWA del iPhone se quedaba en negro y luego en blanco mientras Safari iba bien): antes se pedía
-    // copiando la petición de navegación con otra opción, que WebKit puede rechazar, y sin límite de tiempo, así que una
-    // red colgada dejaba la app esperando 20-30 s. Ahora va con su dirección limpia y, si en 4 s no ha llegado, se sirve
-    // la copia guardada mientras la red la sigue poniendo al día para la próxima vez.
+    // La página (30-10, la PWA del iPhone se quedaba en negro y luego en blanco mientras Safari iba bien): va con su
+    // dirección limpia, nunca copiando la petición de navegación (WebKit puede rechazarla). Desde el 05-11 (auditoría de
+    // las fases 1-3), con copia guardada se sirve esa al momento y la red la pone al día de fondo (actualizarPagina);
+    // antes se esperaban hasta 4 s a la red con la copia ya en el dispositivo.
     const navegacion = event.request.mode === 'navigate';
     const red = fetch(propio ? url.href : event.request, propio ? { cache: 'no-store', credentials: 'same-origin' } : undefined).then((response) => {
-        if (response.ok) guardarCopia(navegacion ? './index.html' : event.request, response.clone(), url, propio).catch(() => {});
+        if (response.ok && !navegacion) guardarCopia(event.request, response.clone(), url, propio).catch(() => {});
         return response;
     });
+    if (navegacion) event.waitUntil(red.then(r => (r.ok ? actualizarPagina(r.clone()) : null)).catch(() => {}));
     const copia = () => caches.match(event.request).then(g => g || (navegacion ? caches.match('./index.html', { ignoreSearch: true }) : null));
     event.respondWith((async () => {
         if (navegacion) {
-            const tarde = new Promise(r => setTimeout(r, 4000, 'tarde'));
-            const primero = await Promise.race([red.catch(() => 'fallo'), tarde]);
-            if (primero instanceof Response) return primero;
             const guardada = await copia();
             if (guardada) return guardada;
         }

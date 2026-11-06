@@ -89,8 +89,11 @@ final class WebViewModel: NSObject, ObservableObject, WKScriptMessageHandler {
         webView.backgroundColor = fondo
         webView.scrollView.backgroundColor = fondo
         super.init()
-        config.userContentController.add(self, name: "bitacoraNative")
-        config.userContentController.addUserScript(Self.marcaNativa())
+        // Sobre la configuración que de verdad usa la WKWebView (la copia que se le pasó al crearla podría no compartir el
+        // controlador). El puente necesita self, así que va después de super.init, pero antes de load(): el marcador
+        // sigue entrando al empezar el documento.
+        webView.configuration.userContentController.add(self, name: "bitacoraNative")
+        webView.configuration.userContentController.addUserScript(Self.marcaNativa())
     }
 
     /// Antes de que cargue la página, la web recibe window.__BITACORA_NATIVE__:

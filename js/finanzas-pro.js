@@ -2044,12 +2044,11 @@
         // y la cuenta si hiciera falta corregirla).
         function openFinanceProQuickCaptureModal() {
             window._financeProQuickDraft = { type: 'expense', amount: '' };
-            showModal(`
+            openSheet({ mode: 'compacta', content: `
                 <div class="modal-title">Registro rápido</div>
                 <div class="finance-modal-note" style="margin-bottom:10px">Escribe el importe y toca la cuenta: se guarda al instante sin categoría. Lo ajustas luego desde "Ajustar movimientos".</div>
                 <div id="finance-quick-capture-body">${renderFinanceProQuickCaptureBody()}</div>
-            `);
-            modoCapa('compacta');
+            ` });
         }
 
         function renderFinanceProQuickCaptureBody() {
@@ -2468,11 +2467,10 @@
             window._financeProTxDraft = existing
                 ? { ...existing, category: existing.category || '', transferTo: existing.transferTo || '', note: existing.note || '' }
                 : { type: 'expense', account: presetAccount || FINANCE_PRO_ACCOUNT_KEYS[0], date: todayISO(), amount: '', category: '', note: '', transferTo: '' };
-            showModal(`
+            openSheet({ mode: 'editor', content: `
                 <div class="modal-title">${existing ? 'editar movimiento.' : 'nuevo movimiento.'}</div>
                 <div id="finance-pro-tx-modal-body">${renderFinanceProTxModalBody()}</div>
-            `);
-            modoCapa('editor');
+            ` });
         }
 
         function renderFinanceProTxModalBody() {

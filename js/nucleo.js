@@ -1230,7 +1230,7 @@
             if (modalEnPantalla()) closeModal();
             if (view !== currentView || mobileMenuAbierto) mobileIr(view, 'historial');
         }
-        function mobileIr(view, tipo) {
+        function mobileIr(view, tipo, afterEnter) {
             const shellActual = document.getElementById('mobile-shell');
             const desdeHistorial = tipo === 'historial';
             // Tocar la pestaña en la que ya estás sube arriba del todo.
@@ -1262,9 +1262,47 @@
             // Tras el gesto del borde la pantalla nueva ya estaba a la vista debajo: entra sin animación.
             if (!mobileSinAnimar) document.querySelector('#mobile-shell .m-pagina')?.classList.add(anim);
             mobileSinAnimar = false;
+            mobileContarVisita(view);
+            if (typeof afterEnter === 'function') afterEnter();
         }
 
         let mobileEstadoBajoCapa = null;
+        // Mantener pulsado «menú.» abre tus apartados más usados (fase 4 / auditoría del 05-11): los cuenta mobileIr, en
+        // este dispositivo. Un toque normal sigue abriendo el menú entero.
+        function mobileContarVisita(view) {
+            if (!NAV_VIEW_LABELS[view] || view === 'calendar') return;
+            try {
+                const v = JSON.parse(localStorage.getItem('bitacora_m_visitas') || '{}');
+                v[view] = (v[view] || 0) + 1;
+                localStorage.setItem('bitacora_m_visitas', JSON.stringify(v));
+            } catch (_) { /* sin almacenamiento */ }
+        }
+        let mobileMenuLargo = false;
+        function mobileMenuPulsar(e) {
+            mobileMenuLargo = false;
+            if (e.button) return;
+            const x0 = e.clientX, y0 = e.clientY;
+            const fuera = () => { clearTimeout(espera); removeEventListener('pointerup', fuera); removeEventListener('pointercancel', fuera); removeEventListener('pointermove', mover); };
+            const mover = ev => { if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) > 10) fuera(); };
+            // El clic de ese mismo toque llega al levantar el dedo, ya con la hoja encima: se ignora (como el + con apuntarAlToque).
+            const espera = setTimeout(() => {
+                fuera();
+                mobileMenuLargo = true;
+                clicDelToque = true;
+                addEventListener('pointerup', () => setTimeout(() => { clicDelToque = false; }, 350), { once: true });
+                haptico('suave');
+                openMasUsados();
+            }, 450);
+            addEventListener('pointerup', fuera); addEventListener('pointercancel', fuera); addEventListener('pointermove', mover);
+        }
+        function openMasUsados() {
+            let visitas = {};
+            try { visitas = JSON.parse(localStorage.getItem('bitacora_m_visitas') || '{}'); } catch (_) { /* sin almacenamiento */ }
+            const vistas = navSeccionesVisibles().flatMap(s => s.items.map(i => i.view)).filter(v => NAV_VIEW_LABELS[v] && v !== 'calendar' && apartadoVisible(v));
+            const orden = [...new Set(vistas)].sort((a, b) => (visitas[b] || 0) - (visitas[a] || 0)).slice(0, 6);
+            openSheet({ mode: 'compacta', content: `<div class="modal-title">más usados.</div>
+                <div class="m-mas-usados">${orden.map(v => `<button class="m-mas-usado ${v === currentView ? 'actual' : ''}" onclick="closeModal(); mobileIr('${v}')"><span>${escapeHtml(NAV_VIEW_LABELS[v].toLowerCase())}.</span><i class='ico ico-der' aria-hidden=true></i></button>`).join('')}</div>` });
+        }
         function toggleMenuMovil() {
             // Cerrado, el menú no se rehace en cada repintado (renderMobileShell reutiliza el último): se pone al día
             // aquí, aún cerrado, para que la animación de abrir salga desde su sitio.
@@ -1552,7 +1590,7 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
                 ${pestana('planner', M_ICONOS.plan, 'plan.')}
                 <button class="m-tab-mas" onpointerdown="apuntarAlToque(event)" onclick="if(!event.detail)openApuntar()" aria-label="Apuntar algo">${M_ICONOS.mas}</button>
                 ${pestana(reciente, `<i class="m-tab-letra">${escapeHtml(nombre.charAt(0))}</i>`, escapeHtml(mobileAbreviatura(nombre)) + '.', `aria-label="${escapeHtml(nombre)}"`)}
-                <button class="m-tab m-tab-menu" onclick="toggleMenuMovil()">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
+                <button class="m-tab m-tab-menu" onpointerdown="mobileMenuPulsar(event)" oncontextmenu="return false" onclick="if (mobileMenuLargo) mobileMenuLargo = false; else toggleMenuMovil()" aria-label="Menú. Mantén pulsado para tus apartados más usados.">${M_ICONOS.menu}<span>menú.</span>${bandejaPendiente.length ? '<i class="m-menu-aviso" aria-hidden="true"></i>' : ''}</button>
             </nav>`;
         }
 

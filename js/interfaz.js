@@ -423,12 +423,10 @@
         }
 
         function switchView(view, afterEnter) {
-            // En el móvil, cualquier salto de apartado (buscador, enlaces dentro de una página) es una pantalla más del
-            // historial, como las del menú: atrás vuelve.
-            if (mobileStandaloneActive && view !== currentView) {
-                if (!afterEnter) { mobileIr(view); return; }
-                mobileAnotarVista(view);
-            }
+            // En el móvil, cualquier salto de apartado (buscador, subapartados, enlaces dentro de una página) pasa por
+            // mobileIr, como el menú: guarda el scroll y la pila (iPhone) o el historial, y atrás vuelve. Con afterEnter
+            // (ir a un subapartado) iba por otro camino que no apuntaba nada (auditoría del 05-11).
+            if (mobileStandaloneActive && view !== currentView) { mobileIr(view, undefined, afterEnter); return; }
             // Al entrar en Finanzas (desde otra sección) se pregunta si
             // activar el modo privacidad (cifras ocultas) antes de mostrar
             // el panel — con Intro se responde "Sí" (botón enfocado de

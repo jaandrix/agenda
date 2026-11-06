@@ -1,5 +1,5 @@
 """Lo común de los bancos de rendimiento: sirve el espejo con el index.html actual y una sesión de ejemplo, sin red real."""
-import functools, http.server, io, os, re, statistics, threading
+import functools, http.server, io, os, re, statistics, threading, time
 from playwright.sync_api import sync_playwright
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,7 +30,14 @@ AYUDA = """window.__b = {
 
 
 class _Servidor(http.server.SimpleHTTPRequestHandler):
+    # Segundos de espera por archivo (sin la barra ni la consulta): para simular una red lenta también para el service
+    # worker, al que no le llegan las rutas de Playwright.
+    retrasos = {}
     def log_message(self, *a): pass
+    def do_GET(self):
+        espera = _Servidor.retrasos.get(self.path.split('?')[0].lstrip('/'))
+        if espera: time.sleep(espera)
+        super().do_GET()
     def handle(self):
         try: super().handle()
         except Exception: pass
