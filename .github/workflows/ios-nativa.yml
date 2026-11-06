@@ -1,0 +1,103 @@
+name: iOS - Bitácora nativa (tests y .ipa sin firmar)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-nativa.yml'
+  workflow_dispatch: {}
+
+jobs:
+  nativa:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ios/BitacoraApp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Usar el Xcode más reciente del runner
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST/Contents/Developer"; fi
+          xcodebuild -version
+
+      - name: Instalar XcodeGen y generar el proyecto
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Tests unitarios (simulador)
+        run: |
+          set -o pipefail
+          UDID=$(xcrun simctl list devices available -j | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))][0].udid')
+          echo "Simulador: $UDID"
+          xcodebuild test \
+            -project BitacoraApp.xcodeproj \
+            -scheme BitacoraNative \
+            -destination "id=$UDID" \
+            -derivedDataPath build-tests \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee tests.log | grep -E "(Test Case|error:|warning: .*BitacoraNative|Executed|TEST (SUCCEEDED|FAILED))" || true
+          grep -q "TEST SUCCEEDED" tests.log
+
+      - name: Análisis estático
+        run: |
+          set -o pipefail
+          xcodebuild analyze \
+            -project BitacoraApp.xcodeproj \
+            -scheme BitacoraNative \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build-analyze \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            2>&1 | tee analyze.log | tail -5
+
+      - name: Compilar Release (sin firma) con número de build único
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project BitacoraApp.xcodeproj \
+            -scheme BitacoraNative \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            build 2>&1 | tee build.log | tail -5
+
+      - name: Comprobar el .app y empaquetar el .ipa
+        run: |
+          set -e
+          APP="build/Build/Products/Release-iphoneos/BitacoraNative.app"
+          test -x "$APP/BitacoraNative" || { echo "Falta el binario"; exit 1; }
+          test -f "$APP/Assets.car" || { echo "Faltan los recursos"; exit 1; }
+          for f in Regular Medium SemiBold Bold; do test -f "$APP/Poppins-$f.ttf" || { echo "Falta Poppins-$f"; exit 1; }; done
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")" = "com.bitacora.nativa.dev"
+          echo "Build: $(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
+          if [ -d "$APP/PlugIns" ]; then echo "La app no debe llevar extensiones (SideStore no las instala)"; exit 1; fi
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qr -y BitacoraNativa-unsigned.ipa Payload
+          rm -rf Payload
+          ls -la BitacoraNativa-unsigned.ipa
+
+      - name: Subir el .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: BitacoraNativa-unsigned-ipa
+          path: ios/BitacoraApp/BitacoraNativa-unsigned.ipa
+          retention-days: 30
+
+      - name: Subir los registros si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registros-nativa
+          path: |
+            ios/BitacoraApp/tests.log
+            ios/BitacoraApp/analyze.log
+            ios/BitacoraApp/build.log
+          retention-days: 7

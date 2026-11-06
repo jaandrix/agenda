@@ -1,0 +1,216 @@
+import SwiftUI
+import Network
+
+enum Pestana: Hashable {
+    case hoy, estado, ajustes
+}
+
+// Una sola hoja a la vez: el enum impide dos modales simultáneos.
+enum Modal: Identifiable, Equatable {
+    case intencion(IntencionEntrante)
+    var id: String {
+        switch self {
+        case .intencion(let i): return "intencion:\(i.id)"
+        }
+    }
+}
+
+enum FaseApp: Equatable {
+    case arrancando
+    case sinSesion(aviso: String?)
+    case lista
+}
+
+// Los servicios se crean una vez y se comparten; las vistas no los ven, solo los modelos.
+struct AppEnvironment {
+    let cliente: ClienteSupabase
+    let auth: AuthRepository
+    let almacen: AlmacenLocal
+    let sync: SyncEngine
+
+    static func real() -> AppEnvironment {
+        let cliente = ClienteSupabase()
+        let auth = AuthSupabase(cliente: cliente)
+        let almacen = AlmacenLocal()
+        let sync = SyncEngine(auth: auth, remoto: RemotoSupabase(cliente: cliente), almacen: almacen)
+        return AppEnvironment(cliente: cliente, auth: auth, almacen: almacen, sync: sync)
+    }
+}
+
+@MainActor
+@Observable
+final class AppCoordinator {
+    let entorno: AppEnvironment
+    private(set) var fase: FaseApp = .arrancando
+    private(set) var sesion: Sesion?
+    var pestana: Pestana = .hoy
+    var modal: Modal?
+    private(set) var bloqueada = false
+    private(set) var velo = false
+    private(set) var intenciones: [IntencionEntrante]
+    private(set) var informe = InformeSync()
+
+    private(set) var bloqueoActivo: Bool
+    private(set) var tema: TemaElegido
+
+    @ObservationIgnored private let cola = ColaIntenciones()
+    @ObservationIgnored private var escuchaSync: Task<Void, Never>?
+    @ObservationIgnored private var pidiendoBiometria = false
+    @ObservationIgnored private let red = NWPathMonitor()
+    @ObservationIgnored private var habiaRed = true
+
+    init(entorno: AppEnvironment = .real()) {
+        self.entorno = entorno
+        bloqueoActivo = UserDefaults.standard.bool(forKey: "bitacora.bloqueo")
+        tema = TemaElegido(rawValue: UserDefaults.standard.string(forKey: "bitacora.tema") ?? "") ?? .sistema
+        intenciones = ColaIntenciones().leer()
+    }
+
+    func arrancar() async {
+        escucharSync()
+        vigilarRed()
+        if let s = await entorno.auth.sesionGuardada() {
+            // Con sesión guardada se entra ya con la copia local y la nube se comprueba a la vez.
+            sesion = s
+            bloqueada = bloqueoActivo
+            await entorno.sync.cargarCopiaLocal(uid: s.userId)
+            fase = .lista
+            if bloqueada { await desbloquear() }
+            Task { await entorno.sync.sincronizar() }
+        } else {
+            fase = .sinSesion(aviso: nil)
+        }
+        atenderIntenciones()
+    }
+
+    func entrar(email: String, contrasena: String) async throws {
+        let s = try await entorno.auth.entrar(email: email, contrasena: contrasena)
+        sesion = s
+        await entorno.sync.cargarCopiaLocal(uid: s.userId)
+        fase = .lista
+        pestana = .hoy
+        Task { await entorno.sync.sincronizar() }
+        atenderIntenciones()
+    }
+
+    func salir() async {
+        let uid = sesion?.userId
+        await entorno.sync.detener(borrandoUsuario: uid)
+        await entorno.auth.salir()
+        sesion = nil
+        bloqueada = false
+        modal = nil
+        fase = .sinSesion(aviso: nil)
+    }
+
+    func sincronizar() async { await entorno.sync.sincronizar() }
+
+    private func escucharSync() {
+        guard escuchaSync == nil else { return }
+        let flujo = entorno.sync.informes
+        escuchaSync = Task { [weak self] in
+            for await i in flujo {
+                guard let self else { return }
+                self.informe = i
+                if i.sesionRevocada, self.sesion != nil {
+                    let uid = self.sesion?.userId
+                    self.sesion = nil
+                    await self.entorno.sync.detener(borrandoUsuario: uid)
+                    self.fase = .sinSesion(aviso: ErrorAuth.sesionRevocada.mensaje)
+                }
+            }
+        }
+    }
+
+    private func vigilarRed() {
+        red.pathUpdateHandler = { [weak self] camino in
+            let hay = camino.status == .satisfied
+            Task { @MainActor in
+                guard let self else { return }
+                if hay, !self.habiaRed, self.sesion != nil { Task { await self.entorno.sync.sincronizar() } }
+                self.habiaRed = hay
+            }
+        }
+        red.start(queue: DispatchQueue(label: "bitacora.red"))
+    }
+
+    // MARK: ciclo de vida
+
+    func cambioDeFase(_ f: ScenePhase) {
+        switch f {
+        case .active:
+            velo = false
+            if bloqueada { Task { await desbloquear() } }
+            else if sesion != nil { Task { await entorno.sync.sincronizar() } }
+        case .inactive:
+            // Antes de que iOS haga la foto del selector de apps.
+            velo = true
+        case .background:
+            velo = true
+            if bloqueoActivo, sesion != nil { bloqueada = true }
+        @unknown default:
+            break
+        }
+    }
+
+    func desbloquear() async {
+        guard bloqueada, !pidiendoBiometria else { return }
+        guard Biometria.disponible else {
+            // Sin Face ID ni código en el iPhone no hay con qué bloquear: se apaga para no dejar a nadie fuera.
+            ponerBloqueo(false)
+            bloqueada = false
+            return
+        }
+        pidiendoBiometria = true
+        defer { pidiendoBiometria = false }
+        if await Biometria.comprobar(motivo: "abrir bitácora.") {
+            bloqueada = false
+            if sesion != nil { Task { await entorno.sync.sincronizar() } }
+            atenderIntenciones()
+        }
+    }
+
+    func activarBloqueo(_ si: Bool) async {
+        if !si { ponerBloqueo(false); return }
+        guard Biometria.disponible else { return }
+        if await Biometria.comprobar(motivo: "activar el bloqueo de bitácora.") { ponerBloqueo(true) }
+    }
+
+    private func ponerBloqueo(_ si: Bool) {
+        bloqueoActivo = si
+        UserDefaults.standard.set(si, forKey: "bitacora.bloqueo")
+    }
+
+    func ponerTema(_ t: TemaElegido) {
+        tema = t
+        UserDefaults.standard.set(t.rawValue, forKey: "bitacora.tema")
+    }
+
+    // MARK: enlaces
+
+    func recibirURL(_ url: URL) {
+        let intencion = url.isFileURL ? EnlaceProfundo.desdeArchivo(url) : EnlaceProfundo.interpretar(url)
+        guard let intencion else {
+            Registro.app.notice("Enlace no admitido, se ignora.")
+            return
+        }
+        intenciones.append(intencion)
+        cola.guardar(intenciones)
+        atenderIntenciones()
+    }
+
+    private func atenderIntenciones() {
+        guard fase == .lista, !bloqueada, modal == nil, let primera = intenciones.first else { return }
+        modal = .intencion(primera)
+    }
+
+    func resolverIntencion(_ i: IntencionEntrante) {
+        if let n = intenciones.firstIndex(of: i) { intenciones.remove(at: n) }
+        cola.guardar(intenciones)
+        modal = nil
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            atenderIntenciones()
+        }
+    }
+}

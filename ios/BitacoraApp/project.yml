@@ -45,6 +45,8 @@ targets:
       - path: Shared
     info:
       path: BitacoraApp/Info.plist
+    # Esquema explícito: con el de la nativa en el proyecto, xcodebuild ya no inventa los que faltan.
+    scheme: {}
     entitlements:
       path: BitacoraApp/BitacoraApp.entitlements
       properties:
@@ -57,6 +59,48 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ENABLE_PREVIEWS: YES
+      groups:
+        - unsignedBuild
+
+  # La app nativa en SwiftUI (NATIVA.md). Otro bundle ID para instalarla junto a la envoltura web sin pisarla.
+  BitacoraNative:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: BitacoraNative
+        excludes:
+          - Info.plist
+      - path: BitacoraWidgets/Fonts
+        buildPhase: resources
+    info:
+      path: BitacoraNative/Info.plist
+    scheme:
+      testTargets:
+        - BitacoraNativeTests
+    settings:
+      base:
+        PRODUCT_NAME: BitacoraNative
+        PRODUCT_BUNDLE_IDENTIFIER: com.bitacora.nativa.dev
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        MARKETING_VERSION: "0.1.0"
+        ENABLE_PREVIEWS: YES
+      groups:
+        - unsignedBuild
+
+  BitacoraNativeTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: BitacoraNativeTests
+    dependencies:
+      - target: BitacoraNative
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.bitacora.nativa.dev.tests
+        GENERATE_INFOPLIST_FILE: YES
       groups:
         - unsignedBuild
 
