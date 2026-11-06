@@ -23,6 +23,34 @@ producto; esta app crece a su lado por cortes completos. La envoltura web (`Bita
 Pendiente para dar la fase 1 por terminada según la guía (14): probarla en el iPhone, Dynamic Type/VoiceOver revisados
 en el dispositivo y medir el arranque en Release.
 
+**0.2.0 (06-11-2026): arreglos de la auditoría de Codex y primera escritura.**
+
+- Sesión con generación: una renovación que vuelve tarde no guarda nada si entretanto se salió o se entró con otra
+  cuenta; salir y entrar cancelan y esperan la renovación en vuelo. Dos peticiones a la vez comparten una renovación.
+- 401/403: una sola renovación forzada y un reintento; si la renovación se rechaza, sesión revocada; si con el token
+  nuevo se vuelve a rechazar, error terminal sin reintentos. Solo se reintentan la falta de red, 5xx y 429.
+- Cada ciclo de sincronización va ligado a cuenta y generación; detener e iniciar cancelan y esperan el ciclo anterior,
+  y lo que vuelve de una generación vieja no guarda ni publica.
+- «hoy.» marca y desmarca tareas (también las arrastradas de días anteriores, que pasan a hoy como al abrir la web) y
+  crea tareas nuevas, con o sin hora. Ver el apartado «Escrituras».
+- La prueba del contrato con la web corre en CI, que salta también con `js/datos.js` y `js/nucleo.js`.
+- `PrivacyInfo.xcprivacy` (UserDefaults CA92.1; correo y contenido ligados a la cuenta, sin rastreo).
+
+## Escrituras
+
+- `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en
+  `estado.json` (con UUID, dispositivo, fecha y versión de contrato) **antes** de verse; si el disco falla, la interfaz
+  vuelve atrás y avisa.
+- Lo visible es la base confirmada con la cola aplicada encima.
+- Al subir: se lee la fila, las operaciones se aplican **sobre lo último de la nube** (no sobre la copia vieja), y solo
+  las claves que cambian van a `merge_bitacora_data`. Crear no hace nada si el id ya existe (no pisa lo que la web
+  cambió); marcar solo toca `done`/`hechaEn` de su tarea y no resucita una borrada.
+- Idempotencia: si se pierde la respuesta, la siguiente vuelta ve el cambio ya en la nube, el parche sale vacío y la
+  operación se da por hecha. «guardar.» decide el id al abrir la hoja: dos toques crean una sola tarea.
+- Nunca upsert de la fila completa; `apuntes` y `_meta` no se escriben (hay un `precondition`).
+- Riesgo que comparte con la web: si otro dispositivo guarda `dayPlanner` justo entre la lectura y la escritura
+  (milisegundos), gana esta escritura. Lo cierra una operación atómica en el servidor (pendiente, necesita SQL).
+
 ## Decisiones
 
 - **Sin el SDK de Supabase.** Para leer una fila y renovar un token basta URLSession (`ClienteSupabase`); el SDK suma
@@ -44,9 +72,10 @@ en el dispositivo y medir el arranque en Release.
 
 ## Riesgos abiertos
 
-- Escrituras: hasta tener la operación del servidor, `merge_bitacora_data` sustituye el bloque entero; dos ediciones a
-  la vez dentro del mismo bloque dependen de la fusión previa (como en la web).
-- `PREPARAR_FUSION` del planificador sin portar (necesario antes de escribir tareas).
+- `merge_bitacora_data` sustituye el bloque entero (ver «Escrituras»): la operación atómica del servidor es el destino.
+- Comprobar `updated_at` antes de bajar la fila no es fiable: no consta que la función del servidor lo actualice
+  (su definición no está en el repo). Hace falta una revisión del servidor para ahorrar descargas.
+- Símbolos de Release sin recortar a propósito mientras es beta (ayudan a diagnosticar); recortarlos antes de TestFlight.
 - Con Apple ID gratuito, SideStore renueva la firma cada 7 días y limita a 3 apps activas (SideStore cuenta como una):
   SideStore + envoltura + nativa llenan el cupo.
 - No se ha medido en el dispositivo (arranque < 700 ms con copia, guía 12.4).
@@ -62,8 +91,8 @@ en el dispositivo y medir el arranque en Release.
   ejecución, comprobación del .app (binario, recursos, fuentes, bundle ID, sin extensiones) y .ipa como artefacto;
   sube los registros si falla.
 
-## Fase 2 (siguiente)
+## Fase 2 (lo que queda)
 
-Portada, Planificador y Captura rápida con escrituras: portar `PREPARAR_FUSION`, operaciones con `operationId` en la
-cola, subida con fusión a tres bandas y `merge_bitacora_data`, interfaz optimista y la matriz de pruebas cruzadas con la
-PWA (guía 12.2) en una cuenta de prueba.
+Probar en el iPhone crear y marcar con la PWA abierta en el ordenador. Después: editar, mover y borrar tareas,
+mañana y pasado mañana, pendientes sin día, recurrentes del día y apuntar (`bitacoradev://apuntar`) creando de verdad;
+la matriz de pruebas cruzadas con la PWA (guía 12.2) y medir arranque, memoria y descarga en el iPhone.
