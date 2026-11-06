@@ -244,7 +244,7 @@ final class AlmacenTests: XCTestCase {
         try await a.guardarBase(Data(#"{"x": 1}"#.utf8), uid: "abc-123")
         try await a.actualizarEstado(uid: "abc-123") { $0.actualizadoNube = "hoy" }
         let base = await a.leerBase(uid: "abc-123")
-        let estado = await a.estado(uid: "abc-123")
+        let estado = try await a.estado(uid: "abc-123")
         XCTAssertEqual(base, Data(#"{"x": 1}"#.utf8))
         XCTAssertEqual(estado.actualizadoNube, "hoy")
         XCTAssertEqual(estado.pendientes, [])

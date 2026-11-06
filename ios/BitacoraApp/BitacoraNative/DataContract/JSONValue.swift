@@ -97,7 +97,7 @@ struct LectorJSON {
             try l.esperar(UInt8(ascii: ":"))
             l.espacios()
             let inicio = l.i
-            _ = try l.valor()
+            try l.saltarValor()
             r.append((clave, inicio..<l.i))
             l.espacios()
             guard l.i < l.b.count else { throw ErrorJSON.finInesperado }
@@ -108,6 +108,73 @@ struct LectorJSON {
         l.espacios()
         guard l.i == l.b.count else { throw ErrorJSON.caracterInesperado(l.i) }
         return r
+    }
+
+    // Elementos de una lista u objeto sin construir sus valores (para el resumen de «estado.»).
+    static func contarElementos(_ datos: Data) -> Int? {
+        var l = LectorJSON(datos)
+        l.espacios()
+        guard l.i < l.b.count, l.b[l.i] == UInt8(ascii: "[") || l.b[l.i] == UInt8(ascii: "{") else { return nil }
+        let esObjeto = l.b[l.i] == UInt8(ascii: "{")
+        l.i += 1
+        l.espacios()
+        if l.i < l.b.count, l.b[l.i] == UInt8(ascii: esObjeto ? "}" : "]") { return 0 }
+        var n = 0
+        while l.i < l.b.count {
+            l.espacios()
+            if esObjeto {
+                guard (try? l.cadena()) != nil else { return nil }
+                l.espacios()
+                guard l.i < l.b.count, l.b[l.i] == UInt8(ascii: ":") else { return nil }
+                l.i += 1
+            }
+            guard (try? l.saltarValor()) != nil else { return nil }
+            n += 1
+            l.espacios()
+            guard l.i < l.b.count else { return nil }
+            if l.b[l.i] == UInt8(ascii: ",") { l.i += 1; continue }
+            return n
+        }
+        return nil
+    }
+
+    // Avanza sobre un valor comprobando que está bien formado pero sin construirlo: localizar las claves de un
+    // documento grande no debe costar lo mismo que decodificarlo entero.
+    mutating func saltarValor() throws {
+        espacios()
+        guard i < b.count else { throw ErrorJSON.finInesperado }
+        switch b[i] {
+        case UInt8(ascii: "\""):
+            try saltarCadena()
+        case UInt8(ascii: "{"), UInt8(ascii: "["):
+            var pila: [UInt8] = []
+            repeat {
+                guard i < b.count else { throw ErrorJSON.finInesperado }
+                let c = b[i]
+                switch c {
+                case UInt8(ascii: "\""): try saltarCadena(); continue
+                case UInt8(ascii: "{"): pila.append(UInt8(ascii: "}"))
+                case UInt8(ascii: "["): pila.append(UInt8(ascii: "]"))
+                case UInt8(ascii: "}"), UInt8(ascii: "]"):
+                    guard pila.popLast() == c else { throw ErrorJSON.caracterInesperado(i) }
+                default: break
+                }
+                i += 1
+            } while !pila.isEmpty
+        default:
+            _ = try valor()
+        }
+    }
+
+    private mutating func saltarCadena() throws {
+        i += 1
+        while i < b.count {
+            let c = b[i]
+            if c == 0x5C { i += 2; continue }
+            i += 1
+            if c == 0x22 { return }
+        }
+        throw ErrorJSON.finInesperado
     }
 
     mutating func espacios() {

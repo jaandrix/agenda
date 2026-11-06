@@ -15,33 +15,30 @@ struct ResumenBloque: Sendable, Identifiable, Equatable {
     let conocida: Bool
 }
 
+// Barato a propósito: el tipo sale del primer byte y el recuento se hace sin construir los valores.
 struct ResumenDocumento: Sendable, Equatable {
     let bytes: Int
     let bloques: [ResumenBloque]
     let desconocidas: [String]
     let ausentes: [String]
-    let conservaTodo: Bool
 
     init(_ doc: DocumentoBitacora) {
         bytes = doc.tamano
         bloques = doc.claves.sorted().map { k in
-            let v = try? doc.valor(de: k)
-            let (tipo, n): (String, Int?) = {
-                switch v {
-                case .array(let a)?: return ("lista", a.count)
-                case .object(let o)?: return ("objeto", o.count)
-                case .string?: return ("texto", nil)
-                case .number?: return ("número", nil)
-                case .bool?: return ("sí/no", nil)
-                case .null?: return ("vacío", nil)
-                case nil: return ("ilegible", nil)
-                }
-            }()
-            return ResumenBloque(id: k, tipo: tipo, elementos: n, bytes: doc.bytes(de: k)?.count ?? 0, conocida: ContratoDatos.conocida(k))
+            let d = doc.bytes(de: k) ?? Data()
+            let tipo: String
+            switch d.first {
+            case UInt8(ascii: "[")?: tipo = "lista"
+            case UInt8(ascii: "{")?: tipo = "objeto"
+            case UInt8(ascii: "\"")?: tipo = "texto"
+            case UInt8(ascii: "t")?, UInt8(ascii: "f")?: tipo = "sí/no"
+            case UInt8(ascii: "n")?: tipo = "vacío"
+            default: tipo = "número"
+            }
+            return ResumenBloque(id: k, tipo: tipo, elementos: LectorJSON.contarElementos(d), bytes: d.count, conocida: ContratoDatos.conocida(k))
         }
         desconocidas = doc.clavesDesconocidas
         ausentes = doc.clavesAusentes
-        conservaTodo = doc.conservaTodoAlReescribir()
     }
 }
 
@@ -50,12 +47,20 @@ struct InformeSync: Sendable, Equatable {
     var ultimaSincronizacion: Date?
     var actualizadoNube: String?
     var resumen: ResumenDocumento?
+    var pendientes = 0
     var revision = 0
     var sesionRevocada = false
 }
 
-// Un solo ciclo a la vez. idle -> pulling -> (replayingPending -> pushing, cuando haya escrituras) -> idle.
-// Sin red o con error se reintenta con espera exponencial y algo de azar; al cerrar sesión se cancela todo.
+enum ErrorSync: Error, Equatable {
+    case sinCuenta
+    case colaIlegible
+}
+
+// Un solo ciclo a la vez: traer la fila, volver a aplicar encima la cola de cambios, subir el parche y guardar la
+// nueva base. Cada `iniciar` abre una generación ligada a una cuenta; lo que vuelve de un ciclo de otra generación
+// se descarta sin publicar ni guardar nada. Los errores de red o del servidor (5xx) se reintentan con espera
+// exponencial y azar; los demás no, para no machacar con un token o una petición que el servidor ya rechazó.
 actor SyncEngine {
     private let auth: AuthRepository
     private let remoto: BitacoraRemoteDataSource
@@ -64,9 +69,14 @@ actor SyncEngine {
     private var reintento: Task<Void, Never>?
     private var intentos = 0
     private var informe = InformeSync()
-    private var activo = true
+    private var generacion = 0
+    private var uid: String?
+    private var otraVuelta = false
     private let continuacion: AsyncStream<InformeSync>.Continuation
     nonisolated let informes: AsyncStream<InformeSync>
+    private var esperaBase: Double = 2
+    func ponerEsperaBase(_ s: Double) { esperaBase = s }
+    func informeActual() -> InformeSync { informe }
 
     init(auth: AuthRepository, remoto: BitacoraRemoteDataSource, almacen: AlmacenLocal) {
         self.auth = auth
@@ -77,12 +87,17 @@ actor SyncEngine {
         continuacion = c
     }
 
-    // Arranque: pinta con la copia local antes de ir a la red.
-    func cargarCopiaLocal(uid: String) async {
-        activo = true
-        let e = await almacen.estado(uid: uid)
-        informe.ultimaSincronizacion = e.ultimaSincronizacion
-        informe.actualizadoNube = e.actualizadoNube
+    // Abre la generación de una cuenta y pinta con su copia local antes de ir a la red.
+    func iniciar(uid: String) async {
+        await detenerCiclos()
+        generacion += 1
+        self.uid = uid
+        intentos = 0
+        informe = InformeSync()
+        let e = try? await almacen.estado(uid: uid)
+        informe.ultimaSincronizacion = e?.ultimaSincronizacion
+        informe.actualizadoNube = e?.actualizadoNube
+        informe.pendientes = e?.pendientes.count ?? 0
         if let d = await almacen.leerBase(uid: uid), let doc = try? DocumentoBitacora(datos: d) {
             informe.resumen = ResumenDocumento(doc)
             informe.revision += 1
@@ -90,78 +105,165 @@ actor SyncEngine {
         publicar()
     }
 
-    func sincronizar() async {
-        guard activo else { return }
-        if let enCurso { return await enCurso.value }
-        reintento?.cancel()
-        reintento = nil
-        let t = Task { await self.ciclo() }
-        enCurso = t
-        await t.value
-        enCurso = nil
-    }
-
-    func detener(borrandoUsuario uid: String?) async {
-        activo = false
-        reintento?.cancel()
-        reintento = nil
-        enCurso?.cancel()
-        if let uid { await almacen.borrarUsuario(uid) }
+    func detener(borrandoUsuario borrar: String?) async {
+        await detenerCiclos()
+        generacion += 1
+        uid = nil
+        if let borrar { await almacen.borrarUsuario(borrar) }
         informe = InformeSync()
         publicar()
     }
 
-    private func ciclo() async {
-        informe.estado = .trayendo
-        publicar()
-        do {
-            let sesion = try await auth.sesionValida()
-            try Task.checkCancellation()
-            guard let fila = try await remoto.leerFila(sesion: sesion) else {
-                informe.estado = .error("tu cuenta aún no tiene datos en la nube.")
-                publicar()
-                return
-            }
-            try Task.checkCancellation()
-            guard activo else { return }
-            // Se comprueba que se puede leer antes de sustituir la copia buena.
-            let doc = try DocumentoBitacora(datos: fila.datos)
-            try await almacen.guardarBase(fila.datos, uid: sesion.userId)
-            let ahora = Date()
-            try await almacen.actualizarEstado(uid: sesion.userId) {
-                $0.actualizadoNube = fila.actualizado
-                $0.ultimaSincronizacion = ahora
-                $0.ultimoError = nil
-            }
-            intentos = 0
-            informe.estado = .reposo
-            informe.ultimaSincronizacion = ahora
-            informe.actualizadoNube = fila.actualizado
-            informe.resumen = ResumenDocumento(doc)
-            informe.revision += 1
-            publicar()
-        } catch is CancellationError {
-            return
-        } catch ErrorAuth.sesionRevocada {
-            informe.sesionRevocada = true
-            informe.estado = .error(ErrorAuth.sesionRevocada.mensaje)
-            publicar()
-        } catch ErrorRed.sinConexion {
-            informe.estado = .sinConexion
-            publicar()
-            programarReintento()
-        } catch {
-            Registro.sync.error("Fallo al traer la nube: \(String(describing: error), privacy: .private)")
-            informe.estado = .error(SyncEngine.mensaje(error))
-            publicar()
-            programarReintento()
+    private func detenerCiclos() async {
+        otraVuelta = false
+        reintento?.cancel()
+        reintento = nil
+        if let t = enCurso {
+            t.cancel()
+            await t.value
+        }
+        enCurso = nil
+    }
+
+    func sincronizar() async {
+        guard uid != nil else { return }
+        if let enCurso { return await enCurso.value }
+        reintento?.cancel()
+        reintento = nil
+        let gen = generacion
+        let t = Task { await self.ciclo(generacion: gen) }
+        enCurso = t
+        await t.value
+        guard generacion == gen else { return }
+        enCurso = nil
+        // Lo que se encoló durante el ciclo no iba en su lote: otra vuelta.
+        if otraVuelta {
+            otraVuelta = false
+            await sincronizar()
         }
     }
 
-    private func programarReintento() {
-        guard activo else { return }
+    // La cola se guarda en disco antes de devolver: la interfaz solo da el cambio por hecho después.
+    func encolar(_ op: OperacionBitacora) async throws {
+        guard let uid else { throw ErrorSync.sinCuenta }
+        let pendiente = OperacionPendiente(op)
+        var total = 0
+        try await almacen.actualizarEstado(uid: uid) {
+            $0.pendientes.append(pendiente)
+            total = $0.pendientes.count
+        }
+        informe.pendientes = total
+        informe.revision += 1
+        publicar()
+        if enCurso != nil { otraVuelta = true }
+        Task { await self.sincronizar() }
+    }
+
+    // Lo que ve la interfaz: la base confirmada con la cola aplicada encima.
+    func documentoVisible() async -> DocumentoBitacora? {
+        guard let uid, let d = await almacen.leerBase(uid: uid), let base = try? DocumentoBitacora(datos: d) else { return nil }
+        let ops = ((try? await almacen.estado(uid: uid))?.pendientes ?? []).map(\.operacion)
+        return AplicarOperaciones.sobre(base, ops).0
+    }
+
+    // Diagnóstico de «estado.»: reescribir la copia no cambia ninguna clave. No va en cada sincronización.
+    func comprobarConservacion() async -> Bool? {
+        guard let uid, let d = await almacen.leerBase(uid: uid), let doc = try? DocumentoBitacora(datos: d) else { return nil }
+        return doc.conservaTodoAlReescribir()
+    }
+
+    private func vigente(_ gen: Int) -> Bool { gen == generacion && !Task.isCancelled }
+
+    private func ciclo(generacion gen: Int) async {
+        guard let uid, vigente(gen) else { return }
+        informe.estado = .trayendo
+        publicar()
+        do {
+            try await conRenovacion(uid: uid, gen: gen) { sesion in try await self.traerYSubir(sesion: sesion, uid: uid, gen: gen) }
+            guard vigente(gen) else { return }
+            intentos = 0
+            informe.estado = .reposo
+            publicar()
+        } catch {
+            guard vigente(gen) else { return }
+            switch error {
+            case is CancellationError, ErrorAuth.sinSesion, ErrorSync.sinCuenta:
+                return
+            case ErrorAuth.sesionRevocada:
+                informe.sesionRevocada = true
+                informe.estado = .error(ErrorAuth.sesionRevocada.mensaje)
+                publicar()
+            case ErrorRed.sinConexion:
+                informe.estado = .sinConexion
+                publicar()
+                programarReintento(gen)
+            default:
+                Registro.sync.error("Fallo al sincronizar: \(String(describing: error), privacy: .private)")
+                informe.estado = .error(SyncEngine.mensaje(error))
+                try? await almacen.actualizarEstado(uid: uid) { $0.ultimoError = SyncEngine.mensaje(error) }
+                publicar()
+                if SyncEngine.reintentable(error) { programarReintento(gen) }
+            }
+        }
+    }
+
+    // Ante un 401/403 se renueva el token una sola vez y se repite. Si la renovación también se rechaza, Auth lanza
+    // sesionRevocada; si con el token nuevo se vuelve a rechazar, es un error terminal, sin reintentos.
+    private func conRenovacion(uid: String, gen: Int, _ trabajo: (Sesion) async throws -> Void) async throws {
+        let sesion = try await auth.sesionValida()
+        guard sesion.userId == uid else { throw ErrorSync.sinCuenta }
+        do {
+            try await trabajo(sesion)
+        } catch ErrorRed.noAutorizado {
+            guard vigente(gen) else { throw CancellationError() }
+            let nueva = try await auth.sesionValida(forzarRenovacion: true)
+            guard nueva.userId == uid, vigente(gen) else { throw ErrorSync.sinCuenta }
+            try await trabajo(nueva)
+        }
+    }
+
+    private func traerYSubir(sesion: Sesion, uid: String, gen: Int) async throws {
+        guard let fila = try await remoto.leerFila(sesion: sesion) else {
+            throw ErrorRed.servidor(404)
+        }
+        guard vigente(gen) else { throw CancellationError() }
+        let nube = try DocumentoBitacora(datos: fila.datos)
+        let lote = try await almacen.estado(uid: uid).pendientes
+        var base = nube
+        if !lote.isEmpty {
+            let (resultado, parche) = AplicarOperaciones.sobre(nube, lote.map(\.operacion))
+            if !parche.isEmpty {
+                guard vigente(gen) else { throw CancellationError() }
+                try await remoto.mezclar(parche: parche, sesion: sesion)
+            }
+            base = resultado
+        }
+        // A partir de aquí el servidor ya tiene el cambio: aunque la vista ya no sea vigente, se guarda la base y se
+        // quita el lote de la cola para no dejarlo a medias. Lo que se encoló mientras tanto se queda.
+        try await almacen.guardarBase(lote.isEmpty ? fila.datos : base.serializado(), uid: uid)
+        let ahora = Date()
+        let hechas = Set(lote.map(\.id))
+        var quedan = 0
+        try await almacen.actualizarEstado(uid: uid) {
+            $0.pendientes.removeAll { hechas.contains($0.id) }
+            $0.confirmadasRecientes = Array(($0.confirmadasRecientes + hechas).suffix(200))
+            $0.actualizadoNube = fila.actualizado
+            $0.ultimaSincronizacion = ahora
+            $0.ultimoError = nil
+            quedan = $0.pendientes.count
+        }
+        guard vigente(gen) else { return }
+        informe.ultimaSincronizacion = ahora
+        informe.actualizadoNube = fila.actualizado
+        informe.resumen = ResumenDocumento(base)
+        informe.pendientes = quedan
+        informe.revision += 1
+    }
+
+    private func programarReintento(_ gen: Int) {
+        guard gen == generacion else { return }
         intentos += 1
-        let espera = min(pow(2, Double(min(intentos, 8))) * 2, 300) * Double.random(in: 0.8...1.2)
+        let espera = min(pow(2, Double(min(intentos, 8))) * esperaBase, 300) * Double.random(in: 0.8...1.2)
         reintento = Task { [weak self] in
             try? await Task.sleep(for: .seconds(espera))
             guard !Task.isCancelled else { return }
@@ -171,11 +273,21 @@ actor SyncEngine {
 
     private func publicar() { continuacion.yield(informe) }
 
+    static func reintentable(_ e: Error) -> Bool {
+        switch e {
+        case ErrorRed.sinConexion: return true
+        case ErrorRed.servidor(let c): return c >= 500 || c == 429
+        default: return false
+        }
+    }
+
     static func mensaje(_ e: Error) -> String {
         switch e {
+        case ErrorRed.servidor(404): return "tu cuenta aún no tiene datos en la nube."
         case ErrorRed.servidor(let c): return "el servidor respondió \(c)."
         case ErrorRed.noAutorizado: return "la nube no deja leer tus datos."
         case ErrorRed.respuestaInvalida, is ErrorJSON: return "llegaron datos que no se entienden."
+        case is DecodingError, is CocoaError: return "no se pudo leer la copia de este iPhone."
         case let a as ErrorAuth: return a.mensaje
         default: return "no se pudo sincronizar."
         }

@@ -5,10 +5,11 @@ struct FilaRemota: Sendable {
     let actualizado: String?
 }
 
-// Solo lectura en esta fase. Cuando haya escrituras irán por `merge_bitacora_data` (parche de primer nivel) o por
-// operaciones del servidor; nunca por un upsert de la fila completa.
+// Las escrituras van por `merge_bitacora_data` (el servidor mezcla el parche por claves de primer nivel, como hace la
+// web). Nunca un upsert de la fila completa: si la función falla, el cambio se queda en la cola.
 protocol BitacoraRemoteDataSource: Sendable {
     func leerFila(sesion: Sesion) async throws -> FilaRemota?
+    func mezclar(parche: [String: JSONValue], sesion: Sesion) async throws
 }
 
 struct RemotoSupabase: BitacoraRemoteDataSource {
@@ -23,6 +24,15 @@ struct RemotoSupabase: BitacoraRemoteDataSource {
         if codigo == 401 || codigo == 403 { throw ErrorRed.noAutorizado }
         guard codigo == 200 else { throw ErrorRed.servidor(codigo) }
         return try RemotoSupabase.extraer(d)
+    }
+
+    func mezclar(parche: [String: JSONValue], sesion: Sesion) async throws {
+        precondition(!parche.keys.contains { ContratoDatos.especiales.contains($0) }, "apuntes y _meta no se escriben desde iOS")
+        let cuerpo = EscritorJSON.datos(.object(["p_patch": .object(parche)]))
+        let r = cliente.peticion("rest/v1/rpc/merge_bitacora_data", metodo: "POST", token: sesion.accessToken, cuerpo: cuerpo, tiempo: 15)
+        let (_, codigo) = try await cliente.enviar(r)
+        if codigo == 401 || codigo == 403 { throw ErrorRed.noAutorizado }
+        guard (200..<300).contains(codigo) else { throw ErrorRed.servidor(codigo) }
     }
 
     // La respuesta es `[{"data": {...}, "updated_at": "..."}]`. Se recortan los bytes de `data` tal cual, sin

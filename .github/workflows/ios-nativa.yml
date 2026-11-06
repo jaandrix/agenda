@@ -6,6 +6,10 @@ on:
     paths:
       - 'ios/**'
       - '.github/workflows/ios-nativa.yml'
+      # Si la web cambia sus datos sin tocar iOS, la prueba del contrato tiene que enterarse.
+      - 'js/datos.js'
+      - 'js/nucleo.js'
+      - 'pruebas/contrato-ios.mjs'
   workflow_dispatch: {}
 
 jobs:
@@ -17,6 +21,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Contrato de datos con la web
+        working-directory: .
+        run: node --test pruebas/contrato-ios.mjs
 
       - name: Usar el Xcode más reciente del runner
         run: |
@@ -75,6 +83,7 @@ jobs:
           test -x "$APP/BitacoraNative" || { echo "Falta el binario"; exit 1; }
           test -f "$APP/Assets.car" || { echo "Faltan los recursos"; exit 1; }
           for f in Regular Medium SemiBold Bold; do test -f "$APP/Poppins-$f.ttf" || { echo "Falta Poppins-$f"; exit 1; }; done
+          test -f "$APP/PrivacyInfo.xcprivacy" || { echo "Falta PrivacyInfo.xcprivacy"; exit 1; }
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")" = "com.bitacora.nativa.dev"
           # Sin UILaunchScreen iOS la abre en modo compatibilidad (franjas negras); sin los demás, no hay enlaces, Face ID ni Poppins.
           for clave in UILaunchScreen NSFaceIDUsageDescription CFBundleURLTypes:0:CFBundleURLSchemes:0 UIAppFonts:0 CFBundleDocumentTypes:0; do

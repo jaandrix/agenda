@@ -4,13 +4,13 @@ struct TareaHoy: Sendable, Identifiable, Equatable {
     let id: String
     let titulo: String
     let hora: String?
-    let hecha: Bool
+    var hecha: Bool
     let arrastrada: Bool
 }
 
 struct VistaHoy: Sendable, Equatable {
     let dia: LocalDay
-    let tareas: [TareaHoy]
+    var tareas: [TareaHoy]
     let sinDia: Int
 }
 

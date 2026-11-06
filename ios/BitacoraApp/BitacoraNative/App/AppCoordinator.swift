@@ -8,9 +8,11 @@ enum Pestana: Hashable {
 // Una sola hoja a la vez: el enum impide dos modales simultáneos.
 enum Modal: Identifiable, Equatable {
     case intencion(IntencionEntrante)
+    case nuevaTarea(dia: LocalDay)
     var id: String {
         switch self {
         case .intencion(let i): return "intencion:\(i.id)"
+        case .nuevaTarea(let d): return "tarea:\(d.iso)"
         }
     }
 }
@@ -73,7 +75,7 @@ final class AppCoordinator {
             // Con sesión guardada se entra ya con la copia local y la nube se comprueba a la vez.
             sesion = s
             bloqueada = bloqueoActivo
-            await entorno.sync.cargarCopiaLocal(uid: s.userId)
+            await entorno.sync.iniciar(uid: s.userId)
             fase = .lista
             if bloqueada { await desbloquear() }
             Task { await entorno.sync.sincronizar() }
@@ -86,7 +88,7 @@ final class AppCoordinator {
     func entrar(email: String, contrasena: String) async throws {
         let s = try await entorno.auth.entrar(email: email, contrasena: contrasena)
         sesion = s
-        await entorno.sync.cargarCopiaLocal(uid: s.userId)
+        await entorno.sync.iniciar(uid: s.userId)
         fase = .lista
         pestana = .hoy
         Task { await entorno.sync.sincronizar() }
@@ -104,6 +106,12 @@ final class AppCoordinator {
     }
 
     func sincronizar() async { await entorno.sync.sincronizar() }
+
+    func encolar(_ op: OperacionBitacora) async throws { try await entorno.sync.encolar(op) }
+
+    func documentoVisible() async -> DocumentoBitacora? { await entorno.sync.documentoVisible() }
+
+    func comprobarConservacion() async -> Bool? { await entorno.sync.comprobarConservacion() }
 
     private func escucharSync() {
         guard escuchaSync == nil else { return }

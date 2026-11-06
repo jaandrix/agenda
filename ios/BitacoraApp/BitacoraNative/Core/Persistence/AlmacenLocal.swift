@@ -1,16 +1,5 @@
 import Foundation
 
-// Una operación local que espera a subir. En la fase 1 la cola existe (y se guarda) pero nadie la llena: la app es
-// de solo lectura hasta demostrar que ninguna clave se pierde.
-struct OperacionPendiente: Codable, Sendable, Equatable, Identifiable {
-    let id: UUID
-    let dispositivo: String
-    let creada: Date
-    let versionContrato: Int
-    let tipo: String
-    let carga: Data
-}
-
 struct EstadoAlmacen: Codable, Sendable, Equatable {
     var version = 1
     var actualizadoNube: String?
@@ -63,15 +52,16 @@ actor AlmacenLocal {
         return try? Data(contentsOf: u)
     }
 
-    func estado(uid: String) -> EstadoAlmacen {
-        guard let u = try? carpeta(uid).appendingPathComponent("estado.json"),
-              let d = try? Data(contentsOf: u),
-              let e = try? AlmacenLocal.decodificador.decode(EstadoAlmacen.self, from: d) else { return EstadoAlmacen() }
-        return e
+    // Si estado.json existe pero no se entiende, se lanza error en vez de empezar de cero: dentro puede haber cambios
+    // sin subir, y escribir encima los borraría.
+    func estado(uid: String) throws -> EstadoAlmacen {
+        let u = try carpeta(uid).appendingPathComponent("estado.json")
+        guard fm.fileExists(atPath: u.path) else { return EstadoAlmacen() }
+        return try AlmacenLocal.decodificador.decode(EstadoAlmacen.self, from: Data(contentsOf: u))
     }
 
     func actualizarEstado(uid: String, _ cambio: (inout EstadoAlmacen) -> Void) throws {
-        var e = estado(uid: uid)
+        var e = try estado(uid: uid)
         cambio(&e)
         try escribir(AlmacenLocal.codificador.encode(e), en: carpeta(uid).appendingPathComponent("estado.json"))
     }

@@ -73,6 +73,9 @@ targets:
           - Info.plist
       - path: BitacoraWidgets/Fonts
         buildPhase: resources
+        excludes:
+          - Poppins-Black.ttf
+          - Poppins-ExtraBold.ttf
     # Sin la clave `info`: XcodeGen reescribiría el Info.plist solo con lo básico y se perdían la pantalla de
     # arranque (la app salía con franjas negras), el esquema de URL, Face ID y las fuentes. Se usa tal cual.
     scheme:
@@ -85,7 +88,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.bitacora.nativa.dev
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        MARKETING_VERSION: "0.1.1"
+        MARKETING_VERSION: "0.2.0"
         ENABLE_PREVIEWS: YES
       groups:
         - unsignedBuild

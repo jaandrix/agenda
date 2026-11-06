@@ -4,6 +4,7 @@ import SwiftUI
 // Enseña nombres de bloques, tamaños y recuentos; nunca contenido.
 struct EstadoView: View {
     @Environment(AppCoordinator.self) private var c
+    @State private var conserva: Bool?
 
     var body: some View {
         List {
@@ -19,7 +20,7 @@ struct EstadoView: View {
                 Section {
                     fila("tamaño.", valor: ByteCountFormatter.string(fromByteCount: Int64(r.bytes), countStyle: .file))
                     fila("bloques.", valor: "\(r.bloques.count)")
-                    fila("se conserva todo.", valor: r.conservaTodo ? "sí" : "no", alerta: !r.conservaTodo)
+                    fila("se conserva todo.", valor: conserva.map { $0 ? "sí" : "no" } ?? "comprobando", alerta: conserva == false)
                     if !r.desconocidas.isEmpty {
                         fila("bloques que esta versión no conoce.", valor: r.desconocidas.joined(separator: ", "))
                     }
@@ -29,7 +30,7 @@ struct EstadoView: View {
                 } header: {
                     Text("copia en este iPhone.")
                 } footer: {
-                    Text("«se conserva todo» comprueba que, al reescribir tu copia, cada bloque sale idéntico, también los que esta versión no entiende. es la condición para activar las escrituras.")
+                    Text("«se conserva todo» comprueba que, al reescribir tu copia, cada bloque sale idéntico, también los que esta versión no entiende. es la condición para que la app escriba.")
                 }
                 Section("bloques.") {
                     ForEach(r.bloques) { b in
@@ -44,7 +45,7 @@ struct EstadoView: View {
             }
             Section("en cola.") {
                 fila("enlaces recibidos sin atender.", valor: "\(c.intenciones.count)")
-                fila("cambios por subir.", valor: "0, la app aún no escribe")
+                fila("cambios por subir.", valor: "\(c.informe.pendientes)")
             }
         }
         .font(Tipo.cuerpo)
@@ -52,6 +53,7 @@ struct EstadoView: View {
         .background(Paleta.fondo)
         .navigationTitle("estado.")
         .refreshable { await c.sincronizar() }
+        .task(id: c.informe.revision) { conserva = await c.comprobarConservacion() }
     }
 
     private var textoEstado: String {

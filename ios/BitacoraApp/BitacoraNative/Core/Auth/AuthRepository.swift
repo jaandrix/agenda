@@ -28,56 +28,92 @@ enum ErrorAuth: Error, Equatable {
     }
 }
 
+protocol AlmacenSesion: Sendable {
+    func leer() -> Sesion?
+    func guardar(_ s: Sesion)
+    func borrar()
+}
+
+struct SesionEnLlavero: AlmacenSesion {
+    private let cuenta = "sesion"
+    func leer() -> Sesion? { Llavero.leer(cuenta: cuenta).flatMap { try? JSONDecoder().decode(Sesion.self, from: $0) } }
+    func guardar(_ s: Sesion) {
+        if let d = try? JSONEncoder().encode(s), !Llavero.guardar(d, cuenta: cuenta) {
+            Registro.auth.error("No se pudo guardar la sesión en el llavero.")
+        }
+    }
+    func borrar() { Llavero.borrar(cuenta: cuenta) }
+}
+
 protocol AuthRepository: Sendable {
     func sesionGuardada() async -> Sesion?
     func entrar(email: String, contrasena: String) async throws -> Sesion
-    // Devuelve una sesión con token vigente, renovándola si hace falta. Sin red lanza ErrorRed.sinConexion y la
-    // sesión guardada sigue ahí; solo un rechazo claro del servidor (ErrorAuth.sesionRevocada) la borra.
-    func sesionValida() async throws -> Sesion
+    // Devuelve una sesión con token vigente, renovándola si caduca pronto o si se fuerza (tras un 401). Sin red lanza
+    // ErrorRed.sinConexion y la sesión guardada sigue ahí; solo un rechazo claro del servidor (ErrorAuth.sesionRevocada)
+    // la borra.
+    func sesionValida(forzarRenovacion: Bool) async throws -> Sesion
     func salir() async
 }
 
+extension AuthRepository {
+    func sesionValida() async throws -> Sesion { try await sesionValida(forzarRenovacion: false) }
+}
+
+// Cada entrada o salida sube la generación. Una renovación que vuelve de la red con una generación vieja, o con un
+// refresh token que ya no es el guardado, no guarda nada: así no resucita una sesión cerrada ni pisa otra cuenta.
 actor AuthSupabase: AuthRepository {
     private let cliente: ClienteSupabase
-    private let cuentaLlavero = "sesion"
+    private let almacen: AlmacenSesion
     private var actual: Sesion?
     private var cargada = false
-    private var renovando: Task<Sesion, Error>?
+    private var generacion = 0
+    private var renovando: (refresh: String, tarea: Task<Sesion, Error>)?
 
-    init(cliente: ClienteSupabase) { self.cliente = cliente }
+    init(cliente: ClienteSupabase, almacen: AlmacenSesion = SesionEnLlavero()) {
+        self.cliente = cliente
+        self.almacen = almacen
+    }
 
     func sesionGuardada() -> Sesion? {
         if !cargada {
             cargada = true
-            if let d = Llavero.leer(cuenta: cuentaLlavero) { actual = try? JSONDecoder().decode(Sesion.self, from: d) }
+            actual = almacen.leer()
         }
         return actual
     }
 
     func entrar(email: String, contrasena: String) async throws -> Sesion {
+        await cancelarRenovacion()
+        generacion += 1
+        let gen = generacion
         let cuerpo = try JSONSerialization.data(withJSONObject: ["email": email, "password": contrasena])
         let r = cliente.peticion("auth/v1/token", consulta: [URLQueryItem(name: "grant_type", value: "password")], metodo: "POST", cuerpo: cuerpo, tiempo: 15)
         let (d, codigo) = try await cliente.enviar(r)
         guard codigo == 200 else { throw AuthSupabase.error(d, codigo: codigo) }
         let s = try AuthSupabase.sesion(de: d)
+        guard gen == generacion else { throw ErrorAuth.sinSesion }
         guardar(s)
         return s
     }
 
-    func sesionValida() async throws -> Sesion {
+    func sesionValida(forzarRenovacion: Bool) async throws -> Sesion {
         guard let s = sesionGuardada() else { throw ErrorAuth.sinSesion }
-        if !s.caducaPronto { return s }
-        if let renovando { return try await renovando.value }
-        let t = Task { try await self.renovar(s) }
-        renovando = t
-        defer { renovando = nil }
+        if !forzarRenovacion && !s.caducaPronto { return s }
+        if let renovando, renovando.refresh == s.refreshToken { return try await renovando.tarea.value }
+        let gen = generacion
+        let t = Task { try await self.renovar(s, generacion: gen) }
+        renovando = (s.refreshToken, t)
+        defer { if renovando?.refresh == s.refreshToken { renovando = nil } }
         return try await t.value
     }
 
-    private func renovar(_ s: Sesion) async throws -> Sesion {
+    private func renovar(_ s: Sesion, generacion gen: Int) async throws -> Sesion {
         let cuerpo = try JSONSerialization.data(withJSONObject: ["refresh_token": s.refreshToken])
         let r = cliente.peticion("auth/v1/token", consulta: [URLQueryItem(name: "grant_type", value: "refresh_token")], metodo: "POST", cuerpo: cuerpo, tiempo: 6)
         let (d, codigo) = try await cliente.enviar(r)
+        try Task.checkCancellation()
+        // Mientras esperaba la red se cerró la sesión o se entró con otra: esta respuesta ya no es de nadie.
+        guard gen == generacion, actual?.refreshToken == s.refreshToken else { throw ErrorAuth.sinSesion }
         if codigo == 400 || codigo == 401 || codigo == 403 {
             Registro.auth.notice("El servidor rechazó la renovación (\(codigo, privacy: .public)): se cierra la sesión.")
             borrar()
@@ -90,6 +126,8 @@ actor AuthSupabase: AuthRepository {
     }
 
     func salir() async {
+        await cancelarRenovacion()
+        generacion += 1
         let token = actual?.accessToken
         borrar()
         guard let token else { return }
@@ -97,18 +135,25 @@ actor AuthSupabase: AuthRepository {
         _ = try? await cliente.enviar(r)
     }
 
+    // Cancela la renovación en vuelo y espera a que termine antes de seguir.
+    private func cancelarRenovacion() async {
+        guard let r = renovando else { return }
+        generacion += 1
+        r.tarea.cancel()
+        _ = try? await r.tarea.value
+        if renovando?.refresh == r.refresh { renovando = nil }
+    }
+
     private func guardar(_ s: Sesion) {
         actual = s
         cargada = true
-        if let d = try? JSONEncoder().encode(s), !Llavero.guardar(d, cuenta: cuentaLlavero) {
-            Registro.auth.error("No se pudo guardar la sesión en el llavero.")
-        }
+        almacen.guardar(s)
     }
 
     private func borrar() {
         actual = nil
         cargada = true
-        Llavero.borrar(cuenta: cuentaLlavero)
+        almacen.borrar()
     }
 
     private struct Respuesta: Decodable {

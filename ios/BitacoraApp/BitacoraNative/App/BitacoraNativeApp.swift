@@ -69,6 +69,7 @@ struct PrincipalView: View {
         .sheet(item: $c.modal) { m in
             switch m {
             case .intencion(let i): IntencionView(intencion: i)
+            case .nuevaTarea(let d): NuevaTareaView(dia: d)
             }
         }
     }
