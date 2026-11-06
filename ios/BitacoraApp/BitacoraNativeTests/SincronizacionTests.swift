@@ -236,6 +236,7 @@ final class SyncTests: XCTestCase {
         let ciclo = Task { await sync.sincronizar() }
         await esperarA { await puerta.llegadas == 1 }
         let parada = Task { await sync.detener(borrandoUsuario: "A") }
+        await esperarA { await sync.generacionActual() == 2 }
         await puerta.abrir()
         await parada.value
         await ciclo.value
@@ -255,6 +256,7 @@ final class SyncTests: XCTestCase {
         await esperarA { await puerta.llegadas == 1 }
         await auth.poner(sesion("B"))
         let cambio = Task { await sync.iniciar(uid: "B") }
+        await esperarA { await sync.generacionActual() == 2 }
         await puerta.abrir()
         await cambio.value
         await ciclo.value

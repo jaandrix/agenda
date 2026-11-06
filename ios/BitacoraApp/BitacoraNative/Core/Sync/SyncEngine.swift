@@ -77,6 +77,7 @@ actor SyncEngine {
     private var esperaBase: Double = 2
     func ponerEsperaBase(_ s: Double) { esperaBase = s }
     func informeActual() -> InformeSync { informe }
+    func generacionActual() -> Int { generacion }
 
     init(auth: AuthRepository, remoto: BitacoraRemoteDataSource, almacen: AlmacenLocal) {
         self.auth = auth
@@ -89,8 +90,11 @@ actor SyncEngine {
 
     // Abre la generación de una cuenta y pinta con su copia local antes de ir a la red.
     func iniciar(uid: String) async {
-        await detenerCiclos()
+        // La generación vieja queda obsoleta ya, antes de esperar a que su ciclo termine.
         generacion += 1
+        let gen = generacion
+        await detenerCiclos()
+        guard gen == generacion else { return }
         self.uid = uid
         intentos = 0
         informe = InformeSync()
@@ -106,9 +110,9 @@ actor SyncEngine {
     }
 
     func detener(borrandoUsuario borrar: String?) async {
-        await detenerCiclos()
         generacion += 1
         uid = nil
+        await detenerCiclos()
         if let borrar { await almacen.borrarUsuario(borrar) }
         informe = InformeSync()
         publicar()
