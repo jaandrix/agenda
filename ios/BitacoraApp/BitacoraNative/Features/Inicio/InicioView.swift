@@ -89,10 +89,11 @@ enum ResumenBus {
             return Text(mias.isEmpty ? "sin buses previstos ahora." : "bus \(mias.joined(separator: ", ")), sin buses previstos ahora.")
         }
         var r = Text("")
-        for (i, (linea, m)) in l.enumerated() {
+        for (i, par) in l.enumerated() {
+            let fuerte = { (s: String) -> Text in Text(s).fontWeight(.bold).foregroundColor(Paleta.texto) }
             if i > 0 { r = r + Text("; ") }
-            r = r + Text("bus ") + Text(linea).fontWeight(.bold).foregroundColor(Paleta.texto) + Text(", ")
-                + (m == 0 ? Text("ya").fontWeight(.bold).foregroundColor(Paleta.texto) : Text("en ") + Text("\(m) min").fontWeight(.bold).foregroundColor(Paleta.texto))
+            r = r + Text("bus ") + fuerte(par.0) + Text(", ")
+            r = r + (par.1 == 0 ? fuerte("ya") : Text("en ") + fuerte("\(par.1) min"))
         }
         return r + Text(".")
     }
@@ -118,10 +119,10 @@ struct InicioView: View {
                                  irA: { c.pestana = $0 },
                                  foto: foto, tiempo: tiempo, bus: bus,
                                  abrirEvento: { e in if let d = vista?.dia { c.modal = .ficha(e, dia: d) } },
-                                 elegir: { d in elegido = d == vista?.hoy ? nil : d },
                                  abrirPerfil: { c.web = Apartados.webURL("friends") },
                                  abrirTiempo: { c.modal = .tiempo },
                                  abrirBus: { c.pestana = .mas; c.rutaMas = ["transporte"] },
+                                 elegir: { d in elegido = d == vista?.hoy ? nil : d },
                                  aviso: aviso)
                 }
                 // Al cruzar las 4:00 cambia el día lógico: se vuelve a leer.

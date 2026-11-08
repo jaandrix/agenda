@@ -44,7 +44,7 @@ enum LecturaEstudios {
                     else { estado = "pendiente." }
                     let item = ItemEstudio(id: iid, lista: k, titulo: x["title"]?.texto.flatMap { $0.isEmpty ? nil : $0 } ?? "sin título",
                                            fecha: fecha, hora: x["time"]?.texto ?? "", estado: estado, hecho: hecho, nota: nota ?? "",
-                                           peso: { switch x["weight"] { case .number(let n)?: return n; case .string(let t)?: return t; default: return "" } }())
+                                           peso: { () -> String in switch x["weight"] { case .number(let n)?: return n; case .string(let t)?: return t; default: return "" } }())
                     if estado == "pendiente." || estado == "vencido." { pend.append(item) } else { pas.append(item) }
                 }
             }

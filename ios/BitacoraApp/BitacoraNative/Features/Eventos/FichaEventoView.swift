@@ -83,10 +83,10 @@ struct FichaEventoView: View {
     private func cargarEntradas() async {
         guard evento.entradas > 0, let doc = await c.documentoVisible() else { return }
         let lista = ((try? doc.valor(de: "entries")) ?? nil)?.lista?.first { $0["id"]?.comoId == evento.id }?["entradas"]?.lista ?? []
-        entradas = lista.compactMap { x in
+        entradas = lista.compactMap { x -> (texto: Data, etiqueta: String)? in
             // qrEntradaSvg: qrB64 son los bytes tal cual; qr, el texto en UTF-8.
             let datos = x["qrB64"]?.texto.flatMap { Data(base64Encoded: $0) } ?? x["qr"]?.texto.map { Data($0.utf8) }
-            return datos.map { ($0, x["etiqueta"]?.texto ?? "") }
+            return datos.map { (texto: $0, etiqueta: x["etiqueta"]?.texto ?? "") }
         }
     }
 
