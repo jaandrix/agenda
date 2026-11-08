@@ -11,8 +11,12 @@ enum Modal: Identifiable, Equatable {
     case tarea(EditorTarea)
     case evento(EditorEvento)
     case movimiento(String, tipo: String)
+    case ficha(EventoDia, dia: LocalDay)
+    case tiempo
     var id: String {
         switch self {
+        case .ficha(let e, let d): return "ficha:\(e.id):\(d.iso)"
+        case .tiempo: return "tiempo"
         case .movimiento(let id, _): return "movimiento:\(id)"
         case .evento(let e): return "evento:\(e.id)"
         case .intencion(let i): return "intencion:\(i.id)"
@@ -43,13 +47,14 @@ struct AppEnvironment {
     let auth: AuthRepository
     let almacen: AlmacenLocal
     let sync: SyncEngine
+    let servicios: ServiciosRemotos
 
     static func real() -> AppEnvironment {
         let cliente = ClienteSupabase()
         let auth = AuthSupabase(cliente: cliente)
         let almacen = AlmacenLocal()
         let sync = SyncEngine(auth: auth, remoto: RemotoSupabase(cliente: cliente), almacen: almacen)
-        return AppEnvironment(cliente: cliente, auth: auth, almacen: almacen, sync: sync)
+        return AppEnvironment(cliente: cliente, auth: auth, almacen: almacen, sync: sync, servicios: ServiciosRemotos(cliente: cliente, auth: auth))
     }
 }
 
@@ -63,6 +68,10 @@ final class AppCoordinator {
     // El cuarto hueco de la barra: el último de calendario o finanzas que se abrió.
     var secundaria: Pestana = .calendario
     var modal: Modal?
+    // Lo que aún no es nativo: su página concreta de la web, a pantalla completa.
+    var web: URL?
+    // La pila de «más.»: los apartados se abren por su vista de la web («transporte», «events»...).
+    var rutaMas: [String] = []
     private(set) var bloqueada = false
     private(set) var velo = false
     private(set) var intenciones: [IntencionEntrante]

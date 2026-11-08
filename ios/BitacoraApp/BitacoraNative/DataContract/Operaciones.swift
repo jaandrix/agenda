@@ -27,6 +27,11 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case crearEntrega(asignaturaId: String, lista: String, id: String, titulo: String, fecha: String?, hora: String?)
     case estadoTareaProyecto(proyectoId: String, tareaId: String, estado: String)
     case proyectoAHoy(proyectoId: String, tareaId: String, idTarea: String, dia: String)
+    // calendario.js (elegir ciudad del tiempo): `ciudadTiempo` = { nombre, lat, lon }. lat y lon en texto decimal.
+    case ponerCiudadTiempo(nombre: String, lat: String, lon: String)
+    // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
+    case transporteFavorita(clave: String, activa: Bool)
+    case transporteLinea(clave: String, linea: String, activa: Bool)
 
     var claves: [String] {
         switch self {
@@ -42,6 +47,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .crearEntrega: return ["studies", "entries", "dayPlanner"]
         case .estadoTareaProyecto: return ["entries"]
         case .proyectoAHoy: return ["entries", "dayPlanner"]
+        case .ponerCiudadTiempo: return ["ciudadTiempo"]
+        case .transporteFavorita, .transporteLinea: return ["servicios"]
         default: return ["dayPlanner"]
         }
     }
@@ -160,6 +167,30 @@ enum AplicarOperaciones {
             }
             lista[n] = .object(h)
             r["habits"] = .some(.array(lista))
+        case let .ponerCiudadTiempo(nombre, lat, lon):
+            guard Double(lat) != nil, Double(lon) != nil else { break }
+            r["ciudadTiempo"] = .some(.object(["nombre": .string(nombre), "lat": .number(lat), "lon": .number(lon)]))
+        case let .transporteFavorita(clave, activa):
+            var serv = (valores["servicios"] ?? nil)?.objeto ?? [:]
+            var tr = serv["transporte"]?.objeto ?? [:]
+            var favs = tr["favoritos"]?.lista ?? []
+            let ya = favs.contains { $0.texto == clave }
+            guard ya != activa else { break }
+            if activa { favs.append(.string(clave)) } else { favs.removeAll { $0.texto == clave } }
+            tr["favoritos"] = .array(favs)
+            serv["transporte"] = .object(tr)
+            r["servicios"] = .some(.object(serv))
+        case let .transporteLinea(clave, linea, activa):
+            var serv = (valores["servicios"] ?? nil)?.objeto ?? [:]
+            var tr = serv["transporte"]?.objeto ?? [:]
+            var lineas = tr["lineas"]?.objeto ?? [:]
+            var actuales = lineas[clave]?.lista ?? []
+            guard actuales.contains(where: { $0.texto == linea }) != activa else { break }
+            if activa { actuales.append(.string(linea)) } else { actuales.removeAll { $0.texto == linea } }
+            if actuales.isEmpty { lineas.removeValue(forKey: clave) } else { lineas[clave] = .array(actuales) }
+            tr["lineas"] = .object(lineas)
+            serv["transporte"] = .object(tr)
+            r["servicios"] = .some(.object(serv))
         case let .crearNota(id, dia, texto, creada):
             var lista = (valores["notes"] ?? nil)?.lista ?? []
             if lista.contains(where: { $0["id"]?.comoId == id }) { break }

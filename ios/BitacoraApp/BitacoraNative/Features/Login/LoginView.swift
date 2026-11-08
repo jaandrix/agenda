@@ -17,7 +17,7 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: Espacio.l) {
                 VStack(alignment: .leading, spacing: Espacio.s) {
                     Marca()
-                    Text("la app nativa, en pruebas. de momento, las tareas de hoy: verlas, marcarlas y crear nuevas. lo demás sigue en la web.")
+                    Text("tu día, calendario y finanzas esenciales, también sin conexión. algunos apartados avanzados siguen en la web.")
                         .font(Tipo.cuerpo)
                         .foregroundStyle(Paleta.textoSecundario)
                 }

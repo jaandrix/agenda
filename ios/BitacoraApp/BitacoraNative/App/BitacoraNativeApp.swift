@@ -104,7 +104,7 @@ struct PrincipalView: View {
                 NavigationStack { PlanView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.plan)
                 NavigationStack { CalendarioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.calendario)
                 NavigationStack { FinanzasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas)
-                NavigationStack { MasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.mas)
+                NavigationStack(path: $c.rutaMas) { MasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.mas)
             }
             BarraBitacora(pestanas: Self.pestanas(secundaria: c.secundaria),
                           activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio") { id in
@@ -115,6 +115,7 @@ struct PrincipalView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea())
         .onChange(of: c.pestana) { _, p in if p == .calendario || p == .finanzas { c.secundaria = p } }
+        .fullScreenCover(item: Binding(get: { c.web.map(PaginaWeb.init) }, set: { c.web = $0?.url })) { NavegadorWeb(url: $0.url).ignoresSafeArea() }
         .sheet(item: $c.modal) { m in
             // Las hojas son las del sistema (detents, arrastrar para cerrar) con el fondo, la tinta y la letra de Bitácora.
             Group {
@@ -123,6 +124,8 @@ struct PrincipalView: View {
                 case .tarea(let t): EditorTareaView(inicial: t)
                 case .evento(let e): EditorEventoView(inicial: e)
                 case .movimiento(let id, let tipo): EditorMovimientoView(id: id, tipoInicial: tipo)
+                case .ficha(let e, let d): FichaEventoView(evento: e, dia: d)
+                case .tiempo: TiempoView()
                 }
             }
             .presentationBackground(Paleta.fondo)
@@ -130,4 +133,9 @@ struct PrincipalView: View {
             .tint(Paleta.acento)
         }
     }
+}
+
+struct PaginaWeb: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
 }
