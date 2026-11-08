@@ -85,6 +85,29 @@ siguiente paso, tocar una tarea cicla pendiente → en marcha → hecha con `est
 sin `evt_` salen como filas de solo lectura. Los exámenes no se marcan (la web no usa `done` en ellos). Marcar una
 tarea de proyecto desde el plan respeta ahora lo que el conector añadió a `tasks`.
 
+**0.10.0 (08-11-2026): identidad visual, primera tanda** (plan de ChatGPT `PLAN-CLAUDE-FASE-0.9-IDENTIDAD-VISUAL-NATIVA.md`).
+Tokens de la PWA móvil en `DesignSystem/Tema.swift`, piezas en `DesignSystem/Componentes.swift` (`BitacoraCheck`,
+`CabeceraApartado`, `CabeceraSeccion`, `FilaAgenda`, `AccionTexto`, `BarraBitacora`), barra propia en lugar de la del
+sistema (plan, calendario, +, finanzas, más; ajustes dentro de más) y Plan rehecho como piloto (`PlanCuerpo`, sin `List`;
+mover y borrar al mantener pulsado y por VoiceOver). Capturas de 390 pt en claro y oscuro: `CapturasTests`, artefacto
+`capturas-diseno` del workflow. Sin cambios en datos ni sincronización. Inicio y el resto, tras aprobar las capturas.
+
+| PWA (styles.css) | SwiftUI |
+|---|---|
+| `--bg-app` #efeee9 / #121211 | `Paleta.fondo` |
+| `--m-superficie` #fff / #1d1d1b | `Paleta.superficie` |
+| `--text-primary` #302f2c / #f4f2eb | `Paleta.texto` |
+| `--text-secondary` #736f63 / #a29f96 | `Paleta.textoSecundario` |
+| `--border` tinta al 7 % / 8 % | `Paleta.borde` |
+| `--border-strong` 16 % | `Paleta.bordeFuerte` (aro de `.m-check`) |
+| `--m-acento` #e5532b / #f0643a | `Paleta.acento` |
+| `--m-sobre-acento` #161514 | `Paleta.sobreAcento` |
+| `.m-ahora-bloque` acento 7 % y filo 16 %, radio 20 | `Paleta.tinteAcento`, `filoAcento`, `Radio.bloque` |
+| `.m-tabbar` radio 26, tab 12,5 bold, icono en círculo al 6 % | `BarraBitacora`, `Radio.barra`, `Paleta.tinteTexto` |
+| `.m-tab-mas` 72 con aro de la barra, subido 28 | botón central 60 + aro 6, subido 22 |
+| `.m-check` 30, borde 2, lleno de acento | `BitacoraCheck` (sello 160 ms) |
+| `--m-fs-titulo` 42 | `Tipo.tituloApartado` |
+
 ## Escrituras
 
 - `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en

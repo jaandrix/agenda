@@ -17,23 +17,41 @@ enum TemaElegido: String, CaseIterable, Identifiable {
 }
 
 extension Color {
-    init(claro: UInt32, oscuro: UInt32) {
+    init(claro: UInt32, oscuro: UInt32, alfaClaro: CGFloat = 1, alfaOscuro: CGFloat = 1) {
         self.init(uiColor: UIColor { t in
-            let v = t.userInterfaceStyle == .dark ? oscuro : claro
-            return UIColor(red: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255, blue: CGFloat(v & 0xFF) / 255, alpha: 1)
+            let oscura = t.userInterfaceStyle == .dark
+            let v = oscura ? oscuro : claro
+            return UIColor(red: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255, blue: CGFloat(v & 0xFF) / 255,
+                           alpha: oscura ? alfaOscuro : alfaClaro)
         })
     }
 }
 
+// Valores de la PWA móvil (styles.css, `body.mobile-standalone` / `body.pwa`): asfalto oscuro y papel claro.
+// claro = papel, oscuro = asfalto. Los nombres son semánticos: las vistas nunca llevan colores sueltos.
 enum Paleta {
-    static let fondo = Color(claro: 0xFAF8F5, oscuro: 0x302F2C)
-    static let superficie = Color(claro: 0xFFFFFF, oscuro: 0x3A3934)
-    static let borde = Color(claro: 0xE8E4DC, oscuro: 0x4A4941)
-    static let texto = Color(claro: 0x302F2C, oscuro: 0xEFEDE3)
-    static let textoSecundario = Color(claro: 0x736F63, oscuro: 0xA9A89C)
-    static let acento = Color(claro: 0xE5532B, oscuro: 0xF0643A)
-    static let sobreAcento = Color(claro: 0xFFFFFF, oscuro: 0x161514)
+    static let fondo = Color(claro: 0xEFEEE9, oscuro: 0x121211)              // --bg-app
+    static let superficie = Color(claro: 0xFFFFFF, oscuro: 0x1D1D1B)         // --m-superficie
+    static let texto = Color(claro: 0x302F2C, oscuro: 0xF4F2EB)              // --text-primary
+    static let textoSecundario = Color(claro: 0x736F63, oscuro: 0xA29F96)    // --text-secondary
+    static let textoApagado = Color(claro: 0x8C887C, oscuro: 0x8A877F)       // --text-muted, solo lo decorativo
+    static let acento = Color(claro: 0xE5532B, oscuro: 0xF0643A)             // --m-acento
+    static let sobreAcento = Color(claro: 0x161514, oscuro: 0x161514)        // --m-sobre-acento
+    static let punto = Color(claro: 0xE2E0D9, oscuro: 0x2A2A27)              // --m-punto
     static let error = Color(claro: 0xB3261E, oscuro: 0xF2B8B5)
+    // --border y --border-strong son la tinta con transparencia, no un gris propio.
+    static let borde = Color(claro: 0x161514, oscuro: 0xF4F2EB, alfaClaro: 0.07, alfaOscuro: 0.08)
+    static let bordeFuerte = Color(claro: 0x161514, oscuro: 0xF4F2EB, alfaClaro: 0.16, alfaOscuro: 0.16)
+    // .m-ahora-bloque: el acento al 7 % sobre el fondo y un filo del acento al 16 %.
+    static let tinteAcento = Color(claro: 0xE5532B, oscuro: 0xF0643A, alfaClaro: 0.07, alfaOscuro: 0.07)
+    static let filoAcento = Color(claro: 0xE5532B, oscuro: 0xF0643A, alfaClaro: 0.16, alfaOscuro: 0.16)
+    // color-mix(--text-primary 6 %): el círculo de cada icono de la barra.
+    static let tinteTexto = Color(claro: 0x302F2C, oscuro: 0xF4F2EB, alfaClaro: 0.06, alfaOscuro: 0.06)
+}
+
+enum Duracion {
+    static let toque: Double = 0.12
+    static let sello: Double = 0.16
 }
 
 enum Espacio {
@@ -46,7 +64,8 @@ enum Espacio {
 
 enum Radio {
     static let control: CGFloat = 10
-    static let bloque: CGFloat = 16
+    static let bloque: CGFloat = 20      // .m-ahora-bloque
+    static let barra: CGFloat = 26       // .m-tabbar, esquinas de arriba
 }
 
 // Poppins con Dynamic Type: cada tamaño escala con el estilo de texto que se le indica.
@@ -62,6 +81,8 @@ enum Tipo {
         return .custom(nombre, size: tamano, relativeTo: estilo)
     }
 
+    // --m-fs-titulo (42) para la cabecera de un apartado; --m-fs-sub (22) para su subtítulo.
+    static let tituloApartado = poppins(42, .bold, estilo: .largeTitle)
     static let titulo = poppins(34, .bold, estilo: .largeTitle)
     static let subtitulo = poppins(20, .semibold, estilo: .title3)
     static let cuerpo = poppins(16, .regular, estilo: .body)

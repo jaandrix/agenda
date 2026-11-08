@@ -83,28 +83,35 @@ struct Marca: View {
     }
 }
 
+// Armazón: las pantallas siguen vivas en un TabView (conservan su estado y su scroll) y la barra del sistema se cambia
+// por la de la PWA. Cambiar de pestaña es inmediato, sin desplazamiento lateral. Ajustes vive en «más.».
 struct PrincipalView: View {
     @Environment(AppCoordinator.self) private var c
 
+    private static let pestanas: [BarraBitacora.Pestana] = [
+        .init(id: "plan", titulo: "plan", icono: "checklist"),
+        .init(id: "calendario", titulo: "calendario", icono: "calendar"),
+        .init(id: "finanzas", titulo: "finanzas", icono: "eurosign"),
+        .init(id: "mas", titulo: "más", icono: "square.grid.2x2"),
+    ]
+    private static let orden: [Pestana] = [.plan, .calendario, .finanzas, .mas]
+
     var body: some View {
         @Bindable var c = c
-        TabView(selection: $c.pestana) {
-            NavigationStack { PlanView() }
-                .tabItem { Label("plan.", systemImage: "checklist") }
-                .tag(Pestana.plan)
-            NavigationStack { CalendarioView() }
-                .tabItem { Label("calendario.", systemImage: "calendar") }
-                .tag(Pestana.calendario)
-            NavigationStack { FinanzasView() }
-                .tabItem { Label("finanzas.", systemImage: "eurosign") }
-                .tag(Pestana.finanzas)
-            NavigationStack { MasView() }
-                .tabItem { Label("más.", systemImage: "square.grid.2x2") }
-                .tag(Pestana.mas)
-            NavigationStack { AjustesView() }
-                .tabItem { Label("ajustes.", systemImage: "gearshape") }
-                .tag(Pestana.ajustes)
+        VStack(spacing: 0) {
+            TabView(selection: $c.pestana) {
+                NavigationStack { PlanView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.plan)
+                NavigationStack { CalendarioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.calendario)
+                NavigationStack { FinanzasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas)
+                NavigationStack { MasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.mas)
+            }
+            BarraBitacora(pestanas: Self.pestanas, activa: Self.pestanas[Self.orden.firstIndex(of: c.pestana) ?? 0].id) { id in
+                if let n = Self.pestanas.firstIndex(where: { $0.id == id }) { c.pestana = Self.orden[n] }
+            } capturar: {
+                c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(), nueva: true, dia: CalendarioBitacora.madrid.diaLogico(Date())))
+            }
         }
+        .background(Paleta.fondo.ignoresSafeArea())
         .sheet(item: $c.modal) { m in
             switch m {
             case .intencion(let i): IntencionView(intencion: i)

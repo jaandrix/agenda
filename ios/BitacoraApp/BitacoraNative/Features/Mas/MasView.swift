@@ -143,6 +143,7 @@ struct MasView: View {
                 Text("viajes, ocio, despensa, enlaces, empleo, social y lo demás siguen en la web. entra con tu cuenta la primera vez.")
             }
             Section {
+                NavigationLink("ajustes.") { AjustesView() }.listRowBackground(Paleta.superficie)
                 NavigationLink("estado de la sincronización.") { EstadoView() }.listRowBackground(Paleta.superficie)
             }
         }

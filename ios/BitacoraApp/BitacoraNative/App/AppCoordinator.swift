@@ -2,7 +2,7 @@ import SwiftUI
 import Network
 
 enum Pestana: Hashable {
-    case plan, calendario, finanzas, mas, ajustes
+    case plan, calendario, finanzas, mas
 }
 
 // Una sola hoja a la vez: el enum impide dos modales simultáneos.

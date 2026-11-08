@@ -76,177 +76,186 @@ struct PlanView: View {
     @State private var modelo = PlanModel()
 
     var body: some View {
-        List {
-            Section {
-                VStack(alignment: .leading, spacing: Espacio.s) {
-                    Picker("día.", selection: $modelo.desplazamiento) {
-                        Text("hoy.").tag(0)
-                        Text("mañana.").tag(1)
-                        Text("pasado.").tag(2)
+        ScrollView {
+            PlanCuerpo(
+                carga: modelo.carga, desplazamiento: $modelo.desplazamiento, estado: c.informe.estado,
+                pendientes: c.informe.pendientes, aviso: modelo.aviso,
+                acciones: PlanCuerpo.Acciones(
+                    marcar: { t, sinDia in Task { await modelo.marcar(t, enSinDia: sinDia, c) } },
+                    marcarRecurrente: { r in Task { await modelo.marcar(r, c) } },
+                    abrir: { t, dia in
+                        c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo))
+                    },
+                    mover: { t, dia in Task { await modelo.guardar(.moverTarea(id: t.id, dia: dia?.iso), c) } },
+                    borrar: { t in Task { await modelo.guardar(.borrarTarea(id: t.id), c) } },
+                    nueva: { dia in
+                        c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(sinDia: dia == nil), nueva: true, dia: dia))
                     }
-                    .pickerStyle(.segmented)
-                    HStack(spacing: Espacio.s) {
-                        IndicadorSync(estado: c.informe.estado)
-                        if c.informe.pendientes > 0 {
-                            Text("\(c.informe.pendientes) por subir.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                        }
-                    }
-                }
-                .listRowBackground(Color.clear)
-            }
-            if let aviso = modelo.aviso {
-                Section { Text(aviso).font(Tipo.cuerpo).foregroundStyle(Paleta.error) }
-            }
-            switch modelo.carga {
-            case .cargando:
-                Section { ProgressView().frame(maxWidth: .infinity) }.listRowBackground(Color.clear)
-            case .vacia:
-                Section {
-                    Text("aún no hay copia de tus datos en este iPhone. se traerá en cuanto haya red.")
-                        .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario)
-                }
-            case .lista(let v):
-                dia(v)
-                if !v.recurrentes.isEmpty {
-                    Section {
-                        ForEach(v.recurrentes) { r in
-                            Fila(titulo: r.texto, hora: nil, hecha: r.hecha, acento: false) { Task { await modelo.marcar(r, c) } }
-                        }
-                    } header: { cabecera("recurrentes de hoy.") }
-                }
-                sinDia(v)
-            }
+                )
+            )
+            .padding(.horizontal, Espacio.l - 4)
+            .padding(.bottom, Espacio.xl)
         }
-        .scrollContentBackground(.hidden)
-        .background(Paleta.fondo)
-        .navigationTitle(titulo)
-        .toolbar {
-            if case .lista(let v) = modelo.carga, !v.tareas.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
-                    ShareLink(item: texto(v)) { Image(systemName: "square.and.arrow.up") }.accessibilityLabel("compartir el día")
-                }
-            }
-        }
+        .scrollIndicators(.hidden)
+        .background(Paleta.fondo.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .sensoryFeedback(.success, trigger: modelo.marcadas)
         .task(id: "\(c.informe.revision)-\(modelo.desplazamiento)") { await modelo.cargar(c) }
-    }
-
-    @ViewBuilder private func dia(_ v: VistaPlan) -> some View {
-        Section {
-            if v.tareas.isEmpty {
-                Text("nada todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).listRowBackground(Paleta.superficie)
-            }
-            ForEach(v.tareas) { t in
-                Fila(titulo: t.titulo, hora: t.hora, hecha: t.hecha, acento: t.arrastrada, notas: t.notas) {
-                    Task { await modelo.marcar(t, enSinDia: false, c) }
-                } abrir: { editar(t, dia: v.dia) }
-                .swipeActions(edge: .trailing) {
-                    if !t.deTrabajo {
-                        Button("borrar.", role: .destructive) { Task { await modelo.guardar(.borrarTarea(id: t.id), c) } }
-                        Button("sin día.") { Task { await modelo.guardar(.moverTarea(id: t.id, dia: nil), c) } }
-                    }
-                }
-                .swipeActions(edge: .leading) {
-                    if !t.deTrabajo { Button(modelo.desplazamiento == 0 ? "mañana." : "hoy.") {
-                        let destino = modelo.desplazamiento == 0 ? v.dia.sumando(dias: 1) : v.dia.sumando(dias: -modelo.desplazamiento)
-                        Task { await modelo.guardar(.moverTarea(id: t.id, dia: destino.iso), c) }
-                    }
-                    .tint(Paleta.acento) }
-                }
-            }
-            botonNueva("+ tarea.") { c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(), nueva: true, dia: v.dia)) }
-        } header: {
-            let hechas = v.tareas.filter(\.hecha).count
-            cabecera("\(v.tareas.count - hechas) pendientes, \(hechas) hechas")
-        }
-    }
-
-    @ViewBuilder private func sinDia(_ v: VistaPlan) -> some View {
-        Section {
-            ForEach(v.sinDia) { t in
-                Fila(titulo: t.titulo, hora: nil, hecha: t.hecha, acento: false, notas: t.notas) {
-                    Task { await modelo.marcar(t, enSinDia: true, c) }
-                } abrir: { editar(t, dia: nil) }
-                .swipeActions(edge: .trailing) {
-                    Button("borrar.", role: .destructive) { Task { await modelo.guardar(.borrarTarea(id: t.id), c) } }
-                }
-                .swipeActions(edge: .leading) {
-                    Button("hoy.") {
-                        let hoy = v.dia.sumando(dias: -modelo.desplazamiento)
-                        Task { await modelo.guardar(.moverTarea(id: t.id, dia: hoy.iso), c) }
-                    }
-                    .tint(Paleta.acento)
-                }
-            }
-            botonNueva("+ sin día.") { c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(sinDia: true), nueva: true, dia: nil)) }
-        } header: { cabecera("pendientes sin día.") }
-    }
-
-    private func texto(_ v: VistaPlan) -> String {
-        ([titulo] + v.tareas.map { ($0.hecha ? "[x] " : "[ ] ") + ($0.hora.map { $0 + " " } ?? "") + $0.titulo }).joined(separator: "\n")
-    }
-
-    private func editar(_ t: TareaPlan, dia: LocalDay?) {
-        c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo))
-    }
-
-    private func botonNueva(_ texto: String, _ accion: @escaping () -> Void) -> some View {
-        Button(action: accion) {
-            Text(texto).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.acento).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        }
-        .listRowBackground(Paleta.superficie)
-    }
-
-    private func cabecera(_ t: String) -> some View {
-        Text(t).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).textCase(nil)
-    }
-
-    private var titulo: String {
-        let d = CalendarioBitacora.madrid.diaLogico(Date(), desplazamiento: modelo.desplazamiento)
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = CalendarioBitacora.madrid.zona
-        guard let fecha = cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) else { return d.iso }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "es_ES")
-        f.timeZone = cal.timeZone
-        f.dateFormat = "EEEE d."
-        return f.string(from: fecha)
     }
 }
 
-private struct Fila: View {
-    let titulo: String
-    let hora: String?
-    let hecha: Bool
-    let acento: Bool
-    var notas = ""
-    let marcar: () -> Void
-    var abrir: (() -> Void)?
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: Espacio.m) {
-            if let hora { Text(hora).font(Tipo.mono).foregroundStyle(Paleta.textoSecundario).frame(width: 44, alignment: .leading) }
-            Button(action: marcar) {
-                Image(systemName: hecha ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(hecha ? Paleta.textoSecundario : color)
-                    .contentTransition(.symbolEffect(.replace))
-                    .frame(minWidth: 44, minHeight: 44)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(hecha ? "desmarcar \(titulo)" : "marcar \(titulo)")
-            VStack(alignment: .leading, spacing: 2) {
-                Text(titulo).font(Tipo.cuerpo).foregroundStyle(hecha ? Paleta.textoSecundario : color).strikethrough(hecha)
-                if !notas.isEmpty { Text(notas).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture { (abrir ?? marcar)() }
-        }
-        .animation(.easeOut(duration: 0.15), value: hecha)
-        .listRowBackground(Paleta.superficie)
+// La pantalla sin estado propio: recibe lo que pinta y qué hacer. Así se puede dibujar igual en las capturas del CI.
+struct PlanCuerpo: View {
+    struct Acciones {
+        var marcar: (TareaPlan, Bool) -> Void = { _, _ in }
+        var marcarRecurrente: (RecurrenteHoy) -> Void = { _ in }
+        var abrir: (TareaPlan, LocalDay?) -> Void = { _, _ in }
+        var mover: (TareaPlan, LocalDay?) -> Void = { _, _ in }
+        var borrar: (TareaPlan) -> Void = { _ in }
+        var nueva: (LocalDay?) -> Void = { _ in }
     }
 
-    private var color: Color { acento ? Paleta.acento : Paleta.texto }
+    let carga: Carga<VistaPlan>
+    @Binding var desplazamiento: Int
+    let estado: EstadoSync
+    let pendientes: Int
+    let aviso: String?
+    var acciones = Acciones()
+    @State var verTodasSinDia = false
+
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            CabeceraApartado(titulo: "plan", contexto: contexto) {
+                if case .lista(let v) = carga, !v.tareas.isEmpty {
+                    ShareLink(item: textoCompartir(v)) {
+                        Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("compartir el día")
+                }
+            }
+            selectorDia
+            if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
+            switch carga {
+            case .cargando:
+                ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(.top, Espacio.xl)
+            case .vacia:
+                Text("aún no hay copia de tus datos en este iPhone. se traerá en cuanto haya red.")
+                    .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.l)
+            case .lista(let v):
+                agenda(v)
+                if !v.recurrentes.isEmpty { recurrentes(v) }
+                sinDia(v)
+            }
+        }
+    }
+
+    // hoy. / mañana. / pasado.: texto, la activa en tinta con la raya del acento debajo; nada de control segmentado.
+    private var selectorDia: some View {
+        HStack(spacing: Espacio.l) {
+            ForEach([(0, "hoy."), (1, "mañana."), (2, "pasado.")], id: \.0) { n, nombre in
+                Button { desplazamiento = n } label: {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(nombre).font(Tipo.poppins(17, desplazamiento == n ? .semibold : .regular, estilo: .headline))
+                            .foregroundStyle(desplazamiento == n ? Paleta.texto : Paleta.textoSecundario)
+                        Capsule().fill(desplazamiento == n ? Paleta.acento : .clear).frame(width: 22, height: 3)
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(desplazamiento == n ? [.isSelected, .isButton] : .isButton)
+            }
+            Spacer()
+        }
+        .padding(.top, Espacio.m)
+    }
+
+    private func agenda(_ v: VistaPlan) -> some View {
+        let hechas = v.tareas.filter(\.hecha).count
+        return VStack(alignment: .leading, spacing: 0) {
+            CabeceraSeccion(titulo: desplazamiento == 0 ? "hoy." : (desplazamiento == 1 ? "mañana." : "pasado mañana."),
+                            detalle: "\(v.tareas.count - hechas) pendientes, \(hechas) hechas", raya: true)
+            if v.tareas.isEmpty {
+                Text("nada todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+            }
+            ForEach(v.tareas) { t in
+                FilaAgenda(hora: t.hora, titulo: t.titulo, notas: t.notas, hecho: t.hecha, acento: t.arrastrada) {
+                    acciones.marcar(t, false)
+                } abrir: { acciones.abrir(t, v.dia) }
+                .contextMenu { menu(t, v, enSinDia: false) }
+            }
+            AccionTexto(texto: "+ tarea.") { acciones.nueva(v.dia) }.padding(.top, Espacio.xs)
+        }
+    }
+
+    private func recurrentes(_ v: VistaPlan) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            CabeceraSeccion(titulo: "recurrentes.", detalle: "\(v.recurrentes.filter(\.hecha).count) de \(v.recurrentes.count)")
+            ForEach(v.recurrentes) { r in
+                FilaAgenda(hora: nil, titulo: r.texto, hecho: r.hecha, mostrarHora: false) { acciones.marcarRecurrente(r) }
+            }
+        }
+    }
+
+    // Como en el inicio de la PWA: con contador y solo las primeras, salvo «ver todas».
+    private func sinDia(_ v: VistaPlan) -> some View {
+        let visibles = verTodasSinDia ? v.sinDia : Array(v.sinDia.prefix(3))
+        return VStack(alignment: .leading, spacing: 0) {
+            CabeceraSeccion(titulo: "pendientes sin día.", detalle: v.sinDia.isEmpty ? nil : "\(v.sinDia.count)")
+            ForEach(visibles) { t in
+                FilaAgenda(hora: nil, titulo: t.titulo, notas: t.notas, hecho: t.hecha, mostrarHora: false) {
+                    acciones.marcar(t, true)
+                } abrir: { acciones.abrir(t, nil) }
+                .contextMenu { menu(t, v, enSinDia: true) }
+            }
+            HStack(spacing: Espacio.l) {
+                AccionTexto(texto: "+ sin día.") { acciones.nueva(nil) }
+                if v.sinDia.count > 3 {
+                    Button(verTodasSinDia ? "ver menos." : "ver todas.") { verTodasSinDia.toggle() }
+                        .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).frame(minHeight: 44)
+                }
+            }
+            .padding(.top, Espacio.xs)
+        }
+    }
+
+    // Lo que antes eran gestos laterales: mantener pulsado, y también por VoiceOver.
+    @ViewBuilder private func menu(_ t: TareaPlan, _ v: VistaPlan, enSinDia: Bool) -> some View {
+        if !t.deTrabajo {
+            let hoy = v.dia.sumando(dias: -desplazamiento)
+            if enSinDia || desplazamiento != 0 { Button("pasar a hoy.") { acciones.mover(t, hoy) } }
+            if !enSinDia && desplazamiento == 0 { Button("pasar a mañana.") { acciones.mover(t, hoy.sumando(dias: 1)) } }
+            if !enSinDia { Button("dejar sin día.") { acciones.mover(t, nil) } }
+            Button("borrar.", role: .destructive) { acciones.borrar(t) }
+        }
+    }
+
+    private var contexto: String {
+        var partes = [fecha]
+        switch estado {
+        case .sinConexion: partes.append("sin conexión")
+        case .error: partes.append("error al sincronizar")
+        case .trayendo: partes.append("sincronizando")
+        case .reposo: break
+        }
+        if pendientes > 0 { partes.append("\(pendientes) por subir") }
+        return partes.joined(separator: ", ") + "."
+    }
+
+    private var fecha: String {
+        let d = CalendarioBitacora.madrid.diaLogico(Date(), desplazamiento: desplazamiento)
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = CalendarioBitacora.madrid.zona
+        guard let f = cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) else { return d.iso }
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "es_ES")
+        fmt.timeZone = cal.timeZone
+        fmt.dateFormat = "EEEE d 'de' MMMM"
+        return fmt.string(from: f)
+    }
+
+    private func textoCompartir(_ v: VistaPlan) -> String {
+        ([fecha + "."] + v.tareas.map { ($0.hecha ? "[x] " : "[ ] ") + ($0.hora.map { $0 + " " } ?? "") + $0.titulo }).joined(separator: "\n")
+    }
 }
