@@ -103,6 +103,10 @@ struct MasView: View {
                         .listRowBackground(Paleta.superficie)
                     }
                 }
+                Section {
+                    NavigationLink("estudios.") { EstudiosView() }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
+                    NavigationLink("proyectos.") { ProyectosView() }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
+                }
                 Section("entregas.") {
                     if v.entregas.isEmpty { Text("nada pendiente.").foregroundStyle(Paleta.textoSecundario).listRowBackground(Paleta.superficie) }
                     ForEach(v.entregas) { e in
@@ -136,7 +140,7 @@ struct MasView: View {
             Section {
                 Button("abrir bitácora web.") { web = true }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
             } footer: {
-                Text("viajes, ocio, despensa, proyectos, enlaces, empleo, social y lo demás siguen en la web. entra con tu cuenta la primera vez.")
+                Text("viajes, ocio, despensa, enlaces, empleo, social y lo demás siguen en la web. entra con tu cuenta la primera vez.")
             }
             Section {
                 NavigationLink("estado de la sincronización.") { EstadoView() }.listRowBackground(Paleta.superficie)

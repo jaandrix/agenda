@@ -76,6 +76,15 @@ tomando lo leído como base) y ya no hace upsert de la fila. Ninguno de los dos 
 las funciones, la PWA falla el guardado y el iPhone deja el cambio en la cola. Con huellas ya no se suben dos veces
 los bloques. El valor invertido en 0 usa la cartera como la web. La cola de enlaces avisa si no puede guardar o quitar.
 
+**0.9.0 (08-11-2026): Estudios + Proyectos + Planificador.** Contrato en `CONTRATO-ESTUDIOS-PROYECTOS.md` (campos,
+operaciones, proyección, conflictos y pruebas PWA–iOS). En «más.»: «estudios.» (asignaturas con exámenes y trabajos y su
+estado como en la web; marcar trabajos entregados con `marcarTrabajo`, que también marca su tarea del plan; crear trabajo
+o examen con `crearEntrega`, que crea su `evt_` y, si es trabajo con fecha, su tarea del plan) y «proyectos.» (progreso,
+siguiente paso, tocar una tarea cicla pendiente → en marcha → hecha con `estadoTareaProyecto`, deslizar «→ hoy.» con
+`proyectoAHoy`). Calendario: las entradas `evt_` ya no se editan en iOS (las reescribe la web) y los exámenes y trabajos
+sin `evt_` salen como filas de solo lectura. Los exámenes no se marcan (la web no usa `done` en ellos). Marcar una
+tarea de proyecto desde el plan respeta ahora lo que el conector añadió a `tasks`.
+
 ## Escrituras
 
 - `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en
@@ -133,7 +142,8 @@ los bloques. El valor invertido en 0 usa la cartera como la web. La cola de enla
 
 ## Pendiente
 
-- Paridad: calendario con trabajo, pagos, servicios y entregas; planificador con eventos del día, subtareas, prioridad
+- Paridad: calendario con trabajo, pagos y servicios; Estudios con notas, pesos, horario y borrar; Proyectos con crear,
+  fases y diario; planificador con eventos del día, subtareas, prioridad
   y orden; finanzas con editar/borrar, traspasos, revisión e inversiones (y el valor de la cartera cuando `invested` es 0).
 - Portada «ahora» y cuatro pestañas (inicio, plan, calendario, más), como propone la auditoría.
 - Revisión monotónica del servidor para no bajar la fila entera en cada vuelta.

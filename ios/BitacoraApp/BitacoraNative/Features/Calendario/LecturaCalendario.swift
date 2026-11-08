@@ -39,6 +39,21 @@ enum LecturaCalendario {
             guard let dia, dia.yearMonth == mes else { continue }
             r[dia, default: []].append(evento(o, id: id, tipo: tipo, anio: mes.year))
         }
+        // Exámenes y trabajos sin su entrada `evt_` (syncExamCalendarEvent solo la crea al editarlos).
+        let enlazados = Set(lista.compactMap { $0["linkedItemId"]?.comoId })
+        for s in ((try? doc.valor(de: "studies")) ?? nil)?["subjects"]?.lista ?? [] {
+            let nombre = s["name"]?.texto ?? ""
+            for (k, etiqueta) in [("exams", "Examen"), ("assignments", "Entrega")] {
+                for x in s[k]?.lista ?? [] {
+                    guard let id = x["id"]?.comoId, !enlazados.contains(id), let dia = (x["date"]?.texto).flatMap(LocalDay.init(iso:)),
+                          dia.yearMonth == mes else { continue }
+                    let titulo = x["title"]?.texto.flatMap { $0.isEmpty ? nil : $0 } ?? "Sin título"
+                    r[dia, default: []].append(EventoDia(id: "estudio_" + id, titulo: "\(etiqueta): \(titulo) (\(nombre))",
+                                                         hora: x["time"]?.texto.flatMap { $0.isEmpty ? nil : $0 }, lugar: "", notas: "",
+                                                         tipo: "estudio", editable: false, sinAviso: true))
+                }
+            }
+        }
         for k in r.keys { r[k]?.sort { ($0.hora ?? "") < ($1.hora ?? "") } }
         return VistaMes(mes: mes, porDia: r)
     }
@@ -58,6 +73,6 @@ enum LecturaCalendario {
         }
         let hora = (o["time"]?.texto ?? o["startTime"]?.texto).flatMap { $0.isEmpty ? nil : $0 }
         return EventoDia(id: id, titulo: titulo, hora: hora, lugar: o["place"]?.texto ?? "", notas: o["notes"]?.texto ?? "",
-                         tipo: tipo, editable: tipo == "event", sinAviso: o["sinAviso"]?.booleano == true)
+                         tipo: tipo, editable: tipo == "event" && o["linkedItemId"] == nil, sinAviso: o["sinAviso"]?.booleano == true)
     }
 }

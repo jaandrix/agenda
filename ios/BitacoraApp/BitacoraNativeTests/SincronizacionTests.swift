@@ -537,6 +537,65 @@ final class OperacionesTests: XCTestCase {
         XCTAssertEqual(try d.valor(de: "entries")?.lista?.count, 2)
     }
 
+    func testEstudiosMarcarYCrearSonIdempotentes() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"dayPlanner": {"days": {"2026-11-20": [{"id": "planner_assign_w1", "title": "trabajo pendiente. a", "time": "10:00", "done": false, "linkedAssignmentId": "w1"}]}, "backlog": []}, "studies": {"subjects": [{"id": "s", "name": "Mates", "notas": "x", "assignments": [{"id": "w1", "title": "a", "date": "2026-11-20", "done": false, "grade": "7"}, {"id": "w2", "title": "b", "date": "2026-11-21", "done": false}]}]}, "entries": [{"id": "e", "type": "event"}]}"#.utf8))
+        let ops: [OperacionBitacora] = [.marcarTrabajo(asignaturaId: "s", id: "w1", hecho: true, momentoMs: momento),
+                                        .marcarTrabajo(asignaturaId: "otra", id: "w2", hecho: true, momentoMs: momento),
+                                        .crearEntrega(asignaturaId: "s", lista: "assignments", id: "w3", titulo: "c", fecha: "2026-11-22", hora: nil),
+                                        .crearEntrega(asignaturaId: "s", lista: "exams", id: "x1", titulo: "parcial", fecha: "2026-11-23", hora: "09:00")]
+        let (r, _) = AplicarOperaciones.sobre(doc, ops)
+        let s = try XCTUnwrap(try r.valor(de: "studies")?["subjects"]?.lista?.first)
+        XCTAssertEqual(s["notas"], .string("x"))
+        XCTAssertEqual(s["assignments"]?.lista?.map { $0["done"] }, [.bool(true), .bool(true), .bool(false)])
+        XCTAssertEqual(s["assignments"]?.lista?.first?["grade"], .string("7"))
+        XCTAssertEqual(s["exams"]?.lista?.first?["time"], .string("09:00"))
+        let dias = try XCTUnwrap(try r.valor(de: "dayPlanner")?["days"]?.objeto)
+        XCTAssertEqual(dias["2026-11-20"]?.lista?.first?["done"], .bool(true))
+        XCTAssertEqual(dias["2026-11-20"]?.lista?.first?["time"], .string("10:00"))
+        XCTAssertEqual(dias["2026-11-21"]?.lista?.first?["id"], .string("planner_assign_w2"))
+        XCTAssertEqual(dias["2026-11-22"]?.lista?.first?["time"], .string("23:59"))
+        XCTAssertNil(dias["2026-11-23"])
+        XCTAssertEqual(try r.valor(de: "entries")?.lista?.compactMap { $0["id"]?.texto }, ["e", "evt_w3", "evt_x1"])
+        // Reaplicar (respuesta perdida o conflicto) no cambia nada.
+        let (r2, parche) = AplicarOperaciones.sobre(r, ops)
+        XCTAssertTrue(parche.isEmpty)
+        XCTAssertEqual(try r2.valor(de: "entries"), try r.valor(de: "entries"))
+        // Lo que ya no existe no se resucita.
+        let (_, nada) = AplicarOperaciones.sobre(doc, [.marcarTrabajo(asignaturaId: "s", id: "borrado", hecho: true, momentoMs: momento),
+                                                       .crearEntrega(asignaturaId: "no", lista: "exams", id: "x9", titulo: "", fecha: nil, hora: nil)])
+        XCTAssertTrue(nada.isEmpty)
+    }
+
+    func testProyectosEstadoYAHoy() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"dayPlanner": {"days": {}, "backlog": []}, "entries": [{"id": "pr", "type": "project", "title": "Casa", "siguienteId": "t1", "fases": [{"id": "f"}], "tareas": [{"id": "t1", "texto": "pintar", "estado": "pendiente", "faseId": "f"}, {"id": "t2", "texto": "luz", "estado": "pendiente"}], "tasks": [{"text": "pintar", "done": false}, {"text": "luz", "done": false}, {"text": "del conector", "done": false}]}, {"id": "solo", "type": "project", "title": "Viejo", "tasks": [{"text": "uno", "done": true}, {"text": "dos", "done": false}]}]}"#.utf8))
+        let ops: [OperacionBitacora] = [.estadoTareaProyecto(proyectoId: "pr", tareaId: "t1", estado: "hecha"),
+                                        .proyectoAHoy(proyectoId: "pr", tareaId: "t2", idTarea: "planner_a", dia: "2026-11-12"),
+                                        .proyectoAHoy(proyectoId: "pr", tareaId: "t2", idTarea: "planner_b", dia: "2026-11-12"),
+                                        .estadoTareaProyecto(proyectoId: "solo", tareaId: "pt_c1", estado: "curso")]
+        let (r, _) = AplicarOperaciones.sobre(doc, ops)
+        let ent = try XCTUnwrap(try r.valor(de: "entries")?.lista)
+        let p = try XCTUnwrap(ent.first)
+        XCTAssertNil(p["siguienteId"])
+        XCTAssertEqual(p["fases"]?.lista?.count, 1)
+        XCTAssertEqual(p["tareas"]?.lista?.map { $0["estado"] }, [.string("hecha"), .string("curso"), .string("pendiente")])
+        XCTAssertEqual(p["tareas"]?.lista?.first?["faseId"], .string("f"))
+        XCTAssertEqual(p["tasks"]?.lista?.map { $0["text"] }, [.string("pintar"), .string("luz"), .string("del conector")])
+        XCTAssertEqual(ent.last?["tareas"]?.lista?.map { $0["estado"] }, [.string("hecha"), .string("curso")])
+        let hoy = try XCTUnwrap(try r.valor(de: "dayPlanner")?["days"]?["2026-11-12"]?.lista)
+        XCTAssertEqual(hoy.count, 1)
+        XCTAssertEqual(hoy.first?["title"], .string("Casa: luz"))
+        XCTAssertEqual(hoy.first?["proyectoTareaId"], .string("t2"))
+        let (_, parche) = AplicarOperaciones.sobre(r, ops)
+        XCTAssertTrue(parche.isEmpty)
+    }
+
+    func testLasEntregasSalenEnElCalendarioSinRepetirse() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"studies": {"subjects": [{"id": "s", "name": "Mates", "exams": [{"id": "x1", "title": "parcial", "date": "2026-11-23"}, {"id": "x2", "title": "final", "date": "2026-11-24"}]}]}, "entries": [{"id": "evt_x1", "type": "event", "title": "Examen: parcial (Mates)", "date": "2026-11-23", "linkedItemId": "x1"}]}"#.utf8))
+        let v = LecturaCalendario.mes(doc, YearMonth(year: 2026, month: 11)!)
+        XCTAssertEqual(v.porDia[LocalDay(iso: "2026-11-23")!]?.map(\.editable), [false])
+        XCTAssertEqual(v.porDia[LocalDay(iso: "2026-11-24")!]?.map(\.titulo), ["Examen: final (Mates)"])
+    }
+
     func testLosParchesSoloTocanSusCampos() throws {
         let doc = try DocumentoBitacora(datos: Data(#"{"dayPlanner": {"days": {"2026-11-12": [{"id": "p1", "title": "a", "notes": "de la web", "time": "09:00"}]}, "backlog": []}, "entries": [{"id": "e1", "type": "event", "title": "cine", "notes": "web", "date": "2026-11-12"}]}"#.utf8))
         let (r, _) = AplicarOperaciones.sobre(doc, [.parcharTarea(id: "p1", campos: ["title": "b"]), .parcharEvento(id: "e1", campos: ["time": "20:00"])])

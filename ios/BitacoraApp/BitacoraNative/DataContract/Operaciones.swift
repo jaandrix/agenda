@@ -21,6 +21,12 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case crearNota(id: String, dia: String, texto: String, creada: String)
     // importe en texto decimal («12.50»): el dinero nunca pasa por Double.
     case crearMovimiento(id: String, tipo: String, importe: String, cuenta: String, categoria: String?, fecha: String, hora: String, concepto: String)
+    // CONTRATO-ESTUDIOS-PROYECTOS.md. Solo trabajos: en los exámenes la web no usa `done`.
+    case marcarTrabajo(asignaturaId: String, id: String, hecho: Bool, momentoMs: Int64)
+    // lista: "exams" o "assignments".
+    case crearEntrega(asignaturaId: String, lista: String, id: String, titulo: String, fecha: String?, hora: String?)
+    case estadoTareaProyecto(proyectoId: String, tareaId: String, estado: String)
+    case proyectoAHoy(proyectoId: String, tareaId: String, idTarea: String, dia: String)
 
     var claves: [String] {
         switch self {
@@ -32,6 +38,10 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .crearMovimiento: return ["financePro"]
         case .marcarRutina: return ["habits"]
         case .crearNota: return ["notes"]
+        case .marcarTrabajo: return ["studies", "dayPlanner"]
+        case .crearEntrega: return ["studies", "entries", "dayPlanner"]
+        case .estadoTareaProyecto: return ["entries"]
+        case .proyectoAHoy: return ["entries", "dayPlanner"]
         default: return ["dayPlanner"]
         }
     }
@@ -40,6 +50,11 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     static func nuevoIdTarea(sinDia: Bool = false, ahora: Date = Date()) -> String {
         let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
         return (sinDia ? "backlog_" : "planner_") + "\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<5).map { _ in letras.randomElement()! })
+    }
+
+    static func nuevoIdItem(ahora: Date = Date()) -> String {
+        let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
+        return "item_\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<4).map { _ in letras.randomElement()! })
     }
 
     static func nuevoIdNota(ahora: Date = Date()) -> String { "note_\(Int64(ahora.timeIntervalSince1970 * 1000))" }
@@ -113,14 +128,8 @@ enum AplicarOperaciones {
                                       "category": .string("Planificador"), "calendarLog": .bool(true)]))
             }
             // proyectoTareaDesdePlanner (js/proyecto.js).
-            if let pid = t["proyectoId"]?.comoId, let tid = t["proyectoTareaId"]?.comoId,
-               let n = lista.firstIndex(where: { $0["id"]?.comoId == pid }), var p = lista[n].objeto, var tareas = p["tareas"]?.lista,
-               let m = tareas.firstIndex(where: { $0["id"]?.comoId == tid }), var pt = tareas[m].objeto {
-                pt["estado"] = .string(hecha ? "hecha" : "curso")
-                tareas[m] = .object(pt)
-                p["tareas"] = .array(tareas)
-                p["tasks"] = .array(tareas.map { .object(["text": .string($0["texto"]?.texto ?? ""), "done": .bool($0["estado"]?.texto == "hecha")]) })
-                lista[n] = .object(p)
+            if let pid = t["proyectoId"]?.comoId, let tid = t["proyectoTareaId"]?.comoId {
+                _ = cambiarTareaProyecto(&lista, pid, tid) { pt, _ in pt["estado"] = .string(hecha ? "hecha" : "curso") }
             }
             r["entries"] = .some(.array(lista))
             // El trabajo de Estudios guarda si está hecho: es lo que sobrevive cuando la tarea del día se archiva.
@@ -170,10 +179,156 @@ enum AplicarOperaciones {
             lista.append(.object(t))
             pro["transactions"] = .array(lista)
             r["financePro"] = .some(.object(pro))
+        case let .marcarTrabajo(aid, id, hecho, momento):
+            guard var st = (valores["studies"] ?? nil)?.objeto, var asig = st["subjects"]?.lista,
+                  let ij = buscarItem(asig, aid, "assignments", id), var s = asig[ij.0].objeto,
+                  var trabajos = s["assignments"]?.lista, var w = trabajos[ij.1].objeto else { break }
+            w["done"] = .bool(hecho)
+            trabajos[ij.1] = .object(w)
+            s["assignments"] = .array(trabajos)
+            asig[ij.0] = .object(s)
+            st["subjects"] = .array(asig)
+            r["studies"] = .some(.object(st))
+            var p = planificador(valores["dayPlanner"] ?? nil)
+            if let sitio = buscar("planner_assign_" + id, en: p) {
+                cambiar(sitio, en: &p) { t in
+                    guard t["done"]?.booleano != hecho else { return }
+                    t["done"] = .bool(hecho)
+                    if hecho { t["hechaEn"] = .number(String(momento)) } else { t.removeValue(forKey: "hechaEn") }
+                }
+            } else {
+                ponerTareaDeTrabajo(w, asignatura: s["name"]?.texto ?? "", en: &p)
+            }
+            r["dayPlanner"] = .some(.object(p))
+        case let .crearEntrega(aid, lista, id, titulo, fecha, hora):
+            guard lista == "exams" || lista == "assignments", var st = (valores["studies"] ?? nil)?.objeto, var asig = st["subjects"]?.lista,
+                  let i = asig.firstIndex(where: { $0["id"]?.comoId == aid }), var s = asig[i].objeto else { break }
+            var items = s[lista]?.lista ?? []
+            if items.contains(where: { $0["id"]?.comoId == id }) { break }
+            var item: [String: JSONValue] = ["id": .string(id), "title": .string(titulo), "date": .string(fecha ?? ""), "grade": .string(""),
+                                             "weight": .string(""), "done": .bool(false)]
+            if let hora, !hora.isEmpty { item["time"] = .string(hora) }
+            items.append(.object(item))
+            s[lista] = .array(items)
+            asig[i] = .object(s)
+            st["subjects"] = .array(asig)
+            r["studies"] = .some(.object(st))
+            let nombre = s["name"]?.texto ?? ""
+            if let fecha, !fecha.isEmpty {
+                // syncExamCalendarEvent (js/enlaces-proyectos.js).
+                var ent = (valores["entries"] ?? nil)?.lista ?? []
+                let etiqueta = lista == "exams" ? "Examen" : "Entrega"
+                let campos: [String: JSONValue] = ["title": .string("\(etiqueta): \(titulo.isEmpty ? "Sin título" : titulo) (\(nombre))"),
+                                                   "date": .string(fecha), "time": .string(hora ?? "")]
+                if let n = ent.firstIndex(where: { $0["linkedItemId"]?.comoId == id }), var e = ent[n].objeto {
+                    campos.forEach { e[$0.key] = $0.value }
+                    ent[n] = .object(e)
+                } else {
+                    var e = campos
+                    e["id"] = .string("evt_" + id)
+                    e["type"] = .string("event")
+                    e["eventType"] = .string("otro")
+                    e["notes"] = .string("")
+                    e["linkedItemId"] = .string(id)
+                    e["linkedSubjectId"] = .string(aid)
+                    e["linkedKind"] = .string(lista)
+                    ent.append(.object(e))
+                }
+                r["entries"] = .some(.array(ent))
+                if lista == "assignments" {
+                    var p = planificador(valores["dayPlanner"] ?? nil)
+                    if buscar("planner_assign_" + id, en: p) == nil { ponerTareaDeTrabajo(item, asignatura: nombre, en: &p) }
+                    r["dayPlanner"] = .some(.object(p))
+                }
+            }
+        case let .estadoTareaProyecto(pid, tid, estado):
+            guard ["pendiente", "curso", "hecha"].contains(estado), var lista = (valores["entries"] ?? nil)?.lista else { break }
+            let ok = cambiarTareaProyecto(&lista, pid, tid) { pt, p in
+                pt["estado"] = .string(estado)
+                if estado == "hecha", p["siguienteId"]?.comoId == tid { p.removeValue(forKey: "siguienteId") }
+            }
+            if ok { r["entries"] = .some(.array(lista)) }
+        case let .proyectoAHoy(pid, tid, idTarea, dia):
+            guard var lista = (valores["entries"] ?? nil)?.lista, let n = lista.firstIndex(where: { $0["id"]?.comoId == pid }),
+                  let pr = lista[n].objeto.map(proyectoNormalizado),
+                  let pt = pr["tareas"]?.lista?.first(where: { $0["id"]?.comoId == tid })?.objeto else { break }
+            var p = planificador(valores["dayPlanner"] ?? nil)
+            if buscar(idTarea, en: p) == nil {
+                // Como la web: si ese día ya está, no se repite.
+                if (p["days"]?[dia]?.lista ?? []).contains(where: { $0["proyectoTareaId"]?.comoId == tid }) { break }
+                let titulo = (pr["title"]?.texto ?? "") + ": " + (pt["texto"]?.texto ?? "")
+                _ = poner(["id": .string(idTarea), "time": .string(""), "title": .string(titulo), "notes": .string(""), "done": .bool(false),
+                           "proyectoId": .string(pid), "proyectoTareaId": .string(tid)], en: dia, de: &p)
+                r["dayPlanner"] = .some(.object(p))
+            }
+            if pt["estado"]?.texto == "pendiente" {
+                _ = cambiarTareaProyecto(&lista, pid, tid) { t, _ in t["estado"] = .string("curso") }
+                r["entries"] = .some(.array(lista))
+            }
         default:
             r["dayPlanner"] = .some(aplicar(op, a: valores["dayPlanner"] ?? nil))
         }
         return r
+    }
+
+    // syncAssignmentPlannerItem (js/enlaces-proyectos.js), solo cuando la tarea no existe.
+    static func ponerTareaDeTrabajo(_ w: [String: JSONValue], asignatura: String, en p: inout [String: JSONValue]) {
+        guard let id = w["id"]?.comoId, let fecha = w["date"]?.texto, !fecha.isEmpty, w["fueraDelPlanificador"]?.booleano != true else { return }
+        let hora = w["time"]?.texto.flatMap { $0.isEmpty ? nil : $0 } ?? "23:59"
+        let titulo = w["title"]?.texto.flatMap { $0.isEmpty ? nil : $0 } ?? "Sin título"
+        _ = poner(["id": .string("planner_assign_" + id), "time": .string(hora), "title": .string("trabajo pendiente. " + titulo),
+                   "notes": .string(asignatura.isEmpty ? "" : "Asignatura: " + asignatura), "done": .bool(w["done"]?.booleano == true),
+                   "arrastrado": .bool(false), "linkedAssignmentId": .string(id)], en: fecha, de: &p)
+    }
+
+    // Primero en su asignatura y, si ya no está ahí, en cualquiera (como findAssignmentById).
+    static func buscarItem(_ asig: [JSONValue], _ aid: String, _ lista: String, _ id: String) -> (Int, Int)? {
+        let orden = asig.indices.filter { asig[$0]["id"]?.comoId == aid } + asig.indices.filter { asig[$0]["id"]?.comoId != aid }
+        for i in orden {
+            if let j = asig[i][lista]?.lista?.firstIndex(where: { $0["id"]?.comoId == id }) { return (i, j) }
+        }
+        return nil
+    }
+
+    // proyectoDatos (js/proyecto.js): tareas desde `tasks` si no hay, y lo que el conector añadió a `tasks` entra.
+    // Ids deterministas para que reaplicar dé lo mismo.
+    static func proyectoNormalizado(_ p: [String: JSONValue]) -> [String: JSONValue] {
+        var p = p
+        let tasks = p["tasks"]?.lista ?? []
+        let estado = { (x: JSONValue) -> JSONValue in .string(x["done"]?.booleano == true ? "hecha" : "pendiente") }
+        var tareas: [JSONValue]
+        if let t = p["tareas"]?.lista {
+            tareas = t
+            for (i, x) in tasks.enumerated() {
+                let texto = x["text"]?.texto ?? ""
+                if let j = tareas.firstIndex(where: { $0["texto"]?.texto == texto }) {
+                    if x["done"]?.booleano == true, var o = tareas[j].objeto, o["estado"]?.texto != "hecha" {
+                        o["estado"] = .string("hecha")
+                        tareas[j] = .object(o)
+                    }
+                } else if !texto.isEmpty {
+                    tareas.append(.object(["id": .string("pt_c\(i)"), "texto": .string(texto), "estado": estado(x)]))
+                }
+            }
+        } else {
+            tareas = tasks.enumerated().map { i, x in .object(["id": .string("pt_c\(i)"), "texto": .string(x["text"]?.texto ?? ""), "estado": estado(x)]) }
+        }
+        p["tareas"] = .array(tareas)
+        return p
+    }
+
+    // Cambia una tarea de un proyecto y rehace `tasks`. Devuelve false si el proyecto o la tarea ya no están.
+    static func cambiarTareaProyecto(_ lista: inout [JSONValue], _ pid: String, _ tid: String,
+                                     _ f: (inout [String: JSONValue], inout [String: JSONValue]) -> Void) -> Bool {
+        guard let n = lista.firstIndex(where: { $0["id"]?.comoId == pid && $0["type"]?.texto == "project" }),
+              var p = lista[n].objeto.map(proyectoNormalizado), var tareas = p["tareas"]?.lista,
+              let m = tareas.firstIndex(where: { $0["id"]?.comoId == tid }), var pt = tareas[m].objeto else { return false }
+        f(&pt, &p)
+        tareas[m] = .object(pt)
+        p["tareas"] = .array(tareas)
+        p["tasks"] = .array(tareas.map { .object(["text": .string($0["texto"]?.texto ?? ""), "done": .bool($0["estado"]?.texto == "hecha")]) })
+        lista[n] = .object(p)
+        return true
     }
 
     // Operaciones del planificador sobre `dayPlanner`.
@@ -247,7 +402,8 @@ enum AplicarOperaciones {
             _ = quitar(sitio, de: &p)
             return .object(p)
 
-        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento:
+        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento,
+             .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy:
             return valor ?? .object(p)
         }
     }
@@ -361,7 +517,7 @@ enum AplicarOperaciones {
         }
     }
 
-    private static func poner(_ t: [String: JSONValue], en dia: String, de p: inout [String: JSONValue]) -> Sitio {
+    static func poner(_ t: [String: JSONValue], en dia: String, de p: inout [String: JSONValue]) -> Sitio {
         var dias = p["days"]?.objeto ?? [:]
         var lista = dias[dia]?.lista ?? []
         lista.append(.object(t))
@@ -370,7 +526,7 @@ enum AplicarOperaciones {
         return .dia(dia, lista.count - 1)
     }
 
-    private static func cambiar(_ sitio: Sitio, en p: inout [String: JSONValue], _ f: (inout [String: JSONValue]) -> Void) {
+    static func cambiar(_ sitio: Sitio, en p: inout [String: JSONValue], _ f: (inout [String: JSONValue]) -> Void) {
         switch sitio {
         case let .dia(dia, n):
             var dias = p["days"]!.objeto!
