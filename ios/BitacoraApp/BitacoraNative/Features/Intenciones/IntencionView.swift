@@ -25,7 +25,7 @@ struct IntencionView: View {
             c.resolverIntencion(intencion)
         } catch {
             UIPasteboard.general.string = titulo
-            error = "no se pudo guardar en este iPhone. el texto está copiado."
+            self.error = "no se pudo guardar en este iPhone. el texto está copiado."
         }
     }
 
