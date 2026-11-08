@@ -458,6 +458,23 @@ final class OperacionesTests: XCTestCase {
         XCTAssertEqual(Array(parche.keys), ["entries"])
     }
 
+    func testFinanzasCuadranYElMovimientoNoSeDuplica() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"financeProfile": {"invested": 1000.10, "emergency": "500,05", "vacation": 100, "customAccounts": [{"id": "x", "balance": 0.1}]}, "financePro": {"accounts": {"bancos": {"name": "Bancos", "balance0": 100.10}, "efectivo": {"balance0": 0.2}}, "categories": [{"id": "c1", "name": "Inversiones"}], "transactions": [{"id": "a", "type": "expense", "amount": 0.1, "account": "bancos", "date": "2026-11-01"}, {"id": "b", "type": "income", "amount": "20,00", "account": "efectivo", "date": "2026-11-02"}, {"id": "c", "type": "transfer", "amount": 50, "account": "bancos", "transferTo": "efectivo", "date": "2026-11-03"}, {"id": "d", "type": "expense", "amount": 30, "account": "bancos", "category": "c1", "date": "2026-11-04"}, {"id": "e", "type": "expense", "amount": 999, "account": "bancos", "date": "2026-12-01"}, {"id": "f", "type": "income", "amount": 5, "account": "bancos", "pendiente": true, "date": "2026-11-05"}]}}"#.utf8))
+        let hoy = LocalDay(iso: "2026-11-08")!
+        let v = LecturaFinanzas.vista(doc, hoy: hoy)
+        XCTAssertEqual(v.saldoLiquido, Decimal(string: "90.2"))
+        XCTAssertEqual(v.patrimonioOperativo, Decimal(string: "1590.35"))
+        XCTAssertEqual(v.activosTotales, Decimal(string: "1690.45"))
+        XCTAssertEqual(v.ingresosMes, Decimal(string: "20"))
+        XCTAssertEqual(v.gastosMes, Decimal(string: "0.1"))
+        let op = OperacionBitacora.crearMovimiento(id: "ptx_q_1", tipo: "expense", importe: "12,5", cuenta: "bancos", categoria: nil, fecha: "2026-11-08", hora: "10:00", concepto: "pan")
+        let (r, _) = AplicarOperaciones.sobre(doc, [op, op])
+        let w = LecturaFinanzas.vista(r, hoy: hoy)
+        XCTAssertEqual(w.saldoLiquido, Decimal(string: "77.7"))
+        XCTAssertEqual(try r.valor(de: "financePro")?["transactions"]?.lista?.last?["amount"], .number("12.5"))
+        XCTAssertEqual(r.bytes(de: "financeProfile"), doc.bytes(de: "financeProfile"))
+    }
+
     func testIdsConElFormatoDeLaWeb() {
         let id = OperacionBitacora.nuevoIdTarea()
         XCTAssertTrue(id.hasPrefix("planner_"))

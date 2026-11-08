@@ -95,6 +95,9 @@ struct PrincipalView: View {
             NavigationStack { CalendarioView() }
                 .tabItem { Label("calendario.", systemImage: "calendar") }
                 .tag(Pestana.calendario)
+            NavigationStack { FinanzasView() }
+                .tabItem { Label("finanzas.", systemImage: "eurosign") }
+                .tag(Pestana.finanzas)
             NavigationStack { EstadoView() }
                 .tabItem { Label("estado.", systemImage: "arrow.triangle.2.circlepath") }
                 .tag(Pestana.estado)
@@ -107,6 +110,7 @@ struct PrincipalView: View {
             case .intencion(let i): IntencionView(intencion: i)
             case .tarea(let t): EditorTareaView(inicial: t)
             case .evento(let e): EditorEventoView(inicial: e)
+            case .movimiento(let id): EditorMovimientoView(id: id)
             }
         }
     }

@@ -2,7 +2,7 @@ import SwiftUI
 import Network
 
 enum Pestana: Hashable {
-    case plan, calendario, estado, ajustes
+    case plan, calendario, finanzas, estado, ajustes
 }
 
 // Una sola hoja a la vez: el enum impide dos modales simultáneos.
@@ -10,8 +10,10 @@ enum Modal: Identifiable, Equatable {
     case intencion(IntencionEntrante)
     case tarea(EditorTarea)
     case evento(EditorEvento)
+    case movimiento(String)
     var id: String {
         switch self {
+        case .movimiento(let id): return "movimiento:\(id)"
         case .evento(let e): return "evento:\(e.id)"
         case .intencion(let i): return "intencion:\(i.id)"
         case .tarea(let t): return "tarea:\(t.id)"

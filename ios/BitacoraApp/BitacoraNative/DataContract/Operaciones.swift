@@ -14,11 +14,14 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case marcarRecurrente(id: String, dia: String, hecha: Bool, momentoMs: Int64)
     case guardarEvento(id: String, fecha: String, hora: String?, titulo: String, lugar: String, notas: String)
     case borrarEntrada(id: String)
+    // importe en texto decimal («12.50»): el dinero nunca pasa por Double.
+    case crearMovimiento(id: String, tipo: String, importe: String, cuenta: String, categoria: String?, fecha: String, hora: String, concepto: String)
 
     var claves: [String] {
         switch self {
         case .marcarRecurrente: return ["recurringTasks", "entries"]
         case .guardarEvento, .borrarEntrada: return ["entries"]
+        case .crearMovimiento: return ["financePro"]
         default: return ["dayPlanner"]
         }
     }
@@ -27,6 +30,11 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     static func nuevoIdTarea(sinDia: Bool = false, ahora: Date = Date()) -> String {
         let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
         return (sinDia ? "backlog_" : "planner_") + "\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<5).map { _ in letras.randomElement()! })
+    }
+
+    static func nuevoIdMovimiento(ahora: Date = Date()) -> String {
+        let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
+        return "ptx_q_\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<5).map { _ in letras.randomElement()! })
     }
 
     static func nuevoIdEntrada(ahora: Date = Date()) -> String {
@@ -78,6 +86,19 @@ enum AplicarOperaciones {
             r["entries"] = .some(ent)
         case .guardarEvento, .borrarEntrada:
             r["entries"] = .some(entradas(op, valores["entries"] ?? nil))
+        case let .crearMovimiento(id, tipo, importe, cuenta, categoria, fecha, hora, concepto):
+            // Como el registro rápido de la web (ptx_q_, manual): solo añade, y no lo repite si el id ya está.
+            guard var pro = (valores["financePro"] ?? nil)?.objeto, let d = Dinero.decimal(texto: importe), d > 0,
+                  tipo == "income" || tipo == "expense" else { break }
+            var lista = pro["transactions"]?.lista ?? []
+            if lista.contains(where: { $0["id"]?.comoId == id }) { break }
+            var t: [String: JSONValue] = ["id": .string(id), "date": .string(fecha), "hora": .string(hora), "account": .string(cuenta),
+                                          "type": .string(tipo), "amount": .number(NSDecimalNumber(decimal: Dinero.redondeado(d)).stringValue), "manual": .bool(true)]
+            if let categoria { t["category"] = .string(categoria) }
+            if !concepto.isEmpty { t["note"] = .string(concepto) }
+            lista.append(.object(t))
+            pro["transactions"] = .array(lista)
+            r["financePro"] = .some(.object(pro))
         default:
             r["dayPlanner"] = .some(aplicar(op, a: valores["dayPlanner"] ?? nil))
         }
@@ -145,7 +166,7 @@ enum AplicarOperaciones {
             _ = quitar(sitio, de: &p)
             return .object(p)
 
-        case .marcarRecurrente, .guardarEvento, .borrarEntrada:
+        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento:
             return valor ?? .object(p)
         }
     }

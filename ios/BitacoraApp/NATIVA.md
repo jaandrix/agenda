@@ -41,6 +41,12 @@ editar, mover, borrar; apuntar crea tareas) y calendario (mes con puntos, agenda
 editar y borrar eventos; avisos locales opcionales). Falta en el calendario lo de otros apartados: horario laboral,
 pagos recurrentes, servicios y entregas de Estudios.
 
+**0.5.0 (08-11-2026): fase 4, Finanzas.** Pestaña «finanzas.»: saldo líquido, patrimonio operativo y activos
+totales (mismas reglas que la web, en Decimal), lo que entra y sale este mes (sin ahorros, ajustes ni inversiones),
+saldo por cuenta y últimos movimientos; respeta «ocultar cifras» (`blurFinances`). Alta de movimientos a mano
+(`crearMovimiento`, como el registro rápido de la web: `ptx_q_`, `manual`). Fuera: importar, presupuestos, editar y
+borrar movimientos, inversiones. Diferencia: si `financeProfile.invested` es 0 la web usa el valor de la cartera.
+
 ## Escrituras
 
 - `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en
