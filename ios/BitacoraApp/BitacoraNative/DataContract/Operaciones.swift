@@ -33,6 +33,10 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // y traspasar entre cuentas propias (type transfer + transferTo, como financeProEmparejarTraspasos).
     case editarMovimiento(id: String, importe: String, concepto: String, categoria: String?, fecha: String, cuenta: String, destino: String?)
     case borrarMovimiento(id: String)
+    // Estudios: editar un examen o trabajo (título, fecha, hora, nota y peso; "" deja la nota o el peso vacíos) y
+    // mantener su `evt_` como syncExamCalendarEvent; borrar como removeSubjectItem (con su evento y su tarea del plan).
+    case editarItemEstudio(asignaturaId: String, lista: String, id: String, titulo: String, fecha: String?, hora: String?, nota: String, peso: String)
+    case borrarItemEstudio(asignaturaId: String, lista: String, id: String)
     case crearTraspaso(id: String, importe: String, desde: String, hacia: String, fecha: String, hora: String, concepto: String)
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
@@ -46,6 +50,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .parcharEvento: return ["entries"]
         case .guardarEvento, .borrarEntrada: return ["entries"]
         case .crearMovimiento, .editarMovimiento, .borrarMovimiento, .crearTraspaso: return ["financePro"]
+        case .editarItemEstudio: return ["studies", "entries"]
+        case .borrarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .marcarRutina: return ["habits"]
         case .crearNota: return ["notes"]
         case .marcarTrabajo: return ["studies", "dayPlanner"]
@@ -190,6 +196,56 @@ enum AplicarOperaciones {
             lista[n] = .object(t)
             pro["transactions"] = .array(lista)
             r["financePro"] = .some(.object(pro))
+        case let .editarItemEstudio(aid, listaK, id, titulo, fecha, hora, nota, peso):
+            guard var st = (valores["studies"] ?? nil)?.objeto, var asig = st["subjects"]?.lista,
+                  let ij = buscarItem(asig, aid, listaK, id), var s = asig[ij.0].objeto,
+                  var items = s[listaK]?.lista, var x = items[ij.1].objeto else { break }
+            let cifra = { (t: String) -> JSONValue in
+                let limpio = t.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
+                return limpio.isEmpty || Double(limpio) == nil ? .string("") : .number(limpio)
+            }
+            let cambios: [String: JSONValue] = ["title": .string(titulo), "date": .string(fecha ?? ""), "time": .string(hora ?? ""),
+                                                "grade": cifra(nota), "weight": cifra(peso)]
+            for (k, v) in cambios where x[k] != v {
+                // Sin hora y sin la clave en la nube: no se añade «time» vacío.
+                if k == "time", v == .string(""), x[k] == nil { continue }
+                x[k] = v
+            }
+            items[ij.1] = .object(x)
+            s[listaK] = .array(items)
+            asig[ij.0] = .object(s)
+            st["subjects"] = .array(asig)
+            r["studies"] = .some(.object(st))
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            let enlazada = lista.firstIndex { $0["linkedItemId"]?.comoId == id }
+            if let f = fecha, !f.isEmpty {
+                let t = "\(listaK == "exams" ? "Examen" : "Entrega"): \(titulo.isEmpty ? "Sin título" : titulo) (\(s["name"]?.texto ?? ""))"
+                if let e = enlazada, var o = lista[e].objeto {
+                    o["title"] = .string(t); o["date"] = .string(f); o["time"] = .string(hora ?? "")
+                    lista[e] = .object(o)
+                } else {
+                    lista.append(.object(["id": .string("evt_" + id), "type": .string("event"), "eventType": .string("otro"), "title": .string(t),
+                                          "date": .string(f), "time": .string(hora ?? ""), "notes": .string(""), "linkedItemId": .string(id),
+                                          "linkedSubjectId": .string(aid), "linkedKind": .string(listaK)]))
+                }
+            } else if let e = enlazada {
+                lista.remove(at: e)
+            }
+            r["entries"] = .some(.array(lista))
+        case let .borrarItemEstudio(aid, listaK, id):
+            guard var st = (valores["studies"] ?? nil)?.objeto, var asig = st["subjects"]?.lista,
+                  let ij = buscarItem(asig, aid, listaK, id), var s = asig[ij.0].objeto, var items = s[listaK]?.lista else { break }
+            items.remove(at: ij.1)
+            s[listaK] = .array(items)
+            asig[ij.0] = .object(s)
+            st["subjects"] = .array(asig)
+            r["studies"] = .some(.object(st))
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            lista.removeAll { $0["linkedItemId"]?.comoId == id }
+            r["entries"] = .some(.array(lista))
+            if listaK == "assignments" {
+                r["dayPlanner"] = .some(aplicar(.borrarTarea(id: "planner_assign_" + id), a: valores["dayPlanner"] ?? nil))
+            }
         case let .borrarMovimiento(id):
             guard var pro = (valores["financePro"] ?? nil)?.objeto, var lista = pro["transactions"]?.lista else { break }
             let antes = lista.count
@@ -476,7 +532,7 @@ enum AplicarOperaciones {
 
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea,
-             .editarMovimiento, .borrarMovimiento, .crearTraspaso:
+             .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio:
             return valor ?? .object(p)
         }
     }
