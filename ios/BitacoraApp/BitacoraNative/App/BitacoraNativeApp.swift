@@ -92,7 +92,7 @@ struct PrincipalView: View {
         [.init(id: "inicio", titulo: "inicio", icono: "house"),
          .init(id: "plan", titulo: "plan", icono: "checklist"),
          secundaria == .finanzas ? .init(id: "finanzas", titulo: "finanzas", icono: "eurosign") : .init(id: "calendario", titulo: "calendario", icono: "calendar"),
-         .init(id: "mas", titulo: "más", icono: "square.grid.2x2")]
+         .init(id: "mas", titulo: "menú", icono: "line.3.horizontal")]
     }
     private static let porId: [String: Pestana] = ["inicio": .inicio, "plan": .plan, "calendario": .calendario, "finanzas": .finanzas, "mas": .mas]
 
