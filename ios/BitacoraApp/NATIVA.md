@@ -99,6 +99,25 @@ en `FilaEvento`. Finanzas con el saldo líquido como cifra principal y `FilaLibr
 cifras no mueve nada. Más como índice. Hojas del sistema con fondo y tinta de Bitácora. Capturas: inicio y plan en claro
 y oscuro, plan vacío, sin conexión y con letra de accesibilidad.
 
+**0.11.0 (08-11-2026): paridad con la PWA (bloque 2 de la auditoría de la 0.10.5).**
+
+- Repositorios fuera del documento (`Core/Servicios/ServiciosRemotos.swift`): perfil (`perfiles_fotos`, la foto en
+  Caches por usuario), tiempo (Open-Meteo con `ciudadTiempo`, 30 min, como `cargarTiempo`), transporte (función
+  `transporte`, 30 s; paradas del Ayuntamiento una semana) y deportes (función `deportes`, 12 h por equipo). Si uno
+  falla, Inicio sigue.
+- Inicio como `renderMobileTopbar` + `.m-home-editorial`: foto, marca, tiempo (hoja con previsión y ciudad), semana
+  con día elegible, «ahora.»/«lo próximo.» con el bus, cabecera del día y la agenda completa: trabajo con la agenda
+  laboral, citas laborales, pagos recurrentes vigentes (`suscripcionVigente`), entradas con QR y partidos.
+- «menú.» con `NAV_SECTIONS` y la visibilidad de `apartadosConfig` (`Features/Mas/Apartados.swift`). Lo no nativo abre
+  `appbitacora.es/#vista` (marcado «web.»). Nativos: inicio, plan, finanzas, rutinas, notas, eventos, estudios,
+  proyectos, transporte y ajustes.
+- Eventos y Transporte nativos; ficha de evento con QR (`CIQRCodeGenerator`, `qr` o `qrB64`).
+- Operaciones nuevas: `ponerCiudadTiempo`, `transporteFavorita`, `transporteLinea`, `editarMovimiento`,
+  `borrarMovimiento`, `crearTraspaso`, `editarItemEstudio` (mantiene el `evt_`), `borrarItemEstudio` (con su evento y
+  su tarea), `crearProyecto`, `cambiarProyecto`. Todas idempotentes y por bloque, como las anteriores.
+- Fuera todavía: estrenos de series, «cerca de ti» en Transporte, presupuestos y cuentas en Finanzas, asignaturas y
+  horario en Estudios, fechas de fases y tareas en Proyectos.
+
 Cómo usar las piezas en un apartado nuevo: `ScrollView` + `LazyVStack` sobre `Paleta.fondo`, `CabeceraApartado` arriba
 (sin barra de navegación), `CabeceraSeccion` por bloque, `FilaAgenda` para lo que se marca, `FilaEvento` para lo que
 tiene hora y no se marca, `FilaLibro` para cifras e índices, `AccionTexto` para «+ algo.». Solo «ahora.» lleva relieve.
