@@ -79,85 +79,60 @@ struct MasView: View {
     @State private var aviso: String?
 
     var body: some View {
-        List {
-            if let aviso { Section { Text(aviso).foregroundStyle(Paleta.error) } }
-            Section {
-                Button("calendario.") { c.pestana = .calendario }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
-                Button("finanzas.") { c.pestana = .finanzas }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
-            }
-            .foregroundStyle(Paleta.texto)
-            if let v = vista {
-                Section("rutinas de hoy.") {
-                    if v.rutinas.isEmpty { Text("ninguna hoy.").foregroundStyle(Paleta.textoSecundario).listRowBackground(Paleta.superficie) }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                CabeceraApartado(titulo: "más", contexto: nil) { EmptyView() }
+                if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
+                CabeceraSeccion(titulo: "apartados.")
+                Button { c.pestana = .calendario } label: { FilaLibro(etiqueta: "calendario.", flecha: true) }.buttonStyle(.plain)
+                Button { c.pestana = .finanzas } label: { FilaLibro(etiqueta: "finanzas.", flecha: true) }.buttonStyle(.plain)
+                NavigationLink { EstudiosView() } label: { FilaLibro(etiqueta: "estudios.", valor: vista.map { $0.entregas.isEmpty ? "" : "\($0.entregas.count)" } ?? "", flecha: true) }.buttonStyle(.plain)
+                NavigationLink { ProyectosView() } label: { FilaLibro(etiqueta: "proyectos.", flecha: true) }.buttonStyle(.plain)
+                Button { web = true } label: { FilaLibro(etiqueta: "lo demás, en la web.", flecha: true) }.buttonStyle(.plain)
+                if let v = vista {
+                    CabeceraSeccion(titulo: "rutinas de hoy.", detalle: v.rutinas.isEmpty ? nil : "\(v.rutinas.filter(\.hecha).count) de \(v.rutinas.count)")
+                    if v.rutinas.isEmpty { Text("ninguna hoy.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
                     ForEach(v.rutinas) { r in
-                        Button { marcar(r) } label: {
-                            HStack(spacing: Espacio.m) {
-                                Image(systemName: r.hecha ? "checkmark.circle.fill" : "circle").font(.title3)
-                                    .foregroundStyle(r.hecha ? Paleta.textoSecundario : Paleta.texto)
-                                    .contentTransition(.symbolEffect(.replace))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(r.texto).foregroundStyle(r.hecha ? Paleta.textoSecundario : Paleta.texto).strikethrough(r.hecha)
-                                    Text("\(r.semana) esta semana" + (r.momento.isEmpty ? "" : ", \(r.momento)")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                                }
-                                Spacer()
-                            }
-                            .frame(minHeight: 44)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .listRowBackground(Paleta.superficie)
+                        FilaAgenda(hora: nil, titulo: r.texto, notas: "\(r.semana) esta semana" + (r.momento.isEmpty ? "" : ", \(r.momento)"),
+                                   hecho: r.hecha, mostrarHora: false) { marcar(r) }
                     }
-                }
-                Section {
-                    NavigationLink("estudios.") { EstudiosView() }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
-                    NavigationLink("proyectos.") { ProyectosView() }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
-                }
-                Section("entregas.") {
-                    if v.entregas.isEmpty { Text("nada pendiente.").foregroundStyle(Paleta.textoSecundario).listRowBackground(Paleta.superficie) }
-                    ForEach(v.entregas) { e in
-                        LabeledContent {
-                            Text(e.fecha).font(Tipo.mono).foregroundStyle(Paleta.textoSecundario)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(e.titulo).foregroundStyle(Paleta.texto)
-                                Text("\(e.tipo), \(e.asignatura)").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                            }
+                    if !v.entregas.isEmpty {
+                        CabeceraSeccion(titulo: "entregas.", detalle: "\(v.entregas.count)")
+                        ForEach(v.entregas.prefix(5)) { e in
+                            FilaEvento(hora: String(e.fecha.suffix(5)), titulo: e.titulo, detalle: "\(e.tipo), \(e.asignatura)")
                         }
-                        .listRowBackground(Paleta.superficie)
                     }
-                }
-                Section("notas.") {
-                    HStack {
+                    CabeceraSeccion(titulo: "notas.")
+                    HStack(alignment: .bottom) {
                         TextField("nota rápida.", text: $nota, axis: .vertical)
-                        Button("guardar.") { guardarNota() }.disabled(nota.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
+                            .padding(.vertical, 12)
+                        AccionTexto(texto: "guardar.") { guardarNota() }
+                            .disabled(nota.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                    .listRowBackground(Paleta.superficie)
-                    ForEach(v.notas) { n in
+                    .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                    ForEach(v.notas.prefix(10)) { n in
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(n.texto).foregroundStyle(Paleta.texto).lineLimit(4)
+                            Text(n.texto).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(4)
                             Text(n.fecha).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 10)
+                        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
                         .textSelection(.enabled)
-                        .listRowBackground(Paleta.superficie)
                     }
                 }
+                CabeceraSeccion(titulo: "este iphone.")
+                NavigationLink { AjustesView() } label: { FilaLibro(etiqueta: "ajustes.", flecha: true) }.buttonStyle(.plain)
+                NavigationLink { EstadoView() } label: { FilaLibro(etiqueta: "estado de la sincronización.", flecha: true) }.buttonStyle(.plain)
             }
-            Section {
-                Button("abrir bitácora web.") { web = true }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
-            } footer: {
-                Text("viajes, ocio, despensa, enlaces, empleo, social y lo demás siguen en la web. entra con tu cuenta la primera vez.")
-            }
-            Section {
-                NavigationLink("ajustes.") { AjustesView() }.listRowBackground(Paleta.superficie)
-                NavigationLink("estado de la sincronización.") { EstadoView() }.listRowBackground(Paleta.superficie)
-            }
+            .padding(.horizontal, Espacio.l - 4)
+            .padding(.bottom, Espacio.xl)
         }
-        .font(Tipo.cuerpo)
-        .scrollContentBackground(.hidden)
-        .background(Paleta.fondo)
-        .navigationTitle("más.")
+        .scrollIndicators(.hidden)
+        .background(Paleta.fondo.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .sensoryFeedback(.success, trigger: marcadas)
         .fullScreenCover(isPresented: $web) { NavegadorWeb(url: Config.webURL).ignoresSafeArea() }
         .task(id: c.informe.revision) {
             let doc = await c.documentoVisible()
@@ -169,7 +144,6 @@ struct MasView: View {
         guard var v = vista, let i = v.rutinas.firstIndex(where: { $0.id == r.id }) else { return }
         v.rutinas[i].hecha.toggle()
         vista = v
-        if v.rutinas[i].hecha { marcadas += 1 }
         let hecha = v.rutinas[i].hecha
         Task {
             do { try await c.encolar(.marcarRutina(id: r.id, dia: CalendarioBitacora.madrid.dia(de: Date()).iso, hecha: hecha)) } catch {

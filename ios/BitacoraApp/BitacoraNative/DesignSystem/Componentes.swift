@@ -210,3 +210,32 @@ struct BarraBitacora: View {
         .accessibilityLabel("apuntar")
     }
 }
+
+// .m-libro-fila: la etiqueta en secundario, puntos guía y la cifra en negrita; filete debajo. Sirve de índice y de cifra.
+struct FilaLibro: View {
+    let etiqueta: String
+    var valor: String = ""
+    var acento = false
+    var flecha = false
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
+            Text(etiqueta).font(Tipo.poppins(15.5, .medium, estilo: .body)).foregroundStyle(Paleta.textoSecundario).lineLimit(1)
+            Line().stroke(style: StrokeStyle(lineWidth: 2, dash: [1, 4])).foregroundStyle(Paleta.bordeFuerte).frame(height: 2)
+                .accessibilityHidden(true)
+            if !valor.isEmpty {
+                Text(valor).font(Tipo.poppins(17, .bold, estilo: .body)).monospacedDigit()
+                    .foregroundStyle(acento ? Paleta.acento : Paleta.texto).lineLimit(1)
+            }
+            if flecha { Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Paleta.textoApagado) }
+        }
+        .frame(minHeight: 48)
+        .contentShape(Rectangle())
+        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        .accessibilityElement(children: .combine)
+    }
+
+    private struct Line: Shape {
+        func path(in r: CGRect) -> Path { Path { p in p.move(to: CGPoint(x: 0, y: r.midY)); p.addLine(to: CGPoint(x: r.maxX, y: r.midY)) } }
+    }
+}

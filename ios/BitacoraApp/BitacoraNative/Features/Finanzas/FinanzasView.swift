@@ -6,56 +6,63 @@ struct FinanzasView: View {
     @State private var ver = false
 
     var body: some View {
-        List {
-            if let v = vista {
-                let oculto = v.ocultar && !ver
-                Section {
-                    cifra("saldo líquido.", v.saldoLiquido, oculto, grande: true)
-                    cifra("patrimonio.", v.patrimonioOperativo, oculto)
-                    cifra("activos totales.", v.activosTotales, oculto)
-                } footer: {
-                    if v.ocultar { Button(ver ? "ocultar cifras." : "ver cifras.") { ver.toggle() }.font(Tipo.pie) }
-                }
-                Section("este mes.") {
-                    cifra("entra.", v.ingresosMes, oculto)
-                    cifra("sale.", v.gastosMes, oculto)
-                }
-                Section("cuentas.") {
-                    ForEach(v.cuentas) { cifra($0.nombre.lowercased() + ".", $0.saldo, oculto) }
-                }
-                Section {
-                    Button {
-                        c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: "expense")
-                    } label: {
-                        Text("+ movimiento.").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.acento).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                CabeceraApartado(titulo: "finanzas", contexto: nil) {
+                    if vista?.ocultar == true {
+                        Button { ver.toggle() } label: {
+                            Image(systemName: ver ? "eye.slash" : "eye").font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(ver ? "ocultar cifras" : "ver cifras")
                     }
-                    .listRowBackground(Paleta.superficie)
+                }
+                if let v = vista {
+                    let oculto = v.ocultar && !ver
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("saldo líquido.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        Text(cifra(v.saldoLiquido, oculto)).font(Tipo.poppins(40, .bold, estilo: .largeTitle)).monospacedDigit()
+                            .foregroundStyle(Paleta.texto).lineLimit(1).minimumScaleFactor(0.6)
+                    }
+                    .padding(.top, Espacio.l)
+                    .accessibilityElement(children: .combine)
+                    FilaLibro(etiqueta: "patrimonio.", valor: cifra(v.patrimonioOperativo, oculto))
+                    FilaLibro(etiqueta: "activos totales.", valor: cifra(v.activosTotales, oculto))
+                    CabeceraSeccion(titulo: "este mes.", raya: true)
+                    FilaLibro(etiqueta: "entra.", valor: cifra(v.ingresosMes, oculto), acento: true)
+                    FilaLibro(etiqueta: "sale.", valor: cifra(v.gastosMes, oculto))
+                    CabeceraSeccion(titulo: "cuentas.")
+                    ForEach(v.cuentas) { FilaLibro(etiqueta: $0.nombre.lowercased() + ".", valor: cifra($0.saldo, oculto)) }
+                    CabeceraSeccion(titulo: "movimientos.", detalle: "importar y presupuestos, en la web")
+                    AccionTexto(texto: "+ movimiento.") { c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: "expense") }
                     ForEach(v.movimientos) { m in
-                        HStack(alignment: .firstTextBaseline) {
+                        HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
+                            Text(String(m.fecha.suffix(5))).font(Tipo.mono).foregroundStyle(Paleta.textoSecundario).frame(width: 46, alignment: .leading)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(m.concepto.isEmpty ? (m.categoria.isEmpty ? "sin concepto" : m.categoria) : m.concepto)
                                     .font(Tipo.cuerpo).foregroundStyle(m.futuro ? Paleta.textoSecundario : Paleta.texto).lineLimit(1)
-                                Text([m.fecha, m.categoria].filter { !$0.isEmpty }.joined(separator: ", ")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                                if !m.categoria.isEmpty && !m.concepto.isEmpty { Text(m.categoria).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
                             }
-                            Spacer()
+                            Spacer(minLength: Espacio.s)
                             Text(oculto ? "•••" : (m.tipo == "income" ? "+" : m.tipo == "transfer" ? "" : "-") + Dinero.formato(m.importe))
-                                .font(Tipo.mono)
+                                .font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit()
                                 .foregroundStyle(m.tipo == "income" ? Paleta.acento : Paleta.texto)
                         }
-                        .listRowBackground(Paleta.superficie)
+                        .padding(.vertical, 10)
+                        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
                         .accessibilityElement(children: .combine)
                     }
-                } header: { Text("movimientos.") } footer: {
-                    Text("importar extractos, presupuestos y lo demás, en la web.")
+                } else {
+                    ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(.top, Espacio.xl)
                 }
-            } else {
-                Section { ProgressView().frame(maxWidth: .infinity) }.listRowBackground(Color.clear)
             }
+            .padding(.horizontal, Espacio.l - 4)
+            .padding(.bottom, Espacio.xl)
         }
-        .font(Tipo.cuerpo)
-        .scrollContentBackground(.hidden)
-        .background(Paleta.fondo)
-        .navigationTitle("finanzas.")
+        .scrollIndicators(.hidden)
+        .background(Paleta.fondo.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
         .task(id: c.informe.revision) {
             let doc = await c.documentoVisible()
@@ -63,14 +70,7 @@ struct FinanzasView: View {
         }
     }
 
-    private func cifra(_ etiqueta: String, _ d: Decimal, _ oculto: Bool, grande: Bool = false) -> some View {
-        LabeledContent {
-            Text(oculto ? "•••" : Dinero.formato(d)).font(grande ? Tipo.subtitulo : Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-        } label: {
-            Text(etiqueta).foregroundStyle(Paleta.textoSecundario)
-        }
-        .listRowBackground(Paleta.superficie)
-    }
+    private func cifra(_ d: Decimal, _ oculto: Bool) -> String { oculto ? "•••••" : Dinero.formato(d) }
 }
 
 struct EditorMovimientoView: View {
