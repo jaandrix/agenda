@@ -434,7 +434,7 @@ enum AplicarOperaciones {
             return .object(p)
 
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento,
-             .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy:
+             .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea:
             return valor ?? .object(p)
         }
     }
