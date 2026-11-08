@@ -37,6 +37,9 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // mantener su `evt_` como syncExamCalendarEvent; borrar como removeSubjectItem (con su evento y su tarea del plan).
     case editarItemEstudio(asignaturaId: String, lista: String, id: String, titulo: String, fecha: String?, hora: String?, nota: String, peso: String)
     case borrarItemEstudio(asignaturaId: String, lista: String, id: String)
+    // Proyectos (js/proyecto.js): crear uno y cambiar su gestor (tareas, siguiente paso, colina, fases y diario).
+    case crearProyecto(id: String, titulo: String, fecha: String)
+    case cambiarProyecto(proyectoId: String, cambio: CambioProyecto)
     case crearTraspaso(id: String, importe: String, desde: String, hacia: String, fecha: String, hora: String, concepto: String)
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
@@ -51,6 +54,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .guardarEvento, .borrarEntrada: return ["entries"]
         case .crearMovimiento, .editarMovimiento, .borrarMovimiento, .crearTraspaso: return ["financePro"]
         case .editarItemEstudio: return ["studies", "entries"]
+        case .crearProyecto, .cambiarProyecto: return ["entries"]
         case .borrarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .marcarRutina: return ["habits"]
         case .crearNota: return ["notes"]
@@ -62,6 +66,16 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .transporteFavorita, .transporteLinea: return ["servicios"]
         default: return ["dayPlanner"]
         }
+    }
+
+    static func esProyecto(_ op: OperacionBitacora) -> Bool {
+        switch op { case .crearProyecto, .cambiarProyecto: return true; default: return false }
+    }
+
+    // proyId de la web: prefijo, la hora en base 36 y cuatro letras.
+    static func nuevoIdProyecto(_ prefijo: String, ahora: Date = Date()) -> String {
+        let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
+        return prefijo + "_" + String(Int64(ahora.timeIntervalSince1970 * 1000), radix: 36) + String((0..<4).map { _ in letras.randomElement()! })
     }
 
     // Mismo formato que la web (`planner_<ms>_<azar>`, `backlog_...`), para que nada distinga de dónde salió.
@@ -86,6 +100,18 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
         return "entry_\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<6).map { _ in letras.randomElement()! })
     }
+}
+
+enum CambioProyecto: Codable, Sendable, Equatable {
+    case anadirTarea(id: String, texto: String, faseId: String?)
+    case editarTarea(id: String, texto: String)
+    case borrarTarea(id: String)
+    case siguiente(id: String?)
+    case colina(String)
+    case anadirFase(id: String, nombre: String, fecha: String)
+    case faseHecha(id: String, hecha: Bool)
+    case apuntar(id: String, fecha: String, texto: String)
+    case quitarApunte(id: String)
 }
 
 struct OperacionPendiente: Codable, Sendable, Equatable, Identifiable {
@@ -246,6 +272,60 @@ enum AplicarOperaciones {
             if listaK == "assignments" {
                 r["dayPlanner"] = .some(aplicar(.borrarTarea(id: "planner_assign_" + id), a: valores["dayPlanner"] ?? nil))
             }
+        case let .crearProyecto(id, titulo, fecha):
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            if lista.contains(where: { $0["id"]?.comoId == id }) { break }
+            var p: [String: JSONValue] = ["id": .string(id), "type": .string("project"), "title": .string(titulo), "tags": .array([]), "date": .string(fecha),
+                                          "notes": .string(""), "status": .string("Pendiente"), "tareas": .array([]), "fases": .array([]),
+                                          "diario": .array([]), "tasks": .array([])]
+            // getCategoryIdForType('project'): la categoría que ya usan los demás proyectos.
+            if let cat = lista.first(where: { $0["type"]?.texto == "project" && $0["categoryId"] != nil })?["categoryId"] { p["categoryId"] = cat }
+            lista.append(.object(p))
+            r["entries"] = .some(.array(lista))
+        case let .cambiarProyecto(pid, cambio):
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            guard let n = lista.firstIndex(where: { $0["id"]?.comoId == pid && $0["type"]?.texto == "project" }),
+                  var p = lista[n].objeto.map(proyectoNormalizado) else { break }
+            var tareas = p["tareas"]?.lista ?? [], fases = p["fases"]?.lista ?? [], diario = p["diario"]?.lista ?? []
+            let cambiarTarea = { (tid: String, f: (inout [String: JSONValue]) -> Void) in
+                if let m = tareas.firstIndex(where: { $0["id"]?.comoId == tid }), var t = tareas[m].objeto { f(&t); tareas[m] = .object(t) }
+            }
+            switch cambio {
+            case let .anadirTarea(id, texto, faseId):
+                if !tareas.contains(where: { $0["id"]?.comoId == id }) {
+                    tareas.append(.object(["id": .string(id), "texto": .string(texto), "estado": .string("pendiente"), "faseId": faseId.map { .string($0) } ?? .null]))
+                }
+            case let .editarTarea(tid, texto):
+                cambiarTarea(tid) { $0["texto"] = .string(texto) }
+            case let .borrarTarea(tid):
+                tareas.removeAll { $0["id"]?.comoId == tid }
+                if p["siguienteId"]?.comoId == tid { p.removeValue(forKey: "siguienteId") }
+            case let .siguiente(tid):
+                p["siguienteId"] = tid.map { .string($0) } ?? .null
+            case let .colina(valor):
+                guard Double(valor) != nil else { break }
+                p["colina"] = .number(valor)
+                let estado = p["status"]?.texto ?? ""
+                if !["Completado", "En progreso", "En desarrollo"].contains(estado), (Double(valor) ?? 0) > 0 { p["status"] = .string("En progreso") }
+            case let .anadirFase(id, nombre, fecha):
+                if !fases.contains(where: { $0["id"]?.comoId == id }) {
+                    fases.append(.object(["id": .string(id), "nombre": .string(nombre), "fecha": .string(fecha), "hecha": .bool(false)]))
+                }
+            case let .faseHecha(id, hecha):
+                if let m = fases.firstIndex(where: { $0["id"]?.comoId == id }), var f = fases[m].objeto { f["hecha"] = .bool(hecha); fases[m] = .object(f) }
+            case let .apuntar(id, fecha, texto):
+                if !diario.contains(where: { $0["id"]?.comoId == id }) {
+                    diario.insert(.object(["id": .string(id), "fecha": .string(fecha), "texto": .string(texto)]), at: 0)
+                }
+            case let .quitarApunte(id):
+                diario.removeAll { $0["id"]?.comoId == id }
+            }
+            p["tareas"] = .array(tareas)
+            p["tasks"] = .array(tareas.map { .object(["text": .string($0["texto"]?.texto ?? ""), "done": .bool($0["estado"]?.texto == "hecha")]) })
+            p["fases"] = .array(fases)
+            p["diario"] = .array(diario)
+            lista[n] = .object(p)
+            r["entries"] = .some(.array(lista))
         case let .borrarMovimiento(id):
             guard var pro = (valores["financePro"] ?? nil)?.objeto, var lista = pro["transactions"]?.lista else { break }
             let antes = lista.count
@@ -532,7 +612,7 @@ enum AplicarOperaciones {
 
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea,
-             .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio:
+             .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto:
             return valor ?? .object(p)
         }
     }
