@@ -175,6 +175,9 @@ final class AppCoordinator {
         switch f {
         case .active:
             velo = false
+            // Lo que dejó un atajo de Siri mientras la app estaba cerrada o en segundo plano.
+            let enCola = cola.leer()
+            if enCola != intenciones { intenciones = enCola; atenderIntenciones() }
             if bloqueada { Task { await desbloquear() } }
             else if sesion != nil { Task { await entorno.sync.sincronizar() } }
         case .inactive:

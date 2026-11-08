@@ -15,9 +15,10 @@ enum AvisosLocales {
         if !si {
             UserDefaults.standard.set(false, forKey: clave)
             await quitarTodos()
+            try? await UNUserNotificationCenter.current().setBadgeCount(0)
             return false
         }
-        let ok = (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])) ?? false
+        let ok = (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
         UserDefaults.standard.set(ok, forKey: clave)
         return ok
     }
@@ -62,6 +63,9 @@ enum AvisosLocales {
         guard activos else { return }
         let centro = UNUserNotificationCenter.current()
         guard await centro.notificationSettings().authorizationStatus == .authorized else { return }
+        // Insignia: tareas de hoy sin hacer, como la de la envoltura web.
+        let pendientes = LecturaPlanificador.vista(doc).tareas.filter { !$0.hecha }.count
+        try? await centro.setBadgeCount(pendientes)
         let quiero = deseados(doc)
         let ids = Set(quiero.map(\.id))
         let sobran = await centro.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix(prefijo) && !ids.contains($0) }

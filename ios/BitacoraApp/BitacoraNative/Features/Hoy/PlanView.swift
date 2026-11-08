@@ -120,6 +120,13 @@ struct PlanView: View {
         .scrollContentBackground(.hidden)
         .background(Paleta.fondo)
         .navigationTitle(titulo)
+        .toolbar {
+            if case .lista(let v) = modelo.carga, !v.tareas.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: texto(v)) { Image(systemName: "square.and.arrow.up") }.accessibilityLabel("compartir el día")
+                }
+            }
+        }
         .refreshable { await c.sincronizar() }
         .sensoryFeedback(.success, trigger: modelo.marcadas)
         .task(id: "\(c.informe.revision)-\(modelo.desplazamiento)") { await modelo.cargar(c) }
@@ -174,6 +181,10 @@ struct PlanView: View {
             }
             botonNueva("+ sin día.") { c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(sinDia: true), nueva: true, dia: nil)) }
         } header: { cabecera("pendientes sin día.") }
+    }
+
+    private func texto(_ v: VistaPlan) -> String {
+        ([titulo] + v.tareas.map { ($0.hecha ? "[x] " : "[ ] ") + ($0.hora.map { $0 + " " } ?? "") + $0.titulo }).joined(separator: "\n")
     }
 
     private func editar(_ t: TareaPlan, dia: LocalDay?) {

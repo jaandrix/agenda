@@ -1,11 +1,7 @@
 name: iOS - Build Bitácora (sin firmar)
 
+# Envoltura web retirada (fase 6 de la app nativa): solo se compila a mano, por si hace falta volver a ella.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'ios/**'
-      - '.github/workflows/ios-build.yml'
   workflow_dispatch: {}
 
 jobs:

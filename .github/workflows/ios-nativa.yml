@@ -97,6 +97,23 @@ jobs:
           rm -rf Payload
           ls -la BitacoraNativa-unsigned.ipa
 
+      # La misma app con la identidad de la de siempre (com.bitacora.app, «Bitácora», bitacora://): sustituye a la envoltura web.
+      - name: Compilar y empaquetar la definitiva
+        run: |
+          set -eo pipefail
+          xcodebuild -project BitacoraApp.xcodeproj -scheme BitacoraNative -configuration Release -sdk iphoneos -derivedDataPath build-def             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM=""             CURRENT_PROJECT_VERSION=${{ github.run_number }} PRODUCT_BUNDLE_IDENTIFIER=com.bitacora.app NOMBRE_APP="Bitácora" ESQUEMA_URL=bitacora             build 2>&1 | tee build-def.log | tail -3
+          APP="build-def/Build/Products/Release-iphoneos/BitacoraNative.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")" = "com.bitacora.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleURLTypes:0:CFBundleURLSchemes:0' "$APP/Info.plist")" = "bitacora"
+          mkdir -p Payload && cp -R "$APP" Payload/ && zip -qr -y BitacoraDefinitiva-unsigned.ipa Payload && rm -rf Payload
+
+      - name: Subir la definitiva
+        uses: actions/upload-artifact@v4
+        with:
+          name: BitacoraDefinitiva-unsigned-ipa
+          path: ios/BitacoraApp/BitacoraDefinitiva-unsigned.ipa
+          retention-days: 30
+
       - name: Subir el .ipa
         uses: actions/upload-artifact@v4
         with:

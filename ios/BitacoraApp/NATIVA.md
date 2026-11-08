@@ -52,6 +52,13 @@ entregas de Estudios por venir, notas (leer y nota rápida, `crearNota`) y «abr
 SFSafariViewController para lo no migrado (viajes, ocio, despensa, proyectos, enlaces, empleo, social...). El estado de
 la sincronización pasa a «más.».
 
+**0.7.0 (08-11-2026): fase 6.** El workflow saca también `BitacoraDefinitiva-unsigned-ipa`: la misma app con la
+identidad de la envoltura (`com.bitacora.app`, «Bitácora», `bitacora://`) para sustituirla; la envoltura web solo se
+compila a mano (`ios-build.yml`). Atajo de Siri «Apuntar en Bitácora» (App Intents, sin extensión), insignia con las
+tareas de hoy sin hacer (con los avisos activados) y compartir el día desde «plan.». Sustituir la envoltura: abrirla
+antes con red para que suba lo pendiente; los datos están en la nube. Widgets: siguen fuera (SideStore no instala
+extensiones). WKWebView ya no se usa: lo no migrado va por SFSafariViewController.
+
 ## Escrituras
 
 - `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en
