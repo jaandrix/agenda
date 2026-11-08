@@ -80,35 +80,6 @@ struct RemotoSupabase: BitacoraRemoteDataSource {
         throw ErrorRed.servidor(codigo)
     }
 
-    func mezclar(parche: [String: JSONValue], esperado: [String: JSONValue?], sesion: Sesion) async throws -> ResultadoMezcla
-    // Con huellas, la comprobación viaja en unos bytes (guardar_bitacora) en vez de repetir los bloques enteros.
-    func mezclar(parche: [String: JSONValue], huellas: [String: String], sesion: Sesion) async throws -> ResultadoMezcla
-}
-
-enum ErrorServidor: Error, Equatable {
-    // Faltan las funciones de escritura protegida: no se escribe y la cola espera.
-    case sinActualizar
-}
-
-enum ResultadoMezcla: Equatable, Sendable {
-    case aplicada(protegida: Bool)
-    case conflicto
-}
-
-struct RemotoSupabase: BitacoraRemoteDataSource {
-    let cliente: ClienteSupabase
-
-    func leerFila(sesion: Sesion) async throws -> FilaRemota? {
-        let r = cliente.peticion("rest/v1/bitacora", consulta: [
-            URLQueryItem(name: "select", value: "data,updated_at"),
-            URLQueryItem(name: "user_id", value: "eq.\(sesion.userId)"),
-        ], token: sesion.accessToken)
-        let (d, codigo) = try await cliente.enviar(r)
-        if codigo == 401 || codigo == 403 { throw ErrorRed.noAutorizado }
-        guard codigo == 200 else { throw ErrorRed.servidor(codigo) }
-        return try RemotoSupabase.extraer(d)
-    }
-
     func mezclar(parche: [String: JSONValue], esperado: [String: JSONValue?], sesion: Sesion) async throws -> ResultadoMezcla {
         precondition(!parche.keys.contains { ContratoDatos.especiales.contains($0) }, "apuntes y _meta no se escriben desde iOS")
         var previo: [String: JSONValue] = [:]
