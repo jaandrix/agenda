@@ -14,6 +14,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case marcarRecurrente(id: String, dia: String, hecha: Bool, momentoMs: Int64)
     case guardarEvento(id: String, fecha: String, hora: String?, titulo: String, lugar: String, notas: String)
     case borrarEntrada(id: String)
+    case marcarRutina(id: String, dia: String, hecha: Bool)
+    case crearNota(id: String, dia: String, texto: String, creada: String)
     // importe en texto decimal («12.50»): el dinero nunca pasa por Double.
     case crearMovimiento(id: String, tipo: String, importe: String, cuenta: String, categoria: String?, fecha: String, hora: String, concepto: String)
 
@@ -22,6 +24,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .marcarRecurrente: return ["recurringTasks", "entries"]
         case .guardarEvento, .borrarEntrada: return ["entries"]
         case .crearMovimiento: return ["financePro"]
+        case .marcarRutina: return ["habits"]
+        case .crearNota: return ["notes"]
         default: return ["dayPlanner"]
         }
     }
@@ -31,6 +35,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
         return (sinDia ? "backlog_" : "planner_") + "\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<5).map { _ in letras.randomElement()! })
     }
+
+    static func nuevoIdNota(ahora: Date = Date()) -> String { "note_\(Int64(ahora.timeIntervalSince1970 * 1000))" }
 
     static func nuevoIdMovimiento(ahora: Date = Date()) -> String {
         let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
@@ -86,6 +92,24 @@ enum AplicarOperaciones {
             r["entries"] = .some(ent)
         case .guardarEvento, .borrarEntrada:
             r["entries"] = .some(entradas(op, valores["entries"] ?? nil))
+        case let .marcarRutina(id, dia, hecha):
+            // toggleHabitToday (js/planificador.js): completadas[dia] = true o se borra; con pasos, todos hechos o ninguno.
+            guard var lista = (valores["habits"] ?? nil)?.lista, let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var h = lista[n].objeto else { break }
+            var hechas = h["completadas"]?.objeto ?? [:]
+            if hecha { hechas[dia] = .bool(true) } else { hechas.removeValue(forKey: dia) }
+            h["completadas"] = .object(hechas)
+            if let pasos = h["pasos"]?.lista, !pasos.isEmpty {
+                var ph = h["pasosHechos"]?.objeto ?? [:]
+                if hecha { ph[dia] = .array(pasos.indices.map { .number(String($0)) }) } else { ph.removeValue(forKey: dia) }
+                h["pasosHechos"] = .object(ph)
+            }
+            lista[n] = .object(h)
+            r["habits"] = .some(.array(lista))
+        case let .crearNota(id, dia, texto, creada):
+            var lista = (valores["notes"] ?? nil)?.lista ?? []
+            if lista.contains(where: { $0["id"]?.comoId == id }) { break }
+            lista.append(.object(["id": .string(id), "date": .string(dia), "content": .string(texto), "createdAt": .string(creada)]))
+            r["notes"] = .some(.array(lista))
         case let .crearMovimiento(id, tipo, importe, cuenta, categoria, fecha, hora, concepto):
             // Como el registro rápido de la web (ptx_q_, manual): solo añade, y no lo repite si el id ya está.
             guard var pro = (valores["financePro"] ?? nil)?.objeto, let d = Dinero.decimal(texto: importe), d > 0,
@@ -166,7 +190,7 @@ enum AplicarOperaciones {
             _ = quitar(sitio, de: &p)
             return .object(p)
 
-        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento:
+        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota:
             return valor ?? .object(p)
         }
     }

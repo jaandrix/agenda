@@ -47,6 +47,11 @@ saldo por cuenta y últimos movimientos; respeta «ocultar cifras» (`blurFinanc
 (`crearMovimiento`, como el registro rápido de la web: `ptx_q_`, `manual`). Fuera: importar, presupuestos, editar y
 borrar movimientos, inversiones. Diferencia: si `financeProfile.invested` es 0 la web usa el valor de la cartera.
 
+**0.6.0 (08-11-2026): fase 5.** Pestaña «más.»: rutinas de hoy (marcar, `marcarRutina` como toggleHabitToday),
+entregas de Estudios por venir, notas (leer y nota rápida, `crearNota`) y «abrir bitácora web.» en un
+SFSafariViewController para lo no migrado (viajes, ocio, despensa, proyectos, enlaces, empleo, social...). El estado de
+la sincronización pasa a «más.».
+
 ## Escrituras
 
 - `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en

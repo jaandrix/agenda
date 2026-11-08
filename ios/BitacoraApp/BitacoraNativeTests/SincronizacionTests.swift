@@ -475,6 +475,22 @@ final class OperacionesTests: XCTestCase {
         XCTAssertEqual(r.bytes(de: "financeProfile"), doc.bytes(de: "financeProfile"))
     }
 
+    func testRutinasYNotas() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"habits": [{"id": "h1", "texto": "leer", "activo": true, "pasos": ["a", "b"], "completadas": {"2026-11-09": true}}, {"id": "h2", "texto": "nadar", "activo": true, "frecuencia": {"tipo": "dias", "dias": [1]}}], "notes": []}"#.utf8))
+        let hoy = LocalDay(iso: "2026-11-12")!
+        let op = OperacionBitacora.marcarRutina(id: "h1", dia: hoy.iso, hecha: true)
+        let nota = OperacionBitacora.crearNota(id: "note_1", dia: hoy.iso, texto: "hola", creada: "2026-11-12T10:00:00Z")
+        let (r, parche) = AplicarOperaciones.sobre(doc, [op, op, nota, nota])
+        XCTAssertEqual(Set(parche.keys), ["habits", "notes"])
+        let v = LecturaMas.vista(r, hoy: hoy)
+        XCTAssertEqual(v.rutinas.map(\.id), ["h1"])
+        XCTAssertEqual(v.rutinas.first?.semana, 2)
+        XCTAssertEqual(v.notas.map(\.texto), ["hola"])
+        XCTAssertEqual(try r.valor(de: "habits")?.lista?.first?["pasosHechos"]?[hoy.iso]?.lista?.count, 2)
+        let (d, _) = AplicarOperaciones.sobre(r, [.marcarRutina(id: "h1", dia: hoy.iso, hecha: false)])
+        XCTAssertNil(try d.valor(de: "habits")?.lista?.first?["completadas"]?[hoy.iso])
+    }
+
     func testIdsConElFormatoDeLaWeb() {
         let id = OperacionBitacora.nuevoIdTarea()
         XCTAssertTrue(id.hasPrefix("planner_"))

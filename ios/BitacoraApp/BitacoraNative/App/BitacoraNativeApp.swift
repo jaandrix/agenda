@@ -98,9 +98,9 @@ struct PrincipalView: View {
             NavigationStack { FinanzasView() }
                 .tabItem { Label("finanzas.", systemImage: "eurosign") }
                 .tag(Pestana.finanzas)
-            NavigationStack { EstadoView() }
-                .tabItem { Label("estado.", systemImage: "arrow.triangle.2.circlepath") }
-                .tag(Pestana.estado)
+            NavigationStack { MasView() }
+                .tabItem { Label("más.", systemImage: "square.grid.2x2") }
+                .tag(Pestana.mas)
             NavigationStack { AjustesView() }
                 .tabItem { Label("ajustes.", systemImage: "gearshape") }
                 .tag(Pestana.ajustes)
