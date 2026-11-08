@@ -88,11 +88,21 @@ actor RemotoFalso: BitacoraRemoteDataSource {
         return FilaRemota(datos: datos, actualizado: "t\(lecturas)")
     }
 
-    func mezclar(parche: [String: JSONValue], sesion: Sesion) async throws {
+    // Como merge_bitacora_si: compara lo esperado con lo que hay y, si otro escribió antes, no toca nada.
+    var escrituraAjena: [String: JSONValue]?
+    func mezclar(parche: [String: JSONValue], esperado: [String: JSONValue?], sesion: Sesion) async throws -> ResultadoMezcla {
+        if let ajena = escrituraAjena {
+            escrituraAjena = nil
+            datos = try DocumentoBitacora(datos: datos).aplicandoParche(ajena).serializado()
+        }
+        let actual = try DocumentoBitacora(datos: datos)
+        for (k, v) in esperado where ((try? actual.valor(de: k)) ?? nil) != v { return .conflicto }
         parches.append(parche)
-        datos = try DocumentoBitacora(datos: datos).aplicandoParche(parche).serializado()
+        datos = actual.aplicandoParche(parche).serializado()
         if perderRespuestaDeMezcla { perderRespuestaDeMezcla = false; throw ErrorRed.sinConexion }
+        return .aplicada(protegida: true)
     }
+    func escribirOtroAntes(_ p: [String: JSONValue]) { escrituraAjena = p }
 
     func ponerNoAutorizados(_ n: Int) { noAutorizadosPendientes = n }
     func ponerPuerta(_ p: Puerta?) { puertaLectura = p }
@@ -314,6 +324,24 @@ final class SyncTests: XCTestCase {
         XCTAssertEqual(try nube.valor(de: "dayPlanner")?["days"]?["2026-11-06"]?.lista?.count, 1)
     }
 
+    func testSiOtroEscribeEntreMedioSeReaplicaYNoSePierdeNada() async throws {
+        let remoto = RemotoFalso(docInicial)
+        let almacen = almacenTemporal()
+        let sync = SyncEngine(auth: AuthFalsa(sesion("A")), remoto: remoto, almacen: almacen)
+        await sync.ponerEsperaBase(100)
+        await sync.iniciar(uid: "A")
+        await sync.sincronizar()
+        // La web añade una tarea justo antes de que llegue la escritura del iPhone.
+        let web = try LectorJSON.valor(Data(#"{"days": {"2026-11-06": [{"id": "web", "title": "de la web"}]}, "backlog": []}"#.utf8))
+        await remoto.escribirOtroAntes(["dayPlanner": web])
+        try await sync.encolar([.crearTarea(id: "ios", dia: "2026-11-06", titulo: "del iphone", hora: nil)])
+        await sync.sincronizar()
+        await esperarA { (try? await almacen.estado(uid: "A").pendientes.isEmpty) == true }
+        let enLaNube = await remoto.datos
+        let ids = try DocumentoBitacora(datos: enLaNube).valor(de: "dayPlanner")?["days"]?["2026-11-06"]?.lista?.compactMap { $0["id"]?.texto }
+        XCTAssertEqual(ids, ["web", "ios"])
+    }
+
     func testLaVistaIncluyeLoQueEsperaEnLaCola() async throws {
         let remoto = RemotoFalso(docInicial)
         let almacen = almacenTemporal()
@@ -489,6 +517,37 @@ final class OperacionesTests: XCTestCase {
         XCTAssertEqual(try r.valor(de: "habits")?.lista?.first?["pasosHechos"]?[hoy.iso]?.lista?.count, 2)
         let (d, _) = AplicarOperaciones.sobre(r, [.marcarRutina(id: "h1", dia: hoy.iso, hecha: false)])
         XCTAssertNil(try d.valor(de: "habits")?.lista?.first?["completadas"]?[hoy.iso])
+    }
+
+    func testMarcarUnaTareaVinculadaActualizaSusApartados() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"dayPlanner": {"days": {"2026-11-12": [{"id": "p1", "title": "entregar", "time": "", "linkedAssignmentId": "w1"}, {"id": "p2", "title": "paso", "proyectoId": "pr", "proyectoTareaId": "t1"}]}, "backlog": []}, "studies": {"subjects": [{"id": "s", "assignments": [{"id": "w1", "done": false}]}]}, "entries": [{"id": "pr", "type": "project", "tareas": [{"id": "t1", "texto": "paso", "estado": "pendiente"}]}]}"#.utf8))
+        let (r, _) = AplicarOperaciones.sobre(doc, [.marcarTarea(id: "p1", hecha: true, momentoMs: momento), .marcarTarea(id: "p2", hecha: true, momentoMs: momento)])
+        XCTAssertEqual(try r.valor(de: "studies")?["subjects"]?.lista?.first?["assignments"]?.lista?.first?["done"], .bool(true))
+        let entradas = try XCTUnwrap(try r.valor(de: "entries")?.lista)
+        XCTAssertEqual(entradas.first?["tareas"]?.lista?.first?["estado"], .string("hecha"))
+        XCTAssertEqual(entradas.first?["tasks"]?.lista?.first?["done"], .bool(true))
+        XCTAssertEqual(Set(entradas.compactMap { $0["id"]?.texto }), ["pr", "planner_done_p1", "planner_done_p2"])
+        let (d, _) = AplicarOperaciones.sobre(r, [.marcarTarea(id: "p1", hecha: false, momentoMs: momento)])
+        XCTAssertEqual(try d.valor(de: "entries")?.lista?.count, 2)
+    }
+
+    func testLosParchesSoloTocanSusCampos() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"dayPlanner": {"days": {"2026-11-12": [{"id": "p1", "title": "a", "notes": "de la web", "time": "09:00"}]}, "backlog": []}, "entries": [{"id": "e1", "type": "event", "title": "cine", "notes": "web", "date": "2026-11-12"}]}"#.utf8))
+        let (r, _) = AplicarOperaciones.sobre(doc, [.parcharTarea(id: "p1", campos: ["title": "b"]), .parcharEvento(id: "e1", campos: ["time": "20:00"])])
+        let t = try r.valor(de: "dayPlanner")?["days"]?["2026-11-12"]?.lista?.first
+        XCTAssertEqual(t?["title"], .string("b"))
+        XCTAssertEqual(t?["notes"], .string("de la web"))
+        XCTAssertEqual(t?["time"], .string("09:00"))
+        let e = try r.valor(de: "entries")?.lista?.first
+        XCTAssertEqual(e?["notes"], .string("web"))
+        XCTAssertEqual(e?["time"], .string("20:00"))
+    }
+
+    func testMovimientoSinCategoriaQuedaPorRevisar() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"financePro": {"accounts": {}, "transactions": [{"id": "a", "date": "2026-11-08", "type": "expense", "amount": 1, "account": "bancos", "hora": "09:00"}, {"id": "b", "date": "2026-11-08", "type": "expense", "amount": 1, "account": "bancos", "hora": "18:00"}]}}"#.utf8))
+        let (r, _) = AplicarOperaciones.sobre(doc, [.crearMovimiento(id: "c", tipo: "expense", importe: "2", cuenta: "bancos", categoria: nil, fecha: "2026-11-08", hora: "12:00", concepto: "")])
+        XCTAssertEqual(try r.valor(de: "financePro")?["transactions"]?.lista?.last?["needsReview"], .bool(true))
+        XCTAssertEqual(LecturaFinanzas.vista(r, hoy: LocalDay(iso: "2026-11-08")!).movimientos.map(\.id), ["b", "c", "a"])
     }
 
     func testIdsConElFormatoDeLaWeb() {

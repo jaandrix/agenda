@@ -110,14 +110,14 @@ jobs:
       - name: Subir la definitiva
         uses: actions/upload-artifact@v4
         with:
-          name: BitacoraDefinitiva-unsigned-ipa
+          name: Bitacora-INSTALAR-ipa
           path: ios/BitacoraApp/BitacoraDefinitiva-unsigned.ipa
           retention-days: 30
 
       - name: Subir el .ipa
         uses: actions/upload-artifact@v4
         with:
-          name: BitacoraNativa-unsigned-ipa
+          name: Bitacora-beta-no-instalar-ipa
           path: ios/BitacoraApp/BitacoraNativa-unsigned.ipa
           retention-days: 30
 

@@ -92,8 +92,18 @@ struct EditorEventoView: View {
         let d = Self.cal.dateComponents([.year, .month, .day], from: fecha)
         let dia = LocalDay(year: d.year!, month: d.month!, day: d.day!)!
         let h = Self.cal.dateComponents([.hour, .minute], from: hora)
-        return .guardarEvento(id: inicial.id, fecha: dia.iso, hora: conHora ? String(format: "%02d:%02d", h.hour ?? 0, h.minute ?? 0) : nil,
-                              titulo: limpio(titulo), lugar: limpio(lugar), notas: limpio(notas, 2000))
+        let horaTexto = conHora ? String(format: "%02d:%02d", h.hour ?? 0, h.minute ?? 0) : nil
+        if inicial.nuevo {
+            return .guardarEvento(id: inicial.id, fecha: dia.iso, hora: horaTexto, titulo: limpio(titulo), lugar: limpio(lugar), notas: limpio(notas, 2000))
+        }
+        // Solo lo que cambió: si la web tocó otro campo mientras tanto, se queda.
+        var campos: [String: String] = [:]
+        if limpio(titulo) != inicial.titulo { campos["title"] = limpio(titulo) }
+        if limpio(lugar) != inicial.lugar { campos["place"] = limpio(lugar) }
+        if limpio(notas, 2000) != inicial.notas { campos["notes"] = limpio(notas, 2000) }
+        if dia != inicial.fecha { campos["date"] = dia.iso }
+        if horaTexto != inicial.hora { campos["time"] = horaTexto ?? "" }
+        return .parcharEvento(id: inicial.id, campos: campos)
     }
 
     // El id viene decidido al abrir: dos toques en «guardar.» guardan el mismo evento una vez.

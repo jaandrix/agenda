@@ -66,15 +66,32 @@ struct ColaIntenciones {
             .appendingPathComponent("BitacoraNativa/intenciones.json")
     }
 
+    // El atajo de Siri y la app pueden tocar el archivo a la vez: leer y escribir van bajo el mismo cerrojo.
+    private static let cerrojo = NSLock()
+
     func leer() -> [IntencionEntrante] {
+        ColaIntenciones.cerrojo.lock(); defer { ColaIntenciones.cerrojo.unlock() }
+        return leerSinCerrojo()
+    }
+
+    private func leerSinCerrojo() -> [IntencionEntrante] {
         guard let d = try? Data(contentsOf: url) else { return [] }
         return (try? JSONDecoder().decode([IntencionEntrante].self, from: d)) ?? []
     }
 
     func guardar(_ lista: [IntencionEntrante]) {
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if let d = try? JSONEncoder().encode(Array(lista.suffix(20))) {
-            try? d.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-        }
+        ColaIntenciones.cerrojo.lock(); defer { ColaIntenciones.cerrojo.unlock() }
+        try? escribir(lista)
+    }
+
+    // Añade sin pisar lo que otro haya dejado entretanto; si no se puede escribir, lo dice.
+    func anadir(_ i: IntencionEntrante) throws {
+        ColaIntenciones.cerrojo.lock(); defer { ColaIntenciones.cerrojo.unlock() }
+        try escribir(leerSinCerrojo() + [i])
+    }
+
+    private func escribir(_ lista: [IntencionEntrante]) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try JSONEncoder().encode(Array(lista.suffix(20))).write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
 }

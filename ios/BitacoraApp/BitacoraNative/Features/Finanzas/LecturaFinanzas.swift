@@ -15,6 +15,7 @@ struct Movimiento: Sendable, Identifiable, Equatable {
     let importe: Decimal
     let cuenta: String
     let futuro: Bool
+    let claveDia: String
 }
 
 struct CategoriaFin: Sendable, Identifiable, Equatable, Hashable {
@@ -81,9 +82,11 @@ enum LecturaFinanzas {
             let catId = o["category"]?.texto ?? ""
             let concepto = [o["note"], o["description"], o["concepto"]].compactMap { $0?.texto }.first { !$0.isEmpty } ?? ""
             movimientos.append(Movimiento(id: o["id"]?.comoId ?? UUID().uuidString, fecha: fecha, concepto: concepto,
-                                          categoria: nombreCat[catId] ?? "", tipo: tipo, importe: importe, cuenta: cuenta, futuro: futuro))
+                                          categoria: nombreCat[catId] ?? "", tipo: tipo, importe: importe, cuenta: cuenta, futuro: futuro,
+                                          claveDia: claveDia(o)))
         }
-        movimientos.sort { $0.fecha > $1.fecha }
+        // financeProCompararMov al revés: fecha, luego hora u orden del extracto, luego id.
+        movimientos.sort { ($0.fecha, $0.claveDia, $0.id) > ($1.fecha, $1.claveDia, $1.id) }
 
         let cuentas = claves.map { k in
             CuentaSaldo(id: k, nombre: cuentasJSON[k]?["name"]?.texto ?? k.prefix(1).uppercased() + String(k.dropFirst()), saldo: redondo(saldos[k] ?? 0))
@@ -98,6 +101,14 @@ enum LecturaFinanzas {
                              activosTotales: redondo(operativo + vacaciones + aMano), ingresosMes: redondo(ingresos), gastosMes: redondo(gastos),
                              movimientos: Array(movimientos.prefix(60)), categorias: categorias,
                              ocultar: ((try? doc.valor(de: "blurFinances")) ?? nil)?.booleano == true)
+    }
+
+    // financeProClaveDia (js/finanzas-pro.js).
+    static func claveDia(_ o: [String: JSONValue]) -> String {
+        if let h = o["hora"]?.texto, !h.isEmpty { return h }
+        guard let orden = o["orden"], orden != .null, let n = Dinero.decimal(orden) else { return "" }
+        let txt = NSDecimalNumber(decimal: n).stringValue
+        return "o" + String(repeating: "0", count: max(0, 6 - txt.count)) + txt
     }
 
     // financeProNeutro: ahorro, ajuste de saldo o la categoría «Inversiones» no son ingreso ni gasto.

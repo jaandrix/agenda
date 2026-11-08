@@ -110,7 +110,7 @@ struct PrincipalView: View {
             case .intencion(let i): IntencionView(intencion: i)
             case .tarea(let t): EditorTareaView(inicial: t)
             case .evento(let e): EditorEventoView(inicial: e)
-            case .movimiento(let id): EditorMovimientoView(id: id)
+            case .movimiento(let id, let tipo): EditorMovimientoView(id: id, tipoInicial: tipo)
             }
         }
     }

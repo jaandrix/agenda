@@ -59,6 +59,16 @@ tareas de hoy sin hacer (con los avisos activados) y compartir el día desde «p
 antes con red para que suba lo pendiente; los datos están en la nube. Widgets: siguen fuera (SideStore no instala
 extensiones). WKWebView ya no se usa: lo no migrado va por SFSafariViewController.
 
+**0.8.0 (08-11-2026): auditoría de la 0.7.0.** Escritura condicionada (`merge_bitacora_si`, hay que ejecutar
+`supabase/sql/merge_bitacora_si.sql`; sin ella la app usa la de siempre y «estado.» lo dice): el servidor solo escribe
+si los bloques siguen como el iPhone los leyó; si no, la app vuelve a leer y reaplica sus operaciones (hasta 4 veces).
+Marcar una tarea hace lo mismo que la web (trabajo de Estudios, tarea del proyecto, marca «Completado»); las tareas
+vinculadas no se editan, mueven ni borran en iOS. Ediciones por campos (`parcharTarea`, `parcharEvento`). Varias
+operaciones en una sola escritura de la cola (crear con notas, apuntar con enlace). Movimientos sin categoría con
+`needsReview`, orden de financeProCompararMov, gasto/ingreso rápido abre el editor nativo. Errores visibles en
+rutinas, notas, borrar eventos y Siri; cola de enlaces con cerrojo. Artefactos: `Bitacora-INSTALAR-ipa` (definitiva) y
+`Bitacora-beta-no-instalar-ipa`.
+
 ## Escrituras
 
 - `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en
@@ -114,8 +124,10 @@ extensiones). WKWebView ya no se usa: lo no migrado va por SFSafariViewControlle
   ejecución, comprobación del .app (binario, recursos, fuentes, bundle ID, sin extensiones) y .ipa como artefacto;
   sube los registros si falla.
 
-## Fase 2 (lo que queda)
+## Pendiente
 
-Probar en el iPhone crear y marcar con la PWA abierta en el ordenador. Después: editar, mover y borrar tareas,
-mañana y pasado mañana, pendientes sin día, recurrentes del día y apuntar (`bitacoradev://apuntar`) creando de verdad;
-la matriz de pruebas cruzadas con la PWA (guía 12.2) y medir arranque, memoria y descarga en el iPhone.
+- Paridad: calendario con trabajo, pagos, servicios y entregas; planificador con eventos del día, subtareas, prioridad
+  y orden; finanzas con editar/borrar, traspasos, revisión e inversiones (y el valor de la cartera cuando `invested` es 0).
+- Portada «ahora» y cuatro pestañas (inicio, plan, calendario, más), como propone la auditoría.
+- Revisión monotónica del servidor para no bajar la fila entera en cada vuelta.
+- Accesibilidad en el dispositivo, medir arranque y memoria, recortar símbolos antes de TestFlight.

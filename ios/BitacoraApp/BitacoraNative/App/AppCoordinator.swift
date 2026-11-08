@@ -10,10 +10,10 @@ enum Modal: Identifiable, Equatable {
     case intencion(IntencionEntrante)
     case tarea(EditorTarea)
     case evento(EditorEvento)
-    case movimiento(String)
+    case movimiento(String, tipo: String)
     var id: String {
         switch self {
-        case .movimiento(let id): return "movimiento:\(id)"
+        case .movimiento(let id, _): return "movimiento:\(id)"
         case .evento(let e): return "evento:\(e.id)"
         case .intencion(let i): return "intencion:\(i.id)"
         case .tarea(let t): return "tarea:\(t.id)"
@@ -122,7 +122,8 @@ final class AppCoordinator {
 
     func sincronizar() async { await entorno.sync.sincronizar() }
 
-    func encolar(_ op: OperacionBitacora) async throws { try await entorno.sync.encolar(op) }
+    func encolar(_ op: OperacionBitacora) async throws { try await entorno.sync.encolar([op]) }
+    func encolar(_ ops: [OperacionBitacora]) async throws { try await entorno.sync.encolar(ops) }
 
     func documentoVisible() async -> DocumentoBitacora? { await entorno.sync.documentoVisible() }
 
@@ -232,19 +233,32 @@ final class AppCoordinator {
             Registro.app.notice("Enlace no admitido, se ignora.")
             return
         }
-        intenciones.append(intencion)
-        cola.guardar(intenciones)
+        try? cola.anadir(intencion)
+        intenciones = cola.leer()
+        if !intenciones.contains(intencion) { intenciones.append(intencion) }
         atenderIntenciones()
     }
 
     private func atenderIntenciones() {
         guard fase == .lista, !bloqueada, modal == nil, let primera = intenciones.first else { return }
+        // Gasto o ingreso rápido: va directo al editor de movimientos.
+        if case .rapido(let tipo) = primera {
+            var lista = cola.leer()
+            if let n = lista.firstIndex(of: primera) { lista.remove(at: n) }
+            cola.guardar(lista)
+            intenciones = lista
+            pestana = .finanzas
+            modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: tipo.rawValue)
+            return
+        }
         modal = .intencion(primera)
     }
 
     func resolverIntencion(_ i: IntencionEntrante) {
-        if let n = intenciones.firstIndex(of: i) { intenciones.remove(at: n) }
-        cola.guardar(intenciones)
+        var lista = cola.leer()
+        if let n = lista.firstIndex(of: i) { lista.remove(at: n) }
+        cola.guardar(lista)
+        intenciones = lista
         modal = nil
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(400))

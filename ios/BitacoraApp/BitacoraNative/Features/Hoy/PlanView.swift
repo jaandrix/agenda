@@ -144,15 +144,15 @@ struct PlanView: View {
                 .swipeActions(edge: .trailing) {
                     if !t.deTrabajo {
                         Button("borrar.", role: .destructive) { Task { await modelo.guardar(.borrarTarea(id: t.id), c) } }
+                        Button("sin día.") { Task { await modelo.guardar(.moverTarea(id: t.id, dia: nil), c) } }
                     }
-                    Button("sin día.") { Task { await modelo.guardar(.moverTarea(id: t.id, dia: nil), c) } }
                 }
                 .swipeActions(edge: .leading) {
-                    Button(modelo.desplazamiento == 0 ? "mañana." : "hoy.") {
+                    if !t.deTrabajo { Button(modelo.desplazamiento == 0 ? "mañana." : "hoy.") {
                         let destino = modelo.desplazamiento == 0 ? v.dia.sumando(dias: 1) : v.dia.sumando(dias: -modelo.desplazamiento)
                         Task { await modelo.guardar(.moverTarea(id: t.id, dia: destino.iso), c) }
                     }
-                    .tint(Paleta.acento)
+                    .tint(Paleta.acento) }
                 }
             }
             botonNueva("+ tarea.") { c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(), nueva: true, dia: v.dia)) }

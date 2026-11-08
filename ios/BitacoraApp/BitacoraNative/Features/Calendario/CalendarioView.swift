@@ -34,6 +34,8 @@ final class CalendarioModel {
 struct CalendarioView: View {
     @Environment(AppCoordinator.self) private var c
     @State private var modelo = CalendarioModel()
+    @State private var borrando: EventoDia?
+    @State private var aviso: String?
 
     private let hoy = CalendarioBitacora.madrid.dia(de: Date())
     private let columnas = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
@@ -61,6 +63,7 @@ struct CalendarioView: View {
                 }
                 .listRowBackground(Color.clear)
             }
+            if let aviso { Section { Text(aviso).foregroundStyle(Paleta.error) } }
             Section {
                 let eventos = modelo.vista?.porDia[modelo.elegido] ?? []
                 if eventos.isEmpty {
@@ -84,7 +87,7 @@ struct CalendarioView: View {
                     .listRowBackground(Paleta.superficie)
                     .swipeActions(edge: .trailing) {
                         if e.editable {
-                            Button("borrar.", role: .destructive) { Task { try? await c.encolar(.borrarEntrada(id: e.id)) } }
+                            Button("borrar.", role: .destructive) { borrando = e }
                         }
                     }
                 }
@@ -108,6 +111,15 @@ struct CalendarioView: View {
         }
         .refreshable { await c.sincronizar() }
         .task(id: "\(c.informe.revision)-\(modelo.mes.iso)") { await modelo.cargar(c) }
+        .confirmationDialog("¿borrar este evento?", isPresented: Binding(get: { borrando != nil }, set: { if !$0 { borrando = nil } }), titleVisibility: .visible) {
+            Button("borrar.", role: .destructive) {
+                guard let e = borrando else { return }
+                Task {
+                    do { try await c.encolar(.borrarEntrada(id: e.id)); aviso = nil } catch { aviso = "no se pudo borrar en este iPhone." }
+                }
+            }
+            Button("cancelar.", role: .cancel) {}
+        }
     }
 
     private func celda(_ d: LocalDay) -> some View {

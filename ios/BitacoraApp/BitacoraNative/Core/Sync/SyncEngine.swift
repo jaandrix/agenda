@@ -50,11 +50,13 @@ struct InformeSync: Sendable, Equatable {
     var pendientes = 0
     var revision = 0
     var sesionRevocada = false
+    var escrituraProtegida: Bool?
 }
 
 enum ErrorSync: Error, Equatable {
     case sinCuenta
     case colaIlegible
+    case conflicto
 }
 
 // Un solo ciclo a la vez: traer la fila, volver a aplicar encima la cola de cambios, subir el parche y guardar la
@@ -148,12 +150,15 @@ actor SyncEngine {
     }
 
     // La cola se guarda en disco antes de devolver: la interfaz solo da el cambio por hecho después.
-    func encolar(_ op: OperacionBitacora) async throws {
+    func encolar(_ op: OperacionBitacora) async throws { try await encolar([op]) }
+
+    // Varias operaciones en una sola escritura de la cola: o entran todas o ninguna.
+    func encolar(_ ops: [OperacionBitacora]) async throws {
         guard let uid else { throw ErrorSync.sinCuenta }
-        let pendiente = OperacionPendiente(op)
+        let pendientes = ops.map { OperacionPendiente($0) }
         var total = 0
         try await almacen.actualizarEstado(uid: uid) {
-            $0.pendientes.append(pendiente)
+            $0.pendientes.append(contentsOf: pendientes)
             total = $0.pendientes.count
         }
         informe.pendientes = total
@@ -227,20 +232,35 @@ actor SyncEngine {
     }
 
     private func traerYSubir(sesion: Sesion, uid: String, gen: Int) async throws {
-        guard let fila = try await remoto.leerFila(sesion: sesion) else {
-            throw ErrorRed.servidor(404)
-        }
-        guard vigente(gen) else { throw CancellationError() }
-        let nube = try DocumentoBitacora(datos: fila.datos)
-        let lote = try await almacen.estado(uid: uid).pendientes
-        var base = nube
-        if !lote.isEmpty {
+        // Si otro cliente escribe el mismo bloque entre la lectura y la escritura, el servidor no escribe y se vuelve a
+        // empezar sobre lo nuevo: las operaciones se aplican otra vez encima, así no se pisa lo que hizo el otro.
+        var intento = 0
+        var fila = FilaRemota(datos: Data(), actualizado: nil)
+        var base = DocumentoBitacora.vacio
+        var lote: [OperacionPendiente] = []
+        while true {
+            guard let leida = try await remoto.leerFila(sesion: sesion) else { throw ErrorRed.servidor(404) }
+            guard vigente(gen) else { throw CancellationError() }
+            fila = leida
+            let nube = try DocumentoBitacora(datos: fila.datos)
+            lote = try await almacen.estado(uid: uid).pendientes
+            base = nube
+            guard !lote.isEmpty else { break }
             let (resultado, parche) = AplicarOperaciones.sobre(nube, lote.map(\.operacion))
-            if !parche.isEmpty {
-                guard vigente(gen) else { throw CancellationError() }
-                try await remoto.mezclar(parche: parche, sesion: sesion)
-            }
             base = resultado
+            guard !parche.isEmpty else { break }
+            guard vigente(gen) else { throw CancellationError() }
+            var esperado: [String: JSONValue?] = [:]
+            for k in parche.keys { esperado[k] = .some((try? nube.valor(de: k)) ?? nil) }
+            switch try await remoto.mezclar(parche: parche, esperado: esperado, sesion: sesion) {
+            case .aplicada(let protegida):
+                informe.escrituraProtegida = protegida
+            case .conflicto:
+                intento += 1
+                if intento < 4 { continue }
+                throw ErrorSync.conflicto
+            }
+            break
         }
         // A partir de aquí el servidor ya tiene el cambio: aunque la vista ya no sea vigente, se guarda la base y se
         // quita el lote de la cola para no dejarlo a medias. Lo que se encoló mientras tanto se queda.
@@ -279,7 +299,7 @@ actor SyncEngine {
 
     static func reintentable(_ e: Error) -> Bool {
         switch e {
-        case ErrorRed.sinConexion: return true
+        case ErrorRed.sinConexion, ErrorSync.conflicto: return true
         case ErrorRed.servidor(let c): return c >= 500 || c == 429
         default: return false
         }
@@ -287,6 +307,7 @@ actor SyncEngine {
 
     static func mensaje(_ e: Error) -> String {
         switch e {
+        case ErrorSync.conflicto: return "otro dispositivo está escribiendo a la vez. se reintenta solo."
         case ErrorRed.servidor(404): return "tu cuenta aún no tiene datos en la nube."
         case ErrorRed.servidor(let c): return "el servidor respondió \(c)."
         case ErrorRed.noAutorizado: return "la nube no deja leer tus datos."

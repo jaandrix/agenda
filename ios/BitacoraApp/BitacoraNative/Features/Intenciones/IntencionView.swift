@@ -9,6 +9,7 @@ struct IntencionView: View {
     let intencion: IntencionEntrante
     @State private var id = OperacionBitacora.nuevoIdTarea()
     @State private var guardando = false
+    @State private var error: String?
 
     // La tarea lleva el texto; si solo llegó un enlace, el enlace es el título. Con los dos, el enlace va en las notas.
     private func apuntar(texto: String, url: String?, hoy: Bool) async {
@@ -18,11 +19,13 @@ struct IntencionView: View {
         let titulo = String((texto.isEmpty ? (url ?? "") : texto).prefix(500))
         let dia = hoy ? CalendarioBitacora.madrid.diaLogico(Date()).iso : nil
         do {
-            try await c.encolar(.crearTarea(id: id, dia: dia, titulo: titulo, hora: nil))
-            if let url, !texto.isEmpty { try await c.encolar(.editarTarea(id: id, titulo: titulo, hora: nil, notas: url)) }
+            var ops: [OperacionBitacora] = [.crearTarea(id: id, dia: dia, titulo: titulo, hora: nil)]
+            if let url, !texto.isEmpty { ops.append(.parcharTarea(id: id, campos: ["notes": url])) }
+            try await c.encolar(ops)
             c.resolverIntencion(intencion)
         } catch {
             UIPasteboard.general.string = titulo
+            error = "no se pudo guardar en este iPhone. el texto está copiado."
         }
     }
 
@@ -30,6 +33,7 @@ struct IntencionView: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: Espacio.m) {
                 Text(explicacion).font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario)
+                if let error { Text(error).font(Tipo.cuerpo).foregroundStyle(Paleta.error) }
                 if case .apuntar(let texto, let url) = intencion {
                     VStack(alignment: .leading, spacing: Espacio.s) {
                         if !texto.isEmpty { Text(texto).font(Tipo.cuerpo).foregroundStyle(Paleta.texto) }

@@ -9,7 +9,14 @@ struct FilaRemota: Sendable {
 // web). Nunca un upsert de la fila completa: si la función falla, el cambio se queda en la cola.
 protocol BitacoraRemoteDataSource: Sendable {
     func leerFila(sesion: Sesion) async throws -> FilaRemota?
-    func mezclar(parche: [String: JSONValue], sesion: Sesion) async throws
+    // `esperado`: lo que valían esas claves al leerlas (nil = no existían). Si alguna cambió entretanto, no escribe y
+    // devuelve .conflicto.
+    func mezclar(parche: [String: JSONValue], esperado: [String: JSONValue?], sesion: Sesion) async throws -> ResultadoMezcla
+}
+
+enum ResultadoMezcla: Equatable, Sendable {
+    case aplicada(protegida: Bool)
+    case conflicto
 }
 
 struct RemotoSupabase: BitacoraRemoteDataSource {
@@ -26,13 +33,26 @@ struct RemotoSupabase: BitacoraRemoteDataSource {
         return try RemotoSupabase.extraer(d)
     }
 
-    func mezclar(parche: [String: JSONValue], sesion: Sesion) async throws {
+    func mezclar(parche: [String: JSONValue], esperado: [String: JSONValue?], sesion: Sesion) async throws -> ResultadoMezcla {
         precondition(!parche.keys.contains { ContratoDatos.especiales.contains($0) }, "apuntes y _meta no se escriben desde iOS")
-        let cuerpo = EscritorJSON.datos(.object(["p_patch": .object(parche)]))
-        let r = cliente.peticion("rest/v1/rpc/merge_bitacora_data", metodo: "POST", token: sesion.accessToken, cuerpo: cuerpo, tiempo: 15)
-        let (_, codigo) = try await cliente.enviar(r)
+        var previo: [String: JSONValue] = [:]
+        for (k, v) in esperado { if let v { previo[k] = v } }
+        let cuerpo = EscritorJSON.datos(.object(["p_patch": .object(parche), "p_esperado": .object(previo)]))
+        let r = cliente.peticion("rest/v1/rpc/merge_bitacora_si", metodo: "POST", token: sesion.accessToken, cuerpo: cuerpo, tiempo: 15)
+        let (d, codigo) = try await cliente.enviar(r)
         if codigo == 401 || codigo == 403 { throw ErrorRed.noAutorizado }
-        guard (200..<300).contains(codigo) else { throw ErrorRed.servidor(codigo) }
+        if (200..<300).contains(codigo) {
+            return (try? LectorJSON.valor(d)) == .bool(true) ? .aplicada(protegida: true) : .conflicto
+        }
+        // Sin la función nueva en el servidor (supabase/sql/merge_bitacora_si.sql), la de siempre: sin protección
+        // frente a escrituras simultáneas, como hasta la 0.7.0.
+        guard codigo == 404 || String(decoding: d, as: UTF8.self).contains("PGRST202") else { throw ErrorRed.servidor(codigo) }
+        let viejo = cliente.peticion("rest/v1/rpc/merge_bitacora_data", metodo: "POST", token: sesion.accessToken,
+                                     cuerpo: EscritorJSON.datos(.object(["p_patch": .object(parche)])), tiempo: 15)
+        let (_, c2) = try await cliente.enviar(viejo)
+        if c2 == 401 || c2 == 403 { throw ErrorRed.noAutorizado }
+        guard (200..<300).contains(c2) else { throw ErrorRed.servidor(c2) }
+        return .aplicada(protegida: false)
     }
 
     // La respuesta es `[{"data": {...}, "updated_at": "..."}]`. Se recortan los bytes de `data` tal cual, sin

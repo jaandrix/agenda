@@ -14,6 +14,9 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case marcarRecurrente(id: String, dia: String, hecha: Bool, momentoMs: Int64)
     case guardarEvento(id: String, fecha: String, hora: String?, titulo: String, lugar: String, notas: String)
     case borrarEntrada(id: String)
+    // Solo los campos que el usuario cambió («title», «time», «notes», «date», «place»): lo demás queda como esté en la nube.
+    case parcharTarea(id: String, campos: [String: String])
+    case parcharEvento(id: String, campos: [String: String])
     case marcarRutina(id: String, dia: String, hecha: Bool)
     case crearNota(id: String, dia: String, texto: String, creada: String)
     // importe en texto decimal («12.50»): el dinero nunca pasa por Double.
@@ -22,6 +25,9 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     var claves: [String] {
         switch self {
         case .marcarRecurrente: return ["recurringTasks", "entries"]
+        // Como togglePlannerItemDone: también el trabajo de Estudios, la tarea del proyecto y la marca «Completado».
+        case .marcarTarea: return ["dayPlanner", "entries", "studies"]
+        case .parcharEvento: return ["entries"]
         case .guardarEvento, .borrarEntrada: return ["entries"]
         case .crearMovimiento: return ["financePro"]
         case .marcarRutina: return ["habits"]
@@ -90,8 +96,48 @@ enum AplicarOperaciones {
             let (rec, ent) = marcarRecurrente(id: id, dia: dia, hecha: hecha, momento: momento, recurrentes: valores["recurringTasks"] ?? nil, entradas: valores["entries"] ?? nil)
             r["recurringTasks"] = .some(rec)
             r["entries"] = .some(ent)
-        case .guardarEvento, .borrarEntrada:
+        case .guardarEvento, .borrarEntrada, .parcharEvento:
             r["entries"] = .some(entradas(op, valores["entries"] ?? nil))
+        case let .marcarTarea(id, hecha, momento):
+            let planner = aplicar(op, a: valores["dayPlanner"] ?? nil)
+            r["dayPlanner"] = .some(planner)
+            guard let sitio = buscar(id, en: planificador(planner)), let t = tareaEn(sitio, planificador(planner)) else { break }
+            let hoy = CalendarioBitacora.madrid.dia(de: Date(timeIntervalSince1970: Double(momento) / 1000)).iso
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            let marca = "planner_done_\(id)"
+            lista.removeAll { $0["id"]?.comoId == marca }
+            if hecha {
+                lista.append(.object(["id": .string(marca), "type": .string("event"), "eventType": .string("otro"),
+                                      "title": .string("Completado: " + (t["title"]?.texto ?? "")), "date": .string(hoy),
+                                      "time": .string(t["time"]?.texto ?? ""), "place": .string(""), "notes": .string(t["notes"]?.texto ?? ""),
+                                      "category": .string("Planificador"), "calendarLog": .bool(true)]))
+            }
+            // proyectoTareaDesdePlanner (js/proyecto.js).
+            if let pid = t["proyectoId"]?.comoId, let tid = t["proyectoTareaId"]?.comoId,
+               let n = lista.firstIndex(where: { $0["id"]?.comoId == pid }), var p = lista[n].objeto, var tareas = p["tareas"]?.lista,
+               let m = tareas.firstIndex(where: { $0["id"]?.comoId == tid }), var pt = tareas[m].objeto {
+                pt["estado"] = .string(hecha ? "hecha" : "curso")
+                tareas[m] = .object(pt)
+                p["tareas"] = .array(tareas)
+                p["tasks"] = .array(tareas.map { .object(["text": .string($0["texto"]?.texto ?? ""), "done": .bool($0["estado"]?.texto == "hecha")]) })
+                lista[n] = .object(p)
+            }
+            r["entries"] = .some(.array(lista))
+            // El trabajo de Estudios guarda si está hecho: es lo que sobrevive cuando la tarea del día se archiva.
+            if let aid = t["linkedAssignmentId"]?.comoId, var st = (valores["studies"] ?? nil)?.objeto, var asig = st["subjects"]?.lista {
+                outer: for i in asig.indices {
+                    guard var s = asig[i].objeto, var trabajos = s["assignments"]?.lista else { continue }
+                    if let j = trabajos.firstIndex(where: { $0["id"]?.comoId == aid }), var w = trabajos[j].objeto {
+                        w["done"] = .bool(hecha)
+                        trabajos[j] = .object(w)
+                        s["assignments"] = .array(trabajos)
+                        asig[i] = .object(s)
+                        st["subjects"] = .array(asig)
+                        r["studies"] = .some(.object(st))
+                        break outer
+                    }
+                }
+            }
         case let .marcarRutina(id, dia, hecha):
             // toggleHabitToday (js/planificador.js): completadas[dia] = true o se borra; con pasos, todos hechos o ninguno.
             guard var lista = (valores["habits"] ?? nil)?.lista, let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var h = lista[n].objeto else { break }
@@ -118,7 +164,8 @@ enum AplicarOperaciones {
             if lista.contains(where: { $0["id"]?.comoId == id }) { break }
             var t: [String: JSONValue] = ["id": .string(id), "date": .string(fecha), "hora": .string(hora), "account": .string(cuenta),
                                           "type": .string(tipo), "amount": .number(NSDecimalNumber(decimal: Dinero.redondeado(d)).stringValue), "manual": .bool(true)]
-            if let categoria { t["category"] = .string(categoria) }
+            // Como el registro rápido de la web: sin categoría, pendiente de «ajustar movimientos».
+            if let categoria { t["category"] = .string(categoria) } else { t["needsReview"] = .bool(true) }
             if !concepto.isEmpty { t["note"] = .string(concepto) }
             lista.append(.object(t))
             pro["transactions"] = .array(lista)
@@ -159,6 +206,16 @@ enum AplicarOperaciones {
             }
             return .object(p)
 
+        case let .parcharTarea(id, campos):
+            guard let sitio = buscar(id, en: p) else { return valor ?? .object(p) }
+            cambiar(sitio, en: &p) { t in
+                for (k, v) in campos where ["title", "notes", "time"].contains(k) {
+                    if k == "time", case .pendiente = sitio { continue }
+                    t[k] = .string(v)
+                }
+            }
+            return .object(p)
+
         case let .editarTarea(id, titulo, hora, notas):
             guard let sitio = buscar(id, en: p) else { return valor ?? .object(p) }
             cambiar(sitio, en: &p) { t in
@@ -190,7 +247,7 @@ enum AplicarOperaciones {
             _ = quitar(sitio, de: &p)
             return .object(p)
 
-        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota:
+        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento:
             return valor ?? .object(p)
         }
     }
@@ -215,6 +272,10 @@ enum AplicarOperaciones {
                 e["categoryId"] = .string("cat_evento")
                 lista.append(.object(e))
             }
+        case let .parcharEvento(id, campos):
+            guard let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var e = lista[n].objeto else { return valor }
+            for (k, v) in campos where ["title", "notes", "time", "date", "place"].contains(k) { e[k] = .string(v) }
+            lista[n] = .object(e)
         case let .borrarEntrada(id):
             guard lista.contains(where: { $0["id"]?.comoId == id }) else { return valor }
             lista.removeAll { $0["id"]?.comoId == id }
@@ -272,6 +333,13 @@ enum AplicarOperaciones {
         }
         if let n = p["backlog"]?.lista?.firstIndex(where: { $0["id"]?.comoId == id }) { return .pendiente(n) }
         return nil
+    }
+
+    static func tareaEn(_ sitio: Sitio, _ p: [String: JSONValue]) -> [String: JSONValue]? {
+        switch sitio {
+        case let .dia(dia, n): return p["days"]?[dia]?.lista?[n].objeto
+        case let .pendiente(n): return p["backlog"]?.lista?[n].objeto
+        }
     }
 
     private static func quitar(_ sitio: Sitio, de p: inout [String: JSONValue]) -> [String: JSONValue]? {

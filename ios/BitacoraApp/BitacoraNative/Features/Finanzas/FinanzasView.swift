@@ -25,7 +25,7 @@ struct FinanzasView: View {
                 }
                 Section {
                     Button {
-                        c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento())
+                        c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: "expense")
                     } label: {
                         Text("+ movimiento.").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.acento).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     }
@@ -77,6 +77,7 @@ struct EditorMovimientoView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.dismiss) private var cerrar
     let id: String
+    let tipoInicial: String
 
     @State private var tipo = "expense"
     @State private var importe = ""
@@ -127,7 +128,7 @@ struct EditorMovimientoView: View {
                     Button("guardar.") { Task { await guardar() } }.disabled(guardando || valor == nil)
                 }
             }
-            .onAppear { enfocado = true }
+            .onAppear { tipo = tipoInicial == "income" ? "income" : "expense"; enfocado = true }
             .task {
                 let doc = await c.documentoVisible()
                 vista = await Task.detached { doc.map { LecturaFinanzas.vista($0) } }.value

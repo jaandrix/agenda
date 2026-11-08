@@ -76,9 +76,11 @@ struct MasView: View {
     @State private var nota = ""
     @State private var idNota = OperacionBitacora.nuevoIdNota()
     @State private var marcadas = 0
+    @State private var aviso: String?
 
     var body: some View {
         List {
+            if let aviso { Section { Text(aviso).foregroundStyle(Paleta.error) } }
             if let v = vista {
                 Section("rutinas de hoy.") {
                     if v.rutinas.isEmpty { Text("ninguna hoy.").foregroundStyle(Paleta.textoSecundario).listRowBackground(Paleta.superficie) }
@@ -159,18 +161,29 @@ struct MasView: View {
         vista = v
         if v.rutinas[i].hecha { marcadas += 1 }
         let hecha = v.rutinas[i].hecha
-        Task { try? await c.encolar(.marcarRutina(id: r.id, dia: CalendarioBitacora.madrid.dia(de: Date()).iso, hecha: hecha)) }
+        Task {
+            do { try await c.encolar(.marcarRutina(id: r.id, dia: CalendarioBitacora.madrid.dia(de: Date()).iso, hecha: hecha)) } catch {
+                if var w = vista, let j = w.rutinas.firstIndex(where: { $0.id == r.id }) { w.rutinas[j].hecha = !hecha; vista = w }
+                aviso = "no se pudo guardar en este iPhone."
+            }
+        }
     }
 
     private func guardarNota() {
         let texto = String(nota.trimmingCharacters(in: .whitespacesAndNewlines).prefix(5000))
         guard !texto.isEmpty else { return }
         let id = idNota
-        nota = ""
-        idNota = OperacionBitacora.nuevoIdNota()
+        // El texto se queda en el campo hasta que la cola lo tiene guardado.
         Task {
-            try? await c.encolar(.crearNota(id: id, dia: CalendarioBitacora.madrid.dia(de: Date()).iso, texto: texto,
-                                            creada: ISO8601DateFormatter().string(from: Date())))
+            do {
+                try await c.encolar(.crearNota(id: id, dia: CalendarioBitacora.madrid.dia(de: Date()).iso, texto: texto,
+                                               creada: ISO8601DateFormatter().string(from: Date())))
+                if nota.trimmingCharacters(in: .whitespacesAndNewlines) == texto { nota = "" }
+                idNota = OperacionBitacora.nuevoIdNota()
+                aviso = nil
+            } catch {
+                aviso = "no se pudo guardar la nota en este iPhone."
+            }
         }
     }
 }

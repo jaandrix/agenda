@@ -13,8 +13,7 @@ struct ApuntarIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         let limpio = String(texto.trimmingCharacters(in: .whitespacesAndNewlines).prefix(EnlaceProfundo.maxTexto))
         if !limpio.isEmpty {
-            let cola = ColaIntenciones()
-            cola.guardar(cola.leer() + [.apuntar(texto: limpio, url: nil)])
+            try ColaIntenciones().anadir(.apuntar(texto: limpio, url: nil))
         }
         return .result()
     }

@@ -89,7 +89,7 @@ enum LecturaPlanificador {
         let hora = o["time"]?.texto.flatMap { $0.isEmpty ? nil : $0 }
         return TareaPlan(id: o["id"]?.comoId ?? UUID().uuidString, titulo: titulo, hora: hora, notas: o["notes"]?.texto ?? "",
                          hecha: o["done"]?.booleano == true, arrastrada: o["arrastrado"]?.booleano == true,
-                         deTrabajo: o["linkedAssignmentId"] != nil)
+                         deTrabajo: o["linkedAssignmentId"] != nil || o["proyectoTareaId"] != nil)
     }
 
     private static func minutos(_ hora: String?) -> Int {

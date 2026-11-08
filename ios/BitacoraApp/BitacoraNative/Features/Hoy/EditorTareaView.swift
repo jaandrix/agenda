@@ -30,6 +30,7 @@ struct EditorTareaView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Group {
                 Section {
                     TextField("qué hay que hacer.", text: $titulo, axis: .vertical)
                         .focused($enfocado)
@@ -50,9 +51,11 @@ struct EditorTareaView: View {
                     }
                 } footer: {
                     if let error { Text(error).foregroundStyle(Paleta.error) }
-                    else if inicial.deTrabajo { Text("viene de un trabajo de estudios: se borra desde la web.") }
+                    else if inicial.deTrabajo { Text("viene de estudios o de un proyecto: se cambia allí, en la web. aquí solo se marca.") }
                 }
                 .listRowBackground(Paleta.superficie)
+                }
+                .disabled(inicial.deTrabajo)
                 if !inicial.nueva && !inicial.deTrabajo {
                     Section {
                         Button("borrar.", role: .destructive) { confirmarBorrado = true }
@@ -68,7 +71,7 @@ struct EditorTareaView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("guardar.") { Task { await guardar() } }.disabled(guardando || limpio.isEmpty)
+                    Button("guardar.") { Task { await guardar() } }.disabled(guardando || limpio.isEmpty || inicial.deTrabajo)
                 }
             }
             .confirmationDialog("¿borrar esta tarea?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
@@ -117,15 +120,19 @@ struct EditorTareaView: View {
 
     private func guardar() async {
         guard !limpio.isEmpty else { return }
+        guard !inicial.deTrabajo else { return }
         var ops: [OperacionBitacora] = []
         if inicial.nueva {
             ops.append(.crearTarea(id: inicial.id, dia: dia?.iso, titulo: limpio, hora: horaTexto))
-            if !notasLimpias.isEmpty { ops.append(.editarTarea(id: inicial.id, titulo: limpio, hora: horaTexto, notas: notasLimpias)) }
+            if !notasLimpias.isEmpty { ops.append(.parcharTarea(id: inicial.id, campos: ["notes": notasLimpias])) }
         } else {
             if dia != inicial.dia { ops.append(.moverTarea(id: inicial.id, dia: dia?.iso)) }
-            if limpio != inicial.titulo || notasLimpias != inicial.notas || horaTexto != inicial.hora {
-                ops.append(.editarTarea(id: inicial.id, titulo: limpio, hora: horaTexto, notas: notasLimpias))
-            }
+            // Solo lo que cambió: si la web tocó otro campo mientras tanto, se queda.
+            var campos: [String: String] = [:]
+            if limpio != inicial.titulo { campos["title"] = limpio }
+            if notasLimpias != inicial.notas { campos["notes"] = notasLimpias }
+            if horaTexto != inicial.hora { campos["time"] = horaTexto ?? "" }
+            if !campos.isEmpty { ops.append(.parcharTarea(id: inicial.id, campos: campos)) }
         }
         await enviar(ops)
     }
@@ -135,7 +142,7 @@ struct EditorTareaView: View {
         guardando = true
         defer { guardando = false }
         do {
-            for op in ops { try await c.encolar(op) }
+            if !ops.isEmpty { try await c.encolar(ops) }
             cerrar()
         } catch {
             self.error = "no se pudo guardar en este iPhone."
