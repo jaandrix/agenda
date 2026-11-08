@@ -44,6 +44,19 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
     case transporteLinea(clave: String, linea: String, activa: Bool)
+    // Apuntar (js/apuntar.js, apuntarCrear). `json` es el objeto ya construido, en texto: entradas (evento, cumpleaños,
+    // viaje, ocio) y tareas recurrentes. Solo se añade si su id no está.
+    case anadirEnLista(clave: String, id: String, json: String)
+    // compraAnadir: cada texto pasa por compraInterpretar; lo que ya está sin marcar no se repite. Crea la lista «Casa»
+    // con `listaId` si no hay ninguna.
+    case anadirCompra(listaId: String, textos: [String], ids: [String])
+    // A la nota del día, sin pisar lo que tenga. `apunteId` evita añadirlo dos veces al reaplicar.
+    case anadirANota(id: String, dia: String, texto: String, creada: String, apunteId: String)
+    // studies.schedule[dia] (clave «lun», «mar»...), como la op `clase` del conector.
+    case anadirClase(dia: String, hora: String, texto: String)
+    // apuntesRecientes: el registro (los últimos 40) y deshacer lo que creó uno, que queda marcado `deshecho`.
+    case registrarApunte(json: String)
+    case deshacerApunte(id: String)
 
     var claves: [String] {
         switch self {
@@ -64,6 +77,12 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .proyectoAHoy: return ["entries", "dayPlanner"]
         case .ponerCiudadTiempo: return ["ciudadTiempo"]
         case .transporteFavorita, .transporteLinea: return ["servicios"]
+        case let .anadirEnLista(clave, _, _): return [clave]
+        case .anadirCompra: return ["listaCompra"]
+        case .anadirANota: return ["notes", "apuntesRecientes"]
+        case .anadirClase: return ["studies"]
+        case .registrarApunte: return ["apuntesRecientes"]
+        case .deshacerApunte: return ["apuntesRecientes", "dayPlanner", "entries", "financePro", "listaCompra", "notes", "studies", "recurringTasks"]
         default: return ["dayPlanner"]
         }
     }
@@ -400,6 +419,72 @@ enum AplicarOperaciones {
             tr["lineas"] = .object(lineas)
             serv["transporte"] = .object(tr)
             r["servicios"] = .some(.object(serv))
+        case let .anadirEnLista(clave, id, json):
+            guard let o = try? LectorJSON.valor(Data(json.utf8)), o.objeto != nil else { break }
+            var lista = (valores[clave] ?? nil)?.lista ?? []
+            if lista.contains(where: { $0["id"]?.comoId == id }) { break }
+            lista.append(o)
+            r[clave] = .some(.array(lista))
+        case let .anadirCompra(listaId, textos, ids):
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]
+            var listas = lc["listas"]?.lista ?? []
+            if listas.isEmpty { listas.append(.object(["id": .string(listaId), "nombre": .string("Casa"), "items": .array([])])) }
+            let actual = lc["actual"]?.comoId
+            let n = listas.firstIndex { $0["id"]?.comoId == listaId } ?? listas.firstIndex { $0["id"]?.comoId == actual } ?? 0
+            guard var l = listas[n].objeto else { break }
+            var items = l["items"]?.lista ?? []
+            for (k, t) in textos.enumerated() {
+                let it = Compra.interpretar(t)
+                guard !it.texto.isEmpty else { continue }
+                if let j = items.firstIndex(where: { $0["hecho"]?.booleano != true && ($0["texto"]?.texto ?? "").lowercased() == it.texto.lowercased() }) {
+                    guard var o = items[j].objeto else { continue }
+                    if !it.cantidad.isEmpty { o["cantidad"] = .string(it.cantidad) }
+                    if let pr = it.precio { o["precio"] = .number(pr) }
+                    items[j] = .object(o)
+                    continue
+                }
+                items.append(.object(["id": .string(k < ids.count ? ids[k] : "cmp_\(k)"), "texto": .string(it.texto), "cantidad": .string(it.cantidad),
+                                      "precio": it.precio.map { .number($0) } ?? .null, "hecho": .bool(false)]))
+            }
+            l["items"] = .array(items)
+            listas[n] = .object(l)
+            lc["listas"] = .array(listas)
+            if !listas.contains(where: { $0["id"]?.comoId == actual }) { lc["actual"] = listas[0]["id"] ?? .string(listaId) }
+            r["listaCompra"] = .some(.object(lc))
+        case let .anadirANota(id, dia, texto, creada, apunteId):
+            if ((valores["apuntesRecientes"] ?? nil)?.lista ?? []).contains(where: { $0["id"]?.comoId == apunteId }) { break }
+            var lista = (valores["notes"] ?? nil)?.lista ?? []
+            if let n = lista.firstIndex(where: { $0["date"]?.texto == dia }), var o = lista[n].objeto {
+                let antes = o["content"]?.texto ?? ""
+                o["content"] = .string([antes, texto].filter { !$0.isEmpty }.joined(separator: "\n\n"))
+                lista[n] = .object(o)
+            } else {
+                lista.append(.object(["id": .string(id), "date": .string(dia), "content": .string(texto), "createdAt": .string(creada)]))
+            }
+            r["notes"] = .some(.array(lista))
+        case let .anadirClase(dia, hora, texto):
+            guard var st = (valores["studies"] ?? nil)?.objeto else { break }
+            var sch = st["schedule"]?.objeto ?? [:]
+            var lista = sch[dia]?.lista ?? []
+            if lista.contains(where: { $0["time"]?.texto == hora && $0["subject"]?.texto == texto }) { break }
+            lista.append(.object(["time": .string(hora), "subject": .string(texto)]))
+            lista.sort { ($0["time"]?.texto ?? "") < ($1["time"]?.texto ?? "") }
+            sch[dia] = .array(lista)
+            st["schedule"] = .object(sch)
+            r["studies"] = .some(.object(st))
+        case let .registrarApunte(json):
+            guard let o = try? LectorJSON.valor(Data(json.utf8)), let id = o["id"]?.comoId else { break }
+            var lista = (valores["apuntesRecientes"] ?? nil)?.lista ?? []
+            if lista.contains(where: { $0["id"]?.comoId == id }) { break }
+            lista.insert(o, at: 0)
+            r["apuntesRecientes"] = .some(.array(Array(lista.prefix(40))))
+        case let .deshacerApunte(id):
+            var lista = (valores["apuntesRecientes"] ?? nil)?.lista ?? []
+            guard let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var a = lista[n].objeto, a["deshecho"]?.booleano != true else { break }
+            r = quitarLoApuntado(a["deshacer"], r)
+            a["deshecho"] = .bool(true)
+            lista[n] = .object(a)
+            r["apuntesRecientes"] = .some(.array(lista))
         case let .crearNota(id, dia, texto, creada):
             var lista = (valores["notes"] ?? nil)?.lista ?? []
             if lista.contains(where: { $0["id"]?.comoId == id }) { break }
@@ -507,6 +592,72 @@ enum AplicarOperaciones {
             }
         default:
             r["dayPlanner"] = .some(aplicar(op, a: valores["dayPlanner"] ?? nil))
+        }
+        return r
+    }
+
+    // apuntarQuitar (js/apuntar.js) y lo que la app crea con tipos propios (estudio, recurrente, clase). Lo que ya no
+    // está se deja como esté: deshacer nunca busca por título ni importe.
+    static func quitarLoApuntado(_ dh: JSONValue?, _ valores: [String: JSONValue?]) -> [String: JSONValue?] {
+        var r = valores
+        func quitarDe(_ clave: String, _ id: String) {
+            guard var l = (r[clave] ?? nil)?.lista else { return }
+            let antes = l.count
+            l.removeAll { $0["id"]?.comoId == id }
+            if l.count != antes { r[clave] = .some(.array(l)) }
+        }
+        switch dh?["tipo"]?.texto {
+        case "tarea":
+            if let t = dh?["tareaId"]?.comoId { r["dayPlanner"] = .some(aplicar(.borrarTarea(id: t), a: r["dayPlanner"] ?? nil)) }
+        case "evento":
+            if let e = dh?["eventoId"]?.comoId { quitarDe("entries", e) }
+        case "gasto":
+            if let t = dh?["txId"]?.comoId, var pro = (r["financePro"] ?? nil)?.objeto, var l = pro["transactions"]?.lista {
+                let antes = l.count
+                l.removeAll { $0["id"]?.comoId == t }
+                if l.count != antes { pro["transactions"] = .array(l); r["financePro"] = .some(.object(pro)) }
+            }
+        case "compra":
+            let fuera = Set((dh?["textos"]?.lista ?? []).compactMap { $0.texto?.lowercased() })
+            if let lid = dh?["listaId"]?.comoId, var lc = (r["listaCompra"] ?? nil)?.objeto, var listas = lc["listas"]?.lista,
+               let n = listas.firstIndex(where: { $0["id"]?.comoId == lid }), var l = listas[n].objeto {
+                let items = l["items"]?.lista ?? []
+                let quedan = items.filter { $0["hecho"]?.booleano == true || !fuera.contains(($0["texto"]?.texto ?? "").lowercased()) }
+                if quedan.count != items.count {
+                    l["items"] = .array(quedan); listas[n] = .object(l); lc["listas"] = .array(listas); r["listaCompra"] = .some(.object(lc))
+                }
+            }
+        case "nota":
+            if let nid = dh?["notaId"]?.comoId, let t = dh?["texto"]?.texto, !t.isEmpty, var l = (r["notes"] ?? nil)?.lista,
+               let n = l.firstIndex(where: { $0["id"]?.comoId == nid }), var o = l[n].objeto, let c = o["content"]?.texto,
+               let rango = c.range(of: t, options: .backwards) {
+                var nuevo = c
+                nuevo.removeSubrange(rango)
+                while nuevo.contains("\n\n\n") { nuevo = nuevo.replacingOccurrences(of: "\n\n\n", with: "\n\n") }
+                o["content"] = .string(nuevo.trimmingCharacters(in: .whitespacesAndNewlines))
+                l[n] = .object(o)
+                r["notes"] = .some(.array(l))
+            }
+        case "estudio":
+            if let aid = dh?["subjectId"]?.comoId, let lista = dh?["lista"]?.texto, let id = dh?["id"]?.comoId {
+                r = aplicar(.borrarItemEstudio(asignaturaId: aid, lista: lista, id: id), a: r)
+            }
+        case "recurrente":
+            if let id = dh?["id"]?.comoId { quitarDe("recurringTasks", id) }
+        case "clase":
+            if var st = (r["studies"] ?? nil)?.objeto, var sch = st["schedule"]?.objeto {
+                var cambia = false
+                for b in dh?["bloques"]?.lista ?? [] {
+                    guard let dia = b["dia"]?.texto, var l = sch[dia]?.lista,
+                          let i = l.firstIndex(where: { $0["time"] == b["time"] && $0["subject"] == b["subject"] }) else { continue }
+                    l.remove(at: i)
+                    if l.isEmpty { sch.removeValue(forKey: dia) } else { sch[dia] = .array(l) }
+                    cambia = true
+                }
+                if cambia { st["schedule"] = .object(sch); r["studies"] = .some(.object(st)) }
+            }
+        default:
+            break
         }
         return r
     }
@@ -644,7 +795,8 @@ enum AplicarOperaciones {
 
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea,
-             .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto:
+             .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
+             .anadirEnLista, .anadirCompra, .anadirANota, .anadirClase, .registrarApunte, .deshacerApunte:
             return valor ?? .object(p)
         }
     }

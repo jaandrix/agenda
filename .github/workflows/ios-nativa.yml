@@ -10,6 +10,8 @@ on:
       - 'js/datos.js'
       - 'js/nucleo.js'
       - 'pruebas/contrato-ios.mjs'
+      - 'js/apuntar.js'
+      - 'pruebas/apuntar-casos.mjs'
   workflow_dispatch: {}
 
 jobs:
@@ -25,6 +27,13 @@ jobs:
       - name: Contrato de datos con la web
         working-directory: .
         run: node --test pruebas/contrato-ios.mjs
+
+      # La app interpreta «apuntar.» con js/apuntar.js: si la web cambia, el banco dorado tiene que estar al día.
+      - name: Banco dorado de apuntar con la web
+        working-directory: .
+        run: |
+          node pruebas/apuntar-casos.mjs > /dev/null
+          git diff --exit-code pruebas/apuntar-casos.json || { echo "pruebas/apuntar-casos.json no coincide con js/apuntar.js: ejecuta node pruebas/apuntar-casos.mjs"; exit 1; }
 
       - name: Usar el Xcode más reciente del runner
         run: |
@@ -93,6 +102,7 @@ jobs:
           test -f "$APP/Assets.car" || { echo "Faltan los recursos"; exit 1; }
           for f in Regular Medium SemiBold Bold; do test -f "$APP/Poppins-$f.ttf" || { echo "Falta Poppins-$f"; exit 1; }; done
           test -f "$APP/PrivacyInfo.xcprivacy" || { echo "Falta PrivacyInfo.xcprivacy"; exit 1; }
+          for f in apuntar apuntar-entorno apuntar-puente; do test -f "$APP/$f.js" || { echo "Falta $f.js"; exit 1; }; done
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")" = "com.bitacora.nativa.dev"
           # Sin UILaunchScreen iOS la abre en modo compatibilidad (franjas negras); sin los demás, no hay enlaces, Face ID ni Poppins.
           for clave in UILaunchScreen NSFaceIDUsageDescription CFBundleURLTypes:0:CFBundleURLSchemes:0 UIAppFonts:0 CFBundleDocumentTypes:0; do

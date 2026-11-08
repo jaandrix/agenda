@@ -71,6 +71,14 @@ targets:
       - path: BitacoraNative
         excludes:
           - Info.plist
+          - "**/*.js"
+      # «apuntar.» interpreta con el mismo js/apuntar.js de la web, en JavaScriptCore (Features/Apuntar).
+      - path: BitacoraNative/Features/Apuntar/apuntar-entorno.js
+        buildPhase: resources
+      - path: BitacoraNative/Features/Apuntar/apuntar-puente.js
+        buildPhase: resources
+      - path: ../../js/apuntar.js
+        buildPhase: resources
       - path: BitacoraWidgets/Fonts
         buildPhase: resources
         excludes:

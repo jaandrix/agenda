@@ -7,7 +7,7 @@ enum Pestana: Hashable {
 
 // Una sola hoja a la vez: el enum impide dos modales simultáneos.
 enum Modal: Identifiable, Equatable {
-    case intencion(IntencionEntrante)
+    case apuntar(ApuntarInicial)
     case tarea(EditorTarea)
     case evento(EditorEvento)
     case movimiento(String, tipo: String)
@@ -21,7 +21,7 @@ enum Modal: Identifiable, Equatable {
         case .editarMovimiento(let m): return "editar:\(m.id)"
         case .movimiento(let id, _): return "movimiento:\(id)"
         case .evento(let e): return "evento:\(e.id)"
-        case .intencion(let i): return "intencion:\(i.id)"
+        case .apuntar(let a): return "apuntar:\(a.id)"
         case .tarea(let t): return "tarea:\(t.id)"
         }
     }
@@ -79,6 +79,24 @@ final class AppCoordinator {
     private(set) var intenciones: [IntencionEntrante]
     private(set) var informe = InformeSync()
     var avisoCola: String?
+    // Una línea breve tras apuntar algo; se va sola.
+    private(set) var aviso: String?
+    @ObservationIgnored private var tareaAviso: Task<Void, Never>?
+
+    func avisar(_ texto: String) {
+        aviso = texto
+        tareaAviso?.cancel()
+        tareaAviso = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2.6))
+            guard !Task.isCancelled else { return }
+            self?.aviso = nil
+        }
+    }
+
+    // El + de la barra y el de cada día: la hoja de apuntar con la fecha de ese día.
+    func abrirApuntar(dia: LocalDay? = nil) {
+        modal = .apuntar(ApuntarInicial(fechaBase: dia))
+    }
 
     private(set) var bloqueoActivo: Bool
     private(set) var tema: TemaElegido
@@ -267,7 +285,11 @@ final class AppCoordinator {
             modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: tipo.rawValue)
             return
         }
-        modal = .intencion(primera)
+        if case let .apuntar(texto, url) = primera {
+            // Siri, los enlaces y «Abrir en» abren la misma hoja que el +, con el texto puesto.
+            let t = [texto, url ?? ""].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }.joined(separator: " ")
+            modal = .apuntar(ApuntarInicial(texto: String(t.prefix(2000)), intencion: primera))
+        }
     }
 
     func resolverIntencion(_ i: IntencionEntrante) {

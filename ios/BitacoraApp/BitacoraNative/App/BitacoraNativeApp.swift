@@ -110,17 +110,32 @@ struct PrincipalView: View {
                           activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio") { id in
                 if let p = Self.porId[id] { c.pestana = p }
             } capturar: {
-                c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(), nueva: true, dia: CalendarioBitacora.madrid.diaLogico(Date())))
+                c.abrirApuntar()
             }
         }
         .background(Paleta.fondo.ignoresSafeArea())
+        .overlay(alignment: .top) {
+            if let aviso = c.aviso {
+                Text(aviso)
+                    .font(Tipo.poppins(14, .medium, estilo: .footnote))
+                    .foregroundStyle(Paleta.texto)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: Radio.control, style: .continuous).stroke(Paleta.borde))
+                    .padding(.horizontal, 20).padding(.top, 8)
+                    .transition(.opacity)
+                    .accessibilityAddTraits(.updatesFrequently)
+                    .onAppear { UIAccessibility.post(notification: .announcement, argument: aviso) }
+            }
+        }
+        .animation(.easeOut(duration: 0.18), value: c.aviso)
         .onChange(of: c.pestana) { _, p in if p == .calendario || p == .finanzas { c.secundaria = p } }
         .fullScreenCover(item: Binding(get: { c.web.map(PaginaWeb.init) }, set: { c.web = $0?.url })) { NavegadorWeb(url: $0.url).ignoresSafeArea() }
         .sheet(item: $c.modal) { m in
             // Las hojas son las del sistema (detents, arrastrar para cerrar) con el fondo, la tinta y la letra de Bitácora.
             Group {
                 switch m {
-                case .intencion(let i): IntencionView(intencion: i)
+                case .apuntar(let a): ApuntarView(inicial: a)
                 case .tarea(let t): EditorTareaView(inicial: t)
                 case .evento(let e): EditorEventoView(inicial: e)
                 case .movimiento(let id, let tipo): EditorMovimientoView(id: id, tipoInicial: tipo)
