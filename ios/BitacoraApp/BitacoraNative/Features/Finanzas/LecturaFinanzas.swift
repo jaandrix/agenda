@@ -16,6 +16,8 @@ struct Movimiento: Sendable, Identifiable, Equatable {
     let cuenta: String
     let futuro: Bool
     let claveDia: String
+    var categoriaId = ""
+    var destino = ""
 }
 
 struct CategoriaFin: Sendable, Identifiable, Equatable, Hashable {
@@ -82,7 +84,7 @@ enum LecturaFinanzas {
             let concepto = [o["note"], o["description"], o["concepto"]].compactMap { $0?.texto }.first { !$0.isEmpty } ?? ""
             movimientos.append(Movimiento(id: o["id"]?.comoId ?? UUID().uuidString, fecha: fecha, concepto: concepto,
                                           categoria: nombreCat[catId] ?? "", tipo: tipo, importe: importe, cuenta: cuenta, futuro: futuro,
-                                          claveDia: claveDia(o)))
+                                          claveDia: claveDia(o), categoriaId: catId, destino: o["transferTo"]?.texto ?? ""))
         }
         // financeProCompararMov al revés: fecha, luego hora u orden del extracto, luego id.
         movimientos.sort { ($0.fecha, $0.claveDia, $0.id) > ($1.fecha, $1.claveDia, $1.id) }

@@ -11,12 +11,14 @@ enum Modal: Identifiable, Equatable {
     case tarea(EditorTarea)
     case evento(EditorEvento)
     case movimiento(String, tipo: String)
+    case editarMovimiento(Movimiento)
     case ficha(EventoDia, dia: LocalDay)
     case tiempo
     var id: String {
         switch self {
         case .ficha(let e, let d): return "ficha:\(e.id):\(d.iso)"
         case .tiempo: return "tiempo"
+        case .editarMovimiento(let m): return "editar:\(m.id)"
         case .movimiento(let id, _): return "movimiento:\(id)"
         case .evento(let e): return "evento:\(e.id)"
         case .intencion(let i): return "intencion:\(i.id)"

@@ -29,6 +29,11 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case proyectoAHoy(proyectoId: String, tareaId: String, idTarea: String, dia: String)
     // calendario.js (elegir ciudad del tiempo): `ciudadTiempo` = { nombre, lat, lon }. lat y lon en texto decimal.
     case ponerCiudadTiempo(nombre: String, lat: String, lon: String)
+    // Finanzas: editar solo los campos del formulario (lo demás del movimiento queda como esté en la nube), borrar uno
+    // y traspasar entre cuentas propias (type transfer + transferTo, como financeProEmparejarTraspasos).
+    case editarMovimiento(id: String, importe: String, concepto: String, categoria: String?, fecha: String, cuenta: String, destino: String?)
+    case borrarMovimiento(id: String)
+    case crearTraspaso(id: String, importe: String, desde: String, hacia: String, fecha: String, hora: String, concepto: String)
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
     case transporteLinea(clave: String, linea: String, activa: Bool)
@@ -40,7 +45,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .marcarTarea: return ["dayPlanner", "entries", "studies"]
         case .parcharEvento: return ["entries"]
         case .guardarEvento, .borrarEntrada: return ["entries"]
-        case .crearMovimiento: return ["financePro"]
+        case .crearMovimiento, .editarMovimiento, .borrarMovimiento, .crearTraspaso: return ["financePro"]
         case .marcarRutina: return ["habits"]
         case .crearNota: return ["notes"]
         case .marcarTrabajo: return ["studies", "dayPlanner"]
@@ -167,6 +172,42 @@ enum AplicarOperaciones {
             }
             lista[n] = .object(h)
             r["habits"] = .some(.array(lista))
+        case let .editarMovimiento(id, importe, concepto, categoria, fecha, cuenta, destino):
+            guard var pro = (valores["financePro"] ?? nil)?.objeto, var lista = pro["transactions"]?.lista,
+                  let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var t = lista[n].objeto,
+                  let d = Dinero.decimal(texto: importe), d > 0 else { break }
+            let cifra = NSDecimalNumber(decimal: Dinero.redondeado(d)).stringValue
+            if Dinero.decimal(t["amount"]) != Dinero.redondeado(d) { t["amount"] = .number(cifra) }
+            let antes = [t["note"], t["description"], t["concepto"]].compactMap { $0?.texto }.first { !$0.isEmpty } ?? ""
+            if concepto != antes { t["note"] = .string(concepto) }
+            if t["date"]?.texto != fecha { t["date"] = .string(fecha) }
+            if t["account"]?.texto != cuenta { t["account"] = .string(cuenta) }
+            if t["type"]?.texto == "transfer" {
+                if let destino, t["transferTo"]?.texto != destino { t["transferTo"] = .string(destino) }
+            } else if t["category"]?.texto != categoria {
+                if let categoria { t["category"] = .string(categoria); t.removeValue(forKey: "needsReview") } else { t.removeValue(forKey: "category") }
+            }
+            lista[n] = .object(t)
+            pro["transactions"] = .array(lista)
+            r["financePro"] = .some(.object(pro))
+        case let .borrarMovimiento(id):
+            guard var pro = (valores["financePro"] ?? nil)?.objeto, var lista = pro["transactions"]?.lista else { break }
+            let antes = lista.count
+            lista.removeAll { $0["id"]?.comoId == id }
+            guard lista.count != antes else { break }
+            pro["transactions"] = .array(lista)
+            r["financePro"] = .some(.object(pro))
+        case let .crearTraspaso(id, importe, desde, hacia, fecha, hora, concepto):
+            guard var pro = (valores["financePro"] ?? nil)?.objeto, let d = Dinero.decimal(texto: importe), d > 0, desde != hacia else { break }
+            var lista = pro["transactions"]?.lista ?? []
+            if lista.contains(where: { $0["id"]?.comoId == id }) { break }
+            var t: [String: JSONValue] = ["id": .string(id), "date": .string(fecha), "hora": .string(hora), "account": .string(desde),
+                                          "transferTo": .string(hacia), "type": .string("transfer"),
+                                          "amount": .number(NSDecimalNumber(decimal: Dinero.redondeado(d)).stringValue), "manual": .bool(true)]
+            if !concepto.isEmpty { t["note"] = .string(concepto) }
+            lista.append(.object(t))
+            pro["transactions"] = .array(lista)
+            r["financePro"] = .some(.object(pro))
         case let .ponerCiudadTiempo(nombre, lat, lon):
             guard Double(lat) != nil, Double(lon) != nil else { break }
             r["ciudadTiempo"] = .some(.object(["nombre": .string(nombre), "lat": .number(lat), "lon": .number(lon)]))
@@ -434,7 +475,8 @@ enum AplicarOperaciones {
             return .object(p)
 
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento,
-             .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea:
+             .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea,
+             .editarMovimiento, .borrarMovimiento, .crearTraspaso:
             return valor ?? .object(p)
         }
     }

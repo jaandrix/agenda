@@ -34,15 +34,17 @@ struct FinanzasView: View {
                     FilaLibro(etiqueta: "sale.", valor: cifra(v.gastosMes, oculto))
                     CabeceraSeccion(titulo: "cuentas.")
                     ForEach(v.cuentas) { FilaLibro(etiqueta: $0.nombre.lowercased() + ".", valor: cifra($0.saldo, oculto)) }
-                    CabeceraSeccion(titulo: "movimientos.", detalle: "importar y presupuestos, en la web")
+                    CabeceraSeccion(titulo: "movimientos.", detalle: "importar, en la web")
                     AccionTexto(texto: "+ movimiento.") { c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: "expense") }
                     ForEach(v.movimientos) { m in
+                        Button { c.modal = .editarMovimiento(m) } label: {
                         HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
                             Text(String(m.fecha.suffix(5))).font(Tipo.mono).foregroundStyle(Paleta.textoSecundario).frame(width: 46, alignment: .leading)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(m.concepto.isEmpty ? (m.categoria.isEmpty ? "sin concepto" : m.categoria) : m.concepto)
                                     .font(Tipo.cuerpo).foregroundStyle(m.futuro ? Paleta.textoSecundario : Paleta.texto).lineLimit(1)
-                                if !m.categoria.isEmpty && !m.concepto.isEmpty { Text(m.categoria).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                                let sub = m.tipo == "transfer" ? "traspaso a \(nombreCuenta(m.destino, v))" : (m.concepto.isEmpty ? "" : m.categoria)
+                                if !sub.isEmpty { Text(sub).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
                             }
                             Spacer(minLength: Espacio.s)
                             Text(oculto ? "•••" : (m.tipo == "income" ? "+" : m.tipo == "transfer" ? "" : "-") + Dinero.formato(m.importe))
@@ -50,6 +52,9 @@ struct FinanzasView: View {
                                 .foregroundStyle(m.tipo == "income" ? Paleta.acento : Paleta.texto)
                         }
                         .padding(.vertical, 10)
+                        .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                         .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
                         .accessibilityElement(children: .combine)
                     }
@@ -71,6 +76,7 @@ struct FinanzasView: View {
     }
 
     private func cifra(_ d: Decimal, _ oculto: Bool) -> String { oculto ? "•••••" : Dinero.formato(d) }
+    private func nombreCuenta(_ id: String, _ v: VistaFinanzas) -> String { (v.cuentas.first { $0.id == id }?.nombre ?? id).lowercased() }
 }
 
 struct EditorMovimientoView: View {
@@ -78,8 +84,11 @@ struct EditorMovimientoView: View {
     @Environment(\.dismiss) private var cerrar
     let id: String
     let tipoInicial: String
+    var existente: Movimiento?
 
     @State private var tipo = "expense"
+    @State private var destino = "efectivo"
+    @State private var confirmarBorrado = false
     @State private var importe = ""
     @State private var concepto = ""
     @State private var cuenta = "bancos"
@@ -97,30 +106,48 @@ struct EditorMovimientoView: View {
                     Picker("tipo.", selection: $tipo) {
                         Text("gasto.").tag("expense")
                         Text("ingreso.").tag("income")
+                        Text("traspaso.").tag("transfer")
                     }
                     .pickerStyle(.segmented)
+                    .disabled(existente != nil)
                     TextField("importe.", text: $importe).keyboardType(.decimalPad).focused($enfocado)
                     TextField("concepto.", text: $concepto)
                 }
                 .listRowBackground(Paleta.superficie)
                 Section {
-                    Picker("cuenta.", selection: $cuenta) {
+                    Picker(tipo == "transfer" ? "desde." : "cuenta.", selection: $cuenta) {
                         ForEach(vista?.cuentas ?? []) { Text($0.nombre.lowercased() + ".").tag($0.id) }
                     }
-                    Picker("categoría.", selection: $categoria) {
-                        Text("sin categoría.").tag(String?.none)
-                        ForEach((vista?.categorias ?? []).filter { $0.tipo == nil || $0.tipo == tipo }) { Text($0.nombre.lowercased()).tag(Optional($0.id)) }
+                    if tipo == "transfer" {
+                        Picker("hacia.", selection: $destino) {
+                            ForEach(vista?.cuentas ?? []) { Text($0.nombre.lowercased() + ".").tag($0.id) }
+                        }
+                    } else {
+                        Picker("categoría.", selection: $categoria) {
+                            Text("sin categoría.").tag(String?.none)
+                            ForEach((vista?.categorias ?? []).filter { $0.tipo == nil || $0.tipo == tipo }) { Text($0.nombre.lowercased()).tag(Optional($0.id)) }
+                        }
                     }
-                    DatePicker("día.", selection: $fecha, in: ...Date(), displayedComponents: .date).environment(\.locale, Locale(identifier: "es_ES"))
+                    DatePicker("día.", selection: $fecha, displayedComponents: .date).environment(\.locale, Locale(identifier: "es_ES"))
                 } footer: {
                     if let error { Text(error).foregroundStyle(Paleta.error) }
                 }
                 .listRowBackground(Paleta.superficie)
+                if existente != nil {
+                    Section {
+                        Button("borrar movimiento.", role: .destructive) { confirmarBorrado = true }
+                    }
+                    .listRowBackground(Paleta.superficie)
+                }
+            }
+            .confirmationDialog("¿borrar este movimiento?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
+                Button("borrar.", role: .destructive) { Task { await borrar() } }
+                Button("cancelar.", role: .cancel) {}
             }
             .font(Tipo.cuerpo)
             .scrollContentBackground(.hidden)
             .background(Paleta.fondo)
-            .navigationTitle("nuevo movimiento.")
+            .navigationTitle(existente == nil ? "nuevo movimiento." : "movimiento.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
@@ -128,13 +155,34 @@ struct EditorMovimientoView: View {
                     Button("guardar.") { Task { await guardar() } }.disabled(guardando || valor == nil)
                 }
             }
-            .onAppear { tipo = tipoInicial == "income" ? "income" : "expense"; enfocado = true }
+            .onAppear {
+                if let m = existente {
+                    tipo = m.tipo
+                    importe = NSDecimalNumber(decimal: m.importe).stringValue.replacingOccurrences(of: ".", with: ",")
+                    concepto = m.concepto
+                    cuenta = m.cuenta
+                    destino = m.destino.isEmpty ? destino : m.destino
+                    categoria = m.categoriaId.isEmpty ? nil : m.categoriaId
+                    if let d = LocalDay(iso: m.fecha) {
+                        var cal = Calendar(identifier: .gregorian)
+                        cal.timeZone = CalendarioBitacora.madrid.zona
+                        fecha = cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) ?? fecha
+                    }
+                } else {
+                    tipo = tipoInicial == "income" ? "income" : "expense"
+                    enfocado = true
+                }
+            }
             .task {
                 let doc = await c.documentoVisible()
                 vista = await Task.detached { doc.map { LecturaFinanzas.vista($0) } }.value
             }
         }
         .presentationDetents([.large])
+    }
+
+    private func borrar() async {
+        do { try await c.encolar(.borrarMovimiento(id: id)); cerrar() } catch { self.error = "no se pudo borrar en este iPhone." }
     }
 
     private var valor: Decimal? { Dinero.decimal(texto: importe).flatMap { $0 > 0 ? $0 : nil } }
@@ -149,7 +197,22 @@ struct EditorMovimientoView: View {
         let d = cal.dateComponents([.year, .month, .day], from: fecha)
         let ahora = cal.dateComponents([.hour, .minute], from: Date())
         let dia = LocalDay(year: d.year!, month: d.month!, day: d.day!)!
+        let texto = String(concepto.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
+        let cifra = NSDecimalNumber(decimal: v).stringValue
+        let horaTexto = String(format: "%02d:%02d", ahora.hour ?? 0, ahora.minute ?? 0)
         do {
+            if existente != nil {
+                try await c.encolar(.editarMovimiento(id: id, importe: cifra, concepto: texto, categoria: categoria, fecha: dia.iso, cuenta: cuenta,
+                                                      destino: tipo == "transfer" ? destino : nil))
+                cerrar()
+                return
+            }
+            if tipo == "transfer" {
+                guard destino != cuenta else { error = "elige dos cuentas distintas."; return }
+                try await c.encolar(.crearTraspaso(id: id, importe: cifra, desde: cuenta, hacia: destino, fecha: dia.iso, hora: horaTexto, concepto: texto))
+                cerrar()
+                return
+            }
             try await c.encolar(.crearMovimiento(id: id, tipo: tipo, importe: NSDecimalNumber(decimal: v).stringValue, cuenta: cuenta,
                                                  categoria: categoria, fecha: dia.iso, hora: String(format: "%02d:%02d", ahora.hour ?? 0, ahora.minute ?? 0),
                                                  concepto: String(concepto.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))))

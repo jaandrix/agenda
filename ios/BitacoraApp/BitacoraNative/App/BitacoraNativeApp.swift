@@ -124,6 +124,7 @@ struct PrincipalView: View {
                 case .tarea(let t): EditorTareaView(inicial: t)
                 case .evento(let e): EditorEventoView(inicial: e)
                 case .movimiento(let id, let tipo): EditorMovimientoView(id: id, tipoInicial: tipo)
+                case .editarMovimiento(let m): EditorMovimientoView(id: m.id, tipoInicial: m.tipo, existente: m)
                 case .ficha(let e, let d): FichaEventoView(evento: e, dia: d)
                 case .tiempo: TiempoView()
                 }
