@@ -250,15 +250,15 @@ actor SyncEngine {
             base = resultado
             guard !parche.isEmpty else { break }
             guard vigente(gen) else { throw CancellationError() }
-            let resultado: ResultadoMezcla
+            let respuesta: ResultadoMezcla
             if let huellas = fila.huellas {
-                resultado = try await remoto.mezclar(parche: parche, huellas: huellas, sesion: sesion)
+                respuesta = try await remoto.mezclar(parche: parche, huellas: huellas, sesion: sesion)
             } else {
                 var esperado: [String: JSONValue?] = [:]
                 for k in parche.keys { esperado[k] = .some((try? nube.valor(de: k)) ?? nil) }
-                resultado = try await remoto.mezclar(parche: parche, esperado: esperado, sesion: sesion)
+                respuesta = try await remoto.mezclar(parche: parche, esperado: esperado, sesion: sesion)
             }
-            switch resultado {
+            switch respuesta {
             case .aplicada(let protegida):
                 informe.escrituraProtegida = protegida
             case .conflicto:
