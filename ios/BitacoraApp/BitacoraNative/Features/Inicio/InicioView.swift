@@ -53,7 +53,9 @@ struct VistaInicio: Equatable {
         let tareas = plan.tareas.map { Cosa(id: "t" + $0.id, hora: $0.hora, titulo: $0.titulo, notas: $0.notas, hecha: $0.hecha, acento: $0.arrastrada, tarea: $0) }
         let agenda = (eventos + tareas).sorted { ($0.hora ?? "") < ($1.hora ?? "") }
         let hechas = plan.tareas.filter(\.hecha).count
-        var v = VistaInicio(hoy: hoy, semana: semana, conCosas: Set(semana.filter { !(porDia[$0] ?? []).isEmpty }),
+        // Como la PWA: un día tiene punto si hay algo en el calendario o en el planificador.
+        let diasPlan = ((try? doc.valor(de: "dayPlanner")) ?? nil)?["days"]?.objeto
+        var v = VistaInicio(hoy: hoy, semana: semana, conCosas: Set(semana.filter { d in !(porDia[d] ?? []).isEmpty || !(diasPlan?[d.iso]?.lista ?? []).isEmpty }),
                             agenda: agenda, sinDia: plan.dia == hoy ? plan.sinDia : [], pendientes: plan.tareas.count - hechas, hechas: hechas)
         v.elegido = plan.dia == hoy ? nil : plan.dia
         if let c = (try? doc.valor(de: "ciudadTiempo")) ?? nil, let n = c["nombre"]?.texto,

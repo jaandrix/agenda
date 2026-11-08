@@ -32,8 +32,9 @@ struct EventosView: View {
     @State private var vista: VistaEventos?
     @State private var partidos: [VistaEventos.Fila] = []
     @State private var hayEquipos = false
-
-    private let hoy = CalendarioBitacora.madrid.dia(de: Date())
+    @State private var partidosCargados = false
+    @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
+    @Environment(\.scenePhase) private var fase
 
     var body: some View {
         ScrollView {
@@ -46,7 +47,8 @@ struct EventosView: View {
                 if hayEquipos {
                     Etiqueta(texto: "tus equipos.")
                     if partidos.isEmpty {
-                        Text("cargando sus partidos…").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+                        Text(partidosCargados ? "sin partidos en los próximos 30 días." : "cargando sus partidos…")
+                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
                     }
                     ForEach(partidos.prefix(6)) { fila($0) }
                 }
@@ -67,7 +69,8 @@ struct EventosView: View {
         .scrollIndicators(.hidden)
         .background(Paleta.fondo.ignoresSafeArea())
         .refreshable { await c.sincronizar() }
-        .task(id: c.informe.revision) {
+        .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
+        .task(id: "\(c.informe.revision)-\(hoy.iso)") {
             let doc = await c.documentoVisible()
             vista = await Task.detached(priority: .userInitiated) { doc.map { VistaEventos.desde($0) } }.value
             guard let doc else { return }
@@ -76,6 +79,7 @@ struct EventosView: View {
                 let r = await c.entorno.servicios.deportes.eventos(doc, desde: hoy, dias: 30)
                 partidos = r.flatMap { d, l in l.map { VistaEventos.Fila(evento: $0, dia: d) } }
                     .sorted { ($0.dia.iso, $0.evento.hora ?? "") < ($1.dia.iso, $1.evento.hora ?? "") }
+                partidosCargados = true
             }
         }
     }

@@ -46,7 +46,8 @@ struct CalendarioView: View {
     @State private var borrando: EventoDia?
     @State private var aviso: String?
 
-    private let hoy = CalendarioBitacora.madrid.dia(de: Date())
+    @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
+    @Environment(\.scenePhase) private var fase
     private let columnas = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
 
     var body: some View {
@@ -95,7 +96,8 @@ struct CalendarioView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: "\(c.informe.revision)-\(modelo.mes.iso)") { await modelo.cargar(c) }
+        .task(id: "\(c.informe.revision)-\(modelo.mes.iso)-\(hoy.iso)") { await modelo.cargar(c) }
+        .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
         .confirmationDialog("¿borrar este evento?", isPresented: Binding(get: { borrando != nil }, set: { if !$0 { borrando = nil } }), titleVisibility: .visible) {
             Button("borrar.", role: .destructive) {
                 guard let e = borrando else { return }

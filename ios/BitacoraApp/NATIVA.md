@@ -118,6 +118,42 @@ y oscuro, plan vacío, sin conexión y con letra de accesibilidad.
 - Fuera todavía: estrenos de series, «cerca de ti» en Transporte, presupuestos y cuentas en Finanzas, asignaturas y
   horario en Estudios, fechas de fases y tareas en Proyectos.
 
+**0.12.0 (08-11-2026): plan de ChatGPT `PLAN-CLAUDE-SIGUIENTE-IPA-APUNTAR-IDENTIDAD-TEMAS-Y-NAVEGACION-2026-11-08.md`.**
+
+- **P1 de la auditoría de la 0.11.0:** editar un trabajo rehace su tarea del plan (fecha, título, hora o quitarla, como
+  syncAssignmentPlannerItem); un movimiento que se queda sin categoría vuelve a `needsReview`; ningún autotraspaso al
+  editar (interfaz y operación); «calendario» del menú abre Calendario y la fila de Estudios abre la primera pestaña
+  encendida (asignaturas nativa; repaso y carrera en su página de la web); el manifiesto declara la fecha de las cachés
+  (C617.1). `Operaciones011Tests` prueba todas las operaciones de la 0.11 (resultado, bloques, lo desconocido y reaplicar).
+- **«apuntar.» completo** (`Features/Apuntar`). El intérprete es el mismo `js/apuntar.js` de la web, cargado en
+  JavaScriptCore con `apuntar-entorno.js` (lo que necesita de nucleo.js, copiado tal cual) y `apuntar-puente.js`
+  (`__apuntar` devuelve cada cosa con su tipo, sus campos y la descripción de los 15 tipos). Decisión: así no hay dos
+  intérpretes que se separen; cualquier arreglo en la web llega a la app en la siguiente compilación. Banco dorado:
+  `node pruebas/apuntar-casos.mjs` pasa las frases de `casos-barra.json` y 34 más por la web y por el entorno nativo, falla
+  si difieren y escribe `pruebas/apuntar-casos.json`; `ApuntarTests` exige lo mismo al iPhone y el workflow, que el JSON
+  siga al día. Las altas son operaciones nuevas (`anadirEnLista`, `anadirCompra`, `anadirANota`, `anadirClase`,
+  `registrarApunte`, `deshacerApunte`), un solo lote por frase, ids decididos antes de encolar. `apuntesRecientes` guarda
+  `deshacer` con la forma de la web para tarea, evento, gasto, compra y nota (cumpleaños, viaje y ocio son «evento»);
+  examen, recurrente y clase usan `estudio`, `recurrente` y `clase`, que solo deshace la app (la web dice «ya no estaba»).
+  Lo que la web apuntó con el conector se deshace en la web. Hoja al 56 % ampliable, borrador por cuenta 3 días
+  (`BorradorApuntar`), accesos (rutina, ocio, viaje y despensa abren su página de la web). Siri, enlaces y «Abrir en»
+  abren la misma hoja con el texto; `IntencionView` desaparece.
+- **Barra:** ~68 pt sobre el área segura, iconos propios de 24 (`IconoBarra` en `DesignSystem/Iconos.swift`, trazo 1,85
+  redondeado y un detalle que se llena de acento en la activa: cuaderno, eje con hitos, semana, libro con moneda, índice),
+  fondo de 36, etiqueta 11 semibold, punto de 4, + de 54 (46 y aro de 4) subido 12, esquinas de 22, sombra corta. Sin SF
+  Symbols. Con letra de accesibilidad se ocultan las etiquetas (los nombres siguen para VoiceOver).
+- **Logo `b.`:** el AppIcon sale de `img/marca/icono-512.png` (sin la «B» antigua ni el rectángulo incrustado); fondo de
+  arranque papel/asfalto; el punto de «bitácora.» usa `Paleta.marca` (#E5532B), que no se usa en controles.
+- **Arcilla y temas:** asfalto, papel, teja (`acuarela`), pizarra, oliva y fundador con los colores de styles.css, y
+  «sistema». En asfalto y papel el acento es la arcilla (#C96A5A / #A64235); la PWA conserva su naranja. `Paleta` resuelve
+  cada color con `TemaActivo.elegido` y la raíz se rehace con `.id(tema)`; no hay `switch` por vistas. Permisos como
+  `temasDisponibles` (`PermisosTemasRemotos`: `suscripciones.estado`, `invitaciones`, `user_metadata.desarrollador`),
+  guardados por cuenta para usarlos sin red; el tema es de cada cuenta en este iPhone. Selector de muestras en Ajustes.
+- **P2 baratos:** Transporte carga las favoritas al entrar, Eventos distingue «cargando» de «sin partidos», Calendario y
+  Eventos renuevan «hoy» al volver a la app, los puntos de la semana de Inicio cuentan el planificador.
+- Fuera de esta versión: tipografías y tamaños de letra (hay que traer cinco familias al paquete), capturas en los seis
+  temas, medidas Release en el iPhone y el resto de cortes verticales.
+
 Cómo usar las piezas en un apartado nuevo: `ScrollView` + `LazyVStack` sobre `Paleta.fondo`, `CabeceraApartado` arriba
 (sin barra de navegación), `CabeceraSeccion` por bloque, `FilaAgenda` para lo que se marca, `FilaEvento` para lo que
 tiene hora y no se marca, `FilaLibro` para cifras e índices, `AccionTexto` para «+ algo.». Solo «ahora.» lleva relieve.
@@ -131,11 +167,11 @@ Pendiente del plan: capturas a 375 y 430, hoja de edición, Calendario, Finanzas
 | `--text-secondary` #736f63 / #a29f96 | `Paleta.textoSecundario` |
 | `--border` tinta al 7 % / 8 % | `Paleta.borde` |
 | `--border-strong` 16 % | `Paleta.bordeFuerte` (aro de `.m-check`) |
-| `--m-acento` #e5532b / #f0643a | `Paleta.acento` |
+| `--m-acento` #e5532b / #f0643a | `Paleta.acento` (arcilla #a64235 / #c96a5a en la nativa; el naranja solo en `Paleta.marca`) |
 | `--m-sobre-acento` #161514 | `Paleta.sobreAcento` |
 | `.m-ahora-bloque` acento 7 % y filo 16 %, radio 20 | `Paleta.tinteAcento`, `filoAcento`, `Radio.bloque` |
-| `.m-tabbar` radio 26, tab 12,5 bold, icono en círculo al 6 % | `BarraBitacora`, `Radio.barra`, `Paleta.tinteTexto` |
-| `.m-tab-mas` 72 con aro de la barra, subido 28 | botón central 60 + aro 6, subido 22 |
+| `.m-tabbar` radio 26, tab 12,5 bold, icono en círculo al 6 % | `BarraBitacora` (0.12: radio 22, etiqueta 11, icono 24 en 36, `IconoBarra`) |
+| `.m-tab-mas` 72 con aro de la barra, subido 28 | botón central 46 + aro 4, subido 12 |
 | `.m-check` 30, borde 2, lleno de acento | `BitacoraCheck` (sello 160 ms) |
 | `--m-fs-titulo` 42 | `Tipo.tituloApartado` |
 
