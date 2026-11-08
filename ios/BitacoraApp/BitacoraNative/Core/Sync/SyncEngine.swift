@@ -239,7 +239,8 @@ actor SyncEngine {
         var base = DocumentoBitacora.vacio
         var lote: [OperacionPendiente] = []
         while true {
-            guard let leida = try await remoto.leerFila(sesion: sesion) else { throw ErrorRed.servidor(404) }
+            // Sin fila todavía (cuenta nueva): se parte de un documento vacío y huellas vacías; guardar_bitacora la crea.
+            let leida = try await remoto.leerFila(sesion: sesion) ?? FilaRemota(datos: Data("{}".utf8), actualizado: nil, huellas: [:])
             guard vigente(gen) else { throw CancellationError() }
             fila = leida
             let nube = try DocumentoBitacora(datos: fila.datos)

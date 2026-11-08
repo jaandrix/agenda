@@ -19,13 +19,17 @@ struct ProyectoVista: Sendable, Identifiable, Equatable {
 // Proyectos de `entries` con proyectoDatos y proyectoSiguiente de la web (CONTRATO-ESTUDIOS-PROYECTOS.md).
 enum LecturaProyectos {
     static func vista(_ doc: DocumentoBitacora, hoy: String = CalendarioBitacora.madrid.diaLogico(Date()).iso) -> [ProyectoVista] {
-        let enHoy = Set((((try? doc.valor(de: "dayPlanner")) ?? nil)?["days"]?[hoy]?.lista ?? []).compactMap { $0["proyectoTareaId"]?.comoId })
+        // La pareja proyecto y tarea: las tareas heredadas de `tasks` se llaman pt_c0, pt_c1... en todos los proyectos.
+        let enHoy = Set((((try? doc.valor(de: "dayPlanner")) ?? nil)?["days"]?[hoy]?.lista ?? []).compactMap { t -> String? in
+            guard let pid = t["proyectoId"]?.comoId, let tid = t["proyectoTareaId"]?.comoId else { return nil }
+            return pid + "|" + tid
+        })
         return (((try? doc.valor(de: "entries")) ?? nil)?.lista ?? []).compactMap { x -> ProyectoVista? in
             guard x["type"]?.texto == "project", let o = x.objeto, let id = o["id"]?.comoId else { return nil }
             let p = AplicarOperaciones.proyectoNormalizado(o)
             let tareas = (p["tareas"]?.lista ?? []).compactMap { t -> TareaProyecto? in
                 guard let tid = t["id"]?.comoId else { return nil }
-                return TareaProyecto(id: tid, texto: t["texto"]?.texto ?? "", estado: t["estado"]?.texto ?? "pendiente", enHoy: enHoy.contains(tid))
+                return TareaProyecto(id: tid, texto: t["texto"]?.texto ?? "", estado: t["estado"]?.texto ?? "pendiente", enHoy: enHoy.contains(id + "|" + tid))
             }
             let vivas = tareas.filter { $0.estado != "hecha" }
             let sig = vivas.first { $0.id == p["siguienteId"]?.comoId } ?? vivas.first { $0.estado == "curso" } ?? vivas.first

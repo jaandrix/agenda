@@ -255,7 +255,7 @@ enum AplicarOperaciones {
             var p = planificador(valores["dayPlanner"] ?? nil)
             if buscar(idTarea, en: p) == nil {
                 // Como la web: si ese día ya está, no se repite.
-                if (p["days"]?[dia]?.lista ?? []).contains(where: { $0["proyectoTareaId"]?.comoId == tid }) { break }
+                if (p["days"]?[dia]?.lista ?? []).contains(where: { $0["proyectoId"]?.comoId == pid && $0["proyectoTareaId"]?.comoId == tid }) { break }
                 let titulo = (pr["title"]?.texto ?? "") + ": " + (pt["texto"]?.texto ?? "")
                 _ = poner(["id": .string(idTarea), "time": .string(""), "title": .string(titulo), "notes": .string(""), "done": .bool(false),
                            "proyectoId": .string(pid), "proyectoTareaId": .string(tid)], en: dia, de: &p)

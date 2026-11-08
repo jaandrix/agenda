@@ -44,23 +44,50 @@ struct VistaInicio: Equatable {
 struct InicioView: View {
     @Environment(AppCoordinator.self) private var c
     @State private var vista: VistaInicio?
+    @State private var aviso: String?
+    @State private var enVuelo = Set<String>()
 
     var body: some View {
         ScrollView {
-            InicioCuerpo(vista: vista, ahora: Date(), estado: c.informe.estado,
-                         marcar: { t in Task { try? await c.encolar(.marcarTarea(id: t.id, hecha: !t.hecha, momentoMs: Int64(Date().timeIntervalSince1970 * 1000))) } },
-                         abrir: { t in c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: vista?.hoy, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo)) },
-                         irA: { c.pestana = $0 })
-                .padding(.horizontal, Espacio.l - 4)
-                .padding(.bottom, Espacio.xl)
+            TimelineView(.periodic(from: .now, by: 30)) { reloj in
+                VStack(alignment: .leading, spacing: 0) {
+                    if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
+                    InicioCuerpo(vista: vista, ahora: reloj.date, estado: c.informe.estado,
+                                 marcar: { t in marcar(t) },
+                                 abrir: { t in c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: vista?.hoy, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo)) },
+                                 irA: { c.pestana = $0 })
+                }
+                // Al cruzar las 4:00 cambia el día lógico: se vuelve a leer.
+                .task(id: CalendarioBitacora.madrid.diaLogico(reloj.date)) { await cargar() }
+            }
+            .padding(.horizontal, Espacio.l - 4)
+            .padding(.bottom, Espacio.xl)
         }
         .scrollIndicators(.hidden)
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: c.informe.revision) {
-            let doc = await c.documentoVisible()
-            vista = await Task.detached(priority: .userInitiated) { doc.map { VistaInicio.desde($0) } }.value
+        .task(id: c.informe.revision) { await cargar() }
+    }
+
+    private func cargar() async {
+        let doc = await c.documentoVisible()
+        vista = await Task.detached(priority: .userInitiated) { doc.map { VistaInicio.desde($0) } }.value
+    }
+
+    // Como Plan: un toque a la vez por tarea y, si la cola no se puede guardar, aviso (la vista se rehace con lo real).
+    private func marcar(_ t: TareaPlan) {
+        guard !enVuelo.contains(t.id) else { return }
+        enVuelo.insert(t.id)
+        Task {
+            defer { enVuelo.remove(t.id) }
+            do {
+                try await c.encolar(.marcarTarea(id: t.id, hecha: !t.hecha, momentoMs: Int64(Date().timeIntervalSince1970 * 1000)))
+                aviso = nil
+            } catch {
+                aviso = "no se pudo guardar el cambio en este iPhone."
+                await cargar()
+            }
         }
     }
 }

@@ -623,6 +623,18 @@ final class OperacionesTests: XCTestCase {
         XCTAssertEqual(v.patrimonioOperativo, Decimal(string: "175.75"))
     }
 
+    func testDosProyectosHeredadosConLaMismaTareaNoSeConfunden() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"dayPlanner": {"days": {}, "backlog": []}, "entries": [{"id": "A", "type": "project", "title": "a", "tasks": [{"text": "uno"}]}, {"id": "B", "type": "project", "title": "b", "tasks": [{"text": "uno"}]}]}"#.utf8))
+        let tidA = try XCTUnwrap(LecturaProyectos.vista(doc, hoy: "2026-11-12").first { $0.id == "A" }?.tareas.first?.id)
+        let tidB = try XCTUnwrap(LecturaProyectos.vista(doc, hoy: "2026-11-12").first { $0.id == "B" }?.tareas.first?.id)
+        XCTAssertEqual(tidA, tidB)
+        let (r, _) = AplicarOperaciones.sobre(doc, [.proyectoAHoy(proyectoId: "A", tareaId: tidA, idTarea: "p_a", dia: "2026-11-12"),
+                                                    .proyectoAHoy(proyectoId: "B", tareaId: tidB, idTarea: "p_b", dia: "2026-11-12")])
+        XCTAssertEqual(try r.valor(de: "dayPlanner")?["days"]?["2026-11-12"]?.lista?.count, 2)
+        let v = LecturaProyectos.vista(r, hoy: "2026-11-12")
+        XCTAssertEqual(v.map { $0.tareas.first?.enHoy }, [true, true])
+    }
+
     func testIdsConElFormatoDeLaWeb() {
         let id = OperacionBitacora.nuevoIdTarea()
         XCTAssertTrue(id.hasPrefix("planner_"))
