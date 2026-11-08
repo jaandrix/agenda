@@ -211,10 +211,10 @@ final class EnlacesTests: XCTestCase {
         XCTAssertEqual(EnlaceProfundo.interpretar(URL(string: "bitacora://quick?type=income")!), .rapido(.income))
     }
 
-    func testColaPersiste() {
+    func testColaPersiste() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".json")
         let cola = ColaIntenciones(url: url)
-        cola.guardar([.rapido(.expense), .apuntar(texto: "a", url: nil)])
+        try cola.guardar([.rapido(.expense), .apuntar(texto: "a", url: nil)])
         XCTAssertEqual(ColaIntenciones(url: url).leer(), [.rapido(.expense), .apuntar(texto: "a", url: nil)])
     }
 }
