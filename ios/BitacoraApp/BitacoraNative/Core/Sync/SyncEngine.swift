@@ -250,9 +250,15 @@ actor SyncEngine {
             base = resultado
             guard !parche.isEmpty else { break }
             guard vigente(gen) else { throw CancellationError() }
-            var esperado: [String: JSONValue?] = [:]
-            for k in parche.keys { esperado[k] = .some((try? nube.valor(de: k)) ?? nil) }
-            switch try await remoto.mezclar(parche: parche, esperado: esperado, sesion: sesion) {
+            let resultado: ResultadoMezcla
+            if let huellas = fila.huellas {
+                resultado = try await remoto.mezclar(parche: parche, huellas: huellas, sesion: sesion)
+            } else {
+                var esperado: [String: JSONValue?] = [:]
+                for k in parche.keys { esperado[k] = .some((try? nube.valor(de: k)) ?? nil) }
+                resultado = try await remoto.mezclar(parche: parche, esperado: esperado, sesion: sesion)
+            }
+            switch resultado {
             case .aplicada(let protegida):
                 informe.escrituraProtegida = protegida
             case .conflicto:
@@ -308,6 +314,7 @@ actor SyncEngine {
     static func mensaje(_ e: Error) -> String {
         switch e {
         case ErrorSync.conflicto: return "otro dispositivo está escribiendo a la vez. se reintenta solo."
+        case ErrorServidor.sinActualizar: return "el servidor necesita actualizarse: tus cambios esperan en este iPhone."
         case ErrorRed.servidor(404): return "tu cuenta aún no tiene datos en la nube."
         case ErrorRed.servidor(let c): return "el servidor respondió \(c)."
         case ErrorRed.noAutorizado: return "la nube no deja leer tus datos."

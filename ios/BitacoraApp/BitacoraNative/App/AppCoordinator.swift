@@ -65,6 +65,7 @@ final class AppCoordinator {
     private(set) var velo = false
     private(set) var intenciones: [IntencionEntrante]
     private(set) var informe = InformeSync()
+    var avisoCola: String?
 
     private(set) var bloqueoActivo: Bool
     private(set) var tema: TemaElegido
@@ -233,9 +234,14 @@ final class AppCoordinator {
             Registro.app.notice("Enlace no admitido, se ignora.")
             return
         }
-        try? cola.anadir(intencion)
-        intenciones = cola.leer()
-        if !intenciones.contains(intencion) { intenciones.append(intencion) }
+        do {
+            try cola.anadir(intencion)
+            intenciones = cola.leer()
+        } catch {
+            // Sin poder guardarla, se atiende ya y se avisa: si la app se cierra antes, se perdería.
+            avisoCola = "no se pudo guardar lo recibido en este iPhone. atiéndelo ahora."
+            if !intenciones.contains(intencion) { intenciones.append(intencion) }
+        }
         atenderIntenciones()
     }
 
@@ -243,10 +249,7 @@ final class AppCoordinator {
         guard fase == .lista, !bloqueada, modal == nil, let primera = intenciones.first else { return }
         // Gasto o ingreso rápido: va directo al editor de movimientos.
         if case .rapido(let tipo) = primera {
-            var lista = cola.leer()
-            if let n = lista.firstIndex(of: primera) { lista.remove(at: n) }
-            cola.guardar(lista)
-            intenciones = lista
+            intenciones = (try? cola.quitar(primera)) ?? intenciones.filter { $0 != primera }
             pestana = .finanzas
             modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: tipo.rawValue)
             return
@@ -255,10 +258,13 @@ final class AppCoordinator {
     }
 
     func resolverIntencion(_ i: IntencionEntrante) {
-        var lista = cola.leer()
-        if let n = lista.firstIndex(of: i) { lista.remove(at: n) }
-        cola.guardar(lista)
-        intenciones = lista
+        do {
+            intenciones = try cola.quitar(i)
+            avisoCola = nil
+        } catch {
+            intenciones.removeAll { $0 == i }
+            avisoCola = "no se pudo actualizar la lista de lo recibido. puede volver a aparecer."
+        }
         modal = nil
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(400))

@@ -103,6 +103,12 @@ actor RemotoFalso: BitacoraRemoteDataSource {
         return .aplicada(protegida: true)
     }
     func escribirOtroAntes(_ p: [String: JSONValue]) { escrituraAjena = p }
+    func mezclar(parche: [String: JSONValue], huellas: [String: String], sesion: Sesion) async throws -> ResultadoMezcla {
+        var esperado: [String: JSONValue?] = [:]
+        let actual = try DocumentoBitacora(datos: datos)
+        for k in parche.keys { esperado[k] = .some((try? actual.valor(de: k)) ?? nil) }
+        return try await mezclar(parche: parche, esperado: esperado, sesion: sesion)
+    }
 
     func ponerNoAutorizados(_ n: Int) { noAutorizadosPendientes = n }
     func ponerPuerta(_ p: Puerta?) { puertaLectura = p }
@@ -548,6 +554,14 @@ final class OperacionesTests: XCTestCase {
         let (r, _) = AplicarOperaciones.sobre(doc, [.crearMovimiento(id: "c", tipo: "expense", importe: "2", cuenta: "bancos", categoria: nil, fecha: "2026-11-08", hora: "12:00", concepto: "")])
         XCTAssertEqual(try r.valor(de: "financePro")?["transactions"]?.lista?.last?["needsReview"], .bool(true))
         XCTAssertEqual(LecturaFinanzas.vista(r, hoy: LocalDay(iso: "2026-11-08")!).movimientos.map(\.id), ["b", "c", "a"])
+    }
+
+    func testLecturaConHuellasYValorDeLaCartera() throws {
+        let fila = try XCTUnwrap(RemotoSupabase.extraerConHuellas(Data(#"{"data": {"financeProfile": {"invested": 0}, "investmentData": {"funds": [{"valuations": [{"date": "2026-01-01", "value": 100}, {"date": "2026-10-01", "value": 150.5}]}, {"contributions": [{"amount": 20}, {"amount": "5,25"}]}]}}, "updated_at": "x", "huellas": {"financeProfile": "abc"}}"#.utf8)))
+        XCTAssertEqual(fila.huellas, ["financeProfile": "abc"])
+        XCTAssertNil(try RemotoSupabase.extraerConHuellas(Data("null".utf8)))
+        let v = LecturaFinanzas.vista(try DocumentoBitacora(datos: fila.datos), hoy: LocalDay(iso: "2026-11-08")!)
+        XCTAssertEqual(v.patrimonioOperativo, Decimal(string: "175.75"))
     }
 
     func testIdsConElFormatoDeLaWeb() {

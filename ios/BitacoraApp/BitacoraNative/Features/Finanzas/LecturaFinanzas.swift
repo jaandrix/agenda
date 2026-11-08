@@ -38,8 +38,7 @@ struct VistaFinanzas: Sendable, Equatable {
 
 // Mismas reglas que js/finanzas.js y finanzas-pro.js (financeProSaldos, financeProCuentaEnSaldo, financeProNeutro,
 // saldoLiquido, patrimonioOperativo, activosTotales). Solo lee: no materializa cargos ni programados (eso es
-// prepararFinanzas en la web). Diferencia conocida: si `financeProfile.invested` es 0, la web lo rellena en memoria con
-// el valor de la cartera; aquí cuenta 0.
+// prepararFinanzas en la web).
 enum LecturaFinanzas {
     static let cuentasFijas = ["efectivo", "bancos", "online"]
 
@@ -92,7 +91,10 @@ enum LecturaFinanzas {
             CuentaSaldo(id: k, nombre: cuentasJSON[k]?["name"]?.texto ?? k.prefix(1).uppercased() + String(k.dropFirst()), saldo: redondo(saldos[k] ?? 0))
         }
         let liquido = redondo(saldos.values.reduce(0, +))
-        let invertido = redondo(Dinero.decimal(perfil["invested"]) ?? 0)
+        // Como loadData en la web: sin cifra a mano (o en cero), el valor actual de la cartera.
+        var invertidoBruto = Dinero.decimal(perfil["invested"]) ?? 0
+        if invertidoBruto <= 0 { invertidoBruto = valorCartera(((try? doc.valor(de: "investmentData")) ?? nil)) }
+        let invertido = redondo(invertidoBruto)
         let emergencia = redondo(Dinero.decimal(perfil["emergency"]) ?? 0)
         let vacaciones = redondo(Dinero.decimal(perfil["vacation"]) ?? 0)
         let aMano = (perfil["customAccounts"]?.lista ?? []).reduce(Decimal(0)) { $0 + redondo(Dinero.decimal($1["balance"]) ?? 0) }
@@ -101,6 +103,15 @@ enum LecturaFinanzas {
                              activosTotales: redondo(operativo + vacaciones + aMano), ingresosMes: redondo(ingresos), gastosMes: redondo(gastos),
                              movimientos: Array(movimientos.prefix(60)), categorias: categorias,
                              ocultar: ((try? doc.valor(de: "blurFinances")) ?? nil)?.booleano == true)
+    }
+
+    // portfolioCurrentValue (js/finanzas-pro.js): por fondo, la última valoración; sin valoraciones, lo aportado.
+    static func valorCartera(_ datos: JSONValue?) -> Decimal {
+        (datos?["funds"]?.lista ?? []).reduce(Decimal(0)) { total, f in
+            let vals = (f["valuations"]?.lista ?? []).sorted { ($0["date"]?.texto ?? "") < ($1["date"]?.texto ?? "") }
+            if let ultima = vals.last { return total + (Dinero.decimal(ultima["value"]) ?? 0) }
+            return total + (f["contributions"]?.lista ?? []).reduce(Decimal(0)) { $0 + (Dinero.decimal($1["amount"]) ?? 0) }
+        }
     }
 
     // financeProClaveDia (js/finanzas-pro.js).

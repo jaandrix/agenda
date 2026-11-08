@@ -69,6 +69,13 @@ operaciones en una sola escritura de la cola (crear con notas, apuntar con enlac
 rutinas, notas, borrar eventos y Siri; cola de enlaces con cerrojo. Artefactos: `Bitacora-INSTALAR-ipa` (definitiva) y
 `Bitacora-beta-no-instalar-ipa`.
 
+**0.8.1 (08-11-2026): reauditoría de la 0.8.0.** `supabase/sql/guardar_bitacora.sql`: `leer_bitacora()` devuelve la
+fila con una huella (md5) por bloque y `guardar_bitacora(parche, huellas)` solo escribe si las huellas siguen igual.
+**La PWA también** escribe así (`doSaveData`: `leerNubeConHuellas` / `escribirNubeProtegido`, reintenta hasta 4 veces
+tomando lo leído como base) y ya no hace upsert de la fila. Ninguno de los dos cae a una escritura sin comprobar: sin
+las funciones, la PWA falla el guardado y el iPhone deja el cambio en la cola. Con huellas ya no se suben dos veces
+los bloques. El valor invertido en 0 usa la cartera como la web. La cola de enlaces avisa si no puede guardar o quitar.
+
 ## Escrituras
 
 - `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en

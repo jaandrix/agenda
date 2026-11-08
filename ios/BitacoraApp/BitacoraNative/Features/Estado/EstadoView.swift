@@ -45,6 +45,7 @@ struct EstadoView: View {
             }
             Section("en cola.") {
                 fila("enlaces recibidos sin atender.", valor: "\(c.intenciones.count)")
+                if let aviso = c.avisoCola { fila("aviso.", valor: aviso, alerta: true) }
                 fila("cambios por subir.", valor: "\(c.informe.pendientes)")
                 if let protegida = c.informe.escrituraProtegida {
                     fila("escritura protegida.", valor: protegida ? "sí" : "no, falta el sql del servidor", alerta: !protegida)

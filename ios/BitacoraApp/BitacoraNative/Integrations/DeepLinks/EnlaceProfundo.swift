@@ -79,9 +79,18 @@ struct ColaIntenciones {
         return (try? JSONDecoder().decode([IntencionEntrante].self, from: d)) ?? []
     }
 
-    func guardar(_ lista: [IntencionEntrante]) {
+    func guardar(_ lista: [IntencionEntrante]) throws {
         ColaIntenciones.cerrojo.lock(); defer { ColaIntenciones.cerrojo.unlock() }
-        try? escribir(lista)
+        try escribir(lista)
+    }
+
+    // Quita una intención releyendo el archivo, para no deshacer lo que otro añadió entretanto.
+    func quitar(_ i: IntencionEntrante) throws -> [IntencionEntrante] {
+        ColaIntenciones.cerrojo.lock(); defer { ColaIntenciones.cerrojo.unlock() }
+        var lista = leerSinCerrojo()
+        if let n = lista.firstIndex(of: i) { lista.remove(at: n) }
+        try escribir(lista)
+        return lista
     }
 
     // Añade sin pisar lo que otro haya dejado entretanto; si no se puede escribir, lo dice.

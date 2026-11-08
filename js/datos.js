@@ -588,6 +588,37 @@
             return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
         }
 
+        const funcionNoExiste = e => !!e && (e.code === 'PGRST202' || e.code === '42883' || /could not find the function|does not exist/i.test(e.message || ''));
+
+        async function leerNubeConHuellas(uid) {
+            const r = await consultaConRed(() => sb.rpc('leer_bitacora'));
+            if (!r.error) return { data: (r.data && r.data.data) || {}, huellas: (r.data && r.data.huellas) || {} };
+            if (!funcionNoExiste(r.error)) throw r.error;
+            const { data, error } = await consultaConRed(() => sb.from('bitacora').select('data').eq('user_id', uid).maybeSingle());
+            if (error) throw error;
+            return { data: (data && data.data) || {}, huellas: null };
+        }
+
+        // true si escribió; false si otro dispositivo cambió alguno de esos bloques desde la lectura. Nunca escribe sin
+        // comprobar: sin las funciones del servidor, falla y el cambio se queda en memoria hasta el siguiente guardado.
+        async function escribirNubeProtegido(patch, leido, huellas) {
+            if (huellas) {
+                const h = {};
+                Object.keys(patch).forEach(k => { h[k] = huellas[k] || ''; });
+                const r = await consultaConRed(() => sb.rpc('guardar_bitacora', { p_patch: patch, p_huellas: h }));
+                if (!r.error) return r.data === true;
+                if (!funcionNoExiste(r.error)) throw r.error;
+            }
+            const servidorViejo = new Error('El servidor necesita actualizarse (supabase/sql/guardar_bitacora.sql). No se guarda para no pisar otros dispositivos.');
+            if ('apuntes' in patch || '_meta' in patch) throw servidorViejo;
+            const esperado = {};
+            Object.keys(patch).forEach(k => { if (k in leido) esperado[k] = leido[k]; });
+            const r2 = await consultaConRed(() => sb.rpc('merge_bitacora_si', { p_patch: patch, p_esperado: esperado }));
+            if (!r2.error) return r2.data === true;
+            if (funcionNoExiste(r2.error)) throw servidorViejo;
+            throw r2.error;
+        }
+
         async function doSaveData() {
             // Si se importan apuntes mientras este guardado espera a la red, no se puede dar por enviado lo nuevo.
             const revisionApuntes = apuntesRevision;
@@ -595,66 +626,44 @@
             const { data: { user }, error: errorUsuario } = await authConRed(() => sb.auth.getUser());
             if (!user) throw (errorUsuario && esErrorDeRed(errorUsuario)) ? errorUsuario : new Error('No hay sesión activa');
 
-            // Leer la versión más reciente antes de escribir. Esto evita que
-            // una pestaña antigua de Bitácora borre cambios hechos desde
-            // /apuntes/.
-            const { data: latestRow, error: readError } = await consultaConRed(() => sb
-                .from('bitacora')
-                .select('data')
-                .eq('user_id', user.id)
-                .maybeSingle());
+            // Leer lo último (con la huella de cada bloque), fusionar y escribir solo si nadie cambió esos bloques entretanto
+            // (guardar_bitacora, supabase/sql/guardar_bitacora.sql). Si otro dispositivo escribió en medio, se vuelve a
+            // leer y fusionar sobre lo nuevo. Antes se escribía sin comprobar y lo del iPhone podía perderse.
+            let latestData, latestApuntes, needsSnapshot, currentWeek, fusion, cambiado = false;
+            for (let intento = 0; ; intento++) {
+                const leida = await leerNubeConHuellas(user.id);
+                latestData = leida.data;
+                latestApuntes = Array.isArray(latestData.apuntes) ? latestData.apuntes : [];
+                currentWeek = isoWeekKey();
+                const lastSnapshotWeek = latestData._meta?.lastSnapshotWeek || '';
+                needsSnapshot = lastSnapshotWeek !== currentWeek;
 
-            if (readError) throw readError;
+                const { fusion: fusionViva, cambiado: cambioAhora } = aplicarFusionConNube(latestData);
+                cambiado = cambiado || cambioAhora;
+                // La fusión devuelve los mismos objetos que la app sigue tocando: si mientras se escribía se marcaba otra
+                // tarea, esa marca acababa en datosBase sin haberse enviado, y el guardado siguiente la deshacía (tareas y
+                // compra que se desmarcaban solas). Lo enviado y la nueva base salen de una copia hecha aquí.
+                fusion = clonarDatos(fusionViva);
+                const mergedData = {
+                    ...latestData,
+                    ...fusion,
+                    // Solo sustituir los apuntes remotos cuando el usuario ha
+                    // importado deliberadamente un archivo que los contiene.
+                    apuntes: enviarApuntes ? apuntes : latestApuntes,
+                    _meta: { ...(latestData._meta || {}), lastSnapshotWeek: needsSnapshot ? currentWeek : lastSnapshotWeek }
+                };
 
-            const latestData = (latestRow && latestRow.data) ? latestRow.data : {};
-            const latestApuntes = Array.isArray(latestData.apuntes) ? latestData.apuntes : [];
-            const currentWeek = isoWeekKey();
-            const lastSnapshotWeek = latestData._meta?.lastSnapshotWeek || '';
-            const needsSnapshot = lastSnapshotWeek !== currentWeek;
-
-            const { fusion: fusionViva, cambiado } = aplicarFusionConNube(latestData);
-            // La fusión devuelve los mismos objetos que la app sigue tocando: si mientras se escribía se marcaba otra
-            // tarea, esa marca acababa en datosBase sin haberse enviado, y el guardado siguiente la deshacía (tareas y
-            // compra que se desmarcaban solas). Lo enviado y la nueva base salen de una copia hecha aquí.
-            const fusion = clonarDatos(fusionViva);
-            const mergedData = {
-                ...latestData,
-                ...fusion,
-                // Solo sustituir los apuntes remotos cuando el usuario ha
-                // importado deliberadamente un archivo que los contiene.
-                apuntes: enviarApuntes ? apuntes : latestApuntes,
-                _meta: { ...(latestData._meta || {}), lastSnapshotWeek: needsSnapshot ? currentWeek : lastSnapshotWeek }
-            };
-
-            // En vez de reescribir siempre el bloque de datos entero, se
-            // envía solo lo que de verdad cambió desde la lectura de arriba
-            // (comparando clave a clave de primer nivel). Una función de
-            // Supabase hace el merge en el servidor. Si esa función todavía
-            // no existe (o falla por cualquier otro motivo), se cae al
-            // guardado completo de siempre — nunca se pierde un guardado
-            // por este cambio, en el peor caso solo no se ahorra nada.
-            const patch = {};
-            Object.keys(mergedData).forEach(key => {
-                if (JSON.stringify(mergedData[key]) !== JSON.stringify(latestData[key])) {
-                    patch[key] = mergedData[key];
-                }
-            });
-
-            if (Object.keys(patch).length > 0) {
-                // Con tiempo máximo: una red que no acaba de fallar dejaba la cola de guardado parada para siempre.
-                const { error: patchError } = await consultaConRed(() => sb.rpc('merge_bitacora_data', { p_patch: patch }));
-                if (patchError) {
-                    // El guardado completo solo si la función no existe: ante un fallo de red o del servidor, escribir el
-                    // bloque entero con la lectura de antes podía pisar lo que otro dispositivo guardó entretanto.
-                    const noExiste = patchError.code === 'PGRST202' || patchError.code === '42883' || /could not find the function|does not exist/i.test(patchError.message || '');
-                    if (!noExiste) throw patchError;
-                    const { error: fallbackError } = await consultaConRed(() => sb.from('bitacora').upsert({
-                        user_id: user.id,
-                        data: mergedData,
-                        updated_at: new Date().toISOString()
-                    }));
-                    if (fallbackError) throw fallbackError;
-                }
+                // Solo lo que cambió desde la lectura de arriba, clave a clave de primer nivel.
+                const patch = {};
+                Object.keys(mergedData).forEach(key => {
+                    if (JSON.stringify(mergedData[key]) !== JSON.stringify(latestData[key])) {
+                        patch[key] = mergedData[key];
+                    }
+                });
+                if (!Object.keys(patch).length || await escribirNubeProtegido(patch, latestData, leida.huellas)) break;
+                if (intento >= 3) throw new Error('Otro dispositivo está guardando a la vez. Se reintentará.');
+                // Lo leído ya está fundido en memoria: es la base para la siguiente vuelta, o se tomaría como cambio propio.
+                datosBase = Object.fromEntries(Object.keys(DATOS_SINCRONIZADOS).map(k => [k, clonarDatos(latestData[k])]));
             }
 
             datosBase = clonarDatos(fusion);
