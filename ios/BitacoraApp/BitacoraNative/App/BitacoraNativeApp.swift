@@ -76,9 +76,9 @@ struct RaizView: View {
 
 struct Marca: View {
     var body: some View {
-        Text("bitácora.")
+        (Text("bitácora").foregroundColor(Paleta.texto) + Text(".").foregroundColor(Paleta.acento))
             .font(Tipo.titulo)
-            .foregroundStyle(Paleta.texto)
+            .accessibilityLabel("bitácora")
             .accessibilityAddTraits(.isHeader)
     }
 }
@@ -116,12 +116,18 @@ struct PrincipalView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .onChange(of: c.pestana) { _, p in if p == .calendario || p == .finanzas { c.secundaria = p } }
         .sheet(item: $c.modal) { m in
-            switch m {
-            case .intencion(let i): IntencionView(intencion: i)
-            case .tarea(let t): EditorTareaView(inicial: t)
-            case .evento(let e): EditorEventoView(inicial: e)
-            case .movimiento(let id, let tipo): EditorMovimientoView(id: id, tipoInicial: tipo)
+            // Las hojas son las del sistema (detents, arrastrar para cerrar) con el fondo, la tinta y la letra de Bitácora.
+            Group {
+                switch m {
+                case .intencion(let i): IntencionView(intencion: i)
+                case .tarea(let t): EditorTareaView(inicial: t)
+                case .evento(let e): EditorEventoView(inicial: e)
+                case .movimiento(let id, let tipo): EditorMovimientoView(id: id, tipoInicial: tipo)
+                }
             }
+            .presentationBackground(Paleta.fondo)
+            .presentationCornerRadius(Radio.barra)
+            .tint(Paleta.acento)
         }
     }
 }

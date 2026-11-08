@@ -56,6 +56,7 @@ struct EstadoView: View {
         .scrollContentBackground(.hidden)
         .background(Paleta.fondo)
         .navigationTitle("estado.")
+        .navigationBarTitleDisplayMode(.inline)
         .refreshable { await c.sincronizar() }
         .task(id: c.informe.revision) { conserva = await c.comprobarConservacion() }
     }

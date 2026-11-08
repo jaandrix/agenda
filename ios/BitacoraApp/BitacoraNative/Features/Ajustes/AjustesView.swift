@@ -47,6 +47,7 @@ struct AjustesView: View {
         .scrollContentBackground(.hidden)
         .background(Paleta.fondo)
         .navigationTitle("ajustes.")
+        .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog("¿cerrar sesión?", isPresented: $confirmarSalida, titleVisibility: .visible) {
             Button("cerrar sesión.", role: .destructive) { Task { await c.salir() } }
             Button("cancelar.", role: .cancel) {}
