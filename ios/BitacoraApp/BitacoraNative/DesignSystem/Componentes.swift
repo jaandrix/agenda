@@ -156,7 +156,10 @@ struct BarraBitacora: View {
     let activa: String
     let elegir: (String) -> Void
     let capturar: () -> Void
+    @Environment(\.dynamicTypeSize) private var letra
 
+    // Medidas del plan de la 0.12: unos 68 pt sobre el área segura, iconos de 24 en un fondo de 36, etiqueta de 11,
+    // punto de 4 y el + de 54 (46 de acento y aro de 4) subido 12. Sin sombra larga: un filo de un píxel y la superficie.
     var body: some View {
         let mitad = pestanas.count / 2
         HStack(alignment: .top, spacing: 0) {
@@ -164,16 +167,17 @@ struct BarraBitacora: View {
             botonCentral
             ForEach(pestanas.suffix(pestanas.count - mitad)) { boton($0) }
         }
-        .padding(.horizontal, Espacio.s)
-        .padding(.top, 6)
+        .padding(.horizontal, 6)
+        .padding(.top, 5)
+        .padding(.bottom, 3)
         .background(alignment: .top) {
-            UnevenRoundedRectangle(topLeadingRadius: Radio.barra, topTrailingRadius: Radio.barra)
+            UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
                 .fill(Paleta.superficie)
                 .overlay(alignment: .top) {
-                    UnevenRoundedRectangle(topLeadingRadius: Radio.barra, topTrailingRadius: Radio.barra)
+                    UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
                         .stroke(Paleta.borde, lineWidth: 1)
                 }
-                .shadow(color: .black.opacity(0.18), radius: 16, y: -6)
+                .shadow(color: .black.opacity(0.06), radius: 5, y: -1)
                 .ignoresSafeArea(edges: .bottom)
         }
     }
@@ -181,16 +185,17 @@ struct BarraBitacora: View {
     private func boton(_ p: Pestana) -> some View {
         let on = p.id == activa
         return Button { elegir(p.id) } label: {
-            VStack(spacing: 4) {
-                Image(systemName: p.icono)
-                    .font(.system(size: 19, weight: .semibold))
-                    .frame(width: 46, height: 46)
+            VStack(spacing: 2) {
+                IconoBarra(id: p.icono, activo: on)
+                    .frame(width: 36, height: 36)
                     .background(on ? Paleta.tinteAcento : Paleta.tinteTexto, in: Circle())
-                Text(p.titulo).font(Tipo.poppins(12.5, .bold, estilo: .caption2)).lineLimit(1)
+                if !letra.isAccessibilitySize {
+                    Text(p.titulo + ".").font(Tipo.poppins(11, .semibold, estilo: .caption2)).lineLimit(1).minimumScaleFactor(0.85)
+                }
                 Circle().fill(on ? Paleta.acento : .clear).frame(width: 4, height: 4)
             }
             .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
-            .frame(maxWidth: .infinity, minHeight: 64)
+            .frame(maxWidth: .infinity, minHeight: 56)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -200,17 +205,16 @@ struct BarraBitacora: View {
 
     private var botonCentral: some View {
         Button(action: capturar) {
-            Image(systemName: "plus")
-                .font(.system(size: 26, weight: .semibold))
+            IconoBarra(id: "apuntar")
                 .foregroundStyle(Paleta.sobreAcento)
-                .frame(width: 60, height: 60)
+                .frame(width: 46, height: 46)
                 .background(Paleta.acento, in: Circle())
-                .padding(6)
+                .padding(4)
                 .background(Paleta.superficie, in: Circle())
         }
         .buttonStyle(.plain)
-        .offset(y: -22)
-        .frame(width: 80)
+        .offset(y: -12)
+        .frame(width: 66, height: 44)
         .accessibilityLabel("apuntar")
     }
 }

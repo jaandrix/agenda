@@ -41,6 +41,7 @@ struct BitacoraNativeApp: App {
     var body: some Scene {
         WindowGroup {
             RaizView()
+                .id(coordinador.tema)
                 .environment(coordinador)
                 .preferredColorScheme(coordinador.tema.esquema)
                 .tint(Paleta.acento)
@@ -76,7 +77,7 @@ struct RaizView: View {
 
 struct Marca: View {
     var body: some View {
-        (Text("bitácora").foregroundColor(Paleta.texto) + Text(".").foregroundColor(Paleta.acento))
+        (Text("bitácora").foregroundColor(Paleta.texto) + Text(".").foregroundColor(Paleta.marca))
             .font(Tipo.titulo)
             .accessibilityLabel("bitácora")
             .accessibilityAddTraits(.isHeader)
@@ -89,10 +90,10 @@ struct PrincipalView: View {
     @Environment(AppCoordinator.self) private var c
 
     static func pestanas(secundaria: Pestana) -> [BarraBitacora.Pestana] {
-        [.init(id: "inicio", titulo: "inicio", icono: "house"),
-         .init(id: "plan", titulo: "plan", icono: "checklist"),
-         secundaria == .finanzas ? .init(id: "finanzas", titulo: "finanzas", icono: "eurosign") : .init(id: "calendario", titulo: "calendario", icono: "calendar"),
-         .init(id: "mas", titulo: "menú", icono: "line.3.horizontal")]
+        [.init(id: "inicio", titulo: "inicio", icono: "inicio"),
+         .init(id: "plan", titulo: "plan", icono: "plan"),
+         secundaria == .finanzas ? .init(id: "finanzas", titulo: "finanzas", icono: "finanzas") : .init(id: "calendario", titulo: "calendario", icono: "calendario"),
+         .init(id: "mas", titulo: "menú", icono: "menu")]
     }
     private static let porId: [String: Pestana] = ["inicio": .inicio, "plan": .plan, "calendario": .calendario, "finanzas": .finanzas, "mas": .mas]
 

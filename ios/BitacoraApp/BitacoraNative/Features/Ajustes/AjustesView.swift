@@ -16,10 +16,8 @@ struct AjustesView: View {
                     .listRowBackground(Paleta.superficie)
             }
             Section {
-                Picker("tema.", selection: Binding(get: { c.tema }, set: { c.ponerTema($0) })) {
-                    ForEach(TemaElegido.allCases) { Text($0.nombre).tag($0) }
-                }
-                .listRowBackground(Paleta.superficie)
+                SelectorTema()
+                    .listRowBackground(Paleta.superficie)
                 Toggle("pedir \(Biometria.nombre) al abrir.", isOn: Binding(get: { c.bloqueoActivo }, set: { v in Task { await c.activarBloqueo(v) } }))
                     .disabled(!Biometria.disponible)
                     .listRowBackground(Paleta.superficie)
@@ -54,5 +52,41 @@ struct AjustesView: View {
         } message: {
             Text("se borra la copia de tus datos de este iPhone. en la nube no cambia nada.")
         }
+    }
+}
+
+// renderSelectorTema: una muestra por tema (fondo, acento y tinta) con su nombre. Solo los que esta cuenta puede usar.
+struct SelectorTema: View {
+    @Environment(AppCoordinator.self) private var c
+    @Environment(\.colorScheme) private var esquema
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Espacio.s) {
+            Text("tema.").font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 10)], spacing: 10) {
+                ForEach(TemaElegido.allCases.filter { $0.permitido(c.permisosTemas) }) { t in
+                    let k = TemaTokens.de(t, sistemaOscuro: esquema == .dark)
+                    let on = t == c.tema
+                    Button { c.ponerTema(t) } label: {
+                        VStack(spacing: 6) {
+                            HStack(spacing: -6) {
+                                ForEach([k.fondo, k.acento, k.texto], id: \.self) { v in
+                                    Circle().fill(Color(uiColor: UIColor(rgb: v))).frame(width: 22, height: 22)
+                                        .overlay(Circle().stroke(Paleta.bordeFuerte, lineWidth: 1))
+                                }
+                            }
+                            Text(t.nombre).font(Tipo.poppins(13, on ? .bold : .medium, estilo: .footnote)).foregroundStyle(Paleta.texto)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 64)
+                        .background(on ? Paleta.tinteAcento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: Radio.control, style: .continuous).stroke(on ? Paleta.acento : .clear, lineWidth: 1.5))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("tema \(t.nombre.dropLast())")
+                    .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
+                }
+            }
+        }
+        .padding(.vertical, 6)
     }
 }

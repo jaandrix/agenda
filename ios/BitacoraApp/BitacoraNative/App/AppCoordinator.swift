@@ -100,6 +100,7 @@ final class AppCoordinator {
 
     private(set) var bloqueoActivo: Bool
     private(set) var tema: TemaElegido
+    private(set) var permisosTemas = PermisosTemas()
 
     @ObservationIgnored private let cola = ColaIntenciones()
     @ObservationIgnored private var escuchaSync: Task<Void, Never>?
@@ -111,6 +112,7 @@ final class AppCoordinator {
         self.entorno = entorno
         bloqueoActivo = UserDefaults.standard.bool(forKey: "bitacora.bloqueo")
         tema = TemaElegido(rawValue: UserDefaults.standard.string(forKey: "bitacora.tema") ?? "") ?? .sistema
+        TemaActivo.elegido = tema
         intenciones = ColaIntenciones().leer()
     }
 
@@ -120,6 +122,7 @@ final class AppCoordinator {
         if let s = await entorno.auth.sesionGuardada() {
             // Con sesión guardada se entra ya con la copia local y la nube se comprueba a la vez.
             sesion = s
+            temaDeCuenta(s.userId)
             bloqueada = bloqueoActivo
             await entorno.sync.iniciar(uid: s.userId)
             fase = .lista
@@ -134,6 +137,7 @@ final class AppCoordinator {
     func entrar(email: String, contrasena: String) async throws {
         let s = try await entorno.auth.entrar(email: email, contrasena: contrasena)
         sesion = s
+        temaDeCuenta(s.userId)
         await entorno.sync.iniciar(uid: s.userId)
         fase = .lista
         pestana = .inicio
@@ -252,9 +256,27 @@ final class AppCoordinator {
         UserDefaults.standard.set(si, forKey: "bitacora.bloqueo")
     }
 
+    // El tema es de cada cuenta en este iPhone (la PWA lo guarda en el navegador: no se sincroniza). La primera vez se
+    // hereda el que había para todo el iPhone. Un tema que esta cuenta no puede usar vuelve a «sistema».
     func ponerTema(_ t: TemaElegido) {
+        guard t.permitido(permisosTemas) else { return }
+        TemaActivo.elegido = t
         tema = t
         UserDefaults.standard.set(t.rawValue, forKey: "bitacora.tema")
+        if let uid = sesion?.userId { UserDefaults.standard.set(t.rawValue, forKey: "bitacora.tema.\(uid)") }
+    }
+
+    private func temaDeCuenta(_ uid: String) {
+        permisosTemas = PermisosTemasRemotos.guardados(uid)
+        let guardado = UserDefaults.standard.string(forKey: "bitacora.tema.\(uid)").flatMap(TemaElegido.init(rawValue:)) ?? tema
+        let t = guardado.permitido(permisosTemas) ? guardado : .sistema
+        if t != tema { TemaActivo.elegido = t; tema = t }
+        let cliente = entorno.cliente, auth = entorno.auth
+        Task { [weak self] in
+            guard let p = await PermisosTemasRemotos.leer(uid, cliente: cliente, auth: auth), let self, self.sesion?.userId == uid else { return }
+            self.permisosTemas = p
+            if !self.tema.permitido(p) { TemaActivo.elegido = .sistema; self.tema = .sistema }
+        }
     }
 
     // MARK: enlaces

@@ -1,18 +1,62 @@
 import SwiftUI
 import UIKit
 
-// Tokens sacados de styles.css: asfalto (oscuro, el de siempre) y papel (claro). El resto de temas llegará cuando
-// haya pantallas que lo justifiquen.
+// Los seis temas de la PWA (THEMES en js/datos.js; colores de styles.css). «acuarela» se enseña como «teja.».
+// «sistema» es papel o asfalto según el iPhone. En asfalto y papel la interfaz usa la arcilla del plan de la 0.12
+// (#C96A5A / #A64235) en lugar del naranja de la PWA: el #E5532B queda solo para el punto del logo (`Paleta.marca`).
 enum TemaElegido: String, CaseIterable, Identifiable {
-    case sistema, asfalto, papel
+    case sistema, asfalto, papel, acuarela, pizarra, oliva, fundador
     var id: String { rawValue }
-    var nombre: String { rawValue + "." }
+    var nombre: String { self == .acuarela ? "teja." : rawValue + "." }
     var esquema: ColorScheme? {
         switch self {
         case .sistema: return nil
-        case .asfalto: return .dark
-        case .papel: return .light
+        case .asfalto, .fundador: return .dark
+        default: return .light
         }
+    }
+
+    // temasDisponibles: fundador para socios y la cuenta del creador; oliva para quien invitó o entró invitado.
+    func permitido(_ p: PermisosTemas) -> Bool {
+        switch self {
+        case .fundador: return p.todos
+        case .oliva: return p.todos || p.oliva
+        default: return true
+        }
+    }
+}
+
+struct PermisosTemas: Codable, Equatable, Sendable {
+    var todos = false
+    var oliva = false
+}
+
+struct TemaTokens {
+    let fondo: UInt32, superficie: UInt32, texto: UInt32, secundario: UInt32, acento: UInt32, sobreAcento: UInt32, punto: UInt32
+    let oscuro: Bool
+
+    static func de(_ t: TemaElegido, sistemaOscuro: Bool) -> TemaTokens {
+        switch t {
+        case .sistema: return de(sistemaOscuro ? .asfalto : .papel, sistemaOscuro: sistemaOscuro)
+        case .asfalto: return TemaTokens(fondo: 0x121211, superficie: 0x1D1D1B, texto: 0xF4F2EB, secundario: 0xA29F96, acento: 0xC96A5A, sobreAcento: 0x161514, punto: 0x2A2A27, oscuro: true)
+        case .papel: return TemaTokens(fondo: 0xEFEEE9, superficie: 0xFFFFFF, texto: 0x302F2C, secundario: 0x736F63, acento: 0xA64235, sobreAcento: 0xFFFFFF, punto: 0xE2E0D9, oscuro: false)
+        case .acuarela: return TemaTokens(fondo: 0xE7E2D9, superficie: 0xF2EFE9, texto: 0x161514, secundario: 0x625D55, acento: 0x8A2233, sobreAcento: 0xFFFFFF, punto: 0xD2CCC1, oscuro: false)
+        case .pizarra: return TemaTokens(fondo: 0xC0C8CA, superficie: 0xD4D8DD, texto: 0x1A2D42, secundario: 0x2E4156, acento: 0x2E4156, sobreAcento: 0xD4D8DD, punto: 0xAAB7B7, oscuro: false)
+        case .oliva: return TemaTokens(fondo: 0xF7F5EE, superficie: 0xEFF1E8, texto: 0x252A22, secundario: 0x687064, acento: 0x8B4F70, sobreAcento: 0xFFFEFA, punto: 0xDDE4CE, oscuro: false)
+        case .fundador: return TemaTokens(fondo: 0x1A1916, superficie: 0x23211D, texto: 0xF1EAD8, secundario: 0xB0A68F, acento: 0xD4B06A, sobreAcento: 0x1A1916, punto: 0x3A362D, oscuro: true)
+        }
+    }
+}
+
+// El tema elegido, leído por los colores dinámicos de `Paleta` cada vez que se resuelven. Solo lo cambia el coordinador
+// (en el hilo principal), y la raíz se vuelve a construir con `.id(tema)` para que todo se pinte otra vez.
+enum TemaActivo {
+    nonisolated(unsafe) static var elegido: TemaElegido = .sistema
+}
+
+extension UIColor {
+    convenience init(rgb v: UInt32, alfa: CGFloat = 1) {
+        self.init(red: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255, blue: CGFloat(v & 0xFF) / 255, alpha: alfa)
     }
 }
 
@@ -20,33 +64,36 @@ extension Color {
     init(claro: UInt32, oscuro: UInt32, alfaClaro: CGFloat = 1, alfaOscuro: CGFloat = 1) {
         self.init(uiColor: UIColor { t in
             let oscura = t.userInterfaceStyle == .dark
-            let v = oscura ? oscuro : claro
-            return UIColor(red: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255, blue: CGFloat(v & 0xFF) / 255,
-                           alpha: oscura ? alfaOscuro : alfaClaro)
+            return UIColor(rgb: oscura ? oscuro : claro, alfa: oscura ? alfaOscuro : alfaClaro)
         })
+    }
+
+    static func delTema(_ f: @escaping (TemaTokens) -> UIColor) -> Color {
+        Color(uiColor: UIColor { t in f(TemaTokens.de(TemaActivo.elegido, sistemaOscuro: t.userInterfaceStyle == .dark)) })
     }
 }
 
-// Valores de la PWA móvil (styles.css, `body.mobile-standalone` / `body.pwa`): asfalto oscuro y papel claro.
-// claro = papel, oscuro = asfalto. Los nombres son semánticos: las vistas nunca llevan colores sueltos.
+// Nombres semánticos: las vistas nunca llevan colores sueltos.
 enum Paleta {
-    static let fondo = Color(claro: 0xEFEEE9, oscuro: 0x121211)              // --bg-app
-    static let superficie = Color(claro: 0xFFFFFF, oscuro: 0x1D1D1B)         // --m-superficie
-    static let texto = Color(claro: 0x302F2C, oscuro: 0xF4F2EB)              // --text-primary
-    static let textoSecundario = Color(claro: 0x736F63, oscuro: 0xA29F96)    // --text-secondary
-    static let textoApagado = Color(claro: 0x8C887C, oscuro: 0x8A877F)       // --text-muted, solo lo decorativo
-    static let acento = Color(claro: 0xE5532B, oscuro: 0xF0643A)             // --m-acento
-    static let sobreAcento = Color(claro: 0x161514, oscuro: 0x161514)        // --m-sobre-acento
-    static let punto = Color(claro: 0xE2E0D9, oscuro: 0x2A2A27)              // --m-punto
-    static let error = Color(claro: 0xB3261E, oscuro: 0xF2B8B5)
+    static let fondo = Color.delTema { UIColor(rgb: $0.fondo) }                                      // --bg-app
+    static let superficie = Color.delTema { UIColor(rgb: $0.superficie) }                            // --m-superficie
+    static let texto = Color.delTema { UIColor(rgb: $0.texto) }                                      // --text-primary
+    static let textoSecundario = Color.delTema { UIColor(rgb: $0.secundario) }                       // --text-secondary
+    static let textoApagado = Color.delTema { UIColor(rgb: $0.secundario, alfa: 0.75) }              // --text-muted, solo lo decorativo
+    static let acento = Color.delTema { UIColor(rgb: $0.acento) }                                    // acento de interacción
+    static let sobreAcento = Color.delTema { UIColor(rgb: $0.sobreAcento) }
+    static let punto = Color.delTema { UIColor(rgb: $0.punto) }                                      // --m-punto
+    static let error = Color.delTema { UIColor(rgb: $0.oscuro ? 0xF2B8B5 : 0xB3261E) }
     // --border y --border-strong son la tinta con transparencia, no un gris propio.
-    static let borde = Color(claro: 0x161514, oscuro: 0xF4F2EB, alfaClaro: 0.07, alfaOscuro: 0.08)
-    static let bordeFuerte = Color(claro: 0x161514, oscuro: 0xF4F2EB, alfaClaro: 0.16, alfaOscuro: 0.16)
+    static let borde = Color.delTema { UIColor(rgb: $0.texto, alfa: $0.oscuro ? 0.08 : 0.07) }
+    static let bordeFuerte = Color.delTema { UIColor(rgb: $0.texto, alfa: 0.16) }
     // .m-ahora-bloque: el acento al 7 % sobre el fondo y un filo del acento al 16 %.
-    static let tinteAcento = Color(claro: 0xE5532B, oscuro: 0xF0643A, alfaClaro: 0.07, alfaOscuro: 0.07)
-    static let filoAcento = Color(claro: 0xE5532B, oscuro: 0xF0643A, alfaClaro: 0.16, alfaOscuro: 0.16)
+    static let tinteAcento = Color.delTema { UIColor(rgb: $0.acento, alfa: $0.oscuro ? 0.12 : 0.08) }
+    static let filoAcento = Color.delTema { UIColor(rgb: $0.acento, alfa: 0.16) }
     // color-mix(--text-primary 6 %): el círculo de cada icono de la barra.
-    static let tinteTexto = Color(claro: 0x302F2C, oscuro: 0xF4F2EB, alfaClaro: 0.06, alfaOscuro: 0.06)
+    static let tinteTexto = Color.delTema { UIColor(rgb: $0.texto, alfa: 0.06) }
+    // El punto oficial del logo «b.»: no cambia con el tema ni se usa en controles.
+    static let marca = Color(uiColor: UIColor(rgb: 0xE5532B))
 }
 
 enum Duracion {
