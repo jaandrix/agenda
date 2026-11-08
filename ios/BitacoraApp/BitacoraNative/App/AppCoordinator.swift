@@ -2,7 +2,7 @@ import SwiftUI
 import Network
 
 enum Pestana: Hashable {
-    case plan, calendario, finanzas, mas
+    case inicio, plan, calendario, finanzas, mas
 }
 
 // Una sola hoja a la vez: el enum impide dos modales simultáneos.
@@ -59,7 +59,9 @@ final class AppCoordinator {
     let entorno: AppEnvironment
     private(set) var fase: FaseApp = .arrancando
     private(set) var sesion: Sesion?
-    var pestana: Pestana = .plan
+    var pestana: Pestana = .inicio
+    // El cuarto hueco de la barra: el último de calendario o finanzas que se abrió.
+    var secundaria: Pestana = .calendario
     var modal: Modal?
     private(set) var bloqueada = false
     private(set) var velo = false
@@ -105,7 +107,7 @@ final class AppCoordinator {
         sesion = s
         await entorno.sync.iniciar(uid: s.userId)
         fase = .lista
-        pestana = .plan
+        pestana = .inicio
         Task { await entorno.sync.sincronizar() }
         atenderIntenciones()
     }

@@ -28,16 +28,18 @@ final class CapturasTests: XCTestCase {
     }
 
     private func guardar(_ nombre: String, oscuro: Bool, carga: Carga<VistaPlan>, estado: EstadoSync = .reposo, pendientes: Int = 0) throws {
-        let pantalla = VStack(spacing: 0) {
+        try guardarPantalla(nombre, oscuro: oscuro, activa: "plan") {
             PlanCuerpo(carga: carga, desplazamiento: .constant(0), estado: estado, pendientes: pendientes, aviso: nil)
+        }
+    }
+
+    func guardarPantalla<V: View>(_ nombre: String, oscuro: Bool, activa: String, @ViewBuilder _ contenido: () -> V) throws {
+        let pantalla = VStack(spacing: 0) {
+            contenido()
                 .padding(.horizontal, Espacio.l - 4)
                 .padding(.top, 54)
             Spacer(minLength: 0)
-            BarraBitacora(pestanas: [.init(id: "plan", titulo: "plan", icono: "checklist"),
-                                     .init(id: "calendario", titulo: "calendario", icono: "calendar"),
-                                     .init(id: "finanzas", titulo: "finanzas", icono: "eurosign"),
-                                     .init(id: "mas", titulo: "más", icono: "square.grid.2x2")],
-                          activa: "plan", elegir: { _ in }, capturar: {})
+            BarraBitacora(pestanas: PrincipalView.pestanas(secundaria: .calendario), activa: activa, elegir: { _ in }, capturar: {})
                 .padding(.bottom, 20)
         }
         .frame(width: 390, height: 1100, alignment: .top)
@@ -49,6 +51,24 @@ final class CapturasTests: XCTestCase {
         let png = try XCTUnwrap(r.uiImage?.pngData(), "no se pudo dibujar \(nombre)")
         try FileManager.default.createDirectory(at: Self.carpeta, withIntermediateDirectories: true)
         try png.write(to: Self.carpeta.appendingPathComponent("\(nombre).png"))
+    }
+
+    func testCapturasDeInicio() throws {
+        let hoy = CalendarioBitacora.madrid.diaLogico(Date())
+        let v = vista()
+        let semana = (0..<7).map { hoy.sumando(dias: $0 - 2) }
+        let agenda = [VistaInicio.Cosa(id: "e1", hora: "09:00", titulo: "dentista", notas: "calle mayor 12", hecha: false, acento: false, tarea: nil)]
+            + v.tareas.map { VistaInicio.Cosa(id: $0.id, hora: $0.hora, titulo: $0.titulo, notas: $0.notas, hecha: $0.hecha, acento: $0.arrastrada, tarea: $0) }
+        let inicio = VistaInicio(hoy: hoy, semana: semana, conCosas: [semana[1], semana[2], semana[5]], agenda: agenda.sorted { ($0.hora ?? "") < ($1.hora ?? "") },
+                                 sinDia: v.sinDia, pendientes: 5, hechas: 1)
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = CalendarioBitacora.madrid.zona
+        let ahora = cal.date(bySettingHour: 11, minute: 40, second: 0, of: Date())!
+        for oscuro in [false, true] {
+            try guardarPantalla("inicio-390-" + (oscuro ? "oscuro" : "claro"), oscuro: oscuro, activa: "inicio") {
+                InicioCuerpo(vista: inicio, ahora: ahora, estado: .reposo)
+            }
+        }
     }
 
     func testCapturasDePlan() throws {

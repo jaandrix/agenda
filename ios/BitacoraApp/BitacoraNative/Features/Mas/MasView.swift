@@ -81,6 +81,11 @@ struct MasView: View {
     var body: some View {
         List {
             if let aviso { Section { Text(aviso).foregroundStyle(Paleta.error) } }
+            Section {
+                Button("calendario.") { c.pestana = .calendario }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
+                Button("finanzas.") { c.pestana = .finanzas }.frame(minHeight: 44).listRowBackground(Paleta.superficie)
+            }
+            .foregroundStyle(Paleta.texto)
             if let v = vista {
                 Section("rutinas de hoy.") {
                     if v.rutinas.isEmpty { Text("ninguna hoy.").foregroundStyle(Paleta.textoSecundario).listRowBackground(Paleta.superficie) }

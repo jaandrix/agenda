@@ -88,30 +88,33 @@ struct Marca: View {
 struct PrincipalView: View {
     @Environment(AppCoordinator.self) private var c
 
-    private static let pestanas: [BarraBitacora.Pestana] = [
-        .init(id: "plan", titulo: "plan", icono: "checklist"),
-        .init(id: "calendario", titulo: "calendario", icono: "calendar"),
-        .init(id: "finanzas", titulo: "finanzas", icono: "eurosign"),
-        .init(id: "mas", titulo: "más", icono: "square.grid.2x2"),
-    ]
-    private static let orden: [Pestana] = [.plan, .calendario, .finanzas, .mas]
+    static func pestanas(secundaria: Pestana) -> [BarraBitacora.Pestana] {
+        [.init(id: "inicio", titulo: "inicio", icono: "house"),
+         .init(id: "plan", titulo: "plan", icono: "checklist"),
+         secundaria == .finanzas ? .init(id: "finanzas", titulo: "finanzas", icono: "eurosign") : .init(id: "calendario", titulo: "calendario", icono: "calendar"),
+         .init(id: "mas", titulo: "más", icono: "square.grid.2x2")]
+    }
+    private static let porId: [String: Pestana] = ["inicio": .inicio, "plan": .plan, "calendario": .calendario, "finanzas": .finanzas, "mas": .mas]
 
     var body: some View {
         @Bindable var c = c
         VStack(spacing: 0) {
             TabView(selection: $c.pestana) {
+                NavigationStack { InicioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.inicio)
                 NavigationStack { PlanView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.plan)
                 NavigationStack { CalendarioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.calendario)
                 NavigationStack { FinanzasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas)
                 NavigationStack { MasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.mas)
             }
-            BarraBitacora(pestanas: Self.pestanas, activa: Self.pestanas[Self.orden.firstIndex(of: c.pestana) ?? 0].id) { id in
-                if let n = Self.pestanas.firstIndex(where: { $0.id == id }) { c.pestana = Self.orden[n] }
+            BarraBitacora(pestanas: Self.pestanas(secundaria: c.secundaria),
+                          activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio") { id in
+                if let p = Self.porId[id] { c.pestana = p }
             } capturar: {
                 c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(), nueva: true, dia: CalendarioBitacora.madrid.diaLogico(Date())))
             }
         }
         .background(Paleta.fondo.ignoresSafeArea())
+        .onChange(of: c.pestana) { _, p in if p == .calendario || p == .finanzas { c.secundaria = p } }
         .sheet(item: $c.modal) { m in
             switch m {
             case .intencion(let i): IntencionView(intencion: i)
