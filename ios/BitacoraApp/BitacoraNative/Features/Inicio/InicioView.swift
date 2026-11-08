@@ -18,7 +18,7 @@ struct VistaInicio: Equatable {
     let hoy: LocalDay
     let semana: [LocalDay]
     let conCosas: Set<LocalDay>
-    let agenda: [Cosa]
+    var agenda: [Cosa]
     let sinDia: [TareaPlan]
     let pendientes: Int
     let hechas: Int
@@ -115,7 +115,7 @@ struct InicioView: View {
                                  abrirEvento: { e in if let d = vista?.hoy { c.modal = .ficha(e, dia: d) } },
                                  abrirPerfil: { c.web = Apartados.webURL("friends") },
                                  abrirTiempo: { c.modal = .tiempo },
-                                 abrirBus: { c.web = Apartados.webURL("transporte") },
+                                 abrirBus: { c.pestana = .mas; c.rutaMas = ["transporte"] },
                                  aviso: aviso)
                 }
                 // Al cruzar las 4:00 cambia el día lógico: se vuelve a leer.
@@ -136,7 +136,14 @@ struct InicioView: View {
 
     private func cargar() async {
         let doc = await c.documentoVisible()
-        vista = await Task.detached(priority: .userInitiated) { doc.map { VistaInicio.desde($0) } }.value
+        guard var v = await Task.detached(priority: .userInitiated, operation: { doc.map { VistaInicio.desde($0) } }).value, let doc else { vista = nil; return }
+        vista = v
+        // Los partidos de tus equipos (srv_p_) llegan de la red: se añaden después, sin esperar a pintar.
+        let partidos = await c.entorno.servicios.deportes.eventos(doc, desde: v.hoy, dias: 1)[v.hoy] ?? []
+        guard !partidos.isEmpty else { return }
+        v.agenda = (v.agenda + partidos.map { VistaInicio.Cosa(id: "e" + $0.id, hora: $0.hora, titulo: $0.titulo, notas: $0.meta, hecha: false, acento: false, tarea: nil, evento: $0) })
+            .sorted { ($0.hora ?? "") < ($1.hora ?? "") }
+        if vista?.hoy == v.hoy { vista = v }
     }
 
     // Cada pieza por su lado: si una falla, las demás siguen.

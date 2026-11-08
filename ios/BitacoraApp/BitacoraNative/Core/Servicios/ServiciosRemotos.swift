@@ -7,11 +7,13 @@ struct ServiciosRemotos: Sendable {
     let perfil: RepositorioPerfil
     let tiempo: RepositorioTiempo
     let transporte: RepositorioTransporte
+    let deportes: RepositorioDeportes
 
     init(cliente: ClienteSupabase, auth: AuthRepository) {
         perfil = RepositorioPerfil(cliente: cliente, auth: auth)
         tiempo = RepositorioTiempo()
         transporte = RepositorioTransporte(cliente: cliente, auth: auth)
+        deportes = RepositorioDeportes(cliente: cliente, auth: auth)
     }
 
     static func get(_ url: URL) async -> Data? {
@@ -270,5 +272,88 @@ actor RepositorioTransporte {
             inicio += 500
         }
         return out
+    }
+}
+
+struct Partido: Sendable, Equatable, Codable {
+    let id: String
+    let fecha: String          // ISO en UTC
+    let horaConfirmada: Bool
+    let local: Bool
+    let rival: String
+    let competicion: String
+    let estadio: String
+}
+
+// serviciosCalendario y partidosDe (servicios.js): el calendario de cada equipo que sigues, de la función `deportes`,
+// guardado 12 horas por equipo.
+actor RepositorioDeportes {
+    private let cliente: ClienteSupabase
+    private let auth: AuthRepository
+    private var memoria: [String: (Date, [Partido])] = [:]
+
+    init(cliente: ClienteSupabase, auth: AuthRepository) {
+        self.cliente = cliente
+        self.auth = auth
+    }
+
+    private func archivo(_ id: String) -> URL { ServiciosRemotos.carpeta.appendingPathComponent("partidos-\(id.filter { $0.isLetter || $0.isNumber }).json") }
+
+    func partidos(equipo id: String, deporte: String, liga: String) async -> [Partido] {
+        if let m = memoria[id], Date().timeIntervalSince(m.0) < 12 * 3600 { return m.1 }
+        let previo: [Partido]? = (try? Data(contentsOf: archivo(id))).flatMap { try? JSONDecoder().decode([Partido].self, from: $0) }
+        if let a = try? FileManager.default.attributesOfItem(atPath: archivo(id).path)[.modificationDate] as? Date,
+           Date().timeIntervalSince(a) < 12 * 3600, let previo {
+            memoria[id] = (a, previo)
+            return previo
+        }
+        do {
+            let s = try await auth.sesionValida()
+            let cuerpo = try JSONSerialization.data(withJSONObject: ["accion": "calendario", "deporte": deporte, "liga": liga, "id": id])
+            let (d, codigo) = try await cliente.enviar(cliente.peticion("functions/v1/deportes", metodo: "POST", token: s.accessToken, cuerpo: cuerpo, tiempo: 15))
+            guard codigo == 200, let j = try JSONSerialization.jsonObject(with: d) as? [String: Any], let lista = j["partidos"] as? [[String: Any]] else { return previo ?? [] }
+            let p = lista.compactMap { x -> Partido? in
+                guard let f = x["fecha"] as? String else { return nil }
+                return Partido(id: "\(x["id"] ?? "")", fecha: f, horaConfirmada: x["horaConfirmada"] as? Bool ?? true, local: x["local"] as? Bool ?? true,
+                               rival: x["rival"] as? String ?? "", competicion: x["competicion"] as? String ?? "", estadio: x["estadio"] as? String ?? "")
+            }
+            memoria[id] = (Date(), p)
+            if let datos = try? JSONEncoder().encode(p) { try? datos.write(to: archivo(id), options: .atomic) }
+            return p
+        } catch {
+            return previo ?? []
+        }
+    }
+
+    // Los partidos de todos tus equipos como eventos del día (srv_p_), sin los ocultos ni los ya apuntados.
+    func eventos(_ doc: DocumentoBitacora, desde: LocalDay, dias: Int) async -> [LocalDay: [EventoDia]] {
+        let serv = (try? doc.valor(de: "servicios")) ?? nil
+        let equipos = serv?["equipos"]?.lista?.compactMap(\.objeto) ?? []
+        guard !equipos.isEmpty else { return [:] }
+        let ocultos = Set(serv?["ocultos"]?.lista?.compactMap(\.texto) ?? [])
+        let apuntados = Set((((try? doc.valor(de: "entries")) ?? nil)?.lista ?? []).compactMap { $0["servicioId"]?.texto })
+        let hasta = desde.sumando(dias: dias)
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = CalendarioBitacora.madrid.zona
+        let iso = ISO8601DateFormatter()
+        let isoFrac = ISO8601DateFormatter()
+        isoFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var r: [LocalDay: [EventoDia]] = [:]
+        for eq in equipos {
+            guard let id = eq["id"]?.comoId else { continue }
+            let corto = eq["corto"]?.texto ?? eq["nombre"]?.texto ?? ""
+            for p in await partidos(equipo: id, deporte: eq["deporte"]?.texto ?? "soccer", liga: eq["liga"]?.texto ?? "") {
+                guard let f = iso.date(from: p.fecha) ?? isoFrac.date(from: p.fecha) else { continue }
+                let dia = CalendarioBitacora.madrid.dia(de: f)
+                let clave = "srv_p_" + p.id
+                guard dia >= desde, dia < hasta, !ocultos.contains(clave), !apuntados.contains(clave) else { continue }
+                let c = cal.dateComponents([.hour, .minute], from: f)
+                r[dia, default: []].append(EventoDia(id: clave, titulo: p.local ? "\(corto) - \(p.rival)" : "\(p.rival) - \(corto)",
+                                                     hora: p.horaConfirmada ? String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0) : nil,
+                                                     lugar: p.estadio, notas: p.competicion, tipo: "partido", editable: false, sinAviso: true,
+                                                     meta: [p.competicion, p.estadio].filter { !$0.isEmpty }.joined(separator: ", ")))
+            }
+        }
+        return r
     }
 }
