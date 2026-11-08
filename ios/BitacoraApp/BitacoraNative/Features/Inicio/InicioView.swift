@@ -26,10 +26,13 @@ struct VistaInicio: Equatable {
     // mobileBusPoste: la primera parada de bus guardada, si Transporte está a la vista.
     var poste: String?
     var lineas: [String] = []
+    // El día elegido en la semana (mobileElegirDia); nil es hoy.
+    var elegido: LocalDay?
+    var dia: LocalDay { elegido ?? hoy }
 
-    static func desde(_ doc: DocumentoBitacora, ahora: Date = Date()) -> VistaInicio {
-        let plan = LecturaPlanificador.vista(doc, ahora: ahora)
-        let hoy = plan.dia
+    static func desde(_ doc: DocumentoBitacora, ahora: Date = Date(), elegido: LocalDay? = nil) -> VistaInicio {
+        let hoy = CalendarioBitacora.madrid.diaLogico(ahora)
+        let plan = LecturaPlanificador.vista(doc, desplazamiento: elegido.map { hoy.dias(hasta: $0) } ?? 0, ahora: ahora)
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "UTC")!
         let semanaDe = cal.component(.weekday, from: cal.date(from: DateComponents(year: hoy.year, month: hoy.month, day: hoy.day, hour: 12))!)
@@ -43,7 +46,7 @@ struct VistaInicio: Equatable {
         // renderMobileDiaPanel: lo apuntado como evento y como tarea a la misma hora se queda solo como tarea.
         let clave = { (t: String, h: String?) in "\(t.trimmingCharacters(in: .whitespaces).lowercased())|\(h ?? "")" }
         let enPlan = Set(plan.tareas.map { clave($0.titulo, $0.hora) })
-        let eventos = (porDia[hoy] ?? []).filter { $0.tipo == "birthday" || !enPlan.contains(clave($0.titulo, $0.hora)) }.map {
+        let eventos = (porDia[plan.dia] ?? []).filter { $0.tipo == "birthday" || !enPlan.contains(clave($0.titulo, $0.hora)) }.map {
             Cosa(id: "e" + $0.id, hora: $0.hora, titulo: $0.titulo, notas: $0.meta, hecha: false, acento: false, tarea: nil,
                  suave: $0.suave, entradas: $0.entradas, evento: $0)
         }
@@ -51,7 +54,8 @@ struct VistaInicio: Equatable {
         let agenda = (eventos + tareas).sorted { ($0.hora ?? "") < ($1.hora ?? "") }
         let hechas = plan.tareas.filter(\.hecha).count
         var v = VistaInicio(hoy: hoy, semana: semana, conCosas: Set(semana.filter { !(porDia[$0] ?? []).isEmpty }),
-                            agenda: agenda, sinDia: plan.sinDia, pendientes: plan.tareas.count - hechas, hechas: hechas)
+                            agenda: agenda, sinDia: plan.dia == hoy ? plan.sinDia : [], pendientes: plan.tareas.count - hechas, hechas: hechas)
+        v.elegido = plan.dia == hoy ? nil : plan.dia
         if let c = (try? doc.valor(de: "ciudadTiempo")) ?? nil, let n = c["nombre"]?.texto,
            let la = Dinero.decimal(c["lat"]), let lo = Dinero.decimal(c["lon"]) {
             v.ciudad = Ciudad(nombre: n, lat: NSDecimalNumber(decimal: la).doubleValue, lon: NSDecimalNumber(decimal: lo).doubleValue)
@@ -102,6 +106,7 @@ struct InicioView: View {
     @State private var foto: Data?
     @State private var tiempo: Tiempo?
     @State private var bus: TiemposParada?
+    @State private var elegido: LocalDay?
 
     var body: some View {
         ScrollView {
@@ -109,10 +114,11 @@ struct InicioView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     InicioCuerpo(vista: vista, ahora: reloj.date, estado: c.informe.estado,
                                  marcar: { t in marcar(t) },
-                                 abrir: { t in c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: vista?.hoy, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo)) },
+                                 abrir: { t in c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: vista?.dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo)) },
                                  irA: { c.pestana = $0 },
                                  foto: foto, tiempo: tiempo, bus: bus,
-                                 abrirEvento: { e in if let d = vista?.hoy { c.modal = .ficha(e, dia: d) } },
+                                 abrirEvento: { e in if let d = vista?.dia { c.modal = .ficha(e, dia: d) } },
+                                 elegir: { d in elegido = d == vista?.hoy ? nil : d },
                                  abrirPerfil: { c.web = Apartados.webURL("friends") },
                                  abrirTiempo: { c.modal = .tiempo },
                                  abrirBus: { c.pestana = .mas; c.rutaMas = ["transporte"] },
@@ -130,20 +136,20 @@ struct InicioView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar(); await cargarServicios(forzar: true) }
-        .task(id: c.informe.revision) { await cargar() }
+        .task(id: "\(c.informe.revision)-\(elegido?.iso ?? "")") { await cargar() }
         .task(id: vista?.ciudad.clave) { await cargarServicios(forzar: false) }
     }
 
     private func cargar() async {
         let doc = await c.documentoVisible()
-        guard var v = await Task.detached(priority: .userInitiated, operation: { doc.map { VistaInicio.desde($0) } }).value, let doc else { vista = nil; return }
+        guard var v = await Task.detached(priority: .userInitiated, operation: { [elegido] in doc.map { VistaInicio.desde($0, elegido: elegido) } }).value, let doc else { vista = nil; return }
         vista = v
         // Los partidos de tus equipos (srv_p_) llegan de la red: se añaden después, sin esperar a pintar.
-        let partidos = await c.entorno.servicios.deportes.eventos(doc, desde: v.hoy, dias: 1)[v.hoy] ?? []
+        let partidos = await c.entorno.servicios.deportes.eventos(doc, desde: v.dia, dias: 1)[v.dia] ?? []
         guard !partidos.isEmpty else { return }
         v.agenda = (v.agenda + partidos.map { VistaInicio.Cosa(id: "e" + $0.id, hora: $0.hora, titulo: $0.titulo, notas: $0.meta, hecha: false, acento: false, tarea: nil, evento: $0) })
             .sorted { ($0.hora ?? "") < ($1.hora ?? "") }
-        if vista?.hoy == v.hoy { vista = v }
+        if vista?.dia == v.dia { vista = v }
     }
 
     // Cada pieza por su lado: si una falla, las demás siguen.
@@ -197,6 +203,7 @@ struct InicioCuerpo: View {
     var abrirPerfil: () -> Void = {}
     var abrirTiempo: () -> Void = {}
     var abrirBus: () -> Void = {}
+    var elegir: (LocalDay) -> Void = { _ in }
     var aviso: String?
 
     private var hora: String {
@@ -213,9 +220,9 @@ struct InicioCuerpo: View {
             if let v = vista {
                 semana(v)
                 bloqueAhora(v)
-                CabeceraSeccion(titulo: "hoy.", detalle: "\(v.pendientes) pendientes, \(v.hechas) hechas", raya: true)
+                cabeceraDia(v)
                 if v.agenda.isEmpty {
-                    Text("nada para hoy.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+                    Text(v.dia == v.hoy ? "nada para hoy." : "nada este día.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
                 }
                 ForEach(v.agenda) { cosa in
                     if let t = cosa.tarea {
@@ -276,15 +283,26 @@ struct InicioCuerpo: View {
     private func semana(_ v: VistaInicio) -> some View {
         HStack(spacing: 0) {
             ForEach(Array(v.semana.enumerated()), id: \.offset) { n, d in
-                VStack(spacing: 4) {
-                    Text(["l", "m", "x", "j", "v", "s", "d"][n]).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    Text("\(d.day)")
-                        .font(Tipo.poppins(17, d == v.hoy ? .bold : .medium, estilo: .body))
-                        .foregroundStyle(d == v.hoy ? Paleta.acento : Paleta.texto)
-                    Circle().fill(v.conCosas.contains(d) ? Paleta.acento : .clear).frame(width: 4, height: 4)
+                let sel = d == v.dia
+                Button { elegir(d) } label: {
+                    VStack(spacing: 6) {
+                        Text(["L", "M", "X", "J", "V", "S", "D"][n]).font(Tipo.poppins(12, .medium, estilo: .caption))
+                            .foregroundStyle(sel ? Paleta.texto : Paleta.textoSecundario)
+                        Text("\(d.day)")
+                            .font(Tipo.poppins(17, sel || d == v.hoy ? .bold : .medium, estilo: .body)).monospacedDigit()
+                            .foregroundStyle(sel ? Paleta.sobreAcento : (d < v.hoy ? Paleta.textoSecundario : Paleta.texto))
+                            .frame(width: 38, height: 38)
+                            .background(sel ? Paleta.acento : .clear, in: Circle())
+                            .overlay(Circle().strokeBorder(d == v.hoy && !sel ? Paleta.texto : .clear, lineWidth: 1.5))
+                        Circle().fill(v.conCosas.contains(d) ? Paleta.acento : .clear).frame(width: 5, height: 5)
+                    }
+                    .padding(.top, 6).padding(.bottom, 8)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(sel ? [.isButton, .isSelected] : .isButton)
             }
         }
         .padding(.top, Espacio.s)
@@ -292,7 +310,42 @@ struct InicioCuerpo: View {
 
     // .m-ahora-bloque: margen 22/6, relleno 18 18 16, radio 20. «ahora.» a 22, la hora a 64, «siguiente,» a 17 y,
     // tras una raya del acento al 18 %, el bus.
-    private func bloqueAhora(_ v: VistaInicio) -> some View {
+    // .m-dia-titulo 34 con .m-dia-sub 16 debajo y la rayita del acento (28 × 3, a 12).
+    private func cabeceraDia(_ v: VistaInicio) -> some View {
+        let n = v.hoy.dias(hasta: v.dia)
+        let titulo = n == 0 ? "hoy." : n == 1 ? "mañana." : n == -1 ? "ayer." : FichaEventoView.fecha(v.dia) + "."
+        let total = v.pendientes + v.hechas
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(titulo).font(Tipo.poppins(34, .bold, estilo: .title)).kerning(-1.2).foregroundStyle(Paleta.texto)
+                .accessibilityAddTraits(.isHeader)
+            Text(total == 0 ? "libre." : "\(v.pendientes) pendientes, \(v.hechas) hechas").font(Tipo.poppins(16, .regular, estilo: .body))
+                .foregroundStyle(Paleta.textoSecundario).padding(.top, 2)
+            RoundedRectangle(cornerRadius: 2).fill(Paleta.acento).frame(width: 28, height: 3).padding(.top, 12)
+        }
+        .padding(.top, Espacio.l).padding(.bottom, Espacio.s)
+    }
+
+    @ViewBuilder private func bloqueAhora(_ v: VistaInicio) -> some View {
+        if v.dia > v.hoy {
+            // renderMobileAhora con otro día por venir: «lo próximo.» y lo primero con hora.
+            let p = v.agenda.first { !$0.hecha && $0.hora != nil }
+            VStack(alignment: .leading, spacing: 0) {
+                Text("lo próximo.").font(Tipo.poppins(22, .bold, estilo: .title2)).kerning(-0.66).foregroundStyle(Paleta.texto)
+                if let p, let h = p.hora {
+                    Text(h).font(Tipo.poppins(64, .bold, estilo: .largeTitle)).kerning(-2.5).foregroundStyle(Paleta.texto).monospacedDigit()
+                        .padding(.top, 4).padding(.bottom, 10).lineLimit(1).minimumScaleFactor(0.6)
+                    Text(p.titulo).font(Tipo.poppins(17, .medium, estilo: .body)).foregroundStyle(Paleta.texto).lineLimit(3)
+                } else {
+                    Text("nada con hora.").font(Tipo.poppins(17, .medium, estilo: .body)).foregroundStyle(Paleta.textoSecundario).padding(.top, 6)
+                }
+            }
+            .modifier(BloqueAhora())
+        } else if v.dia == v.hoy {
+            bloqueHoy(v)
+        }
+    }
+
+    private func bloqueHoy(_ v: VistaInicio) -> some View {
         let siguiente = v.agenda.first { !$0.hecha && ($0.hora ?? "") > hora }
         return VStack(alignment: .leading, spacing: 0) {
             Text("ahora.").font(Tipo.poppins(22, .bold, estilo: .title2)).kerning(-0.66).foregroundStyle(Paleta.texto)
@@ -322,12 +375,20 @@ struct InicioCuerpo: View {
                 .accessibilityLabel("tu bus")
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18).padding(.top, 18).padding(.bottom, 16)
-        .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: Radio.bloque))
-        .overlay(RoundedRectangle(cornerRadius: Radio.bloque).strokeBorder(Paleta.filoAcento, lineWidth: 1))
-        .padding(.top, 22).padding(.bottom, 6)
-        .accessibilityElement(children: .contain)
+        .modifier(BloqueAhora())
+    }
+}
+
+// .m-ahora-bloque: margen 22/6, relleno 18 18 16, radio 20, acento al 7 % con filo al 16 %.
+struct BloqueAhora: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 18).padding(.top, 18).padding(.bottom, 16)
+            .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: Radio.bloque))
+            .overlay(RoundedRectangle(cornerRadius: Radio.bloque).strokeBorder(Paleta.filoAcento, lineWidth: 1))
+            .padding(.top, 22).padding(.bottom, 6)
+            .accessibilityElement(children: .contain)
     }
 }
 
@@ -383,7 +444,7 @@ struct FilaEvento: View {
                     .foregroundStyle(Paleta.textoSecundario).frame(width: 46, alignment: .leading)
                 Circle().fill(suave ? Paleta.bordeFuerte : Paleta.acento).frame(width: 12, height: 12).frame(width: 44, height: 44)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(titulo).font(Tipo.poppins(16, .medium, estilo: .body))
+                    Text(titulo).font(Tipo.poppins(16.5, .semibold, estilo: .body))
                         .foregroundStyle(suave ? Paleta.textoSecundario : Paleta.texto).multilineTextAlignment(.leading)
                     if !detalle.isEmpty { Text(detalle).font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
                 }

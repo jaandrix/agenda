@@ -26,7 +26,7 @@ struct BitacoraCheck: View {
                     Image(systemName: "checkmark").font(.system(size: 13, weight: .heavy)).foregroundStyle(Paleta.sobreAcento)
                 }
             }
-            .frame(width: 30, height: 30)
+            .frame(width: 32, height: 32)
             .scaleEffect(sello ? 1.1 : 1)
             .animation(sinMovimiento ? nil : .easeOut(duration: Duracion.sello), value: sello)
             .frame(width: 44, height: 44)
@@ -49,9 +49,13 @@ struct CabeceraApartado<Accion: View>: View {
             VStack(alignment: .leading, spacing: 2) {
                 (Text(titulo).foregroundColor(Paleta.texto) + Text(".").foregroundColor(Paleta.acento))
                     .font(Tipo.tituloApartado)
-                    .kerning(-1)
+                    .kerning(-2.1)
+                    .lineLimit(1).minimumScaleFactor(0.6)
                     .accessibilityAddTraits(.isHeader)
-                if let contexto { Text(contexto).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                if let contexto, !contexto.isEmpty {
+                    Text(contexto).font(Tipo.poppins(22, .bold, estilo: .title3)).kerning(-0.77).foregroundStyle(Paleta.textoSecundario)
+                        .padding(.top, 2)
+                }
             }
             Spacer(minLength: Espacio.s)
             accion()
@@ -97,7 +101,7 @@ struct FilaAgenda: View {
         HStack(alignment: .center, spacing: Espacio.s) {
             if mostrarHora {
                 Text(hora ?? "")
-                    .font(Tipo.mono)
+                    .font(Tipo.poppins(14, .semibold, estilo: .footnote)).monospacedDigit()
                     .foregroundStyle(acento && !hecho ? Paleta.acento : Paleta.textoSecundario)
                     .frame(width: 46, alignment: .leading)
             }
@@ -105,11 +109,11 @@ struct FilaAgenda: View {
             Button { (abrir ?? marcar)() } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(titulo)
-                        .font(Tipo.cuerpoFuerte)
+                        .font(Tipo.poppins(16.5, .semibold, estilo: .body))
                         .foregroundStyle(hecho ? Paleta.textoSecundario : (acento ? Paleta.acento : Paleta.texto))
                         .strikethrough(hecho, color: Paleta.textoSecundario)
                         .multilineTextAlignment(.leading)
-                    if !notas.isEmpty { Text(notas).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
+                    if !notas.isEmpty { Text(notas).font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
                 }
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
