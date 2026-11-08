@@ -31,6 +31,8 @@ final class CalendarioModel {
     }
 }
 
+// El mes sin caja: semana desde el lunes, el día elegido en un círculo del acento y puntos discretos. Debajo, la agenda
+// del día con las mismas filas que Plan e Inicio. Nada de aspecto de selector de fechas ampliado.
 struct CalendarioView: View {
     @Environment(AppCoordinator.self) private var c
     @State private var modelo = CalendarioModel()
@@ -41,74 +43,49 @@ struct CalendarioView: View {
     private let columnas = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
 
     var body: some View {
-        List {
-            Section {
-                VStack(spacing: Espacio.s) {
-                    HStack {
-                        Button { modelo.moverMes(-1) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
-                            .accessibilityLabel("mes anterior")
-                        Spacer()
-                        Text(nombreMes).font(Tipo.subtitulo).foregroundStyle(Paleta.texto)
-                        Spacer()
-                        Button { modelo.moverMes(1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
-                            .accessibilityLabel("mes siguiente")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Paleta.texto)
-                    LazyVGrid(columns: columnas, spacing: 4) {
-                        ForEach(["l", "m", "x", "j", "v", "s", "d"], id: \.self) { Text($0).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-                        ForEach(0..<huecoInicial, id: \.self) { _ in Color.clear.frame(height: 44) }
-                        ForEach(diasDelMes, id: \.self) { d in celda(d) }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                CabeceraApartado(titulo: "calendario", contexto: nombreMes) {
+                    HStack(spacing: 0) {
+                        boton("chevron.left", "mes anterior") { modelo.moverMes(-1) }
+                        boton("chevron.right", "mes siguiente") { modelo.moverMes(1) }
                     }
                 }
-                .listRowBackground(Color.clear)
-            }
-            if let aviso { Section { Text(aviso).foregroundStyle(Paleta.error) } }
-            Section {
+                if modelo.mes != hoy.yearMonth || modelo.elegido != hoy {
+                    AccionTexto(texto: "volver a hoy.") { modelo.mes = hoy.yearMonth; modelo.elegido = hoy }
+                }
+                LazyVGrid(columns: columnas, spacing: 2) {
+                    ForEach(Array(["l", "m", "x", "j", "v", "s", "d"].enumerated()), id: \.offset) { _, l in
+                        Text(l).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(height: 28)
+                    }
+                    ForEach(0..<huecoInicial, id: \.self) { _ in Color.clear.frame(height: 48) }
+                    ForEach(diasDelMes, id: \.self) { d in celda(d) }
+                }
+                .padding(.top, Espacio.m)
+                if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
                 let eventos = modelo.vista?.porDia[modelo.elegido] ?? []
+                CabeceraSeccion(titulo: nombreDia(modelo.elegido) + ".", detalle: eventos.isEmpty ? nil : "\(eventos.count)", raya: true)
                 if eventos.isEmpty {
-                    Text("nada este día.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).listRowBackground(Paleta.superficie)
+                    Text("nada este día.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
                 }
                 ForEach(eventos) { e in
-                    Button { abrir(e) } label: {
-                        HStack(alignment: .firstTextBaseline, spacing: Espacio.m) {
-                            Text(e.hora ?? "").font(Tipo.mono).foregroundStyle(Paleta.textoSecundario).frame(width: 44, alignment: .leading)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(e.titulo).font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                                let meta = [e.lugar, e.notas].filter { !$0.isEmpty }.joined(separator: ", ")
-                                if !meta.isEmpty { Text(meta).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    FilaEvento(hora: e.hora, titulo: e.titulo, detalle: [e.lugar, e.notas].filter { !$0.isEmpty }.joined(separator: ", "),
+                               abrir: e.editable ? { abrir(e) } : nil)
+                        .contextMenu {
+                            if e.editable { Button("borrar.", role: .destructive) { borrando = e } }
                         }
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Paleta.superficie)
-                    .swipeActions(edge: .trailing) {
-                        if e.editable {
-                            Button("borrar.", role: .destructive) { borrando = e }
-                        }
-                    }
                 }
-                Button {
+                AccionTexto(texto: "+ evento.") {
                     c.modal = .evento(EditorEvento(id: OperacionBitacora.nuevoIdEntrada(), nuevo: true, fecha: modelo.elegido))
-                } label: {
-                    Text("+ evento.").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.acento).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 }
-                .listRowBackground(Paleta.superficie)
-            } header: {
-                Text(nombreDia(modelo.elegido)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).textCase(nil)
+                .padding(.top, Espacio.xs)
             }
+            .padding(.horizontal, Espacio.l - 4)
+            .padding(.bottom, Espacio.xl)
         }
-        .scrollContentBackground(.hidden)
-        .background(Paleta.fondo)
-        .navigationTitle("calendario.")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("hoy.") { modelo.mes = hoy.yearMonth; modelo.elegido = hoy }
-            }
-        }
+        .scrollIndicators(.hidden)
+        .background(Paleta.fondo.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
         .task(id: "\(c.informe.revision)-\(modelo.mes.iso)") { await modelo.cargar(c) }
         .confirmationDialog("¿borrar este evento?", isPresented: Binding(get: { borrando != nil }, set: { if !$0 { borrando = nil } }), titleVisibility: .visible) {
@@ -122,26 +99,32 @@ struct CalendarioView: View {
         }
     }
 
+    private func boton(_ icono: String, _ etiqueta: String, _ accion: @escaping () -> Void) -> some View {
+        Button(action: accion) {
+            Image(systemName: icono).font(.system(size: 17, weight: .semibold)).foregroundStyle(Paleta.texto).frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(etiqueta)
+    }
+
     private func celda(_ d: LocalDay) -> some View {
         let n = modelo.vista?.porDia[d]?.count ?? 0
         let elegido = d == modelo.elegido
         return Button { modelo.elegido = d } label: {
             VStack(spacing: 3) {
                 Text("\(d.day)")
-                    .font(d == hoy ? Tipo.cuerpoFuerte : Tipo.cuerpo)
+                    .font(Tipo.poppins(16, d == hoy || elegido ? .semibold : .regular, estilo: .body))
                     .foregroundStyle(elegido ? Paleta.sobreAcento : (d == hoy ? Paleta.acento : Paleta.texto))
                     .frame(width: 34, height: 34)
                     .background(elegido ? Paleta.acento : Color.clear, in: Circle())
-                HStack(spacing: 2) {
-                    ForEach(0..<min(n, 3), id: \.self) { _ in Circle().fill(Paleta.acento).frame(width: 4, height: 4) }
-                }
-                .frame(height: 4)
+                Circle().fill(n > 0 && !elegido ? Paleta.acento : .clear).frame(width: 4, height: 4)
             }
-            .frame(maxWidth: .infinity, minHeight: 44)
+            .frame(maxWidth: .infinity, minHeight: 48)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(d.day)" + (n > 0 ? ", \(n) cosas" : ""))
+        .accessibilityLabel(nombreDia(d) + (n > 0 ? ", \(n) cosas" : ""))
+        .accessibilityAddTraits(elegido ? [.isSelected, .isButton] : .isButton)
     }
 
     private func abrir(_ e: EventoDia) {
