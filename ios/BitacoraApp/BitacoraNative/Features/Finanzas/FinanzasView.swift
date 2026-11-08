@@ -202,6 +202,7 @@ struct EditorMovimientoView: View {
         let horaTexto = String(format: "%02d:%02d", ahora.hour ?? 0, ahora.minute ?? 0)
         do {
             if existente != nil {
+                if tipo == "transfer", destino == cuenta { error = "elige dos cuentas distintas."; return }
                 try await c.encolar(.editarMovimiento(id: id, importe: cifra, concepto: texto, categoria: categoria, fecha: dia.iso, cuenta: cuenta,
                                                       destino: tipo == "transfer" ? destino : nil))
                 cerrar()

@@ -53,7 +53,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .parcharEvento: return ["entries"]
         case .guardarEvento, .borrarEntrada: return ["entries"]
         case .crearMovimiento, .editarMovimiento, .borrarMovimiento, .crearTraspaso: return ["financePro"]
-        case .editarItemEstudio: return ["studies", "entries"]
+        case .editarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .crearProyecto, .cambiarProyecto: return ["entries"]
         case .borrarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .marcarRutina: return ["habits"]
@@ -215,9 +215,16 @@ enum AplicarOperaciones {
             if t["date"]?.texto != fecha { t["date"] = .string(fecha) }
             if t["account"]?.texto != cuenta { t["account"] = .string(cuenta) }
             if t["type"]?.texto == "transfer" {
+                // Un traspaso a la misma cuenta no tiene sentido: la edición entera se rechaza.
+                if let destino, destino == cuenta { break }
                 if let destino, t["transferTo"]?.texto != destino { t["transferTo"] = .string(destino) }
-            } else if t["category"]?.texto != categoria {
-                if let categoria { t["category"] = .string(categoria); t.removeValue(forKey: "needsReview") } else { t.removeValue(forKey: "category") }
+            } else if let categoria {
+                if t["category"]?.texto != categoria { t["category"] = .string(categoria) }
+                t.removeValue(forKey: "needsReview")
+            } else {
+                // Sin categoría vuelve a «ajustar movimientos», como el registro rápido.
+                t.removeValue(forKey: "category")
+                t["needsReview"] = .bool(true)
             }
             lista[n] = .object(t)
             pro["transactions"] = .array(lista)
@@ -258,6 +265,31 @@ enum AplicarOperaciones {
                 lista.remove(at: e)
             }
             r["entries"] = .some(.array(lista))
+            // syncAssignmentPlannerItem: la tarea del plan se rehace con la fecha, el título y la hora nuevos.
+            if listaK == "assignments" {
+                var p = planificador(valores["dayPlanner"] ?? nil)
+                let pid = "planner_assign_" + id
+                let sitio = buscar(pid, en: p)
+                let existente = sitio.flatMap { tareaEn($0, p) }
+                let fechaN = x["date"]?.texto ?? ""
+                if fechaN.isEmpty || x["fueraDelPlanificador"]?.booleano == true {
+                    if let sitio { _ = quitar(sitio, de: &p) }
+                } else {
+                    let horaN = [x["time"]?.texto, existente?["time"]?.texto].compactMap { $0 }.first { !$0.isEmpty } ?? "23:59"
+                    let nombre = s["name"]?.texto ?? ""
+                    let deseada: [String: JSONValue] = ["id": .string(pid), "time": .string(horaN),
+                                                        "title": .string("trabajo pendiente. " + (titulo.isEmpty ? "Sin título" : titulo)),
+                                                        "notes": .string(nombre.isEmpty ? "" : "Asignatura: " + nombre),
+                                                        "done": .bool(x["done"]?.booleano == true), "arrastrado": .bool(false), "linkedAssignmentId": .string(id)]
+                    var igual = false
+                    if case let .dia(d, _)? = sitio, d == fechaN, existente == deseada { igual = true }
+                    if !igual {
+                        if let sitio { _ = quitar(sitio, de: &p) }
+                        _ = poner(deseada, en: fechaN, de: &p)
+                    }
+                }
+                r["dayPlanner"] = .some(.object(p))
+            }
         case let .borrarItemEstudio(aid, listaK, id):
             guard var st = (valores["studies"] ?? nil)?.objeto, var asig = st["subjects"]?.lista,
                   let ij = buscarItem(asig, aid, listaK, id), var s = asig[ij.0].objeto, var items = s[listaK]?.lista else { break }

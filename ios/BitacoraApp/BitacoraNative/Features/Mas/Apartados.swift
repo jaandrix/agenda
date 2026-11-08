@@ -10,7 +10,7 @@ struct Apartado: Sendable, Identifiable, Equatable {
 
 enum Apartados {
     static let secciones: [(String, [Apartado])] = [
-        ("general", [a("calendar", "inicio"), a("home", "panorama"), a("planner", "planificador"), a("compra", "despensa"),
+        ("general", [a("calendar", "calendario"), a("home", "panorama"), a("planner", "planificador"), a("compra", "despensa"),
                      a("habits", "rutinas"), a("notes", "notas")]),
         ("desarrollo", [a("events", "eventos"), a("finances", "finanzas"), a("work", "empleo"), a("studies", "estudios"),
                         a("profesorado", "profesorado"), a("documents", "documentos"), a("goals", "objetivos"),
@@ -50,6 +50,11 @@ enum Apartados {
 
     static func enMenu(_ vista: String, _ doc: DocumentoBitacora) -> Bool {
         vista == "studies" ? ["studies", "estudiar", "universidad"].contains { visible($0, doc) } : visible(vista, doc)
+    }
+
+    // estudiosVistaInicial (js/nucleo.js): la fila «estudios» abre la primera pestaña encendida.
+    static func destinoEstudios(_ doc: DocumentoBitacora) -> String {
+        ["studies", "estudiar", "universidad"].first { visible($0, doc) } ?? "studies"
     }
 
     static func visibles(_ doc: DocumentoBitacora) -> [(String, [Apartado])] {

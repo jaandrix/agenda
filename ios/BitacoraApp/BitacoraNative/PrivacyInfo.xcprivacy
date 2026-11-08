@@ -3,7 +3,8 @@
 <!--
     Para TestFlight y la App Store (NATIVA.md). Sin rastreo ni dominios de seguimiento.
     API con motivo obligatorio: solo UserDefaults, para preferencias de la propia app (tema, bloqueo, id del
-    dispositivo): CA92.1. No se leen fechas de archivos, espacio en disco, arranque del sistema ni teclados.
+    dispositivo): CA92.1. Fecha de modificación de las cachés propias (transporte, deportes) para saber si
+    caducaron: C617.1. No se leen espacio en disco, arranque del sistema ni teclados.
     Datos: el correo de la cuenta y el contenido que el usuario guarda viajan a su propia cuenta de Supabase para
     que la app funcione; ligados a su cuenta y sin usarse para rastrear.
 -->
@@ -21,6 +22,14 @@
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
                 <string>CA92.1</string>
+            </array>
+        </dict>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>C617.1</string>
             </array>
         </dict>
     </array>

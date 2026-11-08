@@ -5,10 +5,12 @@ import SwiftUI
 struct MenuMas: Sendable, Equatable {
     var grupos: [Grupo] = []
     var cuentas: [String: Int] = [:]
+    var estudios = "studies"
     struct Grupo: Sendable, Equatable { let nombre: String; let apartados: [Apartado] }
 
     static func desde(_ doc: DocumentoBitacora) -> MenuMas {
         var m = MenuMas(grupos: Apartados.visibles(doc).map { Grupo(nombre: $0.0, apartados: $0.1) })
+        m.estudios = Apartados.destinoEstudios(doc)
         // mobileCuentaMenu: lo que queda por hacer hoy en plan y rutinas y los envíos en camino.
         let plan = LecturaPlanificador.vista(doc)
         m.cuentas["planner"] = plan.tareas.filter { !$0.hecha }.count + plan.recurrentes.filter { !$0.hecha }.count
@@ -25,7 +27,7 @@ struct MasView: View {
     @State private var menu: MenuMas?
 
     // Lo que ya es nativo: o una pestaña de la barra, o una página dentro de «más.».
-    static let pestanas: [String: Pestana] = ["calendar": .inicio, "planner": .plan, "finances": .finanzas]
+    static let pestanas: [String: Pestana] = ["calendar": .calendario, "planner": .plan, "finances": .finanzas]
     static let paginas: Set<String> = ["habits", "notes", "studies", "projects", "settings", "events", "transporte"]
 
     var body: some View {
@@ -37,7 +39,7 @@ struct MasView: View {
                         GrupoMenu(titulo: g.nombre + ".") {
                             ForEach(Array(g.apartados.enumerated()), id: \.element.id) { n, a in
                                 if n > 0 { SeparadorMenu() }
-                                fila(a, cuenta: menu.cuentas[a.vista] ?? 0)
+                                fila(a.vista == "studies" ? Apartado(vista: menu.estudios, nombre: a.nombre) : a, cuenta: menu.cuentas[a.vista] ?? 0)
                             }
                         }
                     }
