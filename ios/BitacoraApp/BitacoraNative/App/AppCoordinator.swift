@@ -111,9 +111,10 @@ final class AppCoordinator {
     init(entorno: AppEnvironment = .real()) {
         self.entorno = entorno
         bloqueoActivo = UserDefaults.standard.bool(forKey: "bitacora.bloqueo")
-        tema = TemaElegido(rawValue: UserDefaults.standard.string(forKey: "bitacora.tema") ?? "") ?? .sistema
-        TemaActivo.elegido = tema
+        let t = TemaElegido(rawValue: UserDefaults.standard.string(forKey: "bitacora.tema") ?? "") ?? .sistema
+        tema = t
         intenciones = ColaIntenciones().leer()
+        TemaActivo.elegido = t
     }
 
     func arrancar() async {
