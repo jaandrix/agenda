@@ -90,7 +90,19 @@ Tokens de la PWA móvil en `DesignSystem/Tema.swift`, piezas en `DesignSystem/Co
 `CabeceraApartado`, `CabeceraSeccion`, `FilaAgenda`, `AccionTexto`, `BarraBitacora`), barra propia en lugar de la del
 sistema (plan, calendario, +, finanzas, más; ajustes dentro de más) y Plan rehecho como piloto (`PlanCuerpo`, sin `List`;
 mover y borrar al mantener pulsado y por VoiceOver). Capturas de 390 pt en claro y oscuro: `CapturasTests`, artefacto
-`capturas-diseno` del workflow. Sin cambios en datos ni sincronización. Inicio y el resto, tras aprobar las capturas.
+`capturas-diseno` del workflow. Sin cambios en datos ni sincronización.
+
+**0.10.1 a 0.10.5 (08-11-2026): el resto del plan visual, sin esperar aprobación (lo pidió Alejandro).** Inicio nativo
+(`InicioView`/`InicioCuerpo`: marca, semana, «ahora.», «hoy.», agenda continua, sin día; sin foto ni tiempo hasta que
+haya dato real), barra inicio, plan, +, el último de calendario o finanzas, más. Calendario sin caja con la agenda del día
+en `FilaEvento`. Finanzas con el saldo líquido como cifra principal y `FilaLibro` (`.m-libro-fila`) para el resto; ocultar
+cifras no mueve nada. Más como índice. Hojas del sistema con fondo y tinta de Bitácora. Capturas: inicio y plan en claro
+y oscuro, plan vacío, sin conexión y con letra de accesibilidad.
+
+Cómo usar las piezas en un apartado nuevo: `ScrollView` + `LazyVStack` sobre `Paleta.fondo`, `CabeceraApartado` arriba
+(sin barra de navegación), `CabeceraSeccion` por bloque, `FilaAgenda` para lo que se marca, `FilaEvento` para lo que
+tiene hora y no se marca, `FilaLibro` para cifras e índices, `AccionTexto` para «+ algo.». Solo «ahora.» lleva relieve.
+Pendiente del plan: capturas a 375 y 430, hoja de edición, Calendario, Finanzas y Más en capturas, medir en el iPhone.
 
 | PWA (styles.css) | SwiftUI |
 |---|---|

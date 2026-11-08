@@ -75,7 +75,6 @@ struct MasView: View {
     @State private var web = false
     @State private var nota = ""
     @State private var idNota = OperacionBitacora.nuevoIdNota()
-    @State private var marcadas = 0
     @State private var aviso: String?
 
     var body: some View {

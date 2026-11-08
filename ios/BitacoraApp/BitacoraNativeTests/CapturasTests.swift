@@ -33,7 +33,7 @@ final class CapturasTests: XCTestCase {
         }
     }
 
-    func guardarPantalla<V: View>(_ nombre: String, oscuro: Bool, activa: String, @ViewBuilder _ contenido: () -> V) throws {
+    func guardarPantalla<V: View>(_ nombre: String, oscuro: Bool, activa: String, letra: DynamicTypeSize = .large, @ViewBuilder _ contenido: () -> V) throws {
         let pantalla = VStack(spacing: 0) {
             contenido()
                 .padding(.horizontal, Espacio.l - 4)
@@ -45,6 +45,7 @@ final class CapturasTests: XCTestCase {
         .frame(width: 390, height: 1100, alignment: .top)
         .background(Paleta.fondo)
         .environment(\.colorScheme, oscuro ? .dark : .light)
+        .environment(\.dynamicTypeSize, letra)
 
         let r = ImageRenderer(content: pantalla)
         r.scale = 2
@@ -76,5 +77,9 @@ final class CapturasTests: XCTestCase {
         try guardar("plan-390-oscuro", oscuro: true, carga: .lista(vista()))
         try guardar("plan-390-vacio-claro", oscuro: false, carga: .lista(vista(vacia: true)))
         try guardar("plan-390-sin-conexion-oscuro", oscuro: true, carga: .lista(vista()), estado: .sinConexion, pendientes: 2)
+        // Letra de accesibilidad: nada se corta ni se monta.
+        try guardarPantalla("plan-390-letra-grande-claro", oscuro: false, activa: "plan", letra: .accessibility2) {
+            PlanCuerpo(carga: .lista(vista()), desplazamiento: .constant(0), estado: .reposo, pendientes: 0, aviso: nil)
+        }
     }
 }
