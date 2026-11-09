@@ -106,8 +106,10 @@ const cambiados = git('diff', '--name-only', 'origin/main', '--', 'js', 'styles.
 const versionSubida = git('show', 'origin/main:index.html').stdout.match(/styles\.css\?v=([^"'&\s>]+)/)?.[1];
 if (cambiados && versionSubida === versiones[0]) fallos.push(`hay cambios en js/ o styles.css sin subir ?v= en index.html (sigue en ${versionSubida})`);
 
-const enlazados = [...html.matchAll(/<script\b[^>]*\bsrc=["'](js\/[^"'?]+\.js)(?:\?[^"']*)?["'][^>]*>/gi)].map(m => m[1].replaceAll('/', '\\'));
-for (const src of enlazados) if (!existsSync(join(raiz, src))) fallos.push(`script enlazado inexistente: ${src.replaceAll('\\', '/')}`);
+// Conserva `/` como separador lógico: una barra invertida es parte del nombre en POSIX y hacía que macOS considerase
+// inexistentes todos los scripts aunque estuvieran versionados. Para acceder al disco, reparte los segmentos con join.
+const enlazados = [...html.matchAll(/<script\b[^>]*\bsrc=["'](js\/[^"'?]+\.js)(?:\?[^"']*)?["'][^>]*>/gi)].map(m => m[1].replaceAll('\\', '/'));
+for (const src of enlazados) if (!existsSync(join(raiz, ...src.split('/')))) fallos.push(`script enlazado inexistente: ${src}`);
 const conjuntoEnlazados = new Set(enlazados.map(src => src.toLowerCase()));
 const swTexto = readFileSync(join(raiz, 'service-worker.js'), 'utf8');
 const nucleoTexto = readFileSync(join(carpetaJs, 'nucleo.js'), 'utf8');
@@ -116,7 +118,7 @@ for (const archivo of archivosJs.filter(a => a.startsWith('bajo-demanda/'))) {
     if (!swTexto.includes(`'${nombre}'`)) fallos.push(`js/${archivo} no está en BAJO_DEMANDA de service-worker.js (sin conexión fallaría)`);
     if (!nucleoTexto.includes(`'${nombre}'`)) fallos.push(`js/${archivo} no está en BAJO_DEMANDA de nucleo.js`);
 }
-for (const archivo of archivosJs) if (!archivo.startsWith('bajo-demanda/') && !conjuntoEnlazados.has(`js\\${archivo}`.toLowerCase())) fallos.push(`js/${archivo} no está enlazado en index.html`);
+for (const archivo of archivosJs) if (!archivo.startsWith('bajo-demanda/') && !conjuntoEnlazados.has(`js/${archivo}`.toLowerCase())) fallos.push(`js/${archivo} no está enlazado en index.html`);
 
 const pruebasDinero = spawnSync(process.execPath, ['--test', join(raiz, 'pruebas', 'finanzas.mjs')], { encoding: 'utf8' });
 if (pruebasDinero.status !== 0) fallos.push(`las pruebas de Finanzas no pasan (node --test pruebas/finanzas.mjs):\n${(pruebasDinero.stdout || pruebasDinero.stderr).trim().slice(-1500)}`);
