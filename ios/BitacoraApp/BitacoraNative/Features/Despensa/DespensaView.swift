@@ -59,6 +59,7 @@ struct DespensaView: View {
                 Task { await guardarPlato(dia, momento, nombre, receta) }
             }
         }
+        }
     }
 
     private var detalleCabecera: String? { vista.map { "\($0.listas.count) listas. \($0.recetas.count) recetas." } }
