@@ -55,6 +55,8 @@
                 if (k >= todayKey) return;
                 (p.days[k] || []).forEach(it => {
                     if (!it.done) {
+                        // Para la puntualidad de Panorama: el día previsto sobrevive al arrastre (no a moverla a mano).
+                        if (!it.arrastrado && !it.fechaPrevista) it.fechaPrevista = k;
                         it.arrastrado = true;
                         p.days[todayKey].push(it);
                     }
@@ -430,6 +432,13 @@
             repintarTrasPintar();
         }
 
+        // Contrato compartido con la app de iPhone (Completado en Operaciones.swift, completionSchema 1). Sin fecha prevista
+        // segura (arrastrada antes de guardarla, o sin día), plannedDate va a null y no cuenta en la puntualidad.
+        function camposCompletado(item, diaKey) {
+            const prevista = item.fechaPrevista || (item.arrastrado || !diaKey ? null : diaKey);
+            return { taskId: item.id, plannedDate: prevista, completedDate: currentPlannerDayKey(), automaticCarry: !!(item.fechaPrevista || item.arrastrado), source: 'pwa', completionSchema: 1 };
+        }
+
         async function togglePlannerItemDone(id, offset = plannerDayOffset) {
             const item = plannerItemsForOffset(offset).find(it => it.id === id);
             if (!item) return;
@@ -462,7 +471,8 @@
                     place: '',
                     notes: item.notes || '',
                     category: 'Planificador',
-                    calendarLog: true
+                    calendarLog: true,
+                    ...camposCompletado(item, currentPlannerDayKey(new Date(), offset))
                 });
             }
             filteredEntries = [...entries];

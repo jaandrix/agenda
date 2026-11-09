@@ -44,6 +44,12 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
     case transporteLinea(clave: String, linea: String, activa: Bool)
+    // servicios.transporte.posteInicio: la favorita que sale en Inicio (nil la quita). Ver `LecturaTransporte.posteInicio`.
+    case transporteElegirInicio(clave: String?)
+    // Ajustes → apartados. (renderAjustesApartados): `apartadosConfig.perfil` y `apartadosConfig.opcionales[vista]`.
+    // Ocultar no borra datos.
+    case ponerPerfil(perfil: String)
+    case ponerApartado(vista: String, visible: Bool)
     // Apuntar (js/apuntar.js, apuntarCrear). `json` es el objeto ya construido, en texto: entradas (evento, cumpleaños,
     // viaje, ocio) y tareas recurrentes. Solo se añade si su id no está.
     case anadirEnLista(clave: String, id: String, json: String)
@@ -81,6 +87,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .anadirCompra: return ["listaCompra"]
         case .anadirANota: return ["notes", "apuntesRecientes"]
         case .anadirClase: return ["studies"]
+        case .transporteElegirInicio: return ["servicios"]
+        case .ponerPerfil, .ponerApartado: return ["apartadosConfig"]
         case .registrarApunte: return ["apuntesRecientes"]
         case .deshacerApunte: return ["apuntesRecientes", "dayPlanner", "entries", "financePro", "listaCompra", "notes", "studies", "recurringTasks"]
         default: return ["dayPlanner"]
@@ -177,6 +185,12 @@ enum AplicarOperaciones {
         case .guardarEvento, .borrarEntrada, .parcharEvento:
             r["entries"] = .some(entradas(op, valores["entries"] ?? nil))
         case let .marcarTarea(id, hecha, momento):
+            // La fecha prevista se decide antes de mover la tarea: si estaba en un día pasado y se trae ahora, su día.
+            let antes = planificador(valores["dayPlanner"] ?? nil)
+            let previo = buscar(id, en: antes).map { s -> (String?, Bool) in
+                guard case let .dia(d, _) = s, let t = tareaEn(s, antes) else { return (nil, false) }
+                return Completado.prevista(dia: d, tarea: t, hoy: CalendarioBitacora.madrid.diaLogico(Date(timeIntervalSince1970: Double(momento) / 1000)).iso)
+            }
             let planner = aplicar(op, a: valores["dayPlanner"] ?? nil)
             r["dayPlanner"] = .some(planner)
             guard let sitio = buscar(id, en: planificador(planner)), let t = tareaEn(sitio, planificador(planner)) else { break }
@@ -185,10 +199,13 @@ enum AplicarOperaciones {
             let marca = "planner_done_\(id)"
             lista.removeAll { $0["id"]?.comoId == marca }
             if hecha {
-                lista.append(.object(["id": .string(marca), "type": .string("event"), "eventType": .string("otro"),
-                                      "title": .string("Completado: " + (t["title"]?.texto ?? "")), "date": .string(hoy),
-                                      "time": .string(t["time"]?.texto ?? ""), "place": .string(""), "notes": .string(t["notes"]?.texto ?? ""),
-                                      "category": .string("Planificador"), "calendarLog": .bool(true)]))
+                var e: [String: JSONValue] = ["id": .string(marca), "type": .string("event"), "eventType": .string("otro"),
+                                              "title": .string("Completado: " + (t["title"]?.texto ?? "")), "date": .string(hoy),
+                                              "time": .string(t["time"]?.texto ?? ""), "place": .string(""), "notes": .string(t["notes"]?.texto ?? ""),
+                                              "category": .string("Planificador"), "calendarLog": .bool(true)]
+                Completado.campos(taskId: id, prevista: previo?.0, logico: CalendarioBitacora.madrid.diaLogico(Date(timeIntervalSince1970: Double(momento) / 1000)).iso,
+                                  arrastre: previo?.1 ?? false, origen: "ios").forEach { e[$0.key] = $0.value }
+                lista.append(.object(e))
             }
             // proyectoTareaDesdePlanner (js/proyecto.js).
             if let pid = t["proyectoId"]?.comoId, let tid = t["proyectoTareaId"]?.comoId {
@@ -404,10 +421,42 @@ enum AplicarOperaciones {
             var favs = tr["favoritos"]?.lista ?? []
             let ya = favs.contains { $0.texto == clave }
             guard ya != activa else { break }
+            let n = favs.firstIndex { $0.texto == clave }
             if activa { favs.append(.string(clave)) } else { favs.removeAll { $0.texto == clave } }
             tr["favoritos"] = .array(favs)
+            // Si era el poste de Inicio, pasa a la siguiente parada de bus (o a la anterior) y se guarda.
+            if !activa, tr["posteInicio"]?.texto == clave, let n {
+                let buses = favs.enumerated().filter { $0.element.texto?.hasPrefix("bus:") == true }
+                if let s = (buses.first { $0.offset >= n } ?? buses.last)?.element { tr["posteInicio"] = s } else { tr.removeValue(forKey: "posteInicio") }
+            }
             serv["transporte"] = .object(tr)
             r["servicios"] = .some(.object(serv))
+        case let .transporteElegirInicio(clave):
+            var serv = (valores["servicios"] ?? nil)?.objeto ?? [:]
+            var tr = serv["transporte"]?.objeto ?? [:]
+            if let clave {
+                guard (tr["favoritos"]?.lista ?? []).contains(where: { $0.texto == clave }), tr["posteInicio"]?.texto != clave else { break }
+                tr["posteInicio"] = .string(clave)
+            } else {
+                guard tr["posteInicio"] != nil else { break }
+                tr.removeValue(forKey: "posteInicio")
+            }
+            serv["transporte"] = .object(tr)
+            r["servicios"] = .some(.object(serv))
+        case let .ponerPerfil(perfil):
+            guard ["estudiante", "trabajador", "ambos"].contains(perfil) else { break }
+            var cfg = (valores["apartadosConfig"] ?? nil)?.objeto ?? [:]
+            guard cfg["perfil"]?.texto != perfil else { break }
+            cfg["perfil"] = .string(perfil)
+            r["apartadosConfig"] = .some(.object(cfg))
+        case let .ponerApartado(vista, visible):
+            guard !Apartados.fijos.contains(vista) else { break }
+            var cfg = (valores["apartadosConfig"] ?? nil)?.objeto ?? [:]
+            var op = cfg["opcionales"]?.objeto ?? [:]
+            guard op[vista]?.booleano != visible else { break }
+            op[vista] = .bool(visible)
+            cfg["opcionales"] = .object(op)
+            r["apartadosConfig"] = .some(.object(cfg))
         case let .transporteLinea(clave, linea, activa):
             var serv = (valores["servicios"] ?? nil)?.objeto ?? [:]
             var tr = serv["transporte"]?.objeto ?? [:]
@@ -744,6 +793,8 @@ enum AplicarOperaciones {
             let hoy = CalendarioBitacora.madrid.diaLogico(Date(timeIntervalSince1970: Double(momento) / 1000)).iso
             if case let .dia(dia, _) = sitio, dia < hoy, var t = quitar(sitio, de: &p) {
                 t["arrastrado"] = .bool(true)
+                // arrastrarPlanner: el día en que estaba prevista se conserva al arrastrarla.
+                if t["fechaPrevista"] == nil, tareaEn(sitio, planificador(valor))?["arrastrado"]?.booleano != true { t["fechaPrevista"] = .string(dia) }
                 sitio = poner(t, en: hoy, de: &p)
             }
             cambiar(sitio, en: &p) { t in
@@ -777,6 +828,7 @@ enum AplicarOperaciones {
             if case .pendiente = sitio, dia == nil { return valor ?? .object(p) }
             guard var t = quitar(sitio, de: &p) else { return valor ?? .object(p) }
             t.removeValue(forKey: "arrastrado")
+            t.removeValue(forKey: "fechaPrevista")
             if let dia {
                 if t["time"] == nil { t["time"] = .string("") }
                 _ = poner(t, en: dia, de: &p)

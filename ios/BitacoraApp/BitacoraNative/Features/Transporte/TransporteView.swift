@@ -263,3 +263,13 @@ struct TransporteView: View {
         }
     }
 }
+
+// El poste de Inicio: `servicios.transporte.posteInicio` si sigue entre las favoritas de bus; si no (o sin elegir, como
+// antes de la 0.13), la primera favorita de bus. Mismo criterio que mobileBusPoste en la PWA.
+enum LecturaTransporte {
+    static func posteInicio(_ tr: JSONValue?) -> String? {
+        let buses = (tr?["favoritos"]?.lista ?? []).compactMap(\.texto).filter { $0.hasPrefix("bus:") }
+        if let e = tr?["posteInicio"]?.texto, buses.contains(e) { return e }
+        return buses.first
+    }
+}

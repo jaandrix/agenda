@@ -49,7 +49,7 @@
             if (item.linkedAssignmentId) { const a = findAssignmentById(item.linkedAssignmentId); if (a) a.done = hecha; }
             const logId = 'planner_done_' + item.id;
             entries = entries.filter(e => e.id !== logId);
-            if (hecha) entries.push({ id: logId, type: 'event', eventType: 'otro', title: 'Completado: ' + item.title, date: todayISO(), time: item.time || '', place: '', notes: item.notes || '', category: 'Planificador', calendarLog: true });
+            if (hecha) entries.push({ id: logId, type: 'event', eventType: 'otro', title: 'Completado: ' + item.title, date: todayISO(), time: item.time || '', place: '', notes: item.notes || '', category: 'Planificador', calendarLog: true, ...camposCompletado(item, typeof enDia === 'string' ? enDia : null) });
         }
 
         // Misma lógica que moverTarea en la función del conector: con día y
@@ -68,7 +68,7 @@
                 if (dia && hora) { it.time = hora; insertarConector('tarea', it, dia); }
                 else { delete it.time; dayPlanner.backlog.unshift(it); }
             }
-            if (c.hecha !== undefined) marcarTareaConector(it, !!localizarTareaConector(id)?.dia, !!c.hecha);
+            if (c.hecha !== undefined) marcarTareaConector(it, localizarTareaConector(id)?.dia || false, !!c.hecha);
             return true;
         }
 

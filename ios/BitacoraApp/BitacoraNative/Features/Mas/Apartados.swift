@@ -23,6 +23,13 @@ enum Apartados {
 
     static func webURL(_ vista: String) -> URL { URL(string: "https://appbitacora.es/#\(vista)")! }
 
+    // Lo que no se puede ocultar (inicio, plan, menú y ajustes).
+    static let fijos: Set<String> = ["planner", "settings", "calendar", "home"]
+
+    static func nombre(_ vista: String) -> String {
+        secciones.flatMap(\.1).first { $0.vista == vista }?.nombre ?? vista
+    }
+
     // porDefecto() de cada opcional, sin elección guardada.
     static func visible(_ vista: String, _ doc: DocumentoBitacora) -> Bool {
         let cfg = ((try? doc.valor(de: "apartadosConfig")) ?? nil)

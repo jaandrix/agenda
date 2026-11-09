@@ -1742,7 +1742,9 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
         let mobileBus = null, mobileBusPidiendo = false, mobileBusReloj = null;
         const M_BUS_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M24 10h52c8 0 14 6 14 14v50c0 4-2 7-5 9v7a5 5 0 0 1-10 0v-6H25v6a5 5 0 0 1-10 0v-7c-3-2-5-5-5-9V24c0-8 6-14 14-14zm-2 16v22h56V26zm4 36a6 6 0 1 0 0 12a6 6 0 1 0 0-12zm48 0a6 6 0 1 0 0 12a6 6 0 1 0 0-12z"/></svg>';
         function mobileBusPoste() {
-            const fav = (servicios?.transporte?.favoritos || []).find(c => String(c).startsWith('bus:'));
+            // posteInicio (la app de iPhone también lo elige); si ya no es favorita, la primera de bus.
+            const favs = servicios?.transporte?.favoritos || [], elegido = servicios?.transporte?.posteInicio;
+            const fav = favs.includes(elegido) && String(elegido).startsWith('bus:') ? elegido : favs.find(c => String(c).startsWith('bus:'));
             return fav && apartadoVisible('transporte') ? fav.slice(4) : null;
         }
         function renderMobileBus() {

@@ -63,7 +63,7 @@ struct VistaInicio: Equatable {
             v.ciudad = Ciudad(nombre: n, lat: NSDecimalNumber(decimal: la).doubleValue, lon: NSDecimalNumber(decimal: lo).doubleValue)
         }
         let tr = ((try? doc.valor(de: "servicios")) ?? nil)?["transporte"]
-        if Apartados.visible("transporte", doc), let fav = tr?["favoritos"]?.lista?.compactMap(\.texto).first(where: { $0.hasPrefix("bus:") }) {
+        if Apartados.visible("transporte", doc), let fav = LecturaTransporte.posteInicio(tr) {
             v.poste = String(fav.dropFirst(4))
             v.lineas = tr?["lineas"]?[fav]?.lista?.compactMap(\.texto) ?? []
         }
