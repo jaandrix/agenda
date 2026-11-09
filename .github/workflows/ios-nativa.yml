@@ -10,6 +10,7 @@ on:
       - 'js/datos.js'
       - 'js/nucleo.js'
       - 'pruebas/contrato-ios.mjs'
+      - 'pruebas/comprobar.mjs'
       - 'js/apuntar.js'
       - 'pruebas/apuntar-casos.mjs'
   workflow_dispatch: {}
