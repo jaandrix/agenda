@@ -123,8 +123,23 @@ struct DespensaView: View {
                     .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
             }.frame(maxWidth: .infinity, alignment: .leading) }.buttonStyle(.plain)
             if let p = item.precio { Text("≈ " + Dinero.formato(p)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            Menu {
+                Button("editar.") { modal = .item(item) }
+                Button("eliminar.", role: .destructive) { borrar(item, de: lista) }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Paleta.textoSecundario)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("acciones para \(item.texto)")
         }.frame(minHeight: 52).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-            .swipeActions { Button("borrar", role: .destructive) { Task { try? await c.encolar(.borrarItemCompra(listaId: lista.id, id: item.id)) } } }
+            .contextMenu {
+                Button("editar.") { modal = .item(item) }
+                Button("eliminar.", role: .destructive) { borrar(item, de: lista) }
+            }
+            .accessibilityAction(named: "eliminar") { borrar(item, de: lista) }
     }
 
     private func historial(_ v: VistaDespensa) -> some View { VStack(alignment: .leading, spacing: 0) {
@@ -155,6 +170,9 @@ struct DespensaView: View {
     private func guardarLista() async { let n = nombreLista, previa = listaEditando; nombreLista = ""; listaEditando = nil; try? await c.encolar(.guardarListaCompra(id: previa?.id ?? OperacionBitacora.nuevoIdProyecto("lista"), nombre: n)) }
     private func anadirRapido() async { guard let l = vista?.listaActual else { return }; let t = textoRapido; textoRapido = ""; try? await c.encolar(.anadirCompra(listaId: l.id, textos: [t], ids: [OperacionBitacora.nuevoIdProyecto("cmp")])) }
     private func guardarItem(_ previo: ItemDespensa?, _ texto: String, _ cantidad: String, _ seccion: String, _ precio: String) async { guard let l = vista?.listaActual else { return }; try? await c.encolar(.guardarItemCompra(listaId: l.id, id: previo?.id ?? OperacionBitacora.nuevoIdProyecto("cmp"), texto: texto, cantidad: cantidad, seccion: seccion, precio: precio.isEmpty ? nil : precio, hecho: previo?.hecho ?? false, recetas: previo?.recetas ?? [])) }
+    private func borrar(_ item: ItemDespensa, de lista: ListaDespensa) {
+        Task { try? await c.encolar(.borrarItemCompra(listaId: lista.id, id: item.id)) }
+    }
     private func guardarReceta(_ r: RecetaDespensa?, _ nombre: String, _ raciones: Int, _ ingredientes: [String], _ pasos: [String], _ notas: String) async { try? await c.encolar(.guardarRecetaCompra(id: r?.id ?? OperacionBitacora.nuevoIdProyecto("rec"), nombre: nombre, raciones: raciones, ingredientes: ingredientes, pasos: pasos, notas: notas)) }
     private func anadirReceta(_ r: RecetaDespensa) async { guard let l = vista?.listaActual else { return }; let t = LecturaDespensa.ingredientesFaltantes(r, en: l); try? await c.encolar(.anadirCompra(listaId: l.id, textos: t, ids: t.map { _ in OperacionBitacora.nuevoIdProyecto("cmp") })) }
     private func guardarPlato(_ dia: String, _ momento: String, _ nombre: String, _ receta: RecetaDespensa?) async { try? await c.encolar(.guardarPlatoCompra(dia: dia, id: OperacionBitacora.nuevoIdProyecto("plato"), momento: momento, nombre: nombre, recetaId: receta?.id, ingredientes: receta?.ingredientes.map(\.texto) ?? [])) }

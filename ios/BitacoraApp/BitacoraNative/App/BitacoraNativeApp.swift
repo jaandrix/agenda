@@ -104,12 +104,13 @@ struct PrincipalView: View {
         @Bindable var c = c
         VStack(spacing: 0) {
             TabView(selection: $c.pestana) {
-                NavigationStack { InicioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.inicio)
-                NavigationStack { PlanView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.plan)
-                NavigationStack { CalendarioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.calendario)
-                NavigationStack { FinanzasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas)
-                NavigationStack(path: $c.rutaMas) { MasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.mas)
+                NavigationStack { InicioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.inicio).transition(transicionPestana)
+                NavigationStack { PlanView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.plan).transition(transicionPestana)
+                NavigationStack { CalendarioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.calendario).transition(transicionPestana)
+                NavigationStack { FinanzasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas).transition(transicionPestana)
+                NavigationStack(path: $c.rutaMas) { MasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.mas).transition(transicionPestana)
             }
+            .animation(sinMovimiento ? nil : .easeInOut(duration: 0.18), value: c.pestana)
             BarraBitacora(pestanas: Self.pestanas(secundaria: c.secundaria),
                           activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio") { id in
                 masUsados = nil
@@ -144,7 +145,7 @@ struct PrincipalView: View {
                 }
             }
         }
-        .animation(.easeOut(duration: 0.16), value: masUsados?.map(\.vista).joined())
+        .animation(sinMovimiento ? nil : .spring(response: 0.28, dampingFraction: 0.82), value: masUsados?.map(\.vista).joined())
         .sensoryFeedback(.impact(weight: .light), trigger: masUsados != nil) { _, abierto in abierto }
         .onChange(of: c.modal) { _, m in if m != nil { masUsados = nil } }
         .onChange(of: fase) { _, f in if f != .active { masUsados = nil } }
@@ -185,6 +186,10 @@ struct PrincipalView: View {
             .presentationCornerRadius(Radio.barra)
             .tint(Paleta.acento)
         }
+    }
+
+    private var transicionPestana: AnyTransition {
+        sinMovimiento ? .identity : .opacity.combined(with: .scale(scale: 0.992))
     }
 }
 

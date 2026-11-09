@@ -34,7 +34,7 @@ struct PermisosTemas: Codable, Equatable, Sendable {
 struct TemaTokens {
     let fondo: UInt32, superficie: UInt32, texto: UInt32, secundario: UInt32, acento: UInt32, sobreAcento: UInt32, punto: UInt32
     let oscuro: Bool
-    // Dirección 02: contexto (cabeceras y navegación), progreso (avance) y atención (solo lo que pide mirarse).
+    // Contexto, progreso y atención siempre se derivan del propio tema. No existe una portada o barra azul global.
     var contexto: UInt32 = 0, sobreContexto: UInt32 = 0, progreso: UInt32 = 0, sobreProgreso: UInt32 = 0, atencion: UInt32 = 0
 
     func con(_ c: UInt32, _ sc: UInt32, _ p: UInt32, _ sp: UInt32, _ a: UInt32) -> TemaTokens {
@@ -46,12 +46,12 @@ struct TemaTokens {
     static func de(_ t: TemaElegido, sistemaOscuro: Bool) -> TemaTokens {
         switch t {
         case .sistema: return de(sistemaOscuro ? .asfalto : .papel, sistemaOscuro: sistemaOscuro)
-        case .asfalto: return TemaTokens(fondo: 0x121211, superficie: 0x1D1D1B, texto: 0xF4F2EB, secundario: 0xA29F96, acento: 0xC96A5A, sobreAcento: 0x161514, punto: 0x2A2A27, oscuro: true).con(0x1B2B40, 0xF4F2EB, 0x7FBF98, 0x0F2418, 0xE08FA6)
-        case .papel: return TemaTokens(fondo: 0xEFEEE9, superficie: 0xFFFFFF, texto: 0x302F2C, secundario: 0x736F63, acento: 0xA64235, sobreAcento: 0xFFFFFF, punto: 0xE2E0D9, oscuro: false).con(0x183E70, 0xF7F5EF, 0xB8DFC6, 0x183E70, 0xA34C65)
-        case .acuarela: return TemaTokens(fondo: 0xE7E2D9, superficie: 0xF2EFE9, texto: 0x161514, secundario: 0x625D55, acento: 0x8A2233, sobreAcento: 0xFFFFFF, punto: 0xD2CCC1, oscuro: false).con(0x161514, 0xF2EFE9, 0xC9D3B4, 0x161514, 0x8A2233)
-        case .pizarra: return TemaTokens(fondo: 0xC0C8CA, superficie: 0xD4D8DD, texto: 0x1A2D42, secundario: 0x2E4156, acento: 0x2E4156, sobreAcento: 0xD4D8DD, punto: 0xAAB7B7, oscuro: false).con(0x1A2D42, 0xE4E8EC, 0xA9CDB9, 0x1A2D42, 0x8A3A52)
-        case .oliva: return TemaTokens(fondo: 0xF7F5EE, superficie: 0xEFF1E8, texto: 0x252A22, secundario: 0x687064, acento: 0x8B4F70, sobreAcento: 0xFFFEFA, punto: 0xDDE4CE, oscuro: false).con(0x3B4A2C, 0xF7F5EE, 0xC9D8A9, 0x252A22, 0x8B4F70)
-        case .fundador: return TemaTokens(fondo: 0x1A1916, superficie: 0x23211D, texto: 0xF1EAD8, secundario: 0xB0A68F, acento: 0xD4B06A, sobreAcento: 0x1A1916, punto: 0x3A362D, oscuro: true).con(0x2B2618, 0xF1EAD8, 0xD4B06A, 0x1A1916, 0xE0907E)
+        case .asfalto: return TemaTokens(fondo: 0x121211, superficie: 0x1D1D1B, texto: 0xF4F2EB, secundario: 0xA29F96, acento: 0xC96A5A, sobreAcento: 0x161514, punto: 0x2A2A27, oscuro: true).con(0x121211, 0xF4F2EB, 0xC96A5A, 0x161514, 0xE08FA6)
+        case .papel: return TemaTokens(fondo: 0xEFEEE9, superficie: 0xFFFFFF, texto: 0x302F2C, secundario: 0x736F63, acento: 0xA64235, sobreAcento: 0xFFFFFF, punto: 0xE2E0D9, oscuro: false).con(0xEFEEE9, 0x302F2C, 0xA64235, 0xFFFFFF, 0xA34C65)
+        case .acuarela: return TemaTokens(fondo: 0xE7E2D9, superficie: 0xF2EFE9, texto: 0x161514, secundario: 0x625D55, acento: 0x8A2233, sobreAcento: 0xFFFFFF, punto: 0xD2CCC1, oscuro: false).con(0xE7E2D9, 0x161514, 0x8A2233, 0xFFFFFF, 0x8A2233)
+        case .pizarra: return TemaTokens(fondo: 0xC0C8CA, superficie: 0xD4D8DD, texto: 0x1A2D42, secundario: 0x2E4156, acento: 0x2E4156, sobreAcento: 0xD4D8DD, punto: 0xAAB7B7, oscuro: false).con(0xC0C8CA, 0x1A2D42, 0x2E4156, 0xD4D8DD, 0x8A3A52)
+        case .oliva: return TemaTokens(fondo: 0xF7F5EE, superficie: 0xEFF1E8, texto: 0x252A22, secundario: 0x687064, acento: 0x8B4F70, sobreAcento: 0xFFFEFA, punto: 0xDDE4CE, oscuro: false).con(0xF7F5EE, 0x252A22, 0x8B4F70, 0xFFFEFA, 0x8B4F70)
+        case .fundador: return TemaTokens(fondo: 0x1A1916, superficie: 0x23211D, texto: 0xF1EAD8, secundario: 0xB0A68F, acento: 0xD4B06A, sobreAcento: 0x1A1916, punto: 0x3A362D, oscuro: true).con(0x1A1916, 0xF1EAD8, 0xD4B06A, 0x1A1916, 0xE0907E)
         }
     }
 }

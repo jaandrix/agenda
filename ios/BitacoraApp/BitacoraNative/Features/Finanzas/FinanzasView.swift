@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 private enum SubseccionFinanzas: String, CaseIterable, Identifiable {
     case resumen, movimientos, presupuestos, suscripciones, patrimonio
@@ -22,6 +23,9 @@ struct FinanzasView: View {
     @State private var rango: RangoGrafica = .tresMeses
     @State private var serie: [PuntoDia] = []
     @State private var filtros = FiltrosMovimientos()
+    @State private var mostrarImportador = false
+    @State private var extracto: ExtractoAnalizado?
+    @State private var avisoImportacion: String?
 
     var body: some View {
         ScrollView {
@@ -75,6 +79,18 @@ struct FinanzasView: View {
         .refreshable { await c.sincronizar() }
         .task(id: c.informe.revision) { await cargarVista() }
         .task(id: "\(rango.rawValue)-\(c.informe.revision)") { await cargarSerie() }
+        .fileImporter(isPresented: $mostrarImportador,
+                      allowedContentTypes: [.commaSeparatedText, .tabSeparatedText, .plainText, .data]) { resultado in
+            Task { await leerExtracto(resultado) }
+        }
+        .sheet(item: $extracto) { e in
+            RevisionExtractoView(extracto: e, cuentas: vista?.cuentas ?? []) { cuenta in
+                Task { await importar(e, cuenta: cuenta) }
+            }
+        }
+        .alert("importar extracto.", isPresented: Binding(get: { avisoImportacion != nil }, set: { if !$0 { avisoImportacion = nil } })) {
+            Button("aceptar.", role: .cancel) { avisoImportacion = nil }
+        } message: { Text(avisoImportacion ?? "") }
     }
 
     private func datoCab(_ etiqueta: String, _ valor: String) -> some View {
@@ -112,6 +128,7 @@ struct FinanzasView: View {
             FilaLibro(etiqueta: "entra.", valor: cifra(v.ingresosMes, oculto), acento: true)
             FilaLibro(etiqueta: "sale.", valor: cifra(v.gastosMes, oculto))
             FilaLibro(etiqueta: "balance.", valor: cifra(v.ingresosMes - v.gastosMes, oculto))
+            estadoEnDirecto(v, oculto: oculto)
             if v.diferenciaFuturoPendiente != 0 {
                 Text("pendiente o futuro: \(cifra(v.diferenciaFuturoPendiente, oculto)). dato informativo.")
                     .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.xs)
@@ -161,13 +178,13 @@ struct FinanzasView: View {
             HStack(spacing: Espacio.s) {
                 AccionTexto(texto: "+ movimiento.") { c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: "expense") }
                 Spacer()
-                Button { c.web = Apartados.webURL("finances") } label: {
-                    Text("importar en la web.").font(Tipo.pie).foregroundStyle(Paleta.acento)
+                Button { mostrarImportador = true } label: {
+                    Text("importar extracto.").font(Tipo.pie).foregroundStyle(Paleta.acento)
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint("abre la web de finanzas para importar extractos.")
+                .accessibilityHint("elige un CSV o TSV del banco.")
             }
-            Text("importar extractos abre la web.")
+            Text("lee CSV y TSV en el iPhone, muestra una revisión y evita duplicar el mismo archivo.")
                 .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.s)
             filtrosUI(v)
             let lista = LecturaFinanzas.filtrar(v.movimientos, con: filtros)
@@ -429,7 +446,43 @@ struct FinanzasView: View {
     private func cargarSerie() async {
         let doc = await c.documentoVisible()
         let r = rango
-        serie = await Task.detached(priority: .userInitiated) { doc.map { LecturaFinanzas.serieDiaria(doc: $0, meses: r.meses, conExtras: false) } ?? [] }.value
+        // La sección se llama patrimonio: incluye inversión, emergencia y demás extras, no solo saldo líquido.
+        serie = await Task.detached(priority: .userInitiated) { doc.map { LecturaFinanzas.serieDiaria(doc: $0, meses: r.meses, conExtras: true) } ?? [] }.value
+    }
+
+    private func estadoEnDirecto(_ v: VistaFinanzas, oculto: Bool) -> some View {
+        let gastado = v.presupuestosActual.categories.reduce(Decimal(0)) { $0 + $1.spent }
+        let activas = v.suscripciones.filter(\.activa)
+        let mensual = activas.reduce(Decimal(0)) { $0 + $1.equivalenteMensual }
+        return VStack(alignment: .leading, spacing: 5) {
+            HStack { Text("presupuestos."); Spacer(); Text("\(cifra(gastado, oculto)) de \(cifra(v.presupuestosActual.totalAssigned, oculto))") }
+            HStack { Text("suscripciones."); Spacer(); Text("\(activas.count) activas · \(cifra(mensual, oculto))/mes") }
+            HStack { Text("patrimonio."); Spacer(); Text(cifra(v.patrimonioOperativo, oculto)) }
+        }
+        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+        .padding(12).background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+        .padding(.top, Espacio.s)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func leerExtracto(_ resultado: Result<URL, Error>) async {
+        do {
+            let url = try resultado.get()
+            let acceso = url.startAccessingSecurityScopedResource(); defer { if acceso { url.stopAccessingSecurityScopedResource() } }
+            let datos = try Data(contentsOf: url)
+            guard let texto = String(data: datos, encoding: .utf8) ?? String(data: datos, encoding: .isoLatin1) else {
+                avisoImportacion = "no se pudo leer el texto del archivo."; return
+            }
+            extracto = try await Task.detached { try ImportadorFinanzas.analizar(texto, nombre: url.lastPathComponent) }.value
+        } catch { avisoImportacion = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription }
+    }
+
+    private func importar(_ e: ExtractoAnalizado, cuenta: String) async {
+        do {
+            try await c.encolar(ImportadorFinanzas.operaciones(e, cuenta: cuenta))
+            extracto = nil
+            avisoImportacion = "\(e.filas.count) movimientos preparados. \(e.omitidas) filas omitidas."
+        } catch { avisoImportacion = "no se pudo guardar el extracto en este iPhone." }
     }
 
     private func cifra(_ d: Decimal, _ oculto: Bool) -> String { oculto ? "•••••" : Dinero.formato(d) }
@@ -463,22 +516,30 @@ private struct GraficaSaldo: View {
             } else {
                 let vals = puntos.map { NSDecimalNumber(decimal: $0.valor).doubleValue }
                 let minV = vals.min() ?? 0, maxV = vals.max() ?? 1
-                let rango = max(maxV - minV, 1)
-                let w = g.size.width, h = g.size.height
+                let margen = max((maxV - minV) * 0.12, max(abs(maxV), 1) * 0.01)
+                let bajo = minV - margen, alto = maxV + margen
+                let rango = max(alto - bajo, 1)
+                let insetX: CGFloat = 8, insetY: CGFloat = 18
+                let w = max(g.size.width - insetX * 2, 1), h = max(g.size.height - insetY * 2, 1)
                 let step = w / CGFloat(max(puntos.count - 1, 1))
                 let pt: (Int) -> CGPoint = { i in
-                    CGPoint(x: CGFloat(i) * step, y: h - CGFloat((vals[i] - minV) / rango) * h)
+                    CGPoint(x: insetX + CGFloat(i) * step, y: insetY + h - CGFloat((vals[i] - bajo) / rango) * h)
                 }
                 let linea = Path { p in
                     p.move(to: pt(0))
                     for i in 1..<puntos.count { p.addLine(to: pt(i)) }
                 }
                 let area = Path { p in
-                    p.move(to: CGPoint(x: 0, y: h)); p.addLine(to: pt(0))
+                    p.move(to: CGPoint(x: insetX, y: insetY + h)); p.addLine(to: pt(0))
                     for i in 1..<puntos.count { p.addLine(to: pt(i)) }
-                    p.addLine(to: CGPoint(x: CGFloat(puntos.count - 1) * step, y: h)); p.closeSubpath()
+                    p.addLine(to: CGPoint(x: insetX + CGFloat(puntos.count - 1) * step, y: insetY + h)); p.closeSubpath()
                 }
                 ZStack(alignment: .bottomLeading) {
+                    VStack(spacing: 0) {
+                        Rectangle().fill(Paleta.borde).frame(height: 1); Spacer()
+                        Rectangle().fill(Paleta.borde.opacity(0.65)).frame(height: 1); Spacer()
+                        Rectangle().fill(Paleta.borde).frame(height: 1)
+                    }.padding(.vertical, insetY)
                     area.fill(Paleta.tinteAcento)
                     linea.stroke(Paleta.acento, style: StrokeStyle(lineWidth: 2, lineJoin: .round))
                     if !puntos.isEmpty {
@@ -492,6 +553,51 @@ private struct GraficaSaldo: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
                 .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+            }
+        }
+    }
+}
+
+private struct RevisionExtractoView: View {
+    @Environment(\.dismiss) private var cerrar
+    let extracto: ExtractoAnalizado
+    let cuentas: [CuentaSaldo]
+    let importar: (String) -> Void
+    @State private var cuenta = "bancos"
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Picker("cuenta.", selection: $cuenta) {
+                        ForEach(cuentas) { c in Text(c.nombre.lowercased() + ".").tag(c.id) }
+                    }
+                    LabeledContent("movimientos.", value: "\(extracto.filas.count)")
+                    if extracto.omitidas > 0 { LabeledContent("omitidos.", value: "\(extracto.omitidas)") }
+                } footer: {
+                    Text("volver a importar el mismo archivo en la misma cuenta no crea duplicados.")
+                }
+                Section("revisión.") {
+                    ForEach(extracto.filas.prefix(100)) { f in
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(f.concepto.isEmpty ? "sin concepto" : f.concepto).lineLimit(1)
+                                Text(f.fecha).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            }
+                            Spacer()
+                            Text((f.tipo == "income" ? "+" : "−") + Dinero.formato(f.importe)).monospacedDigit()
+                        }
+                    }
+                    if extracto.filas.count > 100 { Text("y \(extracto.filas.count - 100) más.").foregroundStyle(Paleta.textoSecundario) }
+                }
+            }
+            .navigationTitle("importar extracto.")
+            .onAppear { if !cuentas.contains(where: { $0.id == cuenta }) { cuenta = cuentas.first?.id ?? "bancos" } }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("importar.") { importar(cuenta); cerrar() }.disabled(cuenta.isEmpty || extracto.filas.isEmpty)
+                }
             }
         }
     }

@@ -154,6 +154,16 @@ y oscuro, plan vacío, sin conexión y con letra de accesibilidad.
 - Fuera de esta versión: tipografías y tamaños de letra (hay que traer cinco familias al paquete), capturas en los seis
   temas, medidas Release en el iPhone y el resto de cortes verticales.
 
+**0.16.0 (10-11-2026): temas, paridad funcional y finanzas.**
+
+- Se elimina el contexto azul fijo: Inicio, cabeceras, barra inferior, safe areas y menú rápido derivan sus colores
+  del tema activo. La barra corrige su continuidad inferior, el botón central crece y las transiciones respetan
+  Reducir movimiento.
+- Despensa ofrece editar y eliminar alimentos mediante un control visible, menú contextual y acción de accesibilidad;
+  no depende de `swipeActions` dentro de un `ScrollView`.
+- Finanzas representa patrimonio (no solo saldo líquido), muestra presupuestos y suscripciones en directo e importa
+  extractos CSV/TSV en el iPhone con revisión, cuenta destino y huella idempotente para evitar reimportaciones duplicadas.
+
 **0.15.0 (09-11-2026): Despensa, Ocio y cierre visual.**
 
 - Despensa nativa: varias listas, productos por secciones, precios estimados, frecuentes, historial, finalización con

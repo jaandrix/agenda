@@ -29,11 +29,14 @@ versionados en `.opencode/`:
 - compartir sesiones está desactivado;
 - OpenCode no puede publicar salvo autorización expresa.
 
-Durante la tanda se seleccionó `iceman-free`. Ese es el nombre que mostró OpenCode; no se pudo acreditar desde el
-repositorio el proveedor o identificador interno exacto. La selección de modelo no está fijada en `opencode.json`, por
-lo que debe comprobarse en la interfaz al iniciar cada sesión. En el terminal no interactivo usado por el coordinador,
-el ejecutable no estaba en `PATH`; esto no invalida la instalación que se abre desde su acceso normal, pero sí aconseja
-anotar la ruta o añadirla al `PATH` del usuario.
+En 0.16 se instaló también la CLI `opencode-ai` 1.19.5 y se verificaron los identificadores reales de los modelos. El
+principal pasa a ser `opencode/deepseek-v4.1-flash-free`; `opencode/glm-5.3-flash-free` queda para cortes pequeños,
+`opencode/nemotron-3.5-super-vl-free` para capturas y `opencode/iceman-free` como respaldo. La selección no se fija en
+`opencode.json`: debe indicarse con `--model` o comprobarse en la interfaz.
+
+La aplicación de escritorio y la CLI pueden usar esquemas de base distintos. Si la CLI informa `Database is not empty
+and has no session table`, no se debe borrar la base del escritorio: se inicia con un `XDG_DATA_HOME` aislado. En Windows
+la tarea debe recordar explícitamente que el shell es PowerShell y prohibir heredocs o sintaxis Bash.
 
 ## Cómo pedirle trabajo
 
@@ -180,3 +183,21 @@ estimación histórica.
 
 La regla operativa más importante es sencilla: OpenCode puede producir; Claude Code conserva la responsabilidad de
 entender, aceptar y publicar.
+
+## Medición adicional de la tanda 0.16
+
+Se entregó el mismo corte visual a Iceman y DeepSeek: retirar el azul fijo, corregir barra/safe area, engrosar `+`,
+animar long-tap y transiciones, limitado a cuatro archivos.
+
+- Iceman leyó el alcance, pero durante varios minutos no escribió cambios e intentó `git blame -L49,55` sin proteger la
+  coma de PowerShell y un heredoc Bash. Se interrumpió con cero líneas aprovechables.
+- DeepSeek respetó PowerShell y analizó mejor la arquitectura, temas, pruebas e historial, pero el comando maestro
+  `/implementar-ios` amplió demasiado la exploración. Un segundo encargo directo y limitado leyó los cuatro archivos,
+  pero la variante gratuita no produjo diff en un tiempo útil. Se interrumpió con cero líneas aceptadas.
+- El coordinador implementó el parche visual y toda la parte funcional. Por tanto, en 0.16 el trabajo de código derivado
+  y aceptado de OpenCode fue 0 %. Su aportación fue una auditoría exploratoria parcial, no ahorro neto.
+
+Conclusión: DeepSeek sigue siendo la primera opción por comportamiento, pero los modelos gratuitos no deben estar en la
+ruta crítica. El umbral recomendado es 60-90 segundos hasta el primer diff para un corte pequeño. Si no aparece, se
+interrumpe. Usar `/implementar-ios` solo cuando se desea una entrega autónoma larga; para trabajo dirigido resulta mejor
+un prompt directo con archivos permitidos, criterios y `no explores otros archivos, no subagentes`.

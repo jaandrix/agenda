@@ -155,9 +155,7 @@ struct AccionTexto: View {
     }
 }
 
-// Carcasa tonal integrada con el contexto azul del tema: fondo, tintes, bordes y estados usan la paleta de contexto.
-// Los cuatro grupos laterales comparten geometría y se centran en la altura útil; el + lleva una gama contextual
-// coherente con Inicio.
+// Barra derivada por completo del tema: superficie, tinta y acento. No comparte un azul fijo con Inicio.
 struct BarraBitacora: View {
     struct Pestana: Identifiable {
         let id: String
@@ -168,8 +166,8 @@ struct BarraBitacora: View {
     static let altoHuecoLateral: CGFloat = 62
     static let tamanoIconoLateral: CGFloat = 32
     static let altoTactilMinimo: CGFloat = 44
-    static let diametroCentral: CGFloat = 56
-    static let altoBotonCentral: CGFloat = 64
+    static let diametroCentral: CGFloat = 64
+    static let altoBotonCentral: CGFloat = 70
     static let elevacionCentral: CGFloat = 8
     static let duracionLongPress: Double = 0.5
 
@@ -194,10 +192,10 @@ struct BarraBitacora: View {
         .frame(minHeight: Self.altoHuecoLateral)
         .background(alignment: .top) {
             UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
-                .fill(Paleta.contexto)
+                .fill(Paleta.superficie)
                 .overlay(alignment: .top) {
                     UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
-                        .stroke(Paleta.filoContexto, lineWidth: 1)
+                        .stroke(Paleta.bordeFuerte, lineWidth: 1)
                 }
                 .shadow(color: .black.opacity(0.12), radius: 8, y: -2)
                 .ignoresSafeArea(edges: .bottom)
@@ -209,17 +207,17 @@ struct BarraBitacora: View {
         let esMenu = p.id == "mas"
         let largo = esMenu ? mantener : nil
         let base = VStack(spacing: 2) {
-                IconoBarra(id: p.icono, activo: on, detalle: Paleta.progreso)
-                    .foregroundStyle(on ? Paleta.sobreContexto : Paleta.sobreContextoSuave)
+                IconoBarra(id: p.icono, activo: on, detalle: Paleta.acento)
+                    .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
                     .frame(width: Self.tamanoIconoLateral, height: Self.tamanoIconoLateral)
-                    .background(on ? Paleta.tinteContexto : Color.clear, in: Circle())
+                    .background(on ? Paleta.tinteAcento : Color.clear, in: Circle())
                 if !letra.isAccessibilitySize {
                     Text(p.titulo + ".")
                         .font(Tipo.poppins(10.5, .semibold, estilo: .caption2))
-                        .foregroundStyle(on ? Paleta.sobreContexto : Paleta.sobreContextoSuave)
+                        .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
                         .lineLimit(1).minimumScaleFactor(0.75)
                 }
-                Circle().fill(on ? Paleta.progreso : .clear).frame(width: 4, height: 4)
+                Circle().fill(on ? Paleta.acento : .clear).frame(width: 4, height: 4)
             }
             .frame(maxWidth: .infinity, minHeight: Self.altoHuecoLateral, maxHeight: Self.altoHuecoLateral, alignment: .center)
             .contentShape(Rectangle())
@@ -237,17 +235,17 @@ struct BarraBitacora: View {
 
     private var botonCentral: some View {
         Button(action: capturar) {
-            IconoBarra(id: "apuntar", detalle: Paleta.progreso)
-                .foregroundStyle(Paleta.sobreContexto)
+            IconoBarra(id: "apuntar", detalle: Paleta.acento)
+                .foregroundStyle(Paleta.texto)
                 .frame(width: Self.diametroCentral, height: Self.diametroCentral)
-                .background(Paleta.contexto, in: Circle())
-                .overlay(Circle().stroke(Paleta.filoContexto, lineWidth: 1))
-                .padding(4)
                 .background(Paleta.superficie, in: Circle())
+                .overlay(Circle().stroke(Paleta.acento, lineWidth: 2.5))
+                .padding(4)
+                .background(Paleta.fondo, in: Circle())
         }
         .buttonStyle(.plain)
         .offset(y: -Self.elevacionCentral)
-        .frame(width: 72)
+        .frame(width: 78)
         .frame(minHeight: Self.altoBotonCentral)
         .accessibilityLabel("apuntar")
     }
@@ -367,7 +365,7 @@ struct CabeceraContexto<Contenido: View>: View {
         }
         .padding(.horizontal, 20).padding(.top, Espacio.s).padding(.bottom, 26 + Espacio.m)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Paleta.contexto)
+        .background(Paleta.contexto.ignoresSafeArea(edges: .top))
     }
 }
 
