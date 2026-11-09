@@ -144,6 +144,9 @@ final class AuthCarrerasTests: XCTestCase {
         let renovacion = Task { try await auth.sesionValida() }
         await esperarA { await puerta.llegadas == 1 }
         let salida = Task { await auth.salir() }
+        // salir borra primero el estado local y después espera/cancela la red: esta condición
+        // elimina la carrera del propio test antes de liberar la respuesta de renovación.
+        await esperarA { guardada.leer() == nil }
         await puerta.abrir()
         await salida.value
         let resultado = await renovacion.result

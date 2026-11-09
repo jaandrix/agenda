@@ -126,10 +126,12 @@ actor AuthSupabase: AuthRepository {
     }
 
     func salir() async {
-        await cancelarRenovacion()
+        // La sesión local desaparece en cuanto el actor atiende la salida. No esperamos a que
+        // termine una renovación de red para reflejar el cierre en la interfaz ni en el llavero.
         generacion += 1
-        let token = actual?.accessToken
+        let token = sesionGuardada()?.accessToken
         borrar()
+        await cancelarRenovacion()
         guard let token else { return }
         let r = cliente.peticion("auth/v1/logout", metodo: "POST", token: token, tiempo: 6)
         _ = try? await cliente.enviar(r)
