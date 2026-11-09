@@ -154,6 +154,19 @@ y oscuro, plan vacío, sin conexión y con letra de accesibilidad.
 - Fuera de esta versión: tipografías y tamaños de letra (hay que traer cinco familias al paquete), capturas en los seis
   temas, medidas Release en el iPhone y el resto de cortes verticales.
 
+**0.15.0 (09-11-2026): Despensa, Ocio y cierre visual.**
+
+- Despensa nativa: varias listas, productos por secciones, precios estimados, frecuentes, historial, finalización con
+  gasto enlazado en Finanzas, recetas y planificación semanal. Las operaciones conservan campos desconocidos y se
+  reaplican sin duplicar compras.
+- Ocio nativo: libros, series, películas, videojuegos y listas mixtas; alta, edición y borrado, portada por URL e
+  importación local de CSV de Goodreads, Letterboxd e IMDb. Usa los mismos campos `entries` y `cultureLists` que la PWA.
+- Inicio usa un carrusel semanal de tres páginas que sigue el dedo y encaja de lunes a domingo. Finanzas incorpora
+  presupuestos, movimientos, suscripciones, gráfica y patrimonio. Inicio, Finanzas, Despensa, Ocio y la barra inferior
+  comparten la superficie azul de contexto.
+- La barra inferior centra sus iconos, usa trazos redondeados más simples, aumenta el botón de apuntar y presenta
+  «más usados» en una burbuja animada con una pulsación más corta.
+
 Cómo usar las piezas en un apartado nuevo: `ScrollView` + `LazyVStack` sobre `Paleta.fondo`, `CabeceraApartado` arriba
 (sin barra de navegación), `CabeceraSeccion` por bloque, `FilaAgenda` para lo que se marca, `FilaEvento` para lo que
 tiene hora y no se marca, `FilaLibro` para cifras e índices, `AccionTexto` para «+ algo.». Solo «ahora.» lleva relieve.
@@ -176,6 +189,7 @@ Pendiente del plan: capturas a 375 y 430, hoja de edición, Calendario, Finanzas
 | `--m-fs-titulo` 42 | `Tipo.tituloApartado` |
 
 ## Escrituras
+
 
 - `OperacionBitacora` (DataContract/Operaciones.swift): `crearTarea` y `marcarTarea`. Cada una se guarda en
   `estado.json` (con UUID, dispositivo, fecha y versión de contrato) **antes** de verse; si el disco falla, la interfaz

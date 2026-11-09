@@ -241,7 +241,7 @@ struct FinanzasView: View {
                     Text(m.concepto.isEmpty ? (m.categoria.isEmpty ? "sin concepto" : m.categoria) : m.concepto)
                         .font(Tipo.cuerpo).foregroundStyle(m.futuro ? Paleta.textoSecundario : Paleta.texto).lineLimit(1)
                     let sub = m.tipo == "transfer" ? "traspaso a \(m.destinoNombre.isEmpty ? m.destino : m.destinoNombre.lowercased())" : (m.concepto.isEmpty ? "" : m.categoria)
-                    if !sub.isEmpty || m.neutro { Text(sub + (m.neutro ? (sub.isEmpty ? "neutro" : " · neutro") : "")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1) }
+                    if !sub.isEmpty || m.neutro { Text(sub + (m.neutro ? (sub.isEmpty ? "neutro" : ". neutro") : "")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1) }
                 }
                 Spacer(minLength: Espacio.s)
                 Text(oculto ? "•••" : (m.tipo == "income" ? "+" : m.tipo == "transfer" ? "" : "−") + Dinero.formato(m.importe))
@@ -353,7 +353,7 @@ struct FinanzasView: View {
                             s.frecuencia,
                             s.proximaFecha.map { "próximo \(etiquetaDia($0))" },
                             s.cobrosTrasBaja > 0 ? "\(s.cobrosTrasBaja) cobro(s) tras baja" : nil
-                        ].compactMap { $0 }.joined(separator: " · ")
+                        ].compactMap { $0 }.joined(separator: ". ")
                         Text(detalle + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                     }
                     .padding(.vertical, 8)

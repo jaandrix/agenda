@@ -56,6 +56,21 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // compraAnadir: cada texto pasa por compraInterpretar; lo que ya está sin marcar no se repite. Crea la lista «Casa»
     // con `listaId` si no hay ninguna.
     case anadirCompra(listaId: String, textos: [String], ids: [String])
+    // Despensa nativa: mutaciones pequeñas sobre una lista, su historial, recetas y planificación.
+    case guardarListaCompra(id: String, nombre: String)
+    case borrarListaCompra(id: String)
+    case elegirListaCompra(id: String)
+    case guardarItemCompra(listaId: String, id: String, texto: String, cantidad: String, seccion: String, precio: String?, hecho: Bool, recetas: [String])
+    case borrarItemCompra(listaId: String, id: String)
+    case terminarCompra(listaId: String, compraId: String, fecha: String, tienda: String, total: String, txId: String?)
+    case guardarRecetaCompra(id: String, nombre: String, raciones: Int, ingredientes: [String], pasos: [String], notas: String)
+    case borrarRecetaCompra(id: String)
+    case guardarPlatoCompra(dia: String, id: String, momento: String, nombre: String, recetaId: String?, ingredientes: [String])
+    case borrarPlatoCompra(dia: String, id: String)
+    // Ocio nativo: una entrada multimedia y listas mixtas. Los campos ajenos se conservan al editar.
+    case guardarOcio(id: String, tipo: String, titulo: String, autor: String, estado: String, fechaInicio: String, fechaFin: String, anio: String, valoracion: String, notas: String, enlace: String, portada: String)
+    case guardarListaOcio(id: String, nombre: String, entryIds: [String])
+    case borrarListaOcio(id: String)
     // A la nota del día, sin pisar lo que tenga. `apunteId` evita añadirlo dos veces al reaplicar.
     case anadirANota(id: String, dia: String, texto: String, creada: String, apunteId: String)
     // studies.schedule[dia] (clave «lun», «mar»...), como la op `clase` del conector.
@@ -70,7 +85,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         // Como togglePlannerItemDone: también el trabajo de Estudios, la tarea del proyecto y la marca «Completado».
         case .marcarTarea: return ["dayPlanner", "entries", "studies"]
         case .parcharEvento: return ["entries"]
-        case .guardarEvento, .borrarEntrada: return ["entries"]
+        case .guardarEvento, .guardarOcio: return ["entries"]
+        case .borrarEntrada: return ["entries", "cultureLists"]
         case .crearMovimiento, .editarMovimiento, .borrarMovimiento, .crearTraspaso: return ["financePro"]
         case .editarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .crearProyecto, .cambiarProyecto: return ["entries"]
@@ -84,7 +100,9 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .ponerCiudadTiempo: return ["ciudadTiempo"]
         case .transporteFavorita, .transporteLinea: return ["servicios"]
         case let .anadirEnLista(clave, _, _): return [clave]
-        case .anadirCompra: return ["listaCompra"]
+        case .anadirCompra, .guardarListaCompra, .borrarListaCompra, .elegirListaCompra, .guardarItemCompra, .borrarItemCompra,
+             .terminarCompra, .guardarRecetaCompra, .borrarRecetaCompra, .guardarPlatoCompra, .borrarPlatoCompra: return ["listaCompra"]
+        case .guardarListaOcio, .borrarListaOcio: return ["cultureLists"]
         case .anadirANota: return ["notes", "apuntesRecientes"]
         case .anadirClase: return ["studies"]
         case .transporteElegirInicio: return ["servicios"]
@@ -182,8 +200,19 @@ enum AplicarOperaciones {
             let (rec, ent) = marcarRecurrente(id: id, dia: dia, hecha: hecha, momento: momento, recurrentes: valores["recurringTasks"] ?? nil, entradas: valores["entries"] ?? nil)
             r["recurringTasks"] = .some(rec)
             r["entries"] = .some(ent)
-        case .guardarEvento, .borrarEntrada, .parcharEvento:
+        case .guardarEvento, .parcharEvento:
             r["entries"] = .some(entradas(op, valores["entries"] ?? nil))
+        case let .borrarEntrada(id):
+            r["entries"] = .some(entradas(op, valores["entries"] ?? nil))
+            if var listas = (valores["cultureLists"] ?? nil)?.lista {
+                var cambio = false
+                for n in listas.indices where listas[n]["entryIds"]?.lista?.contains(where: { $0.comoId == id }) == true {
+                    guard var lista = listas[n].objeto else { continue }
+                    lista["entryIds"] = .array((lista["entryIds"]?.lista ?? []).filter { $0.comoId != id })
+                    listas[n] = .object(lista); cambio = true
+                }
+                if cambio { r["cultureLists"] = .some(.array(listas)) }
+            }
         case let .marcarTarea(id, hecha, momento):
             // La fecha prevista se decide antes de mover la tarea: si estaba en un día pasado y se trae ahora, su día.
             let antes = planificador(valores["dayPlanner"] ?? nil)
@@ -500,6 +529,140 @@ enum AplicarOperaciones {
             lc["listas"] = .array(listas)
             if !listas.contains(where: { $0["id"]?.comoId == actual }) { lc["actual"] = listas[0]["id"] ?? .string(listaId) }
             r["listaCompra"] = .some(.object(lc))
+        case let .guardarListaCompra(id, nombre):
+            let limpio = String(nombre.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
+            guard !limpio.isEmpty else { break }
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]
+            var listas = lc["listas"]?.lista ?? []
+            if let n = listas.firstIndex(where: { $0["id"]?.comoId == id }), var l = listas[n].objeto {
+                guard l["nombre"]?.texto != limpio else { break }
+                l["nombre"] = .string(limpio); listas[n] = .object(l)
+            } else {
+                listas.append(.object(["id": .string(id), "nombre": .string(limpio), "items": .array([])]))
+            }
+            lc["listas"] = .array(listas)
+            if lc["actual"]?.comoId == nil { lc["actual"] = .string(id) }
+            r["listaCompra"] = .some(.object(lc))
+        case let .borrarListaCompra(id):
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]
+            var listas = lc["listas"]?.lista ?? []
+            guard listas.count > 1, listas.contains(where: { $0["id"]?.comoId == id }) else { break }
+            listas.removeAll { $0["id"]?.comoId == id }
+            lc["listas"] = .array(listas)
+            if lc["actual"]?.comoId == id { lc["actual"] = listas.first?["id"] ?? .null }
+            r["listaCompra"] = .some(.object(lc))
+        case let .elegirListaCompra(id):
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]
+            guard (lc["listas"]?.lista ?? []).contains(where: { $0["id"]?.comoId == id }), lc["actual"]?.comoId != id else { break }
+            lc["actual"] = .string(id); r["listaCompra"] = .some(.object(lc))
+        case let .guardarItemCompra(listaId, id, texto, cantidad, seccion, precio, hecho, recetas):
+            let limpio = String(texto.trimmingCharacters(in: .whitespacesAndNewlines).prefix(160))
+            guard !limpio.isEmpty else { break }
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]
+            var listas = lc["listas"]?.lista ?? []
+            guard let n = listas.firstIndex(where: { $0["id"]?.comoId == listaId }), var l = listas[n].objeto else { break }
+            var items = l["items"]?.lista ?? []
+            var o = items.first(where: { $0["id"]?.comoId == id })?.objeto ?? ["id": .string(id)]
+            o["texto"] = .string(limpio); o["cantidad"] = .string(String(cantidad.prefix(80)))
+            o["seccion"] = .string(String(seccion.prefix(40))); o["hecho"] = .bool(hecho)
+            o["precio"] = precio.flatMap { Dinero.decimal(texto: $0) }.map { .number(NSDecimalNumber(decimal: $0).stringValue) } ?? .null
+            o["recetas"] = .array(Array(Set(recetas.filter { !$0.isEmpty })).sorted().map { .string($0) })
+            if let j = items.firstIndex(where: { $0["id"]?.comoId == id }) { items[j] = .object(o) } else { items.append(.object(o)) }
+            l["items"] = .array(items); listas[n] = .object(l); lc["listas"] = .array(listas)
+            r["listaCompra"] = .some(.object(lc))
+        case let .borrarItemCompra(listaId, id):
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]
+            var listas = lc["listas"]?.lista ?? []
+            guard let n = listas.firstIndex(where: { $0["id"]?.comoId == listaId }), var l = listas[n].objeto else { break }
+            var items = l["items"]?.lista ?? []
+            let antes = items.count; items.removeAll { $0["id"]?.comoId == id }
+            guard items.count != antes else { break }
+            l["items"] = .array(items); listas[n] = .object(l); lc["listas"] = .array(listas)
+            r["listaCompra"] = .some(.object(lc))
+        case let .terminarCompra(listaId, compraId, fecha, tienda, total, txId):
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]
+            var historial = lc["historial"]?.lista ?? []
+            guard !historial.contains(where: { $0["id"]?.comoId == compraId }) else { break }
+            var listas = lc["listas"]?.lista ?? []
+            guard let n = listas.firstIndex(where: { $0["id"]?.comoId == listaId }), var l = listas[n].objeto else { break }
+            let todos = l["items"]?.lista ?? [], comprados = todos.filter { $0["hecho"]?.booleano == true }
+            guard !comprados.isEmpty else { break }
+            let totalDecimal = Dinero.decimal(texto: total) ?? comprados.reduce(Decimal(0)) { $0 + (Dinero.decimal($1["precio"]) ?? 0) }
+            let lineas = comprados.map { x -> JSONValue in
+                .object(["texto": .string(x["texto"]?.texto ?? ""), "clave": .string((x["texto"]?.texto ?? "").lowercased()),
+                         "cantidad": .string(x["cantidad"]?.texto ?? ""), "precio": x["precio"] ?? .null,
+                         "importe": x["precio"] ?? .null, "deLista": .bool(true), "planeado": .bool(true),
+                         "seccion": .string(x["seccion"]?.texto ?? "otros")])
+            }
+            var compra: [String: JSONValue] = ["id": .string(compraId), "fecha": .string(fecha), "tienda": .string(String(tienda.prefix(100))),
+                                                "listaId": .string(listaId), "total": .number(NSDecimalNumber(decimal: totalDecimal).stringValue),
+                                                "fuente": .string("manual"), "items": .array(lineas),
+                                                "sinComprar": .array(todos.filter { $0["hecho"]?.booleano != true }.map { .string($0["texto"]?.texto ?? "") })]
+            if let txId { compra["txId"] = .string(txId) }
+            historial.append(.object(compra)); lc["historial"] = .array(historial)
+            var frecuentes = lc["frecuentes"]?.objeto ?? [:]
+            for x in comprados {
+                let k = (x["texto"]?.texto ?? "").lowercased()
+                let n = NSDecimalNumber(decimal: Dinero.decimal(frecuentes[k]) ?? 0).intValue
+                frecuentes[k] = .number(String(n + 1))
+            }
+            lc["frecuentes"] = .object(frecuentes)
+            l["items"] = .array(todos.filter { $0["hecho"]?.booleano != true }); listas[n] = .object(l); lc["listas"] = .array(listas)
+            r["listaCompra"] = .some(.object(lc))
+        case let .guardarRecetaCompra(id, nombre, raciones, ingredientes, pasos, notas):
+            let limpio = String(nombre.trimmingCharacters(in: .whitespacesAndNewlines).prefix(120)); guard !limpio.isEmpty else { break }
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]
+            var recetas = lc["recetas"]?.lista ?? []
+            var o = recetas.first(where: { $0["id"]?.comoId == id })?.objeto ?? ["id": .string(id)]
+            o["nombre"] = .string(limpio); o["raciones"] = .number(String(max(1, raciones))); o["notas"] = .string(String(notas.prefix(2000)))
+            o["ingredientes"] = .array(ingredientes.compactMap { linea in
+                let p = linea.split(separator: "|", maxSplits: 1).map(String.init); let texto = (p.count == 2 ? p[1] : p[0]).trimmingCharacters(in: .whitespaces)
+                return texto.isEmpty ? nil : .object(["texto": .string(texto), "cantidad": .string(p.count == 2 ? p[0] : "")])
+            })
+            o["pasos"] = .array(pasos.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.map { .string(String($0.prefix(500))) })
+            if let n = recetas.firstIndex(where: { $0["id"]?.comoId == id }) { recetas[n] = .object(o) } else { recetas.append(.object(o)) }
+            lc["recetas"] = .array(recetas); r["listaCompra"] = .some(.object(lc))
+        case let .borrarRecetaCompra(id):
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]; var recetas = lc["recetas"]?.lista ?? []
+            let antes = recetas.count; recetas.removeAll { $0["id"]?.comoId == id }; guard antes != recetas.count else { break }
+            lc["recetas"] = .array(recetas); r["listaCompra"] = .some(.object(lc))
+        case let .guardarPlatoCompra(dia, id, momento, nombre, recetaId, ingredientes):
+            let limpio = String(nombre.trimmingCharacters(in: .whitespacesAndNewlines).prefix(120)); guard !limpio.isEmpty else { break }
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]; var plan = lc["plan"]?.objeto ?? [:]; var platos = plan[dia]?.lista ?? []
+            var o: [String: JSONValue] = ["id": .string(id), "momento": .string(String(momento.prefix(40))), "nombre": .string(limpio),
+                                          "ingredientes": .array(ingredientes.map { .object(["texto": .string($0), "cantidad": .string("")]) })]
+            if let recetaId { o["recetaId"] = .string(recetaId) }
+            if let n = platos.firstIndex(where: { $0["id"]?.comoId == id }) { platos[n] = .object(o) } else { platos.append(.object(o)) }
+            plan[dia] = .array(platos); lc["plan"] = .object(plan); r["listaCompra"] = .some(.object(lc))
+        case let .borrarPlatoCompra(dia, id):
+            var lc = (valores["listaCompra"] ?? nil)?.objeto ?? [:]; var plan = lc["plan"]?.objeto ?? [:]; var platos = plan[dia]?.lista ?? []
+            let antes = platos.count; platos.removeAll { $0["id"]?.comoId == id }; guard antes != platos.count else { break }
+            if platos.isEmpty { plan.removeValue(forKey: dia) } else { plan[dia] = .array(platos) }
+            lc["plan"] = .object(plan); r["listaCompra"] = .some(.object(lc))
+        case let .guardarOcio(id, tipo, titulo, autor, estado, fechaInicio, fechaFin, anio, valoracion, notas, enlace, portada):
+            guard ["book", "series", "movie", "game"].contains(tipo) else { break }
+            let limpio = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)); guard !limpio.isEmpty else { break }
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            var o = lista.first(where: { $0["id"]?.comoId == id })?.objeto ?? ["id": .string(id), "createdAt": .string(ISO8601DateFormatter().string(from: Date()))]
+            o["type"] = .string(tipo); o["title"] = .string(limpio); o["author"] = .string(String(autor.prefix(200)))
+            o["status"] = .string(String(estado.prefix(40)))
+            o["startDate"] = .string(fechaInicio); o["endDate"] = .string(fechaFin)
+            o["date"] = .string(fechaInicio.isEmpty ? fechaFin : fechaInicio)
+            o["year"] = Dinero.decimal(texto: anio).map { .number(NSDecimalNumber(decimal: $0).stringValue) } ?? .null
+            o["rating"] = Dinero.decimal(texto: valoracion).map { .number(NSDecimalNumber(decimal: $0).stringValue) } ?? .number("0")
+            o["notes"] = .string(String(notas.prefix(4000))); o["url"] = .string(String(enlace.prefix(1000))); o["portada"] = .string(String(portada.prefix(2000)))
+            if let n = lista.firstIndex(where: { $0["id"]?.comoId == id }) { lista[n] = .object(o) } else { lista.append(.object(o)) }
+            r["entries"] = .some(.array(lista))
+        case let .guardarListaOcio(id, nombre, entryIds):
+            let limpio = String(nombre.trimmingCharacters(in: .whitespacesAndNewlines).prefix(100)); guard !limpio.isEmpty else { break }
+            var listas = (valores["cultureLists"] ?? nil)?.lista ?? []
+            let o: JSONValue = .object(["id": .string(id), "name": .string(limpio), "entryIds": .array(Array(Set(entryIds)).sorted().map { .string($0) })])
+            if let n = listas.firstIndex(where: { $0["id"]?.comoId == id }) { listas[n] = o } else { listas.append(o) }
+            r["cultureLists"] = .some(.array(listas))
+        case let .borrarListaOcio(id):
+            var listas = (valores["cultureLists"] ?? nil)?.lista ?? []; let antes = listas.count
+            listas.removeAll { $0["id"]?.comoId == id }; guard antes != listas.count else { break }
+            r["cultureLists"] = .some(.array(listas))
         case let .anadirANota(id, dia, texto, creada, apunteId):
             if ((valores["apuntesRecientes"] ?? nil)?.lista ?? []).contains(where: { $0["id"]?.comoId == apunteId }) { break }
             var lista = (valores["notes"] ?? nil)?.lista ?? []
@@ -848,7 +1011,9 @@ enum AplicarOperaciones {
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea, .transporteElegirInicio, .ponerPerfil, .ponerApartado,
              .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
-             .anadirEnLista, .anadirCompra, .anadirANota, .anadirClase, .registrarApunte, .deshacerApunte:
+             .anadirEnLista, .anadirCompra, .guardarListaCompra, .borrarListaCompra, .elegirListaCompra, .guardarItemCompra,
+             .borrarItemCompra, .terminarCompra, .guardarRecetaCompra, .borrarRecetaCompra, .guardarPlatoCompra, .borrarPlatoCompra,
+             .guardarOcio, .guardarListaOcio, .borrarListaOcio, .anadirANota, .anadirClase, .registrarApunte, .deshacerApunte:
             return valor ?? .object(p)
         }
     }
