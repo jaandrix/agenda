@@ -59,7 +59,7 @@ final class FinanzasLecturaTests: XCTestCase {
             {"id": "g1", "type": "expense", "amount": 120, "account": "bancos", "category": "comida", "date": "2026-11-03"},
             {"id": "r1", "type": "income", "amount": 20, "account": "bancos", "category": "comida", "date": "2026-11-04"},
             {"id": "s1", "type": "expense", "amount": 15, "account": "bancos", "date": "2026-11-05", "recurringEntryId": "sub1"}
-        ]}}, "entries": [{"id": "sub1", "type": "subscription", "active": true, "amount": 15, "renewalDay": 5}]}
+        ]}, "entries": [{"id": "sub1", "type": "subscription", "active": true, "amount": 15, "renewalDay": 5}]}
         """#)
         let v = LecturaFinanzas.vista(d, hoy: hoy)
         let p = v.presupuestosActual
