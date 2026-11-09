@@ -15,14 +15,14 @@ final class FinanzasLecturaTests: XCTestCase {
     }
 
     func testNeutrosYAjustesNoSonGasto() throws {
-        let d = try doc(#"{"financePro": {"accounts": {"bancos": {"balance0": 100}}, "categories": [{"id": "inv", "name": "Inversiones"}], "transactions": [
+        let d = try doc(#"""{"financePro": {"accounts": {"bancos": {"balance0": 100}}, "categories": [{"id": "inv", "name": "Inversiones"}], "transactions": [
             {"id": "n1", "type": "expense", "amount": 10, "account": "bancos", "date": "2026-11-01", "ahorro": true},
             {"id": "n2", "type": "expense", "amount": 5, "account": "bancos", "date": "2026-11-01", "ajuste": true},
             {"id": "n3", "type": "expense", "amount": 7, "account": "bancos", "date": "2026-11-01", "category": "inv"},
             {"id": "n4", "type": "expense", "amount": 3, "account": "bancos", "date": "2026-11-01", "category": "cat_inversion_gasto"},
             {"id": "g1", "type": "expense", "amount": 20, "account": "bancos", "date": "2026-11-01"},
             {"id": "i1", "type": "income", "amount": 50, "account": "bancos", "date": "2026-11-01", "ajuste": true}
-        ]}}"#)
+        ]}}"""#)
         let v = LecturaFinanzas.vista(d, hoy: hoy)
         XCTAssertEqual(v.gastosMes, 20)
         XCTAssertEqual(v.ingresosMes, 0)
@@ -48,7 +48,7 @@ final class FinanzasLecturaTests: XCTestCase {
     }
 
     func testPresupuestoSumaCategoriasYCompromisos() throws {
-        let d = try doc(#"{"financeProfile": {"budgetPlans": {"2026-11": {"salary": 2000, "contributions": 0, "allocations": [
+        let d = try doc(#"""{"financeProfile": {"budgetPlans": {"2026-11": {"salary": 2000, "contributions": 0, "allocations": [
             {"amount": 300, "categoryId": "comida", "label": "comida"},
             {"amount": 200, "categoryId": "comida", "label": "extra comida"},
             {"amount": 100, "auto": "subscription", "label": "suscripciones"}
@@ -56,7 +56,7 @@ final class FinanzasLecturaTests: XCTestCase {
             {"id": "g1", "type": "expense", "amount": 120, "account": "bancos", "category": "comida", "date": "2026-11-03"},
             {"id": "r1", "type": "income", "amount": 20, "account": "bancos", "category": "comida", "date": "2026-11-04"},
             {"id": "s1", "type": "expense", "amount": 15, "account": "bancos", "date": "2026-11-05", "recurringEntryId": "sub1"}
-        ]}}, "entries": [{"id": "sub1", "type": "subscription", "active": true, "amount": 15, "renewalDay": 5}]}"#)
+        ]}}, "entries": [{"id": "sub1", "type": "subscription", "active": true, "amount": 15, "renewalDay": 5}]}"""#)
         let v = LecturaFinanzas.vista(d, hoy: hoy)
         let p = v.presupuestosActual
         XCTAssertEqual(p.income, 2000)
@@ -76,11 +76,11 @@ final class FinanzasLecturaTests: XCTestCase {
     }
 
     func testEquivalenteMensualYSuscripcionVigente() throws {
-        let d = try doc(#"{"financePro": {"accounts": {}, "transactions": []}, "entries": [
+        let d = try doc(#"""{"financePro": {"accounts": {}, "transactions": []}, "entries": [
             {"id": "s1", "type": "subscription", "title": "net", "amount": 12.99, "renewalDay": 10, "active": true},
             {"id": "s2", "type": "subscription", "title": "baja", "amount": 9, "renewalDay": 1, "active": false, "bajas": [{"desde": "2026-10-01"}]},
             {"id": "s3", "type": "subscription", "title": "futura", "amount": 5, "renewalDay": 1, "active": true, "altaDesde": "2026-12-01"}
-        ]}"#)
+        ]}"""#)
         let v = LecturaFinanzas.vista(d, hoy: hoy)
         XCTAssertEqual(v.suscripciones.count, 3)
         let net = try XCTUnwrap(v.suscripciones.first { $0.id == "s1" })
@@ -103,11 +103,11 @@ final class FinanzasLecturaTests: XCTestCase {
     }
 
     func testSerieDiariaYTotalesMensuales() throws {
-        let d = try doc(#"{"financePro": {"accounts": {"bancos": {"balance0": 100}}, "transactions": [
+        let d = try doc(#"""{"financePro": {"accounts": {"bancos": {"balance0": 100}}, "transactions": [
             {"id": "a", "type": "income", "amount": 50, "account": "bancos", "date": "2026-11-01"},
             {"id": "b", "type": "expense", "amount": 10, "account": "bancos", "date": "2026-11-03"},
             {"id": "c", "type": "expense", "amount": 5, "account": "bancos", "date": "2026-10-15"}
-        ]}}"#)
+        ]}}"""#)
         let v = LecturaFinanzas.vista(d, hoy: hoy)
         XCTAssertEqual(v.ingresosMes, 50)
         XCTAssertEqual(v.gastosMes, 10)
@@ -123,10 +123,10 @@ final class FinanzasLecturaTests: XCTestCase {
     }
 
     func testFiltroYAgrupacionPorDia() throws {
-        let d = try doc(#"{"financePro": {"accounts": {"bancos": {"name": "Bancos", "balance0": 0}, "efectivo": {"name": "Efectivo", "balance0": 0}}, "categories": [{"id": "c1", "name": "Comida"}], "transactions": [
+        let d = try doc(#"""{"financePro": {"accounts": {"bancos": {"name": "Bancos", "balance0": 0}, "efectivo": {"name": "Efectivo", "balance0": 0}}, "categories": [{"id": "c1", "name": "Comida"}], "transactions": [
             {"id": "a", "type": "expense", "amount": 1, "account": "bancos", "category": "c1", "date": "2026-11-08", "note": "pan"},
             {"id": "b", "type": "income", "amount": 2, "account": "efectivo", "date": "2026-11-07", "note": "extra"}
-        ]}}"#)
+        ]}}"""#)
         let v = LecturaFinanzas.vista(d, hoy: hoy)
         var f = FiltrosMovimientos(busqueda: "pan")
         XCTAssertEqual(LecturaFinanzas.filtrar(v.movimientos, con: f).map(\.id), ["a"])

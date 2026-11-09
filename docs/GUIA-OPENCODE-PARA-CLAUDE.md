@@ -111,8 +111,9 @@ resultado resultó una base válida tras revisar el estado seleccionado, precarg
 
 Generó mucho volumen útil: modelos de lectura, cinco secciones de interfaz y pruebas. También introdujo tres fallos que
 demuestran por qué no debe aceptarse por tamaño del diff: duplicaba el primer día de una serie, calculaba mal el mes
-siguiente de diciembre y referenciaba incorrectamente el redondeo del ahorro. El coordinador los corrigió antes de
-integrar. La cobertura funcional fue alta, la precisión inicial fue media.
+siguiente de diciembre y referenciaba incorrectamente el redondeo del ahorro. Además, las pruebas nuevas usaban
+literales multilínea con la sintaxis de una sola línea y no compilaban en Xcode. El coordinador corrigió estos problemas
+antes de aceptar la versión. La cobertura funcional fue alta, la precisión inicial fue media-baja en el primer intento.
 
 ### Despensa y Ocio
 
