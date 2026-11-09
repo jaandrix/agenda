@@ -846,7 +846,7 @@ enum AplicarOperaciones {
             return .object(p)
 
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .marcarRutina, .crearNota, .parcharEvento,
-             .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea,
+             .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea, .transporteElegirInicio, .ponerPerfil, .ponerApartado,
              .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
              .anadirEnLista, .anadirCompra, .anadirANota, .anadirClase, .registrarApunte, .deshacerApunte:
             return valor ?? .object(p)
