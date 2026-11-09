@@ -87,4 +87,64 @@ final class Direccion02Tests: XCTestCase {
         // Ajustes y el planificador no se ocultan; un perfil desconocido no se guarda.
         XCTAssertTrue(AplicarOperaciones.sobre(r, [.ponerApartado(vista: "settings", visible: false), .ponerPerfil(perfil: "x")]).1.isEmpty)
     }
+
+    func testSemanaLunesDomingo() {
+        // 2026-11-09 es lunes.
+        let lun = LocalDay(year: 2026, month: 11, day: 9)!
+        XCTAssertEqual(lun.indiceSemanaLunes, 0)
+        let s = lun.semanaLunesDomingo
+        XCTAssertEqual(s.count, 7)
+        XCTAssertEqual(s.first, lun)
+        XCTAssertEqual(s.last, LocalDay(year: 2026, month: 11, day: 15))
+        XCTAssertEqual(s.map(\.indiceSemanaLunes), [0, 1, 2, 3, 4, 5, 6])
+        // Un miércoles devuelve la misma semana lunes-domingo.
+        XCTAssertEqual(LocalDay(year: 2026, month: 11, day: 11)!.semanaLunesDomingo, s)
+        // Domingo cierra la semana.
+        XCTAssertEqual(LocalDay(year: 2026, month: 11, day: 15)!.semanaLunesDomingo, s)
+        // Cruza de mes y de año.
+        let fin = LocalDay(year: 2025, month: 12, day: 31)!
+        XCTAssertEqual(fin.indiceSemanaLunes, 2)
+        XCTAssertEqual(fin.inicioSemanaLunes, LocalDay(year: 2025, month: 12, day: 29))
+        XCTAssertEqual(fin.semanaLunesDomingo.last, LocalDay(year: 2026, month: 1, day: 4))
+    }
+
+    func testAvanceSemanaExacta() {
+        let d = LocalDay(year: 2026, month: 11, day: 11)! // miércoles
+        XCTAssertEqual(d.sumando(dias: 7), LocalDay(year: 2026, month: 11, day: 18))
+        XCTAssertEqual(d.sumando(dias: -7), LocalDay(year: 2026, month: 11, day: 4))
+        XCTAssertEqual(d.sumando(dias: 7).indiceSemanaLunes, d.indiceSemanaLunes)
+        XCTAssertEqual(d.sumando(dias: -7).inicioSemanaLunes, LocalDay(year: 2026, month: 11, day: 2))
+        // Siete avances seguidos cruzan de mes sin perder el día de la semana.
+        var x = d
+        for _ in 0..<7 { x = x.sumando(dias: 7) }
+        XCTAssertEqual(x, LocalDay(year: 2026, month: 12, day: 30))
+        XCTAssertEqual(x.indiceSemanaLunes, d.indiceSemanaLunes)
+    }
+
+    func testVistaInicioUsaSemanaLunesDomingo() throws {
+        // 2026-11-11 12:00 en Madrid (miércoles); la semana visible debe ser lun 9 - dom 15.
+        let ahora = ISO8601DateFormatter().date(from: "2026-11-11T12:00:00+01:00")!
+        let v = VistaInicio.desde(try doc(#"{"dayPlanner": {"days": {}, "backlog": []}, "entries": []}"#), ahora: ahora)
+        XCTAssertEqual(v.semana.count, 7)
+        XCTAssertEqual(v.semana.first, LocalDay(year: 2026, month: 11, day: 9))
+        XCTAssertEqual(v.semana.last, LocalDay(year: 2026, month: 11, day: 15))
+        XCTAssertTrue(v.semana.contains(v.dia))
+        // Elegir un día de otra semana muestra esa semana, lunes a domingo.
+        let v2 = VistaInicio.desde(try doc(#"{"dayPlanner": {"days": {}, "backlog": []}, "entries": []}"#), ahora: ahora,
+                                   elegido: LocalDay(year: 2026, month: 12, day: 2))
+        XCTAssertEqual(v2.semana, LocalDay(year: 2026, month: 12, day: 2)!.semanaLunesDomingo)
+        XCTAssertEqual(v2.semana.first?.indiceSemanaLunes, 0)
+        XCTAssertEqual(v2.semana.last?.indiceSemanaLunes, 6)
+    }
+
+    func testGeometriaBarra() {
+        // Los cuatro iconos laterales comparten geometría y áreas táctiles de 44 pt; el central puede ir elevado.
+        XCTAssertEqual(BarraBitacora.altoHuecoLateral, 56)
+        XCTAssertEqual(BarraBitacora.tamanoIconoLateral, 34)
+        XCTAssertGreaterThanOrEqual(BarraBitacora.altoHuecoLateral, BarraBitacora.altoTactilMinimo)
+        XCTAssertGreaterThanOrEqual(BarraBitacora.altoBotonCentral, BarraBitacora.altoTactilMinimo)
+        XCTAssertGreaterThanOrEqual(BarraBitacora.tamanoIconoLateral, 24)
+        // El icono queda dentro del hueco, con sitio para etiqueta y punto; el grupo usa un alto fijo y centrado.
+        XCTAssertLessThan(BarraBitacora.tamanoIconoLateral, BarraBitacora.altoHuecoLateral)
+    }
 }

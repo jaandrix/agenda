@@ -57,7 +57,7 @@ final class CapturasTests: XCTestCase {
     func testCapturasDeInicio() throws {
         let hoy = CalendarioBitacora.madrid.diaLogico(Date())
         let v = vista()
-        let semana = (0..<7).map { hoy.sumando(dias: $0 - 2) }
+        let semana = hoy.semanaLunesDomingo
         let agenda = [VistaInicio.Cosa(id: "e1", hora: "09:00", titulo: "dentista", notas: "calle mayor 12", hecha: false, acento: false, tarea: nil)]
             + v.tareas.map { VistaInicio.Cosa(id: $0.id, hora: $0.hora, titulo: $0.titulo, notas: $0.notas, hecha: $0.hecha, acento: $0.arrastrada, tarea: $0) }
         let inicio = VistaInicio(hoy: hoy, semana: semana, conCosas: [semana[1], semana[2], semana[5]], agenda: agenda.sorted { ($0.hora ?? "") < ($1.hora ?? "") },

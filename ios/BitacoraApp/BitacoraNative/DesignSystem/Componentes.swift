@@ -2,11 +2,14 @@ import SwiftUI
 
 // Piezas comunes, sacadas de la PWA móvil. No conocen SyncEngine ni JSON: reciben lo que pintan y qué hacer al tocar.
 
-// .m-check: círculo de 30 con borde de 2 (--border-strong); marcado, lleno de acento con el check en --m-sobre-acento.
-// Al marcarse se sella: crece un poco y vuelve, 160 ms; sin animación si se pide movimiento reducido.
+// .m-check: círculo de 30 con borde de 2; marcado, lleno del color activo con el check encima. Al marcarse se sella
+// (160 ms) si no hay movimiento reducido. Los colores se pueden adaptar al fondo (Inicio sobre contexto).
 struct BitacoraCheck: View {
     let hecho: Bool
     var acento = false
+    var colorActivo: Color = Paleta.acento
+    var colorBorde: Color = Paleta.bordeFuerte
+    var colorMarca: Color = Paleta.sobreAcento
     let accion: () -> Void
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var sello = false
@@ -20,10 +23,10 @@ struct BitacoraCheck: View {
             accion()
         } label: {
             ZStack {
-                Circle().strokeBorder(hecho ? Paleta.acento : (acento ? Paleta.acento : Paleta.bordeFuerte), lineWidth: 2)
+                Circle().strokeBorder(hecho || acento ? colorActivo : colorBorde, lineWidth: 2)
                 if hecho {
-                    Circle().fill(Paleta.acento)
-                    Image(systemName: "checkmark").font(.system(size: 13, weight: .heavy)).foregroundStyle(Paleta.sobreAcento)
+                    Circle().fill(colorActivo)
+                    Image(systemName: "checkmark").font(.system(size: 13, weight: .heavy)).foregroundStyle(colorMarca)
                 }
             }
             .frame(width: 32, height: 32)
@@ -69,16 +72,19 @@ struct CabeceraSeccion: View {
     let titulo: String
     var detalle: String?
     var raya = false
+    var colorTexto: Color = Paleta.texto
+    var colorSuave: Color = Paleta.textoSecundario
+    var colorRaya: Color = Paleta.acento
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
-                Text(titulo).font(Tipo.subtitulo).foregroundStyle(Paleta.texto).accessibilityAddTraits(.isHeader)
+                Text(titulo).font(Tipo.subtitulo).foregroundStyle(colorTexto).accessibilityAddTraits(.isHeader)
                 Spacer()
-                if let detalle { Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                if let detalle { Text(detalle).font(Tipo.pie).foregroundStyle(colorSuave) }
             }
-            // .m-dia-raya: una rayita corta del acento debajo del título del día.
-            if raya { Capsule().fill(Paleta.acento).frame(width: 28, height: 3) }
+            // .m-dia-raya: una rayita corta debajo del título del día.
+            if raya { Capsule().fill(colorRaya).frame(width: 28, height: 3) }
         }
         .padding(.top, Espacio.l)
         .padding(.bottom, Espacio.xs)
@@ -86,7 +92,7 @@ struct CabeceraSeccion: View {
 }
 
 // Fila de la agenda: hora en columna fija, círculo, título y nota, filete continuo debajo. Lo arrastrado o en curso en
-// el acento. Tocar el texto abre; el círculo solo marca. Las acciones también van por VoiceOver.
+// el acento. Tocar el texto abre; el círculo solo marca. Los colores se adaptan al fondo (Inicio sobre contexto).
 struct FilaAgenda: View {
     let hora: String?
     let titulo: String
@@ -94,6 +100,11 @@ struct FilaAgenda: View {
     let hecho: Bool
     var acento = false
     var mostrarHora = true
+    var colorTexto: Color = Paleta.texto
+    var colorSuave: Color = Paleta.textoSecundario
+    var colorAcento: Color = Paleta.acento
+    var colorFilo: Color = Paleta.borde
+    var colorSobreAcento: Color = Paleta.sobreAcento
     let marcar: () -> Void
     var abrir: (() -> Void)?
 
@@ -102,18 +113,18 @@ struct FilaAgenda: View {
             if mostrarHora {
                 Text(hora ?? "")
                     .font(Tipo.poppins(14, .semibold, estilo: .footnote)).monospacedDigit()
-                    .foregroundStyle(acento && !hecho ? Paleta.acento : Paleta.textoSecundario)
+                    .foregroundStyle(acento && !hecho ? colorAcento : colorSuave)
                     .frame(width: 46, alignment: .leading)
             }
-            BitacoraCheck(hecho: hecho, acento: acento, accion: marcar)
+            BitacoraCheck(hecho: hecho, acento: acento, colorActivo: colorAcento, colorBorde: colorFilo, colorMarca: colorSobreAcento, accion: marcar)
             Button { (abrir ?? marcar)() } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(titulo)
                         .font(Tipo.poppins(16.5, .semibold, estilo: .body))
-                        .foregroundStyle(hecho ? Paleta.textoSecundario : (acento ? Paleta.acento : Paleta.texto))
-                        .strikethrough(hecho, color: Paleta.textoSecundario)
+                        .foregroundStyle(hecho ? colorSuave : (acento ? colorAcento : colorTexto))
+                        .strikethrough(hecho, color: colorSuave)
                         .multilineTextAlignment(.leading)
-                    if !notas.isEmpty { Text(notas).font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
+                    if !notas.isEmpty { Text(notas).font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(colorSuave).lineLimit(2) }
                 }
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
@@ -121,7 +132,7 @@ struct FilaAgenda: View {
             .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(colorFilo).frame(height: 1) }
         .accessibilityElement(children: .combine)
         .accessibilityLabel([hora, titulo].compactMap { $0 }.joined(separator: ", "))
         .accessibilityValue(hecho ? "hecha" : (acento ? "pendiente, de días anteriores" : "pendiente"))
@@ -130,28 +141,35 @@ struct FilaAgenda: View {
     }
 }
 
-// Botón de texto del acento («+ tarea.»): una acción contextual, sin caja.
+// Botón de texto («+ tarea.»): una acción contextual, sin caja.
 struct AccionTexto: View {
     let texto: String
+    var color: Color = Paleta.acento
     let accion: () -> Void
 
     var body: some View {
         Button(action: accion) {
-            Text(texto).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.acento).frame(minHeight: 44, alignment: .leading)
+            Text(texto).font(Tipo.cuerpoFuerte).foregroundStyle(color).frame(minHeight: 44, alignment: .leading)
         }
         .buttonStyle(.plain)
     }
 }
 
-// .m-tabbar: superficie con las esquinas de arriba de 26, filo arriba y sombra baja; iconos en un círculo con un 6 % de
-// tinta; la activa en el texto principal con un punto del acento; el + central de 72 en el acento, con un aro del color
-// de la barra y subido 28 pt.
+// .m-tabbar: superficie con las esquinas de arriba, iconos propios en un círculo con tinta suave, activa con punto del
+// acento y el + central elevado con un aro del color de la barra.
 struct BarraBitacora: View {
     struct Pestana: Identifiable {
         let id: String
         let titulo: String
         let icono: String
     }
+    // Contrato de geometría (probable sin UI): hueco lateral común, icono a distancia fija del borde superior, área táctil.
+    static let altoHuecoLateral: CGFloat = 56
+    static let tamanoIconoLateral: CGFloat = 34
+    static let altoTactilMinimo: CGFloat = 44
+    static let altoBotonCentral: CGFloat = 44
+    static let elevacionCentral: CGFloat = 9
+
     let pestanas: [Pestana]
     let activa: String
     let elegir: (String) -> Void
@@ -160,18 +178,18 @@ struct BarraBitacora: View {
     var mantener: (() -> Void)?
     @Environment(\.dynamicTypeSize) private var letra
 
-    // 0.13: unos 62 pt sobre el área segura (antes 68), fondo del icono de 34, etiqueta de 11 y el + de 50 (42 de acento
-    // y aro de 4) subido 9. Áreas táctiles de 44 como mínimo. Sin sombra larga: un filo de un píxel y la superficie.
+    // Geometría común para los cuatro iconos laterales: cada grupo ocupa exactamente altoHuecoLateral y se centra en
+    // vertical. El + puede ir elevado, pero nada se sale ni se pega arriba; áreas táctiles de 44 pt como mínimo.
     var body: some View {
         let mitad = pestanas.count / 2
-        HStack(alignment: .top, spacing: 0) {
+        HStack(alignment: .center, spacing: 0) {
             ForEach(pestanas.prefix(mitad)) { boton($0) }
             botonCentral
             ForEach(pestanas.suffix(pestanas.count - mitad)) { boton($0) }
         }
         .padding(.horizontal, 6)
-        .padding(.top, 3)
-        .padding(.bottom, 1)
+        .padding(.top, 2)
+        .padding(.bottom, 2)
         .background(alignment: .top) {
             UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
                 .fill(Paleta.superficie)
@@ -189,15 +207,18 @@ struct BarraBitacora: View {
         let largo = p.id == "mas" ? mantener : nil
         return VStack(spacing: 1) {
                 IconoBarra(id: p.icono, activo: on)
-                    .frame(width: 34, height: 34)
+                    .frame(width: Self.tamanoIconoLateral, height: Self.tamanoIconoLateral)
                     .background(on ? Paleta.tinteAcento : Paleta.tinteTexto, in: Circle())
                 if !letra.isAccessibilitySize {
-                    Text(p.titulo + ".").font(.custom("Poppins-SemiBold", size: 11, relativeTo: .caption2)).lineLimit(1).minimumScaleFactor(0.85)
+                    Text(p.titulo + ".")
+                        .font(.custom("Poppins-SemiBold", size: 11, relativeTo: .caption2))
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .frame(height: 14)
                 }
                 Circle().fill(on ? Paleta.acento : .clear).frame(width: 4, height: 4)
             }
             .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: Self.altoHuecoLateral, maxHeight: Self.altoHuecoLateral, alignment: .center)
             .contentShape(Rectangle())
             // Toque y pulsación larga sin Button: así la pulsación larga no dispara también el toque al soltar.
             .onTapGesture { elegir(p.id) }
@@ -219,8 +240,8 @@ struct BarraBitacora: View {
                 .background(Paleta.superficie, in: Circle())
         }
         .buttonStyle(.plain)
-        .offset(y: -9)
-        .frame(width: 64, height: 44)
+        .offset(y: -Self.elevacionCentral)
+        .frame(width: 64, minHeight: Self.altoBotonCentral)
         .accessibilityLabel("apuntar")
     }
 }

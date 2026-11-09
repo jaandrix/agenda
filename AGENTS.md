@@ -1,9 +1,11 @@
 # Bitácora — instrucciones para agentes (Codex y otros)
 
 Lee primero `CLAUDE.md`: es la fuente de verdad del proyecto (qué es Bitácora, arquitectura, apartados y
-convenciones). Lo mantiene Claude Code, que es quien implementa los cambios en este repositorio.
+convenciones). Claude Code y OpenCode pueden implementar cambios en este repositorio. OpenCode debe trabajar con
+los agentes y comandos versionados en `.opencode/`, conservar cualquier cambio ajeno ya presente y entregar siempre
+un diff revisable con las comprobaciones ejecutadas. No debe hacer `push` salvo que la petición actual lo autorice.
 
-Si vienes a proponer diseño (ChatGPT / Codex):
+Si vienes únicamente a proponer diseño (ChatGPT / Codex):
 
 - No edites el código ni hagas commits. Deja tu propuesta como un único `.md` (más imágenes numeradas) en una
   carpeta de salida fuera del repo, siguiendo `C:\Users\jandr\Documents\Bitacora-ChatGPT\PLANTILLA-PROPUESTA.md`.

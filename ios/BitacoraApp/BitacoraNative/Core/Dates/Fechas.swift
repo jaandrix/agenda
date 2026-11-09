@@ -88,3 +88,23 @@ struct CalendarioBitacora: Sendable {
         return d.sumando(dias: desplazamiento)
     }
 }
+
+// Semana de lunes a domingo sobre días civiles (UTC, sin cambios de hora: el día de la semana de una fecha civil es
+// estable). Lunes = 0, domingo = 6.
+extension LocalDay {
+    private func fechaUTC() -> Date {
+        LocalDay.utc.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
+    }
+
+    var indiceSemanaLunes: Int {
+        // 1=dom, 2=lun, ..., 7=sáb en gregoriano → 0=lun, ..., 6=dom
+        (LocalDay.utc.component(.weekday, from: fechaUTC()) + 5) % 7
+    }
+
+    var inicioSemanaLunes: LocalDay { sumando(dias: -indiceSemanaLunes) }
+
+    var semanaLunesDomingo: [LocalDay] {
+        let lunes = inicioSemanaLunes
+        return (0..<7).map { lunes.sumando(dias: $0) }
+    }
+}

@@ -14,6 +14,13 @@ on:
       - 'pruebas/apuntar-casos.mjs'
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-nativa-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   nativa:
     runs-on: macos-latest
@@ -27,6 +34,10 @@ jobs:
       - name: Contrato de datos con la web
         working-directory: .
         run: node --test pruebas/contrato-ios.mjs
+
+      - name: Comprobación general del repositorio
+        working-directory: .
+        run: node pruebas/comprobar.mjs
 
       # La app interpreta «apuntar.» con js/apuntar.js: si la web cambia, el banco dorado tiene que estar al día.
       - name: Banco dorado de apuntar con la web
@@ -124,20 +135,43 @@ jobs:
           APP="build-def/Build/Products/Release-iphoneos/BitacoraNative.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")" = "com.bitacora.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleURLTypes:0:CFBundleURLSchemes:0' "$APP/Info.plist")" = "bitacora"
+          if [ -d "$APP/PlugIns" ]; then echo "La app definitiva no debe llevar extensiones"; exit 1; fi
           mkdir -p Payload && cp -R "$APP" Payload/ && zip -qr -y BitacoraDefinitiva-unsigned.ipa Payload && rm -rf Payload
+
+      - name: Crear manifiesto verificable de las IPA
+        run: |
+          set -e
+          APP="build-def/Build/Products/Release-iphoneos/BitacoraNative.app"
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")
+          BUILD=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")
+          shasum -a 256 BitacoraDefinitiva-unsigned.ipa BitacoraNativa-unsigned.ipa > SHA256SUMS.txt
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "version=${VERSION}"
+            echo "build=${BUILD}"
+            echo "workflow_run=${GITHUB_RUN_ID}"
+          } > build-info.txt
+          cat build-info.txt
+          cat SHA256SUMS.txt
 
       - name: Subir la definitiva
         uses: actions/upload-artifact@v4
         with:
           name: Bitacora-INSTALAR-ipa
-          path: ios/BitacoraApp/BitacoraDefinitiva-unsigned.ipa
+          path: |
+            ios/BitacoraApp/BitacoraDefinitiva-unsigned.ipa
+            ios/BitacoraApp/build-info.txt
+            ios/BitacoraApp/SHA256SUMS.txt
           retention-days: 30
 
       - name: Subir el .ipa
         uses: actions/upload-artifact@v4
         with:
           name: Bitacora-beta-no-instalar-ipa
-          path: ios/BitacoraApp/BitacoraNativa-unsigned.ipa
+          path: |
+            ios/BitacoraApp/BitacoraNativa-unsigned.ipa
+            ios/BitacoraApp/build-info.txt
+            ios/BitacoraApp/SHA256SUMS.txt
           retention-days: 30
 
       # Los errores como anotaciones: se leen sin descargar el registro entero.
