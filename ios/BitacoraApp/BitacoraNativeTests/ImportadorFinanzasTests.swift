@@ -20,8 +20,8 @@ final class ImportadorFinanzasTests: XCTestCase {
         let ops = ImportadorFinanzas.operaciones(e, cuenta: "bancos")
         let (una, _) = AplicarOperaciones.sobre(doc, ops)
         let (dos, _) = AplicarOperaciones.sobre(una, ops)
-        let tx1 = try una.valor(de: "financePro")?["transactions"]?.lista.count
-        let tx2 = try dos.valor(de: "financePro")?["transactions"]?.lista.count
+        let tx1 = try una.valor(de: "financePro")?["transactions"]?.lista?.count
+        let tx2 = try dos.valor(de: "financePro")?["transactions"]?.lista?.count
         XCTAssertEqual(tx1, 2)
         XCTAssertEqual(tx2, 2)
     }
