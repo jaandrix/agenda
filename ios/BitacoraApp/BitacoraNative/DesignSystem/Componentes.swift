@@ -241,7 +241,8 @@ struct BarraBitacora: View {
         }
         .buttonStyle(.plain)
         .offset(y: -Self.elevacionCentral)
-        .frame(width: 64, minHeight: Self.altoBotonCentral)
+        .frame(width: 64)
+        .frame(minHeight: Self.altoBotonCentral)
         .accessibilityLabel("apuntar")
     }
 }
