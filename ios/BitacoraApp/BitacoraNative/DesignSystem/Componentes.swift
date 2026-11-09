@@ -40,8 +40,8 @@ struct BitacoraCheck: View {
     }
 }
 
-// Cabecera de un apartado: título enorme en minúscula con el punto en el acento (renderMobileCabecera) y una línea de
-// contexto debajo. Sin barra de navegación grande encima.
+// Cabecera de un apartado: título enorme en minúscula con el punto en la señal de contexto (renderMobileCabecera) y
+// una línea de contexto debajo. Sin barra de navegación grande encima.
 struct CabeceraApartado<Accion: View>: View {
     let titulo: String
     var contexto: String?
@@ -50,7 +50,7 @@ struct CabeceraApartado<Accion: View>: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                (Text(titulo).foregroundColor(Paleta.texto) + Text(".").foregroundColor(Paleta.acento))
+                (Text(titulo).foregroundColor(Paleta.texto) + Text(".").foregroundColor(Paleta.progreso))
                     .font(Tipo.tituloApartado)
                     .kerning(-2.1)
                     .lineLimit(1).minimumScaleFactor(0.6)
@@ -74,7 +74,7 @@ struct CabeceraSeccion: View {
     var raya = false
     var colorTexto: Color = Paleta.texto
     var colorSuave: Color = Paleta.textoSecundario
-    var colorRaya: Color = Paleta.acento
+    var colorRaya: Color = Paleta.progreso
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -155,31 +155,32 @@ struct AccionTexto: View {
     }
 }
 
-// .m-tabbar: superficie con las esquinas de arriba, iconos propios en un círculo con tinta suave, activa con punto del
-// acento y el + central elevado con un aro del color de la barra.
+// Carcasa tonal integrada con el contexto azul del tema: fondo, tintes, bordes y estados usan la paleta de contexto.
+// Los cuatro grupos laterales comparten geometría y se centran en la altura útil; el + lleva una gama contextual
+// coherente con Inicio.
 struct BarraBitacora: View {
     struct Pestana: Identifiable {
         let id: String
         let titulo: String
         let icono: String
     }
-    // Contrato de geometría (probable sin UI): hueco lateral común, icono a distancia fija del borde superior, área táctil.
-    static let altoHuecoLateral: CGFloat = 56
-    static let tamanoIconoLateral: CGFloat = 34
+    // Contrato de geometría (probable sin UI): hueco lateral común, icono dentro del hueco, áreas táctiles >= 44 pt.
+    static let altoHuecoLateral: CGFloat = 62
+    static let tamanoIconoLateral: CGFloat = 32
     static let altoTactilMinimo: CGFloat = 44
-    static let altoBotonCentral: CGFloat = 44
-    static let elevacionCentral: CGFloat = 9
+    static let diametroCentral: CGFloat = 56
+    static let altoBotonCentral: CGFloat = 64
+    static let elevacionCentral: CGFloat = 8
+    static let duracionLongPress: Double = 0.5
 
     let pestanas: [Pestana]
     let activa: String
     let elegir: (String) -> Void
     let capturar: () -> Void
-    // Mantener pulsado «menú.» un segundo: los cinco apartados más usados.
+    // Mantener pulsado «menú.» medio segundo: los cinco apartados más usados.
     var mantener: (() -> Void)?
     @Environment(\.dynamicTypeSize) private var letra
 
-    // Geometría común para los cuatro iconos laterales: cada grupo ocupa exactamente altoHuecoLateral y se centra en
-    // vertical. El + puede ir elevado, pero nada se sale ni se pega arriba; áreas táctiles de 44 pt como mínimo.
     var body: some View {
         let mitad = pestanas.count / 2
         HStack(alignment: .center, spacing: 0) {
@@ -188,16 +189,17 @@ struct BarraBitacora: View {
             ForEach(pestanas.suffix(pestanas.count - mitad)) { boton($0) }
         }
         .padding(.horizontal, 6)
-        .padding(.top, 2)
+        .padding(.top, 4)
         .padding(.bottom, 2)
+        .frame(minHeight: Self.altoHuecoLateral)
         .background(alignment: .top) {
-            UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
-                .fill(Paleta.superficie)
+            UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
+                .fill(Paleta.contexto)
                 .overlay(alignment: .top) {
-                    UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
-                        .stroke(Paleta.borde, lineWidth: 1)
+                    UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
+                        .stroke(Paleta.filoContexto, lineWidth: 1)
                 }
-                .shadow(color: .black.opacity(0.06), radius: 5, y: -1)
+                .shadow(color: .black.opacity(0.12), radius: 8, y: -2)
                 .ignoresSafeArea(edges: .bottom)
         }
     }
@@ -205,24 +207,23 @@ struct BarraBitacora: View {
     private func boton(_ p: Pestana) -> some View {
         let on = p.id == activa
         let largo = p.id == "mas" ? mantener : nil
-        return VStack(spacing: 1) {
-                IconoBarra(id: p.icono, activo: on)
+        return VStack(spacing: 2) {
+                IconoBarra(id: p.icono, activo: on, detalle: Paleta.progreso)
+                    .foregroundStyle(on ? Paleta.sobreContexto : Paleta.sobreContextoSuave)
                     .frame(width: Self.tamanoIconoLateral, height: Self.tamanoIconoLateral)
-                    .background(on ? Paleta.tinteAcento : Paleta.tinteTexto, in: Circle())
+                    .background(on ? Paleta.tinteContexto : Color.clear, in: Circle())
                 if !letra.isAccessibilitySize {
                     Text(p.titulo + ".")
-                        .font(.custom("Poppins-SemiBold", size: 11, relativeTo: .caption2))
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(height: 14)
+                        .font(.custom("Poppins-SemiBold", size: 10.5, relativeTo: .caption2))
+                        .foregroundStyle(on ? Paleta.sobreContexto : Paleta.sobreContextoSuave)
+                        .lineLimit(1).minimumScaleFactor(0.75)
                 }
-                Circle().fill(on ? Paleta.acento : .clear).frame(width: 4, height: 4)
+                Circle().fill(on ? Paleta.progreso : .clear).frame(width: 4, height: 4)
             }
-            .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
             .frame(maxWidth: .infinity, minHeight: Self.altoHuecoLateral, maxHeight: Self.altoHuecoLateral, alignment: .center)
             .contentShape(Rectangle())
-            // Toque y pulsación larga sin Button: así la pulsación larga no dispara también el toque al soltar.
             .onTapGesture { elegir(p.id) }
-            .onLongPressGesture(minimumDuration: 1) { largo?() }
+            .onLongPressGesture(minimumDuration: Self.duracionLongPress) { largo?() }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(p.titulo)
             .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
@@ -232,16 +233,17 @@ struct BarraBitacora: View {
 
     private var botonCentral: some View {
         Button(action: capturar) {
-            IconoBarra(id: "apuntar")
-                .foregroundStyle(Paleta.sobreAcento)
-                .frame(width: 42, height: 42)
-                .background(Paleta.acento, in: Circle())
+            IconoBarra(id: "apuntar", detalle: Paleta.progreso)
+                .foregroundStyle(Paleta.sobreContexto)
+                .frame(width: Self.diametroCentral, height: Self.diametroCentral)
+                .background(Paleta.contexto, in: Circle())
+                .overlay(Circle().stroke(Paleta.filoContexto, lineWidth: 1))
                 .padding(4)
                 .background(Paleta.superficie, in: Circle())
         }
         .buttonStyle(.plain)
         .offset(y: -Self.elevacionCentral)
-        .frame(width: 64)
+        .frame(width: 72)
         .frame(minHeight: Self.altoBotonCentral)
         .accessibilityLabel("apuntar")
     }
@@ -283,8 +285,8 @@ private struct AccionMasUsados: ViewModifier {
     }
 }
 
-// Selector de «más usados.»: encima de la barra, superficie sólida del tema, sin blur. Entra con opacidad y escala de
-// 0,96 a 1 (160 ms); con movimiento reducido, sin escala.
+// Bocadillo de «más usados.»: superficie sólida anclada visualmente al icono de menú por un pico inferior.
+// Entra con opacidad y escala de 0,96 a 1 (160 ms); con movimiento reducido, sin escala.
 struct SelectorMasUsados: View {
     let apartados: [Apartado]
     let elegir: (String) -> Void
@@ -301,11 +303,30 @@ struct SelectorMasUsados: View {
                     .buttonStyle(.plain)
             }
         }
-        .padding(.bottom, 6)
-        .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Paleta.borde))
-        .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+        .padding(.bottom, 14)
+        .background { FormaBocadillo().fill(Paleta.superficie).overlay(FormaBocadillo().stroke(Paleta.borde)) }
+        .shadow(color: .black.opacity(0.14), radius: 14, y: 4)
         .accessibilityAction(.escape, cerrar)
+    }
+}
+
+private struct FormaBocadillo: Shape {
+    var radio: CGFloat = 20
+    var picoAncho: CGFloat = 18
+    var picoAlto: CGFloat = 10
+    var picoDesdeDerecha: CGFloat = 34
+
+    func path(in r: CGRect) -> Path {
+        let cuerpo = CGRect(x: r.minX, y: r.minY, width: r.width, height: r.height - picoAlto)
+        let centroPico = max(cuerpo.minX + radio + picoAncho, cuerpo.maxX - picoDesdeDerecha)
+        let izq = centroPico - picoAncho / 2
+        let der = centroPico + picoAncho / 2
+        var p = Path(roundedRect: cuerpo, cornerRadius: radio, style: .continuous)
+        p.move(to: CGPoint(x: izq, y: cuerpo.maxY - 0.5))
+        p.addLine(to: CGPoint(x: centroPico, y: r.maxY))
+        p.addLine(to: CGPoint(x: der, y: cuerpo.maxY - 0.5))
+        p.closeSubpath()
+        return p
     }
 }
 

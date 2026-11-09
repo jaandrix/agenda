@@ -131,7 +131,7 @@ struct PrincipalView: View {
                         c.abrirApartado(v)
                     } cerrar: { masUsados = nil }
                     .frame(maxWidth: 300)
-                    .padding(.trailing, 12).padding(.bottom, 76)
+                    .padding(.trailing, 10).padding(.bottom, BarraBitacora.altoHuecoLateral + 18)
                     .transition(sinMovimiento ? .opacity : .opacity.combined(with: .scale(scale: 0.96, anchor: .bottomTrailing)))
                 }
             }
@@ -140,6 +140,8 @@ struct PrincipalView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: masUsados != nil) { _, abierto in abierto }
         .onChange(of: c.modal) { _, m in if m != nil { masUsados = nil } }
         .onChange(of: fase) { _, f in if f != .active { masUsados = nil } }
+        .onChange(of: c.pestana) { masUsados = nil }
+        .onChange(of: c.rutaMas) { masUsados = nil }
         .background(Paleta.fondo.ignoresSafeArea())
         .overlay(alignment: .top) {
             if let aviso = c.aviso {

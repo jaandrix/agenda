@@ -73,74 +73,68 @@ struct IconoApunte: View {
     }
 }
 
-// La barra de abajo (DIRECCION-ICONOS-BARRA-BITACORA-2026-11-08.svg): lienzo de 24, trazo de 1,85 redondeado y un
-// detalle lleno que, en la pestaña activa, toma el acento. inicio: cuaderno abierto con su punto; plan: eje con tres
-// hitos; calendario: semana con una casilla marcada; finanzas: libro de cuentas con su moneda; menú: índice.
+// La barra de abajo: lienzo de 24, trazo redondeado y un detalle lleno que, en la pestaña activa, toma el color
+// señalado por la barra (contexto/progreso en la carcasa tonal). Cinco iconos propios, simplificados y con curvas
+// consistentes.
 struct IconoBarra: View {
     let id: String
     var activo = false
+    var detalle: Color = Paleta.progreso
 
-    private var trazo: StrokeStyle { StrokeStyle(lineWidth: 1.85, lineCap: .round, lineJoin: .round) }
-    private var fino: StrokeStyle { StrokeStyle(lineWidth: 1.55, lineCap: .round, lineJoin: .round) }
+    private var trazo: StrokeStyle { StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round) }
 
     var body: some View {
         ZStack {
             switch id {
             case "inicio":
                 Path { p in
-                    p.move(to: .init(x: 2.5, y: 5.5)); p.addCurve(to: .init(x: 12, y: 6.1), control1: .init(x: 5.5, y: 3.9), control2: .init(x: 8.6, y: 4.0))
-                    p.addLine(to: .init(x: 12, y: 20.9)); p.addCurve(to: .init(x: 2.5, y: 20.3), control1: .init(x: 8.6, y: 18.8), control2: .init(x: 5.5, y: 18.7)); p.closeSubpath()
-                    p.move(to: .init(x: 21.5, y: 5.5)); p.addCurve(to: .init(x: 12, y: 6.1), control1: .init(x: 18.5, y: 3.9), control2: .init(x: 15.4, y: 4.0))
-                    p.addLine(to: .init(x: 12, y: 20.9)); p.addCurve(to: .init(x: 21.5, y: 20.3), control1: .init(x: 15.4, y: 18.8), control2: .init(x: 18.5, y: 18.7)); p.closeSubpath()
+                    p.addRoundedRect(in: CGRect(x: 3, y: 4.5, width: 8, height: 15), cornerSize: CGSize(width: 3.5, height: 3.5))
+                    p.addRoundedRect(in: CGRect(x: 13, y: 4.5, width: 8, height: 15), cornerSize: CGSize(width: 3.5, height: 3.5))
                 }.stroke(style: trazo)
-                Circle().fill(activo ? Paleta.acento : Color.clear).frame(width: 3.2, height: 3.2).position(x: 18.5, y: 10)
+                if activo { Circle().fill(detalle).frame(width: 3.8, height: 3.8).position(x: 17, y: 9.5) }
             case "plan":
-                Path { p in p.move(to: .init(x: 5, y: 3.5)); p.addLine(to: .init(x: 5, y: 20.5)) }.stroke(style: fino)
                 Path { p in
-                    p.addEllipse(in: CGRect(x: 2.8, y: 2.8, width: 4.4, height: 4.4)); p.addEllipse(in: CGRect(x: 2.8, y: 16.8, width: 4.4, height: 4.4))
-                    if !activo { p.addEllipse(in: CGRect(x: 2.8, y: 9.8, width: 4.4, height: 4.4)) }
-                    p.move(to: .init(x: 10, y: 5)); p.addLine(to: .init(x: 20, y: 5))
-                    p.move(to: .init(x: 10, y: 12)); p.addLine(to: .init(x: 17.5, y: 12))
-                    p.move(to: .init(x: 10, y: 19)); p.addLine(to: .init(x: 19, y: 19))
+                    p.move(to: .init(x: 8.5, y: 6)); p.addLine(to: .init(x: 20, y: 6))
+                    p.move(to: .init(x: 8.5, y: 12)); p.addLine(to: .init(x: 18, y: 12))
+                    p.move(to: .init(x: 8.5, y: 18)); p.addLine(to: .init(x: 20, y: 18))
                 }.stroke(style: trazo)
-                if activo { Circle().fill(Paleta.acento).frame(width: 4.4, height: 4.4).position(x: 5, y: 12) }
-            case "calendario":
-                Path { p in
-                    p.move(to: .init(x: 4, y: 7.5)); p.addLine(to: .init(x: 20, y: 7.5))
-                    p.move(to: .init(x: 5.5, y: 4)); p.addLine(to: .init(x: 5.5, y: 7.5))
-                    p.move(to: .init(x: 18.5, y: 4)); p.addLine(to: .init(x: 18.5, y: 7.5))
-                    p.move(to: .init(x: 4, y: 7.5)); p.addLine(to: .init(x: 4, y: 19.5)); p.addLine(to: .init(x: 20, y: 19.5)); p.addLine(to: .init(x: 20, y: 7.5))
-                }.stroke(style: trazo)
-                Path { p in
-                    for (x, y) in [(7.0, 12.0), (12.0, 12.0), (7.0, 16.0), (12.0, 16.0)] { p.move(to: .init(x: x, y: y)); p.addLine(to: .init(x: x + 2, y: y)) }
-                }.stroke(style: fino)
-                Circle().fill(activo ? AnyShapeStyle(Paleta.acento) : AnyShapeStyle(.foreground)).frame(width: 4, height: 4).position(x: 18, y: 16)
-            case "finanzas":
-                Path { p in
-                    p.addRect(CGRect(x: 3.5, y: 5.5, width: 17, height: 14))
-                    p.move(to: .init(x: 7, y: 10)); p.addLine(to: .init(x: 14, y: 10))
-                    p.move(to: .init(x: 7, y: 14)); p.addLine(to: .init(x: 12, y: 14))
-                }.stroke(style: trazo)
-                if activo {
-                    Circle().fill(Paleta.acento).frame(width: 7.8, height: 7.8).position(x: 17.5, y: 15.5)
+                ForEach(Array([6.0, 12.0, 18.0].enumerated()), id: \.offset) { i, y in
+                    let on = activo && i == 1
+                    Circle()
+                        .fill(on ? AnyShapeStyle(detalle) : AnyShapeStyle(.clear))
+                        .overlay(Circle().stroke(style: trazo))
+                        .frame(width: 4.4, height: 4.4)
+                        .position(x: 4.5, y: y)
+                }
+            case "calendario", "finanzas":
+                if id == "calendario" {
+                    Path { p in p.addRoundedRect(in: CGRect(x: 3.5, y: 5, width: 17, height: 15), cornerSize: CGSize(width: 4, height: 4)) }.stroke(style: trazo)
+                    Path { p in p.move(to: .init(x: 3.5, y: 9.5)); p.addLine(to: .init(x: 20.5, y: 9.5)) }.stroke(style: trazo)
+                    if activo {
+                        RoundedRectangle(cornerRadius: 1.5).fill(detalle).frame(width: 5, height: 4.5).position(x: 15.5, y: 14.5)
+                    } else {
+                        Circle().fill(.foreground).frame(width: 3.4, height: 3.4).position(x: 15.5, y: 14.5)
+                    }
                 } else {
-                    Circle().stroke(lineWidth: 1.85).frame(width: 6, height: 6).position(x: 17.5, y: 15.5)
+                    Path { p in p.addRoundedRect(in: CGRect(x: 3.5, y: 5, width: 17, height: 14), cornerSize: CGSize(width: 4, height: 4)) }.stroke(style: trazo)
+                    Path { p in p.move(to: .init(x: 7.5, y: 12)); p.addLine(to: .init(x: 16.5, y: 12)) }.stroke(style: trazo)
+                    Circle().fill(activo ? AnyShapeStyle(detalle) : AnyShapeStyle(.clear))
+                        .overlay(Circle().stroke(style: trazo))
+                        .frame(width: 6.2, height: 6.2).position(x: 16.5, y: 15.5)
                 }
             case "menu":
                 Path { p in
-                    p.addRoundedRect(in: CGRect(x: 3, y: 4, width: 6, height: 6), cornerSize: CGSize(width: 2, height: 2))
-                    p.addRoundedRect(in: CGRect(x: 14.5, y: 12, width: 6, height: 6), cornerSize: CGSize(width: 2, height: 2))
-                    p.move(to: .init(x: 12.5, y: 7)); p.addLine(to: .init(x: 20.5, y: 7))
-                    p.move(to: .init(x: 3, y: 15)); p.addLine(to: .init(x: 11, y: 15))
+                    for y in [7.0, 12.0, 17.0] {
+                        p.move(to: .init(x: 5, y: y)); p.addLine(to: .init(x: 19, y: y))
+                    }
                 }.stroke(style: trazo)
-                if activo { Circle().fill(Paleta.acento).frame(width: 3.4, height: 3.4).position(x: 6, y: 20.5) }
+                if activo { Circle().fill(detalle).frame(width: 4, height: 4).position(x: 5, y: 12) }
             default:
-                // apuntar: cruz gruesa con el punto de Bitácora.
                 Path { p in
-                    p.move(to: .init(x: 12, y: 3.5)); p.addLine(to: .init(x: 12, y: 20.5))
-                    p.move(to: .init(x: 3.5, y: 12)); p.addLine(to: .init(x: 20.5, y: 12))
-                }.stroke(style: StrokeStyle(lineWidth: 3.2, lineCap: .round))
-                Circle().frame(width: 4.4, height: 4.4).position(x: 20.5, y: 20.5)
+                    p.move(to: .init(x: 12, y: 4.5)); p.addLine(to: .init(x: 12, y: 19.5))
+                    p.move(to: .init(x: 4.5, y: 12)); p.addLine(to: .init(x: 19.5, y: 12))
+                }.stroke(style: StrokeStyle(lineWidth: 2.8, lineCap: .round))
+                Circle().fill(detalle).frame(width: 4, height: 4).position(x: 19, y: 19)
             }
         }
         .frame(width: 24, height: 24)

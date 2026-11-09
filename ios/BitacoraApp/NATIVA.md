@@ -170,8 +170,8 @@ Pendiente del plan: capturas a 375 y 430, hoja de edición, Calendario, Finanzas
 | `--m-acento` #e5532b / #f0643a | `Paleta.acento` (arcilla #a64235 / #c96a5a en la nativa; el naranja solo en `Paleta.marca`) |
 | `--m-sobre-acento` #161514 | `Paleta.sobreAcento` |
 | `.m-ahora-bloque` acento 7 % y filo 16 %, radio 20 | `Paleta.tinteAcento`, `filoAcento`, `Radio.bloque` |
-| `.m-tabbar` radio 26, tab 12,5 bold, icono en círculo al 6 % | `BarraBitacora` (0.12: radio 22, etiqueta 11, icono 24 en 36, `IconoBarra`) |
-| `.m-tab-mas` 72 con aro de la barra, subido 28 | botón central 46 + aro 4, subido 12 |
+| `.m-tabbar` radio 26, tab 12,5 bold, icono en círculo al 6 % | `BarraBitacora` (0.14: carcasa contexto, radio 22, hueco 62, icono 32, etiqueta 10,5, `IconoBarra`) |
+| `.m-tab-mas` 72 con aro de la barra, subido 28 | botón central visible 56 + aro del contexto, elevado 8 |
 | `.m-check` 30, borde 2, lleno de acento | `BitacoraCheck` (sello 160 ms) |
 | `--m-fs-titulo` 42 | `Tipo.tituloApartado` |
 
