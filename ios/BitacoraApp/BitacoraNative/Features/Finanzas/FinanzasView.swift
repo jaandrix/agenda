@@ -466,7 +466,7 @@ private struct GraficaSaldo: View {
                 let rango = max(maxV - minV, 1)
                 let w = g.size.width, h = g.size.height
                 let step = w / CGFloat(max(puntos.count - 1, 1))
-                func pt(_ i: Int) -> CGPoint {
+                let pt: (Int) -> CGPoint = { i in
                     CGPoint(x: CGFloat(i) * step, y: h - CGFloat((vals[i] - minV) / rango) * h)
                 }
                 let linea = Path { p in
