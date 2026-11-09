@@ -28,12 +28,25 @@ struct MasView: View {
 
     // Lo que ya es nativo: o una pestaña de la barra, o una página dentro de «más.».
     static let pestanas: [String: Pestana] = ["calendar": .calendario, "planner": .plan, "finances": .finanzas]
-    static let paginas: Set<String> = ["habits", "notes", "studies", "projects", "settings", "events", "transporte"]
+    static let paginas: Set<String> = ["habits", "notes", "studies", "projects", "settings", "events", "transporte", "home"]
 
     var body: some View {
+        ScrollViewReader { lector in
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "menú", contexto: nil) { EmptyView() }
+                CabeceraApartado(titulo: "menú", contexto: nil) { EmptyView() }.id("arriba")
+                NavigationLink(value: "buscar") {
+                    HStack(spacing: Espacio.s) {
+                        Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .semibold))
+                        Text("buscar en bitácora.").font(Tipo.cuerpo)
+                        Spacer()
+                    }
+                    .foregroundStyle(Paleta.textoSecundario)
+                    .padding(.horizontal, 14).frame(minHeight: 46)
+                    .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                }
+                .buttonStyle(.plain).padding(.top, Espacio.m)
+                .accessibilityLabel("buscar")
                 if let menu {
                     ForEach(menu.grupos, id: \.nombre) { g in
                         GrupoMenu(titulo: g.nombre + ".") {
@@ -56,6 +69,8 @@ struct MasView: View {
             .padding(.bottom, Espacio.xl)
         }
         .scrollIndicators(.hidden)
+        .onChange(of: c.subir[.mas]) { lector.scrollTo("arriba", anchor: .top) }
+        }
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
@@ -69,11 +84,12 @@ struct MasView: View {
     @ViewBuilder private func fila(_ a: Apartado, cuenta: Int) -> some View {
         let inicial = String(a.nombre.prefix(1))
         if let p = Self.pestanas[a.vista] {
-            Button { c.pestana = p } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(.plain)
+            Button { c.anotarUso(a.vista); c.pestana = p } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(.plain)
         } else if Self.paginas.contains(a.vista) {
             NavigationLink(value: a.vista) { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(.plain)
+                .simultaneousGesture(TapGesture().onEnded { c.anotarUso(a.vista) })
         } else {
-            Button { c.web = Apartados.webURL(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta, web: true) }.buttonStyle(.plain)
+            Button { c.anotarUso(a.vista); c.web = Apartados.webURL(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta, web: true) }.buttonStyle(.plain)
         }
     }
 
@@ -87,6 +103,8 @@ struct MasView: View {
         case "events": EventosView()
         case "transporte": TransporteView()
         case "estado": EstadoView()
+        case "buscar": BuscarView()
+        case "home": PanoramaView()
         default: Color.clear.onAppear { c.rutaMas = []; c.web = Apartados.webURL(vista) }
         }
     }

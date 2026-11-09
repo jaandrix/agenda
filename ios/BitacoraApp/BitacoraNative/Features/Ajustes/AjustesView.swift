@@ -18,6 +18,15 @@ struct AjustesView: View {
             Section {
                 SelectorTema()
                     .listRowBackground(Paleta.superficie)
+                Picker("tamaño de letra.", selection: Binding(get: { c.letra }, set: { c.ponerLetra($0) })) {
+                    ForEach(EscalaLetra.allCases) { Text($0.nombre).tag($0) }
+                }
+                .frame(minHeight: 44)
+                .listRowBackground(Paleta.superficie)
+                Button("restablecer apariencia.") { c.ponerLetra(.normal); c.ponerTema(.sistema) }
+                    .frame(minHeight: 44)
+                    .disabled(c.letra == .normal && c.tema == .sistema)
+                    .listRowBackground(Paleta.superficie)
                 Toggle("pedir \(Biometria.nombre) al abrir.", isOn: Binding(get: { c.bloqueoActivo }, set: { v in Task { await c.activarBloqueo(v) } }))
                     .disabled(!Biometria.disponible)
                     .listRowBackground(Paleta.superficie)
@@ -26,7 +35,7 @@ struct AjustesView: View {
             } header: {
                 Text("en este iPhone.")
             } footer: {
-                Text("el bloqueo solo protege la app en este iPhone; tu cuenta sigue con su contraseña. los avisos llegan una hora antes de cada evento con hora; si ya te llegan los de la web, no los actives.")
+                Text("el tamaño de letra se suma al de iOS (Dynamic Type). el bloqueo solo protege la app en este iPhone; tu cuenta sigue con su contraseña. los avisos llegan una hora antes de cada evento con hora; si ya te llegan los de la web, no los actives.")
             }
             Section {
                 Button("abrir la web.") { abrir(Config.webURL) }

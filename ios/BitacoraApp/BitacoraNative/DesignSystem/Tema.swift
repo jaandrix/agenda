@@ -34,16 +34,24 @@ struct PermisosTemas: Codable, Equatable, Sendable {
 struct TemaTokens {
     let fondo: UInt32, superficie: UInt32, texto: UInt32, secundario: UInt32, acento: UInt32, sobreAcento: UInt32, punto: UInt32
     let oscuro: Bool
+    // Dirección 02: contexto (cabeceras y navegación), progreso (avance) y atención (solo lo que pide mirarse).
+    var contexto: UInt32 = 0, sobreContexto: UInt32 = 0, progreso: UInt32 = 0, sobreProgreso: UInt32 = 0, atencion: UInt32 = 0
+
+    func con(_ c: UInt32, _ sc: UInt32, _ p: UInt32, _ sp: UInt32, _ a: UInt32) -> TemaTokens {
+        var t = self
+        (t.contexto, t.sobreContexto, t.progreso, t.sobreProgreso, t.atencion) = (c, sc, p, sp, a)
+        return t
+    }
 
     static func de(_ t: TemaElegido, sistemaOscuro: Bool) -> TemaTokens {
         switch t {
         case .sistema: return de(sistemaOscuro ? .asfalto : .papel, sistemaOscuro: sistemaOscuro)
-        case .asfalto: return TemaTokens(fondo: 0x121211, superficie: 0x1D1D1B, texto: 0xF4F2EB, secundario: 0xA29F96, acento: 0xC96A5A, sobreAcento: 0x161514, punto: 0x2A2A27, oscuro: true)
-        case .papel: return TemaTokens(fondo: 0xEFEEE9, superficie: 0xFFFFFF, texto: 0x302F2C, secundario: 0x736F63, acento: 0xA64235, sobreAcento: 0xFFFFFF, punto: 0xE2E0D9, oscuro: false)
-        case .acuarela: return TemaTokens(fondo: 0xE7E2D9, superficie: 0xF2EFE9, texto: 0x161514, secundario: 0x625D55, acento: 0x8A2233, sobreAcento: 0xFFFFFF, punto: 0xD2CCC1, oscuro: false)
-        case .pizarra: return TemaTokens(fondo: 0xC0C8CA, superficie: 0xD4D8DD, texto: 0x1A2D42, secundario: 0x2E4156, acento: 0x2E4156, sobreAcento: 0xD4D8DD, punto: 0xAAB7B7, oscuro: false)
-        case .oliva: return TemaTokens(fondo: 0xF7F5EE, superficie: 0xEFF1E8, texto: 0x252A22, secundario: 0x687064, acento: 0x8B4F70, sobreAcento: 0xFFFEFA, punto: 0xDDE4CE, oscuro: false)
-        case .fundador: return TemaTokens(fondo: 0x1A1916, superficie: 0x23211D, texto: 0xF1EAD8, secundario: 0xB0A68F, acento: 0xD4B06A, sobreAcento: 0x1A1916, punto: 0x3A362D, oscuro: true)
+        case .asfalto: return TemaTokens(fondo: 0x121211, superficie: 0x1D1D1B, texto: 0xF4F2EB, secundario: 0xA29F96, acento: 0xC96A5A, sobreAcento: 0x161514, punto: 0x2A2A27, oscuro: true).con(0x1B2B40, 0xF4F2EB, 0x7FBF98, 0x0F2418, 0xE08FA6)
+        case .papel: return TemaTokens(fondo: 0xEFEEE9, superficie: 0xFFFFFF, texto: 0x302F2C, secundario: 0x736F63, acento: 0xA64235, sobreAcento: 0xFFFFFF, punto: 0xE2E0D9, oscuro: false).con(0x183E70, 0xF7F5EF, 0xB8DFC6, 0x183E70, 0xA34C65)
+        case .acuarela: return TemaTokens(fondo: 0xE7E2D9, superficie: 0xF2EFE9, texto: 0x161514, secundario: 0x625D55, acento: 0x8A2233, sobreAcento: 0xFFFFFF, punto: 0xD2CCC1, oscuro: false).con(0x161514, 0xF2EFE9, 0xC9D3B4, 0x161514, 0x8A2233)
+        case .pizarra: return TemaTokens(fondo: 0xC0C8CA, superficie: 0xD4D8DD, texto: 0x1A2D42, secundario: 0x2E4156, acento: 0x2E4156, sobreAcento: 0xD4D8DD, punto: 0xAAB7B7, oscuro: false).con(0x1A2D42, 0xE4E8EC, 0xA9CDB9, 0x1A2D42, 0x8A3A52)
+        case .oliva: return TemaTokens(fondo: 0xF7F5EE, superficie: 0xEFF1E8, texto: 0x252A22, secundario: 0x687064, acento: 0x8B4F70, sobreAcento: 0xFFFEFA, punto: 0xDDE4CE, oscuro: false).con(0x3B4A2C, 0xF7F5EE, 0xC9D8A9, 0x252A22, 0x8B4F70)
+        case .fundador: return TemaTokens(fondo: 0x1A1916, superficie: 0x23211D, texto: 0xF1EAD8, secundario: 0xB0A68F, acento: 0xD4B06A, sobreAcento: 0x1A1916, punto: 0x3A362D, oscuro: true).con(0x2B2618, 0xF1EAD8, 0xD4B06A, 0x1A1916, 0xE0907E)
         }
     }
 }
@@ -92,6 +100,14 @@ enum Paleta {
     static let filoAcento = Color.delTema { UIColor(rgb: $0.acento, alfa: 0.16) }
     // color-mix(--text-primary 6 %): el círculo de cada icono de la barra.
     static let tinteTexto = Color.delTema { UIColor(rgb: $0.texto, alfa: 0.06) }
+    static let contexto = Color.delTema { UIColor(rgb: $0.contexto) }
+    static let sobreContexto = Color.delTema { UIColor(rgb: $0.sobreContexto) }
+    static let sobreContextoSuave = Color.delTema { UIColor(rgb: $0.sobreContexto, alfa: 0.74) }
+    static let filoContexto = Color.delTema { UIColor(rgb: $0.sobreContexto, alfa: 0.18) }
+    static let tinteContexto = Color.delTema { UIColor(rgb: $0.sobreContexto, alfa: 0.1) }
+    static let progreso = Color.delTema { UIColor(rgb: $0.progreso) }
+    static let sobreProgreso = Color.delTema { UIColor(rgb: $0.sobreProgreso) }
+    static let atencion = Color.delTema { UIColor(rgb: $0.atencion) }
     // El punto oficial del logo «b.»: no cambia con el tema ni se usa en controles.
     static let marca = Color(uiColor: UIColor(rgb: 0xE5532B))
 }
@@ -115,9 +131,23 @@ enum Radio {
     static let barra: CGFloat = 26       // .m-tabbar, esquinas de arriba
 }
 
-// Poppins con Dynamic Type: cada tamaño escala con el estilo de texto que se le indica.
+// Tamaño de letra de Bitácora (Ajustes → apariencia.), por cuenta en este iPhone. Multiplica los tamaños de Poppins
+// y Dynamic Type sigue actuando encima. Sin zoom ni scaleEffect: la raíz se rehace con `.id` al cambiarlo.
+enum EscalaLetra: String, CaseIterable, Identifiable {
+    case pequena, normal, grande, muyGrande
+    var id: String { rawValue }
+    var factor: CGFloat { [.pequena: 0.9, .normal: 1, .grande: 1.12, .muyGrande: 1.25][self]! }
+    var nombre: String { [.pequena: "pequeña.", .normal: "normal.", .grande: "grande.", .muyGrande: "muy grande."][self]! }
+}
+
+enum LetraActiva {
+    nonisolated(unsafe) static var elegida: EscalaLetra = .normal
+}
+
+// Poppins con Dynamic Type: cada tamaño escala con el estilo de texto que se le indica, por la escala elegida.
 enum Tipo {
     static func poppins(_ tamano: CGFloat, _ peso: Font.Weight = .regular, estilo: Font.TextStyle = .body) -> Font {
+        let tamano = tamano * LetraActiva.elegida.factor
         let nombre: String
         switch peso {
         case .bold, .heavy, .black: nombre = "Poppins-Bold"
@@ -129,12 +159,12 @@ enum Tipo {
     }
 
     // --m-fs-titulo (42) para la cabecera de un apartado; --m-fs-sub (22) para su subtítulo.
-    static let tituloApartado = poppins(42, .bold, estilo: .largeTitle)
-    static let titulo = poppins(34, .bold, estilo: .largeTitle)
-    static let subtitulo = poppins(20, .semibold, estilo: .title3)
-    static let cuerpo = poppins(16, .regular, estilo: .body)
-    static let cuerpoFuerte = poppins(16, .medium, estilo: .body)
-    static let pie = poppins(13, .regular, estilo: .footnote)
+    static var tituloApartado: Font { poppins(42, .bold, estilo: .largeTitle) }
+    static var titulo: Font { poppins(34, .bold, estilo: .largeTitle) }
+    static var subtitulo: Font { poppins(20, .semibold, estilo: .title3) }
+    static var cuerpo: Font { poppins(16, .regular, estilo: .body) }
+    static var cuerpoFuerte: Font { poppins(16, .medium, estilo: .body) }
+    static var pie: Font { poppins(13, .regular, estilo: .footnote) }
     static let mono = Font.system(.footnote, design: .monospaced)
 }
 

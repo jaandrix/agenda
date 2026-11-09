@@ -41,7 +41,7 @@ struct BitacoraNativeApp: App {
     var body: some Scene {
         WindowGroup {
             RaizView()
-                .id(coordinador.tema)
+                .id("\(coordinador.tema.rawValue)-\(coordinador.letra.rawValue)")
                 .environment(coordinador)
                 .preferredColorScheme(coordinador.tema.esquema)
                 .tint(Paleta.acento)
@@ -88,6 +88,9 @@ struct Marca: View {
 // por la de la PWA. Cambiar de pestaña es inmediato, sin desplazamiento lateral. Ajustes vive en «más.».
 struct PrincipalView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+    @State private var masUsados: [Apartado]?
+    @Environment(\.scenePhase) private var fase
 
     static func pestanas(secundaria: Pestana) -> [BarraBitacora.Pestana] {
         [.init(id: "inicio", titulo: "inicio", icono: "inicio"),
@@ -109,11 +112,34 @@ struct PrincipalView: View {
             }
             BarraBitacora(pestanas: Self.pestanas(secundaria: c.secundaria),
                           activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio") { id in
-                if let p = Self.porId[id] { c.pestana = p }
+                masUsados = nil
+                if let p = Self.porId[id] { c.tocarPestana(p) }
             } capturar: {
+                masUsados = nil
                 c.abrirApuntar()
+            } mantener: {
+                Task { await abrirMasUsados() }
             }
         }
+        .overlay {
+            if let lista = masUsados {
+                ZStack(alignment: .bottomTrailing) {
+                    Color.black.opacity(0.001).ignoresSafeArea().onTapGesture { masUsados = nil }
+                        .accessibilityHidden(true)
+                    SelectorMasUsados(apartados: lista) { v in
+                        masUsados = nil
+                        c.abrirApartado(v)
+                    } cerrar: { masUsados = nil }
+                    .frame(maxWidth: 300)
+                    .padding(.trailing, 12).padding(.bottom, 76)
+                    .transition(sinMovimiento ? .opacity : .opacity.combined(with: .scale(scale: 0.96, anchor: .bottomTrailing)))
+                }
+            }
+        }
+        .animation(.easeOut(duration: 0.16), value: masUsados)
+        .sensoryFeedback(.impact(weight: .light), trigger: masUsados != nil) { _, abierto in abierto }
+        .onChange(of: c.modal) { _, m in if m != nil { masUsados = nil } }
+        .onChange(of: fase) { _, f in if f != .active { masUsados = nil } }
         .background(Paleta.fondo.ignoresSafeArea())
         .overlay(alignment: .top) {
             if let aviso = c.aviso {
@@ -149,6 +175,17 @@ struct PrincipalView: View {
             .presentationCornerRadius(Radio.barra)
             .tint(Paleta.acento)
         }
+    }
+}
+
+extension PrincipalView {
+    // Excluye inicio, plan, menú, el cuarto acceso ya visible y lo oculto; si faltan, el orden del menú.
+    func abrirMasUsados() async {
+        guard let doc = await c.documentoVisible() else { return }
+        let menu = Apartados.visibles(doc).flatMap(\.1).map { $0.vista == "studies" ? Apartado(vista: Apartados.destinoEstudios(doc), nombre: $0.nombre) : $0 }
+        let cuarta = c.secundaria == .finanzas ? "finances" : "calendar"
+        let ids = c.uso.ranking(candidatos: menu.map(\.vista), excluir: ["planner", cuarta])
+        masUsados = ids.compactMap { id in menu.first { $0.vista == id } }
     }
 }
 

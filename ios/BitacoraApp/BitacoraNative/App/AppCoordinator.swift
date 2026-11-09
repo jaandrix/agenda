@@ -98,6 +98,38 @@ final class AppCoordinator {
         modal = .apuntar(ApuntarInicial(fechaBase: dia))
     }
 
+    // Sube a la raíz de una pestaña al tocarla otra vez (las vistas la escuchan con su ScrollViewReader).
+    private(set) var subir: [Pestana: Int] = [:]
+    @ObservationIgnored private(set) var uso = UsoApartados()
+
+    // Un toque en la barra. En «menú.», el segundo toque vacía `rutaMas` y vuelve a la raíz.
+    func tocarPestana(_ p: Pestana) {
+        let r = Navegacion.tocar(p, actual: pestana, ruta: rutaMas)
+        if r.ruta != rutaMas { rutaMas = r.ruta }
+        pestana = r.pestana
+        if r.subir { subir[p, default: 0] += 1 }
+    }
+
+    // Abrir un apartado desde el menú, el selector rápido o la búsqueda: pestaña, página nativa o su web.
+    func abrirApartado(_ vista: String) {
+        anotarUso(vista)
+        if let p = MasView.pestanas[vista] { pestana = p; return }
+        if MasView.paginas.contains(vista) { pestana = .mas; rutaMas = [vista]; return }
+        web = Apartados.webURL(vista)
+    }
+
+    func anotarUso(_ vista: String) {
+        uso.anotar(vista)
+        if let uid = sesion?.userId { uso.guardar(uid) }
+    }
+
+    private(set) var letra: EscalaLetra
+    func ponerLetra(_ l: EscalaLetra) {
+        LetraActiva.elegida = l
+        letra = l
+        if let uid = sesion?.userId { UserDefaults.standard.set(l.rawValue, forKey: "bitacora.letra.\(uid)") }
+    }
+
     private(set) var bloqueoActivo: Bool
     private(set) var tema: TemaElegido
     private(set) var permisosTemas = PermisosTemas()
@@ -113,6 +145,7 @@ final class AppCoordinator {
         bloqueoActivo = UserDefaults.standard.bool(forKey: "bitacora.bloqueo")
         let t = TemaElegido(rawValue: UserDefaults.standard.string(forKey: "bitacora.tema") ?? "") ?? .sistema
         tema = t
+        letra = .normal
         intenciones = ColaIntenciones().leer()
         TemaActivo.elegido = t
     }
@@ -268,6 +301,9 @@ final class AppCoordinator {
     }
 
     private func temaDeCuenta(_ uid: String) {
+        uso = UsoApartados.cargar(uid)
+        let l = UserDefaults.standard.string(forKey: "bitacora.letra.\(uid)").flatMap(EscalaLetra.init(rawValue:)) ?? .normal
+        if l != letra { LetraActiva.elegida = l; letra = l }
         permisosTemas = PermisosTemasRemotos.guardados(uid)
         let guardado = UserDefaults.standard.string(forKey: "bitacora.tema.\(uid)").flatMap(TemaElegido.init(rawValue:)) ?? tema
         let t = guardado.permitido(permisosTemas) ? guardado : .sistema
