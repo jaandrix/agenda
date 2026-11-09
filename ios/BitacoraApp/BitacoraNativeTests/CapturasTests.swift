@@ -58,9 +58,10 @@ final class CapturasTests: XCTestCase {
         let hoy = CalendarioBitacora.madrid.diaLogico(Date())
         let v = vista()
         let semana = hoy.semanaLunesDomingo
+        let conCosas: Set<LocalDay> = [semana[1], semana[2], semana[5], semana[0].sumando(dias: -5), semana[6].sumando(dias: 2)]
         let agenda = [VistaInicio.Cosa(id: "e1", hora: "09:00", titulo: "dentista", notas: "calle mayor 12", hecha: false, acento: false, tarea: nil)]
             + v.tareas.map { VistaInicio.Cosa(id: $0.id, hora: $0.hora, titulo: $0.titulo, notas: $0.notas, hecha: $0.hecha, acento: $0.arrastrada, tarea: $0) }
-        let inicio = VistaInicio(hoy: hoy, semana: semana, conCosas: [semana[1], semana[2], semana[5]], agenda: agenda.sorted { ($0.hora ?? "") < ($1.hora ?? "") },
+        let inicio = VistaInicio(hoy: hoy, semana: semana, conCosas: conCosas, agenda: agenda.sorted { ($0.hora ?? "") < ($1.hora ?? "") },
                                  sinDia: v.sinDia, pendientes: 5, hechas: 1)
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = CalendarioBitacora.madrid.zona
@@ -69,6 +70,12 @@ final class CapturasTests: XCTestCase {
             try guardarPantalla("inicio-390-" + (oscuro ? "oscuro" : "claro"), oscuro: oscuro, activa: "inicio") {
                 InicioCuerpo(vista: inicio, ahora: ahora, estado: .reposo)
             }
+        }
+        let previa = LetraActiva.elegida
+        defer { LetraActiva.elegida = previa }
+        LetraActiva.elegida = .grande
+        try guardarPantalla("inicio-390-letra-grande-claro", oscuro: false, activa: "inicio") {
+            InicioCuerpo(vista: inicio, ahora: ahora, estado: .reposo)
         }
     }
 

@@ -152,4 +152,47 @@ final class Direccion02Tests: XCTestCase {
         // El icono queda dentro del hueco, con sitio para etiqueta y punto; el grupo usa un alto fijo y centrado.
         XCTAssertLessThan(BarraBitacora.tamanoIconoLateral, BarraBitacora.altoHuecoLateral)
     }
+
+    func testEscalaLetraFactoresYAjustesEnInicio() {
+        // Ajustes: pequeña, normal, grande, muy grande. Tipo/LetraActiva escala todo Inicio sin scaleEffect global.
+        XCTAssertEqual(EscalaLetra.pequena.factor, 0.9, accuracy: 0.001)
+        XCTAssertEqual(EscalaLetra.normal.factor, 1, accuracy: 0.001)
+        XCTAssertEqual(EscalaLetra.grande.factor, 1.12, accuracy: 0.001)
+        XCTAssertEqual(EscalaLetra.muyGrande.factor, 1.25, accuracy: 0.001)
+        let previa = LetraActiva.elegida
+        defer { LetraActiva.elegida = previa }
+        for escala in EscalaLetra.allCases {
+            LetraActiva.elegida = escala
+            // Bases reales de Inicio: cabecera, carrusel y celdas.
+            XCTAssertEqual(Tipo.tamano(19), 19 * escala.factor, accuracy: 0.001)
+            XCTAssertEqual(Tipo.tamano(30), 30 * escala.factor, accuracy: 0.001)
+            XCTAssertEqual(Tipo.tamano(22), 22 * escala.factor, accuracy: 0.001)
+            XCTAssertEqual(Tipo.tamano(16.5), 16.5 * escala.factor, accuracy: 0.001)
+            XCTAssertEqual(Tipo.tamano(14), 14 * escala.factor, accuracy: 0.001)
+        }
+    }
+
+    func testCarruselPasoUmbrales() {
+        // 44 pt o predicted 70 pt cambian exactamente una semana; si no, vuelve al centro. Dirección por la señal que supera.
+        XCTAssertEqual(CarruselDias.paso(dx: 0, px: 0), 0)
+        XCTAssertEqual(CarruselDias.paso(dx: -44, px: 0), 0)
+        XCTAssertEqual(CarruselDias.paso(dx: -44.1, px: 0), 7)
+        XCTAssertEqual(CarruselDias.paso(dx: 44.1, px: 0), -7)
+        XCTAssertEqual(CarruselDias.paso(dx: 0, px: -70), 0)
+        XCTAssertEqual(CarruselDias.paso(dx: 0, px: -70.1), 7)
+        XCTAssertEqual(CarruselDias.paso(dx: 0, px: 70.1), -7)
+        XCTAssertEqual(CarruselDias.paso(dx: 10, px: -80), 7)
+        XCTAssertEqual(CarruselDias.paso(dx: -50, px: 10), 7)
+    }
+
+    func testVistaInicioPrecargaTresSemanasDesdeCopiaLocal() throws {
+        // conCosas cubre semana anterior, actual y siguiente (copia local), sin tocar semana (7 días, lunes-domingo).
+        let json = #"{"dayPlanner":{"days":{"2026-11-03":[{"id":"a","title":"previa"}],"2026-11-11":[{"id":"b","title":"hoy"}],"2026-11-18":[{"id":"c","title":"siguiente"}]},"backlog":[]},"entries":[]}"#
+        let ahora = ISO8601DateFormatter().date(from: "2026-11-11T12:00:00+01:00")!
+        let v = VistaInicio.desde(try doc(json), ahora: ahora)
+        XCTAssertEqual(v.semana.count, 7)
+        XCTAssertTrue(v.conCosas.contains(LocalDay(year: 2026, month: 11, day: 3)!))
+        XCTAssertTrue(v.conCosas.contains(LocalDay(year: 2026, month: 11, day: 11)!))
+        XCTAssertTrue(v.conCosas.contains(LocalDay(year: 2026, month: 11, day: 18)!))
+    }
 }

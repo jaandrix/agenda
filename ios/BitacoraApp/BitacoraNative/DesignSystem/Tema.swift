@@ -145,9 +145,12 @@ enum LetraActiva {
 }
 
 // Poppins con Dynamic Type: cada tamaño escala con el estilo de texto que se le indica, por la escala elegida.
+// tamano(_:) expone el cálculo (escala de Ajustes) para que Inicio y las pruebas lo usen sin scaleEffect global.
 enum Tipo {
+    static func tamano(_ base: CGFloat) -> CGFloat { base * LetraActiva.elegida.factor }
+
     static func poppins(_ tamano: CGFloat, _ peso: Font.Weight = .regular, estilo: Font.TextStyle = .body) -> Font {
-        let tamano = tamano * LetraActiva.elegida.factor
+        let tamano = Self.tamano(tamano)
         let nombre: String
         switch peso {
         case .bold, .heavy, .black: nombre = "Poppins-Bold"

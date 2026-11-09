@@ -114,7 +114,7 @@ struct FilaAgenda: View {
                 Text(hora ?? "")
                     .font(Tipo.poppins(14, .semibold, estilo: .footnote)).monospacedDigit()
                     .foregroundStyle(acento && !hecho ? colorAcento : colorSuave)
-                    .frame(width: 46, alignment: .leading)
+                    .frame(width: Tipo.tamano(46), alignment: .leading)
             }
             BitacoraCheck(hecho: hecho, acento: acento, colorActivo: colorAcento, colorBorde: colorFilo, colorMarca: colorSobreAcento, accion: marcar)
             Button { (abrir ?? marcar)() } label: {
@@ -206,15 +206,16 @@ struct BarraBitacora: View {
 
     private func boton(_ p: Pestana) -> some View {
         let on = p.id == activa
-        let largo = p.id == "mas" ? mantener : nil
-        return VStack(spacing: 2) {
+        let esMenu = p.id == "mas"
+        let largo = esMenu ? mantener : nil
+        let base = VStack(spacing: 2) {
                 IconoBarra(id: p.icono, activo: on, detalle: Paleta.progreso)
                     .foregroundStyle(on ? Paleta.sobreContexto : Paleta.sobreContextoSuave)
                     .frame(width: Self.tamanoIconoLateral, height: Self.tamanoIconoLateral)
                     .background(on ? Paleta.tinteContexto : Color.clear, in: Circle())
                 if !letra.isAccessibilitySize {
                     Text(p.titulo + ".")
-                        .font(.custom("Poppins-SemiBold", size: 10.5, relativeTo: .caption2))
+                        .font(Tipo.poppins(10.5, .semibold, estilo: .caption2))
                         .foregroundStyle(on ? Paleta.sobreContexto : Paleta.sobreContextoSuave)
                         .lineLimit(1).minimumScaleFactor(0.75)
                 }
@@ -229,6 +230,9 @@ struct BarraBitacora: View {
             .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
             .accessibilityAction { elegir(p.id) }
             .modifier(AccionMasUsados(accion: largo))
+        return Group {
+            if esMenu { base.anchorPreference(key: AnclaMenuKey.self, value: .bounds) { $0 } } else { base }
+        }
     }
 
     private var botonCentral: some View {
@@ -285,10 +289,16 @@ private struct AccionMasUsados: ViewModifier {
     }
 }
 
-// Bocadillo de «más usados.»: superficie sólida anclada visualmente al icono de menú por un pico inferior.
+struct AnclaMenuKey: PreferenceKey {
+    static var defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) { value = nextValue() ?? value }
+}
+
+// Bocadillo de «más usados.»: superficie sólida, anclado al icono de menú por un pico inferior que apunta a su centro.
 // Entra con opacidad y escala de 0,96 a 1 (160 ms); con movimiento reducido, sin escala.
 struct SelectorMasUsados: View {
     let apartados: [Apartado]
+    var picoCentroX: CGFloat? = nil
     let elegir: (String) -> Void
     let cerrar: () -> Void
 
@@ -303,27 +313,34 @@ struct SelectorMasUsados: View {
                     .buttonStyle(.plain)
             }
         }
-        .padding(.bottom, 14)
-        .background { FormaBocadillo().fill(Paleta.superficie).overlay(FormaBocadillo().stroke(Paleta.borde)) }
+        .padding(.bottom, FormaBocadillo.picoAlto + 4)
+        .background {
+            GeometryReader { g in
+                let x = picoCentroX ?? (g.size.width - 34)
+                FormaBocadillo(picoCentroX: x).fill(Paleta.superficie)
+                    .overlay(FormaBocadillo(picoCentroX: x).stroke(Paleta.borde))
+            }
+        }
         .shadow(color: .black.opacity(0.14), radius: 14, y: 4)
         .accessibilityAction(.escape, cerrar)
     }
 }
 
-private struct FormaBocadillo: Shape {
+struct FormaBocadillo: Shape {
+    static let picoAlto: CGFloat = 10
     var radio: CGFloat = 20
     var picoAncho: CGFloat = 18
-    var picoAlto: CGFloat = 10
-    var picoDesdeDerecha: CGFloat = 34
+    var picoCentroX: CGFloat = 200
 
     func path(in r: CGRect) -> Path {
-        let cuerpo = CGRect(x: r.minX, y: r.minY, width: r.width, height: r.height - picoAlto)
-        let centroPico = max(cuerpo.minX + radio + picoAncho, cuerpo.maxX - picoDesdeDerecha)
-        let izq = centroPico - picoAncho / 2
-        let der = centroPico + picoAncho / 2
+        let cuerpo = CGRect(x: r.minX, y: r.minY, width: r.width, height: r.height - Self.picoAlto)
+        let margen = radio + picoAncho / 2 + 2
+        let centro = min(max(picoCentroX, cuerpo.minX + margen), cuerpo.maxX - margen)
+        let izq = centro - picoAncho / 2
+        let der = centro + picoAncho / 2
         var p = Path(roundedRect: cuerpo, cornerRadius: radio, style: .continuous)
         p.move(to: CGPoint(x: izq, y: cuerpo.maxY - 0.5))
-        p.addLine(to: CGPoint(x: centroPico, y: r.maxY))
+        p.addLine(to: CGPoint(x: centro, y: r.maxY))
         p.addLine(to: CGPoint(x: der, y: cuerpo.maxY - 0.5))
         p.closeSubpath()
         return p

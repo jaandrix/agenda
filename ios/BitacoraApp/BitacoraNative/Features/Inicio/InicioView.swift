@@ -36,9 +36,11 @@ struct VistaInicio: Equatable {
         // La semana es siempre lunes-domingo (Madrid) y se lee entera de la copia local.
         let centro = elegido ?? hoy
         let semana = centro.semanaLunesDomingo
-        var meses = [centro.yearMonth]
-        if let ultimo = semana.last, ultimo.yearMonth != centro.yearMonth { meses.append(ultimo.yearMonth) }
-        if let primero = semana.first, primero.yearMonth != centro.yearMonth { meses.append(primero.yearMonth) }
+        let lunes = semana[0]
+        // Carrusel real: semana anterior, actual y siguiente (21 días) desde la copia local, sin red.
+        let rango = (0..<21).map { lunes.sumando(dias: $0 - 7) }
+        var meses = Set<YearMonth>()
+        for d in rango { meses.insert(d.yearMonth) }
         var porDia: [LocalDay: [EventoDia]] = [:]
         for m in meses { porDia.merge(LecturaCalendario.mes(doc, m).porDia) { a, _ in a } }
         // renderMobileDiaPanel: lo apuntado como evento y como tarea a la misma hora se queda solo como tarea.
@@ -51,9 +53,9 @@ struct VistaInicio: Equatable {
         let tareas = plan.tareas.map { Cosa(id: "t" + $0.id, hora: $0.hora, titulo: $0.titulo, notas: $0.notas, hecha: $0.hecha, acento: $0.arrastrada, tarea: $0) }
         let agenda = (eventos + tareas).sorted { ($0.hora ?? "") < ($1.hora ?? "") }
         let hechas = plan.tareas.filter(\.hecha).count
-        // Como la PWA: un día tiene punto si hay algo en el calendario o en el planificador.
+        // Como la PWA: un día tiene punto si hay algo en el calendario o en el planificador (tres semanas, copia local).
         let diasPlan = ((try? doc.valor(de: "dayPlanner")) ?? nil)?["days"]?.objeto
-        var v = VistaInicio(hoy: hoy, semana: semana, conCosas: Set(semana.filter { d in !(porDia[d] ?? []).isEmpty || !(diasPlan?[d.iso]?.lista ?? []).isEmpty }),
+        var v = VistaInicio(hoy: hoy, semana: semana, conCosas: Set(rango.filter { d in !(porDia[d] ?? []).isEmpty || !(diasPlan?[d.iso]?.lista ?? []).isEmpty }),
                             agenda: agenda, sinDia: plan.dia == hoy ? plan.sinDia : [], pendientes: plan.tareas.count - hechas, hechas: hechas)
         v.elegido = plan.dia == hoy ? nil : plan.dia
         if let c = (try? doc.valor(de: "ciudadTiempo")) ?? nil, let n = c["nombre"]?.texto,
@@ -234,7 +236,7 @@ struct InicioCuerpo: View {
                 barra
                 if let v = vista {
                     Text(PanoramaView.meses[v.dia.month - 1] + ".").font(Tipo.poppins(14, .semibold, estilo: .subheadline))
-                        .foregroundStyle(cs).padding(.top, Espacio.s)
+                        .foregroundStyle(cs).padding(.top, Tipo.tamano(Espacio.s))
                     CarruselDias(dias: v.semana, dia: v.dia, hoy: v.hoy, conCosas: v.conCosas, elegir: elegir)
                     TimelineView(.everyMinute) { ctx in
                         BloqueSiguiente(vista: v, ahora: v.dia == v.hoy ? max(ctx.date, ahora) : ahora, bus: bus, abrirBus: abrirBus)
@@ -248,7 +250,7 @@ struct InicioCuerpo: View {
                 if let v = vista {
                     VStack(alignment: .leading, spacing: 0) { dia(v) }
                         .id(v.dia)
-                        .transition(sinMovimiento ? .identity : .opacity)
+                        .transition(sinMovimiento ? .identity : .opacity.combined(with: .offset(y: 4)))
                 } else {
                     ProgressView().tint(cs).frame(maxWidth: .infinity).padding(.top, Espacio.xl)
                 }
@@ -256,7 +258,7 @@ struct InicioCuerpo: View {
             .padding(.horizontal, 20).padding(.top, Espacio.s).padding(.bottom, Espacio.xl)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .animation(sinMovimiento ? nil : .easeOut(duration: 0.14), value: vista?.dia)
+        .animation(sinMovimiento ? nil : .easeOut(duration: 0.15), value: vista?.dia)
     }
 
     @ViewBuilder private func dia(_ v: VistaInicio) -> some View {
@@ -290,11 +292,11 @@ struct InicioCuerpo: View {
     private var barra: some View {
         ZStack {
             (Text("bitácora").foregroundColor(ct) + Text(".").foregroundColor(Paleta.marca))
-                .font(Tipo.poppins(19, .bold, estilo: .title3)).kerning(-0.4)
+                .font(Tipo.poppins(19, .bold, estilo: .title3)).kerning(Tipo.tamano(-0.4))
                 .accessibilityAddTraits(.isHeader)
             HStack {
-                Button(action: abrirPerfil) { Avatar(foto: foto, tamano: 34, fondo: Paleta.tinteContexto, icono: cs) }
-                    .buttonStyle(.plain).frame(width: 44, height: 44, alignment: .leading)
+                Button(action: abrirPerfil) { Avatar(foto: foto, tamano: Tipo.tamano(34), fondo: Paleta.tinteContexto, icono: cs) }
+                    .buttonStyle(.plain).frame(minWidth: 44, minHeight: 44, alignment: .leading)
                     .accessibilityLabel("mi perfil")
                 Spacer()
                 if estado != .reposo {
@@ -302,7 +304,7 @@ struct InicioCuerpo: View {
                 } else if let t = tiempo {
                     Button(action: abrirTiempo) {
                         HStack(spacing: 6) {
-                            Image(systemName: Tiempo.simbolo[t.tipo] ?? "cloud.fill").font(.system(size: 15))
+                            Image(systemName: Tiempo.simbolo[t.tipo] ?? "cloud.fill").font(.system(size: Tipo.tamano(15)))
                             Text("\(Int(t.temp.rounded()))°").font(Tipo.poppins(15, .semibold)).monospacedDigit()
                         }
                         .foregroundStyle(ct)
@@ -313,7 +315,7 @@ struct InicioCuerpo: View {
                 }
             }
         }
-        .frame(minHeight: 52)
+        .frame(minHeight: max(52, Tipo.tamano(52)))
     }
 
     private func cabeceraDia(_ v: VistaInicio) -> some View {
@@ -322,14 +324,14 @@ struct InicioCuerpo: View {
         let total = v.pendientes + v.hechas
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(titulo).font(Tipo.poppins(30, .bold, estilo: .title)).kerning(-1).foregroundStyle(ct)
+                Text(titulo).font(Tipo.poppins(30, .bold, estilo: .title)).kerning(Tipo.tamano(-1)).foregroundStyle(ct)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Text(total == 0 ? "libre." : "\(v.pendientes) pendientes, \(v.hechas) hechas").font(Tipo.pie).foregroundStyle(cs)
             }
             if total > 0 {
                 HStack(spacing: Espacio.s) {
-                    BarraAvance(valor: Double(v.hechas) / Double(total), fondo: cf, color: cp, alto: 3)
+                    BarraAvance(valor: Double(v.hechas) / Double(total), fondo: cf, color: cp, alto: max(3, Tipo.tamano(3)))
                     Text("\(v.hechas * 100 / total) %").font(Tipo.poppins(12, .semibold, estilo: .caption)).monospacedDigit().foregroundStyle(cs)
                 }
                 .accessibilityElement(children: .ignore)
@@ -387,8 +389,8 @@ struct BloqueSiguiente: View {
             }
             if esHoy, vista.poste != nil {
                 Button(action: abrirBus) {
-                    HStack(alignment: .center, spacing: 10) {
-                        IconoBus().fill(Paleta.sobreContexto).frame(width: 20, height: 20)
+                    HStack(alignment: .center, spacing: Tipo.tamano(10)) {
+                        IconoBus().fill(Paleta.sobreContexto).frame(width: Tipo.tamano(20), height: Tipo.tamano(20))
                         ResumenBus.texto(bus, mias: vista.lineas, color: Paleta.sobreContexto).font(Tipo.poppins(15, .regular, estilo: .body))
                             .foregroundColor(Paleta.sobreContextoSuave)
                             .frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
@@ -414,37 +416,46 @@ struct BloqueSiguiente: View {
     }
 }
 
-// Carrusel de días: lunes a domingo, los siete a la vez, números menores. Tocar elige un día; arrastrar en horizontal
-// cambia exactamente una semana (-7/+7). Solo actúa si el gesto es claramente horizontal, para no competir con el scroll
-// vertical. Sin animación de recarga: los datos de la semana ya están en la copia local. Usa LocalDay (Madrid).
+// Carrusel real de días (lunes-domingo, Madrid): recibe la semana visible y deriva las adyacentes con LocalDay;
+// conCosas cubre las tres semanas desde la copia local (sin red). Durante el arrastre horizontal las semanas
+// anterior/actual/siguiente siguen el dedo; al soltar hace snap a una semana completa centrada. Umbral: 44 pt o
+// predicted 70 pt (una semana exacta, ±7 días); si no, vuelve al centro. No compite con el scroll vertical.
+// Reduce Motion: cambio inmediato, sin animación extensa. Los tamaños usan Tipo/LetraActiva (escala de Ajustes).
 struct CarruselDias: View {
     let dias: [LocalDay]
     let dia: LocalDay
     let hoy: LocalDay
     let conCosas: Set<LocalDay>
     let elegir: (LocalDay) -> Void
+    @State private var arrastre: CGFloat = 0
     @State private var eje: Bool?
+    @State private var pendiente: Int = 0
+    @State private var centroLocal: LocalDay?
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     static let letras = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
+    static let umbral: CGFloat = 44
+    static let umbralPredicho: CGFloat = 70
+
+    private var base: LocalDay { centroLocal ?? dias.first ?? dia.inicioSemanaLunes }
+    private var semanas: [[LocalDay]] {
+        [-7, 0, 7].map { delta in (0..<7).map { base.sumando(dias: delta + $0) } }
+    }
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(dias, id: \.self) { d in
-                celda(d, letra: Self.letras[d.indiceSemanaLunes])
-            }
-        }
-        .contentShape(Rectangle())
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 14)
-                .onChanged { v in
-                    if eje == nil { eje = abs(v.translation.width) > abs(v.translation.height) * 1.35 }
+        GeometryReader { geo in
+            let ancho = max(geo.size.width, 1)
+            HStack(spacing: 0) {
+                ForEach(Array(semanas.enumerated()), id: \.offset) { _, semana in
+                    HStack(spacing: 0) { ForEach(semana, id: \.self) { celda($0) } }
+                        .frame(width: ancho)
                 }
-                .onEnded { v in
-                    defer { eje = nil }
-                    guard eje == true else { return }
-                    let dx = v.translation.width, px = v.predictedEndTranslation.width
-                    let paso = (dx <= -44 || px <= -80) ? 7 : (dx >= 44 || px >= 80) ? -7 : 0
-                    if paso != 0 { elegir(dia.sumando(dias: paso)) }
-                })
+            }
+            .offset(x: -ancho + arrastre)
+            .contentShape(Rectangle())
+            .simultaneousGesture(pendiente == 0 ? gesto(ancho: ancho) : nil)
+        }
+        .frame(height: Tipo.tamano(64))
+        .clipped()
         .padding(.top, Espacio.s)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(FichaEventoView.fecha(dia) + (dia == hoy ? ", hoy" : ""))
@@ -455,22 +466,75 @@ struct CarruselDias: View {
         .accessibilityAction(named: "semana anterior") { elegir(dia.sumando(dias: -7)) }
         .accessibilityAction(named: "semana siguiente") { elegir(dia.sumando(dias: 7)) }
         .accessibilityAction(named: "ir a hoy.") { elegir(hoy) }
+        .onChange(of: dia) {
+            if pendiente != 0 { pendiente = 0; arrastre = 0 }
+            let lunes = dia.inicioSemanaLunes
+            if centroLocal == lunes || (dias.first == lunes) { centroLocal = nil }
+        }
+        .onChange(of: dias) { _, nuevos in
+            if let c = centroLocal, nuevos.first == c { centroLocal = nil }
+        }
     }
 
-    private func celda(_ d: LocalDay, letra: String) -> some View {
+    private func gesto(ancho: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 14)
+            .onChanged { v in
+                guard pendiente == 0 else { return }
+                if eje == nil { eje = abs(v.translation.width) > abs(v.translation.height) * 1.35 }
+                if eje == true { arrastre = v.translation.width }
+            }
+            .onEnded { v in
+                defer { eje = nil }
+                guard eje == true, pendiente == 0 else { arrastre = 0; return }
+                let dx = v.translation.width, px = v.predictedEndTranslation.width
+                let paso = Self.paso(dx: dx, px: px)
+                if paso == 0 {
+                    if sinMovimiento { arrastre = 0 } else { withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) { arrastre = 0 } }
+                } else {
+                    let nuevoCentro = base.sumando(dias: paso)
+                    let nuevoDia = dia.sumando(dias: paso)
+                    if sinMovimiento {
+                        var tx = Transaction(); tx.disablesAnimations = true
+                        withTransaction(tx) { centroLocal = nuevoCentro; arrastre = 0 }
+                        elegir(nuevoDia)
+                    } else {
+                        pendiente = paso
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.88)) { arrastre = paso > 0 ? -ancho : ancho }
+                        let esperado = paso
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                            guard pendiente == esperado else { return }
+                            var tx = Transaction(); tx.disablesAnimations = true
+                            withTransaction(tx) { centroLocal = nuevoCentro; arrastre = 0; pendiente = 0 }
+                            elegir(nuevoDia)
+                        }
+                    }
+                }
+            }
+    }
+
+    static func paso(dx: CGFloat, px: CGFloat) -> Int {
+        let porTramo = abs(dx) > umbral
+        let porFuerza = abs(px) > umbralPredicho
+        guard porTramo || porFuerza else { return 0 }
+        let dir = porFuerza ? px : dx
+        return dir < 0 ? 7 : -7
+    }
+
+    private func celda(_ d: LocalDay) -> some View {
         let sel = d == dia
+        let letra = Self.letras[d.indiceSemanaLunes]
         return Button { elegir(d) } label: {
-            VStack(spacing: 2) {
-                Text(letra).font(Tipo.poppins(12, sel ? .semibold : .medium, estilo: .caption2))
-                    .lineLimit(1).minimumScaleFactor(0.7)
+            VStack(spacing: Tipo.tamano(1.5)) {
+                Text(letra).font(Tipo.poppins(10.5, sel ? .semibold : .medium, estilo: .caption2))
+                    .lineLimit(1).minimumScaleFactor(0.65)
                     .foregroundStyle(sel ? Paleta.sobreContexto : Paleta.sobreContextoSuave)
-                Text("\(d.day)").font(Tipo.poppins(30, .bold, estilo: .title3)).monospacedDigit()
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(sel ? Paleta.progreso : .clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                Text("\(d.day)").font(Tipo.poppins(22, .bold, estilo: .title3)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.65)
+                    .frame(maxWidth: .infinity).frame(height: Tipo.tamano(38))
+                    .background(sel ? Paleta.progreso : .clear, in: RoundedRectangle(cornerRadius: Tipo.tamano(11), style: .continuous))
                     .foregroundStyle(sel ? Paleta.sobreProgreso : Paleta.sobreContexto)
-                Circle().fill(conCosas.contains(d) ? Paleta.sobreContextoSuave : .clear).frame(width: 4, height: 4)
-                    .overlay(Circle().strokeBorder(d == hoy && !sel ? Paleta.progreso : .clear, lineWidth: 1.5).frame(width: 8, height: 8))
+                Circle().fill(conCosas.contains(d) ? Paleta.sobreContextoSuave : .clear).frame(width: Tipo.tamano(4), height: Tipo.tamano(4))
+                    .overlay(Circle().strokeBorder(d == hoy && !sel ? Paleta.progreso : .clear, lineWidth: 1.5).frame(width: Tipo.tamano(8), height: Tipo.tamano(8)))
             }
             .frame(maxWidth: .infinity, minHeight: 44)
             .contentShape(Rectangle())
@@ -549,9 +613,9 @@ struct FilaEvento: View {
         Button { abrir?() } label: {
             HStack(spacing: Espacio.s) {
                 Text(hora ?? "").font(Tipo.poppins(14, .semibold, estilo: .footnote)).monospacedDigit()
-                    .foregroundStyle(colorSuave).frame(width: 46, alignment: .leading)
-                Circle().fill(suave ? colorFilo : colorAcento).frame(width: 12, height: 12).frame(width: 44, height: 44)
-                VStack(alignment: .leading, spacing: 2) {
+                    .foregroundStyle(colorSuave).frame(width: Tipo.tamano(46), alignment: .leading)
+                Circle().fill(suave ? colorFilo : colorAcento).frame(width: Tipo.tamano(12), height: Tipo.tamano(12)).frame(width: 44, height: 44)
+                VStack(alignment: .leading, spacing: Tipo.tamano(2)) {
                     Text(titulo).font(Tipo.poppins(16.5, .semibold, estilo: .body))
                         .foregroundStyle(suave ? colorSuave : colorTexto).multilineTextAlignment(.leading)
                     if !detalle.isEmpty { Text(detalle).font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(colorSuave).lineLimit(2) }
@@ -559,7 +623,7 @@ struct FilaEvento: View {
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 if entradas > 0 {
                     Label("qr.", systemImage: "qrcode").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(colorTexto)
-                        .padding(.horizontal, 10).frame(minHeight: 32)
+                        .padding(.horizontal, Tipo.tamano(10)).frame(minHeight: max(32, Tipo.tamano(32)))
                         .background(colorTinte, in: RoundedRectangle(cornerRadius: Radio.control))
                 }
             }
