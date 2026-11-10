@@ -98,7 +98,16 @@ struct CabeceraSeccion: View {
 struct FilaAgenda: View {
     private var prioridadTexto: Text {
         guard let p = prioridad, !hecho else { return Text("") }
-        return Text(p + ". ").foregroundStyle(p == "alta" ? Paleta.error : (p == "media" ? colorAcento : colorSuave))
+        // Colores de la web (.prio-etq): alta #e5484d, media #d98a0b, baja #4c8df6. En los temas claros, una variante más
+        // oscura para llegar a 4,5:1 sobre el fondo; ya hecha, hereda el color al 60 %.
+        let color = Color.delTema { k in
+            switch p {
+            case "alta": return UIColor(rgb: k.oscuro ? 0xE5484D : 0xC8363B)
+            case "media": return UIColor(rgb: k.oscuro ? 0xD98A0B : 0x9A5B00)
+            default: return UIColor(rgb: k.oscuro ? 0x4C8DF6 : 0x2463C9)
+            }
+        }
+        return Text(p + ". ").foregroundStyle(hecho ? color.opacity(0.6) : color)
     }
     let hora: String?
     let titulo: String
