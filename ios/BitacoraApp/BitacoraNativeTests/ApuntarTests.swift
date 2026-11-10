@@ -96,7 +96,8 @@ final class ApuntarTests: XCTestCase {
         XCTAssertEqual(t["needsReview"], .bool(true))
         let soloFecha = try await i.interpretar("el viernes", fechaBase: nil, contexto: b.contexto)
         let vacio = try XCTUnwrap(soloFecha.first)
-        XCTAssertEqual(CrearApunte.crear(vacio, tipo: "viaje", doc: doc), .failure(ErrorApunte(motivo: "falta el destino")))
+        // Solo una fecha no se guarda con ningún tipo (validadores P0 de la 0.17, apuntar-puente.js).
+        XCTAssertEqual(CrearApunte.crear(vacio, tipo: "viaje", doc: doc), .failure(ErrorApunte(motivo: "falta qué es")))
     }
 
     func testCompraInterpretaCantidadYPrecio() {

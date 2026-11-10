@@ -3,7 +3,7 @@ import XCTest
 
 // Enlaces nativos contra js/enlaces-proyectos.js: https:// por defecto, nuevos arriba, 5 favoritos como mucho y al borrar
 // una categoría sus enlaces pasan a otra o se quedan sin ella.
-final class EnlacesTests: XCTestCase {
+final class EnlacesNativosTests: XCTestCase {
     func testEnlacesFavoritosYCategorias() throws {
         let favs = (1...5).map { #"{"id": "f\#($0)", "title": "f", "url": "https://a.es", "favorito": true}"# }.joined(separator: ",")
         let doc = try DocumentoBitacora(datos: Data(#"""
