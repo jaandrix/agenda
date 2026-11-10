@@ -91,6 +91,8 @@ struct PrincipalView: View {
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var masUsados: [Apartado]?
     @Environment(\.scenePhase) private var fase
+    @AppStorage(Vidrio.clave) private var vidrio = false
+    @Environment(\.accessibilityReduceTransparency) private var sinTransparencia
 
     static func pestanas(secundaria: Pestana) -> [BarraBitacora.Pestana] {
         [.init(id: "inicio", titulo: "inicio", icono: "inicio"),
@@ -102,24 +104,12 @@ struct PrincipalView: View {
 
     var body: some View {
         @Bindable var c = c
-        VStack(spacing: 0) {
-            TabView(selection: $c.pestana) {
-                NavigationStack { InicioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.inicio).transition(transicionPestana)
-                NavigationStack { PlanView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.plan).transition(transicionPestana)
-                NavigationStack { CalendarioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.calendario).transition(transicionPestana)
-                NavigationStack { FinanzasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas).transition(transicionPestana)
-                NavigationStack(path: $c.rutaMas) { MasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.mas).transition(transicionPestana)
-            }
-            .animation(sinMovimiento ? nil : .easeInOut(duration: 0.18), value: c.pestana)
-            BarraBitacora(pestanas: Self.pestanas(secundaria: c.secundaria),
-                          activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio") { id in
-                masUsados = nil
-                if let p = Self.porId[id] { c.tocarPestana(p) }
-            } capturar: {
-                masUsados = nil
-                c.abrirApuntar()
-            } mantener: {
-                Task { await abrirMasUsados() }
+        Group {
+            if vidrio && !sinTransparencia {
+                // Glass: el contenido pasa por debajo de la barra, que es el único material de la pantalla.
+                pantallas.safeAreaInset(edge: .bottom, spacing: 0) { barra }
+            } else {
+                VStack(spacing: 0) { pantallas; barra }
             }
         }
         .overlayPreferenceValue(AnclaMenuKey.self) { ancla in
@@ -153,7 +143,7 @@ struct PrincipalView: View {
         .onChange(of: fase) { _, f in if f != .active { masUsados = nil } }
         .onChange(of: c.pestana) { masUsados = nil }
         .onChange(of: c.rutaMas) { masUsados = nil }
-        .background(Paleta.fondo.ignoresSafeArea())
+        .background(fondoPrincipal.ignoresSafeArea())
         .overlay(alignment: .top) {
             if let aviso = c.aviso {
                 Text(aviso)
@@ -187,6 +177,46 @@ struct PrincipalView: View {
             .presentationBackground(Paleta.fondo)
             .presentationCornerRadius(Radio.barra)
             .tint(Paleta.acento)
+        }
+    }
+
+    private var pantallas: some View {
+        @Bindable var c = c
+        return TabView(selection: $c.pestana) {
+            NavigationStack { InicioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.inicio).transition(transicionPestana)
+            NavigationStack { PlanView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.plan).transition(transicionPestana)
+            NavigationStack { CalendarioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.calendario).transition(transicionPestana)
+            NavigationStack { FinanzasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas).transition(transicionPestana)
+            NavigationStack(path: $c.rutaMas) { MasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.mas).transition(transicionPestana)
+        }
+        .animation(sinMovimiento ? nil : .easeInOut(duration: 0.18), value: c.pestana)
+    }
+
+    private var barra: some View {
+        BarraBitacora(pestanas: Self.pestanas(secundaria: c.secundaria),
+                      activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio") { id in
+            masUsados = nil
+            if let p = Self.porId[id] { c.tocarPestana(p) }
+        } capturar: {
+            masUsados = nil
+            c.abrirApuntar()
+        } mantener: {
+            Task { await abrirMasUsados() }
+        }
+        .conVidrio(vidrio && !sinTransparencia)
+    }
+
+    // Glass: fondo atmosférico con dos manchas del propio tema, en degradados (sin filtros de desenfoque). Se ve tras la
+    // barra y donde una pantalla no pinta su fondo.
+    @ViewBuilder private var fondoPrincipal: some View {
+        if vidrio && !sinTransparencia {
+            ZStack {
+                Paleta.fondo
+                RadialGradient(colors: [Paleta.acento.opacity(0.22), .clear], center: UnitPoint(x: 0.12, y: 0.08), startRadius: 0, endRadius: 320)
+                RadialGradient(colors: [Paleta.atencion.opacity(0.16), .clear], center: UnitPoint(x: 0.9, y: 0.8), startRadius: 0, endRadius: 360)
+            }
+        } else {
+            Paleta.fondo
         }
     }
 
