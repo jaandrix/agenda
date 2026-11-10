@@ -325,7 +325,7 @@ struct SelectorMasUsados: View {
                 .accessibilityAddTraits(.isHeader)
             ForEach(Array(apartados.enumerated()), id: \.element.id) { n, a in
                 if n > 0 { SeparadorMenu() }
-                Button { elegir(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: String(a.nombre.prefix(1))) }
+                Button { elegir(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: a.vista) }
                     .buttonStyle(.plain)
             }
         }

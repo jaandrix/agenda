@@ -60,9 +60,9 @@ struct MasView: View {
                     ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(.top, Espacio.xl)
                 }
                 GrupoMenu(titulo: "este iphone.") {
-                    NavigationLink(value: "estado") { FilaMenu(nombre: "estado de la sincronización", inicial: "s") }.buttonStyle(.plain)
+                    NavigationLink(value: "estado") { FilaMenu(nombre: "estado de la sincronización", inicial: "estado") }.buttonStyle(.plain)
                     SeparadorMenu()
-                    Button { c.web = Config.webURL } label: { FilaMenu(nombre: "bitácora web", inicial: "w", web: true) }.buttonStyle(.plain)
+                    Button { c.web = Config.webURL } label: { FilaMenu(nombre: "bitácora web", inicial: "web", web: true) }.buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 20)
@@ -82,7 +82,7 @@ struct MasView: View {
     }
 
     @ViewBuilder private func fila(_ a: Apartado, cuenta: Int) -> some View {
-        let inicial = String(a.nombre.prefix(1))
+        let inicial = a.vista
         if let p = Self.pestanas[a.vista] {
             Button { c.anotarUso(a.vista); c.pestana = p } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(.plain)
         } else if Self.paginas.contains(a.vista) {
@@ -149,7 +149,8 @@ struct FilaMenu: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Text(inicial).font(Tipo.poppins(15, .bold, estilo: .body)).foregroundStyle(Paleta.texto)
+            // `inicial` es la vista o un id del catálogo: el icono propio sustituye a la letra.
+            Icono(id: Icono.deVista(inicial)).foregroundStyle(Paleta.texto)
                 .frame(width: 32, height: 32).background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             Text(nombre).font(Tipo.poppins(17, .semibold, estilo: .body)).kerning(-0.17).foregroundStyle(Paleta.texto)
                 .frame(maxWidth: .infinity, alignment: .leading)
