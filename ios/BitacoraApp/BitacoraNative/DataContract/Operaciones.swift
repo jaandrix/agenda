@@ -53,6 +53,9 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // Día de la semana como en getDay ("0" domingo) → "HH:MM|HH:MM". Sustituye el horario entero, como guardarHorarioLaboral.
     case horarioLaboral(dias: [String: String])
     case laboralEnPrincipal(Bool)
+    // Objetivos (saveEntry type goal en js/entradas.js y la op `objetivo` del conector). actual y meta en texto decimal.
+    case guardarObjetivo(id: String, titulo: String, plazo: String, numerico: Bool, actual: String, meta: String, unidad: String, estado: String, notas: String)
+    case cambiarObjetivo(objetivoId: String, cambio: CambioObjetivo)
     case crearTraspaso(id: String, importe: String, desde: String, hacia: String, fecha: String, hora: String, concepto: String)
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
@@ -104,6 +107,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .editarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .crearProyecto, .cambiarProyecto: return ["entries"]
         case .guardarViaje, .cambiarViaje: return ["entries"]
+        case .guardarObjetivo, .cambiarObjetivo: return ["entries"]
         case .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal: return ["agendaLaboral"]
         case .borrarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .marcarRutina: return ["habits"]
@@ -160,6 +164,14 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
         return "entry_\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<6).map { _ in letras.randomElement()! })
     }
+}
+
+// Los hitos no tienen id en la web: se reconocen por el texto, como la op `objetivo` del conector.
+enum CambioObjetivo: Codable, Sendable, Equatable {
+    case hito(texto: String)
+    case hitoHecho(texto: String, hecho: Bool)
+    case quitarHito(texto: String)
+    case progreso(actual: String)
 }
 
 enum CambioViaje: Codable, Sendable, Equatable {
@@ -433,6 +445,48 @@ enum AplicarOperaciones {
             }
             a["citas"] = .array(citas)
             r["agendaLaboral"] = .some(.object(a))
+        case let .guardarObjetivo(id, titulo, plazo, numerico, actual, meta, unidad, estado, notas):
+            let limpio = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)); guard !limpio.isEmpty else { break }
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            let n = lista.firstIndex(where: { $0["id"]?.comoId == id })
+            if let n, lista[n]["type"]?.texto != "goal" { break }
+            var o = n.flatMap { lista[$0].objeto } ?? ["id": .string(id), "type": .string("goal"), "categoryId": .string("cat_general"),
+                                                      "tags": .array([]), "milestones": .array([]),
+                                                      "date": .string(CalendarioBitacora.madrid.dia(de: Date()).iso)]
+            o["title"] = .string(limpio)
+            o["term"] = .string(["short", "medium", "long"].contains(plazo) ? plazo : "short")
+            o["goalType"] = .string(numerico ? "numeric" : "simple")
+            // saveEntry solo toca valor, meta y unidad si es numérico (parseFloat || 0).
+            if numerico {
+                o["currentValue"] = .number(NSDecimalNumber(decimal: Dinero.decimal(texto: actual) ?? 0).stringValue)
+                o["targetValue"] = .number(NSDecimalNumber(decimal: Dinero.decimal(texto: meta) ?? 0).stringValue)
+                o["unit"] = .string(String(unidad.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40)))
+            }
+            o["status"] = .string(["Pendiente", "En progreso", "Completado"].contains(estado) ? estado : "Pendiente")
+            o["notes"] = .string(String(notas.prefix(4000)))
+            if let n { lista[n] = .object(o) } else { lista.append(.object(o)) }
+            r["entries"] = .some(.array(lista))
+        case let .cambiarObjetivo(gid, cambio):
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            guard let n = lista.firstIndex(where: { $0["id"]?.comoId == gid && $0["type"]?.texto == "goal" }), var g = lista[n].objeto else { break }
+            var hitos = g["milestones"]?.lista ?? []
+            let igual = { (a: String, b: String) in LecturaObjetivos.normal(a) == LecturaObjetivos.normal(b) }
+            switch cambio {
+            case let .hito(texto):
+                let t = String(texto.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
+                if !t.isEmpty, !hitos.contains(where: { igual($0["text"]?.texto ?? "", t) }) { hitos.append(.object(["text": .string(t), "done": .bool(false)])) }
+            case let .hitoHecho(texto, hecho):
+                if let m = hitos.firstIndex(where: { igual($0["text"]?.texto ?? "", texto) }), var h = hitos[m].objeto { h["done"] = .bool(hecho); hitos[m] = .object(h) }
+            case let .quitarHito(texto):
+                if let m = hitos.firstIndex(where: { igual($0["text"]?.texto ?? "", texto) }) { hitos.remove(at: m) }
+            case let .progreso(actual):
+                guard let d = Dinero.decimal(texto: actual) else { break }
+                g["goalType"] = .string("numeric")
+                g["currentValue"] = .number(NSDecimalNumber(decimal: d).stringValue)
+            }
+            g["milestones"] = .array(hitos)
+            lista[n] = .object(g)
+            r["entries"] = .some(.array(lista))
         case let .guardarViaje(id, titulo, destino, inicio, fin, companeros, notas):
             let limpio = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)); guard !limpio.isEmpty else { break }
             var lista = (valores["entries"] ?? nil)?.lista ?? []
@@ -1138,7 +1192,7 @@ enum AplicarOperaciones {
             return .object(p)
 
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .importarMovimiento, .importarFila, .guardarViaje, .cambiarViaje,
-             .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal, .marcarRutina, .crearNota, .parcharEvento,
+             .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal, .guardarObjetivo, .cambiarObjetivo, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea, .transporteElegirInicio, .ponerPerfil, .ponerApartado,
              .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
              .anadirEnLista, .anadirCompra, .guardarListaCompra, .borrarListaCompra, .elegirListaCompra, .guardarItemCompra,
