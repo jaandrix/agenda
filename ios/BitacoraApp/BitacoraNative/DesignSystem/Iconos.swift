@@ -142,17 +142,16 @@ struct Icono: View {
     @ViewBuilder private var dibujo: some View {
         switch id {
         case "inicio":
-            caja(CGRect(x: 3, y: 4, width: 8, height: 16), 3)
-            caja(CGRect(x: 13, y: 4, width: 8, height: 16), 3)
-            punto(17, 9)
+            caja(CGRect(x: 3, y: 3.5, width: 18, height: 17), 6)
+            solido(8, 14.5, 3.4)
+            solido(12, 11.5, 3.4)
+            punto(16, 8.5, 3.4)
         case "plan":
             t { p in
-                p.move(to: .init(x: 6.8, y: 16.6)); p.addLine(to: .init(x: 10.2, y: 13.4))
-                p.move(to: .init(x: 13.8, y: 10.6)); p.addLine(to: .init(x: 16.8, y: 7.8))
+                p.addRoundedRect(in: CGRect(x: 3, y: 3.5, width: 18, height: 17), cornerSize: CGSize(width: 6, height: 6), style: .continuous)
+                p.move(to: .init(x: 7.5, y: 12)); p.addLine(to: .init(x: 10.8, y: 15.2)); p.addLine(to: .init(x: 17, y: 8.4))
             }
-            aro(5, 18, 4.6)
-            aro(12, 12, 4.6)
-            punto(19, 6, 6.4)
+            if activo { punto(17, 8.4, 3) }
         case "calendario":
             t { p in
                 p.addRoundedRect(in: CGRect(x: 3, y: 4.5, width: 18, height: 16), cornerSize: CGSize(width: 5, height: 5), style: .continuous)
@@ -168,10 +167,11 @@ struct Icono: View {
             }
             Circle().fill(tinta).frame(width: 5.4, height: 5.4).position(x: 16, y: 13)
         case "menu":
-            t { p in for y in [7.0, 12.0, 17.0] { p.move(to: .init(x: 9.5, y: y)); p.addLine(to: .init(x: 20, y: y)) } }
-            solido(4.6, 7, 3)
-            punto(4.6, 12, 3)
-            solido(4.6, 17, 3)
+            t { p in
+                p.addRoundedRect(in: CGRect(x: 3, y: 3.5, width: 18, height: 17), cornerSize: CGSize(width: 6, height: 6), style: .continuous)
+                for y in [8.0, 12.0, 16.0] { p.move(to: .init(x: 7.5, y: y)); p.addLine(to: .init(x: 16.5, y: y)) }
+            }
+            if activo { punto(7.5, 12, 3.4) }
         case "apuntar":
             Path { p in
                 p.move(to: .init(x: 12, y: 4.5)); p.addLine(to: .init(x: 12, y: 19.5))
@@ -221,16 +221,12 @@ struct Icono: View {
             punto(12, 13, 3.6)
         case "estudios":
             t { p in
-                p.move(to: .init(x: 12, y: 7)); p.addCurve(to: .init(x: 3, y: 5.5), control1: .init(x: 9.5, y: 5), control2: .init(x: 6, y: 4.8))
-                p.addLine(to: .init(x: 3, y: 18)); p.addCurve(to: .init(x: 12, y: 19.5), control1: .init(x: 6, y: 17.3), control2: .init(x: 9.5, y: 17.8))
-                p.addCurve(to: .init(x: 21, y: 18), control1: .init(x: 14.5, y: 17.8), control2: .init(x: 18, y: 17.3))
-                p.addLine(to: .init(x: 21, y: 5.5)); p.addCurve(to: .init(x: 12, y: 7), control1: .init(x: 18, y: 4.8), control2: .init(x: 14.5, y: 5))
-                p.move(to: .init(x: 12, y: 7)); p.addLine(to: .init(x: 12, y: 19.5))
+                p.move(to: .init(x: 12, y: 4.5)); p.addLine(to: .init(x: 21.5, y: 9)); p.addLine(to: .init(x: 12, y: 13.5))
+                p.addLine(to: .init(x: 2.5, y: 9)); p.closeSubpath()
+                p.move(to: .init(x: 6.5, y: 11)); p.addLine(to: .init(x: 6.5, y: 16)); p.addQuadCurve(to: .init(x: 17.5, y: 16), control: .init(x: 12, y: 20.5))
+                p.addLine(to: .init(x: 17.5, y: 11))
             }
-            lleno { p in
-                p.move(to: .init(x: 15.5, y: 5.8)); p.addLine(to: .init(x: 18.5, y: 5.3)); p.addLine(to: .init(x: 18.5, y: 11))
-                p.addLine(to: .init(x: 17, y: 9.8)); p.addLine(to: .init(x: 15.5, y: 11)); p.closeSubpath()
-            }
+            punto(20, 15.5, 3.2)
         case "profesorado":
             t { p in
                 p.addRoundedRect(in: CGRect(x: 3, y: 4, width: 18, height: 12), cornerSize: CGSize(width: 3, height: 3), style: .continuous)
@@ -343,10 +339,16 @@ struct Icono: View {
             }
             punto(12, 10.2)
         case "ajustes":
-            t { p in for y in [6.5, 12.0, 17.5] { p.move(to: .init(x: 4, y: y)); p.addLine(to: .init(x: 20, y: y)) } }
-            solido(15, 6.5, 5.2)
-            punto(8.5, 12, 5.2)
-            solido(13, 17.5, 5.2)
+            t { p in
+                for k in 0..<6 {
+                    let a = Double(k) * .pi / 3
+                    let q = CGPoint(x: 12 + 8.6 * cos(a), y: 12 + 8.6 * sin(a))
+                    if k == 0 { p.move(to: q) } else { p.addLine(to: q) }
+                }
+                p.closeSubpath()
+            }
+            aro(12, 12, 6.4)
+            if activo { punto(12, 12, 3.2) }
         case "buscar":
             aro(10.5, 10.5, 12)
             t { p in p.move(to: .init(x: 15, y: 15)); p.addLine(to: .init(x: 20, y: 20)) }
