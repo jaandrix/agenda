@@ -32,7 +32,12 @@ Un commit y una compilación de Actions por corte, con push a main.
 | fix | 229ae12 | Orden de argumentos en `PlanView`; con él, el run 61 compila los cortes 1 a 3b y pasa las pruebas. |
 | Viajes | cf34eb2 | Apartado nativo de Viajes (run 63 en verde). Ver el detalle debajo de la tabla. |
 | Empleo | 11d70f9 | Apartado nativo de Empleo con la agenda laboral. Ver el detalle debajo de la tabla. |
-| P1 visual | (este) | Los círculos de marcar no se veían en asfalto. Ver el detalle debajo de la tabla. |
+| P1 visual | fbc5549 | Los círculos de marcar no se veían en asfalto. Ver el detalle debajo de la tabla. |
+| fix | 911b369 | Faltaba la barra del keypath `\.locale` en el editor de tareas: el run 63 no compilaba. Lo había metido un script mío. |
+| Objetivos | 64bbe2d | Apartado nativo de Objetivos. Ver el detalle debajo de la tabla. |
+| Enlaces | 6adcb96 | Apartado nativo de Enlaces. Ver el detalle debajo de la tabla. |
+| Envíos | c74fbfa | Apartado nativo de Envíos. Ver el detalle debajo de la tabla. |
+| Documentos | 90f60f4 | Apartado nativo de Documentos, en lectura. Ver el detalle debajo de la tabla. |
 
 **Corte 1, validadores de Apuntar:**
 - Bloquea fechas que no existen («31 de febrero», «13/13», «el 32», «el 31» en un mes de 30 días) y rangos al revés.
@@ -73,12 +78,37 @@ Un commit y una compilación de Actions por corte, con push a main.
 - El empleo actual en la cabecera.
 - Operaciones `guardarCitaLaboral`, `borrarCitaLaboral`, `horarioLaboral` y `laboralEnPrincipal`, sobre `agendaLaboral`.
 
+**Objetivos:**
+- Lista por plazo con estado, progreso e hitos; crear, editar y eliminar.
+- Hitos: añadir, marcar y quitar. Se reconocen por el texto, como la op `objetivo` del conector.
+- Apuntar el progreso de los objetivos numéricos.
+- Operaciones `guardarObjetivo` / `cambiarObjetivo`, sobre `entries`.
+
+**Enlaces:**
+- Por categorías y favoritos (5 como mucho).
+- Buscar; crear (arriba, con https:// si falta), editar, duplicar, copiar la dirección y eliminar.
+- Categorías con color; al borrar una, sus enlaces pasan a otra o se quedan sin categoría.
+- Se abren en Safari. «pegar.» crea el enlace con lo copiado; la hoja de compartir del sistema necesita una extensión y SideStore no la instala.
+- Operaciones sobre `links` y `linkCategories`.
+
+**Envíos:**
+- Cinco pasos, llegada estimada o retraso, última nota y movimientos.
+- `estadoPedido` lleva el estado de destino, así que reintentar no avanza dos veces.
+- «actualizar.» llama a `seguimiento-pedidos` y trae la nube.
+- Seguir el envío, ver el pedido, copiar el número; crear, editar y borrar.
+- El historial no repite la misma línea si se reintenta la operación.
+
+**Documentos (en lectura):**
+- Fichas por caducidad, con aviso a 30 días o si ya ha caducado.
+- Archivos del bucket `documents`, que se abren con Vista Rápida.
+- Subir, renombrar y editar sigue en la web.
+
 **Pruebas añadidas:**
 - `pruebas/apuntar-p0.mjs`: 30 casos, sobre el mismo entorno que JavaScriptCore.
 - Frases P0 en el banco de paridad `pruebas/apuntar-casos.json`.
 - `pruebas/importar-ios-web.mjs`: comprueba con el importador real de la web que lo importado en el iPhone no se duplica.
 - `testMismaClaveQueLaWebEnLosDosSentidos` y `testPrioridadComoEnLaWeb`.
-- `ViajesTests` y `EmpleoTests`.
+- `ViajesTests`, `EmpleoTests`, `ObjetivosTests`, `EnlacesTests`, `EnviosTests` y `DocumentosTests`.
 - Las dos pruebas de Node corren en el workflow `ios-nativa.yml`.
 
 ## Pendiente, por prioridad
@@ -104,11 +134,10 @@ Un commit y una compilación de Actions por corte, con push a main.
   - asignatura que no existe (que avise en vez de crear un evento).
 - Rutinas, Notas, Estudios y Proyectos hasta tener el contrato completo; Enlaces nativo.
 
-**Apartados de la tanda, sin hacer (siguen en la web, en este orden)**
-- Objetivos: hitos y progreso.
-- Enlaces: favoritos, buscar y guardar desde compartir.
-- Envíos (`pedidos`): estado y la función `seguimiento-pedidos`.
-- Documentos, en lectura.
+**Lo que falta de los apartados nuevos (sigue en la web)**
+- Objetivos: método Harada, kaizen y el kanban arrastrable.
+- Enlaces: vista en rejilla y guardar desde la hoja de compartir (necesita extensión).
+- Documentos: subir, renombrar y borrar archivos; crear y editar fichas.
 
 **Lo que falta de Viajes y Empleo (sigue en la web)**
 - Viajes:
@@ -124,6 +153,9 @@ Un commit y una compilación de Actions por corte, con push a main.
 
 **Web (en espera)**
 - Llevar los validadores de Apuntar a `js/apuntar.js`. Están en `apuntar-puente.js` y se pueden copiar tal cual. Después, quitarlos del puente para no validar dos veces.
+
+**Comprobación pendiente**
+- Los apartados Objetivos, Enlaces, Envíos y Documentos se subieron juntos (90f60f4) y se comprueban en una sola compilación. Me quedé sin consultas a la API pública de GitHub y no podía seguir cada compilación por separado.
 
 ## Qué debe auditar GPT
 
@@ -142,7 +174,8 @@ Un commit y una compilación de Actions por corte, con push a main.
    - que el itinerario sin día salga al final;
    - que una cita de tipo turno se pueda guardar sin título;
    - que `horarioLaboral` sustituya el horario entero, como `guardarHorarioLaboral`.
-5. La IPA del run final: estructura, ausencia de firma y hashes, igual que `14-AUDITORIA-IPA-RUN57.md`.
+5. Enlaces: que `guardarEnlace` no acepte direcciones que no sean web. Envíos: que el historial no se duplique al reintentar. Documentos: la descarga autenticada de un archivo con espacios o tildes en el nombre.
+6. La IPA del run final: estructura, ausencia de firma y hashes, igual que `14-AUDITORIA-IPA-RUN57.md`.
 
 ## OpenCode
 
@@ -151,6 +184,12 @@ El 10-11, `opencode run` falla en este PC con «Database is not empty and has no
 Antes de volver a delegar hay que revisar la base de datos de OpenCode del usuario: tiene una sesión rota.
 
 ## Probar en el iPhone
+
+- **Asfalto:** los círculos de marcar se ven en plan, pendientes sin día, rutinas e inicio.
+- **Objetivos:** crear uno numérico, apuntar el progreso y comprobar que la barra avanza; añadir un hito y marcarlo.
+- **Enlaces:** copiar una dirección en Safari, pulsar «pegar.» y guardarlo; marcar 5 favoritos e intentar un sexto.
+- **Envíos:** crear un pedido con número de seguimiento, pulsar «→ enviado.» y luego «actualizar.».
+- **Documentos:** abrir un archivo con Vista Rápida y comprobar el aviso de una ficha que caduca pronto.
 
 - **Viajes** (desde «más.»):
   - crear un viaje con fechas;
