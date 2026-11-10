@@ -45,6 +45,9 @@ struct EditorTareaView: View {
                         ForEach(opcionesDia, id: \.self) { d in Text(nombre(d)).tag(d) }
                     }
                     if dia != nil {
+                        // Cualquier otro día, no solo hoy, mañana y pasado (mover a una fecha concreta).
+                        DatePicker("fecha.", selection: fechaElegida, displayedComponents: .date)
+                            .environment(.locale, Locale(identifier: "es_ES"))
                         Toggle("a una hora.", isOn: $conHora.animation(.easeOut(duration: 0.15)))
                         if conHora {
                             DatePicker("hora.", selection: $hora, displayedComponents: .hourAndMinute)
@@ -96,7 +99,17 @@ struct EditorTareaView: View {
     private var opcionesDia: [LocalDay?] {
         var r: [LocalDay?] = [hoy, hoy.sumando(dias: 1), hoy.sumando(dias: 2), nil]
         if let d = inicial.dia, !r.contains(d) { r.insert(d, at: 0) }
+        if let d = dia, !r.contains(d) { r.insert(d, at: 0) }
         return r
+    }
+
+    private var fechaElegida: Binding<Date> {
+        Binding {
+            var cal = Calendar(identifier: .gregorian)
+            cal.timeZone = CalendarioBitacora.madrid.zona
+            let d = dia ?? hoy
+            return cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) ?? Date()
+        } set: { dia = CalendarioBitacora.madrid.dia(de: $0) }
     }
 
     private func nombre(_ d: LocalDay?) -> String {
