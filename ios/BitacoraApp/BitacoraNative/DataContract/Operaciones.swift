@@ -44,6 +44,9 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // Proyectos (js/proyecto.js): crear uno y cambiar su gestor (tareas, siguiente paso, colina, fases y diario).
     case crearProyecto(id: String, titulo: String, fecha: String)
     case cambiarProyecto(proyectoId: String, cambio: CambioProyecto)
+    // Viajes (js/viajes.js y la parte travel de saveEntry en js/entradas.js): entradas `type: travel` en `entries`.
+    case guardarViaje(id: String, titulo: String, destino: String, inicio: String, fin: String, companeros: String, notas: String)
+    case cambiarViaje(viajeId: String, cambio: CambioViaje)
     case crearTraspaso(id: String, importe: String, desde: String, hacia: String, fecha: String, hora: String, concepto: String)
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
@@ -94,6 +97,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .crearMovimiento, .importarMovimiento, .importarFila, .editarMovimiento, .borrarMovimiento, .crearTraspaso: return ["financePro"]
         case .editarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .crearProyecto, .cambiarProyecto: return ["entries"]
+        case .guardarViaje, .cambiarViaje: return ["entries"]
         case .borrarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .marcarRutina: return ["habits"]
         case .crearNota: return ["notes"]
@@ -149,6 +153,16 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         let letras = "abcdefghijklmnopqrstuvwxyz0123456789"
         return "entry_\(Int64(ahora.timeIntervalSince1970 * 1000))_" + String((0..<6).map { _ in letras.randomElement()! })
     }
+}
+
+enum CambioViaje: Codable, Sendable, Equatable {
+    // saveItineraryItem / deleteItineraryItem: { id, dia, hora, titulo, lugar, notas } en `itinerario`.
+    case itinerario(id: String, dia: String, hora: String, titulo: String, lugar: String, notas: String)
+    case quitarItinerario(id: String)
+    // addTripPlace / toggleTripPlace / deleteTripPlace: { id, nombre, visitado } en `places`.
+    case lugar(id: String, nombre: String)
+    case lugarVisitado(id: String, visitado: Bool)
+    case quitarLugar(id: String)
 }
 
 enum CambioProyecto: Codable, Sendable, Equatable {
@@ -382,6 +396,48 @@ enum AplicarOperaciones {
             // getCategoryIdForType('project'): la categoría que ya usan los demás proyectos.
             if let cat = lista.first(where: { $0["type"]?.texto == "project" && $0["categoryId"] != nil })?["categoryId"] { p["categoryId"] = cat }
             lista.append(.object(p))
+            r["entries"] = .some(.array(lista))
+        case let .guardarViaje(id, titulo, destino, inicio, fin, companeros, notas):
+            let limpio = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)); guard !limpio.isEmpty else { break }
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            let n = lista.firstIndex(where: { $0["id"]?.comoId == id })
+            if let n, lista[n]["type"]?.texto != "travel" { break }
+            // Como saveEntry al crear: categoría cat_viaje, sin etiquetas ni gastos a mano. Al editar, el resto se queda.
+            var o = n.flatMap { lista[$0].objeto } ?? ["id": .string(id), "type": .string("travel"), "categoryId": .string("cat_viaje"),
+                                                      "tags": .array([]), "expenses": .array([])]
+            o["title"] = .string(limpio); o["destination"] = .string(String(destino.prefix(200)))
+            o["startDate"] = .string(inicio); o["endDate"] = .string(fin); o["date"] = .string(inicio.isEmpty ? fin : inicio)
+            o["companions"] = .string(String(companeros.prefix(300))); o["notes"] = .string(String(notas.prefix(4000)))
+            if let n { lista[n] = .object(o) } else { lista.append(.object(o)) }
+            r["entries"] = .some(.array(lista))
+        case let .cambiarViaje(vid, cambio):
+            var lista = (valores["entries"] ?? nil)?.lista ?? []
+            guard let n = lista.firstIndex(where: { $0["id"]?.comoId == vid && $0["type"]?.texto == "travel" }), var v = lista[n].objeto else { break }
+            var itinerario = v["itinerario"]?.lista ?? [], lugares = v["places"]?.lista ?? []
+            switch cambio {
+            case let .itinerario(id, dia, hora, titulo, lugar, notas):
+                let limpio = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300)); guard !limpio.isEmpty else { break }
+                var o = itinerario.first(where: { $0["id"]?.comoId == id })?.objeto ?? ["id": .string(id)]
+                // Si cambia el lugar, las coordenadas viejas ya no valen (la web las pone al geocodificar).
+                if o["lugar"]?.texto != lugar { o.removeValue(forKey: "lat"); o.removeValue(forKey: "lon") }
+                o["dia"] = .string(dia); o["hora"] = .string(hora); o["titulo"] = .string(limpio)
+                o["lugar"] = .string(String(lugar.prefix(300))); o["notas"] = .string(String(notas.prefix(2000)))
+                if let m = itinerario.firstIndex(where: { $0["id"]?.comoId == id }) { itinerario[m] = .object(o) } else { itinerario.append(.object(o)) }
+            case let .quitarItinerario(id):
+                itinerario.removeAll { $0["id"]?.comoId == id }
+            case let .lugar(id, nombre):
+                let limpio = String(nombre.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200))
+                if !limpio.isEmpty, !lugares.contains(where: { $0["id"]?.comoId == id }) {
+                    lugares.append(.object(["id": .string(id), "nombre": .string(limpio), "visitado": .bool(false)]))
+                }
+            case let .lugarVisitado(id, visitado):
+                if let m = lugares.firstIndex(where: { $0["id"]?.comoId == id }), var o = lugares[m].objeto { o["visitado"] = .bool(visitado); lugares[m] = .object(o) }
+            case let .quitarLugar(id):
+                lugares.removeAll { $0["id"]?.comoId == id }
+            }
+            if v["itinerario"] != nil || !itinerario.isEmpty { v["itinerario"] = .array(itinerario) }
+            if v["places"] != nil || !lugares.isEmpty { v["places"] = .array(lugares) }
+            lista[n] = .object(v)
             r["entries"] = .some(.array(lista))
         case let .cambiarProyecto(pid, cambio):
             var lista = (valores["entries"] ?? nil)?.lista ?? []
@@ -1045,7 +1101,7 @@ enum AplicarOperaciones {
             _ = quitar(sitio, de: &p)
             return .object(p)
 
-        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .importarMovimiento, .importarFila, .marcarRutina, .crearNota, .parcharEvento,
+        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .importarMovimiento, .importarFila, .guardarViaje, .cambiarViaje, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea, .transporteElegirInicio, .ponerPerfil, .ponerApartado,
              .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
              .anadirEnLista, .anadirCompra, .guardarListaCompra, .borrarListaCompra, .elegirListaCompra, .guardarItemCompra,
