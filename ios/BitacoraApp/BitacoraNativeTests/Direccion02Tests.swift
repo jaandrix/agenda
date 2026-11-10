@@ -139,11 +139,11 @@ final class Direccion02Tests: XCTestCase {
 
     func testGeometriaBarra() {
         // Los cuatro iconos laterales comparten geometría, centrados en la altura útil, con áreas táctiles >= 44 pt.
-        XCTAssertEqual(BarraBitacora.altoHuecoLateral, 62)
-        XCTAssertEqual(BarraBitacora.tamanoIconoLateral, 32)
-        XCTAssertEqual(BarraBitacora.diametroCentral, 64)
-        XCTAssertEqual(BarraBitacora.altoBotonCentral, 70)
-        XCTAssertEqual(BarraBitacora.duracionLongPress, 0.5, accuracy: 0.001)
+        XCTAssertEqual(BarraBitacora.altoHuecoLateral, 54)
+        XCTAssertEqual(BarraBitacora.tamanoIconoLateral, 28)
+        XCTAssertEqual(BarraBitacora.diametroCentral, 56)
+        XCTAssertEqual(BarraBitacora.altoBotonCentral, 60)
+        XCTAssertEqual(BarraBitacora.duracionLongPress, 0.36, accuracy: 0.001)
         XCTAssertGreaterThanOrEqual(BarraBitacora.altoHuecoLateral, BarraBitacora.altoTactilMinimo)
         XCTAssertGreaterThanOrEqual(BarraBitacora.altoBotonCentral, BarraBitacora.altoTactilMinimo)
         XCTAssertGreaterThanOrEqual(BarraBitacora.diametroCentral, 55)

@@ -172,21 +172,24 @@ struct BarraBitacora: View {
         let icono: String
     }
     // Contrato de geometría (probable sin UI): hueco lateral común, icono dentro del hueco, áreas táctiles >= 44 pt.
-    static let altoHuecoLateral: CGFloat = 62
-    static let tamanoIconoLateral: CGFloat = 32
+    // 0.17: barra más baja (62 → 54) y botón central más compacto; la pestaña activa la marca una placa que se desliza.
+    static let altoHuecoLateral: CGFloat = 54
+    static let tamanoIconoLateral: CGFloat = 28
     static let altoTactilMinimo: CGFloat = 44
-    static let diametroCentral: CGFloat = 64
-    static let altoBotonCentral: CGFloat = 70
-    static let elevacionCentral: CGFloat = 8
-    static let duracionLongPress: Double = 0.5
+    static let diametroCentral: CGFloat = 56
+    static let altoBotonCentral: CGFloat = 60
+    static let elevacionCentral: CGFloat = 6
+    static let duracionLongPress: Double = 0.36
 
     let pestanas: [Pestana]
     let activa: String
     let elegir: (String) -> Void
     let capturar: () -> Void
-    // Mantener pulsado «menú.» medio segundo: los cinco apartados más usados.
+    // Mantener pulsado «menú.» (0,36 s): los cinco apartados más usados.
     var mantener: (() -> Void)?
     @Environment(\.dynamicTypeSize) private var letra
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+    @Namespace private var placa
 
     var body: some View {
         let mitad = pestanas.count / 2
@@ -196,9 +199,9 @@ struct BarraBitacora: View {
             ForEach(pestanas.suffix(pestanas.count - mitad)) { boton($0) }
         }
         .padding(.horizontal, 6)
-        .padding(.top, 4)
-        .padding(.bottom, 2)
+        .padding(.top, 2)
         .frame(minHeight: Self.altoHuecoLateral)
+        .animation(sinMovimiento ? nil : .spring(response: 0.22, dampingFraction: 0.86), value: activa)
         .background(alignment: .top) {
             UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
                 .fill(Paleta.superficie)
@@ -215,18 +218,23 @@ struct BarraBitacora: View {
         let on = p.id == activa
         let esMenu = p.id == "mas"
         let largo = esMenu ? mantener : nil
-        let base = VStack(spacing: 2) {
+        let base = VStack(spacing: 1) {
                 IconoBarra(id: p.icono, activo: on, detalle: Paleta.acento)
                     .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
-                    .frame(width: Self.tamanoIconoLateral, height: Self.tamanoIconoLateral)
-                    .background(on ? Paleta.tinteAcento : Color.clear, in: Circle())
+                    .frame(width: 24, height: 24)
+                    .frame(width: 46, height: Self.tamanoIconoLateral)
+                    .background {
+                        if on {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Paleta.tinteAcento)
+                                .matchedGeometryEffect(id: "placa", in: placa)
+                        }
+                    }
                 if !letra.isAccessibilitySize {
                     Text(p.titulo + ".")
-                        .font(Tipo.poppins(10.5, .semibold, estilo: .caption2))
+                        .font(Tipo.poppins(10.5, on ? .bold : .medium, estilo: .caption2))
                         .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
                         .lineLimit(1).minimumScaleFactor(0.75)
                 }
-                Circle().fill(on ? Paleta.acento : .clear).frame(width: 4, height: 4)
             }
             .frame(maxWidth: .infinity, minHeight: Self.altoHuecoLateral, maxHeight: Self.altoHuecoLateral, alignment: .center)
             .contentShape(Rectangle())
@@ -246,15 +254,16 @@ struct BarraBitacora: View {
         Button(action: capturar) {
             IconoBarra(id: "apuntar", detalle: Paleta.acento)
                 .foregroundStyle(Paleta.texto)
+                .scaleEffect(1.12)
                 .frame(width: Self.diametroCentral, height: Self.diametroCentral)
                 .background(Paleta.superficie, in: Circle())
                 .overlay(Circle().stroke(Paleta.acento, lineWidth: 2.5))
-                .padding(4)
+                .padding(3)
                 .background(Paleta.fondo, in: Circle())
         }
         .buttonStyle(.plain)
         .offset(y: -Self.elevacionCentral)
-        .frame(width: 78)
+        .frame(width: 70)
         .frame(minHeight: Self.altoBotonCentral)
         .accessibilityLabel("apuntar")
     }
