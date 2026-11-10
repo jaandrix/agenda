@@ -431,6 +431,7 @@ struct CarruselDias: View {
     @State private var eje: Bool?
     @State private var pendiente: Int = 0
     @State private var centroLocal: LocalDay?
+    @State private var semanasPasadas = 0
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     static let letras = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
     static let umbral: CGFloat = 44
@@ -456,6 +457,7 @@ struct CarruselDias: View {
         }
         .frame(height: Tipo.tamano(64))
         .clipped()
+        .sensoryFeedback(.selection, trigger: semanasPasadas)
         .padding(.top, Espacio.s)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(FichaEventoView.fecha(dia) + (dia == hoy ? ", hoy" : ""))
@@ -488,8 +490,13 @@ struct CarruselDias: View {
                 guard eje == true, pendiente == 0 else { arrastre = 0; return }
                 let dx = v.translation.width, px = v.predictedEndTranslation.width
                 let paso = Self.paso(dx: dx, px: px)
+                // Encaje físico: el muelle arranca con la velocidad del dedo (relativa a lo que falta), así la semana
+                // sigue el lanzamiento en vez de reiniciarse; el cambio de semana se confirma al asentarse, no con un reloj.
+                let vx = v.velocity.width
                 if paso == 0 {
-                    if sinMovimiento { arrastre = 0 } else { withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) { arrastre = 0 } }
+                    if sinMovimiento { arrastre = 0 } else {
+                        withAnimation(Self.muelle(velocidad: vx, desde: arrastre, hasta: 0)) { arrastre = 0 }
+                    }
                 } else {
                     let nuevoCentro = base.sumando(dias: paso)
                     let nuevoDia = dia.sumando(dias: paso)
@@ -499,17 +506,27 @@ struct CarruselDias: View {
                         elegir(nuevoDia)
                     } else {
                         pendiente = paso
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.88)) { arrastre = paso > 0 ? -ancho : ancho }
+                        let destino: CGFloat = paso > 0 ? -ancho : ancho
                         let esperado = paso
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                        withAnimation(Self.muelle(velocidad: vx, desde: arrastre, hasta: destino), completionCriteria: .logicallyComplete) {
+                            arrastre = destino
+                        } completion: {
                             guard pendiente == esperado else { return }
                             var tx = Transaction(); tx.disablesAnimations = true
                             withTransaction(tx) { centroLocal = nuevoCentro; arrastre = 0; pendiente = 0 }
+                            semanasPasadas += 1
                             elegir(nuevoDia)
                         }
                     }
                 }
             }
+    }
+
+    // Velocidad inicial relativa (fracción de la distancia por segundo), acotada para que un lanzamiento fuerte no rebote.
+    static func muelle(velocidad: CGFloat, desde: CGFloat, hasta: CGFloat) -> Animation {
+        let falta = hasta - desde
+        let relativa = abs(falta) < 1 ? 0 : min(max(velocidad / falta, 0), 8)
+        return .interpolatingSpring(duration: 0.34, bounce: 0.06, initialVelocity: relativa)
     }
 
     static func paso(dx: CGFloat, px: CGFloat) -> Int {
