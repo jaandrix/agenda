@@ -88,32 +88,31 @@ struct IconoBarra: View {
             switch id {
             case "inicio":
                 Path { p in
-                    p.addRoundedRect(in: CGRect(x: 3, y: 4.5, width: 8, height: 15), cornerSize: CGSize(width: 3.5, height: 3.5))
-                    p.addRoundedRect(in: CGRect(x: 13, y: 4.5, width: 8, height: 15), cornerSize: CGSize(width: 3.5, height: 3.5))
+                    p.addRoundedRect(in: CGRect(x: 3, y: 3.5, width: 18, height: 17), cornerSize: CGSize(width: 6, height: 6))
                 }.stroke(style: trazo)
-                if activo { Circle().fill(detalle).frame(width: 3.8, height: 3.8).position(x: 17, y: 9.5) }
+                Circle().fill(activo ? AnyShapeStyle(detalle) : AnyShapeStyle(.foreground))
+                    .frame(width: 3.4, height: 3.4).position(x: 8, y: 12)
+                Circle().fill(activo ? AnyShapeStyle(detalle) : AnyShapeStyle(.foreground))
+                    .frame(width: 3.4, height: 3.4).position(x: 12, y: 9)
+                Circle().fill(activo ? AnyShapeStyle(detalle) : AnyShapeStyle(.foreground))
+                    .frame(width: 3.4, height: 3.4).position(x: 16, y: 12)
             case "plan":
                 Path { p in
-                    p.move(to: .init(x: 8.5, y: 6)); p.addLine(to: .init(x: 20, y: 6))
-                    p.move(to: .init(x: 8.5, y: 12)); p.addLine(to: .init(x: 18, y: 12))
-                    p.move(to: .init(x: 8.5, y: 18)); p.addLine(to: .init(x: 20, y: 18))
+                    p.addRoundedRect(in: CGRect(x: 3, y: 3.5, width: 18, height: 17), cornerSize: CGSize(width: 6, height: 6))
+                    p.move(to: .init(x: 7.5, y: 12)); p.addLine(to: .init(x: 10.8, y: 15.2)); p.addLine(to: .init(x: 17, y: 8.4))
                 }.stroke(style: trazo)
-                ForEach(Array([6.0, 12.0, 18.0].enumerated()), id: \.offset) { i, y in
-                    let on = activo && i == 1
-                    Circle()
-                        .fill(on ? AnyShapeStyle(detalle) : AnyShapeStyle(.clear))
-                        .overlay(Circle().stroke(style: trazo))
-                        .frame(width: 4.4, height: 4.4)
-                        .position(x: 4.5, y: y)
-                }
             case "calendario", "finanzas":
                 if id == "calendario" {
-                    Path { p in p.addRoundedRect(in: CGRect(x: 3.5, y: 5, width: 17, height: 15), cornerSize: CGSize(width: 4, height: 4)) }.stroke(style: trazo)
-                    Path { p in p.move(to: .init(x: 3.5, y: 9.5)); p.addLine(to: .init(x: 20.5, y: 9.5)) }.stroke(style: trazo)
+                    Path { p in
+                        p.addRoundedRect(in: CGRect(x: 3, y: 4, width: 18, height: 17), cornerSize: CGSize(width: 6, height: 6))
+                        p.move(to: .init(x: 3.5, y: 9)); p.addLine(to: .init(x: 20.5, y: 9))
+                        p.move(to: .init(x: 8, y: 3)); p.addLine(to: .init(x: 8, y: 6.5))
+                        p.move(to: .init(x: 16, y: 3)); p.addLine(to: .init(x: 16, y: 6.5))
+                    }.stroke(style: trazo)
                     if activo {
-                        RoundedRectangle(cornerRadius: 1.5).fill(detalle).frame(width: 5, height: 4.5).position(x: 15.5, y: 14.5)
+                        Circle().fill(detalle).frame(width: 4.5, height: 4.5).position(x: 15.5, y: 15)
                     } else {
-                        Circle().fill(.foreground).frame(width: 3.4, height: 3.4).position(x: 15.5, y: 14.5)
+                        Circle().fill(.foreground).frame(width: 3.4, height: 3.4).position(x: 15.5, y: 15)
                     }
                 } else {
                     Path { p in p.addRoundedRect(in: CGRect(x: 3.5, y: 5, width: 17, height: 14), cornerSize: CGSize(width: 4, height: 4)) }.stroke(style: trazo)
@@ -124,11 +123,12 @@ struct IconoBarra: View {
                 }
             case "menu":
                 Path { p in
-                    for y in [7.0, 12.0, 17.0] {
-                        p.move(to: .init(x: 5, y: y)); p.addLine(to: .init(x: 19, y: y))
+                    p.addRoundedRect(in: CGRect(x: 3, y: 3.5, width: 18, height: 17), cornerSize: CGSize(width: 6, height: 6))
+                    for y in [8.0, 12.0, 16.0] {
+                        p.move(to: .init(x: 7, y: y)); p.addLine(to: .init(x: 17, y: y))
                     }
                 }.stroke(style: trazo)
-                if activo { Circle().fill(detalle).frame(width: 4, height: 4).position(x: 5, y: 12) }
+                if activo { Circle().fill(detalle).frame(width: 3.4, height: 3.4).position(x: 7, y: 12) }
             default:
                 Path { p in
                     p.move(to: .init(x: 12, y: 4.5)); p.addLine(to: .init(x: 12, y: 19.5))

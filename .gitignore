@@ -5,3 +5,7 @@ ios/BitacoraApp/BitacoraApp.xcodeproj/
 ios/BitacoraApp/build/
 ios/BitacoraApp/*.ipa
 ios/BitacoraApp/Payload/
+
+# Sesiones y resultados locales de OpenCode. Los encargos y plantillas sí se versionan.
+.opencode-runtime*/
+trabajo-opencode/resultados/
