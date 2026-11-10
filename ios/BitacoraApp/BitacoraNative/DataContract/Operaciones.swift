@@ -62,6 +62,11 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case favoritoEnlace(id: String, favorito: Bool)
     case guardarCategoriaEnlace(id: String, nombre: String, color: String)
     case borrarCategoriaEnlace(id: String, destino: String?)
+    // Envíos (js/bajo-demanda/actualizaciones.js): `pedidos`. precio en texto decimal; hoy, la fecha civil del día.
+    case guardarPedido(id: String, titulo: String, tienda: String, seguimiento: String, url: String, fechaPedido: String, fechaEstimada: String, precio: String, estado: String, nota: String, hoy: String)
+    // avanzarPedido con el estado al que se pasa: reintentarlo no avanza dos veces.
+    case estadoPedido(id: String, estado: String, hoy: String)
+    case borrarPedido(id: String)
     case crearTraspaso(id: String, importe: String, desde: String, hacia: String, fecha: String, hora: String, concepto: String)
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
@@ -115,6 +120,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .guardarViaje, .cambiarViaje: return ["entries"]
         case .guardarObjetivo, .cambiarObjetivo: return ["entries"]
         case .guardarEnlace, .borrarEnlace, .favoritoEnlace: return ["links"]
+        case .guardarPedido, .estadoPedido, .borrarPedido: return ["pedidos"]
         case .guardarCategoriaEnlace, .borrarCategoriaEnlace: return ["links", "linkCategories"]
         case .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal: return ["agendaLaboral"]
         case .borrarItemEstudio: return ["studies", "entries", "dayPlanner"]
@@ -453,6 +459,41 @@ enum AplicarOperaciones {
             }
             a["citas"] = .array(citas)
             r["agendaLaboral"] = .some(.object(a))
+        case let .guardarPedido(id, titulo, tienda, seguimiento, url, fechaPedido, fechaEstimada, precio, estado, nota, hoy):
+            let t = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
+            guard !t.isEmpty, LecturaEnvios.estados.contains(where: { $0.0 == estado }) else { break }
+            var lista = (valores["pedidos"] ?? nil)?.lista ?? []
+            let n = lista.firstIndex(where: { $0["id"]?.comoId == id })
+            var p = n.flatMap { lista[$0].objeto } ?? ["id": .string(id)]
+            let antes = p["estado"]?.texto
+            let notaLimpia = nota.trimmingCharacters(in: .whitespacesAndNewlines)
+            p["titulo"] = .string(t); p["tienda"] = .string(tienda); p["seguimiento"] = .string(seguimiento.trimmingCharacters(in: .whitespaces).uppercased())
+            p["url"] = .string(url.trimmingCharacters(in: .whitespaces)); p["fechaPedido"] = .string(fechaPedido); p["fechaEstimada"] = .string(fechaEstimada)
+            if let d = Dinero.decimal(texto: precio), d > 0 { p["precio"] = .number(NSDecimalNumber(decimal: d).stringValue) } else { p.removeValue(forKey: "precio") }
+            p["estado"] = .string(estado)
+            // guardarPedido: al crear, o si cambia el estado o hay nota, una línea más en el historial.
+            if n == nil || antes != estado || !notaLimpia.isEmpty {
+                var h: [String: JSONValue] = ["fecha": .string(hoy), "estado": .string(estado)]
+                if !notaLimpia.isEmpty { h["nota"] = .string(String(notaLimpia.prefix(500))) }
+                // Reintentar la misma operación no repite la línea.
+                if p["historial"]?.lista?.last != .object(h) { p["historial"] = .array((p["historial"]?.lista ?? []) + [.object(h)]) }
+            }
+            if estado == "entregado" { if p["fechaEntrega"] == nil { p["fechaEntrega"] = .string(hoy) } } else { p.removeValue(forKey: "fechaEntrega") }
+            if let n { lista[n] = .object(p) } else { lista.append(.object(p)) }
+            r["pedidos"] = .some(.array(lista))
+        case let .estadoPedido(id, estado, hoy):
+            var lista = (valores["pedidos"] ?? nil)?.lista ?? []
+            guard LecturaEnvios.estados.contains(where: { $0.0 == estado }), let n = lista.firstIndex(where: { $0["id"]?.comoId == id }),
+                  var p = lista[n].objeto, p["estado"]?.texto != estado else { break }
+            p["estado"] = .string(estado)
+            p["historial"] = .array((p["historial"]?.lista ?? []) + [.object(["fecha": .string(hoy), "estado": .string(estado)])])
+            if estado == "entregado" { p["fechaEntrega"] = .string(hoy) }
+            lista[n] = .object(p)
+            r["pedidos"] = .some(.array(lista))
+        case let .borrarPedido(id):
+            var lista = (valores["pedidos"] ?? nil)?.lista ?? []; let antes = lista.count
+            lista.removeAll { $0["id"]?.comoId == id }; guard antes != lista.count else { break }
+            r["pedidos"] = .some(.array(lista))
         case let .guardarEnlace(id, titulo, url, categoriaId, descripcion, creado):
             let t = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
             var u = url.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1250,7 +1291,7 @@ enum AplicarOperaciones {
 
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .importarMovimiento, .importarFila, .guardarViaje, .cambiarViaje,
              .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal, .guardarObjetivo, .cambiarObjetivo,
-             .guardarEnlace, .borrarEnlace, .favoritoEnlace, .guardarCategoriaEnlace, .borrarCategoriaEnlace, .marcarRutina, .crearNota, .parcharEvento,
+             .guardarEnlace, .borrarEnlace, .favoritoEnlace, .guardarCategoriaEnlace, .borrarCategoriaEnlace, .guardarPedido, .estadoPedido, .borrarPedido, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea, .transporteElegirInicio, .ponerPerfil, .ponerApartado,
              .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
              .anadirEnLista, .anadirCompra, .guardarListaCompra, .borrarListaCompra, .elegirListaCompra, .guardarItemCompra,
