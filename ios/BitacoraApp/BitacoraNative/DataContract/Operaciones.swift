@@ -47,6 +47,12 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // Viajes (js/viajes.js y la parte travel de saveEntry en js/entradas.js): entradas `type: travel` en `entries`.
     case guardarViaje(id: String, titulo: String, destino: String, inicio: String, fin: String, companeros: String, notas: String)
     case cambiarViaje(viajeId: String, cambio: CambioViaje)
+    // Agenda laboral (js/agenda-laboral.js): `agendaLaboral` = { enPrincipal, horario: { "0"..."6": { ini, fin } }, citas: [{ id lab_... }] }.
+    case guardarCitaLaboral(id: String, fecha: String, ini: String, fin: String, titulo: String, tipo: String, lugar: String, notas: String)
+    case borrarCitaLaboral(id: String)
+    // Día de la semana como en getDay ("0" domingo) → "HH:MM|HH:MM". Sustituye el horario entero, como guardarHorarioLaboral.
+    case horarioLaboral(dias: [String: String])
+    case laboralEnPrincipal(Bool)
     case crearTraspaso(id: String, importe: String, desde: String, hacia: String, fecha: String, hora: String, concepto: String)
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
@@ -98,6 +104,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .editarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .crearProyecto, .cambiarProyecto: return ["entries"]
         case .guardarViaje, .cambiarViaje: return ["entries"]
+        case .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal: return ["agendaLaboral"]
         case .borrarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .marcarRutina: return ["habits"]
         case .crearNota: return ["notes"]
@@ -397,6 +404,35 @@ enum AplicarOperaciones {
             if let cat = lista.first(where: { $0["type"]?.texto == "project" && $0["categoryId"] != nil })?["categoryId"] { p["categoryId"] = cat }
             lista.append(.object(p))
             r["entries"] = .some(.array(lista))
+        case .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal:
+            // datosLaboral(): si falta algo, se crea con lo de la web; lo que no se conoce se queda.
+            var a = (valores["agendaLaboral"] ?? nil)?.objeto ?? ["enPrincipal": .bool(true)]
+            if a["horario"]?.objeto == nil { a["horario"] = .object([:]) }
+            var citas = a["citas"]?.lista ?? []
+            switch op {
+            case let .guardarCitaLaboral(id, fecha, ini, fin, titulo, tipo, lugar, notas):
+                guard LocalDay(iso: fecha) != nil, ["reunion", "turno", "plazo", "otro"].contains(tipo),
+                      !titulo.trimmingCharacters(in: .whitespaces).isEmpty || tipo == "turno" else { return r }
+                var o = citas.first(where: { $0["id"]?.comoId == id })?.objeto ?? ["id": .string(id)]
+                o["fecha"] = .string(fecha); o["ini"] = .string(ini); o["fin"] = .string(fin)
+                o["titulo"] = .string(String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200))); o["tipo"] = .string(tipo)
+                o["lugar"] = .string(String(lugar.prefix(200))); o["notas"] = .string(String(notas.prefix(2000)))
+                if let n = citas.firstIndex(where: { $0["id"]?.comoId == id }) { citas[n] = .object(o) } else { citas.append(.object(o)) }
+            case let .borrarCitaLaboral(id):
+                citas.removeAll { $0["id"]?.comoId == id }
+            case let .horarioLaboral(dias):
+                var h: [String: JSONValue] = [:]
+                for (k, v) in dias where ["0", "1", "2", "3", "4", "5", "6"].contains(k) {
+                    let p = v.split(separator: "|").map(String.init)
+                    if p.count == 2, !p[0].isEmpty, !p[1].isEmpty { h[k] = .object(["ini": .string(p[0]), "fin": .string(p[1])]) }
+                }
+                a["horario"] = .object(h)
+            case let .laboralEnPrincipal(si):
+                a["enPrincipal"] = .bool(si)
+            default: break
+            }
+            a["citas"] = .array(citas)
+            r["agendaLaboral"] = .some(.object(a))
         case let .guardarViaje(id, titulo, destino, inicio, fin, companeros, notas):
             let limpio = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)); guard !limpio.isEmpty else { break }
             var lista = (valores["entries"] ?? nil)?.lista ?? []
@@ -1101,7 +1137,8 @@ enum AplicarOperaciones {
             _ = quitar(sitio, de: &p)
             return .object(p)
 
-        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .importarMovimiento, .importarFila, .guardarViaje, .cambiarViaje, .marcarRutina, .crearNota, .parcharEvento,
+        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .importarMovimiento, .importarFila, .guardarViaje, .cambiarViaje,
+             .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea, .transporteElegirInicio, .ponerPerfil, .ponerApartado,
              .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
              .anadirEnLista, .anadirCompra, .guardarListaCompra, .borrarListaCompra, .elegirListaCompra, .guardarItemCompra,
