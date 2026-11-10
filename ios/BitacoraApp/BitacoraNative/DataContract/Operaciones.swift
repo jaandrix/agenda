@@ -56,6 +56,12 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // Objetivos (saveEntry type goal en js/entradas.js y la op `objetivo` del conector). actual y meta en texto decimal.
     case guardarObjetivo(id: String, titulo: String, plazo: String, numerico: Bool, actual: String, meta: String, unidad: String, estado: String, notas: String)
     case cambiarObjetivo(objetivoId: String, cambio: CambioObjetivo)
+    // Enlaces (js/enlaces-proyectos.js): `links` y `linkCategories`. creado en ISO, decidido al abrir el editor.
+    case guardarEnlace(id: String, titulo: String, url: String, categoriaId: String?, descripcion: String, creado: String)
+    case borrarEnlace(id: String)
+    case favoritoEnlace(id: String, favorito: Bool)
+    case guardarCategoriaEnlace(id: String, nombre: String, color: String)
+    case borrarCategoriaEnlace(id: String, destino: String?)
     case crearTraspaso(id: String, importe: String, desde: String, hacia: String, fecha: String, hora: String, concepto: String)
     // transporte.js: trAlternarFavorita y trAlternarLinea, dentro de `servicios.transporte` (clave «bus:688»).
     case transporteFavorita(clave: String, activa: Bool)
@@ -108,6 +114,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .crearProyecto, .cambiarProyecto: return ["entries"]
         case .guardarViaje, .cambiarViaje: return ["entries"]
         case .guardarObjetivo, .cambiarObjetivo: return ["entries"]
+        case .guardarEnlace, .borrarEnlace, .favoritoEnlace: return ["links"]
+        case .guardarCategoriaEnlace, .borrarCategoriaEnlace: return ["links", "linkCategories"]
         case .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal: return ["agendaLaboral"]
         case .borrarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .marcarRutina: return ["habits"]
@@ -445,6 +453,55 @@ enum AplicarOperaciones {
             }
             a["citas"] = .array(citas)
             r["agendaLaboral"] = .some(.object(a))
+        case let .guardarEnlace(id, titulo, url, categoriaId, descripcion, creado):
+            let t = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
+            var u = url.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !t.isEmpty, !u.isEmpty else { break }
+            // saveNewLink: sin esquema se le pone https://. Solo se guardan direcciones web.
+            if u.range(of: "^https?://", options: [.regularExpression, .caseInsensitive]) == nil { u = "https://" + u }
+            guard u.range(of: "^[a-z][a-z0-9+.-]*:", options: [.regularExpression, .caseInsensitive]).map({ u[$0].lowercased().hasPrefix("http") }) == true else { break }
+            var lista = (valores["links"] ?? nil)?.lista ?? []
+            let d = descripcion.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var o = lista[n].objeto {
+                o["title"] = .string(t); o["url"] = .string(String(u.prefix(2000))); o["categoryId"] = categoriaId.map { .string($0) } ?? .null
+                if d.isEmpty { o.removeValue(forKey: "descripcion") } else { o["descripcion"] = .string(String(d.prefix(500))) }
+                lista[n] = .object(o)
+            } else {
+                var o: [String: JSONValue] = ["id": .string(id), "title": .string(t), "url": .string(String(u.prefix(2000))),
+                                              "categoryId": categoriaId.map { .string($0) } ?? .null, "createdAt": .string(creado)]
+                if !d.isEmpty { o["descripcion"] = .string(String(d.prefix(500))) }
+                lista.insert(.object(o), at: 0)
+            }
+            r["links"] = .some(.array(lista))
+        case let .borrarEnlace(id):
+            var lista = (valores["links"] ?? nil)?.lista ?? []; let antes = lista.count
+            lista.removeAll { $0["id"]?.comoId == id }; guard antes != lista.count else { break }
+            r["links"] = .some(.array(lista))
+        case let .favoritoEnlace(id, favorito):
+            var lista = (valores["links"] ?? nil)?.lista ?? []
+            guard let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var o = lista[n].objeto else { break }
+            // alternarFavoritoEnlace: como mucho 5.
+            if favorito, o["favorito"]?.booleano != true, lista.filter({ $0["favorito"]?.booleano == true }).count >= 5 { break }
+            o["favorito"] = .bool(favorito); lista[n] = .object(o)
+            r["links"] = .some(.array(lista))
+        case let .guardarCategoriaEnlace(id, nombre, color):
+            let t = String(nombre.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80)); guard !t.isEmpty else { break }
+            var cats = (valores["linkCategories"] ?? nil)?.lista ?? []
+            if let n = cats.firstIndex(where: { $0["id"]?.comoId == id }), var o = cats[n].objeto {
+                o["name"] = .string(t); if !color.isEmpty { o["color"] = .string(color) }; cats[n] = .object(o)
+            } else {
+                cats.append(.object(["id": .string(id), "name": .string(t), "color": .string(color.isEmpty ? "#FFADAD" : color)]))
+            }
+            r["linkCategories"] = .some(.array(cats))
+        case let .borrarCategoriaEnlace(id, destino):
+            var cats = (valores["linkCategories"] ?? nil)?.lista ?? []; let antes = cats.count
+            cats.removeAll { $0["id"]?.comoId == id }; guard antes != cats.count else { break }
+            // borrarCategoriaEnlace: sus enlaces pasan a otra categoría o se quedan sin ella.
+            let lista = ((valores["links"] ?? nil)?.lista ?? []).map { l -> JSONValue in
+                guard var o = l.objeto, o["categoryId"]?.comoId == id else { return l }
+                o["categoryId"] = destino.map { .string($0) } ?? .null; return .object(o)
+            }
+            r["linkCategories"] = .some(.array(cats)); r["links"] = .some(.array(lista))
         case let .guardarObjetivo(id, titulo, plazo, numerico, actual, meta, unidad, estado, notas):
             let limpio = String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)); guard !limpio.isEmpty else { break }
             var lista = (valores["entries"] ?? nil)?.lista ?? []
@@ -1192,7 +1249,8 @@ enum AplicarOperaciones {
             return .object(p)
 
         case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .importarMovimiento, .importarFila, .guardarViaje, .cambiarViaje,
-             .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal, .guardarObjetivo, .cambiarObjetivo, .marcarRutina, .crearNota, .parcharEvento,
+             .guardarCitaLaboral, .borrarCitaLaboral, .horarioLaboral, .laboralEnPrincipal, .guardarObjetivo, .cambiarObjetivo,
+             .guardarEnlace, .borrarEnlace, .favoritoEnlace, .guardarCategoriaEnlace, .borrarCategoriaEnlace, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea, .transporteElegirInicio, .ponerPerfil, .ponerApartado,
              .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
              .anadirEnLista, .anadirCompra, .guardarListaCompra, .borrarListaCompra, .elegirListaCompra, .guardarItemCompra,

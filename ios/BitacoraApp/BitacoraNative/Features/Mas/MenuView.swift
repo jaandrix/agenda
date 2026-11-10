@@ -28,7 +28,7 @@ struct MasView: View {
 
     // Lo que ya es nativo: o una pestaña de la barra, o una página dentro de «más.».
     static let pestanas: [String: Pestana] = ["calendar": .calendario, "planner": .plan, "finances": .finanzas]
-    static let paginas: Set<String> = ["habits", "notes", "studies", "projects", "settings", "events", "transporte", "home", "compra", "culture", "travels", "work", "goals"]
+    static let paginas: Set<String> = ["habits", "notes", "studies", "projects", "settings", "events", "transporte", "home", "compra", "culture", "travels", "work", "goals", "links"]
 
     var body: some View {
         ScrollViewReader { lector in
@@ -107,6 +107,7 @@ struct MasView: View {
         case "travels": ViajesView()
         case "work": EmpleoView()
         case "goals": ObjetivosView()
+        case "links": EnlacesView()
         case "estado": EstadoView()
         case "buscar": BuscarView()
         case "home": PanoramaView()
