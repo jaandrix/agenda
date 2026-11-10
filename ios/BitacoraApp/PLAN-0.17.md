@@ -1,0 +1,119 @@
+# Plan de la 0.17 (app nativa)
+
+Decidido el 10-11-2026 a partir del plan maestro de ChatGPT (`Documents\ChatGPT\agenda\PREPARACION-CLAUDE-PROXIMA-IPA`).
+Claude dirige el proyecto y GPT asesora y audita.
+
+**Alcance de Alejandro:** solo la app nativa. La PWA queda en espera: no se tocan `js/`, `index.html`, `styles.css` ni
+`service-worker.js`, y los cambios de la PWA que siguen sin commitear en la copia de trabajo no se tocan.
+
+## Orden acordado
+
+1. Validadores P0 de Apuntar (solo iOS).
+2. Una sola clave de importación de extractos: iOS se adapta a la de la PWA.
+3. Prioridad en el planificador nativo.
+4. El resto de P0 y P1 del plan maestro y de la auditoría de la IPA del run 57.
+5. Barra, iconos y carrusel.
+6. Glass solo como tema opcional detrás de un interruptor, apagado por defecto.
+
+Un commit y una compilación de Actions por corte, con push a main.
+
+## Hecho
+
+| Corte | Commit | Qué |
+|---|---|---|
+| 1 | a4bc0c0 | Validadores P0 de Apuntar en `apuntar-puente.js`, que solo carga JavaScriptCore. Ver el detalle debajo de la tabla. |
+| 2 | 2797972 | Importar extractos con la clave de la web. Ver el detalle debajo de la tabla. |
+| 3 | da20162 | Prioridad de las tareas (`alta`, `media`, `baja` o sin la clave, como en `js/planificador.js`). Ver el detalle debajo de la tabla. |
+| 3b | e300543 | El editor de tareas deja elegir cualquier fecha (`moverTarea` conserva el resto de la tarea). |
+
+**Corte 1, validadores de Apuntar:**
+- Bloquea fechas que no existen («31 de febrero», «13/13», «el 32», «el 31» en un mes de 30 días) y rangos al revés.
+- Bloquea «cada 0 días» y «el día 32 de cada mes».
+- Bloquea los apuntes sin contenido: solo fecha, solo hora o solo importe.
+- Bloquea «cancela / mueve / borra / cambia la…» y las preguntas.
+- «1.500,50 €» se lee entero (antes salía 500,50).
+- El motivo va en `r.error`: la vista lo enseña en rojo y `CrearApunte` se niega a crear.
+- 36af1ab había tocado la web: se deshizo en a4bc0c0, así que la PWA está como en 4605e3e.
+
+**Corte 2, clave de importación:**
+- La clave es `cuenta|fecha|importe|concepto del banco` (`bankNote` o `note`), igual que `dedupeKey`, más `claveImport` y `claveImport2`.
+- Se cuentan las veces, como la web: dos filas iguales son dos movimientos.
+- Nueva operación `importarFila`. `importarMovimiento` se queda solo para lo que ya estaba en cola.
+- Ya no se escriben `ioscsv_*` ni `conceptoBanco`. Este último, en la web, es un campo de los cargos recurrentes y no de los movimientos.
+
+**Corte 3, prioridad:**
+- Se ve delante del nombre y en su color, y VoiceOver la lee.
+- Lo que no tiene hora va primero y por prioridad, igual que `PLANNER_PRIORIDAD_ORDEN`. «Pendientes sin día» también se ordena por prioridad.
+- Se cambia en el editor y en el menú de la tarea.
+- `parcharTarea` quita la clave si la tarea se queda sin prioridad.
+
+**Pruebas añadidas:**
+- `pruebas/apuntar-p0.mjs`: 30 casos, sobre el mismo entorno que JavaScriptCore.
+- Frases P0 en el banco de paridad `pruebas/apuntar-casos.json`.
+- `pruebas/importar-ios-web.mjs`: comprueba con el importador real de la web que lo importado en el iPhone no se duplica.
+- `testMismaClaveQueLaWebEnLosDosSentidos` y `testPrioridadComoEnLaWeb`.
+- Las dos pruebas de Node corren en el workflow `ios-nativa.yml`.
+
+## Pendiente, por prioridad
+
+**P0**
+- **Bandeja de Claude/ChatGPT en iOS:** leer `conector_bandeja` y `registroConector`; aceptar, rechazar y deshacer; agrupar los avisos («Claude añadió 3 tareas»). Es el corte más grande que queda.
+- **Concurrencia PWA/iPhone en `dayPlanner`:** prueba de guardados simultáneos sobre la misma clave. Después, valorar compare-and-swap o una RPC por operación.
+- **Importar, filas pendientes:** la web importa los movimientos pendientes con `pendiente` y luego los completa; iOS los sigue omitiendo. Hay que portar esa lógica sin duplicar.
+
+**P1**
+- Mover una tarea a una fecha concreta también desde el menú de la fila. Hoy solo se puede desde el editor.
+- Subtareas en el planificador.
+- Finanzas:
+  - edición de presupuestos;
+  - CRUD de suscripciones con logos;
+  - patrimonio por rangos;
+  - navegación interna accesible (44 pt, selector que no se desborda).
+- Apuntar, P1 del laboratorio:
+  - prioridad dicha en la frase («… prioridad alta»);
+  - negaciones y condiciones;
+  - faltas de dictado;
+  - varios importes en una frase;
+  - asignatura que no existe (que avise en vez de crear un evento).
+- Rutinas, Notas, Estudios y Proyectos hasta tener el contrato completo; Enlaces nativo.
+
+**Visual**
+- Barra, iconos (catálogo común en `Iconos.swift`) y carrusel semanal con encaje físico.
+- Glass: tema opcional tras un interruptor, apagado por defecto. Antes hay que corregir dos fallos del prototipo: en Finanzas marca «calendario.» como pestaña activa, y un logo de suscripción sale como un cuadro vacío. Tampoco puede llevar velos con desenfoque en filas ni iconos.
+
+**Web (en espera)**
+- Llevar los validadores de Apuntar a `js/apuntar.js`. Están en `apuntar-puente.js` y se pueden copiar tal cual. Después, quitarlos del puente para no validar dos veces.
+
+## Qué debe auditar GPT
+
+1. `apuntar-puente.js` (`__validar`, `__sinMiles`), buscando falsos positivos con frases reales:
+   - «el 30» en un mes de 31 días;
+   - rangos que cruzan de mes o de año;
+   - «cambia el aceite» y «quita el polvo», que deben seguir siendo tareas.
+2. `importarFila` en `Operaciones.swift` y `ClaveImportacion`. Puntos a revisar:
+   - que el importe salga como lo escribe JavaScript (`12.5`, `1250`, `0.1`);
+   - el concepto con espacios o comillas;
+   - un traspaso con `transferTo`;
+   - un extracto que se solapa con otro ya importado.
+3. Prioridad: orden estable y conservación de los campos que iOS no conoce (`linkedAssignmentId`, `proyectoTareaId`, otros).
+4. La IPA del run final: estructura, ausencia de firma y hashes, igual que `14-AUDITORIA-IPA-RUN57.md`.
+
+## OpenCode
+
+El 10-11, `opencode run` falla en este PC con «Database is not empty and has no session table». Falla tanto con el supervisor como directamente, así que no se pudo delegar nada. El encargo preparado es `trabajo-opencode/cola/OC-004-clave-importacion.md` (de solo lectura). La investigación la hizo Claude.
+
+Antes de volver a delegar hay que revisar la base de datos de OpenCode del usuario: tiene una sesión rota.
+
+## Probar en el iPhone
+
+- **Apuntar.** Al escribir estas frases tiene que salir el aviso en rojo y no guardarse nada:
+  - «dentista el 31 de febrero»
+  - «cancela la cita del dentista»
+  - «12 €»
+  - «regar cada 0 días»
+
+  En cambio, «gasté 1.500,50 € en el sofá» se guarda como 1.500,50 €.
+- **Plan.** Mantener pulsada una tarea, elegir «prioridad.» y luego «alta.»: sale «alta.» en rojo delante y la tarea sube entre las que no tienen hora. Abrirla y cambiar la «fecha.» a otro día: desaparece de hoy y aparece ese día.
+- **Finanzas.**
+  1. Importar el mismo CSV dos veces en el iPhone: la segunda no añade nada.
+  2. Importar en el iPhone un extracto que ya se había importado en la web: no añade nada.
