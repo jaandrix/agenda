@@ -47,7 +47,7 @@ struct EditorTareaView: View {
                     if dia != nil {
                         // Cualquier otro día, no solo hoy, mañana y pasado (mover a una fecha concreta).
                         DatePicker("fecha.", selection: fechaElegida, displayedComponents: .date)
-                            .environment(.locale, Locale(identifier: "es_ES"))
+                            .environment(\.locale, Locale(identifier: "es_ES"))
                         Toggle("a una hora.", isOn: $conHora.animation(.easeOut(duration: 0.15)))
                         if conHora {
                             DatePicker("hora.", selection: $hora, displayedComponents: .hourAndMinute)
